@@ -35,7 +35,7 @@ jobs:
           persist-credentials: false
 
       - name: Run TruffleHog secret scan
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@v3.95.6
         with:
           path: ./
           extra_args: --results=verified,unknown --fail --fail-on-scan-errors
