@@ -1,0 +1,11 @@
+# Exclude runtime/tooling directories from filesystem secret scan.
+# TruffleHog still scans repository files; this avoids transient Git metadata and generated folders.
+(^|/)\.git/
+(^|/)node_modules/
+(^|/)dist/
+(^|/)build/
+(^|/)coverage/
+(^|/)\.venv/
+(^|/)venv/
+(^|/)\.next/
+(^|/)\.chroma/
