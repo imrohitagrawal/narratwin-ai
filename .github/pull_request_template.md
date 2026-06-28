@@ -1,30 +1,41 @@
+## Linked issue
+
+Closes #
+
+## Stage / slice
+
+- Stage:
+- Branch:
+- Scope:
+
 ## Summary
 
 - Describe the change in one or two bullets.
 
-## Stage
+## Guardrail checklist
 
-- [ ] Stage -1: skill trust review
-- [ ] Stage 0: product/PRD
-- [ ] Stage 1: architecture/security/AI safety
-- [ ] Stage 2: repo quality gates
-- [ ] Stage 3: Slice 1 implementation
-- [ ] Stage 4+: UI/avatar/release hardening
+- [ ] This PR was created from a tracked GitHub issue.
+- [ ] No direct commits were made to `main`.
+- [ ] CI passes before merge.
+- [ ] No secrets, tokens, credentials, or provider keys are committed.
+- [ ] Tests run without paid providers or real provider keys.
+- [ ] External services use mock/local adapters by default.
+- [ ] Provider keys are read only from environment variables.
+- [ ] LLM outputs include trace/run metadata where applicable.
+- [ ] Generated scripts/answers cite source chunks where applicable.
+- [ ] Eval failures block this PR.
+- [ ] Security critical/high findings block this PR.
+- [ ] Architecture-impacting changes include an ADR update under `docs/ADR/`.
+- [ ] PRD-impacting changes update `docs/TRACEABILITY.md`.
 
-## Scope control
+## Validation evidence
 
-- [ ] This PR is scoped to one issue or one stage.
-- [ ] No unrelated broad skeleton was added.
-- [ ] No premium provider was made mandatory.
-- [ ] No secrets or real API keys were committed.
+Paste commands/results or link CI run:
 
-## Validation
+```text
 
-- [ ] `make quality` was run locally, or not applicable reason is documented below.
-- [ ] Docs were updated.
-- [ ] Tests were added/updated when code changed.
-- [ ] Security, privacy, license, and AI safety impact were considered.
+```
 
-## Notes / not applicable reasons
+## Notes for reviewer
 
 - Add notes here, or write `N/A`.
