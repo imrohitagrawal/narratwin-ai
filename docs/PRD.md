@@ -22,6 +22,48 @@ Without a grounded walkthrough system, project demos become:
 
 Create a platform that transforms approved project knowledge into grounded, multilingual, audience-aware walkthroughs that can later be rendered through avatar, voice, subtitle, and video providers.
 
+## Product modes
+
+NarraTwin AI must preserve two product modes, even though the MVP implements only the grounding loop first.
+
+### Mode 1: Pre-rendered multilingual demo video
+
+This mode turns an existing English demo video, demo script, or project-avatar-pack into a polished localized walkthrough for LinkedIn, YouTube, portfolio pages, recruiter sharing, customer onboarding, or product education.
+
+Future flow:
+
+```text
+English demo video or demo script
+→ transcription / script cleanup
+→ audience-specific script generation
+→ translation / localization
+→ voiceover generation
+→ avatar or video rendering
+→ subtitles
+→ export/shareable demo
+```
+
+### Mode 2: Interactive AI avatar guide
+
+This mode lets a viewer ask questions about a project and receive a grounded, audience-aware response from an avatar-style project guide.
+
+Future flow:
+
+```text
+User selects language, audience, depth, and style
+→ user asks a project question
+→ system retrieves approved project context
+→ system generates a grounded answer
+→ system evaluates unsupported claims
+→ future TTS/avatar provider speaks the answer
+```
+
+## Reusable project-avatar-pack
+
+NarraTwin AI should support a reusable project knowledge contract defined in `docs/PROJECT_AVATAR_PACK.md`.
+
+The pack is the approved source of truth for future generated scripts, video walkthroughs, and interactive Q&A. It prevents the product from becoming a generic chatbot and keeps generated outputs grounded in project-specific facts.
+
 ## MVP scope
 
 The MVP proves the core trust loop, not avatar polish.
