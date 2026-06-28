@@ -71,7 +71,7 @@ Do not paste API keys, personal tokens, or secret values into skill installers.
 
 | Stage | Skill/tool | Source | Install command | Use for | Required output |
 |---|---|---|---|---|---|
-| Stage 0 | PM Skills | `https://github.com/phuryn/pm-skills` | `codex plugin marketplace add phuryn/pm-skills` then selected `codex plugin add ...` commands below | Strategy, PRD, roadmap, metrics, red-team PRD | PRD v1, strategy, metrics, risk register |
+| Stage 0 | PM Skills | `https://github.com/phuryn/pm-skills` | `codex plugin marketplace add phuryn/pm-skills` then selected `codex plugin add ...` commands below | Strategy, PRD, roadmap, metrics, red-team PRD | PRD v1, strategy, metrics, risk register, product-mode validation |
 | Stage 1 | GitHub Spec Kit | `https://github.com/github/spec-kit` | `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@<latest-release-tag>` then `specify init . --integration codex --integration-options="--skills"` | Constitution, specs, plan, tasks, implementation discipline | `.specify/`, specs, plan, tasks |
 | Stage 2 | Addy Osmani Agent Skills | `https://github.com/addyosmani/agent-skills` | `npx skills add https://github.com/addyosmani/agent-skills` | Define-plan-build-verify-review-ship lifecycle | Build/review/ship checklists |
 | Stage 3 | Obra Superpowers | `https://github.com/obra/superpowers` | In Codex CLI use `/plugins`, search `superpowers`, install plugin; if marketplace unavailable, ask Codex to follow repo install docs | TDD, plans, code review, verification | TDD plan and review checkpoints |
@@ -113,7 +113,23 @@ Do not use go-to-market/marketing skills during initial implementation unless th
 
 ---
 
-## 6. Spec Kit install commands
+## 6. Stage 0 product-mode validation gate
+
+Before coding, PM/spec skills must validate that these concepts are reflected in the PRD, roadmap, architecture, and first vertical-slice plan:
+
+- Mode 1: Pre-rendered multilingual demo video.
+- Mode 2: Interactive AI avatar guide.
+- Reusable project-avatar-pack contract from `docs/PROJECT_AVATAR_PACK.md`.
+- Language, audience, depth, and style controls.
+- Grounded generation from approved project knowledge only.
+- Free-first mode with optional premium provider adapters.
+- Slice 1 remains focused on the grounding loop and does not implement avatar/video/Q&A prematurely.
+
+If these are missing or contradicted, Codex must update planning docs before writing application code.
+
+---
+
+## 7. Spec Kit install commands
 
 Use during Stage 1.
 
@@ -138,7 +154,7 @@ Do not run `/speckit.implement` until PRD, architecture, risk register, and task
 
 ---
 
-## 7. Skills.sh install commands
+## 8. Skills.sh install commands
 
 Use only when the relevant stage starts.
 
@@ -167,7 +183,7 @@ npx skills add https://github.com/addyosmani/web-quality-skills --skill performa
 
 ---
 
-## 8. Superpowers install guidance
+## 9. Superpowers install guidance
 
 Use only if you want strict TDD and agentic discipline.
 
@@ -183,7 +199,7 @@ If this is unavailable, Codex must not invent commands. It should read the upstr
 
 ---
 
-## 9. UI/UX Pro Max install commands
+## 10. UI/UX Pro Max install commands
 
 Use after the first UI exists, not at Stage 0.
 
@@ -198,7 +214,7 @@ Do not let this skill override product strategy, architecture, security, or PRD 
 
 ---
 
-## 10. Wednesday AI Agent Skills install commands
+## 11. Wednesday AI Agent Skills install commands
 
 Use after meaningful code exists.
 
@@ -218,7 +234,7 @@ Use it for:
 
 ---
 
-## 11. Project Doc Skills install guidance
+## 12. Project Doc Skills install guidance
 
 Source:
 
@@ -237,7 +253,7 @@ Do not blindly vendor the whole repo.
 
 ---
 
-## 12. Stage -1: Skill Trust Review
+## 13. Stage -1: Skill Trust Review
 
 Before activating skills, create:
 
@@ -267,7 +283,7 @@ Block any skill whose license, install behavior, or execution behavior is unclea
 
 ---
 
-## 13. Skill conflict rules
+## 14. Skill conflict rules
 
 If two skills disagree:
 
@@ -280,12 +296,12 @@ If two skills disagree:
 
 ---
 
-## 14. First Codex prompt
+## 15. First Codex prompt
 
 Use this before coding:
 
 ```text
-Read AGENTS.md, docs/AI_BUILD_BRIEF.md, docs/SKILLS_AND_CODEX_SETUP.md, and docs/SKILL_EXECUTION_PLAN.md.
+Read AGENTS.md, docs/AI_BUILD_BRIEF.md, docs/SKILLS_AND_CODEX_SETUP.md, docs/SKILL_EXECUTION_PLAN.md, and docs/PROJECT_AVATAR_PACK.md.
 
 Do not write application code yet.
 
@@ -294,34 +310,8 @@ Execute Stage -1 and Stage 0 only:
 2. Verify every recommended skill source and install command.
 3. Install/use only Stage 0 PM/spec skills.
 4. Upgrade seed docs into final v1 planning docs.
-5. Red-team the PRD.
-6. Produce the first vertical-slice implementation plan.
-7. Stop and summarize artifacts, risks, assumptions, and recommended next step.
+5. Validate that Mode 1, Mode 2, and the project-avatar-pack contract are reflected in PRD, roadmap, architecture, and vertical-slice planning.
+6. Red-team the PRD.
+7. Produce the first vertical-slice implementation plan.
+8. Stop and summarize artifacts, risks, assumptions, and recommended next step.
 ```
-
----
-
-## 15. Second Codex prompt
-
-Use only after Stage 0 is complete:
-
-```text
-Read the approved PRD, methodology, architecture, ADRs, risk register, skill trust review, and first vertical-slice plan.
-
-Install/use only the skills required for Vertical Slice 1.
-
-Implement only Vertical Slice 1 using TDD.
-
-Do not implement unrelated future modules.
-Use mocks/fakes for external providers.
-Update tests and docs.
-Stop after Slice 1 is working, tested, documented, and reviewed.
-```
-
----
-
-## 16. Final warning
-
-Codex should never be expected to infer install sources from skill names alone.
-
-Every skill must be referenced by source URL and install command in this document or in `docs/SKILL_TRUST_REVIEW.md` before use.
