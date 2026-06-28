@@ -32,6 +32,31 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Enforce issue-linked pull request
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
+          pr = event.get('pull_request', {})
+          body = pr.get('body') or ''
+          head_ref = (pr.get('head') or {}).get('ref')
+          base_ref = (pr.get('base') or {}).get('ref')
+          if head_ref == 'main':
+              raise SystemExit('Pull request head branch must not be main.')
+          if base_ref != 'main':
+              raise SystemExit('Guardrail workflow expects pull requests to target main.')
+          if not re.search(r'(?i)(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+', body):
+              raise SystemExit('Pull request body must link an issue using Closes #<issue>, Fixes #<issue>, or Resolves #<issue>.')
+          print('Issue-linked pull request guardrail passed.')
+          PY
+
       - name: Run repository guardrails
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
