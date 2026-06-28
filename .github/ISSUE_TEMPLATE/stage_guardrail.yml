@@ -1,0 +1,57 @@
+name: Stage / Guardrail Work
+about: Track every stage or guardrail change before branch and PR work starts.
+title: "Stage X — "
+labels: ["stage", "guardrails"]
+body:
+  - type: input
+    id: stage
+    attributes:
+      label: Stage or slice
+      description: Example: Stage 0, Stage 1, Slice 1
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What should this issue achieve?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope
+      description: List the exact files/features expected in scope.
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: List what must not be changed in this issue.
+    validations:
+      required: true
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Required guardrails
+      options:
+        - label: Work will use issue + branch + PR, not direct main commits.
+          required: true
+        - label: CI must pass before merge.
+          required: true
+        - label: No secrets or real provider keys will be committed.
+          required: true
+        - label: Tests must run with mock/local providers and no paid provider requirement.
+          required: true
+        - label: Architecture changes will update ADRs.
+          required: true
+        - label: PRD-impacting changes will update traceability.
+          required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Define measurable acceptance criteria.
+    validations:
+      required: true
