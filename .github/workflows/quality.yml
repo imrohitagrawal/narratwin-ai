@@ -95,8 +95,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -x "./scripts/ci/backend-lint.sh" ]; then
-            ./scripts/ci/backend-lint.sh
+          if [ -f "./scripts/ci/backend-lint.sh" ]; then
+            bash ./scripts/ci/backend-lint.sh
             exit 0
           fi
 
@@ -133,8 +133,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -x "./scripts/ci/backend-test.sh" ]; then
-            ./scripts/ci/backend-test.sh
+          if [ -f "./scripts/ci/backend-test.sh" ]; then
+            bash ./scripts/ci/backend-test.sh
             exit 0
           fi
 
@@ -174,8 +174,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -x "./scripts/ci/frontend-build.sh" ]; then
-            ./scripts/ci/frontend-build.sh
+          if [ -f "./scripts/ci/frontend-build.sh" ]; then
+            bash ./scripts/ci/frontend-build.sh
             exit 0
           fi
 
@@ -212,8 +212,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -x "./scripts/ci/dependency-security.sh" ]; then
-            ./scripts/ci/dependency-security.sh
+          if [ -f "./scripts/ci/dependency-security.sh" ]; then
+            bash ./scripts/ci/dependency-security.sh
             exit 0
           fi
 
