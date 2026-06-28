@@ -29,23 +29,17 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
 
-      - name: Run high-signal secret scan
-        run: |
-          set -euo pipefail
-
-          secret_pattern='AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|gh[pousr]_[0-9A-Za-z_]{36,255}|sk-[0-9A-Za-z]{32,}|-----BEGIN (RSA |EC |OPENSSH |DSA |)PRIVATE KEY-----'
-
-          if git grep -InE "$secret_pattern" -- ':!*.png' ':!*.jpg' ':!*.jpeg' ':!*.gif' ':!*.webp' ':!*.svg'; then
-            echo "::error title=Potential secret detected::A high-signal credential pattern was found. Remove the value before merging."
-            exit 1
-          fi
-
-          echo "No high-signal secret patterns found."
+      - name: Run Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
 
   markdown:
     name: quality / markdown
