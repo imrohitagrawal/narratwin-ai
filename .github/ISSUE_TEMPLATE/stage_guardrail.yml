@@ -1,5 +1,5 @@
 name: Stage / Guardrail Work
-about: Track every stage or guardrail change before branch and PR work starts.
+description: Track every stage or guardrail change before branch and PR work starts.
 title: "Stage X — "
 labels: ["stage", "guardrails"]
 body:
