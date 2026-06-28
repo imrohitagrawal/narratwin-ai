@@ -35,10 +35,14 @@ jobs:
           persist-credentials: false
 
       - name: Run TruffleHog secret scan
-        uses: trufflesecurity/trufflehog@v3.95.6
-        with:
-          path: ./
-          extra_args: --exclude-paths=.trufflehogignore --results=verified --fail --fail-on-scan-errors
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/work" -w /work ghcr.io/trufflesecurity/trufflehog:v3.95.6 filesystem . \
+            --exclude-paths=.trufflehogignore \
+            --results=verified \
+            --fail \
+            --no-update \
+            --github-actions
 
   markdown:
     name: quality / markdown
