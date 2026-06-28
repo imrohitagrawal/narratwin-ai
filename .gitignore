@@ -12,3 +12,6 @@ outputs/
 .chroma/
 .DS_Store
 *.log
+
+# Local Codex skill/vendor workspace
+.codex/
