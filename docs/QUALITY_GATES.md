@@ -21,6 +21,19 @@ The workflow intentionally supports an early bootstrap repo:
 - Once code or manifests appear, the workflow requires repo-local wrappers such as `scripts/ci/backend-test.sh`.
 - This prevents Codex from adding code without also adding validation commands.
 
+## Secrets gate
+
+`quality / secrets` must use a dedicated secret-scanning tool, not only a handcrafted regex.
+
+Current implementation:
+
+- checks out full history for the secrets job
+- runs `gitleaks/gitleaks-action@v3`
+- disables automatic PR comments to avoid noisy bot output
+- does not require a Gitleaks license for this personal-account repository
+
+A lightweight regex scan may be added later as a supplemental fast check, but it must not replace the dedicated scanner.
+
 ## Local gates before every PR
 
 Run the closest applicable local checks before pushing:
