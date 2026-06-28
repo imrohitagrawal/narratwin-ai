@@ -10,6 +10,52 @@ NarraTwin AI
 
 NarraTwin AI is a standalone multilingual AI avatar walkthrough platform. It turns approved project knowledge, README files, architecture docs, demo scripts, and demo videos into audience-aware avatar walkthroughs for recruiters, hiring managers, engineers, product leaders, customers, and global non-English audiences.
 
+## Product modes to preserve
+
+The repo is currently a seed operating model. PM/spec skills must preserve and harden these two product modes before coding starts.
+
+### Mode 1: Pre-rendered multilingual demo video
+
+Future product flow:
+
+```text
+English demo video or demo script
+→ transcription / script cleanup
+→ audience-specific script generation
+→ translation / localization
+→ voiceover generation
+→ avatar or video rendering
+→ subtitles
+→ export/shareable demo
+```
+
+This mode is useful for LinkedIn, YouTube, portfolio pages, recruiter sharing, product onboarding, and customer education.
+
+### Mode 2: Interactive AI avatar guide
+
+Future product flow:
+
+```text
+User selects language, audience, depth, and style
+→ user asks a project question
+→ system retrieves approved project context
+→ system generates a grounded answer
+→ system evaluates unsupported claims
+→ future TTS/avatar provider speaks the answer
+```
+
+This mode is useful for recruiters, hiring managers, engineers, product leaders, customers, and global users who want a personalized explanation.
+
+## Reusable project-avatar-pack
+
+NarraTwin AI should support the reusable project knowledge contract documented in:
+
+```text
+docs/PROJECT_AVATAR_PACK.md
+```
+
+The project-avatar-pack is the approved source-of-truth folder for future generated scripts, video walkthroughs, and interactive Q&A. PM/spec skills must validate that PRD, roadmap, architecture, and Slice 1 planning do not lose this reusable-pack concept.
+
 ## Product capabilities
 
 The product must support:
@@ -71,6 +117,7 @@ Create these before application implementation:
 - `docs/NORTH_STAR_METRICS.md`
 - `docs/METHODOLOGY.md`
 - `docs/ARCHITECTURE.md`
+- `docs/PROJECT_AVATAR_PACK.md`
 - `docs/ADR/0001-architecture-approach.md`
 - `docs/ADR/0002-provider-agnostic-adapters.md`
 - `docs/ADR/0003-free-mode-vs-premium-mode.md`
@@ -141,6 +188,8 @@ Every third-party package, model, media asset, avatar tool, dataset, or generate
 Implement only after documents are created and reviewed:
 
 Project creation → upload markdown project knowledge → ingest/chunk/store knowledge → retrieve relevant context → generate grounded walkthrough script → evaluate unsupported claims → store output → display output in UI → tests passing → docs updated.
+
+Slice 1 must preserve the future two-mode product vision but must not implement avatar video, TTS, subtitles, premium provider adapters, or interactive avatar Q&A.
 
 ## Completion checkpoint before coding
 
