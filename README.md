@@ -10,24 +10,69 @@ This repository is intentionally bootstrapped as a **strategy-first, spec-first,
 
 Do not start by generating a large disconnected code skeleton.
 
-Start with:
+The repo is currently operating under the Stage 0 to Stage 8 model documented in:
 
-1. Product strategy
-2. PRD
-3. PRD red-team review
-4. Methodology
-5. Architecture and ADRs
-6. Vertical-slice implementation plan
-7. TDD implementation for Slice 1
+- `AGENTS.md`
+- `docs/CODEX_OPERATING_MODEL.md`
+- `docs/QUALITY_GATES.md`
+
+## Active stage
+
+The active stage is controlled by:
+
+```text
+.stage/current
+```
+
+Current value:
+
+```text
+0
+```
+
+This means Stage 0 is active.
+
+## Quality gates
+
+Run the current stage quality gate:
+
+```bash
+make stage0-quality
+```
+
+Run all gates available up to the active stage:
+
+```bash
+make quality
+```
+
+During Stage 0, `make quality` runs only Stage 0 checks. It must not require backend, frontend, Docker, database, RAG, avatar, or provider implementation code.
+
+Future stages are declared in the Makefile so Codex cannot claim the quality targets are missing. Their executable checks must be implemented when each stage becomes active.
+
+## Approved build stages
+
+| Stage | Name |
+|---|---|
+| Stage 0 | Codex operating model and skill lock |
+| Stage 1 | Product strategy and PRD v1.0 |
+| Stage 2 | Architecture, security, AI safety |
+| Stage 3 | Repo foundation and CI/CD quality gates |
+| Stage 4 | Slice 1: project upload to grounded script |
+| Stage 5 | Evaluation, guardrails, observability |
+| Stage 6 | Multilingual scripts, subtitles, voice adapter |
+| Stage 7 | Avatar rendering adapter and demo export |
+| Stage 8 | Performance, security hardening, release readiness |
+| Final Review | Independent reviewer pass |
 
 ## Product modes
 
 ### Free Engineering Mode
 
-- Gemini API as primary LLM
+- Gemini API as primary LLM option
 - ChromaDB or pgvector for RAG
 - FastAPI backend
-- Next.js frontend
+- React/Vite or Next.js frontend, depending on the Stage 3 architecture decision
 - FFmpeg for subtitles/video assembly
 - Mock avatar provider first
 - Optional local avatar provider only after license review
@@ -56,7 +101,9 @@ Project creation → upload markdown knowledge → ingest/chunk/store → retrie
 - Wav2Lip must not be enabled by default.
 - AI avatar/voice disclosure is mandatory.
 - Cloned face/voice requires explicit documented consent.
+- `make quality` must pass before any PR is considered ready.
+- Stage 8 and Final Review must remain part of the operating model.
 
 ## Next step
 
-Open `docs/AI_BUILD_BRIEF.md` and give it to Codex from a fresh repo session.
+Complete Stage 0 remediation and review before starting Stage 1. Do not implement product features until Stage 0 and Stage 1 gates pass.
