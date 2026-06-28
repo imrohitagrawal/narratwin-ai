@@ -1,23 +1,34 @@
-.PHONY: quality docs-check diff-check backend-lint backend-test frontend-build dependency-security
+.PHONY: quality stage0-quality stage1-quality stage2-quality stage3-quality stage4-quality stage5-quality stage6-quality stage7-quality stage8-quality final-review-quality
 
-quality: diff-check docs-check backend-lint backend-test frontend-build dependency-security
+quality:
+	python3 scripts/quality/check_quality_stage.py
 
-# Lightweight checks that work while the repo is still documentation-first.
-diff-check:
-	git diff --check
+stage0-quality:
+	python3 scripts/quality/check_stage0_docs.py
 
-docs-check:
-	@echo "Docs are validated by .github/workflows/quality.yml markdown job in CI."
+stage1-quality:
+	python3 scripts/quality/stage_not_implemented.py "Stage 1"
 
-# These delegate to CI wrapper scripts once implementation code exists.
-backend-lint:
-	@if [ -x "./scripts/ci/backend-lint.sh" ]; then ./scripts/ci/backend-lint.sh; else echo "backend lint not applicable yet"; fi
+stage2-quality:
+	python3 scripts/quality/stage_not_implemented.py "Stage 2"
 
-backend-test:
-	@if [ -x "./scripts/ci/backend-test.sh" ]; then ./scripts/ci/backend-test.sh; else echo "backend tests not applicable yet"; fi
+stage3-quality:
+	python3 scripts/quality/stage_not_implemented.py "Stage 3"
 
-frontend-build:
-	@if [ -x "./scripts/ci/frontend-build.sh" ]; then ./scripts/ci/frontend-build.sh; else echo "frontend build not applicable yet"; fi
+stage4-quality:
+	python3 scripts/quality/stage_not_implemented.py "Stage 4"
 
-dependency-security:
-	@if [ -x "./scripts/ci/dependency-security.sh" ]; then ./scripts/ci/dependency-security.sh; else echo "dependency security not applicable yet"; fi
+stage5-quality:
+	python3 scripts/quality/stage_not_implemented.py "Stage 5"
+
+stage6-quality:
+	python3 scripts/quality/stage_not_implemented.py "Stage 6"
+
+stage7-quality:
+	python3 scripts/quality/stage_not_implemented.py "Stage 7"
+
+stage8-quality:
+	python3 scripts/quality/stage_not_implemented.py "Stage 8"
+
+final-review-quality:
+	python3 scripts/quality/stage_not_implemented.py "Final Review"
