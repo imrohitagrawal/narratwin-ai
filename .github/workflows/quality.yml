@@ -29,16 +29,17 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Run TruffleHog secret scan
-        uses: trufflesecurity/trufflehog@v3.95.6
-        with:
-          path: ./
-          extra_args: --results=verified,unknown --fail --fail-on-scan-errors
+      - name: Run Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
 
   markdown:
     name: quality / markdown
@@ -58,7 +59,9 @@ jobs:
           {
             "config": {
               "MD013": false,
+              "MD024": { "siblings_only": true },
               "MD033": false,
+              "MD034": false,
               "MD041": false
             }
           }
