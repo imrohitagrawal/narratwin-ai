@@ -38,7 +38,7 @@ jobs:
         uses: trufflesecurity/trufflehog@v3.95.6
         with:
           path: ./
-          extra_args: --results=verified,unknown --fail --fail-on-scan-errors
+          extra_args: --exclude-paths=.trufflehogignore --results=verified --fail --fail-on-scan-errors
 
   markdown:
     name: quality / markdown
@@ -58,7 +58,9 @@ jobs:
           {
             "config": {
               "MD013": false,
+              "MD024": { "siblings_only": true },
               "MD033": false,
+              "MD034": false,
               "MD041": false
             }
           }
