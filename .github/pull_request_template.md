@@ -1,6 +1,6 @@
 ## Summary
 
-- 
+- Describe the change in one or two bullets.
 
 ## Stage
 
@@ -27,4 +27,4 @@
 
 ## Notes / not applicable reasons
 
-- 
+- Add notes here, or write `N/A`.
