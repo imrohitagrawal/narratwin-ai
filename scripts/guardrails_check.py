@@ -18,7 +18,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 EXCLUDED_DIRS = {
     ".git",
-    ".github",
     ".chroma",
     ".pytest_cache",
     ".ruff_cache",
@@ -167,12 +166,36 @@ def check_no_direct_main_push() -> None:
         failures.append("Direct push to main detected. All work must go through issue + branch + PR.")
 
 
+def check_issue_linked_pull_request() -> None:
+    if os.environ.get("GITHUB_EVENT_NAME") != "pull_request":
+        return
+    event_path = os.environ.get("GITHUB_EVENT_PATH")
+    if not event_path:
+        failures.append("Pull request event payload is unavailable; cannot verify issue linkage.")
+        return
+    try:
+        event = json.loads(Path(event_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        failures.append(f"Could not read pull request event payload: {exc}")
+        return
+    pr = event.get("pull_request", {})
+    body = pr.get("body") or ""
+    head_ref = (pr.get("head") or {}).get("ref")
+    base_ref = (pr.get("base") or {}).get("ref")
+    if head_ref == "main":
+        failures.append("Pull request head branch must not be main.")
+    if base_ref != "main":
+        failures.append("Pull requests for guarded work must target main.")
+    if not re.search(r"(?i)(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+", body):
+        failures.append("Pull request body must link an issue using Closes #<issue>, Fixes #<issue>, or Resolves #<issue>.")
+
+
 def check_workflows_least_privilege() -> None:
     workflow_dir = ROOT / ".github" / "workflows"
     if not workflow_dir.exists():
         failures.append("Missing .github/workflows directory. CI must be YAML-defined.")
         return
-    for workflow in workflow_dir.glob("*.yml"):
+    for workflow in list(workflow_dir.glob("*.yml")) + list(workflow_dir.glob("*.yaml")):
         text = read_text(workflow)
         rel = relative(workflow)
         if "permissions:" not in text:
@@ -297,6 +320,7 @@ def check_security_results_blocking() -> None:
 def main() -> int:
     changes = changed_files()
     check_no_direct_main_push()
+    check_issue_linked_pull_request()
     check_workflows_least_privilege()
     check_secrets()
     check_provider_keys_are_env_only()
