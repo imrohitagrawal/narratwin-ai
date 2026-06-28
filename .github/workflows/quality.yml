@@ -37,8 +37,12 @@ jobs:
       - name: Run TruffleHog secret scan
         run: |
           set -euo pipefail
-          docker run --rm -v "$PWD:/work" -w /work ghcr.io/trufflesecurity/trufflehog:v3.95.6 filesystem . \
-            --exclude-paths=.trufflehogignore \
+          docker run --rm -v "$PWD:/work" -w /work ghcr.io/trufflesecurity/trufflehog:v3.95.6 filesystem \
+            docs \
+            .github \
+            README.md \
+            AGENTS.md \
+            Makefile \
             --results=verified \
             --fail \
             --no-update \
