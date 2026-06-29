@@ -96,6 +96,7 @@ GitHub Actions workflows remain the remote enforcement layer. Local stage target
 The CI layer must continue to enforce:
 
 - `make quality` for the current stage
+- stage-aware backend contracts so Stage 0 governance scripts do not trigger backend implementation gates
 - no direct commits to `main`
 - issue-linked PRs
 - least-privilege workflow permissions

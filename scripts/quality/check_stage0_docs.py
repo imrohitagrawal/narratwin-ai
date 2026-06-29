@@ -16,6 +16,7 @@ STAGE0_BRANCH_PATTERN = re.compile(r"^stage0-")
 REQUIRED_FILES = [
     "AGENTS.md",
     ".github/pull_request_template.md",
+    ".github/workflows/quality.yml",
     ".github/workflows/quality-gates.yml",
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
@@ -61,6 +62,7 @@ REQUIRED_TARGETS = [
 
 STAGE0_ALLOWED_FILES = {
     ".github/pull_request_template.md",
+    ".github/workflows/quality.yml",
     ".github/workflows/quality-gates.yml",
     ".gitignore",
     ".stage/current",
@@ -387,19 +389,26 @@ def check_make_targets(failures: list[str]) -> None:
 
 
 def check_quality_workflow(failures: list[str]) -> None:
-    rel = ".github/workflows/quality-gates.yml"
-    path = ROOT / rel
-    if not path.exists():
-        return
-    text = path.read_text(encoding="utf-8")
-    required_snippets = [
-        "name: Run stage quality gate",
-        "run: make quality",
-        "name: Run repository guardrails",
-    ]
-    for snippet in required_snippets:
-        if snippet not in text:
-            fail(f"{rel} must include the Stage 0 CI enforcement snippet: {snippet}", failures)
+    workflow_requirements = {
+        ".github/workflows/quality-gates.yml": [
+            "name: Run stage quality gate",
+            "run: make quality",
+            "name: Run repository guardrails",
+        ],
+        ".github/workflows/quality.yml": [
+            'if [ -f ".stage/current" ] && [ "$(tr -d',
+            'echo "Backend lint not applicable during Stage 0."',
+            'echo "Backend tests not applicable during Stage 0."',
+        ],
+    }
+    for rel, required_snippets in workflow_requirements.items():
+        path = ROOT / rel
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for snippet in required_snippets:
+            if snippet not in text:
+                fail(f"{rel} must include the Stage 0 CI enforcement snippet: {snippet}", failures)
 
 
 def is_stdlib_import(module_name: str) -> bool:

@@ -44,6 +44,7 @@ Allowed changes:
 - `.gitignore`
 - `README.md`
 - `.github/pull_request_template.md`
+- `.github/workflows/quality.yml`
 - `.github/workflows/quality-gates.yml`
 - `docs/AI_BUILD_BRIEF.md`
 - `docs/CODEX_OPERATING_MODEL.md`
