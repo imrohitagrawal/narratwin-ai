@@ -27,7 +27,7 @@ This repository is protected by workflow, review, and policy-as-code guardrails.
 
 The `Quality Gates` workflow runs `scripts/guardrails_check.py` on pull requests into `main` and on pushes to non-main branches.
 
-The policy check blocks:
+The policy check fails CI for:
 
 - direct push events to `main` when detected by CI
 - workflows without explicit `permissions:`
