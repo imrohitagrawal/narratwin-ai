@@ -107,6 +107,7 @@ STATUS_IMPACT_PREFIXES = (
     ".stage/current",
     "AGENTS.md",
     "Makefile",
+    "docs/AI_BUILD_BRIEF.md",
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
     "docs/REPOSITORY_GUARDRAILS.md",
@@ -132,13 +133,27 @@ def run_git(args: list[str]) -> str:
         return ""
 
 
+def is_zero_sha(value: str) -> bool:
+    return bool(value) and set(value) == {"0"}
+
+
+def resolve_diff_base(head: str, preferred_base: str) -> str:
+    if preferred_base and not is_zero_sha(preferred_base):
+        verified = run_git(["rev-parse", "--verify", f"{preferred_base}^{{commit}}"])
+        if verified:
+            return preferred_base
+    for candidate in ("origin/main", "main"):
+        merge_base = run_git(["merge-base", candidate, head])
+        if merge_base:
+            return merge_base
+    return "HEAD~1"
+
+
 def changed_files() -> list[str]:
     base = os.environ.get("GITHUB_BASE_SHA", "").strip()
     head = os.environ.get("GITHUB_HEAD_SHA", "").strip() or "HEAD"
-    if base:
-        output = run_git(["diff", "--name-only", base, head])
-    else:
-        output = run_git(["diff", "--name-only", "HEAD~1", "HEAD"])
+    resolved_base = resolve_diff_base(head, base)
+    output = run_git(["diff", "--name-only", resolved_base, head])
     return [line.strip() for line in output.splitlines() if line.strip()]
 
 
