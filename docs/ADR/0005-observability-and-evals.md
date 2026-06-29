@@ -43,6 +43,20 @@ strategy version. `FAILED` and `REFUSED` outputs are persisted for audit but exp
 publicly only as redacted failure/refusal metadata, never as accepted generated
 scripts.
 
+Review hardening on 2026-06-30 locks the evaluation and job lifecycle contract more
+tightly:
+
+- the public `EvaluationResult` example must include safety, provider, latency,
+  cost, retrieval, embedding, and drift-analysis fields required by the data model
+- embedded `claimSupports` in accepted run summaries must either use the canonical
+  `ClaimSupport` shape or be explicitly renamed; Stage 2 uses the canonical shape
+- failed or refused terminal output uses the same redacted public shape for
+  synchronous creation failures, `GET`, and idempotency replay; newly created
+  synchronous terminal failures are not mislabeled as replay-only `200` responses
+- idempotency response status is optional until a stored response exists
+- ingestion and walkthrough jobs use the canonical lease vocabulary:
+  `locked_by`, `locked_at`, and `lease_expires_at`
+
 ## Telemetry Schema Decision
 
 `RunMetadata`, `EventEnvelope`, and `MetricPoint` are separate schemas:
