@@ -83,6 +83,7 @@ Allowed changes:
 - `docs/STATUS.md`
 - `docs/TRACEABILITY.md`
 - `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_stage0_docs.py`
 - `scripts/quality/check_stage1_docs.py`
 
 Blocked changes:

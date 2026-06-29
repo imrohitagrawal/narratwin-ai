@@ -72,17 +72,25 @@ Slice 1 must store enough metadata to measure:
 
 ## Release Thresholds For Slice 1
 
-Slice 1 is not acceptable unless:
+Slice 1 is not acceptable unless the release evidence shows:
 
-- happy path creates a stored grounded walkthrough from at least one markdown fixture
-- output includes context refs for project-specific claims
-- unsupported-claim detection or refusal passes a controlled fixture set with at
-  least one supported claim, one unsupported claim, and one mixed-claim response
-- empty-context refusal passes for no-chunk and retrieval-miss cases
-- prompt-injection uploaded-document test passes for at least one malicious markdown
-  fixture that attempts to override system/developer instructions
-- tests pass without real paid provider keys
-- run metadata is stored with provider mode and evaluation status
+- 100% of happy-path markdown fixtures create a stored grounded walkthrough
+- 100% of project-specific paragraphs in controlled happy-path fixtures include at
+  least one context reference or an explicit insufficient-context refusal
+- unsupported-claim detection or refusal passes 100% of the minimum controlled
+  fixture set: one supported claim, one unsupported claim, and one mixed-claim
+  response
+- empty-context refusal passes 100% of no-chunk and retrieval-miss cases
+- prompt-injection uploaded-document tests pass 100% of the required malicious
+  markdown fixture set, with at least one fixture that attempts to override
+  system/developer instructions
+- tests pass with no real paid provider keys and no network-only paid provider
+  dependency
+- run metadata is stored for every successful and refused generation, including
+  provider mode, requested language, retrieved context count, evaluation status,
+  unsupported claim count, and context reference count
+- free-first mode works with mock/local defaults; premium-provider mode is optional
+  and disabled unless configured later
 
 ## Future Thresholds
 

@@ -104,7 +104,7 @@ This review attacks the load-bearing assumptions in `docs/PRD.md` v1.0 and
 
 Go for Stage 1 PR review if:
 
-- product strategy and PRD v1.0 are merged as docs only
+- product strategy and PRD v1.0 are merged as docs/governance only
 - requirements are traceable to stages and future slices
 - `docs/PHASE_PLAN.md` keeps implementation blocked until approved later stages
 - `docs/STATUS.md` records that Stage 1 product hardening is distinct from the

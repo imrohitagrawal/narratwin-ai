@@ -55,7 +55,7 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | Product mode | Requirements | Stages |
 |---|---|---|
 | Pre-rendered multilingual demo video | FR-006, FR-012, FR-013, FR-014, FR-015, NFR-011, NFR-012 | Stage 4 foundation, Stage 6, Stage 7 |
-| Interactive AI avatar walkthrough | FR-005, FR-006, FR-007, FR-008, FR-009, FR-016, NFR-005, NFR-011 | Stage 4 foundation, Stage 5, Stage 7+ |
+| Interactive AI avatar walkthrough | FR-005, FR-006, FR-007, FR-008, FR-009, FR-016, NFR-005, NFR-011 | Stage 4 foundation, Stage 5, future approved stage / `#20` |
 
 ## Change Log
 

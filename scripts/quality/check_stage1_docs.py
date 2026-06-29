@@ -47,6 +47,7 @@ STAGE1_ALLOWED_FILES = {
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
     "scripts/quality/check_quality_stage.py",
+    "scripts/quality/check_stage0_docs.py",
     "scripts/quality/check_stage1_docs.py",
 }
 
@@ -69,28 +70,10 @@ PYTHON_GOVERNANCE_FILES = (
     "scripts/quality/check_stage1_docs.py",
 )
 
-STAGE1_BANNED_IMPORT_ROOTS = {
-    "aiohttp",
-    "anthropic",
-    "boto3",
-    "chromadb",
-    "django",
-    "fastapi",
-    "flask",
-    "google",
-    "gradio",
-    "httpx",
-    "langchain",
-    "llama_index",
-    "numpy",
-    "openai",
-    "pandas",
-    "pytest",
-    "requests",
-    "sqlalchemy",
-    "streamlit",
-    "uvicorn",
+STAGE1_STDLIB_IMPORT_ROOTS = set(getattr(sys, "stdlib_module_names", set())) | {
+    "__future__",
 }
+STAGE1_LOCAL_IMPORT_ROOTS: set[str] = set()
 
 
 def run(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -269,7 +252,7 @@ def check_status_doc(failures: list[str]) -> None:
     text = read("docs/STATUS.md") if (ROOT / "docs/STATUS.md").exists() else ""
     required = [
         ".stage/current = 1",
-        "`#26` delivery PR",
+        "PR `#26` represents the Stage 1 product/PRD hardening artifact set",
         "`#1` is product strategy and PRD v1.0 hardening",
         "`#16` remains the follow-on Spec Kit",
     ]
@@ -321,8 +304,8 @@ def check_python_governance_scripts(failures: list[str]) -> None:
             else:
                 continue
             for root in roots:
-                if root in STAGE1_BANNED_IMPORT_ROOTS:
-                    fail(f"{rel} imports non-governance dependency {root!r}.", failures)
+                if root not in STAGE1_STDLIB_IMPORT_ROOTS and root not in STAGE1_LOCAL_IMPORT_ROOTS:
+                    fail(f"{rel} imports non-stdlib dependency {root!r}.", failures)
 
 
 def check_git_diff_clean(failures: list[str]) -> None:

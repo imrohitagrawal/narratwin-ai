@@ -19,7 +19,7 @@ areas are not allowed before Stage 4.
 
 The `Makefile` must expose:
 
-| Target | Current Stage 0 behavior |
+| Target | Current Stage 1 behavior |
 |---|---|
 | `make quality` | Runs checks for `.stage/current`; currently Stage 1 |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |

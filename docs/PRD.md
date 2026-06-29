@@ -184,7 +184,7 @@ The generated walkthrough must use approved retrieved context only.
 
 Requirements:
 
-- Support audience, language, depth, and style parameters.
+- Support audience, requested language, depth, and style parameters.
 - Produce a script suitable for later voice/subtitle/avatar use.
 - Cite context references for project-specific claims.
 - Refuse or flag claims not supported by approved context.
@@ -203,8 +203,10 @@ Future slices must support:
 - language quality checks against approved source meaning
 - fallback to script-only output when translation, subtitle, or voice generation fails
 
-Slice 1 may accept a language parameter but is not required to ship production-quality
-translation, voice, or subtitles.
+Slice 1 must store the requested language parameter and may produce English-only,
+mock-localized, or best-effort localized script text depending on the approved free
+provider path. Production translation quality, multilingual evaluation, voice, and
+subtitles remain Stage 6 scope.
 
 ### Avatar And Lip-sync Provider Adapter
 
@@ -386,7 +388,7 @@ Included in first implementation slice:
 - upload validation
 - ingestion/chunking/storage
 - project-scoped retrieval
-- audience/language/depth/style request
+- audience/requested-language/depth/style request
 - grounded script generation
 - unsupported-claim evaluation
 - stored output with context refs and metadata
@@ -429,12 +431,15 @@ Slice 1 succeeds when:
   containing instructions to ignore system/developer rules
 - tests run without real paid provider keys
 - docs describe validation evidence and known limitations
+- requested language is stored in run metadata, while production translation quality
+  remains explicitly out of Slice 1 scope
 
 ## 16. Open Questions
 
 | Question | Default decision until resolved |
 |---|---|
 | Which LLM provider is used first outside mocks? | Use mock/local defaults; optional Gemini only after provider review |
+| What language behavior is required before Stage 6? | Store requested language in Slice 1; production multilingual output starts in Stage 6 |
 | How many languages are required for first multilingual slice? | Start with a narrow reviewed set in Stage 6 |
 | What is the first avatar provider? | Mock avatar first; premium provider after adapter and license review |
 | What storage persists project runs? | Local filesystem first unless Stage 2/3 architecture changes this |

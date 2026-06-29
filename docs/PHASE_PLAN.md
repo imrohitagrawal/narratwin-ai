@@ -108,7 +108,7 @@ Acceptance:
 
 Verification:
 
-- review `git diff --name-only` for docs-only scope
+- review `git diff --name-only` for docs/governance-only scope
 - run `python3 -m py_compile scripts/guardrails_check.py scripts/quality/check_quality_stage.py scripts/quality/check_stage1_docs.py`
 - run `python3 scripts/guardrails_check.py`
 - run `make stage1-quality`

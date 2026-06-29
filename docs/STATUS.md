@@ -36,7 +36,7 @@ Use these files together with this tracker:
 
 ## Executive Status
 
-- Stage 0 governance is complete in the current repository state, and Stage 1 product/PRD hardening is in review.
+- Stage 0 governance is complete in the current repository state, and Stage 1 product/PRD hardening artifacts are represented by PR `#26`.
 - `docs/STATUS.md` is the in-repo governance ledger for stage coverage, issue and PR references, open gaps, and next approved actions.
 - Repository checks enforce updates to this file only for repository-tracked governance changes that are visible in the CI diff range.
 - GitHub-side state that changes outside a repository diff must be reconciled in the next governance update; the local Stage 0 gate does not claim live synchronization.
@@ -51,7 +51,7 @@ Use these files together with this tracker:
 | Stage | Status | Issue ledger | Pull request ledger | Quality gate state | Notes |
 |---|---|---|---|---|---|
 | Stage 0 | Complete, governance baseline active | `#14` closed | `#15` merged, `#23` merged | Executable and green | Operating model, quality gate, and repository guardrails are in place; product implementation remains blocked. |
-| Stage 1 | In progress, product hardening delivery PR | `#1` open, `#16` open | `#26` delivery PR | Executable | `#1` is product strategy and PRD v1.0 hardening; `#16` remains the follow-on Spec Kit gate. |
+| Stage 1 | Product/PRD hardening represented by PR `#26` | `#1` open, `#16` open | `#26` | Executable | `#1` is product strategy and PRD v1.0 hardening; `#16` remains the follow-on Spec Kit gate. Reconcile merge state after the GitHub merge event. |
 | Stage 2 | Pending, seed docs exist | `#2` open | None merged | Placeholder target only | Architecture and safety docs exist as seeds, but Stage 2 gate is not implemented. |
 | Stage 3 | Pending, partially pre-scaffolded | `#5` open | Work partially landed in `#15` and `#23` | Placeholder target only | CI and quality scaffolding started early under Stage 0 governance. |
 | Stage 4 | Pending | `#4` open | None merged | Placeholder target only | No product slice has been merged. |
@@ -123,7 +123,7 @@ Use these files together with this tracker:
   - [Skill Trust Review](SKILL_TRUST_REVIEW.md)
 - Third-party governance inventory exists in [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 - Stage 0 merged with green CI and no product implementation.
-- PR `#26` is the Stage 1 product/PRD hardening delivery PR and contains no product implementation.
+- PR `#26` represents the Stage 1 product/PRD hardening artifact set and contains no product implementation.
 
 ### Stage 0 Governance Artifacts In Current Repository State
 
@@ -166,14 +166,14 @@ Use these files together with this tracker:
 - Stage 1 is split across two open issues: `#1` for product/PRD hardening and `#16` for the follow-on Spec Kit constitution/spec/plan/tasks gate.
 - Legacy issue `#3` still uses `Stage -1` naming that no longer matches the operating model.
 - Stage 3 has its own open issue `#5`, but some repo-foundation work has already landed under Stage 0 governance. The eventual Stage 3 plan should explicitly acknowledge that inherited baseline.
-- `.stage/current` is `1` in PR `#26` because this branch implements the executable Stage 1 documentation gate.
+- `.stage/current` is `1` for the Stage 1 product/PRD hardening artifact set because it implements the executable Stage 1 documentation gate.
 - The repository contains seed docs for later stages, but those docs are not proof that the corresponding stage gate has passed.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
 
 ## Next Approved Actions
 
-1. Complete review of PR `#26` for Stage 1 product/PRD hardening under issue `#1`.
-2. After PR `#26` merges, reconcile GitHub issue and PR state in the next governance update if needed.
+1. After PR `#26` merges, reconcile GitHub issue and PR state in the next governance update if needed.
+2. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
 3. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue `#16` before product implementation planning is treated as ready.
 4. Start Stage 2 architecture/security/AI-safety only through issue + branch + PR with no product code.
 5. Close or supersede stale governance issues that conflict with the current operating model, especially `#3`.
