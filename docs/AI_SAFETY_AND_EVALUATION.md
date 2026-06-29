@@ -119,11 +119,13 @@ The evaluator compares generated claims to retrieved context.
 Minimum evaluator behavior:
 
 - identify project-specific factual claims
-- verify each claim against retrieved chunks where possible
+- verify every extracted claim against retrieved chunks
 - require context references for supported claims
 - mark unsupported claims with reason and excerpt
 - refuse when no support exists
 - store status and unsupported-claim count
+- fail or refuse when claim extraction exceeds the Stage 4 evaluation budget rather
+  than partially evaluating only the first claims
 
 Evaluation statuses:
 
@@ -163,12 +165,14 @@ Each generated run must store:
 - `evaluation_id`
 - `run_id`
 - `project_id`
-- future `tenant_id`
+- `tenant_id`
 - `evaluation_status`
 - `groundedness_score`
 - `unsupported_claims`
 - `unsupported_claim_count`
 - `context_refs`
+- `claim_supports`
+- `context_ref_coverage`
 - `refusal_reason`
 - `prompt_injection_detected`
 - `language_check`
@@ -176,6 +180,11 @@ Each generated run must store:
 - `output_schema_valid`
 - `provider`
 - `provider_mode`
+- `embedding_provider`
+- `embedding_model`
+- `embedding_model_version`
+- `embedding_dimension`
+- `vector_store`
 - `latency_ms`
 - `estimated_cost`
 - `created_at`
@@ -183,9 +192,13 @@ Each generated run must store:
 Unsupported-claim item fields:
 
 - `claim_id`
+- `tenant_id`
+- `project_id`
+- `run_id`
 - `claim_text`
-- `status`
+- `claim_status`
 - `supporting_context_refs`
+- `reason_code`
 - `reason`
 - `severity`
 
@@ -195,15 +208,29 @@ Required JSON semantics:
 - `evaluation_status` is one of `PASSED`, `WARNING`, `FAILED`, `REFUSED`
 - `groundedness_score` is a number from `0.0` through `1.0`
 - `unsupported_claims` is an array and is empty for `PASSED`
+- `claim_supports` records support, ambiguity, or unsupported status for every
+  extracted project-specific claim
+- `context_ref_coverage = 1.0` is required for `PASSED`
 - `context_refs` is an array of claim-level references, not only run-level refs
 - `refusal_reason` is required for `REFUSED`
 - `error_code` is required for evaluator timeout, provider schema mismatch, or
   policy failure
 - `prompt_template_version`, `retrieval_strategy_version`, `evaluator_version`,
-  `embedding_model`, `retrieval_top_k`, and `retrieval_score_threshold` are required
-  for drift analysis
+  `embedding_provider`, `embedding_model`, `embedding_model_version`,
+  `embedding_dimension`, `vector_store`, `retrieval_top_k`, and
+  `retrieval_score_threshold` are required for drift analysis
 - persisted claim text and excerpts are redacted and truncated to 500 characters per
   field
+
+Claim extraction rules:
+
+- deterministic Stage 4 extraction identifies project-specific factual claims before
+  support checking
+- non-factual style, tone, and transition text can be excluded from factual support
+  scoring only when the exclusion is recorded
+- if extracted project-specific factual claims exceed the Stage 4 cap of 100, the
+  run fails with `CLAIM_BUDGET_EXCEEDED`
+- no unevaluated project-specific factual claim can be included in accepted output
 
 ## Context Reference Requirements
 
@@ -216,6 +243,7 @@ Context reference fields:
 - `chunk_id`
 - `document_id`
 - `project_id`
+- `tenant_id`
 - `source_filename`
 - `chunk_index`
 - optional `line_start`
@@ -226,6 +254,26 @@ Context reference fields:
 - `script_span_end`
 - `evidence_snapshot`
 
+`EvidenceSnapshot` fields:
+
+- `evidence_snapshot_id`
+- `tenant_id`
+- `project_id`
+- `document_id`
+- `chunk_id`
+- `source_filename`
+- `chunk_index`
+- `source_document_checksum`
+- `chunk_checksum`
+- `chunking_strategy_version`
+- `retrieval_score`
+- `redacted_excerpt`
+- `excerpt_start`
+- `excerpt_end`
+- `redaction_flags`
+- `captured_at`
+- `snapshot_checksum`
+
 Claim-level context references are mandatory. A run-level context list can support
 display, but it cannot satisfy grounding by itself.
 
@@ -234,15 +282,26 @@ failed evaluation as clean final output.
 
 ## Refusal Rules
 
+Canonical retrieval refusal reasons:
+
+- `EMPTY_CONTEXT`
+- `LOW_RETRIEVAL_CONFIDENCE`
+- `AMBIGUOUS_CONTEXT`
+- `CROSS_PROJECT_CONTEXT`
+- `UNSAFE_CONTEXT`
+
 The system must refuse when:
 
-- no approved project context exists
-- retrieval returns no relevant chunks
+- no approved project context exists (`EMPTY_CONTEXT`)
+- retrieval returns no relevant chunks or only below-threshold chunks
+  (`LOW_RETRIEVAL_CONFIDENCE`)
+- top chunks conflict and cannot support one grounded answer (`AMBIGUOUS_CONTEXT`)
 - the user asks for facts outside approved context
 - uploaded content attempts to override safety rules
+- retrieved context is unsafe (`UNSAFE_CONTEXT`)
 - provider output is malformed or unsafe
 - evaluation cannot run and the output would otherwise be published
-- cross-project or future cross-tenant context is detected
+- cross-project or cross-tenant context is detected (`CROSS_PROJECT_CONTEXT`)
 
 Refusals should be specific enough for the user to fix source knowledge, but must
 not expose secrets, stack traces, provider internals, or hidden prompts.
@@ -259,6 +318,10 @@ not expose secrets, stack traces, provider internals, or hidden prompts.
 The frontend must display unsupported-claim count, evaluation status, and context
 reference inspection affordance. It must not collapse `FAILED` or `REFUSED` into a
 generic success state.
+
+Public `FAILED` and `REFUSED` responses must not expose `scriptText`, raw provider
+output, hidden prompts, stack traces, or unredacted evidence. They may expose only
+failure/refusal metadata, redacted unsupported excerpts, and remediation guidance.
 
 ## Provider Safety
 

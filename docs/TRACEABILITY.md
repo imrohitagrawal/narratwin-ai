@@ -50,6 +50,8 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `docs/PORTABILITY_STRATEGY.md` | Provider, data, storage, runtime, AI-output portability, tombstones, synthetic local tenant | Stage 2 / `#2` | Hardened |
 | `docs/API_CONTRACT.md` | Contract-first REST resources, versioning, idempotency, typed schemas, generated-run outputs, future media placeholders | Stage 2 / `#2` | Hardened |
 | `docs/DATA_MODEL.md` | Logical tenant, user, project, document, chunk, ingestion, run, eval, claim-support, artifact, consent, and audit entities | Stage 2 / `#2` | Hardened |
+| `docs/STAGE2_ARCHITECTURE_CONTRACT.json` | Machine-readable Stage 2 semantic contract for states, idempotency, provider defaults, budgets, evidence, cache keys, and review invariants | Stage 2 / `#2` | Added |
+| `docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md` | Human review checklist for architecture, security, AI safety, API/data, portability, performance, observability, sub-agent, and cross-model signoff | Stage 2 / `#2` | Added |
 
 ## Document Ownership
 
@@ -82,3 +84,6 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | 2026-06-29 | `#1` | Harden product strategy and PRD v1.0 | Adds Stage 1 product requirement map and product-mode coverage |
 | 2026-06-29 | `#2` | Draft Stage 2 architecture, security, AI safety, portability, API, and data-model artifacts | Maps PRD safety/provider/traceability requirements to pre-implementation architecture docs |
 | 2026-06-30 | `#2` | Harden Stage 2 architecture/security/evaluation/performance/API/data-model contracts and add executable quality gate | Converts Stage 2 findings into enforceable acceptance checks before Stage 3/4 |
+| 2026-06-30 | `#2` / `#27` | Add machine-readable Stage 2 semantic contract and remediate second-pass architecture review findings | Locks idempotency, approved-knowledge state, failed-output safety, evidence snapshots, retrieval thresholds, provider fallback, cache invalidation, and semantic gate checks |
+| 2026-06-30 | `#2` / `#27` | Add Stage 2 human review checklist | Adds explicit human signoff criteria for sub-agent, cross-model, architecture, security, AI safety, API/data, portability, performance, observability, and no-product-code review |
+| 2026-06-30 | `#2` / `#27` | Resolve final sub-agent and Claude cross-model review findings | Hardens provider-bound secret screening, evaluator evidence, enum parity, cache invalidation, rate limits, deterministic evaluator posture, and Stage 2 checker negative-path behavior |

@@ -27,7 +27,7 @@ High-value assets:
 - generated walkthrough scripts
 - context references and retrieval metadata
 - evaluation results
-- project and future tenant metadata
+- project and tenant metadata
 - audit logs
 - cost and provider usage metadata
 - future avatar, voice, subtitle, and video artifacts
@@ -56,12 +56,48 @@ Controls:
 - run repository secret scanning in CI
 - block private keys, provider keys, GitHub tokens, credentials, and certificates
 - rotate any secret that reaches a remote
+- run secret screening on every provider-bound text segment before any non-local
+  provider egress, including upload, retrieved_context, user_prompt, transcript,
+  provider_payload, and evaluator_payload
 
 Reviewer checks:
 
 - no provider key assignment outside `.env.example`
 - no real keys in docs, tests, fixtures, logs, screenshots, or examples
 - no raw secret values in pull request descriptions
+
+### Secret Screening Result
+
+Provider egress is blocked unless every provider-bound text segment has a passed
+`SecretScreeningResult`. Provider-bound segments include upload, retrieved_context,
+user_prompt, transcript, provider_payload, and evaluator_payload.
+
+Required fields:
+
+- `secret_screening_id`
+- `tenant_id`
+- `project_id`
+- `screened_input_type`
+- `screened_input_id`
+- optional `document_id`
+- `content_checksum`
+- `scanner_version`
+- `categories`
+- `finding_count`
+- `blocking`
+- `redaction_applied`
+- `override_required`
+- `egress_decision`
+- optional `reviewer_id`
+- `audit_event_id`
+- `created_at`
+
+Blocking categories include provider keys, private keys, GitHub tokens, cloud
+credentials, bearer tokens, JWT-like credentials, passwords, and high-confidence
+credential assignments. False positives may be overridden only through an explicit
+review action that records reviewer, reason, redaction decision, and audit event.
+Local/mock provider calls may continue with quarantined content only when no
+external egress occurs.
 
 ### Prompt Injection Controls
 
@@ -98,8 +134,12 @@ Required validation:
 - generated storage path
 - checksum recording
 - binary/executable/archive rejection
+- server-side UTF-8 decoding and content sniffing
+- NUL-byte rejection
+- archive magic-byte rejection
+- control-character threshold enforcement
 - path traversal rejection
-- mandatory obvious-secret screening before non-local provider egress
+- mandatory secret screening before non-local provider egress
 
 File handling rules:
 
@@ -119,9 +159,12 @@ authorization:
 - `actor_id = user_local`
 
 Every endpoint must resolve the actor before data access. Every project-scoped query
-must filter by `tenant_id`, `owner_id`, and `project_id`, even in local mode. Generated
-IDs are not authorization proof. Missing access returns `403`; missing resources
-that are not visible to the actor return `404`.
+must enforce `(tenant_id, owner_id, project_id)` before lookup, retrieval,
+generation, evaluation, export, or delete. Child tables may either denormalize
+`owner_id` or be accessed only through a server-side project authorization guard
+that joins through `Project`. Generated IDs are not authorization proof. Missing
+access returns `403`; missing resources that are not visible to the actor return
+`404`.
 
 ### Tenant And Project Isolation
 
@@ -132,9 +175,10 @@ predicate.
 Controls:
 
 - every document, chunk, embedding, run, artifact, and audit event includes
-  `project_id`
-- future multi-user data includes `tenant_id` and `owner_id`
-- every retrieval query filters by project and future tenant
+  `tenant_id` and `project_id`
+- owner-scoped access is enforced through `owner_id` on `Project` or a documented
+  server-side authorization guard
+- every retrieval query filters by tenant and project
 - provider prompts include only authorized project context
 - artifact storage paths use generated IDs
 - access checks happen before retrieval, generation, evaluation, export, and delete
@@ -142,7 +186,7 @@ Controls:
 Required tests before multi-user release:
 
 - cross-project retrieval is impossible
-- future cross-tenant retrieval is impossible
+- cross-tenant retrieval is impossible using the current `tenant_id` predicate
 - unauthorized project access returns `403`
 - missing project returns `404` without leaking existence across tenants
 
@@ -152,9 +196,10 @@ Uploaded documents are not trusted source material until explicitly approved.
 
 Controls:
 
-- upload validation stores documents as `UPLOADED` or `QUARANTINED`
-- only `APPROVED` documents can be ingested, embedded, retrieved, or sent to
-  non-local providers
+- upload validation stores documents as `UPLOADED`, `STORED`, or `QUARANTINED`
+- only documents with `document_status = STORED`, `approval_status = APPROVED`, and
+  `ingestion_status = INGESTED` can be retrieved or sent to non-local providers
+- ingestion can start only after `approval_status = APPROVED`
 - prompt-injection text can be present in approved evidence, but it remains quoted
   data and never becomes an instruction
 - secret-like content places the document in `QUARANTINED` and blocks external
@@ -223,12 +268,20 @@ Stage 4 local/dev/test limits:
 | Provider calls | 30 per provider mode per project per hour |
 | Prompt input tokens | 6,000 per generation run |
 | Output tokens | 2,500 per generation run |
+| Generated script length | 1,200 words per generation run |
+| Unsupported claims evaluated | 100 extracted project-specific factual claims |
 | Automatic regeneration | 1 retry maximum |
 | Estimated local cost budget | USD 0.00 for mock/local mode |
 | Estimated free-provider budget | USD 1.00 per project per day after explicit opt-in |
 
 Real provider modes must fail closed when cost metadata is unavailable and a budget
 would otherwise be unenforceable.
+
+Evaluation and drift controls are security-relevant. Every accepted or failed
+generation record must include `evaluator_version`, `prompt_template_version`,
+`retrieval_strategy_version`, `embedding_model_version`, `retrieval_top_k`, and
+`retrieval_score_threshold`. Stage 4 uses deterministic, rule-backed evaluation;
+model-as-judge evaluation is future scope and requires a separate ADR.
 
 ### Audit Logs
 
@@ -246,8 +299,9 @@ Audit events:
 
 Audit log rules:
 
-- include `event_id`, `trace_id`, `actor_id` when available, `project_id`, future
-  `tenant_id`, action, outcome, timestamp, and reason code
+- include `event_id`, `trace_id`, `tenant_id`, `project_id`, `actor_id`, action,
+  outcome, timestamp, and reason code for project-scoped or security-relevant
+  events; system events use `actor_id = system`
 - do not store raw secrets
 - avoid storing full uploaded content in audit logs
 - preserve enough metadata for reviewer and incident analysis

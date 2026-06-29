@@ -118,7 +118,7 @@ Responsibilities:
 Security constraints:
 
 - validate all request input at the API boundary
-- enforce project and future tenant isolation before reading or writing data
+- enforce tenant/project isolation before reading or writing data
 - never log secrets, provider keys, raw auth tokens, or private certificates
 - enforce rate limits by user, project, route, and provider mode
 - keep external provider egress explicit and auditable
@@ -155,7 +155,7 @@ Responsibilities:
 - rank retrieved chunks for the selected audience/depth request
 - return context references with stable identifiers
 - refuse retrieval results when context is empty or below quality thresholds
-- isolate embeddings and metadata by future tenant and project
+- isolate embeddings and metadata by tenant and project
 
 Security constraints:
 
@@ -259,7 +259,7 @@ Responsibilities:
 
 - emit structured events for uploads, ingestion, retrieval, generation, evaluation,
   provider calls, refusals, and errors
-- correlate events with `trace_id`, `run_id`, `project_id`, and future `tenant_id`
+- correlate events with `trace_id`, `run_id`, `project_id`, and `tenant_id`
 - track provider mode, latency, token usage, estimated cost, cache hit, and status
 - record audit events for security-relevant actions
 - redact secrets and sensitive content before logging
@@ -329,7 +329,8 @@ Validation gates:
 - sanitized filename
 - generated storage path
 - checksum recorded
-- mandatory obvious-secret screening before non-local provider egress
+- mandatory secret screening of every provider-bound text segment before non-local
+  provider egress
 
 ### Grounded Script Run
 
@@ -408,24 +409,34 @@ access. Future authentication replaces the principal source, not the authorizati
 predicate. This keeps project and tenant filters present from the first data model
 and avoids later risky backfills.
 
-## Document Approval State Machine
+## Knowledge State Separation
 
 Approved project knowledge is a first-class trust primitive. Uploading a document
-does not make it retrievable.
+does not make it retrievable. Storage, approval, and ingestion are separate state
+machines:
 
-Allowed document states:
+- `document_status`: `UPLOADED`, `STORED`, `QUARANTINED`, `DELETED`
+- `approval_status`: `PENDING`, `APPROVED`, `REJECTED`
+- `ingestion_status`: `NOT_STARTED`, `QUEUED`, `RUNNING`, `INGESTED`, `FAILED`,
+  `REFUSED`, `CANCELLED`, `INVALIDATED`
 
-- `UPLOADED`: file passed transport-level validation and is stored safely
-- `QUARANTINED`: file requires review because screening found suspicious content
-- `APPROVED`: file is eligible for ingestion, embedding, retrieval, and provider
-  egress
-- `REJECTED`: file is retained only for audit metadata or deleted by policy
-- `INGESTED`: approved file was chunked and indexed
-- `DELETED`: source file is unavailable and derived records are invalidated
+State invariants:
 
-Only `APPROVED` and `INGESTED` documents can contribute chunks to RAG. Stage 4 may
-offer a local explicit approval action, but it may not silently treat every upload as
-approved project knowledge.
+- storage proves safe persistence
+- approval proves explicit local trust or future reviewer trust
+- ingestion proves derived chunks and embeddings match the current approved source
+- upload cannot directly approve or ingest a document
+- approval cannot directly mark a document ingested
+- ingestion is forbidden unless `document_status = STORED` and
+  `approval_status = APPROVED`
+- retrieval and non-local provider egress require `document_status = STORED`,
+  `approval_status = APPROVED`, `ingestion_status = INGESTED`, and valid
+  non-deleted source and chunk checksums
+
+Any approval change, quarantine, rejection, deletion, source checksum change,
+rechunking, embedding-model change, retrieval-policy change, or safety-policy change
+invalidates derived chunks, embeddings, retrieval caches, and generated-script
+caches.
 
 ## Stage 4 Resource Budgets
 
@@ -454,7 +465,7 @@ targets:
 Stage 4 quality must fail if implementation exceeds these budgets without updating
 this architecture and the corresponding ADR.
 
-## Queue And Backpressure Contract
+## Queue, Lease, Attempt, And Outbox Contract
 
 Ingestion and walkthrough generation are modeled as jobs even when Stage 4 executes
 them synchronously for local simplicity.
@@ -472,13 +483,54 @@ Operational limits:
 
 - one active ingestion job per project
 - one active generation job per project
-- queue capacity of 20 pending jobs in local mode
+- per-project queue capacity of 20 pending jobs in local mode
 - retry budget of one retry for retryable provider or storage failures
+- jobs include `queued_at`, `started_at`, `completed_at`, `failed_at`,
+  `attempt_count`, `max_attempts`, `next_attempt_at`, `locked_by`, `locked_at`, and
+  `lease_expires_at`
+- a worker may execute a job only while holding an unexpired lease
+- lease acquisition and `attempt_count` increment are transactional
 - non-retryable validation, authorization, unsupported-claim, and policy failures do
   not retry
 - duplicate idempotency keys return the original job/result without re-running
-- full queues return `429` or `503` with structured error code `BACKPRESSURE`
+- full queues return `429 BACKPRESSURE_QUEUE_FULL` with `Retry-After` when retry is
+  safe; worker or dependency unavailability returns `503`
 - timed-out jobs persist `FAILED` with timeout reason and audit event
+- outbox rows are written in the same transaction as job/resource state changes
+- observability, audit, cache invalidation, vector writes, and provider side-effect
+  dispatch happen only from committed outbox rows
+- dispatch is idempotent by `outbox_event_id` and operation key
+
+Every mutating API request first reserves an `IdempotencyRecord` and creates the
+canonical resource or job record in one transaction. No provider call, vector write,
+artifact write, cache write, or outbox dispatch may occur before that transaction
+commits.
+
+## Retrieval Strategy v1
+
+Stage 4 retrieval uses `retrieval_strategy_version = stage4-rag-v1`.
+
+Parameters:
+
+- `topK = 6`
+- `retrieval_score_threshold = 0.72`
+- `min_retrieved_chunks = 1`
+- `min_distinct_documents = 1`
+- `max_chunks_per_document = 3`
+- tie-break order: `score desc`, `approved_at desc`, `chunk_index asc`,
+  `chunk_id asc`
+- deterministic keyword-overlap fallback is allowed only inside the authorized
+  project and only before generation
+
+Refusal behavior:
+
+- `EMPTY_CONTEXT`: no eligible `STORED + APPROVED + INGESTED` chunks exist
+- `LOW_RETRIEVAL_CONFIDENCE`: all eligible chunks score below threshold
+- `AMBIGUOUS_CONTEXT`: top chunks conflict and cannot support one grounded answer
+- `CROSS_PROJECT_CONTEXT`: any chunk metadata fails the project/tenant predicate
+- `UNSAFE_CONTEXT`: screening or policy blocks context use
+
+Generation must not run after retrieval refusal.
 
 ## Provider Adapter Contract
 
@@ -539,9 +591,10 @@ persisted audit event.
 
 Isolation rules:
 
-- every data record includes `project_id`
-- future multi-user records include `tenant_id` and `owner_id`
-- retrieval filters must include `project_id` and future `tenant_id`
+- every project-scoped data record includes `tenant_id` and `project_id`
+- owner-controlled resources include `owner_id` or are accessed through a
+  server-side project authorization guard on `(tenant_id, owner_id, project_id)`
+- retrieval filters must include `tenant_id` and `project_id`
 - provider calls include only context for the authorized project
 - artifact paths use generated IDs, not user filenames
 - logs include identifiers and counts, not raw secrets
@@ -551,9 +604,16 @@ Isolation rules:
 
 Local-first defaults:
 
-- metadata store: local database or file-backed store selected in Stage 3/4
+- metadata store: local database selected in Stage 3/4 with ACID transactions and
+  atomic compare-and-swap semantics for idempotency records, leases, job state, and
+  outbox writes
 - artifact store: local filesystem behind `StorageProvider`
 - vector store: ChromaDB or equivalent behind `VectorStoreProvider`
+
+Non-transactional file-backed metadata storage is forbidden for Stage 4 job,
+idempotency, lease, outbox, tombstone, and evaluation metadata. A file-backed store
+is allowed only for artifacts behind `StorageProvider`, not as the canonical
+metadata store.
 
 Portability requirements:
 
@@ -571,6 +631,15 @@ Provider routing is configuration-driven:
 - premium providers are disabled unless explicitly selected and configured
 - provider selection is recorded per run
 - fallback behavior is visible in metadata
+- Stage 4 forbids automatic fallback from `LOCAL` or `MOCK` providers to any
+  `FREE`, `PREMIUM`, or otherwise non-local provider
+- Stage 4 fallback is allowed only within the same egress class, such as
+  `MOCK -> MOCK` or `LOCAL -> LOCAL`
+- non-local provider egress requires explicit server-side configuration, explicit
+  provider selection for that run, passed secret screening for every
+  provider-bound text segment, budget check, audit event, and post-fallback
+  evaluation
+- blocked fallback persists `PROVIDER_FALLBACK_BLOCKED` and fails closed
 
 Routing must never be controlled by uploaded content or generated model output.
 

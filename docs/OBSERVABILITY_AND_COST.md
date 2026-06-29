@@ -6,7 +6,10 @@ NarraTwin AI must make every walkthrough run traceable, debuggable, and cost-awa
 
 The MVP does not need a full dashboard, but it must store enough metadata to explain what happened in each run.
 
-## Track per run
+## RunMetadata
+
+Run metadata is persisted business/run state. It is not a log event and not an
+aggregate metric.
 
 - `run_id`
 - `project_id`
@@ -19,7 +22,6 @@ The MVP does not need a full dashboard, but it must store enough metadata to exp
 - `provider`
 - `provider_mode`
 - `latency_ms`
-- `p95`
 - `cache_hit`
 - `token_usage` when available
 - `estimated_cost` when available
@@ -30,7 +32,7 @@ The MVP does not need a full dashboard, but it must store enough metadata to exp
 - `error_code`
 - `created_at`
 
-## Event Schema
+## EventEnvelope
 
 Every structured event uses this envelope:
 
@@ -49,6 +51,27 @@ Every structured event uses this envelope:
 
 Metadata must never contain provider keys, raw auth tokens, private certificates,
 full raw uploads, full prompts, or unredacted provider payloads.
+
+## MetricPoint
+
+Metric points are numeric time-series data for aggregation and alerting. They must
+not contain raw prompts, uploads, provider payloads, generated script text, user
+emails, request IDs, or other high-cardinality values.
+
+Fields:
+
+- `metric_name`
+- `tenant_id`
+- optional `project_id`
+- `stage`
+- `provider_mode`
+- `value`
+- `unit`
+- `timestamp`
+- bounded `labels`
+
+Aggregate metrics compute p50, p95, and p99 from `latency_ms`; p95 is never stored
+as a per-run field.
 
 ## Structured log events
 
@@ -88,10 +111,38 @@ full raw uploads, full prompts, or unredacted provider payloads.
 - `cache_hit`
 - `cache_invalidated`
 
-## Cost controls
+## Cost Controls And Cache Key Safety
 
-- cache scripts using request checksum, approved chunk checksums, prompt template
-  version, provider, model, and evaluator version
+- cache generated scripts using a key that includes `tenant_id`, `project_id`,
+  `actor_id`, audience, requested language, depth, style, normalized prompt
+  checksum, approved document IDs, approved document checksums, chunk IDs, chunk
+  checksums, chunking strategy version, embedding provider, embedding model, vector
+  index version, retrieval strategy version, retrieval topK, retrieval score
+  threshold, prompt template version, LLM provider, LLM model, evaluator version,
+  evaluation policy version, evaluation schema version, provider mode, and safety
+  policy version
+- canonical cache-key field names are `tenant_id`, `project_id`, `actor_id`,
+  `audience`, `requested_language`, `depth`, `style`,
+  `normalized_prompt_checksum`, `approved_corpus_version`, `approval_epoch`,
+  `approved_document_ids`, `chunk_ids`, `document_checksums`,
+  `chunk_checksums`, `chunking_strategy_version`, `retrieval_strategy_version`,
+  `retrieval_top_k`, `retrieval_score_threshold`, `embedding_provider`,
+  `embedding_model`, `vector_index_version`, `evaluation_policy_version`,
+  `evaluation_schema_version`, `provider_mode`, `llm_provider`, `llm_model`,
+  `provider`, `model`, `evaluator_version`, `prompt_template_version`,
+  `safety_policy_version`, and `secret_screening_version`
+- canonical cache invalidation triggers are `approval_change`, `quarantine`,
+  `rejection`, `deletion`, `source_checksum_change`,
+  `chunking_strategy_change`, `embedding_provider_change`,
+  `embedding_model_change`, `vector_index_rebuild`,
+  `retrieval_strategy_change`, `retrieval_threshold_change`,
+  `prompt_template_change`, `evaluator_version_change`,
+  `evaluation_schema_change`, `safety_policy_change`, `provider_change`,
+  `model_change`, and `unsupported_claim_evaluation_change`
+- cache-hit revalidation fields are `document_status`, `approval_status`,
+  `ingestion_status`, `deleted_at`, `tombstone_id`, `secret_screening_id`,
+  `secret_screening_version`, `source_document_checksum`, and `chunk_checksum`
+- never key generated outputs only by prompt text
 - cache translations only after Stage 6 approval
 - cache audio metadata only after Stage 6 approval
 - cache video metadata only after Stage 7 approval
@@ -100,14 +151,21 @@ full raw uploads, full prompts, or unredacted provider payloads.
 - use mock providers for tests
 - keep premium providers optional
 - store provider and estimated cost per run
+- generated script output is capped at `generatedScriptWords = 1200` and
+  `generatedScriptOutputTokens = 2500`
 
 Cache rules:
 
 - cache TTL is 24 hours in local Stage 4 mode
 - cache size is capped at 100 generated-script entries per project
 - cache hits must reuse or revalidate an evaluation result
-- document approval, deletion, chunking-strategy change, embedding-model change, or
-  prompt-template change invalidates affected cache entries
+- document approval change, quarantine, rejection, deletion, source checksum change,
+  chunking strategy change, embedding provider/model change, vector index rebuild,
+  retrieval strategy or threshold change, prompt template change, evaluator version
+  change, evaluation schema change, safety policy change, provider/model change, or
+  unsupported-claim evaluation change invalidates affected cache entries
+- cache hits must re-check current approval, deletion, secret-screening, and
+  tombstone state before returning accepted output
 
 ## Stage 4 Operational Metrics
 
@@ -131,7 +189,7 @@ Stage 4 records:
 
 Alert thresholds for local/free-provider modes:
 
-- queue depth greater than 20
+- per-project queue depth greater than 20
 - generation p95 greater than 60 seconds
 - evaluation p95 greater than 30 seconds
 - any cost above USD 0.00 in mock/local mode

@@ -24,13 +24,18 @@
 Tenant
 -> User
 -> Project
+-> IdempotencyRecord
 -> KnowledgeDocument
 -> KnowledgeChunk
 -> EmbeddingRecord
 -> IngestionRun
 -> WalkthroughRun
 -> EvaluationResult
+-> EvidenceSnapshot
 -> ClaimSupport
+-> JobLease
+-> OutboxEvent
+-> Tombstone
 -> Artifact
 -> AuditEvent
 ```
@@ -85,16 +90,78 @@ Fields:
 - `description`
 - `default_language`
 - `default_audience`
-- `status`
+- `project_status`
 - `created_at`
 - `updated_at`
 - optional `deleted_at`
+
+Project statuses:
+
+- `ACTIVE`
+- `DELETED`
 
 Indexes:
 
 - `project_id`
 - `(tenant_id, project_id)`
 - `(tenant_id, owner_id)`
+- `(tenant_id, owner_id, created_at, project_id)`
+
+### IdempotencyRecord
+
+Durable write-safety record. Every mutating endpoint creates or reads this record
+transactionally before provider calls, vector writes, artifact writes, cache writes,
+or outbox dispatch.
+
+Fields:
+
+- `idempotency_record_id`
+- `idempotency_key`
+- `tenant_id`
+- `actor_id`
+- optional `project_id`
+- `idempotency_scope`
+- `endpoint`
+- `request_checksum`
+- `status`
+- optional `response_status`
+- optional `response_body_checksum`
+- optional `response_body_ref`
+- optional `resource_type`
+- optional `resource_id`
+- optional `job_ref`
+- optional `error_code`
+- optional `locked_by`
+- optional `locked_at`
+- optional `locked_until`
+- `created_at`
+- `updated_at`
+- `expires_at`
+
+Statuses:
+
+- `RESERVED`
+- `RUNNING`
+- `SUCCEEDED`
+- `FAILED`
+- `EXPIRED`
+
+Rules:
+
+- `idempotency_scope` is non-null; use `project:create` for `POST /projects` and
+  `project_id` for project-scoped writes
+- unique key is `(tenant_id, actor_id, idempotency_scope, endpoint,
+  idempotency_key)`
+- same key and same checksum returns stored response or current job state
+- same key and different checksum returns `IDEMPOTENCY_CONFLICT`
+- failed records are replayable only when no external side effect was committed;
+  otherwise retry resumes from the persisted job or outbox state
+
+Indexes:
+
+- `(tenant_id, actor_id, idempotency_scope, endpoint, idempotency_key)`
+- `(tenant_id, actor_id, idempotency_scope, endpoint, request_checksum)`
+- `(expires_at)`
 
 ### KnowledgeDocument
 
@@ -109,8 +176,9 @@ Fields:
 - `size_bytes`
 - `checksum`
 - `storage_uri`
-- `status`
+- `document_status`
 - `approval_status`
+- `ingestion_status`
 - `approved_by`
 - optional `approved_at`
 - optional `quarantine_reason`
@@ -118,16 +186,39 @@ Fields:
 - `created_at`
 - optional `deleted_at`
 
-Statuses:
+Document statuses:
 
-- `STORED`
 - `UPLOADED`
+- `STORED`
 - `QUARANTINED`
+- `DELETED`
+
+Approval statuses:
+
+- `PENDING`
 - `APPROVED`
 - `REJECTED`
+
+Ingestion statuses:
+
+- `NOT_STARTED`
+- `QUEUED`
+- `RUNNING`
 - `INGESTED`
 - `FAILED`
-- `DELETED`
+- `REFUSED`
+- `CANCELLED`
+- `INVALIDATED`
+
+Rules:
+
+- upload cannot directly approve or ingest a document
+- ingestion requires `document_status = STORED` and `approval_status = APPROVED`
+- retrieval requires `document_status = STORED`, `approval_status = APPROVED`,
+  `ingestion_status = INGESTED`, and no source or chunk tombstone
+- approval, quarantine, rejection, deletion, checksum changes, rechunking, embedding
+  model changes, and retrieval-policy changes invalidate derived chunks,
+  embeddings, retrieval caches, and generated-script caches
 
 Indexes:
 
@@ -135,7 +226,10 @@ Indexes:
 - `(project_id, checksum)`
 - `(tenant_id, project_id, document_id)`
 - `(tenant_id, project_id, approval_status)`
-- `(tenant_id, project_id, status)`
+- `(tenant_id, project_id, document_status)`
+- `(tenant_id, project_id, ingestion_status)`
+- `(tenant_id, project_id, document_status, approval_status, ingestion_status)`
+- `(tenant_id, project_id, created_at, document_id)`
 
 ### KnowledgeChunk
 
@@ -190,7 +284,7 @@ Rules:
 
 - can be regenerated from `KnowledgeChunk`
 - not treated as canonical source of truth
-- retrieval filters must include project and future tenant metadata
+- retrieval filters must include tenant and project metadata
 
 Indexes:
 
@@ -209,14 +303,22 @@ Fields:
 - `document_ids`
 - `status`
 - `idempotency_key`
+- optional `idempotency_record_id`
 - `attempt_count`
+- `max_attempts`
+- optional `next_attempt_at`
+- optional `lease_owner`
+- optional `lease_expires_at`
 - `chunk_count`
 - `embedding_count`
 - optional `error_code`
+- optional `last_error_code`
 - optional `refusal_reason`
+- optional `outbox_event_id`
 - `queued_at`
 - optional `started_at`
 - optional `completed_at`
+- optional `failed_at`
 - `created_at`
 - `updated_at`
 
@@ -228,12 +330,15 @@ Statuses:
 - `FAILED`
 - `REFUSED`
 - `CANCELLED`
+- `CANCELLED`
 
 Indexes:
 
 - `(tenant_id, project_id, ingestion_run_id)`
+- `(tenant_id, project_id, status, queued_at)`
 - `(tenant_id, project_id, status, created_at)`
 - `(tenant_id, project_id, idempotency_key)`
+- `(tenant_id, project_id, lease_expires_at)`
 
 ### WalkthroughRequest
 
@@ -264,23 +369,37 @@ Fields:
 - `requested_language`
 - `depth`
 - `style`
-- `script_text`
+- optional `raw_generated_text`
+- optional `accepted_script_text`
+- optional `failure_public_message`
 - `context_refs`
 - `provider`
 - `provider_mode`
 - optional `model`
 - `trace_id`
 - `idempotency_key`
+- optional `idempotency_record_id`
 - `prompt_template_version`
 - `retrieval_strategy_version`
 - `retrieval_top_k`
 - `retrieval_score_threshold`
 - `retrieved_context_count`
+- `attempt_count`
+- `max_attempts`
+- optional `next_attempt_at`
+- optional `locked_at`
+- optional `locked_by`
+- optional `lease_expires_at`
 - `latency_ms`
 - optional `token_usage`
 - optional `estimated_cost`
 - `error_code`
 - optional `refusal_reason`
+- optional `outbox_event_id`
+- `queued_at`
+- optional `started_at`
+- optional `completed_at`
+- optional `failed_at`
 - `created_at`
 - `updated_at`
 
@@ -291,13 +410,25 @@ Statuses:
 - `COMPLETED`
 - `FAILED`
 - `REFUSED`
+- `CANCELLED`
 
 Indexes:
 
 - `(tenant_id, project_id, run_id)`
+- `(tenant_id, project_id, status, queued_at)`
 - `(tenant_id, project_id, status, created_at)`
 - `(tenant_id, project_id, idempotency_key)`
 - `(tenant_id, project_id, provider, provider_mode, created_at)`
+- `(tenant_id, project_id, lease_expires_at)`
+
+Rules:
+
+- `raw_generated_text` is internal-only and may be retained for audit after
+  redaction policy is applied
+- public API responses expose `accepted_script_text` only when evaluation status is
+  `PASSED` or an allowed non-factual `WARNING`
+- `FAILED` and `REFUSED` public responses omit raw generated output and expose only
+  refusal/failure metadata plus redacted unsupported excerpts
 
 ### ContextRef
 
@@ -324,7 +455,7 @@ Fields:
 Rules:
 
 - context refs used for grounding must be claim-level context references
-- evidence snapshots are redacted and truncated
+- evidence snapshots use the typed `EvidenceSnapshot` shape
 - deletion keeps tombstones so prior runs remain auditable
 
 Indexes:
@@ -332,6 +463,39 @@ Indexes:
 - `(tenant_id, project_id, run_id)`
 - `(tenant_id, project_id, claim_id)`
 - `(tenant_id, project_id, chunk_id)`
+
+### EvidenceSnapshot
+
+Immutable redacted evidence copied at evaluation time so historical runs remain
+auditable after source deletion, rechunking, embedding changes, or provider drift.
+
+Fields:
+
+- `evidence_snapshot_id`
+- `tenant_id`
+- `project_id`
+- `document_id`
+- `chunk_id`
+- `source_filename`
+- `chunk_index`
+- optional `line_start`
+- optional `line_end`
+- `source_document_checksum`
+- `chunk_checksum`
+- `chunking_strategy_version`
+- `retrieval_score`
+- `redacted_excerpt`
+- `excerpt_start`
+- `excerpt_end`
+- `redaction_flags`
+- `captured_at`
+- `snapshot_checksum`
+
+Rules:
+
+- excerpts are redacted and truncated before storage
+- `snapshot_checksum` covers the redacted snapshot payload
+- raw source text is not required to reconstruct support decisions
 
 ### EvaluationResult
 
@@ -341,16 +505,23 @@ Fields:
 - `run_id`
 - `project_id`
 - `tenant_id`
-- `status`
+- `evaluation_status`
 - `groundedness_score`
 - `unsupported_claim_count`
 - `unsupported_claims`
 - `context_refs`
+- `claim_supports`
+- `context_ref_coverage`
 - `evaluator_version`
 - `prompt_template_version`
 - `retrieval_strategy_version`
 - `retrieval_top_k`
 - `retrieval_score_threshold`
+- `embedding_provider`
+- `embedding_model`
+- optional `embedding_model_version`
+- optional `embedding_dimension`
+- `vector_store`
 - optional `error_code`
 - `prompt_injection_detected`
 - `language_check`
@@ -374,7 +545,7 @@ Statuses:
 Indexes:
 
 - `(tenant_id, project_id, run_id)`
-- `(tenant_id, project_id, status, created_at)`
+- `(tenant_id, project_id, evaluation_status, created_at)`
 - `(tenant_id, project_id, evaluation_id)`
 
 ### UnsupportedClaim
@@ -382,15 +553,26 @@ Indexes:
 Fields:
 
 - `claim_id`
+- `tenant_id`
+- `project_id`
+- `run_id`
 - `evaluation_id`
 - `claim_text`
-- `status`
+- `claim_status`
 - `severity`
+- `reason_code`
 - `supporting_context_refs`
 - `reason`
 - `script_span_start`
 - `script_span_end`
 - `redacted_excerpt`
+
+Claim statuses:
+
+- `SUPPORTED`
+- `UNSUPPORTED`
+- `AMBIGUOUS`
+- `MISSING_CONTEXT_REF`
 
 ### ClaimSupport
 
@@ -404,7 +586,10 @@ Fields:
 - `claim_id`
 - `context_ref_id`
 - `chunk_id`
+- `document_id`
 - `support_status`
+- `support_score`
+- `support_reason`
 - `evidence_snapshot`
 - `created_at`
 
@@ -419,6 +604,113 @@ Indexes:
 - `(tenant_id, project_id, run_id, claim_id)`
 - `(tenant_id, project_id, evaluation_id)`
 - `(tenant_id, project_id, context_ref_id)`
+
+### JobLease
+
+Lease record for ingestion and walkthrough work. Stage 4 may execute synchronously,
+but it must persist the same lifecycle so later worker execution does not require a
+data-model rewrite.
+
+Fields:
+
+- `job_lease_id`
+- `tenant_id`
+- `project_id`
+- `job_type`
+- `job_id`
+- `lease_owner`
+- `lease_expires_at`
+- `attempt_count`
+- `max_attempts`
+- optional `last_error_code`
+- `created_at`
+- `updated_at`
+
+Rules:
+
+- a worker may execute only while holding an unexpired lease
+- lease acquisition and `attempt_count` increment are transactional
+- expired `RUNNING` jobs can be recovered by lease steal after `lease_expires_at`
+
+Indexes:
+
+- `(tenant_id, project_id, job_type, job_id)`
+- `(tenant_id, project_id, lease_expires_at)`
+
+### OutboxEvent
+
+Committed side-effect record for audit, observability, provider/vector/cache
+operations, and future worker dispatch.
+
+Fields:
+
+- `outbox_event_id`
+- `tenant_id`
+- optional `project_id`
+- `event_type`
+- `resource_type`
+- `resource_id`
+- `operation_key`
+- `payload_ref`
+- `status`
+- `attempt_count`
+- optional `last_error_code`
+- `created_at`
+- `updated_at`
+
+Statuses:
+
+- `PENDING`
+- `DISPATCHED`
+- `FAILED`
+- `DEAD_LETTERED`
+
+Rules:
+
+- outbox rows are written in the same transaction as resource/job state changes
+- external dispatch happens only from committed outbox rows
+- dispatch is idempotent by `outbox_event_id` and `operation_key`
+- Stage 4 sync mode may dispatch immediately after commit, but poison events move
+  to `DEAD_LETTERED` after retry policy is exhausted
+
+Indexes:
+
+- `(tenant_id, project_id, status, created_at)`
+- `(operation_key)`
+
+### Tombstone
+
+Deletion marker for canonical records and derived artifacts. Tombstones preserve
+auditability, prevent accidental resurrection during import, and record cache
+invalidation state.
+
+Fields:
+
+- `tombstone_id`
+- `tenant_id`
+- `project_id`
+- `resource_type`
+- `resource_id`
+- `resource_status`
+- `deleted_at`
+- `deleted_by`
+- `reason_code`
+- optional `source_checksum`
+- `cache_invalidation_status`
+- optional `audit_event_id`
+- `created_at`
+
+Cache invalidation statuses:
+
+- `PENDING`
+- `COMPLETED`
+- `FAILED`
+
+Indexes:
+
+- `(tenant_id, project_id, tombstone_id)`
+- `(tenant_id, project_id, resource_type, resource_id)`
+- `(tenant_id, project_id, cache_invalidation_status, created_at)`
 
 ### Artifact
 
@@ -519,13 +811,24 @@ Indexes:
 Stage 4 must provide indexed access for:
 
 - project lookup by `(tenant_id, project_id)`
-- document listing by `(tenant_id, project_id, status, created_at)`
+- project listing by `(tenant_id, owner_id, created_at, project_id)`
+- idempotency lookup by `(tenant_id, actor_id, project_id, endpoint,
+  idempotency_key)`
+- document listing by `(tenant_id, project_id, created_at, document_id)`
+- document status filtering by `(tenant_id, project_id, document_status,
+  approval_status, ingestion_status)`
 - approved-document retrieval by `(tenant_id, project_id, approval_status)`
 - chunk retrieval by `(tenant_id, project_id, chunk_id)`
 - embedding lookup by `(tenant_id, project_id, provider, model, status)`
 - ingestion status polling by `(tenant_id, project_id, ingestion_run_id)`
-- walkthrough listing by `(tenant_id, project_id, status, created_at)`
+- ingestion queue lookup by `(tenant_id, project_id, status, queued_at)`
+- walkthrough listing by `(tenant_id, project_id, created_at, run_id)`
+- walkthrough queue lookup by `(tenant_id, project_id, status, queued_at)`
 - evaluation lookup by `(tenant_id, project_id, run_id)`
+- claim support lookup by `(tenant_id, project_id, run_id, claim_id)`
+- job lease recovery by `(tenant_id, project_id, lease_expires_at)`
+- outbox dispatch by `(tenant_id, project_id, status, created_at)`
+- tombstone lookup by `(tenant_id, project_id, resource_type, resource_id)`
 - artifact lookup by `(tenant_id, project_id, artifact_id)`
 - audit review by `(tenant_id, project_id, created_at)`
 

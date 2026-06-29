@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import json
 import os
 import re
 import subprocess
@@ -34,6 +35,8 @@ REQUIRED_FILES = [
     "docs/SECURITY_AND_PRIVACY.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
+    "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+    "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md",
     "docs/THREAT_MODEL.md",
     "docs/TRACEABILITY.md",
     "scripts/guardrails_check.py",
@@ -42,6 +45,7 @@ REQUIRED_FILES = [
 ]
 
 STAGE2_ALLOWED_FILES = {
+    ".github/workflows/quality-gates.yml",
     ".env.example",
     ".gitignore",
     ".stage/current",
@@ -64,6 +68,8 @@ STAGE2_ALLOWED_FILES = {
     "docs/SECURITY_AND_PRIVACY.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
+    "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+    "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md",
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/THREAT_MODEL.md",
     "docs/TRACEABILITY.md",
@@ -81,9 +87,14 @@ PRODUCT_CODE_PATTERNS = [
 SECRET_PATTERNS = [
     re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----"),
     re.compile(r"sk-[A-Za-z0-9_\-]{20,}"),
+    re.compile(r"sk-ant-[A-Za-z0-9_\-]{20,}"),
+    re.compile(r"sk-or-v1-[A-Za-z0-9_\-]{20,}"),
     re.compile(r"gh[pousr]_[A-Za-z0-9_]{20,}"),
     re.compile(r"AIza[0-9A-Za-z_\-]{20,}"),
     re.compile(r"AKIA[0-9A-Z]{16}"),
+    re.compile(r"eyJ[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{10,}"),
+    re.compile(r"(?i)bearer\s+[A-Za-z0-9_\-\.]{20,}"),
+    re.compile(r"(?i)\b(api[_-]?key|secret|token|password|credential)\b\s*[:=]\s*['\"]?([^'\"\s#]{8,})['\"]?"),
 ]
 
 PYTHON_GOVERNANCE_FILES = (
@@ -99,9 +110,10 @@ STDLIB_IMPORT_ROOTS = set(getattr(sys, "stdlib_module_names", set())) | {"__futu
 REQUIRED_PHRASES_BY_FILE = {
     "docs/ARCHITECTURE.md": [
         "Synthetic Local Principal",
-        "Document Approval State Machine",
+        "Knowledge State Separation",
         "Stage 4 Resource Budgets",
-        "Queue And Backpressure Contract",
+        "Queue, Lease, Attempt, And Outbox Contract",
+        "Retrieval Strategy v1",
         "Provider Adapter Contract",
         "Observability Event Contract",
     ],
@@ -134,7 +146,7 @@ REQUIRED_PHRASES_BY_FILE = {
         "Retention And Deletion Decision",
     ],
     "docs/OBSERVABILITY_AND_COST.md": [
-        "Event Schema",
+        "EventEnvelope",
         "p95",
         "queue_depth",
         "cost_budget_exceeded",
@@ -160,6 +172,15 @@ REQUIRED_PHRASES_BY_FILE = {
     "docs/STATUS.md": [
         "Stage 2 quality is executable locally",
         "Stage 2 remediation",
+    ],
+    "docs/STAGE2_ARCHITECTURE_CONTRACT.json": [
+        "\"canonicalIssue\": \"#2\"",
+        "\"canonicalPullRequest\": \"#27\"",
+    ],
+    "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md": [
+        "Stage 2 Human Review Checklist",
+        "Product implementation allowed: no",
+        "Cross-model second-opinion findings",
     ],
 }
 
@@ -194,11 +215,17 @@ def repo_files() -> list[str]:
 
 
 def changed_files_for_stage_scope() -> list[str]:
-    merge_base = run(["git", "merge-base", "main", "HEAD"])
-    if merge_base.returncode != 0:
-        merge_base = run(["git", "merge-base", "origin/main", "HEAD"])
-    if merge_base.returncode != 0:
-        raise RuntimeError(merge_base.stderr.strip() or "git merge-base main HEAD failed")
+    base_candidates = [os.environ.get("GITHUB_BASE_SHA", "").strip(), "origin/main", "main"]
+    merge_base = None
+    attempted: list[str] = []
+    for candidate in [item for item in base_candidates if item]:
+        attempted.append(candidate)
+        result = run(["git", "merge-base", candidate, "HEAD"])
+        if result.returncode == 0 and result.stdout.strip():
+            merge_base = result
+            break
+    if merge_base is None:
+        raise RuntimeError(f"git merge-base failed for Stage 2 scope. Tried: {', '.join(attempted)}")
 
     base = merge_base.stdout.strip()
     committed = run(["git", "diff", "--name-only", f"{base}..HEAD"])
@@ -301,13 +328,384 @@ def check_mock_local_defaults(failures: list[str]) -> None:
         "LLM_PROVIDER=mock",
         "EMBEDDING_PROVIDER=mock",
         "EVALUATION_PROVIDER=mock",
+        "TRANSLATION_PROVIDER=mock",
         "AVATAR_PROVIDER=mock",
         "TTS_PROVIDER=mock",
         "STT_PROVIDER=mock",
+        "SUBTITLE_PROVIDER=mock",
+        "VIDEO_RENDERER=local",
         "STORAGE_PROVIDER=local",
+        "VECTOR_STORE=chroma",
     ):
         if default not in text:
             fail(f".env.example must include free/local test default: {default}", failures)
+
+
+def load_stage2_contract(failures: list[str]) -> dict:
+    path = ROOT / "docs/STAGE2_ARCHITECTURE_CONTRACT.json"
+    try:
+        contract = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        fail(f"docs/STAGE2_ARCHITECTURE_CONTRACT.json must be valid JSON: {exc}", failures)
+        return {}
+    if not isinstance(contract, dict):
+        fail("docs/STAGE2_ARCHITECTURE_CONTRACT.json must contain a JSON object.", failures)
+        return {}
+    return contract
+
+
+def check_contract_invariants(contract: dict, failures: list[str]) -> None:
+    required_keys = [
+        "version",
+        "stage",
+        "canonicalIssue",
+        "canonicalPullRequest",
+        "providerDefaults",
+        "documentStatus",
+        "approvalStatus",
+        "ingestionStatus",
+        "projectStatus",
+        "idempotencyRequiredEndpoints",
+        "idempotencyRecordFields",
+        "walkthroughRunLifecycleFields",
+        "runStatus",
+        "evaluationStatus",
+        "claimSupportStatus",
+        "claimStatus",
+        "evidenceSnapshotFields",
+        "evaluationResultFields",
+        "retrievalStrategy",
+        "stage4Budgets",
+        "rateLimits",
+        "backpressurePolicy",
+        "cacheKeyFields",
+        "cacheInvalidationTriggers",
+        "cacheHitRevalidationFields",
+        "providerBoundSecretScreeningInputs",
+        "secretScreeningResultFields",
+        "observabilitySchemas",
+        "providerFallbackPolicy",
+    ]
+    for key in required_keys:
+        if key not in contract:
+            fail(f"Stage 2 architecture contract is missing key: {key}", failures)
+    if contract.get("stage") != 2:
+        fail("Stage 2 architecture contract must set stage to 2.", failures)
+    if contract.get("canonicalIssue") != "#2":
+        fail("Stage 2 architecture contract must map to issue #2.", failures)
+    if contract.get("canonicalPullRequest") != "#27":
+        fail("Stage 2 architecture contract must map to PR #27.", failures)
+    expected_exact_lists = {
+        "documentStatus": ["UPLOADED", "STORED", "QUARANTINED", "DELETED"],
+        "approvalStatus": ["PENDING", "APPROVED", "REJECTED"],
+        "ingestionStatus": [
+            "NOT_STARTED",
+            "QUEUED",
+            "RUNNING",
+            "INGESTED",
+            "FAILED",
+            "REFUSED",
+            "CANCELLED",
+            "INVALIDATED",
+        ],
+        "projectStatus": ["ACTIVE", "DELETED"],
+        "runStatus": ["QUEUED", "RUNNING", "COMPLETED", "FAILED", "REFUSED", "CANCELLED"],
+        "evaluationStatus": ["PASSED", "WARNING", "FAILED", "REFUSED"],
+        "claimSupportStatus": ["SUPPORTED", "UNSUPPORTED", "AMBIGUOUS"],
+        "claimStatus": ["SUPPORTED", "UNSUPPORTED", "AMBIGUOUS", "MISSING_CONTEXT_REF"],
+    }
+    for key, expected in expected_exact_lists.items():
+        if contract.get(key) != expected:
+            fail(f"Stage 2 architecture contract {key} must equal {expected!r}.", failures)
+    retrieval = contract.get("retrievalStrategy", {})
+    expected_refusals = [
+        "EMPTY_CONTEXT",
+        "LOW_RETRIEVAL_CONFIDENCE",
+        "AMBIGUOUS_CONTEXT",
+        "CROSS_PROJECT_CONTEXT",
+        "UNSAFE_CONTEXT",
+    ]
+    if not isinstance(retrieval, dict):
+        fail("Stage 2 architecture contract retrievalStrategy must be an object.", failures)
+    elif retrieval.get("refusalReasons") != expected_refusals:
+        fail(f"Stage 2 retrieval refusalReasons must equal {expected_refusals!r}.", failures)
+
+
+def require_terms(rel: str, terms: list[str], failures: list[str]) -> None:
+    text = read(rel) if (ROOT / rel).exists() else ""
+    for term in terms:
+        if term not in text:
+            fail(f"{rel} must include contract term: {term}", failures)
+
+
+def section_between(text: str, heading: str) -> str:
+    start = text.find(heading)
+    if start == -1:
+        return ""
+    next_heading = text.find("\n### ", start + len(heading))
+    if next_heading == -1:
+        next_heading = text.find("\n## ", start + len(heading))
+    if next_heading == -1:
+        return text[start:]
+    return text[start:next_heading]
+
+
+def check_contract_semantics(contract: dict, failures: list[str]) -> None:
+    provider_defaults = contract.get("providerDefaults", [])
+    if isinstance(provider_defaults, list):
+        require_terms(".env.example", provider_defaults, failures)
+        require_terms("scripts/guardrails_check.py", provider_defaults, failures)
+
+    require_terms("docs/STATUS.md", ["#2", "#27", "Stage 2"], failures)
+    require_terms("docs/STAGE_ISSUE_PLAN.md", ["Stage 2", "`#2`", "`stage2-*`"], failures)
+    require_terms(
+        "docs/API_CONTRACT.md",
+        contract.get("idempotencyRequiredEndpoints", []) + [
+            "IdempotencyRecord",
+            "IDEMPOTENCY_CONFLICT",
+            "BACKPRESSURE_QUEUE_FULL",
+            "Retry-After",
+            "`evsnap_`",
+            "`tomb_`",
+            "ProjectPatchRequest",
+            "cacheInvalidationStatus",
+            "tombstoneId",
+            "already deleted",
+            "acceptedScriptText",
+            "rawGeneratedText",
+            "documentStatus",
+            "approvalStatus",
+            "ingestionStatus",
+            "retrievalScoreThreshold",
+            "contextRefs",
+            "claimSupports",
+            "contextRefCoverage",
+            "embeddingProvider",
+            "embeddingModel",
+            "embeddingDimension",
+            "vectorStore",
+            "(tenantId, ownerId, projectId)",
+            "evaluator_payload",
+            "chunkingStrategyVersion maps to `chunking_strategy_version`",
+        ],
+        failures,
+    )
+    api_text = read("docs/API_CONTRACT.md") if (ROOT / "docs/API_CONTRACT.md").exists() else ""
+    for status in ("RESERVED", "RUNNING", "SUCCEEDED", "FAILED", "EXPIRED"):
+        if f"`{status}`" not in api_text and f'"{status}"' not in api_text:
+            fail(f"docs/API_CONTRACT.md must include idempotency status: {status}", failures)
+    if '"acceptedScriptText": null' in api_text:
+        fail("docs/API_CONTRACT.md failed/refused examples must omit acceptedScriptText instead of returning null.", failures)
+    for unsafe_error_term in (
+        "raw prompts",
+        "raw uploads",
+        "provider payloads",
+        "stack traces",
+        "environment variables",
+        "secrets",
+    ):
+        if unsafe_error_term not in api_text:
+            fail(f"docs/API_CONTRACT.md must ban {unsafe_error_term} in error details.", failures)
+    retrieval = contract.get("retrievalStrategy", {})
+    if isinstance(retrieval, dict):
+        expected_tie_break = ["score desc", "approved_at desc", "chunk_index asc", "chunk_id asc"]
+        if retrieval.get("tieBreakOrder") != expected_tie_break:
+            fail(f"Stage 2 retrieval tie-break order must be {expected_tie_break!r}.", failures)
+        require_terms("docs/ARCHITECTURE.md", expected_tie_break, failures)
+        require_terms("docs/ADR/0002-rag-storage.md", expected_tie_break, failures)
+        refusal_reasons = retrieval.get("refusalReasons", [])
+        if isinstance(refusal_reasons, list):
+            for rel in (
+                "docs/API_CONTRACT.md",
+                "docs/AI_SAFETY_AND_EVALUATION.md",
+                "docs/ARCHITECTURE.md",
+                "docs/ADR/0002-rag-storage.md",
+            ):
+                require_terms(rel, refusal_reasons, failures)
+    require_terms(
+        "docs/DATA_MODEL.md",
+        contract.get("idempotencyRecordFields", [])
+        + contract.get("walkthroughRunLifecycleFields", [])
+        + contract.get("evidenceSnapshotFields", [])
+        + [
+            "IdempotencyRecord",
+            "EvidenceSnapshot",
+            "JobLease",
+            "OutboxEvent",
+            "raw_generated_text",
+            "accepted_script_text",
+            "claim_supports",
+            "context_ref_coverage",
+            "project_status",
+            "Tombstone",
+        ],
+        failures,
+    )
+    data_text = read("docs/DATA_MODEL.md") if (ROOT / "docs/DATA_MODEL.md").exists() else ""
+    walkthrough_section = section_between(data_text, "### WalkthroughRun")
+    for status in contract.get("runStatus", []):
+        if f"`{status}`" not in walkthrough_section:
+            fail(f"docs/DATA_MODEL.md must include WalkthroughRun status: {status}", failures)
+    evaluation_section = section_between(data_text, "### EvaluationResult")
+    for term in contract.get("evaluationResultFields", []):
+        if term not in evaluation_section:
+            fail(f"docs/DATA_MODEL.md EvaluationResult must include field: {term}", failures)
+    project_section = section_between(data_text, "### Project")
+    for status in contract.get("projectStatus", []):
+        if f"`{status}`" not in project_section:
+            fail(f"docs/DATA_MODEL.md Project must include project_status: {status}", failures)
+    unsupported_claim_section = section_between(data_text, "### UnsupportedClaim")
+    for status in contract.get("claimStatus", []):
+        if f"`{status}`" not in unsupported_claim_section:
+            fail(f"docs/DATA_MODEL.md UnsupportedClaim must include claim_status: {status}", failures)
+    claim_support_section = section_between(data_text, "### ClaimSupport")
+    for status in contract.get("claimSupportStatus", []):
+        if f"`{status}`" not in claim_support_section:
+            fail(f"docs/DATA_MODEL.md ClaimSupport must include support_status: {status}", failures)
+    evidence_fields = contract.get("evidenceSnapshotFields", [])
+    if isinstance(evidence_fields, list):
+        require_terms("docs/DATA_MODEL.md", evidence_fields, failures)
+        require_terms("docs/AI_SAFETY_AND_EVALUATION.md", evidence_fields, failures)
+        camelish = {
+            "source_filename": "sourceFilename",
+            "chunk_index": "chunkIndex",
+            "retrieval_score": "retrievalScore",
+        }
+        require_terms("docs/API_CONTRACT.md", list(camelish.values()), failures)
+    require_terms(
+        "docs/AI_SAFETY_AND_EVALUATION.md",
+        [
+            "tenant_id",
+            "claim_supports",
+            "context_ref_coverage",
+            "CLAIM_BUDGET_EXCEEDED",
+            "EvidenceSnapshot",
+            "scriptText",
+            "evaluation_status",
+        ],
+        failures,
+    )
+    require_terms(
+        "docs/ARCHITECTURE.md",
+        [
+            "Knowledge State Separation",
+            "Queue, Lease, Attempt, And Outbox Contract",
+            "Retrieval Strategy v1",
+            "retrieval_score_threshold = 0.72",
+            "LOW_RETRIEVAL_CONFIDENCE",
+            "AMBIGUOUS_CONTEXT",
+            "PROVIDER_FALLBACK_BLOCKED",
+            "ACID",
+            "atomic compare-and-swap",
+        ],
+        failures,
+    )
+    require_terms(
+        "docs/OBSERVABILITY_AND_COST.md",
+        contract.get("cacheKeyFields", [])
+        + contract.get("cacheInvalidationTriggers", [])
+        + contract.get("cacheHitRevalidationFields", [])
+        + ["RunMetadata", "EventEnvelope", "MetricPoint", "generatedScriptWords = 1200"],
+        failures,
+    )
+    require_terms("docs/SECURITY_AND_PRIVACY.md", contract.get("secretScreeningResultFields", []), failures)
+    require_terms("docs/SECURITY_AND_PRIVACY.md", contract.get("providerBoundSecretScreeningInputs", []), failures)
+    require_terms(
+        "docs/SECURITY_AND_PRIVACY.md",
+        [
+            "1,200 words",
+            "100 extracted project-specific factual claims",
+            "evaluator_version",
+            "prompt_template_version",
+            "embedding_model_version",
+            "deterministic, rule-backed evaluation",
+        ],
+        failures,
+    )
+    require_terms(
+        "docs/THREAT_MODEL.md",
+        ["Deterministic Stage 4 evaluator", "Model-as-judge evaluation is future scope"],
+        failures,
+    )
+    budgets = contract.get("stage4Budgets", {})
+    if isinstance(budgets, dict):
+        required_budget_values = {
+            "fileSizeMiB": 1,
+            "documentsPerProject": 10,
+            "projectCorpusMiB": 5,
+            "chunkTargetTokens": 800,
+            "chunkMaxTokens": 1000,
+            "chunkOverlapTokens": 100,
+            "chunksPerDocument": 100,
+            "chunksPerProject": 200,
+            "embeddingBatchSize": 32,
+            "retrievalTopK": 6,
+            "promptContextTokens": 6000,
+            "generatedScriptWords": 1200,
+            "generatedScriptOutputTokens": 2500,
+            "unsupportedClaimsEvaluated": 100,
+            "automaticRetryMax": 1,
+            "generationTimeoutSeconds": 60,
+            "evaluationTimeoutSeconds": 30,
+            "queueCapacity": 20,
+            "initialPageSize": 20,
+            "maxPageSize": 100,
+            "maxOffsetDepth": 500,
+            "cacheTtlHours": 24,
+            "cacheEntriesPerProject": 100,
+            "mockLocalCostBudgetUsd": 0,
+            "freeProviderDailyBudgetUsd": 1,
+        }
+        for key, expected in required_budget_values.items():
+            if budgets.get(key) != expected:
+                fail(f"Stage 2 budget {key} must be locked to {expected!r}.", failures)
+        for key, value in budgets.items():
+            if not isinstance(value, (int, float)):
+                fail(f"Stage 2 budget {key} must be numeric.", failures)
+            if key != "mockLocalCostBudgetUsd" and isinstance(value, (int, float)) and value <= 0:
+                fail(f"Stage 2 budget {key} must be positive.", failures)
+    backpressure = contract.get("backpressurePolicy", {})
+    if isinstance(backpressure, dict):
+        if backpressure.get("queueFullCode") != "BACKPRESSURE_QUEUE_FULL":
+            fail("Stage 2 backpressure policy must use BACKPRESSURE_QUEUE_FULL.", failures)
+        if backpressure.get("queueCapacityScope") != "per_project":
+            fail("Stage 2 backpressure policy must scope queue capacity per project.", failures)
+        if backpressure.get("retryAfterRequired") is not True:
+            fail("Stage 2 backpressure policy must require Retry-After.", failures)
+    rate_limits = contract.get("rateLimits", {})
+    if isinstance(rate_limits, dict):
+        expected_limits = {
+            "uploadRequestsPerProjectPerHour": 30,
+            "ingestionJobsPerProjectPerHour": 10,
+            "concurrentIngestionJobsPerProject": 1,
+            "generationRunsPerProjectPerHour": 20,
+            "concurrentGenerationJobsPerProject": 1,
+            "providerCallsPerProviderModeProjectHour": 30,
+        }
+        for key, expected in expected_limits.items():
+            if rate_limits.get(key) != expected:
+                fail(f"Stage 2 rate limit {key} must be locked to {expected!r}.", failures)
+        require_terms("docs/SECURITY_AND_PRIVACY.md", [str(value) for value in expected_limits.values()], failures)
+    fallback_policy = contract.get("providerFallbackPolicy", "")
+    if isinstance(fallback_policy, str):
+        for term in ("Only same-egress-class fallback", "PROVIDER_FALLBACK_BLOCKED"):
+            if term not in fallback_policy:
+                fail(f"Stage 2 providerFallbackPolicy must include: {term}", failures)
+        if "unless explicitly configured" in fallback_policy:
+            fail(
+                "Stage 2 providerFallbackPolicy must not allow mock/local to non-local fallback by configuration.",
+                failures,
+            )
+    workflow = read(".github/workflows/quality-gates.yml") if (ROOT / ".github/workflows/quality-gates.yml").exists() else ""
+    if isinstance(provider_defaults, list):
+        for default in provider_defaults:
+            if "=" in default:
+                key, value = default.split("=", 1)
+                yaml_default = f"{key}: {value}"
+            else:
+                yaml_default = default
+            if default not in workflow and yaml_default not in workflow:
+                fail(f".github/workflows/quality-gates.yml must set deterministic provider default: {default}", failures)
 
 
 def check_no_contradictory_stage2_language(failures: list[str]) -> None:
@@ -318,17 +716,27 @@ def check_no_contradictory_stage2_language(failures: list[str]) -> None:
             "docs/SECURITY_AND_PRIVACY.md",
             "docs/API_CONTRACT.md",
             "docs/AI_SAFETY_AND_EVALUATION.md",
+            "docs/QUALITY_GATES.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/STATUS.md",
+            "docs/THREAT_MODEL.md",
+            "docs/PORTABILITY_STRATEGY.md",
         )
         if (ROOT / rel).exists()
     )
+    normalized = " ".join(combined.split())
     banned = [
         "optional obvious-secret screening before non-local provider egress",
         "fail, warn, or regenerate according to stage policy",
         "Authentication is future Stage 3/4 design",
         "Before Stage 4 code:",
+        "During Stage 1, `make quality`",
+        "Current Stage 1 behavior",
+        "future `tenant_id`",
+        "future tenant_id",
     ]
     for phrase in banned:
-        if phrase in combined:
+        if phrase in combined or phrase in normalized:
             fail(f"Stage 2 docs still contain unresolved or contradictory language: {phrase}", failures)
 
 
@@ -340,24 +748,61 @@ def check_makefile_and_dispatcher(failures: list[str]) -> None:
         fail("Makefile stage2-quality must run scripts/quality/check_stage2_docs.py.", failures)
     if "check_stage2_docs.py" not in dispatcher:
         fail("scripts/quality/check_quality_stage.py must dispatch Stage 2 to check_stage2_docs.py.", failures)
-    for default in ("LLM_PROVIDER=mock", "EMBEDDING_PROVIDER=mock", "EVALUATION_PROVIDER=mock"):
+    for default in (
+        "LLM_PROVIDER=mock",
+        "EMBEDDING_PROVIDER=mock",
+        "EVALUATION_PROVIDER=mock",
+        "TRANSLATION_PROVIDER=mock",
+        "AVATAR_PROVIDER=mock",
+        "TTS_PROVIDER=mock",
+        "STT_PROVIDER=mock",
+        "SUBTITLE_PROVIDER=mock",
+        "VIDEO_RENDERER=local",
+        "STORAGE_PROVIDER=local",
+        "VECTOR_STORE=chroma",
+    ):
         if default not in guardrails:
             fail(f"scripts/guardrails_check.py must enforce provider default: {default}", failures)
+
+
+def line_for_match(text: str, match: re.Match[str]) -> str:
+    line_start = text.rfind("\n", 0, match.start()) + 1
+    line_end = text.find("\n", match.end())
+    if line_end == -1:
+        line_end = len(text)
+    return text[line_start:line_end]
+
+
+def is_allowlisted_secret_match(rel: str, text: str, match: re.Match[str]) -> bool:
+    matched_text = match.group(0)
+    if rel.endswith(".env.example") and matched_text.endswith("="):
+        return True
+    if rel.endswith(".env.example") and re.search(r"=\s*['\"]?\s*['\"]?$", matched_text):
+        return True
+    if "PLACEHOLDER" in matched_text or "example" in matched_text.lower():
+        return True
+    line = line_for_match(text, match)
+    if rel in {"scripts/guardrails_check.py", "scripts/quality/check_stage2_docs.py"}:
+        if "re.compile" in line or "SECRET_PATTERNS" in line or "PROVIDER_KEY_NAMES" in line:
+            return True
+        if "providerDefaults" in line or "check_mock_local_defaults" in line:
+            return True
+    return False
 
 
 def check_no_obvious_secrets(failures: list[str]) -> None:
     for rel in repo_files():
         path = ROOT / rel
-        if not path.is_file() or path.suffix not in {".md", ".py", ".txt", ".yaml", ".yml", ".example"}:
-            continue
-        if rel == "scripts/guardrails_check.py":
+        if not path.is_file() or path.suffix not in {".json", ".md", ".py", ".txt", ".yaml", ".yml", ".example"}:
             continue
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
         for pattern in SECRET_PATTERNS:
-            if pattern.search(text):
+            for match in pattern.finditer(text):
+                if is_allowlisted_secret_match(rel, text, match):
+                    continue
                 fail(f"Potential committed secret pattern found in {rel}.", failures)
 
 
@@ -403,6 +848,10 @@ def main() -> int:
     check_stage2_scope(failures)
     check_no_product_code(files, failures)
     check_required_phrases(failures)
+    contract = load_stage2_contract(failures)
+    if contract:
+        check_contract_invariants(contract, failures)
+        check_contract_semantics(contract, failures)
     check_adr_canon(failures)
     check_mock_local_defaults(failures)
     check_no_contradictory_stage2_language(failures)

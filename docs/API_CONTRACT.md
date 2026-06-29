@@ -5,7 +5,7 @@
 - Version: 1.0
 - Stage: Stage 2 architecture, security, AI safety
 - Canonical issue: `#2`
-- Last updated: 2026-06-29
+- Last updated: 2026-06-30
 - Status: contract-first design only; no product endpoints implemented in Stage 2
 
 ## API Principles
@@ -40,9 +40,11 @@ Response headers:
 - `X-Request-Id`: server request ID
 - `Content-Type: application/json`
 
-Stage 4 local mode resolves a synthetic principal with `tenantId = tenant_local` and
-`actorId = user_local`. API handlers must authorize this principal before data
-access. Generated IDs are not authorization proof.
+Stage 4 local mode resolves a synthetic principal with `tenantId = tenant_local`,
+`ownerId = user_local`, and `actorId = user_local`. API handlers must enforce the
+authorization predicate `(tenantId, ownerId, projectId)` before every
+project-scoped lookup, retrieval, generation, evaluation, export, or delete.
+Generated IDs are not authorization proof.
 
 ## Error Shape
 
@@ -58,6 +60,12 @@ All errors use:
   }
 }
 ```
+
+`error.details` is allowlisted metadata only. It may contain stable identifiers,
+counts, enum values, retry hints, validation field names, and redacted excerpts.
+It must not contain raw prompts, raw uploads, raw retrieved context, raw provider
+payloads, provider payloads, stack traces, environment variables, configuration dumps, filesystem
+paths, provider keys, bearer tokens, credentials, or other secrets.
 
 Status mapping:
 
@@ -101,47 +109,108 @@ Canonical IDs use stable prefixes:
 - `ing_` for ingestion runs
 - `run_` for walkthrough runs
 - `eval_` for evaluation results
+- `claim_` for unsupported or supported claim records
+- `claimsup_` for claim-support records
+- `evsnap_` for evidence snapshots
 - `art_` for artifacts
+- `tomb_` for tombstones
 - `audit_` for audit events
+- `req_` for request records
+- `trace_` for trace records
+- `emb_` for embedding records
+- `idem_` for idempotency records
+- `secscan_` for secret-screening records
 
 Provider-native IDs are stored as provider metadata, not canonical IDs.
 
 ## Idempotency Requirements
 
-Idempotency keys are scoped by actor, project, endpoint, and request body checksum.
+Idempotency keys are scoped by tenant, actor, endpoint, non-null
+`idempotencyScope`, and request body checksum. For project creation,
+`idempotencyScope = "project:create"` because no `projectId` exists yet. For
+project-scoped writes, `idempotencyScope = projectId`. Implementations must persist
+an `IdempotencyRecord` before provider calls, vector writes, generated artifacts,
+approval state changes, or tombstone writes.
+
+`IdempotencyRecord` fields:
+
+- `idempotencyRecordId`
+- `tenantId`
+- `actorId`
+- optional `projectId`
+- `idempotencyScope`
+- `endpoint`
+- `idempotencyKey`
+- `requestChecksum`
+- `responseStatus`
+- optional `responseBodyRef`
+- optional `jobRef`
+- `status`
+- optional `lockedBy`
+- optional `lockedAt`
+- `expiresAt`
+- `createdAt`
+- `updatedAt`
+
+Record statuses:
+
+- `RESERVED`
+- `RUNNING`
+- `SUCCEEDED`
+- `FAILED`
+- `EXPIRED`
+
 For duplicate keys:
 
 - identical request body returns the original response or current job status
 - different request body returns `409 IDEMPOTENCY_CONFLICT`
+- an in-flight matching request returns `409 IDEMPOTENCY_IN_PROGRESS` or current
+  accepted job status without starting duplicate work
 - provider calls, vector writes, and generated artifacts must not be duplicated
 - idempotency records are retained for at least 24 hours in local mode
 
 Write endpoints requiring idempotency:
 
 - `POST /api/v1/projects`
+- `PATCH /api/v1/projects/{projectId}`
 - `POST /api/v1/projects/{projectId}/knowledge-documents`
 - `PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval`
+- `DELETE /api/v1/projects/{projectId}/knowledge-documents/{documentId}`
 - `POST /api/v1/projects/{projectId}/ingestion-runs`
 - `POST /api/v1/projects/{projectId}/walkthrough-runs`
+- `DELETE /api/v1/projects/{projectId}`
 - all future media-render endpoints
 
 ## Typed Response Schemas
 
-The markdown examples below are illustrative, but implementation must define typed
-request and response schemas before product code is accepted. Required schemas:
+The markdown examples below are canonical Stage 2 contract examples. Stage 4
+implementation must define OpenAPI or JSON Schema equivalents before product code
+is accepted. Required schemas:
 
 - `Project`
 - `KnowledgeDocument`
 - `IngestionRun`
 - `WalkthroughRun`
+- `AcceptedWalkthroughRun`
+- `UnsafeWalkthroughRun`
 - `EvaluationResult`
 - `ContextRef`
 - `UnsupportedClaim`
+- `EvidenceSnapshot`
+- `IdempotencyRecord`
+- `SecretScreeningResult`
 - `AuditEvent`
 - `APIError`
 
 All schemas include `tenantId`, `projectId` where project-scoped, `createdAt`, and
 stable enum values. Provider-native fields live under `providerMetadata`.
+Public schemas must state whether `tenantId` and `ownerId` are returned or
+server-internal. Stage 4 local API responses return `tenantId = tenant_local` and
+`ownerId = user_local` in project-scoped examples to keep isolation visible.
+
+`SecretScreeningResult` is an internal schema. If exposed to reviewers later, it
+must use camelCase fields equivalent to the security/data contract and omit raw
+secret values.
 
 ## Project Endpoints
 
@@ -165,8 +234,11 @@ Response `201`:
 ```json
 {
   "projectId": "proj_123",
+  "tenantId": "tenant_local",
+  "ownerId": "user_local",
   "name": "NarraTwin AI",
   "description": "Grounded project walkthrough generator",
+  "projectStatus": "ACTIVE",
   "defaultAudience": "RECRUITER",
   "defaultLanguage": "en",
   "createdAt": "2026-06-29T00:00:00Z",
@@ -198,12 +270,46 @@ Partial request fields:
 - `defaultAudience`
 - `defaultLanguage`
 
+`ProjectPatchRequest`:
+
+```json
+{
+  "name": "NarraTwin AI",
+  "description": "Updated project description",
+  "defaultAudience": "ENGINEER",
+  "defaultLanguage": "en"
+}
+```
+
+Response `200`: canonical `Project` response. Duplicate idempotency key with the
+same request checksum replays the same response or current project state. Duplicate
+idempotency key with a different checksum returns `409 IDEMPOTENCY_CONFLICT`.
+
 ### Delete Project
 
 `DELETE /api/v1/projects/{projectId}`
 
 Stage 4 delete is a soft delete for metadata plus local physical source-artifact
 deletion where available. Audit events and tombstones remain.
+
+Response `200`:
+
+```json
+{
+  "projectId": "proj_123",
+  "tenantId": "tenant_local",
+  "ownerId": "user_local",
+  "projectStatus": "DELETED",
+  "deletedAt": "2026-06-29T00:00:00Z",
+  "tombstoneId": "tomb_123",
+  "cacheInvalidationStatus": "COMPLETED"
+}
+```
+
+Repeat delete with the same idempotency key replays the tombstone response. Delete
+of an already deleted visible project returns the existing tombstone response.
+Deletion invalidates document chunks, embeddings, retrieval caches, generation
+caches, and future export paths.
 
 ## Knowledge Document Endpoints
 
@@ -225,12 +331,15 @@ Response `201`:
 ```json
 {
   "documentId": "doc_123",
+  "tenantId": "tenant_local",
   "projectId": "proj_123",
   "sourceFilename": "architecture.md",
   "contentType": "text/markdown",
   "sizeBytes": 12345,
   "checksum": "sha256:abc",
-  "status": "UPLOADED",
+  "documentStatus": "STORED",
+  "approvalStatus": "PENDING",
+  "ingestionStatus": "NOT_STARTED",
   "createdAt": "2026-06-29T00:00:00Z"
 }
 ```
@@ -256,13 +365,16 @@ Request:
 
 ```json
 {
-  "status": "APPROVED",
+  "approvalStatus": "APPROVED",
   "reviewNote": "Approved for local Stage 4 grounding."
 }
 ```
 
-Response `200`: knowledge document with approval status. Only `APPROVED` documents
-can be ingested or retrieved.
+Response `200`: knowledge document with approval status. Approval changes
+`approvalStatus` only; ingestion changes `ingestionStatus` only; deletion changes
+`documentStatus` and invalidates derived records. Retrieval eligibility requires
+`documentStatus = STORED`, `approvalStatus = APPROVED`, `ingestionStatus =
+INGESTED`, and valid non-deleted source and chunk checksums.
 
 ### List Knowledge Documents
 
@@ -281,6 +393,25 @@ authorization-gated.
 
 Deletion must invalidate derived chunks, embeddings, cached retrieval, and affected
 run regeneration paths.
+
+Response `200`:
+
+```json
+{
+  "documentId": "doc_123",
+  "tenantId": "tenant_local",
+  "projectId": "proj_123",
+  "documentStatus": "DELETED",
+  "approvalStatus": "REJECTED",
+  "ingestionStatus": "INVALIDATED",
+  "deletedAt": "2026-06-29T00:00:00Z",
+  "tombstoneId": "tomb_456",
+  "cacheInvalidationStatus": "COMPLETED"
+}
+```
+
+Repeat delete with the same idempotency key replays the tombstone response. Delete
+of an already deleted visible document returns the existing tombstone response.
 
 ## Ingestion Endpoints
 
@@ -301,8 +432,8 @@ Response `202`:
 ```json
 {
   "ingestionRunId": "ing_123",
-  "projectId": "proj_123",
   "tenantId": "tenant_local",
+  "projectId": "proj_123",
   "status": "QUEUED"
 }
 ```
@@ -335,35 +466,119 @@ Request:
 }
 ```
 
-Response `202` or `201`:
+`prompt` is provider-bound user text. It must pass the same secret screening and
+prompt-injection controls as uploads, transcripts, retrieved context, provider
+payloads, and evaluator payloads before non-local provider egress.
+
+Provider-bound text segment types:
+
+- `upload`: sanitized uploaded document text before non-local egress
+- `retrieved_context`: approved retrieved chunks selected for generation
+- `user_prompt`: the `prompt` value in the walkthrough request
+- `transcript`: future transcript text when an approved STT stage exists
+- `provider_payload`: model or provider output before it is sent to another
+  non-local provider
+- `evaluator_payload`: internally constructed evaluation input containing the
+  generated candidate, retrieved evidence, and claim list before evaluator egress
+
+`evaluator_payload` is not a frontend request field. It is a backend-internal
+provider-bound segment that must produce a `SecretScreeningResult` before any
+non-local evaluator provider call.
+
+API JSON uses camelCase. Internal cache, data-model, and observability fields use
+snake_case; implementations must normalize API fields before cache-key generation.
+For example, chunkingStrategyVersion maps to `chunking_strategy_version`.
+
+Response `202` for queued or running work:
 
 ```json
 {
   "runId": "run_123",
+  "tenantId": "tenant_local",
   "projectId": "proj_123",
-  "status": "COMPLETED",
+  "status": "QUEUED",
+  "evaluationStatus": null,
   "audience": "RECRUITER",
   "requestedLanguage": "en",
   "depth": "CONCISE",
   "style": "CONFIDENT",
-  "scriptText": "Generated script text.",
+  "createdAt": "2026-06-29T00:00:00Z"
+}
+```
+
+Response `201` for newly accepted terminal output. Response `200` is reserved for
+idempotency replay or `GET` of an existing terminal run.
+
+```json
+{
+  "runId": "run_123",
+  "tenantId": "tenant_local",
+  "projectId": "proj_123",
+  "status": "COMPLETED",
+  "evaluationStatus": "PASSED",
+  "audience": "RECRUITER",
+  "requestedLanguage": "en",
+  "depth": "CONCISE",
+  "style": "CONFIDENT",
+  "acceptedScriptText": "Generated script text.",
   "contextRefs": [
     {
       "contextRefId": "ctx_123",
+      "tenantId": "tenant_local",
+      "projectId": "proj_123",
       "claimId": "claim_123",
       "chunkId": "chunk_123",
       "documentId": "doc_123",
       "sourceFilename": "project-summary.md",
+      "chunkIndex": 0,
+      "checksum": "sha256:chunk",
       "scriptSpanStart": 0,
-      "scriptSpanEnd": 42
+      "scriptSpanEnd": 42,
+      "evidenceSnapshot": {
+        "evidenceSnapshotId": "evsnap_123",
+        "tenantId": "tenant_local",
+        "projectId": "proj_123",
+        "documentId": "doc_123",
+        "chunkId": "chunk_123",
+        "sourceFilename": "project-summary.md",
+        "chunkIndex": 0,
+        "sourceDocumentChecksum": "sha256:doc",
+        "chunkChecksum": "sha256:chunk",
+        "chunkingStrategyVersion": "stage4-chunk-v1",
+        "retrievalScore": 0.91,
+        "redactedExcerpt": "Project fact used as evidence.",
+        "excerptStart": 0,
+        "excerptEnd": 30,
+        "redactionFlags": [],
+        "capturedAt": "2026-06-29T00:00:00Z",
+        "snapshotChecksum": "sha256:snapshot"
+      }
     }
   ],
   "evaluation": {
     "evaluationId": "eval_123",
-    "status": "PASSED",
+    "evaluationStatus": "PASSED",
     "groundednessScore": 1.0,
     "unsupportedClaimCount": 0,
-    "unsupportedClaims": []
+    "unsupportedClaims": [],
+    "claimSupports": [
+      {
+        "claimSupportId": "claimsup_123",
+        "claimId": "claim_123",
+        "contextRefId": "ctx_123",
+        "supportStatus": "SUPPORTED",
+        "supportScore": 1.0
+      }
+    ],
+    "contextRefCoverage": 1.0,
+    "embeddingProvider": "mock",
+    "embeddingModel": "mock-embedding",
+    "embeddingModelVersion": "stage4-local-v1",
+    "embeddingDimension": 3,
+    "vectorStore": "chroma",
+    "retrievalStrategyVersion": "stage4-rag-v1",
+    "retrievalTopK": 6,
+    "retrievalScoreThreshold": 0.72
   },
   "provider": {
     "provider": "mock",
@@ -378,12 +593,59 @@ Response `202` or `201`:
 }
 ```
 
+Response `200` for failed or refused output:
+
+```json
+{
+  "runId": "run_124",
+  "tenantId": "tenant_local",
+  "projectId": "proj_123",
+  "status": "FAILED",
+  "evaluationStatus": "FAILED",
+  "failure": {
+    "reasonCode": "UNSUPPORTED_PROJECT_FACT",
+    "message": "Generated output contained unsupported project facts.",
+    "unsupportedClaimCount": 1
+  },
+  "redactedUnsupportedExcerpts": [
+    "Unsupported metric claim."
+  ],
+  "contextRefs": [],
+  "createdAt": "2026-06-29T00:00:00Z"
+}
+```
+
+`rawGeneratedText` is internal-only. Public list and get responses for `FAILED` or
+`REFUSED` runs must omit raw generated text and return only refusal or failure
+metadata plus redacted excerpts. Only `PASSED` and allowed `WARNING` responses may
+include `acceptedScriptText`.
+
 Failure behavior:
 
 - no approved context returns a persisted `REFUSED` run with `EMPTY_CONTEXT`
 - unsupported project factual claims return persisted `FAILED` evaluation state
 - provider failure returns structured `502` or stored failed run
-- rate limits return `429`
+- rate limits return `429 RATE_LIMITED`
+- queue admission backpressure returns `429 BACKPRESSURE_QUEUE_FULL` with
+  `Retry-After` when retry is safe
+- worker or dependency unavailability returns `503 DEPENDENCY_UNAVAILABLE`
+
+Backpressure error example:
+
+```json
+{
+  "error": {
+    "code": "BACKPRESSURE_QUEUE_FULL",
+    "message": "The per-project queue is full. Retry after the provided interval.",
+    "details": {
+      "retryAfterSeconds": 60
+    },
+    "requestId": "req_123"
+  }
+}
+```
+
+Responses with `BACKPRESSURE_QUEUE_FULL` include `Retry-After`.
 
 ### List Walkthrough Runs
 
@@ -403,14 +665,72 @@ Response `200`:
 {
   "evaluationId": "eval_123",
   "runId": "run_123",
+  "tenantId": "tenant_local",
   "projectId": "proj_123",
-  "status": "PASSED",
+  "evaluationStatus": "PASSED",
   "groundednessScore": 1.0,
   "unsupportedClaimCount": 0,
   "unsupportedClaims": [],
-  "contextRefs": [],
+  "claimSupports": [
+    {
+      "claimSupportId": "claimsup_123",
+      "tenantId": "tenant_local",
+      "projectId": "proj_123",
+      "runId": "run_123",
+      "evaluationId": "eval_123",
+      "claimId": "claim_123",
+      "contextRefId": "ctx_123",
+      "chunkId": "chunk_123",
+      "documentId": "doc_123",
+      "supportStatus": "SUPPORTED",
+      "supportScore": 1.0,
+      "supportReason": "The claim is directly supported by the cited chunk."
+    }
+  ],
+  "contextRefCoverage": 1.0,
+  "contextRefs": [
+    {
+      "contextRefId": "ctx_123",
+      "tenantId": "tenant_local",
+      "projectId": "proj_123",
+      "claimId": "claim_123",
+      "chunkId": "chunk_123",
+      "documentId": "doc_123",
+      "sourceFilename": "project-summary.md",
+      "chunkIndex": 0,
+      "checksum": "sha256:chunk",
+      "scriptSpanStart": 0,
+      "scriptSpanEnd": 42,
+      "evidenceSnapshot": {
+        "evidenceSnapshotId": "evsnap_123",
+        "tenantId": "tenant_local",
+        "projectId": "proj_123",
+        "documentId": "doc_123",
+        "chunkId": "chunk_123",
+        "sourceFilename": "project-summary.md",
+        "chunkIndex": 0,
+        "sourceDocumentChecksum": "sha256:doc",
+        "chunkChecksum": "sha256:chunk",
+        "chunkingStrategyVersion": "stage4-chunk-v1",
+        "retrievalScore": 0.91,
+        "redactedExcerpt": "Project fact used as evidence.",
+        "excerptStart": 0,
+        "excerptEnd": 30,
+        "redactionFlags": [],
+        "capturedAt": "2026-06-29T00:00:00Z",
+        "snapshotChecksum": "sha256:snapshot"
+      }
+    }
+  ],
+  "embeddingProvider": "mock",
+  "embeddingModel": "mock-embedding",
+  "embeddingModelVersion": "stage4-local-v1",
+  "embeddingDimension": 3,
+  "vectorStore": "chroma",
   "promptTemplateVersion": "stage4-v1",
   "retrievalStrategyVersion": "stage4-rag-v1",
+  "retrievalTopK": 6,
+  "retrievalScoreThreshold": 0.72,
   "evaluatorVersion": "stage4-deterministic-v1",
   "createdAt": "2026-06-29T00:00:00Z"
 }
@@ -465,6 +785,7 @@ Run status:
 - `COMPLETED`
 - `FAILED`
 - `REFUSED`
+- `CANCELLED`
 
 Evaluation status:
 
@@ -483,11 +804,66 @@ Provider mode:
 Knowledge document status:
 
 - `UPLOADED`
+- `STORED`
 - `QUARANTINED`
+- `DELETED`
+
+Approval status:
+
+- `PENDING`
 - `APPROVED`
 - `REJECTED`
+
+Ingestion status:
+
+- `NOT_STARTED`
+- `QUEUED`
+- `RUNNING`
 - `INGESTED`
+- `FAILED`
+- `REFUSED`
+- `CANCELLED`
+- `INVALIDATED`
+
+Project status:
+
+- `ACTIVE`
 - `DELETED`
+
+Claim support status:
+
+- `SUPPORTED`
+- `UNSUPPORTED`
+- `AMBIGUOUS`
+
+Claim status:
+
+- `SUPPORTED`
+- `UNSUPPORTED`
+- `AMBIGUOUS`
+- `MISSING_CONTEXT_REF`
+
+Retrieval refusal reason:
+
+- `EMPTY_CONTEXT`
+- `LOW_RETRIEVAL_CONFIDENCE`
+- `AMBIGUOUS_CONTEXT`
+- `CROSS_PROJECT_CONTEXT`
+- `UNSAFE_CONTEXT`
+
+## List Ordering
+
+Stage 4 list endpoints use page/pageSize pagination with page size capped at `100`
+and offset depth capped at `500` records. All list endpoints must declare stable
+ordering:
+
+- projects: `createdAt desc, projectId desc`
+- knowledge documents: `createdAt desc, documentId desc`
+- ingestion runs: `createdAt desc, ingestionRunId desc`
+- walkthrough runs: `createdAt desc, runId desc`
+
+The data model must include indexes that match these orderings. Later stages may
+replace page pagination with cursor pagination through an ADR.
 
 ## Stage 4 Language Scope
 

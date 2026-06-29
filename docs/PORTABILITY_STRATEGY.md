@@ -76,6 +76,10 @@ project-export/
   chunks.jsonl
   walkthrough-runs.jsonl
   evaluation-results.jsonl
+  context-refs.jsonl
+  claim-supports.jsonl
+  evidence-snapshots.jsonl
+  tombstones.jsonl
   audit-events.jsonl
   artifacts/
 ```
@@ -83,7 +87,7 @@ project-export/
 Export requirements:
 
 - include schema version
-- include project ID and future tenant ID
+- include project ID, `tenant_id`, and synthetic local tenant ID for Stage 4
 - include source document checksums
 - include context references for generated outputs
 - include provider metadata and estimated cost where available
@@ -115,7 +119,7 @@ Import requirements:
 - validate checksums where source files are present
 - regenerate embeddings when vector index is missing or provider changes
 - preserve run/evaluation provenance
-- reject imports that would cross project or future tenant boundaries
+- reject imports that would cross project or current `tenant_id` boundaries
 - map `tenant_local` and `user_local` only when importing into a local single-user
   workspace
 

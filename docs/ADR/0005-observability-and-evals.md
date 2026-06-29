@@ -37,6 +37,24 @@ Evaluation failures must not be hidden from the frontend.
 Stage 4 acceptance requires deterministic evaluation with zero unsupported project
 factual claims. Warning status is not allowed to mask unsupported facts.
 
+Evaluation evidence includes `EvidenceSnapshot`, `ClaimSupport`, embedding
+provider/model/version/dimension, vector store, retrieval threshold, and retrieval
+strategy version. `FAILED` and `REFUSED` outputs are persisted for audit but exposed
+publicly only as redacted failure/refusal metadata, never as accepted generated
+scripts.
+
+## Telemetry Schema Decision
+
+`RunMetadata`, `EventEnvelope`, and `MetricPoint` are separate schemas:
+
+- `RunMetadata` explains a run and stores durable run state
+- `EventEnvelope` records discrete operational or audit events
+- `MetricPoint` records aggregateable numeric measurements
+
+No schema may carry provider keys, raw auth tokens, private certificates, full
+uploads, full prompts, raw generated text for failed/refused runs, or unredacted
+provider payloads.
+
 ## Alternatives Considered
 
 ### Add observability after features work
@@ -91,6 +109,11 @@ Negative:
 Every event uses a shared envelope with `event_id`, `event_name`, `trace_id`,
 `tenant_id`, `actor_id`, `project_id`, `resource_type`, `resource_id`, `outcome`,
 `reason_code`, `created_at`, and redacted metadata.
+
+`evaluation_completed` metadata includes `evaluation_status`,
+`unsupported_claim_count`, `context_ref_coverage`, `embedding_model`, and
+`evaluator_version`. `unsupported_claim_detected` metadata includes `tenant_id`,
+`project_id`, `run_id`, `evaluation_id`, `claim_id`, `reason_code`, and severity.
 
 ## Required Evaluation Outcomes
 

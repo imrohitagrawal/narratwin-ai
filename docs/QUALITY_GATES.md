@@ -10,7 +10,7 @@ Use one top-level command:
 make quality
 ```
 
-During Stage 1, `make quality` runs only Stage 1 documentation and governance checks
+During the current stage, `make quality` runs only the active stage checks
 by delegating to `scripts/quality/check_quality_stage.py`. It must not run backend,
 frontend, Docker, database, RAG, avatar, or provider checks because those product
 areas are not allowed before Stage 4.
@@ -19,7 +19,7 @@ areas are not allowed before Stage 4.
 
 The `Makefile` must expose:
 
-| Target | Current Stage 1 behavior |
+| Target | Current behavior |
 |---|---|
 | `make quality` | Runs checks for `.stage/current`; currently Stage 2 |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
@@ -101,6 +101,12 @@ Stage 2 validates:
   ADR canon
 - mock/local provider defaults include LLM, embedding, evaluation, avatar, TTS, STT,
   and storage defaults
+- semantic contract checks validate issue `#2`, draft PR `#27`, provider defaults,
+  canonical document/approval/ingestion states, idempotency fields, safe
+  failed/refused output shapes, retrieval thresholds, cache-key inputs, evidence
+  snapshot fields, numeric budgets, and stale-language bans
+- the checker scans governance scripts for secrets and does not skip
+  `scripts/guardrails_check.py`
 - Stage 2 changes introduce no backend, frontend, RAG, provider, avatar, Docker,
   database, dependency manifest, lockfile, or runtime product code
 - Stage 2 Python quality scripts remain stdlib-only and compile

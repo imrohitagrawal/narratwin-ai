@@ -85,6 +85,10 @@ local user `user_local` inside synthetic local tenant `tenant_local`. Every
 project-scoped operation validates this principal before lookup, retrieval,
 generation, evaluation, export, or deletion.
 
+The authorization predicate is `(tenant_id, owner_id, project_id)`. Child resource
+queries either include all three fields directly or run only after a server-side
+project authorization guard has verified ownership on `Project`.
+
 ## STRIDE Analysis
 
 | Boundary | Spoofing | Tampering | Repudiation | Information disclosure | Denial of service | Elevation of privilege |
@@ -94,10 +98,12 @@ generation, evaluation, export, or deletion.
 | Ingestion | fake metadata | poisoned chunks | denied ingestion action | raw content in logs | chunk explosion | bypass validation |
 | RAG retrieval | fake project context | altered vector metadata | denied retrieval | cross-project chunks | expensive retrieval | retrieve unauthorized project |
 | LLM provider | fake provider config | prompt injection | denied provider call | secrets in prompt | token/cost exhaustion | model controls tools |
-| Evaluator | fake pass result | altered eval result | denied safety failure | raw prompt leakage | eval loop abuse | bypass failed eval |
+| Deterministic Stage 4 evaluator | fake pass result | altered eval result | denied safety failure | raw evaluator payload leakage | eval loop abuse | bypass failed eval |
 | Storage | fake artifact IDs | overwritten outputs | denied changes | unauthorized download | storage exhaustion | path traversal |
 | Observability | fake event actor | altered logs | missing audit trail | secret logging | log volume abuse | hide malicious actions |
 | Future avatar provider | fake consent | altered media output | denied render | identity/media leakage | render cost abuse | clone identity without consent |
+
+The Stage 4 evaluator boundary is deterministic and rule-backed. Model-as-judge evaluation is future scope and requires an ADR before it can affect acceptance or security decisions.
 
 ## Abuse Cases
 
@@ -124,7 +130,8 @@ Attack:
 
 Controls:
 
-- every retrieval query includes `project_id` and future `tenant_id`
+- every retrieval query includes `tenant_id` and `project_id` after the
+  `(tenant_id, owner_id, project_id)` authorization guard
 - vector-store metadata is validated
 - tests assert cross-project isolation
 - provider prompt includes only authorized context
@@ -138,8 +145,10 @@ Attack:
 
 Controls:
 
-- uploaded documents start as `UPLOADED` or `QUARANTINED`
-- explicit `APPROVED` state is required before ingestion and retrieval
+- uploaded documents start as `UPLOADED`, `STORED`, or `QUARANTINED`
+- `document_status = STORED`, `approval_status = APPROVED`, and
+  `ingestion_status = INGESTED` are required before retrieval or non-local provider
+  egress
 - prompt-injection text remains untrusted evidence, not instructions
 - approval, quarantine, rejection, and deletion emit audit events
 
@@ -153,8 +162,10 @@ Attack:
 Controls:
 
 - repository secret scanning
-- upload obvious-secret screening before non-local egress; secret screening is mandatory
-  before any non-local provider egress
+- mandatory `SecretScreeningResult` before any non-local provider egress, with
+  scanner version, categories, blocking decision, redaction decision, optional
+  reviewer override, and audit event
+- secret screening is mandatory before any non-local provider egress
 - no secrets in prompt assembly
 - provider egress disabled by default locally
 - no raw prompts in logs

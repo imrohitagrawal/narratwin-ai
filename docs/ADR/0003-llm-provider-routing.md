@@ -45,6 +45,18 @@ provider data-retention metadata, and deterministic mock fixtures.
 - real provider tests are opt-in and skipped without explicit credentials
 - premium providers are disabled by default
 
+## Stage 4 Fallback Decision
+
+Stage 4 forbids automatic fallback from `LOCAL` or `MOCK` execution to any
+`FREE`, `PREMIUM`, or otherwise non-local provider. Fallback is allowed only within
+the same egress class, such as `MOCK -> MOCK` or `LOCAL -> LOCAL`.
+
+Fallback across egress classes is a policy change requiring explicit server-side
+configuration, budget check, passed secret screening for every provider-bound text
+segment,
+observability metadata, audit event, post-fallback evaluation, and ADR review.
+Blocked fallback fails closed with `PROVIDER_FALLBACK_BLOCKED`.
+
 ## Alternatives Considered
 
 ### Direct SDK calls in services
@@ -80,7 +92,7 @@ Negative:
 
 - provider keys are never exposed to frontend clients
 - prompts never contain provider secrets
-- prompt content is scoped to one project and future tenant
+- prompt content is scoped to one project and current `tenant_id`
 - provider responses are schema-validated
 - provider errors are redacted before logging or display
 - secret screening is mandatory before non-local provider egress

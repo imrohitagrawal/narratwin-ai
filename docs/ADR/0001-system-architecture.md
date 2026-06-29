@@ -91,6 +91,22 @@ Negative:
 - Stage 4 uses hard resource budgets, idempotent writes, and queue/job state even
   when local execution is synchronous.
 
+## Remediation Locks
+
+Stage 4 implementation must include:
+
+- `IdempotencyRecord` before mutating side effects
+- split knowledge state: `document_status`, `approval_status`, and
+  `ingestion_status`
+- job leases, attempts, and committed outbox events
+- retrieval strategy v1 thresholds and deterministic refusal behavior
+- same-egress-class provider fallback only
+- cache keys that include retrieval, evaluation, provider, safety, and approved
+  corpus versions
+- separate `RunMetadata`, `EventEnvelope`, and `MetricPoint` schemas
+- public run responses that omit raw generated text for `FAILED` and `REFUSED`
+  outcomes
+
 ## Related Documents
 
 - `docs/ARCHITECTURE.md`

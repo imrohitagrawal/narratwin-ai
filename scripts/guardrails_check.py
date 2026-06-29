@@ -56,13 +56,17 @@ TEXT_SUFFIXES = {
 SECRET_PATTERNS = [
     ("private key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----")),
     ("openai key", re.compile(r"sk-[A-Za-z0-9_\-]{20,}")),
+    ("anthropic key", re.compile(r"sk-ant-[A-Za-z0-9_\-]{20,}")),
+    ("openrouter key", re.compile(r"sk-or-v1-[A-Za-z0-9_\-]{20,}")),
     ("github token", re.compile(r"gh[pousr]_[A-Za-z0-9_]{20,}")),
     ("google api key", re.compile(r"AIza[0-9A-Za-z_\-]{20,}")),
     ("aws access key", re.compile(r"AKIA[0-9A-Z]{16}")),
+    ("jwt-like token", re.compile(r"eyJ[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{10,}")),
+    ("bearer token", re.compile(r"(?i)bearer\s+[A-Za-z0-9_\-\.]{20,}")),
     (
         "secret assignment",
         re.compile(
-            r"(?i)(api[_-]?key|secret|token|password|credential)\s*[:=]\s*['\"]([^'\"\n]{8,})['\"]"
+            r"(?i)\b(api[_-]?key|secret|token|password|credential)\b\s*[:=]\s*['\"]?([^'\"\s#]{8,})['\"]?"
         ),
     ),
 ]
@@ -91,6 +95,8 @@ ARCHITECTURE_IMPACT_PREFIXES = (
     "docs/DATA_MODEL.md",
     "docs/PORTABILITY_STRATEGY.md",
     "docs/SECURITY_AND_PRIVACY.md",
+    "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+    "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md",
     "docs/AI_SAFETY_AND_EVALUATION.md",
     "docs/THREAT_MODEL.md",
 )
@@ -135,6 +141,8 @@ STATUS_IMPACT_PREFIXES = (
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
     "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+    "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md",
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/THREAT_MODEL.md",
     "docs/TRACEABILITY.md",
@@ -209,7 +217,15 @@ def relative(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
 
-def is_example_secret_assignment(path: str, match: re.Match[str]) -> bool:
+def line_for_match(text: str, match: re.Match[str]) -> str:
+    line_start = text.rfind("\n", 0, match.start()) + 1
+    line_end = text.find("\n", match.end())
+    if line_end == -1:
+        line_end = len(text)
+    return text[line_start:line_end]
+
+
+def is_allowlisted_secret_match(path: str, text: str, match: re.Match[str]) -> bool:
     matched_text = match.group(0)
     if path.endswith(".env.example") and matched_text.endswith("="):
         return True
@@ -217,6 +233,12 @@ def is_example_secret_assignment(path: str, match: re.Match[str]) -> bool:
         return True
     if "PLACEHOLDER" in matched_text or "example" in matched_text.lower():
         return True
+    line = line_for_match(text, match)
+    if path in {"scripts/guardrails_check.py", "scripts/quality/check_stage2_docs.py"}:
+        if "re.compile" in line or "SECRET_PATTERNS" in line or "PROVIDER_KEY_NAMES" in line:
+            return True
+        if "expected_defaults" in line or "providerDefaults" in line:
+            return True
     return False
 
 
@@ -249,6 +271,9 @@ def check_issue_linked_pull_request() -> None:
         failures.append("Pull requests for guarded work must target main.")
     if not re.search(r"(?i)(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+", body):
         failures.append("Pull request body must link an issue using Closes #<issue>, Fixes #<issue>, or Resolves #<issue>.")
+    if head_ref and head_ref.startswith("stage2-"):
+        if not re.search(r"(?i)(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#2\b", body):
+            failures.append("Stage 2 pull requests must close the canonical Stage 2 issue using Closes #2, Fixes #2, or Resolves #2.")
 
 
 def check_workflows_least_privilege() -> None:
@@ -270,12 +295,10 @@ def check_workflows_least_privilege() -> None:
 def check_secrets() -> None:
     for path in iter_text_files():
         rel = relative(path)
-        if rel == "scripts/guardrails_check.py":
-            continue
         text = read_text(path)
         for name, pattern in SECRET_PATTERNS:
             for match in pattern.finditer(text):
-                if is_example_secret_assignment(rel, match):
+                if is_allowlisted_secret_match(rel, text, match):
                     continue
                 failures.append(f"Potential {name} found in {rel}. No secrets may be committed.")
 
@@ -286,17 +309,19 @@ def check_provider_keys_are_env_only() -> None:
         failures.append("Missing .env.example. Provider keys must be documented as environment variables.")
         return
     env_text = read_text(env_example)
-    for key in ["GEMINI_API_KEY"]:
+    for key in sorted(PROVIDER_KEY_NAMES):
         if key not in env_text:
             failures.append(f"Missing {key} placeholder in .env.example.")
     for path in iter_text_files():
         rel = relative(path)
         text = read_text(path)
-        if rel.endswith(".env.example") or rel == "scripts/guardrails_check.py":
+        if rel.endswith(".env.example"):
             continue
         for key_name in PROVIDER_KEY_NAMES:
             assignment = re.compile(rf"{re.escape(key_name)}\s*=\s*['\"]?[^'\"\n#]+")
-            if assignment.search(text):
+            for match in assignment.finditer(text):
+                if is_allowlisted_secret_match(rel, text, match):
+                    continue
                 failures.append(f"{rel} appears to assign {key_name}. Provider keys must come from environment variables.")
 
 
@@ -307,10 +332,14 @@ def check_mock_local_defaults() -> None:
         "LLM_PROVIDER=mock",
         "EMBEDDING_PROVIDER=mock",
         "EVALUATION_PROVIDER=mock",
+        "TRANSLATION_PROVIDER=mock",
         "AVATAR_PROVIDER=mock",
         "TTS_PROVIDER=mock",
         "STT_PROVIDER=mock",
+        "SUBTITLE_PROVIDER=mock",
+        "VIDEO_RENDERER=local",
         "STORAGE_PROVIDER=local",
+        "VECTOR_STORE=chroma",
     }
     for default in sorted(expected_defaults):
         if default not in text:

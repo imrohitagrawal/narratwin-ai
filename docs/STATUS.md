@@ -58,7 +58,7 @@ Use these files together with this tracker:
 |---|---|---|---|---|---|
 | Stage 0 | Complete, governance baseline active | `#14` closed | `#15` merged, `#23` merged | Executable and green | Operating model, quality gate, and repository guardrails are in place; product implementation remains blocked. |
 | Stage 1 | Product/PRD hardening represented by PR `#26` | `#1` open, `#16` open | `#26` | Executable | `#1` is product strategy and PRD v1.0 hardening; `#16` remains the follow-on Spec Kit gate. Reconcile merge state after the GitHub merge event. |
-| Stage 2 | In PR, remediation gate executable | `#2` open | `#27` draft | Executable locally | Architecture, ADRs, threat model, security/privacy, AI safety/evaluation, portability, API, data model, observability, branch scope, and provider defaults are hardened; product implementation remains blocked until PR review, CI pass, and merge. |
+| Stage 2 | In PR, remediation gate executable | `#2` open | `#27` draft | Executable locally | Architecture, ADRs, threat model, security/privacy, AI safety/evaluation, portability, API, data model, observability, machine-readable semantic contract, human review checklist, branch scope, and provider defaults are hardened; product implementation remains blocked until PR review, CI pass, and merge. |
 | Stage 3 | Pending, partially pre-scaffolded | `#5` open | Work partially landed in `#15` and `#23` | Placeholder target only | CI and quality scaffolding started early under Stage 0 governance. |
 | Stage 4 | Pending | `#4` open | None merged | Placeholder target only | No product slice has been merged. |
 | Stage 5 | Pending | `#10` open | None merged | Placeholder target only | Eval, guardrail, and observability work remains future scope. |
@@ -107,7 +107,7 @@ Use these files together with this tracker:
 | `#22` | Closed | Not merged | Earlier Stage 0 operating-model PR superseded by the Stage 0 redo path. |
 | `#23` | Merged | 2026-06-29 | Redid Stage 0 operating model and executable quality gates; green in both `Quality Gates` and `quality` workflows before merge. |
 | `#26` | Delivery PR | Reconcile after merge | Stage 1 product strategy and PRD v1.0 hardening; includes executable Stage 1 docs quality gate. |
-| `#27` | Draft PR | Not merged | Stage 2 architecture/security/AI-safety remediation; includes executable Stage 2 docs quality gate and no product implementation. |
+| `#27` | Draft PR | Not merged | Stage 2 architecture/security/AI-safety remediation; includes executable Stage 2 docs quality gate, semantic architecture contract checks, and no product implementation. |
 
 ## Completed Work
 
@@ -183,6 +183,13 @@ Use these files together with this tracker:
   Stage 2 remediation in draft PR `#27`, but those docs are not proof that Stage 2
   has completed until the linked PR is reviewed, CI passes, and merge state is
   reconciled.
+- PR `#27` completed second-pass remediation after independent sub-agent and
+  Claude cross-model review identified idempotency, approved-knowledge state,
+  failed-output exposure, retrieval, cache, provider-bound secret screening,
+  evaluation evidence, and guardrail semantic gaps.
+- Stage 2 human signoff is now captured in
+  `docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md`; merge remains blocked until required
+  human review items are completed.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
 
 ## Next Approved Actions
@@ -229,3 +236,4 @@ Required update rules:
 | 2026-06-29 | Stage 2 architecture, security, AI safety, portability, API, and data-model v1.0 docs drafted under issue `#2`; product implementation remains blocked. |
 | 2026-06-30 | Stage 2 remediation added executable local quality gate and hardened architecture/security/eval/performance/API/data-model contracts under issue `#2`; product implementation remains blocked. |
 | 2026-06-30 | Draft PR `#27` opened for Stage 2 remediation and linked to issue `#2`; CI and review remain required before Stage 2 completion. |
+| 2026-06-30 | Second-pass Stage 2 remediation added a machine-readable architecture contract, stronger semantic gate checks, idempotency and job lifecycle locks, safe failed-output contracts, retrieval thresholds, and guardrail self-scanning. |
