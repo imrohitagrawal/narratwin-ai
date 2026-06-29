@@ -1,159 +1,106 @@
 # Quality Gates
 
-NarraTwin AI uses quality gates to keep Codex work scoped, reviewable, and safe.
+NarraTwin AI quality gates are executable stage contracts. A gate that is not implemented must fail loudly when called directly.
 
-## Existing GitHub workflow
+## Stable Command
 
-The repository uses `.github/workflows/quality.yml` as the primary CI workflow.
-
-Current jobs:
-
-- `quality / secrets`
-- `quality / markdown`
-- `quality / backend-lint`
-- `quality / backend-tests`
-- `quality / frontend-build`
-- `quality / dependency-security`
-
-The workflow intentionally supports an early bootstrap repo:
-
-- If backend/frontend/dependency manifests do not exist, related jobs say the check is not applicable.
-- Once code or manifests appear, the workflow requires repo-local wrappers such as `scripts/ci/backend-test.sh`.
-- This prevents Codex from adding code without also adding validation commands.
-
-## Secrets gate
-
-`quality / secrets` must use a dedicated secret-scanning tool, not only a handcrafted regex.
-
-Current implementation:
-
-- checks out full history for the secrets job
-- runs `gitleaks/gitleaks-action@v3`
-- disables automatic PR comments to avoid noisy bot output
-- does not require a Gitleaks license for this personal-account repository
-
-A lightweight regex scan may be added later as a supplemental fast check, but it must not replace the dedicated scanner.
-
-## Local gates before every PR
-
-Run the closest applicable local checks before pushing:
+Use one top-level command:
 
 ```bash
 make quality
 ```
 
-If `make` is not available, run the individual checks listed in this file.
+During Stage 0, `make quality` runs only Stage 0 checks by delegating to `scripts/quality/check_quality_stage.py`. It must not run backend, frontend, Docker, database, RAG, avatar, or provider checks because those product areas are not allowed in Stage 0.
 
-## Documentation-only gate
+## Required Make Targets
 
-For docs-only changes:
+The `Makefile` must expose:
 
-- no secrets in docs
-- no unsupported product claims
-- markdown is readable
-- changed docs reference the correct source of truth
-- skill commands are marked as unverified unless trust review is complete
+| Target | Current Stage 0 behavior |
+|---|---|
+| `make quality` | Runs checks for `.stage/current`; currently Stage 0 only |
+| `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
+| `make stage1-quality` | Fails loudly until Stage 1 quality is implemented |
+| `make stage2-quality` | Fails loudly until Stage 2 quality is implemented |
+| `make stage3-quality` | Fails loudly until Stage 3 quality is implemented |
+| `make stage4-quality` | Fails loudly until Stage 4 quality is implemented |
+| `make stage5-quality` | Fails loudly until Stage 5 quality is implemented |
+| `make stage6-quality` | Fails loudly until Stage 6 quality is implemented |
+| `make stage7-quality` | Fails loudly until Stage 7 quality is implemented |
+| `make stage8-quality` | Fails loudly until Stage 8 quality is implemented |
+| `make final-review-quality` | Fails loudly until Final Review quality is implemented |
 
-## Stage gates
+## Stage 0 Quality Gate
 
-### Stage -1: Skill trust review
+`make stage0-quality` validates:
 
-Required before installing or using external skills:
+- required Stage 0 docs and quality scripts exist
+- `.github/workflows/quality-gates.yml` exists and invokes `make quality`
+- `docs/THIRD_PARTY_NOTICES.md` records governed Stage 0 third-party tools and skill sources
+- `.stage/current` contains `0`
+- current branch name matches the Stage 0 branch pattern
+- files changed from `main` stay within the documented Stage 0 allowlist
+- Stage 0 through Stage 8 plus Final Review are documented
+- no product code has started
+- allowlisted Stage 0 Python scripts remain stdlib-only, read-only governance scripts
+- operating docs contain no unresolved placeholders
+- `docs/SKILL_LOCK.md` records source URL, pin/version status, license status, purpose, active stage, and activation status
+- every third-party GitHub Action referenced by checked-in workflows is represented in `docs/SKILL_LOCK.md`
+- `Makefile` contains all required quality targets
+- working-tree diffs have no whitespace errors
+- obvious committed-secret patterns are absent from tracked text files
+- required Stage 0 guardrail inputs and scripts exist and compile
 
-- `docs/SKILL_TRUST_REVIEW.md` exists
-- every skill source has a decision
-- unclear license/install behavior is blocked
-- `.agents/vendor` is not created by default
+## Future Stage Quality Contracts
 
-### Stage 0: Product and PRD
+### Stage 1: Product Strategy And PRD v1.0
 
-Required before architecture/code work:
+Gate must validate product strategy, PRD v1.0, PRD red-team review, North Star metrics, roadmap, traceability, issue linkage, and no product implementation.
 
-- strategy is specific to NarraTwin AI
-- PRD has user journeys, MVP/non-goals, functional requirements, NFRs, metrics, and failure cases
-- PRD red-team review challenges scope, safety, cost, and license assumptions
-- roadmap is sliced by user-visible outcomes
+### Stage 2: Architecture, Security, AI Safety
 
-### Stage 1: Architecture and safety
+Gate must validate architecture docs, ADRs, security/privacy controls, AI safety/evaluation plan, provider-agnostic boundaries, and no product implementation.
 
-Required before implementation:
+### Stage 3: Repo Foundation And CI/CD Quality Gates
 
-- architecture defines backend, frontend, provider, RAG, evaluation, and storage boundaries
-- ADRs define decisions, alternatives, consequences, and test/security impact
-- security/privacy controls cover uploads, secrets, prompt injection, consent, and provider risks
-- AI evaluation gates are explicit
-- third-party notices have no blockers for the planned slice
+Gate must validate local development docs, CI workflows, CI wrapper scripts, dependency/security scan path, branch protection recommendations, and mock/local provider defaults. Product feature code remains blocked.
 
-### Stage 2: Repo validation contracts
+### Stage 4: Project Upload To Grounded Script Generation
 
-Required before product features:
+Gate must validate the first vertical slice: project creation, markdown upload, ingest/chunk/store, retrieval, grounded script generation, unsupported-claim evaluation, storage, UI display, tests, docs, security notes, observability metadata, limitations, and reviewer pass.
 
-- local development guide exists
-- quality-gate guide exists
-- PR template exists
-- existing `quality.yml` is documented
-- future backend/frontend code must add CI wrapper scripts before merge
+### Stage 5: Evaluations, Guardrails, Observability
 
-### Stage 3: Slice 1
+Gate must validate prompt-injection tests, unsupported-claim evals, failure blocking, trace/run metadata, source chunk or context citations, and observability events.
 
-Required before merging Slice 1:
+### Stage 6: Multilingual Scripts, Subtitles, Voice Adapter
 
-- user can create a project
-- user can upload markdown/text knowledge
-- system chunks/stores/retrieves context
-- grounded script generation works through mocks/fakes if needed
-- unsupported claims are detected or refused
-- output is stored and visible in UI
-- happy path and failure/refusal tests pass
-- no paid provider key is required
-- docs and known limitations are updated
+Gate must validate translation/localization quality, subtitle export, mock/local voice adapter behavior, no required paid provider, accessibility notes, and docs.
 
-## Required wrapper scripts once code exists
+### Stage 7: Avatar Rendering Adapter And Export
 
-When backend code appears, Codex must add:
+Gate must validate mock/local avatar rendering, export artifacts, provider adapter contracts, public-use license checks, AI disclosure, consent controls for any cloned identity feature, and docs.
 
-```text
-scripts/ci/backend-lint.sh
-scripts/ci/backend-test.sh
-```
+### Stage 8: Performance, Security Hardening, Release Readiness
 
-When frontend code appears, Codex must add:
+Gate must validate performance budgets, security hardening, dependency/security scan results, release-readiness evidence, known limitations, rollback notes, and Stage 8 documentation.
 
-```text
-scripts/ci/frontend-build.sh
-```
+### Final Review: Independent Review
 
-When lockfiles or dependency manifests appear, Codex must add:
+Gate must validate independent review evidence across all stages, unresolved risk disposition, quality evidence, security/eval status, release readiness, and no new feature implementation during review.
 
-```text
-scripts/ci/dependency-security.sh
-```
+## CI Relationship
 
-## Branch protection recommendation
+GitHub Actions workflows remain the remote enforcement layer. Local stage targets are the developer and agent contract before pushing.
 
-When the workflow has run successfully at least once, protect `main` with required checks:
+The CI layer must continue to enforce:
 
-- `quality / secrets`
-- `quality / markdown`
-- `quality / backend-lint`
-- `quality / backend-tests`
-- `quality / frontend-build`
-- `quality / dependency-security`
-
-Also require:
-
-- pull request before merge
-- conversation resolution
-- no force pushes
-- latest branch update before merge when practical
-
-## Codex stop rule
-
-Codex must stop and report instead of continuing when:
-
-- a quality gate is missing
-- a command fails
-- a skill install command is unverified
-- a license is unclear
-- a generated output can make unsupported project claims
-- a provider requires a paid key for the MVP path
+- `make quality` for the current stage
+- stage-aware backend contracts so Stage 0 governance scripts do not trigger backend implementation gates
+- no direct commits to `main`
+- issue-linked PRs
+- least-privilege workflow permissions
+- no committed secrets
+- mock/local provider defaults
+- eval failures block merge when eval reports exist
+- critical or high security findings block merge when security reports exist

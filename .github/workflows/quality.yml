@@ -100,6 +100,11 @@ jobs:
         run: |
           set -euo pipefail
 
+          if [ -f ".stage/current" ] && [ "$(tr -d '[:space:]' < .stage/current)" = "0" ]; then
+            echo "Backend lint not applicable during Stage 0."
+            exit 0
+          fi
+
           if [ -f "./scripts/ci/backend-lint.sh" ]; then
             bash ./scripts/ci/backend-lint.sh
             exit 0
@@ -137,6 +142,11 @@ jobs:
       - name: Run backend test contract
         run: |
           set -euo pipefail
+
+          if [ -f ".stage/current" ] && [ "$(tr -d '[:space:]' < .stage/current)" = "0" ]; then
+            echo "Backend tests not applicable during Stage 0."
+            exit 0
+          fi
 
           if [ -f "./scripts/ci/backend-test.sh" ]; then
             bash ./scripts/ci/backend-test.sh
