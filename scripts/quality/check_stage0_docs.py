@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import os
 import re
 import subprocess
 import sys
@@ -190,6 +191,8 @@ def repo_files() -> list[str]:
 def changed_files_for_stage_scope() -> list[str]:
     merge_base = run(["git", "merge-base", "main", "HEAD"])
     if merge_base.returncode != 0:
+        merge_base = run(["git", "merge-base", "origin/main", "HEAD"])
+    if merge_base.returncode != 0:
         raise RuntimeError(merge_base.stderr.strip() or "git merge-base main HEAD failed")
 
     base = merge_base.stdout.strip()
@@ -242,7 +245,7 @@ def check_branch_name(failures: list[str]) -> None:
     if result.returncode != 0:
         fail(result.stderr.strip() or "Could not determine current branch.", failures)
         return
-    branch = result.stdout.strip()
+    branch = result.stdout.strip() or os.environ.get("GITHUB_HEAD_REF", "").strip()
     if not STAGE0_BRANCH_PATTERN.search(branch):
         fail(f"Stage 0 branch must match `stage0-*`, found: {branch}", failures)
 
