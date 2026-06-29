@@ -65,7 +65,7 @@ Stage 0 passes only when:
 - `make stage0-quality` passes
 - `make quality` runs Stage 0 quality only
 - future stage quality targets exist and fail loudly until implemented
-- no product code has started
+- no disallowed product/runtime directories or manifests have started outside the Stage 0 allowlist
 - operating docs contain no unresolved placeholders
 - `docs/SKILL_LOCK.md` records source URL, pin/version status, license status, purpose, active stage, and activation status for each locked source
 

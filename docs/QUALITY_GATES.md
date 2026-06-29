@@ -42,8 +42,8 @@ The `Makefile` must expose:
 - current branch name matches the Stage 0 branch pattern before merge, or is `main` after merge
 - files changed from `main` stay within the documented Stage 0 allowlist
 - Stage 0 through Stage 8 plus Final Review are documented
-- no product code has started
-- allowlisted Stage 0 Python scripts remain stdlib-only governance scripts and pass the Stage 0 purity checks implemented in `scripts/quality/check_stage0_docs.py`
+- no disallowed product/runtime directories or manifests have started outside the Stage 0 allowlist
+- allowlisted Stage 0 Python scripts remain stdlib-only and pass the implemented Stage 0 purity checks in `scripts/quality/check_stage0_docs.py`
 - operating docs contain no unresolved placeholders
 - `docs/SKILL_LOCK.md` records source URL, pin/version status, license status, purpose, active stage, and activation status
 - every third-party GitHub Action referenced by checked-in workflows is represented in `docs/SKILL_LOCK.md`
