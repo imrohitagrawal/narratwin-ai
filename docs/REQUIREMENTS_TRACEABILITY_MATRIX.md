@@ -21,7 +21,7 @@ documentation. It is the product-facing companion to `docs/TRACEABILITY.md`.
 | FR-003 | `docs/PRD.md` | Validate upload type, filename, size, and path safety | Stage 4 / `#4` | Security tests for type, size, filename, path, and obvious secret screening | Planned |
 | FR-004 | `docs/PRD.md` | Ingest, chunk, and store approved knowledge with metadata | Stage 4 / `#4` | Ingestion unit tests and fixture checks | Planned |
 | FR-005 | `docs/PRD.md` | Retrieve project-scoped context for a walkthrough request | Stage 4 / `#4` | Retrieval tests with project isolation | Planned |
-| FR-006 | `docs/PRD.md` | Generate grounded walkthrough script by audience/language/depth/style | Stage 4 / `#4` | Generation tests with mock provider | Planned |
+| FR-006 | `docs/PRD.md` | Generate grounded walkthrough script by audience, stored requested language, depth, and style; Stage 4 script acceptance is English-only | Stage 4 / `#4` | Generation tests with mock provider and metadata assertions | Planned |
 | FR-007 | `docs/PRD.md` | Include context references for project-specific claims | Stage 4 / `#4` | Citation/context-reference assertions | Planned |
 | FR-008 | `docs/PRD.md` | Evaluate unsupported claims and empty-context output | Stage 4 / `#4`; Stage 5 / `#10` | Slice 1 fixtures for supported, unsupported, mixed-claim, no-chunk, and retrieval-miss cases; Stage 5 expands the suite | Planned |
 | FR-009 | `docs/PRD.md` | Detect or neutralize prompt injection inside uploaded documents | Stage 4 / `#4`; Stage 5 / `#10` | Malicious markdown fixture that attempts to override system/developer instructions; Stage 5 adds regressions | Planned |
@@ -33,6 +33,8 @@ documentation. It is the product-facing companion to `docs/TRACEABILITY.md`.
 | FR-015 | `docs/PRD.md` | Render optional avatar/video output through adapter boundary | Stage 7 / `#12`; `#19` | Avatar/video adapter contract tests | Planned |
 | FR-016 | `docs/PRD.md` | Support interactive Q&A over approved project knowledge | Future approved stage / `#20` | Q&A retrieval/eval tests after stage plan update | Planned |
 | FR-017 | `docs/PRD.md` | Support optional premium providers without requiring them locally | Stage 7 adapter scope / `#21` | Provider contract, fallback, and no-key CI tests | Planned |
+| FR-018 | `docs/PRD.md` | Import an existing demo script or transcript and clean it into approved grounded source material | Stage 6 or later | Script/transcript cleanup fixtures and source-reference checks | Planned |
+| FR-019 | `docs/PRD.md` | Support optional STT/transcription boundary for demo video or audio input before script cleanup | Future approved stage after provider and license review | STT adapter contract, consent, disclosure, retention, and no-key CI tests | Planned |
 | NFR-001 | `docs/PRD.md` | No mandatory paid provider APIs for local/dev/test/CI | All stages | CI/local quality evidence | Active guardrail |
 | NFR-002 | `docs/PRD.md` | No committed secrets or credentials | All stages | Secret scanning and guardrails | Active guardrail |
 | NFR-003 | `docs/PRD.md` | Provider keys read only from environment variables | All stages | Guardrail and config tests | Active guardrail |
@@ -50,7 +52,7 @@ documentation. It is the product-facing companion to `docs/TRACEABILITY.md`.
 
 | Product mode | Covered by requirements | First meaningful stage |
 |---|---|---|
-| Pre-rendered multilingual demo video | FR-006, FR-012, FR-013, FR-014, FR-015, NFR-011, NFR-012 | Stage 6, then Stage 7 |
+| Pre-rendered multilingual demo video | FR-006, FR-012, FR-013, FR-014, FR-015, FR-018, FR-019, NFR-011, NFR-012 | Stage 6, then Stage 7; STT/video import requires a future approved stage |
 | Interactive AI avatar walkthrough | FR-005, FR-006, FR-007, FR-008, FR-009, FR-016, NFR-005, NFR-011 | Future approved stage after Stage 4/5 foundation |
 
 ## Use Case Coverage
@@ -61,7 +63,7 @@ documentation. It is the product-facing companion to `docs/TRACEABILITY.md`.
 | Hiring manager review | FR-006, FR-007, FR-008 | Audience-specific prompt and source references |
 | Engineer technical review | FR-005, FR-006, FR-007, FR-010 | Requires architecture/source context |
 | Global localized walkthrough | FR-012, FR-013, FR-014 | Stage 6 after grounded script foundation |
-| Avatar/video demo export | FR-015, NFR-011, NFR-012 | Stage 7 after license/provider review |
+| Avatar/video demo export | FR-015, FR-018, FR-019, NFR-011, NFR-012 | Stage 7 after license/provider review; STT/video import requires future approval |
 | Interactive Q&A | FR-016 | Future mode; requires stage-plan update before implementation |
 
 ## Update Rules

@@ -82,6 +82,8 @@ Allowed changes:
 - `docs/ROADMAP.md`
 - `docs/STATUS.md`
 - `docs/TRACEABILITY.md`
+- `scripts/ci/backend-lint.sh`
+- `scripts/ci/backend-test.sh`
 - `scripts/quality/check_quality_stage.py`
 - `scripts/quality/check_stage0_docs.py`
 - `scripts/quality/check_stage1_docs.py`

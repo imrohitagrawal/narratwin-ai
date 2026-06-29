@@ -133,6 +133,8 @@ Acceptance:
 - tasks have acceptance criteria
 - tasks include verification steps
 - tasks are dependency ordered
+- spec artifacts identify commands, project structure, testing strategy, stage
+  boundaries, success criteria, and implementation approval checkpoints
 - implementation remains blocked until approved
 
 ## Phase 3: Architecture, Security, And AI Safety
@@ -191,20 +193,27 @@ Task breakdown:
 2. Markdown/text upload validation
    - Acceptance: safe files accepted; unsafe files rejected
    - Verify: upload type, size, filename, path tests
-3. Knowledge ingestion and chunk storage
+3. Prompt-injection handling for uploaded knowledge
+   - Acceptance: malicious uploaded instructions are isolated as untrusted content
+     and cannot override system/developer rules
+   - Verify: malicious markdown fixture that attempts to override
+     system/developer instructions
+4. Knowledge ingestion and chunk storage
    - Acceptance: deterministic chunks with source metadata
    - Verify: fixture-based chunking tests
-4. Project-scoped retrieval
+5. Project-scoped retrieval
    - Acceptance: request retrieves only selected project context
    - Verify: retrieval isolation tests
-5. Grounded script generation with mock/default provider
-   - Acceptance: script uses retrieved context and selected audience/language/depth/style
-   - Verify: generation tests with mock provider
-6. Unsupported-claim evaluation and refusal paths
+6. Grounded script generation with mock/default provider
+   - Acceptance: script uses retrieved context and selected audience/depth/style,
+     stores requested language in metadata, and keeps Stage 4 generated-script
+     acceptance English-only
+   - Verify: generation tests with mock provider and metadata assertions
+7. Unsupported-claim evaluation and refusal paths
    - Acceptance: unsupported and empty-context outputs are flagged/refused
    - Verify: eval fixtures covering one supported claim, one unsupported claim,
      one mixed-claim response, no-chunk empty context, and retrieval miss
-7. Stored output and minimal UI display
+8. Stored output and minimal UI display
    - Acceptance: user sees script, context refs, warnings, and run metadata
    - Verify: UI smoke validation and storage tests
 
@@ -259,7 +268,7 @@ Acceptance:
 
 Stage: Stage 7
 
-Issues: `#12`, `#19`, `#21`
+Issues: `#12`, `#19`, `#21` for approved adapter contracts only
 
 Scope:
 
@@ -303,7 +312,8 @@ Acceptance:
 
 Stage: Stage 8 and Final Review
 
-Issues: `#21`, `#13`, `#6`
+Issues: `#13`, `#6`; `#21` only for hardening provider adapters already approved
+in earlier stages
 
 Scope:
 

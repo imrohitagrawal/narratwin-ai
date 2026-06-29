@@ -41,6 +41,8 @@ Use these files together with this tracker:
 - Repository checks enforce updates to this file only for repository-tracked governance changes that are visible in the CI diff range.
 - GitHub-side state that changes outside a repository diff must be reconciled in the next governance update; the local Stage 0 gate does not claim live synchronization.
 - Stage 1 quality is executable locally and enforced in CI.
+- Stage 1 allows narrowly scoped CI wrapper compatibility fixes only where the
+  Stage 1 marker activates pre-existing governance checks.
 - The repository remains blocked from product implementation because Stage 2, Stage 3, and the Stage 4 implementation gate have not passed.
 - Stage 1 is split into product/PRD hardening under `#1` and the follow-on Spec Kit constitution/spec/plan/tasks gate under `#16`.
 - Stage 3 repository-foundation work is partially pre-delivered under Stage 0 governance, but the dedicated Stage 3 issue is still open.
@@ -123,7 +125,7 @@ Use these files together with this tracker:
   - [Skill Trust Review](SKILL_TRUST_REVIEW.md)
 - Third-party governance inventory exists in [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 - Stage 0 merged with green CI and no product implementation.
-- PR `#26` represents the Stage 1 product/PRD hardening artifact set and contains no product implementation.
+- PR `#26` represents the Stage 1 product/PRD hardening artifact set and contains no product implementation; its only CI wrapper changes keep pre-existing governance checks compatible with the Stage 1 marker.
 
 ### Stage 0 Governance Artifacts In Current Repository State
 

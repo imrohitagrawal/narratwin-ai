@@ -207,10 +207,11 @@ Exit gate:
 
 | Roadmap stage | Pre-rendered multilingual demo video | Interactive AI avatar walkthrough |
 |---|---|---|
-| Stage 4 | Produces grounded script foundation | Produces reusable retrieval/generation/eval foundation |
+| Stage 4 | Produces grounded English script foundation and stores requested language metadata; no translation, transcript cleanup, or STT/video import | Produces reusable retrieval/generation/eval foundation |
 | Stage 5 | Hardens evaluation and traceability | Hardens answer safety and refusal behavior |
-| Stage 6 | Adds translation, subtitles, voice-ready output | Adds multilingual answer foundations |
+| Stage 6 | Adds translation, subtitles, voice-ready output, and existing script/transcript cleanup if approved | Adds multilingual answer foundations |
 | Stage 7 | Adds avatar/video render adapter and export | Adds avatar presentation boundary |
+| Future approved stage | Adds optional STT/transcription boundary for demo video/audio import after provider, consent, retention, and license review | N/A |
 | Future approved stage | N/A | Adds interactive Q&A after stage-plan update |
 | Stage 8 | Hardens existing provider/cost/security behavior | Hardens existing provider/cost/security behavior |
 

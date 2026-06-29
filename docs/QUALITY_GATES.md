@@ -75,6 +75,8 @@ The `Makefile` must expose:
 - `docs/STATUS.md` records Stage 1 issue and PR state
 - Stage 1 changes introduce no product/runtime code or manifests
 - Stage 1 Python quality scripts remain stdlib-only and compile
+- any Stage 0 quality script changed by the Stage 1 branch also remains
+  stdlib-only and compiles
 - working-tree diffs have no whitespace errors
 - obvious committed-secret patterns are absent from tracked text files
 

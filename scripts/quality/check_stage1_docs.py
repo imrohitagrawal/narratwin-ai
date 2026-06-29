@@ -46,6 +46,8 @@ STAGE1_ALLOWED_FILES = {
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
+    "scripts/ci/backend-lint.sh",
+    "scripts/ci/backend-test.sh",
     "scripts/quality/check_quality_stage.py",
     "scripts/quality/check_stage0_docs.py",
     "scripts/quality/check_stage1_docs.py",
@@ -67,6 +69,7 @@ SECRET_PATTERNS = [
 
 PYTHON_GOVERNANCE_FILES = (
     "scripts/quality/check_quality_stage.py",
+    "scripts/quality/check_stage0_docs.py",
     "scripts/quality/check_stage1_docs.py",
 )
 
@@ -241,7 +244,7 @@ def check_traceability_canonical(failures: list[str]) -> None:
     rtm = read("docs/REQUIREMENTS_TRACEABILITY_MATRIX.md") if (ROOT / "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md").exists() else ""
     if "Canonical source: `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`" not in trace:
         fail("docs/TRACEABILITY.md must declare docs/REQUIREMENTS_TRACEABILITY_MATRIX.md as canonical.", failures)
-    for req_id in ("FR-001", "FR-017", "NFR-001", "NFR-012"):
+    for req_id in ("FR-001", "FR-017", "FR-018", "FR-019", "NFR-001", "NFR-012"):
         if req_id not in rtm:
             fail(f"docs/REQUIREMENTS_TRACEABILITY_MATRIX.md missing requirement ID: {req_id}", failures)
     if "Stage 4 / `#4`" not in rtm:

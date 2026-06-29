@@ -111,7 +111,9 @@ English demo video or demo script
 ```
 
 Mode 1 is not fully implemented in Slice 1. Slice 1 produces the grounded script that
-later video, voice, subtitle, and avatar providers consume.
+later video, voice, subtitle, and avatar providers consume. Existing demo script or
+transcript cleanup is future scope, and uploaded demo video/audio transcription
+requires an approved STT boundary in a future stage before implementation.
 
 ### Mode 2: Interactive AI Avatar Walkthrough
 
@@ -203,10 +205,10 @@ Future slices must support:
 - language quality checks against approved source meaning
 - fallback to script-only output when translation, subtitle, or voice generation fails
 
-Slice 1 must store the requested language parameter and may produce English-only,
-mock-localized, or best-effort localized script text depending on the approved free
-provider path. Production translation quality, multilingual evaluation, voice, and
-subtitles remain Stage 6 scope.
+Slice 1 must store the requested language parameter, but generated script acceptance
+is English-only until Stage 6. No translation, mock localization, best-effort
+localization, multilingual evaluation, voice, or subtitle acceptance belongs to
+Stage 4.
 
 ### Avatar And Lip-sync Provider Adapter
 
@@ -234,7 +236,7 @@ Requirements:
 | FR-003 | Validate upload type, filename, size, and path safety | Stage 4 | Must |
 | FR-004 | Ingest, chunk, and store approved knowledge with metadata | Stage 4 | Must |
 | FR-005 | Retrieve project-scoped context for a walkthrough request | Stage 4 | Must |
-| FR-006 | Generate a grounded walkthrough script for selected audience/language/depth/style | Stage 4 | Must |
+| FR-006 | Generate a grounded walkthrough script for selected audience, stored requested language, depth, and style; Stage 4 script acceptance is English-only | Stage 4 | Must |
 | FR-007 | Include context references for project-specific claims | Stage 4 | Must |
 | FR-008 | Evaluate unsupported claims and empty-context output | Stage 4 | Must |
 | FR-009 | Detect or neutralize prompt injection inside uploaded documents | Stage 4 and Stage 5 | Must |
@@ -246,6 +248,8 @@ Requirements:
 | FR-015 | Render optional avatar/video output through adapter boundary | Stage 7 | Should |
 | FR-016 | Support interactive Q&A over approved project knowledge | Future approved stage / `#20` | Should |
 | FR-017 | Support optional premium providers without requiring them locally | Stage 7 adapter scope / `#21` | Should |
+| FR-018 | Import an existing demo script or transcript and clean it into approved grounded source material | Stage 6 or later | Should |
+| FR-019 | Support optional STT/transcription boundary for demo video or audio input before script cleanup | Future approved stage after provider and license review | Should |
 
 ## 9. Non-functional Requirements
 
@@ -439,7 +443,7 @@ Slice 1 succeeds when:
 | Question | Default decision until resolved |
 |---|---|
 | Which LLM provider is used first outside mocks? | Use mock/local defaults; optional Gemini only after provider review |
-| What language behavior is required before Stage 6? | Store requested language in Slice 1; production multilingual output starts in Stage 6 |
+| What language behavior is required before Stage 6? | Store requested language in Slice 1; generated script acceptance stays English-only until Stage 6 |
 | How many languages are required for first multilingual slice? | Start with a narrow reviewed set in Stage 6 |
 | What is the first avatar provider? | Mock avatar first; premium provider after adapter and license review |
 | What storage persists project runs? | Local filesystem first unless Stage 2/3 architecture changes this |
