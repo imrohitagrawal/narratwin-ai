@@ -42,8 +42,12 @@ Allowed changes:
 
 - `AGENTS.md`
 - `.gitignore`
+- `README.md`
+- `.github/pull_request_template.md`
+- `docs/AI_BUILD_BRIEF.md`
 - `docs/CODEX_OPERATING_MODEL.md`
 - `docs/QUALITY_GATES.md`
+- `docs/REPOSITORY_GUARDRAILS.md`
 - `docs/SKILL_EXECUTION_PLAN.md`
 - `docs/SKILL_LOCK.md`
 - `docs/SKILL_TRUST_REVIEW.md`

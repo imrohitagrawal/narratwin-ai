@@ -57,12 +57,16 @@ REQUIRED_TARGETS = [
 ]
 
 STAGE0_ALLOWED_FILES = {
+    ".github/pull_request_template.md",
     ".gitignore",
     ".stage/current",
     "AGENTS.md",
     "Makefile",
+    "README.md",
+    "docs/AI_BUILD_BRIEF.md",
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
+    "docs/REPOSITORY_GUARDRAILS.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
@@ -287,6 +291,13 @@ def check_make_targets(failures: list[str]) -> None:
     for target in REQUIRED_TARGETS:
         if not re.search(rf"^{re.escape(target)}:", text, re.MULTILINE):
             fail(f"Makefile missing required target: {target}", failures)
+    required_recipes = {
+        "quality": "python3 scripts/quality/check_quality_stage.py",
+        "stage0-quality": "python3 scripts/quality/check_stage0_docs.py",
+    }
+    for target, recipe in required_recipes.items():
+        if not re.search(rf"^{re.escape(target)}:\n\t{re.escape(recipe)}", text, re.MULTILINE):
+            fail(f"Makefile target must call the required recipe: {target} -> {recipe}", failures)
     for target in [*REQUIRED_TARGETS[2:], "final-review-quality"]:
         if not re.search(
             rf"^{re.escape(target)}:\n\tpython3 scripts/quality/stage_not_implemented\.py",

@@ -17,7 +17,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 EXCLUDED_DIRS = {
-    ".codex",
     ".git",
     ".chroma",
     ".pytest_cache",
@@ -126,8 +125,12 @@ def changed_files() -> list[str]:
 
 
 def iter_text_files() -> list[Path]:
+    output = run_git(["ls-files"])
     files: list[Path] = []
-    for path in ROOT.rglob("*"):
+    for rel in output.splitlines():
+        if not rel:
+            continue
+        path = ROOT / rel
         if not path.is_file():
             continue
         rel_parts = set(path.relative_to(ROOT).parts)
