@@ -35,14 +35,15 @@ The `Makefile` must expose:
 `make stage0-quality` validates:
 
 - required Stage 0 docs and quality scripts exist
+- `docs/STATUS.md` exists and passes the required Stage 0 structural tracker checks for stage ledger content, issue and PR references, open gaps, and next approved actions
 - `.github/workflows/quality-gates.yml` exists and invokes `make quality`
 - `docs/THIRD_PARTY_NOTICES.md` records governed Stage 0 third-party tools and skill sources
 - `.stage/current` contains `0`
-- current branch name matches the Stage 0 branch pattern
+- current branch name matches the Stage 0 branch pattern before merge, or is `main` after merge
 - files changed from `main` stay within the documented Stage 0 allowlist
 - Stage 0 through Stage 8 plus Final Review are documented
-- no product code has started
-- allowlisted Stage 0 Python scripts remain stdlib-only, read-only governance scripts
+- no disallowed product/runtime directories or manifests have started outside the Stage 0 allowlist
+- allowlisted Stage 0 Python scripts remain stdlib-only and pass the implemented Stage 0 purity checks in `scripts/quality/check_stage0_docs.py`
 - operating docs contain no unresolved placeholders
 - `docs/SKILL_LOCK.md` records source URL, pin/version status, license status, purpose, active stage, and activation status
 - every third-party GitHub Action referenced by checked-in workflows is represented in `docs/SKILL_LOCK.md`
@@ -97,10 +98,11 @@ The CI layer must continue to enforce:
 
 - `make quality` for the current stage
 - stage-aware backend contracts so Stage 0 governance scripts do not trigger backend implementation gates
-- no direct commits to `main`
 - issue-linked PRs
 - least-privilege workflow permissions
 - no committed secrets
 - mock/local provider defaults
 - eval failures block merge when eval reports exist
 - critical or high security findings block merge when security reports exist
+
+Direct pushes to `main` remain a repository-settings requirement enforced through branch protection or rulesets rather than the stage-quality workflow itself.

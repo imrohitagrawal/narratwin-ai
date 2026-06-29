@@ -23,6 +23,7 @@ REQUIRED_FILES = [
     "docs/QUALITY_GATES.md",
     "docs/AI_BUILD_BRIEF.md",
     "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/STATUS.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
@@ -41,6 +42,7 @@ OPERATING_DOCS = [
     "AGENTS.md",
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
@@ -74,6 +76,7 @@ STAGE0_ALLOWED_FILES = {
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
     "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/STATUS.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
@@ -225,6 +228,17 @@ def fail(message: str, failures: list[str]) -> None:
     failures.append(message)
 
 
+def section_text(text: str, heading: str) -> str:
+    start = text.find(heading)
+    if start == -1:
+        return ""
+    remainder = text[start + len(heading):]
+    match = re.search(r"\n## ", remainder)
+    if not match:
+        return remainder
+    return remainder[:match.start()]
+
+
 def check_required_files(failures: list[str]) -> None:
     for rel in REQUIRED_FILES:
         if not (ROOT / rel).is_file():
@@ -246,8 +260,10 @@ def check_branch_name(failures: list[str]) -> None:
         fail(result.stderr.strip() or "Could not determine current branch.", failures)
         return
     branch = result.stdout.strip() or os.environ.get("GITHUB_HEAD_REF", "").strip()
+    if branch == "main":
+        return
     if not STAGE0_BRANCH_PATTERN.search(branch):
-        fail(f"Stage 0 branch must match `stage0-*`, found: {branch}", failures)
+        fail(f"Stage 0 branch must match `stage0-*` before merge or be `main` after merge, found: {branch}", failures)
 
 
 def check_stage_documentation(failures: list[str]) -> None:
@@ -347,6 +363,75 @@ def check_third_party_notices(failures: list[str]) -> None:
     for entry in required_entries:
         if entry not in text:
             fail(f"{rel} must record the Stage 0 governed third-party source: {entry}", failures)
+
+
+def check_status_doc(failures: list[str]) -> None:
+    rel = "docs/STATUS.md"
+    path = ROOT / rel
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    issue_section = section_text(text, "## Issue Ledger")
+    pr_section = section_text(text, "## Pull Request Ledger")
+    known_gaps_section = section_text(text, "## Known Gaps And Reconciliation Items")
+    next_actions_section = section_text(text, "## Next Approved Actions")
+    required_sections = [
+        "# Program Status",
+        "## Current Baseline",
+        "## Executive Status",
+        "## Stage Ledger",
+        "## Issue Ledger",
+        "## Pull Request Ledger",
+        "## Completed Work",
+        "## Pre-Implementation Document Inventory",
+        "## Known Gaps And Reconciliation Items",
+        "## Next Approved Actions",
+        "## Maintenance Protocol",
+    ]
+    for section in required_sections:
+        if section not in text:
+            fail(f"{rel} is missing required status-tracker section: {section}", failures)
+    current_stage = (ROOT / ".stage" / "current").read_text(encoding="utf-8").strip() if (ROOT / ".stage" / "current").exists() else ""
+    current_branch = run(["git", "branch", "--show-current"]).stdout.strip()
+    required_phrases = [
+        "Last reviewed date:",
+        "Current stage marker:",
+        "Product implementation merged to `main`:",
+        "Tracker enforcement scope:",
+        "Out-of-band GitHub reconciliation:",
+    ]
+    for phrase in required_phrases:
+        if phrase not in text:
+            fail(f"{rel} must include current-baseline field: {phrase}", failures)
+    if current_stage and f".stage/current = {current_stage}" not in text:
+        fail(f"{rel} must record the current stage marker value `.stage/current = {current_stage}`.", failures)
+    for label in [*(f"Stage {stage}" for stage in range(0, 9)), "Final Review"]:
+        if not re.search(rf"\|\s*{re.escape(label)}\s*\|", text):
+            fail(f"{rel} must include a {label} row in the stage ledger.", failures)
+    if not re.search(r"#\d+", text):
+        fail(f"{rel} must record issue or pull request references using #<number> notation.", failures)
+    if len(re.findall(r"(?m)^\|\s*`#\d+`\s*\|", issue_section)) < 10:
+        fail(f"{rel} must include a populated issue ledger with repository-tracked issue rows.", failures)
+    if len(re.findall(r"(?m)^\|\s*`#\d+`\s*\|", pr_section)) < 3:
+        fail(f"{rel} must include a populated pull request ledger with repository-tracked PR rows.", failures)
+    if not re.search(r"(?m)^1\.\s+", next_actions_section):
+        fail(f"{rel} must include numbered next approved actions.", failures)
+    if not re.search(r"(?m)^- ", known_gaps_section):
+        fail(f"{rel} must record at least one known gap or reconciliation item.", failures)
+    unstable_markers = [
+        "Authoring branch at snapshot:",
+        "Open governance issue at snapshot:",
+        "Open governance PR at snapshot:",
+        "Open at snapshot",
+        "Until PR `#",
+        "does not yet contain `docs/STATUS.md`",
+        "This branch adds",
+    ]
+    for marker in unstable_markers:
+        if marker in text:
+            fail(f"{rel} contains merge-unstable tracker content that should not appear in the current baseline: {marker}", failures)
+    if current_branch and current_branch != "main" and current_branch in text:
+        fail(f"{rel} must not embed the current working branch name `{current_branch}` in the current baseline.", failures)
 
 
 def check_workflow_sources_locked(failures: list[str]) -> None:
@@ -503,6 +588,7 @@ def main() -> int:
     check_placeholders(failures)
     check_stage0_scope(failures)
     check_skill_lock(failures)
+    check_status_doc(failures)
     check_third_party_notices(failures)
     check_workflow_sources_locked(failures)
     check_make_targets(failures)

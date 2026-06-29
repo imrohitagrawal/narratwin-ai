@@ -101,6 +101,39 @@ PRD_IMPACT_PREFIXES = (
     "docs/ROADMAP.md",
 )
 
+STATUS_IMPACT_PREFIXES = (
+    ".github/pull_request_template.md",
+    ".github/workflows/",
+    ".stage/current",
+    "AGENTS.md",
+    "Makefile",
+    "docs/ADR/",
+    "docs/AI_BUILD_BRIEF.md",
+    "docs/AI_SAFETY_AND_EVALUATION.md",
+    "docs/ARCHITECTURE.md",
+    "docs/CODEX_OPERATING_MODEL.md",
+    "docs/METHODOLOGY.md",
+    "docs/NORTH_STAR_METRICS.md",
+    "docs/OBSERVABILITY_AND_COST.md",
+    "docs/PRD.md",
+    "docs/PRD_RED_TEAM_REVIEW.md",
+    "docs/PRODUCT_STRATEGY.md",
+    "docs/PROJECT_AVATAR_PACK.md",
+    "docs/QUALITY_GATES.md",
+    "docs/RELEASE_QUALITY_BAR.md",
+    "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/ROADMAP.md",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/SKILL_LOCK.md",
+    "docs/SKILL_TRUST_REVIEW.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+    "scripts/guardrails_check.py",
+    "scripts/quality/",
+)
+
 CODE_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs"}
 
 failures: list[str] = []
@@ -114,13 +147,29 @@ def run_git(args: list[str]) -> str:
         return ""
 
 
+def is_zero_sha(value: str) -> bool:
+    return bool(value) and set(value) == {"0"}
+
+
+def resolve_diff_base(head: str, preferred_base: str) -> str:
+    if preferred_base and not is_zero_sha(preferred_base):
+        verified = run_git(["rev-parse", "--verify", f"{preferred_base}^{{commit}}"])
+        if verified:
+            merge_base = run_git(["merge-base", preferred_base, head])
+            if merge_base:
+                return merge_base
+    for candidate in ("origin/main", "main"):
+        merge_base = run_git(["merge-base", candidate, head])
+        if merge_base:
+            return merge_base
+    return "HEAD~1"
+
+
 def changed_files() -> list[str]:
     base = os.environ.get("GITHUB_BASE_SHA", "").strip()
     head = os.environ.get("GITHUB_HEAD_SHA", "").strip() or "HEAD"
-    if base:
-        output = run_git(["diff", "--name-only", base, head])
-    else:
-        output = run_git(["diff", "--name-only", "HEAD~1", "HEAD"])
+    resolved_base = resolve_diff_base(head, base)
+    output = run_git(["diff", "--name-only", resolved_base, head])
     return [line.strip() for line in output.splitlines() if line.strip()]
 
 
@@ -272,6 +321,16 @@ def check_traceability_rules(changes: list[str]) -> None:
         failures.append("PRD-impacting changes require docs/TRACEABILITY.md to be updated.")
 
 
+def check_status_tracking_rules(changes: list[str]) -> None:
+    if not changes:
+        return
+    changed_set = set(changes)
+    status_updated = "docs/STATUS.md" in changed_set
+    status_impacted = any(change.startswith(STATUS_IMPACT_PREFIXES) for change in changes)
+    if status_impacted and not status_updated:
+        failures.append("Repository-tracked stage/governance changes require docs/STATUS.md to be updated.")
+
+
 def check_llm_tracing_and_citations() -> None:
     for path in iter_text_files():
         rel = relative(path)
@@ -330,6 +389,7 @@ def main() -> int:
     check_provider_keys_are_env_only()
     check_mock_local_defaults()
     check_traceability_rules(changes)
+    check_status_tracking_rules(changes)
     check_llm_tracing_and_citations()
     check_eval_results_blocking()
     check_security_results_blocking()

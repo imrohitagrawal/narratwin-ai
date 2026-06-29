@@ -19,6 +19,7 @@ Product implementation includes:
 Allowed in Stage 0:
 
 - governance docs
+- canonical delivery status tracking
 - CI enforcement for Stage 0 quality gates
 - stage and issue plans
 - skill lock and skill execution plan
@@ -58,12 +59,13 @@ Allowed in Stage 0:
 Stage 0 passes only when:
 
 - all Stage 0 operating docs exist
+- `docs/STATUS.md` exists and records the repository-tracked stage ledger, issue and PR references, open gaps, and next approved actions
 - `.stage/current` contains `0`
 - Stage 0 through Stage 8 plus Final Review are documented
 - `make stage0-quality` passes
 - `make quality` runs Stage 0 quality only
 - future stage quality targets exist and fail loudly until implemented
-- no product code has started
+- no disallowed product/runtime directories or manifests have started outside the Stage 0 allowlist
 - operating docs contain no unresolved placeholders
 - `docs/SKILL_LOCK.md` records source URL, pin/version status, license status, purpose, active stage, and activation status for each locked source
 

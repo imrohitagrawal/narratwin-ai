@@ -30,13 +30,7 @@ Create or identify stage issue
 | Stage 8 | Stage 8 - Performance, security hardening, release readiness | `stage8-*` | `make stage8-quality` | Linked PR to `main` | Performance evidence, security hardening, release-readiness report |
 | Final Review | Final Review - Independent review | `final-review-*` | `make final-review-quality` | Linked PR to `main` | Independent review report and release decision |
 
-## Stage 0 Scope For This Branch
-
-Current branch:
-
-```text
-stage0-redo-operating-model-quality-gate
-```
+## Stage 0 Governance Branch Scope
 
 Allowed changes:
 
@@ -50,6 +44,7 @@ Allowed changes:
 - `docs/CODEX_OPERATING_MODEL.md`
 - `docs/QUALITY_GATES.md`
 - `docs/REPOSITORY_GUARDRAILS.md`
+- `docs/STATUS.md`
 - `docs/SKILL_EXECUTION_PLAN.md`
 - `docs/SKILL_LOCK.md`
 - `docs/SKILL_TRUST_REVIEW.md`

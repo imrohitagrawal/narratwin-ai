@@ -21,14 +21,14 @@ This repository is protected by workflow, review, and policy-as-code guardrails.
 15. PRD-impacting changes require `docs/TRACEABILITY.md` updates.
 16. GitHub Actions workflows must be YAML-defined.
 17. Workflows must use least-privilege `GITHUB_TOKEN` permissions.
+18. Repository-tracked stage and governance changes require `docs/STATUS.md` updates.
 
 ## What is enforced in CI
 
 The `Quality Gates` workflow runs `scripts/guardrails_check.py` on pull requests into `main` and on pushes to non-main branches.
 
-The policy check blocks:
+The policy check fails CI for:
 
-- direct push events to `main` when detected by CI
 - workflows without explicit `permissions:`
 - workflows that use broad write permissions for pull-request validation
 - likely committed secrets
@@ -36,10 +36,13 @@ The policy check blocks:
 - missing mock/local provider defaults
 - architecture-impacting changes without ADR updates
 - PRD-impacting changes without traceability updates
+- repository-tracked governance changes without `docs/STATUS.md` updates
 - LLM-generation code without trace/run metadata
 - generated-script/answer code without source chunk citations
 - failing eval result reports
 - security reports with critical/high findings
+
+Direct pushes to `main` must be prevented by repository settings such as branch protection or rulesets; the CI policy check is not the enforcement layer for that event.
 
 ## Required GitHub repository settings
 
