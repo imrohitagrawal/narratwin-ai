@@ -402,6 +402,38 @@ def check_contract_invariants(contract: dict, failures: list[str]) -> None:
         fail("Stage 2 architecture contract must map to issue #2.", failures)
     if contract.get("canonicalPullRequest") != "#27":
         fail("Stage 2 architecture contract must map to PR #27.", failures)
+    expected_types = {
+        "providerDefaults": list,
+        "idPrefixes": dict,
+        "documentStatus": list,
+        "approvalStatus": list,
+        "ingestionStatus": list,
+        "projectStatus": list,
+        "runStatus": list,
+        "evaluationStatus": list,
+        "claimSupportStatus": list,
+        "claimStatus": list,
+        "idempotencyRequiredEndpoints": list,
+        "idempotencyRecordFields": list,
+        "walkthroughRunLifecycleFields": list,
+        "publicWalkthroughFields": dict,
+        "evidenceSnapshotFields": list,
+        "evaluationResultFields": list,
+        "retrievalStrategy": dict,
+        "stage4Budgets": dict,
+        "rateLimits": dict,
+        "backpressurePolicy": dict,
+        "cacheKeyFields": list,
+        "cacheInvalidationTriggers": list,
+        "cacheHitRevalidationFields": list,
+        "providerBoundSecretScreeningInputs": list,
+        "secretScreeningResultFields": list,
+        "observabilitySchemas": list,
+        "providerFallbackPolicy": str,
+    }
+    for key, expected_type in expected_types.items():
+        if not isinstance(contract.get(key), expected_type):
+            fail(f"Stage 2 architecture contract {key} must be a {expected_type.__name__}.", failures)
     expected_exact_lists = {
         "documentStatus": ["UPLOADED", "STORED", "QUARANTINED", "DELETED"],
         "approvalStatus": ["PENDING", "APPROVED", "REJECTED"],
@@ -443,6 +475,35 @@ def require_terms(rel: str, terms: list[str], failures: list[str]) -> None:
     for term in terms:
         if term not in text:
             fail(f"{rel} must include contract term: {term}", failures)
+
+
+def section_contains_exact_list(text: str, heading: str, items: list[str]) -> bool:
+    section = section_between(text, heading)
+    if not section:
+        return False
+    for item in items:
+        if f"`{item}`" not in section:
+            return False
+    return True
+
+
+def section_bullets(text: str, heading: str) -> list[str]:
+    section = section_between(text, heading)
+    return re.findall(r"^\s*-\s+`([^`]+)`\s*$", section, flags=re.MULTILINE)
+
+
+def subsection_bullets(text: str, heading: str, start_marker: str, end_markers: tuple[str, ...]) -> list[str]:
+    section = section_between(text, heading)
+    start = section.find(start_marker)
+    if start == -1:
+        return []
+    body = section[start + len(start_marker) :]
+    end = len(body)
+    for marker in end_markers:
+        idx = body.find(marker)
+        if idx != -1 and idx < end:
+            end = idx
+    return re.findall(r"^\s*-\s+`([^`]+)`\s*$", body[:end], flags=re.MULTILINE)
 
 
 def section_between(text: str, heading: str) -> str:
@@ -549,10 +610,12 @@ def check_contract_semantics(contract: dict, failures: list[str]) -> None:
         failures,
     )
     data_text = read("docs/DATA_MODEL.md") if (ROOT / "docs/DATA_MODEL.md").exists() else ""
-    walkthrough_section = section_between(data_text, "### WalkthroughRun")
-    for status in contract.get("runStatus", []):
-        if f"`{status}`" not in walkthrough_section:
-            fail(f"docs/DATA_MODEL.md must include WalkthroughRun status: {status}", failures)
+    walkthrough_statuses = subsection_bullets(data_text, "### WalkthroughRun", "Statuses:", ("Indexes:", "Rules:"))
+    if walkthrough_statuses != contract.get("runStatus", []):
+        fail("docs/DATA_MODEL.md WalkthroughRun statuses must exactly match the canonical runStatus enum.", failures)
+    ingestion_statuses = subsection_bullets(data_text, "### IngestionRun", "Statuses:", ("Indexes:", "Rules:"))
+    if ingestion_statuses != contract.get("runStatus", []):
+        fail("docs/DATA_MODEL.md IngestionRun statuses must exactly match the canonical runStatus enum.", failures)
     evaluation_section = section_between(data_text, "### EvaluationResult")
     for term in contract.get("evaluationResultFields", []):
         if term not in evaluation_section:
@@ -569,6 +632,9 @@ def check_contract_semantics(contract: dict, failures: list[str]) -> None:
     for status in contract.get("claimSupportStatus", []):
         if f"`{status}`" not in claim_support_section:
             fail(f"docs/DATA_MODEL.md ClaimSupport must include support_status: {status}", failures)
+    tombstone_statuses = subsection_bullets(data_text, "### Tombstone", "Cache invalidation statuses:", ("Indexes:", "Rules:"))
+    if tombstone_statuses != ["PENDING", "COMPLETED", "FAILED"]:
+        fail("docs/DATA_MODEL.md Tombstone cache_invalidation_status must exactly match PENDING/COMPLETED/FAILED.", failures)
     evidence_fields = contract.get("evidenceSnapshotFields", [])
     if isinstance(evidence_fields, list):
         require_terms("docs/DATA_MODEL.md", evidence_fields, failures)

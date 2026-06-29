@@ -162,6 +162,7 @@
   "evaluationResultFields": [
     "evaluation_status",
     "claim_supports",
+    "context_refs",
     "context_ref_coverage",
     "embedding_provider",
     "embedding_model",

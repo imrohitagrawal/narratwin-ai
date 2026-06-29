@@ -330,7 +330,6 @@ Statuses:
 - `FAILED`
 - `REFUSED`
 - `CANCELLED`
-- `CANCELLED`
 
 Indexes:
 
@@ -519,8 +518,8 @@ Fields:
 - `retrieval_score_threshold`
 - `embedding_provider`
 - `embedding_model`
-- optional `embedding_model_version`
-- optional `embedding_dimension`
+- `embedding_model_version`
+- `embedding_dimension`
 - `vector_store`
 - optional `error_code`
 - `prompt_injection_detected`
