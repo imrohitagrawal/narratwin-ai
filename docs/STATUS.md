@@ -37,8 +37,8 @@ Use these files together with this tracker:
 ## Executive Status
 
 - Stage 0 governance is complete in the current repository state and keeps product implementation blocked until Stage 1 passes.
-- `docs/STATUS.md` is the in-repo governance ledger for stage coverage, durable issue and PR history, open gaps, and next approved actions.
-- Repository checks enforce updates to this file only for repository-tracked governance changes that are visible in the pull request diff.
+- `docs/STATUS.md` is the in-repo governance ledger for stage coverage, issue and PR references, open gaps, and next approved actions.
+- Repository checks enforce updates to this file only for repository-tracked governance changes that are visible in the CI diff range.
 - GitHub-side state that changes outside a repository diff must be reconciled in the next governance update; the local Stage 0 gate does not claim live synchronization.
 - Stage 0 quality is executable locally and enforced in CI.
 - The repository remains blocked from product implementation because Stage 1 has not passed.

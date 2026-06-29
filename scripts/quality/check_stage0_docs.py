@@ -228,6 +228,17 @@ def fail(message: str, failures: list[str]) -> None:
     failures.append(message)
 
 
+def section_text(text: str, heading: str) -> str:
+    start = text.find(heading)
+    if start == -1:
+        return ""
+    remainder = text[start + len(heading):]
+    match = re.search(r"\n## ", remainder)
+    if not match:
+        return remainder
+    return remainder[:match.start()]
+
+
 def check_required_files(failures: list[str]) -> None:
     for rel in REQUIRED_FILES:
         if not (ROOT / rel).is_file():
@@ -358,6 +369,10 @@ def check_status_doc(failures: list[str]) -> None:
     if not path.exists():
         return
     text = path.read_text(encoding="utf-8")
+    issue_section = section_text(text, "## Issue Ledger")
+    pr_section = section_text(text, "## Pull Request Ledger")
+    known_gaps_section = section_text(text, "## Known Gaps And Reconciliation Items")
+    next_actions_section = section_text(text, "## Next Approved Actions")
     required_sections = [
         "# Program Status",
         "## Current Baseline",
@@ -393,9 +408,13 @@ def check_status_doc(failures: list[str]) -> None:
             fail(f"{rel} must include a {label} row in the stage ledger.", failures)
     if not re.search(r"#\d+", text):
         fail(f"{rel} must record issue or pull request references using #<number> notation.", failures)
-    if not re.search(r"(?m)^1\.\s+", text):
+    if len(re.findall(r"(?m)^\|\s*`#\d+`\s*\|", issue_section)) < 10:
+        fail(f"{rel} must include a populated issue ledger with repository-tracked issue rows.", failures)
+    if len(re.findall(r"(?m)^\|\s*`#\d+`\s*\|", pr_section)) < 3:
+        fail(f"{rel} must include a populated pull request ledger with repository-tracked PR rows.", failures)
+    if not re.search(r"(?m)^1\.\s+", next_actions_section):
         fail(f"{rel} must include numbered next approved actions.", failures)
-    if not re.search(r"(?m)^- ", text.split("## Known Gaps And Reconciliation Items", 1)[-1]):
+    if not re.search(r"(?m)^- ", known_gaps_section):
         fail(f"{rel} must record at least one known gap or reconciliation item.", failures)
     unstable_markers = [
         "Authoring branch at snapshot:",

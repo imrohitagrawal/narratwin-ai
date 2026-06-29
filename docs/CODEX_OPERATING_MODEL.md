@@ -59,7 +59,7 @@ Allowed in Stage 0:
 Stage 0 passes only when:
 
 - all Stage 0 operating docs exist
-- `docs/STATUS.md` exists and records the repository-tracked stage ledger, durable issue and PR history, open gaps, and next approved actions
+- `docs/STATUS.md` exists and records the repository-tracked stage ledger, issue and PR references, open gaps, and next approved actions
 - `.stage/current` contains `0`
 - Stage 0 through Stage 8 plus Final Review are documented
 - `make stage0-quality` passes
