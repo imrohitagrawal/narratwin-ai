@@ -27,7 +27,7 @@ Closes #
 - [ ] Security critical/high findings block this PR.
 - [ ] Architecture-impacting changes include an ADR update under `docs/ADR/`.
 - [ ] PRD-impacting changes update `docs/TRACEABILITY.md`.
-- [ ] Stage/governance status changes update `docs/STATUS.md`.
+- [ ] Repository-tracked stage/governance changes update `docs/STATUS.md`.
 
 ## Validation evidence
 

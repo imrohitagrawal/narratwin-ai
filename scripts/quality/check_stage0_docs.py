@@ -360,12 +360,13 @@ def check_status_doc(failures: list[str]) -> None:
     text = path.read_text(encoding="utf-8")
     required_sections = [
         "# Program Status",
-        "## Snapshot",
+        "## Current Baseline",
         "## Executive Status",
         "## Stage Ledger",
         "## Issue Ledger",
         "## Pull Request Ledger",
         "## Completed Work",
+        "## Pre-Implementation Document Inventory",
         "## Known Gaps And Reconciliation Items",
         "## Next Approved Actions",
         "## Maintenance Protocol",
@@ -374,23 +375,42 @@ def check_status_doc(failures: list[str]) -> None:
         if section not in text:
             fail(f"{rel} is missing required status-tracker section: {section}", failures)
     current_stage = (ROOT / ".stage" / "current").read_text(encoding="utf-8").strip() if (ROOT / ".stage" / "current").exists() else ""
+    current_branch = run(["git", "branch", "--show-current"]).stdout.strip()
     required_phrases = [
-        "Authoring branch at snapshot:",
-        "Last merged `main` baseline at snapshot:",
+        "Last reviewed date:",
         "Current stage marker:",
         "Product implementation merged to `main`:",
+        "Tracker enforcement scope:",
+        "Out-of-band GitHub reconciliation:",
     ]
     for phrase in required_phrases:
         if phrase not in text:
-            fail(f"{rel} must include snapshot consistency field: {phrase}", failures)
+            fail(f"{rel} must include current-baseline field: {phrase}", failures)
     if current_stage and f".stage/current = {current_stage}" not in text:
         fail(f"{rel} must record the current stage marker value `.stage/current = {current_stage}`.", failures)
-    if not re.search(r"\|\s*Stage 0\s*\|", text):
-        fail(f"{rel} must include a Stage 0 row in the stage ledger.", failures)
-    if not re.search(r"\|\s*Stage 1\s*\|", text):
-        fail(f"{rel} must include a Stage 1 row in the stage ledger.", failures)
+    for label in [*(f"Stage {stage}" for stage in range(0, 9)), "Final Review"]:
+        if not re.search(rf"\|\s*{re.escape(label)}\s*\|", text):
+            fail(f"{rel} must include a {label} row in the stage ledger.", failures)
     if not re.search(r"#\d+", text):
         fail(f"{rel} must record issue or pull request references using #<number> notation.", failures)
+    if not re.search(r"(?m)^1\.\s+", text):
+        fail(f"{rel} must include numbered next approved actions.", failures)
+    if not re.search(r"(?m)^- ", text.split("## Known Gaps And Reconciliation Items", 1)[-1]):
+        fail(f"{rel} must record at least one known gap or reconciliation item.", failures)
+    unstable_markers = [
+        "Authoring branch at snapshot:",
+        "Open governance issue at snapshot:",
+        "Open governance PR at snapshot:",
+        "Open at snapshot",
+        "Until PR `#",
+        "does not yet contain `docs/STATUS.md`",
+        "This branch adds",
+    ]
+    for marker in unstable_markers:
+        if marker in text:
+            fail(f"{rel} contains merge-unstable tracker content that should not appear in the current baseline: {marker}", failures)
+    if current_branch and current_branch != "main" and current_branch in text:
+        fail(f"{rel} must not embed the current working branch name `{current_branch}` in the current baseline.", failures)
 
 
 def check_workflow_sources_locked(failures: list[str]) -> None:

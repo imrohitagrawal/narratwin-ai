@@ -21,7 +21,7 @@ This repository is protected by workflow, review, and policy-as-code guardrails.
 15. PRD-impacting changes require `docs/TRACEABILITY.md` updates.
 16. GitHub Actions workflows must be YAML-defined.
 17. Workflows must use least-privilege `GITHUB_TOKEN` permissions.
-18. Stage, issue, pull request, and governance status changes require `docs/STATUS.md` updates.
+18. Repository-tracked stage and governance changes require `docs/STATUS.md` updates.
 
 ## What is enforced in CI
 
@@ -37,6 +37,7 @@ The policy check blocks:
 - missing mock/local provider defaults
 - architecture-impacting changes without ADR updates
 - PRD-impacting changes without traceability updates
+- repository-tracked governance changes without `docs/STATUS.md` updates
 - LLM-generation code without trace/run metadata
 - generated-script/answer code without source chunk citations
 - failing eval result reports

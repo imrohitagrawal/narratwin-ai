@@ -1,29 +1,27 @@
 # Program Status
 
-This file is the canonical repository-tracked delivery status ledger for NarraTwin AI.
+This file is the canonical repository-tracked governance and delivery ledger for NarraTwin AI.
 
-This tracker is snapshot-based. It records the repository state visible from the current branch at authoring time plus the last merged `main` baseline known at that moment.
+It is maintained from the repository itself, not from live GitHub state. Repo checks can verify only repository-tracked changes and internal document consistency. Out-of-band issue and pull request state changes must be reconciled in the next governance update.
 
 Use it to answer:
 
-- what has been completed
-- what is currently open
-- which issue and pull request delivered each governance milestone
+- what has been completed in the repository-tracked governance plan
+- what is currently open in the repository-tracked governance plan
+- which issue and pull request delivered each durable governance milestone
 - what is blocked or ambiguous
 - what the next approved action is
 
-## Snapshot
+## Current Baseline
 
-- Snapshot date: 2026-06-29
-- Authoring branch at snapshot: `stage0-status-tracker`
-- Open governance issue at snapshot: `#24`
-- Open governance PR at snapshot: `#25`
-- Last merged `main` baseline at snapshot: `81e7ed5` `Merge pull request #23 from imrohitagrawal/stage0-redo-operating-model-quality-gate`
+- Last reviewed date: 2026-06-29
 - Current stage marker: `.stage/current = 0`
 - Current implementation permission: blocked
 - Current repo mode: governance-first, documentation-first, quality-gate-first
 - Product implementation merged to `main`: no
-- No product implementation has been merged to `main`.
+- Tracker enforcement scope: repository-tracked stage and governance changes in checked-in files
+- Out-of-band GitHub reconciliation: required in the next governance update
+- No application runtime, backend, frontend, RAG, provider, avatar, or database product code has been merged to `main`.
 
 ## Source Of Truth
 
@@ -38,9 +36,10 @@ Use these files together with this tracker:
 
 ## Executive Status
 
-- Stage 0 governance is complete on the last merged `main` baseline through PRs `#15` and `#23`.
-- This branch adds canonical status tracking and status-update enforcement through issue `#24` and PR `#25`.
-- Until PR `#25` merges, the last merged `main` baseline does not yet contain `docs/STATUS.md`.
+- Stage 0 governance is complete and keeps product implementation blocked until Stage 1 passes.
+- `docs/STATUS.md` is the in-repo governance ledger for stage coverage, durable issue and PR history, open gaps, and next approved actions.
+- Repository checks enforce updates to this file only for repository-tracked governance changes that are visible in the pull request diff.
+- GitHub-side state that changes outside a repository diff must be reconciled in the next governance update; the local Stage 0 gate does not claim live synchronization.
 - Stage 0 quality is executable locally and enforced in CI.
 - The repository remains blocked from product implementation because Stage 1 has not passed.
 - Stage 1 issue ownership is ambiguous because both `#1` and `#16` represent Stage 1 work.
@@ -51,7 +50,7 @@ Use these files together with this tracker:
 
 | Stage | Status | Issue ledger | Pull request ledger | Quality gate state | Notes |
 |---|---|---|---|---|---|
-| Stage 0 | Complete on merged `main` baseline, governance follow-up open on this branch | `#14` closed, `#24` open | `#15` merged, `#23` merged, `#22` superseded/closed, `#25` open | Executable and green | The merged baseline already passes Stage 0 governance; this branch adds the canonical tracker and status-update enforcement as follow-up hardening. |
+| Stage 0 | Complete, governance baseline active | `#14` closed | `#15` merged, `#23` merged | Executable and green | Operating model, quality gate, and repository guardrails are in place; product implementation remains blocked. |
 | Stage 1 | Pending, not started on `main` | `#1` open, `#16` open | None merged | Placeholder target only | Canonical Stage 1 issue must be reconciled before work starts. |
 | Stage 2 | Pending, seed docs exist | `#2` open | None merged | Placeholder target only | Architecture and safety docs exist as seeds, but Stage 2 gate is not implemented. |
 | Stage 3 | Pending, partially pre-scaffolded | `#5` open | Work partially landed in `#15` and `#23` | Placeholder target only | CI and quality scaffolding started early under Stage 0 governance. |
@@ -101,7 +100,6 @@ Use these files together with this tracker:
 | `#15` | Merged | 2026-06-28 | Added repository guardrails and CI quality gates under Stage 0 governance issue `#14`. |
 | `#22` | Closed | Not merged | Earlier Stage 0 operating-model PR superseded by the Stage 0 redo path. |
 | `#23` | Merged | 2026-06-29 | Redid Stage 0 operating model and executable quality gates; green in both `Quality Gates` and `quality` workflows before merge. |
-| `#25` | Open at snapshot | N/A | Adds canonical program status tracking and status-update enforcement under issue `#24`. |
 
 ## Completed Work
 
@@ -117,7 +115,7 @@ Use these files together with this tracker:
   - secret scanning
   - markdown validation
 - Required Stage 0 operating docs now exist on `main`.
-- This branch adds the final missing status-tracker governance layer before the Stage 1 handoff.
+- Canonical repository-tracked governance status now has a dedicated ledger in this file.
 - Skill governance exists through:
   - [Skill Lock](SKILL_LOCK.md)
   - [Skill Execution Plan](SKILL_EXECUTION_PLAN.md)
@@ -165,8 +163,7 @@ Use these files together with this tracker:
 - Stage 3 has its own open issue `#5`, but some repo-foundation work has already landed under Stage 0 governance. The eventual Stage 3 plan should explicitly acknowledge that inherited baseline.
 - `.stage/current` remains `0`, which is correct for the current repository state, but it also means all new governance changes must still satisfy the Stage 0 quality contract until Stage 1 is intentionally advanced.
 - The repository contains seed docs for later stages, but those docs are not proof that the corresponding stage gate has passed.
-- No application runtime, backend, frontend, RAG, provider, avatar, or database code has been merged to `main`.
-- Because this file is snapshot-based, the merge of PR `#25` will require the next governance update to refresh the snapshot from "open at snapshot" to merged history.
+- GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
 
 ## Next Approved Actions
 
@@ -178,22 +175,24 @@ Use these files together with this tracker:
 
 ## Maintenance Protocol
 
-Update this file in the same branch or PR whenever any of the following happens:
+Update this file in the same branch or PR whenever any repository-tracked governance change happens, including:
 
-- a stage issue is opened, closed, superseded, or re-scoped
-- a stage PR is opened, closed, merged, or replaced
+- a stage plan, stage policy, or guardrail contract changes in checked-in files
+- a stage marker or stage gate contract changes
+- a stage issue or PR mapping in this repository ledger changes
 - `.stage/current` changes
 - a stage status changes from pending to in progress, blocked, complete, or superseded
 - a new governance artifact becomes required or an old one becomes obsolete
 - a major blocker or ambiguity is discovered or resolved
 
+Reconcile this file in the next governance PR after any out-of-band GitHub event that changes issue or pull request state without a repository diff.
+
 Required update rules:
 
-- update the snapshot section only when the tracker is materially refreshed
-- treat the snapshot as branch-scoped authoring evidence, not as an automatically updated live dashboard
+- keep the current-baseline section merge-stable; do not record branch-local or pre-merge transient states there
 - preserve historical entries; do not rewrite merged history to look cleaner
 - call out inconsistencies explicitly instead of hiding them
-- use exact issue and PR numbers known at the time of the snapshot
+- use exact issue and PR numbers when recording durable history or current ledger mappings
 - state whether work is merged to `main`, merely documented, or still pending
 - keep the tracker factual and source-backed
 
@@ -202,4 +201,4 @@ Required update rules:
 | Date | Change |
 |---|---|
 | 2026-06-29 | Initial canonical program status tracker added to consolidate stage, issue, PR, and governance status. |
-| 2026-06-29 | Tracker semantics refined to be branch-scoped and snapshot-based, with explicit separation between the last merged `main` baseline and open governance work. |
+| 2026-06-29 | Tracker contract refined to be merge-stable and repository-scoped, with explicit limits on what local checks can enforce. |

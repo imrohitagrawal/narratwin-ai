@@ -33,7 +33,7 @@ Before changing files, read:
 13. Maintain `docs/THIRD_PARTY_NOTICES.md` for third-party packages, tools, skills, models, APIs, datasets, providers, media assets, and generated samples.
 14. Update `docs/ADR/` for architecture-impacting changes.
 15. Update `docs/TRACEABILITY.md` for PRD-impacting changes.
-16. Update `docs/STATUS.md` when stage state, issue ownership, PR status, or governance progress changes.
+16. Update `docs/STATUS.md` when repository-tracked stage state, issue or PR mapping, governance policy, or stage progress changes.
 
 ## Approved Build Stages
 

@@ -294,7 +294,7 @@ def check_status_tracking_rules(changes: list[str]) -> None:
     status_updated = "docs/STATUS.md" in changed_set
     status_impacted = any(change.startswith(STATUS_IMPACT_PREFIXES) for change in changes)
     if status_impacted and not status_updated:
-        failures.append("Stage/governance status changes require docs/STATUS.md to be updated.")
+        failures.append("Repository-tracked stage/governance changes require docs/STATUS.md to be updated.")
 
 
 def check_llm_tracing_and_citations() -> None:
