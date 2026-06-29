@@ -1,227 +1,418 @@
-# PRD: NarraTwin AI
+# PRD v1.0: NarraTwin AI
 
-## Product summary
+## Version
 
-NarraTwin AI is a provider-agnostic multilingual AI avatar walkthrough platform.
+- Version: 1.0
+- Stage: Stage 1 product strategy and PRD hardening
+- Canonical issue: `#1`
+- Last updated: 2026-06-29
+- Implementation status: blocked until approved Stage 4 vertical slice
 
-It turns approved project knowledge into audience-aware walkthrough scripts, subtitles, voice/video-ready outputs, and later interactive Q&A.
+## 1. Summary
 
-## Problem
+NarraTwin AI is a provider-agnostic multilingual AI avatar walkthrough platform. It
+turns approved project knowledge into audience-aware, grounded scripts and later
+voice, subtitle, video, and interactive avatar outputs.
 
-Project creators often explain technical work using English-only README files, long architecture docs, or raw demo videos. Recruiters, hiring managers, engineers, product leaders, customers, and non-English audiences need different levels of explanation.
+The first usable product slice must prove the trust loop: upload project knowledge,
+ingest and retrieve context, generate a grounded walkthrough script, evaluate
+unsupported claims, store the result, and display it to the user. Avatar rendering,
+voice, subtitles, premium providers, and interactive Q&A are future slices built on
+that trusted foundation.
 
-Without a grounded walkthrough system, project demos become:
+## 2. Contacts
 
-- too technical for recruiters
-- too shallow for engineering reviewers
-- too long for hiring managers
-- too English-centric for global audiences
-- too easy for AI tools to hallucinate unsupported claims
+| Role | Owner | Responsibility |
+|---|---|---|
+| Product owner | Rohit Agrawal | Product direction, stage approval, portfolio use case |
+| Engineering agent | Codex | Issue-linked docs, specs, implementation plans, and code changes after gates pass |
+| Reviewer | GitHub PR reviewer | Guardrail, safety, scope, and quality review |
+| Future independent reviewer | TBD | Final review before release claims |
 
-## Goal
+## 3. Background
 
-Create a platform that transforms approved project knowledge into grounded, multilingual, audience-aware walkthroughs that can later be rendered through avatar, voice, subtitle, and video providers.
+Technical projects are often explained through long README files, architecture docs,
+or English-only demo videos. Different viewers need different explanations:
+recruiters want a short impact summary, hiring managers want ownership and trade-offs,
+engineers want architecture and failure modes, product leaders want value and roadmap,
+and global viewers may need a localized walkthrough.
 
-## Product modes
+Generic LLM summaries can hallucinate. Avatar tools can produce polished media without
+knowing whether the script is true. NarraTwin AI solves this by making approved project
+knowledge the source of truth and requiring generated outputs to carry context
+references, evaluation results, and run metadata.
 
-NarraTwin AI must preserve two product modes, even though the MVP implements only the grounding loop first.
+## 4. Objectives
 
-### Mode 1: Pre-rendered multilingual demo video
+### Product Objective
 
-This mode turns an existing English demo video, demo script, or project-avatar-pack into a polished localized walkthrough for LinkedIn, YouTube, portfolio pages, recruiter sharing, customer onboarding, or product education.
+Enable a project creator to turn approved project knowledge into a grounded,
+audience-aware walkthrough that can later be reused for multilingual video and
+interactive avatar experiences.
 
-Future flow:
+### Stage 1 Objective
+
+Harden product strategy and PRD v1.0 without adding product code.
+
+### Stage 4 Slice 1 Objective
+
+Deliver the first working user-facing path:
+
+```text
+project creation
+-> markdown/text upload
+-> ingestion/chunking/storage
+-> context retrieval
+-> grounded walkthrough script generation
+-> unsupported-claim evaluation
+-> stored output
+-> UI display
+```
+
+### Key Results
+
+| Key result | Target for first implementation slice |
+|---|---|
+| Activation | A user can create a project and produce one stored grounded walkthrough |
+| Groundedness | Generated script contains context references for project-specific claims |
+| Safety | Empty context, prompt injection, and unsupported claims are refused or flagged |
+| Provider independence | Tests pass without real paid provider keys |
+| Traceability | Run metadata links output to project, request parameters, provider mode, context, and evaluation |
+
+## 5. Market Segments
+
+| Segment | Problem | Primary output |
+|---|---|---|
+| Project creator | Needs reusable project storytelling for portfolio and interviews | Audience-aware grounded walkthrough |
+| Recruiter | Needs fast signal from a technical project | 60-second summary with role and impact |
+| Hiring manager | Needs ownership, trade-offs, maturity, and delivery scope | Concise walkthrough with decisions and outcomes |
+| Engineer | Needs architecture and implementation evidence | Technical walkthrough with citations/context references |
+| Product/customer viewer | Needs problem, value, workflow, and differentiation | Outcome-focused product walkthrough |
+| Global viewer | Needs the same project in a preferred language | Localized script, subtitle, voice, and future avatar output |
+
+## 6. Product Modes
+
+### Mode 1: Pre-rendered Multilingual Demo Video
+
+User value: create a shareable demo for portfolios, LinkedIn, YouTube, customer
+education, or onboarding.
+
+Target flow:
 
 ```text
 English demo video or demo script
-→ transcription / script cleanup
-→ audience-specific script generation
-→ translation / localization
-→ voiceover generation
-→ avatar or video rendering
-→ subtitles
-→ export/shareable demo
+-> transcription or script cleanup
+-> audience-specific grounded script generation
+-> translation and localization
+-> voiceover generation
+-> avatar or video rendering
+-> subtitles
+-> export or shareable demo
 ```
 
-### Mode 2: Interactive AI avatar guide
+Mode 1 is not fully implemented in Slice 1. Slice 1 produces the grounded script that
+later video, voice, subtitle, and avatar providers consume.
 
-This mode lets a viewer ask questions about a project and receive a grounded, audience-aware response from an avatar-style project guide.
+### Mode 2: Interactive AI Avatar Walkthrough
 
-Future flow:
+User value: let a viewer ask project-specific questions and receive grounded answers
+from a future avatar-style guide.
+
+Target flow:
 
 ```text
-User selects language, audience, depth, and style
-→ user asks a project question
-→ system retrieves approved project context
-→ system generates a grounded answer
-→ system evaluates unsupported claims
-→ future TTS/avatar provider speaks the answer
+viewer selects language, audience, depth, and style
+-> viewer asks a project question
+-> system retrieves approved project context
+-> system generates a grounded answer
+-> system evaluates unsupported claims
+-> future TTS/avatar provider speaks or displays the answer
 ```
 
-## Reusable project-avatar-pack
+Mode 2 is future scope. It must reuse the same project knowledge, retrieval,
+grounding, evaluation, and provider-adapter principles as Mode 1.
 
-NarraTwin AI should support a reusable project knowledge contract defined in `docs/PROJECT_AVATAR_PACK.md`.
+## 7. Core Product Contract
 
-The pack is the approved source of truth for future generated scripts, video walkthroughs, and interactive Q&A. It prevents the product from becoming a generic chatbot and keeps generated outputs grounded in project-specific facts.
+### Project Knowledge Upload
 
-## MVP scope
+The user uploads approved project knowledge. In Slice 1, accepted formats are
+markdown and plain text only.
 
-The MVP proves the core trust loop, not avatar polish.
+Requirements:
 
-Included:
+- Validate file type and extension.
+- Enforce file size limits.
+- Sanitize filenames.
+- Reject binary, executable, archive, and unknown formats.
+- Treat content and filenames as untrusted input.
+- Store source metadata and checksums.
 
-- create/select project
-- upload markdown/text project knowledge
-- validate file type, filename, and size
-- ingest/chunk/store project knowledge
-- retrieve relevant context
-- select audience, language, depth, and style
-- generate grounded walkthrough script
-- evaluate unsupported claims
-- store generated output and evaluation metadata
-- display result in UI
-- run tests without real paid provider keys
+### Project Avatar Pack
 
-## Non-goals for MVP
+The project-avatar-pack is the reusable source-of-truth contract documented in
+`docs/PROJECT_AVATAR_PACK.md`.
 
-- full realtime avatar conversation
-- paid provider dependency
+Slice 1 does not require a full folder structure, but its data model and UX must not
+block future support for:
+
+- `project-summary.md`
+- `architecture.md`
+- `business-impact.md`
+- `demo-script.md`
+- `recruiter-pitch.md`
+- `technical-deep-dive.md`
+- `faqs.md`
+- `metrics.md`
+- future screenshots and diagrams
+
+### RAG Ingestion
+
+The system chunks approved project knowledge and stores source metadata so generated
+outputs can reference context IDs or source chunks.
+
+Requirements:
+
+- Deterministic chunking for repeatable tests.
+- Chunk metadata includes project, source file, checksum, and position.
+- Retrieval is scoped to the selected project.
+- Empty or insufficient context produces a refusal or warning.
+
+### Grounded Script Generation
+
+The generated walkthrough must use approved retrieved context only.
+
+Requirements:
+
+- Support audience, language, depth, and style parameters.
+- Produce a script suitable for later voice/subtitle/avatar use.
+- Cite context references for project-specific claims.
+- Refuse or flag claims not supported by approved context.
+- Store generation request, provider mode, and run metadata.
+
+### Multilingual Script, Voice, And Subtitle Flow
+
+Future slices must support:
+
+- translation/localization of grounded scripts
+- subtitle-ready text with timestamps when media exists
+- optional TTS provider boundary
+- AI voice disclosure
+- language quality checks
+
+Slice 1 may accept a language parameter but is not required to ship production-quality
+translation, voice, or subtitles.
+
+### Avatar And Lip-sync Provider Adapter
+
+Future avatar/video output must use provider-agnostic adapters.
+
+Requirements:
+
+- Mock avatar provider is default until Stage 7.
+- Premium provider SDKs stay outside core domain logic.
+- Wav2Lip is not enabled by default.
+- Any local or cloud lip-sync/avatar tool requires license review.
+- Face cloning and voice cloning require explicit documented consent and are out of
+  MVP scope.
+
+## 8. Functional Requirements
+
+| ID | Requirement | Stage target | Priority |
+|---|---|---:|---|
+| FR-001 | Create and select a project | Stage 4 | Must |
+| FR-002 | Upload markdown/text project knowledge | Stage 4 | Must |
+| FR-003 | Validate upload type, filename, size, and path safety | Stage 4 | Must |
+| FR-004 | Ingest, chunk, and store approved knowledge with metadata | Stage 4 | Must |
+| FR-005 | Retrieve project-scoped context for a walkthrough request | Stage 4 | Must |
+| FR-006 | Generate a grounded walkthrough script for selected audience/language/depth/style | Stage 4 | Must |
+| FR-007 | Include context references for project-specific claims | Stage 4 | Must |
+| FR-008 | Evaluate unsupported claims and empty-context output | Stage 4 | Must |
+| FR-009 | Detect or neutralize prompt injection inside uploaded documents | Stage 4 and Stage 5 | Must |
+| FR-010 | Store output, request parameters, context refs, and evaluation metadata | Stage 4 | Must |
+| FR-011 | Display generated output and evaluation warnings in UI | Stage 4 | Must |
+| FR-012 | Produce multilingual scripts from grounded source content | Stage 6 | Should |
+| FR-013 | Export subtitle-ready output | Stage 6 | Should |
+| FR-014 | Generate optional voice through mock/local-first TTS adapter | Stage 6 | Should |
+| FR-015 | Render optional avatar/video output through adapter boundary | Stage 7 | Should |
+| FR-016 | Support interactive Q&A over approved project knowledge | Stage 7 or later | Should |
+| FR-017 | Support optional premium providers without requiring them locally | Stage 8 or later | Should |
+
+## 9. Non-functional Requirements
+
+| ID | Requirement |
+|---|---|
+| NFR-001 | No mandatory paid provider APIs for local development, tests, or CI |
+| NFR-002 | No secrets, credentials, provider keys, private certificates, or tokens committed |
+| NFR-003 | Provider keys are read only from environment variables |
+| NFR-004 | Uploaded docs, prompts, transcripts, filenames, and provider outputs are untrusted |
+| NFR-005 | Generated outputs include run metadata and source context references |
+| NFR-006 | Evaluation failures block merge once evaluation exists |
+| NFR-007 | Critical/high security findings block merge once security reports exist |
+| NFR-008 | Architecture-impacting changes require ADR updates |
+| NFR-009 | PRD-impacting changes require traceability updates |
+| NFR-010 | Third-party tools, models, providers, APIs, datasets, and media assets are recorded in `docs/THIRD_PARTY_NOTICES.md` |
+| NFR-011 | Public avatar or voice output includes AI-generated media disclosure |
+| NFR-012 | Costs and provider mode are traceable per run |
+
+## 10. User Journeys
+
+### Journey A: Portfolio Creator Generates Recruiter Walkthrough
+
+1. Creator creates a project.
+2. Creator uploads markdown project knowledge.
+3. System validates and stores source metadata.
+4. Creator selects recruiter audience, English, concise depth, and confident style.
+5. System retrieves project context.
+6. System generates a grounded 60-second script.
+7. System evaluates unsupported claims.
+8. Creator sees the script, warnings if any, and source context references.
+
+### Journey B: Hiring Manager Reviews Deeper Walkthrough
+
+1. Hiring manager or creator selects the same project.
+2. User selects hiring-manager audience and medium depth.
+3. System generates a walkthrough focused on ownership, impact, trade-offs, and
+   delivery maturity.
+4. Unsupported claims are flagged or refused.
+
+### Journey C: Engineer Reviews Technical Walkthrough
+
+1. User selects engineer audience and deep depth.
+2. System retrieves architecture and implementation context.
+3. System generates a technical script with context references.
+4. UI shows evaluation result and warnings.
+
+### Journey D: Future Multilingual Demo Video
+
+1. Creator starts from approved script or demo video transcript.
+2. System grounds and adapts the script by audience.
+3. System translates/localizes the script.
+4. System generates subtitles and optional voice.
+5. System sends output to an avatar/video adapter.
+6. System exports a shareable demo with AI disclosure.
+
+### Journey E: Future Interactive Avatar Walkthrough
+
+1. Viewer selects language, audience, depth, and style.
+2. Viewer asks a project question.
+3. System retrieves approved project context.
+4. System answers only from approved context.
+5. Unsupported claims or missing context produce refusal/warning.
+6. Future TTS/avatar adapter presents the answer.
+
+## 11. Evaluation Gates
+
+Every implementation slice that generates or evaluates AI output must define and run
+evaluation gates appropriate to that stage.
+
+Slice 1 gates:
+
+- happy-path grounded walkthrough generation
+- empty-context refusal
+- prompt-injection-in-uploaded-doc test
+- unsupported-claim detection or refusal
+- source context references present
+- run metadata stored
+- no paid provider key required
+
+Later gates:
+
+- translation sanity and language consistency
+- subtitle structure validation
+- TTS adapter fallback
+- avatar/video adapter fallback
+- premium provider cost and failure handling
+
+## 12. Security And Privacy Guardrails
+
+Hard rules:
+
+- Uploaded project knowledge is data, not instructions.
+- Empty context must not produce invented facts.
+- Premium providers are disabled by default.
+- Provider responses are untrusted until evaluated.
+- No cloned voice or face without explicit documented consent.
+- Wav2Lip is not enabled by default.
+- Private data must not be sent to external providers without explicit configuration.
+- Logs must not store raw secrets, tokens, or private provider keys.
+
+## 13. Free-first And Premium-provider Modes
+
+### Free-first Engineering Mode
+
+Default for local/dev/test:
+
+- mock providers where possible
+- local filesystem storage first
+- no required premium provider key
+- deterministic test fixtures
+- provider mode visible in run metadata
+
+### Premium-provider Mode
+
+Optional future mode:
+
+- HeyGen, Tavus, D-ID, ElevenLabs, or similar providers may be adapters.
+- Premium provider use must be explicit.
+- Cost, provider, latency, and failure metadata must be recorded.
+- Core domain logic must not depend directly on provider SDKs.
+
+## 14. MVP Scope
+
+Included in first implementation slice:
+
+- project creation
+- markdown/text upload
+- upload validation
+- ingestion/chunking/storage
+- project-scoped retrieval
+- audience/language/depth/style request
+- grounded script generation
+- unsupported-claim evaluation
+- stored output with context refs and metadata
+- minimal UI display
+
+Excluded from first implementation slice:
+
+- full avatar rendering
+- lip-sync
+- TTS audio generation
+- subtitles
+- production translation quality
+- video export
+- interactive Q&A
+- premium provider adapters
 - voice cloning
 - face cloning
-- production-grade video rendering quality
-- commercial avatar marketplace
-- automatic LinkedIn posting
-- direct ingestion of private repos or private documents
-- multilingual dubbing at production quality
-- premium provider adapters as default behavior
+- private repo ingestion
 
-## Personas
+## 15. Success Criteria
 
-### Recruiter
+Stage 1 succeeds when:
 
-Wants a 60-second project summary that explains what the project does, why it matters, and what role the creator played.
+- strategy and PRD v1.0 are explicit about product modes, users, requirements,
+  non-goals, safety, and metrics
+- requirements are mapped in a traceability matrix
+- phase plan preserves gated vertical slices
+- no product code is introduced
 
-### Hiring Manager
+Slice 1 succeeds when:
 
-Wants ownership, trade-offs, business impact, delivery scope, and engineering maturity.
+- user can produce a stored grounded walkthrough from uploaded markdown/text
+- output includes context references and run metadata
+- unsupported claims are flagged or refused
+- empty-context refusal works
+- prompt injection inside uploaded content is neutralized
+- tests run without real paid provider keys
+- docs describe validation evidence and known limitations
 
-### Engineer
+## 16. Open Questions
 
-Wants architecture, implementation decisions, risks, testing strategy, provider boundaries, and failure handling.
-
-### Product Leader
-
-Wants use case, differentiation, value, constraints, roadmap, and go-to-market clarity.
-
-### Global Viewer
-
-Wants a localized explanation in their preferred language without losing the technical meaning.
-
-### Project Creator
-
-Wants reusable project storytelling that is grounded in approved content and can be adapted for different audiences.
-
-## Primary user journey
-
-1. User creates a project.
-2. User uploads markdown/text project knowledge.
-3. System validates upload safety.
-4. System chunks and stores approved knowledge.
-5. User chooses audience, language, depth, and tone.
-6. System retrieves relevant context.
-7. System generates a grounded walkthrough script.
-8. System evaluates unsupported claims.
-9. System stores output, citations/context references, and evaluation metadata.
-10. User views the generated walkthrough script in the UI.
-
-## Functional requirements
-
-### Project management
-
-- Create project with name, description, language default, and audience default.
-- List existing projects.
-- Store generated walkthrough runs per project.
-
-### Knowledge upload
-
-- Accept markdown and plain text in MVP.
-- Reject unsupported file types.
-- Sanitize filenames.
-- Enforce file size limits.
-- Treat uploaded content as untrusted input.
-- Store source metadata.
-
-### Ingestion and retrieval
-
-- Chunk uploaded knowledge deterministically.
-- Store chunks with source metadata.
-- Retrieve relevant context for a walkthrough request.
-- Include context IDs or references with generated output.
-
-### Script generation
-
-- Generate a walkthrough script using only approved project context.
-- Support audience-specific output.
-- Support language parameter in MVP, even if translation quality is basic.
-- Refuse or flag information not found in approved context.
-
-### Evaluation
-
-- Detect unsupported claims.
-- Detect empty-context output.
-- Detect prompt injection attempts inside uploaded documents.
-- Store evaluation result with the run.
-
-### UI
-
-- Provide minimal UI for project creation, upload, run request, and output display.
-- Show unsupported-claim warnings.
-- Show AI-generated content disclosure where relevant.
-
-## Non-functional requirements
-
-- No mandatory paid provider APIs for MVP.
-- No secrets committed.
-- Provider SDKs must stay outside core domain logic.
-- Tests must run locally without real premium provider keys.
-- Generated output must include run metadata.
-- Uploads must be bounded by type and size.
-- Documentation must be updated with each vertical slice.
-- Quality workflow must pass before merge.
-
-## First vertical slice acceptance criteria
-
-- User can create a project.
-- User can upload markdown/text knowledge.
-- System chunks and stores documents.
-- User can request a walkthrough script.
-- Script is grounded in uploaded content.
-- Unsupported claims are flagged or refused.
-- Output is visible in UI and stored.
-- Tests pass without real paid provider keys.
-- Docs explain how to run and validate the slice.
-
-## Hard safety rules
-
-- If approved project knowledge does not contain an answer, say the information is unavailable in the approved project context.
-- Uploaded documents must never be allowed to override system/developer instructions.
-- Premium avatar, TTS, face clone, and voice clone providers are disabled by default.
-- Cloned face or voice requires explicit documented consent.
-- Wav2Lip is not enabled by default.
-
-## Success metrics
-
-- Time to first grounded walkthrough.
-- Groundedness score.
-- Unsupported claim rate.
-- Prompt-injection refusal pass rate.
-- Language success rate.
-- Cache hit rate.
-- Cost estimate per run.
-- User feedback score.
-
-## MVP cut line
-
-The first MVP is successful when a user can upload project knowledge and receive a stored, evaluated, grounded walkthrough script through a minimal UI.
-
-Avatar video, voice, subtitles, premium providers, and interactive Q&A come after the grounding loop works.
+| Question | Default decision until resolved |
+|---|---|
+| Which LLM provider is used first outside mocks? | Use mock/local defaults; optional Gemini only after provider review |
+| How many languages are required for first multilingual slice? | Start with a narrow reviewed set in Stage 6 |
+| What is the first avatar provider? | Mock avatar first; premium provider after adapter and license review |
+| What storage persists project runs? | Local filesystem first unless Stage 2/3 architecture changes this |
+| How will human reviewers score recruiter usefulness? | Start with simple acceptance rubric and feedback field |
