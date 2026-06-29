@@ -113,6 +113,8 @@ Required:
       non-blocking with reviewer rationale.
 - [ ] Cross-model second-opinion findings are resolved or explicitly accepted as
       non-blocking with reviewer rationale.
+- [ ] The reviewer used `docs/STAGE2_REVIEW_PROMPT_PACK.md` or an equivalent
+      prompt set for parallel review coverage.
 - [ ] Human reviewer confirms Stage 2 is documentation/governance only and is
       ready for PR review, CI, and merge.
 

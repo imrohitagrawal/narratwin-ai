@@ -52,6 +52,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `docs/DATA_MODEL.md` | Logical tenant, user, project, document, chunk, ingestion, run, eval, claim-support, artifact, consent, and audit entities | Stage 2 / `#2` | Hardened |
 | `docs/STAGE2_ARCHITECTURE_CONTRACT.json` | Machine-readable Stage 2 semantic contract for states, idempotency, provider defaults, budgets, evidence, cache keys, and review invariants | Stage 2 / `#2` | Added |
 | `docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md` | Human review checklist for architecture, security, AI safety, API/data, portability, performance, observability, sub-agent, and cross-model signoff | Stage 2 / `#2` | Added |
+| `docs/STAGE2_REVIEW_PROMPT_PACK.md` | Reusable prompt pack for parallel sub-agent review and cross-model second opinion | Stage 2 / `#2` | Added |
 
 ## Document Ownership
 
@@ -87,3 +88,4 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | 2026-06-30 | `#2` / `#27` | Add machine-readable Stage 2 semantic contract and remediate second-pass architecture review findings | Locks idempotency, approved-knowledge state, failed-output safety, evidence snapshots, retrieval thresholds, provider fallback, cache invalidation, and semantic gate checks |
 | 2026-06-30 | `#2` / `#27` | Add Stage 2 human review checklist | Adds explicit human signoff criteria for sub-agent, cross-model, architecture, security, AI safety, API/data, portability, performance, observability, and no-product-code review |
 | 2026-06-30 | `#2` / `#27` | Resolve final sub-agent and Claude cross-model review findings | Hardens provider-bound secret screening, evaluator evidence, enum parity, cache invalidation, rate limits, deterministic evaluator posture, and Stage 2 checker negative-path behavior |
+| 2026-06-30 | `#2` / `#27` | Add reusable Stage 2 review prompt pack | Standardizes the ruthless architecture, security, API/data, portability, and cross-model prompts for future Stage 2 reviews |

@@ -190,6 +190,8 @@ Use these files together with this tracker:
 - Stage 2 human signoff is now captured in
   `docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md`; merge remains blocked until required
   human review items are completed.
+- Stage 2 reusable review prompts now live in
+  `docs/STAGE2_REVIEW_PROMPT_PACK.md` for future parallel review runs.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
 
 ## Next Approved Actions

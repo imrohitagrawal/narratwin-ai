@@ -126,6 +126,7 @@ Allowed changes:
 - `docs/STATUS.md`
 - `docs/STAGE2_ARCHITECTURE_CONTRACT.json`
 - `docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md`
+- `docs/STAGE2_REVIEW_PROMPT_PACK.md`
 - `docs/THIRD_PARTY_NOTICES.md`
 - `docs/THREAT_MODEL.md`
 - `docs/TRACEABILITY.md`

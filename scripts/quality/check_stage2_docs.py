@@ -37,6 +37,7 @@ REQUIRED_FILES = [
     "docs/STATUS.md",
     "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
     "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md",
+    "docs/STAGE2_REVIEW_PROMPT_PACK.md",
     "docs/THREAT_MODEL.md",
     "docs/TRACEABILITY.md",
     "scripts/guardrails_check.py",
@@ -70,6 +71,7 @@ STAGE2_ALLOWED_FILES = {
     "docs/STATUS.md",
     "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
     "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md",
+    "docs/STAGE2_REVIEW_PROMPT_PACK.md",
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/THREAT_MODEL.md",
     "docs/TRACEABILITY.md",
@@ -181,6 +183,11 @@ REQUIRED_PHRASES_BY_FILE = {
         "Stage 2 Human Review Checklist",
         "Product implementation allowed: no",
         "Cross-model second-opinion findings",
+    ],
+    "docs/STAGE2_REVIEW_PROMPT_PACK.md": [
+        "Stage 2 Review Prompt Pack",
+        "Ruthless Architecture Reviewer",
+        "Cross-Model Second Opinion",
     ],
 }
 
