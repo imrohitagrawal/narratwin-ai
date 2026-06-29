@@ -106,6 +106,7 @@ STATUS_IMPACT_PREFIXES = (
     ".github/workflows/",
     ".stage/current",
     "AGENTS.md",
+    "Makefile",
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
     "docs/REPOSITORY_GUARDRAILS.md",
@@ -114,6 +115,8 @@ STATUS_IMPACT_PREFIXES = (
     "docs/SKILL_TRUST_REVIEW.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/THIRD_PARTY_NOTICES.md",
+    "scripts/guardrails_check.py",
+    "scripts/quality/",
 )
 
 CODE_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs"}

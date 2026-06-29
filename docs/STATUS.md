@@ -36,7 +36,7 @@ Use these files together with this tracker:
 
 ## Executive Status
 
-- Stage 0 governance is complete and keeps product implementation blocked until Stage 1 passes.
+- Stage 0 governance is complete in the current repository state and keeps product implementation blocked until Stage 1 passes.
 - `docs/STATUS.md` is the in-repo governance ledger for stage coverage, durable issue and PR history, open gaps, and next approved actions.
 - Repository checks enforce updates to this file only for repository-tracked governance changes that are visible in the pull request diff.
 - GitHub-side state that changes outside a repository diff must be reconciled in the next governance update; the local Stage 0 gate does not claim live synchronization.
@@ -114,7 +114,7 @@ Use these files together with this tracker:
   - stage-aware backend contract behavior for Stage 0 governance scripts
   - secret scanning
   - markdown validation
-- Required Stage 0 operating docs now exist on `main`.
+- Required Stage 0 operating docs exist in the current repository state.
 - Canonical repository-tracked governance status now has a dedicated ledger in this file.
 - Skill governance exists through:
   - [Skill Lock](SKILL_LOCK.md)
@@ -123,7 +123,7 @@ Use these files together with this tracker:
 - Third-party governance inventory exists in [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 - Stage 0 merged with green CI and no product implementation.
 
-### Stage 0 Artifacts On `main`
+### Stage 0 Governance Artifacts In Current Repository State
 
 - [AGENTS.md](../AGENTS.md)
 - [CODEX_OPERATING_MODEL.md](CODEX_OPERATING_MODEL.md)
