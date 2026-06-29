@@ -35,11 +35,14 @@ The `Makefile` must expose:
 `make stage0-quality` validates:
 
 - required Stage 0 docs and quality scripts exist
+- `.github/workflows/quality-gates.yml` exists and invokes `make quality`
+- `docs/THIRD_PARTY_NOTICES.md` records governed Stage 0 third-party tools and skill sources
 - `.stage/current` contains `0`
 - current branch name matches the Stage 0 branch pattern
 - files changed from `main` stay within the documented Stage 0 allowlist
 - Stage 0 through Stage 8 plus Final Review are documented
 - no product code has started
+- allowlisted Stage 0 Python scripts remain stdlib-only, read-only governance scripts
 - operating docs contain no unresolved placeholders
 - `docs/SKILL_LOCK.md` records source URL, pin/version status, license status, purpose, active stage, and activation status
 - every third-party GitHub Action referenced by checked-in workflows is represented in `docs/SKILL_LOCK.md`
@@ -92,6 +95,7 @@ GitHub Actions workflows remain the remote enforcement layer. Local stage target
 
 The CI layer must continue to enforce:
 
+- `make quality` for the current stage
 - no direct commits to `main`
 - issue-linked PRs
 - least-privilege workflow permissions

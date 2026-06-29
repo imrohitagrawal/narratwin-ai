@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Maintain this file for every third-party package, model, API, dataset, avatar provider, media asset, and generated sample.
+Maintain this file for every third-party package, tool, skill source, GitHub Action, model, API, dataset, avatar provider, media asset, and generated sample.
 
 This file is not legal advice. Treat it as the engineering license-review register.
 
@@ -15,10 +15,19 @@ This file is not legal advice. Treat it as the engineering license-review regist
 | Tavus | Premium avatar provider | Provider terms | Review before use | Future optional adapter | Must not be hardcoded into core logic. |
 | D-ID | Premium avatar provider | Provider terms | Review before use | Future optional adapter | Must not be hardcoded into core logic. |
 | ElevenLabs | Premium TTS/voice provider | Provider terms | Review before use | Future optional adapter | Voice cloning requires explicit documented consent. |
+| PM Skills | Product-management skill bundle | Pending upstream license review before activation | Not approved until reviewed | Governance only in Stage 0; candidate for Stage 1 | Recorded in `docs/SKILL_LOCK.md`; not activated in Stage 0. |
+| GitHub Spec Kit | Spec and planning toolkit | Pending upstream license review before activation | Not approved until reviewed | Candidate for Stage 2 and Stage 3 planning | Recorded in `docs/SKILL_LOCK.md`; implementation commands blocked in Stage 0. |
+| Addy Osmani Agent Skills | Engineering skill bundle | Pending upstream license review before activation | Not approved until reviewed | Reference-only guidance in Stage 0 | Used as local guidance only; no Stage 0 product implementation allowed. |
+| Agent Skills Standard | Skill packaging convention | Pending upstream license review before activation | Not approved until reviewed | Governance source for future skill packaging | Recorded for operating-model consistency only. |
+| GitHub Action: Checkout | CI repository checkout | GitHub Action terms; immutable pin review required in Stage 3 | Yes after pin review | Existing CI dependency | Source: `actions/checkout`. Not a product runtime dependency. |
+| GitHub Action: Setup Python | CI Python runtime setup | GitHub Action terms; immutable pin review required in Stage 3 | Yes after pin review | Existing CI dependency | Source: `actions/setup-python`. Not a product runtime dependency. |
+| GitHub Action: Upload Artifact | CI artifact upload | GitHub Action terms; immutable pin review required in Stage 3 | Yes after pin review | Existing CI dependency | Source: `actions/upload-artifact`. Not a product runtime dependency. |
+| Gitleaks GitHub Action | CI secret scanning | Upstream action terms; immutable pin review required in Stage 3 | Yes after pin review | Existing CI dependency | Source: `gitleaks/gitleaks-action`. Not a product runtime dependency. |
+| GitHub Action: Markdownlint CLI2 | CI markdown validation | Upstream action terms; immutable pin review required in Stage 3 | Yes after pin review | Existing CI dependency | Source: `DavidAnson/markdownlint-cli2-action`. Not a product runtime dependency. |
 
 ## Rules
 
-- Do not add a dependency, model, dataset, avatar tool, media asset, or provider without updating this file.
+- Do not add a dependency, tool, skill source, GitHub Action, model, dataset, avatar tool, media asset, or provider without updating this file.
 - Do not enable non-commercial or research-only tools in recruiter-facing, public, portfolio, or commercial workflows.
 - Do not enable voice cloning or face cloning without explicit consent workflow.
 - Do not use premium providers in tests unless mocked.

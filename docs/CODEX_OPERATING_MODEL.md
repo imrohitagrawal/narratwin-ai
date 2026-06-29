@@ -19,8 +19,10 @@ Product implementation includes:
 Allowed in Stage 0:
 
 - governance docs
+- CI enforcement for Stage 0 quality gates
 - stage and issue plans
 - skill lock and skill execution plan
+- third-party notice updates for newly governed tools and skills
 - executable Stage 0 quality checks
 - README and agent operating instructions
 

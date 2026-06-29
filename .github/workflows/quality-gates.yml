@@ -41,6 +41,9 @@ jobs:
           GITHUB_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: python scripts/guardrails_check.py
 
+      - name: Run stage quality gate
+        run: make quality
+
       - name: Run tests when present without paid providers
         shell: bash
         env:

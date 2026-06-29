@@ -44,6 +44,7 @@ Allowed changes:
 - `.gitignore`
 - `README.md`
 - `.github/pull_request_template.md`
+- `.github/workflows/quality-gates.yml`
 - `docs/AI_BUILD_BRIEF.md`
 - `docs/CODEX_OPERATING_MODEL.md`
 - `docs/QUALITY_GATES.md`
@@ -52,6 +53,7 @@ Allowed changes:
 - `docs/SKILL_LOCK.md`
 - `docs/SKILL_TRUST_REVIEW.md`
 - `docs/STAGE_ISSUE_PLAN.md`
+- `docs/THIRD_PARTY_NOTICES.md`
 - `.stage/current`
 - `Makefile`
 - `scripts/guardrails_check.py`

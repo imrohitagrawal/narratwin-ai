@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 import subprocess
 import sys
@@ -15,6 +16,7 @@ STAGE0_BRANCH_PATTERN = re.compile(r"^stage0-")
 REQUIRED_FILES = [
     "AGENTS.md",
     ".github/pull_request_template.md",
+    ".github/workflows/quality-gates.yml",
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
     "docs/AI_BUILD_BRIEF.md",
@@ -23,6 +25,7 @@ REQUIRED_FILES = [
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
     "docs/STAGE_ISSUE_PLAN.md",
+    "docs/THIRD_PARTY_NOTICES.md",
     ".stage/current",
     "Makefile",
     "README.md",
@@ -58,6 +61,7 @@ REQUIRED_TARGETS = [
 
 STAGE0_ALLOWED_FILES = {
     ".github/pull_request_template.md",
+    ".github/workflows/quality-gates.yml",
     ".gitignore",
     ".stage/current",
     "AGENTS.md",
@@ -71,6 +75,7 @@ STAGE0_ALLOWED_FILES = {
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
     "docs/STAGE_ISSUE_PLAN.md",
+    "docs/THIRD_PARTY_NOTICES.md",
     "scripts/guardrails_check.py",
     "scripts/quality/check_quality_stage.py",
     "scripts/quality/check_stage0_docs.py",
@@ -107,6 +112,58 @@ SECRET_PATTERNS = [
 SECRET_SCAN_EXCLUDES = {
     "scripts/guardrails_check.py",
     "scripts/quality/check_stage0_docs.py",
+}
+
+STAGE0_PYTHON_GOVERNANCE_FILES = (
+    "scripts/guardrails_check.py",
+    "scripts/quality/check_quality_stage.py",
+    "scripts/quality/check_stage0_docs.py",
+    "scripts/quality/stage_not_implemented.py",
+)
+
+STAGE0_BANNED_IMPORT_ROOTS = {
+    "aiohttp",
+    "anthropic",
+    "boto3",
+    "chromadb",
+    "django",
+    "fastapi",
+    "flask",
+    "google",
+    "gradio",
+    "httpx",
+    "langchain",
+    "llama_index",
+    "numpy",
+    "openai",
+    "pandas",
+    "pytest",
+    "requests",
+    "sqlalchemy",
+    "streamlit",
+    "uvicorn",
+}
+
+STAGE0_MUTATING_CALL_NAMES = {
+    "mkdir",
+    "rename",
+    "replace",
+    "rmdir",
+    "symlink_to",
+    "touch",
+    "unlink",
+    "write_bytes",
+    "write_text",
+}
+
+STAGE0_KNOWN_STDLIB_IMPORT_ROOTS = {
+    "ast",
+    "json",
+    "os",
+    "pathlib",
+    "re",
+    "subprocess",
+    "sys",
 }
 
 
@@ -265,6 +322,28 @@ def check_skill_lock(failures: list[str]) -> None:
             fail(f"{rel} row has an empty required field: {row}", failures)
 
 
+def check_third_party_notices(failures: list[str]) -> None:
+    rel = "docs/THIRD_PARTY_NOTICES.md"
+    path = ROOT / rel
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    required_entries = [
+        "PM Skills",
+        "GitHub Spec Kit",
+        "Addy Osmani Agent Skills",
+        "Agent Skills Standard",
+        "GitHub Action: Checkout",
+        "GitHub Action: Setup Python",
+        "GitHub Action: Upload Artifact",
+        "Gitleaks GitHub Action",
+        "GitHub Action: Markdownlint CLI2",
+    ]
+    for entry in required_entries:
+        if entry not in text:
+            fail(f"{rel} must record the Stage 0 governed third-party source: {entry}", failures)
+
+
 def check_workflow_sources_locked(failures: list[str]) -> None:
     skill_lock = ROOT / "docs" / "SKILL_LOCK.md"
     if not skill_lock.exists():
@@ -305,6 +384,67 @@ def check_make_targets(failures: list[str]) -> None:
             re.MULTILINE,
         ):
             fail(f"Makefile target must fail loudly through stage_not_implemented.py: {target}", failures)
+
+
+def check_quality_workflow(failures: list[str]) -> None:
+    rel = ".github/workflows/quality-gates.yml"
+    path = ROOT / rel
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    required_snippets = [
+        "name: Run stage quality gate",
+        "run: make quality",
+        "name: Run repository guardrails",
+    ]
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"{rel} must include the Stage 0 CI enforcement snippet: {snippet}", failures)
+
+
+def is_stdlib_import(module_name: str) -> bool:
+    if module_name == "__future__":
+        return True
+    stdlib_modules = getattr(sys, "stdlib_module_names", set()) or STAGE0_KNOWN_STDLIB_IMPORT_ROOTS
+    return module_name in stdlib_modules
+
+
+def check_stage0_script_purity(failures: list[str]) -> None:
+    for rel in STAGE0_PYTHON_GOVERNANCE_FILES:
+        path = ROOT / rel
+        if not path.exists():
+            continue
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=rel)
+        except SyntaxError as exc:
+            fail(f"{rel} is not valid Python for Stage 0 purity checks: {exc}", failures)
+            continue
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    root = alias.name.split(".", 1)[0]
+                    if root in STAGE0_BANNED_IMPORT_ROOTS:
+                        fail(f"{rel} imports banned product/runtime module during Stage 0: {root}", failures)
+                    elif not is_stdlib_import(root):
+                        fail(f"{rel} imports non-stdlib module during Stage 0: {root}", failures)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module is None:
+                    continue
+                root = node.module.split(".", 1)[0]
+                if root in STAGE0_BANNED_IMPORT_ROOTS:
+                    fail(f"{rel} imports banned product/runtime module during Stage 0: {root}", failures)
+                elif not is_stdlib_import(root):
+                    fail(f"{rel} imports non-stdlib module during Stage 0: {root}", failures)
+            elif isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name) and node.func.id == "open" and len(node.args) >= 2:
+                    mode = node.args[1]
+                    if isinstance(mode, ast.Constant) and isinstance(mode.value, str) and any(
+                        flag in mode.value for flag in ("w", "a", "x", "+")
+                    ):
+                        fail(f"{rel} must stay read-only in Stage 0; found open(..., {mode.value!r}).", failures)
+                elif isinstance(node.func, ast.Attribute) and node.func.attr in STAGE0_MUTATING_CALL_NAMES:
+                    fail(f"{rel} must stay read-only in Stage 0; found mutating filesystem call: {node.func.attr}().", failures)
 
 
 def check_diff_whitespace(failures: list[str]) -> None:
@@ -351,8 +491,11 @@ def main() -> int:
     check_placeholders(failures)
     check_stage0_scope(failures)
     check_skill_lock(failures)
+    check_third_party_notices(failures)
     check_workflow_sources_locked(failures)
     check_make_targets(failures)
+    check_quality_workflow(failures)
+    check_stage0_script_purity(failures)
     check_diff_whitespace(failures)
     check_python_scripts_compile(failures)
 
