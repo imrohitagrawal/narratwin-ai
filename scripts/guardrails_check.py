@@ -107,15 +107,29 @@ STATUS_IMPACT_PREFIXES = (
     ".stage/current",
     "AGENTS.md",
     "Makefile",
+    "docs/ADR/",
     "docs/AI_BUILD_BRIEF.md",
+    "docs/AI_SAFETY_AND_EVALUATION.md",
+    "docs/ARCHITECTURE.md",
     "docs/CODEX_OPERATING_MODEL.md",
+    "docs/METHODOLOGY.md",
+    "docs/NORTH_STAR_METRICS.md",
+    "docs/OBSERVABILITY_AND_COST.md",
+    "docs/PRD.md",
+    "docs/PRD_RED_TEAM_REVIEW.md",
+    "docs/PRODUCT_STRATEGY.md",
+    "docs/PROJECT_AVATAR_PACK.md",
     "docs/QUALITY_GATES.md",
+    "docs/RELEASE_QUALITY_BAR.md",
     "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/ROADMAP.md",
+    "docs/SECURITY_AND_PRIVACY.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
     "scripts/guardrails_check.py",
     "scripts/quality/",
 )
@@ -141,7 +155,9 @@ def resolve_diff_base(head: str, preferred_base: str) -> str:
     if preferred_base and not is_zero_sha(preferred_base):
         verified = run_git(["rev-parse", "--verify", f"{preferred_base}^{{commit}}"])
         if verified:
-            return preferred_base
+            merge_base = run_git(["merge-base", preferred_base, head])
+            if merge_base:
+                return merge_base
     for candidate in ("origin/main", "main"):
         merge_base = run_git(["merge-base", candidate, head])
         if merge_base:

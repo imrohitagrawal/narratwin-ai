@@ -39,7 +39,7 @@ The `Makefile` must expose:
 - `.github/workflows/quality-gates.yml` exists and invokes `make quality`
 - `docs/THIRD_PARTY_NOTICES.md` records governed Stage 0 third-party tools and skill sources
 - `.stage/current` contains `0`
-- current branch name matches the Stage 0 branch pattern
+- current branch name matches the Stage 0 branch pattern before merge, or is `main` after merge
 - files changed from `main` stay within the documented Stage 0 allowlist
 - Stage 0 through Stage 8 plus Final Review are documented
 - no product code has started

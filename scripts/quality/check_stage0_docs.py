@@ -260,8 +260,10 @@ def check_branch_name(failures: list[str]) -> None:
         fail(result.stderr.strip() or "Could not determine current branch.", failures)
         return
     branch = result.stdout.strip() or os.environ.get("GITHUB_HEAD_REF", "").strip()
+    if branch == "main":
+        return
     if not STAGE0_BRANCH_PATTERN.search(branch):
-        fail(f"Stage 0 branch must match `stage0-*`, found: {branch}", failures)
+        fail(f"Stage 0 branch must match `stage0-*` before merge or be `main` after merge, found: {branch}", failures)
 
 
 def check_stage_documentation(failures: list[str]) -> None:
