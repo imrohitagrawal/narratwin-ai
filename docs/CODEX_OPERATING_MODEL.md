@@ -19,6 +19,7 @@ Product implementation includes:
 Allowed in Stage 0:
 
 - governance docs
+- canonical delivery status tracking
 - CI enforcement for Stage 0 quality gates
 - stage and issue plans
 - skill lock and skill execution plan
@@ -58,6 +59,7 @@ Allowed in Stage 0:
 Stage 0 passes only when:
 
 - all Stage 0 operating docs exist
+- `docs/STATUS.md` exists and records current stage, issue, PR, and governance status
 - `.stage/current` contains `0`
 - Stage 0 through Stage 8 plus Final Review are documented
 - `make stage0-quality` passes

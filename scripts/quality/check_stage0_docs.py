@@ -23,6 +23,7 @@ REQUIRED_FILES = [
     "docs/QUALITY_GATES.md",
     "docs/AI_BUILD_BRIEF.md",
     "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/STATUS.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
@@ -41,6 +42,7 @@ OPERATING_DOCS = [
     "AGENTS.md",
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
@@ -74,6 +76,7 @@ STAGE0_ALLOWED_FILES = {
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
     "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/STATUS.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
     "docs/SKILL_TRUST_REVIEW.md",
@@ -349,6 +352,40 @@ def check_third_party_notices(failures: list[str]) -> None:
             fail(f"{rel} must record the Stage 0 governed third-party source: {entry}", failures)
 
 
+def check_status_doc(failures: list[str]) -> None:
+    rel = "docs/STATUS.md"
+    path = ROOT / rel
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    required_sections = [
+        "# Program Status",
+        "## Snapshot",
+        "## Executive Status",
+        "## Stage Ledger",
+        "## Issue Ledger",
+        "## Pull Request Ledger",
+        "## Completed Work",
+        "## Known Gaps And Reconciliation Items",
+        "## Next Approved Actions",
+        "## Maintenance Protocol",
+    ]
+    for section in required_sections:
+        if section not in text:
+            fail(f"{rel} is missing required status-tracker section: {section}", failures)
+    required_references = [
+        ".stage/current",
+        "#14",
+        "#23",
+        "Stage 0",
+        "Stage 1",
+        "No product implementation",
+    ]
+    for item in required_references:
+        if item not in text:
+            fail(f"{rel} must explicitly record required current-state reference: {item}", failures)
+
+
 def check_workflow_sources_locked(failures: list[str]) -> None:
     skill_lock = ROOT / "docs" / "SKILL_LOCK.md"
     if not skill_lock.exists():
@@ -503,6 +540,7 @@ def main() -> int:
     check_placeholders(failures)
     check_stage0_scope(failures)
     check_skill_lock(failures)
+    check_status_doc(failures)
     check_third_party_notices(failures)
     check_workflow_sources_locked(failures)
     check_make_targets(failures)

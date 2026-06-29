@@ -7,6 +7,7 @@ You are working on NarraTwin AI as a Principal Staff AI Product Engineer.
 Before changing files, read:
 
 - `docs/AI_BUILD_BRIEF.md`
+- `docs/STATUS.md`
 - `docs/REPOSITORY_GUARDRAILS.md`
 - `.github/pull_request_template.md`
 - `scripts/guardrails_check.py`
@@ -32,6 +33,7 @@ Before changing files, read:
 13. Maintain `docs/THIRD_PARTY_NOTICES.md` for third-party packages, tools, skills, models, APIs, datasets, providers, media assets, and generated samples.
 14. Update `docs/ADR/` for architecture-impacting changes.
 15. Update `docs/TRACEABILITY.md` for PRD-impacting changes.
+16. Update `docs/STATUS.md` when stage state, issue ownership, PR status, or governance progress changes.
 
 ## Approved Build Stages
 

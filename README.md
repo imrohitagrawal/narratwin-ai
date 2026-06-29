@@ -8,6 +8,10 @@ It turns approved project knowledge, README files, architecture docs, demo scrip
 
 This repository is intentionally bootstrapped as a **strategy-first, spec-first, TDD-first** build.
 
+Current governance and delivery status is tracked in:
+
+- `docs/STATUS.md`
+
 Do not start by generating a large disconnected code skeleton.
 
 Start with:

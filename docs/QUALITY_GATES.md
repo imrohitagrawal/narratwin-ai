@@ -35,6 +35,7 @@ The `Makefile` must expose:
 `make stage0-quality` validates:
 
 - required Stage 0 docs and quality scripts exist
+- `docs/STATUS.md` exists and contains the canonical stage, issue, PR, and next-action ledger
 - `.github/workflows/quality-gates.yml` exists and invokes `make quality`
 - `docs/THIRD_PARTY_NOTICES.md` records governed Stage 0 third-party tools and skill sources
 - `.stage/current` contains `0`
