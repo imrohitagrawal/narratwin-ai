@@ -2,6 +2,8 @@
 
 This file is the canonical repository-tracked delivery status ledger for NarraTwin AI.
 
+This tracker is snapshot-based. It records the repository state visible from the current branch at authoring time plus the last merged `main` baseline known at that moment.
+
 Use it to answer:
 
 - what has been completed
@@ -13,8 +15,10 @@ Use it to answer:
 ## Snapshot
 
 - Snapshot date: 2026-06-29
-- Default branch baseline: `main`
-- Default branch head at snapshot: `81e7ed5` `Merge pull request #23 from imrohitagrawal/stage0-redo-operating-model-quality-gate`
+- Authoring branch at snapshot: `stage0-status-tracker`
+- Open governance issue at snapshot: `#24`
+- Open governance PR at snapshot: `#25`
+- Last merged `main` baseline at snapshot: `81e7ed5` `Merge pull request #23 from imrohitagrawal/stage0-redo-operating-model-quality-gate`
 - Current stage marker: `.stage/current = 0`
 - Current implementation permission: blocked
 - Current repo mode: governance-first, documentation-first, quality-gate-first
@@ -34,7 +38,9 @@ Use these files together with this tracker:
 
 ## Executive Status
 
-- Stage 0 governance is complete on `main` through merged PRs `#15` and `#23`.
+- Stage 0 governance is complete on the last merged `main` baseline through PRs `#15` and `#23`.
+- This branch adds canonical status tracking and status-update enforcement through issue `#24` and PR `#25`.
+- Until PR `#25` merges, the last merged `main` baseline does not yet contain `docs/STATUS.md`.
 - Stage 0 quality is executable locally and enforced in CI.
 - The repository remains blocked from product implementation because Stage 1 has not passed.
 - Stage 1 issue ownership is ambiguous because both `#1` and `#16` represent Stage 1 work.
@@ -45,7 +51,7 @@ Use these files together with this tracker:
 
 | Stage | Status | Issue ledger | Pull request ledger | Quality gate state | Notes |
 |---|---|---|---|---|---|
-| Stage 0 | Complete on `main` | `#14` closed | `#15` merged, `#23` merged, `#22` superseded/closed | Executable and green | Operating model, skill lock, Stage 0 gate, CI enforcement, and governance inventory are in place. |
+| Stage 0 | Complete on merged `main` baseline, governance follow-up open on this branch | `#14` closed, `#24` open | `#15` merged, `#23` merged, `#22` superseded/closed, `#25` open | Executable and green | The merged baseline already passes Stage 0 governance; this branch adds the canonical tracker and status-update enforcement as follow-up hardening. |
 | Stage 1 | Pending, not started on `main` | `#1` open, `#16` open | None merged | Placeholder target only | Canonical Stage 1 issue must be reconciled before work starts. |
 | Stage 2 | Pending, seed docs exist | `#2` open | None merged | Placeholder target only | Architecture and safety docs exist as seeds, but Stage 2 gate is not implemented. |
 | Stage 3 | Pending, partially pre-scaffolded | `#5` open | Work partially landed in `#15` and `#23` | Placeholder target only | CI and quality scaffolding started early under Stage 0 governance. |
@@ -95,6 +101,7 @@ Use these files together with this tracker:
 | `#15` | Merged | 2026-06-28 | Added repository guardrails and CI quality gates under Stage 0 governance issue `#14`. |
 | `#22` | Closed | Not merged | Earlier Stage 0 operating-model PR superseded by the Stage 0 redo path. |
 | `#23` | Merged | 2026-06-29 | Redid Stage 0 operating model and executable quality gates; green in both `Quality Gates` and `quality` workflows before merge. |
+| `#25` | Open at snapshot | N/A | Adds canonical program status tracking and status-update enforcement under issue `#24`. |
 
 ## Completed Work
 
@@ -110,6 +117,7 @@ Use these files together with this tracker:
   - secret scanning
   - markdown validation
 - Required Stage 0 operating docs now exist on `main`.
+- This branch adds the final missing status-tracker governance layer before the Stage 1 handoff.
 - Skill governance exists through:
   - [Skill Lock](SKILL_LOCK.md)
   - [Skill Execution Plan](SKILL_EXECUTION_PLAN.md)
@@ -158,6 +166,7 @@ Use these files together with this tracker:
 - `.stage/current` remains `0`, which is correct for the current repository state, but it also means all new governance changes must still satisfy the Stage 0 quality contract until Stage 1 is intentionally advanced.
 - The repository contains seed docs for later stages, but those docs are not proof that the corresponding stage gate has passed.
 - No application runtime, backend, frontend, RAG, provider, avatar, or database code has been merged to `main`.
+- Because this file is snapshot-based, the merge of PR `#25` will require the next governance update to refresh the snapshot from "open at snapshot" to merged history.
 
 ## Next Approved Actions
 
@@ -169,7 +178,7 @@ Use these files together with this tracker:
 
 ## Maintenance Protocol
 
-Update this file whenever any of the following happens:
+Update this file in the same branch or PR whenever any of the following happens:
 
 - a stage issue is opened, closed, superseded, or re-scoped
 - a stage PR is opened, closed, merged, or replaced
@@ -181,9 +190,10 @@ Update this file whenever any of the following happens:
 Required update rules:
 
 - update the snapshot section only when the tracker is materially refreshed
+- treat the snapshot as branch-scoped authoring evidence, not as an automatically updated live dashboard
 - preserve historical entries; do not rewrite merged history to look cleaner
 - call out inconsistencies explicitly instead of hiding them
-- use exact issue and PR numbers
+- use exact issue and PR numbers known at the time of the snapshot
 - state whether work is merged to `main`, merely documented, or still pending
 - keep the tracker factual and source-backed
 
@@ -192,3 +202,4 @@ Required update rules:
 | Date | Change |
 |---|---|
 | 2026-06-29 | Initial canonical program status tracker added to consolidate stage, issue, PR, and governance status. |
+| 2026-06-29 | Tracker semantics refined to be branch-scoped and snapshot-based, with explicit separation between the last merged `main` baseline and open governance work. |

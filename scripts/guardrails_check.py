@@ -101,6 +101,21 @@ PRD_IMPACT_PREFIXES = (
     "docs/ROADMAP.md",
 )
 
+STATUS_IMPACT_PREFIXES = (
+    ".github/pull_request_template.md",
+    ".github/workflows/",
+    ".stage/current",
+    "AGENTS.md",
+    "docs/CODEX_OPERATING_MODEL.md",
+    "docs/QUALITY_GATES.md",
+    "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/SKILL_LOCK.md",
+    "docs/SKILL_TRUST_REVIEW.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+)
+
 CODE_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs"}
 
 failures: list[str] = []
@@ -272,6 +287,16 @@ def check_traceability_rules(changes: list[str]) -> None:
         failures.append("PRD-impacting changes require docs/TRACEABILITY.md to be updated.")
 
 
+def check_status_tracking_rules(changes: list[str]) -> None:
+    if not changes:
+        return
+    changed_set = set(changes)
+    status_updated = "docs/STATUS.md" in changed_set
+    status_impacted = any(change.startswith(STATUS_IMPACT_PREFIXES) for change in changes)
+    if status_impacted and not status_updated:
+        failures.append("Stage/governance status changes require docs/STATUS.md to be updated.")
+
+
 def check_llm_tracing_and_citations() -> None:
     for path in iter_text_files():
         rel = relative(path)
@@ -330,6 +355,7 @@ def main() -> int:
     check_provider_keys_are_env_only()
     check_mock_local_defaults()
     check_traceability_rules(changes)
+    check_status_tracking_rules(changes)
     check_llm_tracing_and_citations()
     check_eval_results_blocking()
     check_security_results_blocking()

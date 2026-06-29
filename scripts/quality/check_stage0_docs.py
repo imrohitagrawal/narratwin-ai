@@ -373,17 +373,24 @@ def check_status_doc(failures: list[str]) -> None:
     for section in required_sections:
         if section not in text:
             fail(f"{rel} is missing required status-tracker section: {section}", failures)
-    required_references = [
-        ".stage/current",
-        "#14",
-        "#23",
-        "Stage 0",
-        "Stage 1",
-        "No product implementation",
+    current_stage = (ROOT / ".stage" / "current").read_text(encoding="utf-8").strip() if (ROOT / ".stage" / "current").exists() else ""
+    required_phrases = [
+        "Authoring branch at snapshot:",
+        "Last merged `main` baseline at snapshot:",
+        "Current stage marker:",
+        "Product implementation merged to `main`:",
     ]
-    for item in required_references:
-        if item not in text:
-            fail(f"{rel} must explicitly record required current-state reference: {item}", failures)
+    for phrase in required_phrases:
+        if phrase not in text:
+            fail(f"{rel} must include snapshot consistency field: {phrase}", failures)
+    if current_stage and f".stage/current = {current_stage}" not in text:
+        fail(f"{rel} must record the current stage marker value `.stage/current = {current_stage}`.", failures)
+    if not re.search(r"\|\s*Stage 0\s*\|", text):
+        fail(f"{rel} must include a Stage 0 row in the stage ledger.", failures)
+    if not re.search(r"\|\s*Stage 1\s*\|", text):
+        fail(f"{rel} must include a Stage 1 row in the stage ledger.", failures)
+    if not re.search(r"#\d+", text):
+        fail(f"{rel} must record issue or pull request references using #<number> notation.", failures)
 
 
 def check_workflow_sources_locked(failures: list[str]) -> None:
