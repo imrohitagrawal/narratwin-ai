@@ -105,7 +105,7 @@ Use these files together with this tracker:
 
 ### Completed Governance Milestones
 
-- Branch/PR-only workflow is documented and enforced.
+- Branch/PR-only workflow is documented and enforced through repository checks where possible, with direct-push prevention delegated to repository settings.
 - Local `make quality` exists and dispatches by `.stage/current`.
 - Stage 0 quality is executable through `scripts/quality/check_stage0_docs.py`.
 - GitHub Actions enforce:
