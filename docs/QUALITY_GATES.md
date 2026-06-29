@@ -36,13 +36,17 @@ The `Makefile` must expose:
 
 - required Stage 0 docs and quality scripts exist
 - `.stage/current` contains `0`
+- current branch name matches the Stage 0 branch pattern
+- files changed from `main` stay within the documented Stage 0 allowlist
 - Stage 0 through Stage 8 plus Final Review are documented
 - no product code has started
 - operating docs contain no unresolved placeholders
 - `docs/SKILL_LOCK.md` records source URL, pin/version status, license status, purpose, active stage, and activation status
+- every third-party GitHub Action referenced by checked-in workflows is represented in `docs/SKILL_LOCK.md`
 - `Makefile` contains all required quality targets
 - working-tree diffs have no whitespace errors
 - obvious committed-secret patterns are absent from tracked text files
+- required Stage 0 guardrail inputs and scripts exist and compile
 
 ## Future Stage Quality Contracts
 

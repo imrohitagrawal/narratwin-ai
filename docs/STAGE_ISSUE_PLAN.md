@@ -41,13 +41,16 @@ stage0-redo-operating-model-quality-gate
 Allowed changes:
 
 - `AGENTS.md`
+- `.gitignore`
 - `docs/CODEX_OPERATING_MODEL.md`
 - `docs/QUALITY_GATES.md`
 - `docs/SKILL_EXECUTION_PLAN.md`
 - `docs/SKILL_LOCK.md`
+- `docs/SKILL_TRUST_REVIEW.md`
 - `docs/STAGE_ISSUE_PLAN.md`
 - `.stage/current`
 - `Makefile`
+- `scripts/guardrails_check.py`
 - `scripts/quality/check_stage0_docs.py`
 - `scripts/quality/check_quality_stage.py`
 - `scripts/quality/stage_not_implemented.py`

@@ -1,77 +1,46 @@
 # Skill Trust Review
 
-This file records the trust and installation review for skills listed in `docs/SKILL_EXECUTION_PLAN.md`.
+This file records Stage 0 trust posture for locked skill and workflow sources. No skills were installed or activated in Stage 0.
 
-## Status legend
+## Decision legend
 
-- `approved-for-stage`: can be installed or used only in the named stage.
-- `needs-manual-review`: do not install until license, install behavior, and execution behavior are manually checked.
-- `rejected-for-now`: do not install for the current roadmap.
+- `reference-only`: may be read as local guidance but not installed or activated for product work
+- `needs-manual-review`: pin, license, install path, telemetry, and side effects must be reviewed before activation
+- `approved-for-stage`: approved only for the named stage after lock fields are complete
+
+## Stage model
+
+The trust review follows the current repo stage sequence:
+
+1. Stage 0: Codex operating model and skill lock
+2. Stage 1: Product strategy and PRD v1.0
+3. Stage 2: Architecture, security, AI safety
+4. Stage 3: Repo foundation and CI/CD quality gates
+5. Stage 4: Project upload to grounded script generation
+6. Stage 5: Evaluations, guardrails, observability
+7. Stage 6: Multilingual scripts, subtitles, voice adapter
+8. Stage 7: Avatar rendering adapter and export
+9. Stage 8: Performance, security hardening, release readiness
+10. Final Review: Independent review
+
+## Reviewed sources
+
+| Active stage | Skill/tool | Source | Decision | Notes |
+|---|---|---|---|---|
+| Stage 0 | Addy Osmani Agent Skills | `https://github.com/addyosmani/agent-skills` | reference-only | Used only as local reading guidance in Stage 0. No install or activation performed. |
+| Stage 0 | Agent Skills Standard | `https://github.com/agentskills/agentskills` | reference-only | Recorded as a governance source only. No install or activation performed. |
+| Stage 1 | PM Skills | `https://github.com/phuryn/pm-skills` | needs-manual-review | Intended for strategy, PRD, metrics, roadmap, and PRD red-team review after pin and license verification. |
+| Stage 2 and Stage 3 | GitHub Spec Kit | `https://github.com/github/spec-kit` | needs-manual-review | Intended for constitution, spec, plan, and tasks after immutable version review. Implementation commands remain blocked until Stage 4. |
+| Stage 3 through Final Review | GitHub Actions workflow actions | `https://github.com/actions/checkout`, `https://github.com/actions/setup-python`, `https://github.com/actions/upload-artifact` | needs-manual-review | Existing CI dependencies; immutable action version review is still required. |
+| Stage 3 through Stage 8 | Gitleaks GitHub Action | `https://github.com/gitleaks/gitleaks-action` | needs-manual-review | Existing CI secret-scan dependency; immutable action version review is still required. |
+| Stage 3 through Final Review | Markdownlint CLI2 Action | `https://github.com/DavidAnson/markdownlint-cli2-action` | needs-manual-review | Existing CI markdown gate dependency; immutable action version review is still required. |
 
 ## Rules
 
 1. Do not install all skills at once.
 2. Do not paste API keys, GitHub tokens, or provider secrets into any skill installer.
-3. Prefer official package/plugin installers over copying skill files.
-4. Clone or vendor skill files only when no installer exists and this review approves the exact source.
-5. Pin version, release tag, or commit before using a skill in a repeatable build.
-6. If a skill changes git hooks, filesystem state, network behavior, telemetry, or CI behavior, record it here before use.
-7. Security, privacy, license, and PRD acceptance criteria override skill recommendations.
-
-## Reviewed skills and tools
-
-| Stage | Skill/tool | Source | Install path | Decision | Notes |
-|---|---|---|---|---|---|
-| Stage 0 | PM Skills | `https://github.com/phuryn/pm-skills` | Codex plugin marketplace and selected `codex plugin add ...` commands | needs-manual-review | Use for PRD, strategy, roadmap, metrics, and PRD red-team only. Do not use for implementation. |
-| Stage 1 | GitHub Spec Kit | `https://github.com/github/spec-kit` | `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@<pinned-tag>` | needs-manual-review | Use for constitution, specs, plan, and tasks. Do not run implementation command until Stage 0 and architecture are approved. |
-| Stage 2 | Addy Osmani Agent Skills | `https://github.com/addyosmani/agent-skills` | `npx skills add https://github.com/addyosmani/agent-skills` | needs-manual-review | Use for engineering lifecycle, review, and shipping checklists. Do not let it override NarraTwin PRD scope. |
-| Stage 3 | Obra Superpowers | `https://github.com/obra/superpowers` | Codex plugin install if available; otherwise inspect upstream docs | needs-manual-review | Use only if strict TDD/review workflow is needed. Do not invent install commands. |
-| Stage 4 | Security and Hardening | `https://www.skills.sh/addyosmani/agent-skills/security-and-hardening` | `npx skills add https://github.com/addyosmani/agent-skills --skill security-and-hardening` | needs-manual-review | Use before upload, prompt-injection, provider, and secrets work. |
-| Stage 5 | Python Testing Patterns | `https://www.skills.sh/wshobson/agents/python-testing-patterns` | `npx skills add https://github.com/wshobson/agents --skill python-testing-patterns` | needs-manual-review | Use when FastAPI, RAG, provider mocks, and pytest code are introduced. |
-| Stage 5 | Webapp Testing | `https://www.skills.sh/anthropics/skills/webapp-testing` | `npx skills add https://github.com/anthropics/skills --skill webapp-testing` | needs-manual-review | Use after the UI exists and can run locally. |
-| Stage 5 | E2E Testing Patterns | `https://www.skills.sh/wshobson/agents/e2e-testing-patterns` | `npx skills add https://github.com/wshobson/agents --skill e2e-testing-patterns` | needs-manual-review | Use for Playwright/Cypress patterns after at least one real UI flow exists. |
-| Stage 5 | Vercel Agent Skills | `https://github.com/vercel-labs/agent-skills` | `npx skills add vercel-labs/agent-skills` | needs-manual-review | Use for Next.js frontend quality. Not a product strategy source. |
-| Stage 5 | UI/UX Pro Max | `https://github.com/nextlevelbuilder/ui-ux-pro-max-skill` | `npm install -g ui-ux-pro-max-cli` then `uipro init --ai codex` | needs-manual-review | Use for UI polish after functional UI exists. Do not start here. |
-| Stage 6 | Project Doc Skills | `https://github.com/imrohitagrawal/project-doc-skills` | Inspect/clone only after review; copy only approved `SKILL.md` folders if needed | needs-manual-review | Use for README, runbooks, architecture docs, and release handoff. Do not blindly vendor whole repo. |
-| Stage 6 | Performance Skill | `https://www.skills.sh/addyosmani/web-quality-skills/performance` | `npx skills add https://github.com/addyosmani/web-quality-skills --skill performance` | needs-manual-review | Use after UI/API flows exist. Do not optimize before the first slice works. |
-| Stage 7 | Wednesday AI Agent Skills | `https://github.com/wednesday-solutions/ai-agent-skills` | `npx @wednesday-solutions-eng/ai-agent-skills install` | needs-manual-review | Use after meaningful code exists for codebase map, dependency graph, and guardrails. |
-
-## Skill activation order
-
-1. Stage -1: Complete this trust review.
-2. Stage 0: Install/use only PM and spec skills for product strategy and PRD hardening.
-3. Stage 1: Use architecture, ADR, security, and AI safety review skills.
-4. Stage 2: Add repo quality gates and local validation wrappers.
-5. Stage 3: Implement Slice 1 using TDD and backend/provider/RAG testing skills.
-6. Stage 4: Add UI/E2E skills only after a working UI exists.
-7. Stage 5: Add performance, documentation, and codebase intelligence skills only after meaningful code exists.
-
-## Stop/go gates
-
-### Before coding
-
-- `docs/PRODUCT_STRATEGY.md` is specific to NarraTwin AI.
-- `docs/PRD.md` has implementation-ready user journeys, requirements, non-goals, NFRs, risks, and acceptance criteria.
-- `docs/ARCHITECTURE.md` defines module boundaries, data flow, trust zones, provider contracts, and evaluation flow.
-- `docs/SECURITY_AND_PRIVACY.md` defines upload, secret, consent, provider, and prompt-injection controls.
-- `docs/AI_SAFETY_AND_EVALUATION.md` defines hard gates and required tests.
-- `docs/THIRD_PARTY_NOTICES.md` has no unresolved licensing blockers for the planned slice.
-
-### Before merging Slice 1
-
-- Local quality gates pass.
-- GitHub Actions `quality` workflow passes.
-- Tests cover happy path and at least one failure/refusal path.
-- Unsupported claims are flagged or refused.
-- Uploaded documents are treated as untrusted input.
-- No paid provider key is required.
-- Docs and known limitations are updated.
-
-## Conflict resolution
-
-1. Security, privacy, consent, and license constraints win.
-2. PRD acceptance criteria win over broad implementation suggestions.
-3. ADRs win over ad-hoc architecture suggestions.
-4. TDD failures block progress.
-5. Vertical-slice scope wins over skeleton expansion.
-6. Human-readable docs must be updated when decisions change.
+3. Prefer official installers over copying skill files.
+4. Do not commit `.codex` cache, vendor, auth, config, or plugin runtime state.
+5. Pin version, release tag, or commit SHA before using a skill or workflow source in a repeatable build.
+6. Record filesystem, network, telemetry, hook, and credential side effects before activation.
+7. Security, privacy, consent, license, and stage-gate constraints override skill recommendations.

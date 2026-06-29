@@ -10,16 +10,23 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+STAGE0_BRANCH_PATTERN = re.compile(r"^stage0-")
 
 REQUIRED_FILES = [
     "AGENTS.md",
+    ".github/pull_request_template.md",
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
+    "docs/AI_BUILD_BRIEF.md",
+    "docs/REPOSITORY_GUARDRAILS.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
+    "docs/SKILL_TRUST_REVIEW.md",
     "docs/STAGE_ISSUE_PLAN.md",
     ".stage/current",
     "Makefile",
+    "README.md",
+    "scripts/guardrails_check.py",
     "scripts/quality/check_stage0_docs.py",
     "scripts/quality/check_quality_stage.py",
     "scripts/quality/stage_not_implemented.py",
@@ -31,6 +38,7 @@ OPERATING_DOCS = [
     "docs/QUALITY_GATES.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
+    "docs/SKILL_TRUST_REVIEW.md",
     "docs/STAGE_ISSUE_PLAN.md",
 ]
 
@@ -47,6 +55,23 @@ REQUIRED_TARGETS = [
     "stage8-quality",
     "final-review-quality",
 ]
+
+STAGE0_ALLOWED_FILES = {
+    ".gitignore",
+    ".stage/current",
+    "AGENTS.md",
+    "Makefile",
+    "docs/CODEX_OPERATING_MODEL.md",
+    "docs/QUALITY_GATES.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/SKILL_LOCK.md",
+    "docs/SKILL_TRUST_REVIEW.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "scripts/guardrails_check.py",
+    "scripts/quality/check_quality_stage.py",
+    "scripts/quality/check_stage0_docs.py",
+    "scripts/quality/stage_not_implemented.py",
+}
 
 PRODUCT_CODE_PATTERNS = [
     re.compile(r"^(app|apps|api|backend|frontend|server|src|web|packages|services|rag|providers|avatar)/"),
@@ -99,6 +124,33 @@ def repo_files() -> list[str]:
     return sorted(set(tracked + untracked))
 
 
+def changed_files_for_stage_scope() -> list[str]:
+    merge_base = run(["git", "merge-base", "main", "HEAD"])
+    if merge_base.returncode != 0:
+        raise RuntimeError(merge_base.stderr.strip() or "git merge-base main HEAD failed")
+
+    base = merge_base.stdout.strip()
+    committed = run(["git", "diff", "--name-only", f"{base}..HEAD"])
+    if committed.returncode != 0:
+        raise RuntimeError(committed.stderr.strip() or "git diff base..HEAD failed")
+
+    working = run(["git", "diff", "--name-only", "HEAD"])
+    if working.returncode != 0:
+        raise RuntimeError(working.stderr.strip() or "git diff HEAD failed")
+
+    untracked = run(["git", "ls-files", "--others", "--exclude-standard"])
+    if untracked.returncode != 0:
+        raise RuntimeError(untracked.stderr.strip() or "git ls-files --others failed")
+
+    files = {
+        line.strip()
+        for output in (committed.stdout, working.stdout, untracked.stdout)
+        for line in output.splitlines()
+        if line.strip()
+    }
+    return sorted(files)
+
+
 def read(rel: str) -> str:
     return (ROOT / rel).read_text(encoding="utf-8")
 
@@ -120,6 +172,16 @@ def check_current_stage(failures: list[str]) -> None:
     value = current.read_text(encoding="utf-8").strip()
     if value != "0":
         fail(f".stage/current must contain 0 during Stage 0, found: {value!r}", failures)
+
+
+def check_branch_name(failures: list[str]) -> None:
+    result = run(["git", "branch", "--show-current"])
+    if result.returncode != 0:
+        fail(result.stderr.strip() or "Could not determine current branch.", failures)
+        return
+    branch = result.stdout.strip()
+    if not STAGE0_BRANCH_PATTERN.search(branch):
+        fail(f"Stage 0 branch must match `stage0-*`, found: {branch}", failures)
 
 
 def check_stage_documentation(failures: list[str]) -> None:
@@ -145,6 +207,18 @@ def check_no_product_code(files: list[str], failures: list[str]) -> None:
             continue
         if any(pattern.search(rel) for pattern in PRODUCT_CODE_PATTERNS):
             fail(f"Product/runtime code or manifest is not allowed in Stage 0: {rel}", failures)
+
+
+def check_stage0_scope(failures: list[str]) -> None:
+    try:
+        changed_files = changed_files_for_stage_scope()
+    except RuntimeError as exc:
+        fail(str(exc), failures)
+        return
+
+    for rel in changed_files:
+        if rel not in STAGE0_ALLOWED_FILES:
+            fail(f"Stage 0 branch changed file outside the allowed scope: {rel}", failures)
 
 
 def check_placeholders(failures: list[str]) -> None:
@@ -185,6 +259,24 @@ def check_skill_lock(failures: list[str]) -> None:
             continue
         if not all(columns[:7]):
             fail(f"{rel} row has an empty required field: {row}", failures)
+
+
+def check_workflow_sources_locked(failures: list[str]) -> None:
+    skill_lock = ROOT / "docs" / "SKILL_LOCK.md"
+    if not skill_lock.exists():
+        return
+    text = skill_lock.read_text(encoding="utf-8")
+    workflow_dir = ROOT / ".github" / "workflows"
+    uses_pattern = re.compile(r"^\s*uses:\s*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@", re.MULTILINE)
+    required_sources = set()
+    for workflow in list(workflow_dir.glob("*.yml")) + list(workflow_dir.glob("*.yaml")):
+        workflow_text = workflow.read_text(encoding="utf-8")
+        for action in uses_pattern.findall(workflow_text):
+            required_sources.add(f"https://github.com/{action}")
+
+    for source in sorted(required_sources):
+        if f"`{source}`" not in text:
+            fail(f"docs/SKILL_LOCK.md is missing workflow source entry: {source}", failures)
 
 
 def check_make_targets(failures: list[str]) -> None:
@@ -228,6 +320,7 @@ def check_secret_patterns(files: list[str], failures: list[str]) -> None:
 
 def check_python_scripts_compile(failures: list[str]) -> None:
     for rel in [
+        "scripts/guardrails_check.py",
         "scripts/quality/check_stage0_docs.py",
         "scripts/quality/check_quality_stage.py",
         "scripts/quality/stage_not_implemented.py",
@@ -242,9 +335,12 @@ def main() -> int:
 
     check_required_files(failures)
     check_current_stage(failures)
+    check_branch_name(failures)
     check_stage_documentation(failures)
     check_placeholders(failures)
+    check_stage0_scope(failures)
     check_skill_lock(failures)
+    check_workflow_sources_locked(failures)
     check_make_targets(failures)
     check_diff_whitespace(failures)
     check_python_scripts_compile(failures)
