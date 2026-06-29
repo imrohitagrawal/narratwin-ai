@@ -187,11 +187,14 @@ Use these files together with this tracker:
   Claude cross-model review identified idempotency, approved-knowledge state,
   failed-output exposure, retrieval, cache, provider-bound secret screening,
   evaluation evidence, and guardrail semantic gaps.
-- Stage 2 human signoff is now captured in
-  `docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md`; merge remains blocked until required
-  human review items are completed.
+- Stage 2 sub-agent and cross-model finding disposition is captured in
+  `docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md`; merge remains blocked until the final
+  human PR reviewer signoff is completed.
 - Stage 2 reusable review prompts now live in
   `docs/STAGE2_REVIEW_PROMPT_PACK.md` for future parallel review runs.
+- Non-blocking review recommendations are now tracked in
+  `docs/RECOMMENDED_REVIEW_ITEMS.md` and checked by stage quality so each item
+  must be resolved, accepted, or superseded at the correct future stage.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
 
 ## Next Approved Actions
@@ -239,3 +242,7 @@ Required update rules:
 | 2026-06-30 | Stage 2 remediation added executable local quality gate and hardened architecture/security/eval/performance/API/data-model contracts under issue `#2`; product implementation remains blocked. |
 | 2026-06-30 | Draft PR `#27` opened for Stage 2 remediation and linked to issue `#2`; CI and review remain required before Stage 2 completion. |
 | 2026-06-30 | Second-pass Stage 2 remediation added a machine-readable architecture contract, stronger semantic gate checks, idempotency and job lifecycle locks, safe failed-output contracts, retrieval thresholds, and guardrail self-scanning. |
+| 2026-06-30 | Stage 2 review rerun blockers were remediated for idempotency indexes, evaluation/evidence API consistency, key/cert guardrails, and checker exact-lock coverage; final human PR reviewer signoff remains pending. |
+| 2026-06-30 | Added a recommended-review-item register and stage quality checker so non-blocking review findings are enforced at their assigned stages. |
+| 2026-06-30 | Latest Stage 2 review rerun remediated API schema-list and evaluation-result field contract gaps and tightened recommendation-checker governance coverage. |
+| 2026-06-30 | Latest Stage 2 review rerun remediated failed/refused response status wording, idempotency response optionality, AI safety evaluation-schema coverage, claim-support shape consistency, and lease vocabulary drift. |

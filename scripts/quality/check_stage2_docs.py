@@ -32,6 +32,7 @@ REQUIRED_FILES = [
     "docs/OBSERVABILITY_AND_COST.md",
     "docs/PORTABILITY_STRATEGY.md",
     "docs/QUALITY_GATES.md",
+    "docs/RECOMMENDED_REVIEW_ITEMS.md",
     "docs/SECURITY_AND_PRIVACY.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
@@ -42,6 +43,7 @@ REQUIRED_FILES = [
     "docs/TRACEABILITY.md",
     "scripts/guardrails_check.py",
     "scripts/quality/check_quality_stage.py",
+    "scripts/quality/check_recommended_review_items.py",
     "scripts/quality/check_stage2_docs.py",
 ]
 
@@ -66,6 +68,7 @@ STAGE2_ALLOWED_FILES = {
     "docs/OBSERVABILITY_AND_COST.md",
     "docs/PORTABILITY_STRATEGY.md",
     "docs/QUALITY_GATES.md",
+    "docs/RECOMMENDED_REVIEW_ITEMS.md",
     "docs/SECURITY_AND_PRIVACY.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
@@ -77,6 +80,7 @@ STAGE2_ALLOWED_FILES = {
     "docs/TRACEABILITY.md",
     "scripts/guardrails_check.py",
     "scripts/quality/check_quality_stage.py",
+    "scripts/quality/check_recommended_review_items.py",
     "scripts/quality/check_stage2_docs.py",
 }
 
@@ -99,9 +103,12 @@ SECRET_PATTERNS = [
     re.compile(r"(?i)\b(api[_-]?key|secret|token|password|credential)\b\s*[:=]\s*['\"]?([^'\"\s#]{8,})['\"]?"),
 ]
 
+PRIVATE_KEY_CERT_SUFFIXES = {".pem", ".key", ".crt", ".cer", ".p12", ".pfx"}
+
 PYTHON_GOVERNANCE_FILES = (
     "scripts/guardrails_check.py",
     "scripts/quality/check_quality_stage.py",
+    "scripts/quality/check_recommended_review_items.py",
     "scripts/quality/check_stage0_docs.py",
     "scripts/quality/check_stage1_docs.py",
     "scripts/quality/check_stage2_docs.py",
@@ -166,6 +173,12 @@ REQUIRED_PHRASES_BY_FILE = {
     "docs/QUALITY_GATES.md": [
         "Stage 2 quality is executable",
         "Stage 2 validates",
+        "Recommended Review Items",
+    ],
+    "docs/RECOMMENDED_REVIEW_ITEMS.md": [
+        "Recommended Review Items",
+        "RR-001",
+        "Required stage",
     ],
     "docs/STAGE_ISSUE_PLAN.md": [
         "Stage 2 Architecture And Safety Branch Scope",
@@ -294,6 +307,7 @@ def check_no_product_code(files: list[str], failures: list[str]) -> None:
     allowed_scripts = {
         "scripts/guardrails_check.py",
         "scripts/quality/check_quality_stage.py",
+        "scripts/quality/check_recommended_review_items.py",
         "scripts/quality/check_stage0_docs.py",
         "scripts/quality/check_stage1_docs.py",
         "scripts/quality/check_stage2_docs.py",
@@ -456,6 +470,110 @@ def check_contract_invariants(contract: dict, failures: list[str]) -> None:
     for key, expected in expected_exact_lists.items():
         if contract.get(key) != expected:
             fail(f"Stage 2 architecture contract {key} must equal {expected!r}.", failures)
+    expected_id_prefixes = {
+        "projectId": "proj_",
+        "documentId": "doc_",
+        "chunkId": "chunk_",
+        "contextRefId": "ctx_",
+        "ingestionRunId": "ing_",
+        "runId": "run_",
+        "evaluationId": "eval_",
+        "claimId": "claim_",
+        "claimSupportId": "claimsup_",
+        "evidenceSnapshotId": "evsnap_",
+        "artifactId": "art_",
+        "tombstoneId": "tomb_",
+        "auditEventId": "audit_",
+        "requestId": "req_",
+        "traceId": "trace_",
+        "embeddingId": "emb_",
+        "idempotencyRecordId": "idem_",
+        "secretScreeningId": "secscan_",
+    }
+    if contract.get("idPrefixes") != expected_id_prefixes:
+        fail(f"Stage 2 architecture contract idPrefixes must equal {expected_id_prefixes!r}.", failures)
+    expected_idempotency_endpoints = [
+        "POST /api/v1/projects",
+        "PATCH /api/v1/projects/{projectId}",
+        "POST /api/v1/projects/{projectId}/knowledge-documents",
+        "PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval",
+        "DELETE /api/v1/projects/{projectId}/knowledge-documents/{documentId}",
+        "POST /api/v1/projects/{projectId}/ingestion-runs",
+        "POST /api/v1/projects/{projectId}/walkthrough-runs",
+        "DELETE /api/v1/projects/{projectId}",
+    ]
+    if contract.get("idempotencyRequiredEndpoints") != expected_idempotency_endpoints:
+        fail(
+            "Stage 2 architecture contract idempotencyRequiredEndpoints must equal "
+            f"{expected_idempotency_endpoints!r}.",
+            failures,
+        )
+    expected_evidence_snapshot_fields = [
+        "evidence_snapshot_id",
+        "tenant_id",
+        "project_id",
+        "document_id",
+        "chunk_id",
+        "source_filename",
+        "chunk_index",
+        "source_document_checksum",
+        "chunk_checksum",
+        "chunking_strategy_version",
+        "retrieval_score",
+        "redacted_excerpt",
+        "excerpt_start",
+        "excerpt_end",
+        "redaction_flags",
+        "captured_at",
+        "snapshot_checksum",
+    ]
+    if contract.get("evidenceSnapshotFields") != expected_evidence_snapshot_fields:
+        fail(
+            "Stage 2 architecture contract evidenceSnapshotFields must equal "
+            f"{expected_evidence_snapshot_fields!r}.",
+            failures,
+        )
+    expected_evaluation_result_fields = [
+        "evaluation_id",
+        "run_id",
+        "project_id",
+        "tenant_id",
+        "evaluation_status",
+        "groundedness_score",
+        "unsupported_claim_count",
+        "unsupported_claims",
+        "claim_supports",
+        "context_refs",
+        "context_ref_coverage",
+        "evaluator_version",
+        "prompt_template_version",
+        "embedding_provider",
+        "embedding_model",
+        "embedding_model_version",
+        "embedding_dimension",
+        "vector_store",
+        "retrieval_strategy_version",
+        "retrieval_top_k",
+        "retrieval_score_threshold",
+        "error_code",
+        "prompt_injection_detected",
+        "language_check",
+        "audience_fit_check",
+        "output_schema_valid",
+        "refusal_reason",
+        "provider",
+        "provider_mode",
+        "model",
+        "latency_ms",
+        "estimated_cost",
+        "created_at",
+    ]
+    if contract.get("evaluationResultFields") != expected_evaluation_result_fields:
+        fail(
+            "Stage 2 architecture contract evaluationResultFields must equal "
+            f"{expected_evaluation_result_fields!r}.",
+            failures,
+        )
     retrieval = contract.get("retrievalStrategy", {})
     expected_refusals = [
         "EMPTY_CONTEXT",
@@ -548,6 +666,9 @@ def check_contract_semantics(contract: dict, failures: list[str]) -> None:
             "contextRefs",
             "claimSupports",
             "contextRefCoverage",
+            "EvaluationSummary",
+            '"schema": "EvaluationSummary"',
+            '"evidenceSnapshot"',
             "embeddingProvider",
             "embeddingModel",
             "embeddingDimension",
@@ -559,11 +680,52 @@ def check_contract_semantics(contract: dict, failures: list[str]) -> None:
         failures,
     )
     api_text = read("docs/API_CONTRACT.md") if (ROOT / "docs/API_CONTRACT.md").exists() else ""
+    if "and request body checksum" in api_text:
+        fail("docs/API_CONTRACT.md must not include request body checksum in the idempotency uniqueness scope.", failures)
+    id_prefixes = contract.get("idPrefixes", {})
+    if isinstance(id_prefixes, dict):
+        for name, prefix in id_prefixes.items():
+            if f"`{prefix}`" not in api_text:
+                fail(f"docs/API_CONTRACT.md must document canonical ID prefix {name}: {prefix}", failures)
     for status in ("RESERVED", "RUNNING", "SUCCEEDED", "FAILED", "EXPIRED"):
         if f"`{status}`" not in api_text and f'"{status}"' not in api_text:
             fail(f"docs/API_CONTRACT.md must include idempotency status: {status}", failures)
     if '"acceptedScriptText": null' in api_text:
         fail("docs/API_CONTRACT.md failed/refused examples must omit acceptedScriptText instead of returning null.", failures)
+    if "Response `200` for failed or refused output" in api_text:
+        fail("docs/API_CONTRACT.md must not label new failed/refused POST output as Response 200.", failures)
+    idempotency_section = section_between(api_text, "## Idempotency Requirements")
+    if "- optional `responseStatus`" not in idempotency_section:
+        fail("docs/API_CONTRACT.md IdempotencyRecord responseStatus must be optional.", failures)
+    typed_schema_section = section_between(api_text, "## Typed Response Schemas")
+    for schema_name in ("EvaluationSummary", "ClaimSupport"):
+        if f"`{schema_name}`" not in typed_schema_section:
+            fail(f"docs/API_CONTRACT.md required schema list must include {schema_name}.", failures)
+    evaluation_response_section = section_between(api_text, "### Get Evaluation Result")
+    for field_name in (
+        "promptInjectionDetected",
+        "languageCheck",
+        "audienceFitCheck",
+        "outputSchemaValid",
+        "provider",
+        "providerMode",
+        "latencyMs",
+        "estimatedCost",
+    ):
+        if f'"{field_name}"' not in evaluation_response_section:
+            fail(f"docs/API_CONTRACT.md EvaluationResult response must include {field_name}.", failures)
+    accepted_run_section = section_between(api_text, "### Generate Walkthrough")
+    for field_name in (
+        "tenantId",
+        "projectId",
+        "runId",
+        "evaluationId",
+        "chunkId",
+        "documentId",
+        "supportReason",
+    ):
+        if f'"{field_name}"' not in accepted_run_section:
+            fail(f"docs/API_CONTRACT.md embedded claimSupports must include canonical ClaimSupport field {field_name}.", failures)
     for unsafe_error_term in (
         "raw prompts",
         "raw uploads",
@@ -610,12 +772,31 @@ def check_contract_semantics(contract: dict, failures: list[str]) -> None:
         failures,
     )
     data_text = read("docs/DATA_MODEL.md") if (ROOT / "docs/DATA_MODEL.md").exists() else ""
+    knowledge_document_section = section_between(data_text, "### KnowledgeDocument")
+    for field_name in ("approved_by", "ingested_at"):
+        if f"- optional `{field_name}`" not in knowledge_document_section:
+            fail(f"docs/DATA_MODEL.md KnowledgeDocument field {field_name} must be optional.", failures)
+    normalized_data_text = re.sub(r"\s+", " ", data_text)
+    required_idempotency_index = "(tenant_id, actor_id, idempotency_scope, endpoint, idempotency_key)"
+    stale_idempotency_index = "(tenant_id, actor_id, project_id, endpoint, idempotency_key)"
+    if required_idempotency_index not in normalized_data_text:
+        fail(f"docs/DATA_MODEL.md Required Indexes must include {required_idempotency_index}.", failures)
+    if stale_idempotency_index in normalized_data_text:
+        fail(f"docs/DATA_MODEL.md must not use stale idempotency index {stale_idempotency_index}.", failures)
     walkthrough_statuses = subsection_bullets(data_text, "### WalkthroughRun", "Statuses:", ("Indexes:", "Rules:"))
     if walkthrough_statuses != contract.get("runStatus", []):
         fail("docs/DATA_MODEL.md WalkthroughRun statuses must exactly match the canonical runStatus enum.", failures)
     ingestion_statuses = subsection_bullets(data_text, "### IngestionRun", "Statuses:", ("Indexes:", "Rules:"))
     if ingestion_statuses != contract.get("runStatus", []):
         fail("docs/DATA_MODEL.md IngestionRun statuses must exactly match the canonical runStatus enum.", failures)
+    ingestion_section = section_between(data_text, "### IngestionRun")
+    job_lease_section = section_between(data_text, "### JobLease")
+    for section_name, section_text in (("IngestionRun", ingestion_section), ("JobLease", job_lease_section)):
+        for field_name in ("locked_by", "locked_at", "lease_expires_at"):
+            if f"`{field_name}`" not in section_text:
+                fail(f"docs/DATA_MODEL.md {section_name} must use canonical lease field {field_name}.", failures)
+        if "lease_owner" in section_text:
+            fail(f"docs/DATA_MODEL.md {section_name} must not use stale lease_owner field.", failures)
     evaluation_section = section_between(data_text, "### EvaluationResult")
     for term in contract.get("evaluationResultFields", []):
         if term not in evaluation_section:
@@ -658,6 +839,11 @@ def check_contract_semantics(contract: dict, failures: list[str]) -> None:
         ],
         failures,
     )
+    ai_safety_text = read("docs/AI_SAFETY_AND_EVALUATION.md") if (ROOT / "docs/AI_SAFETY_AND_EVALUATION.md").exists() else ""
+    ai_eval_section = section_between(ai_safety_text, "## Evaluation Result Schema")
+    for term in contract.get("evaluationResultFields", []):
+        if term not in ai_eval_section:
+            fail(f"docs/AI_SAFETY_AND_EVALUATION.md Evaluation Result Schema must include field: {term}", failures)
     require_terms(
         "docs/ARCHITECTURE.md",
         [
@@ -866,6 +1052,9 @@ def is_allowlisted_secret_match(rel: str, text: str, match: re.Match[str]) -> bo
 def check_no_obvious_secrets(failures: list[str]) -> None:
     for rel in repo_files():
         path = ROOT / rel
+        if path.suffix.lower() in PRIVATE_KEY_CERT_SUFFIXES:
+            fail(f"{rel} is a key/certificate file. Private keys and certificates must not be committed.", failures)
+            continue
         if not path.is_file() or path.suffix not in {".json", ".md", ".py", ".txt", ".yaml", ".yml", ".example"}:
             continue
         try:

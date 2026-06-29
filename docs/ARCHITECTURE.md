@@ -584,8 +584,10 @@ Required Stage 4 operational metrics:
 - rate-limit hits
 - `cost_budget_exceeded`
 
-Observability sink failure must not mark a generated output as accepted without a
-persisted audit event.
+Accepted generated output requires a committed run record, evaluation result,
+audit event, and outbox event. External observability sink delivery may fail after
+that transaction commits without invalidating acceptance, but no output may be
+marked accepted if the audit/outbox records were not persisted.
 
 ## Data Isolation
 

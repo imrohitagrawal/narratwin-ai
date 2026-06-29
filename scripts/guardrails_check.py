@@ -33,6 +33,8 @@ EXCLUDED_DIRS = {
 
 TEXT_SUFFIXES = {
     ".adoc",
+    ".cer",
+    ".crt",
     ".css",
     ".env",
     ".example",
@@ -41,8 +43,12 @@ TEXT_SUFFIXES = {
     ".js",
     ".json",
     ".jsx",
+    ".key",
     ".md",
     ".mjs",
+    ".p12",
+    ".pem",
+    ".pfx",
     ".py",
     ".sh",
     ".toml",
@@ -52,6 +58,8 @@ TEXT_SUFFIXES = {
     ".yaml",
     ".yml",
 }
+
+PRIVATE_KEY_CERT_SUFFIXES = {".pem", ".key", ".crt", ".cer", ".p12", ".pfx"}
 
 SECRET_PATTERNS = [
     ("private key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----")),
@@ -133,6 +141,7 @@ STATUS_IMPACT_PREFIXES = (
     "docs/PRODUCT_STRATEGY.md",
     "docs/PROJECT_AVATAR_PACK.md",
     "docs/QUALITY_GATES.md",
+    "docs/RECOMMENDED_REVIEW_ITEMS.md",
     "docs/RELEASE_QUALITY_BAR.md",
     "docs/REPOSITORY_GUARDRAILS.md",
     "docs/ROADMAP.md",
@@ -295,6 +304,9 @@ def check_workflows_least_privilege() -> None:
 def check_secrets() -> None:
     for path in iter_text_files():
         rel = relative(path)
+        if path.suffix.lower() in PRIVATE_KEY_CERT_SUFFIXES:
+            failures.append(f"{rel} is a key/certificate file. Private keys and certificates must not be committed.")
+            continue
         text = read_text(path)
         for name, pattern in SECRET_PATTERNS:
             for match in pattern.finditer(text):

@@ -179,10 +179,10 @@ Fields:
 - `document_status`
 - `approval_status`
 - `ingestion_status`
-- `approved_by`
+- optional `approved_by`
 - optional `approved_at`
 - optional `quarantine_reason`
-- `ingested_at`
+- optional `ingested_at`
 - `created_at`
 - optional `deleted_at`
 
@@ -307,7 +307,8 @@ Fields:
 - `attempt_count`
 - `max_attempts`
 - optional `next_attempt_at`
-- optional `lease_owner`
+- optional `locked_by`
+- optional `locked_at`
 - optional `lease_expires_at`
 - `chunk_count`
 - `embedding_count`
@@ -592,6 +593,10 @@ Fields:
 - `evidence_snapshot`
 - `created_at`
 
+`evidence_snapshot` is the immutable redacted snapshot used by this support
+decision. API responses may duplicate it on `claimSupports` for auditability and
+also expose the same snapshot through the linked `ContextRef.evidenceSnapshot`.
+
 Support statuses:
 
 - `SUPPORTED`
@@ -617,7 +622,8 @@ Fields:
 - `project_id`
 - `job_type`
 - `job_id`
-- `lease_owner`
+- `locked_by`
+- `locked_at`
 - `lease_expires_at`
 - `attempt_count`
 - `max_attempts`
@@ -811,7 +817,7 @@ Stage 4 must provide indexed access for:
 
 - project lookup by `(tenant_id, project_id)`
 - project listing by `(tenant_id, owner_id, created_at, project_id)`
-- idempotency lookup by `(tenant_id, actor_id, project_id, endpoint,
+- idempotency lookup by `(tenant_id, actor_id, idempotency_scope, endpoint,
   idempotency_key)`
 - document listing by `(tenant_id, project_id, created_at, document_id)`
 - document status filtering by `(tenant_id, project_id, document_status,

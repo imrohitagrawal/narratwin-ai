@@ -84,6 +84,11 @@ The `Makefile` must expose:
 
 Stage 2 quality is executable through `scripts/quality/check_stage2_docs.py`.
 
+All stage quality targets also run
+`scripts/quality/check_recommended_review_items.py` before the stage-specific
+gate. The checker validates [Recommended Review Items](RECOMMENDED_REVIEW_ITEMS.md)
+and fails when an item is still open at or after its required stage.
+
 Stage 2 validates:
 
 - `.stage/current` contains `2`
@@ -92,6 +97,8 @@ Stage 2 validates:
 - required Stage 2 architecture, ADR, threat model, security/privacy, AI
   safety/evaluation, portability, API, data model, observability, status, and
   traceability docs exist
+- the recommended-review-item register exists and assigns non-blocking review
+  items to the correct required stage
 - Stage 2 docs include the remediation locks for synthetic local authorization,
   approved-knowledge state, mandatory secret screening before provider egress,
   hard unsupported-claim failure policy, claim-level context references, resource

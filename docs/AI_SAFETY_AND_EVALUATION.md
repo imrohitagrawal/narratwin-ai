@@ -130,7 +130,8 @@ Minimum evaluator behavior:
 Evaluation statuses:
 
 - `PASSED`: no unsupported claims found
-- `WARNING`: minor unsupported or ambiguous content requiring user review
+- `WARNING`: minor non-factual presentation or ambiguous content requiring user
+  review
 - `FAILED`: unsupported claims cannot be published silently
 - `REFUSED`: context is missing, unsafe, or insufficient
 
@@ -173,6 +174,12 @@ Each generated run must store:
 - `context_refs`
 - `claim_supports`
 - `context_ref_coverage`
+- `evaluator_version`
+- `prompt_template_version`
+- `retrieval_strategy_version`
+- `retrieval_top_k`
+- `retrieval_score_threshold`
+- optional `error_code`
 - `refusal_reason`
 - `prompt_injection_detected`
 - `language_check`
@@ -180,13 +187,14 @@ Each generated run must store:
 - `output_schema_valid`
 - `provider`
 - `provider_mode`
+- optional `model`
 - `embedding_provider`
 - `embedding_model`
 - `embedding_model_version`
 - `embedding_dimension`
 - `vector_store`
 - `latency_ms`
-- `estimated_cost`
+- optional `estimated_cost`
 - `created_at`
 
 Unsupported-claim item fields:

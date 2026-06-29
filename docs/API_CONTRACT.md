@@ -126,7 +126,8 @@ Provider-native IDs are stored as provider metadata, not canonical IDs.
 ## Idempotency Requirements
 
 Idempotency keys are scoped by tenant, actor, endpoint, non-null
-`idempotencyScope`, and request body checksum. For project creation,
+`idempotencyScope`, and `idempotencyKey`. The request body checksum is stored on
+the idempotency record for conflict detection, not uniqueness. For project creation,
 `idempotencyScope = "project:create"` because no `projectId` exists yet. For
 project-scoped writes, `idempotencyScope = projectId`. Implementations must persist
 an `IdempotencyRecord` before provider calls, vector writes, generated artifacts,
@@ -142,7 +143,7 @@ approval state changes, or tombstone writes.
 - `endpoint`
 - `idempotencyKey`
 - `requestChecksum`
-- `responseStatus`
+- optional `responseStatus`
 - optional `responseBodyRef`
 - optional `jobRef`
 - `status`
@@ -193,9 +194,11 @@ is accepted. Required schemas:
 - `WalkthroughRun`
 - `AcceptedWalkthroughRun`
 - `UnsafeWalkthroughRun`
+- `EvaluationSummary`
 - `EvaluationResult`
 - `ContextRef`
 - `UnsupportedClaim`
+- `ClaimSupport`
 - `EvidenceSnapshot`
 - `IdempotencyRecord`
 - `SecretScreeningResult`
@@ -556,6 +559,7 @@ idempotency replay or `GET` of an existing terminal run.
     }
   ],
   "evaluation": {
+    "schema": "EvaluationSummary",
     "evaluationId": "eval_123",
     "evaluationStatus": "PASSED",
     "groundednessScore": 1.0,
@@ -564,10 +568,36 @@ idempotency replay or `GET` of an existing terminal run.
     "claimSupports": [
       {
         "claimSupportId": "claimsup_123",
+        "tenantId": "tenant_local",
+        "projectId": "proj_123",
+        "runId": "run_123",
+        "evaluationId": "eval_123",
         "claimId": "claim_123",
         "contextRefId": "ctx_123",
+        "chunkId": "chunk_123",
+        "documentId": "doc_123",
         "supportStatus": "SUPPORTED",
-        "supportScore": 1.0
+        "supportScore": 1.0,
+        "supportReason": "The claim is directly supported by the cited chunk.",
+        "evidenceSnapshot": {
+          "evidenceSnapshotId": "evsnap_123",
+          "tenantId": "tenant_local",
+          "projectId": "proj_123",
+          "documentId": "doc_123",
+          "chunkId": "chunk_123",
+          "sourceFilename": "project-summary.md",
+          "chunkIndex": 0,
+          "sourceDocumentChecksum": "sha256:doc",
+          "chunkChecksum": "sha256:chunk",
+          "chunkingStrategyVersion": "stage4-chunk-v1",
+          "retrievalScore": 0.91,
+          "redactedExcerpt": "Project fact used as evidence.",
+          "excerptStart": 0,
+          "excerptEnd": 30,
+          "redactionFlags": [],
+          "capturedAt": "2026-06-29T00:00:00Z",
+          "snapshotChecksum": "sha256:snapshot"
+        }
       }
     ],
     "contextRefCoverage": 1.0,
@@ -593,7 +623,15 @@ idempotency replay or `GET` of an existing terminal run.
 }
 ```
 
-Response `200` for failed or refused output:
+The embedded `evaluation` object in accepted walkthrough-run responses is an
+`EvaluationSummary`, not the full canonical `EvaluationResult`. It exists for UI
+state rendering and must include the decision fields needed to explain accepted
+output. The full `EvaluationResult` is returned by
+`GET /api/v1/projects/{projectId}/walkthrough-runs/{runId}/evaluation`.
+
+Failed or refused terminal output shape. A newly created synchronous terminal
+failure uses `201` with this shape; `200` is used only for `GET` or idempotency
+replay of an existing terminal run.
 
 ```json
 {
@@ -684,7 +722,26 @@ Response `200`:
       "documentId": "doc_123",
       "supportStatus": "SUPPORTED",
       "supportScore": 1.0,
-      "supportReason": "The claim is directly supported by the cited chunk."
+      "supportReason": "The claim is directly supported by the cited chunk.",
+      "evidenceSnapshot": {
+        "evidenceSnapshotId": "evsnap_123",
+        "tenantId": "tenant_local",
+        "projectId": "proj_123",
+        "documentId": "doc_123",
+        "chunkId": "chunk_123",
+        "sourceFilename": "project-summary.md",
+        "chunkIndex": 0,
+        "sourceDocumentChecksum": "sha256:doc",
+        "chunkChecksum": "sha256:chunk",
+        "chunkingStrategyVersion": "stage4-chunk-v1",
+        "retrievalScore": 0.91,
+        "redactedExcerpt": "Project fact used as evidence.",
+        "excerptStart": 0,
+        "excerptEnd": 30,
+        "redactionFlags": [],
+        "capturedAt": "2026-06-29T00:00:00Z",
+        "snapshotChecksum": "sha256:snapshot"
+      }
     }
   ],
   "contextRefCoverage": 1.0,
@@ -732,6 +789,16 @@ Response `200`:
   "retrievalTopK": 6,
   "retrievalScoreThreshold": 0.72,
   "evaluatorVersion": "stage4-deterministic-v1",
+  "promptInjectionDetected": false,
+  "languageCheck": "PASSED",
+  "audienceFitCheck": "PASSED",
+  "outputSchemaValid": true,
+  "refusalReason": null,
+  "provider": "mock",
+  "providerMode": "LOCAL",
+  "model": "mock-script-generator",
+  "latencyMs": 100,
+  "estimatedCost": 0,
   "createdAt": "2026-06-29T00:00:00Z"
 }
 ```

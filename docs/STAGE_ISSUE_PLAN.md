@@ -121,6 +121,7 @@ Allowed changes:
 - `docs/OBSERVABILITY_AND_COST.md`
 - `docs/PORTABILITY_STRATEGY.md`
 - `docs/QUALITY_GATES.md`
+- `docs/RECOMMENDED_REVIEW_ITEMS.md`
 - `docs/SECURITY_AND_PRIVACY.md`
 - `docs/STAGE_ISSUE_PLAN.md`
 - `docs/STATUS.md`
@@ -132,6 +133,7 @@ Allowed changes:
 - `docs/TRACEABILITY.md`
 - `scripts/guardrails_check.py`
 - `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_recommended_review_items.py`
 - `scripts/quality/check_stage2_docs.py`
 
 Blocked changes:

@@ -12,6 +12,12 @@ outputs/
 .chroma/
 .DS_Store
 *.log
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
 
 # Local Codex skill/vendor workspace
 .codex/
