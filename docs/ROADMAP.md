@@ -18,7 +18,7 @@ preserves two product modes while implementing the grounded script loop first:
 
 ## Outcome Roadmap
 
-| Phase | Outcome statement | Primary evidence |
+| Stage | Outcome statement | Primary evidence |
 |---|---|---|
 | Stage 0 | Enable safe agent work by establishing operating model, skill lock, guardrails, and Stage 0 quality checks | Merged Stage 0 docs and CI |
 | Stage 1 | Enable reviewers to approve a focused product definition before implementation | Product strategy, PRD v1.0, red-team, metrics, roadmap, RTM, phase plan |
@@ -62,6 +62,7 @@ Outcome:
 Exit gate:
 
 - documents are reviewed through issue `#1`
+- `make stage1-quality` and `make quality` pass with `.stage/current = 1`
 - no product code is introduced
 - product implementation remains blocked until later gates pass
 - issue `#16` remains the follow-on Spec Kit constitution/spec/plan/tasks gate
@@ -117,7 +118,7 @@ project creation
 Exit gate:
 
 - user-facing happy path works
-- at least one refusal path works
+- empty-context, unsupported-claim, and prompt-injection refusal paths pass
 - generated output has context refs and run metadata
 - tests pass without real paid provider keys
 - docs include security notes, observability metadata, known limitations, and reviewer
@@ -163,12 +164,14 @@ Outcome:
 - mock/local avatar rendering adapter
 - video export artifact path
 - adapter contract tests
+- optional premium provider adapter contracts where explicitly approved
 - AI-generated media disclosure
 - consent controls for any cloned identity feature
 
 Exit gate:
 
 - avatar/video output remains provider-agnostic
+- premium providers remain optional and disabled for local/dev/test
 - Wav2Lip is not enabled by default
 - third-party notices and license review are complete for any used tool
 
@@ -178,7 +181,7 @@ Outcome:
 
 - dependency/security scan evidence
 - performance budgets
-- provider fallback behavior
+- provider fallback behavior for existing adapters
 - cost and latency review
 - release-readiness report
 - known limitations and rollback notes
@@ -208,7 +211,8 @@ Exit gate:
 | Stage 5 | Hardens evaluation and traceability | Hardens answer safety and refusal behavior |
 | Stage 6 | Adds translation, subtitles, voice-ready output | Adds multilingual answer foundations |
 | Stage 7 | Adds avatar/video render adapter and export | Adds avatar presentation boundary |
-| Stage 8 | Hardens provider/cost/security behavior | Hardens provider/cost/security behavior |
+| Future approved stage | N/A | Adds interactive Q&A after stage-plan update |
+| Stage 8 | Hardens existing provider/cost/security behavior | Hardens existing provider/cost/security behavior |
 
 ## Roadmap Guardrails
 

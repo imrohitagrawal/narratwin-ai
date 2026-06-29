@@ -19,10 +19,28 @@ authorize product implementation in Stage 1.
    storage, avatar, and media implementation blocked until later approved stages.
 2. Stage 1 closes product/PRD hardening under issue `#1`.
 3. Issue `#16` remains the follow-on Spec Kit constitution/spec/plan/tasks gate.
-4. `.stage/current` remains `0` until the repository intentionally advances stage
-   quality gates through a reviewed PR.
+4. `.stage/current` is advanced to `1` in the Stage 1 PR because this PR implements
+   the executable Stage 1 documentation quality gate.
 5. Slice 1 implementation starts only after Stage 2 architecture/security/AI-safety
    and Stage 3 repo foundation gates are approved.
+
+## Phase-to-stage mapping
+
+The canonical delivery unit is the approved stage. This document uses numbered
+phases only to order planning work within or across stages.
+
+| Phase | Stage | Issue | Implementation permission |
+|---|---|---|---|
+| Phase 1 | Stage 1 | `#1` | No product implementation |
+| Phase 2 | Stage 1 follow-on | `#16` | No product implementation |
+| Phase 3 | Stage 2 | `#2` | No product implementation |
+| Phase 4 | Stage 3 | `#5` | No product feature code |
+| Phase 5 | Stage 4 | `#4` | First vertical slice only |
+| Phase 6 | Stage 5 | `#10` | Slice-scoped evaluation, guardrails, observability |
+| Phase 7 | Stage 6 | `#11`, `#17`, `#18` | Slice-scoped multilingual, subtitle, voice adapter |
+| Phase 8 | Stage 7 | `#12`, `#19`, `#21` | Slice-scoped avatar/video and optional provider adapters |
+| Phase 9 | Future approved stage | `#20` | Interactive Q&A only after stage-plan update |
+| Phase 10 | Stage 8 and Final Review | `#13`, `#6` | Hardening and review only |
 
 ## Boundaries
 
@@ -91,10 +109,10 @@ Acceptance:
 Verification:
 
 - review `git diff --name-only` for docs-only scope
-- run `python -m py_compile scripts/guardrails_check.py`
-- run `python scripts/guardrails_check.py`
-- run `make quality` and record whether Stage 0 branch-pattern rules block this
-  Stage 1 branch
+- run `python3 -m py_compile scripts/guardrails_check.py scripts/quality/check_quality_stage.py scripts/quality/check_stage1_docs.py`
+- run `python3 scripts/guardrails_check.py`
+- run `make stage1-quality`
+- run `make quality`
 
 ## Phase 2: Spec Kit Gate
 
@@ -184,7 +202,8 @@ Task breakdown:
    - Verify: generation tests with mock provider
 6. Unsupported-claim evaluation and refusal paths
    - Acceptance: unsupported and empty-context outputs are flagged/refused
-   - Verify: eval fixtures
+   - Verify: eval fixtures covering one supported claim, one unsupported claim,
+     one mixed-claim response, no-chunk empty context, and retrieval miss
 7. Stored output and minimal UI display
    - Acceptance: user sees script, context refs, warnings, and run metadata
    - Verify: UI smoke validation and storage tests
@@ -192,6 +211,7 @@ Task breakdown:
 Checkpoint:
 
 - all Stage 4 quality checks pass
+- Slice 1 unsupported-claim, empty-context, and prompt-injection fixtures block merge
 - docs include security notes, observability metadata, known limitations, and reviewer
   evidence
 
@@ -239,25 +259,27 @@ Acceptance:
 
 Stage: Stage 7
 
-Issues: `#12`, `#19`
+Issues: `#12`, `#19`, `#21`
 
 Scope:
 
 - mock/local avatar renderer
 - adapter contract tests
 - video export artifact path
+- optional premium provider adapter contracts where explicitly approved
 - AI media disclosure
 - consent controls for any cloned identity feature
 
 Acceptance:
 
 - provider SDKs are isolated behind adapters
+- premium providers are optional and disabled for local/dev/test
 - Wav2Lip is not enabled by default
 - third-party notices and license reviews are updated
 
 ## Phase 9: Interactive AI Avatar Walkthrough
 
-Stage: Stage 7 or later
+Stage: Future approved stage after Stage 4/5 foundation
 
 Issue: `#20`
 
@@ -271,6 +293,8 @@ Scope:
 
 Acceptance:
 
+- stage plan and `docs/STATUS.md` identify the approved implementation stage before
+  code starts
 - Q&A refuses unsupported answers
 - context references are stored and shown
 - prompt-injection tests pass
@@ -283,8 +307,7 @@ Issues: `#21`, `#13`, `#6`
 
 Scope:
 
-- optional premium provider adapters
-- fallback behavior
+- fallback behavior for existing adapters
 - cost and latency review
 - performance budgets
 - security hardening

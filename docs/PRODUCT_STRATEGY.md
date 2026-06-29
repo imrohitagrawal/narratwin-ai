@@ -38,6 +38,9 @@ auditable, and provider-agnostic.
 NarraTwin AI preserves two product modes from the start, even though the first
 implementation slice proves only the grounded script loop.
 
+- pre-rendered multilingual demo video
+- interactive AI avatar walkthrough
+
 ### Mode 1: Pre-rendered Multilingual Demo Video
 
 This mode helps project creators produce portfolio-ready and recruiter-ready demo

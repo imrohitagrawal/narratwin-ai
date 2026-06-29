@@ -10,7 +10,10 @@ Use one top-level command:
 make quality
 ```
 
-During Stage 0, `make quality` runs only Stage 0 checks by delegating to `scripts/quality/check_quality_stage.py`. It must not run backend, frontend, Docker, database, RAG, avatar, or provider checks because those product areas are not allowed in Stage 0.
+During Stage 1, `make quality` runs only Stage 1 documentation and governance checks
+by delegating to `scripts/quality/check_quality_stage.py`. It must not run backend,
+frontend, Docker, database, RAG, avatar, or provider checks because those product
+areas are not allowed before Stage 4.
 
 ## Required Make Targets
 
@@ -18,9 +21,9 @@ The `Makefile` must expose:
 
 | Target | Current Stage 0 behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`; currently Stage 0 only |
+| `make quality` | Runs checks for `.stage/current`; currently Stage 1 |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
-| `make stage1-quality` | Fails loudly until Stage 1 quality is implemented |
+| `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
 | `make stage2-quality` | Fails loudly until Stage 2 quality is implemented |
 | `make stage3-quality` | Fails loudly until Stage 3 quality is implemented |
 | `make stage4-quality` | Fails loudly until Stage 4 quality is implemented |
@@ -56,7 +59,24 @@ The `Makefile` must expose:
 
 ### Stage 1: Product Strategy And PRD v1.0
 
-Gate must validate product strategy, PRD v1.0, PRD red-team review, North Star metrics, roadmap, traceability, issue linkage, and no product implementation.
+`make stage1-quality` validates:
+
+- required Stage 1 product and PRD artifacts exist
+- `.stage/current` contains `1`
+- current branch name matches the Stage 1 branch pattern before merge, or is `main`
+  after merge
+- changed files stay within the documented Stage 1 allowlist
+- product strategy and PRD v1.0 preserve both product modes
+- PRD captures project knowledge upload, RAG ingestion, grounded script generation,
+  evaluation gates, security/privacy guardrails, media provider boundaries, and
+  free-first/premium-provider modes
+- `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md` is the canonical requirement matrix
+- `docs/TRACEABILITY.md` links to the canonical matrix instead of duplicating it
+- `docs/STATUS.md` records Stage 1 issue and PR state
+- Stage 1 changes introduce no product/runtime code or manifests
+- Stage 1 Python quality scripts remain stdlib-only and compile
+- working-tree diffs have no whitespace errors
+- obvious committed-secret patterns are absent from tracked text files
 
 ### Stage 2: Architecture, Security, AI Safety
 

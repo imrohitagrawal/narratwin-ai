@@ -194,11 +194,14 @@ Requirements:
 
 Future slices must support:
 
-- translation/localization of grounded scripts
-- subtitle-ready text with timestamps when media exists
-- optional TTS provider boundary
-- AI voice disclosure
-- language quality checks
+- translation/localization of grounded scripts while preserving context references
+- subtitle-ready WebVTT or SRT export once timing information exists
+- untimed subtitle draft export before media timing exists
+- optional TTS provider boundary with text input, voice profile metadata, audio
+  artifact reference, provider mode, latency, and cost metadata
+- AI voice disclosure in output metadata and UI wherever audio is produced
+- language quality checks against approved source meaning
+- fallback to script-only output when translation, subtitle, or voice generation fails
 
 Slice 1 may accept a language parameter but is not required to ship production-quality
 translation, voice, or subtitles.
@@ -210,6 +213,10 @@ Future avatar/video output must use provider-agnostic adapters.
 Requirements:
 
 - Mock avatar provider is default until Stage 7.
+- Adapter input includes grounded script, optional audio artifact, optional subtitle
+  artifact, avatar profile, consent metadata, and provider mode.
+- Adapter output includes render status, output artifact reference, provider metadata,
+  disclosure text, fallback reason, and estimated cost when available.
 - Premium provider SDKs stay outside core domain logic.
 - Wav2Lip is not enabled by default.
 - Any local or cloud lip-sync/avatar tool requires license review.
@@ -235,8 +242,8 @@ Requirements:
 | FR-013 | Export subtitle-ready output | Stage 6 | Should |
 | FR-014 | Generate optional voice through mock/local-first TTS adapter | Stage 6 | Should |
 | FR-015 | Render optional avatar/video output through adapter boundary | Stage 7 | Should |
-| FR-016 | Support interactive Q&A over approved project knowledge | Stage 7 or later | Should |
-| FR-017 | Support optional premium providers without requiring them locally | Stage 8 or later | Should |
+| FR-016 | Support interactive Q&A over approved project knowledge | Future approved stage / `#20` | Should |
+| FR-017 | Support optional premium providers without requiring them locally | Stage 7 adapter scope / `#21` | Should |
 
 ## 9. Non-functional Requirements
 
@@ -336,6 +343,15 @@ Hard rules:
 - Wav2Lip is not enabled by default.
 - Private data must not be sent to external providers without explicit configuration.
 - Logs must not store raw secrets, tokens, or private provider keys.
+- Project data must be isolated by project identifier and future tenant/user boundary.
+- Uploaded source files and generated runs must have a documented retention and
+  deletion policy before external storage or multi-user access ships.
+- External provider egress requires explicit provider-mode configuration and visible
+  run metadata.
+- Uploaded content must be screened for obvious secrets before being sent to external
+  providers in any non-local mode.
+- The system must record which files are approved sources for each run so users and
+  reviewers can audit the grounding basis.
 
 ## 13. Free-first And Premium-provider Modes
 
@@ -357,6 +373,9 @@ Optional future mode:
 - Premium provider use must be explicit.
 - Cost, provider, latency, and failure metadata must be recorded.
 - Core domain logic must not depend directly on provider SDKs.
+- Stage 8 may harden premium-provider behavior only after an adapter exists in an
+  earlier approved stage; it must not introduce new provider features during
+  hardening.
 
 ## 14. MVP Scope
 
@@ -400,10 +419,14 @@ Stage 1 succeeds when:
 Slice 1 succeeds when:
 
 - user can produce a stored grounded walkthrough from uploaded markdown/text
-- output includes context references and run metadata
-- unsupported claims are flagged or refused
-- empty-context refusal works
-- prompt injection inside uploaded content is neutralized
+- output includes at least one context reference for each project-specific paragraph
+  or a refusal explaining why context is insufficient
+- unsupported claims are flagged or refused across a controlled fixture set with at
+  least one supported claim, one unsupported claim, and one mixed-claim response
+- empty-context refusal works for a project with no stored chunks and for a retrieval
+  miss against an existing project
+- prompt injection inside uploaded content is neutralized for at least one fixture
+  containing instructions to ignore system/developer rules
 - tests run without real paid provider keys
 - docs describe validation evidence and known limitations
 

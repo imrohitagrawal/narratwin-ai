@@ -74,11 +74,13 @@ Slice 1 must store enough metadata to measure:
 
 Slice 1 is not acceptable unless:
 
-- happy path creates a stored grounded walkthrough
-- output includes context refs
-- unsupported-claim detection or refusal works on a controlled test
-- empty-context refusal works
-- prompt-injection uploaded-document test works
+- happy path creates a stored grounded walkthrough from at least one markdown fixture
+- output includes context refs for project-specific claims
+- unsupported-claim detection or refusal passes a controlled fixture set with at
+  least one supported claim, one unsupported claim, and one mixed-claim response
+- empty-context refusal passes for no-chunk and retrieval-miss cases
+- prompt-injection uploaded-document test passes for at least one malicious markdown
+  fixture that attempts to override system/developer instructions
 - tests pass without real paid provider keys
 - run metadata is stored with provider mode and evaluation status
 
@@ -86,7 +88,8 @@ Slice 1 is not acceptable unless:
 
 | Stage | Threshold |
 |---|---|
-| Stage 5 | Unsupported-claim evals are blocking and visible in validation evidence |
+| Stage 4 | Slice 1 unsupported-claim, empty-context, and prompt-injection fixtures block merge |
+| Stage 5 | Expanded unsupported-claim evals are blocking and visible in validation evidence |
 | Stage 6 | Multilingual output passes language sanity checks for approved test cases |
 | Stage 6 | Subtitle export has valid structure for generated scripts |
 | Stage 7 | Mock avatar/video render completes with AI disclosure and provider metadata |
