@@ -34,6 +34,23 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md` | Requirement-to-stage matrix | Stage 1 / `#1` | Added |
 | `docs/PHASE_PLAN.md` | Spec-driven phase plan and vertical-slice breakdown | Stage 1 / `#1` | Added |
 
+## Stage 2 Architecture And Safety Traceability
+
+| Artifact | Requirement coverage | Stage / issue | Status |
+|---|---|---|---|
+| `docs/ARCHITECTURE.md` | Provider-agnostic boundaries, first vertical slice flow, observability, CI quality gates, no product implementation, Stage 2 remediation locks | Stage 2 / `#2` | Hardened |
+| `docs/ADR/0001-system-architecture.md` | System boundary decision for frontend, backend API, ingestion, RAG, generation, evaluator, adapters, observability | Stage 2 / `#2` | Added |
+| `docs/ADR/0002-rag-storage.md` | RAG storage, chunk metadata, vector-store portability, project isolation | Stage 2 / `#2` | Added |
+| `docs/ADR/0003-llm-provider-routing.md` | LLM, embedding, translation, and evaluation provider routing with mock/local defaults | Stage 2 / `#2` | Added |
+| `docs/ADR/0004-avatar-provider-adapter.md` | Future avatar adapter boundary, consent, disclosure, premium-provider isolation | Stage 2 / `#2` | Added |
+| `docs/ADR/0005-observability-and-evals.md` | Run metadata, structured events, evaluation statuses, merge-blocking eval posture | Stage 2 / `#2` | Added |
+| `docs/THREAT_MODEL.md` | STRIDE-style risks for upload, RAG, provider, evaluation, observability, and future avatar flows | Stage 2 / `#2` | Added |
+| `docs/SECURITY_AND_PRIVACY.md` | Secret scanning, prompt injection controls, upload validation, isolation, key isolation, logging, rate limits, audit logs, dependency and OWASP scan posture | Stage 2 / `#2` | Hardened |
+| `docs/AI_SAFETY_AND_EVALUATION.md` | Unsupported-claim evaluation, prompt-injection resistance, claim-level context refs, refusal rules, eval schemas, fixture contract, UI state matrix | Stage 2 / `#2` | Hardened |
+| `docs/PORTABILITY_STRATEGY.md` | Provider, data, storage, runtime, AI-output portability, tombstones, synthetic local tenant | Stage 2 / `#2` | Hardened |
+| `docs/API_CONTRACT.md` | Contract-first REST resources, versioning, idempotency, typed schemas, generated-run outputs, future media placeholders | Stage 2 / `#2` | Hardened |
+| `docs/DATA_MODEL.md` | Logical tenant, user, project, document, chunk, ingestion, run, eval, claim-support, artifact, consent, and audit entities | Stage 2 / `#2` | Hardened |
+
 ## Document Ownership
 
 | Document | Owns | Other docs should |
@@ -63,3 +80,5 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 |---|---|---|---|
 | 2026-06-29 | `#14` | Add repository guardrails and quality gates | Adds traceability enforcement before implementation starts |
 | 2026-06-29 | `#1` | Harden product strategy and PRD v1.0 | Adds Stage 1 product requirement map and product-mode coverage |
+| 2026-06-29 | `#2` | Draft Stage 2 architecture, security, AI safety, portability, API, and data-model artifacts | Maps PRD safety/provider/traceability requirements to pre-implementation architecture docs |
+| 2026-06-30 | `#2` | Harden Stage 2 architecture/security/evaluation/performance/API/data-model contracts and add executable quality gate | Converts Stage 2 findings into enforceable acceptance checks before Stage 3/4 |

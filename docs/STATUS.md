@@ -14,8 +14,8 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-06-29
-- Current stage marker: `.stage/current = 1`
+- Last reviewed date: 2026-06-30
+- Current stage marker: `.stage/current = 2`
 - Current implementation permission: blocked
 - Current repo mode: governance-first, documentation-first, quality-gate-first
 - Product implementation merged to `main`: no
@@ -41,6 +41,10 @@ Use these files together with this tracker:
 - Repository checks enforce updates to this file only for repository-tracked governance changes that are visible in the CI diff range.
 - GitHub-side state that changes outside a repository diff must be reconciled in the next governance update; the local Stage 0 gate does not claim live synchronization.
 - Stage 1 quality is executable locally and enforced in CI.
+- Stage 2 quality is executable locally through `make stage2-quality`.
+- Stage 2 remediation hardens architecture, security, AI safety, portability, API,
+  data model, observability, branch scope, provider defaults, and ADR canon for issue
+  `#2`; product implementation remains blocked.
 - Stage 1 allows narrowly scoped CI wrapper compatibility fixes only where the
   Stage 1 marker activates pre-existing governance checks.
 - The repository remains blocked from product implementation because Stage 2, Stage 3, and the Stage 4 implementation gate have not passed.
@@ -54,7 +58,7 @@ Use these files together with this tracker:
 |---|---|---|---|---|---|
 | Stage 0 | Complete, governance baseline active | `#14` closed | `#15` merged, `#23` merged | Executable and green | Operating model, quality gate, and repository guardrails are in place; product implementation remains blocked. |
 | Stage 1 | Product/PRD hardening represented by PR `#26` | `#1` open, `#16` open | `#26` | Executable | `#1` is product strategy and PRD v1.0 hardening; `#16` remains the follow-on Spec Kit gate. Reconcile merge state after the GitHub merge event. |
-| Stage 2 | Pending, seed docs exist | `#2` open | None merged | Placeholder target only | Architecture and safety docs exist as seeds, but Stage 2 gate is not implemented. |
+| Stage 2 | In progress, remediation gate executable | `#2` open | None merged | Executable locally | Architecture, ADRs, threat model, security/privacy, AI safety/evaluation, portability, API, data model, observability, branch scope, and provider defaults are hardened; product implementation remains blocked until PR review and CI pass. |
 | Stage 3 | Pending, partially pre-scaffolded | `#5` open | Work partially landed in `#15` and `#23` | Placeholder target only | CI and quality scaffolding started early under Stage 0 governance. |
 | Stage 4 | Pending | `#4` open | None merged | Placeholder target only | No product slice has been merged. |
 | Stage 5 | Pending | `#10` open | None merged | Placeholder target only | Eval, guardrail, and observability work remains future scope. |
@@ -152,10 +156,14 @@ Use these files together with this tracker:
 | `docs/PRD_RED_TEAM_REVIEW.md` | Present | Stage 1 red-team review in PR `#26`. |
 | `docs/NORTH_STAR_METRICS.md` | Present | Stage 1 metrics doc in PR `#26`. |
 | `docs/METHODOLOGY.md` | Present | Seed methodology exists. |
-| `docs/ARCHITECTURE.md` | Present | Seed architecture doc exists. |
+| `docs/ARCHITECTURE.md` | Present | Stage 2 architecture v1.0 drafted. |
 | `docs/PROJECT_AVATAR_PACK.md` | Present | Reusable project-avatar-pack concept is documented. |
-| `docs/SECURITY_AND_PRIVACY.md` | Present | Seed security/privacy doc exists. |
-| `docs/AI_SAFETY_AND_EVALUATION.md` | Present | Seed AI safety/evaluation doc exists. |
+| `docs/SECURITY_AND_PRIVACY.md` | Present | Stage 2 security/privacy v1.0 drafted. |
+| `docs/AI_SAFETY_AND_EVALUATION.md` | Present | Stage 2 AI safety/evaluation v1.0 drafted. |
+| `docs/THREAT_MODEL.md` | Present | Stage 2 threat model drafted. |
+| `docs/PORTABILITY_STRATEGY.md` | Present | Stage 2 portability strategy drafted. |
+| `docs/API_CONTRACT.md` | Present | Stage 2 API contract drafted. |
+| `docs/DATA_MODEL.md` | Present | Stage 2 logical data model drafted. |
 | `docs/OBSERVABILITY_AND_COST.md` | Present | Seed observability/cost doc exists. |
 | `docs/ROADMAP.md` | Present | Stage 1 outcome roadmap in PR `#26`. |
 | `docs/RELEASE_QUALITY_BAR.md` | Present | Seed release-quality bar exists. |
@@ -168,8 +176,11 @@ Use these files together with this tracker:
 - Stage 1 is split across two open issues: `#1` for product/PRD hardening and `#16` for the follow-on Spec Kit constitution/spec/plan/tasks gate.
 - Legacy issue `#3` still uses `Stage -1` naming that no longer matches the operating model.
 - Stage 3 has its own open issue `#5`, but some repo-foundation work has already landed under Stage 0 governance. The eventual Stage 3 plan should explicitly acknowledge that inherited baseline.
-- `.stage/current` is `1` for the Stage 1 product/PRD hardening artifact set because it implements the executable Stage 1 documentation gate.
-- The repository contains seed docs for later stages, but those docs are not proof that the corresponding stage gate has passed.
+- `.stage/current` is `2` for the Stage 2 architecture/security/AI-safety artifact
+  set because it implements the executable Stage 2 documentation gate.
+- The repository contains Stage 2 v1.0 architecture/security planning docs plus
+  Stage 2 remediation, but those docs are not proof that Stage 2 has completed until
+  the linked PR is reviewed, CI passes, and merge state is reconciled.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
 
 ## Next Approved Actions
@@ -177,7 +188,9 @@ Use these files together with this tracker:
 1. After PR `#26` merges, reconcile GitHub issue and PR state in the next governance update if needed.
 2. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
 3. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue `#16` before product implementation planning is treated as ready.
-4. Start Stage 2 architecture/security/AI-safety only through issue + branch + PR with no product code.
+4. Finish Stage 2 architecture/security/AI-safety remediation through issue `#2`, a
+   `stage2-*` branch, a linked PR, green local/CI quality evidence, and no product
+   code.
 5. Close or supersede stale governance issues that conflict with the current operating model, especially `#3`.
 6. Keep this file updated at every stage boundary, every stage-issue change, and every merged stage PR.
 
@@ -212,3 +225,5 @@ Required update rules:
 | 2026-06-29 | Tracker contract refined to be merge-stable and repository-scoped, with explicit limits on what local checks can enforce. |
 | 2026-06-29 | Stage 1 product/PRD hardening split clarified: `#1` covers PRD v1.0 hardening, while `#16` remains the follow-on Spec Kit gate. |
 | 2026-06-29 | PR `#26` advanced `.stage/current` to `1` and added executable Stage 1 documentation quality checks. |
+| 2026-06-29 | Stage 2 architecture, security, AI safety, portability, API, and data-model v1.0 docs drafted under issue `#2`; product implementation remains blocked. |
+| 2026-06-30 | Stage 2 remediation added executable local quality gate and hardened architecture/security/eval/performance/API/data-model contracts under issue `#2`; product implementation remains blocked. |

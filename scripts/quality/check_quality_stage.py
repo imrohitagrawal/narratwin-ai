@@ -22,6 +22,8 @@ def main() -> int:
         return subprocess.call([sys.executable, "scripts/quality/check_stage0_docs.py"], cwd=ROOT)
     if stage == "1":
         return subprocess.call([sys.executable, "scripts/quality/check_stage1_docs.py"], cwd=ROOT)
+    if stage == "2":
+        return subprocess.call([sys.executable, "scripts/quality/check_stage2_docs.py"], cwd=ROOT)
 
     return subprocess.call(
         [sys.executable, "scripts/quality/stage_not_implemented.py", f"Stage {stage}"],

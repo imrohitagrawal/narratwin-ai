@@ -87,8 +87,12 @@ ARCHITECTURE_IMPACT_PREFIXES = (
     "terraform/",
     "docker/",
     "docs/ARCHITECTURE.md",
+    "docs/API_CONTRACT.md",
+    "docs/DATA_MODEL.md",
+    "docs/PORTABILITY_STRATEGY.md",
     "docs/SECURITY_AND_PRIVACY.md",
     "docs/AI_SAFETY_AND_EVALUATION.md",
+    "docs/THREAT_MODEL.md",
 )
 
 PRD_IMPACT_PREFIXES = (
@@ -110,11 +114,14 @@ STATUS_IMPACT_PREFIXES = (
     "docs/ADR/",
     "docs/AI_BUILD_BRIEF.md",
     "docs/AI_SAFETY_AND_EVALUATION.md",
+    "docs/API_CONTRACT.md",
     "docs/ARCHITECTURE.md",
     "docs/CODEX_OPERATING_MODEL.md",
+    "docs/DATA_MODEL.md",
     "docs/METHODOLOGY.md",
     "docs/NORTH_STAR_METRICS.md",
     "docs/OBSERVABILITY_AND_COST.md",
+    "docs/PORTABILITY_STRATEGY.md",
     "docs/PRD.md",
     "docs/PRD_RED_TEAM_REVIEW.md",
     "docs/PRODUCT_STRATEGY.md",
@@ -129,6 +136,7 @@ STATUS_IMPACT_PREFIXES = (
     "docs/SKILL_TRUST_REVIEW.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/THIRD_PARTY_NOTICES.md",
+    "docs/THREAT_MODEL.md",
     "docs/TRACEABILITY.md",
     "scripts/guardrails_check.py",
     "scripts/quality/",
@@ -296,6 +304,9 @@ def check_mock_local_defaults() -> None:
     env_example = ROOT / ".env.example"
     text = read_text(env_example) if env_example.exists() else ""
     expected_defaults = {
+        "LLM_PROVIDER=mock",
+        "EMBEDDING_PROVIDER=mock",
+        "EVALUATION_PROVIDER=mock",
         "AVATAR_PROVIDER=mock",
         "TTS_PROVIDER=mock",
         "STT_PROVIDER=mock",
@@ -336,7 +347,7 @@ def check_llm_tracing_and_citations() -> None:
         rel = relative(path)
         if path.suffix.lower() not in CODE_SUFFIXES:
             continue
-        if rel == "scripts/guardrails_check.py":
+        if rel == "scripts/guardrails_check.py" or rel.startswith("scripts/quality/"):
             continue
         text = read_text(path).lower()
         if any(term in text for term in ["llm", "generate_script", "walkthrough script", "generated_script"]):

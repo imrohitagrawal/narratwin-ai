@@ -96,3 +96,47 @@ Blocked changes:
 - avatar, TTS, STT, subtitle, or provider adapter code
 - Docker, database, or runtime deployment code
 - dependency manifests or lockfiles for product/runtime code
+
+## Stage 2 Architecture And Safety Branch Scope
+
+Allowed changes:
+
+- `.env.example`
+- `.gitignore`
+- `.stage/current`
+- `Makefile`
+- `docs/ADR/0001-architecture-approach.md`
+- `docs/ADR/0001-system-architecture.md`
+- `docs/ADR/0002-provider-agnostic-adapters.md`
+- `docs/ADR/0002-rag-storage.md`
+- `docs/ADR/0003-free-mode-vs-premium-mode.md`
+- `docs/ADR/0003-llm-provider-routing.md`
+- `docs/ADR/0004-avatar-provider-adapter.md`
+- `docs/ADR/0005-observability-and-evals.md`
+- `docs/AI_SAFETY_AND_EVALUATION.md`
+- `docs/API_CONTRACT.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DATA_MODEL.md`
+- `docs/OBSERVABILITY_AND_COST.md`
+- `docs/PORTABILITY_STRATEGY.md`
+- `docs/QUALITY_GATES.md`
+- `docs/SECURITY_AND_PRIVACY.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/THREAT_MODEL.md`
+- `docs/TRACEABILITY.md`
+- `scripts/guardrails_check.py`
+- `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_stage2_docs.py`
+
+Blocked changes:
+
+- backend product code
+- frontend product code
+- RAG, vector store, or embedding implementation code
+- avatar, TTS, STT, subtitle, or provider adapter implementation code
+- Docker, database, infrastructure, or runtime deployment code
+- dependency manifests or lockfiles for product/runtime code
+- unapproved workflow automation, agent runtime configs, or external-provider
+  automation not recorded in `docs/THIRD_PARTY_NOTICES.md` and `docs/SKILL_LOCK.md`

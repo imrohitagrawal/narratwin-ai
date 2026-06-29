@@ -21,10 +21,10 @@ The `Makefile` must expose:
 
 | Target | Current Stage 1 behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`; currently Stage 1 |
+| `make quality` | Runs checks for `.stage/current`; currently Stage 2 |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
 | `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
-| `make stage2-quality` | Fails loudly until Stage 2 quality is implemented |
+| `make stage2-quality` | Runs executable Stage 2 architecture, security, AI safety, and portability checks |
 | `make stage3-quality` | Fails loudly until Stage 3 quality is implemented |
 | `make stage4-quality` | Fails loudly until Stage 4 quality is implemented |
 | `make stage5-quality` | Fails loudly until Stage 5 quality is implemented |
@@ -82,7 +82,30 @@ The `Makefile` must expose:
 
 ### Stage 2: Architecture, Security, AI Safety
 
-Gate must validate architecture docs, ADRs, security/privacy controls, AI safety/evaluation plan, provider-agnostic boundaries, and no product implementation.
+Stage 2 quality is executable through `scripts/quality/check_stage2_docs.py`.
+
+Stage 2 validates:
+
+- `.stage/current` contains `2`
+- current branch name matches `stage2-*` before merge, or is `main` after merge
+- changed files stay within the documented Stage 2 allowlist
+- required Stage 2 architecture, ADR, threat model, security/privacy, AI
+  safety/evaluation, portability, API, data model, observability, status, and
+  traceability docs exist
+- Stage 2 docs include the remediation locks for synthetic local authorization,
+  approved-knowledge state, mandatory secret screening before provider egress,
+  hard unsupported-claim failure policy, claim-level context references, resource
+  budgets, queue/backpressure, provider adapter contracts, event schema, retention,
+  tombstones, and API idempotency
+- legacy Stage 1 ADRs with duplicate numbers are marked superseded by the Stage 2
+  ADR canon
+- mock/local provider defaults include LLM, embedding, evaluation, avatar, TTS, STT,
+  and storage defaults
+- Stage 2 changes introduce no backend, frontend, RAG, provider, avatar, Docker,
+  database, dependency manifest, lockfile, or runtime product code
+- Stage 2 Python quality scripts remain stdlib-only and compile
+- working-tree diffs have no whitespace errors
+- obvious committed-secret patterns are absent from tracked text files
 
 ### Stage 3: Repo Foundation And CI/CD Quality Gates
 
