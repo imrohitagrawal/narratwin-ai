@@ -98,10 +98,11 @@ The CI layer must continue to enforce:
 
 - `make quality` for the current stage
 - stage-aware backend contracts so Stage 0 governance scripts do not trigger backend implementation gates
-- no direct commits to `main`
 - issue-linked PRs
 - least-privilege workflow permissions
 - no committed secrets
 - mock/local provider defaults
 - eval failures block merge when eval reports exist
 - critical or high security findings block merge when security reports exist
+
+Direct pushes to `main` remain a repository-settings requirement enforced through branch protection or rulesets rather than the stage-quality workflow itself.

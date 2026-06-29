@@ -29,7 +29,6 @@ The `Quality Gates` workflow runs `scripts/guardrails_check.py` on pull requests
 
 The policy check fails CI for:
 
-- direct push events to `main` when detected by CI
 - workflows without explicit `permissions:`
 - workflows that use broad write permissions for pull-request validation
 - likely committed secrets
@@ -42,6 +41,8 @@ The policy check fails CI for:
 - generated-script/answer code without source chunk citations
 - failing eval result reports
 - security reports with critical/high findings
+
+Direct pushes to `main` must be prevented by repository settings such as branch protection or rulesets; the CI policy check is not the enforcement layer for that event.
 
 ## Required GitHub repository settings
 
