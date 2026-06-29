@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted for MVP planning.
+Superseded by `docs/ADR/0001-system-architecture.md`.
 
 ## Decision
 

@@ -12,6 +12,26 @@ outputs/
 .chroma/
 .DS_Store
 *.log
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
 
 # Local Codex skill/vendor workspace
 .codex/
+.wednesday/
+
+# Local agent/tool-generated files that are not approved stage artifacts
+.claude/
+.cursorrules
+.commitlintrc.json
+.github/copilot-instructions.md
+.github/workflows/commit-lint.yml
+.github/workflows/pr-coverage.yml
+.github/workflows/pr-sonar.yml
+.github/workflows/stale-deps.yml
+.github/workflows/triage.yml
+CLAUDE.md
+GEMINI.md

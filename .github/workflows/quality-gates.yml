@@ -50,11 +50,16 @@ jobs:
         shell: bash
         env:
           LLM_PROVIDER: mock
+          EMBEDDING_PROVIDER: mock
+          EVALUATION_PROVIDER: mock
+          TRANSLATION_PROVIDER: mock
           AVATAR_PROVIDER: mock
           TTS_PROVIDER: mock
           STT_PROVIDER: mock
+          SUBTITLE_PROVIDER: mock
+          VIDEO_RENDERER: local
           STORAGE_PROVIDER: local
-          VECTOR_STORE: local
+          VECTOR_STORE: chroma
           APP_ENV: test
         run: |
           set -euo pipefail

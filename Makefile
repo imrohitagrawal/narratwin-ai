@@ -4,31 +4,41 @@ quality:
 	python3 scripts/quality/check_quality_stage.py
 
 stage0-quality:
+	python3 scripts/quality/check_recommended_review_items.py 0
 	python3 scripts/quality/check_stage0_docs.py
 
 stage1-quality:
+	python3 scripts/quality/check_recommended_review_items.py 1
 	python3 scripts/quality/check_stage1_docs.py
 
 stage2-quality:
-	python3 scripts/quality/stage_not_implemented.py "Stage 2"
+	python3 scripts/quality/check_recommended_review_items.py 2
+	python3 scripts/quality/check_stage2_docs.py
 
 stage3-quality:
+	python3 scripts/quality/check_recommended_review_items.py 3
 	python3 scripts/quality/stage_not_implemented.py "Stage 3"
 
 stage4-quality:
+	python3 scripts/quality/check_recommended_review_items.py 4
 	python3 scripts/quality/stage_not_implemented.py "Stage 4"
 
 stage5-quality:
+	python3 scripts/quality/check_recommended_review_items.py 5
 	python3 scripts/quality/stage_not_implemented.py "Stage 5"
 
 stage6-quality:
+	python3 scripts/quality/check_recommended_review_items.py 6
 	python3 scripts/quality/stage_not_implemented.py "Stage 6"
 
 stage7-quality:
+	python3 scripts/quality/check_recommended_review_items.py 7
 	python3 scripts/quality/stage_not_implemented.py "Stage 7"
 
 stage8-quality:
+	python3 scripts/quality/check_recommended_review_items.py 8
 	python3 scripts/quality/stage_not_implemented.py "Stage 8"
 
 final-review-quality:
+	python3 scripts/quality/check_recommended_review_items.py "Final Review"
 	python3 scripts/quality/stage_not_implemented.py "Final Review"

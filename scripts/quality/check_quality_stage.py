@@ -12,16 +12,29 @@ ROOT = Path(__file__).resolve().parents[2]
 CURRENT_STAGE = ROOT / ".stage" / "current"
 
 
+def run_recommended_review_item_check(stage: str) -> int:
+    return subprocess.call(
+        [sys.executable, "scripts/quality/check_recommended_review_items.py", stage],
+        cwd=ROOT,
+    )
+
+
 def main() -> int:
     if not CURRENT_STAGE.exists():
         print("Missing .stage/current. Cannot determine quality stage.")
         return 1
 
     stage = CURRENT_STAGE.read_text(encoding="utf-8").strip()
+    recommendation_status = run_recommended_review_item_check(stage)
+    if recommendation_status != 0:
+        return recommendation_status
+
     if stage == "0":
         return subprocess.call([sys.executable, "scripts/quality/check_stage0_docs.py"], cwd=ROOT)
     if stage == "1":
         return subprocess.call([sys.executable, "scripts/quality/check_stage1_docs.py"], cwd=ROOT)
+    if stage == "2":
+        return subprocess.call([sys.executable, "scripts/quality/check_stage2_docs.py"], cwd=ROOT)
 
     return subprocess.call(
         [sys.executable, "scripts/quality/stage_not_implemented.py", f"Stage {stage}"],

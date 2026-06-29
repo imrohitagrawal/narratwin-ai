@@ -24,6 +24,9 @@ This file is not legal advice. Treat it as the engineering license-review regist
 | GitHub Action: Upload Artifact | CI artifact upload | GitHub Action terms; immutable pin review required in Stage 3 | Yes after pin review | Existing CI dependency | Source: `actions/upload-artifact`. Not a product runtime dependency. |
 | Gitleaks GitHub Action | CI secret scanning | Upstream action terms; immutable pin review required in Stage 3 | Yes after pin review | Existing CI dependency | Source: `gitleaks/gitleaks-action`. Not a product runtime dependency. |
 | GitHub Action: Markdownlint CLI2 | CI markdown validation | Upstream action terms; immutable pin review required in Stage 3 | Yes after pin review | Existing CI dependency | Source: `DavidAnson/markdownlint-cli2-action`. Not a product runtime dependency. |
+| OWASP ZAP | Future OWASP baseline scan for web security review | Apache License 2.0 per OWASP ZAP project; exact action/container pin required before CI use | Yes after pin and config review | Planned Stage 3/8 security tool, not enabled yet | Reference: `https://www.zaproxy.org/`; baseline scan to run only after a web surface exists. |
+| OWASP ASVS | Application security control reference | OWASP documentation/license terms; do not copy large text without review | Yes as reference material | Reference only | Used to frame security baseline controls; not a runtime dependency. Reference: `https://owasp.org/www-project-application-security-verification-standard/`. |
+| OWASP Top 10 for LLM Applications | AI safety risk reference | OWASP documentation/license terms; do not copy large text without review | Yes as reference material | Reference only | Used to frame prompt injection, vector/embedding, output-handling, supply-chain, and consumption risks. Reference: `https://genai.owasp.org/llm-top-10/`. |
 
 ## Rules
 
