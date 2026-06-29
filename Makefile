@@ -7,7 +7,7 @@ stage0-quality:
 	python3 scripts/quality/check_stage0_docs.py
 
 stage1-quality:
-	python3 scripts/quality/stage_not_implemented.py "Stage 1"
+	python3 scripts/quality/check_stage1_docs.py
 
 stage2-quality:
 	python3 scripts/quality/stage_not_implemented.py "Stage 2"

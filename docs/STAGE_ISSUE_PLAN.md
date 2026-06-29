@@ -65,3 +65,34 @@ Blocked changes:
 - avatar, TTS, STT, subtitle, or provider adapter code
 - Docker, database, or runtime deployment code
 - Stage 1 product strategy or PRD expansion
+
+## Stage 1 Product And PRD Branch Scope
+
+Allowed changes:
+
+- `.stage/current`
+- `Makefile`
+- `docs/NORTH_STAR_METRICS.md`
+- `docs/PHASE_PLAN.md`
+- `docs/PRD.md`
+- `docs/PRD_RED_TEAM_REVIEW.md`
+- `docs/PRODUCT_STRATEGY.md`
+- `docs/QUALITY_GATES.md`
+- `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
+- `docs/ROADMAP.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `scripts/ci/backend-lint.sh`
+- `scripts/ci/backend-test.sh`
+- `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_stage0_docs.py`
+- `scripts/quality/check_stage1_docs.py`
+
+Blocked changes:
+
+- backend product code
+- frontend product code
+- RAG, vector store, or embedding code
+- avatar, TTS, STT, subtitle, or provider adapter code
+- Docker, database, or runtime deployment code
+- dependency manifests or lockfiles for product/runtime code

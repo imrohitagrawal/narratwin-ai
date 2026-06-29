@@ -1,215 +1,227 @@
 # Roadmap
 
-## Roadmap principle
+## Version
 
-Build NarraTwin AI as reviewed vertical slices. Do not build a large disconnected skeleton.
+- Version: 1.0
+- Stage: Stage 1 product strategy and PRD hardening
+- Canonical issue: `#1`
+- Last updated: 2026-06-29
 
-Each phase must produce a working, tested, documented outcome before the next phase starts.
+## Roadmap Principle
 
-The roadmap must preserve two product modes while still implementing the grounding loop first:
+Build NarraTwin AI through reviewed vertical slices. Each phase must produce a
+working, tested, documented outcome before the next phase starts. The roadmap
+preserves two product modes while implementing the grounded script loop first:
 
-- Mode 1: Pre-rendered multilingual demo video.
-- Mode 2: Interactive AI avatar guide.
+- pre-rendered multilingual demo video
+- interactive AI avatar walkthrough
 
-## Phase -1: Skill and repo trust setup
+## Outcome Roadmap
+
+| Stage | Outcome statement | Primary evidence |
+|---|---|---|
+| Stage 0 | Enable safe agent work by establishing operating model, skill lock, guardrails, and Stage 0 quality checks | Merged Stage 0 docs and CI |
+| Stage 1 | Enable reviewers to approve a focused product definition before implementation | Product strategy, PRD v1.0, red-team, metrics, roadmap, RTM, phase plan |
+| Stage 2 | Enable secure architecture decisions before code | Architecture, ADRs, security/privacy, AI safety/evaluation |
+| Stage 3 | Enable repeatable local and CI validation before product code | Repo foundation, quality wrappers, dependency/security scan path |
+| Stage 4 | Enable a creator to generate a grounded walkthrough from uploaded project knowledge | First vertical slice with tests, docs, UI, evaluation, storage |
+| Stage 5 | Enable generated AI outputs to be blocked or warned when unsafe or unsupported | Blocking evals, prompt-injection tests, observability metadata |
+| Stage 6 | Enable global viewers to consume localized scripts with subtitle and voice-ready outputs | Translation/localization, subtitle export, mock/local voice adapter |
+| Stage 7 | Enable optional avatar/video rendering without provider lock-in | Mock/local avatar renderer, video export path, consent/disclosure controls |
+| Stage 8 | Enable a release-ready product with performance, security, cost, and provider hardening | Security/performance evidence, provider fallback, release readiness |
+| Final Review | Enable an independent release decision | Independent review report and unresolved risk disposition |
+
+## Stage Details
+
+### Stage 0: Codex Operating Model And Skill Lock
 
 Outcome:
 
-- `docs/SKILL_TRUST_REVIEW.md`
-- clarified skill setup and conflict rules
-- no blind vendoring
-- no app code
+- issue-linked branch and PR workflow
+- Stage 0 operating model
+- skill governance
+- guardrail checks
+- no product implementation
 
-Exit gate:
+Status:
 
-- each skill source is approved, rejected, or marked for manual review
-- Codex knows which skill to use at which stage
+- complete on `main`
 
-## Phase 0: Product and planning hardening
+### Stage 1: Product Strategy And PRD v1.0
 
 Outcome:
 
-- product strategy
-- implementation-ready PRD
+- hardened product strategy
+- PRD v1.0
 - PRD red-team review
 - North Star metrics
-- roadmap
-- risk register
-- first vertical-slice plan
-- explicit validation of two product modes
-- explicit validation of the project-avatar-pack contract
+- outcome roadmap
+- requirements traceability matrix
+- phase plan
 
 Exit gate:
 
-- PRD has clear user journeys, requirements, non-goals, NFRs, risks, and acceptance criteria
-- product modes and project-avatar-pack are reflected in PRD, roadmap, and architecture
+- documents are reviewed through issue `#1`
+- `make stage1-quality` and `make quality` pass with `.stage/current = 1`
+- no product code is introduced
+- product implementation remains blocked until later gates pass
+- issue `#16` remains the follow-on Spec Kit constitution/spec/plan/tasks gate
 
-## Phase 1: Architecture, security, and AI safety
+### Stage 2: Architecture, Security, And AI Safety
 
 Outcome:
 
-- architecture blueprint
-- ADRs
-- security and privacy controls
-- AI safety and evaluation gates
-- third-party notices
-- observability and cost plan
+- provider-agnostic architecture
+- trust boundaries and data flow
+- ADRs for architecture-impacting choices
+- upload safety model
+- prompt-injection and unsupported-claim evaluation plan
+- provider, storage, observability, and cost-control boundaries
 
 Exit gate:
 
-- architecture defines components, data flow, trust boundaries, provider contracts, and evaluation flow
+- architecture and safety docs are reviewed
+- provider interfaces are defined before implementation
+- no product implementation starts
 
-## Phase 2: Repo quality gates
+### Stage 3: Repo Foundation And CI/CD Quality Gates
 
 Outcome:
 
-- local validation commands
-- GitHub Actions quality workflow alignment
-- PR template
-- quality-gate documentation
+- local development setup
+- executable quality targets for implementation stages
+- CI wrappers for future backend/frontend checks
+- dependency and security scan path
+- mock/local provider defaults
 
 Exit gate:
 
-- quality workflow is understandable
-- future backend/frontend code must add CI wrapper scripts before merge
+- future product code has a validation path
+- no product feature code is introduced
 
-## Phase 3: Slice 1 — grounded script generation
+### Stage 4: Slice 1, Project Upload To Grounded Script Generation
 
 Outcome:
 
 ```text
 project creation
-→ markdown/text upload
-→ ingestion/chunking/storage
-→ context retrieval
-→ grounded walkthrough script
-→ unsupported-claim evaluation
-→ stored output
-→ UI display
+-> markdown/text upload
+-> validation
+-> ingestion/chunking/storage
+-> retrieval
+-> grounded walkthrough script generation
+-> unsupported-claim evaluation
+-> stored output
+-> UI display
 ```
 
 Exit gate:
 
-- happy path works
-- one failure/refusal path works
-- tests pass without real premium provider keys
-- generated output is stored and visible
+- user-facing happy path works
+- empty-context, unsupported-claim, and prompt-injection refusal paths pass
+- generated output has context refs and run metadata
+- tests pass without real paid provider keys
+- docs include security notes, observability metadata, known limitations, and reviewer
+  evidence
 
-## Phase 4: Translation, subtitles, and run history
+### Stage 5: Evaluations, Guardrails, And Observability
 
 Outcome:
 
-- translated script output
-- subtitle-ready format
-- run history screen
-- cached generation results
+- blocking unsupported-claim evaluation
+- prompt-injection regression tests
+- trace/run metadata
+- source chunk/context citation validation
+- structured events and cost metadata
 
 Exit gate:
 
-- language consistency tests exist
-- cached runs are traceable
+- evaluation failures block merge
+- unsafe uploaded instructions cannot override system rules
+- runs are debuggable from stored metadata
 
-## Phase 5: Voice generation and media disclosure
+### Stage 6: Multilingual Scripts, Subtitles, And Voice Adapter
 
 Outcome:
 
-- TTS provider interface
-- mock TTS provider first
-- optional free-first TTS provider after license/terms review
-- AI voice disclosure surfaced in output metadata/UI
+- grounded script translation/localization
+- subtitle-ready export
+- mock/local TTS adapter boundary
+- AI voice disclosure where audio exists
 - no voice cloning
 
 Exit gate:
 
-- generated audio is optional
-- tests run without real provider keys
-- AI-generated voice disclosure exists where audio is produced
+- language consistency checks pass for selected test cases
+- subtitle format validates
+- audio remains optional
+- no real paid provider key is required for tests
 
-## Phase 6: Pre-rendered multilingual demo video
-
-Outcome:
-
-```text
-English demo video or demo script
-→ transcription / script cleanup
-→ audience-specific script generation
-→ translation / localization
-→ voiceover generation
-→ avatar or video rendering
-→ subtitles
-→ export/shareable demo
-```
-
-Exit gate:
-
-- video generation remains provider-agnostic
-- premium providers are optional adapters
-- third-party notices are updated
-- output clearly discloses AI-generated media
-- no face/voice cloning without explicit documented consent
-
-## Phase 7: Interactive avatar Q&A
+### Stage 7: Avatar Rendering Adapter And Export
 
 Outcome:
 
-```text
-user selects language, audience, depth, and style
-→ user asks a project question
-→ retrieval from approved project knowledge
-→ grounded answer generation
-→ unsupported-claim evaluation
-→ future TTS/avatar response
-```
+- mock/local avatar rendering adapter
+- video export artifact path
+- adapter contract tests
+- optional premium provider adapter contracts where explicitly approved
+- AI-generated media disclosure
+- consent controls for any cloned identity feature
 
 Exit gate:
 
-- Q&A cannot answer outside approved context without saying unavailable
-- empty-context refusal works
-- prompt-injection tests pass
-- context citations/references are stored and shown
+- avatar/video output remains provider-agnostic
+- premium providers remain optional and disabled for local/dev/test
+- Wav2Lip is not enabled by default
+- third-party notices and license review are complete for any used tool
 
-## Phase 8: Optional premium provider adapters
+### Stage 8: Performance, Security Hardening, And Release Readiness
 
 Outcome:
 
-- HeyGen/Tavus/D-ID/ElevenLabs adapters if desired
-- provider contract tests
-- cost tracking
-- failure fallback
+- dependency/security scan evidence
+- performance budgets
+- provider fallback behavior for existing adapters
+- cost and latency review
+- release-readiness report
+- known limitations and rollback notes
 
 Exit gate:
 
-- premium provider is optional
-- no core logic imports provider SDK directly
+- critical/high security findings are resolved or block release
+- release claims match implemented behavior
 
-## Phase 9: Analytics and portfolio showcase
+### Final Review: Independent Release Review
 
 Outcome:
 
-- language/audience/depth usage analytics
-- demo completion metrics
-- feedback collection
-- cost and latency dashboard or report
-- portfolio-ready showcase materials
+- independent review of product claims, quality evidence, safety, security, provider
+  risks, and release readiness
 
 Exit gate:
 
-- analytics do not expose secrets or private uploaded content
-- claims in showcase match implemented behavior
+- unresolved risks have explicit disposition
+- no new feature implementation occurs during final review
 
-## Phase 10: Release readiness
+## Product Mode Alignment
 
-Outcome:
+| Roadmap stage | Pre-rendered multilingual demo video | Interactive AI avatar walkthrough |
+|---|---|---|
+| Stage 4 | Produces grounded English script foundation and stores requested language metadata; no translation, transcript cleanup, or STT/video import | Produces reusable retrieval/generation/eval foundation |
+| Stage 5 | Hardens evaluation and traceability | Hardens answer safety and refusal behavior |
+| Stage 6 | Adds translation, subtitles, voice-ready output, and existing script/transcript cleanup if approved | Adds multilingual answer foundations |
+| Stage 7 | Adds avatar/video render adapter and export | Adds avatar presentation boundary |
+| Future approved stage | Adds optional STT/transcription boundary for demo video/audio import after provider, consent, retention, and license review | N/A |
+| Future approved stage | N/A | Adds interactive Q&A after stage-plan update |
+| Stage 8 | Hardens existing provider/cost/security behavior | Hardens existing provider/cost/security behavior |
 
-- release checklist
-- demo script
-- known limitations
-- architecture docs
-- local setup docs
-- portfolio-ready README
+## Roadmap Guardrails
 
-Exit gate:
-
-- new developer can run the project
-- all quality gates pass
-- claims in README match implemented behavior
+- No implementation before approved gates.
+- No broad horizontal scaffolding.
+- No mandatory paid providers.
+- No unreviewed third-party avatar/lip-sync tools.
+- No face or voice cloning in MVP.
+- No generated claims without approved context support.
+- Every implementation slice includes tests, docs, security notes, observability
+  metadata, known limitations, and reviewer pass.

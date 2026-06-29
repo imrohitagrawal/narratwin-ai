@@ -15,7 +15,7 @@ Use it to answer:
 ## Current Baseline
 
 - Last reviewed date: 2026-06-29
-- Current stage marker: `.stage/current = 0`
+- Current stage marker: `.stage/current = 1`
 - Current implementation permission: blocked
 - Current repo mode: governance-first, documentation-first, quality-gate-first
 - Product implementation merged to `main`: no
@@ -36,13 +36,15 @@ Use these files together with this tracker:
 
 ## Executive Status
 
-- Stage 0 governance is complete in the current repository state and keeps product implementation blocked until Stage 1 passes.
+- Stage 0 governance is complete in the current repository state, and Stage 1 product/PRD hardening artifacts are represented by PR `#26`.
 - `docs/STATUS.md` is the in-repo governance ledger for stage coverage, issue and PR references, open gaps, and next approved actions.
 - Repository checks enforce updates to this file only for repository-tracked governance changes that are visible in the CI diff range.
 - GitHub-side state that changes outside a repository diff must be reconciled in the next governance update; the local Stage 0 gate does not claim live synchronization.
-- Stage 0 quality is executable locally and enforced in CI.
-- The repository remains blocked from product implementation because Stage 1 has not passed.
-- Stage 1 issue ownership is ambiguous because both `#1` and `#16` represent Stage 1 work.
+- Stage 1 quality is executable locally and enforced in CI.
+- Stage 1 allows narrowly scoped CI wrapper compatibility fixes only where the
+  Stage 1 marker activates pre-existing governance checks.
+- The repository remains blocked from product implementation because Stage 2, Stage 3, and the Stage 4 implementation gate have not passed.
+- Stage 1 is split into product/PRD hardening under `#1` and the follow-on Spec Kit constitution/spec/plan/tasks gate under `#16`.
 - Stage 3 repository-foundation work is partially pre-delivered under Stage 0 governance, but the dedicated Stage 3 issue is still open.
 - Stage 4 through Stage 8 and Final Review remain open with no merged implementation work.
 
@@ -51,7 +53,7 @@ Use these files together with this tracker:
 | Stage | Status | Issue ledger | Pull request ledger | Quality gate state | Notes |
 |---|---|---|---|---|---|
 | Stage 0 | Complete, governance baseline active | `#14` closed | `#15` merged, `#23` merged | Executable and green | Operating model, quality gate, and repository guardrails are in place; product implementation remains blocked. |
-| Stage 1 | Pending, not started on `main` | `#1` open, `#16` open | None merged | Placeholder target only | Canonical Stage 1 issue must be reconciled before work starts. |
+| Stage 1 | Product/PRD hardening represented by PR `#26` | `#1` open, `#16` open | `#26` | Executable | `#1` is product strategy and PRD v1.0 hardening; `#16` remains the follow-on Spec Kit gate. Reconcile merge state after the GitHub merge event. |
 | Stage 2 | Pending, seed docs exist | `#2` open | None merged | Placeholder target only | Architecture and safety docs exist as seeds, but Stage 2 gate is not implemented. |
 | Stage 3 | Pending, partially pre-scaffolded | `#5` open | Work partially landed in `#15` and `#23` | Placeholder target only | CI and quality scaffolding started early under Stage 0 governance. |
 | Stage 4 | Pending | `#4` open | None merged | Placeholder target only | No product slice has been merged. |
@@ -68,8 +70,8 @@ Use these files together with this tracker:
 | Issue | State | Intended stage | Current interpretation |
 |---|---|---|---|
 | `#14` | Closed | Stage 0 | Canonical completed Stage 0 issue for repository guardrails and CI quality gates. |
-| `#1` | Open | Stage 1 | Original Stage 1 issue for product strategy and PRD v1.0. |
-| `#16` | Open | Stage 1 | Competing Stage 1 issue focused on Spec Kit constitution/spec/plan/tasks gate. |
+| `#1` | Open | Stage 1 | Canonical Stage 1 product strategy and PRD v1.0 hardening issue. |
+| `#16` | Open | Stage 1 follow-on | Spec Kit constitution/spec/plan/tasks gate that follows product/PRD hardening. |
 | `#2` | Open | Stage 2 | Architecture, security, AI safety. |
 | `#5` | Open | Stage 3 | Repo foundation and CI/CD gates. |
 | `#4` | Open | Stage 4 | First grounded-script vertical slice. |
@@ -100,6 +102,7 @@ Use these files together with this tracker:
 | `#15` | Merged | 2026-06-28 | Added repository guardrails and CI quality gates under Stage 0 governance issue `#14`. |
 | `#22` | Closed | Not merged | Earlier Stage 0 operating-model PR superseded by the Stage 0 redo path. |
 | `#23` | Merged | 2026-06-29 | Redid Stage 0 operating model and executable quality gates; green in both `Quality Gates` and `quality` workflows before merge. |
+| `#26` | Delivery PR | Reconcile after merge | Stage 1 product strategy and PRD v1.0 hardening; includes executable Stage 1 docs quality gate. |
 
 ## Completed Work
 
@@ -122,6 +125,7 @@ Use these files together with this tracker:
   - [Skill Trust Review](SKILL_TRUST_REVIEW.md)
 - Third-party governance inventory exists in [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 - Stage 0 merged with green CI and no product implementation.
+- PR `#26` represents the Stage 1 product/PRD hardening artifact set and contains no product implementation; its only CI wrapper changes keep pre-existing governance checks compatible with the Stage 1 marker.
 
 ### Stage 0 Governance Artifacts In Current Repository State
 
@@ -137,41 +141,45 @@ Use these files together with this tracker:
 - [check_quality_stage.py](../scripts/quality/check_quality_stage.py)
 - [check_stage0_docs.py](../scripts/quality/check_stage0_docs.py)
 - [stage_not_implemented.py](../scripts/quality/stage_not_implemented.py)
+- [check_stage1_docs.py](../scripts/quality/check_stage1_docs.py)
 
 ## Pre-Implementation Document Inventory
 
 | Document | State | Notes |
 |---|---|---|
-| `docs/PRODUCT_STRATEGY.md` | Present | Seed product strategy exists. |
-| `docs/PRD.md` | Present | Seed PRD exists. |
-| `docs/PRD_RED_TEAM_REVIEW.md` | Present | Seed red-team review exists. |
-| `docs/NORTH_STAR_METRICS.md` | Present | Seed metrics doc exists. |
+| `docs/PRODUCT_STRATEGY.md` | Present | Stage 1 product strategy v1.0 in PR `#26`. |
+| `docs/PRD.md` | Present | Stage 1 PRD v1.0 in PR `#26`. |
+| `docs/PRD_RED_TEAM_REVIEW.md` | Present | Stage 1 red-team review in PR `#26`. |
+| `docs/NORTH_STAR_METRICS.md` | Present | Stage 1 metrics doc in PR `#26`. |
 | `docs/METHODOLOGY.md` | Present | Seed methodology exists. |
 | `docs/ARCHITECTURE.md` | Present | Seed architecture doc exists. |
 | `docs/PROJECT_AVATAR_PACK.md` | Present | Reusable project-avatar-pack concept is documented. |
 | `docs/SECURITY_AND_PRIVACY.md` | Present | Seed security/privacy doc exists. |
 | `docs/AI_SAFETY_AND_EVALUATION.md` | Present | Seed AI safety/evaluation doc exists. |
 | `docs/OBSERVABILITY_AND_COST.md` | Present | Seed observability/cost doc exists. |
-| `docs/ROADMAP.md` | Present | Seed roadmap exists. |
+| `docs/ROADMAP.md` | Present | Stage 1 outcome roadmap in PR `#26`. |
 | `docs/RELEASE_QUALITY_BAR.md` | Present | Seed release-quality bar exists. |
 | `docs/TRACEABILITY.md` | Present | Seed traceability register exists and contains guardrail mappings. |
+| `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md` | Present | Stage 1 product requirement-to-stage matrix. |
+| `docs/PHASE_PLAN.md` | Present | Stage 1 spec-driven phase plan and vertical-slice breakdown. |
 
 ## Known Gaps And Reconciliation Items
 
-- Stage 1 is represented by two open issues: `#1` and `#16`. One canonical Stage 1 issue should be chosen before starting work.
+- Stage 1 is split across two open issues: `#1` for product/PRD hardening and `#16` for the follow-on Spec Kit constitution/spec/plan/tasks gate.
 - Legacy issue `#3` still uses `Stage -1` naming that no longer matches the operating model.
 - Stage 3 has its own open issue `#5`, but some repo-foundation work has already landed under Stage 0 governance. The eventual Stage 3 plan should explicitly acknowledge that inherited baseline.
-- `.stage/current` remains `0`, which is correct for the current repository state, but it also means all new governance changes must still satisfy the Stage 0 quality contract until Stage 1 is intentionally advanced.
+- `.stage/current` is `1` for the Stage 1 product/PRD hardening artifact set because it implements the executable Stage 1 documentation gate.
 - The repository contains seed docs for later stages, but those docs are not proof that the corresponding stage gate has passed.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
 
 ## Next Approved Actions
 
-1. Reconcile Stage 1 issue ownership by choosing whether `#1`, `#16`, or a new replacement issue is canonical.
-2. Keep `.stage/current` at `0` until the Stage 1 PR is opened on a dedicated `stage1-*` branch and the Stage 1 gate is intentionally implemented.
-3. Start Stage 1 only through issue + branch + PR with no product code.
-4. Close or supersede stale governance issues that conflict with the current operating model, especially `#3`.
-5. Keep this file updated at every stage boundary, every stage-issue change, and every merged stage PR.
+1. After PR `#26` merges, reconcile GitHub issue and PR state in the next governance update if needed.
+2. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
+3. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue `#16` before product implementation planning is treated as ready.
+4. Start Stage 2 architecture/security/AI-safety only through issue + branch + PR with no product code.
+5. Close or supersede stale governance issues that conflict with the current operating model, especially `#3`.
+6. Keep this file updated at every stage boundary, every stage-issue change, and every merged stage PR.
 
 ## Maintenance Protocol
 
@@ -202,3 +210,5 @@ Required update rules:
 |---|---|
 | 2026-06-29 | Initial canonical program status tracker added to consolidate stage, issue, PR, and governance status. |
 | 2026-06-29 | Tracker contract refined to be merge-stable and repository-scoped, with explicit limits on what local checks can enforce. |
+| 2026-06-29 | Stage 1 product/PRD hardening split clarified: `#1` covers PRD v1.0 hardening, while `#16` remains the follow-on Spec Kit gate. |
+| 2026-06-29 | PR `#26` advanced `.stage/current` to `1` and added executable Stage 1 documentation quality checks. |

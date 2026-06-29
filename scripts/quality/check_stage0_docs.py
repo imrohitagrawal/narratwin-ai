@@ -463,11 +463,13 @@ def check_make_targets(failures: list[str]) -> None:
     required_recipes = {
         "quality": "python3 scripts/quality/check_quality_stage.py",
         "stage0-quality": "python3 scripts/quality/check_stage0_docs.py",
+        "stage1-quality": "python3 scripts/quality/check_stage1_docs.py",
     }
     for target, recipe in required_recipes.items():
         if not re.search(rf"^{re.escape(target)}:\n\t{re.escape(recipe)}", text, re.MULTILINE):
             fail(f"Makefile target must call the required recipe: {target} -> {recipe}", failures)
-    for target in [*REQUIRED_TARGETS[2:], "final-review-quality"]:
+    future_targets = [*REQUIRED_TARGETS[3:], "final-review-quality"]
+    for target in future_targets:
         if not re.search(
             rf"^{re.escape(target)}:\n\tpython3 scripts/quality/stage_not_implemented\.py",
             text,
