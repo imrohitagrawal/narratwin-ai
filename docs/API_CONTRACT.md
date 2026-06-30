@@ -605,7 +605,7 @@ idempotency replay or `GET` of an existing terminal run.
     "embeddingModel": "mock-embedding",
     "embeddingModelVersion": "stage4-local-v1",
     "embeddingDimension": 3,
-    "vectorStore": "chroma",
+    "vectorStore": "disabled",
     "retrievalStrategyVersion": "stage4-rag-v1",
     "retrievalTopK": 6,
     "retrievalScoreThreshold": 0.72
@@ -783,7 +783,7 @@ Response `200`:
   "embeddingModel": "mock-embedding",
   "embeddingModelVersion": "stage4-local-v1",
   "embeddingDimension": 3,
-  "vectorStore": "chroma",
+  "vectorStore": "disabled",
   "promptTemplateVersion": "stage4-v1",
   "retrievalStrategyVersion": "stage4-rag-v1",
   "retrievalTopK": 6,

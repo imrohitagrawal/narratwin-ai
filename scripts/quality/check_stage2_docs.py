@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -356,13 +357,13 @@ def check_mock_local_defaults(failures: list[str]) -> None:
         "SUBTITLE_PROVIDER=mock",
         "VIDEO_RENDERER=local",
         "STORAGE_PROVIDER=local",
-        "VECTOR_STORE=chroma",
+        "VECTOR_STORE=disabled",
     ):
         if default not in text:
             fail(f".env.example must include free/local test default: {default}", failures)
 
 
-def load_stage2_contract(failures: list[str]) -> dict:
+def load_stage2_contract(failures: list[str]) -> dict[str, Any]:
     path = ROOT / "docs/STAGE2_ARCHITECTURE_CONTRACT.json"
     try:
         contract = json.loads(path.read_text(encoding="utf-8"))
@@ -375,7 +376,7 @@ def load_stage2_contract(failures: list[str]) -> dict:
     return contract
 
 
-def check_contract_invariants(contract: dict, failures: list[str]) -> None:
+def check_contract_invariants(contract: dict[str, Any], failures: list[str]) -> None:
     required_keys = [
         "version",
         "stage",
@@ -636,7 +637,7 @@ def section_between(text: str, heading: str) -> str:
     return text[start:next_heading]
 
 
-def check_contract_semantics(contract: dict, failures: list[str]) -> None:
+def check_contract_semantics(contract: dict[str, Any], failures: list[str]) -> None:
     provider_defaults = contract.get("providerDefaults", [])
     if isinstance(provider_defaults, list):
         require_terms(".env.example", provider_defaults, failures)
@@ -1018,7 +1019,7 @@ def check_makefile_and_dispatcher(failures: list[str]) -> None:
         "SUBTITLE_PROVIDER=mock",
         "VIDEO_RENDERER=local",
         "STORAGE_PROVIDER=local",
-        "VECTOR_STORE=chroma",
+        "VECTOR_STORE=disabled",
     ):
         if default not in guardrails:
             fail(f"scripts/guardrails_check.py must enforce provider default: {default}", failures)

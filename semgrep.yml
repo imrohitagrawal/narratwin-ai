@@ -1,0 +1,27 @@
+rules:
+  - id: python-subprocess-shell-true
+    message: Avoid shell=True; pass argv lists to subprocess.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+
+  - id: python-exec-eval
+    message: Do not use dynamic exec/eval.
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+
+  - id: react-dangerously-set-inner-html
+    message: Do not use dangerouslySetInnerHTML in the frontend scaffold.
+    severity: ERROR
+    languages: [typescript]
+    pattern: dangerouslySetInnerHTML={...}
+
+  - id: github-action-mutable-ref
+    message: Pin third-party GitHub Actions by immutable commit SHA.
+    severity: ERROR
+    languages: [yaml]
+    pattern-regex: "uses:\\s*[^@\\s]+@(?:v\\d+(?:\\.\\d+\\.\\d+)?|main|master)\\b"

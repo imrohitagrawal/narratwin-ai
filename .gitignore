@@ -4,11 +4,13 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.uv-cache/
 node_modules/
 .next/
 dist/
 build/
 outputs/
+reports/
 .chroma/
 .DS_Store
 *.log

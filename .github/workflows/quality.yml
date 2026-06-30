@@ -29,17 +29,19 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Run Gitleaks secret scan
-        uses: gitleaks/gitleaks-action@v3
+      - name: Compatibility secret guardrail
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_ENABLE_COMMENTS: "false"
-          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          GITHUB_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/guardrails_check.py
 
   markdown:
     name: quality / markdown
@@ -49,7 +51,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
 
@@ -73,7 +75,7 @@ jobs:
           JSON
 
       - name: Run Markdown lint
-        uses: DavidAnson/markdownlint-cli2-action@v20
+        uses: DavidAnson/markdownlint-cli2-action@992badcdf24e3b8eb7e87ff9287fe931bcb00c6e # v20
         with:
           globs: |
             **/*.md
@@ -83,168 +85,3 @@ jobs:
             !**/coverage/**
             !**/.venv/**
             !**/venv/**
-
-  backend_lint:
-    name: quality / backend-lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Run backend lint contract
-        run: |
-          set -euo pipefail
-
-          if [ -f ".stage/current" ] && [ "$(tr -d '[:space:]' < .stage/current)" = "0" ]; then
-            echo "Backend lint not applicable during Stage 0."
-            exit 0
-          fi
-
-          if [ -f "./scripts/ci/backend-lint.sh" ]; then
-            bash ./scripts/ci/backend-lint.sh
-            exit 0
-          fi
-
-          if git ls-files | grep -Eq '(^backend/|^api/|^server/|\.py$|\.java$|\.kt$|\.go$|\.rs$|\.cs$|(^|/)(pom\.xml|build\.gradle|build\.gradle\.kts|pyproject\.toml|requirements.*\.txt|go\.mod|Cargo\.toml|.*\.csproj|.*\.sln)$)'; then
-            echo "::error title=Backend lint not configured::Backend files were detected, but ./scripts/ci/backend-lint.sh is missing."
-            echo "Add a repo-local wrapper. Examples: ruff check ., pytest lint target, golangci-lint run, mvn -B -q -DskipTests verify, ./gradlew check."
-            exit 1
-          fi
-
-          echo "Backend lint not applicable yet."
-
-      - name: Upload backend lint reports
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quality-backend-lint-reports
-          path: reports/backend-lint/**
-          if-no-files-found: ignore
-          retention-days: 7
-
-  backend_tests:
-    name: quality / backend-tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Run backend test contract
-        run: |
-          set -euo pipefail
-
-          if [ -f ".stage/current" ] && [ "$(tr -d '[:space:]' < .stage/current)" = "0" ]; then
-            echo "Backend tests not applicable during Stage 0."
-            exit 0
-          fi
-
-          if [ -f "./scripts/ci/backend-test.sh" ]; then
-            bash ./scripts/ci/backend-test.sh
-            exit 0
-          fi
-
-          if git ls-files | grep -Eq '(^backend/|^api/|^server/|\.py$|\.java$|\.kt$|\.go$|\.rs$|\.cs$|(^|/)(pom\.xml|build\.gradle|build\.gradle\.kts|pyproject\.toml|requirements.*\.txt|go\.mod|Cargo\.toml|.*\.csproj|.*\.sln)$)'; then
-            echo "::error title=Backend tests not configured::Backend files were detected, but ./scripts/ci/backend-test.sh is missing."
-            echo "Add a repo-local wrapper. Examples: pytest -q, go test ./..., mvn -B test, ./gradlew test, npm test."
-            exit 1
-          fi
-
-          echo "Backend tests not applicable yet."
-
-      - name: Upload backend test reports
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quality-backend-test-reports
-          path: |
-            reports/backend-tests/**
-            test-results/**
-            coverage/**
-          if-no-files-found: ignore
-          retention-days: 7
-
-  frontend_build:
-    name: quality / frontend-build
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Run frontend build contract
-        run: |
-          set -euo pipefail
-
-          if [ -f "./scripts/ci/frontend-build.sh" ]; then
-            bash ./scripts/ci/frontend-build.sh
-            exit 0
-          fi
-
-          if git ls-files | grep -Eq '(^frontend/|^web/|^apps/frontend/|^apps/web/|(^|/)(next\.config\.(js|mjs|cjs|ts)|nuxt\.config\.(js|ts)|vite\.config\.(js|mjs|cjs|ts)|angular\.json|tsconfig\.json|package\.json)$|\.tsx$|\.jsx$)'; then
-            echo "::error title=Frontend build not configured::Frontend files were detected, but ./scripts/ci/frontend-build.sh is missing."
-            echo "Add a repo-local wrapper. Examples: npm ci && npm run build, pnpm install --frozen-lockfile && pnpm build, yarn install --immutable && yarn build."
-            exit 1
-          fi
-
-          echo "Frontend build not applicable yet."
-
-      - name: Upload frontend build reports
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quality-frontend-build-reports
-          path: reports/frontend-build/**
-          if-no-files-found: ignore
-          retention-days: 7
-
-  dependency_security:
-    name: quality / dependency-security
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Run dependency/security contract
-        run: |
-          set -euo pipefail
-
-          if [ -f "./scripts/ci/dependency-security.sh" ]; then
-            bash ./scripts/ci/dependency-security.sh
-            exit 0
-          fi
-
-          if git ls-files | grep -Eq '(^|/)(package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|requirements.*\.txt|Pipfile\.lock|go\.sum|Cargo\.lock|Gemfile\.lock|packages\.lock\.json|pom\.xml|build\.gradle|build\.gradle\.kts|gradle\.lockfile|composer\.lock)$'; then
-            echo "::error title=Dependency security not configured::Dependency manifests or lockfiles were detected, but ./scripts/ci/dependency-security.sh is missing."
-            echo "Implement the repo-standard SCA path. Examples: GitHub dependency review, Dependabot policy, Snyk CLI, or Sonatype evaluation."
-            exit 1
-          fi
-
-          echo "Dependency/security checks not applicable yet."
-
-      - name: Upload dependency-security reports
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quality-dependency-security-reports
-          path: reports/dependency-security/**
-          if-no-files-found: ignore
-          retention-days: 7

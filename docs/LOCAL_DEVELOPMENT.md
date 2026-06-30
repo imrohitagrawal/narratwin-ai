@@ -4,20 +4,23 @@ This guide explains how to work on NarraTwin AI before and after application cod
 
 ## Current repo state
 
-The repo is currently in strategy/spec/quality-gate hardening mode. Do not expect backend or frontend commands to exist until Slice 1 implementation starts.
+The repo is currently in Stage 3 repo foundation and CI/CD quality-gate
+hardening mode. Backend and frontend feature workflows still wait for Stage 4,
+but dependency manifests, CI wrappers, and a minimal frontend scaffold now exist.
 
 ## Prerequisites
 
 Recommended local tools:
 
 ```bash
-brew install git gh python@3.12 node docker ripgrep ffmpeg
+brew install git gh python@3.13 node docker ripgrep ffmpeg
 ```
 
 Recommended optional tools:
 
 ```bash
-python3 -m pip install --upgrade pip uv
+brew install gitleaks
+python3 -m pip install uv==0.11.18
 npm install -g npm
 ```
 
@@ -64,6 +67,46 @@ Preferred command:
 make quality
 ```
 
+Stage-specific command:
+
+```bash
+make stage3-quality
+```
+
+`make stage3-quality` is the full local Stage 3 gate. It runs the Stage 3
+scope/docs contract, backend lint/typecheck, backend unit/API tests, frontend
+lint/typecheck/unit/build, production Playwright smoke, dependency/security
+scans, eval smoke, and Docker image builds.
+
+The dependency/security wrapper requires the Gitleaks CLI for local parity with
+CI. For offline local development only, set
+`NARRATWIN_ALLOW_LOCAL_SECRET_SCAN_FALLBACK=1` to use the repository guardrail
+secret scan as an explicit reduced fallback.
+
+Install Python dependencies:
+
+```bash
+uv sync --frozen
+```
+
+Install frontend dependencies:
+
+```bash
+npm --prefix frontend ci --strict-allow-scripts=true
+```
+
+Run repo foundation wrappers directly:
+
+```bash
+bash scripts/ci/backend-lint.sh
+bash scripts/ci/backend-test.sh
+bash scripts/ci/frontend-build.sh
+bash scripts/ci/frontend-smoke.sh
+bash scripts/ci/dependency-security.sh
+bash scripts/ci/docker-build.sh
+bash scripts/ci/eval-smoke.sh
+```
+
 If `make` is unavailable, run the closest applicable checks manually:
 
 ```bash
@@ -71,7 +114,28 @@ git status --short
 git diff --check
 ```
 
-Backend, frontend, and dependency-security wrappers are required only after code/manifests exist.
+Backend, frontend, and dependency-security wrappers are now present. They must
+continue to avoid paid providers, real provider keys, and product feature
+implementation before the approved Stage 4 slice.
+
+Local Compose includes localhost-bound Postgres and Redis services for Stage 4
+readiness only. Vector storage remains disabled in Stage 3 until the Chroma
+adapter decision is locked.
+
+`scripts/ci/frontend-smoke.sh` installs Chromium for Playwright smoke locally
+unless `PLAYWRIGHT_SKIP_INSTALL=1` is set. CI always installs the browser with
+system dependencies before running smoke.
+
+Health-check-only local services:
+
+```bash
+uv run uvicorn backend.app.main:app --reload
+npm --prefix frontend run dev
+docker compose up --build
+```
+
+Only `/healthz`, `/readyz`, `/api/v1/healthz`, and `/api/v1/readyz` are
+implemented in the backend during Stage 3.
 
 ## Codex workflow
 

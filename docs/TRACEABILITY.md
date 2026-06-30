@@ -54,6 +54,20 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md` | Human review checklist for architecture, security, AI safety, API/data, portability, performance, observability, sub-agent, and cross-model signoff | Stage 2 / `#2` | Added |
 | `docs/STAGE2_REVIEW_PROMPT_PACK.md` | Reusable prompt pack for parallel sub-agent review and cross-model second opinion | Stage 2 / `#2` | Added |
 
+## Stage 3 Repo Foundation Traceability
+
+| Artifact | Requirement coverage | Stage / issue | Status |
+|---|---|---|---|
+| `backend/` | Health checks only for the backend FastAPI skeleton; no product feature workflow | Stage 3 / `#5` | Added |
+| `pyproject.toml` and `uv.lock` | Backend foundation dependencies and Python quality tooling needed before Slice 1 implementation | Stage 3 / `#5` | Added |
+| `frontend/` | Stage 3 frontend foundation aligned to the Next.js architecture decision; no product feature workflow | Stage 3 / `#5` | Added |
+| `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile` | Local health-check-only container build path, localhost-bound Compose services, writable local artifact volume, digest-pinned images, non-root runtime images, and Docker build gate | Stage 3 / `#5` | Hardened |
+| `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.github/workflows/eval-smoke.yml`, `.github/workflows/quality.yml`, `.github/workflows/quality-gates.yml` | PR-blocking CI, security, Docker build, Playwright smoke, eval smoke, inherited quality gates, and immutable action pinning | Stage 3 / `#5` | Hardened |
+| `.pre-commit-config.yaml` | Local pre-commit quality hooks for lint, typecheck, tests, frontend, and guardrails | Stage 3 / `#5` | Added |
+| `scripts/ci/*` | Backend lint/typecheck, backend unit/API tests, frontend build/tests, Playwright smoke, Docker build, eval smoke, and dependency/security scan wrappers required before implementation slices | Stage 3 / `#5` | Hardened |
+| `scripts/quality/check_stage3_docs.py` | Executable Stage 3 gate for exact-file repo foundation scope, action pinning, Docker hardening, eval smoke fixture, and dependency/CI contracts | Stage 3 / `#5` | Hardened |
+| `docs/LOCAL_DEVELOPMENT.md` | Local setup commands for `uv sync`, frontend install, and Stage 3 quality gates | Stage 3 / `#5` | Updated |
+
 ## Document Ownership
 
 | Document | Owns | Other docs should |
@@ -89,3 +103,4 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | 2026-06-30 | `#2` / `#27` | Add Stage 2 human review checklist | Adds explicit human signoff criteria for sub-agent, cross-model, architecture, security, AI safety, API/data, portability, performance, observability, and no-product-code review |
 | 2026-06-30 | `#2` / `#27` | Resolve final sub-agent and Claude cross-model review findings | Hardens provider-bound secret screening, evaluator evidence, enum parity, cache invalidation, rate limits, deterministic evaluator posture, and Stage 2 checker negative-path behavior |
 | 2026-06-30 | `#2` / `#27` | Add reusable Stage 2 review prompt pack | Standardizes the ruthless architecture, security, API/data, portability, and cross-model prompts for future Stage 2 reviews |
+| 2026-06-30 | `#5` | Start Stage 3 repo foundation and CI/CD gates | Adds Stage 3 health checks, frontend foundation, dependency manifests, CI wrappers, dependency/security scan path, Docker build path, eval smoke, and executable Stage 3 quality gate |

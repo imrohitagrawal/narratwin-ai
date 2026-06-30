@@ -1,0 +1,9 @@
+{
+  "name": "stage3-health-contract",
+  "expected": {
+    "status": "ok",
+    "service": "narratwin-ai-backend",
+    "stage": "3"
+  },
+  "max_unsupported_claims": 0
+}

@@ -82,6 +82,26 @@ Negative:
 - adapter contract tests become mandatory
 - first visible output is text-only rather than media-rich
 
+## Stage 3 foundation
+
+Stage 3 may add dependency manifests, CI wrappers, Docker build files, a
+health-check-only FastAPI skeleton, local-only Postgres/Redis Compose services,
+and a minimal Next.js TypeScript frontend scaffold to make the Stage 4 slice
+testable. This does not change the
+architecture decision and must not introduce project upload, RAG, script
+generation, provider adapter, avatar, database schema, or deployment environment
+implementation.
+
+Stage 3 foundation containers must run without root privileges, local Compose
+ports must bind to localhost by default, and API/frontend scaffolds must include
+baseline security headers before generated or user-controlled content appears in
+Stage 4.
+
+Stage 3 must not default to Chroma/vector storage until the Stage 4 adapter
+mode, dependency/license approval, persistence path, and tenant/project isolation
+tests are locked. Local artifact storage may be mounted as a writable volume so
+the Stage 4 upload slice has an explicit place to write derived local files.
+
 ## Guardrails
 
 - No product implementation in Stage 2.

@@ -1,0 +1,16 @@
+.git
+.venv
+frontend/.next
+frontend/node_modules
+node_modules
+coverage
+reports
+test-results
+playwright-report
+outputs
+.chroma
+.env
+.env.*
+!.env.example
+__pycache__
+*.pyc
