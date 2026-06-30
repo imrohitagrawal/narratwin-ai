@@ -1,0 +1,36 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check
+        language: system
+        types: [python]
+      - id: mypy
+        name: mypy
+        entry: uv run mypy backend scripts tests
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+      - id: frontend-lint
+        name: frontend lint
+        entry: npm --prefix frontend run lint
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+      - id: frontend-test
+        name: frontend test
+        entry: npm --prefix frontend test
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+      - id: guardrails
+        name: repository guardrails
+        entry: python3 scripts/guardrails_check.py
+        language: system
+        pass_filenames: false

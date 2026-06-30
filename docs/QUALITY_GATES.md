@@ -11,9 +11,10 @@ make quality
 ```
 
 During the current stage, `make quality` runs only the active stage checks
-by delegating to `scripts/quality/check_quality_stage.py`. It must not run backend,
-frontend, Docker, database, RAG, avatar, or provider checks because those product
-areas are not allowed before Stage 4.
+by delegating to `scripts/quality/check_quality_stage.py`. Stage 3 may run
+backend, frontend, Docker, and local service foundation checks only for the
+approved health-check scaffold and CI/CD foundation. Product backend, frontend,
+database, RAG, avatar, or provider behavior remains blocked until Stage 4.
 
 ## Required Make Targets
 
@@ -21,11 +22,11 @@ The `Makefile` must expose:
 
 | Target | Current behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`; currently Stage 2 |
+| `make quality` | Runs checks for `.stage/current`; currently Stage 3 |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
 | `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
 | `make stage2-quality` | Runs executable Stage 2 architecture, security, AI safety, and portability checks |
-| `make stage3-quality` | Fails loudly until Stage 3 quality is implemented |
+| `make stage3-quality` | Runs executable Stage 3 repo foundation and CI/CD checks |
 | `make stage4-quality` | Fails loudly until Stage 4 quality is implemented |
 | `make stage5-quality` | Fails loudly until Stage 5 quality is implemented |
 | `make stage6-quality` | Fails loudly until Stage 6 quality is implemented |
@@ -122,7 +123,54 @@ Stage 2 validates:
 
 ### Stage 3: Repo Foundation And CI/CD Quality Gates
 
-Gate must validate local development docs, CI workflows, CI wrapper scripts, dependency/security scan path, branch protection recommendations, and mock/local provider defaults. Product feature code remains blocked.
+Stage 3 quality is executable through `make stage3-quality`, which first runs
+`scripts/quality/check_stage3_docs.py` and then executes the repo-local CI
+wrappers.
+
+Gate validates:
+
+- `.stage/current` contains `3`
+- current branch name matches `stage3-*` before merge, or is `main` after merge
+- changed files stay within the documented Stage 3 allowlist
+- Stage 3 branch scope is exact-file allowlisted; broad `backend/`,
+  `frontend/`, or `tests/` product paths are not accepted
+- local development docs include Python and frontend setup commands
+- backend FastAPI skeleton exposes health checks only, including versioned
+  `/api/v1` health endpoints and baseline security headers
+- Python dependency manifests and locks exist for the approved FastAPI foundation
+  stack and quality tooling
+- the frontend scaffold follows the documented Next.js TypeScript decision and
+  does not introduce product feature workflows
+- CI wrapper scripts execute backend lint/typecheck, backend unit/API tests,
+  frontend lint/typecheck/unit/build, Playwright smoke, Docker build, eval smoke,
+  and dependency/security scan path
+- tracked GitHub workflows exist for CI, security, eval smoke, and inherited
+  quality gates, with third-party actions pinned by immutable SHA
+- CI bootstraps `uv` with a pinned version before using `uv.lock`
+- dependency/security checks include secret scan, Bandit, `pip-audit`,
+  `npm audit --audit-level=high`, Semgrep over source, workflow, Docker,
+  Compose, manifest, and env-template files, and local-or-CI Gitleaks coverage
+- Docker build paths exist for backend and frontend foundation images; runtime
+  containers run as non-root, base/service images are digest pinned, and local
+  Compose port bindings are localhost-only
+- local Compose includes Postgres and Redis services only as Stage 4 foundation
+  readiness; no database schema, migration, queue, or product persistence code is
+  implemented in Stage 3
+- vector storage defaults to `disabled` until the Stage 4 Chroma/provider
+  adapter decision, dependency, persistence path, and tenant-isolation tests are
+  locked
+- eval smoke loads a deterministic fixture, writes a report artifact, and fails
+  on an unsupported health-contract claim mismatch
+- the policy-gates workflow runs repository guardrails and the static Stage 3
+  contract check; the dedicated CI, security, Docker, frontend smoke, and eval
+  workflows own the expensive PR-blocking wrappers
+- pre-commit configuration runs local lint, typecheck, test, frontend, and
+  guardrail checks
+- Stage 3 docs and third-party notices record newly introduced packages and tools
+- Stage 3 changes introduce no product implementation beyond health checks, no
+  RAG, provider, avatar, database migrations, or deployment environment logic
+- Stage 3 Python quality scripts compile
+- working-tree diffs have no whitespace errors
 
 ### Stage 4: Project Upload To Grounded Script Generation
 

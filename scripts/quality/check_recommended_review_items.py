@@ -39,6 +39,9 @@ EXPECTED_ITEMS = {
     "RR-006": ("Stage 2", "review prompt pack"),
     "RR-007": ("Stage 2", "WARNING"),
     "RR-008": ("Stage 2", "observability"),
+    "RR-009": ("Stage 4", "job uniqueness"),
+    "RR-010": ("Stage 4", "policy version"),
+    "RR-011": ("Stage 4", "tenant isolation"),
 }
 
 
@@ -140,13 +143,13 @@ def check_register(target: str) -> list[str]:
             )
 
     for item_id, (required_stage, required_term) in EXPECTED_ITEMS.items():
-        item = by_id.get(item_id)
-        if item is None:
+        expected_item = by_id.get(item_id)
+        if expected_item is None:
             fail(f"Missing expected recommended review item: {item_id}", failures)
             continue
-        if item.required_stage != required_stage:
+        if expected_item.required_stage != required_stage:
             fail(f"{item_id} must be assigned to {required_stage}.", failures)
-        if required_term not in item.recommendation and required_term not in item.acceptance_criteria:
+        if required_term not in expected_item.recommendation and required_term not in expected_item.acceptance_criteria:
             fail(f"{item_id} must retain review context term: {required_term}", failures)
 
     return failures

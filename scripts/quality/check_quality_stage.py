@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -35,6 +36,10 @@ def main() -> int:
         return subprocess.call([sys.executable, "scripts/quality/check_stage1_docs.py"], cwd=ROOT)
     if stage == "2":
         return subprocess.call([sys.executable, "scripts/quality/check_stage2_docs.py"], cwd=ROOT)
+    if stage == "3":
+        if os.environ.get("NARRATWIN_POLICY_ONLY") == "1":
+            return subprocess.call([sys.executable, "scripts/quality/check_stage3_docs.py"], cwd=ROOT)
+        return subprocess.call(["make", "stage3-quality"], cwd=ROOT)
 
     return subprocess.call(
         [sys.executable, "scripts/quality/stage_not_implemented.py", f"Stage {stage}"],

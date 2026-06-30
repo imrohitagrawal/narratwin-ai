@@ -146,3 +146,84 @@ Blocked changes:
 - dependency manifests or lockfiles for product/runtime code
 - unapproved workflow automation, agent runtime configs, or external-provider
   automation not recorded in `docs/THIRD_PARTY_NOTICES.md` and `docs/SKILL_LOCK.md`
+
+## Stage 3 Repo Foundation And CI/CD Branch Scope
+
+Allowed changes:
+
+- `.dockerignore`
+- `.github/workflows/ci.yml`
+- `.github/workflows/security.yml`
+- `.github/workflows/eval-smoke.yml`
+- `.github/workflows/quality.yml`
+- `.github/workflows/quality-gates.yml`
+- `.pre-commit-config.yaml`
+- `.gitignore`
+- `.stage/current`
+- `.env.example`
+- `Makefile`
+- `backend/Dockerfile`
+- `backend/__init__.py`
+- `backend/app/__init__.py`
+- `backend/app/main.py`
+- `docker-compose.yml`
+- `evals/smoke/stage3_health_fixture.json`
+- `pyproject.toml`
+- `semgrep.yml`
+- `tests/api/test_health_api.py`
+- `tests/unit/test_health_contract.py`
+- `uv.lock`
+- `frontend/Dockerfile`
+- `frontend/.gitignore`
+- `frontend/README.md`
+- `frontend/eslint.config.mjs`
+- `frontend/playwright.config.ts`
+- `frontend/next.config.ts`
+- `frontend/package.json`
+- `frontend/package-lock.json`
+- `frontend/src/app/favicon.ico`
+- `frontend/src/app/globals.css`
+- `frontend/src/app/layout.tsx`
+- `frontend/src/app/page.module.css`
+- `frontend/src/app/page.test.tsx`
+- `frontend/src/app/page.tsx`
+- `frontend/tests/smoke.spec.ts`
+- `frontend/tsconfig.json`
+- `frontend/vitest.config.ts`
+- `docs/ADR/0001-system-architecture.md`
+- `docs/API_CONTRACT.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/RECOMMENDED_REVIEW_ITEMS.md`
+- `docs/REPOSITORY_GUARDRAILS.md`
+- `docs/SKILL_LOCK.md`
+- `docs/STAGE2_ARCHITECTURE_CONTRACT.json`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/TRACEABILITY.md`
+- `scripts/guardrails_check.py`
+- `scripts/ci/backend-lint.sh`
+- `scripts/ci/backend-test.sh`
+- `scripts/ci/docker-build.sh`
+- `scripts/ci/eval-smoke.sh`
+- `scripts/ci/frontend-build.sh`
+- `scripts/ci/frontend-smoke.sh`
+- `scripts/ci/dependency-security.sh`
+- `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_recommended_review_items.py`
+- `scripts/quality/check_stage2_docs.py`
+- `scripts/quality/check_stage3_docs.py`
+
+Blocked changes:
+
+- backend product implementation beyond health checks
+- frontend product feature implementation beyond the minimal framework scaffold
+- RAG, vector store, or embedding implementation code
+- avatar, TTS, STT, subtitle, or provider adapter implementation code
+- database migrations, infrastructure deployment, or non-local runtime deployment code
+- broad backend, frontend, or test paths outside the exact Stage 3 scaffold
+  allowlist
+- premium-provider automation or real provider keys
+- Vite frontend scaffolding unless a future ADR supersedes the documented
+  Next.js frontend decision

@@ -52,7 +52,14 @@ Enable branch protection or repository ruleset for `main` with:
 
 - Require a pull request before merging.
 - Require status checks to pass before merging.
-- Required status check: `policy-gates` from the `Quality Gates` workflow.
+- Required status checks:
+  - `policy-gates` from the `Quality Gates` workflow
+  - `quality / markdown`
+  - `lint / typecheck / unit / api`
+  - `frontend tests / playwright smoke`
+  - `ci / docker build`
+  - `secret scan / bandit / audit / semgrep`
+  - `eval smoke`
 - Require branches to be up to date before merging.
 - Block force pushes.
 - Block deletions.

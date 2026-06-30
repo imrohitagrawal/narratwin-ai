@@ -1,0 +1,84 @@
+.page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  background: #f6f7f9;
+}
+
+.main {
+  display: grid;
+  align-content: center;
+  width: 100%;
+  max-width: 920px;
+  min-height: 100svh;
+  gap: 24px;
+  padding: 72px 32px;
+  margin: 0 auto;
+}
+
+.kicker {
+  color: #386641;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.main h1 {
+  max-width: 720px;
+  color: #111827;
+  font-size: 48px;
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.summary {
+  max-width: 720px;
+  color: #4b5563;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.statusList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.statusList div {
+  min-height: 112px;
+  padding: 16px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.statusList dt {
+  margin-bottom: 8px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.statusList dd {
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .main {
+    padding: 48px 20px;
+  }
+
+  .main h1 {
+    font-size: 36px;
+    line-height: 1.12;
+  }
+
+  .statusList {
+    grid-template-columns: 1fr;
+  }
+}

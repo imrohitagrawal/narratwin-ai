@@ -14,7 +14,7 @@
     "SUBTITLE_PROVIDER=mock",
     "VIDEO_RENDERER=local",
     "STORAGE_PROVIDER=local",
-    "VECTOR_STORE=chroma"
+    "VECTOR_STORE=disabled"
   ],
   "idPrefixes": {
     "projectId": "proj_",

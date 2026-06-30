@@ -1,0 +1,112 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: local
+      DATABASE_URL: postgresql://narratwin:narratwin_local@postgres:5432/narratwin
+      REDIS_URL: redis://:narratwin_redis_local@redis:6379/0
+      STORAGE_PROVIDER: local
+      LOCAL_STORAGE_ROOT: /app/data/outputs
+      VECTOR_STORE: disabled
+      LLM_PROVIDER: mock
+      EMBEDDING_PROVIDER: mock
+      EVALUATION_PROVIDER: mock
+      TRANSLATION_PROVIDER: mock
+      AVATAR_PROVIDER: mock
+      TTS_PROVIDER: mock
+      STT_PROVIDER: mock
+      SUBTITLE_PROVIDER: mock
+      VIDEO_RENDERER: local
+    ports:
+      - "127.0.0.1:8000:8000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - backend-data:/app/data
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "127.0.0.1:3000:3000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine@sha256:dc17045ccfd343b49600570ea734b9c4991cf1c3f3302e67df51e3b402dd55c4
+    user: postgres
+    environment:
+      POSTGRES_DB: narratwin
+      POSTGRES_USER: narratwin
+      POSTGRES_PASSWORD: narratwin_local
+    ports:
+      - "127.0.0.1:5432:5432"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U narratwin -d narratwin"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: redis:8-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005
+    user: redis
+    command: ["redis-server", "--requirepass", "narratwin_redis_local"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "narratwin_redis_local", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  backend-data:
+  postgres-data:
+  redis-data:

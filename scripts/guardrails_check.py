@@ -199,9 +199,10 @@ def changed_files() -> list[str]:
 
 
 def iter_text_files() -> list[Path]:
-    output = run_git(["ls-files"])
+    tracked = run_git(["ls-files"])
+    untracked = run_git(["ls-files", "--others", "--exclude-standard"])
     files: list[Path] = []
-    for rel in output.splitlines():
+    for rel in sorted({line.strip() for output in (tracked, untracked) for line in output.splitlines()}):
         if not rel:
             continue
         path = ROOT / rel
@@ -280,9 +281,18 @@ def check_issue_linked_pull_request() -> None:
         failures.append("Pull requests for guarded work must target main.")
     if not re.search(r"(?i)(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+", body):
         failures.append("Pull request body must link an issue using Closes #<issue>, Fixes #<issue>, or Resolves #<issue>.")
-    if head_ref and head_ref.startswith("stage2-"):
-        if not re.search(r"(?i)(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#2\b", body):
-            failures.append("Stage 2 pull requests must close the canonical Stage 2 issue using Closes #2, Fixes #2, or Resolves #2.")
+    canonical_stage_issues = {
+        "stage2-": ("Stage 2", "2"),
+        "stage3-": ("Stage 3", "5"),
+    }
+    for branch_prefix, (stage_name, issue_number) in canonical_stage_issues.items():
+        if head_ref and head_ref.startswith(branch_prefix):
+            pattern = rf"(?i)(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#{issue_number}\b"
+            if not re.search(pattern, body):
+                failures.append(
+                    f"{stage_name} pull requests must close the canonical {stage_name} issue using "
+                    f"Closes #{issue_number}, Fixes #{issue_number}, or Resolves #{issue_number}."
+                )
 
 
 def check_workflows_least_privilege() -> None:
@@ -351,7 +361,7 @@ def check_mock_local_defaults() -> None:
         "SUBTITLE_PROVIDER=mock",
         "VIDEO_RENDERER=local",
         "STORAGE_PROVIDER=local",
-        "VECTOR_STORE=chroma",
+        "VECTOR_STORE=disabled",
     }
     for default in sorted(expected_defaults):
         if default not in text:
