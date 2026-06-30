@@ -7,13 +7,15 @@ from datetime import UTC, datetime
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, FastAPI, File, Header, HTTPException, Request, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.app.stage4 import (
+    LocalPrincipal,
+    MAX_UPLOAD_BYTES,
     Stage4Error,
     document_to_api,
     ingestion_to_api,
@@ -90,6 +92,18 @@ class GenerateWalkthroughRequest(BaseModel):
     depth: Literal["CONCISE", "STANDARD", "DETAILED"] = "CONCISE"
     style: Literal["CONFIDENT", "TECHNICAL", "FRIENDLY"] = "CONFIDENT"
     prompt: str = "Create a concise grounded walkthrough."
+
+
+async def local_principal(x_local_user_id: str | None = Header(default=None, alias="X-Local-User-Id")) -> LocalPrincipal:
+    actor_id = (x_local_user_id or "").strip()
+    return LocalPrincipal(actor_id=actor_id or "user_local")
+
+
+async def idempotency_key_header(
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> str | None:
+    key = (idempotency_key or "").strip()
+    return key or None
 
 
 app = FastAPI(
@@ -229,12 +243,18 @@ def api_readyz() -> ReadinessResponse:
 
 
 @api_v1.post("/projects", status_code=201, tags=["projects"])
-def create_project(request: CreateProjectRequest) -> dict[str, object]:
+def create_project(
+    request: CreateProjectRequest,
+    principal: LocalPrincipal = Depends(local_principal),
+    idempotency_key: str | None = Depends(idempotency_key_header),
+) -> dict[str, object]:
     project = stage4_service.create_project(
+        principal=principal,
         name=request.name,
         description=request.description,
         default_audience=request.default_audience,
         default_language=request.default_language,
+        idempotency_key=idempotency_key,
     )
     return project_to_api(project)
 
@@ -246,14 +266,18 @@ def create_project(request: CreateProjectRequest) -> dict[str, object]:
 )
 async def upload_knowledge_document(
     project_id: str,
+    principal: LocalPrincipal = Depends(local_principal),
+    idempotency_key: str | None = Depends(idempotency_key_header),
     file: UploadFile = File(...),
 ) -> dict[str, object]:
-    data = await file.read()
+    data = await read_upload_with_limit(file)
     document = stage4_service.upload_document(
+        principal=principal,
         project_id=project_id,
         source_filename=file.filename or "",
         content_type=file.content_type or "application/octet-stream",
         data=data,
+        idempotency_key=idempotency_key,
     )
     return document_to_api(document)
 
@@ -266,15 +290,32 @@ def approve_knowledge_document(
     project_id: str,
     document_id: str,
     request: ApproveDocumentRequest,
+    principal: LocalPrincipal = Depends(local_principal),
+    idempotency_key: str | None = Depends(idempotency_key_header),
 ) -> dict[str, object]:
     del request
-    document = stage4_service.approve_document(project_id=project_id, document_id=document_id)
+    document = stage4_service.approve_document(
+        principal=principal,
+        project_id=project_id,
+        document_id=document_id,
+        idempotency_key=idempotency_key,
+    )
     return document_to_api(document)
 
 
 @api_v1.post("/projects/{project_id}/ingestion-runs", status_code=201, tags=["ingestion"])
-def start_ingestion_run(project_id: str, request: StartIngestionRequest) -> dict[str, object]:
-    run = stage4_service.ingest_documents(project_id=project_id, document_ids=request.document_ids)
+def start_ingestion_run(
+    project_id: str,
+    request: StartIngestionRequest,
+    principal: LocalPrincipal = Depends(local_principal),
+    idempotency_key: str | None = Depends(idempotency_key_header),
+) -> dict[str, object]:
+    run = stage4_service.ingest_documents(
+        principal=principal,
+        project_id=project_id,
+        document_ids=request.document_ids,
+        idempotency_key=idempotency_key,
+    )
     return ingestion_to_api(run)
 
 
@@ -282,16 +323,31 @@ def start_ingestion_run(project_id: str, request: StartIngestionRequest) -> dict
 def generate_walkthrough_run(
     project_id: str,
     request: GenerateWalkthroughRequest,
+    principal: LocalPrincipal = Depends(local_principal),
+    idempotency_key: str | None = Depends(idempotency_key_header),
 ) -> dict[str, object]:
     run = stage4_service.generate_walkthrough(
+        principal=principal,
         project_id=project_id,
         audience=request.audience,
         requested_language=request.requested_language,
         depth=request.depth,
         style=request.style,
         prompt=request.prompt,
+        idempotency_key=idempotency_key,
     )
     return walkthrough_to_api(run)
+
+
+async def read_upload_with_limit(file: UploadFile) -> bytes:
+    data = bytearray()
+    while True:
+        chunk = await file.read(64 * 1024)
+        if not chunk:
+            return bytes(data)
+        data.extend(chunk)
+        if len(data) > MAX_UPLOAD_BYTES:
+            raise Stage4Error(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit.")
 
 
 def reset_app_state_for_tests() -> None:

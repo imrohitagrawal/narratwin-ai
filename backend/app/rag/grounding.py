@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 
 from backend.app.rag.models import (
     ClaimSupport,
@@ -26,9 +27,83 @@ def evaluate_grounding(
     retrieved_context: list[RetrievedContext],
 ) -> EvaluationResult:
     context_by_chunk = {context.chunk.chunk_id: context for context in retrieved_context}
+    context_by_citation_index = {
+        index: context for index, context in enumerate(retrieved_context, start=1)
+    }
     unsupported_claims: list[UnsupportedClaim] = []
     claim_supports: list[ClaimSupport] = []
+    matched_claim_ids: set[str] = set()
+    failed_sentence_claim_ids: set[str] = set()
+
+    for sentence_index, sentence in enumerate(_script_sentences(candidate.text), start=1):
+        matching_claims = [
+            claim
+            for claim in candidate.claims
+            if _spans_overlap(
+                sentence.start,
+                sentence.end,
+                claim.script_span_start,
+                claim.script_span_end,
+            )
+            or _normalize(claim.text) in _normalize(sentence.text)
+        ]
+        if not matching_claims:
+            unsupported_claims.append(
+                UnsupportedClaim(
+                    claim_id=f"script_span_{sentence_index:03d}",
+                    claim_text=sentence.text,
+                    reason="Visible generated script text has no provider claim metadata.",
+                )
+            )
+            continue
+        markers = _citation_markers(sentence.text)
+        if len(markers) != 1:
+            failed_sentence_claim_ids.add(matching_claims[0].claim_id)
+            unsupported_claims.append(
+                UnsupportedClaim(
+                    claim_id=matching_claims[0].claim_id,
+                    claim_text=sentence.text,
+                    reason="Visible generated script claim must contain exactly one citation marker.",
+                )
+            )
+            continue
+        marker_index = markers[0]
+        marker_context = context_by_citation_index.get(marker_index)
+        if marker_context is None:
+            failed_sentence_claim_ids.add(matching_claims[0].claim_id)
+            unsupported_claims.append(
+                UnsupportedClaim(
+                    claim_id=matching_claims[0].claim_id,
+                    claim_text=sentence.text,
+                    reason="Visible citation marker does not map to retrieved context.",
+                )
+            )
+            continue
+        claim = matching_claims[0]
+        if claim.citation_index != marker_index or claim.chunk_id != marker_context.chunk.chunk_id:
+            failed_sentence_claim_ids.add(claim.claim_id)
+            unsupported_claims.append(
+                UnsupportedClaim(
+                    claim_id=claim.claim_id,
+                    claim_text=claim.text,
+                    reason="Visible citation marker does not match provider claim support metadata.",
+                )
+            )
+            continue
+        matched_claim_ids.add(claim.claim_id)
+
     for claim in candidate.claims:
+        if claim.claim_id in failed_sentence_claim_ids:
+            continue
+        if claim.claim_id not in matched_claim_ids:
+            unsupported_claims.append(
+                UnsupportedClaim(
+                    claim_id=claim.claim_id,
+                    claim_text=claim.text,
+                    reason="Provider claim metadata does not map to a visible cited script claim.",
+                )
+            )
+            continue
         context = context_by_chunk.get(claim.chunk_id or "")
         if context is None or _normalize(claim.text) not in _normalize(context.chunk.text):
             unsupported_claims.append(
@@ -49,6 +124,7 @@ def evaluate_grounding(
                 support_status="SUPPORTED",
                 support_score=1.0,
                 support_reason="The claim is directly supported by the cited retrieved chunk.",
+                citation_index=claim.citation_index,
             )
         )
     supported_count = len(claim_supports)
@@ -73,3 +149,35 @@ def evaluate_grounding(
 
 def _normalize(text: str) -> str:
     return " ".join(re.findall(r"[a-z0-9]+", text.lower()))
+
+
+@dataclass(frozen=True)
+class _ScriptSentence:
+    text: str
+    start: int
+    end: int
+
+
+def _script_sentences(text: str) -> list[_ScriptSentence]:
+    pattern = re.compile(r"\S.*?(?:[.!?](?:\s*\[\d+\])?)(?=\s+\S|$)", re.DOTALL)
+    sentences = [
+        _ScriptSentence(
+            text=match.group(0).strip(),
+            start=match.start(),
+            end=match.end(),
+        )
+        for match in pattern.finditer(text)
+        if match.group(0).strip()
+    ]
+    if sentences:
+        return sentences
+    stripped = text.strip()
+    return [_ScriptSentence(text=stripped, start=0, end=len(text))] if stripped else []
+
+
+def _citation_markers(text: str) -> list[int]:
+    return [int(match.group(1)) for match in re.finditer(r"\[(\d+)\]", text)]
+
+
+def _spans_overlap(left_start: int, left_end: int, right_start: int, right_end: int) -> bool:
+    return max(left_start, right_start) < min(left_end, right_end)

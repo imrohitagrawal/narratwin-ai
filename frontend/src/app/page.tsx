@@ -4,31 +4,44 @@ import { useState } from "react";
 
 import styles from "./page.module.css";
 
-const sampleScript =
-  "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1] For recruiters, Every generated walkthrough claim must cite retrieved source chunks from approved knowledge. [2]";
-
-const citations = [
-  {
-    id: "ctx_001",
-    source: "stage4_project.md",
-    chunk: "chunk_001",
-    excerpt: "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.",
+const sampleRun = {
+  runId: "run_stage4_demo",
+  traceId: "trace_stage4_local",
+  status: "PASSED",
+  acceptedScriptText:
+    "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1] For recruiters, Every generated walkthrough claim must cite retrieved source chunks from approved knowledge. [2]",
+  evaluation: {
+    unsupportedClaimCount: 0,
+    claimSupports: [
+      { claimId: "claim_001", contextRefId: "ctx_001", citationIndex: 1 },
+      { claimId: "claim_002", contextRefId: "ctx_002", citationIndex: 2 },
+    ],
   },
-  {
-    id: "ctx_002",
-    source: "stage4_project.md",
-    chunk: "chunk_002",
-    excerpt: "Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.",
-  },
-];
+  contextRefs: [
+    {
+      contextRefId: "ctx_001",
+      sourceFilename: "stage4_project.md",
+      chunkId: "chunk_001",
+      evidenceSnapshot: {
+        redactedExcerpt: "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.",
+      },
+    },
+    {
+      contextRefId: "ctx_002",
+      sourceFilename: "stage4_project.md",
+      chunkId: "chunk_002",
+      evidenceSnapshot: {
+        redactedExcerpt: "Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.",
+      },
+    },
+  ],
+};
 
 export default function Home() {
-  const [script, setScript] = useState(sampleScript);
-  const [status, setStatus] = useState("PASSED");
+  const [run, setRun] = useState(sampleRun);
 
   function generateWalkthrough() {
-    setScript(sampleScript);
-    setStatus("PASSED");
+    setRun(sampleRun);
   }
 
   return (
@@ -82,17 +95,17 @@ export default function Home() {
         <section className={styles.result} aria-labelledby="result-title">
           <div className={styles.resultHeader}>
             <h2 id="result-title">Walkthrough script</h2>
-            <span className={styles.badge}>{status}</span>
+            <span className={styles.badge}>{run.status}</span>
           </div>
-          <p>{script}</p>
+          <p>{run.acceptedScriptText}</p>
           <dl className={styles.metadata} aria-label="Trace metadata">
             <div>
               <dt>Trace</dt>
-              <dd>trace_stage4_local</dd>
+              <dd>{run.traceId}</dd>
             </div>
             <div>
               <dt>Run</dt>
-              <dd>run_stage4_demo</dd>
+              <dd>{run.runId}</dd>
             </div>
           </dl>
         </section>
@@ -100,17 +113,22 @@ export default function Home() {
         <section className={styles.citations} aria-labelledby="citations-title">
           <div className={styles.resultHeader}>
             <h2 id="citations-title">Citations</h2>
-            <span className={styles.badge}>0 unsupported claims</span>
+            <span className={styles.badge}>{run.evaluation.unsupportedClaimCount} unsupported claims</span>
           </div>
           <ul>
-            {citations.map((citation, index) => (
-              <li key={citation.id}>
-                <strong>[{index + 1}]</strong>
-                <span>{citation.source}</span>
-                <code>{citation.chunk}</code>
-                <p>{citation.excerpt}</p>
+            {run.contextRefs.map((citation) => {
+              const support = run.evaluation.claimSupports.find(
+                (candidate) => candidate.contextRefId === citation.contextRefId,
+              );
+              return (
+              <li key={citation.contextRefId}>
+                <strong>[{support?.citationIndex}]</strong>
+                <span>{citation.sourceFilename}</span>
+                <code>{citation.chunkId}</code>
+                <p>{citation.evidenceSnapshot.redactedExcerpt}</p>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </section>
       </section>

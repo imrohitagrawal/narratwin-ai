@@ -51,6 +51,7 @@ Allowed changes:
 - `docs/STAGE_ISSUE_PLAN.md`
 - `docs/THIRD_PARTY_NOTICES.md`
 - `.stage/current`
+- `.github/workflows/eval-smoke.yml`
 - `Makefile`
 - `scripts/guardrails_check.py`
 - `scripts/quality/check_stage0_docs.py`
@@ -255,9 +256,12 @@ Allowed changes:
 - `scripts/quality/check_quality_stage.py`
 - `scripts/quality/check_stage4_docs.py`
 - `docs/API_CONTRACT.md`
+- `docs/ADR/0002-rag-storage.md`
 - `docs/DATA_MODEL.md`
+- `docs/OBSERVABILITY_AND_COST.md`
 - `docs/QUALITY_GATES.md`
 - `docs/RECOMMENDED_REVIEW_ITEMS.md`
+- `docs/SECURITY_AND_PRIVACY.md`
 - `docs/STAGE_ISSUE_PLAN.md`
 - `docs/STATUS.md`
 - `docs/THIRD_PARTY_NOTICES.md`

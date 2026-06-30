@@ -2,7 +2,7 @@ from backend.app.rag.chunking import chunk_document
 
 
 def test_chunk_document_preserves_heading_and_line_metadata() -> None:
-    text = "# Overview\n\nNarraTwin creates grounded scripts.\n\n## Safety\n\nClaims cite chunks."
+    text = "\n\n# Overview\n\nNarraTwin creates grounded scripts.\n\n## Safety\n\nClaims cite chunks."
 
     chunks = chunk_document(
         document_id="doc_test",
@@ -15,7 +15,7 @@ def test_chunk_document_preserves_heading_and_line_metadata() -> None:
 
     assert [chunk.chunk_index for chunk in chunks] == [0, 1]
     assert chunks[0].heading_path == ["Overview"]
-    assert chunks[0].line_start == 1
+    assert chunks[0].line_start == 3
     assert chunks[0].line_end >= chunks[0].line_start
     assert "grounded scripts" in chunks[0].text
     assert chunks[1].heading_path == ["Overview", "Safety"]
@@ -34,3 +34,22 @@ def test_chunk_document_rejects_empty_content() -> None:
     )
 
     assert chunks == []
+
+
+def test_chunk_document_splits_single_long_line_with_overlap() -> None:
+    words = [f"word{i}" for i in range(25)]
+
+    chunks = chunk_document(
+        document_id="doc_test",
+        project_id="proj_test",
+        tenant_id="tenant_local",
+        source_filename="long.md",
+        text=" ".join(words),
+        max_tokens=10,
+        overlap_tokens=2,
+    )
+
+    assert len(chunks) == 3
+    assert all(chunk.token_count <= 10 for chunk in chunks)
+    assert chunks[0].line_start == chunks[0].line_end == 1
+    assert "word8" in chunks[1].text

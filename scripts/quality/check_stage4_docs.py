@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import tomllib
@@ -15,7 +16,10 @@ STAGE4_BRANCH_PATTERN = re.compile(r"^stage4-")
 
 REQUIRED_FILES = [
     ".stage/current",
+    ".github/workflows/eval-smoke.yml",
+    "Makefile",
     "backend/app/main.py",
+    "backend/app/rag/__init__.py",
     "backend/app/stage4.py",
     "backend/app/rag/chunking.py",
     "backend/app/rag/grounding.py",
@@ -34,22 +38,47 @@ REQUIRED_FILES = [
     "frontend/src/app/page.test.tsx",
     "frontend/tests/smoke.spec.ts",
     "docs/RECOMMENDED_REVIEW_ITEMS.md",
+    "docs/ADR/0002-rag-storage.md",
+    "docs/API_CONTRACT.md",
+    "docs/DATA_MODEL.md",
+    "docs/OBSERVABILITY_AND_COST.md",
+    "docs/QUALITY_GATES.md",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
 ]
 
+STAGE4_ALLOWED_FILES = set(REQUIRED_FILES) | {
+    "pyproject.toml",
+    "uv.lock",
+    "frontend/playwright.config.ts",
+    "tests/api/test_health_api.py",
+    "tests/unit/test_health_contract.py",
+    "scripts/quality/check_quality_stage.py",
+    "scripts/quality/check_stage4_docs.py",
+}
+
+BLOCKED_STAGE4_PATTERNS = [
+    re.compile(r"(^|/)(avatar|tts|voice|video|rendering|heygen|elevenlabs|tavus|wav2lip)(/|$)", re.IGNORECASE),
+    re.compile(r"(^|/)(terraform|infra)(/|$)", re.IGNORECASE),
+]
+
 REQUIRED_DIRECT_DEPENDENCIES = {
     "beautifulsoup4",
-    "datasets",
-    "litellm",
     "markdown",
-    "openai",
     "pgvector",
     "pypdf",
     "python-docx",
-    "sentence-transformers",
     "tiktoken",
+}
+
+REQUIRED_OPTIONAL_DEPENDENCIES = {
+    "datasets",
+    "litellm",
+    "openai",
+    "sentence-transformers",
 }
 
 BLOCKED_DEPENDENCIES = {
@@ -68,12 +97,41 @@ def run_git(args: list[str]) -> str:
         return ""
 
 
+def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(args, cwd=ROOT, text=True, capture_output=True, check=False)
+
+
 def fail(message: str, failures: list[str]) -> None:
     failures.append(message)
 
 
 def read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
+
+
+def changed_files_for_stage_scope() -> list[str]:
+    base_candidates = [os.environ.get("GITHUB_BASE_SHA", "").strip(), "origin/main", "main"]
+    merge_base = ""
+    for candidate in [item for item in base_candidates if item]:
+        result = run(["git", "merge-base", candidate, "HEAD"])
+        if result.returncode == 0 and result.stdout.strip():
+            merge_base = result.stdout.strip()
+            break
+    if not merge_base:
+        raise RuntimeError("git merge-base failed for Stage 4 scope.")
+
+    outputs: list[str] = []
+    for args in (
+        ["git", "diff", "--name-only", f"{merge_base}..HEAD"],
+        ["git", "diff", "--name-only", "HEAD"],
+        ["git", "ls-files", "--others", "--exclude-standard"],
+    ):
+        result = run(args)
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr.strip() or f"{' '.join(args)} failed")
+        outputs.append(result.stdout)
+
+    return sorted({line.strip() for output in outputs for line in output.splitlines() if line.strip()})
 
 
 def check_required_files(failures: list[str]) -> None:
@@ -91,15 +149,32 @@ def check_stage_marker_and_branch(failures: list[str]) -> None:
         fail(f"Stage 4 work must run on a stage4-* branch or main after merge; got {branch}.", failures)
 
 
+def check_stage_scope(failures: list[str]) -> None:
+    for rel_path in changed_files_for_stage_scope():
+        if rel_path not in STAGE4_ALLOWED_FILES:
+            fail(f"Stage 4 changed file outside the allowlist: {rel_path}", failures)
+        for pattern in BLOCKED_STAGE4_PATTERNS:
+            if pattern.search(rel_path):
+                fail(f"Stage 4 Slice 1 must not include blocked avatar/TTS/video/infra scope: {rel_path}", failures)
+
+
 def check_dependencies(failures: list[str]) -> None:
     data = tomllib.loads(read("pyproject.toml"))
     dependencies = {
         str(raw).split(">=", maxsplit=1)[0].split("==", maxsplit=1)[0].lower()
         for raw in data.get("project", {}).get("dependencies", [])
     }
+    optional_dependencies = {
+        str(raw).split(">=", maxsplit=1)[0].split("==", maxsplit=1)[0].lower()
+        for values in data.get("project", {}).get("optional-dependencies", {}).values()
+        for raw in values
+    }
     missing = REQUIRED_DIRECT_DEPENDENCIES - dependencies
     if missing:
         fail(f"Missing required Stage 4 direct dependencies: {sorted(missing)}", failures)
+    missing_optional = REQUIRED_OPTIONAL_DEPENDENCIES - optional_dependencies
+    if missing_optional:
+        fail(f"Missing required Stage 4 optional dependencies: {sorted(missing_optional)}", failures)
     blocked = BLOCKED_DEPENDENCIES & dependencies
     if blocked:
         fail(f"Stage 4 Slice 1 must not include avatar/TTS/video dependencies: {sorted(blocked)}", failures)
@@ -187,6 +262,7 @@ def main() -> int:
         return 1
 
     check_stage_marker_and_branch(failures)
+    check_stage_scope(failures)
     check_dependencies(failures)
     check_backend_contracts(failures)
     check_tests_and_eval(failures)

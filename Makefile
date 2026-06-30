@@ -56,6 +56,7 @@ stage4-quality:
 	bash scripts/ci/frontend-smoke.sh
 	bash scripts/ci/dependency-security.sh
 	bash scripts/ci/eval-smoke.sh
+	bash scripts/ci/docker-build.sh
 
 stage5-quality:
 	python3 scripts/quality/check_recommended_review_items.py 5

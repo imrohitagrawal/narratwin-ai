@@ -10,6 +10,9 @@ OWNER_LOCAL = "user_local"
 ACTOR_LOCAL = "user_local"
 CHUNKING_STRATEGY_VERSION = "stage4-chunk-v1"
 RETRIEVAL_STRATEGY_VERSION = "stage4-rag-v1"
+RETRIEVAL_TOP_K = 6
+RETRIEVAL_MIN_SCORE = 0.72
+RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = 3
 MOCK_EMBEDDING_MODEL = "mock-embedding"
 MOCK_EMBEDDING_MODEL_VERSION = "stage4-local-v1"
 
@@ -21,6 +24,8 @@ class KnowledgeChunk:
     project_id: str
     document_id: str
     source_filename: str
+    source_document_checksum: str
+    approved_at: str
     chunk_index: int
     text: str
     token_count: int
@@ -71,6 +76,7 @@ class ClaimSupport:
     support_status: Literal["SUPPORTED"]
     support_score: float
     support_reason: str
+    citation_index: int
 
 
 @dataclass(frozen=True)

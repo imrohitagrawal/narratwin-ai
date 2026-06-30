@@ -16,5 +16,8 @@ test("home page exposes the Stage 4 grounded script workflow", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Walkthrough script" })).toBeVisible();
   await expect(page.getByLabel("Trace metadata")).toContainText("trace_stage4_local");
   await expect(page.getByText("0 unsupported claims")).toBeVisible();
+  const firstCitation = page.locator("li").filter({ hasText: "chunk_001" });
+  await expect(firstCitation.getByText("[1]", { exact: true })).toBeVisible();
+  await expect(firstCitation.getByText("chunk_001")).toBeVisible();
   await expect(page.getByText("stage4_project.md").first()).toBeVisible();
 });

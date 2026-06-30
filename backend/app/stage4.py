@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import PurePath
-from typing import Any, Literal
+from collections.abc import Callable
+from typing import Any, Literal, TypeVar, cast
 
 from backend.app.rag.chunking import checksum_text, chunk_document
 from backend.app.rag.grounding import evaluate_grounding
@@ -15,7 +17,9 @@ from backend.app.rag.models import (
     MOCK_EMBEDDING_MODEL,
     MOCK_EMBEDDING_MODEL_VERSION,
     OWNER_LOCAL,
+    RETRIEVAL_MIN_SCORE,
     RETRIEVAL_STRATEGY_VERSION,
+    RETRIEVAL_TOP_K,
     TENANT_LOCAL,
     EvaluationResult,
     GeneratedScript,
@@ -27,8 +31,21 @@ from backend.app.rag.retrieval import retrieve_context
 from backend.app.rag.store import InMemoryRagStore
 
 MAX_UPLOAD_BYTES = 1_048_576
+MAX_DOCUMENTS_PER_INGESTION = 10
+MAX_CHUNKS_PER_PROJECT = 200
+MAX_PROMPT_CHARS = 2_000
+MAX_PUBLIC_EXCERPT_CHARS = 240
 ALLOWED_EXTENSIONS = {".md", ".txt"}
 ALLOWED_CONTENT_TYPES = {"text/markdown", "text/plain", "application/octet-stream"}
+ARCHIVE_MAGIC_BYTES = (b"PK\x03\x04", b"Rar!\x1a\x07", b"7z\xbc\xaf\x27\x1c")
+PROMPT_INJECTION_PATTERNS = (
+    "ignore previous instructions",
+    "ignore prior instructions",
+    "reveal secrets",
+    "system prompt",
+    "developer message",
+)
+T = TypeVar("T")
 
 
 def _now() -> str:
@@ -44,8 +61,16 @@ class Stage4Error(Exception):
 
 
 @dataclass
+class LocalPrincipal:
+    tenant_id: str = TENANT_LOCAL
+    actor_id: str = OWNER_LOCAL
+
+
+@dataclass
 class ProjectRecord:
     project_id: str
+    tenant_id: str
+    owner_id: str
     name: str
     description: str
     default_audience: str
@@ -57,6 +82,8 @@ class ProjectRecord:
 @dataclass
 class DocumentRecord:
     document_id: str
+    tenant_id: str
+    owner_id: str
     project_id: str
     source_filename: str
     content_type: str
@@ -67,12 +94,15 @@ class DocumentRecord:
     approval_status: Literal["PENDING", "APPROVED"] = "PENDING"
     ingestion_status: Literal["NOT_STARTED", "INGESTED"] = "NOT_STARTED"
     created_at: str = field(default_factory=_now)
+    approved_at: str | None = None
     ingested_at: str | None = None
 
 
 @dataclass
 class IngestionRunRecord:
     ingestion_run_id: str
+    tenant_id: str
+    actor_id: str
     project_id: str
     document_ids: list[str]
     status: Literal["COMPLETED"]
@@ -84,8 +114,11 @@ class IngestionRunRecord:
 @dataclass
 class WalkthroughRunRecord:
     run_id: str
+    tenant_id: str
+    actor_id: str
     project_id: str
     status: Literal["COMPLETED", "FAILED", "REFUSED"]
+    failure_reason: str | None
     evaluation_status: Literal["PASSED", "FAILED"] | None
     audience: str
     requested_language: str
@@ -128,10 +161,34 @@ class Stage4Service:
     def create_project(
         self,
         *,
+        principal: LocalPrincipal,
         name: str,
         description: str = "",
         default_audience: str = "RECRUITER",
         default_language: str = "en",
+        idempotency_key: str | None = None,
+    ) -> ProjectRecord:
+        return self._idempotent(
+            scope=f"{principal.actor_id}:create_project",
+            idempotency_key=idempotency_key,
+            request_checksum=checksum_text(f"{name}\n{description}\n{default_audience}\n{default_language}"),
+            create=lambda: self._create_project_once(
+                principal=principal,
+                name=name,
+                description=description,
+                default_audience=default_audience,
+                default_language=default_language,
+            ),
+        )
+
+    def _create_project_once(
+        self,
+        *,
+        principal: LocalPrincipal,
+        name: str,
+        description: str,
+        default_audience: str,
+        default_language: str,
     ) -> ProjectRecord:
         if not name.strip():
             raise Stage4Error(422, "VALIDATION_ERROR", "Project name is required.")
@@ -139,6 +196,8 @@ class Stage4Service:
         now = _now()
         project = ProjectRecord(
             project_id=f"proj_{self._project_counter:06d}",
+            tenant_id=principal.tenant_id,
+            owner_id=principal.actor_id,
             name=name.strip(),
             description=description.strip(),
             default_audience=default_audience,
@@ -152,24 +211,53 @@ class Stage4Service:
     def upload_document(
         self,
         *,
+        principal: LocalPrincipal,
+        project_id: str,
+        source_filename: str,
+        content_type: str,
+        data: bytes,
+        idempotency_key: str | None = None,
+    ) -> DocumentRecord:
+        return self._idempotent(
+            scope=f"{principal.actor_id}:upload_document:{project_id}",
+            idempotency_key=idempotency_key,
+            request_checksum=checksum_text(
+                f"{project_id}\n{source_filename}\n{content_type}\n{hashlib.sha256(data).hexdigest()}"
+            ),
+            create=lambda: self._upload_document_once(
+                principal=principal,
+                project_id=project_id,
+                source_filename=source_filename,
+                content_type=content_type,
+                data=data,
+            ),
+        )
+
+    def _upload_document_once(
+        self,
+        *,
+        principal: LocalPrincipal,
         project_id: str,
         source_filename: str,
         content_type: str,
         data: bytes,
     ) -> DocumentRecord:
-        self._require_project(project_id)
+        self._require_project(principal=principal, project_id=project_id)
         safe_filename = sanitize_filename(source_filename)
         suffix = PurePath(safe_filename).suffix.lower()
         if suffix not in ALLOWED_EXTENSIONS or content_type not in ALLOWED_CONTENT_TYPES:
             raise Stage4Error(415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted.")
         if len(data) > MAX_UPLOAD_BYTES:
             raise Stage4Error(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit.")
+        validate_upload_bytes(data)
         text = decode_upload(data)
         if not text.strip():
             raise Stage4Error(422, "VALIDATION_ERROR", "Uploaded document is empty.")
         self._document_counter += 1
         document = DocumentRecord(
             document_id=f"doc_{self._document_counter:06d}",
+            tenant_id=principal.tenant_id,
+            owner_id=principal.actor_id,
             project_id=project_id,
             source_filename=safe_filename,
             content_type="text/markdown" if suffix == ".md" else "text/plain",
@@ -180,33 +268,102 @@ class Stage4Service:
         self.documents[document.document_id] = document
         return document
 
-    def approve_document(self, *, project_id: str, document_id: str) -> DocumentRecord:
-        document = self._require_document(project_id, document_id)
+    def approve_document(
+        self,
+        *,
+        principal: LocalPrincipal,
+        project_id: str,
+        document_id: str,
+        idempotency_key: str | None = None,
+    ) -> DocumentRecord:
+        return self._idempotent(
+            scope=f"{principal.actor_id}:approve_document:{project_id}:{document_id}",
+            idempotency_key=idempotency_key,
+            request_checksum=checksum_text(f"{project_id}\n{document_id}\nAPPROVED"),
+            create=lambda: self._approve_document_once(
+                principal=principal,
+                project_id=project_id,
+                document_id=document_id,
+            ),
+        )
+
+    def _approve_document_once(
+        self,
+        *,
+        principal: LocalPrincipal,
+        project_id: str,
+        document_id: str,
+    ) -> DocumentRecord:
+        document = self._require_document(principal=principal, project_id=project_id, document_id=document_id)
         document.approval_status = "APPROVED"
+        document.approved_at = _now()
         return document
 
-    def ingest_documents(self, *, project_id: str, document_ids: list[str]) -> IngestionRunRecord:
-        self._require_project(project_id)
+    def ingest_documents(
+        self,
+        *,
+        principal: LocalPrincipal,
+        project_id: str,
+        document_ids: list[str],
+        idempotency_key: str | None = None,
+    ) -> IngestionRunRecord:
+        return self._idempotent(
+            scope=f"{principal.actor_id}:ingest_documents:{project_id}",
+            idempotency_key=idempotency_key,
+            request_checksum=checksum_text(f"{project_id}\n{','.join(document_ids)}"),
+            create=lambda: self._ingest_documents_once(
+                principal=principal,
+                project_id=project_id,
+                document_ids=document_ids,
+            ),
+        )
+
+    def _ingest_documents_once(
+        self,
+        *,
+        principal: LocalPrincipal,
+        project_id: str,
+        document_ids: list[str],
+    ) -> IngestionRunRecord:
+        self._require_project(principal=principal, project_id=project_id)
         if not document_ids:
             raise Stage4Error(422, "VALIDATION_ERROR", "At least one document is required.")
+        if len(document_ids) > MAX_DOCUMENTS_PER_INGESTION:
+            raise Stage4Error(413, "INGESTION_TOO_LARGE", "Too many documents requested for one ingestion run.")
         stored_chunks: list[KnowledgeChunk] = []
         for document_id in document_ids:
-            document = self._require_document(project_id, document_id)
+            document = self._require_document(principal=principal, project_id=project_id, document_id=document_id)
             if document.approval_status != "APPROVED":
                 raise Stage4Error(422, "DOCUMENT_NOT_APPROVED", "Document must be approved before ingestion.")
+            parsed_text = parse_document_text(document.text)
+            if contains_prompt_injection(parsed_text):
+                raise Stage4Error(422, "UNSAFE_DOCUMENT_CONTENT", "Document contains unsafe instruction-like content.")
             chunks = chunk_document(
                 document_id=document.document_id,
                 project_id=project_id,
-                tenant_id=TENANT_LOCAL,
+                tenant_id=principal.tenant_id,
                 source_filename=document.source_filename,
-                text=parse_document_text(document.text),
+                text=parsed_text,
+                source_document_checksum=document.checksum,
+                approved_at=document.approved_at or document.created_at,
             )
+            if (
+                self.rag_store.chunk_count_for_project(
+                    tenant_id=principal.tenant_id,
+                    project_id=project_id,
+                )
+                + len(chunks)
+                > MAX_CHUNKS_PER_PROJECT
+            ):
+                raise Stage4Error(413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 chunk limit.")
             stored_chunks.extend(self.rag_store.add_chunks(chunks, self.embedder))
             document.ingestion_status = "INGESTED"
             document.ingested_at = _now()
         self._ingestion_counter += 1
         run = IngestionRunRecord(
             ingestion_run_id=f"ing_{self._ingestion_counter:06d}",
+            tenant_id=principal.tenant_id,
+            actor_id=principal.actor_id,
             project_id=project_id,
             document_ids=document_ids,
             status="COMPLETED",
@@ -220,6 +377,34 @@ class Stage4Service:
     def generate_walkthrough(
         self,
         *,
+        principal: LocalPrincipal,
+        project_id: str,
+        audience: str,
+        requested_language: str,
+        depth: str,
+        style: str,
+        prompt: str,
+        idempotency_key: str | None = None,
+    ) -> WalkthroughRunRecord:
+        return self._idempotent(
+            scope=f"{principal.actor_id}:generate_walkthrough:{project_id}",
+            idempotency_key=idempotency_key,
+            request_checksum=checksum_text(f"{project_id}\n{audience}\n{requested_language}\n{depth}\n{style}\n{prompt}"),
+            create=lambda: self._generate_walkthrough_once(
+                principal=principal,
+                project_id=project_id,
+                audience=audience,
+                requested_language=requested_language,
+                depth=depth,
+                style=style,
+                prompt=prompt,
+            ),
+        )
+
+    def _generate_walkthrough_once(
+        self,
+        *,
+        principal: LocalPrincipal,
         project_id: str,
         audience: str,
         requested_language: str,
@@ -227,23 +412,28 @@ class Stage4Service:
         style: str,
         prompt: str,
     ) -> WalkthroughRunRecord:
-        self._require_project(project_id)
+        self._require_project(principal=principal, project_id=project_id)
+        if len(prompt) > MAX_PROMPT_CHARS:
+            raise Stage4Error(413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit.")
         self._run_counter += 1
         run_id = f"run_{self._run_counter:06d}"
         retrieved = retrieve_context(
             store=self.rag_store,
             embedder=self.embedder,
-            tenant_id=TENANT_LOCAL,
+            tenant_id=principal.tenant_id,
             project_id=project_id,
             query=f"{audience} {prompt}",
-            top_k=6,
-            min_score=0.1,
+            top_k=RETRIEVAL_TOP_K,
+            min_score=RETRIEVAL_MIN_SCORE,
         )
-        if not retrieved:
+        if not retrieved or any(contains_prompt_injection(context.chunk.text) for context in retrieved):
             run = WalkthroughRunRecord(
                 run_id=run_id,
+                tenant_id=principal.tenant_id,
+                actor_id=principal.actor_id,
                 project_id=project_id,
                 status="REFUSED",
+                failure_reason="LOW_RETRIEVAL_CONFIDENCE" if not retrieved else "UNSAFE_RETRIEVED_CONTEXT",
                 evaluation_status=None,
                 audience=audience,
                 requested_language=requested_language,
@@ -263,7 +453,7 @@ class Stage4Service:
             retrieved_context=retrieved,
         )
         evaluation = evaluate_grounding(
-            tenant_id=TENANT_LOCAL,
+            tenant_id=principal.tenant_id,
             project_id=project_id,
             run_id=run_id,
             candidate=generated,
@@ -271,8 +461,11 @@ class Stage4Service:
         )
         run = WalkthroughRunRecord(
             run_id=run_id,
+            tenant_id=principal.tenant_id,
+            actor_id=principal.actor_id,
             project_id=project_id,
             status="COMPLETED" if evaluation.evaluation_status == "PASSED" else "FAILED",
+            failure_reason=None if evaluation.evaluation_status == "PASSED" else "UNSUPPORTED_PROJECT_FACT",
             evaluation_status=evaluation.evaluation_status,
             audience=audience,
             requested_language=requested_language,
@@ -287,24 +480,72 @@ class Stage4Service:
         self.walkthrough_runs[run_id] = run
         return run
 
-    def _require_project(self, project_id: str) -> ProjectRecord:
+    def _require_project(self, *, principal: LocalPrincipal, project_id: str) -> ProjectRecord:
         project = self.projects.get(project_id)
         if project is None:
             raise Stage4Error(404, "NOT_FOUND", "Project not found.")
+        if project.tenant_id != principal.tenant_id or project.owner_id != principal.actor_id:
+            raise Stage4Error(403, "FORBIDDEN", "Project is not accessible to this principal.")
         return project
 
-    def _require_document(self, project_id: str, document_id: str) -> DocumentRecord:
+    def _require_document(self, *, principal: LocalPrincipal, project_id: str, document_id: str) -> DocumentRecord:
+        self._require_project(principal=principal, project_id=project_id)
         document = self.documents.get(document_id)
         if document is None or document.project_id != project_id:
             raise Stage4Error(404, "NOT_FOUND", "Knowledge document not found.")
+        if document.tenant_id != principal.tenant_id or document.owner_id != principal.actor_id:
+            raise Stage4Error(403, "FORBIDDEN", "Document is not accessible to this principal.")
         return document
+
+    def _idempotent(
+        self,
+        *,
+        scope: str,
+        idempotency_key: str | None,
+        request_checksum: str,
+        create: Callable[[], T],
+    ) -> T:
+        if not idempotency_key:
+            return create()
+        record_key = (TENANT_LOCAL, scope, idempotency_key)
+        existing = self.idempotency_records.get(record_key)
+        if existing is not None:
+            if existing["request_checksum"] != request_checksum:
+                raise Stage4Error(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request.")
+            return cast(T, existing["value"])
+        value = create()
+        self.idempotency_records[record_key] = {
+            "request_checksum": request_checksum,
+            "value": value,
+            "created_at": _now(),
+        }
+        return value
 
 
 def sanitize_filename(filename: str) -> str:
-    name = PurePath(filename).name.strip()
-    if not name or name in {".", ".."} or "/" in name or "\\" in name:
+    raw = filename.strip()
+    if (
+        not raw
+        or raw in {".", ".."}
+        or "/" in raw
+        or "\\" in raw
+        or ".." in PurePath(raw).parts
+        or len(raw) > 160
+        or any(ord(char) < 32 for char in raw)
+    ):
         raise Stage4Error(422, "VALIDATION_ERROR", "Invalid filename.")
+    name = PurePath(raw).name
     return name
+
+
+def validate_upload_bytes(data: bytes) -> None:
+    if data.startswith(ARCHIVE_MAGIC_BYTES):
+        raise Stage4Error(415, "UNSUPPORTED_MEDIA_TYPE", "Archive uploads are not accepted in Stage 4.")
+    if b"\x00" in data:
+        raise Stage4Error(422, "VALIDATION_ERROR", "Uploaded document contains NUL bytes.")
+    control_count = sum(1 for byte in data if byte < 32 and byte not in {9, 10, 13})
+    if data and control_count / len(data) > 0.01:
+        raise Stage4Error(422, "VALIDATION_ERROR", "Uploaded document contains too many control characters.")
 
 
 def decode_upload(data: bytes) -> str:
@@ -315,14 +556,37 @@ def decode_upload(data: bytes) -> str:
 
 
 def parse_document_text(text: str) -> str:
-    return text.replace("\x00", "").strip()
+    if "\x00" in text:
+        raise Stage4Error(422, "VALIDATION_ERROR", "Uploaded document contains NUL bytes.")
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def contains_prompt_injection(text: str) -> bool:
+    normalized = " ".join(text.lower().split())
+    return any(pattern in normalized for pattern in PROMPT_INJECTION_PATTERNS)
+
+
+def redact_public_text(text: str) -> tuple[str, list[str]]:
+    redacted = text[:MAX_PUBLIC_EXCERPT_CHARS]
+    flags: list[str] = []
+    patterns = [
+        ("SECRET_LIKE_TOKEN", re.compile(r"(?i)(api[_-]?key|secret|token|password)\s*[:=]\s*\S+")),
+        ("LONG_HEX_TOKEN", re.compile(r"\b[a-f0-9]{32,}\b", re.IGNORECASE)),
+    ]
+    for flag, pattern in patterns:
+        if pattern.search(redacted):
+            redacted = pattern.sub("[REDACTED]", redacted)
+            flags.append(flag)
+    if len(text) > MAX_PUBLIC_EXCERPT_CHARS:
+        flags.append("TRUNCATED")
+    return redacted, flags
 
 
 def project_to_api(project: ProjectRecord) -> dict[str, Any]:
     return {
         "projectId": project.project_id,
-        "tenantId": TENANT_LOCAL,
-        "ownerId": OWNER_LOCAL,
+        "tenantId": project.tenant_id,
+        "ownerId": project.owner_id,
         "name": project.name,
         "description": project.description,
         "projectStatus": "ACTIVE",
@@ -336,7 +600,7 @@ def project_to_api(project: ProjectRecord) -> dict[str, Any]:
 def document_to_api(document: DocumentRecord) -> dict[str, Any]:
     return {
         "documentId": document.document_id,
-        "tenantId": TENANT_LOCAL,
+        "tenantId": document.tenant_id,
         "projectId": document.project_id,
         "sourceFilename": document.source_filename,
         "contentType": document.content_type,
@@ -346,13 +610,15 @@ def document_to_api(document: DocumentRecord) -> dict[str, Any]:
         "approvalStatus": document.approval_status,
         "ingestionStatus": document.ingestion_status,
         "createdAt": document.created_at,
+        "approvedAt": document.approved_at,
     }
 
 
 def ingestion_to_api(run: IngestionRunRecord) -> dict[str, Any]:
     return {
         "ingestionRunId": run.ingestion_run_id,
-        "tenantId": TENANT_LOCAL,
+        "tenantId": run.tenant_id,
+        "actorId": run.actor_id,
         "projectId": run.project_id,
         "status": run.status,
         "documentIds": run.document_ids,
@@ -365,7 +631,8 @@ def ingestion_to_api(run: IngestionRunRecord) -> dict[str, Any]:
 def walkthrough_to_api(run: WalkthroughRunRecord) -> dict[str, Any]:
     base: dict[str, Any] = {
         "runId": run.run_id,
-        "tenantId": TENANT_LOCAL,
+        "tenantId": run.tenant_id,
+        "actorId": run.actor_id,
         "projectId": run.project_id,
         "status": run.status,
         "evaluationStatus": run.evaluation_status,
@@ -387,18 +654,18 @@ def walkthrough_to_api(run: WalkthroughRunRecord) -> dict[str, Any]:
         base["evaluation"] = evaluation_to_api(run.evaluation, run)
     elif run.status == "REFUSED":
         base["failure"] = {
-            "reasonCode": "EMPTY_CONTEXT",
-            "message": "No approved ingested context was available for generation.",
+            "reasonCode": run.failure_reason or "LOW_RETRIEVAL_CONFIDENCE",
+            "message": "No safe approved ingested context was available for generation.",
             "unsupportedClaimCount": 0,
         }
     elif run.evaluation is not None:
         base["failure"] = {
-            "reasonCode": "UNSUPPORTED_PROJECT_FACT",
+            "reasonCode": run.failure_reason or "UNSUPPORTED_PROJECT_FACT",
             "message": "Generated output contained unsupported project facts.",
             "unsupportedClaimCount": run.evaluation.unsupported_claim_count,
         }
         base["redactedUnsupportedExcerpts"] = [
-            claim.claim_text for claim in run.evaluation.unsupported_claims
+            redact_public_text(claim.claim_text)[0] for claim in run.evaluation.unsupported_claims
         ]
     return base
 
@@ -413,7 +680,7 @@ def evaluation_to_api(evaluation: EvaluationResult, run: WalkthroughRunRecord) -
         "unsupportedClaims": [
             {
                 "claimId": claim.claim_id,
-                "claimText": claim.claim_text,
+                "claimText": redact_public_text(claim.claim_text)[0],
                 "reason": claim.reason,
             }
             for claim in evaluation.unsupported_claims
@@ -421,7 +688,7 @@ def evaluation_to_api(evaluation: EvaluationResult, run: WalkthroughRunRecord) -
         "claimSupports": [
             {
                 "claimSupportId": support.claim_support_id,
-                "tenantId": TENANT_LOCAL,
+                "tenantId": evaluation.tenant_id,
                 "projectId": evaluation.project_id,
                 "runId": evaluation.run_id,
                 "evaluationId": evaluation.evaluation_id,
@@ -432,6 +699,7 @@ def evaluation_to_api(evaluation: EvaluationResult, run: WalkthroughRunRecord) -
                 "supportStatus": support.support_status,
                 "supportScore": support.support_score,
                 "supportReason": support.support_reason,
+                "citationIndex": support.citation_index,
             }
             for support in evaluation.claim_supports
         ],
@@ -442,8 +710,8 @@ def evaluation_to_api(evaluation: EvaluationResult, run: WalkthroughRunRecord) -
         "embeddingDimension": 16,
         "vectorStore": "memory",
         "retrievalStrategyVersion": RETRIEVAL_STRATEGY_VERSION,
-        "retrievalTopK": 6,
-        "retrievalScoreThreshold": 0.1,
+        "retrievalTopK": RETRIEVAL_TOP_K,
+        "retrievalScoreThreshold": RETRIEVAL_MIN_SCORE,
         "policyVersion": evaluation.policy_version,
         "schemaVersion": evaluation.schema_version,
         "safetyPolicyVersion": evaluation.safety_policy_version,
@@ -458,10 +726,10 @@ def _context_ref_to_api(context: RetrievedContext, run: WalkthroughRunRecord) ->
             (candidate for candidate in run.generated_script.claims if candidate.chunk_id == context.chunk.chunk_id),
             None,
         )
-    excerpt = context.chunk.text[:240]
+    excerpt, redaction_flags = redact_public_text(context.chunk.text)
     return {
         "contextRefId": context.context_ref_id,
-        "tenantId": TENANT_LOCAL,
+        "tenantId": context.chunk.tenant_id,
         "projectId": context.chunk.project_id,
         "claimId": claim.claim_id if claim is not None else "",
         "chunkId": context.chunk.chunk_id,
@@ -473,28 +741,24 @@ def _context_ref_to_api(context: RetrievedContext, run: WalkthroughRunRecord) ->
         "scriptSpanEnd": claim.script_span_end if claim is not None else 0,
         "evidenceSnapshot": {
             "evidenceSnapshotId": "evsnap_" + context.context_ref_id.removeprefix("ctx_"),
-            "tenantId": TENANT_LOCAL,
+            "tenantId": context.chunk.tenant_id,
             "projectId": context.chunk.project_id,
             "documentId": context.chunk.document_id,
             "chunkId": context.chunk.chunk_id,
             "sourceFilename": context.chunk.source_filename,
             "chunkIndex": context.chunk.chunk_index,
-            "sourceDocumentChecksum": _document_checksum_from_chunk(context.chunk),
+            "sourceDocumentChecksum": context.chunk.source_document_checksum,
             "chunkChecksum": context.chunk.checksum,
             "chunkingStrategyVersion": CHUNKING_STRATEGY_VERSION,
             "retrievalScore": round(context.score, 4),
             "redactedExcerpt": excerpt,
             "excerptStart": 0,
             "excerptEnd": len(excerpt),
-            "redactionFlags": [],
+            "redactionFlags": redaction_flags,
             "capturedAt": run.created_at,
             "snapshotChecksum": checksum_text(excerpt),
         },
     }
-
-
-def _document_checksum_from_chunk(chunk: KnowledgeChunk) -> str:
-    return "sha256:" + hashlib.sha256(f"{chunk.document_id}:{chunk.source_filename}".encode()).hexdigest()
 
 
 stage4_service = Stage4Service()

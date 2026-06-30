@@ -148,6 +148,14 @@ Stage 4 Slice 1 implementation notes:
 - accepted uploads are limited to `.md` and `.txt`
 - files are decoded as UTF-8 and rejected when empty, oversized, path-like, or an
   unsupported media type
+- multipart uploads are read with a hard Stage 4 byte cap instead of buffering an
+  unlimited file before validation
+- archive magic bytes, NUL bytes, and control-heavy text are rejected before
+  storage
+- prompt-injection-like uploaded content is rejected before ingestion and unsafe
+  retrieved context is refused before generation
+- public evidence excerpts and unsupported-output excerpts are capped and passed
+  through the local redaction helper before response serialization
 - raw upload content is not echoed in public validation errors
 - uploaded markdown is treated as text evidence and is not rendered as trusted HTML
 - non-local provider egress is disabled in tests and local slice execution
@@ -385,6 +393,7 @@ Before Stage 4 Slice 1 can merge:
 - project-scoped retrieval
 - empty-context refusal
 - prompt-injection-in-uploaded-document test
+- prompt-injection retrieved-context refusal path
 - unsupported-claim detection or refusal
 - no real paid provider key required
 - no secret committed in repository scan

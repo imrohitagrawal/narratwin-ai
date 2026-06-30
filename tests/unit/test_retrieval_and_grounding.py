@@ -1,5 +1,6 @@
 from backend.app.rag.chunking import chunk_document
 from backend.app.rag.grounding import evaluate_grounding
+from backend.app.rag.models import GeneratedScript, ScriptClaim
 from backend.app.rag.providers import MockEmbeddingProvider, MockLLMProvider
 from backend.app.rag.retrieval import retrieve_context
 from backend.app.rag.store import InMemoryRagStore
@@ -87,3 +88,104 @@ def test_grounding_fails_unsupported_claims_from_llm_output() -> None:
     assert evaluation.evaluation_status == "FAILED"
     assert evaluation.unsupported_claim_count == 1
     assert "guarantees hiring outcomes" in evaluation.unsupported_claims[0].claim_text
+
+
+def test_grounding_fails_visible_script_text_without_claim_metadata() -> None:
+    chunks = chunk_document(
+        document_id="doc_a",
+        project_id="proj_a",
+        tenant_id="tenant_local",
+        source_filename="project.md",
+        text="NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.",
+        max_tokens=20,
+    )
+    store = InMemoryRagStore()
+    embedder = MockEmbeddingProvider()
+    stored = store.add_chunks(chunks, embedder)
+    retrieved = retrieve_context(
+        store=store,
+        embedder=embedder,
+        tenant_id="tenant_local",
+        project_id="proj_a",
+        query="grounded walkthrough scripts",
+        top_k=3,
+        min_score=0.1,
+    )
+    supported = "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts."
+    hallucinated = "NarraTwin guarantees hiring outcomes. [1]"
+    candidate = GeneratedScript(
+        text=f"For recruiters, {supported} [1] {hallucinated}",
+        claims=[
+            ScriptClaim(
+                claim_id="claim_001",
+                text=supported,
+                citation_index=1,
+                chunk_id=stored[0].chunk_id,
+                script_span_start=0,
+                script_span_end=len(f"For recruiters, {supported} [1]"),
+            )
+        ],
+    )
+
+    evaluation = evaluate_grounding(
+        tenant_id="tenant_local",
+        project_id="proj_a",
+        run_id="run_test",
+        candidate=candidate,
+        retrieved_context=retrieved,
+    )
+
+    assert evaluation.evaluation_status == "FAILED"
+    assert any("no provider claim metadata" in claim.reason for claim in evaluation.unsupported_claims)
+
+
+def test_grounding_fails_visible_citation_marker_mismatch() -> None:
+    store = InMemoryRagStore()
+    embedder = MockEmbeddingProvider()
+    chunks = chunk_document(
+        document_id="doc_a",
+        project_id="proj_a",
+        tenant_id="tenant_local",
+        source_filename="project.md",
+        text=(
+            "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.\n"
+            "Every generated walkthrough claim must cite retrieved source chunks from approved knowledge."
+        ),
+        max_tokens=9,
+    )
+    stored = store.add_chunks(chunks, embedder)
+    retrieved = retrieve_context(
+        store=store,
+        embedder=embedder,
+        tenant_id="tenant_local",
+        project_id="proj_a",
+        query="grounded walkthrough scripts cite retrieved source chunks",
+        top_k=3,
+        min_score=0.1,
+    )
+    claim_text = stored[0].text.rstrip(".") + "."
+    script = f"For recruiters, {claim_text} [2]"
+    candidate = GeneratedScript(
+        text=script,
+        claims=[
+            ScriptClaim(
+                claim_id="claim_001",
+                text=claim_text,
+                citation_index=1,
+                chunk_id=stored[0].chunk_id,
+                script_span_start=0,
+                script_span_end=len(script),
+            )
+        ],
+    )
+
+    evaluation = evaluate_grounding(
+        tenant_id="tenant_local",
+        project_id="proj_a",
+        run_id="run_test",
+        candidate=candidate,
+        retrieved_context=retrieved,
+    )
+
+    assert evaluation.evaluation_status == "FAILED"
+    assert any("citation marker" in claim.reason for claim in evaluation.unsupported_claims)

@@ -39,6 +39,8 @@ def _flush_chunk(
     project_id: str,
     document_id: str,
     source_filename: str,
+    source_document_checksum: str,
+    approved_at: str,
     lines: list[str],
     heading_path: list[str],
     line_start: int,
@@ -55,6 +57,8 @@ def _flush_chunk(
             project_id=project_id,
             document_id=document_id,
             source_filename=source_filename,
+            source_document_checksum=source_document_checksum,
+            approved_at=approved_at,
             chunk_index=chunk_index,
             text=text,
             token_count=count_tokens(text),
@@ -73,11 +77,19 @@ def chunk_document(
     tenant_id: str,
     source_filename: str,
     text: str,
-    max_tokens: int = 120,
+    source_document_checksum: str | None = None,
+    approved_at: str = "",
+    max_tokens: int = 800,
+    overlap_tokens: int = 100,
 ) -> list[KnowledgeChunk]:
-    normalized = text.replace("\r\n", "\n").replace("\r", "\n").strip()
-    if not normalized:
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    if not normalized.strip():
         return []
+    if source_document_checksum is None:
+        source_document_checksum = checksum_text(text)
+    if max_tokens <= 0:
+        raise ValueError("max_tokens must be positive")
+    overlap = max(0, min(overlap_tokens, max_tokens - 1))
 
     chunks: list[KnowledgeChunk] = []
     heading_path: list[str] = []
@@ -98,6 +110,8 @@ def chunk_document(
                     project_id=project_id,
                     document_id=document_id,
                     source_filename=source_filename,
+                    source_document_checksum=source_document_checksum,
+                    approved_at=approved_at,
                     lines=active_lines,
                     heading_path=active_heading_path,
                     line_start=active_line_start,
@@ -116,6 +130,46 @@ def chunk_document(
             active_line_end = line_number
             continue
 
+        if line_token_count > max_tokens:
+            if active_lines:
+                _flush_chunk(
+                    chunks=chunks,
+                    tenant_id=tenant_id,
+                    project_id=project_id,
+                    document_id=document_id,
+                    source_filename=source_filename,
+                    source_document_checksum=source_document_checksum,
+                    approved_at=approved_at,
+                    lines=active_lines,
+                    heading_path=active_heading_path,
+                    line_start=active_line_start,
+                    line_end=active_line_end,
+                )
+                active_lines = []
+                active_token_count = 0
+            words = TOKEN_PATTERN.findall(line)
+            step = max_tokens - overlap
+            for start_index in range(0, len(words), step):
+                window = words[start_index : start_index + max_tokens]
+                if not window:
+                    continue
+                _flush_chunk(
+                    chunks=chunks,
+                    tenant_id=tenant_id,
+                    project_id=project_id,
+                    document_id=document_id,
+                    source_filename=source_filename,
+                    source_document_checksum=source_document_checksum,
+                    approved_at=approved_at,
+                    lines=[" ".join(window)],
+                    heading_path=heading_path,
+                    line_start=line_number,
+                    line_end=line_number,
+                )
+                if start_index + max_tokens >= len(words):
+                    break
+            continue
+
         if active_lines and active_token_count + line_token_count > max_tokens:
             _flush_chunk(
                 chunks=chunks,
@@ -123,6 +177,8 @@ def chunk_document(
                 project_id=project_id,
                 document_id=document_id,
                 source_filename=source_filename,
+                source_document_checksum=source_document_checksum,
+                approved_at=approved_at,
                 lines=active_lines,
                 heading_path=active_heading_path,
                 line_start=active_line_start,
@@ -145,6 +201,8 @@ def chunk_document(
             project_id=project_id,
             document_id=document_id,
             source_filename=source_filename,
+            source_document_checksum=source_document_checksum,
+            approved_at=approved_at,
             lines=active_lines,
             heading_path=active_heading_path,
             line_start=active_line_start,
