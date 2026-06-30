@@ -227,3 +227,46 @@ Blocked changes:
 - premium-provider automation or real provider keys
 - Vite frontend scaffolding unless a future ADR supersedes the documented
   Next.js frontend decision
+
+## Stage 4 Grounded Script Branch Scope
+
+Allowed changes:
+
+- `.stage/current`
+- `Makefile`
+- `backend/app/main.py`
+- `backend/app/stage4.py`
+- `backend/app/rag/`
+- `evals/smoke/stage4_grounded_script_dataset.json`
+- `frontend/src/app/page.tsx`
+- `frontend/src/app/page.module.css`
+- `frontend/src/app/page.test.tsx`
+- `frontend/tests/smoke.spec.ts`
+- `frontend/playwright.config.ts`
+- `pyproject.toml`
+- `uv.lock`
+- `tests/fixtures/stage4_project.md`
+- `tests/unit/test_chunking.py`
+- `tests/unit/test_retrieval_and_grounding.py`
+- `tests/api/test_health_api.py`
+- `tests/api/test_stage4_slice_api.py`
+- `tests/unit/test_health_contract.py`
+- `scripts/ci/eval-smoke.sh`
+- `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_stage4_docs.py`
+- `docs/API_CONTRACT.md`
+- `docs/DATA_MODEL.md`
+- `docs/QUALITY_GATES.md`
+- `docs/RECOMMENDED_REVIEW_ITEMS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/TRACEABILITY.md`
+
+Blocked changes:
+
+- avatar rendering, TTS, STT, subtitle, or video-rendering implementation
+- premium-provider calls or required real provider keys
+- cross-tenant or shared vector-store retrieval without tenant/project filters
+- database migrations or asynchronous job infrastructure before the persistence
+  decision and job uniqueness constraints are locked

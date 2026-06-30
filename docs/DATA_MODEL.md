@@ -6,7 +6,8 @@
 - Stage: Stage 2 architecture, security, AI safety
 - Canonical issue: `#2`
 - Last updated: 2026-06-29
-- Status: logical model only; no database schema or migrations in Stage 2
+- Status: logical model plus Stage 4 local in-memory implementation; no database
+  schema or migrations yet
 
 ## Modeling Principles
 
@@ -42,6 +43,11 @@ Tenant
 
 Stage 4 operates in local single-user mode through synthetic tenant/user records,
 not by omitting authorization fields.
+
+Stage 4 Slice 1 stores project, document, chunk, embedding, ingestion-run,
+walkthrough-run, and evaluation records in process memory only. These records keep
+canonical IDs and tenant/project fields so the later database schema can preserve
+the same contracts.
 
 ## Synthetic Local Tenant And User
 
@@ -258,6 +264,10 @@ Metadata:
 Indexes:
 
 - `(project_id, document_id, chunk_index)`
+
+Stage 4 local retrieval enforces the equivalent of `(tenant_id, project_id)` before
+scoring chunks. Cross-project retrieval fixtures are required and present before
+the first slice can merge.
 - `(project_id, chunk_id)`
 - `(tenant_id, project_id, chunk_id)`
 - `(tenant_id, project_id, document_id, chunk_index)`

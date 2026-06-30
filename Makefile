@@ -49,7 +49,13 @@ eval-smoke:
 
 stage4-quality:
 	python3 scripts/quality/check_recommended_review_items.py 4
-	python3 scripts/quality/stage_not_implemented.py "Stage 4"
+	python3 scripts/quality/check_stage4_docs.py
+	bash scripts/ci/backend-lint.sh
+	bash scripts/ci/backend-test.sh
+	bash scripts/ci/frontend-build.sh
+	bash scripts/ci/frontend-smoke.sh
+	bash scripts/ci/dependency-security.sh
+	bash scripts/ci/eval-smoke.sh
 
 stage5-quality:
 	python3 scripts/quality/check_recommended_review_items.py 5

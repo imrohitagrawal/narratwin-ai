@@ -7,6 +7,8 @@
 - Canonical issue: `#2`
 - Last updated: 2026-06-29
 - Implementation status: policy and architecture only; product implementation blocked
+- Stage 4 branch status: first local slice implementation started with mock/local
+  providers only
 
 ## Security Posture
 
@@ -141,6 +143,15 @@ Required validation:
 - path traversal rejection
 - mandatory secret screening before non-local provider egress
 
+Stage 4 Slice 1 implementation notes:
+
+- accepted uploads are limited to `.md` and `.txt`
+- files are decoded as UTF-8 and rejected when empty, oversized, path-like, or an
+  unsupported media type
+- raw upload content is not echoed in public validation errors
+- uploaded markdown is treated as text evidence and is not rendered as trusted HTML
+- non-local provider egress is disabled in tests and local slice execution
+
 File handling rules:
 
 - never trust the original filename as a path
@@ -189,6 +200,10 @@ Required tests before multi-user release:
 - cross-tenant retrieval is impossible using the current `tenant_id` predicate
 - unauthorized project access returns `403`
 - missing project returns `404` without leaking existence across tenants
+
+Stage 4 Slice 1 includes a retrieval test that inserts chunks for two projects and
+asserts that retrieval for one project excludes chunks from the other project under
+the synthetic local tenant.
 
 ### Approved Knowledge Controls
 

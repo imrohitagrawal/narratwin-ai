@@ -32,6 +32,13 @@ Use a local-first storage design with explicit provider interfaces:
 ChromaDB remains the planned first local vector-store candidate behind an internal
 adapter, subject to dependency and license review before implementation.
 
+Stage 4 Slice 1 implements the first local RAG path with an in-memory vector
+store and deterministic mock embedding provider. pgvector is locked as dependency
+preparation only. ChromaDB was removed from active dependencies because
+`pip-audit` reports a vulnerable version with no fixed version available. The
+in-memory store still enforces the same `tenant_id` and `project_id` retrieval
+filter that future adapters must preserve.
+
 Approved knowledge is canonical only when storage, approval, and ingestion state
 all pass: `document_status = STORED`, `approval_status = APPROVED`, and
 `ingestion_status = INGESTED`. `UPLOADED`, `QUARANTINED`, `REJECTED`,
@@ -113,6 +120,15 @@ Negative:
 - ingestion needs metadata discipline from the first slice
 - export/import contracts are required for portability
 - storage adapter tests are required
+
+Stage 4 Slice 1 limitations:
+
+- data is process-local and resets between app restarts
+- ingestion and generation run synchronously, so durable active-job uniqueness
+  constraints are deferred until asynchronous workers or database migrations start
+- markdown and plain text are the only enabled upload formats
+- mock embeddings and mock LLM output are deterministic and provider-agnostic, but
+  are not quality-equivalent to real providers
 
 ## Security Requirements
 

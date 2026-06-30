@@ -1,0 +1,27 @@
+{
+  "name": "stage4-grounded-script-smoke",
+  "project": {
+    "name": "NarraTwin AI",
+    "description": "Grounded walkthrough generator",
+    "defaultAudience": "RECRUITER",
+    "defaultLanguage": "en"
+  },
+  "document": {
+    "filename": "stage4_project.md",
+    "contentType": "text/markdown",
+    "path": "tests/fixtures/stage4_project.md"
+  },
+  "generation": {
+    "audience": "RECRUITER",
+    "requestedLanguage": "en",
+    "depth": "CONCISE",
+    "style": "CONFIDENT",
+    "prompt": "Create a concise grounded walkthrough for a recruiter."
+  },
+  "expected": {
+    "status": "COMPLETED",
+    "evaluationStatus": "PASSED",
+    "unsupportedClaimCount": 0,
+    "requiredCitations": 1
+  }
+}

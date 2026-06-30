@@ -178,7 +178,32 @@ Gate validates:
 
 ### Stage 4: Project Upload To Grounded Script Generation
 
-Gate must validate the first vertical slice: project creation, markdown upload, ingest/chunk/store, retrieval, grounded script generation, unsupported-claim evaluation, storage, UI display, tests, docs, security notes, observability metadata, limitations, and reviewer pass.
+Stage 4 quality is executable through `make stage4-quality`, which first runs
+`scripts/quality/check_stage4_docs.py` and then executes the repo-local CI
+wrappers.
+
+Gate validates:
+
+- `.stage/current` contains `4`
+- current branch name matches `stage4-*` before merge, or is `main` after merge
+- first-slice files exist for project creation, markdown/txt upload, parsing,
+  chunking, mock embeddings, local storage, retrieval, grounded script
+  generation, citations, grounding evaluation, UI display, tests, and eval smoke
+- direct Stage 4 dependencies are locked and avatar/TTS/video dependencies remain
+  absent from Slice 1
+- provider interfaces use deterministic mock/local providers for tests and do not
+  require paid provider keys
+- every accepted generated claim maps to a retrieved source chunk through context
+  refs and claim-support records
+- unsupported claims fail evaluation and are not exposed as accepted script text
+- upload validation rejects unsupported media types and avoids echoing raw upload
+  content in public errors
+- retrieval is partitioned by tenant and project
+- deterministic RAG eval smoke fixture requires zero unsupported claims and at
+  least one citation
+- frontend unit and Playwright smoke tests cover the result and citation display
+- Stage 4 due recommended review items are resolved, accepted with rationale, or
+  superseded
 
 ### Stage 5: Evaluations, Guardrails, Observability
 
