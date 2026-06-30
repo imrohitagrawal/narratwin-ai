@@ -42,6 +42,8 @@ EXPECTED_ITEMS = {
     "RR-009": ("Stage 4", "job uniqueness"),
     "RR-010": ("Stage 4", "policy version"),
     "RR-011": ("Stage 4", "tenant isolation"),
+    "RR-012": ("Stage 4", "httpx2"),
+    "RR-013": ("Stage 4", "Playwright"),
 }
 
 

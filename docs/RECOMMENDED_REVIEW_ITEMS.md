@@ -8,6 +8,8 @@ this file before running the stage-specific gate.
 
 - Every non-blocking recommendation from sub-agent, cross-model, human, or PR
   review must be recorded here unless it is fixed immediately.
+- Residual risks called out in PR review are non-blocking recommendations and
+  must be tracked here before the PR is treated as ready for review.
 - `Required stage` is the first stage where the item must be resolved,
   accepted as non-blocking with rationale, or superseded.
 - Stage quality must fail when an item is still `Open` or `In Progress` at or
@@ -39,3 +41,5 @@ this file before running the stage-specific gate.
 | RR-009 | Lock active ingestion/generation job uniqueness at the database transaction level. | Stage 4 | Open | Stage 3 ruthless architecture review | Stage 4 data model or migration defines partial unique constraints, advisory-lock strategy, or equivalent isolation rules for active `QUEUED`/`RUNNING` jobs before job endpoints are implemented. |
 | RR-010 | Persist evaluation, schema, and safety policy version fields with evaluation results. | Stage 4 | Open | Stage 3 ruthless architecture review | Stage 4 evaluation result schema includes policy/schema version fields needed to prove which policy accepted cached or replayed output. |
 | RR-011 | Lock vector-store tenant isolation strategy before RAG implementation. | Stage 4 | Open | Stage 3 ruthless architecture review | Stage 4 defines Chroma/provider mode, dependency approval, persistence path, required metadata fields, post-query SQL revalidation, and cross-project retrieval-isolation fixtures. |
+| RR-012 | Re-evaluate the `httpx2` dev dependency before API test surface expands. | Stage 4 | Open | Stage 3 PR review | Stage 4 either removes `httpx2`, replaces it with the settled FastAPI/Starlette/httpx-compatible test stack, or records an explicit accepted rationale with passing API tests and notices updated. |
+| RR-013 | Decide whether local Playwright browser installation cost remains acceptable for the first frontend slice. | Stage 4 | Open | Stage 3 PR review | Stage 4 frontend test strategy either keeps the current local Chromium install behavior with rationale, provides a faster documented local path that preserves CI parity, or supersedes it with an equivalent smoke/e2e gate. |
