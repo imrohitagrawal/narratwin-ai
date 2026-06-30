@@ -480,9 +480,10 @@ def check_workflows(failures: list[str]) -> None:
             "Gitleaks secret scan",
             "Bandit, dependency audit, Semgrep",
             "NARRATWIN_GITLEAKS_ACTION_COMPLETED",
+            "security / docker build",
         ],
         ".github/workflows/eval-smoke.yml": ["Run eval smoke"],
-        ".github/workflows/quality.yml": ["quality / markdown"],
+        ".github/workflows/quality.yml": ["quality / secrets", "quality / markdown"],
         ".github/workflows/quality-gates.yml": ["Run repository guardrails", "Run stage quality gate"],
     }
     for rel, phrases in required_phrases.items():

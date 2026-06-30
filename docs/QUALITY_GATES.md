@@ -164,6 +164,10 @@ Gate validates:
 - the policy-gates workflow runs repository guardrails and the static Stage 3
   contract check; the dedicated CI, security, Docker, frontend smoke, and eval
   workflows own the expensive PR-blocking wrappers
+- compatibility status contexts remain for repository rulesets that still require
+  `quality / secrets` and `security / docker build`; the authoritative secret
+  scan remains the security workflow and the authoritative Docker gate remains
+  `ci / docker build`
 - pre-commit configuration runs local lint, typecheck, test, frontend, and
   guardrail checks
 - Stage 3 docs and third-party notices record newly introduced packages and tools
