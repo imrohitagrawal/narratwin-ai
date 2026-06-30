@@ -48,6 +48,35 @@ def test_retrieval_returns_project_scoped_relevant_chunks() -> None:
     assert "grounded walkthrough" in results[0].chunk.text
 
 
+def test_rag_store_keeps_same_document_chunks_isolated_by_tenant() -> None:
+    store = InMemoryRagStore()
+    embedder = MockEmbeddingProvider()
+    tenant_a_chunks = chunk_document(
+        document_id="doc_shared",
+        project_id="proj_shared",
+        tenant_id="tenant_a",
+        source_filename="project.md",
+        text="Tenant A grounded walkthrough scripts.",
+        max_tokens=12,
+    )
+    tenant_b_chunks = chunk_document(
+        document_id="doc_shared",
+        project_id="proj_shared",
+        tenant_id="tenant_b",
+        source_filename="project.md",
+        text="Tenant B grounded walkthrough scripts.",
+        max_tokens=12,
+    )
+
+    store.add_chunks(tenant_a_chunks, embedder)
+    store.add_chunks(tenant_b_chunks, embedder)
+
+    assert store.chunk_count_for_project(tenant_id="tenant_a", project_id="proj_shared") == 1
+    assert store.chunk_count_for_project(tenant_id="tenant_b", project_id="proj_shared") == 1
+    assert store.chunks_for_project(tenant_id="tenant_a", project_id="proj_shared")[0].tenant_id == "tenant_a"
+    assert store.chunks_for_project(tenant_id="tenant_b", project_id="proj_shared")[0].tenant_id == "tenant_b"
+
+
 def test_grounding_fails_unsupported_claims_from_llm_output() -> None:
     # Grounding evaluation requires retrieved source_chunk citations plus run_id trace metadata.
     store = InMemoryRagStore()

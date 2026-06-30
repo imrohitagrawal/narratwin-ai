@@ -2,12 +2,11 @@
 set -euo pipefail
 
 cd frontend
+export NARRATWIN_ALLOW_DEV_INLINE_CSP=1
 if [ ! -d node_modules ]; then
   npm ci --strict-allow-scripts=true
 fi
-if [ ! -f .next/BUILD_ID ]; then
-  npm run build
-fi
+npm run build
 if [ "${CI:-}" = "true" ]; then
   npx playwright install --with-deps chromium
 elif [ "${PLAYWRIGHT_SKIP_INSTALL:-}" = "1" ]; then

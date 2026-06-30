@@ -16,6 +16,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend.app.stage4 import (
     LocalPrincipal,
     MAX_UPLOAD_BYTES,
+    MAX_UPLOAD_REQUEST_BYTES,
     Stage4Error,
     document_to_api,
     ingestion_to_api,
@@ -87,10 +88,10 @@ class StartIngestionRequest(BaseModel):
 class GenerateWalkthroughRequest(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
-    audience: Literal["RECRUITER", "ENGINEER", "PRODUCT_LEADER", "CUSTOMER"] = "RECRUITER"
+    audience: Literal["RECRUITER", "HIRING_MANAGER", "ENGINEER", "PRODUCT_LEADER", "BEGINNER", "GLOBAL_VIEWER"] = "RECRUITER"
     requested_language: Literal["en"] = Field(default="en", alias="requestedLanguage")
-    depth: Literal["CONCISE", "STANDARD", "DETAILED"] = "CONCISE"
-    style: Literal["CONFIDENT", "TECHNICAL", "FRIENDLY"] = "CONFIDENT"
+    depth: Literal["CONCISE", "STANDARD", "DEEP"] = "CONCISE"
+    style: Literal["PLAIN", "CONFIDENT", "TECHNICAL", "EXECUTIVE"] = "CONFIDENT"
     prompt: str = "Create a concise grounded walkthrough."
 
 
@@ -202,6 +203,7 @@ class ClaimSupportResponse(BaseModel):
     support_status: Literal["SUPPORTED"] = Field(alias="supportStatus")
     support_score: float = Field(alias="supportScore")
     support_reason: str = Field(alias="supportReason")
+    evidence_snapshot: EvidenceSnapshotResponse = Field(alias="evidenceSnapshot")
     citation_index: int = Field(alias="citationIndex")
 
 
@@ -283,9 +285,11 @@ async def local_principal(x_local_user_id: str | None = Header(default=None, ali
 
 async def idempotency_key_header(
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
-) -> str | None:
+) -> str:
     key = (idempotency_key or "").strip()
-    return key or None
+    if not key:
+        raise Stage4Error(400, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key header is required for write requests.")
+    return key
 
 
 app = FastAPI(
@@ -314,6 +318,19 @@ async def add_foundation_headers(
 ) -> Response:
     request_id = request.headers.get("X-Request-Id") or str(uuid4())
     request.state.request_id = request_id
+    if request.method == "POST" and request.url.path.endswith("/knowledge-documents"):
+        content_length = request.headers.get("Content-Length")
+        try:
+            upload_request_bytes = int(content_length) if content_length is not None else 0
+        except ValueError:
+            upload_request_bytes = MAX_UPLOAD_REQUEST_BYTES + 1
+        if upload_request_bytes > MAX_UPLOAD_REQUEST_BYTES:
+            return error_response(
+                request=request,
+                status_code=413,
+                code="UPLOAD_TOO_LARGE",
+                message="Upload exceeds the Stage 4 size limit.",
+            )
     response = await call_next(request)
     for header, value in FOUNDATION_HEADERS.items():
         response.headers[header] = value
@@ -512,6 +529,7 @@ def start_ingestion_run(
     "/projects/{project_id}/walkthrough-runs",
     status_code=201,
     response_model=WalkthroughRunResponse,
+    response_model_exclude_none=True,
     tags=["walkthrough"],
 )
 def generate_walkthrough_run(

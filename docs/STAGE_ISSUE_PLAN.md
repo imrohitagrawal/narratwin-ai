@@ -234,6 +234,7 @@ Blocked changes:
 
 Allowed changes:
 
+- `.github/workflows/eval-smoke.yml`
 - `.stage/current`
 - `Makefile`
 - `backend/app/main.py`
@@ -255,6 +256,7 @@ Allowed changes:
 - `tests/api/test_stage4_slice_api.py`
 - `tests/unit/test_health_contract.py`
 - `scripts/ci/eval-smoke.sh`
+- `scripts/ci/frontend-smoke.sh`
 - `scripts/quality/check_quality_stage.py`
 - `scripts/quality/check_stage4_docs.py`
 - `docs/API_CONTRACT.md`

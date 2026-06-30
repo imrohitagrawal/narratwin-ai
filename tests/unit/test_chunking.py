@@ -1,3 +1,5 @@
+import pytest
+
 from backend.app.rag.chunking import chunk_document
 
 
@@ -71,3 +73,36 @@ def test_chunk_document_splits_single_long_heading() -> None:
     assert len(chunks) == 3
     assert all(chunk.token_count <= 10 for chunk in chunks)
     assert all(chunk.heading_path for chunk in chunks)
+
+
+def test_chunk_document_enforces_max_chunks_during_construction() -> None:
+    words = [f"word{i}" for i in range(60)]
+
+    with pytest.raises(ValueError, match="max_chunks exceeded"):
+        chunk_document(
+            document_id="doc_test",
+            project_id="proj_test",
+            tenant_id="tenant_local",
+            source_filename="limited.md",
+            text=" ".join(words),
+            max_tokens=10,
+            overlap_tokens=0,
+            max_chunks=3,
+        )
+
+
+def test_chunk_document_overlaps_normal_rollover_chunks() -> None:
+    text = "\n".join(" ".join(f"word{line}_{index}" for index in range(4)) for line in range(4))
+
+    chunks = chunk_document(
+        document_id="doc_test",
+        project_id="proj_test",
+        tenant_id="tenant_local",
+        source_filename="overlap.md",
+        text=text,
+        max_tokens=8,
+        overlap_tokens=2,
+    )
+
+    assert len(chunks) >= 2
+    assert chunks[0].text.split()[-2:] == chunks[1].text.split()[:2]

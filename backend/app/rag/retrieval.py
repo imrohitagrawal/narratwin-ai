@@ -30,7 +30,7 @@ def retrieve_context(
     for chunk in store.chunks_for_project(tenant_id=tenant_id, project_id=project_id):
         score = _retrieval_score(query=query, query_embedding=query_embedding, text=chunk.text, embedding=chunk.embedding)
         context_ref_id = "ctx_" + hashlib.sha256(
-            f"{project_id}:{chunk.chunk_id}:{query}".encode("utf-8")
+            f"{tenant_id}:{project_id}:{chunk.chunk_id}:{query}".encode("utf-8")
         ).hexdigest()[:16]
         if score >= min_score:
             scored.append((score, chunk.approved_at, chunk.chunk_index, chunk.chunk_id, RetrievedContext(context_ref_id, chunk, score)))

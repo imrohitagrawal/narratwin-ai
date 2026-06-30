@@ -23,5 +23,10 @@
     "evaluationStatus": "PASSED",
     "unsupportedClaimCount": 0,
     "requiredCitations": 1
-  }
+  },
+  "negativeFixtures": [
+    "empty_context",
+    "prompt_injection_ignore_rules",
+    "cross_project_chunk"
+  ]
 }

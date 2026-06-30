@@ -33,6 +33,7 @@ REQUIRED_FILES = [
     "tests/api/test_stage4_slice_api.py",
     "evals/smoke/stage4_grounded_script_dataset.json",
     "scripts/ci/eval-smoke.sh",
+    "scripts/ci/frontend-smoke.sh",
     "frontend/src/app/page.tsx",
     "frontend/src/app/page.module.css",
     "frontend/src/app/page.test.tsx",

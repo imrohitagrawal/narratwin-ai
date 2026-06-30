@@ -126,7 +126,7 @@ test("home page generates a Stage 4 grounded script through the API workflow", a
   const response = await page.goto("/");
 
   expect(response?.headers()["content-security-policy"]).toBe(
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:8000; base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
   );
   expect(response?.headers()["referrer-policy"]).toBe("no-referrer");
   expect(response?.headers()["x-content-type-options"]).toBe("nosniff");

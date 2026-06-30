@@ -19,9 +19,9 @@ def checksum_text(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def _chunk_id(document_id: str, chunk_index: int, text: str) -> str:
+def _chunk_id(tenant_id: str, project_id: str, document_id: str, chunk_index: int, text: str) -> str:
     digest = hashlib.sha256(
-        f"{document_id}:{chunk_index}:{CHUNKING_STRATEGY_VERSION}:{text}".encode("utf-8")
+        f"{tenant_id}:{project_id}:{document_id}:{chunk_index}:{CHUNKING_STRATEGY_VERSION}:{text}".encode("utf-8")
     ).hexdigest()[:16]
     return f"chunk_{digest}"
 
@@ -45,14 +45,17 @@ def _flush_chunk(
     heading_path: list[str],
     line_start: int,
     line_end: int,
+    max_chunks: int | None,
 ) -> None:
     text = "\n".join(line.strip() for line in lines if line.strip()).strip()
     if not text:
         return
+    if max_chunks is not None and len(chunks) >= max_chunks:
+        raise ValueError("max_chunks exceeded")
     chunk_index = len(chunks)
     chunks.append(
         KnowledgeChunk(
-            chunk_id=_chunk_id(document_id, chunk_index, text),
+            chunk_id=_chunk_id(tenant_id, project_id, document_id, chunk_index, text),
             tenant_id=tenant_id,
             project_id=project_id,
             document_id=document_id,
@@ -70,6 +73,15 @@ def _flush_chunk(
     )
 
 
+def _tail_overlap_lines(lines: list[str], overlap_tokens: int) -> list[str]:
+    if overlap_tokens <= 0:
+        return []
+    words = TOKEN_PATTERN.findall("\n".join(lines))
+    if not words:
+        return []
+    return [" ".join(words[-overlap_tokens:])]
+
+
 def chunk_document(
     *,
     document_id: str,
@@ -81,6 +93,7 @@ def chunk_document(
     approved_at: str = "",
     max_tokens: int = 800,
     overlap_tokens: int = 100,
+    max_chunks: int | None = None,
 ) -> list[KnowledgeChunk]:
     normalized = text.replace("\r\n", "\n").replace("\r", "\n")
     if not normalized.strip():
@@ -116,6 +129,7 @@ def chunk_document(
                     heading_path=active_heading_path,
                     line_start=active_line_start,
                     line_end=active_line_end,
+                    max_chunks=max_chunks,
                 )
             level = len(heading_match.group(1))
             heading_path = _current_heading_path(heading_path, level, heading_match.group(2))
@@ -138,6 +152,7 @@ def chunk_document(
                         heading_path=heading_path,
                         line_start=line_number,
                         line_end=line_number,
+                        max_chunks=max_chunks,
                     )
                     if start_index + max_tokens >= len(words):
                         break
@@ -170,6 +185,7 @@ def chunk_document(
                     heading_path=active_heading_path,
                     line_start=active_line_start,
                     line_end=active_line_end,
+                    max_chunks=max_chunks,
                 )
                 active_lines = []
                 active_token_count = 0
@@ -191,6 +207,7 @@ def chunk_document(
                     heading_path=heading_path,
                     line_start=line_number,
                     line_end=line_number,
+                    max_chunks=max_chunks,
                 )
                 if start_index + max_tokens >= len(words):
                     break
@@ -209,9 +226,15 @@ def chunk_document(
                 heading_path=active_heading_path,
                 line_start=active_line_start,
                 line_end=active_line_end,
+                max_chunks=max_chunks,
             )
-            active_lines = []
-            active_token_count = 0
+            overlap_lines = _tail_overlap_lines(active_lines, overlap)
+            if overlap_lines and count_tokens(overlap_lines[0]) + line_token_count <= max_tokens:
+                active_lines = overlap_lines
+                active_token_count = count_tokens(overlap_lines[0])
+            else:
+                active_lines = []
+                active_token_count = 0
 
         if not active_lines:
             active_line_start = line_number
@@ -233,5 +256,6 @@ def chunk_document(
             heading_path=active_heading_path,
             line_start=active_line_start,
             line_end=active_line_end,
+            max_chunks=max_chunks,
         )
     return chunks

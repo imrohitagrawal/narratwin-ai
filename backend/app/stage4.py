@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import PurePath
-from collections.abc import Callable
+from threading import Lock
 from typing import Any, Literal, TypeVar, cast
 
 from backend.app.rag.chunking import checksum_text, chunk_document
@@ -34,18 +36,27 @@ MAX_UPLOAD_BYTES = 1_048_576
 MAX_PROJECT_CORPUS_BYTES = 5 * 1_048_576
 MAX_ACTIVE_DOCUMENTS_PER_PROJECT = 10
 MAX_DOCUMENTS_PER_INGESTION = 10
+MAX_CHUNKS_PER_DOCUMENT = 100
 MAX_CHUNKS_PER_PROJECT = 200
+MAX_PROJECTS_PER_TENANT = 25
+MAX_RUNS_PER_PROJECT = 50
+MAX_IDEMPOTENCY_RECORDS_PER_TENANT = 500
 MAX_PROMPT_CHARS = 2_000
 MAX_PUBLIC_EXCERPT_CHARS = 240
+MAX_UPLOAD_REQUEST_BYTES = MAX_UPLOAD_BYTES + 65_536
 ALLOWED_EXTENSIONS = {".md", ".txt"}
 ALLOWED_CONTENT_TYPES = {"text/markdown", "text/plain", "application/octet-stream"}
 ARCHIVE_MAGIC_BYTES = (b"PK\x03\x04", b"Rar!\x1a\x07", b"7z\xbc\xaf\x27\x1c")
-PROMPT_INJECTION_PATTERNS = (
-    "ignore previous instructions",
-    "ignore prior instructions",
-    "reveal secrets",
-    "system prompt",
-    "developer message",
+PROMPT_INJECTION_PATTERNS = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r"\b(ignore|disregard|forget|override)\s+(all\s+)?(previous|prior|earlier)\s+instructions\b",
+        r"\b(reveal|print|show|exfiltrate|leak)\s+(the\s+)?(system|developer)?\s*(prompt|message|secret|secrets)\b",
+        r"\bfollow\s+this\s+document\s+as\s+(system|developer)\s+policy\b",
+        r"\btreat\s+this\s+document\s+as\s+(a\s+)?(system|developer)\s+(message|instruction|policy)\b",
+        r"\bnew\s+(system|developer)\s+(message|instruction|policy)\b",
+        r"\bdisable\s+(safety|grounding|citation|source)\s+(checks|rules|policy)\b",
+    )
 )
 T = TypeVar("T")
 
@@ -142,7 +153,7 @@ class IdempotencyRecord:
     endpoint: str
     idempotency_key: str
     request_checksum: str
-    status: Literal["COMPLETED"]
+    status: Literal["PENDING", "COMPLETED"]
     value: Any
     created_at: str
     updated_at: str
@@ -160,6 +171,7 @@ class Stage4Service:
         self.idempotency_records: dict[tuple[str, str, str, str, str], IdempotencyRecord] = {}
         self._active_ingestions: set[tuple[str, str]] = set()
         self._active_generations: set[tuple[str, str]] = set()
+        self._operation_lock = Lock()
         self._project_counter = 0
         self._document_counter = 0
         self._ingestion_counter = 0
@@ -215,6 +227,8 @@ class Stage4Service:
     ) -> ProjectRecord:
         if not name.strip():
             raise Stage4Error(422, "VALIDATION_ERROR", "Project name is required.")
+        if self._project_count_for_tenant(principal=principal) >= MAX_PROJECTS_PER_TENANT:
+            raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 project limit.")
         self._project_counter += 1
         now = _now()
         project = ProjectRecord(
@@ -376,15 +390,19 @@ class Stage4Service:
             parsed_text = parse_document_text(document.text)
             if contains_prompt_injection(parsed_text):
                 raise Stage4Error(422, "UNSAFE_DOCUMENT_CONTENT", "Document contains unsafe instruction-like content.")
-            chunks = chunk_document(
-                document_id=document.document_id,
-                project_id=project_id,
-                tenant_id=principal.tenant_id,
-                source_filename=document.source_filename,
-                text=parsed_text,
-                source_document_checksum=document.checksum,
-                approved_at=document.approved_at or document.created_at,
-            )
+            try:
+                chunks = chunk_document(
+                    document_id=document.document_id,
+                    project_id=project_id,
+                    tenant_id=principal.tenant_id,
+                    source_filename=document.source_filename,
+                    text=parsed_text,
+                    source_document_checksum=document.checksum,
+                    approved_at=document.approved_at or document.created_at,
+                    max_chunks=MAX_CHUNKS_PER_DOCUMENT,
+                )
+            except ValueError as exc:
+                raise Stage4Error(413, "DOCUMENT_TOO_LARGE", "Document exceeds the Stage 4 chunk limit.") from exc
             if (
                 self.rag_store.chunk_count_for_project(
                     tenant_id=principal.tenant_id,
@@ -460,6 +478,8 @@ class Stage4Service:
         self._require_project(principal=principal, project_id=project_id)
         if len(prompt) > MAX_PROMPT_CHARS:
             raise Stage4Error(413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit.")
+        if self._run_count_for_project(principal=principal, project_id=project_id) >= MAX_RUNS_PER_PROJECT:
+            raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Project exceeds the Stage 4 generation run limit.")
         self._run_counter += 1
         run_id = f"run_{self._run_counter:06d}"
         retrieved = retrieve_context(
@@ -553,32 +573,66 @@ class Stage4Service:
         create: Callable[[], T],
     ) -> T:
         if not idempotency_key:
-            return create()
+            raise Stage4Error(400, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key header is required for write requests.")
         record_key = (principal.tenant_id, principal.actor_id, scope, endpoint, idempotency_key)
-        existing = self.idempotency_records.get(record_key)
-        if existing is not None:
-            if existing.request_checksum != request_checksum:
-                raise Stage4Error(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request.")
-            return cast(T, existing.value)
-        value = create()
-        now = _now()
-        record_id = "idem_" + hashlib.sha256(
-            f"{principal.tenant_id}:{principal.actor_id}:{scope}:{endpoint}:{idempotency_key}".encode()
-        ).hexdigest()[:16]
-        self.idempotency_records[record_key] = IdempotencyRecord(
-            idempotency_record_id=record_id,
-            tenant_id=principal.tenant_id,
-            actor_id=principal.actor_id,
-            idempotency_scope=scope,
-            endpoint=endpoint,
-            idempotency_key=idempotency_key,
-            request_checksum=request_checksum,
-            status="COMPLETED",
-            value=value,
-            created_at=now,
-            updated_at=now,
-        )
+        with self._operation_lock:
+            existing = self.idempotency_records.get(record_key)
+            if existing is not None:
+                if existing.request_checksum != request_checksum:
+                    raise Stage4Error(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request.")
+                if existing.status == "PENDING":
+                    raise Stage4Error(409, "IDEMPOTENCY_IN_PROGRESS", "Idempotency key is already in progress.")
+                return cast(T, existing.value)
+            if self._idempotency_count_for_tenant(principal=principal) >= MAX_IDEMPOTENCY_RECORDS_PER_TENANT:
+                raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit.")
+            now = _now()
+            record_id = "idem_" + hashlib.sha256(
+                f"{principal.tenant_id}:{principal.actor_id}:{scope}:{endpoint}:{idempotency_key}".encode()
+            ).hexdigest()[:16]
+            pending = IdempotencyRecord(
+                idempotency_record_id=record_id,
+                tenant_id=principal.tenant_id,
+                actor_id=principal.actor_id,
+                idempotency_scope=scope,
+                endpoint=endpoint,
+                idempotency_key=idempotency_key,
+                request_checksum=request_checksum,
+                status="PENDING",
+                value=None,
+                created_at=now,
+                updated_at=now,
+            )
+            self.idempotency_records[record_key] = pending
+        try:
+            value = create()
+        except Exception:
+            with self._operation_lock:
+                self.idempotency_records.pop(record_key, None)
+            raise
+        with self._operation_lock:
+            pending.status = "COMPLETED"
+            pending.value = value
+            pending.updated_at = _now()
         return value
+
+    def _project_count_for_tenant(self, *, principal: LocalPrincipal) -> int:
+        return sum(1 for project in self.projects.values() if project.tenant_id == principal.tenant_id)
+
+    def _run_count_for_project(self, *, principal: LocalPrincipal, project_id: str) -> int:
+        return sum(
+            1
+            for run in self.walkthrough_runs.values()
+            if run.tenant_id == principal.tenant_id
+            and run.actor_id == principal.actor_id
+            and run.project_id == project_id
+        )
+
+    def _idempotency_count_for_tenant(self, *, principal: LocalPrincipal) -> int:
+        return sum(
+            1
+            for record in self.idempotency_records.values()
+            if record.tenant_id == principal.tenant_id and record.actor_id == principal.actor_id
+        )
 
     def _active_document_count(self, *, principal: LocalPrincipal, project_id: str) -> int:
         return sum(
@@ -607,13 +661,15 @@ class Stage4Service:
         create: Callable[[], T],
     ) -> T:
         lock_key = (principal.tenant_id, project_id)
-        if lock_key in active:
-            raise Stage4Error(429, "BACKPRESSURE_QUEUE_FULL", "Another Stage 4 operation is already active for this project.")
-        active.add(lock_key)
+        with self._operation_lock:
+            if lock_key in active:
+                raise Stage4Error(429, "BACKPRESSURE_QUEUE_FULL", "Another Stage 4 operation is already active for this project.")
+            active.add(lock_key)
         try:
             return create()
         finally:
-            active.remove(lock_key)
+            with self._operation_lock:
+                active.remove(lock_key)
 
 
 def sanitize_filename(filename: str) -> str:
@@ -656,18 +712,20 @@ def parse_document_text(text: str) -> str:
 
 
 def contains_prompt_injection(text: str) -> bool:
-    normalized = " ".join(text.lower().split())
-    return any(pattern in normalized for pattern in PROMPT_INJECTION_PATTERNS)
+    normalized = re.sub(r"[^a-z0-9]+", " ", text.lower())
+    normalized = " ".join(normalized.split())
+    return any(pattern.search(normalized) for pattern in PROMPT_INJECTION_PATTERNS)
 
 
 def redact_public_text(text: str) -> tuple[str, list[str]]:
-    redacted = text[:MAX_PUBLIC_EXCERPT_CHARS]
+    redacted = text
     flags: list[str] = []
     patterns = [
         ("OPENAI_LIKE_KEY", re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b")),
         ("ANTHROPIC_LIKE_KEY", re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}\b")),
         ("OPENROUTER_LIKE_KEY", re.compile(r"\bsk-or-v1-[A-Za-z0-9_-]{20,}\b")),
         ("GITHUB_TOKEN", re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b")),
+        ("GOOGLE_API_KEY", re.compile(r"\bAIza[0-9A-Za-z_-]{20,}\b")),
         ("AWS_ACCESS_KEY", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
         ("JWT_LIKE_TOKEN", re.compile(r"\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\b")),
         ("BEARER_TOKEN", re.compile(r"(?i)\bbearer\s+[A-Za-z0-9_.-]{20,}")),
@@ -678,7 +736,8 @@ def redact_public_text(text: str) -> tuple[str, list[str]]:
         if pattern.search(redacted):
             redacted = pattern.sub("[REDACTED]", redacted)
             flags.append(flag)
-    if len(text) > MAX_PUBLIC_EXCERPT_CHARS:
+    if len(text) > MAX_PUBLIC_EXCERPT_CHARS or len(redacted) > MAX_PUBLIC_EXCERPT_CHARS:
+        redacted = redacted[:MAX_PUBLIC_EXCERPT_CHARS]
         flags.append("TRUNCATED")
     return redacted, flags
 
@@ -772,6 +831,7 @@ def walkthrough_to_api(run: WalkthroughRunRecord) -> dict[str, Any]:
 
 
 def evaluation_to_api(evaluation: EvaluationResult, run: WalkthroughRunRecord) -> dict[str, Any]:
+    context_by_id = {context.context_ref_id: context for context in run.retrieved_context}
     return {
         "schema": "EvaluationSummary",
         "evaluationId": evaluation.evaluation_id,
@@ -800,9 +860,11 @@ def evaluation_to_api(evaluation: EvaluationResult, run: WalkthroughRunRecord) -
                 "supportStatus": support.support_status,
                 "supportScore": support.support_score,
                 "supportReason": support.support_reason,
+                "evidenceSnapshot": _context_ref_to_api(context_by_id[support.context_ref_id], run)["evidenceSnapshot"],
                 "citationIndex": support.citation_index,
             }
             for support in evaluation.claim_supports
+            if support.context_ref_id in context_by_id
         ],
         "contextRefCoverage": evaluation.context_ref_coverage,
         "embeddingProvider": "mock",
@@ -828,6 +890,27 @@ def _context_ref_to_api(context: RetrievedContext, run: WalkthroughRunRecord) ->
             None,
         )
     excerpt, redaction_flags = redact_public_text(context.chunk.text)
+    evidence_snapshot = {
+        "evidenceSnapshotId": "evsnap_" + context.context_ref_id.removeprefix("ctx_"),
+        "tenantId": context.chunk.tenant_id,
+        "projectId": context.chunk.project_id,
+        "documentId": context.chunk.document_id,
+        "chunkId": context.chunk.chunk_id,
+        "sourceFilename": context.chunk.source_filename,
+        "chunkIndex": context.chunk.chunk_index,
+        "sourceDocumentChecksum": context.chunk.source_document_checksum,
+        "chunkChecksum": context.chunk.checksum,
+        "chunkingStrategyVersion": CHUNKING_STRATEGY_VERSION,
+        "retrievalScore": round(context.score, 4),
+        "redactedExcerpt": excerpt,
+        "excerptStart": 0,
+        "excerptEnd": len(excerpt),
+        "redactionFlags": redaction_flags,
+        "capturedAt": run.created_at,
+    }
+    evidence_snapshot["snapshotChecksum"] = checksum_text(
+        json.dumps(evidence_snapshot, sort_keys=True, separators=(",", ":"))
+    )
     return {
         "contextRefId": context.context_ref_id,
         "tenantId": context.chunk.tenant_id,
@@ -840,25 +923,7 @@ def _context_ref_to_api(context: RetrievedContext, run: WalkthroughRunRecord) ->
         "checksum": context.chunk.checksum,
         "scriptSpanStart": claim.script_span_start if claim is not None else 0,
         "scriptSpanEnd": claim.script_span_end if claim is not None else 0,
-        "evidenceSnapshot": {
-            "evidenceSnapshotId": "evsnap_" + context.context_ref_id.removeprefix("ctx_"),
-            "tenantId": context.chunk.tenant_id,
-            "projectId": context.chunk.project_id,
-            "documentId": context.chunk.document_id,
-            "chunkId": context.chunk.chunk_id,
-            "sourceFilename": context.chunk.source_filename,
-            "chunkIndex": context.chunk.chunk_index,
-            "sourceDocumentChecksum": context.chunk.source_document_checksum,
-            "chunkChecksum": context.chunk.checksum,
-            "chunkingStrategyVersion": CHUNKING_STRATEGY_VERSION,
-            "retrievalScore": round(context.score, 4),
-            "redactedExcerpt": excerpt,
-            "excerptStart": 0,
-            "excerptEnd": len(excerpt),
-            "redactionFlags": redaction_flags,
-            "capturedAt": run.created_at,
-            "snapshotChecksum": checksum_text(excerpt),
-        },
+        "evidenceSnapshot": evidence_snapshot,
     }
 
 
