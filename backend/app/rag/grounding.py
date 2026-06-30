@@ -12,6 +12,13 @@ from backend.app.rag.models import (
     RetrievedContext,
     UnsupportedClaim,
 )
+from backend.app.eval.script_faithfulness import (
+    calculate_answer_relevancy,
+    calculate_context_precision_recall,
+    calculate_script_faithfulness,
+)
+from backend.app.eval.metrics import calculate_groundedness
+from backend.app.rag.models import KnowledgeChunk
 
 GROUNDING_POLICY_VERSION = "stage4-grounding-policy-v1"
 EVALUATION_SCHEMA_VERSION = "stage4-evaluation-schema-v1"
@@ -25,6 +32,8 @@ def evaluate_grounding(
     run_id: str,
     candidate: GeneratedScript,
     retrieved_context: list[RetrievedContext],
+    prompt: str,
+    all_chunks: list[KnowledgeChunk],
 ) -> EvaluationResult:
     context_by_chunk = {context.chunk.chunk_id: context for context in retrieved_context}
     context_by_citation_index = {
@@ -140,7 +149,21 @@ def evaluate_grounding(
         )
     supported_count = len(claim_supports)
     total_count = len(candidate.claims)
-    coverage = supported_count / total_count if total_count else 0.0
+    coverage = calculate_groundedness(supported_claim_count=supported_count, candidate_claim_count=total_count)
+    faithfulness = calculate_script_faithfulness(
+        candidate_claim_count=total_count,
+        claim_support_count=supported_count,
+        unsupported_claim_count=len(unsupported_claims),
+    )
+    answer_relevancy = calculate_answer_relevancy(
+        candidate_text=candidate.text,
+        prompt=prompt,
+    )
+    context_precision, context_recall = calculate_context_precision_recall(
+        candidate_text=candidate.text,
+        retrieved_context=retrieved_context,
+        all_chunks=all_chunks,
+    )
     return EvaluationResult(
         evaluation_id=f"eval_{run_id.removeprefix('run_')}",
         run_id=run_id,
@@ -148,6 +171,10 @@ def evaluate_grounding(
         project_id=project_id,
         evaluation_status="PASSED" if not unsupported_claims and total_count > 0 else "FAILED",
         groundedness_score=coverage,
+        faithfulness_score=faithfulness,
+        answer_relevancy=answer_relevancy,
+        context_precision=context_precision,
+        context_recall=context_recall,
         unsupported_claim_count=len(unsupported_claims),
         unsupported_claims=unsupported_claims,
         claim_supports=claim_supports,

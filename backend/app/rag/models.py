@@ -87,6 +87,10 @@ class EvaluationResult:
     project_id: str
     evaluation_status: Literal["PASSED", "FAILED"]
     groundedness_score: float
+    faithfulness_score: float
+    answer_relevancy: float
+    context_precision: float
+    context_recall: float
     unsupported_claim_count: int
     unsupported_claims: list[UnsupportedClaim]
     claim_supports: list[ClaimSupport]

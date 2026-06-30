@@ -352,7 +352,8 @@ Validation errors:
 
 - `413` for oversized file
 - `415` for unsupported type
-- `422` for invalid filename or failed content validation
+- `422 SECRET_LIKE_CONTENT` when uploaded content contains token-like or credential-like material
+- `422` for invalid filename or other failed content validation
 
 Stage 4 limits:
 
@@ -564,6 +565,10 @@ idempotency replay or `GET` of an existing terminal run.
     "evaluationId": "eval_123",
     "evaluationStatus": "PASSED",
     "groundednessScore": 1.0,
+    "faithfulness": 1.0,
+    "answerRelevancy": 1.0,
+    "contextPrecision": 1.0,
+    "contextRecall": 1.0,
     "unsupportedClaimCount": 0,
     "unsupportedClaims": [],
     "claimSupports": [
@@ -609,7 +614,10 @@ idempotency replay or `GET` of an existing terminal run.
     "vectorStore": "memory",
     "retrievalStrategyVersion": "stage4-rag-v1",
     "retrievalTopK": 6,
-    "retrievalScoreThreshold": 0.72
+    "retrievalScoreThreshold": 0.72,
+    "policyVersion": "stage4-grounding-policy-v1",
+    "schemaVersion": "stage4-evaluation-schema-v1",
+    "safetyPolicyVersion": "stage4-safety-policy-v1"
   },
   "provider": {
     "provider": "mock",
@@ -618,6 +626,8 @@ idempotency replay or `GET` of an existing terminal run.
   "trace": {
     "traceId": "trace_123",
     "latencyMs": 100,
+    "inputTokens": 58,
+    "outputTokens": 15,
     "estimatedCost": 0
   },
   "createdAt": "2026-06-29T00:00:00Z"
@@ -661,7 +671,11 @@ include `acceptedScriptText`.
 
 Failure behavior:
 
-- no approved context returns a persisted `REFUSED` run with `EMPTY_CONTEXT`
+- no approved context returns a persisted `REFUSED` run with `LOW_RETRIEVAL_CONFIDENCE`
+- prompt-injection-like request text returns a persisted `REFUSED` run with
+  `PROMPT_INJECTION_DETECTED`
+- unsafe retrieved approved context returns a persisted `REFUSED` run with
+  `UNSAFE_RETRIEVED_CONTEXT`
 - unsupported project factual claims return persisted `FAILED` evaluation state
 - provider failure returns structured `502` or stored failed run
 - rate limits return `429 RATE_LIMITED`
@@ -708,6 +722,10 @@ Response `200`:
   "projectId": "proj_123",
   "evaluationStatus": "PASSED",
   "groundednessScore": 1.0,
+  "faithfulness": 1.0,
+  "answerRelevancy": 1.0,
+  "contextPrecision": 1.0,
+  "contextRecall": 1.0,
   "unsupportedClaimCount": 0,
   "unsupportedClaims": [],
   "claimSupports": [
@@ -789,6 +807,9 @@ Response `200`:
   "retrievalStrategyVersion": "stage4-rag-v1",
   "retrievalTopK": 6,
   "retrievalScoreThreshold": 0.72,
+  "policyVersion": "stage4-grounding-policy-v1",
+  "schemaVersion": "stage4-evaluation-schema-v1",
+  "safetyPolicyVersion": "stage4-safety-policy-v1",
   "evaluatorVersion": "stage4-deterministic-v1",
   "promptInjectionDetected": false,
   "languageCheck": "PASSED",
