@@ -130,6 +130,13 @@ Stage 4 Slice 1 limitations:
 - mock embeddings and mock LLM output are deterministic and provider-agnostic, but
   are not quality-equivalent to real providers
 
+Stage 4 verification hardening adds local-mode resource bounds and audit behavior
+that future durable adapters must preserve: write APIs require an idempotency
+record before side effects, in-memory indexes are keyed by tenant and project,
+document chunk construction stops at the per-document budget, evidence snapshot
+checksums cover the serialized snapshot payload, and the UI reaches FastAPI
+through a same-origin Next.js rewrite rather than broad backend CORS.
+
 ## Security Requirements
 
 - every document, chunk, embedding, run, and artifact includes `project_id`

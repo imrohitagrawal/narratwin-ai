@@ -62,6 +62,9 @@ Use these files together with this tracker:
   in this branch. Local Stage 4 quality passes; GitHub CI reconciliation and PR
   review remain required before merge. PR `#29` uses follow-up ledger commits when
   push-scoped guardrails need repository-tracked reconciliation on the latest SHA.
+- Stage 4 sub-agent verification findings on idempotency, upload/security
+  hardening, resource bounds, tenant-safe retrieval, grounding eval coverage, and
+  live UI routing have branch-local remediation in PR `#29`.
 - Stage 1 is split into product/PRD hardening under `#1` and the follow-on Spec Kit constitution/spec/plan/tasks gate under `#16`.
 - Stage 3 repository-foundation work builds on the partial Stage 0 CI baseline and
   is now adding dependency manifests, health checks, Docker build paths, CI
@@ -85,7 +88,7 @@ Use these files together with this tracker:
 | Stage 1 | Product/PRD hardening represented by PR `#26` | `#1` open, `#16` open | `#26` | Executable | `#1` is product strategy and PRD v1.0 hardening; `#16` remains the follow-on Spec Kit gate. Reconcile merge state after the GitHub merge event. |
 | Stage 2 | Complete, merged to `main` | `#2` reconcile after merge | `#27` merged | Executable locally | Architecture, ADRs, threat model, security/privacy, AI safety/evaluation, portability, API, data model, observability, machine-readable semantic contract, human review checklist, branch scope, and provider defaults are hardened. |
 | Stage 3 | Complete in Stage 4 branch baseline; GitHub reconciliation required | `#5` reconcile after merge | Reconcile after merge | Executable locally | Adds repo foundation manifests, health checks, frontend foundation, Docker build path, pre-commit, CI/security/eval workflows, dependency/security scan path, local setup docs, hardened workflow pins, exact-file scope checks, non-root containers, and fixture-backed eval smoke without product features beyond health checks. |
-| Stage 4 | In progress | `#4` open | PR `#29` on branch `stage4-grounded-script-generation` | Executable locally; last local `make quality` passed | First-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, Docker build coverage, and quality gate are in branch-local implementation. GitHub CI reconciliation and PR review remain required before merge. |
+| Stage 4 | In progress | `#4` open | PR `#29` on branch `stage4-grounded-script-generation` | Executable locally; last local `make quality` passed | First-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, Docker build coverage, quality gate, and sub-agent verification hardening are in branch-local implementation. GitHub CI reconciliation and PR review remain required before merge. |
 | Stage 5 | Pending | `#10` open | None merged | Placeholder target only | Eval, guardrail, and observability work remains future scope. |
 | Stage 6 | Pending | `#11` open | None merged | Placeholder target only | Translation, subtitles, and voice adapter remain future scope. |
 | Stage 7 | Pending | `#12` open | None merged | Placeholder target only | Avatar rendering and export remain future scope. |
