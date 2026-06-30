@@ -65,6 +65,9 @@ Use these files together with this tracker:
   pins `uv` and container images, narrows branch scope to exact scaffold files,
   hardens local containers, disables premature Chroma defaults, and makes eval
   smoke fixture/report backed.
+- Stage 3 preserves inherited compatibility status contexts for `quality /
+  secrets` and `security / docker build` while the authoritative Stage 3 secret
+  scan and Docker gates remain owned by the `security` and `ci` workflows.
 - Stage 4 through Stage 8 and Final Review remain open with no merged implementation work.
 
 ## Stage Ledger
@@ -258,6 +261,7 @@ Required update rules:
 | 2026-06-30 | Second-pass Stage 2 remediation added a machine-readable architecture contract, stronger semantic gate checks, idempotency and job lifecycle locks, safe failed-output contracts, retrieval thresholds, and guardrail self-scanning. |
 | 2026-06-30 | Stage 2 review rerun blockers were remediated for idempotency indexes, evaluation/evidence API consistency, key/cert guardrails, and checker exact-lock coverage; final human PR reviewer signoff remains pending. |
 | 2026-06-30 | Added a recommended-review-item register and stage quality checker so non-blocking review findings are enforced at their assigned stages. |
+| 2026-06-30 | Stage 3 restored required compatibility status contexts for inherited branch-protection checks while retaining the newer authoritative CI and security gates. |
 | 2026-06-30 | Latest Stage 2 review rerun remediated API schema-list and evaluation-result field contract gaps and tightened recommendation-checker governance coverage. |
 | 2026-06-30 | Latest Stage 2 review rerun remediated failed/refused response status wording, idempotency response optionality, AI safety evaluation-schema coverage, claim-support shape consistency, and lease vocabulary drift. |
 | 2026-06-30 | ADR 0005 updated to record the latest Stage 2 evaluation, response-shape, idempotency, and lease-vocabulary hardening decisions. |
