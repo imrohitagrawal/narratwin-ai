@@ -94,6 +94,188 @@ class GenerateWalkthroughRequest(BaseModel):
     prompt: str = "Create a concise grounded walkthrough."
 
 
+class ProjectResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    project_id: str = Field(alias="projectId")
+    tenant_id: str = Field(alias="tenantId")
+    owner_id: str = Field(alias="ownerId")
+    name: str
+    description: str
+    project_status: Literal["ACTIVE"] = Field(alias="projectStatus")
+    default_audience: str = Field(alias="defaultAudience")
+    default_language: str = Field(alias="defaultLanguage")
+    created_at: str = Field(alias="createdAt")
+    updated_at: str = Field(alias="updatedAt")
+
+
+class DocumentResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    document_id: str = Field(alias="documentId")
+    tenant_id: str = Field(alias="tenantId")
+    project_id: str = Field(alias="projectId")
+    source_filename: str = Field(alias="sourceFilename")
+    content_type: str = Field(alias="contentType")
+    size_bytes: int = Field(alias="sizeBytes")
+    checksum: str
+    document_status: Literal["STORED"] = Field(alias="documentStatus")
+    approval_status: Literal["PENDING", "APPROVED"] = Field(alias="approvalStatus")
+    ingestion_status: Literal["NOT_STARTED", "INGESTED"] = Field(alias="ingestionStatus")
+    created_at: str = Field(alias="createdAt")
+    approved_at: str | None = Field(default=None, alias="approvedAt")
+
+
+class IngestionRunResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    ingestion_run_id: str = Field(alias="ingestionRunId")
+    tenant_id: str = Field(alias="tenantId")
+    actor_id: str = Field(alias="actorId")
+    project_id: str = Field(alias="projectId")
+    status: Literal["COMPLETED"]
+    document_ids: list[str] = Field(alias="documentIds")
+    chunk_count: int = Field(alias="chunkCount")
+    embedding_count: int = Field(alias="embeddingCount")
+    created_at: str = Field(alias="createdAt")
+
+
+class EvidenceSnapshotResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    evidence_snapshot_id: str = Field(alias="evidenceSnapshotId")
+    tenant_id: str = Field(alias="tenantId")
+    project_id: str = Field(alias="projectId")
+    document_id: str = Field(alias="documentId")
+    chunk_id: str = Field(alias="chunkId")
+    source_filename: str = Field(alias="sourceFilename")
+    chunk_index: int = Field(alias="chunkIndex")
+    source_document_checksum: str = Field(alias="sourceDocumentChecksum")
+    chunk_checksum: str = Field(alias="chunkChecksum")
+    chunking_strategy_version: str = Field(alias="chunkingStrategyVersion")
+    retrieval_score: float = Field(alias="retrievalScore")
+    redacted_excerpt: str = Field(alias="redactedExcerpt")
+    excerpt_start: int = Field(alias="excerptStart")
+    excerpt_end: int = Field(alias="excerptEnd")
+    redaction_flags: list[str] = Field(alias="redactionFlags")
+    captured_at: str = Field(alias="capturedAt")
+    snapshot_checksum: str = Field(alias="snapshotChecksum")
+
+
+class ContextRefResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    context_ref_id: str = Field(alias="contextRefId")
+    tenant_id: str = Field(alias="tenantId")
+    project_id: str = Field(alias="projectId")
+    claim_id: str = Field(alias="claimId")
+    chunk_id: str = Field(alias="chunkId")
+    document_id: str = Field(alias="documentId")
+    source_filename: str = Field(alias="sourceFilename")
+    chunk_index: int = Field(alias="chunkIndex")
+    checksum: str
+    script_span_start: int = Field(alias="scriptSpanStart")
+    script_span_end: int = Field(alias="scriptSpanEnd")
+    evidence_snapshot: EvidenceSnapshotResponse = Field(alias="evidenceSnapshot")
+
+
+class UnsupportedClaimResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    claim_id: str = Field(alias="claimId")
+    claim_text: str = Field(alias="claimText")
+    reason: str
+
+
+class ClaimSupportResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    claim_support_id: str = Field(alias="claimSupportId")
+    tenant_id: str = Field(alias="tenantId")
+    project_id: str = Field(alias="projectId")
+    run_id: str = Field(alias="runId")
+    evaluation_id: str = Field(alias="evaluationId")
+    claim_id: str = Field(alias="claimId")
+    context_ref_id: str = Field(alias="contextRefId")
+    chunk_id: str = Field(alias="chunkId")
+    document_id: str = Field(alias="documentId")
+    support_status: Literal["SUPPORTED"] = Field(alias="supportStatus")
+    support_score: float = Field(alias="supportScore")
+    support_reason: str = Field(alias="supportReason")
+    citation_index: int = Field(alias="citationIndex")
+
+
+class EvaluationResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    schema_name: Literal["EvaluationSummary"] = Field(alias="schema")
+    evaluation_id: str = Field(alias="evaluationId")
+    evaluation_status: Literal["PASSED", "FAILED"] = Field(alias="evaluationStatus")
+    groundedness_score: float = Field(alias="groundednessScore")
+    unsupported_claim_count: int = Field(alias="unsupportedClaimCount")
+    unsupported_claims: list[UnsupportedClaimResponse] = Field(alias="unsupportedClaims")
+    claim_supports: list[ClaimSupportResponse] = Field(alias="claimSupports")
+    context_ref_coverage: float = Field(alias="contextRefCoverage")
+    embedding_provider: str = Field(alias="embeddingProvider")
+    embedding_model: str = Field(alias="embeddingModel")
+    embedding_model_version: str = Field(alias="embeddingModelVersion")
+    embedding_dimension: int = Field(alias="embeddingDimension")
+    vector_store: str = Field(alias="vectorStore")
+    retrieval_strategy_version: str = Field(alias="retrievalStrategyVersion")
+    retrieval_top_k: int = Field(alias="retrievalTopK")
+    retrieval_score_threshold: float = Field(alias="retrievalScoreThreshold")
+    policy_version: str = Field(alias="policyVersion")
+    schema_version: str = Field(alias="schemaVersion")
+    safety_policy_version: str = Field(alias="safetyPolicyVersion")
+    context_refs: list[ContextRefResponse] = Field(alias="contextRefs")
+
+
+class ProviderResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    provider: Literal["mock"]
+    provider_mode: Literal["LOCAL"] = Field(alias="providerMode")
+
+
+class TraceResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    trace_id: str = Field(alias="traceId")
+    latency_ms: int = Field(alias="latencyMs")
+    estimated_cost: int = Field(alias="estimatedCost")
+
+
+class FailureResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    reason_code: str = Field(alias="reasonCode")
+    message: str
+    unsupported_claim_count: int = Field(alias="unsupportedClaimCount")
+
+
+class WalkthroughRunResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    run_id: str = Field(alias="runId")
+    tenant_id: str = Field(alias="tenantId")
+    actor_id: str = Field(alias="actorId")
+    project_id: str = Field(alias="projectId")
+    status: Literal["COMPLETED", "FAILED", "REFUSED"]
+    evaluation_status: Literal["PASSED", "FAILED"] | None = Field(alias="evaluationStatus")
+    audience: str
+    requested_language: str = Field(alias="requestedLanguage")
+    depth: str
+    style: str
+    context_refs: list[ContextRefResponse] = Field(alias="contextRefs")
+    provider: ProviderResponse
+    trace: TraceResponse
+    created_at: str = Field(alias="createdAt")
+    accepted_script_text: str | None = Field(default=None, alias="acceptedScriptText")
+    evaluation: EvaluationResponse | None = None
+    failure: FailureResponse | None = None
+    redacted_unsupported_excerpts: list[str] = Field(default_factory=list, alias="redactedUnsupportedExcerpts")
+
+
 async def local_principal(x_local_user_id: str | None = Header(default=None, alias="X-Local-User-Id")) -> LocalPrincipal:
     actor_id = (x_local_user_id or "").strip()
     return LocalPrincipal(actor_id=actor_id or "user_local")
@@ -242,12 +424,12 @@ def api_readyz() -> ReadinessResponse:
     return readyz()
 
 
-@api_v1.post("/projects", status_code=201, tags=["projects"])
+@api_v1.post("/projects", status_code=201, response_model=ProjectResponse, tags=["projects"])
 def create_project(
     request: CreateProjectRequest,
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
-) -> dict[str, object]:
+) -> ProjectResponse:
     project = stage4_service.create_project(
         principal=principal,
         name=request.name,
@@ -256,12 +438,13 @@ def create_project(
         default_language=request.default_language,
         idempotency_key=idempotency_key,
     )
-    return project_to_api(project)
+    return ProjectResponse.model_validate(project_to_api(project))
 
 
 @api_v1.post(
     "/projects/{project_id}/knowledge-documents",
     status_code=201,
+    response_model=DocumentResponse,
     tags=["knowledge"],
 )
 async def upload_knowledge_document(
@@ -269,7 +452,7 @@ async def upload_knowledge_document(
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
     file: UploadFile = File(...),
-) -> dict[str, object]:
+) -> DocumentResponse:
     data = await read_upload_with_limit(file)
     document = stage4_service.upload_document(
         principal=principal,
@@ -279,11 +462,12 @@ async def upload_knowledge_document(
         data=data,
         idempotency_key=idempotency_key,
     )
-    return document_to_api(document)
+    return DocumentResponse.model_validate(document_to_api(document))
 
 
 @api_v1.patch(
     "/projects/{project_id}/knowledge-documents/{document_id}/approval",
+    response_model=DocumentResponse,
     tags=["knowledge"],
 )
 def approve_knowledge_document(
@@ -292,7 +476,7 @@ def approve_knowledge_document(
     request: ApproveDocumentRequest,
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
-) -> dict[str, object]:
+) -> DocumentResponse:
     del request
     document = stage4_service.approve_document(
         principal=principal,
@@ -300,32 +484,42 @@ def approve_knowledge_document(
         document_id=document_id,
         idempotency_key=idempotency_key,
     )
-    return document_to_api(document)
+    return DocumentResponse.model_validate(document_to_api(document))
 
 
-@api_v1.post("/projects/{project_id}/ingestion-runs", status_code=201, tags=["ingestion"])
+@api_v1.post(
+    "/projects/{project_id}/ingestion-runs",
+    status_code=201,
+    response_model=IngestionRunResponse,
+    tags=["ingestion"],
+)
 def start_ingestion_run(
     project_id: str,
     request: StartIngestionRequest,
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
-) -> dict[str, object]:
+) -> IngestionRunResponse:
     run = stage4_service.ingest_documents(
         principal=principal,
         project_id=project_id,
         document_ids=request.document_ids,
         idempotency_key=idempotency_key,
     )
-    return ingestion_to_api(run)
+    return IngestionRunResponse.model_validate(ingestion_to_api(run))
 
 
-@api_v1.post("/projects/{project_id}/walkthrough-runs", status_code=201, tags=["walkthrough"])
+@api_v1.post(
+    "/projects/{project_id}/walkthrough-runs",
+    status_code=201,
+    response_model=WalkthroughRunResponse,
+    tags=["walkthrough"],
+)
 def generate_walkthrough_run(
     project_id: str,
     request: GenerateWalkthroughRequest,
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
-) -> dict[str, object]:
+) -> WalkthroughRunResponse:
     run = stage4_service.generate_walkthrough(
         principal=principal,
         project_id=project_id,
@@ -336,7 +530,7 @@ def generate_walkthrough_run(
         prompt=request.prompt,
         idempotency_key=idempotency_key,
     )
-    return walkthrough_to_api(run)
+    return WalkthroughRunResponse.model_validate(walkthrough_to_api(run))
 
 
 async def read_upload_with_limit(file: UploadFile) -> bytes:

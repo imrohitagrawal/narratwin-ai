@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from backend.app.main import app, reset_app_state_for_tests
+from backend.app.stage4 import redact_public_text, stage4_service
 
 
 def test_create_upload_ingest_generate_grounded_script_with_citations() -> None:
@@ -130,6 +131,12 @@ def test_write_idempotency_conflicts_on_changed_request() -> None:
     assert first.status_code == 201
     assert second.status_code == 409
     assert second.json()["error"]["code"] == "IDEMPOTENCY_CONFLICT"
+    record = next(iter(stage4_service.idempotency_records.values()))
+    assert record.tenant_id == "tenant_local"
+    assert record.actor_id == "user_local"
+    assert record.endpoint == "POST /api/v1/projects"
+    assert record.idempotency_scope == "project:create"
+    assert record.status == "COMPLETED"
 
 
 def test_project_access_is_scoped_to_local_principal() -> None:
@@ -218,3 +225,63 @@ def test_prompt_injection_document_is_rejected_before_ingestion() -> None:
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "UNSAFE_DOCUMENT_CONTENT"
+
+
+def test_project_document_limit_is_enforced_before_storing_upload() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_response = client.post(
+        "/api/v1/projects",
+        json={"name": "NarraTwin AI"},
+        headers={"Idempotency-Key": "doc-limit-project"},
+    )
+    project_id = project_response.json()["projectId"]
+
+    for index in range(10):
+        response = client.post(
+            f"/api/v1/projects/{project_id}/knowledge-documents",
+            files={"file": (f"doc{index}.md", f"content {index}".encode(), "text/markdown")},
+            headers={"Idempotency-Key": f"doc-limit-upload-{index}"},
+        )
+        assert response.status_code == 201
+
+    rejected = client.post(
+        f"/api/v1/projects/{project_id}/knowledge-documents",
+        files={"file": ("doc10.md", b"extra content", "text/markdown")},
+        headers={"Idempotency-Key": "doc-limit-upload-10"},
+    )
+
+    assert rejected.status_code == 413
+    assert rejected.json()["error"]["code"] == "PROJECT_DOCUMENT_LIMIT_EXCEEDED"
+
+
+def test_public_redaction_covers_bare_provider_tokens() -> None:
+    openai_like = "sk-" + ("a" * 24)
+    github_like = "ghp_" + ("A" * 24)
+    bearer_like = "Bearer " + ("b" * 24)
+    redacted, flags = redact_public_text(
+        f"tokens {openai_like} {github_like} {bearer_like} api_key=visible"
+    )
+
+    assert openai_like not in redacted
+    assert github_like not in redacted
+    assert bearer_like not in redacted
+    assert "api_key=visible" not in redacted
+    assert "[REDACTED]" in redacted
+    assert {"OPENAI_LIKE_KEY", "GITHUB_TOKEN", "BEARER_TOKEN", "SECRET_LIKE_TOKEN"} <= set(flags)
+
+
+def test_stage4_openapi_uses_typed_response_models() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+
+    response = client.get("/api/v1/openapi.json")
+    schemas = response.json()["components"]["schemas"]
+    projects_operation = response.json()["paths"]["/api/v1/projects"]["post"]
+
+    assert "ProjectResponse" in schemas
+    assert "WalkthroughRunResponse" in schemas
+    assert (
+        projects_operation["responses"]["201"]["content"]["application/json"]["schema"]["$ref"]
+        == "#/components/schemas/ProjectResponse"
+    )

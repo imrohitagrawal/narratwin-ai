@@ -31,6 +31,8 @@ from backend.app.rag.retrieval import retrieve_context
 from backend.app.rag.store import InMemoryRagStore
 
 MAX_UPLOAD_BYTES = 1_048_576
+MAX_PROJECT_CORPUS_BYTES = 5 * 1_048_576
+MAX_ACTIVE_DOCUMENTS_PER_PROJECT = 10
 MAX_DOCUMENTS_PER_INGESTION = 10
 MAX_CHUNKS_PER_PROJECT = 200
 MAX_PROMPT_CHARS = 2_000
@@ -131,6 +133,21 @@ class WalkthroughRunRecord:
     created_at: str
 
 
+@dataclass
+class IdempotencyRecord:
+    idempotency_record_id: str
+    tenant_id: str
+    actor_id: str
+    idempotency_scope: str
+    endpoint: str
+    idempotency_key: str
+    request_checksum: str
+    status: Literal["COMPLETED"]
+    value: Any
+    created_at: str
+    updated_at: str
+
+
 class Stage4Service:
     def __init__(self) -> None:
         self.embedder = MockEmbeddingProvider()
@@ -140,7 +157,9 @@ class Stage4Service:
         self.documents: dict[str, DocumentRecord] = {}
         self.ingestion_runs: dict[str, IngestionRunRecord] = {}
         self.walkthrough_runs: dict[str, WalkthroughRunRecord] = {}
-        self.idempotency_records: dict[tuple[str, str, str], dict[str, Any]] = {}
+        self.idempotency_records: dict[tuple[str, str, str, str, str], IdempotencyRecord] = {}
+        self._active_ingestions: set[tuple[str, str]] = set()
+        self._active_generations: set[tuple[str, str]] = set()
         self._project_counter = 0
         self._document_counter = 0
         self._ingestion_counter = 0
@@ -153,6 +172,8 @@ class Stage4Service:
         self.ingestion_runs.clear()
         self.walkthrough_runs.clear()
         self.idempotency_records.clear()
+        self._active_ingestions.clear()
+        self._active_generations.clear()
         self._project_counter = 0
         self._document_counter = 0
         self._ingestion_counter = 0
@@ -169,7 +190,9 @@ class Stage4Service:
         idempotency_key: str | None = None,
     ) -> ProjectRecord:
         return self._idempotent(
-            scope=f"{principal.actor_id}:create_project",
+            principal=principal,
+            endpoint="POST /api/v1/projects",
+            scope="project:create",
             idempotency_key=idempotency_key,
             request_checksum=checksum_text(f"{name}\n{description}\n{default_audience}\n{default_language}"),
             create=lambda: self._create_project_once(
@@ -219,7 +242,9 @@ class Stage4Service:
         idempotency_key: str | None = None,
     ) -> DocumentRecord:
         return self._idempotent(
-            scope=f"{principal.actor_id}:upload_document:{project_id}",
+            principal=principal,
+            endpoint="POST /api/v1/projects/{projectId}/knowledge-documents",
+            scope=project_id,
             idempotency_key=idempotency_key,
             request_checksum=checksum_text(
                 f"{project_id}\n{source_filename}\n{content_type}\n{hashlib.sha256(data).hexdigest()}"
@@ -243,6 +268,10 @@ class Stage4Service:
         data: bytes,
     ) -> DocumentRecord:
         self._require_project(principal=principal, project_id=project_id)
+        if self._active_document_count(principal=principal, project_id=project_id) >= MAX_ACTIVE_DOCUMENTS_PER_PROJECT:
+            raise Stage4Error(413, "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "Project exceeds the Stage 4 document limit.")
+        if self._project_corpus_bytes(principal=principal, project_id=project_id) + len(data) > MAX_PROJECT_CORPUS_BYTES:
+            raise Stage4Error(413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 corpus size limit.")
         safe_filename = sanitize_filename(source_filename)
         suffix = PurePath(safe_filename).suffix.lower()
         if suffix not in ALLOWED_EXTENSIONS or content_type not in ALLOWED_CONTENT_TYPES:
@@ -277,7 +306,9 @@ class Stage4Service:
         idempotency_key: str | None = None,
     ) -> DocumentRecord:
         return self._idempotent(
-            scope=f"{principal.actor_id}:approve_document:{project_id}:{document_id}",
+            principal=principal,
+            endpoint="PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval",
+            scope=project_id,
             idempotency_key=idempotency_key,
             request_checksum=checksum_text(f"{project_id}\n{document_id}\nAPPROVED"),
             create=lambda: self._approve_document_once(
@@ -308,13 +339,20 @@ class Stage4Service:
         idempotency_key: str | None = None,
     ) -> IngestionRunRecord:
         return self._idempotent(
-            scope=f"{principal.actor_id}:ingest_documents:{project_id}",
+            principal=principal,
+            endpoint="POST /api/v1/projects/{projectId}/ingestion-runs",
+            scope=project_id,
             idempotency_key=idempotency_key,
             request_checksum=checksum_text(f"{project_id}\n{','.join(document_ids)}"),
-            create=lambda: self._ingest_documents_once(
+            create=lambda: self._run_with_project_lock(
+                active=self._active_ingestions,
                 principal=principal,
                 project_id=project_id,
-                document_ids=document_ids,
+                create=lambda: self._ingest_documents_once(
+                    principal=principal,
+                    project_id=project_id,
+                    document_ids=document_ids,
+                ),
             ),
         )
 
@@ -387,17 +425,24 @@ class Stage4Service:
         idempotency_key: str | None = None,
     ) -> WalkthroughRunRecord:
         return self._idempotent(
-            scope=f"{principal.actor_id}:generate_walkthrough:{project_id}",
+            principal=principal,
+            endpoint="POST /api/v1/projects/{projectId}/walkthrough-runs",
+            scope=project_id,
             idempotency_key=idempotency_key,
             request_checksum=checksum_text(f"{project_id}\n{audience}\n{requested_language}\n{depth}\n{style}\n{prompt}"),
-            create=lambda: self._generate_walkthrough_once(
+            create=lambda: self._run_with_project_lock(
+                active=self._active_generations,
                 principal=principal,
                 project_id=project_id,
-                audience=audience,
-                requested_language=requested_language,
-                depth=depth,
-                style=style,
-                prompt=prompt,
+                create=lambda: self._generate_walkthrough_once(
+                    principal=principal,
+                    project_id=project_id,
+                    audience=audience,
+                    requested_language=requested_language,
+                    depth=depth,
+                    style=style,
+                    prompt=prompt,
+                ),
             ),
         )
 
@@ -500,6 +545,8 @@ class Stage4Service:
     def _idempotent(
         self,
         *,
+        principal: LocalPrincipal,
+        endpoint: str,
         scope: str,
         idempotency_key: str | None,
         request_checksum: str,
@@ -507,19 +554,66 @@ class Stage4Service:
     ) -> T:
         if not idempotency_key:
             return create()
-        record_key = (TENANT_LOCAL, scope, idempotency_key)
+        record_key = (principal.tenant_id, principal.actor_id, scope, endpoint, idempotency_key)
         existing = self.idempotency_records.get(record_key)
         if existing is not None:
-            if existing["request_checksum"] != request_checksum:
+            if existing.request_checksum != request_checksum:
                 raise Stage4Error(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request.")
-            return cast(T, existing["value"])
+            return cast(T, existing.value)
         value = create()
-        self.idempotency_records[record_key] = {
-            "request_checksum": request_checksum,
-            "value": value,
-            "created_at": _now(),
-        }
+        now = _now()
+        record_id = "idem_" + hashlib.sha256(
+            f"{principal.tenant_id}:{principal.actor_id}:{scope}:{endpoint}:{idempotency_key}".encode()
+        ).hexdigest()[:16]
+        self.idempotency_records[record_key] = IdempotencyRecord(
+            idempotency_record_id=record_id,
+            tenant_id=principal.tenant_id,
+            actor_id=principal.actor_id,
+            idempotency_scope=scope,
+            endpoint=endpoint,
+            idempotency_key=idempotency_key,
+            request_checksum=request_checksum,
+            status="COMPLETED",
+            value=value,
+            created_at=now,
+            updated_at=now,
+        )
         return value
+
+    def _active_document_count(self, *, principal: LocalPrincipal, project_id: str) -> int:
+        return sum(
+            1
+            for document in self.documents.values()
+            if document.tenant_id == principal.tenant_id
+            and document.owner_id == principal.actor_id
+            and document.project_id == project_id
+        )
+
+    def _project_corpus_bytes(self, *, principal: LocalPrincipal, project_id: str) -> int:
+        return sum(
+            document.size_bytes
+            for document in self.documents.values()
+            if document.tenant_id == principal.tenant_id
+            and document.owner_id == principal.actor_id
+            and document.project_id == project_id
+        )
+
+    def _run_with_project_lock(
+        self,
+        *,
+        active: set[tuple[str, str]],
+        principal: LocalPrincipal,
+        project_id: str,
+        create: Callable[[], T],
+    ) -> T:
+        lock_key = (principal.tenant_id, project_id)
+        if lock_key in active:
+            raise Stage4Error(429, "BACKPRESSURE_QUEUE_FULL", "Another Stage 4 operation is already active for this project.")
+        active.add(lock_key)
+        try:
+            return create()
+        finally:
+            active.remove(lock_key)
 
 
 def sanitize_filename(filename: str) -> str:
@@ -570,7 +664,14 @@ def redact_public_text(text: str) -> tuple[str, list[str]]:
     redacted = text[:MAX_PUBLIC_EXCERPT_CHARS]
     flags: list[str] = []
     patterns = [
-        ("SECRET_LIKE_TOKEN", re.compile(r"(?i)(api[_-]?key|secret|token|password)\s*[:=]\s*\S+")),
+        ("OPENAI_LIKE_KEY", re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b")),
+        ("ANTHROPIC_LIKE_KEY", re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}\b")),
+        ("OPENROUTER_LIKE_KEY", re.compile(r"\bsk-or-v1-[A-Za-z0-9_-]{20,}\b")),
+        ("GITHUB_TOKEN", re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b")),
+        ("AWS_ACCESS_KEY", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+        ("JWT_LIKE_TOKEN", re.compile(r"\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\b")),
+        ("BEARER_TOKEN", re.compile(r"(?i)\bbearer\s+[A-Za-z0-9_.-]{20,}")),
+        ("SECRET_LIKE_TOKEN", re.compile(r"(?i)\b(api[_-]?key|secret|token|password|credential)\b\s*[:=]\s*\S+")),
         ("LONG_HEX_TOKEN", re.compile(r"\b[a-f0-9]{32,}\b", re.IGNORECASE)),
     ]
     for flag, pattern in patterns:

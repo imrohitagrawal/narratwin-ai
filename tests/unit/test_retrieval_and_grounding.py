@@ -189,3 +189,101 @@ def test_grounding_fails_visible_citation_marker_mismatch() -> None:
 
     assert evaluation.evaluation_status == "FAILED"
     assert any("citation marker" in claim.reason for claim in evaluation.unsupported_claims)
+
+
+def test_grounding_fails_unsupported_text_blended_into_supported_sentence() -> None:
+    store = InMemoryRagStore()
+    embedder = MockEmbeddingProvider()
+    chunks = chunk_document(
+        document_id="doc_a",
+        project_id="proj_a",
+        tenant_id="tenant_local",
+        source_filename="project.md",
+        text="NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.",
+        max_tokens=20,
+    )
+    stored = store.add_chunks(chunks, embedder)
+    retrieved = retrieve_context(
+        store=store,
+        embedder=embedder,
+        tenant_id="tenant_local",
+        project_id="proj_a",
+        query="grounded walkthrough scripts",
+        top_k=3,
+        min_score=0.1,
+    )
+    claim_text = "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts."
+    script = f"For recruiters, {claim_text.rstrip('.')} and guarantees hiring outcomes. [1]"
+    candidate = GeneratedScript(
+        text=script,
+        claims=[
+            ScriptClaim(
+                claim_id="claim_001",
+                text=claim_text,
+                citation_index=1,
+                chunk_id=stored[0].chunk_id,
+                script_span_start=0,
+                script_span_end=len(script),
+            )
+        ],
+    )
+
+    evaluation = evaluate_grounding(
+        tenant_id="tenant_local",
+        project_id="proj_a",
+        run_id="run_test",
+        candidate=candidate,
+        retrieved_context=retrieved,
+    )
+
+    assert evaluation.evaluation_status == "FAILED"
+    assert any("does not exactly match" in claim.reason for claim in evaluation.unsupported_claims)
+
+
+def test_grounding_fails_trailing_unpunctuated_unsupported_text() -> None:
+    store = InMemoryRagStore()
+    embedder = MockEmbeddingProvider()
+    chunks = chunk_document(
+        document_id="doc_a",
+        project_id="proj_a",
+        tenant_id="tenant_local",
+        source_filename="project.md",
+        text="NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.",
+        max_tokens=20,
+    )
+    stored = store.add_chunks(chunks, embedder)
+    retrieved = retrieve_context(
+        store=store,
+        embedder=embedder,
+        tenant_id="tenant_local",
+        project_id="proj_a",
+        query="grounded walkthrough scripts",
+        top_k=3,
+        min_score=0.1,
+    )
+    claim_text = "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts."
+    supported_sentence = f"For recruiters, {claim_text} [1]"
+    candidate = GeneratedScript(
+        text=f"{supported_sentence} NarraTwin guarantees hiring outcomes",
+        claims=[
+            ScriptClaim(
+                claim_id="claim_001",
+                text=claim_text,
+                citation_index=1,
+                chunk_id=stored[0].chunk_id,
+                script_span_start=0,
+                script_span_end=len(supported_sentence),
+            )
+        ],
+    )
+
+    evaluation = evaluate_grounding(
+        tenant_id="tenant_local",
+        project_id="proj_a",
+        run_id="run_test",
+        candidate=candidate,
+        retrieved_context=retrieved,
+    )
+
+    assert evaluation.evaluation_status == "FAILED"
+    assert any("no provider claim metadata" in claim.reason for claim in evaluation.unsupported_claims)

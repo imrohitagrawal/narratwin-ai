@@ -150,35 +150,59 @@ checks = [
 if run.get("contextRefs") and claim_supports:
     first_context = run["contextRefs"][0]
     first_support = claim_supports[0]
-    negative_candidate = GeneratedScript(
-        text=f"{run['acceptedScriptText']} NarraTwin guarantees hiring outcomes. [1]",
-        claims=[
-            ScriptClaim(
-                claim_id=first_support["claimId"],
-                text=run["acceptedScriptText"].split("[1]", maxsplit=1)[0].replace("For recruiters, ", "").strip(),
-                citation_index=1,
-                chunk_id=first_context["chunkId"],
-                script_span_start=0,
-                script_span_end=run["acceptedScriptText"].find("[1]") + 3,
-            )
-        ],
-    )
     retrieved_context = stage4_service.walkthrough_runs[run["runId"]].retrieved_context
-    negative_eval = evaluate_grounding(
-        tenant_id=run["tenantId"],
-        project_id=project_id,
-        run_id="run_eval_negative",
-        candidate=negative_candidate,
-        retrieved_context=retrieved_context,
-    )
-    checks.append(
-        {
-            "name": "negative visible unsupported claim fails",
-            "passed": negative_eval.evaluation_status == "FAILED",
-            "expected": "FAILED",
-            "actual": negative_eval.evaluation_status,
-        }
-    )
+    first_script = run["acceptedScriptText"].split("[1]", maxsplit=1)[0]
+    first_claim_text = first_script.replace("For recruiters, ", "").strip()
+    supported_span_end = run["acceptedScriptText"].find("[1]") + 3
+
+    def candidate_for(text, span_end=supported_span_end):
+        return GeneratedScript(
+            text=text,
+            claims=[
+                ScriptClaim(
+                    claim_id=first_support["claimId"],
+                    text=first_claim_text,
+                    citation_index=1,
+                    chunk_id=first_context["chunkId"],
+                    script_span_start=0,
+                    script_span_end=span_end,
+                )
+            ],
+        )
+
+    negative_cases = [
+        (
+            "negative visible unsupported claim fails",
+            candidate_for(f"{run['acceptedScriptText']} NarraTwin guarantees hiring outcomes. [1]"),
+        ),
+        (
+            "negative blended unsupported claim fails",
+            candidate_for(
+                f"{first_script.rstrip('.')} and guarantees hiring outcomes. [1]",
+                len(f"{first_script.rstrip('.')} and guarantees hiring outcomes. [1]"),
+            ),
+        ),
+        (
+            "negative trailing unpunctuated claim fails",
+            candidate_for(f"{run['acceptedScriptText']} NarraTwin guarantees hiring outcomes"),
+        ),
+    ]
+    for name, negative_candidate in negative_cases:
+        negative_eval = evaluate_grounding(
+            tenant_id=run["tenantId"],
+            project_id=project_id,
+            run_id=f"run_eval_{name.replace(' ', '_')}",
+            candidate=negative_candidate,
+            retrieved_context=retrieved_context,
+        )
+        checks.append(
+            {
+                "name": name,
+                "passed": negative_eval.evaluation_status == "FAILED",
+                "expected": "FAILED",
+                "actual": negative_eval.evaluation_status,
+            }
+        )
 
 failed = [check for check in checks if not check["passed"]]
 report = {

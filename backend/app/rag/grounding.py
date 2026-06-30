@@ -90,6 +90,17 @@ def evaluate_grounding(
                 )
             )
             continue
+        visible_claim_text = _visible_claim_text(sentence.text)
+        if _normalize(visible_claim_text) != _normalize(claim.text):
+            failed_sentence_claim_ids.add(claim.claim_id)
+            unsupported_claims.append(
+                UnsupportedClaim(
+                    claim_id=claim.claim_id,
+                    claim_text=sentence.text,
+                    reason="Visible generated claim text does not exactly match supported claim metadata.",
+                )
+            )
+            continue
         matched_claim_ids.add(claim.claim_id)
 
     for claim in candidate.claims:
@@ -160,15 +171,27 @@ class _ScriptSentence:
 
 def _script_sentences(text: str) -> list[_ScriptSentence]:
     pattern = re.compile(r"\S.*?(?:[.!?](?:\s*\[\d+\])?)(?=\s+\S|$)", re.DOTALL)
-    sentences = [
-        _ScriptSentence(
-            text=match.group(0).strip(),
-            start=match.start(),
-            end=match.end(),
+    sentences: list[_ScriptSentence] = []
+    last_end = 0
+    for match in pattern.finditer(text):
+        gap = text[last_end : match.start()].strip()
+        if gap:
+            gap_start = text.find(gap, last_end, match.start())
+            sentences.append(_ScriptSentence(text=gap, start=gap_start, end=gap_start + len(gap)))
+        sentence = match.group(0).strip()
+        if sentence:
+            sentences.append(_ScriptSentence(text=sentence, start=match.start(), end=match.end()))
+        last_end = match.end()
+    trailing = text[last_end:].strip()
+    if trailing:
+        trailing_start = text.find(trailing, last_end)
+        sentences.append(
+            _ScriptSentence(
+                text=trailing,
+                start=trailing_start,
+                end=trailing_start + len(trailing),
+            )
         )
-        for match in pattern.finditer(text)
-        if match.group(0).strip()
-    ]
     if sentences:
         return sentences
     stripped = text.strip()
@@ -181,3 +204,8 @@ def _citation_markers(text: str) -> list[int]:
 
 def _spans_overlap(left_start: int, left_end: int, right_start: int, right_end: int) -> bool:
     return max(left_start, right_start) < min(left_end, right_end)
+
+
+def _visible_claim_text(text: str) -> str:
+    without_citation = re.sub(r"\s*\[\d+\]\s*", " ", text).strip()
+    return re.sub(r"(?i)^for\s+[a-z_ -]+s,\s*", "", without_citation).strip()

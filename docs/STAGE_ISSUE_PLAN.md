@@ -72,6 +72,7 @@ Blocked changes:
 Allowed changes:
 
 - `.stage/current`
+- `.github/workflows/eval-smoke.yml`
 - `Makefile`
 - `docs/NORTH_STAR_METRICS.md`
 - `docs/PHASE_PLAN.md`

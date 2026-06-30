@@ -18,8 +18,8 @@ Use it to answer:
 - Current stage marker: `.stage/current = 4`
 - Current implementation permission: Stage 4 first vertical slice only, on the
   issue-linked Stage 4 branch
-- Current repo mode: first-slice implementation branch with local Stage 4 quality
-  passing; PR review and GitHub CI reconciliation still required before merge
+- Current repo mode: Stage 4 first-slice implementation permitted; product
+  implementation is not merged to `main`
 - Product implementation merged to `main`: no
 - Tracker enforcement scope: repository-tracked stage and governance changes in checked-in files
 - Out-of-band GitHub reconciliation: required in the next governance update

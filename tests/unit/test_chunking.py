@@ -53,3 +53,21 @@ def test_chunk_document_splits_single_long_line_with_overlap() -> None:
     assert all(chunk.token_count <= 10 for chunk in chunks)
     assert chunks[0].line_start == chunks[0].line_end == 1
     assert "word8" in chunks[1].text
+
+
+def test_chunk_document_splits_single_long_heading() -> None:
+    heading = "# " + " ".join(f"heading{i}" for i in range(25))
+
+    chunks = chunk_document(
+        document_id="doc_test",
+        project_id="proj_test",
+        tenant_id="tenant_local",
+        source_filename="heading.md",
+        text=heading,
+        max_tokens=10,
+        overlap_tokens=2,
+    )
+
+    assert len(chunks) == 3
+    assert all(chunk.token_count <= 10 for chunk in chunks)
+    assert all(chunk.heading_path for chunk in chunks)
