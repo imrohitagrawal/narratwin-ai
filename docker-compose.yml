@@ -45,8 +45,11 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        NARRATWIN_API_PROXY_TARGET: http://backend:8000
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
+      NARRATWIN_API_PROXY_TARGET: http://backend:8000
     ports:
       - "127.0.0.1:3000:3000"
     read_only: true

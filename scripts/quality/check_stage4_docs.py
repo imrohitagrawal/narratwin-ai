@@ -34,6 +34,8 @@ REQUIRED_FILES = [
     "evals/smoke/stage4_grounded_script_dataset.json",
     "scripts/ci/eval-smoke.sh",
     "scripts/ci/frontend-smoke.sh",
+    "docker-compose.yml",
+    "frontend/Dockerfile",
     "frontend/src/app/page.tsx",
     "frontend/src/app/page.module.css",
     "frontend/src/app/page.test.tsx",

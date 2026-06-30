@@ -2,7 +2,6 @@
 set -euo pipefail
 
 cd frontend
-export NARRATWIN_ALLOW_DEV_INLINE_CSP=1
 if [ ! -d node_modules ]; then
   npm ci --strict-allow-scripts=true
 fi

@@ -132,10 +132,14 @@ Stage 4 Slice 1 limitations:
 
 Stage 4 verification hardening adds local-mode resource bounds and audit behavior
 that future durable adapters must preserve: write APIs require an idempotency
-record before side effects, in-memory indexes are keyed by tenant and project,
-document chunk construction stops at the per-document budget, evidence snapshot
-checksums cover the serialized snapshot payload, and the UI reaches FastAPI
-through a same-origin Next.js rewrite rather than broad backend CORS.
+record before side effects, multi-document ingestion validates the full batch
+before committing chunks or document state, in-memory indexes are keyed by tenant
+and project, document chunk construction stops at the per-document budget,
+evidence snapshot checksums cover the serialized snapshot payload, and the UI
+reaches FastAPI through a configurable same-origin Next.js rewrite rather than
+broad backend CORS. The Stage 4 frontend keeps `unsafe-inline` script CSP because
+the current Next.js standalone build emits inline bootstrap scripts; replacing
+that with nonce or hash-based CSP is a future hardening task.
 
 ## Security Requirements
 

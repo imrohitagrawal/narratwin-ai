@@ -255,6 +255,8 @@ Allowed changes:
 - `tests/api/test_health_api.py`
 - `tests/api/test_stage4_slice_api.py`
 - `tests/unit/test_health_contract.py`
+- `docker-compose.yml`
+- `frontend/Dockerfile`
 - `scripts/ci/eval-smoke.sh`
 - `scripts/ci/frontend-smoke.sh`
 - `scripts/quality/check_quality_stage.py`

@@ -382,7 +382,12 @@ class Stage4Service:
             raise Stage4Error(422, "VALIDATION_ERROR", "At least one document is required.")
         if len(document_ids) > MAX_DOCUMENTS_PER_INGESTION:
             raise Stage4Error(413, "INGESTION_TOO_LARGE", "Too many documents requested for one ingestion run.")
-        stored_chunks: list[KnowledgeChunk] = []
+        prepared_documents: list[tuple[DocumentRecord, list[KnowledgeChunk]]] = []
+        pending_chunk_count = 0
+        existing_chunk_count = self.rag_store.chunk_count_for_project(
+            tenant_id=principal.tenant_id,
+            project_id=project_id,
+        )
         for document_id in document_ids:
             document = self._require_document(principal=principal, project_id=project_id, document_id=document_id)
             if document.approval_status != "APPROVED":
@@ -403,15 +408,13 @@ class Stage4Service:
                 )
             except ValueError as exc:
                 raise Stage4Error(413, "DOCUMENT_TOO_LARGE", "Document exceeds the Stage 4 chunk limit.") from exc
-            if (
-                self.rag_store.chunk_count_for_project(
-                    tenant_id=principal.tenant_id,
-                    project_id=project_id,
-                )
-                + len(chunks)
-                > MAX_CHUNKS_PER_PROJECT
-            ):
+            if existing_chunk_count + pending_chunk_count + len(chunks) > MAX_CHUNKS_PER_PROJECT:
                 raise Stage4Error(413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 chunk limit.")
+            pending_chunk_count += len(chunks)
+            prepared_documents.append((document, chunks))
+
+        stored_chunks: list[KnowledgeChunk] = []
+        for document, chunks in prepared_documents:
             stored_chunks.extend(self.rag_store.add_chunks(chunks, self.embedder))
             document.ingestion_status = "INGESTED"
             document.ingested_at = _now()

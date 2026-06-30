@@ -79,7 +79,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `frontend/src/app/page.tsx` and `frontend/tests/smoke.spec.ts` | User-facing grounded script workflow and citation/evaluation display | Stage 4 / `#4` | Added |
 | `evals/smoke/stage4_grounded_script_dataset.json` and `scripts/ci/eval-smoke.sh` | Deterministic RAG eval smoke dataset requiring zero unsupported claims and at least one citation | Stage 4 / `#4` | Added |
 | `scripts/quality/check_stage4_docs.py` | Executable Stage 4 static gate for slice artifacts, mocks, dependencies, tests, eval fixture, docs, and review-item disposition | Stage 4 / `#4` | Added |
-| `backend/app/stage4.py`, `frontend/next.config.ts`, and Stage 4 tests | Verification hardening for mandatory idempotency, bounded local memory/chunks, stronger redaction and prompt-injection refusal, tenant-safe retrieval IDs, same-origin UI API routing, and refusal eval fixtures | Stage 4 / `#4` | Hardened |
+| `backend/app/stage4.py`, `frontend/next.config.ts`, `docker-compose.yml`, and Stage 4 tests | Verification hardening for mandatory idempotency, atomic multi-document ingestion, bounded local memory/chunks, stronger redaction and prompt-injection refusal, tenant-safe retrieval IDs, same-origin UI API routing for local and Compose paths, and refusal eval fixtures | Stage 4 / `#4` | Hardened |
 
 ## Document Ownership
 
@@ -118,4 +118,4 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | 2026-06-30 | `#2` / `#27` | Add reusable Stage 2 review prompt pack | Standardizes the ruthless architecture, security, API/data, portability, and cross-model prompts for future Stage 2 reviews |
 | 2026-06-30 | `#5` | Start Stage 3 repo foundation and CI/CD gates | Adds Stage 3 health checks, frontend foundation, dependency manifests, CI wrappers, dependency/security scan path, Docker build path, eval smoke, and executable Stage 3 quality gate |
 | 2026-06-30 | `#4` | Start Stage 4 grounded-script Slice 1 implementation | Adds first-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, and Stage 4 quality gate |
-| 2026-06-30 | `#4` / PR `#29` | Resolve Stage 4 sub-agent verification blockers | Hardens write idempotency, upload/request limits, prompt-injection refusal, redaction, resource budgets, tenant-safe retrieval, same-origin UI routing, and negative eval smoke coverage |
+| 2026-06-30 | `#4` / PR `#29` | Resolve Stage 4 sub-agent verification blockers | Hardens write idempotency, atomic ingestion, upload/request limits, prompt-injection refusal, redaction, resource budgets, tenant-safe retrieval, same-origin UI routing, and negative eval smoke coverage |

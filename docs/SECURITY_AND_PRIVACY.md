@@ -276,26 +276,27 @@ Cost controls:
 
 ### Rate And Cost Limit Values
 
-Stage 4 local/dev/test limits:
+Stage 4 local/dev/test implemented limits are process-local lifetime caps unless
+otherwise noted. Sliding-window per-hour limits require a durable rate limiter and
+remain future Stage 5/8 hardening work.
 
 | Control | Limit |
 |---|---:|
-| Upload requests | 30 per project per hour |
 | Accepted file size | 1 MiB per file |
+| Upload request body | 1 MiB file plus multipart overhead |
 | Project corpus size | 5 MiB |
 | Documents per project | 10 active documents |
-| Ingestion jobs | 10 per project per hour |
+| Documents per ingestion request | 10 documents |
+| Chunks per document | 100 chunks |
+| Chunks per project | 200 chunks |
+| Projects per tenant | 25 projects |
 | Concurrent ingestion jobs | 1 per project |
-| Generation runs | 20 per project per hour |
+| Generation runs | 50 per project |
 | Concurrent generation jobs | 1 per project |
-| Provider calls | 30 per provider mode per project per hour |
-| Prompt input tokens | 6,000 per generation run |
-| Output tokens | 2,500 per generation run |
-| Generated script length | 1,200 words per generation run |
-| Unsupported claims evaluated | 100 extracted project-specific factual claims |
-| Automatic regeneration | 1 retry maximum |
+| Prompt input | 2,000 characters per generation run |
+| Idempotency records | 500 per tenant/user |
+| Automatic regeneration | Disabled |
 | Estimated local cost budget | USD 0.00 for mock/local mode |
-| Estimated free-provider budget | USD 1.00 per project per day after explicit opt-in |
 
 Real provider modes must fail closed when cost metadata is unavailable and a budget
 would otherwise be unenforceable.
