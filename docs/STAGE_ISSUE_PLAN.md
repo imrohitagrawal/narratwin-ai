@@ -244,6 +244,7 @@ Allowed changes:
 - `frontend/src/app/page.module.css`
 - `frontend/src/app/page.test.tsx`
 - `frontend/tests/smoke.spec.ts`
+- `frontend/next.config.ts`
 - `frontend/playwright.config.ts`
 - `pyproject.toml`
 - `uv.lock`

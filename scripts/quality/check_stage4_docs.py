@@ -53,6 +53,7 @@ REQUIRED_FILES = [
 STAGE4_ALLOWED_FILES = set(REQUIRED_FILES) | {
     "pyproject.toml",
     "uv.lock",
+    "frontend/next.config.ts",
     "frontend/playwright.config.ts",
     "tests/api/test_health_api.py",
     "tests/unit/test_health_contract.py",

@@ -11,8 +11,8 @@ describe("Home", () => {
     expect(html).toContain("Grounded script generation");
     expect(html).toContain("Generate grounded script");
     expect(html).toContain("Walkthrough script");
-    expect(html).toContain("trace_stage4_local");
+    expect(html).toContain("Generate a grounded script to display cited output.");
+    expect(html).toContain("Citations will appear after generation.");
     expect(html).toContain("0 unsupported claims");
-    expect(html).toContain("stage4_project.md");
   });
 });
