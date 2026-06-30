@@ -1,0 +1,70 @@
+{
+  "name": "stage5-file-upload-abuse-cases",
+  "cases": [
+    {
+      "name": "path traversal filename",
+      "filename": "../secret.md",
+      "content": "approved text content",
+      "contentType": "text/markdown",
+      "status": 422,
+      "expectedErrorCode": "VALIDATION_ERROR"
+    },
+    {
+      "name": "nul bytes in content",
+      "filename": "nul.md",
+      "content": "safe\u0000unsafe",
+      "contentType": "text/markdown",
+      "status": 422,
+      "expectedErrorCode": "VALIDATION_ERROR"
+    },
+    {
+      "name": "unsupported content type",
+      "filename": "script.js",
+      "content": "const secret = 1;",
+      "contentType": "application/javascript",
+      "status": 415,
+      "expectedErrorCode": "UNSUPPORTED_MEDIA_TYPE"
+    },
+    {
+      "name": "archive payload",
+      "filename": "archive.md",
+      "content": "PK\u0003\u0004archive",
+      "contentType": "text/markdown",
+      "status": 415,
+      "expectedErrorCode": "UNSUPPORTED_MEDIA_TYPE"
+    },
+    {
+      "name": "empty markdown file",
+      "filename": "empty.md",
+      "content": "",
+      "contentType": "text/markdown",
+      "status": 422,
+      "expectedErrorCode": "VALIDATION_ERROR"
+    },
+    {
+      "name": "control character ratio",
+      "filename": "control.md",
+      "content": "safe\u0001\u0002\u0003unsafe",
+      "contentType": "text/markdown",
+      "status": 422,
+      "expectedErrorCode": "VALIDATION_ERROR"
+    },
+    {
+      "name": "content type extension mismatch",
+      "filename": "mismatch.md",
+      "content": "approved text content",
+      "contentType": "application/octet-stream",
+      "status": 415,
+      "expectedErrorCode": "UNSUPPORTED_MEDIA_TYPE"
+    },
+    {
+      "name": "invalid utf8 payload",
+      "filename": "invalid-utf8.md",
+      "content": "",
+      "contentBase64": "//4=",
+      "contentType": "text/markdown",
+      "status": 422,
+      "expectedErrorCode": "VALIDATION_ERROR"
+    }
+  ]
+}

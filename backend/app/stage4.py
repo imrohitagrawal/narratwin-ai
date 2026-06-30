@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -31,6 +32,13 @@ from backend.app.rag.models import (
 from backend.app.rag.providers import MockEmbeddingProvider, MockLLMProvider
 from backend.app.rag.retrieval import retrieve_context
 from backend.app.rag.store import InMemoryRagStore
+from backend.app.eval.metrics import evaluate_token_usage, estimate_cost_usd
+from backend.app.observability import (
+    langfuse_observation,
+    log_event,
+    record_walkthrough_metrics,
+    with_trace,
+)
 
 MAX_UPLOAD_BYTES = 1_048_576
 MAX_PROJECT_CORPUS_BYTES = 5 * 1_048_576
@@ -45,20 +53,39 @@ MAX_PROMPT_CHARS = 2_000
 MAX_PUBLIC_EXCERPT_CHARS = 240
 MAX_UPLOAD_REQUEST_BYTES = MAX_UPLOAD_BYTES + 65_536
 ALLOWED_EXTENSIONS = {".md", ".txt"}
-ALLOWED_CONTENT_TYPES = {"text/markdown", "text/plain", "application/octet-stream"}
+ALLOWED_CONTENT_TYPES_BY_EXTENSION = {
+    ".md": "text/markdown",
+    ".txt": "text/plain",
+}
 ARCHIVE_MAGIC_BYTES = (b"PK\x03\x04", b"Rar!\x1a\x07", b"7z\xbc\xaf\x27\x1c")
 PROMPT_INJECTION_PATTERNS = tuple(
     re.compile(pattern)
     for pattern in (
         r"\b(ignore|disregard|forget|override)\s+(all\s+)?(previous|prior|earlier)\s+instructions\b",
-        r"\b(reveal|print|show|exfiltrate|leak)\s+(the\s+)?(system|developer)?\s*(prompt|message|secret|secrets)\b",
+        r"\b(ignore|disregard|forget|override)\s+all\s+(instructions|rules|requirements)\b",
+        r"\banswer\s+without\s+(citations|sources|grounding)\b",
+        r"\b(reveal|print|show|exfiltrate|leak)\s+(the\s+)?(hidden\s+)?(system|developer)?\s*(prompt|message|secret|secrets)\b",
+        r"\bfollow\s+(these|the)\s+instructions\s+instead\b",
         r"\bfollow\s+this\s+document\s+as\s+(system|developer)\s+policy\b",
         r"\btreat\s+this\s+document\s+as\s+(a\s+)?(system|developer)\s+(message|instruction|policy)\b",
         r"\bnew\s+(system|developer)\s+(message|instruction|policy)\b",
         r"\bdisable\s+(safety|grounding|citation|source)\s+(checks|rules|policy)\b",
     )
 )
+SECRET_REDACTION_PATTERNS = (
+    ("OPENAI_LIKE_KEY", re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b")),
+    ("ANTHROPIC_LIKE_KEY", re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}\b")),
+    ("OPENROUTER_LIKE_KEY", re.compile(r"\bsk-or-v1-[A-Za-z0-9_-]{20,}\b")),
+    ("GITHUB_TOKEN", re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b")),
+    ("GOOGLE_API_KEY", re.compile(r"\bAIza[0-9A-Za-z_-]{20,}\b")),
+    ("AWS_ACCESS_KEY", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+    ("JWT_LIKE_TOKEN", re.compile(r"\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\b")),
+    ("BEARER_TOKEN", re.compile(r"(?i)\bbearer\s+[A-Za-z0-9_.-]{20,}")),
+    ("SECRET_LIKE_TOKEN", re.compile(r"(?i)\b(api[_-]?key|secret|token|password|credential)\b\s*[:=]\s*\S+")),
+    ("LONG_HEX_TOKEN", re.compile(r"\b[a-f0-9]{32,}\b", re.IGNORECASE)),
+)
 T = TypeVar("T")
+WalkthroughRunStatus = Literal["COMPLETED", "FAILED", "REFUSED"]
 
 
 def _now() -> str:
@@ -130,9 +157,14 @@ class WalkthroughRunRecord:
     tenant_id: str
     actor_id: str
     project_id: str
-    status: Literal["COMPLETED", "FAILED", "REFUSED"]
+    status: WalkthroughRunStatus
     failure_reason: str | None
     evaluation_status: Literal["PASSED", "FAILED"] | None
+    trace_id: str
+    latency_ms: int
+    input_tokens: int
+    output_tokens: int
+    estimated_cost: float
     audience: str
     requested_language: str
     depth: str
@@ -160,6 +192,11 @@ class IdempotencyRecord:
 
 
 class Stage4Service:
+    WALKTHROUGH_REFUSAL_REASON_PROMPT_INJECTION = "PROMPT_INJECTION_DETECTED"
+    WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL = "LOW_RETRIEVAL_CONFIDENCE"
+    WALKTHROUGH_REFUSAL_REASON_UNSAFE_CONTEXT = "UNSAFE_RETRIEVED_CONTEXT"
+    WALKTHROUGH_REFUSAL_REASON_UNSUPPORTED_FACT = "UNSUPPORTED_PROJECT_FACT"
+
     def __init__(self) -> None:
         self.embedder = MockEmbeddingProvider()
         self.llm = MockLLMProvider()
@@ -288,7 +325,7 @@ class Stage4Service:
             raise Stage4Error(413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 corpus size limit.")
         safe_filename = sanitize_filename(source_filename)
         suffix = PurePath(safe_filename).suffix.lower()
-        if suffix not in ALLOWED_EXTENSIONS or content_type not in ALLOWED_CONTENT_TYPES:
+        if suffix not in ALLOWED_EXTENSIONS or content_type != ALLOWED_CONTENT_TYPES_BY_EXTENSION.get(suffix):
             raise Stage4Error(415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted.")
         if len(data) > MAX_UPLOAD_BYTES:
             raise Stage4Error(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit.")
@@ -296,6 +333,8 @@ class Stage4Service:
         text = decode_upload(data)
         if not text.strip():
             raise Stage4Error(422, "VALIDATION_ERROR", "Uploaded document is empty.")
+        if contains_secret_like_content(text):
+            raise Stage4Error(422, "SECRET_LIKE_CONTENT", "Uploaded document contains secret-like content.")
         self._document_counter += 1
         document = DocumentRecord(
             document_id=f"doc_{self._document_counter:06d}",
@@ -483,70 +522,316 @@ class Stage4Service:
             raise Stage4Error(413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit.")
         if self._run_count_for_project(principal=principal, project_id=project_id) >= MAX_RUNS_PER_PROJECT:
             raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Project exceeds the Stage 4 generation run limit.")
+
         self._run_counter += 1
         run_id = f"run_{self._run_counter:06d}"
-        retrieved = retrieve_context(
-            store=self.rag_store,
-            embedder=self.embedder,
-            tenant_id=principal.tenant_id,
-            project_id=project_id,
-            query=f"{audience} {prompt}",
-            top_k=RETRIEVAL_TOP_K,
-            min_score=RETRIEVAL_MIN_SCORE,
-        )
-        if not retrieved or any(contains_prompt_injection(context.chunk.text) for context in retrieved):
-            run = WalkthroughRunRecord(
+        started_at_ms = time.perf_counter()
+        run_started_at = _now()
+
+        with with_trace(
+            scope="narratwin.walkthrough",
+            name="walkthrough-generation",
+            attributes={
+                "run_id": run_id,
+                "project_id": project_id,
+                "tenant_id": principal.tenant_id,
+                "audience": audience,
+                "requested_language": requested_language,
+                "depth": depth,
+                "style": style,
+            },
+        ) as trace_id:
+            log_event(
+                event_name="walkthrough.run.started",
                 run_id=run_id,
                 tenant_id=principal.tenant_id,
                 actor_id=principal.actor_id,
                 project_id=project_id,
-                status="REFUSED",
-                failure_reason="LOW_RETRIEVAL_CONFIDENCE" if not retrieved else "UNSAFE_RETRIEVED_CONTEXT",
-                evaluation_status=None,
+                trace_id=trace_id,
+                prompt_signature=checksum_text(prompt),
                 audience=audience,
                 requested_language=requested_language,
                 depth=depth,
                 style=style,
-                accepted_script_text=None,
-                generated_script=None,
-                retrieved_context=[],
-                evaluation=None,
-                created_at=_now(),
             )
-            self.walkthrough_runs[run_id] = run
-            return run
-        generated = self.llm.generate_script(
-            audience=audience,
-            prompt=prompt,
-            retrieved_context=retrieved,
-        )
-        evaluation = evaluate_grounding(
-            tenant_id=principal.tenant_id,
-            project_id=project_id,
-            run_id=run_id,
-            candidate=generated,
-            retrieved_context=retrieved,
-        )
+            with langfuse_observation(
+                name="walkthrough.run",
+                trace_id=trace_id,
+                run_id=run_id,
+                metadata={
+                    "tenant_id": principal.tenant_id,
+                    "project_id": project_id,
+                    "audience": audience,
+                    "requested_language": requested_language,
+                    "depth": depth,
+                    "style": style,
+                },
+            ) as lf_metadata:
+                if contains_prompt_injection(prompt):
+                    run = self._build_walkthrough_run(
+                        run_id=run_id,
+                        principal=principal,
+                        project_id=project_id,
+                        status="REFUSED",
+                        failure_reason=self.WALKTHROUGH_REFUSAL_REASON_PROMPT_INJECTION,
+                        evaluation_status=None,
+                        trace_id=trace_id,
+                        started_at=run_started_at,
+                        latency_ms=self._elapsed_ms(started_at_ms, time.perf_counter()),
+                        audience=audience,
+                        requested_language=requested_language,
+                        depth=depth,
+                        style=style,
+                        accepted_script_text=None,
+                        generated_script=None,
+                        retrieved_context=[],
+                        evaluation=None,
+                        log_metadata={
+                            "run_status": "refused",
+                            "failure_reason": self.WALKTHROUGH_REFUSAL_REASON_PROMPT_INJECTION,
+                        },
+                        lf_metadata=lf_metadata,
+                    )
+                else:
+                    retrieved = retrieve_context(
+                        store=self.rag_store,
+                        embedder=self.embedder,
+                        tenant_id=principal.tenant_id,
+                        project_id=project_id,
+                        query=f"{audience} {prompt}",
+                        top_k=RETRIEVAL_TOP_K,
+                        min_score=RETRIEVAL_MIN_SCORE,
+                    )
+                    all_chunks = self.rag_store.chunks_for_project(
+                        tenant_id=principal.tenant_id,
+                        project_id=project_id,
+                    )
+                    if not retrieved:
+                        run = self._build_walkthrough_run(
+                            run_id=run_id,
+                            principal=principal,
+                            project_id=project_id,
+                            status="REFUSED",
+                            failure_reason=self.WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL,
+                            evaluation_status=None,
+                            trace_id=trace_id,
+                            started_at=run_started_at,
+                            latency_ms=self._elapsed_ms(started_at_ms, time.perf_counter()),
+                            audience=audience,
+                            requested_language=requested_language,
+                            depth=depth,
+                            style=style,
+                            accepted_script_text=None,
+                            generated_script=None,
+                            retrieved_context=[],
+                            evaluation=None,
+                            log_metadata={
+                                "run_status": "refused",
+                                "failure_reason": self.WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL,
+                            },
+                        )
+                    elif any(contains_prompt_injection(context.chunk.text) for context in retrieved):
+                        run = self._build_walkthrough_run(
+                            run_id=run_id,
+                            principal=principal,
+                            project_id=project_id,
+                            status="REFUSED",
+                            failure_reason=self.WALKTHROUGH_REFUSAL_REASON_UNSAFE_CONTEXT,
+                            evaluation_status=None,
+                            trace_id=trace_id,
+                            started_at=run_started_at,
+                            latency_ms=self._elapsed_ms(started_at_ms, time.perf_counter()),
+                            audience=audience,
+                            requested_language=requested_language,
+                            depth=depth,
+                            style=style,
+                            accepted_script_text=None,
+                            generated_script=None,
+                            retrieved_context=[],
+                            evaluation=None,
+                            log_metadata={
+                                "run_status": "refused",
+                                "failure_reason": self.WALKTHROUGH_REFUSAL_REASON_UNSAFE_CONTEXT,
+                            },
+                        )
+                    else:
+                        generated = self.llm.generate_script(
+                            audience=audience,
+                            prompt=prompt,
+                            retrieved_context=retrieved,
+                        )
+                        evaluation = evaluate_grounding(
+                            tenant_id=principal.tenant_id,
+                            project_id=project_id,
+                            run_id=run_id,
+                            candidate=generated,
+                            retrieved_context=retrieved,
+                            prompt=prompt,
+                            all_chunks=all_chunks,
+                        )
+                        input_tokens, output_tokens = evaluate_token_usage(
+                            prompt=prompt,
+                            retrieved_context=retrieved,
+                            candidate_text=generated.text,
+                        )
+                        estimated_cost = estimate_cost_usd(
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                        )
+                        run_status: WalkthroughRunStatus = (
+                            "COMPLETED" if evaluation.evaluation_status == "PASSED" else "FAILED"
+                        )
+                        run = self._build_walkthrough_run(
+                            run_id=run_id,
+                            principal=principal,
+                            project_id=project_id,
+                            status=run_status,
+                            failure_reason=self.WALKTHROUGH_REFUSAL_REASON_UNSUPPORTED_FACT
+                            if run_status == "FAILED"
+                            else None,
+                            evaluation_status=evaluation.evaluation_status,
+                            trace_id=trace_id,
+                            started_at=run_started_at,
+                            latency_ms=self._elapsed_ms(started_at_ms, time.perf_counter()),
+                            audience=audience,
+                            requested_language=requested_language,
+                            depth=depth,
+                            style=style,
+                            accepted_script_text=generated.text if evaluation.evaluation_status == "PASSED" else None,
+                            generated_script=generated,
+                            retrieved_context=retrieved,
+                            evaluation=evaluation,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            estimated_cost=estimated_cost,
+                            log_metadata={
+                                "run_status": run_status,
+                                "evaluation_status": evaluation.evaluation_status,
+                                "groundedness_score": evaluation.groundedness_score,
+                                "unsupported_claims": evaluation.unsupported_claim_count,
+                            },
+                        )
+
+        self.walkthrough_runs[run_id] = run
+        return run
+
+    def _build_walkthrough_run(
+        self,
+        *,
+        run_id: str,
+        principal: LocalPrincipal,
+        project_id: str,
+        status: WalkthroughRunStatus,
+        failure_reason: str | None,
+        evaluation_status: Literal["PASSED", "FAILED"] | None,
+        trace_id: str,
+        started_at: str,
+        latency_ms: int,
+        audience: str,
+        requested_language: str,
+        depth: str,
+        style: str,
+        accepted_script_text: str | None,
+        generated_script: GeneratedScript | None,
+        retrieved_context: list[RetrievedContext],
+        evaluation: EvaluationResult | None,
+        input_tokens: int = 0,
+        output_tokens: int = 0,
+        estimated_cost: float = 0.0,
+        log_metadata: dict[str, object] | None = None,
+        lf_metadata: dict[str, object] | None = None,
+    ) -> WalkthroughRunRecord:
+        if evaluation is None and status == "FAILED":
+            # Keep failure status semantics stable while still returning structured output.
+            failure_reason = failure_reason or self.WALKTHROUGH_REFUSAL_REASON_UNSUPPORTED_FACT
+
+        if input_tokens == 0 and output_tokens == 0 and accepted_script_text:
+            input_tokens, output_tokens = evaluate_token_usage(
+                prompt="",
+                retrieved_context=retrieved_context,
+                candidate_text=accepted_script_text,
+            )
+        if estimated_cost == 0.0 and (input_tokens or output_tokens):
+            estimated_cost = estimate_cost_usd(input_tokens=input_tokens, output_tokens=output_tokens)
+
+        if latency_ms < 0:
+            latency_ms = 0
+
         run = WalkthroughRunRecord(
             run_id=run_id,
             tenant_id=principal.tenant_id,
             actor_id=principal.actor_id,
             project_id=project_id,
-            status="COMPLETED" if evaluation.evaluation_status == "PASSED" else "FAILED",
-            failure_reason=None if evaluation.evaluation_status == "PASSED" else "UNSUPPORTED_PROJECT_FACT",
-            evaluation_status=evaluation.evaluation_status,
+            status=status,
+            failure_reason=failure_reason,
+            evaluation_status=evaluation_status,
+            trace_id=trace_id,
+            latency_ms=latency_ms,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            estimated_cost=estimated_cost,
             audience=audience,
             requested_language=requested_language,
             depth=depth,
             style=style,
-            accepted_script_text=generated.text if evaluation.evaluation_status == "PASSED" else None,
-            generated_script=generated,
-            retrieved_context=retrieved,
+            accepted_script_text=accepted_script_text,
+            generated_script=generated_script,
+            retrieved_context=retrieved_context,
             evaluation=evaluation,
-            created_at=_now(),
+            created_at=started_at,
+        )
+        record_walkthrough_metrics(
+            tenant_id=principal.tenant_id,
+            run_id=run_id,
+            status=status,
+            evaluation_status=evaluation_status,
+            reason_code=failure_reason,
+            latency_ms=latency_ms,
+            token_usage={
+                "inputTokens": input_tokens,
+                "outputTokens": output_tokens,
+                "totalTokens": input_tokens + output_tokens,
+            },
+            estimated_cost=estimated_cost,
         )
         self.walkthrough_runs[run_id] = run
+
+        safe_metadata = dict(log_metadata or {})
+        for reserved in {
+            "run_id",
+            "status",
+            "tenant_id",
+            "project_id",
+            "trace_id",
+            "failure_reason",
+            "latency_ms",
+            "input_tokens",
+            "output_tokens",
+            "estimated_cost",
+            "evaluation_status",
+        }:
+            safe_metadata.pop(reserved, None)
+        safe_metadata.pop("event", None)
+        log_event(
+            event_name="walkthrough.run.completed",
+            run_id=run_id,
+            status=status,
+            tenant_id=principal.tenant_id,
+            project_id=project_id,
+            trace_id=trace_id,
+            failure_reason=failure_reason or "",
+            latency_ms=latency_ms,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            estimated_cost=estimated_cost,
+            evaluation_status=evaluation_status or "",
+            lf_metadata_keys=list((lf_metadata or {}).keys()),
+            **safe_metadata,
+        )
         return run
+
+    def _elapsed_ms(self, started_at: float, ended_at: float) -> int:
+        return int((ended_at - started_at) * 1000)
 
     def _require_project(self, *, principal: LocalPrincipal, project_id: str) -> ProjectRecord:
         project = self.projects.get(project_id)
@@ -711,7 +996,10 @@ def decode_upload(data: bytes) -> str:
 def parse_document_text(text: str) -> str:
     if "\x00" in text:
         raise Stage4Error(422, "VALIDATION_ERROR", "Uploaded document contains NUL bytes.")
-    return text.replace("\r\n", "\n").replace("\r", "\n")
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    if contains_secret_like_content(normalized):
+        raise Stage4Error(422, "SECRET_LIKE_CONTENT", "Uploaded document contains secret-like content.")
+    return normalized
 
 
 def contains_prompt_injection(text: str) -> bool:
@@ -720,22 +1008,14 @@ def contains_prompt_injection(text: str) -> bool:
     return any(pattern.search(normalized) for pattern in PROMPT_INJECTION_PATTERNS)
 
 
+def contains_secret_like_content(text: str) -> bool:
+    return any(pattern.search(text) for _, pattern in SECRET_REDACTION_PATTERNS)
+
+
 def redact_public_text(text: str) -> tuple[str, list[str]]:
     redacted = text
     flags: list[str] = []
-    patterns = [
-        ("OPENAI_LIKE_KEY", re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b")),
-        ("ANTHROPIC_LIKE_KEY", re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}\b")),
-        ("OPENROUTER_LIKE_KEY", re.compile(r"\bsk-or-v1-[A-Za-z0-9_-]{20,}\b")),
-        ("GITHUB_TOKEN", re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b")),
-        ("GOOGLE_API_KEY", re.compile(r"\bAIza[0-9A-Za-z_-]{20,}\b")),
-        ("AWS_ACCESS_KEY", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
-        ("JWT_LIKE_TOKEN", re.compile(r"\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\b")),
-        ("BEARER_TOKEN", re.compile(r"(?i)\bbearer\s+[A-Za-z0-9_.-]{20,}")),
-        ("SECRET_LIKE_TOKEN", re.compile(r"(?i)\b(api[_-]?key|secret|token|password|credential)\b\s*[:=]\s*\S+")),
-        ("LONG_HEX_TOKEN", re.compile(r"\b[a-f0-9]{32,}\b", re.IGNORECASE)),
-    ]
-    for flag, pattern in patterns:
+    for flag, pattern in SECRET_REDACTION_PATTERNS:
         if pattern.search(redacted):
             redacted = pattern.sub("[REDACTED]", redacted)
             flags.append(flag)
@@ -806,9 +1086,11 @@ def walkthrough_to_api(run: WalkthroughRunRecord) -> dict[str, Any]:
         "contextRefs": [_context_ref_to_api(context, run) for context in run.retrieved_context],
         "provider": {"provider": "mock", "providerMode": "LOCAL"},
         "trace": {
-            "traceId": "trace_" + run.run_id.removeprefix("run_"),
-            "latencyMs": 0,
-            "estimatedCost": 0,
+            "traceId": run.trace_id,
+            "latencyMs": run.latency_ms,
+            "inputTokens": run.input_tokens,
+            "outputTokens": run.output_tokens,
+            "estimatedCost": run.estimated_cost,
         },
         "createdAt": run.created_at,
     }
@@ -818,7 +1100,7 @@ def walkthrough_to_api(run: WalkthroughRunRecord) -> dict[str, Any]:
     elif run.status == "REFUSED":
         base["failure"] = {
             "reasonCode": run.failure_reason or "LOW_RETRIEVAL_CONFIDENCE",
-            "message": "No safe approved ingested context was available for generation.",
+            "message": _failure_message_for_reason(run.failure_reason),
             "unsupportedClaimCount": 0,
         }
     elif run.evaluation is not None:
@@ -833,6 +1115,16 @@ def walkthrough_to_api(run: WalkthroughRunRecord) -> dict[str, Any]:
     return base
 
 
+def _failure_message_for_reason(reason_code: str | None) -> str:
+    if reason_code == Stage4Service.WALKTHROUGH_REFUSAL_REASON_PROMPT_INJECTION:
+        return "The request was refused because it contained unsafe instruction-like content."
+    if reason_code == Stage4Service.WALKTHROUGH_REFUSAL_REASON_UNSAFE_CONTEXT:
+        return "The request was refused because retrieved approved context contained unsafe instruction-like content."
+    if reason_code == Stage4Service.WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL:
+        return "No safe approved ingested context was available for generation."
+    return "The walkthrough request was refused by the safety policy."
+
+
 def evaluation_to_api(evaluation: EvaluationResult, run: WalkthroughRunRecord) -> dict[str, Any]:
     context_by_id = {context.context_ref_id: context for context in run.retrieved_context}
     return {
@@ -840,6 +1132,10 @@ def evaluation_to_api(evaluation: EvaluationResult, run: WalkthroughRunRecord) -
         "evaluationId": evaluation.evaluation_id,
         "evaluationStatus": evaluation.evaluation_status,
         "groundednessScore": evaluation.groundedness_score,
+        "faithfulness": evaluation.faithfulness_score,
+        "answerRelevancy": evaluation.answer_relevancy,
+        "contextPrecision": evaluation.context_precision,
+        "contextRecall": evaluation.context_recall,
         "unsupportedClaimCount": evaluation.unsupported_claim_count,
         "unsupportedClaims": [
             {

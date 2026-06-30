@@ -1,3 +1,9 @@
+from opentelemetry import trace
+from prometheus_client import generate_latest
+
+from backend.app.eval import calculate_groundedness
+from backend.app.observability.metrics import record_walkthrough_metrics
+from backend.app.observability.traces import with_trace
 from backend.app.rag.chunking import chunk_document
 from backend.app.rag.grounding import evaluate_grounding
 from backend.app.rag.models import GeneratedScript, ScriptClaim
@@ -112,6 +118,8 @@ def test_grounding_fails_unsupported_claims_from_llm_output() -> None:
         run_id="run_test",
         candidate=candidate,
         retrieved_context=retrieved,
+        prompt="Create a grounded script.",
+        all_chunks=chunks,
     )
 
     assert evaluation.evaluation_status == "FAILED"
@@ -162,6 +170,8 @@ def test_grounding_fails_visible_script_text_without_claim_metadata() -> None:
         run_id="run_test",
         candidate=candidate,
         retrieved_context=retrieved,
+        prompt="Create a grounded script.",
+        all_chunks=stored,
     )
 
     assert evaluation.evaluation_status == "FAILED"
@@ -214,6 +224,8 @@ def test_grounding_fails_visible_citation_marker_mismatch() -> None:
         run_id="run_test",
         candidate=candidate,
         retrieved_context=retrieved,
+        prompt="Create a grounded script.",
+        all_chunks=stored,
     )
 
     assert evaluation.evaluation_status == "FAILED"
@@ -263,6 +275,8 @@ def test_grounding_fails_unsupported_text_blended_into_supported_sentence() -> N
         run_id="run_test",
         candidate=candidate,
         retrieved_context=retrieved,
+        prompt="Create a grounded script.",
+        all_chunks=stored,
     )
 
     assert evaluation.evaluation_status == "FAILED"
@@ -312,7 +326,43 @@ def test_grounding_fails_trailing_unpunctuated_unsupported_text() -> None:
         run_id="run_test",
         candidate=candidate,
         retrieved_context=retrieved,
+        prompt="Create a grounded script.",
+        all_chunks=stored,
     )
 
     assert evaluation.evaluation_status == "FAILED"
     assert any("no provider claim metadata" in claim.reason for claim in evaluation.unsupported_claims)
+
+
+def test_walkthrough_trace_id_comes_from_active_span() -> None:
+    with with_trace(scope="narratwin.test", name="unit-trace") as trace_id:
+        active_span = trace.get_current_span()
+        active_trace_id = active_span.get_span_context().trace_id
+
+    assert trace_id == f"trace_{active_trace_id:032x}"
+
+
+def test_stage5_eval_package_exposes_groundedness_metric() -> None:
+    assert calculate_groundedness(supported_claim_count=2, candidate_claim_count=4) == 0.5
+    assert calculate_groundedness(supported_claim_count=0, candidate_claim_count=0) == 0.0
+
+
+def test_refused_walkthrough_metrics_use_bounded_labels() -> None:
+    record_walkthrough_metrics(
+        tenant_id="tenant_should_not_be_label",
+        run_id="run_should_not_be_label",
+        status="REFUSED",
+        evaluation_status=None,
+        reason_code="PROMPT_INJECTION_DETECTED_UNIT",
+        latency_ms=0,
+        token_usage={"inputTokens": 0, "outputTokens": 0, "totalTokens": 0},
+        estimated_cost=0.0,
+    )
+
+    metrics_text = generate_latest().decode("utf-8")
+
+    assert 'status="REFUSED"' in metrics_text
+    assert 'reason_code="OTHER"' in metrics_text
+    assert "PROMPT_INJECTION_DETECTED_UNIT" not in metrics_text
+    assert "tenant_should_not_be_label" not in metrics_text
+    assert "run_should_not_be_label" not in metrics_text

@@ -14,20 +14,19 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-06-30
-- Current stage marker: `.stage/current = 4`
-- Current implementation permission: Stage 4 first vertical slice only, on the
-  issue-linked Stage 4 branch
-- Current repo mode: Stage 4 first-slice implementation permitted; product
-  implementation is not merged to `main`
-- Product implementation merged to `main`: no
+- Last reviewed date: 2026-07-01
+- Current stage marker: `.stage/current = 5`
+- Current implementation permission: Stage 5 evaluation, guardrail, and
+  observability work only, on the issue-linked Stage 5 branch
+- Current repo mode: Stage 5 dependency and quality-feature preparation has
+  started after Stage 4 merged to `main`
+- Product implementation merged to `main`: Stage 4 first vertical slice merged
+  through PR `#29`
 - Tracker enforcement scope: repository-tracked stage and governance changes in checked-in files
-- Out-of-band GitHub reconciliation: required in the next governance update
-- No Stage 4 backend, RAG, provider, avatar, or database product code has been
-  merged to `main`.
-- The Stage 4 branch may add first-slice dependencies and implementation for
-  project creation, markdown upload, ingest/chunk/store, retrieval, grounded
-  script generation, unsupported-claim evaluation, storage, and UI display.
+- Out-of-band GitHub reconciliation: PR `#29` is recorded as merged based on the
+  Stage 5 branch start handoff; issue state still requires GitHub-side review.
+- Stage 5 may add slice-scoped evaluation, guardrail, trace/run metadata,
+  observability, and security-review support for the merged Stage 4 first slice.
 
 ## Source Of Truth
 
@@ -56,15 +55,13 @@ Use these files together with this tracker:
   reconcile the exact Stage 3 PR ledger after the GitHub merge event if needed.
 - Stage 1 allows narrowly scoped CI wrapper compatibility fixes only where the
   Stage 1 marker activates pre-existing governance checks.
-- Stage 4 first-slice work has started on branch
-  `stage4-grounded-script-generation` for issue `#4`; backend/API, frontend,
-  deterministic eval smoke, and executable Stage 4 quality gate work are present
-  in this branch. Local Stage 4 quality passes; GitHub CI reconciliation and PR
-  review remain required before merge. PR `#29` uses follow-up ledger commits when
-  push-scoped guardrails need repository-tracked reconciliation on the latest SHA.
-- Stage 4 sub-agent verification findings on idempotency, atomic ingestion,
-  upload/security hardening, resource bounds, tenant-safe retrieval, grounding
-  eval coverage, and live UI routing have branch-local remediation in PR `#29`.
+- Stage 4 first-slice work merged to `main` through PR `#29` on 2026-06-30.
+- Stage 5 has started on branch `stage5-evaluations-guardrails-observability`
+  for issue `#10`; initial dependency preparation added observability packages
+  that pass import and `pip-audit` checks.
+- Ragas and Giskard were evaluated for Stage 5 but are not active dependencies:
+  `ragas==0.4.3` currently fails `pip-audit`, and fixed Giskard releases require
+  `scipy<1.12.0`, which is incompatible with the repo's Python 3.13 baseline.
 - Stage 1 is split into product/PRD hardening under `#1` and the follow-on Spec Kit constitution/spec/plan/tasks gate under `#16`.
 - Stage 3 repository-foundation work builds on the partial Stage 0 CI baseline and
   is now adding dependency manifests, health checks, Docker build paths, CI
@@ -78,7 +75,8 @@ Use these files together with this tracker:
 - Stage 3 preserves inherited compatibility status contexts for `quality /
   secrets` and `security / docker build` while the authoritative Stage 3 secret
   scan and Docker gates remain owned by the `security` and `ci` workflows.
-- Stage 5 through Stage 8 and Final Review remain open with no merged implementation work.
+- Stage 6 through Stage 8 and Final Review remain open with no merged
+  implementation work.
 
 ## Stage Ledger
 
@@ -88,8 +86,8 @@ Use these files together with this tracker:
 | Stage 1 | Product/PRD hardening represented by PR `#26` | `#1` open, `#16` open | `#26` | Executable | `#1` is product strategy and PRD v1.0 hardening; `#16` remains the follow-on Spec Kit gate. Reconcile merge state after the GitHub merge event. |
 | Stage 2 | Complete, merged to `main` | `#2` reconcile after merge | `#27` merged | Executable locally | Architecture, ADRs, threat model, security/privacy, AI safety/evaluation, portability, API, data model, observability, machine-readable semantic contract, human review checklist, branch scope, and provider defaults are hardened. |
 | Stage 3 | Complete in Stage 4 branch baseline; GitHub reconciliation required | `#5` reconcile after merge | Reconcile after merge | Executable locally | Adds repo foundation manifests, health checks, frontend foundation, Docker build path, pre-commit, CI/security/eval workflows, dependency/security scan path, local setup docs, hardened workflow pins, exact-file scope checks, non-root containers, and fixture-backed eval smoke without product features beyond health checks. |
-| Stage 4 | In progress | `#4` open | PR `#29` on branch `stage4-grounded-script-generation` | Executable locally; last local `make quality` passed | First-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, Docker build coverage, quality gate, atomic-ingestion hardening, and sub-agent verification hardening are in branch-local implementation. GitHub CI reconciliation and PR review remain required before merge. |
-| Stage 5 | Pending | `#10` open | None merged | Placeholder target only | Eval, guardrail, and observability work remains future scope. |
+| Stage 4 | Complete, merged to `main` | `#4` reconcile after merge | PR `#29` merged | Executable locally at merge | First-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, Docker build coverage, quality gate, atomic-ingestion hardening, and sub-agent verification hardening merged through PR `#29`. |
+| Stage 5 | In progress | `#10` open | None merged | Executable in progress | RAG eval runner, prompt-injection guardrails, file-upload abuse tests, and observability metadata now execute in `make stage5-quality`; follow-on Stage 5 PRs remain open. |
 | Stage 6 | Pending | `#11` open | None merged | Placeholder target only | Translation, subtitles, and voice adapter remain future scope. |
 | Stage 7 | Pending | `#12` open | None merged | Placeholder target only | Avatar rendering and export remain future scope. |
 | Stage 8 | Pending | `#13` open | None merged | Placeholder target only | Performance, hardening, and release readiness remain future scope. |
@@ -106,8 +104,8 @@ Use these files together with this tracker:
 | `#16` | Open | Stage 1 follow-on | Spec Kit constitution/spec/plan/tasks gate that follows product/PRD hardening. |
 | `#2` | Reconcile after merge | Stage 2 | Architecture, security, AI safety completed by merged PR `#27`; issue state must be reconciled with GitHub. |
 | `#5` | Reconcile after merge | Stage 3 | Repo foundation and CI/CD gates are treated as complete in this Stage 4 branch baseline; reconcile exact GitHub state. |
-| `#4` | Open | Stage 4 | First grounded-script vertical slice; branch `stage4-grounded-script-generation` is active. |
-| `#10` | Open | Stage 5 | Evaluation, guardrails, observability. |
+| `#4` | Reconcile after merge | Stage 4 | First grounded-script vertical slice merged through PR `#29`; issue state must be reconciled with GitHub. |
+| `#10` | Open | Stage 5 | Evaluation, guardrails, observability; branch `stage5-evaluations-guardrails-observability` is active. |
 | `#11` | Open | Stage 6 | Multilingual scripts, subtitles, voice adapter. |
 | `#12` | Open | Stage 7 | Avatar rendering adapter and demo export. |
 | `#13` | Open | Stage 8 | Performance, security, release readiness. |
@@ -136,6 +134,7 @@ Use these files together with this tracker:
 | `#23` | Merged | 2026-06-29 | Redid Stage 0 operating model and executable quality gates; green in both `Quality Gates` and `quality` workflows before merge. |
 | `#26` | Delivery PR | Reconcile after merge | Stage 1 product strategy and PRD v1.0 hardening; includes executable Stage 1 docs quality gate. |
 | `#27` | Merged | 2026-06-30 | Stage 2 architecture/security/AI-safety remediation; includes executable Stage 2 docs quality gate, semantic architecture contract checks, and no product implementation. |
+| `#29` | Merged | 2026-06-30 | Stage 4 first vertical slice from project upload to grounded script display merged to `main`; Stage 5 starts from this baseline. |
 
 ## Completed Work
 
@@ -210,8 +209,8 @@ Use these files together with this tracker:
 - Legacy issue `#3` still uses `Stage -1` naming that no longer matches the operating model.
 - Stage 3 issue/PR state still needs GitHub reconciliation after the Stage 3
   merge event.
-- `.stage/current` is `4` in the Stage 4 branch. `make quality` dispatches to
-  the executable `make stage4-quality` gate.
+- `.stage/current` is `5` in the Stage 5 branch. `make quality` dispatches to
+  the executable `make stage5-quality` gate.
 - PR `#27` completed second-pass remediation after independent sub-agent and
   Claude cross-model review identified idempotency, approved-knowledge state,
   failed-output exposure, retrieval, cache, provider-bound secret screening,
@@ -234,11 +233,12 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Implement the Stage 4 first vertical slice through issue `#4` on branch
-   `stage4-grounded-script-generation`.
+1. Complete the Stage 5 evaluations, guardrails, and observability PR linked to
+   issue `#10` on branch `stage5-evaluations-guardrails-observability`.
 2. Run `make quality` locally and require equivalent CI status checks before PR
    review.
-3. Open a PR linked to issue `#4` only after all gates pass.
+3. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
+   `#29`, then record the Stage 5 PR once opened.
 4. Reconcile GitHub issue and PR state for Stage 3 issue `#5` and Stage 2 issue
    `#2` after merged PR events.
 5. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.

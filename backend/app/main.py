@@ -214,6 +214,10 @@ class EvaluationResponse(BaseModel):
     evaluation_id: str = Field(alias="evaluationId")
     evaluation_status: Literal["PASSED", "FAILED"] = Field(alias="evaluationStatus")
     groundedness_score: float = Field(alias="groundednessScore")
+    faithfulness: float = Field(alias="faithfulness")
+    answer_relevancy: float = Field(alias="answerRelevancy")
+    context_precision: float = Field(alias="contextPrecision")
+    context_recall: float = Field(alias="contextRecall")
     unsupported_claim_count: int = Field(alias="unsupportedClaimCount")
     unsupported_claims: list[UnsupportedClaimResponse] = Field(alias="unsupportedClaims")
     claim_supports: list[ClaimSupportResponse] = Field(alias="claimSupports")
@@ -244,7 +248,9 @@ class TraceResponse(BaseModel):
 
     trace_id: str = Field(alias="traceId")
     latency_ms: int = Field(alias="latencyMs")
-    estimated_cost: int = Field(alias="estimatedCost")
+    input_tokens: int = Field(default=0, alias="inputTokens")
+    output_tokens: int = Field(default=0, alias="outputTokens")
+    estimated_cost: float = Field(alias="estimatedCost")
 
 
 class FailureResponse(BaseModel):

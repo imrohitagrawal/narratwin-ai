@@ -81,6 +81,18 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `scripts/quality/check_stage4_docs.py` | Executable Stage 4 static gate for slice artifacts, mocks, dependencies, tests, eval fixture, docs, and review-item disposition | Stage 4 / `#4` | Added |
 | `backend/app/stage4.py`, `frontend/next.config.ts`, `docker-compose.yml`, and Stage 4 tests | Verification hardening for mandatory idempotency, atomic multi-document ingestion, bounded local memory/chunks, stronger redaction and prompt-injection refusal, tenant-safe retrieval IDs, same-origin UI API routing for local and Compose paths, and refusal eval fixtures | Stage 4 / `#4` | Hardened |
 
+## Traceability for Stage 5
+
+| Artifact | Requirement coverage | Stage / issue | Status |
+|---|---|---|---|
+| `backend/app/eval/runner.py` and `backend/app/eval/script_faithfulness.py` | RAG-grounded answer metrics (faithfulness, answer relevancy, context precision, recall), unsupported-claim behavior, and golden-happy-path threshold reporting | Stage 5 / `#10` | Added |
+| `backend/app/observability/*` | Trace ID, structured event logging, Langfuse adapter behavior, token/cost and latency metrics, and refusal/acceptance observability surfaces | Stage 5 / `#10` | Added |
+| `backend/app/stage4.py` | Run telemetry capture for trace metadata, cost/tokens, and refusal/eval status in response payloads | Stage 5 / `#10` | Updated |
+| `evals/smoke/stage5_grounded_script_dataset.json`, `evals/smoke/stage5_prompt_injection_set.json`, `evals/smoke/stage5_file_upload_abuse_set.json` | Runtime eval fixture coverage for happy-path quality, prompt injection, and file upload abuse guardrails | Stage 5 / `#10` | Added |
+| `scripts/ci/eval-smoke.sh` and `docs/EVAL_REPORT.md` | Stage 5 CI smoke generation, artifact emission, and evidence collection for quality review | Stage 5 / `#10` | Added |
+| `scripts/quality/check_stage5_docs.py` | Static Stage 5 quality and artifact presence checks used by local and CI gate dispatch | Stage 5 / `#10` | Added |
+| `docs/QUALITY_GATES.md` | Stage 5 gate criteria (faithfulness/relevancy/precision/recall thresholds and guardrail classes) | Stage 5 / `#10` | Updated |
+
 ## Document Ownership
 
 | Document | Owns | Other docs should |

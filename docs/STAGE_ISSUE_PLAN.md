@@ -280,3 +280,50 @@ Blocked changes:
 - cross-tenant or shared vector-store retrieval without tenant/project filters
 - database migrations or asynchronous job infrastructure before the persistence
   decision and job uniqueness constraints are locked
+
+## Stage 5 Evaluations, Guardrails, Observability Branch Scope
+
+Allowed changes:
+
+- `.github/workflows/eval-smoke.yml`
+- `.stage/current`
+- `Makefile`
+- `backend/app/main.py`
+- `backend/app/stage4.py`
+- `backend/app/rag/grounding.py`
+- `backend/app/rag/models.py`
+- `backend/app/eval/`
+- `backend/app/observability/`
+- `evals/smoke/stage5_grounded_script_dataset.json`
+- `evals/smoke/stage5_prompt_injection_set.json`
+- `evals/smoke/stage5_file_upload_abuse_set.json`
+- `tests/unit/test_retrieval_and_grounding.py`
+- `tests/unit/test_health_contract.py`
+- `tests/api/test_health_api.py`
+- `tests/api/test_stage4_slice_api.py`
+- `scripts/ci/eval-smoke.sh`
+- `scripts/quality/check_stage5_docs.py`
+- `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_recommended_review_items.py`
+- `docs/EVAL_REPORT.md`
+- `docs/ADR/0005-observability-and-evals.md`
+- `docs/API_CONTRACT.md`
+- `docs/OBSERVABILITY_AND_COST.md`
+- `docs/QUALITY_GATES.md`
+- `docs/RECOMMENDED_REVIEW_ITEMS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `pyproject.toml`
+- `uv.lock`
+
+Blocked changes:
+
+- avatar rendering, TTS, STT, subtitle, or video-rendering implementation
+- premium-provider calls or required real provider keys
+- database migrations, asynchronous job infrastructure, or production deployment
+  infrastructure
+- broad frontend feature changes outside the approved Stage 4 first-slice UI
+- new provider integrations beyond local/mock evaluation and observability
+  adapters

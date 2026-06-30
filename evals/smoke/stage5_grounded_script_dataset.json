@@ -1,0 +1,48 @@
+{
+  "name": "stage5-eval-smoke-grounded-script",
+  "project": {
+    "name": "NarraTwin AI",
+    "description": "Grounded walkthrough generator",
+    "defaultAudience": "RECRUITER",
+    "defaultLanguage": "en"
+  },
+  "document": {
+    "filename": "stage4_project.md",
+    "contentType": "text/markdown",
+    "path": "tests/fixtures/stage4_project.md"
+  },
+  "generation": {
+    "audience": "RECRUITER",
+    "requestedLanguage": "en",
+    "depth": "CONCISE",
+    "style": "CONFIDENT",
+    "prompt": "Create a concise grounded walkthrough for a recruiter."
+  },
+  "unsupportedClaimCases": [
+    {
+      "name": "supported claim",
+      "type": "supported",
+      "expectedEvaluationStatus": "PASSED",
+      "expectedUnsupportedClaimCount": 0
+    },
+    {
+      "name": "unsupported claim",
+      "type": "unsupported",
+      "expectedEvaluationStatus": "FAILED",
+      "expectedUnsupportedClaimCount": 1
+    },
+    {
+      "name": "mixed supported and unsupported claims",
+      "type": "mixed",
+      "expectedEvaluationStatus": "FAILED",
+      "expectedUnsupportedClaimCount": 1
+    }
+  ],
+  "promptInjectionSet": "evals/smoke/stage5_prompt_injection_set.json",
+  "fileUploadAbuseSet": "evals/smoke/stage5_file_upload_abuse_set.json",
+  "expected": {
+    "status": "COMPLETED",
+    "evaluationStatus": "PASSED",
+    "unsupportedClaimCount": 0
+  }
+}

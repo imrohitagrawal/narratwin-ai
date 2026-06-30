@@ -240,6 +240,34 @@ def test_prompt_injection_document_is_rejected_before_ingestion() -> None:
     assert response.json()["error"]["code"] == "UNSAFE_DOCUMENT_CONTENT"
 
 
+def test_upload_rejects_secret_like_document_content_before_storage() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_response = client.post(
+        "/api/v1/projects",
+        json={"name": "NarraTwin AI Secrets"},
+        headers={"Idempotency-Key": "secret-upload-project"},
+    )
+    project_id = project_response.json()["projectId"]
+    secret_text = "sk-" + "a" * 24
+    upload_response = client.post(
+        f"/api/v1/projects/{project_id}/knowledge-documents",
+        files={
+            "file": (
+                "secret.md",
+                f"NarraTwin deployment token is {secret_text}.".encode(),
+                "text/markdown",
+            )
+        },
+        headers={"Idempotency-Key": "secret-upload"},
+    )
+
+    assert upload_response.status_code == 422
+    body = upload_response.json()
+    assert body["error"]["code"] == "SECRET_LIKE_CONTENT"
+    assert secret_text not in str(body)
+
+
 def test_multi_document_ingestion_is_atomic_when_later_document_fails() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)

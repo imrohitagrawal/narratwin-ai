@@ -57,6 +57,34 @@ tightly:
 - ingestion and walkthrough jobs use the canonical lease vocabulary:
   `locked_by`, `locked_at`, and `lease_expires_at`
 
+Stage 5 implementation on 2026-06-30 turns this planning decision into an
+executable local slice:
+
+- the Stage 5 eval runner is deterministic, fixture-backed, and CI-executable in
+  local/mock mode; it writes a machine-readable report and the reviewer-facing
+  `docs/EVAL_REPORT.md`
+- RAG smoke metrics enforce the Stage 5 thresholds for faithfulness, answer
+  relevancy, context precision, context recall, and zero unsupported claims in
+  golden cases
+- unsupported-claim detection, prompt-injection refusal cases, uploaded-document
+  prompt-injection cases, and file-upload abuse cases run as blocking smoke
+  checks
+- secret-like uploaded content is rejected before storage, and ingestion repeats
+  unsafe-content checks before chunking
+- Langfuse integration is an optional adapter and must not export raw prompts,
+  uploads, provider payloads, or generated script text
+- OpenTelemetry spans use stable operation names with run/project identifiers as
+  attributes, not span-name cardinality
+- structured logs use allowlisted run metadata and prompt signatures instead of
+  raw prompt or document text
+- Prometheus run metrics use bounded labels and counters/histograms for latency,
+  token usage, estimated cost, status, evaluation status, and refusal reason
+
+Stage 5 intentionally remains run-level and local-first. Request-level FastAPI
+instrumentation, `/metrics` exposure, externally exported traces, release-grade
+semantic evals, larger adversarial corpora, and centralized log redaction are
+tracked as later-stage hardening items in `docs/RECOMMENDED_REVIEW_ITEMS.md`.
+
 ## Telemetry Schema Decision
 
 `RunMetadata`, `EventEnvelope`, and `MetricPoint` are separate schemas:

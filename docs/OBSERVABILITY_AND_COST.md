@@ -200,6 +200,8 @@ walkthrough response:
 
 - `trace.traceId`
 - `trace.latencyMs`
+- `trace.inputTokens`
+- `trace.outputTokens`
 - `trace.estimatedCost`
 - `provider.provider`
 - `provider.providerMode`

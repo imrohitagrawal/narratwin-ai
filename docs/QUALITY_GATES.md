@@ -11,10 +11,10 @@ make quality
 ```
 
 During the current stage, `make quality` runs only the active stage checks
-by delegating to `scripts/quality/check_quality_stage.py`. Stage 4 may run
-backend, frontend, Docker, and local first-slice RAG checks only for the approved
-project-upload-to-grounded-script-generation vertical slice. Product behavior
-outside that approved slice remains blocked.
+by delegating to `scripts/quality/check_quality_stage.py`. Stage 5 now gates
+runtime evaluation, prompt-injection guardrails, file-abuse tests, telemetry,
+and observability surfaces for the approved first-slice path. Product behavior
+outside the approved slice remains blocked.
 
 ## Required Make Targets
 
@@ -22,13 +22,13 @@ The `Makefile` must expose:
 
 | Target | Current behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`; currently Stage 4 |
+| `make quality` | Runs checks for `.stage/current`; currently Stage 5 |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
 | `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
 | `make stage2-quality` | Runs executable Stage 2 architecture, security, AI safety, and portability checks |
 | `make stage3-quality` | Runs executable Stage 3 repo foundation and CI/CD checks |
 | `make stage4-quality` | Runs executable Stage 4 first-slice checks |
-| `make stage5-quality` | Fails loudly until Stage 5 quality is implemented |
+| `make stage5-quality` | Runs executable Stage 5 eval/guardrail/observability checks |
 | `make stage6-quality` | Fails loudly until Stage 6 quality is implemented |
 | `make stage7-quality` | Fails loudly until Stage 7 quality is implemented |
 | `make stage8-quality` | Fails loudly until Stage 8 quality is implemented |
@@ -209,7 +209,36 @@ Gate validates:
 
 ### Stage 5: Evaluations, Guardrails, Observability
 
-Gate must validate prompt-injection tests, unsupported-claim evals, failure blocking, trace/run metadata, source chunk or context citations, and observability events.
+Stage 5 quality is executable through `make stage5-quality`, which first runs
+`scripts/quality/check_stage5_docs.py` and then executes the repo-local CI
+wrappers.
+
+Gate validates:
+
+- `.stage/current` contains `5`
+- current branch name matches `stage5-*` before merge, or is `main` after merge
+- Stage 5 quality artifacts exist for eval runner, prompt-injection tests,
+  unsupported-claim fixtures, and file-upload abuse fixtures
+- `backend/app/eval` exposes groundedness, faithfulness, answer-relevancy,
+  context precision/recall, and unsupported-claim detectors
+- `backend/app/observability` exposes OpenTelemetry trace-id generation,
+  Langfuse tracing adapter, structured logs, and token/cost/latency metadata
+- eval smoke validates:
+  - unsupported claims are zero on the golden run
+  - refusal behavior for prompt-injection paths and file-upload abuse paths
+  - trace metadata includes latency and cost
+  - metrics thresholds:
+    - faithfulness >= 0.85
+    - answer relevancy >= 0.80
+    - context precision >= 0.75
+    - context recall >= 0.70
+  - unsupported-claim count check remains zero for the happy-path fixture
+- `scripts/ci/eval-smoke.sh` writes both JSON (`reports/eval-smoke/stage5-eval-smoke-report.json`) and markdown (`docs/EVAL_REPORT.md`) artifacts
+- Stage 5 dependency and security posture remains unchanged: no new provider keys,
+  no committed secret findings, and no untracked security-scope drift
+- trace-run metadata is returned in `WalkthroughRunResponse.trace` fields
+- Stage 5 due recommended review items are resolved, accepted with rationale, or
+  superseded
 
 ### Stage 6: Multilingual Scripts, Subtitles, Voice Adapter
 
