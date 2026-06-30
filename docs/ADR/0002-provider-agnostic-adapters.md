@@ -82,3 +82,34 @@ Slice 1 must not require:
 - ElevenLabs
 - real avatar video provider
 - real voice or face cloning
+
+## Stage 6 impact
+
+Stage 6 implements the first multilingual media-adjacent path without hardcoding
+paid providers:
+
+- `TranslationProvider` wraps translation/localization behavior.
+- `TTSProvider` wraps voice artifact generation behavior.
+- The active implementation uses `MockTranslationProvider` and `MockTTSProvider`
+  for local/dev/test.
+- Subtitle generation remains deterministic local logic that emits downloadable
+  SubRip artifacts.
+- Stage 6 validates provider output after adapter return and before display or
+  artifact creation: translated text must be non-empty, remain within size
+  limits, preserve required glossary terms, and preserve citation markers.
+- Stage 6 response schemas allow provider IDs beyond `mock` while constraining
+  `providerMode` to contract-approved modes, so future local adapters can be
+  tested without changing the public response shape.
+- Requested unavailable voice providers fall back to the mock/local provider and
+  record a structured fallback reason.
+- The mock/local voice adapter emits a JSON manifest only. Stage 6 does not
+  synthesize playable audio, does not clone voices, and does not send text or
+  audio to non-local providers.
+- Paid translation or voice providers remain future optional adapters and must
+  add contract tests, environment-only keys, license review, and third-party
+  notices before activation. A future provider must update `backend/app/stage6.py`,
+  API contracts, unit/API tests, security notes, and third-party notices before
+  it can be enabled.
+
+This preserves the provider-adapter boundary while allowing Stage 6 to deliver
+translation, glossary preservation, subtitles, and mock/local voice artifacts.

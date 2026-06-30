@@ -15,18 +15,18 @@ Use it to answer:
 ## Current Baseline
 
 - Last reviewed date: 2026-07-01
-- Current stage marker: `.stage/current = 5`
-- Current implementation permission: Stage 5 evaluation, guardrail, and
-  observability work only, on the issue-linked Stage 5 branch
-- Current repo mode: Stage 5 dependency and quality-feature preparation has
-  started after Stage 4 merged to `main`
-- Product implementation merged to `main`: Stage 4 first vertical slice merged
-  through PR `#29`
+- Current stage marker: `.stage/current = 6`
+- Current implementation permission: Stage 6 multilingual script, subtitle, and
+  mock/local voice-adapter work only, on the issue-linked Stage 6 branch
+- Current repo mode: Stage 6 dependency and implementation preparation has
+  started after Stage 5 merged to `main`
+- Product implementation merged to `main`: Stage 5 evaluation, guardrail, and
+  observability work merged through PR `#30`
 - Tracker enforcement scope: repository-tracked stage and governance changes in checked-in files
-- Out-of-band GitHub reconciliation: PR `#29` is recorded as merged based on the
-  Stage 5 branch start handoff; issue state still requires GitHub-side review.
-- Stage 5 may add slice-scoped evaluation, guardrail, trace/run metadata,
-  observability, and security-review support for the merged Stage 4 first slice.
+- Out-of-band GitHub reconciliation: PR `#30` is recorded as merged based on the
+  Stage 6 branch start handoff; issue `#10` is recorded as closed by that PR.
+- Stage 6 may add slice-scoped translation/localization, subtitle export, and
+  mock/local voice-adapter support for the merged Stage 4 and Stage 5 paths.
 
 ## Source Of Truth
 
@@ -56,9 +56,15 @@ Use these files together with this tracker:
 - Stage 1 allows narrowly scoped CI wrapper compatibility fixes only where the
   Stage 1 marker activates pre-existing governance checks.
 - Stage 4 first-slice work merged to `main` through PR `#29` on 2026-06-30.
-- Stage 5 has started on branch `stage5-evaluations-guardrails-observability`
-  for issue `#10`; initial dependency preparation added observability packages
-  that pass import and `pip-audit` checks.
+- Stage 5 completed through merged PR `#30`; issue `#10` is closed.
+- Stage 6 has started on branch
+  `stage6-multilingual-subtitles-voice-adapter` for issue `#11`; initial
+  implementation adds multilingual generation, glossary preservation, subtitle
+  artifacts, a mock/local voice adapter, downloadable artifacts, and an
+  executable Stage 6 quality gate. Independent review findings for idempotency,
+  provider-output validation, request boundaries, provider response schemas,
+  frontend artifact safety, and documentation clarity have been remediated in
+  the branch.
 - Ragas and Giskard were evaluated for Stage 5 but are not active dependencies:
   `ragas==0.4.3` currently fails `pip-audit`, and fixed Giskard releases require
   `scipy<1.12.0`, which is incompatible with the repo's Python 3.13 baseline.
@@ -75,7 +81,7 @@ Use these files together with this tracker:
 - Stage 3 preserves inherited compatibility status contexts for `quality /
   secrets` and `security / docker build` while the authoritative Stage 3 secret
   scan and Docker gates remain owned by the `security` and `ci` workflows.
-- Stage 6 through Stage 8 and Final Review remain open with no merged
+- Stage 7 through Stage 8 and Final Review remain open with no merged
   implementation work.
 
 ## Stage Ledger
@@ -87,8 +93,8 @@ Use these files together with this tracker:
 | Stage 2 | Complete, merged to `main` | `#2` reconcile after merge | `#27` merged | Executable locally | Architecture, ADRs, threat model, security/privacy, AI safety/evaluation, portability, API, data model, observability, machine-readable semantic contract, human review checklist, branch scope, and provider defaults are hardened. |
 | Stage 3 | Complete in Stage 4 branch baseline; GitHub reconciliation required | `#5` reconcile after merge | Reconcile after merge | Executable locally | Adds repo foundation manifests, health checks, frontend foundation, Docker build path, pre-commit, CI/security/eval workflows, dependency/security scan path, local setup docs, hardened workflow pins, exact-file scope checks, non-root containers, and fixture-backed eval smoke without product features beyond health checks. |
 | Stage 4 | Complete, merged to `main` | `#4` reconcile after merge | PR `#29` merged | Executable locally at merge | First-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, Docker build coverage, quality gate, atomic-ingestion hardening, and sub-agent verification hardening merged through PR `#29`. |
-| Stage 5 | In progress | `#10` open | None merged | Executable in progress | RAG eval runner, prompt-injection guardrails, file-upload abuse tests, and observability metadata now execute in `make stage5-quality`; follow-on Stage 5 PRs remain open. |
-| Stage 6 | Pending | `#11` open | None merged | Placeholder target only | Translation, subtitles, and voice adapter remain future scope. |
+| Stage 5 | Complete, merged to `main` | `#10` closed | PR `#30` merged | Executable at merge | RAG eval runner, prompt-injection guardrails, file-upload abuse tests, and observability metadata merged through PR `#30`. |
+| Stage 6 | In progress | `#11` open | None merged | Executable in progress | Translation, subtitles, mock/local voice adapter, downloadable artifacts, and Stage 6 quality checks are in progress on branch `stage6-multilingual-subtitles-voice-adapter`. |
 | Stage 7 | Pending | `#12` open | None merged | Placeholder target only | Avatar rendering and export remain future scope. |
 | Stage 8 | Pending | `#13` open | None merged | Placeholder target only | Performance, hardening, and release readiness remain future scope. |
 | Final Review | Pending | `#6` open | None merged | Placeholder target only | Independent release review has not started. |
@@ -105,8 +111,8 @@ Use these files together with this tracker:
 | `#2` | Reconcile after merge | Stage 2 | Architecture, security, AI safety completed by merged PR `#27`; issue state must be reconciled with GitHub. |
 | `#5` | Reconcile after merge | Stage 3 | Repo foundation and CI/CD gates are treated as complete in this Stage 4 branch baseline; reconcile exact GitHub state. |
 | `#4` | Reconcile after merge | Stage 4 | First grounded-script vertical slice merged through PR `#29`; issue state must be reconciled with GitHub. |
-| `#10` | Open | Stage 5 | Evaluation, guardrails, observability; branch `stage5-evaluations-guardrails-observability` is active. |
-| `#11` | Open | Stage 6 | Multilingual scripts, subtitles, voice adapter. |
+| `#10` | Closed | Stage 5 | Evaluation, guardrails, observability completed by merged PR `#30`. |
+| `#11` | Open | Stage 6 | Multilingual scripts, subtitles, voice adapter; branch `stage6-multilingual-subtitles-voice-adapter` is active. |
 | `#12` | Open | Stage 7 | Avatar rendering adapter and demo export. |
 | `#13` | Open | Stage 8 | Performance, security, release readiness. |
 | `#6` | Open | Final Review | Independent reviewer pass. |
@@ -135,6 +141,7 @@ Use these files together with this tracker:
 | `#26` | Delivery PR | Reconcile after merge | Stage 1 product strategy and PRD v1.0 hardening; includes executable Stage 1 docs quality gate. |
 | `#27` | Merged | 2026-06-30 | Stage 2 architecture/security/AI-safety remediation; includes executable Stage 2 docs quality gate, semantic architecture contract checks, and no product implementation. |
 | `#29` | Merged | 2026-06-30 | Stage 4 first vertical slice from project upload to grounded script display merged to `main`; Stage 5 starts from this baseline. |
+| `#30` | Merged | Reconcile exact merge date | Stage 5 evaluations, guardrails, observability, and quality evidence merged to `main`; Stage 6 starts from this baseline. |
 
 ## Completed Work
 
@@ -209,8 +216,8 @@ Use these files together with this tracker:
 - Legacy issue `#3` still uses `Stage -1` naming that no longer matches the operating model.
 - Stage 3 issue/PR state still needs GitHub reconciliation after the Stage 3
   merge event.
-- `.stage/current` is `5` in the Stage 5 branch. `make quality` dispatches to
-  the executable `make stage5-quality` gate.
+- `.stage/current` is `6` in the Stage 6 branch. `make quality` dispatches to
+  the executable `make stage6-quality` gate.
 - PR `#27` completed second-pass remediation after independent sub-agent and
   Claude cross-model review identified idempotency, approved-knowledge state,
   failed-output exposure, retrieval, cache, provider-bound secret screening,
@@ -229,24 +236,41 @@ Use these files together with this tracker:
   fixed versions.
 - Stage 4 due recommended review items `RR-005` and `RR-009` through `RR-013`
   now have branch-local dispositions in `docs/RECOMMENDED_REVIEW_ITEMS.md`.
+- Stage 6 dependency preparation has added `babel`, `langcodes`, `pydub`,
+  `audioop-lts`, and `srt` for localization, language-code normalization,
+  Python 3.13-compatible audio handling, and subtitle serialization;
+  implementation and quality gates remain in progress.
+- Stage 6 implementation now includes `TranslationProvider` and `TTSProvider`
+  adapter interfaces, mock/local provider defaults, glossary preservation,
+  SubRip subtitle export, unsupported-language handling, provider fallback, UI
+  target-language controls, downloadable script/subtitle artifacts, locked
+  pending/completed idempotency, post-provider glossary/citation validation,
+  request boundary constraints, and safe artifact-link enablement.
+- Stage 6 final PR review produced no Critical or Required findings; optional
+  follow-ups are tracked as `RR-029` through `RR-031` in
+  `docs/RECOMMENDED_REVIEW_ITEMS.md` for Stage 8 hardening/release readiness.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
 
 ## Next Approved Actions
 
-1. Complete the Stage 5 evaluations, guardrails, and observability PR linked to
-   issue `#10` on branch `stage5-evaluations-guardrails-observability`.
+1. Complete the Stage 6 multilingual scripts, subtitles, and mock/local voice
+   adapter PR linked to issue `#11` on branch
+   `stage6-multilingual-subtitles-voice-adapter`.
 2. Run `make quality` locally and require equivalent CI status checks before PR
    review.
-3. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
-   `#29`, then record the Stage 5 PR once opened.
-4. Reconcile GitHub issue and PR state for Stage 3 issue `#5` and Stage 2 issue
+3. Keep Stage 6 implementation scoped to translation/localization, subtitle
+   export, mock/local voice-adapter behavior, accessibility notes, and docs
+   validation.
+4. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
+   `#29`, and confirm the exact Stage 5 PR `#30` merge date if needed.
+5. Reconcile GitHub issue and PR state for Stage 3 issue `#5` and Stage 2 issue
    `#2` after merged PR events.
-5. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
-6. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue
+6. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
+7. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue
    `#16` before broader product implementation planning is treated as ready.
-7. Close or supersede stale governance issues that conflict with the current
+8. Close or supersede stale governance issues that conflict with the current
    operating model, especially `#3`.
-8. Keep this file updated at every stage boundary, every stage-issue change, and
+9. Keep this file updated at every stage boundary, every stage-issue change, and
    every merged stage PR.
 
 ## Maintenance Protocol
@@ -292,3 +316,6 @@ Required update rules:
 | 2026-06-30 | ADR 0005 updated to record the latest Stage 2 evaluation, response-shape, idempotency, and lease-vocabulary hardening decisions. |
 | 2026-06-30 | PR `#27` merged Stage 2 to `main`; Stage 3 started on `stage3-repo-foundation-ci-cd` for issue `#5` with repo foundation manifests, health checks, Docker build path, CI/security/eval workflows, frontend scaffold, executable Stage 3 quality gate, hardened action pins, exact-file scope checks, non-root containers, and fixture-backed eval smoke. |
 | 2026-06-30 | Stage 4 branch `stage4-grounded-script-generation` started for issue `#4`, advanced `.stage/current` to `4`, added first-slice dependency preparation, backend RAG/API workflow, frontend result display, deterministic eval smoke, and executable Stage 4 quality gate. |
+| 2026-07-01 | Stage 6 branch `stage6-multilingual-subtitles-voice-adapter` advanced `.stage/current` to `6` and added multilingual generation, glossary preservation, subtitle artifacts, mock/local voice fallback, downloadable UI artifacts, and executable Stage 6 quality gate work under issue `#11`. |
+| 2026-07-01 | Stage 6 independent review findings were remediated for idempotency, provider-output validation, request-boundary limits, provider-ready response schemas, frontend artifact safety, and docs/gate clarity. |
+| 2026-07-01 | Stage 6 final PR review optional recommendations were tracked as `RR-029` through `RR-031` for Stage 8 hardening/release readiness. |

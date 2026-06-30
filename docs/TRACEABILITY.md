@@ -8,7 +8,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 ## Version
 
-- Last updated: 2026-06-29
+- Last updated: 2026-07-01
 - Current PRD source: `docs/PRD.md` v1.0
 - Canonical source: `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
 
@@ -93,6 +93,18 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `scripts/quality/check_stage5_docs.py` | Static Stage 5 quality and artifact presence checks used by local and CI gate dispatch | Stage 5 / `#10` | Added |
 | `docs/QUALITY_GATES.md` | Stage 5 gate criteria (faithfulness/relevancy/precision/recall thresholds and guardrail classes) | Stage 5 / `#10` | Updated |
 
+## Traceability for Stage 6
+
+| Artifact | Requirement coverage | Stage / issue | Status |
+|---|---|---|---|
+| `backend/app/stage6.py` | Source English script localization, target-language validation, glossary/project-term preservation, deterministic SubRip subtitle export, `TranslationProvider` adapter, `TTSProvider` adapter, mock/local voice fallback, post-provider glossary/citation validation, bounded captions, capped locked idempotency, and downloadable artifact packaging | Stage 6 / `#11` | Added and hardened |
+| `backend/app/main.py` | `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/multilingual-runs` API endpoint with project/run authorization, request boundary constraints, unsupported-language error handling, provider fallback, provider-ready response schemas, and artifact response payloads | Stage 6 / `#11` | Updated |
+| `tests/unit/test_stage6_multilingual.py` | Translation preserves product terms, subtitle timing format is valid, provider fallback works, unsupported language tags fail cleanly, in-flight duplicate idempotency is rejected, hostile provider output is refused, and long subtitle tokens stay bounded | Stage 6 / `#11` | Added and hardened |
+| `tests/api/test_stage6_multilingual_api.py` | End-to-end API coverage for source English walkthrough translation, downloadable script/subtitle artifacts, mock voice fallback, non-mock local adapter response validation, boundary validation, idempotency replay, and unsupported-language errors | Stage 6 / `#11` | Added and hardened |
+| `frontend/src/app/page.tsx`, `frontend/src/app/page.test.tsx`, and `frontend/tests/smoke.spec.ts` | User-facing target language selection, glossary terms, generated multilingual script display, glossary-aware multilingual idempotency keys, artifact MIME allowlisting, and downloadable script/subtitle artifact links only when artifacts are available | Stage 6 / `#11` | Updated and hardened |
+| `scripts/quality/check_stage6_docs.py` | Static Stage 6 quality gate for provider adapter markers, dependencies, tests, UI controls, docs metadata, provider-output validation, idempotency hardening, mock voice limitations, accessibility notes, and branch scope | Stage 6 / `#11` | Added and hardened |
+| `docs/API_CONTRACT.md`, `docs/ADR/0002-provider-agnostic-adapters.md`, and `docs/QUALITY_GATES.md` | Contract and governance updates for multilingual runs, mock/local adapters, no-real-audio voice limitation, provider-extension surfaces, failure modes, subtitle accessibility, downloadable artifacts, and no paid-provider hardcoding | Stage 6 / `#11` | Updated and hardened |
+
 ## Document Ownership
 
 | Document | Owns | Other docs should |
@@ -131,3 +143,5 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | 2026-06-30 | `#5` | Start Stage 3 repo foundation and CI/CD gates | Adds Stage 3 health checks, frontend foundation, dependency manifests, CI wrappers, dependency/security scan path, Docker build path, eval smoke, and executable Stage 3 quality gate |
 | 2026-06-30 | `#4` | Start Stage 4 grounded-script Slice 1 implementation | Adds first-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, and Stage 4 quality gate |
 | 2026-06-30 | `#4` / PR `#29` | Resolve Stage 4 sub-agent verification blockers | Hardens write idempotency, atomic ingestion, upload/request limits, prompt-injection refusal, redaction, resource budgets, tenant-safe retrieval, same-origin UI routing, and negative eval smoke coverage |
+| 2026-07-01 | `#11` | Start Stage 6 multilingual walkthrough implementation | Adds provider-adapter based translation, glossary preservation, subtitle generation, mock/local voice fallback, downloadable artifacts, API/UI tests, and executable Stage 6 quality gate |
+| 2026-07-01 | `#11` | Resolve Stage 6 independent review findings | Hardens idempotency, provider-output validation, request boundary constraints, provider-ready response schemas, frontend artifact safety, docs clarity, and executable Stage 6 gate checks |

@@ -90,8 +90,70 @@ const walkthroughResponse = {
   },
 };
 
-test("home page generates a Stage 4 grounded script through the API workflow", async ({ page }) => {
+const multilingualResponse = {
+  multilingualRunId: "mlrun_ui_smoke",
+  sourceRunId: "run_ui_smoke",
+  sourceLanguage: "en",
+  targetLanguage: "es",
+  status: "COMPLETED",
+  sourceScriptText: walkthroughResponse.acceptedScriptText,
+  translatedScriptText:
+    "For recruiters, NarraTwin AI convierte approved project knowledge en grounded walkthrough scripts. [1]",
+  subtitlesText:
+    "1\n00:00:00,000 --> 00:00:04,000\nFor recruiters, NarraTwin AI convierte approved project knowledge en grounded walkthrough scripts. [1]\n\n",
+  glossaryTerms: ["NarraTwin AI", "project knowledge", "source chunks"],
+  preservedTerms: ["NarraTwin AI", "project knowledge"],
+  translationProvider: { provider: "mock", providerMode: "LOCAL" },
+  voice: {
+    provider: "mock",
+    providerMode: "LOCAL",
+    requestedProvider: "mock",
+    language: "es",
+    artifact: {
+      fileName: "voice-manifest-es.json",
+      mimeType: "application/json",
+      contentBase64: "e30=",
+      checksum: "sha256:voice",
+    },
+  },
+  artifacts: {
+    translatedScript: {
+      fileName: "run_ui_smoke-es-script.md",
+      mimeType: "text/markdown",
+      contentBase64: "U3RhZ2UgNiBzY3JpcHQ=",
+      checksum: "sha256:script",
+    },
+    subtitles: {
+      fileName: "run_ui_smoke-es.srt",
+      mimeType: "application/x-subrip",
+      contentBase64: "MQo=",
+      checksum: "sha256:srt",
+    },
+    voiceManifest: {
+      fileName: "voice-manifest-es.json",
+      mimeType: "application/json",
+      contentBase64: "e30=",
+      checksum: "sha256:voice",
+    },
+  },
+  trace: {
+    traceId: "trace_ui_smoke",
+    sourceContextRefCount: 1,
+    sourceCitationCount: 1,
+  },
+};
+
+function checksumSeed(...values: string[]) {
+  let hash = 0;
+  for (const value of values.join("|")) {
+    hash = (hash * 31 + value.charCodeAt(0)) >>> 0;
+  }
+  return hash.toString(16);
+}
+
+test("home page generates a Stage 6 multilingual walkthrough through the API workflow", async ({ page }) => {
   const calls: string[] = [];
+  let multilingualIdempotencyKey = "";
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -120,6 +182,14 @@ test("home page generates a Stage 4 grounded script through the API workflow", a
       await route.fulfill({ json: walkthroughResponse });
       return;
     }
+    if (
+      request.method() === "POST" &&
+      path === "/api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/multilingual-runs"
+    ) {
+      multilingualIdempotencyKey = request.headers()["idempotency-key"] ?? "";
+      await route.fulfill({ json: multilingualResponse });
+      return;
+    }
     await route.fulfill({ status: 404, json: { error: "unexpected route" } });
   });
 
@@ -132,12 +202,29 @@ test("home page generates a Stage 4 grounded script through the API workflow", a
   expect(response?.headers()["x-content-type-options"]).toBe("nosniff");
   expect(response?.headers()["x-frame-options"]).toBe("DENY");
 
-  await expect(page.getByRole("heading", { name: "Grounded script generation" })).toBeVisible();
-  await page.getByRole("button", { name: "Generate grounded script" }).click();
-  await expect.poll(() => calls, { timeout: 5000 }).toHaveLength(5);
+  await expect(page.getByRole("heading", { name: "Multilingual walkthrough generation" })).toBeVisible();
+  await page.getByRole("button", { name: "Generate multilingual walkthrough" }).click();
+  await expect.poll(() => calls, { timeout: 5000 }).toHaveLength(6);
+  const baseSeed = checksumSeed(
+    "NarraTwin AI",
+    "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.\n\nEvery generated walkthrough claim must cite retrieved source chunks from approved knowledge.",
+    "RECRUITER",
+    "CONCISE",
+    "es",
+  );
+  expect(multilingualIdempotencyKey).not.toBe(`ui-multilingual-${baseSeed}`);
 
   await expect(page.getByLabel("Trace metadata")).toContainText("trace_ui_smoke");
   await expect(page.getByLabel("Trace metadata")).toContainText("run_ui_smoke");
+  await expect(page.getByLabel("Trace metadata")).toContainText("es");
+  await expect(page.getByRole("link", { name: "Download script" })).toHaveAttribute(
+    "download",
+    "run_ui_smoke-es-script.md",
+  );
+  await expect(page.getByRole("link", { name: "Download subtitles" })).toHaveAttribute(
+    "download",
+    "run_ui_smoke-es.srt",
+  );
   await expect(page.getByText("0 unsupported claims")).toBeVisible();
   const firstCitation = page.locator("li").filter({ hasText: "chunk_ui_001" });
   await expect(firstCitation.getByText("[1]", { exact: true })).toBeVisible();
@@ -149,5 +236,6 @@ test("home page generates a Stage 4 grounded script through the API workflow", a
     "PATCH /api/v1/projects/proj_ui/knowledge-documents/doc_ui/approval",
     "POST /api/v1/projects/proj_ui/ingestion-runs",
     "POST /api/v1/projects/proj_ui/walkthrough-runs",
+    "POST /api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/multilingual-runs",
   ]);
 });
