@@ -15,16 +15,19 @@ Use it to answer:
 ## Current Baseline
 
 - Last reviewed date: 2026-06-30
-- Current stage marker: `.stage/current = 3`
-- Current implementation permission: blocked for product features; Stage 3 repo foundation only
-- Current repo mode: governance-first, documentation-first, quality-gate-first
+- Current stage marker: `.stage/current = 4`
+- Current implementation permission: Stage 4 first vertical slice only, on the
+  issue-linked Stage 4 branch
+- Current repo mode: Stage 4 first-slice implementation permitted; product
+  implementation is not merged to `main`
 - Product implementation merged to `main`: no
 - Tracker enforcement scope: repository-tracked stage and governance changes in checked-in files
 - Out-of-band GitHub reconciliation: required in the next governance update
-- No backend, RAG, provider, avatar, or database product code has been merged to `main`.
-- Stage 3 may add dependency manifests, CI wrappers, Docker build files, and
-  health-check-only backend/frontend foundation scaffolding, but product feature
-  implementation remains blocked.
+- No Stage 4 backend, RAG, provider, avatar, or database product code has been
+  merged to `main`.
+- The Stage 4 branch may add first-slice dependencies and implementation for
+  project creation, markdown upload, ingest/chunk/store, retrieval, grounded
+  script generation, unsupported-claim evaluation, storage, and UI display.
 
 ## Source Of Truth
 
@@ -49,12 +52,19 @@ Use these files together with this tracker:
   and ADR canon are hardened for issue `#2`.
 - Stage 3 quality is executable locally through `make stage3-quality`, which now
   runs the full Stage 3 wrapper set rather than only metadata checks.
-- Stage 3 repo foundation work is in progress on branch
-  `stage3-repo-foundation-ci-cd` for issue `#5`.
+- Stage 3 repo foundation is treated as complete in the Stage 4 branch baseline;
+  reconcile the exact Stage 3 PR ledger after the GitHub merge event if needed.
 - Stage 1 allows narrowly scoped CI wrapper compatibility fixes only where the
   Stage 1 marker activates pre-existing governance checks.
-- The repository remains blocked from product feature implementation because Stage
-  3 and the Stage 4 implementation gate have not passed.
+- Stage 4 first-slice work has started on branch
+  `stage4-grounded-script-generation` for issue `#4`; backend/API, frontend,
+  deterministic eval smoke, and executable Stage 4 quality gate work are present
+  in this branch. Local Stage 4 quality passes; GitHub CI reconciliation and PR
+  review remain required before merge. PR `#29` uses follow-up ledger commits when
+  push-scoped guardrails need repository-tracked reconciliation on the latest SHA.
+- Stage 4 sub-agent verification findings on idempotency, atomic ingestion,
+  upload/security hardening, resource bounds, tenant-safe retrieval, grounding
+  eval coverage, and live UI routing have branch-local remediation in PR `#29`.
 - Stage 1 is split into product/PRD hardening under `#1` and the follow-on Spec Kit constitution/spec/plan/tasks gate under `#16`.
 - Stage 3 repository-foundation work builds on the partial Stage 0 CI baseline and
   is now adding dependency manifests, health checks, Docker build paths, CI
@@ -68,7 +78,7 @@ Use these files together with this tracker:
 - Stage 3 preserves inherited compatibility status contexts for `quality /
   secrets` and `security / docker build` while the authoritative Stage 3 secret
   scan and Docker gates remain owned by the `security` and `ci` workflows.
-- Stage 4 through Stage 8 and Final Review remain open with no merged implementation work.
+- Stage 5 through Stage 8 and Final Review remain open with no merged implementation work.
 
 ## Stage Ledger
 
@@ -77,8 +87,8 @@ Use these files together with this tracker:
 | Stage 0 | Complete, governance baseline active | `#14` closed | `#15` merged, `#23` merged | Executable and green | Operating model, quality gate, and repository guardrails are in place; product implementation remains blocked. |
 | Stage 1 | Product/PRD hardening represented by PR `#26` | `#1` open, `#16` open | `#26` | Executable | `#1` is product strategy and PRD v1.0 hardening; `#16` remains the follow-on Spec Kit gate. Reconcile merge state after the GitHub merge event. |
 | Stage 2 | Complete, merged to `main` | `#2` reconcile after merge | `#27` merged | Executable locally | Architecture, ADRs, threat model, security/privacy, AI safety/evaluation, portability, API, data model, observability, machine-readable semantic contract, human review checklist, branch scope, and provider defaults are hardened. |
-| Stage 3 | In progress | `#5` open | Branch `stage3-repo-foundation-ci-cd`; PR pending | Executable locally | Adds repo foundation manifests, health checks, frontend foundation, Docker build path, pre-commit, CI/security/eval workflows, dependency/security scan path, local setup docs, hardened workflow pins, exact-file scope checks, non-root containers, and fixture-backed eval smoke without product features beyond health checks. |
-| Stage 4 | Pending | `#4` open | None merged | Placeholder target only | No product slice has been merged. |
+| Stage 3 | Complete in Stage 4 branch baseline; GitHub reconciliation required | `#5` reconcile after merge | Reconcile after merge | Executable locally | Adds repo foundation manifests, health checks, frontend foundation, Docker build path, pre-commit, CI/security/eval workflows, dependency/security scan path, local setup docs, hardened workflow pins, exact-file scope checks, non-root containers, and fixture-backed eval smoke without product features beyond health checks. |
+| Stage 4 | In progress | `#4` open | PR `#29` on branch `stage4-grounded-script-generation` | Executable locally; last local `make quality` passed | First-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, Docker build coverage, quality gate, atomic-ingestion hardening, and sub-agent verification hardening are in branch-local implementation. GitHub CI reconciliation and PR review remain required before merge. |
 | Stage 5 | Pending | `#10` open | None merged | Placeholder target only | Eval, guardrail, and observability work remains future scope. |
 | Stage 6 | Pending | `#11` open | None merged | Placeholder target only | Translation, subtitles, and voice adapter remain future scope. |
 | Stage 7 | Pending | `#12` open | None merged | Placeholder target only | Avatar rendering and export remain future scope. |
@@ -95,8 +105,8 @@ Use these files together with this tracker:
 | `#1` | Open | Stage 1 | Canonical Stage 1 product strategy and PRD v1.0 hardening issue. |
 | `#16` | Open | Stage 1 follow-on | Spec Kit constitution/spec/plan/tasks gate that follows product/PRD hardening. |
 | `#2` | Reconcile after merge | Stage 2 | Architecture, security, AI safety completed by merged PR `#27`; issue state must be reconciled with GitHub. |
-| `#5` | Open | Stage 3 | Repo foundation and CI/CD gates. |
-| `#4` | Open | Stage 4 | First grounded-script vertical slice. |
+| `#5` | Reconcile after merge | Stage 3 | Repo foundation and CI/CD gates are treated as complete in this Stage 4 branch baseline; reconcile exact GitHub state. |
+| `#4` | Open | Stage 4 | First grounded-script vertical slice; branch `stage4-grounded-script-generation` is active. |
 | `#10` | Open | Stage 5 | Evaluation, guardrails, observability. |
 | `#11` | Open | Stage 6 | Multilingual scripts, subtitles, voice adapter. |
 | `#12` | Open | Stage 7 | Avatar rendering adapter and demo export. |
@@ -198,9 +208,10 @@ Use these files together with this tracker:
 
 - Stage 1 is split across two open issues: `#1` for product/PRD hardening and `#16` for the follow-on Spec Kit constitution/spec/plan/tasks gate.
 - Legacy issue `#3` still uses `Stage -1` naming that no longer matches the operating model.
-- Stage 3 has its own open issue `#5`, but some repo-foundation work has already landed under Stage 0 governance. The eventual Stage 3 plan should explicitly acknowledge that inherited baseline.
-- `.stage/current` is `3` for the Stage 3 repo foundation and CI/CD artifact set
-  because it implements the executable Stage 3 quality gate.
+- Stage 3 issue/PR state still needs GitHub reconciliation after the Stage 3
+  merge event.
+- `.stage/current` is `4` in the Stage 4 branch. `make quality` dispatches to
+  the executable `make stage4-quality` gate.
 - PR `#27` completed second-pass remediation after independent sub-agent and
   Claude cross-model review identified idempotency, approved-knowledge state,
   failed-output exposure, retrieval, cache, provider-bound secret screening,
@@ -213,16 +224,30 @@ Use these files together with this tracker:
 - Non-blocking review recommendations are now tracked in
   `docs/RECOMMENDED_REVIEW_ITEMS.md` and checked by stage quality so each item
   must be resolved, accepted, or superseded at the correct future stage.
+- Stage 4 dependency preparation has added direct document-ingestion, provider,
+  vector-type, and evaluation-fixture packages; ChromaDB and Ragas were removed
+  from active dependencies because `pip-audit` reported vulnerabilities with no
+  fixed versions.
+- Stage 4 due recommended review items `RR-005` and `RR-009` through `RR-013`
+  now have branch-local dispositions in `docs/RECOMMENDED_REVIEW_ITEMS.md`.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
 
 ## Next Approved Actions
 
-1. Finish Stage 3 repo foundation and CI/CD quality gates through issue `#5`.
-2. Reconcile GitHub issue state for Stage 2 issue `#2` after merged PR `#27`.
-3. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
-4. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue `#16` before product implementation planning is treated as ready.
-5. Close or supersede stale governance issues that conflict with the current operating model, especially `#3`.
-6. Keep this file updated at every stage boundary, every stage-issue change, and every merged stage PR.
+1. Implement the Stage 4 first vertical slice through issue `#4` on branch
+   `stage4-grounded-script-generation`.
+2. Run `make quality` locally and require equivalent CI status checks before PR
+   review.
+3. Open a PR linked to issue `#4` only after all gates pass.
+4. Reconcile GitHub issue and PR state for Stage 3 issue `#5` and Stage 2 issue
+   `#2` after merged PR events.
+5. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
+6. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue
+   `#16` before broader product implementation planning is treated as ready.
+7. Close or supersede stale governance issues that conflict with the current
+   operating model, especially `#3`.
+8. Keep this file updated at every stage boundary, every stage-issue change, and
+   every merged stage PR.
 
 ## Maintenance Protocol
 
@@ -266,3 +291,4 @@ Required update rules:
 | 2026-06-30 | Latest Stage 2 review rerun remediated failed/refused response status wording, idempotency response optionality, AI safety evaluation-schema coverage, claim-support shape consistency, and lease vocabulary drift. |
 | 2026-06-30 | ADR 0005 updated to record the latest Stage 2 evaluation, response-shape, idempotency, and lease-vocabulary hardening decisions. |
 | 2026-06-30 | PR `#27` merged Stage 2 to `main`; Stage 3 started on `stage3-repo-foundation-ci-cd` for issue `#5` with repo foundation manifests, health checks, Docker build path, CI/security/eval workflows, frontend scaffold, executable Stage 3 quality gate, hardened action pins, exact-file scope checks, non-root containers, and fixture-backed eval smoke. |
+| 2026-06-30 | Stage 4 branch `stage4-grounded-script-generation` started for issue `#4`, advanced `.stage/current` to `4`, added first-slice dependency preparation, backend RAG/API workflow, frontend result display, deterministic eval smoke, and executable Stage 4 quality gate. |

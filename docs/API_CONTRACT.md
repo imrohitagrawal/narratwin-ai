@@ -6,7 +6,8 @@
 - Stage: Stage 2 architecture, security, AI safety
 - Canonical issue: `#2`
 - Last updated: 2026-06-30
-- Status: contract-first design only; no product endpoints implemented in Stage 2
+- Status: Stage 4 branch implements the first local grounded-script endpoint path
+  with mock/local providers and in-memory storage
 
 ## API Principles
 
@@ -604,8 +605,8 @@ idempotency replay or `GET` of an existing terminal run.
     "embeddingProvider": "mock",
     "embeddingModel": "mock-embedding",
     "embeddingModelVersion": "stage4-local-v1",
-    "embeddingDimension": 3,
-    "vectorStore": "disabled",
+    "embeddingDimension": 16,
+    "vectorStore": "memory",
     "retrievalStrategyVersion": "stage4-rag-v1",
     "retrievalTopK": 6,
     "retrievalScoreThreshold": 0.72
@@ -782,8 +783,8 @@ Response `200`:
   "embeddingProvider": "mock",
   "embeddingModel": "mock-embedding",
   "embeddingModelVersion": "stage4-local-v1",
-  "embeddingDimension": 3,
-  "vectorStore": "disabled",
+  "embeddingDimension": 16,
+  "vectorStore": "memory",
   "promptTemplateVersion": "stage4-v1",
   "retrievalStrategyVersion": "stage4-rag-v1",
   "retrievalTopK": 6,

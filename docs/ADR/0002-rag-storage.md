@@ -32,6 +32,13 @@ Use a local-first storage design with explicit provider interfaces:
 ChromaDB remains the planned first local vector-store candidate behind an internal
 adapter, subject to dependency and license review before implementation.
 
+Stage 4 Slice 1 implements the first local RAG path with an in-memory vector
+store and deterministic mock embedding provider. pgvector is locked as dependency
+preparation only. ChromaDB was removed from active dependencies because
+`pip-audit` reports a vulnerable version with no fixed version available. The
+in-memory store still enforces the same `tenant_id` and `project_id` retrieval
+filter that future adapters must preserve.
+
 Approved knowledge is canonical only when storage, approval, and ingestion state
 all pass: `document_status = STORED`, `approval_status = APPROVED`, and
 `ingestion_status = INGESTED`. `UPLOADED`, `QUARANTINED`, `REJECTED`,
@@ -113,6 +120,26 @@ Negative:
 - ingestion needs metadata discipline from the first slice
 - export/import contracts are required for portability
 - storage adapter tests are required
+
+Stage 4 Slice 1 limitations:
+
+- data is process-local and resets between app restarts
+- ingestion and generation run synchronously, so durable active-job uniqueness
+  constraints are deferred until asynchronous workers or database migrations start
+- markdown and plain text are the only enabled upload formats
+- mock embeddings and mock LLM output are deterministic and provider-agnostic, but
+  are not quality-equivalent to real providers
+
+Stage 4 verification hardening adds local-mode resource bounds and audit behavior
+that future durable adapters must preserve: write APIs require an idempotency
+record before side effects, multi-document ingestion validates the full batch
+before committing chunks or document state, in-memory indexes are keyed by tenant
+and project, document chunk construction stops at the per-document budget,
+evidence snapshot checksums cover the serialized snapshot payload, and the UI
+reaches FastAPI through a configurable same-origin Next.js rewrite rather than
+broad backend CORS. The Stage 4 frontend keeps `unsafe-inline` script CSP because
+the current Next.js standalone build emits inline bootstrap scripts; replacing
+that with nonce or hash-based CSP is a future hardening task.
 
 ## Security Requirements
 

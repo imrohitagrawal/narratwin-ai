@@ -195,6 +195,18 @@ Alert thresholds for local/free-provider modes:
 - any cost above USD 0.00 in mock/local mode
 - unsupported-claim rate above 0 for accepted outputs
 
+Stage 4 Slice 1 implementation records lightweight response metadata in the
+walkthrough response:
+
+- `trace.traceId`
+- `trace.latencyMs`
+- `trace.estimatedCost`
+- `provider.provider`
+- `provider.providerMode`
+- evaluation policy, schema, and safety policy versions
+
+The mock/local provider path must always report estimated cost `0`.
+
 ## MVP observability rule
 
 Every generated output must be linked to:

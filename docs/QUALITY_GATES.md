@@ -11,10 +11,10 @@ make quality
 ```
 
 During the current stage, `make quality` runs only the active stage checks
-by delegating to `scripts/quality/check_quality_stage.py`. Stage 3 may run
-backend, frontend, Docker, and local service foundation checks only for the
-approved health-check scaffold and CI/CD foundation. Product backend, frontend,
-database, RAG, avatar, or provider behavior remains blocked until Stage 4.
+by delegating to `scripts/quality/check_quality_stage.py`. Stage 4 may run
+backend, frontend, Docker, and local first-slice RAG checks only for the approved
+project-upload-to-grounded-script-generation vertical slice. Product behavior
+outside that approved slice remains blocked.
 
 ## Required Make Targets
 
@@ -22,12 +22,12 @@ The `Makefile` must expose:
 
 | Target | Current behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`; currently Stage 3 |
+| `make quality` | Runs checks for `.stage/current`; currently Stage 4 |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
 | `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
 | `make stage2-quality` | Runs executable Stage 2 architecture, security, AI safety, and portability checks |
 | `make stage3-quality` | Runs executable Stage 3 repo foundation and CI/CD checks |
-| `make stage4-quality` | Fails loudly until Stage 4 quality is implemented |
+| `make stage4-quality` | Runs executable Stage 4 first-slice checks |
 | `make stage5-quality` | Fails loudly until Stage 5 quality is implemented |
 | `make stage6-quality` | Fails loudly until Stage 6 quality is implemented |
 | `make stage7-quality` | Fails loudly until Stage 7 quality is implemented |
@@ -178,7 +178,34 @@ Gate validates:
 
 ### Stage 4: Project Upload To Grounded Script Generation
 
-Gate must validate the first vertical slice: project creation, markdown upload, ingest/chunk/store, retrieval, grounded script generation, unsupported-claim evaluation, storage, UI display, tests, docs, security notes, observability metadata, limitations, and reviewer pass.
+Stage 4 quality is executable through `make stage4-quality`, which first runs
+`scripts/quality/check_stage4_docs.py` and then executes the repo-local CI
+wrappers.
+
+Gate validates:
+
+- `.stage/current` contains `4`
+- current branch name matches `stage4-*` before merge, or is `main` after merge
+- first-slice files exist for project creation, markdown/txt upload, parsing,
+  chunking, mock embeddings, local storage, retrieval, grounded script
+  generation, citations, grounding evaluation, UI display, tests, and eval smoke
+- direct Stage 4 dependencies are locked and avatar/TTS/video dependencies remain
+  absent from Slice 1
+- provider interfaces use deterministic mock/local providers for tests and do not
+  require paid provider keys
+- every accepted generated claim maps to a retrieved source chunk through context
+  refs and claim-support records
+- unsupported claims fail evaluation and are not exposed as accepted script text
+- upload validation rejects unsupported media types and avoids echoing raw upload
+  content in public errors
+- Stage 4 changed files remain within the documented first-slice allowlist
+- retrieval is partitioned by tenant and project
+- deterministic RAG eval smoke fixture requires zero unsupported claims and at
+  least one citation
+- frontend unit and Playwright smoke tests cover the result and citation display
+- Docker images build after Stage 4 runtime/API changes
+- Stage 4 due recommended review items are resolved, accepted with rationale, or
+  superseded
 
 ### Stage 5: Evaluations, Guardrails, Observability
 

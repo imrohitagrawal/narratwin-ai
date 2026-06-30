@@ -51,6 +51,7 @@ Allowed changes:
 - `docs/STAGE_ISSUE_PLAN.md`
 - `docs/THIRD_PARTY_NOTICES.md`
 - `.stage/current`
+- `.github/workflows/eval-smoke.yml`
 - `Makefile`
 - `scripts/guardrails_check.py`
 - `scripts/quality/check_stage0_docs.py`
@@ -71,6 +72,7 @@ Blocked changes:
 Allowed changes:
 
 - `.stage/current`
+- `.github/workflows/eval-smoke.yml`
 - `Makefile`
 - `docs/NORTH_STAR_METRICS.md`
 - `docs/PHASE_PLAN.md`
@@ -227,3 +229,54 @@ Blocked changes:
 - premium-provider automation or real provider keys
 - Vite frontend scaffolding unless a future ADR supersedes the documented
   Next.js frontend decision
+
+## Stage 4 Grounded Script Branch Scope
+
+Allowed changes:
+
+- `.github/workflows/eval-smoke.yml`
+- `.stage/current`
+- `Makefile`
+- `backend/app/main.py`
+- `backend/app/stage4.py`
+- `backend/app/rag/`
+- `evals/smoke/stage4_grounded_script_dataset.json`
+- `frontend/src/app/page.tsx`
+- `frontend/src/app/page.module.css`
+- `frontend/src/app/page.test.tsx`
+- `frontend/tests/smoke.spec.ts`
+- `frontend/next.config.ts`
+- `frontend/playwright.config.ts`
+- `pyproject.toml`
+- `uv.lock`
+- `tests/fixtures/stage4_project.md`
+- `tests/unit/test_chunking.py`
+- `tests/unit/test_retrieval_and_grounding.py`
+- `tests/api/test_health_api.py`
+- `tests/api/test_stage4_slice_api.py`
+- `tests/unit/test_health_contract.py`
+- `docker-compose.yml`
+- `frontend/Dockerfile`
+- `scripts/ci/eval-smoke.sh`
+- `scripts/ci/frontend-smoke.sh`
+- `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_stage4_docs.py`
+- `docs/API_CONTRACT.md`
+- `docs/ADR/0002-rag-storage.md`
+- `docs/DATA_MODEL.md`
+- `docs/OBSERVABILITY_AND_COST.md`
+- `docs/QUALITY_GATES.md`
+- `docs/RECOMMENDED_REVIEW_ITEMS.md`
+- `docs/SECURITY_AND_PRIVACY.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/TRACEABILITY.md`
+
+Blocked changes:
+
+- avatar rendering, TTS, STT, subtitle, or video-rendering implementation
+- premium-provider calls or required real provider keys
+- cross-tenant or shared vector-store retrieval without tenant/project filters
+- database migrations or asynchronous job infrastructure before the persistence
+  decision and job uniqueness constraints are locked

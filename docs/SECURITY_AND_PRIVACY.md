@@ -7,6 +7,8 @@
 - Canonical issue: `#2`
 - Last updated: 2026-06-29
 - Implementation status: policy and architecture only; product implementation blocked
+- Stage 4 branch status: first local slice implementation started with mock/local
+  providers only
 
 ## Security Posture
 
@@ -141,6 +143,23 @@ Required validation:
 - path traversal rejection
 - mandatory secret screening before non-local provider egress
 
+Stage 4 Slice 1 implementation notes:
+
+- accepted uploads are limited to `.md` and `.txt`
+- files are decoded as UTF-8 and rejected when empty, oversized, path-like, or an
+  unsupported media type
+- multipart uploads are read with a hard Stage 4 byte cap instead of buffering an
+  unlimited file before validation
+- archive magic bytes, NUL bytes, and control-heavy text are rejected before
+  storage
+- prompt-injection-like uploaded content is rejected before ingestion and unsafe
+  retrieved context is refused before generation
+- public evidence excerpts and unsupported-output excerpts are capped and passed
+  through the local redaction helper before response serialization
+- raw upload content is not echoed in public validation errors
+- uploaded markdown is treated as text evidence and is not rendered as trusted HTML
+- non-local provider egress is disabled in tests and local slice execution
+
 File handling rules:
 
 - never trust the original filename as a path
@@ -189,6 +208,10 @@ Required tests before multi-user release:
 - cross-tenant retrieval is impossible using the current `tenant_id` predicate
 - unauthorized project access returns `403`
 - missing project returns `404` without leaking existence across tenants
+
+Stage 4 Slice 1 includes a retrieval test that inserts chunks for two projects and
+asserts that retrieval for one project excludes chunks from the other project under
+the synthetic local tenant.
 
 ### Approved Knowledge Controls
 
@@ -253,26 +276,27 @@ Cost controls:
 
 ### Rate And Cost Limit Values
 
-Stage 4 local/dev/test limits:
+Stage 4 local/dev/test implemented limits are process-local lifetime caps unless
+otherwise noted. Sliding-window per-hour limits require a durable rate limiter and
+remain future Stage 5/8 hardening work.
 
 | Control | Limit |
 |---|---:|
-| Upload requests | 30 per project per hour |
 | Accepted file size | 1 MiB per file |
+| Upload request body | 1 MiB file plus multipart overhead |
 | Project corpus size | 5 MiB |
 | Documents per project | 10 active documents |
-| Ingestion jobs | 10 per project per hour |
+| Documents per ingestion request | 10 documents |
+| Chunks per document | 100 chunks |
+| Chunks per project | 200 chunks |
+| Projects per tenant | 25 projects |
 | Concurrent ingestion jobs | 1 per project |
-| Generation runs | 20 per project per hour |
+| Generation runs | 50 per project |
 | Concurrent generation jobs | 1 per project |
-| Provider calls | 30 per provider mode per project per hour |
-| Prompt input tokens | 6,000 per generation run |
-| Output tokens | 2,500 per generation run |
-| Generated script length | 1,200 words per generation run |
-| Unsupported claims evaluated | 100 extracted project-specific factual claims |
-| Automatic regeneration | 1 retry maximum |
+| Prompt input | 2,000 characters per generation run |
+| Idempotency records | 500 per tenant/user |
+| Automatic regeneration | Disabled |
 | Estimated local cost budget | USD 0.00 for mock/local mode |
-| Estimated free-provider budget | USD 1.00 per project per day after explicit opt-in |
 
 Real provider modes must fail closed when cost metadata is unavailable and a budget
 would otherwise be unenforceable.
@@ -370,6 +394,7 @@ Before Stage 4 Slice 1 can merge:
 - project-scoped retrieval
 - empty-context refusal
 - prompt-injection-in-uploaded-document test
+- prompt-injection retrieved-context refusal path
 - unsupported-claim detection or refusal
 - no real paid provider key required
 - no secret committed in repository scan

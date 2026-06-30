@@ -4,11 +4,18 @@ import { describe, expect, it } from "vitest";
 import Home from "./page";
 
 describe("Home", () => {
-  it("renders the Stage 3 foundation shell", () => {
+  it("renders the Stage 4 grounded script workflow", () => {
+    // The UI must expose trace/run_id metadata and source_chunk citation evidence
+    // for generated script claims.
     const html = renderToStaticMarkup(<Home />);
 
-    expect(html).toContain("Repository foundation");
-    expect(html).toContain("Next.js TypeScript scaffold");
-    expect(html).toContain("Feature work blocked until Stage 4");
+    expect(html).toContain("Grounded script generation");
+    expect(html).toContain("Generate grounded script");
+    expect(html).toContain("Walkthrough script");
+    expect(html).toContain("Trace");
+    expect(html).toContain("Run");
+    expect(html).toContain("Generate a grounded script to display cited output.");
+    expect(html).toContain("Citations will appear after generation.");
+    expect(html).toContain("0 unsupported claims");
   });
 });
