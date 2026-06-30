@@ -3,11 +3,12 @@
 ## Version
 
 - Version: 1.0
-- Stage: Stage 2 architecture, security, AI safety
-- Canonical issue: `#2`
-- Last updated: 2026-06-30
-- Status: Stage 4 branch implements the first local grounded-script endpoint path
-  with mock/local providers and in-memory storage
+- Stage: Stage 6 multilingual scripts, subtitles, voice adapter
+- Canonical issue: `#11`
+- Last updated: 2026-07-01
+- Status: Stage 6 branch implements multilingual walkthrough generation with
+  mock/local translation and voice adapters, deterministic subtitles, and
+  downloadable script/subtitle artifacts
 
 ## API Principles
 
@@ -109,6 +110,7 @@ Canonical IDs use stable prefixes:
 - `ctx_` for context references
 - `ing_` for ingestion runs
 - `run_` for walkthrough runs
+- `mlrun_` for multilingual walkthrough artifact runs
 - `eval_` for evaluation results
 - `claim_` for unsupported or supported claim records
 - `claimsup_` for claim-support records
@@ -180,6 +182,7 @@ Write endpoints requiring idempotency:
 - `DELETE /api/v1/projects/{projectId}/knowledge-documents/{documentId}`
 - `POST /api/v1/projects/{projectId}/ingestion-runs`
 - `POST /api/v1/projects/{projectId}/walkthrough-runs`
+- `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/multilingual-runs`
 - `DELETE /api/v1/projects/{projectId}`
 - all future media-render endpoints
 
@@ -699,6 +702,157 @@ Backpressure error example:
 ```
 
 Responses with `BACKPRESSURE_QUEUE_FULL` include `Retry-After`.
+
+### Generate Multilingual Walkthrough
+
+`POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/multilingual-runs`
+
+Stage 6 translates an accepted English source walkthrough into a selected target
+language, preserves glossary/project terms, generates SubRip subtitles, and
+returns downloadable script/subtitle artifacts. The endpoint uses
+`TranslationProvider` and `TTSProvider` adapter interfaces with mock/local
+defaults; no paid provider is hardcoded or required for local/dev/test.
+Stage 6 does not synthesize real audio, does not play audio, does not clone a
+voice, and does not call non-local providers. The voice output is a downloadable
+JSON manifest from the mock/local `TTSProvider`.
+
+Request:
+
+```json
+{
+  "targetLanguage": "es",
+  "glossaryTerms": ["NarraTwin AI", "project knowledge", "source chunks"],
+  "requestedVoiceProvider": "mock"
+}
+```
+
+Supported Stage 6 target languages are `en`, `es`, `fr`, and `hi`. Unsupported
+language tags return `422 UNSUPPORTED_LANGUAGE` without exposing raw source text.
+When `requestedVoiceProvider` is unavailable, the response falls back to the mock
+local voice provider and records `fallbackReason =
+REQUESTED_PROVIDER_UNAVAILABLE`.
+
+Request boundary limits:
+
+- `targetLanguage`: 2-16 characters, BCP-47-like language tag, normalized to a
+  supported base language
+- `glossaryTerms`: at most 25 entries; each entry must be non-empty and at most
+  80 characters
+- `requestedVoiceProvider`: 1-64 characters, lowercase/uppercase letters,
+  numbers, `_`, or `-`; normalized to lowercase before adapter use
+- accepted source script and translated provider output: at most 20,000
+  characters
+- subtitle captions: deterministic local timing, at most 96 characters per
+  caption and at most 250 captions
+
+Post-provider validation:
+
+- translated output must be non-empty
+- translated output must stay within the Stage 6 size limit
+- every configured glossary term present in the source script must remain present
+  in translated output
+- every source citation marker such as `[1]` must remain present in translated
+  output before subtitles or downloadable artifacts are returned
+- provider identifiers must satisfy the adapter identifier pattern
+- Voice provider artifacts must be JSON manifests with safe `.json` filenames,
+  `application/json` MIME type, decodable UTF-8 JSON object content, and a
+  checksum matching the decoded manifest text
+
+Response `201`:
+
+```json
+{
+  "multilingualRunId": "mlrun_123",
+  "sourceRunId": "run_123",
+  "sourceLanguage": "en",
+  "targetLanguage": "es",
+  "status": "COMPLETED",
+  "sourceScriptText": "Generated script text with citations.",
+  "translatedScriptText": "Translated script text with preserved project terms.",
+  "subtitlesText": "1\n00:00:00,000 --> 00:00:04,000\nTranslated script text.\n\n",
+  "glossaryTerms": ["NarraTwin AI", "project knowledge"],
+  "preservedTerms": ["NarraTwin AI", "project knowledge"],
+  "translationProvider": {
+    "provider": "mock",
+    "providerMode": "LOCAL"
+  },
+  "voice": {
+    "provider": "mock",
+    "providerMode": "LOCAL",
+    "requestedProvider": "mock",
+    "fallbackReason": null,
+    "language": "es",
+    "artifact": {
+      "fileName": "voice-manifest-es.json",
+      "mimeType": "application/json",
+      "contentBase64": "base64-json",
+      "checksum": "sha256:voice"
+    }
+  },
+  "artifacts": {
+    "translatedScript": {
+      "fileName": "run_123-es-script.md",
+      "mimeType": "text/markdown",
+      "contentBase64": "base64-script",
+      "checksum": "sha256:script"
+    },
+    "subtitles": {
+      "fileName": "run_123-es.srt",
+      "mimeType": "application/x-subrip",
+      "contentBase64": "base64-srt",
+      "checksum": "sha256:srt"
+    },
+    "voiceManifest": {
+      "fileName": "voice-manifest-es.json",
+      "mimeType": "application/json",
+      "contentBase64": "base64-json",
+      "checksum": "sha256:voice"
+    }
+  },
+  "trace": {
+    "traceId": "trace_123",
+    "sourceContextRefCount": 1,
+    "sourceCitationCount": 1
+  }
+}
+```
+
+Provider response schema:
+
+- `translationProvider.provider`, `voice.provider`, and
+  `voice.requestedProvider` are provider IDs, not a hardcoded provider enum.
+- `providerMode` is constrained to `LOCAL`, `DISABLED`, or
+  `OPTIONAL_EXTERNAL`.
+- Current Stage 6 local/dev/test behavior uses `mock` and `LOCAL`.
+- Adding another adapter requires code changes in `backend/app/stage6.py`,
+  API/contract updates in this file, tests in `tests/unit` and `tests/api`,
+  third-party notices, and review of provider keys, egress, licensing, and
+  output validation. A provider adapter must not require frontend-supplied
+  secrets.
+
+Failure modes:
+
+| Status | Code | Meaning |
+|---:|---|---|
+| 400 | `IDEMPOTENCY_KEY_REQUIRED` | Missing `Idempotency-Key` on the write request |
+| 403 | `FORBIDDEN` | Project or source run is not accessible to the principal |
+| 404 | `NOT_FOUND` | Project or source walkthrough run does not exist |
+| 409 | `IDEMPOTENCY_CONFLICT` | Idempotency key was reused with a different request body |
+| 409 | `IDEMPOTENCY_IN_PROGRESS` | Duplicate request arrived while the first request is still pending |
+| 413 | `SOURCE_SCRIPT_TOO_LARGE` | Accepted source script exceeds the Stage 6 source limit |
+| 413 | `PROVIDER_OUTPUT_TOO_LARGE` | Translation provider output exceeds the Stage 6 output limit |
+| 422 | `SOURCE_RUN_NOT_TRANSLATABLE` | Source run is not completed or has no accepted script |
+| 422 | `UNSUPPORTED_LANGUAGE` | Target language is not supported by Stage 6 |
+| 422 | `PROVIDER_OUTPUT_INVALID` | Provider output is empty, invalid, or failed glossary/citation preservation |
+| 422 | `VALIDATION_ERROR` | Request boundary validation failed, including glossary/provider field limits |
+| 429 | `RESOURCE_LIMIT_EXCEEDED` | Stage 6 idempotency record limit is exceeded for the request scope |
+
+Subtitle artifacts must be valid SubRip (`.srt`) with deterministic timing.
+Accessibility notes for Stage 6: generated subtitles are downloadable text
+artifacts, keep readable caption lengths, and preserve source citation markers so
+reviewers can compare multilingual output against accepted grounded evidence.
+Frontend download links remain disabled until the response artifact matches the
+expected MIME type, file extension, base64 shape, and safe filename rules.
 
 ### List Walkthrough Runs
 

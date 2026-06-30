@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, FastAPI, File, Header, HTTPException, Request, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.app.stage4 import (
@@ -24,6 +24,14 @@ from backend.app.stage4 import (
     stage4_service,
     walkthrough_to_api,
 )
+from backend.app.stage6 import (
+    MAX_GLOSSARY_TERM_CHARS,
+    MAX_GLOSSARY_TERMS,
+    MAX_PROVIDER_ID_CHARS,
+    Stage6Error,
+    multilingual_to_api,
+    stage6_service,
+)
 
 ErrorDetailValue = str | int | float | bool
 
@@ -35,7 +43,7 @@ class HealthResponse(BaseModel):
 
     status: Literal["ok"]
     service: Literal["narratwin-ai-backend"]
-    stage: Literal["4"]
+    stage: Literal["6"]
 
 
 class ReadinessResponse(HealthResponse):
@@ -93,6 +101,40 @@ class GenerateWalkthroughRequest(BaseModel):
     depth: Literal["CONCISE", "STANDARD", "DEEP"] = "CONCISE"
     style: Literal["PLAIN", "CONFIDENT", "TECHNICAL", "EXECUTIVE"] = "CONFIDENT"
     prompt: str = "Create a concise grounded walkthrough."
+
+
+class GenerateMultilingualWalkthroughRequest(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    target_language: str = Field(
+        alias="targetLanguage",
+        min_length=2,
+        max_length=16,
+        pattern=r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+    )
+    glossary_terms: list[Annotated[str, Field(min_length=1, max_length=MAX_GLOSSARY_TERM_CHARS)]] = Field(
+        default_factory=list,
+        alias="glossaryTerms",
+        max_length=MAX_GLOSSARY_TERMS,
+    )
+    requested_voice_provider: str = Field(
+        default="mock",
+        alias="requestedVoiceProvider",
+        min_length=1,
+        max_length=MAX_PROVIDER_ID_CHARS,
+        pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$",
+    )
+
+    @field_validator("glossary_terms")
+    @classmethod
+    def normalize_glossary_terms(cls, terms: list[str]) -> list[str]:
+        normalized: list[str] = []
+        for term in terms:
+            candidate = " ".join(term.strip().split())
+            if not candidate:
+                raise ValueError("Glossary terms must not be blank.")
+            normalized.append(candidate)
+        return normalized
 
 
 class ProjectResponse(BaseModel):
@@ -284,6 +326,73 @@ class WalkthroughRunResponse(BaseModel):
     redacted_unsupported_excerpts: list[str] = Field(default_factory=list, alias="redactedUnsupportedExcerpts")
 
 
+class DownloadableArtifactResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    file_name: str = Field(alias="fileName")
+    mime_type: str = Field(alias="mimeType")
+    content_base64: str = Field(alias="contentBase64")
+    checksum: str
+
+
+class TranslationProviderResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    provider: str = Field(min_length=1, max_length=MAX_PROVIDER_ID_CHARS, pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")
+    provider_mode: Literal["LOCAL", "DISABLED", "OPTIONAL_EXTERNAL"] = Field(alias="providerMode")
+
+
+class VoiceProviderResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    provider: str = Field(min_length=1, max_length=MAX_PROVIDER_ID_CHARS, pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")
+    provider_mode: Literal["LOCAL", "DISABLED", "OPTIONAL_EXTERNAL"] = Field(alias="providerMode")
+    requested_provider: str = Field(
+        alias="requestedProvider",
+        min_length=1,
+        max_length=MAX_PROVIDER_ID_CHARS,
+        pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$",
+    )
+    fallback_reason: str | None = Field(default=None, alias="fallbackReason")
+    language: str
+    artifact: DownloadableArtifactResponse
+
+
+class MultilingualArtifactsResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    translated_script: DownloadableArtifactResponse = Field(alias="translatedScript")
+    subtitles: DownloadableArtifactResponse
+    voice_manifest: DownloadableArtifactResponse = Field(alias="voiceManifest")
+
+
+class MultilingualTraceResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    trace_id: str = Field(alias="traceId")
+    source_context_ref_count: int = Field(alias="sourceContextRefCount")
+    source_citation_count: int = Field(alias="sourceCitationCount")
+
+
+class MultilingualWalkthroughResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    multilingual_run_id: str = Field(alias="multilingualRunId")
+    source_run_id: str = Field(alias="sourceRunId")
+    source_language: str = Field(alias="sourceLanguage")
+    target_language: str = Field(alias="targetLanguage")
+    status: Literal["COMPLETED"]
+    source_script_text: str = Field(alias="sourceScriptText")
+    translated_script_text: str = Field(alias="translatedScriptText")
+    subtitles_text: str = Field(alias="subtitlesText")
+    glossary_terms: list[str] = Field(alias="glossaryTerms")
+    preserved_terms: list[str] = Field(alias="preservedTerms")
+    translation_provider: TranslationProviderResponse = Field(alias="translationProvider")
+    voice: VoiceProviderResponse
+    artifacts: MultilingualArtifactsResponse
+    trace: MultilingualTraceResponse
+
+
 async def local_principal(x_local_user_id: str | None = Header(default=None, alias="X-Local-User-Id")) -> LocalPrincipal:
     actor_id = (x_local_user_id or "").strip()
     return LocalPrincipal(actor_id=actor_id or "user_local")
@@ -410,6 +519,16 @@ async def stage4_error_handler(request: Request, exc: Stage4Error) -> JSONRespon
     )
 
 
+@app.exception_handler(Stage6Error)
+async def stage6_error_handler(request: Request, exc: Stage6Error) -> JSONResponse:
+    return error_response(
+        request=request,
+        status_code=exc.status_code,
+        code=exc.code,
+        message=exc.message,
+    )
+
+
 @app.exception_handler(Exception)
 async def unhandled_error_handler(request: Request, _exc: Exception) -> JSONResponse:
     return error_response(
@@ -421,7 +540,7 @@ async def unhandled_error_handler(request: Request, _exc: Exception) -> JSONResp
 
 
 def health_payload() -> HealthResponse:
-    return HealthResponse(status="ok", service="narratwin-ai-backend", stage="4")
+    return HealthResponse(status="ok", service="narratwin-ai-backend", stage="6")
 
 
 @app.get("/healthz", response_model=HealthResponse, tags=["health"])
@@ -557,6 +676,48 @@ def generate_walkthrough_run(
     return WalkthroughRunResponse.model_validate(walkthrough_to_api(run))
 
 
+@api_v1.post(
+    "/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+    status_code=201,
+    response_model=MultilingualWalkthroughResponse,
+    response_model_exclude_none=True,
+    tags=["walkthrough"],
+)
+def generate_multilingual_walkthrough_run(
+    project_id: str,
+    run_id: str,
+    request: GenerateMultilingualWalkthroughRequest,
+    principal: LocalPrincipal = Depends(local_principal),
+    idempotency_key: str | None = Depends(idempotency_key_header),
+) -> MultilingualWalkthroughResponse:
+    project = stage4_service.projects.get(project_id)
+    if project is None:
+        raise Stage6Error(404, "NOT_FOUND", "Project not found.")
+    if project.tenant_id != principal.tenant_id or project.owner_id != principal.actor_id:
+        raise Stage6Error(403, "FORBIDDEN", "Project is not accessible to this principal.")
+    source_run = stage4_service.walkthrough_runs.get(run_id)
+    if source_run is None or source_run.project_id != project_id:
+        raise Stage6Error(404, "NOT_FOUND", "Walkthrough run not found.")
+    if source_run.tenant_id != principal.tenant_id or source_run.actor_id != principal.actor_id:
+        raise Stage6Error(403, "FORBIDDEN", "Walkthrough run is not accessible to this principal.")
+    if source_run.status != "COMPLETED" or not source_run.accepted_script_text:
+        raise Stage6Error(422, "SOURCE_RUN_NOT_TRANSLATABLE", "Only completed grounded walkthrough runs can be translated.")
+
+    multilingual_run = stage6_service.generate_multilingual_walkthrough(
+        source_script=source_run.accepted_script_text,
+        source_language=source_run.requested_language,
+        target_language=request.target_language,
+        glossary_terms=request.glossary_terms,
+        requested_voice_provider=request.requested_voice_provider,
+        source_run_id=source_run.run_id,
+        trace_id=source_run.trace_id,
+        source_context_ref_count=len(source_run.retrieved_context),
+        idempotency_scope=f"{principal.tenant_id}:{principal.actor_id}:{project_id}:{run_id}",
+        idempotency_key=idempotency_key,
+    )
+    return MultilingualWalkthroughResponse.model_validate(multilingual_to_api(multilingual_run))
+
+
 async def read_upload_with_limit(file: UploadFile) -> bytes:
     data = bytearray()
     while True:
@@ -570,6 +731,7 @@ async def read_upload_with_limit(file: UploadFile) -> bytes:
 
 def reset_app_state_for_tests() -> None:
     stage4_service.reset()
+    stage6_service.reset()
 
 
 app.include_router(api_v1)

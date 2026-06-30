@@ -1,9 +1,9 @@
 from backend.app.main import health_payload
 
 
-def test_health_payload_is_stage4_contract() -> None:
+def test_health_payload_is_stage6_contract() -> None:
     payload = health_payload()
 
     assert payload.status == "ok"
     assert payload.service == "narratwin-ai-backend"
-    assert payload.stage == "4"
+    assert payload.stage == "6"

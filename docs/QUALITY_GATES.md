@@ -11,10 +11,11 @@ make quality
 ```
 
 During the current stage, `make quality` runs only the active stage checks
-by delegating to `scripts/quality/check_quality_stage.py`. Stage 5 now gates
-runtime evaluation, prompt-injection guardrails, file-abuse tests, telemetry,
-and observability surfaces for the approved first-slice path. Product behavior
-outside the approved slice remains blocked.
+by delegating to `scripts/quality/check_quality_stage.py`. Stage 6 now gates
+multilingual script generation, glossary-preserving translation, subtitle export,
+mock/local voice-adapter behavior, downloadable artifacts, accessibility notes,
+and documentation for the approved first-slice path. Product behavior outside
+the approved slice remains blocked.
 
 ## Required Make Targets
 
@@ -22,14 +23,14 @@ The `Makefile` must expose:
 
 | Target | Current behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`; currently Stage 5 |
+| `make quality` | Runs checks for `.stage/current`; currently Stage 6 |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
 | `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
 | `make stage2-quality` | Runs executable Stage 2 architecture, security, AI safety, and portability checks |
 | `make stage3-quality` | Runs executable Stage 3 repo foundation and CI/CD checks |
 | `make stage4-quality` | Runs executable Stage 4 first-slice checks |
 | `make stage5-quality` | Runs executable Stage 5 eval/guardrail/observability checks |
-| `make stage6-quality` | Fails loudly until Stage 6 quality is implemented |
+| `make stage6-quality` | Runs executable Stage 6 multilingual/subtitle/voice checks |
 | `make stage7-quality` | Fails loudly until Stage 7 quality is implemented |
 | `make stage8-quality` | Fails loudly until Stage 8 quality is implemented |
 | `make final-review-quality` | Fails loudly until Final Review quality is implemented |
@@ -242,7 +243,45 @@ Gate validates:
 
 ### Stage 6: Multilingual Scripts, Subtitles, Voice Adapter
 
-Gate must validate translation/localization quality, subtitle export, mock/local voice adapter behavior, no required paid provider, accessibility notes, and docs.
+Stage 6 quality is executable through `make stage6-quality`, which first runs
+`scripts/quality/check_stage6_docs.py` and then executes the repo-local CI
+wrappers.
+
+Gate validates:
+
+- `.stage/current` contains `6`
+- current branch name matches `stage6-*` before merge, or is `main` after merge
+- changed files stay within the documented Stage 6 allowlist
+- direct Stage 6 dependencies are locked: `babel`, `langcodes`, `pydub`,
+  `audioop-lts`, and `srt`
+- no paid/avatar provider dependencies are introduced
+- backend exposes a provider-adapter based multilingual path with
+  `TranslationProvider`, `TTSProvider`, `MockTranslationProvider`, and
+  `MockTTSProvider`
+- translation preserves configured glossary/project terms
+- provider output is validated before display or artifact creation for non-empty
+  output, size limits, glossary preservation, and citation-marker preservation
+- Stage 6 idempotency uses a locked pending/completed record so duplicate
+  in-flight write requests fail with `IDEMPOTENCY_IN_PROGRESS`
+- API request fields enforce Stage 6 boundary limits for target language,
+  glossary terms, and requested provider IDs
+- unsupported language tags fail cleanly with `UNSUPPORTED_LANGUAGE`
+- requested unavailable voice providers fall back to mock/local behavior without
+  hardcoded paid-provider calls
+- mock/local voice behavior emits a JSON manifest only; Stage 6 does not
+  synthesize real audio, play audio, clone voices, or call non-local providers
+- voice provider artifacts are validated as JSON manifests with safe `.json`
+  filenames, `application/json` MIME type, parseable JSON object content, and
+  matching checksums before they are returned
+- subtitle export emits valid deterministic SubRip timing
+- API responses include downloadable translated-script and subtitle artifacts
+- frontend exposes target language selection and script/subtitle download links,
+  uses glossary-aware multilingual idempotency keys, and only enables artifact
+  links after safe artifact MIME, extension, base64, and filename validation
+- accessibility notes document downloadable text subtitle behavior and readable
+  caption sizing
+- Stage 6 docs, traceability, third-party notices, and provider ADR updates are
+  present
 
 ### Stage 7: Avatar Rendering Adapter And Export
 

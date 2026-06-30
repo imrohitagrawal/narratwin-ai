@@ -327,3 +327,57 @@ Blocked changes:
 - broad frontend feature changes outside the approved Stage 4 first-slice UI
 - new provider integrations beyond local/mock evaluation and observability
   adapters
+
+## Stage 6 Multilingual Scripts, Subtitles, Voice Adapter Branch Scope
+
+Allowed changes:
+
+- `.stage/current`
+- `Makefile`
+- `backend/app/main.py`
+- `backend/app/stage6.py`
+- `frontend/src/app/page.tsx`
+- `frontend/src/app/page.module.css`
+- `frontend/src/app/page.test.tsx`
+- `frontend/tests/smoke.spec.ts`
+- `tests/unit/test_stage6_multilingual.py`
+- `tests/api/test_stage6_multilingual_api.py`
+- `tests/unit/test_health_contract.py`
+- `tests/api/test_health_api.py`
+- `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_stage6_docs.py`
+- `docs/API_CONTRACT.md`
+- `docs/ADR/0002-provider-agnostic-adapters.md`
+- `docs/QUALITY_GATES.md`
+- `docs/RECOMMENDED_REVIEW_ITEMS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/TRACEABILITY.md`
+- `pyproject.toml`
+- `uv.lock`
+
+Blocked changes:
+
+- real paid provider calls or required real provider keys
+- hardcoded premium-provider SDK usage
+- avatar rendering, face cloning, voice cloning, or video rendering
+- STT/video import workflows outside the approved Stage 6 source-script path
+- database migrations, asynchronous job infrastructure, or production deployment
+  infrastructure
+- non-local TTS, translation, subtitle, or media-provider dependencies without
+  provider-adapter review and third-party notice updates
+
+Required Stage 6 hardening within this scope:
+
+- write idempotency must reserve a pending record before provider work and reject
+  duplicate in-flight requests
+- provider output must be validated for non-empty translated text, size limits,
+  glossary preservation, and citation-marker preservation before display or
+  downloadable artifact creation
+- API request fields must enforce target-language, glossary, and provider-ID
+  boundary limits
+- frontend artifact links must only be enabled for expected script/subtitle MIME
+  types and file extensions
+- mock/local voice behavior must remain a JSON manifest only, with no real audio,
+  playback, voice cloning, or non-local provider egress

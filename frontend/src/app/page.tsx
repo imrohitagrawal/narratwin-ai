@@ -34,6 +34,31 @@ type WalkthroughRun = {
   };
 };
 
+type DownloadableArtifact = {
+  fileName: string;
+  mimeType: string;
+  contentBase64: string;
+};
+
+type MultilingualWalkthrough = {
+  multilingualRunId: string;
+  status: string;
+  sourceLanguage: string;
+  targetLanguage: string;
+  translatedScriptText: string;
+  subtitlesText: string;
+  preservedTerms: string[];
+  voice: {
+    provider: string;
+    requestedProvider: string;
+    fallbackReason?: string;
+  };
+  artifacts: {
+    translatedScript: DownloadableArtifact;
+    subtitles: DownloadableArtifact;
+  };
+};
+
 type ProjectResponse = {
   projectId: string;
 };
@@ -60,13 +85,14 @@ async function postJson<T>(path: string, body: object, idempotencyKey: string): 
 
 async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    throw new Error(`Stage 4 API request failed with ${response.status}`);
+    throw new Error(`NarraTwin API request failed with ${response.status}`);
   }
   return (await response.json()) as T;
 }
 
 export default function Home() {
   const [run, setRun] = useState<WalkthroughRun | null>(null);
+  const [multilingualRun, setMultilingualRun] = useState<MultilingualWalkthrough | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
 
@@ -77,7 +103,18 @@ export default function Home() {
     const knowledgeDocument = String(form.get("knowledgeDocument") ?? "").trim();
     const audience = String(form.get("audience") ?? "RECRUITER");
     const depth = String(form.get("depth") ?? "CONCISE");
-    const requestSeed = checksumSeed(projectName, knowledgeDocument, audience, depth);
+    const targetLanguage = String(form.get("targetLanguage") ?? "es");
+    const glossaryTerms = String(form.get("glossaryTerms") ?? "")
+      .split("\n")
+      .map((term) => term.trim())
+      .filter(Boolean);
+    const requestSeed = checksumSeed(projectName, knowledgeDocument, audience, depth, targetLanguage);
+    const requestedVoiceProvider = "mock";
+    const multilingualSeed = checksumSeed(
+      requestSeed,
+      requestedVoiceProvider,
+      ...glossaryTerms.slice().sort((left, right) => left.localeCompare(right)),
+    );
 
     setIsGenerating(true);
     setError("");
@@ -141,10 +178,22 @@ export default function Home() {
         `ui-generate-${requestSeed}`,
       );
 
+      const multilingual = await postJson<MultilingualWalkthrough>(
+        `/projects/${project.projectId}/walkthrough-runs/${generated.runId}/multilingual-runs`,
+        {
+          targetLanguage,
+          glossaryTerms,
+          requestedVoiceProvider,
+        },
+        `ui-multilingual-${multilingualSeed}`,
+      );
+
       setRun(generated);
+      setMultilingualRun(multilingual);
     } catch (caught) {
       setRun(null);
-      setError(caught instanceof Error ? caught.message : "Stage 4 API request failed.");
+      setMultilingualRun(null);
+      setError(caught instanceof Error ? caught.message : "Stage 6 API request failed.");
     } finally {
       setIsGenerating(false);
     }
@@ -157,7 +206,7 @@ export default function Home() {
       <section className={styles.workspace} aria-labelledby="workspace-title">
         <div className={styles.header}>
           <p className={styles.kicker}>NarraTwin AI</p>
-          <h1 id="workspace-title">Grounded script generation</h1>
+          <h1 id="workspace-title">Multilingual walkthrough generation</h1>
         </div>
 
         <form className={styles.form} aria-label="Project knowledge form" onSubmit={generateWalkthrough}>
@@ -189,8 +238,28 @@ export default function Home() {
             </label>
           </div>
 
+          <div className={styles.controls}>
+            <label className={styles.field}>
+              <span>Target language</span>
+              <select name="targetLanguage" defaultValue="es">
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="hi">Hindi</option>
+              </select>
+            </label>
+
+            <label className={styles.field}>
+              <span>Glossary terms</span>
+              <textarea
+                name="glossaryTerms"
+                defaultValue={"NarraTwin AI\nproject knowledge\nsource chunks"}
+                rows={4}
+              />
+            </label>
+          </div>
+
           <button className={styles.primaryAction} type="submit" disabled={isGenerating}>
-            {isGenerating ? "Generating" : "Generate grounded script"}
+            {isGenerating ? "Generating" : "Generate multilingual walkthrough"}
           </button>
         </form>
 
@@ -199,9 +268,17 @@ export default function Home() {
         <section className={styles.result} aria-labelledby="result-title">
           <div className={styles.resultHeader}>
             <h2 id="result-title">Walkthrough script</h2>
-            <span className={styles.badge}>{run?.status ?? "READY"}</span>
+            <span className={styles.badge}>{multilingualRun?.status ?? run?.status ?? "READY"}</span>
           </div>
-          <p>{run?.acceptedScriptText ?? "Generate a grounded script to display cited output."}</p>
+          <p>
+            {multilingualRun?.translatedScriptText ??
+              run?.acceptedScriptText ??
+              "Generate a grounded script to display cited output."}
+          </p>
+          <div className={styles.artifactActions} aria-label="Downloadable artifacts">
+            {renderArtifactAction("Download script", "script", multilingualRun?.artifacts.translatedScript)}
+            {renderArtifactAction("Download subtitles", "subtitles", multilingualRun?.artifacts.subtitles)}
+          </div>
           <dl className={styles.metadata} aria-label="Trace metadata">
             <div>
               <dt>Trace</dt>
@@ -210,6 +287,14 @@ export default function Home() {
             <div>
               <dt>Run</dt>
               <dd>{run?.runId ?? "pending"}</dd>
+            </div>
+            <div>
+              <dt>Language</dt>
+              <dd>{multilingualRun?.targetLanguage ?? "pending"}</dd>
+            </div>
+            <div>
+              <dt>Voice</dt>
+              <dd>{multilingualRun?.voice.provider ?? "pending"}</dd>
             </div>
           </dl>
         </section>
@@ -242,6 +327,60 @@ export default function Home() {
       </section>
     </main>
   );
+}
+
+type ArtifactKind = "script" | "subtitles";
+
+const allowedArtifactMimeTypes: Record<ArtifactKind, string> = {
+  script: "text/markdown",
+  subtitles: "application/x-subrip",
+};
+
+const allowedArtifactExtensions: Record<ArtifactKind, string> = {
+  script: ".md",
+  subtitles: ".srt",
+};
+
+function renderArtifactAction(label: string, kind: ArtifactKind, artifact?: DownloadableArtifact) {
+  const href = artifactHref(kind, artifact);
+  if (!artifact || !href) {
+    return (
+      <button type="button" disabled>
+        {label}
+      </button>
+    );
+  }
+  return (
+    <a href={href} download={artifact.fileName}>
+      {label}
+    </a>
+  );
+}
+
+export function artifactHref(kind: ArtifactKind, artifact?: DownloadableArtifact) {
+  if (!artifact) {
+    return "";
+  }
+  if (artifact.mimeType !== allowedArtifactMimeTypes[kind]) {
+    return "";
+  }
+  if (!artifact.fileName.endsWith(allowedArtifactExtensions[kind])) {
+    return "";
+  }
+  if (!safeArtifactFileName(artifact.fileName)) {
+    return "";
+  }
+  if (!/^[A-Za-z0-9+/=]+$/.test(artifact.contentBase64)) {
+    return "";
+  }
+  return `data:${artifact.mimeType};base64,${artifact.contentBase64}`;
+}
+
+function safeArtifactFileName(fileName: string) {
+  if (!fileName || fileName.includes("/") || fileName.includes("\\")) {
+    return false;
+  }
+  return !/[\u0000-\u001f\u007f]/.test(fileName);
 }
 
 function checksumSeed(...values: string[]) {
