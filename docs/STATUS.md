@@ -60,7 +60,8 @@ Use these files together with this tracker:
   `stage4-grounded-script-generation` for issue `#4`; backend/API, frontend,
   deterministic eval smoke, and executable Stage 4 quality gate work are present
   in this branch. Local Stage 4 quality passes; GitHub CI reconciliation and PR
-  review remain required before merge.
+  review remain required before merge. PR `#29` uses follow-up ledger commits when
+  push-scoped guardrails need repository-tracked reconciliation on the latest SHA.
 - Stage 1 is split into product/PRD hardening under `#1` and the follow-on Spec Kit constitution/spec/plan/tasks gate under `#16`.
 - Stage 3 repository-foundation work builds on the partial Stage 0 CI baseline and
   is now adding dependency manifests, health checks, Docker build paths, CI
