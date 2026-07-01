@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+import time
 from datetime import UTC, datetime
+from threading import Lock
 from typing import Annotated, Literal
 from uuid import uuid4
 
@@ -15,6 +17,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.app.rag.chunking import checksum_text
 from backend.app.stage4 import (
+    MAX_API_REQUEST_BYTES,
     LocalPrincipal,
     MAX_UPLOAD_BYTES,
     MAX_UPLOAD_REQUEST_BYTES,
@@ -50,7 +53,7 @@ class HealthResponse(BaseModel):
 
     status: Literal["ok"]
     service: Literal["narratwin-ai-backend"]
-    stage: Literal["7"]
+    stage: Literal["8"]
 
 
 class ReadinessResponse(HealthResponse):
@@ -542,6 +545,39 @@ FOUNDATION_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
 }
+MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE = 120
+STAGE8_RATE_LIMIT_WINDOW_SECONDS = 60.0
+WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+class Stage8WriteRateLimiter:
+    def __init__(self, *, limit: int, window_seconds: float) -> None:
+        self.limit = limit
+        self.window_seconds = window_seconds
+        self._events_by_key: dict[str, list[float]] = {}
+        self._lock = Lock()
+
+    def allow(self, *, key: str, now: float | None = None) -> bool:
+        timestamp = time.monotonic() if now is None else now
+        cutoff = timestamp - self.window_seconds
+        with self._lock:
+            events = [event for event in self._events_by_key.get(key, []) if event > cutoff]
+            if len(events) >= self.limit:
+                self._events_by_key[key] = events
+                return False
+            events.append(timestamp)
+            self._events_by_key[key] = events
+            return True
+
+    def reset(self) -> None:
+        with self._lock:
+            self._events_by_key.clear()
+
+
+stage8_write_rate_limiter = Stage8WriteRateLimiter(
+    limit=MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE,
+    window_seconds=STAGE8_RATE_LIMIT_WINDOW_SECONDS,
+)
 
 
 @app.middleware("http")
@@ -551,18 +587,31 @@ async def add_foundation_headers(
 ) -> Response:
     request_id = request.headers.get("X-Request-Id") or str(uuid4())
     request.state.request_id = request_id
-    if request.method == "POST" and request.url.path.endswith("/knowledge-documents"):
-        content_length = request.headers.get("Content-Length")
+    if request.method in WRITE_METHODS and request.url.path.startswith("/api/v1/"):
+        content_length_header = request.headers.get("Content-Length")
         try:
-            upload_request_bytes = int(content_length) if content_length is not None else 0
+            request_bytes = int(content_length_header) if content_length_header is not None else 0
         except ValueError:
-            upload_request_bytes = MAX_UPLOAD_REQUEST_BYTES + 1
-        if upload_request_bytes > MAX_UPLOAD_REQUEST_BYTES:
+            request_bytes = MAX_API_REQUEST_BYTES + 1
+        request_limit = (
+            MAX_UPLOAD_REQUEST_BYTES
+            if request.method == "POST" and request.url.path.endswith("/knowledge-documents")
+            else MAX_API_REQUEST_BYTES
+        )
+        if request_bytes > request_limit:
             return error_response(
                 request=request,
                 status_code=413,
-                code="UPLOAD_TOO_LARGE",
-                message="Upload exceeds the Stage 4 size limit.",
+                code="UPLOAD_TOO_LARGE" if request_limit == MAX_UPLOAD_REQUEST_BYTES else "REQUEST_TOO_LARGE",
+                message="Request exceeds the Stage 8 size limit.",
+            )
+        rate_limit_key = rate_limit_key_for(request)
+        if not stage8_write_rate_limiter.allow(key=rate_limit_key):
+            return error_response(
+                request=request,
+                status_code=429,
+                code="RATE_LIMIT_EXCEEDED",
+                message="Too many write requests. Retry after the Stage 8 local rate-limit window.",
             )
     response = await call_next(request)
     for header, value in FOUNDATION_HEADERS.items():
@@ -573,6 +622,14 @@ async def add_foundation_headers(
 
 def request_id_for(request: Request) -> str:
     return str(getattr(request.state, "request_id", "")) or str(uuid4())
+
+
+def rate_limit_key_for(request: Request) -> str:
+    principal = request.headers.get("X-Local-User-Id")
+    if principal and principal.strip():
+        return f"user:{principal.strip()}"
+    client_host = request.client.host if request.client else "local"
+    return f"ip:{client_host}"
 
 
 def error_response(
@@ -668,7 +725,7 @@ async def unhandled_error_handler(request: Request, _exc: Exception) -> JSONResp
 
 
 def health_payload() -> HealthResponse:
-    return HealthResponse(status="ok", service="narratwin-ai-backend", stage="7")
+    return HealthResponse(status="ok", service="narratwin-ai-backend", stage="8")
 
 
 @app.get("/healthz", response_model=HealthResponse, tags=["health"])
@@ -928,6 +985,7 @@ def reset_app_state_for_tests() -> None:
     stage4_service.reset()
     stage6_service.reset()
     stage7_service.reset()
+    stage8_write_rate_limiter.reset()
 
 
 app.include_router(api_v1)

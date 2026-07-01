@@ -11,11 +11,12 @@ make quality
 ```
 
 During the current stage, `make quality` runs only the active stage checks
-by delegating to `scripts/quality/check_quality_stage.py`. Stage 7 has started
-from the merged Stage 6 baseline and is scoped to mock/local avatar rendering,
-demo export artifacts, provider contract tests, public-use license checks, AI
-disclosure, consent controls, and documentation. Product behavior outside the
-approved slice remains blocked.
+by delegating to `scripts/quality/check_quality_stage.py`. Stage 8 has started
+from merged PR `#32` at commit `7f7196a` and is scoped to performance smoke
+tests, API latency budget checks, frontend Lighthouse checks, rate limiting,
+request size limits, upload MIME validation, dependency audit, Docker image
+scan, release checklist, runbook, demo seed data, portfolio README, and release
+readiness evidence. Product behavior outside hardening remains blocked.
 
 ## Required Make Targets
 
@@ -23,7 +24,7 @@ The `Makefile` must expose:
 
 | Target | Current behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`; currently Stage 7 |
+| `make quality` | Runs checks for `.stage/current`; currently Stage 8 |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
 | `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
 | `make stage2-quality` | Runs executable Stage 2 architecture, security, AI safety, and portability checks |
@@ -32,7 +33,7 @@ The `Makefile` must expose:
 | `make stage5-quality` | Runs executable Stage 5 eval/guardrail/observability checks |
 | `make stage6-quality` | Runs executable Stage 6 multilingual/subtitle/voice checks |
 | `make stage7-quality` | Runs executable Stage 7 avatar rendering/export checks |
-| `make stage8-quality` | Fails loudly until Stage 8 quality is implemented |
+| `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
 | `make final-review-quality` | Fails loudly until Final Review quality is implemented |
 
 ## Stage 0 Quality Gate
@@ -342,7 +343,33 @@ Gate validates:
 
 ### Stage 8: Performance, Security Hardening, Release Readiness
 
-Gate must validate performance budgets, security hardening, dependency/security scan results, release-readiness evidence, known limitations, rollback notes, and Stage 8 documentation.
+Stage 8 quality is executable through `make stage8-quality`, which first runs
+`scripts/quality/check_stage8_docs.py` and then executes the repo-local CI
+wrappers.
+
+Gate validates:
+
+- `.stage/current` contains `8`
+- current branch name matches `stage8-*` before merge, or is `main` after merge
+- changed files stay within the documented Stage 8 allowlist
+- health endpoint < 200 ms local
+- script generation mocked path < 2 sec
+- upload limit enforced through request and streaming limits
+- upload MIME validation rejects octet-stream compatibility for markdown/text
+- write rate limiting returns `RATE_LIMIT_EXCEEDED`
+- `locust` is locked as dev-only performance tooling
+- frontend Lighthouse checks are locked and executable
+- dependency audit blocks critical/high findings
+- Docker image scan blocks critical/high container vulnerabilities through
+  Trivy, Grype, or Docker Scout
+- frontend production image strips npm/npx from the runner layer before
+  scanning so package-manager-only vulnerabilities are not shipped
+- release checklist, runbook, demo seed data, portfolio README, and
+  `docs/RELEASE_READINESS_REVIEW.md` exist
+- RR-029 through RR-035 have explicit Stage 8 dispositions, especially
+  multi-worker durability blocks, real video export/license posture, persistent
+  synthetic-media consent/provenance, and source-run based avatar rendering
+- no paid provider or production credential dependency is introduced
 
 ### Final Review: Independent Review
 

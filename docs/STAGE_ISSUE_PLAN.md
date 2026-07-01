@@ -441,3 +441,71 @@ Required Stage 7 hardening within this scope:
   `.codex` generated skill files
 - any optional Stage 8 hardening recommendation discovered during Stage 7 must
   be recorded in `docs/RECOMMENDED_REVIEW_ITEMS.md` with a required stage/phase
+
+## Stage 8 Performance, Security Hardening, Release Readiness Branch Scope
+
+Allowed changes:
+
+- `.stage/current`
+- `Makefile`
+- `backend/app/main.py`
+- `backend/app/stage4.py`
+- `backend/app/stage6.py`
+- `backend/Dockerfile`
+- `frontend/Dockerfile`
+- `frontend/package.json`
+- `frontend/package-lock.json`
+- `frontend/scripts/run-lighthouse.mjs`
+- `perf/stage8_locustfile.py`
+- `pyproject.toml`
+- `uv.lock`
+- `scripts/ci/dependency-security.sh`
+- `scripts/ci/docker-image-scan.sh`
+- `scripts/ci/frontend-lighthouse.sh`
+- `scripts/ci/performance-smoke.sh`
+- `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_stage8_docs.py`
+- `tests/api/test_health_api.py`
+- `tests/api/test_stage8_hardening_api.py`
+- `tests/unit/test_health_contract.py`
+- `tests/unit/test_stage6_multilingual.py`
+- `demo/stage8_seed_project.md`
+- `docs/API_CONTRACT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/RECOMMENDED_REVIEW_ITEMS.md`
+- `docs/RELEASE_CHECKLIST.md`
+- `docs/RELEASE_READINESS_REVIEW.md`
+- `docs/RUNBOOK.md`
+- `docs/SKILL_LOCK.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/TRACEABILITY.md`
+- `portfolio/README.md`
+
+Blocked changes:
+
+- real paid provider calls or required real provider keys
+- new production credential dependency
+- broad product feature implementation beyond release hardening
+- multi-worker production enablement while Stage 6 and Stage 7 process-local
+  idempotency/job/artifact state remains non-durable
+- real video export implementation before renderer/provider license posture,
+  performance limits, and artifact validation are approved
+- external avatar provider or public synthetic-media export before persistent
+  consent/provenance is implemented
+
+Required Stage 8 hardening within this scope:
+
+- performance smoke tests and API latency budget checks
+- frontend Lighthouse checks
+- rate limiting
+- request size limits
+- upload MIME validation
+- dependency audit
+- Docker image scan
+- release checklist and rollback notes
+- runbook
+- demo seed data
+- portfolio README
+- `docs/RELEASE_READINESS_REVIEW.md`

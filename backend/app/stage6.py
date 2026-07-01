@@ -471,7 +471,7 @@ def normalize_glossary_terms(terms: Iterable[str]) -> list[str]:
     for term in terms:
         candidate = " ".join(term.strip().split())
         if not candidate:
-            continue
+            raise Stage6Error(422, "VALIDATION_ERROR", "Glossary terms must not be blank.")
         if len(candidate) > MAX_GLOSSARY_TERM_CHARS:
             raise Stage6Error(422, "VALIDATION_ERROR", "Glossary term exceeds the Stage 6 limit.")
         if candidate not in normalized:

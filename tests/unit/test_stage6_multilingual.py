@@ -44,6 +44,20 @@ def test_translation_preserves_project_terms_from_glossary() -> None:
     assert result.translated_script_text != source_script
 
 
+def test_domain_service_rejects_blank_glossary_terms_directly() -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            target_language="es",
+            glossary_terms=["NarraTwin AI", "   "],
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "VALIDATION_ERROR"
+
+
 def test_subtitle_timing_format_is_valid_subrip() -> None:
     subtitles = generate_subtitles(
         script_text=(

@@ -3,11 +3,12 @@
 ## Version
 
 - Version: 1.0
-- Stage: Stage 7 avatar rendering adapter and export
-- Canonical issue: `#12`
+- Stage: Stage 8 performance, security hardening, release readiness
+- Canonical issue: `#13`
 - Last updated: 2026-07-01
-- Status: Stage 7 branch implements mock/local avatar rendering and demo export
-  artifacts on top of the grounded walkthrough path
+- Status: Stage 8 branch adds local performance budgets, request hardening,
+  dependency/container scan gates, and release-readiness evidence on top of the
+  Stage 7 mock/local avatar path
 
 ## API Principles
 
@@ -21,6 +22,13 @@
 - Project-scoped endpoints enforce authorization before data access.
 - Generated outputs expose evaluation state and context references.
 - Provider secrets are never accepted from frontend request bodies.
+- Write requests are locally rate limited and return `RATE_LIMIT_EXCEEDED` with
+  HTTP `429` when the Stage 8 local window is exceeded.
+- API write requests have a general request size limit. Uploads keep the stricter
+  multipart upload limit and streaming read limit.
+- Markdown uploads must use `text/markdown`; plain-text uploads must use
+  `text/plain`. `application/octet-stream` compatibility is intentionally
+  rejected until a validated compatibility exception is approved.
 
 ## API Versioning
 
