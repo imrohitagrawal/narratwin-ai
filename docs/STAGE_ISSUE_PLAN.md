@@ -84,6 +84,7 @@ Allowed changes:
 - `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
 - `docs/ROADMAP.md`
 - `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
 - `docs/TRACEABILITY.md`
 - `scripts/ci/backend-lint.sh`
 - `scripts/ci/backend-test.sh`

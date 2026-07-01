@@ -11,12 +11,11 @@ make quality
 ```
 
 During the current stage, `make quality` runs only the active stage checks
-by delegating to `scripts/quality/check_quality_stage.py`. Stage 8 has started
-from merged PR `#32` at commit `7f7196a` and is scoped to performance smoke
-tests, API latency budget checks, frontend Lighthouse checks, rate limiting,
-request size limits, upload MIME validation, dependency audit, Docker image
-scan, release checklist, runbook, demo seed data, portfolio README, and release
-readiness evidence. Product behavior outside hardening remains blocked.
+by delegating to `scripts/quality/check_quality_stage.py`. The repository stage
+marker remains `.stage/current = 8`, so ordinary Stage 8 branches and `main`
+dispatch to the Stage 8 gate. Final Review and Phase 1 Closure branches override
+that marker by branch prefix and dispatch to their dedicated governance gates.
+Product behavior outside approved Phase 1 closure remediation remains blocked.
 
 ## Required Make Targets
 
@@ -24,7 +23,7 @@ The `Makefile` must expose:
 
 | Target | Current behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`; currently Stage 8 |
+| `make quality` | Runs checks for `.stage/current`, with Final Review and Phase 1 Closure branch-prefix overrides |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
 | `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
 | `make stage2-quality` | Runs executable Stage 2 architecture, security, AI safety, and portability checks |

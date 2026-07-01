@@ -4,6 +4,8 @@ Date: 2026-07-01
 
 Branch: `phase-1-closure-governance-traceability`
 
+Pull request: `#46`
+
 Baseline:
 
 - `main` includes Stage 8 PR `#33` merge commit `fb40113`.

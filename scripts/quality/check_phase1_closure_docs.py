@@ -25,6 +25,7 @@ REQUIRED_PHASE1_FILES = {
     "docs/RELEASE_READINESS_REVIEW.md",
     "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md",
     "docs/RISK_REGISTER.md",
+    "docs/THIRD_PARTY_NOTICES.md",
     "docs/evals/phase1_golden_questions.jsonl",
     "docs/demo/PHASE_1_DEMO_SCRIPT.md",
     "docs/demo/PHASE_1_DEMO_CHECKLIST.md",
@@ -391,6 +392,7 @@ def check_release_docs(failures: list[str]) -> None:
         "docs/RUNBOOK.md": read("docs/RUNBOOK.md"),
         "docs/STATUS.md": read("docs/STATUS.md"),
         "docs/RISK_REGISTER.md": read("docs/RISK_REGISTER.md"),
+        "docs/THIRD_PARTY_NOTICES.md": read("docs/THIRD_PARTY_NOTICES.md"),
         "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md": read(
             "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md"
         ),
@@ -407,6 +409,10 @@ def check_release_docs(failures: list[str]) -> None:
         "docs/RUNBOOK.md": ("make phase1-closure-quality", "make ci", "docker compose up --build"),
         "docs/STATUS.md": ("Phase 1 Closure", "PR `#45`", "`#35`"),
         "docs/RISK_REGISTER.md": ("Final Review Risk Register", "Phase 1 Closure"),
+        "docs/THIRD_PARTY_NOTICES.md": (
+            "Phase 1 golden-question dataset",
+            "docs/evals/phase1_golden_questions.jsonl",
+        ),
         "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md": (
             "Canonical issue: `#1`",
             "Reconciliation issue: `#40`",
