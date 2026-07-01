@@ -1,8 +1,9 @@
 # Stage 8 And Phase 1 Runbook
 
 Status: Stage 8 and Final Review are merged. Phase 1 Closure is active and the
-release posture is No-Go until P0/P1 issues `#35` through `#42` close or are
-explicitly downgraded with evidence.
+release posture is No-Go until remaining P0/P1 issues `#38` and `#39` close or
+are explicitly downgraded with evidence. Issues `#35`, `#36`, `#37`, `#40`,
+`#41`, and `#42` are closed through merged PRs `#46`, `#47`, and `#50`.
 
 ## Local Verification
 
@@ -77,4 +78,6 @@ procedure, and rollback communication channels for a real deployment environment
 
 ## Deployment Limits
 
-Stage 8 does not approve multi-worker production. Process-local idempotency, multilingual artifact replay, avatar render jobs, and avatar artifact metadata remain single-process only until durable persistence is implemented.
+Stage 8 does not approve multi-worker production; multi-worker deployment blocked is the release marker until durable persistence is implemented. Process-local idempotency, multilingual artifact replay, avatar render jobs, and avatar artifact metadata remain single-process only.
+
+Avatar export remains source-run based avatar export for the local/mock demo path. Real timed media, multilingual/subtitle-bound avatar rendering, external provider export, and public synthetic-media distribution remain blocked until a future reviewed release phase implements durable consent/provenance, provider/license posture, and production monitoring.

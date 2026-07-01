@@ -10,9 +10,11 @@ Review date: 2026-07-01
 No-Go for production release, multi-worker deployment, external paid/provider-backed
 generation, real video export, and public synthetic-media distribution.
 
-Conditional local mock-provider portfolio/demo review remains allowed only after
-Phase 1 P0/P1 blockers are closed or explicitly downgraded with evidence. No
-release tag has been created.
+Conditional local mock-provider portfolio/demo review remains distinct from
+production go-live. With `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed,
+local/mock single-process demo readiness can be reviewed through the local gates
+and documented limitations, while `#38` and `#39` keep production release No-Go.
+No release tag has been created.
 
 ## Current Baseline
 
@@ -25,6 +27,10 @@ release tag has been created.
   `docs/reviews/DEFECT_BACKLOG.md`, and `docs/reviews/GO_NO_GO.md`.
 - Phase 1 Closure is tracked through issues `#35` through `#44` and
   `docs/reviews/PHASE_1_CLOSURE_REPORT.md`.
+- PR `#46` merged Phase 1 Closure governance/traceability and closed `#35`,
+  `#36`, `#40`, and `#41`.
+- PR `#47` merged trusted local principal contract remediation and closed `#37`.
+- PR `#50` merged Stage 7 checksum-binding remediation and closed `#42`.
 
 ## Stage 8 Evidence
 
@@ -58,19 +64,24 @@ Final Review produced a No-Go decision and opened follow-up issues `#35` through
 `docs/reviews/GO_NO_GO.md` and mapped in
 `docs/reviews/PHASE_1_CLOSURE_REPORT.md`.
 
-P0/P1 closure items must complete before Phase 2:
+P0/P1 closure items must complete before Phase 2. Current reconciliation:
 
-- `#35` Governance and release docs stale after Stage 8 merge.
-- `#36` Final Review gate and branch-policy evidence.
-- `#37` Local principal contract mismatch. Remediation is in progress through PR
-  `#47` on `phase-1-closure-37-local-principal-contract` with trusted
-  local/dev/test-only principal simulation evidence; it remains open until
-  reviewed, merged, and CI passes.
-- `#38` Branch protection/ruleset evidence.
-- `#39` Production durability and monitoring blockers.
-- `#40` Canonical RTM stale.
-- `#41` Portfolio local-demo durability disclosure.
-- `#42` Stage 7 source-evaluation checksum binding.
+- `#35` Governance and release docs stale after Stage 8 merge: closed through
+  merged PR `#46`.
+- `#36` Final Review gate and branch-policy evidence: closed through merged PR
+  `#46`; live repository branch-protection/ruleset proof remains open under
+  `#38`.
+- `#37` Local principal contract mismatch: closed through merged PR `#47` with
+  trusted local/dev/test-only principal simulation evidence.
+- `#38` Branch protection/ruleset evidence: still release-blocking because
+  checked-in files do not prove live GitHub required-check enforcement.
+- `#39` Production durability and monitoring blockers: still release-blocking
+  for production go-live.
+- `#40` Canonical RTM stale: closed through merged PR `#46`.
+- `#41` Portfolio local-demo durability disclosure: closed through merged PR
+  `#46`.
+- `#42` Stage 7 source-evaluation checksum binding: closed through merged PR
+  `#50`.
 
 P2 follow-ups `#43` and `#44` remain deferred unless they block Phase 1
 correctness.
@@ -79,15 +90,20 @@ correctness.
 
 - Branch protection/ruleset enforcement for required `main` checks still needs
   external evidence or a reviewed No-Go exception.
-- Process-local project/run/idempotency/artifact state blocks production,
-  multi-worker deployment, restart recovery, and production idempotency claims.
+- Process-local project/run/idempotency/artifact state keeps multi-worker
+  deployment blocked and blocks production go-live, restart recovery, and
+  production idempotency claims.
 - Production dashboards, alert routes, first-hour watch procedure, and rollback
   communication channels are not defined for a real deployment.
 - External providers remain disabled unless provider-specific evals, egress
   controls, and red-team cases are implemented.
 - Real video export and public synthetic-media distribution remain blocked until
-  renderer/provider license posture, persistent consent, and provenance are
-  implemented.
+  renderer/provider license posture, persistent consent, provenance, and any
+  source-run based avatar export decision are implemented and reviewed.
+- Issues `#48` and `#49` are classified as pre-production/P2 hardening: `#48`
+  blocks production auth/durable-storage authorization claims, and `#49` blocks
+  local-demo durability, multi-worker, or production-readiness claims. They do
+  not block local/mock Phase 1 demo review while production remains No-Go.
 
 ## Conditional Local Demo Conditions
 
@@ -97,7 +113,8 @@ The local demo can be reviewed only when:
 - no real provider keys are required
 - no real video, cloned face, cloned voice, or public synthetic-media claim is made
 - demo docs disclose single-process, process-local, non-durable state
-- P0/P1 Final Review issues are closed or explicitly downgraded with evidence
+- `#38` and `#39` remain explicitly represented as production/release blockers
+  unless they are closed or downgraded with evidence
 - local quality, eval, security, and CI gates pass
 
 ## Downgrade Evidence Rule
@@ -110,8 +127,10 @@ posture, the same PR must update `docs/reviews/GO_NO_GO.md`; otherwise the issue
 remains release-blocking.
 
 Static governance artifacts do not by themselves close implementation blockers.
-Issues `#37` and `#42` still require separate executable evidence or a reviewed
-No-Go exception before the local demo can be treated as Phase 1 closure-ready.
+Issues `#37` and `#42` now have separate executable evidence through merged PRs
+`#47` and `#50`. Issues `#38` and `#39` still require external evidence,
+implementation evidence, or reviewed No-Go exceptions before production release
+can be treated as Phase 1 closure-ready.
 
 ## Tagging Policy
 

@@ -1,8 +1,10 @@
 # Stage 8 And Phase 1 Release Checklist
 
 Status: Stage 8 merged through PR `#33`; Final Review merged through PR `#45`;
-Phase 1 Closure remains No-Go until P0/P1 issues `#35` through `#42` close or are
-explicitly downgraded with evidence.
+Phase 1 Closure remains No-Go for production until the remaining P0/P1 issues
+`#38` and `#39` close or are explicitly downgraded with evidence. Issues `#35`,
+`#36`, `#37`, `#40`, `#41`, and `#42` are closed through merged PRs `#46`, `#47`,
+and `#50`.
 
 ## Required Gates
 
@@ -18,7 +20,7 @@ explicitly downgraded with evidence.
 - [x] Lighthouse checks run and meet Stage 8 local category and named audit thresholds.
 - [x] Locust headless smoke records health endpoint traffic and keeps local p95 under 200 ms.
 - [x] Eval/security gates pass without paid providers or real provider keys in recorded Stage 8 and Final Review evidence.
-- [ ] Phase 1 P0/P1 blockers `#35` through `#42` are closed or explicitly downgraded with evidence.
+- [ ] Remaining Phase 1 P0/P1 blockers `#38` and `#39` are closed or explicitly downgraded with evidence.
 - [ ] `make lint`, `make typecheck`, `make test`, `make api-test`, `make ui-test`, `make e2e`, `make eval`, `make security`, and `make ci` pass for the closure branch.
 - [ ] `make secrets-scan`, `make security-scan`, `make dependency-audit`, and `make container-scan` pass for the closure branch.
 - [ ] Docker Compose local readiness is verified or unused services are documented honestly.
@@ -26,8 +28,9 @@ explicitly downgraded with evidence.
 
 ## Release Blockers
 
-- Multi-worker production deployment is blocked until Stage 6 multilingual state and Stage 7 avatar render/job/idempotency/artifact state are durable.
+- Multi-worker production deployment is blocked until Stage 6 multilingual state and Stage 7 avatar render/job/idempotency/artifact state are durable; shorthand release marker: multi-worker deployment blocked.
 - Real video export remains blocked until the selected renderer/provider path and license posture are reviewed.
+- Source-run based avatar export is the current local/mock export posture; multilingual/subtitle-bound timed media export remains blocked until a future reviewed product decision.
 - External avatar providers and public synthetic-media distribution remain blocked until persistent consent/provenance is implemented.
 - Release readiness is blocked until `main` branch protection or repository rulesets are enabled and require the emitted Stage 8 status contexts, including `quality / secrets`, `security / docker build`, and `stage8 / performance lighthouse`, or until a reviewed No-Go exception is recorded.
 - Phase 2 is blocked until Phase 1 P0/P1 issues are closed or explicitly downgraded with evidence.

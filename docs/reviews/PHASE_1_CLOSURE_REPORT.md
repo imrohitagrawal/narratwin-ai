@@ -4,7 +4,7 @@ Date: 2026-07-01
 
 Branch: `phase-1-closure-governance-traceability`
 
-Pull request: `#46`
+Pull requests: `#46`, `#47`, `#50`
 
 Baseline:
 
@@ -15,6 +15,13 @@ Baseline:
 - Final Review outcome remains No-Go for production, multi-worker deployment,
   external paid/provider-backed generation, real video export, and public
   synthetic-media distribution.
+- Phase 1 Closure PR `#46` merged at
+  `3131b3932c921a33fb6f45142d7fd7dbedb41792` and closed issues `#35`, `#36`,
+  `#40`, and `#41`.
+- Phase 1 Closure PR `#47` merged at
+  `cb53e33a75ff6837a5498dfb0cc01c06decab8c5` and closed issue `#37`.
+- Phase 1 Closure PR `#50` merged at
+  `b6235da1a5202ffc9dbde6284ad39f3e3ad70486` and closed issue `#42`.
 
 ## Phase 1 Closure Gate
 
@@ -33,14 +40,14 @@ when reconciling reviewer findings against issues `#35` through `#44`.
 
 | Issue | Priority | Closure module | Phase 1 disposition |
 |---|---:|---|---|
-| `#35` | P0 | Module A: Governance and Traceability | Required. Reconcile Stage 8 merge state, release docs, status ledger, runbook, and release checklist. |
-| `#36` | P0 | Module A: Governance and Traceability | Required. Final Review gate is now present on `main` through PR `#45`; Phase 1 must reconcile docs and close with evidence. |
-| `#37` | P1 | Module F: Security Closure | In progress through PR `#47`. Branch `phase-1-closure-37-local-principal-contract` chooses trusted local/dev/test-only `X-Local-User-Id` simulation, rejects production header identity, and adds API/docs evidence. |
-| `#38` | P1 | Module A: Governance and Traceability | Required. Capture repository branch-protection/ruleset evidence or record a reviewed No-Go exception. |
-| `#39` | P1 | Module C: Local Run and Portability | Required for release claims. Production durability/monitoring remains No-Go unless explicitly downgraded with reviewer evidence. |
-| `#40` | P0 | Module A: Governance and Traceability | Required. Reconcile canonical RTM statuses and evidence to implemented Stage 4-8 behavior. |
-| `#41` | P0 | Module G: Demo Readiness | Required. Portfolio/demo docs must disclose single-process, process-local, non-durable limits. |
-| `#42` | P1 | Module B: Functional Phase 1 Flow | In progress through PR `#50` on branch `phase-1-closure-42-stage7-checksum-binding`. Hardens Stage 7 source-evaluation checksum binding before stronger evidence-integrity claims; remains open until PR review, local quality, and CI pass. |
+| `#35` | P0 | Module A: Governance and Traceability | Closed through merged PR `#46`. Stage 8 merge state, release docs, status ledger, runbook, and release checklist were reconciled. |
+| `#36` | P0 | Module A: Governance and Traceability | Closed through merged PR `#46`. The executable Final Review gate and repository-tracked branch-policy evidence posture were reconciled; live repository ruleset proof remains open under `#38`. |
+| `#37` | P1 | Module F: Security Closure | Closed through merged PR `#47`. Trusted local/dev/test-only `X-Local-User-Id` simulation is documented, production header identity is rejected, and API/docs evidence was added. |
+| `#38` | P1 | Module A: Governance and Traceability | Release-blocking. Repository branch-protection/ruleset evidence is not captured in checked-in files; production release remains No-Go unless external evidence is captured or a reviewed No-Go exception is recorded. |
+| `#39` | P1 | Module C: Local Run and Portability | Release-blocking for production go-live. Local/mock demo readiness is distinct from production readiness; production durability, multi-worker, external-provider, monitoring, and public synthetic-media release remain No-Go. |
+| `#40` | P0 | Module A: Governance and Traceability | Closed through merged PR `#46`. Canonical RTM statuses and evidence were reconciled to implemented Stage 4-8 behavior. |
+| `#41` | P0 | Module G: Demo Readiness | Closed through merged PR `#46`. Portfolio/demo docs disclose single-process, process-local, non-durable limits. |
+| `#42` | P1 | Module B: Functional Phase 1 Flow | Closed through merged PR `#50`. Stage 7 source-evaluation checksum binding was hardened before stronger evidence-integrity claims. |
 | `#43` | P2 | Module B: Functional Phase 1 Flow | Deferred unless it blocks P0/P1 proof. It expands integrated performance/E2E evidence beyond local smoke. |
 | `#44` | P2 | Module F: Security Closure | Deferred unless it blocks P0/P1 correctness. It tracks telemetry, CSP, log-envelope, and stale risk-register hardening. |
 
@@ -66,18 +73,21 @@ release governance, or demo honesty.
 |---|---|---|
 | Reviewer findings converted to issues | Complete | Issues `#35` through `#44` exist. |
 | P0/P1 classified | Complete | This report maps P0/P1/P2 findings to modules. |
-| Phase 1 closure report | In progress | This document starts the Phase 1 closure ledger. |
-| Release readiness review updated | In progress | `docs/RELEASE_READINESS_REVIEW.md` now records Final Review No-Go and Phase 1 conditions. |
-| Issue `#37` local principal contract | In progress | PR `#47` adds `APP_ENV`-gated `X-Local-User-Id` validation/rejection, keeps `user_local` fallback, preserves tenant/project/owner authorization predicates, and updates API/security/architecture docs. |
-| Issue `#42` source evidence checksum binding | In progress | PR `#50` on branch `phase-1-closure-42-stage7-checksum-binding` adds canonical Stage 7 checksum helper usage in the API route and service, plus unit/API regression evidence for source run ID and trace ID binding. |
+| Phase 1 closure report | In progress | This document is the Phase 1 closure ledger and now reconciles merged PRs `#46`, `#47`, and `#50`. |
+| Release readiness review updated | In progress | `docs/RELEASE_READINESS_REVIEW.md` records Final Review No-Go, merged `#37`/`#42` evidence, and remaining `#38`/`#39` release blockers. |
+| Issue `#37` local principal contract | Complete | PR `#47` merged and closed `#37`, adding `APP_ENV`-gated `X-Local-User-Id` validation/rejection, keeping `user_local` fallback, preserving tenant/project/owner authorization predicates, and updating API/security/architecture docs. |
+| Issue `#42` source evidence checksum binding | Complete | PR `#50` merged and closed `#42`, adding canonical Stage 7 checksum helper usage in the API route and service, plus unit/API regression evidence for source run ID and trace ID binding. |
+| Issue `#38` branch protection/ruleset evidence | Blocking | External repository settings evidence is still absent from checked-in files; the reviewed posture is No-Go for release until evidence or a reviewed exception exists. |
+| Issue `#39` production durability and monitoring | Blocking | Local/mock demo review can proceed only within the documented limits; production, multi-worker, external-provider, and public synthetic-media release remain No-Go. |
 | Release tag | Blocked | No tag until all Phase 1 P0/P1 gates pass and CI/review are complete. |
 
 ## Scope And Downgrade Rules
 
 This governance branch may map, document, and gate Phase 1 closure evidence, but
 it does not land backend, frontend, RAG, provider, Docker, database, or runtime
-product-code fixes. P1 issues `#37` and `#42` remain release-blocking until
-separate Phase 1 implementation PRs or a reviewed exception provide executable
+product-code fixes. P1 issues `#37` and `#42` have executable evidence through
+merged PRs `#47` and `#50`. Remaining P1 blockers `#38` and `#39` stay
+release-blocking until separate Phase 1 PRs or reviewed exceptions provide
 evidence.
 
 Downgrades are allowed only when the active closure reviewer records the issue,
@@ -105,9 +115,9 @@ Evidence added in PR `#47` on branch
   `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/THREAT_MODEL.md`, and
   `docs/PORTABILITY_STRATEGY.md`
 
-This evidence does not close Phase 1 Closure by itself. Release posture remains
-No-Go until every Phase 1 P0/P1 blocker is resolved or explicitly downgraded with
-reviewer evidence, especially issue `#42` while it remains open.
+This evidence closed issue `#37` through merged PR `#47`. Release posture remains
+No-Go until every remaining Phase 1 P0/P1 blocker is resolved or explicitly
+downgraded with reviewer evidence, especially issues `#38` and `#39`.
 
 Independent review residual risks from PR `#47` are now tracked as durable
 follow-ups instead of PR-body-only notes:
@@ -141,8 +151,18 @@ Evidence added in PR `#50` on branch
   `docs/QUALITY_GATES.md`, `docs/STAGE_ISSUE_PLAN.md`, and
   `docs/ADR/0004-avatar-provider-adapter.md`
 
-This evidence does not upgrade release posture. Issue `#42` remains open until
-the linked PR passes local quality, CI, and review.
+This evidence closed issue `#42` through merged PR `#50`; it does not upgrade
+release posture while `#38` and `#39` remain open.
+
+## Follow-Up Issue Classification
+
+Issues `#48` and `#49` were opened from PR `#47` independent review residual
+risks and remain open.
+
+| Issue | Classification | Release impact | Rationale |
+|---|---|---|---|
+| `#48` | Pre-production/P2 hardening | Does not block local/mock Phase 1 demo review; blocks production auth, durable-storage, or stronger authorization-proof claims. | The issue text records that current owner checks block cross-principal access today, while future auth/durable storage should use scoped lookup helpers before production claims. |
+| `#49` | Pre-production/P2 hardening | Does not block local/mock Phase 1 demo review; blocks local-demo durability, multi-worker, and production-readiness claims. | The issue text classifies actor-rotated idempotency growth as a local/dev/test resource-abuse risk, and production/multi-worker release remains No-Go under `#39`. |
 
 ## Golden Question Status
 
