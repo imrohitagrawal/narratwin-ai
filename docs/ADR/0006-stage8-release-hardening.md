@@ -35,6 +35,13 @@ Stage 8 hardening is part of the architecture contract, not only test coverage.
   retained key state.
 - Provider-bound walkthrough prompts and multilingual glossary terms get
   secret-like content screening before provider execution.
+- Stage 4 and Stage 6 idempotency retains terminal semantic validation
+  failures so exact request replays return the same failure and changed-body key
+  reuse returns `IDEMPOTENCY_CONFLICT`; unexpected implementation exceptions
+  still release the reservation.
+- Stage 6 voice provider manifests are exact-schema validated before
+  response/artifact exposure, including top-level and nested field rejection for
+  unknown provider output.
 - Performance smoke tests run both focused API latency tests and a headless
   Locust health-endpoint p95 budget check.
 - Frontend Lighthouse checks enforce category scores and named audit budgets,
@@ -44,7 +51,8 @@ Stage 8 hardening is part of the architecture contract, not only test coverage.
   workflow. The scan attempts local Trivy, Grype, pinned Dockerized Trivy, and
   Docker Scout per image. A confirmed critical/high SARIF report fails the gate;
   a scanner/tool failure without a usable SARIF report can fall through to the
-  next scanner.
+  next scanner. Scanner exit codes are captured before fallback evaluation so a
+  nonzero scan result with usable SARIF cannot be converted into a pass.
 - PR CI emits a dedicated `stage8 / performance lighthouse` status when
   `.stage/current` is `8`, running the Locust and Lighthouse budget scripts
   outside the policy-only static quality job.
