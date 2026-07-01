@@ -32,6 +32,10 @@ Use it to answer:
   data, portfolio README, and release-readiness review evidence.
 - Stage 8 PR `#33` is open for branch
   `stage8-performance-security-release-readiness` and issue `#13`.
+- Stage 8 final exhaustive review remediation is recorded in ADR `0006`,
+  including semantic-failure idempotency replay, exact Stage 6 voice-manifest
+  validation, Docker scan exit-code handling, and branch-protection context
+  documentation.
 
 ## Source Of Truth
 
@@ -245,6 +249,10 @@ Use these files together with this tracker:
 - Stage 8 PR CI now includes the `stage8 / performance lighthouse` budget status
   for Locust and Lighthouse checks; release readiness still requires enabling or
   verifying `main` branch protection/repository rulesets outside the repository.
+- Stage 8 final exhaustive review remediation updated ADR `0006` to document
+  semantic-failure idempotency replay, exact Stage 6 voice-manifest schema
+  validation, and Docker scanner fallback semantics as release-hardening
+  architecture decisions.
 - PR `#27` completed second-pass remediation after independent sub-agent and
   Claude cross-model review identified idempotency, approved-knowledge state,
   failed-output exposure, retrieval, cache, provider-bound secret screening,
@@ -381,3 +389,4 @@ Required update rules:
 | 2026-07-01 | Stage 8 captured review-process failure analysis and the future ruthless-review protocol in `docs/REVIEW_RIGOR_RETROSPECTIVE.md`. |
 | 2026-07-01 | Stage 8 added `docs/PROJECT_LEARNINGS_TRACKER.md` and linked it from `README.md` so reusable project learnings are discoverable for future applications. |
 | 2026-07-01 | Stage 8 added `docs/PROJECT_GOVERNANCE_LEARNINGS.md` to capture reusable governance patterns including status tracking, recommended-review registers, stage gates, ADRs, traceability, third-party/tool locks, release evidence, and repository settings checks. |
+| 2026-07-01 | Stage 8 final exhaustive review remediation updated ADR `0006` and status tracking for semantic-failure idempotency replay, exact Stage 6 voice-manifest validation, Docker scan exit-code handling, and branch-protection context documentation. |
