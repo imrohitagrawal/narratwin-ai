@@ -116,4 +116,4 @@ stage8-quality:
 
 final-review-quality:
 	python3 scripts/quality/check_recommended_review_items.py "Final Review"
-	python3 scripts/quality/stage_not_implemented.py "Final Review"
+	python3 scripts/quality/check_final_review_docs.py

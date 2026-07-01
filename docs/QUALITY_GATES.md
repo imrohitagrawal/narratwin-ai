@@ -34,7 +34,7 @@ The `Makefile` must expose:
 | `make stage6-quality` | Runs executable Stage 6 multilingual/subtitle/voice checks |
 | `make stage7-quality` | Runs executable Stage 7 avatar rendering/export checks |
 | `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
-| `make final-review-quality` | Fails loudly until Final Review quality is implemented |
+| `make final-review-quality` | Runs executable Final Review artifact checks |
 
 ## Stage 0 Quality Gate
 
@@ -382,7 +382,26 @@ Gate validates:
 
 ### Final Review: Independent Review
 
-Gate must validate independent review evidence across all stages, unresolved risk disposition, quality evidence, security/eval status, release readiness, and no new feature implementation during review.
+Final Review quality is executable through `make final-review-quality`.
+On `final-review-*` branches, the top-level `make quality` dispatcher runs the
+Final Review artifact gate even though `.stage/current` remains `8` until Phase 1
+closure decides whether to advance the stage marker.
+
+Gate validates:
+
+- current branch name matches `final-review-*` before merge, or is `main` after
+  merge
+- required review artifacts exist under `docs/reviews/`
+- required PRD, RTM, quality, AI safety, security/privacy, and release-readiness
+  inputs exist
+- changed files stay within the Final Review artifact/gate allowlist
+- review artifacts link issue `#6`, Stage 8 merge `fb40113`, and findings/issues
+  `#35` through `#44`
+- `GO_NO_GO.md` keeps production release No-Go and limits any conditional demo
+  claim to local mock-provider review
+- defect IDs in `DEFECT_BACKLOG.md` are unique
+- no backend, frontend, provider, RAG, avatar, runtime, Docker, database, or
+  product feature implementation is introduced by the Final Review artifact PR
 
 ## CI Relationship
 
