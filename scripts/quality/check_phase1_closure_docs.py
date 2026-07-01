@@ -33,17 +33,20 @@ REQUIRED_PHASE1_FILES = {
 }
 
 MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
+    ".github/workflows/quality-gates.yml",
     "Makefile",
     "README.md",
     "docs/PRD.md",
     "docs/QUALITY_GATES.md",
     "docs/RECOMMENDED_REVIEW_ITEMS.md",
+    "docs/REPOSITORY_GUARDRAILS.md",
     "docs/RELEASE_CHECKLIST.md",
     "docs/RUNBOOK.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
     "portfolio/README.md",
+    "scripts/ci/verify_branch_protection.py",
     "scripts/quality/check_phase1_closure_docs.py",
     "scripts/quality/check_quality_stage.py",
     "scripts/quality/check_recommended_review_items.py",

@@ -52,6 +52,12 @@ jobs:
           GITHUB_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: python scripts/guardrails_check.py
 
+      - name: Verify branch protection required contexts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python scripts/ci/verify_branch_protection.py
+
       - name: Run stage quality gate
         env:
           LLM_PROVIDER: mock

@@ -2,9 +2,11 @@
 
 Status: Stage 8 merged through PR `#33`; Final Review merged through PR `#45`;
 Phase 1 Closure remains No-Go for production until the remaining P0/P1 issues
-`#38` and `#39` close or are explicitly downgraded with evidence. Issues `#35`,
-`#36`, `#37`, `#40`, `#41`, and `#42` are closed through merged PRs `#46`, `#47`,
-and `#50`.
+`#39` closes or is explicitly downgraded with evidence. Issues `#35`, `#36`,
+`#37`, `#40`, `#41`, and `#42` are closed through merged PRs `#46`, `#47`, and
+`#50`; issue `#38` has live GitHub branch-protection evidence and
+required-context drift checking recorded in this Phase 1 Closure update through
+PR `#53`.
 
 ## Required Gates
 
@@ -20,7 +22,8 @@ and `#50`.
 - [x] Lighthouse checks run and meet Stage 8 local category and named audit thresholds.
 - [x] Locust headless smoke records health endpoint traffic and keeps local p95 under 200 ms.
 - [x] Eval/security gates pass without paid providers or real provider keys in recorded Stage 8 and Final Review evidence.
-- [ ] Remaining Phase 1 P0/P1 blockers `#38` and `#39` are closed or explicitly downgraded with evidence.
+- [x] `main` branch protection is enabled with strict required CI status contexts, required PR review, admin enforcement, blocked force pushes, blocked deletions, and required conversation resolution; `policy-gates` runs `scripts/ci/verify_branch_protection.py` to fail on required-context drift visible through the branch summary API; direct pusher restrictions are unavailable on this user-owned repository per GitHub API validation.
+- [ ] Remaining Phase 1 P0/P1 blocker `#39` is closed or explicitly downgraded with evidence.
 - [ ] `make lint`, `make typecheck`, `make test`, `make api-test`, `make ui-test`, `make e2e`, `make eval`, `make security`, and `make ci` pass for the closure branch.
 - [ ] `make secrets-scan`, `make security-scan`, `make dependency-audit`, and `make container-scan` pass for the closure branch.
 - [ ] Docker Compose local readiness is verified or unused services are documented honestly.
@@ -32,7 +35,6 @@ and `#50`.
 - Real video export remains blocked until the selected renderer/provider path and license posture are reviewed.
 - Source-run based avatar export is the current local/mock export posture; multilingual/subtitle-bound timed media export remains blocked until a future reviewed product decision.
 - External avatar providers and public synthetic-media distribution remain blocked until persistent consent/provenance is implemented.
-- Release readiness is blocked until `main` branch protection or repository rulesets are enabled and require the emitted Stage 8 status contexts, including `quality / secrets`, `security / docker build`, and `stage8 / performance lighthouse`, or until a reviewed No-Go exception is recorded.
 - Phase 2 is blocked until Phase 1 P0/P1 issues are closed or explicitly downgraded with evidence.
 - A release tag is blocked until all Phase 1 gates pass locally and in CI.
 

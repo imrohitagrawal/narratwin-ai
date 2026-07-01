@@ -1,10 +1,14 @@
 # Phase 1 Closure Report
 
 Date: 2026-07-01
+Latest update: 2026-07-02
 
-Branch: `phase-1-closure-governance-traceability`
+Branches: `phase-1-closure-governance-traceability`,
+`phase-1-closure-37-local-principal-contract`,
+`phase-1-closure-42-stage7-checksum-binding`, and
+`phase-1-closure-38-branch-protection-evidence`
 
-Pull requests: `#46`, `#47`, `#50`
+Pull requests: `#46`, `#47`, `#50`, `#53`
 
 Baseline:
 
@@ -22,6 +26,8 @@ Baseline:
   `cb53e33a75ff6837a5498dfb0cc01c06decab8c5` and closed issue `#37`.
 - Phase 1 Closure PR `#50` merged at
   `b6235da1a5202ffc9dbde6284ad39f3e3ad70486` and closed issue `#42`.
+- Live GitHub `main` branch protection was enabled and verified on 2026-07-02
+  for issue `#38`; PR `#53` records the repository-settings evidence.
 
 ## Phase 1 Closure Gate
 
@@ -41,9 +47,9 @@ when reconciling reviewer findings against issues `#35` through `#44`.
 | Issue | Priority | Closure module | Phase 1 disposition |
 |---|---:|---|---|
 | `#35` | P0 | Module A: Governance and Traceability | Closed through merged PR `#46`. Stage 8 merge state, release docs, status ledger, runbook, and release checklist were reconciled. |
-| `#36` | P0 | Module A: Governance and Traceability | Closed through merged PR `#46`. The executable Final Review gate and repository-tracked branch-policy evidence posture were reconciled; live repository ruleset proof remains open under `#38`. |
+| `#36` | P0 | Module A: Governance and Traceability | Closed through merged PR `#46`. The executable Final Review gate and repository-tracked branch-policy evidence posture were reconciled; live branch-protection proof is now recorded under `#38`. |
 | `#37` | P1 | Module F: Security Closure | Closed through merged PR `#47`. Trusted local/dev/test-only `X-Local-User-Id` simulation is documented, production header identity is rejected, and API/docs evidence was added. |
-| `#38` | P1 | Module A: Governance and Traceability | Release-blocking. Repository branch-protection/ruleset evidence is not captured in checked-in files; production release remains No-Go unless external evidence is captured or a reviewed No-Go exception is recorded. |
+| `#38` | P1 | Module A: Governance and Traceability | Resolved with live GitHub evidence. `main` branch protection is enabled, strict required checks are configured, required reviews and admin enforcement are enabled, and force pushes/deletions are blocked. |
 | `#39` | P1 | Module C: Local Run and Portability | Release-blocking for production go-live. Local/mock demo readiness is distinct from production readiness; production durability, multi-worker, external-provider, monitoring, and public synthetic-media release remain No-Go. |
 | `#40` | P0 | Module A: Governance and Traceability | Closed through merged PR `#46`. Canonical RTM statuses and evidence were reconciled to implemented Stage 4-8 behavior. |
 | `#41` | P0 | Module G: Demo Readiness | Closed through merged PR `#46`. Portfolio/demo docs disclose single-process, process-local, non-durable limits. |
@@ -59,7 +65,7 @@ release governance, or demo honesty.
 
 | Module | Scope | P0/P1 issues | Required evidence |
 |---|---|---|---|
-| Module A | Governance and Traceability | `#35`, `#36`, `#38`, `#40` | PRD/RTM/status/release/readiness/risk docs are non-contradictory; Final Review gate is executable; branch-protection evidence is captured or explicitly release-blocked. |
+| Module A | Governance and Traceability | `#35`, `#36`, `#38`, `#40` | PRD/RTM/status/release/readiness/risk docs are non-contradictory; Final Review gate is executable; branch-protection evidence is captured. |
 | Module B | Functional Phase 1 Flow | `#42` | End-to-end project -> upload -> ingest -> chunk -> retrieve -> generate -> evaluate -> display path passes with citations, stored output, and no unsupported claims. |
 | Module C | Local Run and Portability | `#39` | `cp .env.example .env` and `docker compose up --build` work for local health/readiness, or declared unused services are documented honestly in release/demo docs and `docs/THIRD_PARTY_NOTICES.md`. |
 | Module D | Test and CI Commands | None directly; supports all P0/P1 | `make lint`, `make typecheck`, `make test`, `make api-test`, `make ui-test`, `make e2e`, `make eval`, `make security`, and `make ci` are real wrappers. `make quality` on this branch is the Phase 1 governance gate, not the full suite. |
@@ -74,10 +80,10 @@ release governance, or demo honesty.
 | Reviewer findings converted to issues | Complete | Issues `#35` through `#44` exist. |
 | P0/P1 classified | Complete | This report maps P0/P1/P2 findings to modules. |
 | Phase 1 closure report | In progress | This document is the Phase 1 closure ledger and now reconciles merged PRs `#46`, `#47`, and `#50`. |
-| Release readiness review updated | In progress | `docs/RELEASE_READINESS_REVIEW.md` records Final Review No-Go, merged `#37`/`#42` evidence, and remaining `#38`/`#39` release blockers. |
+| Release readiness review updated | In progress | `docs/RELEASE_READINESS_REVIEW.md` records Final Review No-Go, merged `#37`/`#42` evidence, live `#38` branch-protection evidence, and remaining `#39` release blocker. |
 | Issue `#37` local principal contract | Complete | PR `#47` merged and closed `#37`, adding `APP_ENV`-gated `X-Local-User-Id` validation/rejection, keeping `user_local` fallback, preserving tenant/project/owner authorization predicates, and updating API/security/architecture docs. |
 | Issue `#42` source evidence checksum binding | Complete | PR `#50` merged and closed `#42`, adding canonical Stage 7 checksum helper usage in the API route and service, plus unit/API regression evidence for source run ID and trace ID binding. |
-| Issue `#38` branch protection/ruleset evidence | Blocking | External repository settings evidence is still absent from checked-in files; the reviewed posture is No-Go for release until evidence or a reviewed exception exists. |
+| Issue `#38` branch protection/ruleset evidence | Complete through PR `#53` | Live GitHub API evidence confirms `main` branch protection is enabled with strict required status checks, required PR review, admin enforcement, blocked force pushes, blocked deletions, and required conversation resolution; direct pusher restrictions are unavailable for this user-owned repository per GitHub API validation. |
 | Issue `#39` production durability and monitoring | Blocking | Local/mock demo review can proceed only within the documented limits; production, multi-worker, external-provider, and public synthetic-media release remain No-Go. |
 | Release tag | Blocked | No tag until all Phase 1 P0/P1 gates pass and CI/review are complete. |
 
@@ -86,9 +92,9 @@ release governance, or demo honesty.
 This governance branch may map, document, and gate Phase 1 closure evidence, but
 it does not land backend, frontend, RAG, provider, Docker, database, or runtime
 product-code fixes. P1 issues `#37` and `#42` have executable evidence through
-merged PRs `#47` and `#50`. Remaining P1 blockers `#38` and `#39` stay
-release-blocking until separate Phase 1 PRs or reviewed exceptions provide
-evidence.
+merged PRs `#47` and `#50`. P1 issue `#38` now has live GitHub
+repository-settings evidence. Remaining P1 blocker `#39` stays release-blocking
+until a separate Phase 1 PR or reviewed exception provides evidence.
 
 Downgrades are allowed only when the active closure reviewer records the issue,
 proposed priority change, evidence, reviewer/date, and release impact in this
@@ -117,7 +123,7 @@ Evidence added in PR `#47` on branch
 
 This evidence closed issue `#37` through merged PR `#47`. Release posture remains
 No-Go until every remaining Phase 1 P0/P1 blocker is resolved or explicitly
-downgraded with reviewer evidence, especially issues `#38` and `#39`.
+downgraded with reviewer evidence, especially issue `#39`.
 
 Independent review residual risks from PR `#47` are now tracked as durable
 follow-ups instead of PR-body-only notes:
@@ -152,7 +158,45 @@ Evidence added in PR `#50` on branch
   `docs/ADR/0004-avatar-provider-adapter.md`
 
 This evidence closed issue `#42` through merged PR `#50`; it does not upgrade
-release posture while `#38` and `#39` remain open.
+release posture while `#39` remains open.
+
+## Issue #38 Evidence
+
+GitHub API verification on 2026-07-02 recorded `main` branch protection as
+enabled. The branch summary endpoint
+`repos/imrohitagrawal/narratwin-ai/branches/main` returns `protected: true`,
+`protection.enabled: true`, and `required_status_checks.enforcement_level:
+everyone`.
+
+The classic branch-protection endpoint
+`repos/imrohitagrawal/narratwin-ai/branches/main/protection` returns:
+
+- strict required status checks enabled
+- required contexts: `policy-gates`, `quality / secrets`,
+  `quality / markdown`, `lint / typecheck / unit / api`,
+  `frontend tests / playwright smoke`, `ci / docker build`,
+  `secret scan / bandit / audit / semgrep`, `security / docker build`,
+  `eval smoke`, and `stage8 / performance lighthouse`
+- GitHub Actions app binding for each required check: `app_id: 15368`
+- one required approving review, stale review dismissal, and last-push approval
+- administrator enforcement enabled
+- force pushes and deletions disabled
+- conversation resolution required
+- direct pusher restrictions unavailable for this user-owned repository; the
+  GitHub API rejected a `restrictions.users` configuration with `Only
+  organization repositories can have users and team restrictions`, and the live
+  protection payload keeps `restrictions: null`
+
+This evidence resolves issue `#38`; it does not upgrade production release
+posture while issue `#39` remains open.
+
+PR `#53` also adds `scripts/ci/verify_branch_protection.py` to the required
+`policy-gates` workflow. The verifier uses the reviewer-readable branch summary
+endpoint to fail CI if `main` no longer reports `protected: true`,
+`protection.enabled: true`, `required_status_checks.enforcement_level:
+everyone`, the exact required CI contexts, and GitHub Actions app bindings for
+those contexts. Admin-only protection settings remain captured in the evidence
+above rather than inferred from repository files.
 
 ## Follow-Up Issue Classification
 

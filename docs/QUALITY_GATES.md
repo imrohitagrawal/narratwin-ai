@@ -439,7 +439,9 @@ Gate validates:
 - Final Review baseline artifacts exist and `docs/reviews/GO_NO_GO.md`
   preserves the five No-Go decision lines
 - changed files stay within the Phase 1 closure allowlist. Module A branches are
-  limited to governance/reporting files; Module F issue `#37` may also change
+  limited to governance/reporting files; issue `#38` may also update the
+  required `policy-gates` workflow and branch-protection verifier that make its
+  evidence reproducible; Module F issue `#37` may also change
   the local-principal implementation, API tests, and active architecture/security
   contract docs needed to reconcile the trusted local principal behavior. Module
   B issue `#42` may change only the Stage 7 checksum-binding implementation,
@@ -461,9 +463,14 @@ Gate validates:
   and single-process, process-local, non-durable, mock/local-only disclosures
 
 The Phase 1 Closure quality gate validates the static governance contract. It
-does not replace `make ci`, does not prove GitHub branch-protection settings, and
-does not execute the Phase 1 golden questions through the RAG pipeline until a
-later eval-runner PR wires that dataset into `make eval`.
+does not replace `make ci` and does not execute the Phase 1 golden questions
+through the RAG pipeline until a later eval-runner PR wires that dataset into
+`make eval`. Live branch-protection context drift is verified remotely by the
+required `policy-gates` workflow step
+`scripts/ci/verify_branch_protection.py`, which queries the reviewer-readable
+branch summary endpoint for `main` and fails if `protected: true`, exact
+required contexts, `enforcement_level: everyone`, or GitHub Actions app bindings
+drift.
 
 Changes to `scripts/quality/check_phase1_closure_docs.py`,
 `scripts/quality/check_quality_stage.py`, or

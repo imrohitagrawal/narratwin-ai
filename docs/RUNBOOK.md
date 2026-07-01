@@ -1,9 +1,11 @@
 # Stage 8 And Phase 1 Runbook
 
 Status: Stage 8 and Final Review are merged. Phase 1 Closure is active and the
-release posture is No-Go until remaining P0/P1 issues `#38` and `#39` close or
-are explicitly downgraded with evidence. Issues `#35`, `#36`, `#37`, `#40`,
-`#41`, and `#42` are closed through merged PRs `#46`, `#47`, and `#50`.
+release posture is No-Go until remaining P0/P1 issue `#39` closes or is
+explicitly downgraded with evidence. Issues `#35`, `#36`, `#37`, `#40`, `#41`,
+and `#42` are closed through merged PRs `#46`, `#47`, and `#50`; issue `#38`
+has live GitHub branch-protection evidence and required-context drift checking
+recorded through PR `#53`.
 
 ## Local Verification
 
