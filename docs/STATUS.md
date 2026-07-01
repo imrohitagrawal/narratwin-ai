@@ -16,12 +16,14 @@ Use it to answer:
 
 - Last reviewed date: 2026-07-01
 - Current stage marker: `.stage/current = 8`
-- Current implementation permission: Stage 8 performance, security hardening,
-  and release-readiness work only, on the issue-linked Stage 8 branch
-- Current repo mode: Stage 8 implementation is in progress after Stage 7 merged
-  to `main`
-- Product implementation merged to `main`: Stage 7 mock/local avatar rendering
-  adapter and demo export work merged through PR `#32` at commit `7f7196a`
+- Current implementation permission: Final Review is review-only; no product
+  fixes or new feature implementation are approved in the independent reviewer
+  pass.
+- Current repo mode: Stage 8 has merged to `main`; Final Review handoff is
+  being prepared for issue `#6`.
+- Product implementation merged to `main`: Stage 8 performance, security
+  hardening, and release-readiness work merged through PR `#33` at commit
+  `fb40113`.
 - Tracker enforcement scope: repository-tracked stage and governance changes in checked-in files
 - Out-of-band GitHub reconciliation: PR `#32` is recorded as merged based on the
   verified local `main` baseline; issue `#12` should be reconciled as closed if
@@ -30,12 +32,14 @@ Use it to answer:
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
   data, portfolio README, and release-readiness review evidence.
-- Stage 8 PR `#33` is open for branch
-  `stage8-performance-security-release-readiness` and issue `#13`.
+- Stage 8 PR `#33` merged branch
+  `stage8-performance-security-release-readiness` for issue `#13`.
 - Stage 8 final exhaustive review remediation is recorded in ADR `0006`,
   including semantic-failure idempotency replay, exact Stage 6 voice-manifest
   validation, Docker scan exit-code handling, and branch-protection context
   documentation.
+- Final Review issue `#6` is the next stage. The handoff artifact is
+  `docs/reviews/FINAL_REVIEW_HANDOFF.md`.
 
 ## Source Of Truth
 
@@ -105,9 +109,8 @@ Use these files together with this tracker:
 - Stage 3 preserves inherited compatibility status contexts for `quality /
   secrets` and `security / docker build` while the authoritative Stage 3 secret
   scan and Docker gates remain owned by the `security` and `ci` workflows.
-- Stage 8 has started on branch
-  `stage8-performance-security-release-readiness` for issue `#13`; Final Review
-  remains open with no merged implementation work.
+- Stage 8 completed through merged PR `#33`; Final Review remains open and is
+  review-only with no product fixes or new feature implementation approved.
 
 ## Stage Ledger
 
@@ -121,8 +124,8 @@ Use these files together with this tracker:
 | Stage 5 | Complete, merged to `main` | `#10` closed | PR `#30` merged | Executable at merge | RAG eval runner, prompt-injection guardrails, file-upload abuse tests, and observability metadata merged through PR `#30`. |
 | Stage 6 | Complete, merged to `main` | `#11` closed | PR `#31` merged | Executable at merge | Translation, subtitles, mock/local voice adapter, downloadable artifacts, and Stage 6 quality checks merged through PR `#31`. |
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
-| Stage 8 | In PR review | `#13` open | PR `#33` open | Executable in progress | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and `docs/RELEASE_READINESS_REVIEW.md` are being reviewed on the Stage 8 branch. |
-| Final Review | Pending | `#6` open | None merged | Placeholder target only | Independent release review has not started. |
+| Stage 8 | Complete, merged to `main` | `#13` reconcile after merge | PR `#33` merged | Executable at merge | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and `docs/RELEASE_READINESS_REVIEW.md` merged through commit `fb40113`. |
+| Final Review | Handoff prepared | `#6` open | None merged | Placeholder target only | Independent release review handoff exists at `docs/reviews/FINAL_REVIEW_HANDOFF.md`; review must produce `docs/reviews/FINAL_REVIEW.md`, `docs/reviews/RISK_REGISTER.md`, `docs/reviews/DEFECT_BACKLOG.md`, and `docs/reviews/GO_NO_GO.md` without fixing issues. |
 
 ## Issue Ledger
 
@@ -139,7 +142,7 @@ Use these files together with this tracker:
 | `#10` | Closed | Stage 5 | Evaluation, guardrails, observability completed by merged PR `#30`. |
 | `#11` | Closed | Stage 6 | Multilingual scripts, subtitles, voice adapter completed by merged PR `#31`. |
 | `#12` | Reconcile after merge | Stage 7 | Avatar rendering adapter and demo export completed by merged PR `#32`; issue state must be reconciled with GitHub. |
-| `#13` | Open | Stage 8 | Performance, security, release readiness; PR `#33` is open from branch `stage8-performance-security-release-readiness`. |
+| `#13` | Reconcile after merge | Stage 8 | Performance, security, release readiness completed by merged PR `#33`; issue state must be reconciled with GitHub. |
 | `#6` | Open | Final Review | Independent reviewer pass. |
 
 ### Additional Backlog And Governance Issues
@@ -169,7 +172,7 @@ Use these files together with this tracker:
 | `#30` | Merged | Reconcile exact merge date | Stage 5 evaluations, guardrails, observability, and quality evidence merged to `main`; Stage 6 starts from this baseline. |
 | `#31` | Merged | Reconcile exact merge date | Stage 6 multilingual scripts, subtitles, mock/local voice adapter, downloadable artifacts, and quality evidence merged to `main`; Stage 7 starts from this baseline. |
 | `#32` | Merged | 2026-07-01 | Stage 7 avatar rendering adapter and export merged to `main` at commit `7f7196a`; Stage 8 starts from this baseline. |
-| `#33` | Open | Not merged | Stage 8 performance, security hardening, and release-readiness PR linked to issue `#13`. |
+| `#33` | Merged | 2026-07-01 | Stage 8 performance, security hardening, and release-readiness PR merged to `main` at commit `fb40113`; Final Review starts from this baseline. |
 
 ## Completed Work
 
@@ -314,11 +317,11 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Keep Stage 8 implementation scoped to performance smoke tests, latency
-   budgets, security hardening, dependency/container scan gates, release
-   readiness evidence, and explicit release blockers.
-2. Review PR `#33`, require local `make quality` and equivalent CI status
-   checks, then merge only after issue `#13` linkage and all gates are green.
+1. Start Final Review from issue `#6` on a `final-review-*` branch and use
+   `docs/reviews/FINAL_REVIEW_HANDOFF.md` as the review contract.
+2. Produce `docs/reviews/FINAL_REVIEW.md`,
+   `docs/reviews/RISK_REGISTER.md`, `docs/reviews/DEFECT_BACKLOG.md`, and
+   `docs/reviews/GO_NO_GO.md`; do not fix issues in the Final Review pass.
 3. Enable or verify `main` branch protection/repository rulesets before treating
    Stage 8 as release-ready; required status contexts must include the emitted
    `quality / secrets`, `security / docker build`, and
@@ -391,3 +394,4 @@ Required update rules:
 | 2026-07-01 | Stage 8 added `docs/PROJECT_GOVERNANCE_LEARNINGS.md` to capture reusable governance patterns including status tracking, recommended-review registers, stage gates, ADRs, traceability, third-party/tool locks, release evidence, and repository settings checks. |
 | 2026-07-01 | Stage 8 final exhaustive review remediation updated ADR `0006` and status tracking for semantic-failure idempotency replay, exact Stage 6 voice-manifest validation, Docker scan exit-code handling, and branch-protection context documentation. |
 | 2026-07-01 | Stage 8 final PR review reconciled `docs/REPOSITORY_GUARDRAILS.md` and the Stage 8 quality checker so the canonical branch-protection checklist includes `stage8 / performance lighthouse`. |
+| 2026-07-01 | PR `#33` merged Stage 8 to `main` at commit `fb40113`; Final Review handoff was added at `docs/reviews/FINAL_REVIEW_HANDOFF.md` for issue `#6`. |
