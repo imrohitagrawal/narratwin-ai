@@ -555,6 +555,24 @@ Allowed governance/reporting changes for Module A:
 - `scripts/quality/check_quality_stage.py`
 - `scripts/quality/check_recommended_review_items.py`
 
+Allowed implementation/contract changes for Module F issue `#37`:
+
+- `backend/app/main.py`
+- `tests/api/test_stage4_slice_api.py`
+- `docs/ADR/0007-local-principal-contract.md`
+- `docs/API_CONTRACT.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DATA_MODEL.md`
+- `docs/PORTABILITY_STRATEGY.md`
+- `docs/QUALITY_GATES.md`
+- `docs/SECURITY_AND_PRIVACY.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THREAT_MODEL.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/PHASE_1_CLOSURE_REPORT.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+
 Final Review baseline artifacts under `docs/reviews/FINAL_REVIEW.md`,
 `docs/reviews/RISK_REGISTER.md`, `docs/reviews/DEFECT_BACKLOG.md`, and
 `docs/reviews/GO_NO_GO.md` are required inputs for Phase 1 Closure but are not

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+import os
+import re
 import time
 from datetime import UTC, datetime
 from threading import Lock
@@ -17,6 +19,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.app.rag.chunking import checksum_text
+from backend.app.rag.models import OWNER_LOCAL
 from backend.app.stage4 import (
     MAX_API_REQUEST_BYTES,
     LocalPrincipal,
@@ -515,9 +518,29 @@ class AvatarRenderResponse(BaseModel):
     trace: AvatarTraceResponse
 
 
+def normalize_local_user_id_header(value: str | None, *, app_env: str | None = None) -> str:
+    candidate = (value or "").strip()
+    if not candidate:
+        return OWNER_LOCAL
+
+    normalized_env = (app_env if app_env is not None else os.environ.get("APP_ENV", "local")).strip().lower() or "local"
+    if normalized_env not in LOCAL_PRINCIPAL_SIMULATION_ENVS:
+        raise Stage4Error(
+            400,
+            "LOCAL_PRINCIPAL_HEADER_NOT_ALLOWED",
+            "X-Local-User-Id is only allowed in trusted local, dev, and test environments.",
+        )
+    if not LOCAL_USER_ID_PATTERN.fullmatch(candidate):
+        raise Stage4Error(
+            400,
+            "VALIDATION_ERROR",
+            "X-Local-User-Id must contain only ASCII letters, digits, underscore, or dash, with a maximum length of 64.",
+        )
+    return candidate
+
+
 async def local_principal(x_local_user_id: str | None = Header(default=None, alias="X-Local-User-Id")) -> LocalPrincipal:
-    actor_id = (x_local_user_id or "").strip()
-    return LocalPrincipal(actor_id=actor_id or "user_local")
+    return LocalPrincipal(actor_id=normalize_local_user_id_header(x_local_user_id))
 
 
 async def idempotency_key_header(
@@ -550,6 +573,8 @@ MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE = 120
 STAGE8_RATE_LIMIT_WINDOW_SECONDS = 60.0
 MAX_STAGE8_RATE_LIMIT_KEYS = 2_048
 WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+LOCAL_PRINCIPAL_SIMULATION_ENVS = {"local", "dev", "test"}
+LOCAL_USER_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
 class Stage8BodyTooLarge(Exception):

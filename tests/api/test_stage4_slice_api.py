@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import app, reset_app_state_for_tests
@@ -152,6 +153,92 @@ def test_write_idempotency_conflicts_on_changed_request() -> None:
     assert record.status == "COMPLETED"
 
 
+def test_missing_local_user_header_falls_back_to_user_local() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/projects",
+        json={"name": "Default local principal"},
+        headers={"Idempotency-Key": "default-local-principal"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["ownerId"] == "user_local"
+    record = next(iter(stage4_service.idempotency_records.values()))
+    assert record.actor_id == "user_local"
+
+
+def test_whitespace_local_user_header_falls_back_to_user_local() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/projects",
+        json={"name": "Whitespace local principal"},
+        headers={"X-Local-User-Id": "   \t  ", "Idempotency-Key": "whitespace-local-principal"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["ownerId"] == "user_local"
+    record = next(iter(stage4_service.idempotency_records.values()))
+    assert record.actor_id == "user_local"
+
+
+def test_unset_app_env_defaults_to_local_for_valid_local_user_header(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("APP_ENV", raising=False)
+    reset_app_state_for_tests()
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/projects",
+        json={"name": "Unset env local principal"},
+        headers={"X-Local-User-Id": "alice", "Idempotency-Key": "unset-env-local-principal"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["ownerId"] == "alice"
+
+
+def test_blank_app_env_defaults_to_local_for_valid_local_user_header(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_ENV", "   ")
+    reset_app_state_for_tests()
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/projects",
+        json={"name": "Blank env local principal"},
+        headers={"X-Local-User-Id": "bob", "Idempotency-Key": "blank-env-local-principal"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["ownerId"] == "bob"
+
+
+@pytest.mark.parametrize("app_env", ["local", "dev", "test", "LOCAL"])
+def test_valid_local_user_header_is_accepted_in_allowed_environments(
+    app_env: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_ENV", app_env)
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    local_user_id = "Alice_123-" + ("a" * 54)
+
+    response = client.post(
+        "/api/v1/projects",
+        json={"name": f"Allowed env principal {app_env}"},
+        headers={
+            "X-Local-User-Id": f"  {local_user_id}  ",
+            "Idempotency-Key": f"allowed-env-local-principal-{app_env}",
+        },
+    )
+
+    assert len(local_user_id) == 64
+    assert response.status_code == 201
+    assert response.json()["ownerId"] == local_user_id
+
+
 def test_project_access_is_scoped_to_local_principal() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
@@ -170,6 +257,53 @@ def test_project_access_is_scoped_to_local_principal() -> None:
 
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "FORBIDDEN"
+
+
+@pytest.mark.parametrize("local_user_id", ["alice@example.com", "a" * 65])
+def test_invalid_local_user_header_returns_validation_error(local_user_id: str) -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/projects",
+        json={"name": "Invalid local principal"},
+        headers={"X-Local-User-Id": local_user_id, "Idempotency-Key": f"invalid-local-principal-{len(local_user_id)}"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_local_user_header_is_rejected_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_ENV", "production")
+    reset_app_state_for_tests()
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/projects",
+        json={"name": "Production header rejection"},
+        headers={"X-Local-User-Id": "alice", "Idempotency-Key": "production-local-principal"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "LOCAL_PRINCIPAL_HEADER_NOT_ALLOWED"
+
+
+def test_production_without_local_user_header_still_uses_user_local(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_ENV", "production")
+    reset_app_state_for_tests()
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/projects",
+        json={"name": "Production default principal"},
+        headers={"Idempotency-Key": "production-default-principal"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["ownerId"] == "user_local"
+    record = next(iter(stage4_service.idempotency_records.values()))
+    assert record.actor_id == "user_local"
 
 
 def test_upload_rejects_path_names_nul_bytes_and_archives() -> None:

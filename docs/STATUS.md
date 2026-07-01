@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-01
+- Last reviewed date: 2026-07-02
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only. No Phase 2 feature
   work, external provider enablement, production release tag, or public
@@ -111,6 +111,14 @@ Use these files together with this tracker:
   Closure resolves required blockers.
 - Phase 1 Closure starts from issues `#35` through `#44`; P0/P1 items must close
   or be explicitly downgraded with evidence before Phase 2.
+- Phase 1 Closure issue `#37` is in progress through PR `#47` on branch
+  `phase-1-closure-37-local-principal-contract` to reconcile the trusted
+  local/dev/test-only principal simulation contract. Release posture remains
+  No-Go until all Phase 1 P0/P1 blockers, including `#42`, are resolved or
+  explicitly downgraded with evidence.
+- PR `#47` independent review residual risks are now durable follow-ups:
+  issue `#48` for scoped project-lookup hardening and issue `#49` for
+  simulated-actor idempotency resource caps, mirrored as `RR-036` and `RR-037`.
 
 ## Stage Ledger
 
@@ -147,7 +155,7 @@ Use these files together with this tracker:
 | `#6` | Closed | Final Review | Independent reviewer pass completed by merged PR `#45`; outcome is No-Go pending Phase 1 Closure. |
 | `#35` | Open | Phase 1 P0 | Reconcile Stage 8 merge state in governance and release docs. |
 | `#36` | Open | Phase 1 P0 | Reconcile executable Final Review gate and branch-policy evidence after PR `#45`. |
-| `#37` | Open | Phase 1 P1 | Reconcile trusted local principal contract with API behavior. |
+| `#37` | Open | Phase 1 P1 | In progress through PR `#47` on branch `phase-1-closure-37-local-principal-contract`; reconciles trusted local/dev/test-only `X-Local-User-Id` simulation with API behavior, docs, and tests. |
 | `#38` | Open | Phase 1 P1 | Verify branch protection and required CI status contexts. |
 | `#39` | Open | Phase 1 P1 | Resolve or explicitly maintain production durability and monitoring blockers. |
 | `#40` | Open | Phase 1 P0 | Reconcile canonical requirements traceability matrix. |
@@ -155,6 +163,8 @@ Use these files together with this tracker:
 | `#42` | Open | Phase 1 P1 | Harden Stage 7 source evidence checksum binding. |
 | `#43` | Open | Phase 1 P2 | Expand performance and integrated E2E evidence beyond local smoke. |
 | `#44` | Open | Phase 1 P2 | Track telemetry, CSP, log-envelope, and stale risk-register hardening. |
+| `#48` | Open | Future hardening | Track scoped project-lookup hardening before production auth, durable storage, or stronger authorization-proof claims; created from PR `#47` independent API integrity review. |
+| `#49` | Open | Future hardening | Bound local idempotency records across simulated actors before local-demo durability, multi-worker, or production-readiness claims; created from PR `#47` independent performance/security review. |
 
 ### Additional Backlog And Governance Issues
 
@@ -186,6 +196,7 @@ Use these files together with this tracker:
 | `#33` | Merged | 2026-07-01 | Stage 8 performance, security hardening, and release-readiness PR linked to issue `#13`; merged at `fb40113`. |
 | `#45` | Merged | 2026-07-01 | Final Review artifacts and executable review gate merged; outcome is No-Go until Phase 1 Closure. |
 | `#46` | Delivery PR | Reconcile after merge | Phase 1 Closure Module A governance and traceability PR for issues `#35`, `#36`, `#40`, and `#41`, with release-readiness, demo, golden-question, and quality-gate hardening. |
+| `#47` | Draft delivery PR | Pending | Phase 1 Closure Module F security PR for issue `#37`; reconciles trusted local/dev/test-only principal simulation with implementation, API tests, and contract docs. |
 
 ## Completed Work
 
@@ -400,3 +411,5 @@ Required update rules:
 | 2026-07-01 | Phase 1 Closure started after PR `#45` merged; issues `#35` through `#44` classified and mapped to closure modules; release posture remains No-Go. |
 | 2026-07-01 | Phase 1 Closure governance gate was hardened after cross-model review to protect Final Review No-Go inputs, parse issue/module tables, validate the golden-question schema, and distinguish governance checks from full CI/eval execution. |
 | 2026-07-02 | PR `#46` recorded as the Phase 1 Closure Module A governance/traceability delivery PR for issues `#35`, `#36`, `#40`, and `#41`; remaining P1 implementation blockers stay open. |
+| 2026-07-02 | Phase 1 Closure issue `#37` started on branch `phase-1-closure-37-local-principal-contract` and draft PR `#47` to reconcile the trusted local principal contract; release posture remains No-Go while `#42` and other P0/P1 blockers remain open. |
+| 2026-07-02 | PR `#47` independent review residual risks were converted into GitHub issues `#48` and `#49` and recorded as `RR-036` and `RR-037` in `docs/RECOMMENDED_REVIEW_ITEMS.md`. |

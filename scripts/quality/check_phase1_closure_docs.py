@@ -32,11 +32,12 @@ REQUIRED_PHASE1_FILES = {
     "docs/demo/PHASE_1_SCREENSHOT_GUIDE.md",
 }
 
-ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
+MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
     "Makefile",
     "README.md",
     "docs/PRD.md",
     "docs/QUALITY_GATES.md",
+    "docs/RECOMMENDED_REVIEW_ITEMS.md",
     "docs/RELEASE_CHECKLIST.md",
     "docs/RUNBOOK.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -46,6 +47,17 @@ ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
     "scripts/quality/check_phase1_closure_docs.py",
     "scripts/quality/check_quality_stage.py",
     "scripts/quality/check_recommended_review_items.py",
+}
+ISSUE_37_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
+    "backend/app/main.py",
+    "docs/ADR/0007-local-principal-contract.md",
+    "docs/API_CONTRACT.md",
+    "docs/ARCHITECTURE.md",
+    "docs/DATA_MODEL.md",
+    "docs/PORTABILITY_STRATEGY.md",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/THREAT_MODEL.md",
+    "tests/api/test_stage4_slice_api.py",
 }
 
 EXPECTED_ISSUE_PRIORITIES = {
@@ -181,9 +193,11 @@ def check_required_files(failures: list[str]) -> None:
 
 
 def check_changed_files(failures: list[str]) -> None:
+    branch = current_branch()
+    allowed_files = ISSUE_37_ALLOWED_CHANGED_FILES if branch.startswith("phase-1-closure-37-") else MODULE_A_ALLOWED_CHANGED_FILES
     for rel in changed_files():
-        if rel not in ALLOWED_CHANGED_FILES:
-            fail(failures, f"Phase 1 Closure governance PR may not change {rel}.")
+        if rel not in allowed_files:
+            fail(failures, f"Phase 1 Closure branch {branch} may not change {rel}.")
 
 
 def check_final_review_baseline(failures: list[str]) -> None:

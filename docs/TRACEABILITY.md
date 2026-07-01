@@ -8,7 +8,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 ## Version
 
-- Last updated: 2026-07-01
+- Last updated: 2026-07-02
 - Current PRD source: `docs/PRD.md` v1.0
 - Canonical source: `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
 
@@ -131,6 +131,15 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `demo/stage8_seed_project.md` and `portfolio/README.md` | demo seed data and portfolio README for local, provider-free showcase path | Stage 8 / `#13` | Added |
 | `docs/ADR/0006-stage8-release-hardening.md`, `scripts/quality/check_stage8_docs.py`, `docs/QUALITY_GATES.md`, `docs/PROJECT_LEARNINGS_TRACKER.md`, `docs/PROJECT_GOVERNANCE_LEARNINGS.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/SKILL_LOCK.md`, `docs/THIRD_PARTY_NOTICES.md`, and `docs/RECOMMENDED_REVIEW_ITEMS.md` | Stage 8 hardening decision record, executable Stage 8 gate, reusable project-learning tracker, governance learnings, stage branch scope, active skill/tool lock, third-party notices, and RR-029 through RR-035 dispositions | Stage 8 / `#13` | Added and updated |
 
+## Phase 1 Closure Traceability
+
+| Artifact | Requirement coverage | Stage / issue | Status |
+|---|---|---|---|
+| `backend/app/main.py` | Trusted local multi-principal simulation keeps `tenant_local`, defaults to `user_local`, validates `X-Local-User-Id`, gates non-empty header use to local/dev/test via `APP_ENV`, and rejects production header identity while preserving tenant/project/owner authorization predicates | Phase 1 Closure / `#37`, PR `#47` | Hardened |
+| `tests/api/test_stage4_slice_api.py` | API evidence for missing and whitespace-only local header fallback, alice/bob isolation, invalid header validation, production header rejection, and production default fallback without `X-Local-User-Id` | Phase 1 Closure / `#37`, PR `#47` | Added |
+| `docs/ADR/0007-local-principal-contract.md`, `docs/API_CONTRACT.md`, `docs/ARCHITECTURE.md`, `docs/SECURITY_AND_PRIVACY.md`, `docs/DATA_MODEL.md`, `docs/THREAT_MODEL.md`, and `docs/PORTABILITY_STRATEGY.md` | Contract and security documentation for trusted local-only principal simulation, non-authentication limits, production rejection, and unchanged authorization predicates | Phase 1 Closure / `#37`, PR `#47` | Updated |
+| `scripts/quality/check_phase1_closure_docs.py`, `docs/QUALITY_GATES.md`, and `docs/STAGE_ISSUE_PLAN.md` | Phase 1 Closure gate scope expanded for Module F issue `#37` implementation and contract files without allowing Phase 2 feature work | Phase 1 Closure / `#37`, PR `#47` | Updated |
+
 ## Document Ownership
 
 | Document | Owns | Other docs should |
@@ -174,3 +183,4 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | 2026-07-01 | `#12` | Start Stage 7 avatar rendering adapter and export implementation | Adds mock/local avatar rendering, strict provider config validation, render lifecycle status, provider failure fallback, local HTML demo export with active content rejection, semantically bound JSON render manifest, semantically bound video placeholder artifact, source-matched demo preview/export-artifact UI, AI disclosure, affirmative synthetic avatar consent controls, cloned identity rejection, artifact validation, API/UI tests, and executable Stage 7 quality gate |
 | 2026-07-01 | `#13` | Start Stage 8 performance, security hardening, and release readiness | Adds performance smoke tests, API latency budget checks, frontend Lighthouse checks, rate limiting, request size limits, strict upload MIME validation, dependency audit, Docker image scan, release checklist, runbook, demo seed data, portfolio README, release-readiness review, and explicit blockers for multi-worker state, real video export, external avatar providers, and public synthetic-media consent/provenance |
 | 2026-07-01 | `#40` | Reconcile canonical RTM during Phase 1 Closure | Updates `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md` from stale planned statuses to implemented/local-demo statuses for Stage 4-8 behavior while preserving production No-Go limits. |
+| 2026-07-02 | `#37` / PR `#47` | Reconcile local principal contract during Phase 1 Closure | Documents and tests trusted local/dev/test-only `X-Local-User-Id` simulation, production rejection, default `user_local` fallback, and unchanged tenant/project/owner authorization predicates. |

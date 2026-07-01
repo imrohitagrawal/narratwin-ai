@@ -5,7 +5,7 @@
 - Version: 1.0
 - Stage: Stage 2 architecture, security, AI safety
 - Canonical issue: `#2`
-- Last updated: 2026-06-29
+- Last updated: 2026-07-02
 - Status: logical model plus Stage 4 local in-memory implementation; no database
   schema or migrations yet
 
@@ -41,25 +41,32 @@ Tenant
 -> AuditEvent
 ```
 
-Stage 4 operates in local single-user mode through synthetic tenant/user records,
-not by omitting authorization fields.
+Stage 4+ operates in trusted local mode through synthetic tenant/default-user
+records plus optional validated local principal simulation, not by omitting
+authorization fields.
 
 Stage 4 Slice 1 stores project, document, chunk, embedding, ingestion-run,
 walkthrough-run, and evaluation records in process memory only. These records keep
 canonical IDs and tenant/project fields so the later database schema can preserve
 the same contracts.
 
-## Synthetic Local Tenant And User
+## Synthetic Local Tenant And Principals
 
-Stage 4 must create or assume these logical records:
+Stage 4+ must create or assume these default logical records:
 
 - `tenant_id = tenant_local`
 - `user_id = user_local`
 - `owner_id = user_local`
 
+Local/dev/test may simulate additional local principals through a validated
+`X-Local-User-Id` header, but the tenant remains `tenant_local`. Simulated
+principal IDs use the same `owner_id` and `actor_id` fields as the default
+principal; they are local test identities, not authenticated production users.
+
 All project-scoped entities include `tenant_id` and `project_id`; user-owned
 entities include `owner_id` or `actor_id`. Future auth changes how the actor is
-resolved, not the storage shape.
+resolved, not the storage shape or the `(tenant_id, owner_id, project_id)`
+authorization predicate.
 
 ## Entities
 

@@ -35,7 +35,7 @@ when reconciling reviewer findings against issues `#35` through `#44`.
 |---|---:|---|---|
 | `#35` | P0 | Module A: Governance and Traceability | Required. Reconcile Stage 8 merge state, release docs, status ledger, runbook, and release checklist. |
 | `#36` | P0 | Module A: Governance and Traceability | Required. Final Review gate is now present on `main` through PR `#45`; Phase 1 must reconcile docs and close with evidence. |
-| `#37` | P1 | Module F: Security Closure | Required. Choose and enforce/document the trusted local principal contract. |
+| `#37` | P1 | Module F: Security Closure | In progress through PR `#47`. Branch `phase-1-closure-37-local-principal-contract` chooses trusted local/dev/test-only `X-Local-User-Id` simulation, rejects production header identity, and adds API/docs evidence. |
 | `#38` | P1 | Module A: Governance and Traceability | Required. Capture repository branch-protection/ruleset evidence or record a reviewed No-Go exception. |
 | `#39` | P1 | Module C: Local Run and Portability | Required for release claims. Production durability/monitoring remains No-Go unless explicitly downgraded with reviewer evidence. |
 | `#40` | P0 | Module A: Governance and Traceability | Required. Reconcile canonical RTM statuses and evidence to implemented Stage 4-8 behavior. |
@@ -68,6 +68,7 @@ release governance, or demo honesty.
 | P0/P1 classified | Complete | This report maps P0/P1/P2 findings to modules. |
 | Phase 1 closure report | In progress | This document starts the Phase 1 closure ledger. |
 | Release readiness review updated | In progress | `docs/RELEASE_READINESS_REVIEW.md` now records Final Review No-Go and Phase 1 conditions. |
+| Issue `#37` local principal contract | In progress | PR `#47` adds `APP_ENV`-gated `X-Local-User-Id` validation/rejection, keeps `user_local` fallback, preserves tenant/project/owner authorization predicates, and updates API/security/architecture docs. |
 | Release tag | Blocked | No tag until all Phase 1 P0/P1 gates pass and CI/review are complete. |
 
 ## Scope And Downgrade Rules
@@ -83,6 +84,38 @@ proposed priority change, evidence, reviewer/date, and release impact in this
 report and in the linked GitHub issue. A downgrade that changes the release
 posture must also update `docs/reviews/GO_NO_GO.md` in the same reviewed PR.
 Absent that evidence, P0/P1 items stay blocking.
+
+## Issue #37 Evidence
+
+Chosen contract: trusted local multi-principal simulation. Local/dev/test always
+use `tenant_id = tenant_local`; unset or blank `APP_ENV` defaults to the
+effective environment `local`; missing or whitespace-only `X-Local-User-Id`
+falls back to `user_local`; valid non-empty values may simulate local principals
+only when the effective `APP_ENV` is `local`, `dev`, or `test`. The header is
+not authentication and is rejected outside those environments.
+
+Evidence added in PR `#47` on branch
+`phase-1-closure-37-local-principal-contract`:
+
+- implementation: `backend/app/main.py`
+- API tests: `tests/api/test_stage4_slice_api.py`
+- architecture decision: `docs/ADR/0007-local-principal-contract.md`
+- contract docs: `docs/API_CONTRACT.md`, `docs/SECURITY_AND_PRIVACY.md`,
+  `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/THREAT_MODEL.md`, and
+  `docs/PORTABILITY_STRATEGY.md`
+
+This evidence does not close Phase 1 Closure by itself. Release posture remains
+No-Go until every Phase 1 P0/P1 blocker is resolved or explicitly downgraded with
+reviewer evidence, especially issue `#42` while it remains open.
+
+Independent review residual risks from PR `#47` are now tracked as durable
+follow-ups instead of PR-body-only notes:
+
+- Issue `#48` / `RR-036`: harden project-scoped lookup helpers so future auth and
+  durable storage paths enforce `(tenant_id, owner_id, project_id)` as the lookup
+  predicate.
+- Issue `#49` / `RR-037`: bound local idempotency record growth across simulated
+  local actors.
 
 ## Golden Question Status
 

@@ -5,7 +5,7 @@
 - Version: 1.0
 - Stage: Stage 8 performance, security hardening, release readiness
 - Canonical issue: `#13`
-- Last updated: 2026-07-01
+- Last updated: 2026-07-02
 - Status: Stage 8 branch adds local performance budgets, request hardening,
   dependency/container scan gates, and release-readiness evidence on top of the
   Stage 7 mock/local avatar path
@@ -49,17 +49,32 @@ Request headers:
 - `X-Request-Id`: optional caller-provided request ID
 - `Idempotency-Key`: required for upload, ingestion, generation, approval, deletion,
   and future media-render write operations
+- `X-Local-User-Id`: optional trusted local/dev/test-only principal simulation
+  header. It is not authentication and must never be accepted as production
+  identity.
 
 Response headers:
 
 - `X-Request-Id`: server request ID
 - `Content-Type: application/json`
 
-Stage 4 local mode resolves a synthetic principal with `tenantId = tenant_local`,
-`ownerId = user_local`, and `actorId = user_local`. API handlers must enforce the
-authorization predicate `(tenantId, ownerId, projectId)` before every
-project-scoped lookup, retrieval, generation, evaluation, export, or delete.
-Generated IDs are not authorization proof.
+Stage 4+ local mode resolves a synthetic tenant with `tenantId = tenant_local`.
+By default, `ownerId = user_local` and `actorId = user_local`. The backend reads
+`APP_ENV` from the environment and defaults an unset or blank value to the
+effective environment `local`. In effective local/dev/test environments only,
+`X-Local-User-Id` may simulate a different local principal for isolation tests
+and local demos. The header value is trimmed, must contain only ASCII letters,
+digits, underscore, or dash, and is capped at 64 characters. Missing or
+whitespace-only values fall back to `user_local`. Invalid non-empty values return
+`400 VALIDATION_ERROR`. Any non-empty `X-Local-User-Id` outside local/dev/test
+returns `400 LOCAL_PRINCIPAL_HEADER_NOT_ALLOWED`.
+
+`X-Local-User-Id` is not authentication. Production identity must come from a
+future real authentication source, and that change must replace only principal
+resolution, not the authorization predicate. API handlers must enforce
+`(tenantId, ownerId, projectId)` before every project-scoped lookup, retrieval,
+generation, evaluation, export, or delete. Generated IDs are not authorization
+proof.
 
 ## Error Shape
 
@@ -241,7 +256,9 @@ or endpoint-specific provider/config objects when the response contract exposes
 adapter state directly.
 Public schemas must state whether `tenantId` and `ownerId` are returned or
 server-internal. Stage 4 local API responses return `tenantId = tenant_local` and
-`ownerId = user_local` in project-scoped examples to keep isolation visible.
+default examples use `ownerId = user_local` to keep isolation visible. Trusted
+local/dev/test simulation may return a different `ownerId` when
+`X-Local-User-Id` is valid and accepted.
 
 `SecretScreeningResult` is an internal schema. If exposed to reviewers later, it
 must use camelCase fields equivalent to the security/data contract and omit raw

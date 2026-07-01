@@ -5,7 +5,7 @@
 - Version: 1.0
 - Stage: Stage 2 architecture, security, AI safety
 - Canonical issue: `#2`
-- Last updated: 2026-06-29
+- Last updated: 2026-07-02
 - Scope: pre-implementation architecture and first vertical slice planning
 
 ## Scope
@@ -80,10 +80,14 @@ Untrusted:
 
 ## Authorization Boundary
 
-Stage 4 local mode still has an authorization boundary. The actor is the synthetic
-local user `user_local` inside synthetic local tenant `tenant_local`. Every
-project-scoped operation validates this principal before lookup, retrieval,
-generation, evaluation, export, or deletion.
+Stage 4+ local mode still has an authorization boundary. The default actor is
+the synthetic local user `user_local` inside synthetic local tenant
+`tenant_local`. In trusted local/dev/test only, `X-Local-User-Id` can simulate a
+different local actor after strict normalization and validation. This header is
+not authentication and is rejected as a production identity source.
+
+Every project-scoped operation validates the resolved principal before lookup,
+retrieval, generation, evaluation, export, or deletion.
 
 The authorization predicate is `(tenant_id, owner_id, project_id)`. Child resource
 queries either include all three fields directly or run only after a server-side
