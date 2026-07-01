@@ -52,6 +52,10 @@ def main() -> int:
         if os.environ.get("NARRATWIN_POLICY_ONLY") == "1":
             return subprocess.call([sys.executable, "scripts/quality/check_stage6_docs.py"], cwd=ROOT)
         return subprocess.call(["make", "stage6-quality"], cwd=ROOT)
+    if stage == "7":
+        if os.environ.get("NARRATWIN_POLICY_ONLY") == "1":
+            return subprocess.call([sys.executable, "scripts/quality/check_stage7_docs.py"], cwd=ROOT)
+        return subprocess.call(["make", "stage7-quality"], cwd=ROOT)
 
     return subprocess.call(
         [sys.executable, "scripts/quality/stage_not_implemented.py", f"Stage {stage}"],

@@ -381,3 +381,63 @@ Required Stage 6 hardening within this scope:
   types and file extensions
 - mock/local voice behavior must remain a JSON manifest only, with no real audio,
   playback, voice cloning, or non-local provider egress
+
+## Stage 7 Avatar Rendering Adapter And Export Branch Scope
+
+Allowed changes:
+
+- `.stage/current`
+- `Makefile`
+- `backend/app/main.py`
+- `backend/app/stage7.py`
+- `frontend/src/app/page.tsx`
+- `frontend/src/app/page.module.css`
+- `frontend/src/app/page.test.tsx`
+- `frontend/tests/smoke.spec.ts`
+- `tests/unit/test_stage7_avatar.py`
+- `tests/api/test_stage7_avatar_api.py`
+- `tests/unit/test_health_contract.py`
+- `tests/api/test_health_api.py`
+- `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_stage7_docs.py`
+- `docs/API_CONTRACT.md`
+- `docs/ADR/0002-provider-agnostic-adapters.md`
+- `docs/QUALITY_GATES.md`
+- `docs/RECOMMENDED_REVIEW_ITEMS.md`
+- `docs/SKILL_LOCK.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/TRACEABILITY.md`
+
+Blocked changes:
+
+- real paid avatar-provider calls or required real provider keys
+- hardcoded premium-provider SDK usage
+- face cloning, voice cloning, or identity replication without explicit consent
+- non-local video or avatar-provider dependencies without provider-adapter
+  review and third-party notice updates
+- database migrations, asynchronous job infrastructure, or production deployment
+  infrastructure
+- STT/video import workflows outside the approved generated-script-to-demo-export
+  path
+
+Required Stage 7 hardening within this scope:
+
+- avatar rendering must use a mock/local provider by default and must not call
+  premium providers in local/dev/test
+- provider config, render job status history, failed provider fallback, and video
+  export placeholder metadata must be explicit and tested
+- export artifacts must be validated for expected MIME type, extension, size,
+  checksum, and safe filename before API response or frontend download
+- provider-produced config, render manifests, and video placeholders must be
+  validated from the start before storage, response, or display
+- generated demo exports must carry AI-generated avatar/video disclosure metadata
+- any cloned identity feature must remain disabled unless consent controls,
+  provenance metadata, and review evidence are implemented
+- provider contracts must preserve trace/run metadata, source citations, and
+  evaluation status from the grounded script path
+- UI work must follow the activated UI/UX Pro Max guidance without committing
+  `.codex` generated skill files
+- any optional Stage 8 hardening recommendation discovered during Stage 7 must
+  be recorded in `docs/RECOMMENDED_REVIEW_ITEMS.md` with a required stage/phase

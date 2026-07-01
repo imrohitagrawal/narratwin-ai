@@ -15,18 +15,20 @@ Use it to answer:
 ## Current Baseline
 
 - Last reviewed date: 2026-07-01
-- Current stage marker: `.stage/current = 6`
-- Current implementation permission: Stage 6 multilingual script, subtitle, and
-  mock/local voice-adapter work only, on the issue-linked Stage 6 branch
-- Current repo mode: Stage 6 dependency and implementation preparation has
-  started after Stage 5 merged to `main`
-- Product implementation merged to `main`: Stage 5 evaluation, guardrail, and
-  observability work merged through PR `#30`
+- Current stage marker: `.stage/current = 7`
+- Current implementation permission: Stage 7 mock/local avatar rendering adapter
+  and demo export work only, on the issue-linked Stage 7 branch
+- Current repo mode: Stage 7 implementation is in progress after Stage 6 merged
+  to `main`
+- Product implementation merged to `main`: Stage 6 multilingual scripts,
+  subtitles, voice-adapter, and downloadable artifact work merged through PR
+  `#31`
 - Tracker enforcement scope: repository-tracked stage and governance changes in checked-in files
-- Out-of-band GitHub reconciliation: PR `#30` is recorded as merged based on the
-  Stage 6 branch start handoff; issue `#10` is recorded as closed by that PR.
-- Stage 6 may add slice-scoped translation/localization, subtitle export, and
-  mock/local voice-adapter support for the merged Stage 4 and Stage 5 paths.
+- Out-of-band GitHub reconciliation: PR `#31` is recorded as merged based on the
+  Stage 7 branch start handoff; issue `#11` is recorded as closed by that PR.
+- Stage 7 may add slice-scoped mock/local avatar rendering, validated demo
+  export artifacts, provider contract tests, public-use license checks, AI
+  disclosure, and consent controls for the merged Stage 4 through Stage 6 paths.
 
 ## Source Of Truth
 
@@ -57,14 +59,26 @@ Use these files together with this tracker:
   Stage 1 marker activates pre-existing governance checks.
 - Stage 4 first-slice work merged to `main` through PR `#29` on 2026-06-30.
 - Stage 5 completed through merged PR `#30`; issue `#10` is closed.
-- Stage 6 has started on branch
-  `stage6-multilingual-subtitles-voice-adapter` for issue `#11`; initial
-  implementation adds multilingual generation, glossary preservation, subtitle
-  artifacts, a mock/local voice adapter, downloadable artifacts, and an
-  executable Stage 6 quality gate. Independent review findings for idempotency,
-  provider-output validation, request boundaries, provider response schemas,
-  frontend artifact safety, and documentation clarity have been remediated in
-  the branch.
+- Stage 6 completed through merged PR `#31`; issue `#11` is closed.
+- Stage 7 has started on branch `stage7-avatar-rendering-adapter-export` for
+  issue `#12`; initial governance activation records the UI/UX Pro Max CLI and
+  Codex skill for Stage 7 design guidance.
+- Stage 7 implementation now adds `backend/app/stage7.py`, the
+  `/avatar-renders` API route, provider config validation, render job lifecycle
+  status, local HTML demo exports, JSON render manifests, JSON video export
+  placeholders, synthetic avatar consent controls, cloned identity rejection,
+  artifact validation, frontend preview/export-artifact UI, frontend download
+  safety checks, and executable Stage 7 quality.
+- Stage 7 fresh-review remediation tightened successful render validation:
+  provider metadata must match local provider config, fallback reasons are enum
+  validated, demo HTML must exactly match trusted renderer output, manifests and
+  video placeholders carry source context-ref IDs, citation indexes, evaluation
+  ID/checksum, disclosure, provider config, and public-use license checks,
+  unexpected JSON artifact fields are rejected, semantic validation failures are
+  idempotently retained, failed idempotent attempts replay terminal errors
+  without another provider call, and frontend downloads validate decoded size,
+  checksum, JSON schema markers, active HTML content, and visible blocked
+  reasons before enabling links.
 - Ragas and Giskard were evaluated for Stage 5 but are not active dependencies:
   `ragas==0.4.3` currently fails `pip-audit`, and fixed Giskard releases require
   `scipy<1.12.0`, which is incompatible with the repo's Python 3.13 baseline.
@@ -81,7 +95,7 @@ Use these files together with this tracker:
 - Stage 3 preserves inherited compatibility status contexts for `quality /
   secrets` and `security / docker build` while the authoritative Stage 3 secret
   scan and Docker gates remain owned by the `security` and `ci` workflows.
-- Stage 7 through Stage 8 and Final Review remain open with no merged
+- Stage 7 is in progress; Stage 8 and Final Review remain open with no merged
   implementation work.
 
 ## Stage Ledger
@@ -94,8 +108,8 @@ Use these files together with this tracker:
 | Stage 3 | Complete in Stage 4 branch baseline; GitHub reconciliation required | `#5` reconcile after merge | Reconcile after merge | Executable locally | Adds repo foundation manifests, health checks, frontend foundation, Docker build path, pre-commit, CI/security/eval workflows, dependency/security scan path, local setup docs, hardened workflow pins, exact-file scope checks, non-root containers, and fixture-backed eval smoke without product features beyond health checks. |
 | Stage 4 | Complete, merged to `main` | `#4` reconcile after merge | PR `#29` merged | Executable locally at merge | First-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, Docker build coverage, quality gate, atomic-ingestion hardening, and sub-agent verification hardening merged through PR `#29`. |
 | Stage 5 | Complete, merged to `main` | `#10` closed | PR `#30` merged | Executable at merge | RAG eval runner, prompt-injection guardrails, file-upload abuse tests, and observability metadata merged through PR `#30`. |
-| Stage 6 | In progress | `#11` open | None merged | Executable in progress | Translation, subtitles, mock/local voice adapter, downloadable artifacts, and Stage 6 quality checks are in progress on branch `stage6-multilingual-subtitles-voice-adapter`. |
-| Stage 7 | Pending | `#12` open | None merged | Placeholder target only | Avatar rendering and export remain future scope. |
+| Stage 6 | Complete, merged to `main` | `#11` closed | PR `#31` merged | Executable at merge | Translation, subtitles, mock/local voice adapter, downloadable artifacts, and Stage 6 quality checks merged through PR `#31`. |
+| Stage 7 | In progress | `#12` open | None merged | Executable in progress | Avatar rendering adapter and demo export started on branch `stage7-avatar-rendering-adapter-export`; mock/local avatar rendering, provider config validation, render job status, local HTML demo export, JSON render manifest and video placeholder artifacts, consent/disclosure controls, artifact validation, UI preview/export workflow, and executable Stage 7 quality gate are implemented in branch. |
 | Stage 8 | Pending | `#13` open | None merged | Placeholder target only | Performance, hardening, and release readiness remain future scope. |
 | Final Review | Pending | `#6` open | None merged | Placeholder target only | Independent release review has not started. |
 
@@ -112,8 +126,8 @@ Use these files together with this tracker:
 | `#5` | Reconcile after merge | Stage 3 | Repo foundation and CI/CD gates are treated as complete in this Stage 4 branch baseline; reconcile exact GitHub state. |
 | `#4` | Reconcile after merge | Stage 4 | First grounded-script vertical slice merged through PR `#29`; issue state must be reconciled with GitHub. |
 | `#10` | Closed | Stage 5 | Evaluation, guardrails, observability completed by merged PR `#30`. |
-| `#11` | Open | Stage 6 | Multilingual scripts, subtitles, voice adapter; branch `stage6-multilingual-subtitles-voice-adapter` is active. |
-| `#12` | Open | Stage 7 | Avatar rendering adapter and demo export. |
+| `#11` | Closed | Stage 6 | Multilingual scripts, subtitles, voice adapter completed by merged PR `#31`. |
+| `#12` | Open | Stage 7 | Avatar rendering adapter and demo export; branch `stage7-avatar-rendering-adapter-export` is active. |
 | `#13` | Open | Stage 8 | Performance, security, release readiness. |
 | `#6` | Open | Final Review | Independent reviewer pass. |
 
@@ -142,6 +156,7 @@ Use these files together with this tracker:
 | `#27` | Merged | 2026-06-30 | Stage 2 architecture/security/AI-safety remediation; includes executable Stage 2 docs quality gate, semantic architecture contract checks, and no product implementation. |
 | `#29` | Merged | 2026-06-30 | Stage 4 first vertical slice from project upload to grounded script display merged to `main`; Stage 5 starts from this baseline. |
 | `#30` | Merged | Reconcile exact merge date | Stage 5 evaluations, guardrails, observability, and quality evidence merged to `main`; Stage 6 starts from this baseline. |
+| `#31` | Merged | Reconcile exact merge date | Stage 6 multilingual scripts, subtitles, mock/local voice adapter, downloadable artifacts, and quality evidence merged to `main`; Stage 7 starts from this baseline. |
 
 ## Completed Work
 
@@ -216,8 +231,8 @@ Use these files together with this tracker:
 - Legacy issue `#3` still uses `Stage -1` naming that no longer matches the operating model.
 - Stage 3 issue/PR state still needs GitHub reconciliation after the Stage 3
   merge event.
-- `.stage/current` is `6` in the Stage 6 branch. `make quality` dispatches to
-  the executable `make stage6-quality` gate.
+- `.stage/current` is `7` in the Stage 7 branch. `make quality` dispatches to
+  the executable `make stage7-quality` gate.
 - PR `#27` completed second-pass remediation after independent sub-agent and
   Claude cross-model review identified idempotency, approved-knowledge state,
   failed-output exposure, retrieval, cache, provider-bound secret screening,
@@ -249,18 +264,43 @@ Use these files together with this tracker:
 - Stage 6 final PR review produced no Critical or Required findings; optional
   follow-ups are tracked as `RR-029` through `RR-031` in
   `docs/RECOMMENDED_REVIEW_ITEMS.md` for Stage 8 hardening/release readiness.
+- Stage 7 UI/UX tooling activation installed `ui-ux-pro-max-cli@2.10.0`
+  globally, initialized `.codex/skills/ui-ux-pro-max` with
+  `uipro init --ai codex`, and recorded the tool in `docs/SKILL_LOCK.md` and
+  `docs/THIRD_PARTY_NOTICES.md`; generated `.codex` skill files remain ignored
+  and must not be committed.
+- Stage 7 implementation now includes a mock/local avatar rendering adapter,
+  `/avatar-renders` API route, strict local-only provider config model, render job
+  status history, validated `text/html` demo export with active HTML content
+  rejection, semantically bound `application/json` render manifest,
+  self-contained `application/json` video export placeholder, provider
+  metadata/config cross-checks, enum fallback reason validation, AI-generated
+  avatar/video disclosure, affirmative synthetic avatar consent control, cloned
+  identity disablement, idempotency replay/in-flight rejection and terminal
+  failed-attempt replay, provider failure fallback, process-local render/artifact
+  metadata storage, source citation/evaluation IDs and checksums, frontend
+  source-matched demo preview, export artifact list, frontend artifact safety
+  checks with checksum/content validation and blocked reasons, API/UI tests, and
+  `scripts/quality/check_stage7_docs.py`.
+- Stage 7 applies the Stage 6 provider-output validation learning from the
+  start: provider config, render manifest, video placeholder, and downloadable
+  artifacts are all validated before storage, response, or display.
+- Stage 7 optional follow-ups are tracked as `RR-032` through `RR-035` in
+  `docs/RECOMMENDED_REVIEW_ITEMS.md` for Stage 8 hardening/release readiness.
+- Stage 7 post-review product-source follow-up is tracked as `RR-035` for the
+  Stage 8 decision on source-run versus multilingual/subtitle-bound avatar
+  rendering before real timed media export.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
 
 ## Next Approved Actions
 
-1. Complete the Stage 6 multilingual scripts, subtitles, and mock/local voice
-   adapter PR linked to issue `#11` on branch
-   `stage6-multilingual-subtitles-voice-adapter`.
-2. Run `make quality` locally and require equivalent CI status checks before PR
+1. Run `make quality` locally and require equivalent CI status checks before PR
    review.
-3. Keep Stage 6 implementation scoped to translation/localization, subtitle
-   export, mock/local voice-adapter behavior, accessibility notes, and docs
-   validation.
+2. Keep Stage 7 implementation scoped to mock/local avatar rendering, validated
+   export artifacts, provider contract tests, public-use license checks, AI
+   disclosure, consent controls, and docs validation.
+3. Complete PR review for issue `#12` on branch
+   `stage7-avatar-rendering-adapter-export` after local quality and CI pass.
 4. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
    `#29`, and confirm the exact Stage 5 PR `#30` merge date if needed.
 5. Reconcile GitHub issue and PR state for Stage 3 issue `#5` and Stage 2 issue
@@ -319,3 +359,5 @@ Required update rules:
 | 2026-07-01 | Stage 6 branch `stage6-multilingual-subtitles-voice-adapter` advanced `.stage/current` to `6` and added multilingual generation, glossary preservation, subtitle artifacts, mock/local voice fallback, downloadable UI artifacts, and executable Stage 6 quality gate work under issue `#11`. |
 | 2026-07-01 | Stage 6 independent review findings were remediated for idempotency, provider-output validation, request-boundary limits, provider-ready response schemas, frontend artifact safety, and docs/gate clarity. |
 | 2026-07-01 | Stage 6 final PR review optional recommendations were tracked as `RR-029` through `RR-031` for Stage 8 hardening/release readiness. |
+| 2026-07-01 | PR `#31` merged Stage 6 to `main`; Stage 7 branch `stage7-avatar-rendering-adapter-export` started for issue `#12`, advanced `.stage/current` to `7`, and activated UI/UX Pro Max CLI/skill guidance for avatar rendering and demo export design. |
+| 2026-07-01 | Stage 7 implementation added mock/local avatar rendering, strict provider config validation, render lifecycle status, provider failure fallback, exact active-content-checked local HTML demo export, semantically bound strict JSON render manifest, self-contained strict JSON video placeholder artifact, source evidence IDs/checksums, source-matched preview/export-artifact UI, affirmative disclosure/consent controls, cloned identity rejection, semantic-validation and terminal failed idempotency replay, frontend checksum/content artifact validation, API/UI tests, and executable Stage 7 quality checks. |

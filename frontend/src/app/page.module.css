@@ -83,6 +83,22 @@
   line-height: 1.55;
 }
 
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.checkboxField input {
+  width: 18px;
+  height: 18px;
+  accent-color: #1f5f46;
+}
+
 .primaryAction {
   justify-self: start;
   min-height: 44px;
@@ -155,7 +171,7 @@
 
 .metadata {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 180px));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px;
 }
 
@@ -172,9 +188,12 @@
 }
 
 .metadata dd {
+  min-width: 0;
   color: #374151;
   font-size: 13px;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .badge {
@@ -213,6 +232,129 @@
 }
 
 .artifactActions button:disabled {
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.previewFrame {
+  overflow: hidden;
+  border: 1px solid #c8d0dc;
+  border-radius: 8px;
+  background: #0f172a;
+}
+
+.previewScreen {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  min-height: 220px;
+  padding: 22px;
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.9), rgba(31, 95, 70, 0.72)),
+    #0f172a;
+  color: #ffffff;
+}
+
+.previewPresenter {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: #e8f3ee;
+  color: #1f5f46;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.previewCopy {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.previewCopy strong {
+  color: #ffffff;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.previewCopy p {
+  display: -webkit-box;
+  max-width: 720px;
+  overflow: hidden;
+  color: #f8fafc;
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.artifactList {
+  display: grid;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.artifactRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e7ef;
+}
+
+.artifactRow:last-child {
+  border-bottom: 0;
+}
+
+.artifactRow div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.artifactRow strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+.artifactRow span {
+  color: #6b7280;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.artifactReason {
+  color: #9f1c1c;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.artifactRow a,
+.artifactRow button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #c8d0dc;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f5f46;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.artifactRow button:disabled {
   color: #6b7280;
   cursor: not-allowed;
 }
@@ -281,6 +423,15 @@
 
   .metadata {
     grid-template-columns: 1fr;
+  }
+
+  .previewScreen,
+  .artifactRow {
+    grid-template-columns: 1fr;
+  }
+
+  .previewPresenter {
+    width: 76px;
   }
 
   .citations li {

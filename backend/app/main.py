@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from backend.app.rag.chunking import checksum_text
 from backend.app.stage4 import (
     LocalPrincipal,
     MAX_UPLOAD_BYTES,
@@ -32,6 +33,12 @@ from backend.app.stage6 import (
     multilingual_to_api,
     stage6_service,
 )
+from backend.app.stage7 import (
+    MAX_PROVIDER_ID_CHARS as MAX_AVATAR_PROVIDER_ID_CHARS,
+    Stage7Error,
+    avatar_render_to_api,
+    stage7_service,
+)
 
 ErrorDetailValue = str | int | float | bool
 
@@ -43,7 +50,7 @@ class HealthResponse(BaseModel):
 
     status: Literal["ok"]
     service: Literal["narratwin-ai-backend"]
-    stage: Literal["6"]
+    stage: Literal["7"]
 
 
 class ReadinessResponse(HealthResponse):
@@ -135,6 +142,20 @@ class GenerateMultilingualWalkthroughRequest(BaseModel):
                 raise ValueError("Glossary terms must not be blank.")
             normalized.append(candidate)
         return normalized
+
+
+class GenerateAvatarRenderRequest(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    requested_avatar_provider: str = Field(
+        default="mock",
+        alias="requestedAvatarProvider",
+        min_length=1,
+        max_length=MAX_AVATAR_PROVIDER_ID_CHARS,
+        pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$",
+    )
+    consent_to_use_synthetic_avatar: bool = Field(alias="consentToUseSyntheticAvatar")
+    cloned_identity_requested: bool = Field(default=False, alias="clonedIdentityRequested")
 
 
 class ProjectResponse(BaseModel):
@@ -393,6 +414,103 @@ class MultilingualWalkthroughResponse(BaseModel):
     trace: MultilingualTraceResponse
 
 
+class AvatarProviderRenderResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    provider: str = Field(
+        min_length=1,
+        max_length=MAX_AVATAR_PROVIDER_ID_CHARS,
+        pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$",
+    )
+    provider_mode: Literal["LOCAL", "DISABLED", "OPTIONAL_EXTERNAL"] = Field(alias="providerMode")
+    requested_provider: str = Field(
+        alias="requestedProvider",
+        min_length=1,
+        max_length=MAX_AVATAR_PROVIDER_ID_CHARS,
+        pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$",
+    )
+    fallback_reason: str | None = Field(default=None, alias="fallbackReason")
+
+
+class ProviderConfigResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    provider: str = Field(
+        min_length=1,
+        max_length=MAX_AVATAR_PROVIDER_ID_CHARS,
+        pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$",
+    )
+    provider_mode: Literal["LOCAL", "DISABLED", "OPTIONAL_EXTERNAL"] = Field(alias="providerMode")
+    adapter_kind: Literal["MOCK_LOCAL", "EXTERNAL_STUB"] = Field(alias="adapterKind")
+    allow_network_egress: bool = Field(alias="allowNetworkEgress")
+    requires_api_key: bool = Field(alias="requiresApiKey")
+    supports_real_video: bool = Field(alias="supportsRealVideo")
+    supports_cloned_identity: bool = Field(alias="supportsClonedIdentity")
+
+
+class RenderJobStatusEventResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    status: Literal["QUEUED", "RUNNING", "FAILED", "FALLBACK", "COMPLETED"]
+    message: str
+
+
+class VideoRendererResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    renderer: Literal["local-html"]
+    renderer_mode: Literal["LOCAL"] = Field(alias="rendererMode")
+    export_format: Literal["html"] = Field(alias="exportFormat")
+
+
+class AvatarDisclosureResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    ai_generated: bool = Field(alias="aiGenerated")
+    cloned_identity: bool = Field(alias="clonedIdentity")
+    consent_required: bool = Field(alias="consentRequired")
+    consent_status: Literal["CONFIRMED", "NOT_REQUIRED"] = Field(alias="consentStatus")
+    message: str
+
+
+class AvatarArtifactsResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    demo_export: DownloadableArtifactResponse = Field(alias="demoExport")
+    render_manifest: DownloadableArtifactResponse = Field(alias="renderManifest")
+    video_export_placeholder: DownloadableArtifactResponse = Field(alias="videoExportPlaceholder")
+
+
+class AvatarTraceResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    trace_id: str = Field(alias="traceId")
+    source_context_ref_count: int = Field(alias="sourceContextRefCount")
+    source_citation_count: int = Field(alias="sourceCitationCount")
+    source_context_ref_ids: list[str] = Field(alias="sourceContextRefIds")
+    source_citation_indexes: list[int] = Field(alias="sourceCitationIndexes")
+    source_evaluation_id: str = Field(alias="sourceEvaluationId")
+    source_evaluation_checksum: str = Field(alias="sourceEvaluationChecksum")
+    evaluation_status: Literal["PASSED", "FAILED", "UNKNOWN"] = Field(alias="evaluationStatus")
+
+
+class AvatarRenderResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    avatar_render_id: str = Field(alias="avatarRenderId")
+    source_run_id: str = Field(alias="sourceRunId")
+    status: Literal["COMPLETED"]
+    render_job_status: Literal["COMPLETED"] = Field(alias="renderJobStatus")
+    render_job_status_history: list[RenderJobStatusEventResponse] = Field(alias="renderJobStatusHistory")
+    source_script_text: str = Field(alias="sourceScriptText")
+    avatar_provider: AvatarProviderRenderResponse = Field(alias="avatarProvider")
+    provider_config: ProviderConfigResponse = Field(alias="providerConfig")
+    video_renderer: VideoRendererResponse = Field(alias="videoRenderer")
+    disclosure: AvatarDisclosureResponse
+    artifacts: AvatarArtifactsResponse
+    trace: AvatarTraceResponse
+
+
 async def local_principal(x_local_user_id: str | None = Header(default=None, alias="X-Local-User-Id")) -> LocalPrincipal:
     actor_id = (x_local_user_id or "").strip()
     return LocalPrincipal(actor_id=actor_id or "user_local")
@@ -529,6 +647,16 @@ async def stage6_error_handler(request: Request, exc: Stage6Error) -> JSONRespon
     )
 
 
+@app.exception_handler(Stage7Error)
+async def stage7_error_handler(request: Request, exc: Stage7Error) -> JSONResponse:
+    return error_response(
+        request=request,
+        status_code=exc.status_code,
+        code=exc.code,
+        message=exc.message,
+    )
+
+
 @app.exception_handler(Exception)
 async def unhandled_error_handler(request: Request, _exc: Exception) -> JSONResponse:
     return error_response(
@@ -540,7 +668,7 @@ async def unhandled_error_handler(request: Request, _exc: Exception) -> JSONResp
 
 
 def health_payload() -> HealthResponse:
-    return HealthResponse(status="ok", service="narratwin-ai-backend", stage="6")
+    return HealthResponse(status="ok", service="narratwin-ai-backend", stage="7")
 
 
 @app.get("/healthz", response_model=HealthResponse, tags=["health"])
@@ -718,6 +846,73 @@ def generate_multilingual_walkthrough_run(
     return MultilingualWalkthroughResponse.model_validate(multilingual_to_api(multilingual_run))
 
 
+@api_v1.post(
+    "/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders",
+    status_code=201,
+    response_model=AvatarRenderResponse,
+    tags=["walkthrough"],
+)
+def generate_avatar_render(
+    project_id: str,
+    run_id: str,
+    request: GenerateAvatarRenderRequest,
+    principal: LocalPrincipal = Depends(local_principal),
+    idempotency_key: str | None = Depends(idempotency_key_header),
+) -> AvatarRenderResponse:
+    project = stage4_service.projects.get(project_id)
+    if project is None:
+        raise Stage7Error(404, "NOT_FOUND", "Project not found.")
+    if project.tenant_id != principal.tenant_id or project.owner_id != principal.actor_id:
+        raise Stage7Error(403, "FORBIDDEN", "Project is not accessible to this principal.")
+    source_run = stage4_service.walkthrough_runs.get(run_id)
+    if source_run is None or source_run.project_id != project_id:
+        raise Stage7Error(404, "NOT_FOUND", "Walkthrough run not found.")
+    if source_run.tenant_id != principal.tenant_id or source_run.actor_id != principal.actor_id:
+        raise Stage7Error(403, "FORBIDDEN", "Walkthrough run is not accessible to this principal.")
+    if source_run.status != "COMPLETED" or not source_run.accepted_script_text:
+        raise Stage7Error(422, "SOURCE_RUN_NOT_RENDERABLE", "Only completed grounded walkthrough runs can be rendered.")
+    if source_run.evaluation_status != "PASSED":
+        raise Stage7Error(422, "SOURCE_RUN_NOT_RENDERABLE", "Only passed grounded walkthrough runs can be rendered.")
+    if source_run.evaluation is None or not source_run.evaluation.claim_supports or not source_run.retrieved_context:
+        raise Stage7Error(
+            422,
+            "SOURCE_RUN_NOT_RENDERABLE",
+            "Avatar rendering requires grounded evaluation evidence.",
+        )
+
+    citation_count = len(source_run.evaluation.claim_supports)
+    source_context_ref_ids = tuple(context.context_ref_id for context in source_run.retrieved_context)
+    source_citation_indexes = tuple(support.citation_index for support in source_run.evaluation.claim_supports)
+    source_evaluation_checksum = checksum_text(
+        "\n".join(
+            [
+                source_run.evaluation.evaluation_id,
+                source_run.evaluation.evaluation_status,
+                ",".join(source_context_ref_ids),
+                ",".join(str(index) for index in source_citation_indexes),
+            ]
+        )
+    )
+    avatar_render = stage7_service.render_avatar_demo(
+        source_script=source_run.accepted_script_text,
+        requested_avatar_provider=request.requested_avatar_provider,
+        source_run_id=source_run.run_id,
+        trace_id=source_run.trace_id,
+        source_context_ref_count=len(source_run.retrieved_context),
+        source_citation_count=citation_count,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_evaluation_id=source_run.evaluation.evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=source_run.evaluation_status or "UNKNOWN",
+        cloned_identity_requested=request.cloned_identity_requested,
+        consent_to_use_synthetic_avatar=request.consent_to_use_synthetic_avatar,
+        idempotency_scope=f"{principal.tenant_id}:{principal.actor_id}:{project_id}:{run_id}",
+        idempotency_key=idempotency_key,
+    )
+    return AvatarRenderResponse.model_validate(avatar_render_to_api(avatar_render))
+
+
 async def read_upload_with_limit(file: UploadFile) -> bytes:
     data = bytearray()
     while True:
@@ -732,6 +927,7 @@ async def read_upload_with_limit(file: UploadFile) -> bytes:
 def reset_app_state_for_tests() -> None:
     stage4_service.reset()
     stage6_service.reset()
+    stage7_service.reset()
 
 
 app.include_router(api_v1)

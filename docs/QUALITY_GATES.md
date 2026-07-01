@@ -11,11 +11,11 @@ make quality
 ```
 
 During the current stage, `make quality` runs only the active stage checks
-by delegating to `scripts/quality/check_quality_stage.py`. Stage 6 now gates
-multilingual script generation, glossary-preserving translation, subtitle export,
-mock/local voice-adapter behavior, downloadable artifacts, accessibility notes,
-and documentation for the approved first-slice path. Product behavior outside
-the approved slice remains blocked.
+by delegating to `scripts/quality/check_quality_stage.py`. Stage 7 has started
+from the merged Stage 6 baseline and is scoped to mock/local avatar rendering,
+demo export artifacts, provider contract tests, public-use license checks, AI
+disclosure, consent controls, and documentation. Product behavior outside the
+approved slice remains blocked.
 
 ## Required Make Targets
 
@@ -23,7 +23,7 @@ The `Makefile` must expose:
 
 | Target | Current behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`; currently Stage 6 |
+| `make quality` | Runs checks for `.stage/current`; currently Stage 7 |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
 | `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
 | `make stage2-quality` | Runs executable Stage 2 architecture, security, AI safety, and portability checks |
@@ -31,7 +31,7 @@ The `Makefile` must expose:
 | `make stage4-quality` | Runs executable Stage 4 first-slice checks |
 | `make stage5-quality` | Runs executable Stage 5 eval/guardrail/observability checks |
 | `make stage6-quality` | Runs executable Stage 6 multilingual/subtitle/voice checks |
-| `make stage7-quality` | Fails loudly until Stage 7 quality is implemented |
+| `make stage7-quality` | Runs executable Stage 7 avatar rendering/export checks |
 | `make stage8-quality` | Fails loudly until Stage 8 quality is implemented |
 | `make final-review-quality` | Fails loudly until Final Review quality is implemented |
 
@@ -285,7 +285,60 @@ Gate validates:
 
 ### Stage 7: Avatar Rendering Adapter And Export
 
-Gate must validate mock/local avatar rendering, export artifacts, provider adapter contracts, public-use license checks, AI disclosure, consent controls for any cloned identity feature, and docs.
+Stage 7 quality is executable through `make stage7-quality`, which first runs
+`scripts/quality/check_stage7_docs.py` and then executes the repo-local CI
+wrappers.
+
+Gate validates:
+
+- `.stage/current` contains `7`
+- current branch name matches `stage7-*` before merge, or is `main` after merge
+- changed files stay within the documented Stage 7 allowlist
+- backend exposes `AvatarProvider`, `MockAvatarProvider`, and a local HTML
+  `VideoRenderer` export path through `backend/app/stage7.py`
+- backend exposes a validated provider config model, disabled external adapter
+  stub, render job status lifecycle, and video export placeholder artifact
+- `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/avatar-renders`
+  requires a completed, passed grounded source run before rendering
+- avatar rendering uses mock/local defaults and does not call paid avatar
+  providers in local/dev/test
+- requested unavailable avatar providers fall back to the mock/local provider and
+  record `REQUESTED_PROVIDER_UNAVAILABLE`
+- provider failure fallback records only enum fallback reasons and successful
+  provider metadata must match local provider config
+- cloned identity requests fail with `CLONED_IDENTITY_DISABLED`
+- synthetic avatar demo export requires explicit consent and fails with
+  `AVATAR_CONSENT_REQUIRED` when missing
+- export artifacts are validated for expected MIME type, extension, size,
+  checksum, base64 decoding, JSON manifest shape, active HTML content, and safe
+  filename before API response or frontend download
+- provider-produced config, manifest, and video placeholder output are validated
+  from the first Stage 7 implementation, applying the Stage 6 learning that
+  every provider output surface must be checked before storage or display
+- HTML demo exports must reject active HTML content and must exactly match
+  trusted renderer output for the source run, trace, and disclosure text
+- render manifests and video placeholders must be semantically bound to trusted
+  provider config, source run, trace, citation/evaluation IDs and checksums,
+  disclosure inputs, and public-use license checks, and must reject unexpected
+  top-level or nested JSON fields
+- failed idempotent render attempts are retained as terminal failed records and
+  replay the same error without another provider call
+- Stage 7 semantic validation failures with an idempotency key, including
+  missing consent and cloned identity requests, are retained and replayed or
+  conflict on changed retry bodies
+- malformed provider output shapes must fail with `PROVIDER_OUTPUT_INVALID`, not
+  uncontrolled server errors
+- generated demo exports carry AI-generated avatar/video disclosure metadata
+- provider contracts preserve trace/run metadata, source citations, and
+  evaluation status from the grounded script path
+- frontend exposes the avatar export workflow, disclosure metadata, consent
+  control, demo preview, export artifacts page section, and download links for
+  script, subtitles, avatar demo HTML, render manifest, and video placeholder
+  artifacts only after artifact safety checks
+- UI work follows the activated UI/UX Pro Max guidance without committing
+  `.codex` generated skill files
+- Stage 7 docs, traceability, third-party notices, skill lock, and provider ADR
+  updates are present
 
 ### Stage 8: Performance, Security Hardening, Release Readiness
 
