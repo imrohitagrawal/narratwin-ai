@@ -148,11 +148,11 @@ e2e:
 eval:
 	bash scripts/ci/eval-smoke.sh
 
-ci: lint typecheck test api-test ui-test e2e eval security docker-build container-scan frontend-lighthouse
+ci: quality lint typecheck test api-test ui-test e2e eval security docker-build container-scan frontend-lighthouse
 
 secrets-scan:
 	python3 scripts/guardrails_check.py
-	NARRATWIN_ALLOW_LOCAL_SECRET_SCAN_FALLBACK=1 bash scripts/ci/dependency-security.sh
+	bash scripts/ci/dependency-security.sh
 
 security-scan:
 	bash scripts/ci/dependency-security.sh
@@ -161,5 +161,5 @@ dependency-audit:
 	uv run pip-audit
 	npm --prefix frontend audit --audit-level=high
 
-container-scan:
+container-scan: docker-build
 	bash scripts/ci/docker-image-scan.sh

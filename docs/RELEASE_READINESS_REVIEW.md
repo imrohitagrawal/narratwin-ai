@@ -97,6 +97,19 @@ The local demo can be reviewed only when:
 - P0/P1 Final Review issues are closed or explicitly downgraded with evidence
 - local quality, eval, security, and CI gates pass
 
+## Downgrade Evidence Rule
+
+A P0/P1 issue may be downgraded only by the active closure reviewer through a
+reviewed PR linked to the GitHub issue. The PR must record the issue, previous
+priority, new priority, evidence, reviewer/date, and release impact in
+`docs/reviews/PHASE_1_CLOSURE_REPORT.md`. If the downgrade changes the release
+posture, the same PR must update `docs/reviews/GO_NO_GO.md`; otherwise the issue
+remains release-blocking.
+
+Static governance artifacts do not by themselves close implementation blockers.
+Issues `#37` and `#42` still require separate executable evidence or a reviewed
+No-Go exception before the local demo can be treated as Phase 1 closure-ready.
+
 ## Tagging Policy
 
 Create a release tag only after every Phase 1 P0/P1 gate passes locally and in CI,

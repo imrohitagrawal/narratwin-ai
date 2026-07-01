@@ -2,7 +2,11 @@
 
 Use this checklist for local mock-provider demo readiness.
 
-- [ ] App opens locally.
+- [ ] `.env` exists from `cp .env.example .env`.
+- [ ] `docker compose up --build` starts backend, frontend, Postgres, and Redis.
+- [ ] `curl http://localhost:8000/api/v1/healthz` returns successfully.
+- [ ] `curl http://localhost:8000/api/v1/readyz` returns successfully.
+- [ ] App opens locally at `http://localhost:3000`.
 - [ ] User can create project.
 - [ ] User can upload project knowledge.
 - [ ] Uploaded knowledge is approved and ingested.

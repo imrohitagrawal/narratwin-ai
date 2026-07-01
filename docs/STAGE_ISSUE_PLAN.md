@@ -533,6 +533,7 @@ Required Stage 8 hardening within this scope:
 Allowed governance/reporting changes for Module A:
 
 - `Makefile`
+- `README.md`
 - `docs/PRD.md`
 - `docs/QUALITY_GATES.md`
 - `docs/RELEASE_CHECKLIST.md`
@@ -552,6 +553,15 @@ Allowed governance/reporting changes for Module A:
 - `scripts/quality/check_phase1_closure_docs.py`
 - `scripts/quality/check_quality_stage.py`
 - `scripts/quality/check_recommended_review_items.py`
+
+Final Review baseline artifacts under `docs/reviews/FINAL_REVIEW.md`,
+`docs/reviews/RISK_REGISTER.md`, `docs/reviews/DEFECT_BACKLOG.md`, and
+`docs/reviews/GO_NO_GO.md` are required inputs for Phase 1 Closure but are not
+allowed Module A edits. Any release-posture change must happen in a separately
+reviewed closure PR with explicit downgrade evidence.
+
+Changes to the three Phase 1 quality scripts above require explicit reviewer
+scrutiny because the PR branch executes its own in-repo gate code.
 
 Blocked changes:
 

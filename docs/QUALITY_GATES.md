@@ -422,17 +422,36 @@ the Phase 1 Closure gate even though `.stage/current` remains `8`.
 Gate validates:
 
 - current branch name matches `phase-1-closure-*` before merge, or is `main`
-  after merge
-- `docs/reviews/PHASE_1_CLOSURE_REPORT.md` exists and classifies issues `#35`
-  through `#44` as P0/P1/P2/P3
-- every P0/P1 issue maps to a closure module
-- `docs/RELEASE_READINESS_REVIEW.md` preserves the Final Review No-Go posture
-- `docs/evals/phase1_golden_questions.jsonl` exists with the required minimum
-  questions and unsupported-claim threshold of zero
-- Phase 1 demo docs exist under `docs/demo/`
-- portfolio/demo docs disclose single-process, process-local, non-durable state
-  and mock/local providers only
-- no release tag is claimed before all Phase 1 gates pass
+  after merge; unresolved branch context fails closed
+- Final Review baseline artifacts exist and `docs/reviews/GO_NO_GO.md`
+  preserves the five No-Go decision lines
+- changed files stay within the Phase 1 governance/reporting allowlist; Final
+  Review baseline artifacts are required inputs but not allowed closure-branch
+  edits
+- `docs/reviews/PHASE_1_CLOSURE_REPORT.md` parses as an issue table covering
+  issues `#35` through `#44` with expected P0/P1/P2/P3 priorities
+- every P0/P1 issue maps to a valid closure module and the module table covers
+  the P0/P1 issue set with non-empty required evidence
+- `docs/RELEASE_READINESS_REVIEW.md` preserves the Final Review No-Go posture,
+  tagging block, and downgrade evidence rule
+- `docs/evals/phase1_golden_questions.jsonl` is valid JSONL with the required
+  minimum questions, expected answers, evidence paths, required/forbidden
+  claims, citation policy, metric floors, unsupported-claim threshold of zero,
+  and at least one prompt-injection and one safety-boundary fixture
+- Phase 1 demo docs and portfolio docs include runnable local startup,
+  health/readiness, project/upload/generation/citation/eval/saved-output flow,
+  and single-process, process-local, non-durable, mock/local-only disclosures
+
+The Phase 1 Closure quality gate validates the static governance contract. It
+does not replace `make ci`, does not prove GitHub branch-protection settings, and
+does not execute the Phase 1 golden questions through the RAG pipeline until a
+later eval-runner PR wires that dataset into `make eval`.
+
+Changes to `scripts/quality/check_phase1_closure_docs.py`,
+`scripts/quality/check_quality_stage.py`, or
+`scripts/quality/check_recommended_review_items.py` require explicit reviewer
+attention because in-repo gate scripts are executed from the PR branch under
+review.
 
 ## CI Relationship
 

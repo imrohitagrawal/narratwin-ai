@@ -397,3 +397,4 @@ Required update rules:
 | 2026-07-01 | Stage 8 final PR review reconciled `docs/REPOSITORY_GUARDRAILS.md` and the Stage 8 quality checker so the canonical branch-protection checklist includes `stage8 / performance lighthouse`. |
 | 2026-07-01 | Final Review artifact branch added independent review reports under `docs/reviews/` and wired an executable Final Review artifact gate for `final-review-*` branches; Phase 1 closure remains tracked separately by Final Review follow-up issues. |
 | 2026-07-01 | Phase 1 Closure started after PR `#45` merged; issues `#35` through `#44` classified and mapped to closure modules; release posture remains No-Go. |
+| 2026-07-01 | Phase 1 Closure governance gate was hardened after cross-model review to protect Final Review No-Go inputs, parse issue/module tables, validate the golden-question schema, and distinguish governance checks from full CI/eval execution. |

@@ -52,9 +52,9 @@ release governance, or demo honesty.
 |---|---|---|---|
 | Module A | Governance and Traceability | `#35`, `#36`, `#38`, `#40` | PRD/RTM/status/release/readiness/risk docs are non-contradictory; Final Review gate is executable; branch-protection evidence is captured or explicitly release-blocked. |
 | Module B | Functional Phase 1 Flow | `#42` | End-to-end project -> upload -> ingest -> chunk -> retrieve -> generate -> evaluate -> display path passes with citations, stored output, and no unsupported claims. |
-| Module C | Local Run and Portability | `#39` | `cp .env.example .env` and `docker compose up --build` work for local health/readiness, or declared unused services are documented honestly. |
-| Module D | Test and CI Commands | None directly; supports all P0/P1 | `make lint`, `make typecheck`, `make test`, `make api-test`, `make ui-test`, `make e2e`, `make eval`, `make security`, and `make ci` are real wrappers. |
-| Module E | RAG Quality and AI Safety | Supports `#40` and release evidence | `docs/evals/phase1_golden_questions.jsonl` exists with thresholds: faithfulness >= 0.85, answer relevancy >= 0.80, context precision >= 0.75, context recall >= 0.70, unsupported claims = 0. |
+| Module C | Local Run and Portability | `#39` | `cp .env.example .env` and `docker compose up --build` work for local health/readiness, or declared unused services are documented honestly in release/demo docs and `docs/THIRD_PARTY_NOTICES.md`. |
+| Module D | Test and CI Commands | None directly; supports all P0/P1 | `make lint`, `make typecheck`, `make test`, `make api-test`, `make ui-test`, `make e2e`, `make eval`, `make security`, and `make ci` are real wrappers. `make quality` on this branch is the Phase 1 governance gate, not the full suite. |
+| Module E | RAG Quality and AI Safety | Supports `#40` and release evidence | `docs/evals/phase1_golden_questions.jsonl` is a static golden-question contract with source evidence, expected answers, forbidden claims, and thresholds: faithfulness >= 0.85, answer relevancy >= 0.80, context precision >= 0.75, context recall >= 0.70, unsupported claims = 0. It is not yet measured by the executable eval runner. |
 | Module F | Security Closure | `#37`; supports `#38`, `#39`, `#44` | Secret scan, upload abuse, prompt injection, provider-key exposure, unsafe logs, dependency audit, and container scan gates pass or remain release-blocked. |
 | Module G | Demo Readiness | `#41` | Demo script, checklist, and screenshot guide disclose local/mock-only, single-process, process-local, non-durable limitations. |
 
@@ -67,6 +67,30 @@ release governance, or demo honesty.
 | Phase 1 closure report | In progress | This document starts the Phase 1 closure ledger. |
 | Release readiness review updated | In progress | `docs/RELEASE_READINESS_REVIEW.md` now records Final Review No-Go and Phase 1 conditions. |
 | Release tag | Blocked | No tag until all Phase 1 P0/P1 gates pass and CI/review are complete. |
+
+## Scope And Downgrade Rules
+
+This governance branch may map, document, and gate Phase 1 closure evidence, but
+it does not land backend, frontend, RAG, provider, Docker, database, or runtime
+product-code fixes. P1 issues `#37` and `#42` remain release-blocking until
+separate Phase 1 implementation PRs or a reviewed exception provide executable
+evidence.
+
+Downgrades are allowed only when the active closure reviewer records the issue,
+proposed priority change, evidence, reviewer/date, and release impact in this
+report and in the linked GitHub issue. A downgrade that changes the release
+posture must also update `docs/reviews/GO_NO_GO.md` in the same reviewed PR.
+Absent that evidence, P0/P1 items stay blocking.
+
+## Golden Question Status
+
+`docs/evals/phase1_golden_questions.jsonl` now defines the Phase 1 RAG and
+safety acceptance contract, including expected answers, required claims,
+forbidden claims, source evidence, citation policy, metric floors, and
+unsupported-claim maximums. The current Phase 1 Closure quality gate validates
+that static contract only. The executable `make eval` path still runs the Stage
+5 smoke dataset until a later PR wires this Phase 1 golden set into a measured
+runner.
 
 ## Non-Goals
 

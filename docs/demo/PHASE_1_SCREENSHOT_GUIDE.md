@@ -2,6 +2,16 @@
 
 Capture screenshots only from the local mock-provider demo.
 
+Start the app with:
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Then verify `http://localhost:8000/api/v1/healthz`,
+`http://localhost:8000/api/v1/readyz`, and open `http://localhost:3000`.
+
 ## Required Screens
 
 1. App open with project form visible.

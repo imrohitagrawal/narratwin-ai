@@ -4,7 +4,8 @@
 
 - Version: 1.1
 - Stage: Phase 1 Closure governance reconciliation
-- Canonical issue: `#40`
+- Canonical issue: `#1`
+- Reconciliation issue: `#40`
 - Last updated: 2026-07-01
 
 ## Purpose

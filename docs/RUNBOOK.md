@@ -6,10 +6,38 @@ explicitly downgraded with evidence.
 
 ## Local Verification
 
-1. Run `make quality`.
-2. If Lighthouse fails, inspect `reports/lighthouse/stage8-lighthouse.json` and `reports/lighthouse/frontend-server.log`.
-3. If dependency audit fails, inspect `pip-audit`, `npm audit --audit-level=high`, and `reports/security`.
-4. If Docker image scan fails, inspect the SARIF files in `reports/security`.
+1. Start from a Phase 1 branch, not `main`.
+2. Run `make phase1-closure-quality` for the governance closure gate.
+3. Run `make quality`; on `phase-1-closure-*` branches this dispatches to the
+   same governance closure gate.
+4. Run the broader local suite where tooling is available:
+
+   ```bash
+   make lint
+   make typecheck
+   make test
+   make api-test
+   make ui-test
+   make e2e
+   make eval
+   make security
+   make ci
+   ```
+
+5. Verify the local demo startup path:
+
+   ```bash
+   cp .env.example .env
+   docker compose up --build
+   curl http://localhost:8000/api/v1/healthz
+   curl http://localhost:8000/api/v1/readyz
+   ```
+
+6. If Lighthouse fails, inspect `reports/lighthouse/stage8-lighthouse.json` and
+   `reports/lighthouse/frontend-server.log`.
+7. If dependency audit fails, inspect `pip-audit`, `npm audit --audit-level=high`,
+   and `reports/security`.
+8. If Docker image scan fails, inspect the SARIF files in `reports/security`.
 
 ## Operational Checks
 
