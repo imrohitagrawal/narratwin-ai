@@ -13,7 +13,9 @@ if [ ! -d node_modules ]; then
 fi
 
 npm run build
-if [ "${PLAYWRIGHT_SKIP_INSTALL:-}" = "1" ]; then
+if [ "${CI:-}" = "true" ]; then
+  npx playwright install --with-deps chromium
+elif [ "${PLAYWRIGHT_SKIP_INSTALL:-}" = "1" ]; then
   echo "Skipping Playwright browser install because PLAYWRIGHT_SKIP_INSTALL=1"
 else
   npx playwright install chromium

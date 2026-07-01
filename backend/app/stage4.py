@@ -326,7 +326,8 @@ class Stage4Service:
             raise Stage4Error(413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 corpus size limit.")
         safe_filename = sanitize_filename(source_filename)
         suffix = PurePath(safe_filename).suffix.lower()
-        if suffix not in ALLOWED_EXTENSIONS or content_type != ALLOWED_CONTENT_TYPES_BY_EXTENSION.get(suffix):
+        normalized_content_type = normalize_content_type(content_type)
+        if suffix not in ALLOWED_EXTENSIONS or normalized_content_type != ALLOWED_CONTENT_TYPES_BY_EXTENSION.get(suffix):
             raise Stage4Error(415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted.")
         if len(data) > MAX_UPLOAD_BYTES:
             raise Stage4Error(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit.")
@@ -1003,6 +1004,10 @@ def parse_document_text(text: str) -> str:
     if contains_secret_like_content(normalized):
         raise Stage4Error(422, "SECRET_LIKE_CONTENT", "Uploaded document contains secret-like content.")
     return normalized
+
+
+def normalize_content_type(content_type: str) -> str:
+    return content_type.split(";", 1)[0].strip().lower()
 
 
 def contains_prompt_injection(text: str) -> bool:

@@ -42,6 +42,9 @@ Use these files together with this tracker:
 - [Stage Issue Plan](STAGE_ISSUE_PLAN.md)
 - [Quality Gates](QUALITY_GATES.md)
 - [Traceability Register](TRACEABILITY.md)
+- [Project Learnings Tracker](PROJECT_LEARNINGS_TRACKER.md)
+- [Project Governance Learnings](PROJECT_GOVERNANCE_LEARNINGS.md)
+- [Review Rigor Retrospective](REVIEW_RIGOR_RETROSPECTIVE.md)
 - GitHub issues and pull requests for execution history
 
 ## Executive Status
@@ -239,6 +242,9 @@ Use these files together with this tracker:
   merge event.
 - `.stage/current` is `8` in the Stage 8 branch. `make quality` dispatches to
   the executable `make stage8-quality` gate outside policy-only CI mode.
+- Stage 8 PR CI now includes the `stage8 / performance lighthouse` budget status
+  for Locust and Lighthouse checks; release readiness still requires enabling or
+  verifying `main` branch protection/repository rulesets outside the repository.
 - PR `#27` completed second-pass remediation after independent sub-agent and
   Claude cross-model review identified idempotency, approved-knowledge state,
   failed-output exposure, retrieval, cache, provider-bound secret screening,
@@ -305,14 +311,17 @@ Use these files together with this tracker:
    readiness evidence, and explicit release blockers.
 2. Review PR `#33`, require local `make quality` and equivalent CI status
    checks, then merge only after issue `#13` linkage and all gates are green.
-3. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
+3. Enable or verify `main` branch protection/repository rulesets before treating
+   Stage 8 as release-ready; required status contexts must include the emitted
+   `quality / secrets` and `security / docker build` compatibility checks.
+4. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
    `#29`, and confirm the exact Stage 5 PR `#30` merge date if needed.
-4. Reconcile GitHub issue and PR state for Stage 3 issue `#5`, Stage 2 issue
+5. Reconcile GitHub issue and PR state for Stage 3 issue `#5`, Stage 2 issue
    `#2`, and Stage 7 issue `#12` after merged PR events.
-5. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
-6. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue
+6. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
+7. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue
    `#16` before broader product implementation planning is treated as ready.
-7. Close or supersede stale governance issues that conflict with the current
+8. Close or supersede stale governance issues that conflict with the current
    operating model, especially `#3`.
 9. Keep this file updated at every stage boundary, every stage-issue change, and
    every merged stage PR.
@@ -368,3 +377,6 @@ Required update rules:
 | 2026-07-01 | PR `#32` merged Stage 7 to `main` at commit `7f7196a`; Stage 8 branch `stage8-performance-security-release-readiness` started for issue `#13`, advanced `.stage/current` to `8`, activated release-readiness skill guidance, and began performance/security/release hardening. |
 | 2026-07-01 | PR `#33` opened for Stage 8 performance, security hardening, and release readiness; sub-agent review findings are being remediated before merge. |
 | 2026-07-01 | Stage 8 review remediation added ADR `0006` for release hardening gates and removed a synthetic secret-assignment fixture that tripped repository guardrails. |
+| 2026-07-01 | Stage 8 captured review-process failure analysis and the future ruthless-review protocol in `docs/REVIEW_RIGOR_RETROSPECTIVE.md`. |
+| 2026-07-01 | Stage 8 added `docs/PROJECT_LEARNINGS_TRACKER.md` and linked it from `README.md` so reusable project learnings are discoverable for future applications. |
+| 2026-07-01 | Stage 8 added `docs/PROJECT_GOVERNANCE_LEARNINGS.md` to capture reusable governance patterns including status tracking, recommended-review registers, stage gates, ADRs, traceability, third-party/tool locks, release evidence, and repository settings checks. |

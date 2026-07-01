@@ -94,6 +94,27 @@ describe("Home", () => {
     ).toBe("Checksum mismatch.");
   });
 
+  it("blocks artifact MIME type and extension mismatches", () => {
+    const text = "Stage 6 script";
+
+    expect(
+      artifactBlockReason("script", {
+        fileName: "run-es-script.md",
+        mimeType: "text/plain",
+        contentBase64: btoa(text),
+        checksum: `sha256:${sha256Hex(text)}`,
+      }),
+    ).toBe("Unexpected MIME type.");
+    expect(
+      artifactBlockReason("script", {
+        fileName: "run-es-script.txt",
+        mimeType: "text/markdown",
+        contentBase64: btoa(text),
+        checksum: `sha256:${sha256Hex(text)}`,
+      }),
+    ).toBe("Unexpected file extension.");
+  });
+
   it("does not block inert web terms inside escaped avatar demo text", () => {
     const html =
       "<!doctype html><html><body><article>CSS modules, src=, href=, and url() are project prose.</article></body></html>";

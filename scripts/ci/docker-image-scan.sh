@@ -20,6 +20,16 @@ scan_with_docker_scout() {
     "local://${image}"
 }
 
+scan_report_exists() {
+  local output="$1"
+  [ -s "${output}" ] && grep -q '"runs"' "${output}"
+}
+
+prepare_scan_output() {
+  local output="$1"
+  rm -f "${output}"
+}
+
 scan_with_trivy() {
   local image="$1"
   local output="$2"
@@ -53,19 +63,107 @@ scan_with_trivy_container() {
     "${image}"
 }
 
-if command -v trivy >/dev/null 2>&1; then
-  scan_with_trivy "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-image-scan.sarif.json"
-  scan_with_trivy "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-image-scan.sarif.json"
-elif command -v grype >/dev/null 2>&1; then
-  scan_with_grype "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-image-scan.sarif.json"
-  scan_with_grype "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-image-scan.sarif.json"
-elif docker version >/dev/null 2>&1; then
-  scan_with_trivy_container "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-image-scan.sarif.json"
-  scan_with_trivy_container "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-image-scan.sarif.json"
-elif docker scout version >/dev/null 2>&1; then
-  scan_with_docker_scout "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-image-scan.sarif.json"
-  scan_with_docker_scout "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-image-scan.sarif.json"
+scan_with_dockerized_trivy_or_scout() {
+  local image="$1"
+  local output="$2"
+  prepare_scan_output "${output}"
+  if scan_with_trivy_container "${image}" "${output}"; then
+    return 0
+  fi
+  local scan_status=$?
+  if scan_report_exists "${output}"; then
+    return "${scan_status}"
+  fi
+  if docker scout version >/dev/null 2>&1; then
+    echo "Dockerized Trivy did not produce a scan report for ${image}; falling back to Docker Scout." >&2
+    scan_with_docker_scout "${image}" "${output}"
+    return
+  fi
+  return "${scan_status}"
+}
+
+scan_with_available_scanners() {
+  local image="$1"
+  local output="$2"
+  local attempted=0
+  local scan_status=1
+
+  if command -v trivy >/dev/null 2>&1; then
+    attempted=1
+    prepare_scan_output "${output}"
+    if scan_with_trivy "${image}" "${output}"; then
+      return 0
+    fi
+    scan_status=$?
+    if scan_report_exists "${output}"; then
+      return "${scan_status}"
+    fi
+    echo "Local Trivy did not produce a usable SARIF report for ${image}; trying the next scanner." >&2
+  fi
+
+  if command -v grype >/dev/null 2>&1; then
+    attempted=1
+    prepare_scan_output "${output}"
+    if scan_with_grype "${image}" "${output}"; then
+      return 0
+    fi
+    scan_status=$?
+    if scan_report_exists "${output}"; then
+      return "${scan_status}"
+    fi
+    echo "Grype did not produce a usable SARIF report for ${image}; trying the next scanner." >&2
+  fi
+
+  if docker version >/dev/null 2>&1; then
+    attempted=1
+    if scan_with_dockerized_trivy_or_scout "${image}" "${output}"; then
+      return 0
+    fi
+    scan_status=$?
+    if scan_report_exists "${output}"; then
+      return "${scan_status}"
+    fi
+    echo "Dockerized Trivy/Docker Scout did not produce a usable SARIF report for ${image}." >&2
+  elif docker scout version >/dev/null 2>&1; then
+    attempted=1
+    prepare_scan_output "${output}"
+    if scan_with_docker_scout "${image}" "${output}"; then
+      return 0
+    fi
+    scan_status=$?
+    if scan_report_exists "${output}"; then
+      return "${scan_status}"
+    fi
+    echo "Docker Scout did not produce a usable SARIF report for ${image}." >&2
+  fi
+
+  if [ "${attempted}" -eq 1 ]; then
+    return "${scan_status}"
+  fi
+  return 127
+}
+
+if scan_with_available_scanners "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-image-scan.sarif.json"; then
+  :
 else
+  backend_status=$?
+  if [ "${backend_status}" -ne 127 ]; then
+    exit "${backend_status}"
+  fi
+  cat > "${REPORT_DIR}/docker-image-scan-unavailable.json" <<'JSON'
+{"status":"tool_unavailable","required":"trivy, grype, dockerized trivy, or docker scout","budget":"no critical/high container vulnerabilities"}
+JSON
+  echo "Docker image vulnerability scanning requires trivy, grype, dockerized trivy, or docker scout."
+  exit 1
+fi
+
+if scan_with_available_scanners "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-image-scan.sarif.json"; then
+  :
+else
+  frontend_status=$?
+  if [ "${frontend_status}" -ne 127 ]; then
+    exit "${frontend_status}"
+  fi
   cat > "${REPORT_DIR}/docker-image-scan-unavailable.json" <<'JSON'
 {"status":"tool_unavailable","required":"trivy, grype, dockerized trivy, or docker scout","budget":"no critical/high container vulnerabilities"}
 JSON

@@ -11,6 +11,17 @@ This repository is intentionally bootstrapped as a **strategy-first, spec-first,
 Current governance and delivery status is tracked in:
 
 - `docs/STATUS.md`
+- `docs/PROJECT_LEARNINGS_TRACKER.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/CODEX_OPERATING_MODEL.md`
+
+Reusable project learnings are tracked in
+`docs/PROJECT_LEARNINGS_TRACKER.md` and link to dedicated reference pages such
+as `docs/REVIEW_RIGOR_RETROSPECTIVE.md` and
+`docs/PROJECT_GOVERNANCE_LEARNINGS.md`. Check these before starting a new
+implementation stage, opening a release-readiness PR, or using this project as a
+template for a new application.
 
 Do not start by generating a large disconnected code skeleton.
 

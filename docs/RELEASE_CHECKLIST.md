@@ -7,7 +7,7 @@ Status: pre-release hardening review for issue `#13`.
 - [ ] `make quality` passes on `stage8-performance-security-release-readiness`.
 - [ ] Health endpoint < 200 ms local.
 - [ ] Script generation mocked path < 2 sec.
-- [ ] API write requests without valid `Content-Length` are rejected before body parsing; uploads keep streaming read checks.
+- [ ] API write requests without valid `Content-Length` are rejected before body parsing (`Content-Length is required` when missing), and actual ASGI body bytes are counted so under-reported `Content-Length` cannot bypass local budgets.
 - [ ] Upload MIME validation rejects `.md`/`.txt` octet-stream compatibility by default.
 - [ ] Write rate limiting returns `RATE_LIMIT_EXCEEDED`.
 - [ ] `uv run pip-audit` reports no critical/high active dependency vulnerabilities.
@@ -22,6 +22,7 @@ Status: pre-release hardening review for issue `#13`.
 - Multi-worker production deployment is blocked until Stage 6 multilingual state and Stage 7 avatar render/job/idempotency/artifact state are durable.
 - Real video export remains blocked until the selected renderer/provider path and license posture are reviewed.
 - External avatar providers and public synthetic-media distribution remain blocked until persistent consent/provenance is implemented.
+- Release readiness is blocked until `main` branch protection or repository rulesets are enabled and require the emitted Stage 8 status contexts, including `quality / secrets`, `security / docker build`, and `stage8 / performance lighthouse`.
 
 ## Rollback
 

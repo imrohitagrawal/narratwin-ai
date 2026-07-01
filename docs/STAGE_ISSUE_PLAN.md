@@ -237,6 +237,8 @@ Allowed changes:
 
 - `.github/workflows/eval-smoke.yml`
 - `.stage/current`
+- `.github/pull_request_template.md`
+- `.github/workflows/ci.yml`
 - `Makefile`
 - `backend/app/main.py`
 - `backend/app/stage4.py`
@@ -334,7 +336,9 @@ Blocked changes:
 Allowed changes:
 
 - `.stage/current`
+- `.github/workflows/security.yml`
 - `Makefile`
+- `README.md`
 - `backend/app/main.py`
 - `backend/app/stage6.py`
 - `frontend/src/app/page.tsx`
@@ -456,6 +460,7 @@ Allowed changes:
 - `frontend/Dockerfile`
 - `frontend/package.json`
 - `frontend/package-lock.json`
+- `frontend/src/app/page.test.tsx`
 - `frontend/scripts/run-lighthouse.mjs`
 - `perf/stage8_locustfile.py`
 - `pyproject.toml`
@@ -467,16 +472,21 @@ Allowed changes:
 - `scripts/quality/check_quality_stage.py`
 - `scripts/quality/check_stage8_docs.py`
 - `tests/api/test_health_api.py`
+- `tests/api/test_stage6_multilingual_api.py`
 - `tests/api/test_stage8_hardening_api.py`
 - `tests/unit/test_health_contract.py`
 - `tests/unit/test_stage6_multilingual.py`
 - `demo/stage8_seed_project.md`
 - `docs/ADR/0006-stage8-release-hardening.md`
 - `docs/API_CONTRACT.md`
+- `docs/ARCHITECTURE.md`
 - `docs/QUALITY_GATES.md`
+- `docs/PROJECT_LEARNINGS_TRACKER.md`
+- `docs/PROJECT_GOVERNANCE_LEARNINGS.md`
 - `docs/RECOMMENDED_REVIEW_ITEMS.md`
 - `docs/RELEASE_CHECKLIST.md`
 - `docs/RELEASE_READINESS_REVIEW.md`
+- `docs/REVIEW_RIGOR_RETROSPECTIVE.md`
 - `docs/RUNBOOK.md`
 - `docs/SKILL_LOCK.md`
 - `docs/STAGE_ISSUE_PLAN.md`
@@ -511,3 +521,7 @@ Required Stage 8 hardening within this scope:
 - demo seed data
 - portfolio README
 - `docs/RELEASE_READINESS_REVIEW.md`
+- project learnings tracker and dedicated review-rigor/governance learning pages
+- PR template checklist for learnings-tracker review and invariant,
+  exploit-matrix, and contract/gate review
+- Stage 8 CI budget status for Locust performance smoke and Lighthouse checks

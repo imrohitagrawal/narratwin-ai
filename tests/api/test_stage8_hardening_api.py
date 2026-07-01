@@ -2,8 +2,7 @@ import asyncio
 import json
 import time
 from pathlib import Path
-from types import SimpleNamespace
-from typing import Any, cast
+from typing import cast
 
 from fastapi.testclient import TestClient
 from starlette.types import Message, Receive, Scope, Send
@@ -12,7 +11,7 @@ from backend.app.main import (
     MAX_STAGE8_RATE_LIMIT_KEYS,
     MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE,
     app,
-    rate_limit_key_for,
+    rate_limit_key_from_scope,
     reset_app_state_for_tests,
     stage8_write_rate_limiter,
 )
@@ -61,7 +60,12 @@ def _upload_approve_ingest_fixture(client: TestClient, project_id: str) -> None:
     assert ingestion_response.status_code == 201
 
 
-async def _call_app_without_content_length(path: str, body: bytes) -> tuple[int, dict[str, object]]:
+async def _call_app_with_raw_body(
+    path: str,
+    body: bytes,
+    *,
+    headers: list[tuple[bytes, bytes]] | None = None,
+) -> tuple[int, dict[str, object]]:
     messages: list[Message] = []
     body_sent = False
 
@@ -84,7 +88,8 @@ async def _call_app_without_content_length(path: str, body: bytes) -> tuple[int,
         "path": path,
         "raw_path": path.encode("ascii"),
         "query_string": b"",
-        "headers": [
+        "headers": headers
+        or [
             (b"host", b"testserver"),
             (b"content-type", b"application/json"),
             (b"idempotency-key", b"stage8-missing-length"),
@@ -139,14 +144,15 @@ def test_write_rate_limit_rejects_excess_requests_without_provider_calls() -> No
 def test_write_rate_limit_uses_client_ip_and_bounds_retained_keys() -> None:
     reset_app_state_for_tests()
 
-    first_request = SimpleNamespace(client=SimpleNamespace(host="203.0.113.10"), headers={})
-    second_request = SimpleNamespace(
-        client=SimpleNamespace(host="203.0.113.10"),
-        headers={"X-Local-User-Id": "rotated-user"},
-    )
+    first_scope: Scope = {"type": "http", "client": ("203.0.113.10", 40000)}
+    second_scope: Scope = {
+        "type": "http",
+        "client": ("203.0.113.10", 40000),
+        "headers": [(b"x-local-user-id", b"rotated-user")],
+    }
 
-    assert rate_limit_key_for(cast(Any, first_request)) == "ip:203.0.113.10"
-    assert rate_limit_key_for(cast(Any, second_request)) == "ip:203.0.113.10"
+    assert rate_limit_key_from_scope(first_scope) == "ip:203.0.113.10"
+    assert rate_limit_key_from_scope(second_scope) == "ip:203.0.113.10"
 
     for index in range(MAX_STAGE8_RATE_LIMIT_KEYS):
         assert stage8_write_rate_limiter.allow(key=f"ip:198.51.100.{index}", now=1.0)
@@ -173,11 +179,33 @@ def test_json_request_size_limit_rejects_missing_content_length_before_body_pars
     reset_app_state_for_tests()
     body = json.dumps({"name": "x" * (MAX_API_REQUEST_BYTES + 1)}).encode("utf-8")
 
-    status, payload = asyncio.run(_call_app_without_content_length("/api/v1/projects", body))
+    status, payload = asyncio.run(_call_app_with_raw_body("/api/v1/projects", body))
 
     assert status == 411
     error = cast(dict[str, object], payload["error"])
     assert error["code"] == "CONTENT_LENGTH_REQUIRED"
+
+
+def test_json_request_size_limit_rejects_underreported_content_length() -> None:
+    reset_app_state_for_tests()
+    body = json.dumps({"name": "x" * (MAX_API_REQUEST_BYTES + 1)}).encode("utf-8")
+
+    status, payload = asyncio.run(
+        _call_app_with_raw_body(
+            "/api/v1/projects",
+            body,
+            headers=[
+                (b"host", b"testserver"),
+                (b"content-type", b"application/json"),
+                (b"content-length", b"2"),
+                (b"idempotency-key", b"stage8-underreported-length"),
+            ],
+        )
+    )
+
+    assert status == 413
+    error = cast(dict[str, object], payload["error"])
+    assert error["code"] == "REQUEST_TOO_LARGE"
 
 
 def test_upload_mime_validation_rejects_octet_stream_markdown_compatibility() -> None:
@@ -193,6 +221,21 @@ def test_upload_mime_validation_rejects_octet_stream_markdown_compatibility() ->
 
     assert response.status_code == 415
     assert response.json()["error"]["code"] == "UNSUPPORTED_MEDIA_TYPE"
+
+
+def test_upload_mime_validation_accepts_allowed_media_type_parameters() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id = _create_project(client, key="stage8-mime-parameter-project")
+
+    response = client.post(
+        f"/api/v1/projects/{project_id}/knowledge-documents",
+        files={"file": ("stage8_project.txt", b"NarraTwin grounded content.", "text/plain; charset=utf-8")},
+        headers=idempotency_headers("stage8-text-upload-with-charset"),
+    )
+
+    assert response.status_code == 201
+    assert response.json()["contentType"] == "text/plain"
 
 
 def test_provider_bound_prompt_rejects_secret_like_content_before_generation() -> None:

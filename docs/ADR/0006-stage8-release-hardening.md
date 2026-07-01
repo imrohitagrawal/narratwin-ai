@@ -27,21 +27,27 @@ Stage 8 hardening is part of the architecture contract, not only test coverage.
 - API write requests under `/api/v1/` require a valid non-negative
   `Content-Length` before body parsing; missing length fails with
   `411 CONTENT_LENGTH_REQUIRED`, malformed length fails with
-  `400 INVALID_CONTENT_LENGTH`, and oversized length fails with
-  `413 REQUEST_TOO_LARGE`.
+  `400 INVALID_CONTENT_LENGTH`, oversized declared length fails with
+  `413 REQUEST_TOO_LARGE`, and actual ASGI body bytes are counted so
+  under-reported length cannot bypass the local budget.
 - Local write rate limiting is keyed by client IP instead of caller-supplied
   headers, rejects over-budget writes with `429 RATE_LIMIT_EXCEEDED`, and bounds
   retained key state.
-- Provider-bound walkthrough prompts get secret-like content screening before
-  generation.
+- Provider-bound walkthrough prompts and multilingual glossary terms get
+  secret-like content screening before provider execution.
 - Performance smoke tests run both focused API latency tests and a headless
   Locust health-endpoint p95 budget check.
 - Frontend Lighthouse checks enforce category scores and named audit budgets,
   including request count through the audit details table when no numeric value
   is provided by Lighthouse.
 - Docker image scanning is required in the Stage 8 local gate and PR security
-  workflow. The scanner order is local Trivy, Grype, pinned Dockerized Trivy, then
-  Docker Scout fallback.
+  workflow. The scan attempts local Trivy, Grype, pinned Dockerized Trivy, and
+  Docker Scout per image. A confirmed critical/high SARIF report fails the gate;
+  a scanner/tool failure without a usable SARIF report can fall through to the
+  next scanner.
+- PR CI emits a dedicated `stage8 / performance lighthouse` status when
+  `.stage/current` is `8`, running the Locust and Lighthouse budget scripts
+  outside the policy-only static quality job.
 - Release checklist, runbook, status, traceability, skill lock, and third-party
   notices must remain consistent with the executable gates.
 

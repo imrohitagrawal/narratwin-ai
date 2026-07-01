@@ -15,8 +15,11 @@ STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
 
 REQUIRED_FILES = [
     ".stage/current",
+    ".github/pull_request_template.md",
+    ".github/workflows/ci.yml",
     ".github/workflows/security.yml",
     "Makefile",
+    "README.md",
     "backend/app/main.py",
     "backend/app/stage4.py",
     "backend/app/stage6.py",
@@ -24,6 +27,7 @@ REQUIRED_FILES = [
     "frontend/Dockerfile",
     "frontend/package.json",
     "frontend/package-lock.json",
+    "frontend/src/app/page.test.tsx",
     "frontend/scripts/run-lighthouse.mjs",
     "perf/stage8_locustfile.py",
     "pyproject.toml",
@@ -34,15 +38,20 @@ REQUIRED_FILES = [
     "scripts/ci/performance-smoke.sh",
     "scripts/quality/check_quality_stage.py",
     "scripts/quality/check_stage8_docs.py",
+    "tests/api/test_stage6_multilingual_api.py",
     "tests/api/test_stage8_hardening_api.py",
     "tests/unit/test_stage6_multilingual.py",
     "demo/stage8_seed_project.md",
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/API_CONTRACT.md",
+    "docs/ARCHITECTURE.md",
     "docs/QUALITY_GATES.md",
+    "docs/PROJECT_LEARNINGS_TRACKER.md",
+    "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
     "docs/RECOMMENDED_REVIEW_ITEMS.md",
     "docs/RELEASE_CHECKLIST.md",
     "docs/RELEASE_READINESS_REVIEW.md",
+    "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
     "docs/RUNBOOK.md",
     "docs/SKILL_LOCK.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -120,6 +129,7 @@ def check_backend_and_tests(failures: list[str]) -> None:
     main_text = read("backend/app/main.py")
     stage4_text = read("backend/app/stage4.py")
     tests = read("tests/api/test_stage8_hardening_api.py")
+    stage6_api_tests = read("tests/api/test_stage6_multilingual_api.py")
     for marker in (
         'stage="8"',
         "MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE",
@@ -128,7 +138,9 @@ def check_backend_and_tests(failures: list[str]) -> None:
         "REQUEST_TOO_LARGE",
         "CONTENT_LENGTH_REQUIRED",
         "MAX_STAGE8_RATE_LIMIT_KEYS",
-        "rate_limit_key_for",
+        "rate_limit_key_from_scope",
+        "actual_bytes",
+        "Stage8RequestSizeLimitMiddleware",
         "stage8_write_rate_limiter.reset",
     ):
         if marker not in main_text:
@@ -141,6 +153,7 @@ def check_backend_and_tests(failures: list[str]) -> None:
         "write_rate_limit_uses_client_ip_and_bounds_retained_keys",
         "json_request_size_limit_is_enforced",
         "json_request_size_limit_rejects_missing_content_length",
+        "json_request_size_limit_rejects_underreported_content_length",
         "upload_mime_validation_rejects_octet_stream",
         "mocked_script_generation_path_stays_under_two_seconds",
         "latency_ms < 200",
@@ -148,6 +161,9 @@ def check_backend_and_tests(failures: list[str]) -> None:
     ):
         if marker not in tests:
             fail(f"Stage 8 tests must cover {marker}.", failures)
+    for marker in ("SECRET_LIKE_CONTENT", "IDEMPOTENCY_CONFLICT", "stage6-secret-glossary"):
+        if marker not in stage6_api_tests:
+            fail(f"Stage 8 Stage 6 API tests must cover {marker}.", failures)
     frontend_dockerfile = read("frontend/Dockerfile")
     for marker in ("/usr/local/lib/node_modules/npm", "/usr/local/bin/npm", "/usr/local/bin/npx"):
         if marker not in frontend_dockerfile:
@@ -160,6 +176,7 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
     package_lock = read("frontend/package-lock.json")
     makefile = read("Makefile")
     security_workflow = read(".github/workflows/security.yml")
+    ci_workflow = read(".github/workflows/ci.yml")
     if "locust" not in pyproject:
         fail("Stage 8 must lock locust as a dev-only performance tool.", failures)
     if "lighthouse" not in package.get("devDependencies", {}):
@@ -202,9 +219,12 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
     ):
         if marker not in scripts:
             fail(f"Stage 8 scripts must include {marker}.", failures)
-    for marker in ("Docker image vulnerability scan", "docker-image-scan.sh", "upload-artifact"):
+    for marker in ("security / docker build", "Docker image vulnerability scan", "docker-image-scan.sh", "upload-artifact"):
         if marker not in security_workflow:
             fail(f"Stage 8 security workflow must include {marker}.", failures)
+    for marker in ("stage8 / performance lighthouse", "performance-smoke.sh", "frontend-lighthouse.sh", "stage8-performance-lighthouse-reports"):
+        if marker not in ci_workflow:
+            fail(f"Stage 8 CI workflow must include {marker}.", failures)
 
 
 def check_docs(failures: list[str]) -> None:
@@ -212,11 +232,16 @@ def check_docs(failures: list[str]) -> None:
         path: read(path)
         for path in (
             "docs/API_CONTRACT.md",
+            ".github/pull_request_template.md",
             "docs/ADR/0006-stage8-release-hardening.md",
+            "docs/ARCHITECTURE.md",
             "docs/QUALITY_GATES.md",
+            "docs/PROJECT_LEARNINGS_TRACKER.md",
+            "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
             "docs/RECOMMENDED_REVIEW_ITEMS.md",
             "docs/RELEASE_CHECKLIST.md",
             "docs/RELEASE_READINESS_REVIEW.md",
+            "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
             "docs/RUNBOOK.md",
             "docs/SKILL_LOCK.md",
             "docs/STAGE_ISSUE_PLAN.md",
@@ -239,6 +264,8 @@ def check_docs(failures: list[str]) -> None:
         "rate limiting",
         "request size limits",
         "Content-Length is required",
+        "actual ASGI body",
+        "SECRET_LIKE_CONTENT",
         "upload MIME validation",
         "Lighthouse",
         "p95",
@@ -249,6 +276,15 @@ def check_docs(failures: list[str]) -> None:
         "runbook",
         "demo seed data",
         "portfolio",
+        "LRN-001",
+        "LRN-002",
+        "Review Rigor Retrospective",
+        "Project Governance Learnings",
+        "PROJECT_LEARNINGS_TRACKER.md",
+        "REVIEW_RIGOR_RETROSPECTIVE.md",
+        "invariant, exploit-matrix, and contract/gate review",
+        "branch protection",
+        "stage8 / performance lighthouse",
         "RR-029",
         "RR-030",
         "RR-031",

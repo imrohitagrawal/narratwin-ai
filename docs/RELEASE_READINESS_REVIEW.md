@@ -14,23 +14,46 @@ Stage 8 adds release-readiness hardening evidence, but does not approve producti
 |---|---|
 | health endpoint < 200 ms local | `tests/api/test_stage8_hardening_api.py::test_health_reports_stage8_with_local_latency_budget` |
 | script generation mocked path < 2 sec | `tests/api/test_stage8_hardening_api.py::test_mocked_script_generation_path_stays_under_two_seconds` |
-| upload limit enforced | `Content-Length is required` for write requests before body parsing, uploads keep streaming read limit, and Stage 8 API tests cover both paths |
+| upload limit enforced | Write requests require valid `Content-Length`, actual ASGI body bytes are counted so under-reported length cannot bypass local budgets, uploads keep the Stage 4 content-size limit, and Stage 8 API tests cover these paths |
 | no critical/high dependency vulnerabilities | `scripts/ci/dependency-security.sh` |
 | no critical/high container vulnerabilities | `scripts/ci/docker-image-scan.sh` using Trivy, Grype, pinned Dockerized Trivy, or Docker Scout; PR CI runs the image scan in the security workflow |
-| all eval/security gates pass | `make stage8-quality` runs security and eval smoke gates |
+| Locust and Lighthouse budgets | local `make stage8-quality` and PR CI status `stage8 / performance lighthouse`; reports are emitted under `reports/performance/` and `reports/lighthouse/` |
+| all eval/security gates pass | `make stage8-quality` runs security and eval smoke gates; PR CI emits policy, security, Docker scan, and Stage 8 budget statuses |
+
+Latest local run on 2026-07-01:
+
+- `make quality` passed on `stage8-performance-security-release-readiness`.
+- Locust health smoke: 180 requests, 0 failures, p95 7 ms.
+- Lighthouse: performance 1.00, accessibility 1.00, best-practices 0.96, SEO
+  1.00, LCP 1057 ms, CLS 0, TBT 0 ms, 10 network requests.
+- Docker scan SARIF: backend 0 results, frontend 0 results.
+- Dependency audit: no critical/high Python or frontend dependency findings;
+  frontend audit currently reports moderate dev-tool findings from the
+  Lighthouse dependency tree, below the Stage 8 blocking threshold.
 
 ## Hardening Added
 
 - Stage 8 health marker.
 - Write rate limiting for local API write methods.
-- General request size limits that fail closed on missing/invalid `Content-Length`, plus existing upload streaming limit.
+- General request size limits that fail closed on missing/invalid `Content-Length` and count actual ASGI body bytes before the request reaches route handlers.
 - Strict markdown/plain-text upload MIME validation remains enforced; `application/octet-stream` compatibility is explicitly rejected.
 - Provider-bound prompt text is screened for secret-like content before generation.
 - Performance smoke tests and headless Locust profile with health p95 threshold.
 - Frontend Lighthouse checks with category and named audit thresholds.
 - Dependency audit and Docker image scan wrappers.
+- PR CI Stage 8 budget job for Locust performance smoke and Lighthouse checks.
 - Frontend production image strips npm/npx from the runner layer so vulnerable package-manager-only dependencies such as npm-bundled `undici` are not shipped with the standalone server.
 - Release checklist, runbook, demo seed data, and portfolio README.
+
+## Evidence Locations
+
+- Local quality command: `make quality`.
+- API performance report: `reports/performance/stage8-locust_stats.csv`.
+- API performance server log: `reports/performance/stage8-api-server.log`.
+- Lighthouse report: `reports/lighthouse/stage8-lighthouse.json`.
+- Lighthouse server log: `reports/lighthouse/frontend-server.log`.
+- Docker scan SARIF reports: `reports/security/backend-image-scan.sarif.json` and `reports/security/frontend-image-scan.sarif.json`.
+- PR CI artifacts: `stage8-performance-lighthouse-reports` and `docker-image-scan-reports`.
 
 ## RR-029 Through RR-035 Disposition
 

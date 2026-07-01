@@ -18,6 +18,7 @@ from pydub import AudioSegment  # type: ignore[import-untyped]
 import srt  # type: ignore[import-untyped]
 
 from backend.app.rag.chunking import checksum_text
+from backend.app.stage4 import contains_secret_like_content
 
 SUPPORTED_LANGUAGES = {
     "en": "English",
@@ -105,8 +106,8 @@ class Stage6IdempotencyRecord:
     endpoint: str
     idempotency_key: str
     request_checksum: str
-    status: Literal["PENDING", "COMPLETED"]
-    value: MultilingualWalkthroughResult | None
+    status: Literal["PENDING", "COMPLETED", "FAILED"]
+    value: MultilingualWalkthroughResult | Stage6Error | None
 
 
 class TranslationProvider(Protocol):
@@ -281,23 +282,18 @@ class Stage6Service:
         idempotency_scope: str | None = None,
         idempotency_key: str | None = None,
     ) -> MultilingualWalkthroughResult:
-        normalized_source_language = normalize_language_tag(source_language)
-        normalized_target_language = normalize_language_tag(target_language)
-        normalized_terms = normalize_glossary_terms(glossary_terms)
-        source_text = source_script.strip()
-        if not source_text:
-            raise Stage6Error(422, "VALIDATION_ERROR", "Source English script is required.")
-        if len(source_text) > MAX_SOURCE_SCRIPT_CHARS:
-            raise Stage6Error(413, "SOURCE_SCRIPT_TOO_LARGE", "Source English script exceeds the Stage 6 limit.")
+        raw_glossary_terms = list(glossary_terms)
         request_checksum = checksum_text(
-            "\n".join(
-                [
-                    source_text,
-                    normalized_source_language,
-                    normalized_target_language,
-                    requested_voice_provider,
-                    *normalized_terms,
-                ]
+            json.dumps(
+                {
+                    "sourceScript": source_script,
+                    "sourceLanguage": source_language,
+                    "targetLanguage": target_language,
+                    "requestedVoiceProvider": requested_voice_provider,
+                    "glossaryTerms": raw_glossary_terms,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
             )
         )
         endpoint = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs"
@@ -319,6 +315,8 @@ class Stage6Service:
                             "IDEMPOTENCY_IN_PROGRESS",
                             "Idempotency key is already in progress.",
                         )
+                    if existing.status == "FAILED":
+                        raise cast(Stage6Error, existing.value)
                     return cast(MultilingualWalkthroughResult, existing.value)
                 if self._idempotency_count_for_scope(idempotency_scope) >= MAX_IDEMPOTENCY_RECORDS_PER_SCOPE:
                     raise Stage6Error(
@@ -336,6 +334,22 @@ class Stage6Service:
                 )
 
         try:
+            normalized_source_language = normalize_language_tag(source_language)
+            normalized_target_language = normalize_language_tag(target_language)
+            normalized_terms = normalize_glossary_terms(raw_glossary_terms)
+            if any(contains_secret_like_content(term) for term in normalized_terms):
+                raise Stage6Error(422, "SECRET_LIKE_CONTENT", "Glossary terms contain secret-like content.")
+            source_text = source_script.strip()
+            if not source_text:
+                raise Stage6Error(422, "VALIDATION_ERROR", "Source English script is required.")
+            if len(source_text) > MAX_SOURCE_SCRIPT_CHARS:
+                raise Stage6Error(413, "SOURCE_SCRIPT_TOO_LARGE", "Source English script exceeds the Stage 6 limit.")
+        except Stage6Error as exc:
+            if record_key is not None:
+                self._store_idempotent_failure(record_key, exc)
+            raise
+
+        try:
             result = self._create_multilingual_walkthrough(
                 source_text=source_text,
                 normalized_source_language=normalized_source_language,
@@ -346,6 +360,10 @@ class Stage6Service:
                 trace_id=trace_id,
                 source_context_ref_count=source_context_ref_count,
             )
+        except Stage6Error as exc:
+            if record_key is not None:
+                self._store_idempotent_failure(record_key, exc)
+            raise
         except Exception:
             if record_key is not None:
                 with self._operation_lock:
@@ -357,6 +375,12 @@ class Stage6Service:
                 record.status = "COMPLETED"
                 record.value = result
         return result
+
+    def _store_idempotent_failure(self, record_key: tuple[str, str, str], error: Stage6Error) -> None:
+        with self._operation_lock:
+            record = self.idempotency_records[record_key]
+            record.status = "FAILED"
+            record.value = error
 
     def _create_multilingual_walkthrough(
         self,

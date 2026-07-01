@@ -29,8 +29,9 @@
 - API write requests have a general request size limit and must send a valid
   non-negative `Content-Length`. Missing length returns
   `411 CONTENT_LENGTH_REQUIRED`; malformed length returns
-  `400 INVALID_CONTENT_LENGTH`. Uploads keep the stricter multipart upload limit
-  and streaming read limit.
+  `400 INVALID_CONTENT_LENGTH`. Stage 8 also counts actual ASGI body bytes, so
+  under-reported `Content-Length` cannot bypass the local request budget. Uploads
+  keep the stricter multipart upload limit and streaming read limit.
 - Markdown uploads must use `text/markdown`; plain-text uploads must use
   `text/plain`. `application/octet-stream` compatibility is intentionally
   rejected until a validated compatibility exception is approved.
@@ -542,8 +543,11 @@ Response `202` for queued or running work:
 }
 ```
 
-Response `201` for newly accepted terminal output. Response `200` is reserved for
-idempotency replay or `GET` of an existing terminal run.
+Response `201` for newly accepted terminal output. In the Stage 4 through Stage 8
+synchronous local path, an exact idempotency replay returns the stored original
+`201` response body. Future asynchronous/persistent implementations may switch
+replay to `200` only after the idempotency response contract and tests are
+updated together. `GET` of an existing terminal run returns `200`.
 
 ```json
 {
@@ -672,8 +676,9 @@ output. The full `EvaluationResult` is returned by
 `GET /api/v1/projects/{projectId}/walkthrough-runs/{runId}/evaluation`.
 
 Failed or refused terminal output shape. A newly created synchronous terminal
-failure uses `201` with this shape; `200` is used only for `GET` or idempotency
-replay of an existing terminal run.
+failure uses `201` with this shape. In the Stage 4 through Stage 8 synchronous
+local path, exact idempotency replay returns the stored original `201` response
+body. `GET` of an existing terminal run returns `200`.
 
 ```json
 {
@@ -710,8 +715,9 @@ Failure behavior:
 - unsupported project factual claims return persisted `FAILED` evaluation state
 - provider failure returns structured `502` or stored failed run
 - rate limits return `429 RATE_LIMIT_EXCEEDED`
-- queue admission backpressure returns `429 BACKPRESSURE_QUEUE_FULL` with
-  `Retry-After` when retry is safe
+- local per-project operation backpressure returns `429 BACKPRESSURE_QUEUE_FULL`
+  without `Retry-After`; future queued workers may add `Retry-After` only when a
+  safe retry interval is known and implemented
 - worker or dependency unavailability returns `503 DEPENDENCY_UNAVAILABLE`
 
 Backpressure error example:
@@ -720,16 +726,12 @@ Backpressure error example:
 {
   "error": {
     "code": "BACKPRESSURE_QUEUE_FULL",
-    "message": "The per-project queue is full. Retry after the provided interval.",
-    "details": {
-      "retryAfterSeconds": 60
-    },
+    "message": "Another Stage 4 operation is already active for this project.",
+    "details": {},
     "requestId": "req_123"
   }
 }
 ```
-
-Responses with `BACKPRESSURE_QUEUE_FULL` include `Retry-After`.
 
 ### Generate Multilingual Walkthrough
 
@@ -869,6 +871,7 @@ Failure modes:
 | 409 | `IDEMPOTENCY_IN_PROGRESS` | Duplicate request arrived while the first request is still pending |
 | 413 | `SOURCE_SCRIPT_TOO_LARGE` | Accepted source script exceeds the Stage 6 source limit |
 | 413 | `PROVIDER_OUTPUT_TOO_LARGE` | Translation provider output exceeds the Stage 6 output limit |
+| 422 | `SECRET_LIKE_CONTENT` | Glossary terms contain secret-like content and are rejected before provider calls |
 | 422 | `SOURCE_RUN_NOT_TRANSLATABLE` | Source run is not completed or has no accepted script |
 | 422 | `UNSUPPORTED_LANGUAGE` | Target language is not supported by Stage 6 |
 | 422 | `PROVIDER_OUTPUT_INVALID` | Provider output is empty, invalid, or failed glossary/citation preservation |

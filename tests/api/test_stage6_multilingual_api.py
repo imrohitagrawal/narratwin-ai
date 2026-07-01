@@ -196,6 +196,37 @@ def test_multilingual_walkthrough_api_rejects_oversized_boundary_fields() -> Non
     assert response.json()["error"]["code"] == "VALIDATION_ERROR"
 
 
+def test_multilingual_walkthrough_api_rejects_secret_like_glossary_terms() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client)
+    path = f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs"
+    request = {
+        "targetLanguage": "es",
+        "glossaryTerms": ["api" + "_key=visible-secret-token-value"],
+        "requestedVoiceProvider": "mock",
+    }
+
+    response = client.post(path, json=request, headers=idempotency_headers("stage6-secret-glossary"))
+    replay = client.post(path, json=request, headers=idempotency_headers("stage6-secret-glossary"))
+    conflict = client.post(
+        path,
+        json={
+            "targetLanguage": "es",
+            "glossaryTerms": ["NarraTwin AI"],
+            "requestedVoiceProvider": "mock",
+        },
+        headers=idempotency_headers("stage6-secret-glossary"),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "SECRET_LIKE_CONTENT"
+    assert replay.status_code == 422
+    assert replay.json()["error"]["code"] == "SECRET_LIKE_CONTENT"
+    assert conflict.status_code == 409
+    assert conflict.json()["error"]["code"] == "IDEMPOTENCY_CONFLICT"
+
+
 def test_multilingual_walkthrough_api_rejects_invalid_provider_name_at_boundary() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)

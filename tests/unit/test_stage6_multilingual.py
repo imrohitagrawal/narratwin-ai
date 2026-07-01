@@ -58,6 +58,20 @@ def test_domain_service_rejects_blank_glossary_terms_directly() -> None:
     assert exc.value.code == "VALIDATION_ERROR"
 
 
+def test_domain_service_rejects_secret_like_glossary_terms_directly() -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            target_language="es",
+            glossary_terms=["api" + "_key=visible-secret-token-value"],
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "SECRET_LIKE_CONTENT"
+
+
 def test_subtitle_timing_format_is_valid_subrip() -> None:
     subtitles = generate_subtitles(
         script_text=(
