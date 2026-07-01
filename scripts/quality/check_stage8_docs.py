@@ -37,6 +37,7 @@ REQUIRED_FILES = [
     "tests/api/test_stage8_hardening_api.py",
     "tests/unit/test_stage6_multilingual.py",
     "demo/stage8_seed_project.md",
+    "docs/ADR/0006-stage8-release-hardening.md",
     "docs/API_CONTRACT.md",
     "docs/QUALITY_GATES.md",
     "docs/RECOMMENDED_REVIEW_ITEMS.md",
@@ -211,6 +212,7 @@ def check_docs(failures: list[str]) -> None:
         path: read(path)
         for path in (
             "docs/API_CONTRACT.md",
+            "docs/ADR/0006-stage8-release-hardening.md",
             "docs/QUALITY_GATES.md",
             "docs/RECOMMENDED_REVIEW_ITEMS.md",
             "docs/RELEASE_CHECKLIST.md",

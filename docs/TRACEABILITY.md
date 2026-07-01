@@ -129,7 +129,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `.github/workflows/security.yml`, `scripts/ci/dependency-security.sh`, and `scripts/ci/docker-image-scan.sh` | Dependency audit and Docker image scan gates for no critical/high dependency or container vulnerabilities, including PR CI execution and pinned Dockerized Trivy fallback | Stage 8 / `#13` | Hardened |
 | `docs/RELEASE_CHECKLIST.md`, `docs/RUNBOOK.md`, and `docs/RELEASE_READINESS_REVIEW.md` | release checklist, rollback notes, runbook, known limitations, multi-worker block, real video export/license posture block, persistent synthetic-media consent/provenance block, and source-run based avatar rendering decision | Stage 8 / `#13` | Added |
 | `demo/stage8_seed_project.md` and `portfolio/README.md` | demo seed data and portfolio README for local, provider-free showcase path | Stage 8 / `#13` | Added |
-| `scripts/quality/check_stage8_docs.py`, `docs/QUALITY_GATES.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/SKILL_LOCK.md`, `docs/THIRD_PARTY_NOTICES.md`, and `docs/RECOMMENDED_REVIEW_ITEMS.md` | executable Stage 8 gate, stage branch scope, active skill/tool lock, third-party notices, and RR-029 through RR-035 dispositions | Stage 8 / `#13` | Added and updated |
+| `docs/ADR/0006-stage8-release-hardening.md`, `scripts/quality/check_stage8_docs.py`, `docs/QUALITY_GATES.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/SKILL_LOCK.md`, `docs/THIRD_PARTY_NOTICES.md`, and `docs/RECOMMENDED_REVIEW_ITEMS.md` | Stage 8 hardening decision record, executable Stage 8 gate, stage branch scope, active skill/tool lock, third-party notices, and RR-029 through RR-035 dispositions | Stage 8 / `#13` | Added and updated |
 
 ## Document Ownership
 

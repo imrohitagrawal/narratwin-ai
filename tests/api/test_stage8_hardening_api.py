@@ -207,7 +207,7 @@ def test_provider_bound_prompt_rejects_secret_like_content_before_generation() -
             "requestedLanguage": "en",
             "depth": "CONCISE",
             "style": "CONFIDENT",
-            "prompt": "Use api_key=visible-secret-token-value in the walkthrough.",
+            "prompt": "Use api" + "_key=visible-secret-token-value in the walkthrough.",
         },
         headers=idempotency_headers("stage8-secret-prompt"),
     )

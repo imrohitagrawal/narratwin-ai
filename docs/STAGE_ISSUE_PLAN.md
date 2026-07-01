@@ -471,6 +471,7 @@ Allowed changes:
 - `tests/unit/test_health_contract.py`
 - `tests/unit/test_stage6_multilingual.py`
 - `demo/stage8_seed_project.md`
+- `docs/ADR/0006-stage8-release-hardening.md`
 - `docs/API_CONTRACT.md`
 - `docs/QUALITY_GATES.md`
 - `docs/RECOMMENDED_REVIEW_ITEMS.md`
