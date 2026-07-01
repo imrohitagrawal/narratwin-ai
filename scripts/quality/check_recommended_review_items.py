@@ -24,6 +24,7 @@ STAGE_ORDER = {
     "Stage 7": 7,
     "Stage 8": 8,
     "Final Review": 9,
+    "Phase 1 Closure": 10,
 }
 
 OPEN_STATUSES = {"Open", "In Progress"}
@@ -74,6 +75,8 @@ def normalize_stage(value: str) -> str | None:
         return candidate if candidate in STAGE_ORDER else None
     if value.lower() in {"final", "final review"}:
         return "Final Review"
+    if value.lower() in {"phase 1", "phase 1 closure", "phase1", "phase1 closure"}:
+        return "Phase 1 Closure"
     return None
 
 
@@ -87,7 +90,7 @@ def target_stage() -> str:
         raise ValueError("Missing .stage/current. Cannot check recommended review items.")
     normalized = normalize_stage(CURRENT_STAGE.read_text(encoding="utf-8").strip())
     if normalized is None:
-        raise ValueError(".stage/current must contain 0 through 8 or Final Review.")
+        raise ValueError(".stage/current must contain 0 through 8, Final Review, or Phase 1 Closure.")
     return normalized
 
 

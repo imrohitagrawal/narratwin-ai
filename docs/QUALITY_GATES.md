@@ -35,6 +35,16 @@ The `Makefile` must expose:
 | `make stage7-quality` | Runs executable Stage 7 avatar rendering/export checks |
 | `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
 | `make final-review-quality` | Runs executable Final Review artifact checks |
+| `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
+| `make lint` | Runs backend Ruff and frontend ESLint |
+| `make typecheck` | Runs backend mypy and frontend TypeScript checks |
+| `make test` | Runs backend unit tests and frontend unit tests |
+| `make api-test` | Runs backend API tests |
+| `make ui-test` | Runs frontend unit tests |
+| `make e2e` | Runs frontend Playwright smoke |
+| `make eval` | Runs eval smoke |
+| `make security` | Runs dependency/security wrapper |
+| `make ci` | Runs the local CI wrapper set |
 
 ## Stage 0 Quality Gate
 
@@ -402,6 +412,27 @@ Gate validates:
 - defect IDs in `DEFECT_BACKLOG.md` are unique
 - no backend, frontend, provider, RAG, avatar, runtime, Docker, database, or
   product feature implementation is introduced by the Final Review artifact PR
+
+### Phase 1 Closure
+
+Phase 1 Closure quality is executable through `make phase1-closure-quality`.
+On `phase-1-closure-*` branches, the top-level `make quality` dispatcher runs
+the Phase 1 Closure gate even though `.stage/current` remains `8`.
+
+Gate validates:
+
+- current branch name matches `phase-1-closure-*` before merge, or is `main`
+  after merge
+- `docs/reviews/PHASE_1_CLOSURE_REPORT.md` exists and classifies issues `#35`
+  through `#44` as P0/P1/P2/P3
+- every P0/P1 issue maps to a closure module
+- `docs/RELEASE_READINESS_REVIEW.md` preserves the Final Review No-Go posture
+- `docs/evals/phase1_golden_questions.jsonl` exists with the required minimum
+  questions and unsupported-claim threshold of zero
+- Phase 1 demo docs exist under `docs/demo/`
+- portfolio/demo docs disclose single-process, process-local, non-durable state
+  and mock/local providers only
+- no release tag is claimed before all Phase 1 gates pass
 
 ## CI Relationship
 

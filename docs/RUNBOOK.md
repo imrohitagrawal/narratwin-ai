@@ -1,4 +1,8 @@
-# Stage 8 Runbook
+# Stage 8 And Phase 1 Runbook
+
+Status: Stage 8 and Final Review are merged. Phase 1 Closure is active and the
+release posture is No-Go until P0/P1 issues `#35` through `#42` close or are
+explicitly downgraded with evidence.
 
 ## Local Verification
 
@@ -14,7 +18,7 @@
 - Generation: mocked grounded script generation must stay under 2 sec locally.
 - Uploads: accepted files remain markdown/text only, UTF-8 only, size limited, and secret/prompt-injection screened.
 - Rate limiting: excessive local write requests return `RATE_LIMIT_EXCEEDED`.
-- Monitoring owner: the PR reviewer watches the first local/demo run and records failures in PR `#33`.
+- Monitoring owner: the Phase 1 closure reviewer watches the first local/demo run and records failures in the active Phase 1 closure PR.
 - Logs: local API logs and CI artifacts are the authoritative Stage 8 evidence; production dashboards and alert routes are Final Review blockers.
 - First-hour production monitoring is not approved in Stage 8 because no production deployment is approved.
 
@@ -39,7 +43,9 @@ Rollback owner: the release reviewer for the active PR. Expected local/demo roll
 
 ## Monitoring Blockers
 
-Production launch remains blocked until Final Review defines dashboard locations, alert thresholds, paging/ownership, first-hour watch procedure, and rollback communication channels for a real deployment environment.
+Production launch remains blocked until Phase 1 or a later reviewed release phase
+defines dashboard locations, alert thresholds, paging/ownership, first-hour watch
+procedure, and rollback communication channels for a real deployment environment.
 
 ## Deployment Limits
 

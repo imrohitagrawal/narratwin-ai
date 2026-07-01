@@ -1,4 +1,6 @@
-.PHONY: quality stage0-quality stage1-quality stage2-quality stage3-quality stage4-quality stage5-quality stage6-quality stage7-quality stage8-quality final-review-quality backend-lint backend-test frontend-build frontend-smoke frontend-lighthouse security docker-build docker-image-scan eval-smoke performance-smoke
+.PHONY: quality stage0-quality stage1-quality stage2-quality stage3-quality stage4-quality stage5-quality stage6-quality stage7-quality stage8-quality final-review-quality phase1-closure-quality lint typecheck test api-test ui-test e2e eval security ci secrets-scan security-scan dependency-audit container-scan backend-lint backend-test frontend-build frontend-smoke frontend-lighthouse docker-build docker-image-scan eval-smoke performance-smoke
+
+export UV_CACHE_DIR ?= .uv-cache
 
 quality:
 	python3 scripts/quality/check_quality_stage.py
@@ -117,3 +119,47 @@ stage8-quality:
 final-review-quality:
 	python3 scripts/quality/check_recommended_review_items.py "Final Review"
 	python3 scripts/quality/check_final_review_docs.py
+
+phase1-closure-quality:
+	python3 scripts/quality/check_recommended_review_items.py "Phase 1 Closure"
+	python3 scripts/quality/check_phase1_closure_docs.py
+
+lint:
+	uv run ruff check backend scripts tests
+	npm --prefix frontend run lint
+
+typecheck:
+	uv run mypy backend scripts tests
+	npm --prefix frontend run typecheck
+
+test:
+	uv run pytest tests/unit
+	npm --prefix frontend test
+
+api-test:
+	uv run pytest tests/api
+
+ui-test:
+	npm --prefix frontend test
+
+e2e:
+	bash scripts/ci/frontend-smoke.sh
+
+eval:
+	bash scripts/ci/eval-smoke.sh
+
+ci: lint typecheck test api-test ui-test e2e eval security docker-build container-scan frontend-lighthouse
+
+secrets-scan:
+	python3 scripts/guardrails_check.py
+	NARRATWIN_ALLOW_LOCAL_SECRET_SCAN_FALLBACK=1 bash scripts/ci/dependency-security.sh
+
+security-scan:
+	bash scripts/ci/dependency-security.sh
+
+dependency-audit:
+	uv run pip-audit
+	npm --prefix frontend audit --audit-level=high
+
+container-scan:
+	bash scripts/ci/docker-image-scan.sh

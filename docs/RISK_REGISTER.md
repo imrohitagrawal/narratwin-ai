@@ -1,5 +1,10 @@
 # Risk Register
 
+Status: superseded for release decisions by
+`docs/reviews/RISK_REGISTER.md` and `docs/reviews/GO_NO_GO.md` after Final
+Review PR `#45`. This file remains a product risk seed; Phase 1 Closure uses the
+Final Review Risk Register as the current blocker source.
+
 | ID | Risk | Severity | Likelihood | Owner | Mitigation | Status |
 |---|---|---:|---:|---|---|---|
 | R1 | MVP expands into avatar, TTS, video, Q&A, and premium providers too early | High | High | Product/Engineering | Enforce vertical slices and PRD cut line | Open |
@@ -13,10 +18,19 @@
 | R9 | CI fails once backend/frontend appears because wrapper scripts are missing | Medium | High | Engineering | Add `scripts/ci/*` wrappers with the first code slice | Open |
 | R10 | Skills conflict and Codex follows the wrong instruction source | Medium | Medium | Engineering | Use `docs/SKILL_TRUST_REVIEW.md` conflict rules | Open |
 
+## Phase 1 Closure Addendum
+
+| ID | Risk | Priority | Source | Current disposition |
+|---|---|---:|---|---|
+| P1-R1 | Governance/release docs contradict merged Stage 8 and Final Review state | P0 | `#35`, `#40` | Must close in Module A. |
+| P1-R2 | Final Review remains No-Go for production, multi-worker, external provider, real video, and public synthetic-media claims | P1 | `#39`, `docs/reviews/GO_NO_GO.md` | Must remain blocked or be explicitly downgraded with evidence. |
+| P1-R3 | Local principal contract and checksum evidence-integrity gaps weaken security/correctness claims | P1 | `#37`, `#42` | Must close before Phase 2. |
+| P1-R4 | Branch protection/ruleset enforcement cannot be proven from repository files | P1 | `#38` | Requires external GitHub evidence or reviewed No-Go exception. |
+
 ## Top blockers before Slice 1
 
-1. Finish skill trust review.
-2. Confirm Slice 1 scope excludes avatar/video/TTS.
-3. Add local validation and CI wrapper expectations.
-4. Keep provider adapters mock-first.
-5. Keep prompt-injection and unsupported-claim tests mandatory.
+1. Close or downgrade Phase 1 P0/P1 issues with evidence.
+2. Keep release posture No-Go until `docs/reviews/GO_NO_GO.md` is updated by reviewed PR.
+3. Keep provider adapters mock-first.
+4. Keep prompt-injection and unsupported-claim tests mandatory.
+5. Do not create a release tag until all Phase 1 gates pass.
