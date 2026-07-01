@@ -3,10 +3,12 @@
 ## Version
 
 - Version: 1.0
-- Stage: Stage 1 product strategy and PRD hardening
-- Canonical issue: `#1`
-- Last updated: 2026-06-29
-- Implementation status: blocked until approved Stage 4 vertical slice
+- Stage: Phase 1 Closure governance reconciliation
+- Canonical issue: `#1`; current RTM reconciliation issue `#40`
+- Last updated: 2026-07-01
+- Implementation status: Stage 4 through Stage 8 local/mock implementation is
+  merged; Final Review remains No-Go for production until Phase 1 Closure resolves
+  required P0/P1 blockers.
 
 ## 1. Summary
 

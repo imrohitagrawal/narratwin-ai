@@ -29,6 +29,7 @@ Create or identify stage issue
 | Stage 7 | `#12` | Stage 7 - Avatar rendering adapter and export | `stage7-*` | `make stage7-quality` | Linked PR to `main` | Mock/local avatar renderer, export artifacts, provider contract tests |
 | Stage 8 | `#13` | Stage 8 - Performance, security hardening, release readiness | `stage8-*` | `make stage8-quality` | Linked PR to `main` | Performance evidence, security hardening, release-readiness report |
 | Final Review | `#6` | Final Review - Independent review | `final-review-*` | `make final-review-quality` | Linked PR to `main` | Independent review report and release decision |
+| Phase 1 Closure | `#35`-`#44` | Phase 1 Closure - Final Review blockers | `phase-1-closure-*` | `make phase1-closure-quality` | Linked PR to `main` | Closed or downgraded P0/P1 blockers, closure report, release readiness update |
 
 ## Stage 0 Governance Branch Scope
 
@@ -83,6 +84,7 @@ Allowed changes:
 - `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
 - `docs/ROADMAP.md`
 - `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
 - `docs/TRACEABILITY.md`
 - `scripts/ci/backend-lint.sh`
 - `scripts/ci/backend-test.sh`
@@ -526,3 +528,47 @@ Required Stage 8 hardening within this scope:
 - PR template checklist for learnings-tracker review and invariant,
   exploit-matrix, and contract/gate review
 - Stage 8 CI budget status for Locust performance smoke and Lighthouse checks
+
+## Phase 1 Closure Branch Scope
+
+Allowed governance/reporting changes for Module A:
+
+- `Makefile`
+- `README.md`
+- `docs/PRD.md`
+- `docs/QUALITY_GATES.md`
+- `docs/RELEASE_CHECKLIST.md`
+- `docs/RELEASE_READINESS_REVIEW.md`
+- `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
+- `docs/RISK_REGISTER.md`
+- `docs/RUNBOOK.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/PHASE_1_CLOSURE_REPORT.md`
+- `docs/evals/phase1_golden_questions.jsonl`
+- `docs/demo/PHASE_1_DEMO_SCRIPT.md`
+- `docs/demo/PHASE_1_DEMO_CHECKLIST.md`
+- `docs/demo/PHASE_1_SCREENSHOT_GUIDE.md`
+- `portfolio/README.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `scripts/quality/check_quality_stage.py`
+- `scripts/quality/check_recommended_review_items.py`
+
+Final Review baseline artifacts under `docs/reviews/FINAL_REVIEW.md`,
+`docs/reviews/RISK_REGISTER.md`, `docs/reviews/DEFECT_BACKLOG.md`, and
+`docs/reviews/GO_NO_GO.md` are required inputs for Phase 1 Closure but are not
+allowed Module A edits. Any release-posture change must happen in a separately
+reviewed closure PR with explicit downgrade evidence.
+
+Changes to the three Phase 1 quality scripts above require explicit reviewer
+scrutiny because the PR branch executes its own in-repo gate code.
+
+Blocked changes:
+
+- Phase 2 feature work
+- real paid provider calls or required real provider keys
+- production/multi-worker enablement
+- real video export
+- external avatar provider or public synthetic-media distribution
+- release tag creation before all Phase 1 gates pass

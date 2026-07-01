@@ -6,7 +6,9 @@ It turns approved project knowledge, README files, architecture docs, demo scrip
 
 ## Current repository state
 
-This repository is intentionally bootstrapped as a **strategy-first, spec-first, TDD-first** build.
+Stage 8 and the Final Independent Reviewer Pass are merged to `main`. Phase 1
+Closure is active, and the release posture remains **No-Go** until required P0/P1
+closure issues are resolved or explicitly downgraded with reviewer evidence.
 
 Current governance and delivery status is tracked in:
 
@@ -23,17 +25,32 @@ as `docs/REVIEW_RIGOR_RETROSPECTIVE.md` and
 implementation stage, opening a release-readiness PR, or using this project as a
 template for a new application.
 
-Do not start by generating a large disconnected code skeleton.
+The implemented local/mock Phase 1 path covers:
 
-Start with:
+- project creation
+- markdown/text knowledge upload
+- ingest, chunk, and project-scoped retrieval
+- grounded walkthrough script generation
+- citation/source-reference display
+- unsupported-claim evaluation
+- stored output display in the UI
 
-1. Product strategy
-2. PRD
-3. PRD red-team review
-4. Methodology
-5. Architecture and ADRs
-6. Vertical-slice implementation plan
-7. TDD implementation for Slice 1
+The current demo is local-only, single-process, process-local, and non-durable.
+It does not approve production release, multi-worker deployment, real video
+export, external paid/provider-backed generation, cloned identity use, or public
+synthetic-media distribution.
+
+## Local demo
+
+```bash
+cp .env.example .env
+docker compose up --build
+curl http://localhost:8000/api/v1/healthz
+curl http://localhost:8000/api/v1/readyz
+```
+
+Open `http://localhost:3000` and follow
+`docs/demo/PHASE_1_DEMO_SCRIPT.md`.
 
 ## Product modes
 
@@ -72,6 +89,8 @@ Project creation → upload markdown knowledge → ingest/chunk/store → retrie
 - AI avatar/voice disclosure is mandatory.
 - Cloned face/voice requires explicit documented consent.
 
-## Next step
+## Quality gates
 
-Open `docs/AI_BUILD_BRIEF.md` and give it to Codex from a fresh repo session.
+On Phase 1 Closure branches, `make quality` runs the governance closure gate.
+Run `make ci` for the broader local lint, typecheck, test, eval, security,
+Docker, and Lighthouse wrapper suite where local tooling is available.

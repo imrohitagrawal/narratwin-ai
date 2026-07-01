@@ -16,22 +16,24 @@ Use it to answer:
 
 - Last reviewed date: 2026-07-01
 - Current stage marker: `.stage/current = 8`
-- Current implementation permission: Stage 8 performance, security hardening,
-  and release-readiness work only, on the issue-linked Stage 8 branch
-- Current repo mode: Stage 8 implementation is in progress after Stage 7 merged
-  to `main`
-- Product implementation merged to `main`: Stage 7 mock/local avatar rendering
-  adapter and demo export work merged through PR `#32` at commit `7f7196a`
+- Current implementation permission: Phase 1 Closure only. No Phase 2 feature
+  work, external provider enablement, production release tag, or public
+  synthetic-media distribution claim is permitted until Phase 1 P0/P1 blockers
+  close or are explicitly downgraded with evidence.
+- Current repo mode: Final Review has merged; Phase 1 Closure is active and
+  release posture is No-Go.
+- Product implementation merged to `main`: Stage 8 performance, security
+  hardening, and release-readiness work merged through PR `#33` at commit
+  `fb40113`.
 - Tracker enforcement scope: repository-tracked stage and governance changes in checked-in files
-- Out-of-band GitHub reconciliation: PR `#32` is recorded as merged based on the
-  verified local `main` baseline; issue `#12` should be reconciled as closed if
-  GitHub issue state has not already been updated.
+- Out-of-band GitHub reconciliation: PR `#45` merged the Final Review artifacts at
+  commit `5a294c72d2b4b8cbbc0339f7bcb3f17089bddece`; Final Review issue `#6`
+  is closed; follow-up issues `#35` through `#44` are open for Phase 1 Closure.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
   data, portfolio README, and release-readiness review evidence.
-- Stage 8 PR `#33` is open for branch
-  `stage8-performance-security-release-readiness` and issue `#13`.
+- Stage 8 PR `#33` is merged and Stage 8 issue `#13` is closed.
 - Stage 8 final exhaustive review remediation is recorded in ADR `0006`,
   including semantic-failure idempotency replay, exact Stage 6 voice-manifest
   validation, Docker scan exit-code handling, and branch-protection context
@@ -105,9 +107,10 @@ Use these files together with this tracker:
 - Stage 3 preserves inherited compatibility status contexts for `quality /
   secrets` and `security / docker build` while the authoritative Stage 3 secret
   scan and Docker gates remain owned by the `security` and `ci` workflows.
-- Stage 8 has started on branch
-  `stage8-performance-security-release-readiness` for issue `#13`; Final Review
-  remains open with no merged implementation work.
+- Final Review PR `#45` is merged and records a No-Go outcome until Phase 1
+  Closure resolves required blockers.
+- Phase 1 Closure starts from issues `#35` through `#44`; P0/P1 items must close
+  or be explicitly downgraded with evidence before Phase 2.
 
 ## Stage Ledger
 
@@ -121,8 +124,9 @@ Use these files together with this tracker:
 | Stage 5 | Complete, merged to `main` | `#10` closed | PR `#30` merged | Executable at merge | RAG eval runner, prompt-injection guardrails, file-upload abuse tests, and observability metadata merged through PR `#30`. |
 | Stage 6 | Complete, merged to `main` | `#11` closed | PR `#31` merged | Executable at merge | Translation, subtitles, mock/local voice adapter, downloadable artifacts, and Stage 6 quality checks merged through PR `#31`. |
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
-| Stage 8 | In PR review | `#13` open | PR `#33` open | Executable in progress | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and `docs/RELEASE_READINESS_REVIEW.md` are being reviewed on the Stage 8 branch. |
-| Final Review | Pending | `#6` open | None merged | Placeholder target only | Independent release review has not started. |
+| Stage 8 | Complete, merged to `main` | `#13` closed | PR `#33` merged | Executable at merge | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and release-readiness review merged at `fb40113`. |
+| Final Review | Complete, merged to `main` | `#6` closed | PR `#45` merged | Executable artifact gate | Independent review artifacts merged at `5a294c7`; outcome is No-Go until Phase 1 Closure resolves blockers. |
+| Phase 1 Closure | In progress | `#35`-`#44` open | PR `#46` for Module A governance/traceability; later branches remain `phase-1-closure-*` | Executable governance gate added | P0/P1 closure for governance, traceability, functional flow, local run/portability, tests/CI, RAG quality, security, and demo readiness. |
 
 ## Issue Ledger
 
@@ -139,8 +143,18 @@ Use these files together with this tracker:
 | `#10` | Closed | Stage 5 | Evaluation, guardrails, observability completed by merged PR `#30`. |
 | `#11` | Closed | Stage 6 | Multilingual scripts, subtitles, voice adapter completed by merged PR `#31`. |
 | `#12` | Reconcile after merge | Stage 7 | Avatar rendering adapter and demo export completed by merged PR `#32`; issue state must be reconciled with GitHub. |
-| `#13` | Open | Stage 8 | Performance, security, release readiness; PR `#33` is open from branch `stage8-performance-security-release-readiness`. |
-| `#6` | Open | Final Review | Independent reviewer pass. |
+| `#13` | Closed | Stage 8 | Performance, security, release readiness completed by merged PR `#33`. |
+| `#6` | Closed | Final Review | Independent reviewer pass completed by merged PR `#45`; outcome is No-Go pending Phase 1 Closure. |
+| `#35` | Open | Phase 1 P0 | Reconcile Stage 8 merge state in governance and release docs. |
+| `#36` | Open | Phase 1 P0 | Reconcile executable Final Review gate and branch-policy evidence after PR `#45`. |
+| `#37` | Open | Phase 1 P1 | Reconcile trusted local principal contract with API behavior. |
+| `#38` | Open | Phase 1 P1 | Verify branch protection and required CI status contexts. |
+| `#39` | Open | Phase 1 P1 | Resolve or explicitly maintain production durability and monitoring blockers. |
+| `#40` | Open | Phase 1 P0 | Reconcile canonical requirements traceability matrix. |
+| `#41` | Open | Phase 1 P0 | Disclose local demo durability and provider limits in portfolio/demo docs. |
+| `#42` | Open | Phase 1 P1 | Harden Stage 7 source evidence checksum binding. |
+| `#43` | Open | Phase 1 P2 | Expand performance and integrated E2E evidence beyond local smoke. |
+| `#44` | Open | Phase 1 P2 | Track telemetry, CSP, log-envelope, and stale risk-register hardening. |
 
 ### Additional Backlog And Governance Issues
 
@@ -169,7 +183,9 @@ Use these files together with this tracker:
 | `#30` | Merged | Reconcile exact merge date | Stage 5 evaluations, guardrails, observability, and quality evidence merged to `main`; Stage 6 starts from this baseline. |
 | `#31` | Merged | Reconcile exact merge date | Stage 6 multilingual scripts, subtitles, mock/local voice adapter, downloadable artifacts, and quality evidence merged to `main`; Stage 7 starts from this baseline. |
 | `#32` | Merged | 2026-07-01 | Stage 7 avatar rendering adapter and export merged to `main` at commit `7f7196a`; Stage 8 starts from this baseline. |
-| `#33` | Open | Not merged | Stage 8 performance, security hardening, and release-readiness PR linked to issue `#13`. |
+| `#33` | Merged | 2026-07-01 | Stage 8 performance, security hardening, and release-readiness PR linked to issue `#13`; merged at `fb40113`. |
+| `#45` | Merged | 2026-07-01 | Final Review artifacts and executable review gate merged; outcome is No-Go until Phase 1 Closure. |
+| `#46` | Delivery PR | Reconcile after merge | Phase 1 Closure Module A governance and traceability PR for issues `#35`, `#36`, `#40`, and `#41`, with release-readiness, demo, golden-question, and quality-gate hardening. |
 
 ## Completed Work
 
@@ -314,26 +330,15 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Keep Stage 8 implementation scoped to performance smoke tests, latency
-   budgets, security hardening, dependency/container scan gates, release
-   readiness evidence, and explicit release blockers.
-2. Review PR `#33`, require local `make quality` and equivalent CI status
-   checks, then merge only after issue `#13` linkage and all gates are green.
-3. Enable or verify `main` branch protection/repository rulesets before treating
-   Stage 8 as release-ready; required status contexts must include the emitted
-   `quality / secrets`, `security / docker build`, and
-   `stage8 / performance lighthouse` checks.
-4. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
-   `#29`, and confirm the exact Stage 5 PR `#30` merge date if needed.
-5. Reconcile GitHub issue and PR state for Stage 3 issue `#5`, Stage 2 issue
-   `#2`, and Stage 7 issue `#12` after merged PR events.
-6. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
-7. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue
-   `#16` before broader product implementation planning is treated as ready.
-8. Close or supersede stale governance issues that conflict with the current
-   operating model, especially `#3`.
-9. Keep this file updated at every stage boundary, every stage-issue change, and
-   every merged stage PR.
+1. Complete Phase 1 Closure P0/P1 issues `#35` through `#42` through
+   issue-linked `phase-1-closure-*` branches and PRs.
+2. Keep Phase 2 feature work blocked until P0/P1 items are closed or explicitly
+   downgraded with evidence.
+3. Keep production, multi-worker deployment, external provider use, real video
+   export, and public synthetic-media distribution No-Go.
+4. Run local quality and CI before merging each Phase 1 closure PR.
+5. Create a release tag only after all Phase 1 gates pass and the Go/No-Go
+   decision is updated by reviewed PR.
 
 ## Maintenance Protocol
 
@@ -392,3 +397,6 @@ Required update rules:
 | 2026-07-01 | Stage 8 final exhaustive review remediation updated ADR `0006` and status tracking for semantic-failure idempotency replay, exact Stage 6 voice-manifest validation, Docker scan exit-code handling, and branch-protection context documentation. |
 | 2026-07-01 | Stage 8 final PR review reconciled `docs/REPOSITORY_GUARDRAILS.md` and the Stage 8 quality checker so the canonical branch-protection checklist includes `stage8 / performance lighthouse`. |
 | 2026-07-01 | Final Review artifact branch added independent review reports under `docs/reviews/` and wired an executable Final Review artifact gate for `final-review-*` branches; Phase 1 closure remains tracked separately by Final Review follow-up issues. |
+| 2026-07-01 | Phase 1 Closure started after PR `#45` merged; issues `#35` through `#44` classified and mapped to closure modules; release posture remains No-Go. |
+| 2026-07-01 | Phase 1 Closure governance gate was hardened after cross-model review to protect Final Review No-Go inputs, parse issue/module tables, validate the golden-question schema, and distinguish governance checks from full CI/eval execution. |
+| 2026-07-02 | PR `#46` recorded as the Phase 1 Closure Module A governance/traceability delivery PR for issues `#35`, `#36`, `#40`, and `#41`; remaining P1 implementation blockers stay open. |

@@ -11,12 +11,11 @@ make quality
 ```
 
 During the current stage, `make quality` runs only the active stage checks
-by delegating to `scripts/quality/check_quality_stage.py`. Stage 8 has started
-from merged PR `#32` at commit `7f7196a` and is scoped to performance smoke
-tests, API latency budget checks, frontend Lighthouse checks, rate limiting,
-request size limits, upload MIME validation, dependency audit, Docker image
-scan, release checklist, runbook, demo seed data, portfolio README, and release
-readiness evidence. Product behavior outside hardening remains blocked.
+by delegating to `scripts/quality/check_quality_stage.py`. The repository stage
+marker remains `.stage/current = 8`, so ordinary Stage 8 branches and `main`
+dispatch to the Stage 8 gate. Final Review and Phase 1 Closure branches override
+that marker by branch prefix and dispatch to their dedicated governance gates.
+Product behavior outside approved Phase 1 closure remediation remains blocked.
 
 ## Required Make Targets
 
@@ -24,7 +23,7 @@ The `Makefile` must expose:
 
 | Target | Current behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`; currently Stage 8 |
+| `make quality` | Runs checks for `.stage/current`, with Final Review and Phase 1 Closure branch-prefix overrides |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
 | `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
 | `make stage2-quality` | Runs executable Stage 2 architecture, security, AI safety, and portability checks |
@@ -35,6 +34,16 @@ The `Makefile` must expose:
 | `make stage7-quality` | Runs executable Stage 7 avatar rendering/export checks |
 | `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
 | `make final-review-quality` | Runs executable Final Review artifact checks |
+| `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
+| `make lint` | Runs backend Ruff and frontend ESLint |
+| `make typecheck` | Runs backend mypy and frontend TypeScript checks |
+| `make test` | Runs backend unit tests and frontend unit tests |
+| `make api-test` | Runs backend API tests |
+| `make ui-test` | Runs frontend unit tests |
+| `make e2e` | Runs frontend Playwright smoke |
+| `make eval` | Runs eval smoke |
+| `make security` | Runs dependency/security wrapper |
+| `make ci` | Runs the local CI wrapper set |
 
 ## Stage 0 Quality Gate
 
@@ -402,6 +411,46 @@ Gate validates:
 - defect IDs in `DEFECT_BACKLOG.md` are unique
 - no backend, frontend, provider, RAG, avatar, runtime, Docker, database, or
   product feature implementation is introduced by the Final Review artifact PR
+
+### Phase 1 Closure
+
+Phase 1 Closure quality is executable through `make phase1-closure-quality`.
+On `phase-1-closure-*` branches, the top-level `make quality` dispatcher runs
+the Phase 1 Closure gate even though `.stage/current` remains `8`.
+
+Gate validates:
+
+- current branch name matches `phase-1-closure-*` before merge, or is `main`
+  after merge; unresolved branch context fails closed
+- Final Review baseline artifacts exist and `docs/reviews/GO_NO_GO.md`
+  preserves the five No-Go decision lines
+- changed files stay within the Phase 1 governance/reporting allowlist; Final
+  Review baseline artifacts are required inputs but not allowed closure-branch
+  edits
+- `docs/reviews/PHASE_1_CLOSURE_REPORT.md` parses as an issue table covering
+  issues `#35` through `#44` with expected P0/P1/P2/P3 priorities
+- every P0/P1 issue maps to a valid closure module and the module table covers
+  the P0/P1 issue set with non-empty required evidence
+- `docs/RELEASE_READINESS_REVIEW.md` preserves the Final Review No-Go posture,
+  tagging block, and downgrade evidence rule
+- `docs/evals/phase1_golden_questions.jsonl` is valid JSONL with the required
+  minimum questions, expected answers, evidence paths, required/forbidden
+  claims, citation policy, metric floors, unsupported-claim threshold of zero,
+  and at least one prompt-injection and one safety-boundary fixture
+- Phase 1 demo docs and portfolio docs include runnable local startup,
+  health/readiness, project/upload/generation/citation/eval/saved-output flow,
+  and single-process, process-local, non-durable, mock/local-only disclosures
+
+The Phase 1 Closure quality gate validates the static governance contract. It
+does not replace `make ci`, does not prove GitHub branch-protection settings, and
+does not execute the Phase 1 golden questions through the RAG pipeline until a
+later eval-runner PR wires that dataset into `make eval`.
+
+Changes to `scripts/quality/check_phase1_closure_docs.py`,
+`scripts/quality/check_quality_stage.py`, or
+`scripts/quality/check_recommended_review_items.py` require explicit reviewer
+attention because in-repo gate scripts are executed from the PR branch under
+review.
 
 ## CI Relationship
 

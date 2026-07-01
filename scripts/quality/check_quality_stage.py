@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CURRENT_STAGE = ROOT / ".stage" / "current"
 FINAL_REVIEW_BRANCH_PREFIX = "final-review-"
+PHASE1_CLOSURE_BRANCH_PREFIX = "phase-1-closure-"
 
 
 def current_branch() -> str:
@@ -44,6 +45,8 @@ def main() -> int:
     branch = current_branch()
     if branch.startswith(FINAL_REVIEW_BRANCH_PREFIX):
         stage = "Final Review"
+    if branch.startswith(PHASE1_CLOSURE_BRANCH_PREFIX):
+        stage = "Phase 1 Closure"
 
     recommendation_status = run_recommended_review_item_check(stage)
     if recommendation_status != 0:
@@ -81,6 +84,8 @@ def main() -> int:
         return subprocess.call(["make", "stage8-quality"], cwd=ROOT)
     if stage == "Final Review":
         return subprocess.call([sys.executable, "scripts/quality/check_final_review_docs.py"], cwd=ROOT)
+    if stage == "Phase 1 Closure":
+        return subprocess.call([sys.executable, "scripts/quality/check_phase1_closure_docs.py"], cwd=ROOT)
 
     return subprocess.call(
         [sys.executable, "scripts/quality/stage_not_implemented.py", f"Stage {stage}"],

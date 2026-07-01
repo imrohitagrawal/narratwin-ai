@@ -1,11 +1,43 @@
-# Stage 8 Runbook
+# Stage 8 And Phase 1 Runbook
+
+Status: Stage 8 and Final Review are merged. Phase 1 Closure is active and the
+release posture is No-Go until P0/P1 issues `#35` through `#42` close or are
+explicitly downgraded with evidence.
 
 ## Local Verification
 
-1. Run `make quality`.
-2. If Lighthouse fails, inspect `reports/lighthouse/stage8-lighthouse.json` and `reports/lighthouse/frontend-server.log`.
-3. If dependency audit fails, inspect `pip-audit`, `npm audit --audit-level=high`, and `reports/security`.
-4. If Docker image scan fails, inspect the SARIF files in `reports/security`.
+1. Start from a Phase 1 branch, not `main`.
+2. Run `make phase1-closure-quality` for the governance closure gate.
+3. Run `make quality`; on `phase-1-closure-*` branches this dispatches to the
+   same governance closure gate.
+4. Run the broader local suite where tooling is available:
+
+   ```bash
+   make lint
+   make typecheck
+   make test
+   make api-test
+   make ui-test
+   make e2e
+   make eval
+   make security
+   make ci
+   ```
+
+5. Verify the local demo startup path:
+
+   ```bash
+   cp .env.example .env
+   docker compose up --build
+   curl http://localhost:8000/api/v1/healthz
+   curl http://localhost:8000/api/v1/readyz
+   ```
+
+6. If Lighthouse fails, inspect `reports/lighthouse/stage8-lighthouse.json` and
+   `reports/lighthouse/frontend-server.log`.
+7. If dependency audit fails, inspect `pip-audit`, `npm audit --audit-level=high`,
+   and `reports/security`.
+8. If Docker image scan fails, inspect the SARIF files in `reports/security`.
 
 ## Operational Checks
 
@@ -14,7 +46,7 @@
 - Generation: mocked grounded script generation must stay under 2 sec locally.
 - Uploads: accepted files remain markdown/text only, UTF-8 only, size limited, and secret/prompt-injection screened.
 - Rate limiting: excessive local write requests return `RATE_LIMIT_EXCEEDED`.
-- Monitoring owner: the PR reviewer watches the first local/demo run and records failures in PR `#33`.
+- Monitoring owner: the Phase 1 closure reviewer watches the first local/demo run and records failures in the active Phase 1 closure PR.
 - Logs: local API logs and CI artifacts are the authoritative Stage 8 evidence; production dashboards and alert routes are Final Review blockers.
 - First-hour production monitoring is not approved in Stage 8 because no production deployment is approved.
 
@@ -39,7 +71,9 @@ Rollback owner: the release reviewer for the active PR. Expected local/demo roll
 
 ## Monitoring Blockers
 
-Production launch remains blocked until Final Review defines dashboard locations, alert thresholds, paging/ownership, first-hour watch procedure, and rollback communication channels for a real deployment environment.
+Production launch remains blocked until Phase 1 or a later reviewed release phase
+defines dashboard locations, alert thresholds, paging/ownership, first-hour watch
+procedure, and rollback communication channels for a real deployment environment.
 
 ## Deployment Limits
 

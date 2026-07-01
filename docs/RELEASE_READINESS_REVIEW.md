@@ -1,26 +1,46 @@
-# Stage 8 Release Readiness Review
+# Release Readiness Review
 
-Issue: `#13`
-Branch: `stage8-performance-security-release-readiness`
+Issue baseline: Stage 8 `#13`, Final Review `#6`, Phase 1 Closure issues `#35`
+through `#44`
+
 Review date: 2026-07-01
 
 ## Decision
 
-Stage 8 adds release-readiness hardening evidence, but does not approve production multi-worker deployment or real public media export. The local mock/provider path can be demoed after `make quality` and CI pass. Stage 8 records multi-worker deployment blocked until durable Stage 6 and Stage 7 state exists.
+No-Go for production release, multi-worker deployment, external paid/provider-backed
+generation, real video export, and public synthetic-media distribution.
 
-## Budget Evidence
+Conditional local mock-provider portfolio/demo review remains allowed only after
+Phase 1 P0/P1 blockers are closed or explicitly downgraded with evidence. No
+release tag has been created.
+
+## Current Baseline
+
+- Stage 8 merged to `main` through PR `#33` at merge commit `fb40113`.
+- Final Review merged to `main` through PR `#45` at merge commit
+  `5a294c72d2b4b8cbbc0339f7bcb3f17089bddece`.
+- Final Review issue `#6` is closed.
+- Final Review artifacts are authoritative for the current Go/No-Go posture:
+  `docs/reviews/FINAL_REVIEW.md`, `docs/reviews/RISK_REGISTER.md`,
+  `docs/reviews/DEFECT_BACKLOG.md`, and `docs/reviews/GO_NO_GO.md`.
+- Phase 1 Closure is tracked through issues `#35` through `#44` and
+  `docs/reviews/PHASE_1_CLOSURE_REPORT.md`.
+
+## Stage 8 Evidence
+
+Stage 8 added release-readiness hardening evidence but did not approve production.
 
 | Budget | Evidence |
 |---|---|
 | health endpoint < 200 ms local | `tests/api/test_stage8_hardening_api.py::test_health_reports_stage8_with_local_latency_budget` |
 | script generation mocked path < 2 sec | `tests/api/test_stage8_hardening_api.py::test_mocked_script_generation_path_stays_under_two_seconds` |
-| upload limit enforced | Write requests require valid `Content-Length`, actual ASGI body bytes are counted so under-reported length cannot bypass local budgets, uploads keep the Stage 4 content-size limit, and Stage 8 API tests cover these paths |
+| upload limit enforced | Fail-closed `Content-Length` checks, ASGI body-byte counting, upload content-size limits, and Stage 8 API tests |
 | no critical/high dependency vulnerabilities | `scripts/ci/dependency-security.sh` |
-| no critical/high container vulnerabilities | `scripts/ci/docker-image-scan.sh` using Trivy, Grype, pinned Dockerized Trivy, or Docker Scout; PR CI runs the image scan in the security workflow |
-| Locust and Lighthouse budgets | local `make stage8-quality` and PR CI status `stage8 / performance lighthouse`; reports are emitted under `reports/performance/` and `reports/lighthouse/` |
-| all eval/security gates pass | `make stage8-quality` runs security and eval smoke gates; PR CI emits policy, security, Docker scan, and Stage 8 budget statuses |
+| no critical/high container vulnerabilities | `scripts/ci/docker-image-scan.sh` using Trivy, Grype, pinned Dockerized Trivy, or Docker Scout |
+| Locust and Lighthouse budgets | `scripts/ci/performance-smoke.sh`, `scripts/ci/frontend-lighthouse.sh`, and PR CI status `stage8 / performance lighthouse` |
+| eval/security gates | `make stage8-quality` plus PR CI policy, security, Docker scan, and Stage 8 budget statuses |
 
-Latest local run on 2026-07-01:
+Latest Stage 8 local evidence recorded before PR `#33` merged:
 
 - `make quality` passed on `stage8-performance-security-release-readiness`.
 - Locust health smoke: 175 requests, 0 failures, p95 7 ms.
@@ -28,46 +48,70 @@ Latest local run on 2026-07-01:
   1.00, LCP 1057 ms, CLS 0, TBT 0 ms, 10 network requests.
 - Docker scan SARIF: backend 0 results, frontend 0 results.
 - Dependency audit: no critical/high Python or frontend dependency findings;
-  frontend audit currently reports moderate dev-tool findings from the
-  Lighthouse dependency tree, below the Stage 8 blocking threshold.
+  moderate Lighthouse dev-tool findings remain below the Stage 8 blocking
+  threshold.
 
-## Hardening Added
+## Final Review Outcome
 
-- Stage 8 health marker.
-- Write rate limiting for local API write methods.
-- General request size limits that fail closed on missing/invalid `Content-Length` and count actual ASGI body bytes before the request reaches route handlers.
-- Strict markdown/plain-text upload MIME validation remains enforced; `application/octet-stream` compatibility is explicitly rejected.
-- Provider-bound prompt text is screened for secret-like content before generation.
-- Performance smoke tests and headless Locust profile with health p95 threshold.
-- Frontend Lighthouse checks with category and named audit thresholds.
-- Dependency audit and Docker image scan wrappers.
-- PR CI Stage 8 budget job for Locust performance smoke and Lighthouse checks.
-- Final review remediation for Stage 4 idempotent semantic-failure replay,
-  Docker scan nonzero-SARIF failure preservation, and exact voice-manifest schema
-  validation.
-- Frontend production image strips npm/npx from the runner layer so vulnerable package-manager-only dependencies such as npm-bundled `undici` are not shipped with the standalone server.
-- Release checklist, runbook, demo seed data, and portfolio README.
+Final Review produced a No-Go decision and opened follow-up issues `#35` through
+`#44`. Required Phase 1 closure blockers are recorded in
+`docs/reviews/GO_NO_GO.md` and mapped in
+`docs/reviews/PHASE_1_CLOSURE_REPORT.md`.
 
-## Evidence Locations
+P0/P1 closure items must complete before Phase 2:
 
-- Local quality command: `make quality`.
-- API performance report: `reports/performance/stage8-locust_stats.csv`.
-- API performance server log: `reports/performance/stage8-api-server.log`.
-- Lighthouse report: `reports/lighthouse/stage8-lighthouse.json`.
-- Lighthouse server log: `reports/lighthouse/frontend-server.log`.
-- Docker scan SARIF reports: `reports/security/backend-image-scan.sarif.json` and `reports/security/frontend-image-scan.sarif.json`.
-- PR CI artifacts: `stage8-performance-lighthouse-reports` and `docker-image-scan-reports`.
+- `#35` Governance and release docs stale after Stage 8 merge.
+- `#36` Final Review gate and branch-policy evidence.
+- `#37` Local principal contract mismatch.
+- `#38` Branch protection/ruleset evidence.
+- `#39` Production durability and monitoring blockers.
+- `#40` Canonical RTM stale.
+- `#41` Portfolio local-demo durability disclosure.
+- `#42` Stage 7 source-evaluation checksum binding.
 
-## RR-029 Through RR-035 Disposition
+P2 follow-ups `#43` and `#44` remain deferred unless they block Phase 1
+correctness.
 
-- RR-029: Done. `Stage6Service` now rejects blank glossary terms through direct domain calls.
-- RR-030: Done. Frontend artifact safety tests were expanded in Stage 7 and Stage 8 keeps backend validation authoritative.
-- RR-031: Accepted Non-blocking. Multi-worker deployment is explicitly blocked until Stage 6 state is durable.
-- RR-032: Accepted Non-blocking. Multi-worker deployment is explicitly blocked until Stage 7 render/job/idempotency/artifact state is durable.
-- RR-033: Accepted Non-blocking. Real video export remains blocked; local HTML plus JSON placeholder is the only approved Stage 8 posture.
-- RR-034: Accepted Non-blocking. External providers and public synthetic-media distribution remain blocked until persistent consent/provenance exists.
-- RR-035: Accepted Non-blocking. Avatar export remains source-run based; this source-run based avatar export posture is documented for Stage 8, and multilingual/subtitle-bound rendering is a future explicit product decision before timed media export.
+## Current Release Blockers
 
-## Independent Security And Release Review
+- Branch protection/ruleset enforcement for required `main` checks still needs
+  external evidence or a reviewed No-Go exception.
+- Process-local project/run/idempotency/artifact state blocks production,
+  multi-worker deployment, restart recovery, and production idempotency claims.
+- Production dashboards, alert routes, first-hour watch procedure, and rollback
+  communication channels are not defined for a real deployment.
+- External providers remain disabled unless provider-specific evals, egress
+  controls, and red-team cases are implemented.
+- Real video export and public synthetic-media distribution remain blocked until
+  renderer/provider license posture, persistent consent, and provenance are
+  implemented.
 
-The Stage 8 review checked untrusted upload boundaries, request size handling, rate limiting, dependency audit, Docker scan posture, mock/local provider defaults, synthetic-media consent/provenance blockers, release rollback notes, and no paid-provider credential dependency. Follow-up review also checked sub-agent findings for request-size bypass, rate-limit key trust, CI scan enforcement, performance-smoke depth, rollback actionability, and status-ledger drift. Residual risk is documented as release-blocking limits rather than hidden UI/API behavior.
+## Conditional Local Demo Conditions
+
+The local demo can be reviewed only when:
+
+- mock/local providers remain the only active providers
+- no real provider keys are required
+- no real video, cloned face, cloned voice, or public synthetic-media claim is made
+- demo docs disclose single-process, process-local, non-durable state
+- P0/P1 Final Review issues are closed or explicitly downgraded with evidence
+- local quality, eval, security, and CI gates pass
+
+## Downgrade Evidence Rule
+
+A P0/P1 issue may be downgraded only by the active closure reviewer through a
+reviewed PR linked to the GitHub issue. The PR must record the issue, previous
+priority, new priority, evidence, reviewer/date, and release impact in
+`docs/reviews/PHASE_1_CLOSURE_REPORT.md`. If the downgrade changes the release
+posture, the same PR must update `docs/reviews/GO_NO_GO.md`; otherwise the issue
+remains release-blocking.
+
+Static governance artifacts do not by themselves close implementation blockers.
+Issues `#37` and `#42` still require separate executable evidence or a reviewed
+No-Go exception before the local demo can be treated as Phase 1 closure-ready.
+
+## Tagging Policy
+
+Create a release tag only after every Phase 1 P0/P1 gate passes locally and in CI,
+the PRs are reviewed and merged, and `docs/reviews/GO_NO_GO.md` is updated from
+No-Go to the reviewed target posture. No tag is permitted from the current state.
