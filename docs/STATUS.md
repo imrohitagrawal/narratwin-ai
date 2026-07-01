@@ -28,7 +28,9 @@ Use it to answer:
 - Tracker enforcement scope: repository-tracked stage and governance changes in checked-in files
 - Out-of-band GitHub reconciliation: PR `#45` merged the Final Review artifacts at
   commit `5a294c72d2b4b8cbbc0339f7bcb3f17089bddece`; Final Review issue `#6`
-  is closed; follow-up issues `#35` through `#44` are open for Phase 1 Closure.
+  is closed. Phase 1 Closure issues `#35`, `#36`, `#37`, `#40`, `#41`, and
+  `#42` are closed through merged PRs `#46`, `#47`, and `#50`; issues `#38`,
+  `#39`, `#43`, `#44`, `#48`, and `#49` remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -110,20 +112,20 @@ Use these files together with this tracker:
 - Final Review PR `#45` is merged and records a No-Go outcome until Phase 1
   Closure resolves required blockers.
 - Phase 1 Closure starts from issues `#35` through `#44`; P0/P1 items must close
-  or be explicitly downgraded with evidence before Phase 2.
-- Phase 1 Closure issue `#37` is in progress through PR `#47` on branch
-  `phase-1-closure-37-local-principal-contract` to reconcile the trusted
-  local/dev/test-only principal simulation contract. Release posture remains
-  No-Go until all Phase 1 P0/P1 blockers, including `#42`, are resolved or
-  explicitly downgraded with evidence.
-- Phase 1 Closure issue `#42` is in progress through PR `#50` on branch
-  `phase-1-closure-42-stage7-checksum-binding` to make the Stage 7 avatar render
-  API route and service share one canonical source-evaluation checksum
-  definition, reject direct mock-provider checksum mismatches, and reject
-  synthesized evidence for positive source evidence counts, duplicate-key
-  provider JSON artifacts, and delimiter-ambiguous idempotency request preimages.
-  Release posture remains No-Go until all Phase 1 P0/P1 blockers are resolved
-  or explicitly downgraded with evidence.
+  or be explicitly downgraded with evidence before Phase 2. After PRs `#46`,
+  `#47`, and `#50`, the remaining original open P0/P1 blockers are `#38` and
+  `#39`.
+- Phase 1 Closure issue `#37` is closed through merged PR `#47` at merge commit
+  `cb53e33a75ff6837a5498dfb0cc01c06decab8c5`, reconciling the trusted
+  local/dev/test-only principal simulation contract with API behavior, tests,
+  and contract docs.
+- Phase 1 Closure issue `#42` is closed through merged PR `#50` at merge commit
+  `b6235da1a5202ffc9dbde6284ad39f3e3ad70486`, hardening Stage 7 source
+  evidence checksum binding with a shared canonical route/service/mock-provider
+  helper, explicit evidence IDs/indexes, duplicate-key JSON rejection, and
+  structured idempotency request checksums.
+- Release posture remains No-Go until the remaining Phase 1 P0/P1 blockers
+  `#38` and `#39` are resolved or explicitly downgraded with evidence.
 - PR `#47` independent review residual risks are now durable follow-ups:
   issue `#48` for scoped project-lookup hardening and issue `#49` for
   simulated-actor idempotency resource caps, mirrored as `RR-036` and `RR-037`.
@@ -142,7 +144,7 @@ Use these files together with this tracker:
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
 | Stage 8 | Complete, merged to `main` | `#13` closed | PR `#33` merged | Executable at merge | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and release-readiness review merged at `fb40113`. |
 | Final Review | Complete, merged to `main` | `#6` closed | PR `#45` merged | Executable artifact gate | Independent review artifacts merged at `5a294c7`; outcome is No-Go until Phase 1 Closure resolves blockers. |
-| Phase 1 Closure | In progress | `#35`-`#44` open | PR `#46` for Module A governance/traceability; later branches remain `phase-1-closure-*` | Executable governance gate added | P0/P1 closure for governance, traceability, functional flow, local run/portability, tests/CI, RAG quality, security, and demo readiness. |
+| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed; `#38`, `#39`, `#43`, and `#44` open | PRs `#46`, `#47`, and `#50` merged; later branches remain `phase-1-closure-*` | Executable governance gate added | Remaining original release blockers are `#38` branch-protection/ruleset evidence and `#39` production durability/monitoring. `#43` and `#44` remain P2 unless they block Phase 1 correctness. |
 
 ## Issue Ledger
 
@@ -161,18 +163,18 @@ Use these files together with this tracker:
 | `#12` | Reconcile after merge | Stage 7 | Avatar rendering adapter and demo export completed by merged PR `#32`; issue state must be reconciled with GitHub. |
 | `#13` | Closed | Stage 8 | Performance, security, release readiness completed by merged PR `#33`. |
 | `#6` | Closed | Final Review | Independent reviewer pass completed by merged PR `#45`; outcome is No-Go pending Phase 1 Closure. |
-| `#35` | Open | Phase 1 P0 | Reconcile Stage 8 merge state in governance and release docs. |
-| `#36` | Open | Phase 1 P0 | Reconcile executable Final Review gate and branch-policy evidence after PR `#45`. |
-| `#37` | Open | Phase 1 P1 | In progress through PR `#47` on branch `phase-1-closure-37-local-principal-contract`; reconciles trusted local/dev/test-only `X-Local-User-Id` simulation with API behavior, docs, and tests. |
+| `#35` | Closed | Phase 1 P0 | Reconciled Stage 8 merge state in governance and release docs through merged PR `#46`. |
+| `#36` | Closed | Phase 1 P0 | Reconciled executable Final Review gate and repository-tracked branch-policy evidence posture through merged PR `#46`; live branch-protection proof remains tracked by open issue `#38`. |
+| `#37` | Closed | Phase 1 P1 | Trusted local/dev/test-only `X-Local-User-Id` simulation reconciled with API behavior, docs, and tests through merged PR `#47`. |
 | `#38` | Open | Phase 1 P1 | Verify branch protection and required CI status contexts. |
 | `#39` | Open | Phase 1 P1 | Resolve or explicitly maintain production durability and monitoring blockers. |
-| `#40` | Open | Phase 1 P0 | Reconcile canonical requirements traceability matrix. |
-| `#41` | Open | Phase 1 P0 | Disclose local demo durability and provider limits in portfolio/demo docs. |
-| `#42` | Open | Phase 1 P1 | In progress through PR `#50` on branch `phase-1-closure-42-stage7-checksum-binding`; hardens Stage 7 source evidence checksum binding by sharing one canonical route/service/mock-provider checksum definition, requiring explicit evidence IDs for positive counts, using structured idempotency checksums, and rejecting duplicate-key provider JSON artifacts. |
+| `#40` | Closed | Phase 1 P0 | Canonical requirements traceability matrix reconciled through merged PR `#46`. |
+| `#41` | Closed | Phase 1 P0 | Local demo durability and provider limits disclosed in portfolio/demo docs through merged PR `#46`. |
+| `#42` | Closed | Phase 1 P1 | Stage 7 source evidence checksum binding hardened through merged PR `#50` by sharing one canonical route/service/mock-provider checksum definition, requiring explicit evidence IDs for positive counts, using structured idempotency checksums, and rejecting duplicate-key provider JSON artifacts. |
 | `#43` | Open | Phase 1 P2 | Expand performance and integrated E2E evidence beyond local smoke. |
 | `#44` | Open | Phase 1 P2 | Track telemetry, CSP, log-envelope, and stale risk-register hardening. |
-| `#48` | Open | Future hardening | Track scoped project-lookup hardening before production auth, durable storage, or stronger authorization-proof claims; created from PR `#47` independent API integrity review. |
-| `#49` | Open | Future hardening | Bound local idempotency records across simulated actors before local-demo durability, multi-worker, or production-readiness claims; created from PR `#47` independent performance/security review. |
+| `#48` | Open | Pre-production/P2 hardening | Track scoped project-lookup hardening before production auth, durable storage, or stronger authorization-proof claims; created from PR `#47` independent API integrity review. It does not block local/mock Phase 1 demo review while production remains No-Go. |
+| `#49` | Open | Pre-production/P2 hardening | Bound local idempotency records across simulated actors before local-demo durability, multi-worker, or production-readiness claims; created from PR `#47` independent performance/security review. It does not block local/mock Phase 1 demo review while production and multi-worker release remain No-Go. |
 
 ### Additional Backlog And Governance Issues
 
@@ -203,9 +205,9 @@ Use these files together with this tracker:
 | `#32` | Merged | 2026-07-01 | Stage 7 avatar rendering adapter and export merged to `main` at commit `7f7196a`; Stage 8 starts from this baseline. |
 | `#33` | Merged | 2026-07-01 | Stage 8 performance, security hardening, and release-readiness PR linked to issue `#13`; merged at `fb40113`. |
 | `#45` | Merged | 2026-07-01 | Final Review artifacts and executable review gate merged; outcome is No-Go until Phase 1 Closure. |
-| `#46` | Delivery PR | Reconcile after merge | Phase 1 Closure Module A governance and traceability PR for issues `#35`, `#36`, `#40`, and `#41`, with release-readiness, demo, golden-question, and quality-gate hardening. |
-| `#47` | Draft delivery PR | Pending | Phase 1 Closure Module F security PR for issue `#37`; reconciles trusted local/dev/test-only principal simulation with implementation, API tests, and contract docs. |
-| `#50` | Delivery PR | Pending | Phase 1 Closure Module B functional-flow PR for issue `#42`; hardens Stage 7 source evidence checksum binding through a canonical helper shared by the API route, service, and mock provider, with explicit evidence IDs, structured idempotency checksums, and duplicate-key provider JSON rejection. |
+| `#46` | Merged | 2026-07-01 | Phase 1 Closure Module A governance and traceability PR for issues `#35`, `#36`, `#40`, and `#41`, with release-readiness, demo, golden-question, and quality-gate hardening; merged at `3131b3932c921a33fb6f45142d7fd7dbedb41792`. |
+| `#47` | Merged | 2026-07-01 | Phase 1 Closure Module F security PR for issue `#37`; reconciles trusted local/dev/test-only principal simulation with implementation, API tests, and contract docs; merged at `cb53e33a75ff6837a5498dfb0cc01c06decab8c5`. |
+| `#50` | Merged | 2026-07-01 | Phase 1 Closure Module B functional-flow PR for issue `#42`; hardens Stage 7 source evidence checksum binding through a canonical helper shared by the API route, service, and mock provider, with explicit evidence IDs, structured idempotency checksums, and duplicate-key provider JSON rejection; merged at `b6235da1a5202ffc9dbde6284ad39f3e3ad70486`. |
 
 ## Completed Work
 
@@ -350,8 +352,9 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Complete Phase 1 Closure P0/P1 issues `#35` through `#42` through
-   issue-linked `phase-1-closure-*` branches and PRs.
+1. Complete the remaining Phase 1 Closure P0/P1 issues `#38` and `#39` through
+   issue-linked `phase-1-closure-*` branches and PRs, or record reviewed No-Go
+   exceptions with evidence.
 2. Keep Phase 2 feature work blocked until P0/P1 items are closed or explicitly
    downgraded with evidence.
 3. Keep production, multi-worker deployment, external provider use, real video
@@ -419,7 +422,8 @@ Required update rules:
 | 2026-07-01 | Final Review artifact branch added independent review reports under `docs/reviews/` and wired an executable Final Review artifact gate for `final-review-*` branches; Phase 1 closure remains tracked separately by Final Review follow-up issues. |
 | 2026-07-01 | Phase 1 Closure started after PR `#45` merged; issues `#35` through `#44` classified and mapped to closure modules; release posture remains No-Go. |
 | 2026-07-01 | Phase 1 Closure governance gate was hardened after cross-model review to protect Final Review No-Go inputs, parse issue/module tables, validate the golden-question schema, and distinguish governance checks from full CI/eval execution. |
-| 2026-07-02 | PR `#46` recorded as the Phase 1 Closure Module A governance/traceability delivery PR for issues `#35`, `#36`, `#40`, and `#41`; remaining P1 implementation blockers stay open. |
-| 2026-07-02 | Phase 1 Closure issue `#37` started on branch `phase-1-closure-37-local-principal-contract` and draft PR `#47` to reconcile the trusted local principal contract; release posture remains No-Go while `#42` and other P0/P1 blockers remain open. |
+| 2026-07-02 | PR `#46` recorded as the Phase 1 Closure Module A governance/traceability delivery PR for issues `#35`, `#36`, `#40`, and `#41`; later closure entries reconcile subsequent implementation blockers. |
+| 2026-07-02 | Phase 1 Closure issue `#37` started on branch `phase-1-closure-37-local-principal-contract` and draft PR `#47` to reconcile the trusted local principal contract; later closure entries supersede this branch-start state. |
 | 2026-07-02 | PR `#47` independent review residual risks were converted into GitHub issues `#48` and `#49` and recorded as `RR-036` and `RR-037` in `docs/RECOMMENDED_REVIEW_ITEMS.md`. |
-| 2026-07-02 | Phase 1 Closure issue `#42` started through PR `#50` on branch `phase-1-closure-42-stage7-checksum-binding` to harden Stage 7 source evidence checksum binding through a canonical helper shared by the API route, Stage 7 service, and mock provider, plus explicit evidence IDs, structured idempotency checksums, and duplicate-key provider JSON rejection; release posture remains No-Go while Phase 1 P0/P1 blockers remain open. |
+| 2026-07-02 | Phase 1 Closure issue `#42` started through PR `#50` on branch `phase-1-closure-42-stage7-checksum-binding` to harden Stage 7 source evidence checksum binding through a canonical helper shared by the API route, Stage 7 service, and mock provider, plus explicit evidence IDs, structured idempotency checksums, and duplicate-key provider JSON rejection; later closure entries supersede this branch-start state. |
+| 2026-07-02 | PRs `#47` and `#50` reconciled as merged and issues `#37` and `#42` reconciled as closed; original Phase 1 P0/P1 blockers now remain limited to `#38` branch-protection/ruleset evidence and `#39` production durability/monitoring, while `#48` and `#49` are classified as pre-production/P2 hardening that do not block local/mock Phase 1 demo review under the continuing production No-Go posture. |
