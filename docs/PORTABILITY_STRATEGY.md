@@ -5,7 +5,7 @@
 - Version: 1.0
 - Stage: Stage 2 architecture, security, AI safety
 - Canonical issue: `#2`
-- Last updated: 2026-06-29
+- Last updated: 2026-07-02
 
 ## Goal
 
@@ -120,8 +120,8 @@ Import requirements:
 - regenerate embeddings when vector index is missing or provider changes
 - preserve run/evaluation provenance
 - reject imports that would cross project or current `tenant_id` boundaries
-- map `tenant_local` and `user_local` only when importing into a local single-user
-  workspace
+- map `tenant_local`, `user_local`, and any validated local simulation principals
+  only when importing into a trusted local workspace
 
 ## Storage Portability
 
@@ -152,8 +152,11 @@ Local-first mode:
 - mock providers available
 - local storage available
 - deterministic fixtures for tests
-- Synthetic local tenant and user are always present as `tenant_local` and
-  `user_local`
+- synthetic local tenant and default user are always present as `tenant_local`
+  and `user_local`
+- trusted local/dev/test principal simulation may use `X-Local-User-Id`; the
+  header is not portable production authentication and must not be accepted as
+  production identity
 
 Future deployment mode:
 

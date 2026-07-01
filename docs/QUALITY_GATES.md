@@ -424,7 +424,10 @@ Gate validates:
   after merge; unresolved branch context fails closed
 - Final Review baseline artifacts exist and `docs/reviews/GO_NO_GO.md`
   preserves the five No-Go decision lines
-- changed files stay within the Phase 1 governance/reporting allowlist; Final
+- changed files stay within the Phase 1 closure allowlist. Module A branches are
+  limited to governance/reporting files; Module F issue `#37` may also change
+  the local-principal implementation, API tests, and active architecture/security
+  contract docs needed to reconcile the trusted local principal behavior. Final
   Review baseline artifacts are required inputs but not allowed closure-branch
   edits
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md` parses as an issue table covering

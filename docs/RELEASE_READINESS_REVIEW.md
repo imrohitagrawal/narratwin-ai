@@ -62,7 +62,10 @@ P0/P1 closure items must complete before Phase 2:
 
 - `#35` Governance and release docs stale after Stage 8 merge.
 - `#36` Final Review gate and branch-policy evidence.
-- `#37` Local principal contract mismatch.
+- `#37` Local principal contract mismatch. Remediation is in progress through PR
+  `#47` on `phase-1-closure-37-local-principal-contract` with trusted
+  local/dev/test-only principal simulation evidence; it remains open until
+  reviewed, merged, and CI passes.
 - `#38` Branch protection/ruleset evidence.
 - `#39` Production durability and monitoring blockers.
 - `#40` Canonical RTM stale.

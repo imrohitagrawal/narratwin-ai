@@ -5,7 +5,7 @@
 - Version: 1.0
 - Stage: Stage 2 architecture, security, AI safety
 - Canonical issue: `#2`
-- Last updated: 2026-06-29
+- Last updated: 2026-07-02
 - Implementation status: policy and architecture only; product implementation blocked
 - Stage 4 branch status: first local slice implementation started with mock/local
   providers only
@@ -170,26 +170,37 @@ File handling rules:
 
 ### Authorization Model
 
-Stage 4 local mode uses a synthetic local principal instead of skipping
+Stage 4+ local/dev/test mode uses a synthetic local principal instead of skipping
 authorization:
 
 - `tenant_id = tenant_local`
-- `owner_id = user_local`
-- `actor_id = user_local`
+- default `owner_id = user_local`
+- default `actor_id = user_local`
 
-Every endpoint must resolve the actor before data access. Every project-scoped query
-must enforce `(tenant_id, owner_id, project_id)` before lookup, retrieval,
-generation, evaluation, export, or delete. Child tables may either denormalize
-`owner_id` or be accessed only through a server-side project authorization guard
-that joins through `Project`. Generated IDs are not authorization proof. Missing
-access returns `403`; missing resources that are not visible to the actor return
-`404`.
+`APP_ENV` is read from the environment; unset or blank values default to the
+effective environment `local` for local-first development. In effective
+local/dev/test environments only, `X-Local-User-Id` may simulate a different
+local principal. The header is not authentication, is not a production identity
+source, and is accepted only after normalization and validation: whitespace-only
+values fall back to `user_local`; non-empty values must contain only ASCII
+letters, digits, underscore, or dash and be at most 64 characters. Invalid
+non-empty values return `400 VALIDATION_ERROR`. Non-empty values outside
+local/dev/test return `400 LOCAL_PRINCIPAL_HEADER_NOT_ALLOWED`.
+
+Every endpoint must resolve the actor before data access. Every project-scoped
+query must enforce `(tenant_id, owner_id, project_id)` before lookup, retrieval,
+generation, evaluation, export, or delete. Future real authentication replaces
+only the principal source, not this authorization predicate. Child tables may
+either denormalize `owner_id` or be accessed only through a server-side project
+authorization guard that joins through `Project`. Generated IDs are not
+authorization proof. Missing access returns `403`; missing resources that are not
+visible to the actor return `404`.
 
 ### Tenant And Project Isolation
 
-Stage 4 starts with project isolation plus a synthetic local tenant/user. Future
-multi-user mode replaces the principal source without changing the isolation
-predicate.
+Stage 4 starts with project isolation plus a synthetic local tenant/default user
+and trusted local-only principal simulation for tests. Future multi-user mode
+replaces the principal source without changing the isolation predicate.
 
 Controls:
 

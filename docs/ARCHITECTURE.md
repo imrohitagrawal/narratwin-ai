@@ -5,7 +5,7 @@
 - Version: 1.0
 - Stage: Stage 2 architecture, security, AI safety
 - Canonical issue: `#2`
-- Last updated: 2026-06-29
+- Last updated: 2026-07-02
 - Implementation status: blocked until Stage 4 gate approval
 
 ## Architecture Goal
@@ -397,17 +397,28 @@ Trusted after validation:
 
 ## Synthetic Local Principal
 
-Stage 4 is allowed to run in local single-user mode, but it must not treat possession
-of a project ID as authorization. The local mode uses a synthetic principal:
+Stage 4+ is allowed to run in local mode, but it must not treat possession of a
+project ID as authorization. The local mode uses a synthetic tenant and a default
+local principal:
 
 - `tenant_id = tenant_local`
-- `owner_id = user_local`
-- `actor_id = user_local`
+- default `owner_id = user_local`
+- default `actor_id = user_local`
 
-Every project-scoped read and write checks this synthetic principal before data
-access. Future authentication replaces the principal source, not the authorization
-predicate. This keeps project and tenant filters present from the first data model
-and avoids later risky backfills.
+The backend reads `APP_ENV` from the environment and treats unset or blank values
+as the effective environment `local`. In effective local/dev/test environments
+only, the backend accepts `X-Local-User-Id` as a local principal simulation
+header. It is not authentication, must never be accepted as production identity,
+and may contain only ASCII letters, digits, underscore, or dash with a
+64-character maximum. Missing or whitespace-only values use `user_local`;
+invalid non-empty values fail with `VALIDATION_ERROR`; non-empty values outside
+local/dev/test fail with `LOCAL_PRINCIPAL_HEADER_NOT_ALLOWED`.
+
+Every project-scoped read and write checks the resolved principal before data
+access. Future authentication replaces the principal source, not the
+authorization predicate `(tenant_id, owner_id, project_id)`. This keeps project
+and tenant filters present from the first data model and avoids later risky
+backfills.
 
 ## Knowledge State Separation
 
