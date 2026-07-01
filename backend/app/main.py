@@ -18,7 +18,6 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from backend.app.rag.chunking import checksum_text
 from backend.app.rag.models import OWNER_LOCAL
 from backend.app.stage4 import (
     MAX_API_REQUEST_BYTES,
@@ -44,6 +43,7 @@ from backend.app.stage7 import (
     MAX_PROVIDER_ID_CHARS as MAX_AVATAR_PROVIDER_ID_CHARS,
     Stage7Error,
     avatar_render_to_api,
+    build_source_evaluation_checksum,
     stage7_service,
 )
 
@@ -1135,15 +1135,15 @@ def generate_avatar_render(
     citation_count = len(source_run.evaluation.claim_supports)
     source_context_ref_ids = tuple(context.context_ref_id for context in source_run.retrieved_context)
     source_citation_indexes = tuple(support.citation_index for support in source_run.evaluation.claim_supports)
-    source_evaluation_checksum = checksum_text(
-        "\n".join(
-            [
-                source_run.evaluation.evaluation_id,
-                source_run.evaluation.evaluation_status,
-                ",".join(source_context_ref_ids),
-                ",".join(str(index) for index in source_citation_indexes),
-            ]
-        )
+    source_evaluation_checksum = build_source_evaluation_checksum(
+        source_evaluation_id=source_run.evaluation.evaluation_id,
+        source_run_id=source_run.run_id,
+        trace_id=source_run.trace_id,
+        evaluation_status=source_run.evaluation_status or "UNKNOWN",
+        source_context_ref_ids=source_context_ref_ids,
+        source_context_ref_count=len(source_run.retrieved_context),
+        source_citation_indexes=source_citation_indexes,
+        source_citation_count=citation_count,
     )
     avatar_render = stage7_service.render_avatar_demo(
         source_script=source_run.accepted_script_text,

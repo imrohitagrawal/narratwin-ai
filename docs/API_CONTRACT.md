@@ -159,10 +159,12 @@ Provider-native IDs are stored as provider metadata, not canonical IDs.
 
 Idempotency keys are scoped by tenant, actor, endpoint, non-null
 `idempotencyScope`, and `idempotencyKey`. The request body checksum is stored on
-the idempotency record for conflict detection, not uniqueness. For project creation,
-`idempotencyScope = "project:create"` because no `projectId` exists yet. For
-project-scoped writes, `idempotencyScope = projectId`. Implementations must persist
-an `IdempotencyRecord` before provider calls, vector writes, generated artifacts,
+the idempotency record for conflict detection, not uniqueness. Request checksum
+preimages must be structured so user/provider strings containing delimiters
+cannot collide across fields. For project creation, `idempotencyScope =
+"project:create"` because no `projectId` exists yet. For project-scoped writes,
+`idempotencyScope = projectId`. Implementations must persist an
+`IdempotencyRecord` before provider calls, vector writes, generated artifacts,
 approval state changes, or tombstone writes.
 Nested media writes that act on a specific source run, such as Stage 6
 multilingual generation and Stage 7 avatar rendering, narrow the scope to the
@@ -923,6 +925,19 @@ placeholder artifacts. The manifest carries AI-generated avatar/video disclosure
 metadata, provider config metadata, source trace metadata, source citations, and
 evaluation status from the grounded script path.
 
+Phase 1 Closure issue `#42` hardens `sourceEvaluationChecksum` as a canonical
+Stage 7 checksum shared by the API route and Stage 7 service. The checksum input
+set is, in order: normalized `sourceEvaluationId`, `sourceRunId`, `traceId`,
+normalized `evaluationStatus`, comma-joined normalized `sourceContextRefIds`,
+and comma-joined normalized `sourceCitationIndexes`. The response schema is
+unchanged. Stage 7 rejects supplied source-evaluation checksums that do not
+match this canonical preimage at both the service and mock-provider boundary,
+and rejects checksum string components containing delimiter/control characters
+that would make the comma/newline preimage ambiguous. Positive source context
+or citation counts require explicit source context ref IDs and citation indexes;
+Stage 7 must not synthesize placeholder evidence identifiers for direct service
+or mock-provider calls.
+
 Request:
 
 ```json
@@ -968,12 +983,23 @@ Post-provider validation:
   are inert text in the trusted renderer output.
 - render manifest artifact must use `application/json`, `.json`, a safe filename,
   valid base64 UTF-8 JSON object content, and a checksum matching decoded content
+- render manifest and video export placeholder JSON must not contain duplicate
+  object keys at any nesting level
 - render manifest must match trusted provider config, AI-generated avatar/video
   disclosure metadata, source run ID, source trace ID, source context count,
   source context ref IDs, source citation count/indexes, source evaluation ID,
   source evaluation checksum, script checksum, source evaluation status, and
   public-use license check; unexpected top-level or nested JSON fields are
   rejected before storage or response
+- source evaluation checksum validation uses the shared Stage 7 checksum helper
+  so the API route, render response, render manifest, and video placeholder bind
+  the same source run identity, trace identity, evaluation ID/status, context
+  refs, and citation indexes; service-level and direct mock-provider calls
+  cannot override the canonical checksum with a stale or caller-supplied
+  mismatch
+- Stage 7 avatar render idempotency request checksums use structured JSON
+  preimages so newline/comma characters in strings cannot collide across request
+  fields
 - video export placeholder artifact must use `application/json`, `.json`, a
   safe filename, valid base64 UTF-8 JSON object content, matching checksum,
   expected schema/version, source run ID, trace ID, local renderer, validated
@@ -1099,7 +1125,7 @@ Failure modes:
 | 422 | `SOURCE_RUN_NOT_RENDERABLE` | Source run is not completed, passed, or accepted |
 | 422 | `CLONED_IDENTITY_DISABLED` | Cloned identity rendering is disabled in Stage 7 |
 | 422 | `AVATAR_CONSENT_REQUIRED` | Synthetic avatar export consent was not provided |
-| 422 | `PROVIDER_OUTPUT_INVALID` | Provider output is invalid or failed artifact/disclosure validation |
+| 422 | `PROVIDER_OUTPUT_INVALID` | Provider output is invalid or failed artifact/disclosure validation, including duplicate JSON keys in provider JSON artifacts |
 | 422 | `VALIDATION_ERROR` | Request boundary validation failed, including provider field limits |
 | 429 | `RESOURCE_LIMIT_EXCEEDED` | Stage 7 idempotency record limit is exceeded for the request scope |
 | 502 | `PROVIDER_RENDER_FAILED` | Avatar provider and fallback render both failed before a valid export could be produced |

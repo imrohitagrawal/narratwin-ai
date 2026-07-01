@@ -324,15 +324,29 @@ Gate validates:
   filename before API response or frontend download
 - provider-produced config, manifest, and video placeholder output are validated
   from the first Stage 7 implementation, applying the Stage 6 learning that
-  every provider output surface must be checked before storage or display
+  every provider output surface must be checked before storage or display;
+  provider JSON artifacts must reject duplicate object keys at any nesting level
 - HTML demo exports must reject active HTML content and must exactly match
   trusted renderer output for the source run, trace, and disclosure text
 - render manifests and video placeholders must be semantically bound to trusted
   provider config, source run, trace, citation/evaluation IDs and checksums,
   disclosure inputs, and public-use license checks, and must reject unexpected
   top-level or nested JSON fields
+- source evaluation checksums must use the shared Stage 7
+  `build_source_evaluation_checksum` helper over normalized evaluation ID,
+  source run ID, trace ID, normalized evaluation status, normalized context ref
+  IDs, and normalized citation indexes so route, service, manifest, and
+  placeholder evidence binding cannot drift; any caller-supplied checksum must
+  match the helper result at the service and mock-provider boundary, and checksum
+  string components must reject delimiter/control characters that would make
+  comma/newline serialization ambiguous
+- positive source context or citation counts must include explicit source
+  context ref IDs and citation indexes; Stage 7 must not synthesize placeholder
+  evidence identifiers for direct service or mock-provider calls
 - failed idempotent render attempts are retained as terminal failed records and
   replay the same error without another provider call
+- Stage 7 idempotency request checksums use structured request preimages so
+  delimiter characters in user/provider strings cannot collide across fields
 - Stage 7 semantic validation failures with an idempotency key, including
   missing consent and cloned identity requests, are retained and replayed or
   conflict on changed retry bodies
@@ -427,7 +441,9 @@ Gate validates:
 - changed files stay within the Phase 1 closure allowlist. Module A branches are
   limited to governance/reporting files; Module F issue `#37` may also change
   the local-principal implementation, API tests, and active architecture/security
-  contract docs needed to reconcile the trusted local principal behavior. Final
+  contract docs needed to reconcile the trusted local principal behavior. Module
+  B issue `#42` may change only the Stage 7 checksum-binding implementation,
+  Stage 7 unit/API tests, and active checksum contract/governance docs. Final
   Review baseline artifacts are required inputs but not allowed closure-branch
   edits
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md` parses as an issue table covering

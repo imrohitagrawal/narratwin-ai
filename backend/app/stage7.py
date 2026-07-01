@@ -9,7 +9,7 @@ import json
 import re
 import threading
 from dataclasses import dataclass
-from typing import Literal, Protocol, cast
+from typing import Any, Literal, Protocol, cast
 
 from backend.app.rag.chunking import checksum_text
 
@@ -24,6 +24,7 @@ ACTIVE_HTML_PATTERN = re.compile(
     r"<[^>]+javascript:)",
     re.IGNORECASE,
 )
+CHECKSUM_COMPONENT_DELIMITER_PATTERN = re.compile(r"[\x00-\x1f\x7f,]")
 PUBLIC_USE_LICENSE_CHECK = "mock-local-provider-only-no-third-party-media"
 ALLOWED_FALLBACK_REASONS = {"REQUESTED_PROVIDER_UNAVAILABLE", "PROVIDER_RENDER_FAILED"}
 ProviderMode = Literal["LOCAL", "DISABLED", "OPTIONAL_EXTERNAL"]
@@ -197,22 +198,34 @@ class MockAvatarProvider:
     ) -> AvatarProviderResult:
         disclosure = disclosure_metadata()
         scene_count = estimate_scene_count(source_script)
-        source_context_ref_ids = source_context_ref_ids or tuple(
-            f"context_ref_{index + 1:03d}" for index in range(source_context_ref_count)
+        source_context_ref_ids = normalize_evidence_ids(
+            source_context_ref_ids or None,
+            count=source_context_ref_count,
+            prefix="context_ref",
         )
-        source_citation_indexes = source_citation_indexes or tuple(range(1, source_citation_count + 1))
-        source_evaluation_checksum = source_evaluation_checksum or checksum_text(
-            "\n".join(
-                [
-                    source_evaluation_id,
-                    source_run_id,
-                    trace_id,
-                    evaluation_status,
-                    ",".join(source_context_ref_ids),
-                    ",".join(str(index) for index in source_citation_indexes),
-                ]
+        source_citation_indexes = normalize_citation_indexes(
+            source_citation_indexes or None,
+            count=source_citation_count,
+        )
+        source_evaluation_id = normalize_evaluation_id(source_evaluation_id)
+        evaluation_status = validate_evaluation_status(evaluation_status)
+        canonical_evaluation_checksum = build_source_evaluation_checksum(
+            source_evaluation_id=source_evaluation_id,
+            source_run_id=source_run_id,
+            trace_id=trace_id,
+            evaluation_status=evaluation_status,
+            source_context_ref_ids=source_context_ref_ids,
+            source_context_ref_count=source_context_ref_count,
+            source_citation_indexes=source_citation_indexes,
+            source_citation_count=source_citation_count,
+        )
+        if source_evaluation_checksum and source_evaluation_checksum != canonical_evaluation_checksum:
+            raise Stage7Error(
+                422,
+                "VALIDATION_ERROR",
+                "Source evaluation checksum does not match canonical source evidence.",
             )
-        )
+        source_evaluation_checksum = canonical_evaluation_checksum
         provider_config = ProviderConfig(
             provider=self.provider,
             provider_mode="LOCAL",
@@ -411,24 +424,20 @@ class Stage7Service:
         idempotency_key: str | None = None,
     ) -> AvatarRenderResult:
         source_text = source_script.strip()
-        request_checksum = checksum_text(
-            "\n".join(
-                [
-                    source_text,
-                    str(requested_avatar_provider),
-                    str(cloned_identity_requested),
-                    str(consent_to_use_synthetic_avatar),
-                    source_run_id,
-                    trace_id,
-                    str(source_context_ref_count),
-                    str(source_citation_count),
-                    ",".join(source_context_ref_ids or ()),
-                    ",".join(str(index) for index in (source_citation_indexes or ())),
-                    str(source_evaluation_id),
-                    str(source_evaluation_checksum or ""),
-                    str(evaluation_status),
-                ]
-            )
+        request_checksum = build_avatar_render_request_checksum(
+            source_text=source_text,
+            requested_avatar_provider=requested_avatar_provider,
+            cloned_identity_requested=cloned_identity_requested,
+            consent_to_use_synthetic_avatar=consent_to_use_synthetic_avatar,
+            source_run_id=source_run_id,
+            trace_id=trace_id,
+            source_context_ref_count=source_context_ref_count,
+            source_citation_count=source_citation_count,
+            source_context_ref_ids=source_context_ref_ids,
+            source_citation_indexes=source_citation_indexes,
+            source_evaluation_id=source_evaluation_id,
+            source_evaluation_checksum=source_evaluation_checksum,
+            evaluation_status=evaluation_status,
         )
         endpoint = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders"
         record_key: tuple[str, str, str] | None = None
@@ -501,18 +510,23 @@ class Stage7Service:
                 count=source_citation_count,
             )
             normalized_evaluation_id = normalize_evaluation_id(source_evaluation_id)
-            normalized_evaluation_checksum = source_evaluation_checksum or checksum_text(
-                "\n".join(
-                    [
-                        normalized_evaluation_id,
-                        source_run_id,
-                        trace_id,
-                        normalized_evaluation_status,
-                        ",".join(normalized_context_ref_ids),
-                        ",".join(str(index) for index in normalized_citation_indexes),
-                    ]
-                )
+            canonical_evaluation_checksum = build_source_evaluation_checksum(
+                source_evaluation_id=source_evaluation_id,
+                source_run_id=source_run_id,
+                trace_id=trace_id,
+                evaluation_status=evaluation_status,
+                source_context_ref_ids=source_context_ref_ids,
+                source_context_ref_count=source_context_ref_count,
+                source_citation_indexes=source_citation_indexes,
+                source_citation_count=source_citation_count,
             )
+            if source_evaluation_checksum is not None and source_evaluation_checksum != canonical_evaluation_checksum:
+                raise Stage7Error(
+                    422,
+                    "VALIDATION_ERROR",
+                    "Source evaluation checksum does not match canonical source evidence.",
+                )
+            normalized_evaluation_checksum = canonical_evaluation_checksum
             result = self._create_avatar_render(
                 source_text=source_text,
                 requested_provider=requested_provider,
@@ -890,22 +904,40 @@ def validate_evaluation_status(evaluation_status: str) -> EvaluationStatus:
     return cast(EvaluationStatus, candidate)
 
 
+def validate_checksum_component(value: str, *, field_name: str) -> str:
+    if not isinstance(value, str) or not value or len(value) > 128:
+        raise Stage7Error(422, "VALIDATION_ERROR", f"{field_name} is invalid.")
+    if CHECKSUM_COMPONENT_DELIMITER_PATTERN.search(value):
+        raise Stage7Error(422, "VALIDATION_ERROR", f"{field_name} contains invalid checksum delimiters.")
+    return value
+
+
 def normalize_evidence_ids(values: tuple[str, ...] | None, *, count: int, prefix: str) -> tuple[str, ...]:
     if count < 0:
         raise Stage7Error(422, "VALIDATION_ERROR", "Source evidence count is invalid.")
-    normalized = values if values is not None else tuple(f"{prefix}_{index + 1:03d}" for index in range(count))
+    if values is None:
+        if count == 0:
+            return ()
+        raise Stage7Error(422, "VALIDATION_ERROR", "Source evidence identifiers are required.")
+    normalized = values
     if len(normalized) != count:
         raise Stage7Error(422, "VALIDATION_ERROR", "Source evidence identifiers do not match source evidence count.")
     for value in normalized:
         if not isinstance(value, str) or not value.strip() or len(value) > 128:
             raise Stage7Error(422, "VALIDATION_ERROR", "Source evidence identifier is invalid.")
-    return tuple(value.strip() for value in normalized)
+    return tuple(
+        validate_checksum_component(value.strip(), field_name="Source evidence identifier") for value in normalized
+    )
 
 
 def normalize_citation_indexes(values: tuple[int, ...] | None, *, count: int) -> tuple[int, ...]:
     if count < 0:
         raise Stage7Error(422, "VALIDATION_ERROR", "Source citation count is invalid.")
-    normalized = values if values is not None else tuple(range(1, count + 1))
+    if values is None:
+        if count == 0:
+            return ()
+        raise Stage7Error(422, "VALIDATION_ERROR", "Source citation indexes are required.")
+    normalized = values
     if len(normalized) != count:
         raise Stage7Error(422, "VALIDATION_ERROR", "Source citation indexes do not match source citation count.")
     for value in normalized:
@@ -917,7 +949,105 @@ def normalize_citation_indexes(values: tuple[int, ...] | None, *, count: int) ->
 def normalize_evaluation_id(value: str) -> str:
     if not isinstance(value, str) or not value.strip() or len(value.strip()) > 128:
         raise Stage7Error(422, "VALIDATION_ERROR", "Source evaluation identifier is invalid.")
-    return value.strip()
+    return validate_checksum_component(value.strip(), field_name="Source evaluation identifier")
+
+
+def build_source_evaluation_checksum(
+    *,
+    source_evaluation_id: str,
+    source_run_id: str,
+    trace_id: str,
+    evaluation_status: str,
+    source_context_ref_ids: tuple[str, ...] | None,
+    source_context_ref_count: int,
+    source_citation_indexes: tuple[int, ...] | None,
+    source_citation_count: int,
+) -> str:
+    normalized_evaluation_id = normalize_evaluation_id(source_evaluation_id)
+    normalized_source_run_id = validate_checksum_component(source_run_id, field_name="Source run identifier")
+    normalized_trace_id = validate_checksum_component(trace_id, field_name="Source trace identifier")
+    normalized_evaluation_status = validate_evaluation_status(evaluation_status)
+    normalized_context_ref_ids = normalize_evidence_ids(
+        source_context_ref_ids,
+        count=source_context_ref_count,
+        prefix="context_ref",
+    )
+    normalized_citation_indexes = normalize_citation_indexes(
+        source_citation_indexes,
+        count=source_citation_count,
+    )
+    return checksum_text(
+        "\n".join(
+            [
+                normalized_evaluation_id,
+                normalized_source_run_id,
+                normalized_trace_id,
+                normalized_evaluation_status,
+                ",".join(normalized_context_ref_ids),
+                ",".join(str(index) for index in normalized_citation_indexes),
+            ]
+        )
+    )
+
+
+def build_avatar_render_request_checksum(
+    *,
+    source_text: str,
+    requested_avatar_provider: str,
+    cloned_identity_requested: bool,
+    consent_to_use_synthetic_avatar: bool,
+    source_run_id: str,
+    trace_id: str,
+    source_context_ref_count: int,
+    source_citation_count: int,
+    source_context_ref_ids: tuple[str, ...] | None,
+    source_citation_indexes: tuple[int, ...] | None,
+    source_evaluation_id: str,
+    source_evaluation_checksum: str | None,
+    evaluation_status: str,
+) -> str:
+    return checksum_text(
+        json.dumps(
+            {
+                "clonedIdentityRequested": cloned_identity_requested,
+                "consentToUseSyntheticAvatar": consent_to_use_synthetic_avatar,
+                "evaluationStatus": evaluation_status,
+                "requestedAvatarProvider": requested_avatar_provider,
+                "sourceCitationCount": source_citation_count,
+                "sourceCitationIndexes": list(source_citation_indexes) if source_citation_indexes is not None else None,
+                "sourceContextRefCount": source_context_ref_count,
+                "sourceContextRefIds": list(source_context_ref_ids) if source_context_ref_ids is not None else None,
+                "sourceEvaluationChecksum": source_evaluation_checksum,
+                "sourceEvaluationId": source_evaluation_id,
+                "sourceRunId": source_run_id,
+                "sourceText": source_text,
+                "traceId": trace_id,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    )
+
+
+def reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    parsed: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in parsed:
+            raise ValueError(f"Duplicate JSON key: {key}")
+        parsed[key] = value
+    return parsed
+
+
+def parse_provider_json_object(artifact: ExportArtifact, *, artifact_name: str) -> dict[str, Any]:
+    try:
+        parsed = json.loads(decode_artifact_text(artifact), object_pairs_hook=reject_duplicate_json_keys)
+    except json.JSONDecodeError as exc:
+        raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", f"{artifact_name} must contain valid JSON.") from exc
+    except ValueError as exc:
+        raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", f"{artifact_name} must not contain duplicate JSON keys.") from exc
+    if not isinstance(parsed, dict):
+        raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", f"{artifact_name} must be a JSON object.")
+    return parsed
 
 
 def validate_export_artifact(
@@ -995,12 +1125,7 @@ def validate_render_manifest(
     evaluation_status: EvaluationStatus,
     disclosure: DisclosureMetadata,
 ) -> None:
-    try:
-        parsed = json.loads(decode_artifact_text(artifact))
-    except json.JSONDecodeError as exc:
-        raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", "Render manifest must contain valid JSON.") from exc
-    if not isinstance(parsed, dict):
-        raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", "Render manifest must be a JSON object.")
+    parsed = parse_provider_json_object(artifact, artifact_name="Render manifest")
     expected = expected_render_manifest_payload(
         avatar_provider=avatar_provider,
         provider_config=provider_config,
@@ -1037,12 +1162,7 @@ def validate_video_export_placeholder(
     evaluation_status: EvaluationStatus,
     disclosure: DisclosureMetadata,
 ) -> None:
-    try:
-        parsed = json.loads(decode_artifact_text(artifact))
-    except json.JSONDecodeError as exc:
-        raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", "Video export placeholder must contain valid JSON.") from exc
-    if not isinstance(parsed, dict):
-        raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", "Video export placeholder must be a JSON object.")
+    parsed = parse_provider_json_object(artifact, artifact_name="Video export placeholder")
     expected = expected_video_export_placeholder_payload(
         provider_config=provider_config,
         source_script=source_script,

@@ -573,6 +573,21 @@ Allowed implementation/contract changes for Module F issue `#37`:
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md`
 - `scripts/quality/check_phase1_closure_docs.py`
 
+Allowed implementation/contract changes for Module B issue `#42`:
+
+- `backend/app/main.py`
+- `backend/app/stage7.py`
+- `tests/unit/test_stage7_avatar.py`
+- `tests/api/test_stage7_avatar_api.py`
+- `docs/ADR/0004-avatar-provider-adapter.md`
+- `docs/API_CONTRACT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/PHASE_1_CLOSURE_REPORT.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+
 Final Review baseline artifacts under `docs/reviews/FINAL_REVIEW.md`,
 `docs/reviews/RISK_REGISTER.md`, `docs/reviews/DEFECT_BACKLOG.md`, and
 `docs/reviews/GO_NO_GO.md` are required inputs for Phase 1 Closure but are not
