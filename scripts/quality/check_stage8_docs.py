@@ -38,6 +38,7 @@ REQUIRED_FILES = [
     "scripts/ci/performance-smoke.sh",
     "scripts/quality/check_quality_stage.py",
     "scripts/quality/check_stage8_docs.py",
+    "tests/api/test_stage4_slice_api.py",
     "tests/api/test_stage6_multilingual_api.py",
     "tests/api/test_stage8_hardening_api.py",
     "tests/unit/test_stage6_multilingual.py",
@@ -129,7 +130,9 @@ def check_backend_and_tests(failures: list[str]) -> None:
     main_text = read("backend/app/main.py")
     stage4_text = read("backend/app/stage4.py")
     tests = read("tests/api/test_stage8_hardening_api.py")
+    stage4_api_tests = read("tests/api/test_stage4_slice_api.py")
     stage6_api_tests = read("tests/api/test_stage6_multilingual_api.py")
+    stage6_unit_tests = read("tests/unit/test_stage6_multilingual.py")
     for marker in (
         'stage="8"',
         "MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE",
@@ -164,6 +167,12 @@ def check_backend_and_tests(failures: list[str]) -> None:
     for marker in ("SECRET_LIKE_CONTENT", "IDEMPOTENCY_CONFLICT", "stage6-secret-glossary"):
         if marker not in stage6_api_tests:
             fail(f"Stage 8 Stage 6 API tests must cover {marker}.", failures)
+    for marker in ("replay_response", "conflict_response", "secret-upload"):
+        if marker not in stage4_api_tests:
+            fail(f"Stage 8 Stage 4 API tests must cover {marker}.", failures)
+    for marker in ("test_tts_provider_manifest_rejects_unknown_schema_fields", "unexpectedTopLevel", "unexpectedNested"):
+        if marker not in stage6_unit_tests:
+            fail(f"Stage 8 Stage 6 unit tests must cover {marker}.", failures)
     frontend_dockerfile = read("frontend/Dockerfile")
     for marker in ("/usr/local/lib/node_modules/npm", "/usr/local/bin/npm", "/usr/local/bin/npx"):
         if marker not in frontend_dockerfile:
@@ -266,6 +275,8 @@ def check_docs(failures: list[str]) -> None:
         "Content-Length is required",
         "actual ASGI body",
         "SECRET_LIKE_CONTENT",
+        "Voice provider artifacts must be JSON manifests",
+        "top-level or nested fields fail",
         "upload MIME validation",
         "Lighthouse",
         "p95",

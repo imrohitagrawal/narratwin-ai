@@ -186,7 +186,7 @@ class IdempotencyRecord:
     endpoint: str
     idempotency_key: str
     request_checksum: str
-    status: Literal["PENDING", "COMPLETED"]
+    status: Literal["PENDING", "COMPLETED", "FAILED"]
     value: Any
     created_at: str
     updated_at: str
@@ -874,6 +874,8 @@ class Stage4Service:
                     raise Stage4Error(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request.")
                 if existing.status == "PENDING":
                     raise Stage4Error(409, "IDEMPOTENCY_IN_PROGRESS", "Idempotency key is already in progress.")
+                if existing.status == "FAILED":
+                    raise cast(Stage4Error, existing.value)
                 return cast(T, existing.value)
             if self._idempotency_count_for_tenant(principal=principal) >= MAX_IDEMPOTENCY_RECORDS_PER_TENANT:
                 raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit.")
@@ -897,6 +899,12 @@ class Stage4Service:
             self.idempotency_records[record_key] = pending
         try:
             value = create()
+        except Stage4Error as exc:
+            with self._operation_lock:
+                pending.status = "FAILED"
+                pending.value = exc
+                pending.updated_at = _now()
+            raise
         except Exception:
             with self._operation_lock:
                 self.idempotency_records.pop(record_key, None)

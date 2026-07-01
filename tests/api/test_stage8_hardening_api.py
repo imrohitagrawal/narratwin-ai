@@ -242,21 +242,35 @@ def test_provider_bound_prompt_rejects_secret_like_content_before_generation() -
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id = _create_project(client, key="stage8-secret-prompt-project")
+    path = f"/api/v1/projects/{project_id}/walkthrough-runs"
+    request = {
+        "audience": "RECRUITER",
+        "requestedLanguage": "en",
+        "depth": "CONCISE",
+        "style": "CONFIDENT",
+        "prompt": "Use api" + "_key=visible-secret-token-value in the walkthrough.",
+    }
 
-    response = client.post(
-        f"/api/v1/projects/{project_id}/walkthrough-runs",
+    response = client.post(path, json=request, headers=idempotency_headers("stage8-secret-prompt"))
+    replay = client.post(path, json=request, headers=idempotency_headers("stage8-secret-prompt"))
+    conflict = client.post(
+        path,
         json={
             "audience": "RECRUITER",
             "requestedLanguage": "en",
             "depth": "CONCISE",
             "style": "CONFIDENT",
-            "prompt": "Use api" + "_key=visible-secret-token-value in the walkthrough.",
+            "prompt": "Create a concise grounded walkthrough.",
         },
         headers=idempotency_headers("stage8-secret-prompt"),
     )
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "SECRET_LIKE_CONTENT"
+    assert replay.status_code == 422
+    assert replay.json()["error"]["code"] == "SECRET_LIKE_CONTENT"
+    assert conflict.status_code == 409
+    assert conflict.json()["error"]["code"] == "IDEMPOTENCY_CONFLICT"
 
 
 def test_mocked_script_generation_path_stays_under_two_seconds() -> None:

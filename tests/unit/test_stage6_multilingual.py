@@ -6,6 +6,7 @@ from datetime import timedelta
 import pytest
 import srt  # type: ignore[import-untyped]
 
+from backend.app.rag.chunking import checksum_text
 from backend.app.stage6 import (
     DownloadableArtifact,
     MAX_CAPTION_CHARS,
@@ -316,6 +317,64 @@ def test_tts_provider_output_must_be_a_valid_json_manifest_artifact() -> None:
 
     service = create_stage6_service()
     service.tts_provider = InvalidTTSProvider()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            target_language="es",
+            glossary_terms=["NarraTwin AI"],
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "PROVIDER_OUTPUT_INVALID"
+
+
+def test_tts_provider_manifest_rejects_unknown_schema_fields() -> None:
+    class ExtraFieldTTSProvider:
+        provider = "mock"
+        provider_mode = "LOCAL"
+
+        def synthesize(
+            self,
+            *,
+            text: str,
+            language: str,
+            requested_provider: str,
+            fallback_reason: str | None,
+        ) -> VoiceProviderResult:
+            manifest = {
+                "provider": self.provider,
+                "providerMode": self.provider_mode,
+                "language": language,
+                "languageDisplayName": "Spanish",
+                "textChecksum": checksum_text(text),
+                "durationSecondsEstimate": 2.0,
+                "mockAudioProfile": {
+                    "durationMillisecondsEstimate": 2000,
+                    "sampleRateHz": 16000,
+                    "channels": 1,
+                    "unexpectedNested": "value",
+                },
+                "disclosure": "Mock local TTS placeholder. No cloned voice or paid provider was used.",
+                "unexpectedTopLevel": "value",
+            }
+            decoded = json.dumps(manifest, sort_keys=True)
+            return VoiceProviderResult(
+                provider=self.provider,
+                provider_mode=self.provider_mode,
+                requested_provider=requested_provider,
+                fallback_reason=fallback_reason,
+                language=language,
+                artifact=DownloadableArtifact(
+                    file_name="voice-manifest-es.json",
+                    mime_type="application/json",
+                    content_base64=base64.b64encode(decoded.encode("utf-8")).decode("ascii"),
+                    checksum=checksum_text(decoded),
+                ),
+            )
+
+    service = create_stage6_service()
+    service.tts_provider = ExtraFieldTTSProvider()
 
     with pytest.raises(Stage6Error) as exc:
         service.generate_multilingual_walkthrough(

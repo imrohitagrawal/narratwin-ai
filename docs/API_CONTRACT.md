@@ -785,8 +785,13 @@ Post-provider validation:
   output before subtitles or downloadable artifacts are returned
 - provider identifiers must satisfy the adapter identifier pattern
 - Voice provider artifacts must be JSON manifests with safe `.json` filenames,
-  `application/json` MIME type, decodable UTF-8 JSON object content, and a
-  checksum matching the decoded manifest text
+  `application/json` MIME type, decodable UTF-8 JSON object content, a checksum
+  matching the decoded manifest text, and an exact schema. The Stage 8 local
+  schema requires only `provider`, `providerMode`, `language`,
+  `languageDisplayName`, `textChecksum`, `durationSecondsEstimate`,
+  `mockAudioProfile`, and `disclosure`; `mockAudioProfile` allows only
+  `durationMillisecondsEstimate`, `sampleRateHz`, and `channels`. Unknown
+  top-level or nested fields fail with `PROVIDER_OUTPUT_INVALID`.
 
 Response `201`:
 

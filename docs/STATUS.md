@@ -313,7 +313,8 @@ Use these files together with this tracker:
    checks, then merge only after issue `#13` linkage and all gates are green.
 3. Enable or verify `main` branch protection/repository rulesets before treating
    Stage 8 as release-ready; required status contexts must include the emitted
-   `quality / secrets` and `security / docker build` compatibility checks.
+   `quality / secrets`, `security / docker build`, and
+   `stage8 / performance lighthouse` checks.
 4. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
    `#29`, and confirm the exact Stage 5 PR `#30` merge date if needed.
 5. Reconcile GitHub issue and PR state for Stage 3 issue `#5`, Stage 2 issue

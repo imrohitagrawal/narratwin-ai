@@ -23,7 +23,7 @@ Stage 8 adds release-readiness hardening evidence, but does not approve producti
 Latest local run on 2026-07-01:
 
 - `make quality` passed on `stage8-performance-security-release-readiness`.
-- Locust health smoke: 180 requests, 0 failures, p95 7 ms.
+- Locust health smoke: 175 requests, 0 failures, p95 7 ms.
 - Lighthouse: performance 1.00, accessibility 1.00, best-practices 0.96, SEO
   1.00, LCP 1057 ms, CLS 0, TBT 0 ms, 10 network requests.
 - Docker scan SARIF: backend 0 results, frontend 0 results.
@@ -42,6 +42,9 @@ Latest local run on 2026-07-01:
 - Frontend Lighthouse checks with category and named audit thresholds.
 - Dependency audit and Docker image scan wrappers.
 - PR CI Stage 8 budget job for Locust performance smoke and Lighthouse checks.
+- Final review remediation for Stage 4 idempotent semantic-failure replay,
+  Docker scan nonzero-SARIF failure preservation, and exact voice-manifest schema
+  validation.
 - Frontend production image strips npm/npx from the runner layer so vulnerable package-manager-only dependencies such as npm-bundled `undici` are not shipped with the standalone server.
 - Release checklist, runbook, demo seed data, and portfolio README.
 

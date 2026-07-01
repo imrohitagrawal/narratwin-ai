@@ -471,6 +471,7 @@ Allowed changes:
 - `scripts/ci/performance-smoke.sh`
 - `scripts/quality/check_quality_stage.py`
 - `scripts/quality/check_stage8_docs.py`
+- `tests/api/test_stage4_slice_api.py`
 - `tests/api/test_health_api.py`
 - `tests/api/test_stage6_multilingual_api.py`
 - `tests/api/test_stage8_hardening_api.py`

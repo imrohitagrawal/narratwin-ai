@@ -250,8 +250,9 @@ def test_upload_rejects_secret_like_document_content_before_storage() -> None:
     )
     project_id = project_response.json()["projectId"]
     secret_text = "sk-" + "a" * 24
+    path = f"/api/v1/projects/{project_id}/knowledge-documents"
     upload_response = client.post(
-        f"/api/v1/projects/{project_id}/knowledge-documents",
+        path,
         files={
             "file": (
                 "secret.md",
@@ -261,11 +262,31 @@ def test_upload_rejects_secret_like_document_content_before_storage() -> None:
         },
         headers={"Idempotency-Key": "secret-upload"},
     )
+    replay_response = client.post(
+        path,
+        files={
+            "file": (
+                "secret.md",
+                f"NarraTwin deployment token is {secret_text}.".encode(),
+                "text/markdown",
+            )
+        },
+        headers={"Idempotency-Key": "secret-upload"},
+    )
+    conflict_response = client.post(
+        path,
+        files={"file": ("safe.md", b"NarraTwin creates grounded walkthrough scripts.", "text/markdown")},
+        headers={"Idempotency-Key": "secret-upload"},
+    )
 
     assert upload_response.status_code == 422
     body = upload_response.json()
     assert body["error"]["code"] == "SECRET_LIKE_CONTENT"
     assert secret_text not in str(body)
+    assert replay_response.status_code == 422
+    assert replay_response.json()["error"]["code"] == "SECRET_LIKE_CONTENT"
+    assert conflict_response.status_code == 409
+    assert conflict_response.json()["error"]["code"] == "IDEMPOTENCY_CONFLICT"
 
 
 def test_multi_document_ingestion_is_atomic_when_later_document_fails() -> None:

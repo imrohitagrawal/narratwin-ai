@@ -67,10 +67,13 @@ scan_with_dockerized_trivy_or_scout() {
   local image="$1"
   local output="$2"
   prepare_scan_output "${output}"
-  if scan_with_trivy_container "${image}" "${output}"; then
+  set +e
+  scan_with_trivy_container "${image}" "${output}"
+  local scan_status=$?
+  set -e
+  if [ "${scan_status}" -eq 0 ]; then
     return 0
   fi
-  local scan_status=$?
   if scan_report_exists "${output}"; then
     return "${scan_status}"
   fi
@@ -91,10 +94,13 @@ scan_with_available_scanners() {
   if command -v trivy >/dev/null 2>&1; then
     attempted=1
     prepare_scan_output "${output}"
-    if scan_with_trivy "${image}" "${output}"; then
+    set +e
+    scan_with_trivy "${image}" "${output}"
+    scan_status=$?
+    set -e
+    if [ "${scan_status}" -eq 0 ]; then
       return 0
     fi
-    scan_status=$?
     if scan_report_exists "${output}"; then
       return "${scan_status}"
     fi
@@ -104,10 +110,13 @@ scan_with_available_scanners() {
   if command -v grype >/dev/null 2>&1; then
     attempted=1
     prepare_scan_output "${output}"
-    if scan_with_grype "${image}" "${output}"; then
+    set +e
+    scan_with_grype "${image}" "${output}"
+    scan_status=$?
+    set -e
+    if [ "${scan_status}" -eq 0 ]; then
       return 0
     fi
-    scan_status=$?
     if scan_report_exists "${output}"; then
       return "${scan_status}"
     fi
@@ -116,10 +125,13 @@ scan_with_available_scanners() {
 
   if docker version >/dev/null 2>&1; then
     attempted=1
-    if scan_with_dockerized_trivy_or_scout "${image}" "${output}"; then
+    set +e
+    scan_with_dockerized_trivy_or_scout "${image}" "${output}"
+    scan_status=$?
+    set -e
+    if [ "${scan_status}" -eq 0 ]; then
       return 0
     fi
-    scan_status=$?
     if scan_report_exists "${output}"; then
       return "${scan_status}"
     fi
@@ -127,10 +139,13 @@ scan_with_available_scanners() {
   elif docker scout version >/dev/null 2>&1; then
     attempted=1
     prepare_scan_output "${output}"
-    if scan_with_docker_scout "${image}" "${output}"; then
+    set +e
+    scan_with_docker_scout "${image}" "${output}"
+    scan_status=$?
+    set -e
+    if [ "${scan_status}" -eq 0 ]; then
       return 0
     fi
-    scan_status=$?
     if scan_report_exists "${output}"; then
       return "${scan_status}"
     fi

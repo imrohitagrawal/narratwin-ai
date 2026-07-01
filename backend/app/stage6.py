@@ -34,6 +34,19 @@ MAX_CAPTION_COUNT = 250
 MAX_PROVIDER_ID_CHARS = 64
 MAX_IDEMPOTENCY_RECORDS_PER_SCOPE = 100
 PROVIDER_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+VOICE_MANIFEST_KEYS = frozenset(
+    {
+        "provider",
+        "providerMode",
+        "language",
+        "languageDisplayName",
+        "textChecksum",
+        "durationSecondsEstimate",
+        "mockAudioProfile",
+        "disclosure",
+    }
+)
+MOCK_AUDIO_PROFILE_KEYS = frozenset({"durationMillisecondsEstimate", "sampleRateHz", "channels"})
 ProviderMode = Literal["LOCAL", "DISABLED", "OPTIONAL_EXTERNAL"]
 
 
@@ -559,6 +572,29 @@ def validate_voice_manifest_artifact(artifact: DownloadableArtifact) -> Download
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider artifact must contain valid JSON.") from exc
     if not isinstance(parsed, dict):
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest must be a JSON object.")
+    if set(parsed) != VOICE_MANIFEST_KEYS:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest schema is invalid.")
+    if parsed["provider"] != "mock":
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest provider is invalid.")
+    validate_provider_mode(str(parsed["providerMode"]))
+    normalize_language_tag(str(parsed["language"]))
+    if not isinstance(parsed["languageDisplayName"], str) or not parsed["languageDisplayName"].strip():
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest language display name is invalid.")
+    if not isinstance(parsed["textChecksum"], str) or not parsed["textChecksum"].startswith("sha256:"):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest text checksum is invalid.")
+    duration_estimate = parsed["durationSecondsEstimate"]
+    if not isinstance(duration_estimate, int | float) or duration_estimate <= 0:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest duration is invalid.")
+    audio_profile = parsed["mockAudioProfile"]
+    if not isinstance(audio_profile, dict) or set(audio_profile) != MOCK_AUDIO_PROFILE_KEYS:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest audio profile schema is invalid.")
+    if audio_profile["sampleRateHz"] != 16000 or audio_profile["channels"] != 1:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest audio profile is invalid.")
+    profile_duration = audio_profile["durationMillisecondsEstimate"]
+    if not isinstance(profile_duration, int) or profile_duration <= 0:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest audio duration is invalid.")
+    if not isinstance(parsed["disclosure"], str) or "Mock local TTS placeholder" not in parsed["disclosure"]:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest disclosure is invalid.")
     if artifact.checksum != checksum_text(decoded):
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider artifact checksum is invalid.")
     return artifact
