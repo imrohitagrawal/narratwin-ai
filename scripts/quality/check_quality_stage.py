@@ -11,6 +11,21 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CURRENT_STAGE = ROOT / ".stage" / "current"
+FINAL_REVIEW_BRANCH_PREFIX = "final-review-"
+
+
+def current_branch() -> str:
+    env_branch = os.environ.get("GITHUB_HEAD_REF", "").strip()
+    if env_branch:
+        return env_branch
+    result = subprocess.run(
+        ["git", "branch", "--show-current"],
+        cwd=ROOT,
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
 
 
 def run_recommended_review_item_check(stage: str) -> int:
@@ -26,6 +41,10 @@ def main() -> int:
         return 1
 
     stage = CURRENT_STAGE.read_text(encoding="utf-8").strip()
+    branch = current_branch()
+    if branch.startswith(FINAL_REVIEW_BRANCH_PREFIX):
+        stage = "Final Review"
+
     recommendation_status = run_recommended_review_item_check(stage)
     if recommendation_status != 0:
         return recommendation_status
@@ -60,6 +79,8 @@ def main() -> int:
         if os.environ.get("NARRATWIN_POLICY_ONLY") == "1":
             return subprocess.call([sys.executable, "scripts/quality/check_stage8_docs.py"], cwd=ROOT)
         return subprocess.call(["make", "stage8-quality"], cwd=ROOT)
+    if stage == "Final Review":
+        return subprocess.call([sys.executable, "scripts/quality/check_final_review_docs.py"], cwd=ROOT)
 
     return subprocess.call(
         [sys.executable, "scripts/quality/stage_not_implemented.py", f"Stage {stage}"],
