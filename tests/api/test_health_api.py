@@ -50,7 +50,7 @@ def test_health_endpoint_returns_ok() -> None:
     assert response.json() == {
             "status": "ok",
             "service": "narratwin-ai-backend",
-            "stage": "6",
+            "stage": "7",
     }
     assert_foundation_headers(response)
 
@@ -66,7 +66,7 @@ def test_ready_endpoint_returns_timestamped_ok() -> None:
     body = response.json()
     assert body["status"] == "ok"
     assert body["service"] == "narratwin-ai-backend"
-    assert body["stage"] == "6"
+    assert body["stage"] == "7"
     checked_at = datetime.fromisoformat(body["checkedAt"])
     assert checked_at.tzinfo == UTC
     assert before_request <= checked_at <= after_request
@@ -82,7 +82,7 @@ def test_api_v1_health_endpoint_matches_root_health_contract() -> None:
     assert response.json() == {
             "status": "ok",
             "service": "narratwin-ai-backend",
-            "stage": "6",
+            "stage": "7",
     }
     assert_foundation_headers(response)
 
@@ -98,7 +98,7 @@ def test_api_v1_ready_endpoint_returns_timestamped_ok() -> None:
     body = response.json()
     assert body["status"] == "ok"
     assert body["service"] == "narratwin-ai-backend"
-    assert body["stage"] == "6"
+    assert body["stage"] == "7"
     checked_at = datetime.fromisoformat(body["checkedAt"])
     assert checked_at.tzinfo == UTC
     assert before_request <= checked_at <= after_request

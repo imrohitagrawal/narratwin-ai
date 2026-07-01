@@ -38,6 +38,7 @@ type DownloadableArtifact = {
   fileName: string;
   mimeType: string;
   contentBase64: string;
+  checksum: string;
 };
 
 type MultilingualWalkthrough = {
@@ -59,6 +60,53 @@ type MultilingualWalkthrough = {
   };
 };
 
+type AvatarRender = {
+  avatarRenderId: string;
+  sourceRunId: string;
+  status: string;
+  renderJobStatus: string;
+  renderJobStatusHistory: Array<{
+    status: string;
+    message: string;
+  }>;
+  sourceScriptText: string;
+  avatarProvider: {
+    provider: string;
+    providerMode: string;
+    requestedProvider: string;
+    fallbackReason?: string;
+  };
+  providerConfig: {
+    provider: string;
+    providerMode: string;
+    adapterKind: string;
+    allowNetworkEgress: boolean;
+    requiresApiKey: boolean;
+    supportsRealVideo: boolean;
+    supportsClonedIdentity: boolean;
+  };
+  videoRenderer: {
+    renderer: string;
+    exportFormat: string;
+  };
+  disclosure: {
+    aiGenerated: boolean;
+    clonedIdentity: boolean;
+    consentStatus: string;
+    message: string;
+  };
+  artifacts: {
+    demoExport: DownloadableArtifact;
+    renderManifest: DownloadableArtifact;
+    videoExportPlaceholder: DownloadableArtifact;
+  };
+  trace: {
+    traceId: string;
+    sourceCitationCount: number;
+    evaluationStatus: string;
+  };
+};
+
 type ProjectResponse = {
   projectId: string;
 };
@@ -67,9 +115,27 @@ type DocumentResponse = {
   documentId: string;
 };
 
+type ApiErrorPayload = {
+  error?: {
+    code?: unknown;
+    message?: unknown;
+  };
+};
+
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
 const defaultKnowledge =
   "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.\n\nEvery generated walkthrough claim must cite retrieved source chunks from approved knowledge.";
+const safeApiErrorCodes = new Set([
+  "AVATAR_CONSENT_REQUIRED",
+  "CLONED_IDENTITY_DISABLED",
+  "FORBIDDEN",
+  "IDEMPOTENCY_CONFLICT",
+  "IDEMPOTENCY_IN_PROGRESS",
+  "IDEMPOTENCY_KEY_REQUIRED",
+  "NOT_FOUND",
+  "SOURCE_RUN_NOT_RENDERABLE",
+  "VALIDATION_ERROR",
+]);
 
 async function postJson<T>(path: string, body: object, idempotencyKey: string): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
@@ -85,6 +151,17 @@ async function postJson<T>(path: string, body: object, idempotencyKey: string): 
 
 async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
+    let payload: ApiErrorPayload = {};
+    try {
+      payload = (await response.json()) as ApiErrorPayload;
+    } catch {
+      payload = {};
+    }
+    const code = typeof payload.error?.code === "string" ? payload.error.code : "";
+    const message = typeof payload.error?.message === "string" ? payload.error.message : "";
+    if (safeApiErrorCodes.has(code) && message.length > 0 && message.length <= 240) {
+      throw new Error(`${code}: ${message}`);
+    }
     throw new Error(`NarraTwin API request failed with ${response.status}`);
   }
   return (await response.json()) as T;
@@ -93,6 +170,8 @@ async function readJson<T>(response: Response): Promise<T> {
 export default function Home() {
   const [run, setRun] = useState<WalkthroughRun | null>(null);
   const [multilingualRun, setMultilingualRun] = useState<MultilingualWalkthrough | null>(null);
+  const [avatarRender, setAvatarRender] = useState<AvatarRender | null>(null);
+  const [syntheticAvatarConsent, setSyntheticAvatarConsent] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
 
@@ -104,16 +183,24 @@ export default function Home() {
     const audience = String(form.get("audience") ?? "RECRUITER");
     const depth = String(form.get("depth") ?? "CONCISE");
     const targetLanguage = String(form.get("targetLanguage") ?? "es");
+    const consentToUseSyntheticAvatar = syntheticAvatarConsent;
     const glossaryTerms = String(form.get("glossaryTerms") ?? "")
       .split("\n")
       .map((term) => term.trim())
       .filter(Boolean);
     const requestSeed = checksumSeed(projectName, knowledgeDocument, audience, depth, targetLanguage);
     const requestedVoiceProvider = "mock";
+    const requestedAvatarProvider = "mock";
     const multilingualSeed = checksumSeed(
       requestSeed,
       requestedVoiceProvider,
       ...glossaryTerms.slice().sort((left, right) => left.localeCompare(right)),
+    );
+    const avatarSeed = checksumSeed(
+      requestSeed,
+      requestedAvatarProvider,
+      String(consentToUseSyntheticAvatar),
+      "cloned-identity-false",
     );
 
     setIsGenerating(true);
@@ -188,25 +275,43 @@ export default function Home() {
         `ui-multilingual-${multilingualSeed}`,
       );
 
+      const avatar = await postJson<AvatarRender>(
+        `/projects/${project.projectId}/walkthrough-runs/${generated.runId}/avatar-renders`,
+        {
+          requestedAvatarProvider,
+          consentToUseSyntheticAvatar,
+          clonedIdentityRequested: false,
+        },
+        `ui-avatar-${avatarSeed}`,
+      );
+
       setRun(generated);
       setMultilingualRun(multilingual);
+      setAvatarRender(avatar);
     } catch (caught) {
       setRun(null);
       setMultilingualRun(null);
-      setError(caught instanceof Error ? caught.message : "Stage 6 API request failed.");
+      setAvatarRender(null);
+      setError(caught instanceof Error ? caught.message : "Stage 7 API request failed.");
     } finally {
       setIsGenerating(false);
     }
   }
 
   const supports = run?.evaluation?.claimSupports ?? [];
+  const previewScript =
+    multilingualRun?.translatedScriptText ??
+    run?.acceptedScriptText ??
+    "Generate a grounded script to display cited output.";
+  const avatarPreviewScript =
+    avatarRender?.sourceScriptText ?? run?.acceptedScriptText ?? "Generate a grounded script to display cited output.";
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} aria-busy={isGenerating}>
       <section className={styles.workspace} aria-labelledby="workspace-title">
         <div className={styles.header}>
           <p className={styles.kicker}>NarraTwin AI</p>
-          <h1 id="workspace-title">Multilingual walkthrough generation</h1>
+          <h1 id="workspace-title">Avatar demo export</h1>
         </div>
 
         <form className={styles.form} aria-label="Project knowledge form" onSubmit={generateWalkthrough}>
@@ -258,12 +363,26 @@ export default function Home() {
             </label>
           </div>
 
-          <button className={styles.primaryAction} type="submit" disabled={isGenerating}>
-            {isGenerating ? "Generating" : "Generate multilingual walkthrough"}
+          <label className={styles.checkboxField}>
+            <input
+              name="syntheticAvatarConsent"
+              type="checkbox"
+              checked={syntheticAvatarConsent}
+              onChange={(event) => setSyntheticAvatarConsent(event.currentTarget.checked)}
+            />
+            <span>Synthetic avatar consent: local AI presenter, no cloned face or voice</span>
+          </label>
+
+          <button className={styles.primaryAction} type="submit" disabled={isGenerating || !syntheticAvatarConsent}>
+            {isGenerating ? "Generating" : "Generate avatar demo export"}
           </button>
         </form>
 
-        {error ? <p className={styles.errorStatus}>{error}</p> : null}
+        {error ? (
+          <p className={styles.errorStatus} role="alert" aria-live="assertive">
+            {error}
+          </p>
+        ) : null}
 
         <section className={styles.result} aria-labelledby="result-title">
           <div className={styles.resultHeader}>
@@ -271,13 +390,22 @@ export default function Home() {
             <span className={styles.badge}>{multilingualRun?.status ?? run?.status ?? "READY"}</span>
           </div>
           <p>
-            {multilingualRun?.translatedScriptText ??
-              run?.acceptedScriptText ??
-              "Generate a grounded script to display cited output."}
+            {previewScript}
           </p>
           <div className={styles.artifactActions} aria-label="Downloadable artifacts">
             {renderArtifactAction("Download script", "script", multilingualRun?.artifacts.translatedScript)}
             {renderArtifactAction("Download subtitles", "subtitles", multilingualRun?.artifacts.subtitles)}
+            {renderArtifactAction("Download avatar demo", "avatarDemo", avatarRender?.artifacts.demoExport)}
+            {renderArtifactAction(
+              "Download render manifest",
+              "renderManifest",
+              avatarRender?.artifacts.renderManifest,
+            )}
+            {renderArtifactAction(
+              "Download video placeholder",
+              "videoPlaceholder",
+              avatarRender?.artifacts.videoExportPlaceholder,
+            )}
           </div>
           <dl className={styles.metadata} aria-label="Trace metadata">
             <div>
@@ -296,7 +424,98 @@ export default function Home() {
               <dt>Voice</dt>
               <dd>{multilingualRun?.voice.provider ?? "pending"}</dd>
             </div>
+            <div>
+              <dt>Avatar</dt>
+              <dd>{avatarRender?.avatarProvider.provider ?? "pending"}</dd>
+            </div>
           </dl>
+        </section>
+
+        <section className={styles.result} aria-labelledby="avatar-title">
+          <div className={styles.resultHeader}>
+            <h2 id="avatar-title">Avatar export</h2>
+            <span className={styles.badge}>{avatarRender?.status ?? "READY"}</span>
+          </div>
+          <p>
+            {avatarRender?.disclosure.message ??
+              "Avatar export metadata and AI disclosure will appear after generation."}
+          </p>
+          <dl className={styles.metadata} aria-label="Avatar metadata">
+            <div>
+              <dt>Renderer</dt>
+              <dd>{avatarRender?.videoRenderer.renderer ?? "pending"}</dd>
+            </div>
+            <div>
+              <dt>Consent</dt>
+              <dd>{avatarRender?.disclosure.consentStatus ?? "pending"}</dd>
+            </div>
+            <div>
+              <dt>Cloned identity</dt>
+              <dd>{avatarRender?.disclosure.clonedIdentity ? "enabled" : "disabled"}</dd>
+            </div>
+            <div>
+              <dt>Evaluation</dt>
+              <dd>{avatarRender?.trace.evaluationStatus ?? "pending"}</dd>
+            </div>
+            <div>
+              <dt>Network</dt>
+              <dd>{avatarRender?.providerConfig.allowNetworkEgress ? "enabled" : "disabled"}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className={styles.result} aria-labelledby="preview-title">
+          <div className={styles.resultHeader}>
+            <h2 id="preview-title">Demo preview</h2>
+            <span className={styles.badge}>{avatarRender?.renderJobStatus ?? "READY"}</span>
+          </div>
+          <div className={styles.previewFrame} aria-label="Avatar demo preview">
+            <div className={styles.previewScreen}>
+              <div className={styles.previewPresenter} aria-hidden="true">
+                AI
+              </div>
+              <div className={styles.previewCopy}>
+                <strong>{avatarRender?.videoRenderer.renderer ?? "local-html"}</strong>
+                <p>{avatarPreviewScript}</p>
+              </div>
+            </div>
+          </div>
+          <dl className={styles.metadata} aria-label="Render job lifecycle">
+            <div>
+              <dt>Status</dt>
+              <dd>{avatarRender?.renderJobStatus ?? "pending"}</dd>
+            </div>
+            <div>
+              <dt>Provider mode</dt>
+              <dd>{avatarRender?.providerConfig.providerMode ?? "pending"}</dd>
+            </div>
+            <div>
+              <dt>Adapter</dt>
+              <dd>{avatarRender?.providerConfig.adapterKind ?? "pending"}</dd>
+            </div>
+            <div>
+              <dt>Real video</dt>
+              <dd>{avatarRender?.providerConfig.supportsRealVideo ? "enabled" : "placeholder"}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className={styles.result} aria-labelledby="artifacts-title">
+          <div className={styles.resultHeader}>
+            <h2 id="artifacts-title">Export artifacts</h2>
+            <span className={styles.badge}>{avatarRender ? "5 artifacts" : "READY"}</span>
+          </div>
+          <div className={styles.artifactList} aria-label="Export artifact list">
+            {renderArtifactRow("Translated script", "script", multilingualRun?.artifacts.translatedScript)}
+            {renderArtifactRow("Subtitles", "subtitles", multilingualRun?.artifacts.subtitles)}
+            {renderArtifactRow("Avatar demo", "avatarDemo", avatarRender?.artifacts.demoExport)}
+            {renderArtifactRow("Render manifest", "renderManifest", avatarRender?.artifacts.renderManifest)}
+            {renderArtifactRow(
+              "Video placeholder",
+              "videoPlaceholder",
+              avatarRender?.artifacts.videoExportPlaceholder,
+            )}
+          </div>
         </section>
 
         <section className={styles.citations} aria-labelledby="citations-title">
@@ -329,51 +548,120 @@ export default function Home() {
   );
 }
 
-type ArtifactKind = "script" | "subtitles";
+type ArtifactKind = "script" | "subtitles" | "avatarDemo" | "renderManifest" | "videoPlaceholder";
 
 const allowedArtifactMimeTypes: Record<ArtifactKind, string> = {
   script: "text/markdown",
   subtitles: "application/x-subrip",
+  avatarDemo: "text/html",
+  renderManifest: "application/json",
+  videoPlaceholder: "application/json",
 };
 
 const allowedArtifactExtensions: Record<ArtifactKind, string> = {
   script: ".md",
   subtitles: ".srt",
+  avatarDemo: ".html",
+  renderManifest: ".json",
+  videoPlaceholder: ".json",
 };
 
 function renderArtifactAction(label: string, kind: ArtifactKind, artifact?: DownloadableArtifact) {
-  const href = artifactHref(kind, artifact);
-  if (!artifact || !href) {
+  const validation = artifactValidation(kind, artifact);
+  if (!artifact || !validation.href) {
     return (
       <button type="button" disabled>
-        {label}
+        {validation.state === "blocked" ? `${label} blocked` : label}
       </button>
     );
   }
   return (
-    <a href={href} download={artifact.fileName}>
+    <a href={validation.href} download={artifact.fileName}>
       {label}
     </a>
   );
 }
 
+function renderArtifactRow(label: string, kind: ArtifactKind, artifact?: DownloadableArtifact) {
+  const validation = artifactValidation(kind, artifact);
+  return (
+    <div className={styles.artifactRow}>
+      <div>
+        <strong>{label}</strong>
+        <span>{artifact?.fileName ?? "pending"}</span>
+        {validation.state === "blocked" ? (
+          <small className={styles.artifactReason}>Blocked: {validation.reason}</small>
+        ) : null}
+      </div>
+      {validation.state === "ready" && artifact && validation.href ? (
+        <a href={validation.href} download={artifact.fileName} aria-label={`Download export artifact ${label}`}>
+          Download
+        </a>
+      ) : validation.state === "blocked" ? (
+        <button type="button" disabled aria-label={`Blocked export artifact ${label}`}>
+          Blocked
+        </button>
+      ) : (
+        <button type="button" disabled aria-label={`Download export artifact ${label}`}>
+          Pending
+        </button>
+      )}
+    </div>
+  );
+}
+
+type ArtifactValidation = {
+  state: "pending" | "ready" | "blocked";
+  href: string;
+  reason: string;
+};
+
+export function artifactSafetyState(kind: ArtifactKind, artifact?: DownloadableArtifact) {
+  return artifactValidation(kind, artifact).state;
+}
+
+export function artifactBlockReason(kind: ArtifactKind, artifact?: DownloadableArtifact) {
+  return artifactValidation(kind, artifact).reason;
+}
+
 export function artifactHref(kind: ArtifactKind, artifact?: DownloadableArtifact) {
+  return artifactValidation(kind, artifact).href;
+}
+
+function artifactValidation(kind: ArtifactKind, artifact?: DownloadableArtifact): ArtifactValidation {
   if (!artifact) {
-    return "";
+    return { state: "pending", href: "", reason: "Artifact has not been produced yet." };
   }
   if (artifact.mimeType !== allowedArtifactMimeTypes[kind]) {
-    return "";
+    return { state: "blocked", href: "", reason: "Unexpected MIME type." };
   }
   if (!artifact.fileName.endsWith(allowedArtifactExtensions[kind])) {
-    return "";
+    return { state: "blocked", href: "", reason: "Unexpected file extension." };
   }
   if (!safeArtifactFileName(artifact.fileName)) {
-    return "";
+    return { state: "blocked", href: "", reason: "Unsafe filename." };
   }
-  if (!/^[A-Za-z0-9+/=]+$/.test(artifact.contentBase64)) {
-    return "";
+  const decoded = decodeBase64Artifact(artifact.contentBase64);
+  if (!decoded) {
+    return { state: "blocked", href: "", reason: "Invalid base64 content." };
   }
-  return `data:${artifact.mimeType};base64,${artifact.contentBase64}`;
+  if (decoded.bytes.length > 512 * 1024) {
+    return { state: "blocked", href: "", reason: "Artifact exceeds local preview limit." };
+  }
+  if (!artifact.checksum || artifact.checksum !== `sha256:${sha256Hex(decoded.text)}`) {
+    return { state: "blocked", href: "", reason: "Checksum mismatch." };
+  }
+  if (kind === "avatarDemo" && activeHtmlPattern.test(decoded.text)) {
+    return { state: "blocked", href: "", reason: "HTML export contains active content." };
+  }
+  if ((kind === "renderManifest" || kind === "videoPlaceholder") && !validJsonArtifact(kind, decoded.text)) {
+    return { state: "blocked", href: "", reason: "JSON metadata shape is invalid." };
+  }
+  return {
+    state: "ready",
+    href: `data:${artifact.mimeType};base64,${artifact.contentBase64}`,
+    reason: "",
+  };
 }
 
 function safeArtifactFileName(fileName: string) {
@@ -381,6 +669,122 @@ function safeArtifactFileName(fileName: string) {
     return false;
   }
   return !/[\u0000-\u001f\u007f]/.test(fileName);
+}
+
+const activeHtmlPattern =
+  /<script\b|<iframe\b|<form\b|<object\b|<embed\b|<link\b|<base\b|<style\b|<meta\s+http-equiv\b|<[^>]+\s(?:on[a-z]+|src|href|srcset|style)\s*=|<[^>]+javascript:/i;
+
+function decodeBase64Artifact(contentBase64: string) {
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(contentBase64) || contentBase64.length % 4 !== 0) {
+    return null;
+  }
+  try {
+    const binary = atob(contentBase64);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return { bytes, text };
+  } catch {
+    return null;
+  }
+}
+
+function validJsonArtifact(kind: ArtifactKind, text: string) {
+  try {
+    const parsed = JSON.parse(text) as { schema?: unknown };
+    if (!parsed || typeof parsed !== "object") {
+      return false;
+    }
+    if (kind === "renderManifest") {
+      return parsed.schema === "Stage7AvatarRenderManifest";
+    }
+    if (kind === "videoPlaceholder") {
+      return parsed.schema === "Stage7VideoExportPlaceholder";
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function sha256Hex(text: string) {
+  const bytes = new TextEncoder().encode(text);
+  const bitLength = bytes.length * 8;
+  const paddedLength = (((bytes.length + 9 + 63) >> 6) << 6);
+  const padded = new Uint8Array(paddedLength);
+  padded.set(bytes);
+  padded[bytes.length] = 0x80;
+  const view = new DataView(padded.buffer);
+  view.setUint32(paddedLength - 4, bitLength, false);
+
+  const hash = new Uint32Array([
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
+    0x5be0cd19,
+  ]);
+  const constants = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4,
+    0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe,
+    0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f,
+    0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+    0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
+    0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+    0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116,
+    0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
+    0xc67178f2,
+  ];
+  const words = new Uint32Array(64);
+
+  for (let offset = 0; offset < padded.length; offset += 64) {
+    for (let index = 0; index < 16; index += 1) {
+      words[index] = view.getUint32(offset + index * 4, false);
+    }
+    for (let index = 16; index < 64; index += 1) {
+      const s0 = rotateRight(words[index - 15], 7) ^ rotateRight(words[index - 15], 18) ^ (words[index - 15] >>> 3);
+      const s1 = rotateRight(words[index - 2], 17) ^ rotateRight(words[index - 2], 19) ^ (words[index - 2] >>> 10);
+      words[index] = (words[index - 16] + s0 + words[index - 7] + s1) >>> 0;
+    }
+
+    let a = hash[0];
+    let b = hash[1];
+    let c = hash[2];
+    let d = hash[3];
+    let e = hash[4];
+    let f = hash[5];
+    let g = hash[6];
+    let h = hash[7];
+
+    for (let index = 0; index < 64; index += 1) {
+      const s1 = rotateRight(e, 6) ^ rotateRight(e, 11) ^ rotateRight(e, 25);
+      const choice = (e & f) ^ (~e & g);
+      const temp1 = (h + s1 + choice + constants[index] + words[index]) >>> 0;
+      const s0 = rotateRight(a, 2) ^ rotateRight(a, 13) ^ rotateRight(a, 22);
+      const majority = (a & b) ^ (a & c) ^ (b & c);
+      const temp2 = (s0 + majority) >>> 0;
+      h = g;
+      g = f;
+      f = e;
+      e = (d + temp1) >>> 0;
+      d = c;
+      c = b;
+      b = a;
+      a = (temp1 + temp2) >>> 0;
+    }
+
+    hash[0] = (hash[0] + a) >>> 0;
+    hash[1] = (hash[1] + b) >>> 0;
+    hash[2] = (hash[2] + c) >>> 0;
+    hash[3] = (hash[3] + d) >>> 0;
+    hash[4] = (hash[4] + e) >>> 0;
+    hash[5] = (hash[5] + f) >>> 0;
+    hash[6] = (hash[6] + g) >>> 0;
+    hash[7] = (hash[7] + h) >>> 0;
+  }
+
+  return Array.from(hash, (word) => word.toString(16).padStart(8, "0")).join("");
+}
+
+function rotateRight(value: number, bits: number) {
+  return (value >>> bits) | (value << (32 - bits));
 }
 
 function checksumSeed(...values: string[]) {

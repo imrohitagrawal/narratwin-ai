@@ -82,7 +82,14 @@ stage6-quality:
 
 stage7-quality:
 	python3 scripts/quality/check_recommended_review_items.py 7
-	python3 scripts/quality/stage_not_implemented.py "Stage 7"
+	python3 scripts/quality/check_stage7_docs.py
+	bash scripts/ci/backend-lint.sh
+	bash scripts/ci/backend-test.sh
+	bash scripts/ci/frontend-build.sh
+	bash scripts/ci/frontend-smoke.sh
+	bash scripts/ci/dependency-security.sh
+	bash scripts/ci/eval-smoke.sh
+	bash scripts/ci/docker-build.sh
 
 stage8-quality:
 	python3 scripts/quality/check_recommended_review_items.py 8

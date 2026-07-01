@@ -3,12 +3,11 @@
 ## Version
 
 - Version: 1.0
-- Stage: Stage 6 multilingual scripts, subtitles, voice adapter
-- Canonical issue: `#11`
+- Stage: Stage 7 avatar rendering adapter and export
+- Canonical issue: `#12`
 - Last updated: 2026-07-01
-- Status: Stage 6 branch implements multilingual walkthrough generation with
-  mock/local translation and voice adapters, deterministic subtitles, and
-  downloadable script/subtitle artifacts
+- Status: Stage 7 branch implements mock/local avatar rendering and demo export
+  artifacts on top of the grounded walkthrough path
 
 ## API Principles
 
@@ -111,6 +110,7 @@ Canonical IDs use stable prefixes:
 - `ing_` for ingestion runs
 - `run_` for walkthrough runs
 - `mlrun_` for multilingual walkthrough artifact runs
+- `avrun_` for avatar render runs
 - `eval_` for evaluation results
 - `claim_` for unsupported or supported claim records
 - `claimsup_` for claim-support records
@@ -135,6 +135,10 @@ the idempotency record for conflict detection, not uniqueness. For project creat
 project-scoped writes, `idempotencyScope = projectId`. Implementations must persist
 an `IdempotencyRecord` before provider calls, vector writes, generated artifacts,
 approval state changes, or tombstone writes.
+Nested media writes that act on a specific source run, such as Stage 6
+multilingual generation and Stage 7 avatar rendering, narrow the scope to the
+authenticated tenant, actor, project, and source run so replay/conflict checks
+cannot cross source-run boundaries.
 
 `IdempotencyRecord` fields:
 
@@ -170,6 +174,8 @@ For duplicate keys:
 - different request body returns `409 IDEMPOTENCY_CONFLICT`
 - an in-flight matching request returns `409 IDEMPOTENCY_IN_PROGRESS` or current
   accepted job status without starting duplicate work
+- a terminal failed matching request returns the original failure code/message
+  without starting duplicate provider work
 - provider calls, vector writes, and generated artifacts must not be duplicated
 - idempotency records are retained for at least 24 hours in local mode
 
@@ -183,6 +189,7 @@ Write endpoints requiring idempotency:
 - `POST /api/v1/projects/{projectId}/ingestion-runs`
 - `POST /api/v1/projects/{projectId}/walkthrough-runs`
 - `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/multilingual-runs`
+- `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/avatar-renders`
 - `DELETE /api/v1/projects/{projectId}`
 - all future media-render endpoints
 
@@ -209,8 +216,12 @@ is accepted. Required schemas:
 - `AuditEvent`
 - `APIError`
 
-All schemas include `tenantId`, `projectId` where project-scoped, `createdAt`, and
-stable enum values. Provider-native fields live under `providerMetadata`.
+Persisted project-scoped domain schemas include `tenantId`, `projectId` where
+project-scoped, `createdAt`, and stable enum values. Endpoint-specific response
+schemas below are authoritative for child action outputs such as multilingual
+runs and avatar renders. Provider-native fields live under `providerMetadata`
+or endpoint-specific provider/config objects when the response contract exposes
+adapter state directly.
 Public schemas must state whether `tenantId` and `ownerId` are returned or
 server-internal. Stage 4 local API responses return `tenantId = tenant_local` and
 `ownerId = user_local` in project-scoped examples to keep isolation visible.
@@ -854,6 +865,208 @@ reviewers can compare multilingual output against accepted grounded evidence.
 Frontend download links remain disabled until the response artifact matches the
 expected MIME type, file extension, base64 shape, and safe filename rules.
 
+### Generate Avatar Demo Export
+
+`POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/avatar-renders`
+
+Stage 7 renders a completed, passed grounded walkthrough run into a mock/local
+avatar demo export. The endpoint uses an `AvatarProvider` adapter and a local
+HTML `VideoRenderer` export path with mock/local defaults. Local/dev/test must
+not call paid avatar providers or require real provider keys.
+
+Stage 7 does not create a real video binary, does not clone a face, does not
+clone a voice, and does not call non-local providers. The demo export is a
+downloadable HTML artifact plus JSON render manifest and video-export
+placeholder artifacts. The manifest carries AI-generated avatar/video disclosure
+metadata, provider config metadata, source trace metadata, source citations, and
+evaluation status from the grounded script path.
+
+Request:
+
+```json
+{
+  "requestedAvatarProvider": "mock",
+  "consentToUseSyntheticAvatar": true,
+  "clonedIdentityRequested": false
+}
+```
+
+Request boundary limits:
+
+- `requestedAvatarProvider`: 1-64 characters, lowercase/uppercase letters,
+  numbers, `_`, or `-`; normalized to lowercase before adapter use
+- `consentToUseSyntheticAvatar`: required boolean; must be `true` for the
+  synthetic local presenter export
+- `clonedIdentityRequested`: optional boolean; `true` is disabled in Stage 7
+- accepted source script: at most 20,000 characters
+- export artifacts: at most 512 KiB each after base64 decoding
+
+Post-provider validation:
+
+- source run must be `COMPLETED` with `evaluationStatus = PASSED` and accepted
+  script text
+- avatar provider identifiers must satisfy the adapter identifier pattern
+- provider mode must be `LOCAL`, `DISABLED`, or `OPTIONAL_EXTERNAL`
+- provider config must be validated before storage or response; every successful
+  Stage 7 render must be `MOCK_LOCAL`, `LOCAL`, no network egress, no API-key
+  requirement, no real video support, and no cloned-identity support
+- `avatarProvider.providerMode` and `providerConfig.providerMode` must both be
+  `LOCAL` on success, and provider metadata must match the validated provider
+  config
+- `fallbackReason` is either `null`, `REQUESTED_PROVIDER_UNAVAILABLE`, or
+  `PROVIDER_RENDER_FAILED`; arbitrary provider-supplied reason strings are
+  rejected
+- demo export artifact must use `text/html`, `.html`, a safe filename, valid
+  base64 UTF-8 content, a checksum matching decoded content, exact trusted
+  renderer output for the source run/trace/disclosure, and no active HTML
+  content such as scripts, style tags/attributes, base tags, `src`/`href`/
+  `srcset` attributes, event-handler attributes, forms, iframes, external links,
+  `javascript:` URLs in tags, or refresh metadata. Benign escaped source prose
+  may mention terms such as CSS, `src=`, `href=`, or `url()` because those terms
+  are inert text in the trusted renderer output.
+- render manifest artifact must use `application/json`, `.json`, a safe filename,
+  valid base64 UTF-8 JSON object content, and a checksum matching decoded content
+- render manifest must match trusted provider config, AI-generated avatar/video
+  disclosure metadata, source run ID, source trace ID, source context count,
+  source context ref IDs, source citation count/indexes, source evaluation ID,
+  source evaluation checksum, script checksum, source evaluation status, and
+  public-use license check; unexpected top-level or nested JSON fields are
+  rejected before storage or response
+- video export placeholder artifact must use `application/json`, `.json`, a
+  safe filename, valid base64 UTF-8 JSON object content, matching checksum,
+  expected schema/version, source run ID, trace ID, local renderer, validated
+  provider config, disclosure, citation/evaluation metadata, public-use license
+  check, a non-empty reason, and `realVideoProduced = false`; unexpected
+  top-level or nested JSON fields are rejected before storage or response
+
+Response `201`:
+
+```json
+{
+  "avatarRenderId": "avrun_123",
+  "sourceRunId": "run_123",
+  "status": "COMPLETED",
+  "renderJobStatus": "COMPLETED",
+  "renderJobStatusHistory": [
+    { "status": "QUEUED", "message": "Avatar render job queued." },
+    { "status": "RUNNING", "message": "Avatar provider render started." },
+    { "status": "COMPLETED", "message": "Avatar render job completed." }
+  ],
+  "sourceScriptText": "Generated script text with citations. [1]",
+  "avatarProvider": {
+    "provider": "mock",
+    "providerMode": "LOCAL",
+    "requestedProvider": "mock",
+    "fallbackReason": null
+  },
+  "providerConfig": {
+    "provider": "mock",
+    "providerMode": "LOCAL",
+    "adapterKind": "MOCK_LOCAL",
+    "allowNetworkEgress": false,
+    "requiresApiKey": false,
+    "supportsRealVideo": false,
+    "supportsClonedIdentity": false
+  },
+  "videoRenderer": {
+    "renderer": "local-html",
+    "rendererMode": "LOCAL",
+    "exportFormat": "html"
+  },
+  "disclosure": {
+    "aiGenerated": true,
+    "clonedIdentity": false,
+    "consentRequired": true,
+    "consentStatus": "CONFIRMED",
+    "message": "AI-generated avatar demo export using a synthetic local presenter. No cloned face, cloned voice, or paid avatar provider was used."
+  },
+  "artifacts": {
+    "demoExport": {
+      "fileName": "run_123-avatar-demo.html",
+      "mimeType": "text/html",
+      "contentBase64": "base64-html",
+      "checksum": "sha256:html"
+    },
+    "renderManifest": {
+      "fileName": "run_123-avatar-render-manifest.json",
+      "mimeType": "application/json",
+      "contentBase64": "base64-json",
+      "checksum": "sha256:manifest"
+    },
+    "videoExportPlaceholder": {
+      "fileName": "run_123-video-export-placeholder.json",
+      "mimeType": "application/json",
+      "contentBase64": "base64-json",
+      "checksum": "sha256:placeholder"
+    }
+  },
+  "trace": {
+    "traceId": "trace_123",
+    "sourceContextRefCount": 1,
+    "sourceCitationCount": 1,
+    "sourceContextRefIds": ["ctx_123_001"],
+    "sourceCitationIndexes": [1],
+    "sourceEvaluationId": "eval_123",
+    "sourceEvaluationChecksum": "sha256:evaluation",
+    "evaluationStatus": "PASSED"
+  }
+}
+```
+
+Provider response schema:
+
+- `avatarProvider.provider` and `avatarProvider.requestedProvider` are provider
+  IDs, not hardcoded provider enums.
+- `providerMode` is constrained to `LOCAL`, `DISABLED`, or
+  `OPTIONAL_EXTERNAL`.
+- `providerConfig` is a separate validated response model that records adapter
+  kind, network/key requirements, real-video capability, and cloned-identity
+  capability. Stage 7 validates it the same way it validates provider artifacts,
+  because Stage 6 showed that all provider-produced surfaces must be checked
+  from the first implementation, not added after review. Any successful Stage 7
+  render that advertises network egress, API keys, real video, cloned identity,
+  or an external stub as the producing adapter is rejected with
+  `PROVIDER_OUTPUT_INVALID`.
+- `renderJobStatusHistory` records lifecycle events such as `QUEUED`, `RUNNING`,
+  `FALLBACK`, `FAILED`, and `COMPLETED`; failed optional provider stubs fall
+  back to the mock/local provider and keep the final job status `COMPLETED` only
+  after fallback artifacts pass validation.
+- Failed idempotent render attempts are retained as terminal failed records; an
+  identical retry returns the same failure without re-entering the provider.
+  Stage 7 semantic validation failures such as missing consent and cloned
+  identity requests are retained when an idempotency key is supplied; replaying
+  the key with a changed request returns `IDEMPOTENCY_CONFLICT`.
+- Current Stage 7 local/dev/test behavior uses `mock` and `LOCAL`.
+- Adding another adapter requires code changes in `backend/app/stage7.py`,
+  API/contract updates in this file, tests in `tests/unit` and `tests/api`,
+  third-party notices, public-use license review, environment-only key handling,
+  consent/provenance review for identity features, and provider-output
+  validation before activation.
+
+Failure modes:
+
+| Status | Code | Meaning |
+|---:|---|---|
+| 400 | `IDEMPOTENCY_KEY_REQUIRED` | Missing `Idempotency-Key` on the write request |
+| 403 | `FORBIDDEN` | Project or source run is not accessible to the principal |
+| 404 | `NOT_FOUND` | Project or source walkthrough run does not exist |
+| 409 | `IDEMPOTENCY_CONFLICT` | Idempotency key was reused with a different request body |
+| 409 | `IDEMPOTENCY_IN_PROGRESS` | Duplicate request arrived while the first request is still pending |
+| 413 | `SOURCE_SCRIPT_TOO_LARGE` | Accepted source script exceeds the Stage 7 source limit |
+| 413 | `PROVIDER_OUTPUT_TOO_LARGE` | Avatar provider output exceeds the Stage 7 output limit |
+| 422 | `SOURCE_RUN_NOT_RENDERABLE` | Source run is not completed, passed, or accepted |
+| 422 | `CLONED_IDENTITY_DISABLED` | Cloned identity rendering is disabled in Stage 7 |
+| 422 | `AVATAR_CONSENT_REQUIRED` | Synthetic avatar export consent was not provided |
+| 422 | `PROVIDER_OUTPUT_INVALID` | Provider output is invalid or failed artifact/disclosure validation |
+| 422 | `VALIDATION_ERROR` | Request boundary validation failed, including provider field limits |
+| 429 | `RESOURCE_LIMIT_EXCEEDED` | Stage 7 idempotency record limit is exceeded for the request scope |
+| 502 | `PROVIDER_RENDER_FAILED` | Avatar provider and fallback render both failed before a valid export could be produced |
+
+Frontend download links remain disabled until the response artifact matches the
+expected MIME type, file extension, base64/UTF-8 decoding, decoded size limit,
+checksum, JSON schema marker for JSON artifacts, active-HTML blocklist for HTML
+artifacts, and safe filename rules.
+
 ### List Walkthrough Runs
 
 `GET /api/v1/projects/{projectId}/walkthrough-runs?page=1&pageSize=20`
@@ -982,11 +1195,13 @@ Response `200`:
 ## Future Media Endpoints
 
 These endpoints are contract placeholders only. They must not be implemented before
-approved stages.
+approved stages. Stage 7 implements only the nested source-run endpoint
+`POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/avatar-renders`
+documented above; project-level artifact listing remains future scope.
 
 - `POST /api/v1/projects/{projectId}/subtitle-runs`
 - `POST /api/v1/projects/{projectId}/tts-runs`
-- `POST /api/v1/projects/{projectId}/avatar-renders`
+- Future project-level avatar/artifact collection endpoint, exact path TBD
 - `GET /api/v1/projects/{projectId}/artifacts/{artifactId}`
 
 Future media endpoints must require:
@@ -1040,9 +1255,8 @@ Evaluation status:
 Provider mode:
 
 - `LOCAL`
-- `MOCK`
-- `FREE`
-- `PREMIUM`
+- `DISABLED`
+- `OPTIONAL_EXTERNAL`
 
 Knowledge document status:
 
