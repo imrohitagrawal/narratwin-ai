@@ -51,6 +51,7 @@ MAX_RUNS_PER_PROJECT = 50
 MAX_IDEMPOTENCY_RECORDS_PER_TENANT = 500
 MAX_PROMPT_CHARS = 2_000
 MAX_PUBLIC_EXCERPT_CHARS = 240
+MAX_API_REQUEST_BYTES = 256 * 1024
 MAX_UPLOAD_REQUEST_BYTES = MAX_UPLOAD_BYTES + 65_536
 ALLOWED_EXTENSIONS = {".md", ".txt"}
 ALLOWED_CONTENT_TYPES_BY_EXTENSION = {
@@ -185,7 +186,7 @@ class IdempotencyRecord:
     endpoint: str
     idempotency_key: str
     request_checksum: str
-    status: Literal["PENDING", "COMPLETED"]
+    status: Literal["PENDING", "COMPLETED", "FAILED"]
     value: Any
     created_at: str
     updated_at: str
@@ -325,7 +326,8 @@ class Stage4Service:
             raise Stage4Error(413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 corpus size limit.")
         safe_filename = sanitize_filename(source_filename)
         suffix = PurePath(safe_filename).suffix.lower()
-        if suffix not in ALLOWED_EXTENSIONS or content_type != ALLOWED_CONTENT_TYPES_BY_EXTENSION.get(suffix):
+        normalized_content_type = normalize_content_type(content_type)
+        if suffix not in ALLOWED_EXTENSIONS or normalized_content_type != ALLOWED_CONTENT_TYPES_BY_EXTENSION.get(suffix):
             raise Stage4Error(415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted.")
         if len(data) > MAX_UPLOAD_BYTES:
             raise Stage4Error(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit.")
@@ -520,6 +522,8 @@ class Stage4Service:
         self._require_project(principal=principal, project_id=project_id)
         if len(prompt) > MAX_PROMPT_CHARS:
             raise Stage4Error(413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit.")
+        if contains_secret_like_content(prompt):
+            raise Stage4Error(422, "SECRET_LIKE_CONTENT", "Prompt contains secret-like content.")
         if self._run_count_for_project(principal=principal, project_id=project_id) >= MAX_RUNS_PER_PROJECT:
             raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Project exceeds the Stage 4 generation run limit.")
 
@@ -870,6 +874,8 @@ class Stage4Service:
                     raise Stage4Error(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request.")
                 if existing.status == "PENDING":
                     raise Stage4Error(409, "IDEMPOTENCY_IN_PROGRESS", "Idempotency key is already in progress.")
+                if existing.status == "FAILED":
+                    raise cast(Stage4Error, existing.value)
                 return cast(T, existing.value)
             if self._idempotency_count_for_tenant(principal=principal) >= MAX_IDEMPOTENCY_RECORDS_PER_TENANT:
                 raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit.")
@@ -893,6 +899,12 @@ class Stage4Service:
             self.idempotency_records[record_key] = pending
         try:
             value = create()
+        except Stage4Error as exc:
+            with self._operation_lock:
+                pending.status = "FAILED"
+                pending.value = exc
+                pending.updated_at = _now()
+            raise
         except Exception:
             with self._operation_lock:
                 self.idempotency_records.pop(record_key, None)
@@ -1000,6 +1012,10 @@ def parse_document_text(text: str) -> str:
     if contains_secret_like_content(normalized):
         raise Stage4Error(422, "SECRET_LIKE_CONTENT", "Uploaded document contains secret-like content.")
     return normalized
+
+
+def normalize_content_type(content_type: str) -> str:
+    return content_type.split(";", 1)[0].strip().lower()
 
 
 def contains_prompt_injection(text: str) -> bool:

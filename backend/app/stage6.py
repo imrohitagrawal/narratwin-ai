@@ -18,6 +18,7 @@ from pydub import AudioSegment  # type: ignore[import-untyped]
 import srt  # type: ignore[import-untyped]
 
 from backend.app.rag.chunking import checksum_text
+from backend.app.stage4 import contains_secret_like_content
 
 SUPPORTED_LANGUAGES = {
     "en": "English",
@@ -33,6 +34,19 @@ MAX_CAPTION_COUNT = 250
 MAX_PROVIDER_ID_CHARS = 64
 MAX_IDEMPOTENCY_RECORDS_PER_SCOPE = 100
 PROVIDER_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+VOICE_MANIFEST_KEYS = frozenset(
+    {
+        "provider",
+        "providerMode",
+        "language",
+        "languageDisplayName",
+        "textChecksum",
+        "durationSecondsEstimate",
+        "mockAudioProfile",
+        "disclosure",
+    }
+)
+MOCK_AUDIO_PROFILE_KEYS = frozenset({"durationMillisecondsEstimate", "sampleRateHz", "channels"})
 ProviderMode = Literal["LOCAL", "DISABLED", "OPTIONAL_EXTERNAL"]
 
 
@@ -105,8 +119,8 @@ class Stage6IdempotencyRecord:
     endpoint: str
     idempotency_key: str
     request_checksum: str
-    status: Literal["PENDING", "COMPLETED"]
-    value: MultilingualWalkthroughResult | None
+    status: Literal["PENDING", "COMPLETED", "FAILED"]
+    value: MultilingualWalkthroughResult | Stage6Error | None
 
 
 class TranslationProvider(Protocol):
@@ -281,23 +295,18 @@ class Stage6Service:
         idempotency_scope: str | None = None,
         idempotency_key: str | None = None,
     ) -> MultilingualWalkthroughResult:
-        normalized_source_language = normalize_language_tag(source_language)
-        normalized_target_language = normalize_language_tag(target_language)
-        normalized_terms = normalize_glossary_terms(glossary_terms)
-        source_text = source_script.strip()
-        if not source_text:
-            raise Stage6Error(422, "VALIDATION_ERROR", "Source English script is required.")
-        if len(source_text) > MAX_SOURCE_SCRIPT_CHARS:
-            raise Stage6Error(413, "SOURCE_SCRIPT_TOO_LARGE", "Source English script exceeds the Stage 6 limit.")
+        raw_glossary_terms = list(glossary_terms)
         request_checksum = checksum_text(
-            "\n".join(
-                [
-                    source_text,
-                    normalized_source_language,
-                    normalized_target_language,
-                    requested_voice_provider,
-                    *normalized_terms,
-                ]
+            json.dumps(
+                {
+                    "sourceScript": source_script,
+                    "sourceLanguage": source_language,
+                    "targetLanguage": target_language,
+                    "requestedVoiceProvider": requested_voice_provider,
+                    "glossaryTerms": raw_glossary_terms,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
             )
         )
         endpoint = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs"
@@ -319,6 +328,8 @@ class Stage6Service:
                             "IDEMPOTENCY_IN_PROGRESS",
                             "Idempotency key is already in progress.",
                         )
+                    if existing.status == "FAILED":
+                        raise cast(Stage6Error, existing.value)
                     return cast(MultilingualWalkthroughResult, existing.value)
                 if self._idempotency_count_for_scope(idempotency_scope) >= MAX_IDEMPOTENCY_RECORDS_PER_SCOPE:
                     raise Stage6Error(
@@ -336,6 +347,22 @@ class Stage6Service:
                 )
 
         try:
+            normalized_source_language = normalize_language_tag(source_language)
+            normalized_target_language = normalize_language_tag(target_language)
+            normalized_terms = normalize_glossary_terms(raw_glossary_terms)
+            if any(contains_secret_like_content(term) for term in normalized_terms):
+                raise Stage6Error(422, "SECRET_LIKE_CONTENT", "Glossary terms contain secret-like content.")
+            source_text = source_script.strip()
+            if not source_text:
+                raise Stage6Error(422, "VALIDATION_ERROR", "Source English script is required.")
+            if len(source_text) > MAX_SOURCE_SCRIPT_CHARS:
+                raise Stage6Error(413, "SOURCE_SCRIPT_TOO_LARGE", "Source English script exceeds the Stage 6 limit.")
+        except Stage6Error as exc:
+            if record_key is not None:
+                self._store_idempotent_failure(record_key, exc)
+            raise
+
+        try:
             result = self._create_multilingual_walkthrough(
                 source_text=source_text,
                 normalized_source_language=normalized_source_language,
@@ -346,6 +373,10 @@ class Stage6Service:
                 trace_id=trace_id,
                 source_context_ref_count=source_context_ref_count,
             )
+        except Stage6Error as exc:
+            if record_key is not None:
+                self._store_idempotent_failure(record_key, exc)
+            raise
         except Exception:
             if record_key is not None:
                 with self._operation_lock:
@@ -357,6 +388,12 @@ class Stage6Service:
                 record.status = "COMPLETED"
                 record.value = result
         return result
+
+    def _store_idempotent_failure(self, record_key: tuple[str, str, str], error: Stage6Error) -> None:
+        with self._operation_lock:
+            record = self.idempotency_records[record_key]
+            record.status = "FAILED"
+            record.value = error
 
     def _create_multilingual_walkthrough(
         self,
@@ -471,7 +508,7 @@ def normalize_glossary_terms(terms: Iterable[str]) -> list[str]:
     for term in terms:
         candidate = " ".join(term.strip().split())
         if not candidate:
-            continue
+            raise Stage6Error(422, "VALIDATION_ERROR", "Glossary terms must not be blank.")
         if len(candidate) > MAX_GLOSSARY_TERM_CHARS:
             raise Stage6Error(422, "VALIDATION_ERROR", "Glossary term exceeds the Stage 6 limit.")
         if candidate not in normalized:
@@ -535,6 +572,29 @@ def validate_voice_manifest_artifact(artifact: DownloadableArtifact) -> Download
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider artifact must contain valid JSON.") from exc
     if not isinstance(parsed, dict):
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest must be a JSON object.")
+    if set(parsed) != VOICE_MANIFEST_KEYS:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest schema is invalid.")
+    if parsed["provider"] != "mock":
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest provider is invalid.")
+    validate_provider_mode(str(parsed["providerMode"]))
+    normalize_language_tag(str(parsed["language"]))
+    if not isinstance(parsed["languageDisplayName"], str) or not parsed["languageDisplayName"].strip():
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest language display name is invalid.")
+    if not isinstance(parsed["textChecksum"], str) or not parsed["textChecksum"].startswith("sha256:"):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest text checksum is invalid.")
+    duration_estimate = parsed["durationSecondsEstimate"]
+    if not isinstance(duration_estimate, int | float) or duration_estimate <= 0:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest duration is invalid.")
+    audio_profile = parsed["mockAudioProfile"]
+    if not isinstance(audio_profile, dict) or set(audio_profile) != MOCK_AUDIO_PROFILE_KEYS:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest audio profile schema is invalid.")
+    if audio_profile["sampleRateHz"] != 16000 or audio_profile["channels"] != 1:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest audio profile is invalid.")
+    profile_duration = audio_profile["durationMillisecondsEstimate"]
+    if not isinstance(profile_duration, int) or profile_duration <= 0:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest audio duration is invalid.")
+    if not isinstance(parsed["disclosure"], str) or "Mock local TTS placeholder" not in parsed["disclosure"]:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest disclosure is invalid.")
     if artifact.checksum != checksum_text(decoded):
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider artifact checksum is invalid.")
     return artifact

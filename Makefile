@@ -1,4 +1,4 @@
-.PHONY: quality stage0-quality stage1-quality stage2-quality stage3-quality stage4-quality stage5-quality stage6-quality stage7-quality stage8-quality final-review-quality backend-lint backend-test frontend-build frontend-smoke security docker-build eval-smoke
+.PHONY: quality stage0-quality stage1-quality stage2-quality stage3-quality stage4-quality stage5-quality stage6-quality stage7-quality stage8-quality final-review-quality backend-lint backend-test frontend-build frontend-smoke frontend-lighthouse security docker-build docker-image-scan eval-smoke performance-smoke
 
 quality:
 	python3 scripts/quality/check_quality_stage.py
@@ -44,8 +44,17 @@ security:
 docker-build:
 	bash scripts/ci/docker-build.sh
 
+docker-image-scan:
+	bash scripts/ci/docker-image-scan.sh
+
 eval-smoke:
 	bash scripts/ci/eval-smoke.sh
+
+frontend-lighthouse:
+	bash scripts/ci/frontend-lighthouse.sh
+
+performance-smoke:
+	bash scripts/ci/performance-smoke.sh
 
 stage4-quality:
 	python3 scripts/quality/check_recommended_review_items.py 4
@@ -93,7 +102,17 @@ stage7-quality:
 
 stage8-quality:
 	python3 scripts/quality/check_recommended_review_items.py 8
-	python3 scripts/quality/stage_not_implemented.py "Stage 8"
+	python3 scripts/quality/check_stage8_docs.py
+	bash scripts/ci/backend-lint.sh
+	bash scripts/ci/backend-test.sh
+	bash scripts/ci/frontend-build.sh
+	bash scripts/ci/frontend-smoke.sh
+	bash scripts/ci/performance-smoke.sh
+	bash scripts/ci/dependency-security.sh
+	bash scripts/ci/eval-smoke.sh
+	bash scripts/ci/docker-build.sh
+	bash scripts/ci/docker-image-scan.sh
+	bash scripts/ci/frontend-lighthouse.sh
 
 final-review-quality:
 	python3 scripts/quality/check_recommended_review_items.py "Final Review"

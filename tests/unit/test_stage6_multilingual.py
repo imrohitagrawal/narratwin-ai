@@ -6,6 +6,7 @@ from datetime import timedelta
 import pytest
 import srt  # type: ignore[import-untyped]
 
+from backend.app.rag.chunking import checksum_text
 from backend.app.stage6 import (
     DownloadableArtifact,
     MAX_CAPTION_CHARS,
@@ -42,6 +43,34 @@ def test_translation_preserves_project_terms_from_glossary() -> None:
     assert "source chunks" in result.translated_script_text
     assert "convierte" in result.translated_script_text
     assert result.translated_script_text != source_script
+
+
+def test_domain_service_rejects_blank_glossary_terms_directly() -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            target_language="es",
+            glossary_terms=["NarraTwin AI", "   "],
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "VALIDATION_ERROR"
+
+
+def test_domain_service_rejects_secret_like_glossary_terms_directly() -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            target_language="es",
+            glossary_terms=["api" + "_key=visible-secret-token-value"],
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "SECRET_LIKE_CONTENT"
 
 
 def test_subtitle_timing_format_is_valid_subrip() -> None:
@@ -288,6 +317,64 @@ def test_tts_provider_output_must_be_a_valid_json_manifest_artifact() -> None:
 
     service = create_stage6_service()
     service.tts_provider = InvalidTTSProvider()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            target_language="es",
+            glossary_terms=["NarraTwin AI"],
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "PROVIDER_OUTPUT_INVALID"
+
+
+def test_tts_provider_manifest_rejects_unknown_schema_fields() -> None:
+    class ExtraFieldTTSProvider:
+        provider = "mock"
+        provider_mode = "LOCAL"
+
+        def synthesize(
+            self,
+            *,
+            text: str,
+            language: str,
+            requested_provider: str,
+            fallback_reason: str | None,
+        ) -> VoiceProviderResult:
+            manifest = {
+                "provider": self.provider,
+                "providerMode": self.provider_mode,
+                "language": language,
+                "languageDisplayName": "Spanish",
+                "textChecksum": checksum_text(text),
+                "durationSecondsEstimate": 2.0,
+                "mockAudioProfile": {
+                    "durationMillisecondsEstimate": 2000,
+                    "sampleRateHz": 16000,
+                    "channels": 1,
+                    "unexpectedNested": "value",
+                },
+                "disclosure": "Mock local TTS placeholder. No cloned voice or paid provider was used.",
+                "unexpectedTopLevel": "value",
+            }
+            decoded = json.dumps(manifest, sort_keys=True)
+            return VoiceProviderResult(
+                provider=self.provider,
+                provider_mode=self.provider_mode,
+                requested_provider=requested_provider,
+                fallback_reason=fallback_reason,
+                language=language,
+                artifact=DownloadableArtifact(
+                    file_name="voice-manifest-es.json",
+                    mime_type="application/json",
+                    content_base64=base64.b64encode(decoded.encode("utf-8")).decode("ascii"),
+                    checksum=checksum_text(decoded),
+                ),
+            )
+
+    service = create_stage6_service()
+    service.tts_provider = ExtraFieldTTSProvider()
 
     with pytest.raises(Stage6Error) as exc:
         service.generate_multilingual_walkthrough(

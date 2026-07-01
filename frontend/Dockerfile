@@ -1,4 +1,4 @@
-FROM node:26-slim@sha256:a1d9d671994fc2d26e297ac56b4b1522a8bc7fa71c43b14cd1b1fe6c5116f7dc AS deps
+FROM node:26-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9 AS deps
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NPM_CONFIG_FUND=false
@@ -18,7 +18,7 @@ ENV NARRATWIN_API_PROXY_TARGET=${NARRATWIN_API_PROXY_TARGET}
 COPY frontend ./
 RUN npm run build
 
-FROM node:26-slim@sha256:a1d9d671994fc2d26e297ac56b4b1522a8bc7fa71c43b14cd1b1fe6c5116f7dc AS runner
+FROM node:26-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9 AS runner
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -27,6 +27,8 @@ ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
 WORKDIR /app
+
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static

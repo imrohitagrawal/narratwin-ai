@@ -3,11 +3,12 @@
 ## Version
 
 - Version: 1.0
-- Stage: Stage 7 avatar rendering adapter and export
-- Canonical issue: `#12`
+- Stage: Stage 8 performance, security hardening, release readiness
+- Canonical issue: `#13`
 - Last updated: 2026-07-01
-- Status: Stage 7 branch implements mock/local avatar rendering and demo export
-  artifacts on top of the grounded walkthrough path
+- Status: Stage 8 branch adds local performance budgets, request hardening,
+  dependency/container scan gates, and release-readiness evidence on top of the
+  Stage 7 mock/local avatar path
 
 ## API Principles
 
@@ -21,6 +22,19 @@
 - Project-scoped endpoints enforce authorization before data access.
 - Generated outputs expose evaluation state and context references.
 - Provider secrets are never accepted from frontend request bodies.
+- Write requests are locally rate limited and return `RATE_LIMIT_EXCEEDED` with
+  HTTP `429` when the Stage 8 local window is exceeded. This local flood-control
+  check runs before endpoint idempotency handling, so over-budget duplicate
+  idempotency replays can receive `429 RATE_LIMIT_EXCEEDED`.
+- API write requests have a general request size limit and must send a valid
+  non-negative `Content-Length`. Missing length returns
+  `411 CONTENT_LENGTH_REQUIRED`; malformed length returns
+  `400 INVALID_CONTENT_LENGTH`. Stage 8 also counts actual ASGI body bytes, so
+  under-reported `Content-Length` cannot bypass the local request budget. Uploads
+  keep the stricter multipart upload limit and streaming read limit.
+- Markdown uploads must use `text/markdown`; plain-text uploads must use
+  `text/plain`. `application/octet-stream` compatibility is intentionally
+  rejected until a validated compatibility exception is approved.
 
 ## API Versioning
 
@@ -178,6 +192,9 @@ For duplicate keys:
   without starting duplicate provider work
 - provider calls, vector writes, and generated artifacts must not be duplicated
 - idempotency records are retained for at least 24 hours in local mode
+- Stage 8 local rate limiting is a pre-idempotency flood-control guard. It can
+  return `429 RATE_LIMIT_EXCEEDED` before idempotency replay logic when a caller
+  exceeds the local write window.
 
 Write endpoints requiring idempotency:
 
@@ -446,7 +463,8 @@ Request:
 }
 ```
 
-Response `202`:
+Response `201` in the Stage 4 through Stage 8 synchronous local path. Future
+queued ingestion may return `202`:
 
 ```json
 {
@@ -525,8 +543,11 @@ Response `202` for queued or running work:
 }
 ```
 
-Response `201` for newly accepted terminal output. Response `200` is reserved for
-idempotency replay or `GET` of an existing terminal run.
+Response `201` for newly accepted terminal output. In the Stage 4 through Stage 8
+synchronous local path, an exact idempotency replay returns the stored original
+`201` response body. Future asynchronous/persistent implementations may switch
+replay to `200` only after the idempotency response contract and tests are
+updated together. `GET` of an existing terminal run returns `200`.
 
 ```json
 {
@@ -655,8 +676,9 @@ output. The full `EvaluationResult` is returned by
 `GET /api/v1/projects/{projectId}/walkthrough-runs/{runId}/evaluation`.
 
 Failed or refused terminal output shape. A newly created synchronous terminal
-failure uses `201` with this shape; `200` is used only for `GET` or idempotency
-replay of an existing terminal run.
+failure uses `201` with this shape. In the Stage 4 through Stage 8 synchronous
+local path, exact idempotency replay returns the stored original `201` response
+body. `GET` of an existing terminal run returns `200`.
 
 ```json
 {
@@ -692,9 +714,10 @@ Failure behavior:
   `UNSAFE_RETRIEVED_CONTEXT`
 - unsupported project factual claims return persisted `FAILED` evaluation state
 - provider failure returns structured `502` or stored failed run
-- rate limits return `429 RATE_LIMITED`
-- queue admission backpressure returns `429 BACKPRESSURE_QUEUE_FULL` with
-  `Retry-After` when retry is safe
+- rate limits return `429 RATE_LIMIT_EXCEEDED`
+- local per-project operation backpressure returns `429 BACKPRESSURE_QUEUE_FULL`
+  without `Retry-After`; future queued workers may add `Retry-After` only when a
+  safe retry interval is known and implemented
 - worker or dependency unavailability returns `503 DEPENDENCY_UNAVAILABLE`
 
 Backpressure error example:
@@ -703,16 +726,12 @@ Backpressure error example:
 {
   "error": {
     "code": "BACKPRESSURE_QUEUE_FULL",
-    "message": "The per-project queue is full. Retry after the provided interval.",
-    "details": {
-      "retryAfterSeconds": 60
-    },
+    "message": "Another Stage 4 operation is already active for this project.",
+    "details": {},
     "requestId": "req_123"
   }
 }
 ```
-
-Responses with `BACKPRESSURE_QUEUE_FULL` include `Retry-After`.
 
 ### Generate Multilingual Walkthrough
 
@@ -766,8 +785,13 @@ Post-provider validation:
   output before subtitles or downloadable artifacts are returned
 - provider identifiers must satisfy the adapter identifier pattern
 - Voice provider artifacts must be JSON manifests with safe `.json` filenames,
-  `application/json` MIME type, decodable UTF-8 JSON object content, and a
-  checksum matching the decoded manifest text
+  `application/json` MIME type, decodable UTF-8 JSON object content, a checksum
+  matching the decoded manifest text, and an exact schema. The Stage 8 local
+  schema requires only `provider`, `providerMode`, `language`,
+  `languageDisplayName`, `textChecksum`, `durationSecondsEstimate`,
+  `mockAudioProfile`, and `disclosure`; `mockAudioProfile` allows only
+  `durationMillisecondsEstimate`, `sampleRateHz`, and `channels`. Unknown
+  top-level or nested fields fail with `PROVIDER_OUTPUT_INVALID`.
 
 Response `201`:
 
@@ -852,6 +876,7 @@ Failure modes:
 | 409 | `IDEMPOTENCY_IN_PROGRESS` | Duplicate request arrived while the first request is still pending |
 | 413 | `SOURCE_SCRIPT_TOO_LARGE` | Accepted source script exceeds the Stage 6 source limit |
 | 413 | `PROVIDER_OUTPUT_TOO_LARGE` | Translation provider output exceeds the Stage 6 output limit |
+| 422 | `SECRET_LIKE_CONTENT` | Glossary terms contain secret-like content and are rejected before provider calls |
 | 422 | `SOURCE_RUN_NOT_TRANSLATABLE` | Source run is not completed or has no accepted script |
 | 422 | `UNSUPPORTED_LANGUAGE` | Target language is not supported by Stage 6 |
 | 422 | `PROVIDER_OUTPUT_INVALID` | Provider output is empty, invalid, or failed glossary/citation preservation |

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+import time
 from datetime import UTC, datetime
-from typing import Annotated, Literal
+from threading import Lock
+from typing import Annotated, Literal, cast
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, FastAPI, File, Header, HTTPException, Request, Response, UploadFile
@@ -12,9 +14,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.app.rag.chunking import checksum_text
 from backend.app.stage4 import (
+    MAX_API_REQUEST_BYTES,
     LocalPrincipal,
     MAX_UPLOAD_BYTES,
     MAX_UPLOAD_REQUEST_BYTES,
@@ -50,7 +54,7 @@ class HealthResponse(BaseModel):
 
     status: Literal["ok"]
     service: Literal["narratwin-ai-backend"]
-    stage: Literal["7"]
+    stage: Literal["8"]
 
 
 class ReadinessResponse(HealthResponse):
@@ -542,6 +546,239 @@ FOUNDATION_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
 }
+MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE = 120
+STAGE8_RATE_LIMIT_WINDOW_SECONDS = 60.0
+MAX_STAGE8_RATE_LIMIT_KEYS = 2_048
+WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+class Stage8BodyTooLarge(Exception):
+    def __init__(self, *, status_code: int, code: str, message: str) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.code = code
+        self.message = message
+
+
+class Stage8RequestSizeLimitMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if not stage8_write_scope(scope):
+            await self.app(scope, receive, send)
+            return
+
+        request_id = request_id_from_scope(scope)
+        request_limit = stage8_request_limit_for_scope(scope)
+        content_length = content_length_from_scope(scope)
+        if content_length is None:
+            await send_stage8_error(
+                scope,
+                send,
+                status_code=411,
+                code="CONTENT_LENGTH_REQUIRED",
+                message="Content-Length is required for Stage 8 local write request limits.",
+                request_id=request_id,
+            )
+            return
+        try:
+            declared_bytes = int(content_length)
+        except ValueError:
+            await send_stage8_error(
+                scope,
+                send,
+                status_code=400,
+                code="INVALID_CONTENT_LENGTH",
+                message="Content-Length must be a non-negative integer.",
+                request_id=request_id,
+            )
+            return
+        if declared_bytes < 0:
+            await send_stage8_error(
+                scope,
+                send,
+                status_code=400,
+                code="INVALID_CONTENT_LENGTH",
+                message="Content-Length must be a non-negative integer.",
+                request_id=request_id,
+            )
+            return
+        if declared_bytes > request_limit:
+            await send_stage8_error(
+                scope,
+                send,
+                status_code=413,
+                code="UPLOAD_TOO_LARGE" if request_limit == MAX_UPLOAD_REQUEST_BYTES else "REQUEST_TOO_LARGE",
+                message="Request exceeds the Stage 8 size limit.",
+                request_id=request_id,
+            )
+            return
+
+        rate_limit_key = rate_limit_key_from_scope(scope)
+        if not stage8_write_rate_limiter.allow(key=rate_limit_key):
+            await send_stage8_error(
+                scope,
+                send,
+                status_code=429,
+                code="RATE_LIMIT_EXCEEDED",
+                message="Too many write requests. Retry after the Stage 8 local rate-limit window.",
+                request_id=request_id,
+            )
+            return
+
+        messages: list[Message] = []
+        actual_bytes = 0
+        while True:
+            message = await receive()
+            messages.append(message)
+            if message["type"] == "http.request":
+                body = cast(bytes, message.get("body", b""))
+                actual_bytes += len(body)
+                if actual_bytes > request_limit:
+                    exc = Stage8BodyTooLarge(
+                        status_code=413,
+                        code="UPLOAD_TOO_LARGE" if request_limit == MAX_UPLOAD_REQUEST_BYTES else "REQUEST_TOO_LARGE",
+                        message="Request exceeds the Stage 8 size limit.",
+                    )
+                    await send_stage8_error(
+                        scope,
+                        send,
+                        status_code=exc.status_code,
+                        code=exc.code,
+                        message=exc.message,
+                        request_id=request_id,
+                    )
+                    return
+                if not message.get("more_body", False):
+                    break
+            else:
+                break
+
+        replay_index = 0
+
+        async def replay_receive() -> Message:
+            nonlocal replay_index
+            if replay_index < len(messages):
+                message = messages[replay_index]
+                replay_index += 1
+                return message
+            return {"type": "http.disconnect"}
+
+        await self.app(scope, replay_receive, send)
+
+
+def stage8_write_scope(scope: Scope) -> bool:
+    return (
+        scope["type"] == "http"
+        and scope.get("method") in WRITE_METHODS
+        and str(scope.get("path", "")).startswith("/api/v1/")
+    )
+
+
+def stage8_request_limit_for_scope(scope: Scope) -> int:
+    return (
+        MAX_UPLOAD_REQUEST_BYTES
+        if scope.get("method") == "POST" and str(scope.get("path", "")).endswith("/knowledge-documents")
+        else MAX_API_REQUEST_BYTES
+    )
+
+
+def content_length_from_scope(scope: Scope) -> str | None:
+    for name, value in headers_from_scope(scope):
+        if name.lower() == b"content-length":
+            return value.decode("ascii", errors="ignore")
+    return None
+
+
+def request_id_from_scope(scope: Scope) -> str:
+    for name, value in headers_from_scope(scope):
+        if name.lower() == b"x-request-id":
+            decoded = value.decode("ascii", errors="ignore").strip()
+            if decoded:
+                return decoded
+    return str(uuid4())
+
+
+def headers_from_scope(scope: Scope) -> list[tuple[bytes, bytes]]:
+    return cast(list[tuple[bytes, bytes]], scope.get("headers", []))
+
+
+def rate_limit_key_from_scope(scope: Scope) -> str:
+    client = scope.get("client")
+    if isinstance(client, tuple) and client:
+        return f"ip:{client[0]}"
+    return "ip:local"
+
+
+async def send_stage8_error(
+    scope: Scope,
+    send: Send,
+    *,
+    status_code: int,
+    code: str,
+    message: str,
+    request_id: str,
+) -> None:
+    payload = ErrorResponse(
+        error=ErrorBody(
+            code=code,
+            message=message,
+            details={},
+            requestId=request_id,
+        )
+    )
+    response = JSONResponse(
+        status_code=status_code,
+        content=payload.model_dump(by_alias=True),
+        headers={**FOUNDATION_HEADERS, "X-Request-Id": request_id},
+    )
+
+    async def empty_receive() -> Message:
+        return {"type": "http.disconnect"}
+
+    await response(scope, empty_receive, send)
+
+
+class Stage8WriteRateLimiter:
+    def __init__(self, *, limit: int, window_seconds: float, max_keys: int) -> None:
+        self.limit = limit
+        self.window_seconds = window_seconds
+        self.max_keys = max_keys
+        self._events_by_key: dict[str, list[float]] = {}
+        self._lock = Lock()
+
+    def allow(self, *, key: str, now: float | None = None) -> bool:
+        timestamp = time.monotonic() if now is None else now
+        cutoff = timestamp - self.window_seconds
+        with self._lock:
+            for existing_key, existing_events in list(self._events_by_key.items()):
+                retained_events = [event for event in existing_events if event > cutoff]
+                if retained_events:
+                    self._events_by_key[existing_key] = retained_events
+                else:
+                    del self._events_by_key[existing_key]
+
+            events = [event for event in self._events_by_key.get(key, []) if event > cutoff]
+            if key not in self._events_by_key and len(self._events_by_key) >= self.max_keys:
+                return False
+            if len(events) >= self.limit:
+                self._events_by_key[key] = events
+                return False
+            events.append(timestamp)
+            self._events_by_key[key] = events
+            return True
+
+    def reset(self) -> None:
+        with self._lock:
+            self._events_by_key.clear()
+
+
+stage8_write_rate_limiter = Stage8WriteRateLimiter(
+    limit=MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE,
+    window_seconds=STAGE8_RATE_LIMIT_WINDOW_SECONDS,
+    max_keys=MAX_STAGE8_RATE_LIMIT_KEYS,
+)
 
 
 @app.middleware("http")
@@ -551,24 +788,14 @@ async def add_foundation_headers(
 ) -> Response:
     request_id = request.headers.get("X-Request-Id") or str(uuid4())
     request.state.request_id = request_id
-    if request.method == "POST" and request.url.path.endswith("/knowledge-documents"):
-        content_length = request.headers.get("Content-Length")
-        try:
-            upload_request_bytes = int(content_length) if content_length is not None else 0
-        except ValueError:
-            upload_request_bytes = MAX_UPLOAD_REQUEST_BYTES + 1
-        if upload_request_bytes > MAX_UPLOAD_REQUEST_BYTES:
-            return error_response(
-                request=request,
-                status_code=413,
-                code="UPLOAD_TOO_LARGE",
-                message="Upload exceeds the Stage 4 size limit.",
-            )
     response = await call_next(request)
     for header, value in FOUNDATION_HEADERS.items():
         response.headers[header] = value
     response.headers["X-Request-Id"] = request_id
     return response
+
+
+app.add_middleware(Stage8RequestSizeLimitMiddleware)
 
 
 def request_id_for(request: Request) -> str:
@@ -668,7 +895,7 @@ async def unhandled_error_handler(request: Request, _exc: Exception) -> JSONResp
 
 
 def health_payload() -> HealthResponse:
-    return HealthResponse(status="ok", service="narratwin-ai-backend", stage="7")
+    return HealthResponse(status="ok", service="narratwin-ai-backend", stage="8")
 
 
 @app.get("/healthz", response_model=HealthResponse, tags=["health"])
@@ -928,6 +1155,7 @@ def reset_app_state_for_tests() -> None:
     stage4_service.reset()
     stage6_service.reset()
     stage7_service.reset()
+    stage8_write_rate_limiter.reset()
 
 
 app.include_router(api_v1)

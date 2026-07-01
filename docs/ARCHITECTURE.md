@@ -493,8 +493,10 @@ Operational limits:
 - non-retryable validation, authorization, unsupported-claim, and policy failures do
   not retry
 - duplicate idempotency keys return the original job/result without re-running
-- full queues return `429 BACKPRESSURE_QUEUE_FULL` with `Retry-After` when retry is
-  safe; worker or dependency unavailability returns `503`
+- full durable queues may return `429 BACKPRESSURE_QUEUE_FULL` with
+  `Retry-After` when retry is safe; the current local in-process path returns
+  `429 BACKPRESSURE_QUEUE_FULL` without `Retry-After`; worker or dependency
+  unavailability returns `503`
 - timed-out jobs persist `FAILED` with timeout reason and audit event
 - outbox rows are written in the same transaction as job/resource state changes
 - observability, audit, cache invalidation, vector writes, and provider side-effect

@@ -15,20 +15,27 @@ Use it to answer:
 ## Current Baseline
 
 - Last reviewed date: 2026-07-01
-- Current stage marker: `.stage/current = 7`
-- Current implementation permission: Stage 7 mock/local avatar rendering adapter
-  and demo export work only, on the issue-linked Stage 7 branch
-- Current repo mode: Stage 7 implementation is in progress after Stage 6 merged
+- Current stage marker: `.stage/current = 8`
+- Current implementation permission: Stage 8 performance, security hardening,
+  and release-readiness work only, on the issue-linked Stage 8 branch
+- Current repo mode: Stage 8 implementation is in progress after Stage 7 merged
   to `main`
-- Product implementation merged to `main`: Stage 6 multilingual scripts,
-  subtitles, voice-adapter, and downloadable artifact work merged through PR
-  `#31`
+- Product implementation merged to `main`: Stage 7 mock/local avatar rendering
+  adapter and demo export work merged through PR `#32` at commit `7f7196a`
 - Tracker enforcement scope: repository-tracked stage and governance changes in checked-in files
-- Out-of-band GitHub reconciliation: PR `#31` is recorded as merged based on the
-  Stage 7 branch start handoff; issue `#11` is recorded as closed by that PR.
-- Stage 7 may add slice-scoped mock/local avatar rendering, validated demo
-  export artifacts, provider contract tests, public-use license checks, AI
-  disclosure, and consent controls for the merged Stage 4 through Stage 6 paths.
+- Out-of-band GitHub reconciliation: PR `#32` is recorded as merged based on the
+  verified local `main` baseline; issue `#12` should be reconciled as closed if
+  GitHub issue state has not already been updated.
+- Stage 8 may add performance smoke tests, API latency budgets, frontend
+  Lighthouse checks, rate limiting, request size limits, upload MIME validation,
+  dependency audit, Docker image scan, release checklist, runbook, demo seed
+  data, portfolio README, and release-readiness review evidence.
+- Stage 8 PR `#33` is open for branch
+  `stage8-performance-security-release-readiness` and issue `#13`.
+- Stage 8 final exhaustive review remediation is recorded in ADR `0006`,
+  including semantic-failure idempotency replay, exact Stage 6 voice-manifest
+  validation, Docker scan exit-code handling, and branch-protection context
+  documentation.
 
 ## Source Of Truth
 
@@ -39,6 +46,9 @@ Use these files together with this tracker:
 - [Stage Issue Plan](STAGE_ISSUE_PLAN.md)
 - [Quality Gates](QUALITY_GATES.md)
 - [Traceability Register](TRACEABILITY.md)
+- [Project Learnings Tracker](PROJECT_LEARNINGS_TRACKER.md)
+- [Project Governance Learnings](PROJECT_GOVERNANCE_LEARNINGS.md)
+- [Review Rigor Retrospective](REVIEW_RIGOR_RETROSPECTIVE.md)
 - GitHub issues and pull requests for execution history
 
 ## Executive Status
@@ -95,8 +105,9 @@ Use these files together with this tracker:
 - Stage 3 preserves inherited compatibility status contexts for `quality /
   secrets` and `security / docker build` while the authoritative Stage 3 secret
   scan and Docker gates remain owned by the `security` and `ci` workflows.
-- Stage 7 is in progress; Stage 8 and Final Review remain open with no merged
-  implementation work.
+- Stage 8 has started on branch
+  `stage8-performance-security-release-readiness` for issue `#13`; Final Review
+  remains open with no merged implementation work.
 
 ## Stage Ledger
 
@@ -109,8 +120,8 @@ Use these files together with this tracker:
 | Stage 4 | Complete, merged to `main` | `#4` reconcile after merge | PR `#29` merged | Executable locally at merge | First-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, Docker build coverage, quality gate, atomic-ingestion hardening, and sub-agent verification hardening merged through PR `#29`. |
 | Stage 5 | Complete, merged to `main` | `#10` closed | PR `#30` merged | Executable at merge | RAG eval runner, prompt-injection guardrails, file-upload abuse tests, and observability metadata merged through PR `#30`. |
 | Stage 6 | Complete, merged to `main` | `#11` closed | PR `#31` merged | Executable at merge | Translation, subtitles, mock/local voice adapter, downloadable artifacts, and Stage 6 quality checks merged through PR `#31`. |
-| Stage 7 | In progress | `#12` open | None merged | Executable in progress | Avatar rendering adapter and demo export started on branch `stage7-avatar-rendering-adapter-export`; mock/local avatar rendering, provider config validation, render job status, local HTML demo export, JSON render manifest and video placeholder artifacts, consent/disclosure controls, artifact validation, UI preview/export workflow, and executable Stage 7 quality gate are implemented in branch. |
-| Stage 8 | Pending | `#13` open | None merged | Placeholder target only | Performance, hardening, and release readiness remain future scope. |
+| Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
+| Stage 8 | In PR review | `#13` open | PR `#33` open | Executable in progress | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and `docs/RELEASE_READINESS_REVIEW.md` are being reviewed on the Stage 8 branch. |
 | Final Review | Pending | `#6` open | None merged | Placeholder target only | Independent release review has not started. |
 
 ## Issue Ledger
@@ -127,8 +138,8 @@ Use these files together with this tracker:
 | `#4` | Reconcile after merge | Stage 4 | First grounded-script vertical slice merged through PR `#29`; issue state must be reconciled with GitHub. |
 | `#10` | Closed | Stage 5 | Evaluation, guardrails, observability completed by merged PR `#30`. |
 | `#11` | Closed | Stage 6 | Multilingual scripts, subtitles, voice adapter completed by merged PR `#31`. |
-| `#12` | Open | Stage 7 | Avatar rendering adapter and demo export; branch `stage7-avatar-rendering-adapter-export` is active. |
-| `#13` | Open | Stage 8 | Performance, security, release readiness. |
+| `#12` | Reconcile after merge | Stage 7 | Avatar rendering adapter and demo export completed by merged PR `#32`; issue state must be reconciled with GitHub. |
+| `#13` | Open | Stage 8 | Performance, security, release readiness; PR `#33` is open from branch `stage8-performance-security-release-readiness`. |
 | `#6` | Open | Final Review | Independent reviewer pass. |
 
 ### Additional Backlog And Governance Issues
@@ -157,6 +168,8 @@ Use these files together with this tracker:
 | `#29` | Merged | 2026-06-30 | Stage 4 first vertical slice from project upload to grounded script display merged to `main`; Stage 5 starts from this baseline. |
 | `#30` | Merged | Reconcile exact merge date | Stage 5 evaluations, guardrails, observability, and quality evidence merged to `main`; Stage 6 starts from this baseline. |
 | `#31` | Merged | Reconcile exact merge date | Stage 6 multilingual scripts, subtitles, mock/local voice adapter, downloadable artifacts, and quality evidence merged to `main`; Stage 7 starts from this baseline. |
+| `#32` | Merged | 2026-07-01 | Stage 7 avatar rendering adapter and export merged to `main` at commit `7f7196a`; Stage 8 starts from this baseline. |
+| `#33` | Open | Not merged | Stage 8 performance, security hardening, and release-readiness PR linked to issue `#13`. |
 
 ## Completed Work
 
@@ -231,8 +244,15 @@ Use these files together with this tracker:
 - Legacy issue `#3` still uses `Stage -1` naming that no longer matches the operating model.
 - Stage 3 issue/PR state still needs GitHub reconciliation after the Stage 3
   merge event.
-- `.stage/current` is `7` in the Stage 7 branch. `make quality` dispatches to
-  the executable `make stage7-quality` gate.
+- `.stage/current` is `8` in the Stage 8 branch. `make quality` dispatches to
+  the executable `make stage8-quality` gate outside policy-only CI mode.
+- Stage 8 PR CI now includes the `stage8 / performance lighthouse` budget status
+  for Locust and Lighthouse checks; release readiness still requires enabling or
+  verifying `main` branch protection/repository rulesets outside the repository.
+- Stage 8 final exhaustive review remediation updated ADR `0006` to document
+  semantic-failure idempotency replay, exact Stage 6 voice-manifest schema
+  validation, and Docker scanner fallback semantics as release-hardening
+  architecture decisions.
 - PR `#27` completed second-pass remediation after independent sub-agent and
   Claude cross-model review identified idempotency, approved-knowledge state,
   failed-output exposure, retrieval, cache, provider-bound secret screening,
@@ -294,17 +314,19 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Run `make quality` locally and require equivalent CI status checks before PR
-   review.
-2. Keep Stage 7 implementation scoped to mock/local avatar rendering, validated
-   export artifacts, provider contract tests, public-use license checks, AI
-   disclosure, consent controls, and docs validation.
-3. Complete PR review for issue `#12` on branch
-   `stage7-avatar-rendering-adapter-export` after local quality and CI pass.
+1. Keep Stage 8 implementation scoped to performance smoke tests, latency
+   budgets, security hardening, dependency/container scan gates, release
+   readiness evidence, and explicit release blockers.
+2. Review PR `#33`, require local `make quality` and equivalent CI status
+   checks, then merge only after issue `#13` linkage and all gates are green.
+3. Enable or verify `main` branch protection/repository rulesets before treating
+   Stage 8 as release-ready; required status contexts must include the emitted
+   `quality / secrets`, `security / docker build`, and
+   `stage8 / performance lighthouse` checks.
 4. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
    `#29`, and confirm the exact Stage 5 PR `#30` merge date if needed.
-5. Reconcile GitHub issue and PR state for Stage 3 issue `#5` and Stage 2 issue
-   `#2` after merged PR events.
+5. Reconcile GitHub issue and PR state for Stage 3 issue `#5`, Stage 2 issue
+   `#2`, and Stage 7 issue `#12` after merged PR events.
 6. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
 7. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue
    `#16` before broader product implementation planning is treated as ready.
@@ -361,3 +383,11 @@ Required update rules:
 | 2026-07-01 | Stage 6 final PR review optional recommendations were tracked as `RR-029` through `RR-031` for Stage 8 hardening/release readiness. |
 | 2026-07-01 | PR `#31` merged Stage 6 to `main`; Stage 7 branch `stage7-avatar-rendering-adapter-export` started for issue `#12`, advanced `.stage/current` to `7`, and activated UI/UX Pro Max CLI/skill guidance for avatar rendering and demo export design. |
 | 2026-07-01 | Stage 7 implementation added mock/local avatar rendering, strict provider config validation, render lifecycle status, provider failure fallback, exact active-content-checked local HTML demo export, semantically bound strict JSON render manifest, self-contained strict JSON video placeholder artifact, source evidence IDs/checksums, source-matched preview/export-artifact UI, affirmative disclosure/consent controls, cloned identity rejection, semantic-validation and terminal failed idempotency replay, frontend checksum/content artifact validation, API/UI tests, and executable Stage 7 quality checks. |
+| 2026-07-01 | PR `#32` merged Stage 7 to `main` at commit `7f7196a`; Stage 8 branch `stage8-performance-security-release-readiness` started for issue `#13`, advanced `.stage/current` to `8`, activated release-readiness skill guidance, and began performance/security/release hardening. |
+| 2026-07-01 | PR `#33` opened for Stage 8 performance, security hardening, and release readiness; sub-agent review findings are being remediated before merge. |
+| 2026-07-01 | Stage 8 review remediation added ADR `0006` for release hardening gates and removed a synthetic secret-assignment fixture that tripped repository guardrails. |
+| 2026-07-01 | Stage 8 captured review-process failure analysis and the future ruthless-review protocol in `docs/REVIEW_RIGOR_RETROSPECTIVE.md`. |
+| 2026-07-01 | Stage 8 added `docs/PROJECT_LEARNINGS_TRACKER.md` and linked it from `README.md` so reusable project learnings are discoverable for future applications. |
+| 2026-07-01 | Stage 8 added `docs/PROJECT_GOVERNANCE_LEARNINGS.md` to capture reusable governance patterns including status tracking, recommended-review registers, stage gates, ADRs, traceability, third-party/tool locks, release evidence, and repository settings checks. |
+| 2026-07-01 | Stage 8 final exhaustive review remediation updated ADR `0006` and status tracking for semantic-failure idempotency replay, exact Stage 6 voice-manifest validation, Docker scan exit-code handling, and branch-protection context documentation. |
+| 2026-07-01 | Stage 8 final PR review reconciled `docs/REPOSITORY_GUARDRAILS.md` and the Stage 8 quality checker so the canonical branch-protection checklist includes `stage8 / performance lighthouse`. |

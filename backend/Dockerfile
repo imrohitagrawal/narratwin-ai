@@ -1,4 +1,4 @@
-FROM python:3.13-slim@sha256:eb43ff125d8d58d7449dcba7d336c23bcac412f526d861db493b9994d8010280
+FROM python:3.13-alpine@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -12,7 +12,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
 COPY backend ./backend
-RUN useradd --create-home --uid 10001 appuser && chown -R appuser:appuser /app
+RUN adduser -D -u 10001 appuser && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000

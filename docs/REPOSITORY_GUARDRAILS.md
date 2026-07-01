@@ -62,6 +62,7 @@ Enable branch protection or repository ruleset for `main` with:
   - `secret scan / bandit / audit / semgrep`
   - `security / docker build`
   - `eval smoke`
+  - `stage8 / performance lighthouse`
 - Require branches to be up to date before merging.
 - Block force pushes.
 - Block deletions.

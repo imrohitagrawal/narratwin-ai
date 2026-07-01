@@ -28,6 +28,8 @@ Closes #
 - [ ] Architecture-impacting changes include an ADR update under `docs/ADR/`.
 - [ ] PRD-impacting changes update `docs/TRACEABILITY.md`.
 - [ ] Repository-tracked stage/governance changes update `docs/STATUS.md`.
+- [ ] Implementation or release-readiness changes checked `docs/PROJECT_LEARNINGS_TRACKER.md`.
+- [ ] Implementation or release-readiness changes completed invariant, exploit-matrix, and contract/gate review per `docs/REVIEW_RIGOR_RETROSPECTIVE.md`.
 
 ## Validation evidence
 

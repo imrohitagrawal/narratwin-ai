@@ -59,10 +59,20 @@ jobs:
   docker:
     name: security / docker build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
       - name: Docker build compatibility context
         run: bash scripts/ci/docker-build.sh
+      - name: Docker image vulnerability scan
+        run: bash scripts/ci/docker-image-scan.sh
+      - name: Upload Docker image scan reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: docker-image-scan-reports
+          path: reports/security
+          if-no-files-found: error
+          retention-days: 7
