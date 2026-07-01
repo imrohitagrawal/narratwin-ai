@@ -7,13 +7,14 @@ Status: pre-release hardening review for issue `#13`.
 - [ ] `make quality` passes on `stage8-performance-security-release-readiness`.
 - [ ] Health endpoint < 200 ms local.
 - [ ] Script generation mocked path < 2 sec.
-- [ ] Upload limit enforced by `Content-Length` and streaming read checks.
+- [ ] API write requests without valid `Content-Length` are rejected before body parsing; uploads keep streaming read checks.
 - [ ] Upload MIME validation rejects `.md`/`.txt` octet-stream compatibility by default.
 - [ ] Write rate limiting returns `RATE_LIMIT_EXCEEDED`.
 - [ ] `uv run pip-audit` reports no critical/high active dependency vulnerabilities.
 - [ ] `npm --prefix frontend audit --audit-level=high` reports no high/critical frontend dependency vulnerabilities.
-- [ ] Docker image scan reports no critical/high vulnerabilities for backend and frontend images.
-- [ ] Lighthouse checks run and meet Stage 8 local thresholds.
+- [ ] Docker image scan reports no critical/high vulnerabilities for backend and frontend images locally and in PR CI.
+- [ ] Lighthouse checks run and meet Stage 8 local category and named audit thresholds.
+- [ ] Locust headless smoke records health endpoint traffic and keeps local p95 under 200 ms.
 - [ ] Eval/security gates pass without paid providers or real provider keys.
 
 ## Release Blockers
@@ -24,4 +25,11 @@ Status: pre-release hardening review for issue `#13`.
 
 ## Rollback
 
-Rollback is code-only for Stage 8: revert the Stage 8 PR, redeploy the previous image pair, and verify `/api/v1/healthz`, eval smoke, dependency audit, and Docker image scan.
+Stage 8 has no database migration or durable data rollback. Rollback is code-only:
+
+1. Revert PR `#33` or deploy the previous `main` image pair from PR `#32` commit `7f7196a`.
+2. Rebuild/redeploy backend and frontend images from the previous commit.
+3. Notify the reviewer/owner in the PR thread that Stage 8 was rolled back.
+4. Verify `/api/v1/healthz`, eval smoke, dependency audit, Docker image scan, and frontend smoke.
+
+Expected rollback time: under 15 minutes for local/demo deployments, assuming Docker image build cache is warm.

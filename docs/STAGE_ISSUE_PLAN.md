@@ -107,6 +107,7 @@ Allowed changes:
 - `.github/workflows/quality-gates.yml`
 - `.gitignore`
 - `.stage/current`
+- `.github/workflows/security.yml`
 - `Makefile`
 - `docs/ADR/0001-architecture-approach.md`
 - `docs/ADR/0001-system-architecture.md`

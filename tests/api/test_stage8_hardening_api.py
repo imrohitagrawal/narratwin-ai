@@ -1,9 +1,21 @@
+import asyncio
+import json
 import time
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any, cast
 
 from fastapi.testclient import TestClient
+from starlette.types import Message, Receive, Scope, Send
 
-from backend.app.main import MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE, app, reset_app_state_for_tests
+from backend.app.main import (
+    MAX_STAGE8_RATE_LIMIT_KEYS,
+    MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE,
+    app,
+    rate_limit_key_for,
+    reset_app_state_for_tests,
+    stage8_write_rate_limiter,
+)
 from backend.app.stage4 import MAX_API_REQUEST_BYTES
 
 
@@ -49,6 +61,52 @@ def _upload_approve_ingest_fixture(client: TestClient, project_id: str) -> None:
     assert ingestion_response.status_code == 201
 
 
+async def _call_app_without_content_length(path: str, body: bytes) -> tuple[int, dict[str, object]]:
+    messages: list[Message] = []
+    body_sent = False
+
+    async def receive() -> Message:
+        nonlocal body_sent
+        if body_sent:
+            return {"type": "http.disconnect"}
+        body_sent = True
+        return {"type": "http.request", "body": body, "more_body": False}
+
+    async def send(message: Message) -> None:
+        messages.append(message)
+
+    scope: Scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": "POST",
+        "scheme": "http",
+        "path": path,
+        "raw_path": path.encode("ascii"),
+        "query_string": b"",
+        "headers": [
+            (b"host", b"testserver"),
+            (b"content-type", b"application/json"),
+            (b"idempotency-key", b"stage8-missing-length"),
+        ],
+        "client": ("127.0.0.1", 43210),
+        "server": ("testserver", 80),
+    }
+    await app(scope, cast(Receive, receive), cast(Send, send))
+
+    status = next(
+        cast(int, message["status"])
+        for message in messages
+        if message["type"] == "http.response.start"
+    )
+    response_body = b"".join(
+        cast(bytes, message.get("body", b""))
+        for message in messages
+        if message["type"] == "http.response.body"
+    )
+    return status, cast(dict[str, object], json.loads(response_body.decode("utf-8")))
+
+
 def test_health_reports_stage8_with_local_latency_budget() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
@@ -78,6 +136,24 @@ def test_write_rate_limit_rejects_excess_requests_without_provider_calls() -> No
     assert last_response.json()["error"]["code"] == "RATE_LIMIT_EXCEEDED"
 
 
+def test_write_rate_limit_uses_client_ip_and_bounds_retained_keys() -> None:
+    reset_app_state_for_tests()
+
+    first_request = SimpleNamespace(client=SimpleNamespace(host="203.0.113.10"), headers={})
+    second_request = SimpleNamespace(
+        client=SimpleNamespace(host="203.0.113.10"),
+        headers={"X-Local-User-Id": "rotated-user"},
+    )
+
+    assert rate_limit_key_for(cast(Any, first_request)) == "ip:203.0.113.10"
+    assert rate_limit_key_for(cast(Any, second_request)) == "ip:203.0.113.10"
+
+    for index in range(MAX_STAGE8_RATE_LIMIT_KEYS):
+        assert stage8_write_rate_limiter.allow(key=f"ip:198.51.100.{index}", now=1.0)
+    assert not stage8_write_rate_limiter.allow(key="ip:203.0.113.200", now=1.0)
+    assert stage8_write_rate_limiter.allow(key="ip:203.0.113.200", now=62.0)
+
+
 def test_json_request_size_limit_is_enforced_before_validation() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
@@ -93,6 +169,17 @@ def test_json_request_size_limit_is_enforced_before_validation() -> None:
     assert response.json()["error"]["code"] == "REQUEST_TOO_LARGE"
 
 
+def test_json_request_size_limit_rejects_missing_content_length_before_body_parsing() -> None:
+    reset_app_state_for_tests()
+    body = json.dumps({"name": "x" * (MAX_API_REQUEST_BYTES + 1)}).encode("utf-8")
+
+    status, payload = asyncio.run(_call_app_without_content_length("/api/v1/projects", body))
+
+    assert status == 411
+    error = cast(dict[str, object], payload["error"])
+    assert error["code"] == "CONTENT_LENGTH_REQUIRED"
+
+
 def test_upload_mime_validation_rejects_octet_stream_markdown_compatibility() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
@@ -106,6 +193,27 @@ def test_upload_mime_validation_rejects_octet_stream_markdown_compatibility() ->
 
     assert response.status_code == 415
     assert response.json()["error"]["code"] == "UNSUPPORTED_MEDIA_TYPE"
+
+
+def test_provider_bound_prompt_rejects_secret_like_content_before_generation() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id = _create_project(client, key="stage8-secret-prompt-project")
+
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs",
+        json={
+            "audience": "RECRUITER",
+            "requestedLanguage": "en",
+            "depth": "CONCISE",
+            "style": "CONFIDENT",
+            "prompt": "Use api_key=visible-secret-token-value in the walkthrough.",
+        },
+        headers=idempotency_headers("stage8-secret-prompt"),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "SECRET_LIKE_CONTENT"
 
 
 def test_mocked_script_generation_path_stays_under_two_seconds() -> None:

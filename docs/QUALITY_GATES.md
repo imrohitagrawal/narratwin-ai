@@ -354,14 +354,20 @@ Gate validates:
 - changed files stay within the documented Stage 8 allowlist
 - health endpoint < 200 ms local
 - script generation mocked path < 2 sec
-- upload limit enforced through request and streaming limits
+- upload limit enforced through fail-closed `Content-Length` checks and
+  streaming read limits
 - upload MIME validation rejects octet-stream compatibility for markdown/text
-- write rate limiting returns `RATE_LIMIT_EXCEEDED`
+- write rate limiting returns `RATE_LIMIT_EXCEEDED`, uses the client IP as the
+  local actor key, and bounds retained rate-limit keys
 - `locust` is locked as dev-only performance tooling
-- frontend Lighthouse checks are locked and executable
+- performance smoke runs a headless Locust profile and enforces the health
+  endpoint p95 latency budget
+- frontend Lighthouse checks are locked and enforce both category and named audit
+  budgets
 - dependency audit blocks critical/high findings
 - Docker image scan blocks critical/high container vulnerabilities through
-  Trivy, Grype, or Docker Scout
+  Trivy, Grype, pinned Dockerized Trivy, or Docker Scout, including the PR
+  security workflow scan
 - frontend production image strips npm/npx from the runner layer before
   scanning so package-manager-only vulnerabilities are not shipped
 - release checklist, runbook, demo seed data, portfolio README, and

@@ -30,6 +30,8 @@ Use it to answer:
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
   data, portfolio README, and release-readiness review evidence.
+- Stage 8 PR `#33` is open for branch
+  `stage8-performance-security-release-readiness` and issue `#13`.
 
 ## Source Of Truth
 
@@ -112,7 +114,7 @@ Use these files together with this tracker:
 | Stage 5 | Complete, merged to `main` | `#10` closed | PR `#30` merged | Executable at merge | RAG eval runner, prompt-injection guardrails, file-upload abuse tests, and observability metadata merged through PR `#30`. |
 | Stage 6 | Complete, merged to `main` | `#11` closed | PR `#31` merged | Executable at merge | Translation, subtitles, mock/local voice adapter, downloadable artifacts, and Stage 6 quality checks merged through PR `#31`. |
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
-| Stage 8 | In progress | `#13` open | None merged | Executable in progress | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and `docs/RELEASE_READINESS_REVIEW.md` are being added on the Stage 8 branch. |
+| Stage 8 | In PR review | `#13` open | PR `#33` open | Executable in progress | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and `docs/RELEASE_READINESS_REVIEW.md` are being reviewed on the Stage 8 branch. |
 | Final Review | Pending | `#6` open | None merged | Placeholder target only | Independent release review has not started. |
 
 ## Issue Ledger
@@ -130,7 +132,7 @@ Use these files together with this tracker:
 | `#10` | Closed | Stage 5 | Evaluation, guardrails, observability completed by merged PR `#30`. |
 | `#11` | Closed | Stage 6 | Multilingual scripts, subtitles, voice adapter completed by merged PR `#31`. |
 | `#12` | Reconcile after merge | Stage 7 | Avatar rendering adapter and demo export completed by merged PR `#32`; issue state must be reconciled with GitHub. |
-| `#13` | Open | Stage 8 | Performance, security, release readiness; branch `stage8-performance-security-release-readiness` is active. |
+| `#13` | Open | Stage 8 | Performance, security, release readiness; PR `#33` is open from branch `stage8-performance-security-release-readiness`. |
 | `#6` | Open | Final Review | Independent reviewer pass. |
 
 ### Additional Backlog And Governance Issues
@@ -160,6 +162,7 @@ Use these files together with this tracker:
 | `#30` | Merged | Reconcile exact merge date | Stage 5 evaluations, guardrails, observability, and quality evidence merged to `main`; Stage 6 starts from this baseline. |
 | `#31` | Merged | Reconcile exact merge date | Stage 6 multilingual scripts, subtitles, mock/local voice adapter, downloadable artifacts, and quality evidence merged to `main`; Stage 7 starts from this baseline. |
 | `#32` | Merged | 2026-07-01 | Stage 7 avatar rendering adapter and export merged to `main` at commit `7f7196a`; Stage 8 starts from this baseline. |
+| `#33` | Open | Not merged | Stage 8 performance, security hardening, and release-readiness PR linked to issue `#13`. |
 
 ## Completed Work
 
@@ -234,8 +237,8 @@ Use these files together with this tracker:
 - Legacy issue `#3` still uses `Stage -1` naming that no longer matches the operating model.
 - Stage 3 issue/PR state still needs GitHub reconciliation after the Stage 3
   merge event.
-- `.stage/current` is `7` in the Stage 7 branch. `make quality` dispatches to
-  the executable `make stage7-quality` gate.
+- `.stage/current` is `8` in the Stage 8 branch. `make quality` dispatches to
+  the executable `make stage8-quality` gate outside policy-only CI mode.
 - PR `#27` completed second-pass remediation after independent sub-agent and
   Claude cross-model review identified idempotency, approved-knowledge state,
   failed-output exposure, retrieval, cache, provider-bound secret screening,
@@ -297,22 +300,19 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Run `make quality` locally and require equivalent CI status checks before PR
-   review.
-2. Keep Stage 8 implementation scoped to performance smoke tests, latency
+1. Keep Stage 8 implementation scoped to performance smoke tests, latency
    budgets, security hardening, dependency/container scan gates, release
    readiness evidence, and explicit release blockers.
-3. Open a PR from `stage8-performance-security-release-readiness` to `main`
-   linked with `Closes #13` after local quality and independent release/security
-   review pass.
-4. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
+2. Review PR `#33`, require local `make quality` and equivalent CI status
+   checks, then merge only after issue `#13` linkage and all gates are green.
+3. Reconcile GitHub issue and PR state for Stage 4 issue `#4` after merged PR
    `#29`, and confirm the exact Stage 5 PR `#30` merge date if needed.
-5. Reconcile GitHub issue and PR state for Stage 3 issue `#5`, Stage 2 issue
+4. Reconcile GitHub issue and PR state for Stage 3 issue `#5`, Stage 2 issue
    `#2`, and Stage 7 issue `#12` after merged PR events.
-6. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
-7. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue
+5. Confirm issue `#1` disposition after the Stage 1 product/PRD hardening merge.
+6. Run the follow-on Spec Kit constitution/spec/plan/tasks gate through issue
    `#16` before broader product implementation planning is treated as ready.
-8. Close or supersede stale governance issues that conflict with the current
+7. Close or supersede stale governance issues that conflict with the current
    operating model, especially `#3`.
 9. Keep this file updated at every stage boundary, every stage-issue change, and
    every merged stage PR.
@@ -366,3 +366,4 @@ Required update rules:
 | 2026-07-01 | PR `#31` merged Stage 6 to `main`; Stage 7 branch `stage7-avatar-rendering-adapter-export` started for issue `#12`, advanced `.stage/current` to `7`, and activated UI/UX Pro Max CLI/skill guidance for avatar rendering and demo export design. |
 | 2026-07-01 | Stage 7 implementation added mock/local avatar rendering, strict provider config validation, render lifecycle status, provider failure fallback, exact active-content-checked local HTML demo export, semantically bound strict JSON render manifest, self-contained strict JSON video placeholder artifact, source evidence IDs/checksums, source-matched preview/export-artifact UI, affirmative disclosure/consent controls, cloned identity rejection, semantic-validation and terminal failed idempotency replay, frontend checksum/content artifact validation, API/UI tests, and executable Stage 7 quality checks. |
 | 2026-07-01 | PR `#32` merged Stage 7 to `main` at commit `7f7196a`; Stage 8 branch `stage8-performance-security-release-readiness` started for issue `#13`, advanced `.stage/current` to `8`, activated release-readiness skill guidance, and began performance/security/release hardening. |
+| 2026-07-01 | PR `#33` opened for Stage 8 performance, security hardening, and release readiness; sub-agent review findings are being remediated before merge. |

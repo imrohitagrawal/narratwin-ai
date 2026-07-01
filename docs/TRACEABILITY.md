@@ -121,12 +121,12 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 | Artifact | Requirement coverage | Stage / issue | Status |
 |---|---|---|---|
-| `backend/app/main.py` and `backend/app/stage4.py` | Stage 8 health marker, write rate limiting, request size limits, upload limit enforcement, strict upload MIME validation, and request ID/error envelope preservation | Stage 8 / `#13` | Hardened |
+| `backend/app/main.py` and `backend/app/stage4.py` | Stage 8 health marker, client-IP keyed and bounded write rate limiting, fail-closed request `Content-Length` limits, upload limit enforcement, strict upload MIME validation, provider-bound prompt secret screening, and request ID/error envelope preservation | Stage 8 / `#13` | Hardened |
 | `backend/app/stage6.py` and `tests/unit/test_stage6_multilingual.py` | RR-029 direct domain-service rejection of blank glossary terms | Stage 8 / `#13` | Hardened |
-| `tests/api/test_stage8_hardening_api.py` | health endpoint < 200 ms local, mocked script generation < 2 sec, upload MIME rejection, request-size rejection, and rate-limit behavior | Stage 8 / `#13` | Added |
-| `perf/stage8_locustfile.py` and `scripts/ci/performance-smoke.sh` | Performance smoke tests and Locust profile for local API checks | Stage 8 / `#13` | Added |
-| `frontend/scripts/run-lighthouse.mjs` and `scripts/ci/frontend-lighthouse.sh` | Frontend Lighthouse checks for performance, accessibility, best practices, and SEO | Stage 8 / `#13` | Added |
-| `scripts/ci/dependency-security.sh` and `scripts/ci/docker-image-scan.sh` | Dependency audit and Docker image scan gates for no critical/high dependency or container vulnerabilities | Stage 8 / `#13` | Hardened |
+| `tests/api/test_stage8_hardening_api.py` | health endpoint < 200 ms local, mocked script generation < 2 sec, upload MIME rejection, request-size rejection including missing `Content-Length`, prompt secret screening, and rate-limit behavior | Stage 8 / `#13` | Added |
+| `perf/stage8_locustfile.py` and `scripts/ci/performance-smoke.sh` | Performance smoke tests and headless Locust p95 health-budget profile for local API checks | Stage 8 / `#13` | Added |
+| `frontend/scripts/run-lighthouse.mjs` and `scripts/ci/frontend-lighthouse.sh` | Frontend Lighthouse checks for performance, accessibility, best practices, SEO, and named audit budgets | Stage 8 / `#13` | Added |
+| `.github/workflows/security.yml`, `scripts/ci/dependency-security.sh`, and `scripts/ci/docker-image-scan.sh` | Dependency audit and Docker image scan gates for no critical/high dependency or container vulnerabilities, including PR CI execution and pinned Dockerized Trivy fallback | Stage 8 / `#13` | Hardened |
 | `docs/RELEASE_CHECKLIST.md`, `docs/RUNBOOK.md`, and `docs/RELEASE_READINESS_REVIEW.md` | release checklist, rollback notes, runbook, known limitations, multi-worker block, real video export/license posture block, persistent synthetic-media consent/provenance block, and source-run based avatar rendering decision | Stage 8 / `#13` | Added |
 | `demo/stage8_seed_project.md` and `portfolio/README.md` | demo seed data and portfolio README for local, provider-free showcase path | Stage 8 / `#13` | Added |
 | `scripts/quality/check_stage8_docs.py`, `docs/QUALITY_GATES.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/SKILL_LOCK.md`, `docs/THIRD_PARTY_NOTICES.md`, and `docs/RECOMMENDED_REVIEW_ITEMS.md` | executable Stage 8 gate, stage branch scope, active skill/tool lock, third-party notices, and RR-029 through RR-035 dispositions | Stage 8 / `#13` | Added and updated |

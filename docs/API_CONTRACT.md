@@ -23,9 +23,14 @@
 - Generated outputs expose evaluation state and context references.
 - Provider secrets are never accepted from frontend request bodies.
 - Write requests are locally rate limited and return `RATE_LIMIT_EXCEEDED` with
-  HTTP `429` when the Stage 8 local window is exceeded.
-- API write requests have a general request size limit. Uploads keep the stricter
-  multipart upload limit and streaming read limit.
+  HTTP `429` when the Stage 8 local window is exceeded. This local flood-control
+  check runs before endpoint idempotency handling, so over-budget duplicate
+  idempotency replays can receive `429 RATE_LIMIT_EXCEEDED`.
+- API write requests have a general request size limit and must send a valid
+  non-negative `Content-Length`. Missing length returns
+  `411 CONTENT_LENGTH_REQUIRED`; malformed length returns
+  `400 INVALID_CONTENT_LENGTH`. Uploads keep the stricter multipart upload limit
+  and streaming read limit.
 - Markdown uploads must use `text/markdown`; plain-text uploads must use
   `text/plain`. `application/octet-stream` compatibility is intentionally
   rejected until a validated compatibility exception is approved.
@@ -186,6 +191,9 @@ For duplicate keys:
   without starting duplicate provider work
 - provider calls, vector writes, and generated artifacts must not be duplicated
 - idempotency records are retained for at least 24 hours in local mode
+- Stage 8 local rate limiting is a pre-idempotency flood-control guard. It can
+  return `429 RATE_LIMIT_EXCEEDED` before idempotency replay logic when a caller
+  exceeds the local write window.
 
 Write endpoints requiring idempotency:
 
@@ -454,7 +462,8 @@ Request:
 }
 ```
 
-Response `202`:
+Response `201` in the Stage 4 through Stage 8 synchronous local path. Future
+queued ingestion may return `202`:
 
 ```json
 {
@@ -700,7 +709,7 @@ Failure behavior:
   `UNSAFE_RETRIEVED_CONTEXT`
 - unsupported project factual claims return persisted `FAILED` evaluation state
 - provider failure returns structured `502` or stored failed run
-- rate limits return `429 RATE_LIMITED`
+- rate limits return `429 RATE_LIMIT_EXCEEDED`
 - queue admission backpressure returns `429 BACKPRESSURE_QUEUE_FULL` with
   `Retry-After` when retry is safe
 - worker or dependency unavailability returns `503 DEPENDENCY_UNAVAILABLE`

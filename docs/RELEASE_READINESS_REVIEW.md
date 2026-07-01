@@ -1,7 +1,7 @@
 # Stage 8 Release Readiness Review
 
-Issue: `#13`  
-Branch: `stage8-performance-security-release-readiness`  
+Issue: `#13`
+Branch: `stage8-performance-security-release-readiness`
 Review date: 2026-07-01
 
 ## Decision
@@ -14,19 +14,20 @@ Stage 8 adds release-readiness hardening evidence, but does not approve producti
 |---|---|
 | health endpoint < 200 ms local | `tests/api/test_stage8_hardening_api.py::test_health_reports_stage8_with_local_latency_budget` |
 | script generation mocked path < 2 sec | `tests/api/test_stage8_hardening_api.py::test_mocked_script_generation_path_stays_under_two_seconds` |
-| upload limit enforced | upload `Content-Length`, streaming read limit, and Stage 8 API tests |
+| upload limit enforced | `Content-Length is required` for write requests before body parsing, uploads keep streaming read limit, and Stage 8 API tests cover both paths |
 | no critical/high dependency vulnerabilities | `scripts/ci/dependency-security.sh` |
-| no critical/high container vulnerabilities | `scripts/ci/docker-image-scan.sh` using Trivy, Grype, or Docker Scout |
+| no critical/high container vulnerabilities | `scripts/ci/docker-image-scan.sh` using Trivy, Grype, pinned Dockerized Trivy, or Docker Scout; PR CI runs the image scan in the security workflow |
 | all eval/security gates pass | `make stage8-quality` runs security and eval smoke gates |
 
 ## Hardening Added
 
 - Stage 8 health marker.
 - Write rate limiting for local API write methods.
-- General request size limits plus existing upload streaming limit.
+- General request size limits that fail closed on missing/invalid `Content-Length`, plus existing upload streaming limit.
 - Strict markdown/plain-text upload MIME validation remains enforced; `application/octet-stream` compatibility is explicitly rejected.
-- Performance smoke tests and Locust profile.
-- Frontend Lighthouse checks.
+- Provider-bound prompt text is screened for secret-like content before generation.
+- Performance smoke tests and headless Locust profile with health p95 threshold.
+- Frontend Lighthouse checks with category and named audit thresholds.
 - Dependency audit and Docker image scan wrappers.
 - Frontend production image strips npm/npx from the runner layer so vulnerable package-manager-only dependencies such as npm-bundled `undici` are not shipped with the standalone server.
 - Release checklist, runbook, demo seed data, and portfolio README.
@@ -43,4 +44,4 @@ Stage 8 adds release-readiness hardening evidence, but does not approve producti
 
 ## Independent Security And Release Review
 
-The Stage 8 review checked untrusted upload boundaries, request size handling, rate limiting, dependency audit, Docker scan posture, mock/local provider defaults, synthetic-media consent/provenance blockers, release rollback notes, and no paid-provider credential dependency. Residual risk is documented as release-blocking limits rather than hidden UI/API behavior.
+The Stage 8 review checked untrusted upload boundaries, request size handling, rate limiting, dependency audit, Docker scan posture, mock/local provider defaults, synthetic-media consent/provenance blockers, release rollback notes, and no paid-provider credential dependency. Follow-up review also checked sub-agent findings for request-size bypass, rate-limit key trust, CI scan enforcement, performance-smoke depth, rollback actionability, and status-ledger drift. Residual risk is documented as release-blocking limits rather than hidden UI/API behavior.

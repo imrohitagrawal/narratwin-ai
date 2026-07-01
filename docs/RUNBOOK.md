@@ -14,6 +14,9 @@
 - Generation: mocked grounded script generation must stay under 2 sec locally.
 - Uploads: accepted files remain markdown/text only, UTF-8 only, size limited, and secret/prompt-injection screened.
 - Rate limiting: excessive local write requests return `RATE_LIMIT_EXCEEDED`.
+- Monitoring owner: the PR reviewer watches the first local/demo run and records failures in PR `#33`.
+- Logs: local API logs and CI artifacts are the authoritative Stage 8 evidence; production dashboards and alert routes are Final Review blockers.
+- First-hour production monitoring is not approved in Stage 8 because no production deployment is approved.
 
 ## Incident Response
 
@@ -21,6 +24,22 @@
 - Container critical/high finding: rebuild from a patched base image or dependency lock, then rerun Docker image scan.
 - Performance budget regression: profile the changed path, document the bottleneck, and keep the release blocked until the budget passes.
 - Synthetic-media consent/provenance gap: keep external avatar/public export disabled.
+
+## Rollback
+
+Stage 8 has no schema migration, external provider state, or durable media output to roll back.
+
+1. Revert PR `#33` or check out PR `#32` baseline commit `7f7196a`.
+2. Rebuild the previous backend/frontend images with `bash scripts/ci/docker-build.sh`.
+3. Redeploy the previous local/demo image pair.
+4. Run `GET /api/v1/healthz`, `bash scripts/ci/eval-smoke.sh`, `bash scripts/ci/dependency-security.sh`, and `bash scripts/ci/docker-image-scan.sh`.
+5. Post rollback status and remaining blockers in the PR or release thread.
+
+Rollback owner: the release reviewer for the active PR. Expected local/demo rollback time: under 15 minutes with warm Docker cache.
+
+## Monitoring Blockers
+
+Production launch remains blocked until Final Review defines dashboard locations, alert thresholds, paging/ownership, first-hour watch procedure, and rollback communication channels for a real deployment environment.
 
 ## Deployment Limits
 

@@ -15,6 +15,7 @@ STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
 
 REQUIRED_FILES = [
     ".stage/current",
+    ".github/workflows/security.yml",
     "Makefile",
     "backend/app/main.py",
     "backend/app/stage4.py",
@@ -124,6 +125,8 @@ def check_backend_and_tests(failures: list[str]) -> None:
         "Stage8WriteRateLimiter",
         "RATE_LIMIT_EXCEEDED",
         "REQUEST_TOO_LARGE",
+        "CONTENT_LENGTH_REQUIRED",
+        "MAX_STAGE8_RATE_LIMIT_KEYS",
         "rate_limit_key_for",
         "stage8_write_rate_limiter.reset",
     ):
@@ -134,7 +137,9 @@ def check_backend_and_tests(failures: list[str]) -> None:
     for marker in (
         "health_reports_stage8_with_local_latency_budget",
         "write_rate_limit_rejects_excess_requests",
+        "write_rate_limit_uses_client_ip_and_bounds_retained_keys",
         "json_request_size_limit_is_enforced",
+        "json_request_size_limit_rejects_missing_content_length",
         "upload_mime_validation_rejects_octet_stream",
         "mocked_script_generation_path_stays_under_two_seconds",
         "latency_ms < 200",
@@ -153,6 +158,7 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
     package = json.loads(read("frontend/package.json"))
     package_lock = read("frontend/package-lock.json")
     makefile = read("Makefile")
+    security_workflow = read(".github/workflows/security.yml")
     if "locust" not in pyproject:
         fail("Stage 8 must lock locust as a dev-only performance tool.", failures)
     if "lighthouse" not in package.get("devDependencies", {}):
@@ -181,15 +187,23 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
     for marker in (
         "locust",
         "stage8_hardening_api",
+        "--headless",
+        "NARRATWIN_LOCUST_HEALTH_P95_MS",
         "lighthouse",
         "docker scout cves",
         "trivy image",
+        "aquasec/trivy@sha256",
+        "largest-contentful-paint",
+        "cumulative-layout-shift",
         "--only-severity critical,high",
         "performance",
         "accessibility",
     ):
         if marker not in scripts:
             fail(f"Stage 8 scripts must include {marker}.", failures)
+    for marker in ("Docker image vulnerability scan", "docker-image-scan.sh", "upload-artifact"):
+        if marker not in security_workflow:
+            fail(f"Stage 8 security workflow must include {marker}.", failures)
 
 
 def check_docs(failures: list[str]) -> None:
@@ -222,8 +236,10 @@ def check_docs(failures: list[str]) -> None:
         "no critical/high container vulnerabilities",
         "rate limiting",
         "request size limits",
+        "Content-Length is required",
         "upload MIME validation",
         "Lighthouse",
+        "p95",
         "Trivy",
         "Docker Scout",
         "release checklist",

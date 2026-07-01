@@ -521,6 +521,8 @@ class Stage4Service:
         self._require_project(principal=principal, project_id=project_id)
         if len(prompt) > MAX_PROMPT_CHARS:
             raise Stage4Error(413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit.")
+        if contains_secret_like_content(prompt):
+            raise Stage4Error(422, "SECRET_LIKE_CONTENT", "Prompt contains secret-like content.")
         if self._run_count_for_project(principal=principal, project_id=project_id) >= MAX_RUNS_PER_PROJECT:
             raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Project exceeds the Stage 4 generation run limit.")
 

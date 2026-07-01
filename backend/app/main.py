@@ -547,13 +547,15 @@ FOUNDATION_HEADERS = {
 }
 MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE = 120
 STAGE8_RATE_LIMIT_WINDOW_SECONDS = 60.0
+MAX_STAGE8_RATE_LIMIT_KEYS = 2_048
 WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 
 class Stage8WriteRateLimiter:
-    def __init__(self, *, limit: int, window_seconds: float) -> None:
+    def __init__(self, *, limit: int, window_seconds: float, max_keys: int) -> None:
         self.limit = limit
         self.window_seconds = window_seconds
+        self.max_keys = max_keys
         self._events_by_key: dict[str, list[float]] = {}
         self._lock = Lock()
 
@@ -561,7 +563,16 @@ class Stage8WriteRateLimiter:
         timestamp = time.monotonic() if now is None else now
         cutoff = timestamp - self.window_seconds
         with self._lock:
+            for existing_key, existing_events in list(self._events_by_key.items()):
+                retained_events = [event for event in existing_events if event > cutoff]
+                if retained_events:
+                    self._events_by_key[existing_key] = retained_events
+                else:
+                    del self._events_by_key[existing_key]
+
             events = [event for event in self._events_by_key.get(key, []) if event > cutoff]
+            if key not in self._events_by_key and len(self._events_by_key) >= self.max_keys:
+                return False
             if len(events) >= self.limit:
                 self._events_by_key[key] = events
                 return False
@@ -577,6 +588,7 @@ class Stage8WriteRateLimiter:
 stage8_write_rate_limiter = Stage8WriteRateLimiter(
     limit=MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE,
     window_seconds=STAGE8_RATE_LIMIT_WINDOW_SECONDS,
+    max_keys=MAX_STAGE8_RATE_LIMIT_KEYS,
 )
 
 
@@ -589,10 +601,29 @@ async def add_foundation_headers(
     request.state.request_id = request_id
     if request.method in WRITE_METHODS and request.url.path.startswith("/api/v1/"):
         content_length_header = request.headers.get("Content-Length")
+        if content_length_header is None:
+            return error_response(
+                request=request,
+                status_code=411,
+                code="CONTENT_LENGTH_REQUIRED",
+                message="Content-Length is required for Stage 8 local write request limits.",
+            )
         try:
-            request_bytes = int(content_length_header) if content_length_header is not None else 0
+            request_bytes = int(content_length_header)
         except ValueError:
-            request_bytes = MAX_API_REQUEST_BYTES + 1
+            return error_response(
+                request=request,
+                status_code=400,
+                code="INVALID_CONTENT_LENGTH",
+                message="Content-Length must be a non-negative integer.",
+            )
+        if request_bytes < 0:
+            return error_response(
+                request=request,
+                status_code=400,
+                code="INVALID_CONTENT_LENGTH",
+                message="Content-Length must be a non-negative integer.",
+            )
         request_limit = (
             MAX_UPLOAD_REQUEST_BYTES
             if request.method == "POST" and request.url.path.endswith("/knowledge-documents")
@@ -625,9 +656,6 @@ def request_id_for(request: Request) -> str:
 
 
 def rate_limit_key_for(request: Request) -> str:
-    principal = request.headers.get("X-Local-User-Id")
-    if principal and principal.strip():
-        return f"user:{principal.strip()}"
     client_host = request.client.host if request.client else "local"
     return f"ip:{client_host}"
 

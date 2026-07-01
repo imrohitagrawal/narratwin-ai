@@ -36,16 +36,41 @@ const thresholds = {
   "best-practices": 0.9,
   seo: 0.8,
 };
+const auditThresholds = {
+  "largest-contentful-paint": 2500,
+  "cumulative-layout-shift": 0.1,
+  "total-blocking-time": 300,
+  "interactive": 3500,
+  "total-byte-weight": 750_000,
+  "network-requests": 80,
+};
 
-const failures = Object.entries(thresholds).filter(([category, threshold]) => {
+const categoryFailures = Object.entries(thresholds).filter(([category, threshold]) => {
   const score = report.categories?.[category]?.score;
   return typeof score !== "number" || score < threshold;
 });
 
-if (failures.length > 0) {
-  for (const [category, threshold] of failures) {
+function auditBudgetValue(auditId) {
+  const audit = report.audits?.[auditId];
+  if (auditId === "network-requests") {
+    return audit?.details?.items?.length;
+  }
+  return audit?.numericValue;
+}
+
+const auditFailures = Object.entries(auditThresholds).filter(([auditId, threshold]) => {
+  const value = auditBudgetValue(auditId);
+  return typeof value !== "number" || value > threshold;
+});
+
+if (categoryFailures.length > 0 || auditFailures.length > 0) {
+  for (const [category, threshold] of categoryFailures) {
     const score = report.categories?.[category]?.score;
     console.error(`Lighthouse ${category} score ${score} is below ${threshold}.`);
+  }
+  for (const [auditId, threshold] of auditFailures) {
+    const value = auditBudgetValue(auditId);
+    console.error(`Lighthouse ${auditId} value ${value} exceeds ${threshold}.`);
   }
   process.exit(1);
 }
