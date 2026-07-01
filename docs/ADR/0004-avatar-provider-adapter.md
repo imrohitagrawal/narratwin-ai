@@ -22,6 +22,13 @@ only after the grounded script and evaluation loop works.
 Define an `AvatarProvider` adapter boundary now and implement only mock/local
 behavior when the approved stage arrives.
 
+Phase 1 Closure issue `#42` adds one canonical Stage 7 source-evaluation checksum
+definition shared by the avatar render API route and Stage 7 service. The
+checksum is computed over normalized evaluation ID, source run ID, trace ID,
+normalized evaluation status, normalized source context ref IDs, and normalized
+source citation indexes, in that order. Render manifests, video placeholders,
+and API trace metadata must expose the same checksum for the same source run.
+
 Avatar rendering input must include:
 
 - grounded script reference
@@ -44,6 +51,8 @@ Avatar rendering output must include:
 - provider metadata
 - disclosure text
 - fallback reason when applicable
+- source evaluation checksum bound to source run ID, trace ID, evaluation
+  ID/status, context ref IDs, and citation indexes
 - latency
 - estimated cost when available
 - error code when applicable
@@ -73,6 +82,8 @@ Positive:
 - consent and disclosure requirements are explicit
 - premium providers remain optional
 - mock provider enables tests without real provider keys
+- Stage 7 evidence integrity uses one route/service checksum definition instead
+  of duplicate inline calculations
 
 Negative:
 

@@ -59,6 +59,20 @@ ISSUE_37_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/THREAT_MODEL.md",
     "tests/api/test_stage4_slice_api.py",
 }
+ISSUE_42_ALLOWED_CHANGED_FILES = {
+    "backend/app/main.py",
+    "backend/app/stage7.py",
+    "docs/ADR/0004-avatar-provider-adapter.md",
+    "docs/API_CONTRACT.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/reviews/PHASE_1_CLOSURE_REPORT.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/api/test_stage7_avatar_api.py",
+    "tests/unit/test_stage7_avatar.py",
+}
 
 EXPECTED_ISSUE_PRIORITIES = {
     "#35": "P0",
@@ -194,7 +208,12 @@ def check_required_files(failures: list[str]) -> None:
 
 def check_changed_files(failures: list[str]) -> None:
     branch = current_branch()
-    allowed_files = ISSUE_37_ALLOWED_CHANGED_FILES if branch.startswith("phase-1-closure-37-") else MODULE_A_ALLOWED_CHANGED_FILES
+    if branch.startswith("phase-1-closure-37-"):
+        allowed_files = ISSUE_37_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-42-"):
+        allowed_files = ISSUE_42_ALLOWED_CHANGED_FILES
+    else:
+        allowed_files = MODULE_A_ALLOWED_CHANGED_FILES
     for rel in changed_files():
         if rel not in allowed_files:
             fail(failures, f"Phase 1 Closure branch {branch} may not change {rel}.")

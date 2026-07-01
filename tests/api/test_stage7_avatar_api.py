@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import app, reset_app_state_for_tests
 from backend.app.stage4 import stage4_service
+from backend.app.stage7 import build_source_evaluation_checksum
 
 IDEMPOTENCY_HEADER = "Idempotency-" + "Key"
 
@@ -111,6 +112,19 @@ def test_avatar_render_api_returns_validated_demo_export_artifacts() -> None:
     assert body["trace"]["sourceEvaluationId"].startswith("eval_")
     assert body["trace"]["sourceEvaluationChecksum"].startswith("sha256:")
     assert body["trace"]["evaluationStatus"] == "PASSED"
+    source_run = stage4_service.walkthrough_runs[run_id]
+    assert source_run.evaluation is not None
+    expected_source_evaluation_checksum = build_source_evaluation_checksum(
+        source_evaluation_id=source_run.evaluation.evaluation_id,
+        source_run_id=source_run.run_id,
+        trace_id=source_run.trace_id,
+        evaluation_status=source_run.evaluation_status or "UNKNOWN",
+        source_context_ref_ids=tuple(context.context_ref_id for context in source_run.retrieved_context),
+        source_context_ref_count=len(source_run.retrieved_context),
+        source_citation_indexes=tuple(support.citation_index for support in source_run.evaluation.claim_supports),
+        source_citation_count=len(source_run.evaluation.claim_supports),
+    )
+    assert body["trace"]["sourceEvaluationChecksum"] == expected_source_evaluation_checksum
     manifest = json.loads(base64.b64decode(body["artifacts"]["renderManifest"]["contentBase64"]).decode("utf-8"))
     assert manifest["source"]["contextRefIds"] == body["trace"]["sourceContextRefIds"]
     assert manifest["source"]["citationIndexes"] == body["trace"]["sourceCitationIndexes"]

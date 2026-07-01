@@ -10,11 +10,300 @@ from backend.app.stage7 import (
     AvatarProvider,
     ExportArtifact,
     ExternalAvatarProviderStub,
+    MockAvatarProvider,
     ProviderConfig,
     Stage7Error,
     artifact_from_text,
+    build_avatar_render_request_checksum,
+    build_source_evaluation_checksum,
     create_stage7_service,
 )
+
+
+def test_source_evaluation_checksum_binds_each_canonical_source_field() -> None:
+    baseline_checksum = build_source_evaluation_checksum(
+        source_evaluation_id=" eval_stage7 ",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        evaluation_status="passed",
+        source_context_ref_ids=(" ctx_b ", "ctx_a"),
+        source_context_ref_count=2,
+        source_citation_indexes=(2, 1),
+        source_citation_count=2,
+    )
+
+    assert baseline_checksum == "sha256:3e397eb1b2a0f4b129325ceb2e1f9154b6c564608130e386d194fe318263f6f8"
+    assert (
+        build_source_evaluation_checksum(
+            source_evaluation_id=" eval_stage7 ",
+            source_run_id="run_stage7_changed",
+            trace_id="trace_stage7",
+            evaluation_status="passed",
+            source_context_ref_ids=(" ctx_b ", "ctx_a"),
+            source_context_ref_count=2,
+            source_citation_indexes=(2, 1),
+            source_citation_count=2,
+        )
+        != baseline_checksum
+    )
+    assert (
+        build_source_evaluation_checksum(
+            source_evaluation_id=" eval_stage7 ",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7_changed",
+            evaluation_status="passed",
+            source_context_ref_ids=(" ctx_b ", "ctx_a"),
+            source_context_ref_count=2,
+            source_citation_indexes=(2, 1),
+            source_citation_count=2,
+        )
+        != baseline_checksum
+    )
+    assert (
+        build_source_evaluation_checksum(
+            source_evaluation_id="eval_stage7_changed",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            evaluation_status="passed",
+            source_context_ref_ids=(" ctx_b ", "ctx_a"),
+            source_context_ref_count=2,
+            source_citation_indexes=(2, 1),
+            source_citation_count=2,
+        )
+        != baseline_checksum
+    )
+    assert (
+        build_source_evaluation_checksum(
+            source_evaluation_id=" eval_stage7 ",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            evaluation_status="FAILED",
+            source_context_ref_ids=(" ctx_b ", "ctx_a"),
+            source_context_ref_count=2,
+            source_citation_indexes=(2, 1),
+            source_citation_count=2,
+        )
+        != baseline_checksum
+    )
+    assert (
+        build_source_evaluation_checksum(
+            source_evaluation_id=" eval_stage7 ",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            evaluation_status="passed",
+            source_context_ref_ids=("ctx_b", "ctx_c"),
+            source_context_ref_count=2,
+            source_citation_indexes=(2, 1),
+            source_citation_count=2,
+        )
+        != baseline_checksum
+    )
+    assert (
+        build_source_evaluation_checksum(
+            source_evaluation_id=" eval_stage7 ",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            evaluation_status="passed",
+            source_context_ref_ids=(" ctx_b ", "ctx_a"),
+            source_context_ref_count=2,
+            source_citation_indexes=(2, 3),
+            source_citation_count=2,
+        )
+        != baseline_checksum
+    )
+
+
+@pytest.mark.parametrize(
+    ("field_name", "field_value"),
+    [
+        ("source_evaluation_id", "eval_stage7\nrun_stage7"),
+        ("source_run_id", "run_stage7\ntrace_stage7"),
+        ("trace_id", "trace_stage7\nPASSED"),
+        ("source_context_ref_ids", ("ctx_a,ctx_b", "ctx_c")),
+        ("source_context_ref_ids", ("ctx_a\nctx_b", "ctx_c")),
+    ],
+)
+def test_source_evaluation_checksum_rejects_ambiguous_delimiter_inputs(
+    field_name: str,
+    field_value: str | tuple[str, ...],
+) -> None:
+    source_evaluation_id = "eval_stage7"
+    source_run_id = "run_stage7"
+    trace_id = "trace_stage7"
+    source_context_ref_ids: tuple[str, ...] = ("ctx_a", "ctx_b")
+    if field_name == "source_evaluation_id":
+        source_evaluation_id = cast(str, field_value)
+    elif field_name == "source_run_id":
+        source_run_id = cast(str, field_value)
+    elif field_name == "trace_id":
+        trace_id = cast(str, field_value)
+    elif field_name == "source_context_ref_ids":
+        source_context_ref_ids = cast(tuple[str, ...], field_value)
+
+    with pytest.raises(Stage7Error) as exc:
+        build_source_evaluation_checksum(
+            source_evaluation_id=source_evaluation_id,
+            source_run_id=source_run_id,
+            trace_id=trace_id,
+            evaluation_status="PASSED",
+            source_context_ref_ids=source_context_ref_ids,
+            source_context_ref_count=2,
+            source_citation_indexes=(1, 2),
+            source_citation_count=2,
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "VALIDATION_ERROR"
+
+
+def test_stage7_service_rejects_supplied_noncanonical_source_evaluation_checksum() -> None:
+    service = create_stage7_service()
+
+    with pytest.raises(Stage7Error) as exc:
+        service.render_avatar_demo(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            requested_avatar_provider="mock",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7",
+            source_evaluation_checksum="sha256:forged",
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "VALIDATION_ERROR"
+
+
+def test_mock_avatar_provider_rejects_supplied_noncanonical_source_evaluation_checksum() -> None:
+    provider = MockAvatarProvider()
+
+    with pytest.raises(Stage7Error) as exc:
+        provider.render(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            requested_provider="mock",
+            fallback_reason=None,
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7",
+            source_evaluation_checksum="sha256:forged",
+            evaluation_status="PASSED",
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "VALIDATION_ERROR"
+
+
+def test_source_evaluation_checksum_requires_explicit_evidence_ids_for_positive_counts() -> None:
+    with pytest.raises(Stage7Error) as missing_context_refs:
+        build_source_evaluation_checksum(
+            source_evaluation_id="eval_stage7",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            evaluation_status="PASSED",
+            source_context_ref_ids=None,
+            source_context_ref_count=1,
+            source_citation_indexes=(1,),
+            source_citation_count=1,
+        )
+    with pytest.raises(Stage7Error) as missing_citation_indexes:
+        build_source_evaluation_checksum(
+            source_evaluation_id="eval_stage7",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            evaluation_status="PASSED",
+            source_context_ref_ids=("ctx_stage7",),
+            source_context_ref_count=1,
+            source_citation_indexes=None,
+            source_citation_count=1,
+        )
+
+    assert missing_context_refs.value.status_code == 422
+    assert missing_context_refs.value.code == "VALIDATION_ERROR"
+    assert missing_citation_indexes.value.status_code == 422
+    assert missing_citation_indexes.value.code == "VALIDATION_ERROR"
+
+
+def test_stage7_service_rejects_positive_evidence_counts_without_explicit_evidence_ids() -> None:
+    service = create_stage7_service()
+
+    with pytest.raises(Stage7Error) as exc:
+        service.render_avatar_demo(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            requested_avatar_provider="mock",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "VALIDATION_ERROR"
+
+
+def test_mock_avatar_provider_rejects_positive_evidence_counts_without_explicit_evidence_ids() -> None:
+    provider = MockAvatarProvider()
+
+    with pytest.raises(Stage7Error) as exc:
+        provider.render(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            requested_provider="mock",
+            fallback_reason=None,
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_evaluation_id="eval_stage7",
+            evaluation_status="PASSED",
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "VALIDATION_ERROR"
+
+
+def test_avatar_render_request_checksum_uses_structured_preimage_for_delimiter_safety() -> None:
+    first_checksum = build_avatar_render_request_checksum(
+        source_text="script\nmock",
+        requested_avatar_provider="provider",
+        cloned_identity_requested=False,
+        consent_to_use_synthetic_avatar=True,
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_count=0,
+        source_citation_count=0,
+        source_context_ref_ids=None,
+        source_citation_indexes=None,
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=None,
+        evaluation_status="PASSED",
+    )
+    second_checksum = build_avatar_render_request_checksum(
+        source_text="script",
+        requested_avatar_provider="mock\nprovider",
+        cloned_identity_requested=False,
+        consent_to_use_synthetic_avatar=True,
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_count=0,
+        source_citation_count=0,
+        source_context_ref_ids=None,
+        source_citation_indexes=None,
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=None,
+        evaluation_status="PASSED",
+    )
+
+    assert first_checksum != second_checksum
 
 
 def test_mock_avatar_render_returns_valid_demo_export_with_disclosure() -> None:
@@ -27,6 +316,8 @@ def test_mock_avatar_render_returns_valid_demo_export_with_disclosure() -> None:
         trace_id="trace_stage7",
         source_context_ref_count=1,
         source_citation_count=1,
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
         evaluation_status="PASSED",
         consent_to_use_synthetic_avatar=True,
     )
@@ -62,7 +353,7 @@ def test_mock_avatar_render_returns_valid_demo_export_with_disclosure() -> None:
     manifest = json.loads(base64.b64decode(result.artifacts.render_manifest.content_base64).decode("utf-8"))
     assert manifest["disclosure"]["message"].startswith("AI-generated avatar demo")
     assert manifest["source"]["citationCount"] == 1
-    assert manifest["source"]["contextRefIds"] == ["context_ref_001"]
+    assert manifest["source"]["contextRefIds"] == ["ctx_stage7"]
     assert manifest["source"]["citationIndexes"] == [1]
     assert manifest["source"]["evaluationId"] == "local_evaluation"
     assert manifest["source"]["evaluationChecksum"].startswith("sha256:")
@@ -76,7 +367,7 @@ def test_mock_avatar_render_returns_valid_demo_export_with_disclosure() -> None:
     assert placeholder["status"] == "PLACEHOLDER_ONLY"
     assert placeholder["realVideoProduced"] is False
     assert placeholder["providerConfig"]["providerMode"] == "LOCAL"
-    assert placeholder["source"]["contextRefIds"] == ["context_ref_001"]
+    assert placeholder["source"]["contextRefIds"] == ["ctx_stage7"]
     assert placeholder["source"]["evaluationId"] == "local_evaluation"
     assert placeholder["disclosure"]["aiGenerated"] is True
     assert placeholder["publicUseLicenseCheck"] == "mock-local-provider-only-no-third-party-media"
@@ -95,6 +386,8 @@ def test_mock_avatar_render_allows_benign_escaped_web_terms_in_source_text() -> 
         trace_id="trace_web_terms",
         source_context_ref_count=1,
         source_citation_count=1,
+        source_context_ref_ids=("ctx_web_terms",),
+        source_citation_indexes=(1,),
         evaluation_status="PASSED",
         consent_to_use_synthetic_avatar=True,
     )
@@ -340,6 +633,10 @@ def test_external_stub_config_cannot_produce_successful_stage7_output() -> None:
                 trace_id=trace_id,
                 source_context_ref_count=source_context_ref_count,
                 source_citation_count=source_citation_count,
+                source_context_ref_ids=cast(tuple[str, ...], _extra["source_context_ref_ids"]),
+                source_citation_indexes=cast(tuple[int, ...], _extra["source_citation_indexes"]),
+                source_evaluation_id=cast(str, _extra["source_evaluation_id"]),
+                source_evaluation_checksum=cast(str, _extra["source_evaluation_checksum"]),
                 evaluation_status=evaluation_status,
             )
             return AvatarProviderResult(
@@ -401,6 +698,10 @@ def test_provider_mode_must_match_validated_provider_config() -> None:
                 trace_id=trace_id,
                 source_context_ref_count=source_context_ref_count,
                 source_citation_count=source_citation_count,
+                source_context_ref_ids=cast(tuple[str, ...], _extra["source_context_ref_ids"]),
+                source_citation_indexes=cast(tuple[int, ...], _extra["source_citation_indexes"]),
+                source_evaluation_id=cast(str, _extra["source_evaluation_id"]),
+                source_evaluation_checksum=cast(str, _extra["source_evaluation_checksum"]),
                 evaluation_status=evaluation_status,
             )
             return AvatarProviderResult(
@@ -684,6 +985,10 @@ def test_render_manifest_must_match_trusted_source_and_disclosure() -> None:
                 trace_id=trace_id,
                 source_context_ref_count=source_context_ref_count,
                 source_citation_count=source_citation_count,
+                source_context_ref_ids=cast(tuple[str, ...], _extra["source_context_ref_ids"]),
+                source_citation_indexes=cast(tuple[int, ...], _extra["source_citation_indexes"]),
+                source_evaluation_id=cast(str, _extra["source_evaluation_id"]),
+                source_evaluation_checksum=cast(str, _extra["source_evaluation_checksum"]),
                 evaluation_status=evaluation_status,
             )
             manifest = json.loads(base64.b64decode(valid_result.render_manifest.content_base64).decode("utf-8"))
@@ -714,6 +1019,8 @@ def test_render_manifest_must_match_trusted_source_and_disclosure() -> None:
             trace_id="trace_stage7",
             source_context_ref_count=1,
             source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
             evaluation_status="PASSED",
             consent_to_use_synthetic_avatar=True,
         )
@@ -748,6 +1055,10 @@ def test_render_manifest_rejects_unexpected_provider_metadata_fields() -> None:
                 trace_id=trace_id,
                 source_context_ref_count=source_context_ref_count,
                 source_citation_count=source_citation_count,
+                source_context_ref_ids=cast(tuple[str, ...], _extra["source_context_ref_ids"]),
+                source_citation_indexes=cast(tuple[int, ...], _extra["source_citation_indexes"]),
+                source_evaluation_id=cast(str, _extra["source_evaluation_id"]),
+                source_evaluation_checksum=cast(str, _extra["source_evaluation_checksum"]),
                 evaluation_status=evaluation_status,
             )
             manifest = json.loads(base64.b64decode(valid_result.render_manifest.content_base64).decode("utf-8"))
@@ -777,6 +1088,81 @@ def test_render_manifest_rejects_unexpected_provider_metadata_fields() -> None:
             trace_id="trace_stage7",
             source_context_ref_count=1,
             source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "PROVIDER_OUTPUT_INVALID"
+
+
+def test_render_manifest_rejects_duplicate_json_keys() -> None:
+    class DuplicateKeyManifestProvider:
+        provider = "mock"
+        provider_mode = "LOCAL"
+
+        def render(
+            self,
+            *,
+            source_script: str,
+            requested_provider: str,
+            fallback_reason: str | None,
+            source_run_id: str,
+            trace_id: str,
+            source_context_ref_count: int,
+            source_citation_count: int,
+            evaluation_status: str,
+            **_extra: object,
+        ) -> AvatarProviderResult:
+            valid_result = create_stage7_service().avatar_provider.render(
+                source_script=source_script,
+                requested_provider=requested_provider,
+                fallback_reason=fallback_reason,
+                source_run_id=source_run_id,
+                trace_id=trace_id,
+                source_context_ref_count=source_context_ref_count,
+                source_citation_count=source_citation_count,
+                source_context_ref_ids=cast(tuple[str, ...], _extra["source_context_ref_ids"]),
+                source_citation_indexes=cast(tuple[int, ...], _extra["source_citation_indexes"]),
+                source_evaluation_id=cast(str, _extra["source_evaluation_id"]),
+                source_evaluation_checksum=cast(str, _extra["source_evaluation_checksum"]),
+                evaluation_status=evaluation_status,
+            )
+            manifest_text = base64.b64decode(valid_result.render_manifest.content_base64).decode("utf-8")
+            manifest_text = manifest_text.replace(
+                '"source": {',
+                '"source": {"evaluationChecksum": "sha256:forged"}, "source": {',
+                1,
+            )
+            return AvatarProviderResult(
+                provider=valid_result.provider,
+                provider_mode=valid_result.provider_mode,
+                requested_provider=valid_result.requested_provider,
+                fallback_reason=valid_result.fallback_reason,
+                provider_config=valid_result.provider_config,
+                demo_export=valid_result.demo_export,
+                render_manifest=artifact_from_text(
+                    file_name=valid_result.render_manifest.file_name,
+                    mime_type=valid_result.render_manifest.mime_type,
+                    text=manifest_text,
+                ),
+                video_export_placeholder=valid_result.video_export_placeholder,
+            )
+
+    service = create_stage7_service()
+    service.avatar_provider = cast(AvatarProvider, DuplicateKeyManifestProvider())
+
+    with pytest.raises(Stage7Error) as exc:
+        service.render_avatar_demo(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
             evaluation_status="PASSED",
             consent_to_use_synthetic_avatar=True,
         )
@@ -811,6 +1197,10 @@ def test_video_placeholder_rejects_unexpected_provider_metadata_fields() -> None
                 trace_id=trace_id,
                 source_context_ref_count=source_context_ref_count,
                 source_citation_count=source_citation_count,
+                source_context_ref_ids=cast(tuple[str, ...], _extra["source_context_ref_ids"]),
+                source_citation_indexes=cast(tuple[int, ...], _extra["source_citation_indexes"]),
+                source_evaluation_id=cast(str, _extra["source_evaluation_id"]),
+                source_evaluation_checksum=cast(str, _extra["source_evaluation_checksum"]),
                 evaluation_status=evaluation_status,
             )
             placeholder = json.loads(
@@ -842,6 +1232,81 @@ def test_video_placeholder_rejects_unexpected_provider_metadata_fields() -> None
             trace_id="trace_stage7",
             source_context_ref_count=1,
             source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "PROVIDER_OUTPUT_INVALID"
+
+
+def test_video_placeholder_rejects_duplicate_json_keys() -> None:
+    class DuplicateKeyPlaceholderProvider:
+        provider = "mock"
+        provider_mode = "LOCAL"
+
+        def render(
+            self,
+            *,
+            source_script: str,
+            requested_provider: str,
+            fallback_reason: str | None,
+            source_run_id: str,
+            trace_id: str,
+            source_context_ref_count: int,
+            source_citation_count: int,
+            evaluation_status: str,
+            **_extra: object,
+        ) -> AvatarProviderResult:
+            valid_result = create_stage7_service().avatar_provider.render(
+                source_script=source_script,
+                requested_provider=requested_provider,
+                fallback_reason=fallback_reason,
+                source_run_id=source_run_id,
+                trace_id=trace_id,
+                source_context_ref_count=source_context_ref_count,
+                source_citation_count=source_citation_count,
+                source_context_ref_ids=cast(tuple[str, ...], _extra["source_context_ref_ids"]),
+                source_citation_indexes=cast(tuple[int, ...], _extra["source_citation_indexes"]),
+                source_evaluation_id=cast(str, _extra["source_evaluation_id"]),
+                source_evaluation_checksum=cast(str, _extra["source_evaluation_checksum"]),
+                evaluation_status=evaluation_status,
+            )
+            placeholder_text = base64.b64decode(valid_result.video_export_placeholder.content_base64).decode("utf-8")
+            placeholder_text = placeholder_text.replace(
+                '"source": {',
+                '"source": {"evaluationChecksum": "sha256:forged"}, "source": {',
+                1,
+            )
+            return AvatarProviderResult(
+                provider=valid_result.provider,
+                provider_mode=valid_result.provider_mode,
+                requested_provider=valid_result.requested_provider,
+                fallback_reason=valid_result.fallback_reason,
+                provider_config=valid_result.provider_config,
+                demo_export=valid_result.demo_export,
+                render_manifest=valid_result.render_manifest,
+                video_export_placeholder=artifact_from_text(
+                    file_name=valid_result.video_export_placeholder.file_name,
+                    mime_type=valid_result.video_export_placeholder.mime_type,
+                    text=placeholder_text,
+                ),
+            )
+
+    service = create_stage7_service()
+    service.avatar_provider = cast(AvatarProvider, DuplicateKeyPlaceholderProvider())
+
+    with pytest.raises(Stage7Error) as exc:
+        service.render_avatar_demo(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
             evaluation_status="PASSED",
             consent_to_use_synthetic_avatar=True,
         )

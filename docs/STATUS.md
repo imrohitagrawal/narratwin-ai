@@ -116,6 +116,14 @@ Use these files together with this tracker:
   local/dev/test-only principal simulation contract. Release posture remains
   No-Go until all Phase 1 P0/P1 blockers, including `#42`, are resolved or
   explicitly downgraded with evidence.
+- Phase 1 Closure issue `#42` is in progress through PR `#50` on branch
+  `phase-1-closure-42-stage7-checksum-binding` to make the Stage 7 avatar render
+  API route and service share one canonical source-evaluation checksum
+  definition, reject direct mock-provider checksum mismatches, and reject
+  synthesized evidence for positive source evidence counts, duplicate-key
+  provider JSON artifacts, and delimiter-ambiguous idempotency request preimages.
+  Release posture remains No-Go until all Phase 1 P0/P1 blockers are resolved
+  or explicitly downgraded with evidence.
 - PR `#47` independent review residual risks are now durable follow-ups:
   issue `#48` for scoped project-lookup hardening and issue `#49` for
   simulated-actor idempotency resource caps, mirrored as `RR-036` and `RR-037`.
@@ -160,7 +168,7 @@ Use these files together with this tracker:
 | `#39` | Open | Phase 1 P1 | Resolve or explicitly maintain production durability and monitoring blockers. |
 | `#40` | Open | Phase 1 P0 | Reconcile canonical requirements traceability matrix. |
 | `#41` | Open | Phase 1 P0 | Disclose local demo durability and provider limits in portfolio/demo docs. |
-| `#42` | Open | Phase 1 P1 | Harden Stage 7 source evidence checksum binding. |
+| `#42` | Open | Phase 1 P1 | In progress through PR `#50` on branch `phase-1-closure-42-stage7-checksum-binding`; hardens Stage 7 source evidence checksum binding by sharing one canonical route/service/mock-provider checksum definition, requiring explicit evidence IDs for positive counts, using structured idempotency checksums, and rejecting duplicate-key provider JSON artifacts. |
 | `#43` | Open | Phase 1 P2 | Expand performance and integrated E2E evidence beyond local smoke. |
 | `#44` | Open | Phase 1 P2 | Track telemetry, CSP, log-envelope, and stale risk-register hardening. |
 | `#48` | Open | Future hardening | Track scoped project-lookup hardening before production auth, durable storage, or stronger authorization-proof claims; created from PR `#47` independent API integrity review. |
@@ -197,6 +205,7 @@ Use these files together with this tracker:
 | `#45` | Merged | 2026-07-01 | Final Review artifacts and executable review gate merged; outcome is No-Go until Phase 1 Closure. |
 | `#46` | Delivery PR | Reconcile after merge | Phase 1 Closure Module A governance and traceability PR for issues `#35`, `#36`, `#40`, and `#41`, with release-readiness, demo, golden-question, and quality-gate hardening. |
 | `#47` | Draft delivery PR | Pending | Phase 1 Closure Module F security PR for issue `#37`; reconciles trusted local/dev/test-only principal simulation with implementation, API tests, and contract docs. |
+| `#50` | Delivery PR | Pending | Phase 1 Closure Module B functional-flow PR for issue `#42`; hardens Stage 7 source evidence checksum binding through a canonical helper shared by the API route, service, and mock provider, with explicit evidence IDs, structured idempotency checksums, and duplicate-key provider JSON rejection. |
 
 ## Completed Work
 
@@ -413,3 +422,4 @@ Required update rules:
 | 2026-07-02 | PR `#46` recorded as the Phase 1 Closure Module A governance/traceability delivery PR for issues `#35`, `#36`, `#40`, and `#41`; remaining P1 implementation blockers stay open. |
 | 2026-07-02 | Phase 1 Closure issue `#37` started on branch `phase-1-closure-37-local-principal-contract` and draft PR `#47` to reconcile the trusted local principal contract; release posture remains No-Go while `#42` and other P0/P1 blockers remain open. |
 | 2026-07-02 | PR `#47` independent review residual risks were converted into GitHub issues `#48` and `#49` and recorded as `RR-036` and `RR-037` in `docs/RECOMMENDED_REVIEW_ITEMS.md`. |
+| 2026-07-02 | Phase 1 Closure issue `#42` started through PR `#50` on branch `phase-1-closure-42-stage7-checksum-binding` to harden Stage 7 source evidence checksum binding through a canonical helper shared by the API route, Stage 7 service, and mock provider, plus explicit evidence IDs, structured idempotency checksums, and duplicate-key provider JSON rejection; release posture remains No-Go while Phase 1 P0/P1 blockers remain open. |
