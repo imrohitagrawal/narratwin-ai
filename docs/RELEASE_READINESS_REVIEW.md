@@ -11,10 +11,11 @@ No-Go for production release, multi-worker deployment, external paid/provider-ba
 generation, real video export, and public synthetic-media distribution.
 
 Conditional local mock-provider portfolio/demo review remains distinct from
-production go-live. With `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed,
-local/mock single-process demo readiness can be reviewed through the local gates
-and documented limitations, while `#38` and `#39` keep production release No-Go.
-No release tag has been created.
+production go-live. With `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed
+and `#38` resolved with live branch-protection evidence, local/mock
+single-process demo readiness can be reviewed through the local gates and
+documented limitations, while `#39` keeps production release No-Go. No release
+tag has been created.
 
 ## Current Baseline
 
@@ -22,7 +23,8 @@ No release tag has been created.
 - Final Review merged to `main` through PR `#45` at merge commit
   `5a294c72d2b4b8cbbc0339f7bcb3f17089bddece`.
 - Final Review issue `#6` is closed.
-- Final Review artifacts are authoritative for the current Go/No-Go posture:
+- Final Review artifacts are the baseline for the current No-Go posture, with
+  issue-level dispositions superseded by reviewed Phase 1 Closure evidence:
   `docs/reviews/FINAL_REVIEW.md`, `docs/reviews/RISK_REGISTER.md`,
   `docs/reviews/DEFECT_BACKLOG.md`, and `docs/reviews/GO_NO_GO.md`.
 - Phase 1 Closure is tracked through issues `#35` through `#44` and
@@ -31,6 +33,8 @@ No release tag has been created.
   `#36`, `#40`, and `#41`.
 - PR `#47` merged trusted local principal contract remediation and closed `#37`.
 - PR `#50` merged Stage 7 checksum-binding remediation and closed `#42`.
+- Live GitHub `main` branch protection was enabled and verified on 2026-07-02
+  for issue `#38` and recorded through PR `#53`.
 
 ## Stage 8 Evidence
 
@@ -69,12 +73,11 @@ P0/P1 closure items must complete before Phase 2. Current reconciliation:
 - `#35` Governance and release docs stale after Stage 8 merge: closed through
   merged PR `#46`.
 - `#36` Final Review gate and branch-policy evidence: closed through merged PR
-  `#46`; live repository branch-protection/ruleset proof remains open under
-  `#38`.
+  `#46`; live repository branch-protection proof is now recorded under `#38`.
 - `#37` Local principal contract mismatch: closed through merged PR `#47` with
   trusted local/dev/test-only principal simulation evidence.
-- `#38` Branch protection/ruleset evidence: still release-blocking because
-  checked-in files do not prove live GitHub required-check enforcement.
+- `#38` Branch protection/ruleset evidence: live GitHub `main` branch
+  protection is enabled and requires the documented CI contexts.
 - `#39` Production durability and monitoring blockers: still release-blocking
   for production go-live.
 - `#40` Canonical RTM stale: closed through merged PR `#46`.
@@ -88,8 +91,6 @@ correctness.
 
 ## Current Release Blockers
 
-- Branch protection/ruleset enforcement for required `main` checks still needs
-  external evidence or a reviewed No-Go exception.
 - Process-local project/run/idempotency/artifact state keeps multi-worker
   deployment blocked and blocks production go-live, restart recovery, and
   production idempotency claims.
@@ -113,8 +114,8 @@ The local demo can be reviewed only when:
 - no real provider keys are required
 - no real video, cloned face, cloned voice, or public synthetic-media claim is made
 - demo docs disclose single-process, process-local, non-durable state
-- `#38` and `#39` remain explicitly represented as production/release blockers
-  unless they are closed or downgraded with evidence
+- `#39` remains explicitly represented as a production/release blocker unless
+  it is closed or downgraded with evidence
 - local quality, eval, security, and CI gates pass
 
 ## Downgrade Evidence Rule
@@ -128,9 +129,57 @@ remains release-blocking.
 
 Static governance artifacts do not by themselves close implementation blockers.
 Issues `#37` and `#42` now have separate executable evidence through merged PRs
-`#47` and `#50`. Issues `#38` and `#39` still require external evidence,
-implementation evidence, or reviewed No-Go exceptions before production release
-can be treated as Phase 1 closure-ready.
+`#47` and `#50`. Issue `#38` now has live GitHub repository-settings evidence
+plus the required `policy-gates` branch-protection context verifier added in PR
+`#53`.
+Issue `#39` still requires implementation evidence or a reviewed No-Go exception
+before production release can be treated as Phase 1 closure-ready. The
+unchanged Final Review artifacts preserve the original July 1 reviewer baseline;
+this Phase 1 Closure review is the current issue-disposition source for `#38`.
+
+## Issue #38 Evidence
+
+GitHub API verification on 2026-07-02 recorded `main` branch protection as
+enabled. The classic branch-protection endpoint
+`repos/imrohitagrawal/narratwin-ai/branches/main/protection` returns:
+
+- `required_status_checks.strict: true`
+- required contexts: `policy-gates`, `quality / secrets`,
+  `quality / markdown`, `lint / typecheck / unit / api`,
+  `frontend tests / playwright smoke`, `ci / docker build`,
+  `secret scan / bandit / audit / semgrep`, `security / docker build`,
+  `eval smoke`, and `stage8 / performance lighthouse`
+- GitHub Actions app binding for each required check: `app_id: 15368`
+- `required_pull_request_reviews.required_approving_review_count: 1`
+- `required_pull_request_reviews.dismiss_stale_reviews: true`
+- `required_pull_request_reviews.require_last_push_approval: true`
+- `enforce_admins.enabled: true`
+- `allow_force_pushes.enabled: false`
+- `allow_deletions.enabled: false`
+- `required_conversation_resolution.enabled: true`
+
+The only documented repository-settings item not configured as a classic branch
+protection restriction is direct pusher allowlisting. GitHub rejected that
+setting for this user-owned repository with `Only organization repositories can
+have users and team restrictions`; the live protection response keeps
+`restrictions: null`. The accepted enforcement path for this repository is
+required PR review, strict required checks, administrator enforcement, blocked
+force pushes, blocked deletions, and required conversation resolution.
+
+The branch summary endpoint
+`repos/imrohitagrawal/narratwin-ai/branches/main` returns `protected: true`,
+`protection.enabled: true`, and `required_status_checks.enforcement_level:
+everyone`.
+
+PR `#53` adds `scripts/ci/verify_branch_protection.py` to the required
+`policy-gates` workflow. That verifier queries the same branch summary endpoint
+on every pull request to `main` and every non-main branch push, and fails if the
+endpoint no longer reports `protected: true`, exact required CI contexts,
+`enforcement_level: everyone`, or GitHub Actions app bindings for those
+contexts. Admin-only settings such as strictness, required review count,
+administrator enforcement, force-push/deletion blocking, and conversation
+resolution remain recorded from the classic branch-protection endpoint evidence
+above.
 
 ## Tagging Policy
 

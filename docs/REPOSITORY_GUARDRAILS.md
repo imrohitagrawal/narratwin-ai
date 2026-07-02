@@ -25,7 +25,9 @@ This repository is protected by workflow, review, and policy-as-code guardrails.
 
 ## What is enforced in CI
 
-The `Quality Gates` workflow runs `scripts/guardrails_check.py` on pull requests into `main` and on pushes to non-main branches.
+The `Quality Gates` workflow runs `scripts/guardrails_check.py`,
+`scripts/ci/verify_branch_protection.py`, and `make quality` on pull requests
+into `main` and on pushes to non-main branches.
 
 The policy check fails CI for:
 
@@ -37,6 +39,8 @@ The policy check fails CI for:
 - architecture-impacting changes without ADR updates
 - PRD-impacting changes without traceability updates
 - repository-tracked governance changes without `docs/STATUS.md` updates
+- drift between live `main` branch-protection required status contexts and the
+  documented required context set
 - LLM-generation code without trace/run metadata
 - generated-script/answer code without source chunk citations
 - failing eval result reports
@@ -68,6 +72,12 @@ Enable branch protection or repository ruleset for `main` with:
 - Block deletions.
 - Include administrators, if available on your plan/settings.
 - Restrict who can push directly to `main`, if available.
+
+For the current user-owned repository, GitHub rejected direct pusher
+restrictions with `Only organization repositories can have users and team
+restrictions`; the enforced path is required PR review, strict required checks,
+administrator enforcement, blocked force pushes, blocked deletions, and required
+conversation resolution.
 
 ## Required workflow for every stage
 
