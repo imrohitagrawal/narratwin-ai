@@ -6,18 +6,24 @@ import base64
 import binascii
 import html
 import json
+import logging
 import re
 import threading
-from dataclasses import dataclass
+from collections.abc import Mapping
+from copy import deepcopy
+from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Literal, Protocol, cast
 
 from backend.app.rag.chunking import checksum_text
+from backend.app.storage import load_state, resolve_state_file, write_state
 
 MAX_SOURCE_SCRIPT_CHARS = 20_000
 MAX_EXPORT_ARTIFACT_BYTES = 512 * 1024
 MAX_PROVIDER_ID_CHARS = 64
 MAX_IDEMPOTENCY_RECORDS_PER_SCOPE = 100
 PROVIDER_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+LOGGER = logging.getLogger(__name__)
 ACTIVE_HTML_PATTERN = re.compile(
     r"(<script\b|<iframe\b|<form\b|<object\b|<embed\b|<link\b|<base\b|<style\b|"
     r"<meta\s+http-equiv\b|<[^>]+\s(?:on[a-z]+|src|href|srcset|style)\s*=|"
@@ -386,23 +392,135 @@ class Stage7Service:
         *,
         avatar_provider: AvatarProvider | None = None,
         fallback_avatar_provider: AvatarProvider | None = None,
+        state_path: Path | None = None,
     ) -> None:
         self.avatar_provider = avatar_provider or MockAvatarProvider()
         self.fallback_avatar_provider = fallback_avatar_provider or MockAvatarProvider()
+        self.state_path = state_path
         self.idempotency_records: dict[tuple[str, str, str], Stage7IdempotencyRecord] = {}
         self.avatar_renders: dict[str, AvatarRenderResult] = {}
         self.artifact_metadata: dict[str, tuple[ExportArtifactMetadata, ...]] = {}
         self._operation_lock = threading.Lock()
         self._run_counter = 0
+        self._restore()
 
     def reset(self) -> None:
         with self._operation_lock:
             self.avatar_provider = MockAvatarProvider()
             self.fallback_avatar_provider = MockAvatarProvider()
-            self.idempotency_records.clear()
-            self.avatar_renders.clear()
-            self.artifact_metadata.clear()
-            self._run_counter = 0
+            self._clear_runtime_state()
+            self._persist_locked()
+
+    def _clear_runtime_state(self) -> None:
+        self.idempotency_records.clear()
+        self.avatar_renders.clear()
+        self.artifact_metadata.clear()
+        self._run_counter = 0
+
+    def _restore(self) -> None:
+        payload = load_state(self.state_path)
+        if payload is None:
+            return
+        try:
+            if payload.get("schema") != "stage7-local-state-v1":
+                raise ValueError("Stage 7 state schema mismatch.")
+            counters = payload.get("counters", {})
+            run_counter = 0
+            if isinstance(counters, dict):
+                run_counter = int(counters.get("run", 0))
+            for row in payload.get("avatarRenders", []):
+                if not isinstance(row, dict):
+                    continue
+                result = avatar_render_result_from_dict(row)
+                self.avatar_renders[result.avatar_render_id] = result
+            run_counter = max(run_counter, max_numeric_suffix(self.avatar_renders, "avrun_"))
+            self._run_counter = run_counter
+            for row in payload.get("artifactMetadata", []):
+                if not isinstance(row, dict):
+                    continue
+                render_id = str(row.get("avatar_render_id", ""))
+                metadata = row.get("metadata", [])
+                if render_id and isinstance(metadata, list):
+                    self.artifact_metadata[render_id] = tuple(
+                        ExportArtifactMetadata(
+                            file_name=str(item["file_name"]),
+                            mime_type=str(item["mime_type"]),
+                            checksum=str(item["checksum"]),
+                        )
+                        for item in metadata
+                        if isinstance(item, dict)
+                    )
+            for row in payload.get("idempotencyRecords", []):
+                if not isinstance(row, dict):
+                    continue
+                if row.get("status") == "RUNNING":
+                    continue
+                try:
+                    record = stage7_idempotency_record_from_dict(row, self)
+                except (KeyError, TypeError, ValueError) as exc:
+                    LOGGER.warning("Skipping incompatible Stage 7 idempotency record at %s: %s", self.state_path, exc)
+                    continue
+                key = (record.idempotency_scope, record.endpoint, record.idempotency_key)
+                self.idempotency_records[key] = record
+        except (KeyError, TypeError, ValueError, Stage7Error) as exc:
+            LOGGER.warning("Ignoring incompatible Stage 7 local state snapshot at %s: %s", self.state_path, exc)
+            self._clear_runtime_state()
+
+    def _runtime_snapshot_locked(self) -> dict[str, Any]:
+        return {
+            "idempotencyRecords": deepcopy(self.idempotency_records),
+            "avatarRenders": deepcopy(self.avatar_renders),
+            "artifactMetadata": deepcopy(self.artifact_metadata),
+            "runCounter": self._run_counter,
+        }
+
+    def _restore_runtime_snapshot_locked(self, snapshot: dict[str, Any]) -> None:
+        self.idempotency_records = deepcopy(snapshot["idempotencyRecords"])
+        self.avatar_renders = deepcopy(snapshot["avatarRenders"])
+        self.artifact_metadata = deepcopy(snapshot["artifactMetadata"])
+        self._run_counter = int(snapshot["runCounter"])
+
+    def _restore_failed_operation_locked(
+        self,
+        snapshot: dict[str, Any],
+        *,
+        record_key: tuple[str, str, str] | None,
+        result: AvatarRenderResult | None,
+    ) -> None:
+        if record_key is not None:
+            prior_record = snapshot["idempotencyRecords"].get(record_key)
+            if prior_record is None:
+                self.idempotency_records.pop(record_key, None)
+            else:
+                self.idempotency_records[record_key] = deepcopy(prior_record)
+        if result is not None:
+            self.avatar_renders.pop(result.avatar_render_id, None)
+            self.artifact_metadata.pop(result.avatar_render_id, None)
+        self._run_counter = max(
+            int(snapshot["runCounter"]),
+            max_numeric_suffix(self.avatar_renders, "avrun_"),
+        )
+
+    def _persist_locked(self) -> None:
+        write_state(
+            self.state_path,
+            {
+                "schema": "stage7-local-state-v1",
+                "avatarRenders": [
+                    avatar_render_result_to_dict(result) for result in self.avatar_renders.values()
+                ],
+                "artifactMetadata": [
+                    {"avatar_render_id": render_id, "metadata": [asdict(item) for item in metadata]}
+                    for render_id, metadata in self.artifact_metadata.items()
+                ],
+                "idempotencyRecords": [
+                    stage7_idempotency_record_to_dict(record)
+                    for record in self.idempotency_records.values()
+                    if record.status != "RUNNING"
+                ],
+                "counters": {"run": self._run_counter},
+            },
+        )
 
     def render_avatar_demo(
         self,
@@ -441,6 +559,9 @@ class Stage7Service:
         )
         endpoint = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders"
         record_key: tuple[str, str, str] | None = None
+        result: AvatarRenderResult | None = None
+        with self._operation_lock:
+            snapshot = self._runtime_snapshot_locked()
         if idempotency_scope and idempotency_key:
             record_key = (idempotency_scope, endpoint, idempotency_key)
             with self._operation_lock:
@@ -550,6 +671,15 @@ class Stage7Service:
                         record.error_status_code = exc.status_code
                         record.error_code = exc.code
                         record.error_message = exc.message
+                    try:
+                        self._persist_locked()
+                    except OSError:
+                        self._restore_failed_operation_locked(snapshot, record_key=record_key, result=None)
+                        raise exc
+            raise
+        except OSError:
+            with self._operation_lock:
+                self._restore_failed_operation_locked(snapshot, record_key=record_key, result=result)
             raise
         except Exception:
             if record_key is not None:
@@ -560,12 +690,23 @@ class Stage7Service:
                         record.error_status_code = 500
                         record.error_code = "INTERNAL_SERVER_ERROR"
                         record.error_message = "Avatar render failed."
+                    try:
+                        self._persist_locked()
+                    except OSError:
+                        self._restore_failed_operation_locked(snapshot, record_key=record_key, result=None)
+                        raise
             raise
-        if record_key is not None:
-            with self._operation_lock:
+        assert result is not None
+        with self._operation_lock:
+            if record_key is not None:
                 record = self.idempotency_records[record_key]
                 record.status = "SUCCEEDED"
                 record.value = result
+            try:
+                self._persist_locked()
+            except OSError:
+                self._restore_failed_operation_locked(snapshot, record_key=record_key, result=result)
+                raise
         return result
 
     def _create_avatar_render(
@@ -792,8 +933,211 @@ class Stage7Service:
         return sum(record.idempotency_scope == idempotency_scope for record in self.idempotency_records.values())
 
 
-def create_stage7_service() -> Stage7Service:
-    return Stage7Service()
+def stage7_idempotency_record_to_dict(record: Stage7IdempotencyRecord) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "idempotency_scope": record.idempotency_scope,
+        "endpoint": record.endpoint,
+        "idempotency_key": record.idempotency_key,
+        "request_checksum": record.request_checksum,
+        "status": record.status,
+        "error_status_code": record.error_status_code,
+        "error_code": record.error_code,
+        "error_message": record.error_message,
+    }
+    if record.value is not None:
+        row["value"] = {"kind": "render", "id": record.value.avatar_render_id}
+    else:
+        row["value"] = {"kind": "none"}
+    return row
+
+
+def stage7_idempotency_record_from_dict(row: dict[str, Any], service: Stage7Service) -> Stage7IdempotencyRecord:
+    value_ref = row.get("value", {})
+    value: AvatarRenderResult | None = None
+    if isinstance(value_ref, dict) and value_ref.get("kind") == "render":
+        value = service.avatar_renders.get(str(value_ref.get("id", "")))
+    status = str(row["status"])
+    if status not in {"RUNNING", "SUCCEEDED", "FAILED"}:
+        raise ValueError(f"Unsupported Stage 7 idempotency status: {status}")
+    if status == "SUCCEEDED" and value is None:
+        raise ValueError("Succeeded Stage 7 idempotency record references missing value.")
+    return Stage7IdempotencyRecord(
+        idempotency_scope=str(row["idempotency_scope"]),
+        endpoint=str(row["endpoint"]),
+        idempotency_key=str(row["idempotency_key"]),
+        request_checksum=str(row["request_checksum"]),
+        status=cast(Literal["RUNNING", "SUCCEEDED", "FAILED"], status),
+        value=value,
+        error_status_code=int(row["error_status_code"]) if row.get("error_status_code") is not None else None,
+        error_code=str(row["error_code"]) if row.get("error_code") is not None else None,
+        error_message=str(row["error_message"]) if row.get("error_message") is not None else None,
+    )
+
+
+def max_numeric_suffix(records: Mapping[str, object], prefix: str) -> int:
+    maximum = 0
+    for identifier in records:
+        if identifier.startswith(prefix):
+            try:
+                maximum = max(maximum, int(identifier.removeprefix(prefix)))
+            except ValueError:
+                continue
+    return maximum
+
+
+def avatar_render_result_to_dict(result: AvatarRenderResult) -> dict[str, Any]:
+    return asdict(result)
+
+
+def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
+    avatar_provider = cast(dict[str, Any], row["avatar_provider"])
+    provider_config = cast(dict[str, Any], row["provider_config"])
+    video_renderer = cast(dict[str, Any], row["video_renderer"])
+    disclosure = cast(dict[str, Any], row["disclosure"])
+    artifacts = cast(dict[str, Any], row["artifacts"])
+    restored_provider = AvatarProviderMetadata(
+        provider=validate_provider_id(str(avatar_provider["provider"]), field_name="avatar provider"),
+        provider_mode=validate_provider_mode(str(avatar_provider["provider_mode"])),
+        requested_provider=validate_provider_id(
+            str(avatar_provider["requested_provider"]),
+            field_name="requested avatar provider",
+        ),
+        fallback_reason=validate_fallback_reason(
+            str(avatar_provider["fallback_reason"]) if avatar_provider.get("fallback_reason") is not None else None
+        ),
+    )
+    restored_config = validate_provider_config(
+        ProviderConfig(
+            provider=str(provider_config["provider"]),
+            provider_mode=cast(ProviderMode, provider_config["provider_mode"]),
+            adapter_kind=cast(ProviderAdapterKind, provider_config["adapter_kind"]),
+            allow_network_egress=provider_config["allow_network_egress"],
+            requires_api_key=provider_config["requires_api_key"],
+            supports_real_video=provider_config["supports_real_video"],
+            supports_cloned_identity=provider_config["supports_cloned_identity"],
+        ),
+        provider=restored_provider.provider,
+    )
+    validate_provider_metadata_matches_config(restored_provider, restored_config)
+    restored_disclosure = DisclosureMetadata(
+        ai_generated=validate_bool(disclosure["ai_generated"], field_name="disclosure ai_generated"),
+        cloned_identity=validate_bool(disclosure["cloned_identity"], field_name="disclosure cloned_identity"),
+        consent_required=validate_bool(disclosure["consent_required"], field_name="disclosure consent_required"),
+        consent_status=validate_consent_status(str(disclosure["consent_status"])),
+        message=str(disclosure["message"]),
+    )
+    demo_export = validate_export_artifact(
+        export_artifact_from_dict(cast(dict[str, Any], artifacts["demo_export"])),
+        expected_mime_type="text/html",
+        expected_extension=".html",
+    )
+    render_manifest = validate_export_artifact(
+        export_artifact_from_dict(cast(dict[str, Any], artifacts["render_manifest"])),
+        expected_mime_type="application/json",
+        expected_extension=".json",
+    )
+    video_export_placeholder = validate_export_artifact(
+        export_artifact_from_dict(cast(dict[str, Any], artifacts["video_export_placeholder"])),
+        expected_mime_type="application/json",
+        expected_extension=".json",
+    )
+    source_script = str(row["source_script_text"])
+    source_run_id = str(row["source_run_id"])
+    trace_id = str(row["trace_id"])
+    source_context_ref_count = int(row["source_context_ref_count"])
+    source_citation_count = int(row["source_citation_count"])
+    source_context_ref_ids = tuple(str(value) for value in row.get("source_context_ref_ids", ()))
+    source_citation_indexes = tuple(int(value) for value in row.get("source_citation_indexes", ()))
+    source_evaluation_id = normalize_evaluation_id(str(row["source_evaluation_id"]))
+    source_evaluation_checksum = str(row["source_evaluation_checksum"])
+    evaluation_status = validate_evaluation_status(str(row["evaluation_status"]))
+    validate_demo_html_export(
+        demo_export,
+        source_script=source_script,
+        source_run_id=source_run_id,
+        trace_id=trace_id,
+        disclosure=restored_disclosure,
+    )
+    validate_render_manifest(
+        render_manifest,
+        avatar_provider=restored_provider,
+        provider_config=restored_config,
+        source_script=source_script,
+        source_run_id=source_run_id,
+        trace_id=trace_id,
+        source_context_ref_count=source_context_ref_count,
+        source_citation_count=source_citation_count,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_evaluation_id=source_evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=evaluation_status,
+        disclosure=restored_disclosure,
+    )
+    validate_video_export_placeholder(
+        video_export_placeholder,
+        provider_config=restored_config,
+        source_script=source_script,
+        source_run_id=source_run_id,
+        trace_id=trace_id,
+        source_context_ref_count=source_context_ref_count,
+        source_citation_count=source_citation_count,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_evaluation_id=source_evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=evaluation_status,
+        disclosure=restored_disclosure,
+    )
+    return AvatarRenderResult(
+        avatar_render_id=str(row["avatar_render_id"]),
+        source_run_id=source_run_id,
+        status="COMPLETED",
+        render_job_status="COMPLETED",
+        render_job_status_history=tuple(
+            RenderJobStatusEvent(
+                status=validate_render_job_status(str(item["status"])),
+                message=str(item["message"]),
+            )
+            for item in row.get("render_job_status_history", [])
+            if isinstance(item, dict)
+        ),
+        source_script_text=source_script,
+        avatar_provider=restored_provider,
+        provider_config=restored_config,
+        video_renderer=VideoRendererMetadata(
+            renderer=str(video_renderer["renderer"]),
+            renderer_mode="LOCAL",
+            export_format="html",
+        ),
+        disclosure=restored_disclosure,
+        artifacts=AvatarArtifacts(
+            demo_export=demo_export,
+            render_manifest=render_manifest,
+            video_export_placeholder=video_export_placeholder,
+        ),
+        trace_id=trace_id,
+        source_context_ref_count=source_context_ref_count,
+        source_citation_count=source_citation_count,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_evaluation_id=source_evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=evaluation_status,
+    )
+
+
+def export_artifact_from_dict(row: dict[str, Any]) -> ExportArtifact:
+    return ExportArtifact(
+        file_name=str(row["file_name"]),
+        mime_type=str(row["mime_type"]),
+        content_base64=str(row["content_base64"]),
+        checksum=str(row["checksum"]),
+    )
+
+
+def create_stage7_service(*, state_path: Path | None = None) -> Stage7Service:
+    return Stage7Service(state_path=state_path)
 
 
 def resolve_avatar_provider(requested_provider: str) -> tuple[str, str | None]:
@@ -839,6 +1183,26 @@ def validate_provider_adapter_kind(adapter_kind: str) -> ProviderAdapterKind:
     if candidate not in {"MOCK_LOCAL", "EXTERNAL_STUB"}:
         raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", "Invalid provider adapter kind.")
     return cast(ProviderAdapterKind, candidate)
+
+
+def validate_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", f"{field_name} must be a boolean.")
+    return value
+
+
+def validate_consent_status(consent_status: str) -> Literal["CONFIRMED", "NOT_REQUIRED"]:
+    candidate = consent_status.strip().upper()
+    if candidate not in {"CONFIRMED", "NOT_REQUIRED"}:
+        raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", "Invalid disclosure consent status.")
+    return cast(Literal["CONFIRMED", "NOT_REQUIRED"], candidate)
+
+
+def validate_render_job_status(status: str) -> RenderJobStatus:
+    candidate = status.strip().upper()
+    if candidate not in {"QUEUED", "RUNNING", "FAILED", "FALLBACK", "COMPLETED"}:
+        raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", "Invalid render job status.")
+    return cast(RenderJobStatus, candidate)
 
 
 def validate_provider_result(result: AvatarProviderResult) -> AvatarProviderResult:
@@ -1460,4 +1824,4 @@ def artifact_to_api(artifact: ExportArtifact) -> dict[str, str]:
     }
 
 
-stage7_service = create_stage7_service()
+stage7_service = create_stage7_service(state_path=resolve_state_file("stage7"))

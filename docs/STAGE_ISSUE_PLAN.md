@@ -533,10 +533,15 @@ Required Stage 8 hardening within this scope:
 
 Allowed governance/reporting changes for Module A:
 
+- `AGENTS.md`
+- `.github/CODEOWNERS`
+- `.github/pull_request_template.md`
 - `Makefile`
 - `README.md`
 - `docs/PRD.md`
+- `docs/ENGINEERING_PROCESS_RCA.md`
 - `docs/QUALITY_GATES.md`
+- `docs/REPOSITORY_GUARDRAILS.md`
 - `docs/RELEASE_CHECKLIST.md`
 - `docs/RELEASE_READINESS_REVIEW.md`
 - `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
@@ -545,6 +550,7 @@ Allowed governance/reporting changes for Module A:
 - `docs/STAGE_ISSUE_PLAN.md`
 - `docs/STATUS.md`
 - `docs/TRACEABILITY.md`
+- `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md`
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md`
 - `docs/evals/phase1_golden_questions.jsonl`
 - `docs/demo/PHASE_1_DEMO_SCRIPT.md`
@@ -554,6 +560,29 @@ Allowed governance/reporting changes for Module A:
 - `scripts/quality/check_phase1_closure_docs.py`
 - `scripts/quality/check_quality_stage.py`
 - `scripts/quality/check_recommended_review_items.py`
+
+Additional allowed implementation/evidence changes for Phase 1 Closure issue
+`#39`:
+
+- `.env.example`
+- `backend/app/main.py`
+- `backend/app/rag/store.py`
+- `backend/app/stage4.py`
+- `backend/app/stage6.py`
+- `backend/app/stage7.py`
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/file_state.py`
+- `docs/API_CONTRACT.md`
+- `docs/ADR/0006-stage8-release-hardening.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/OBSERVABILITY_AND_COST.md`
+- `docs/PORTABILITY_STRATEGY.md`
+- `docs/RISK_REGISTER.md`
+- `docs/reviews/RISK_REGISTER.md`
+- `scripts/guardrails_check.py`
+- `tests/api/test_health_api.py`
+- `tests/unit/test_guardrails_check.py`
+- `tests/unit/test_local_durability.py`
 
 Allowed implementation/contract changes for Module F issue `#37`:
 

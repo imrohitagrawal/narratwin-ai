@@ -16,7 +16,9 @@ Use this checklist for local mock-provider demo readiness.
 - [ ] Eval result is visible.
 - [ ] Unsupported claims are blocked or flagged.
 - [ ] Saved output is visible in the UI.
-- [ ] Demo presenter states the single-process, process-local, non-durable limit.
+- [ ] Demo presenter states the single-process/local-only limit, optional JSON
+      restart snapshots when configured, and no multi-worker or production
+      durability.
 - [ ] Demo presenter states mock/local providers only.
 - [ ] Demo presenter makes no production, real-video, cloned-identity, or public
   synthetic-media distribution claim.

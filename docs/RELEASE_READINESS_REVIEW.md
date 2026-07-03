@@ -11,11 +11,12 @@ No-Go for production release, multi-worker deployment, external paid/provider-ba
 generation, real video export, and public synthetic-media distribution.
 
 Conditional local mock-provider portfolio/demo review remains distinct from
-production go-live. With `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed
-and `#38` resolved with live branch-protection evidence, local/mock
+production go-live. With `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed,
+`#38` resolved with live branch-protection evidence, and `#39` adding optional
+local file-backed restart recovery plus `/api/v1/ops/status`, local/mock
 single-process demo readiness can be reviewed through the local gates and
-documented limitations, while `#39` keeps production release No-Go. No release
-tag has been created.
+documented limitations. Production release remains No-Go. No release tag has
+been created.
 
 ## Current Baseline
 
@@ -78,7 +79,8 @@ P0/P1 closure items must complete before Phase 2. Current reconciliation:
   trusted local/dev/test-only principal simulation evidence.
 - `#38` Branch protection/ruleset evidence: live GitHub `main` branch
   protection is enabled and requires the documented CI contexts.
-- `#39` Production durability and monitoring blockers: still release-blocking
+- `#39` Production durability and monitoring blockers: partially remediated for
+  local restart recovery and local ops posture visibility; still release-blocking
   for production go-live.
 - `#40` Canonical RTM stale: closed through merged PR `#46`.
 - `#41` Portfolio local-demo durability disclosure: closed through merged PR
@@ -91,11 +93,16 @@ correctness.
 
 ## Current Release Blockers
 
-- Process-local project/run/idempotency/artifact state keeps multi-worker
-  deployment blocked and blocks production go-live, restart recovery, and
-  production idempotency claims.
-- Production dashboards, alert routes, first-hour watch procedure, and rollback
-  communication channels are not defined for a real deployment.
+- Optional file-backed JSON snapshots now cover local restart recovery for Stage
+  4 project/document/run/RAG state, Stage 6 multilingual idempotency replay, and
+  Stage 7 avatar render/idempotency/artifact metadata. This is single-node only;
+  multi-worker production remains blocked until ACID/CAS metadata, locking,
+  migrations, backup/restore, and production idempotency semantics are
+  implemented and reviewed.
+- `/api/v1/ops/status` reports local durable-state enablement, bounded record
+  counts, and monitoring flags. Production dashboards, alert routes, first-hour
+  watch procedure, and rollback communication channels are still not defined for
+  a real deployment.
 - External providers remain disabled unless provider-specific evals, egress
   controls, and red-team cases are implemented.
 - Real video export and public synthetic-media distribution remain blocked until
@@ -113,7 +120,9 @@ The local demo can be reviewed only when:
 - mock/local providers remain the only active providers
 - no real provider keys are required
 - no real video, cloned face, cloned voice, or public synthetic-media claim is made
-- demo docs disclose single-process, process-local, non-durable state
+- demo docs disclose single-process/single-node local state: process-local by
+  default, optional JSON restart snapshots only when configured, and no
+  multi-worker or production durability
 - `#39` remains explicitly represented as a production/release blocker unless
   it is closed or downgraded with evidence
 - local quality, eval, security, and CI gates pass
@@ -132,7 +141,9 @@ Issues `#37` and `#42` now have separate executable evidence through merged PRs
 `#47` and `#50`. Issue `#38` now has live GitHub repository-settings evidence
 plus the required `policy-gates` branch-protection context verifier added in PR
 `#53`.
-Issue `#39` still requires implementation evidence or a reviewed No-Go exception
+Issue `#39` now has implementation evidence for local file-backed restart
+recovery and local operational status visibility, but still requires production
+database/locking/backup and monitoring evidence or a reviewed No-Go exception
 before production release can be treated as Phase 1 closure-ready. The
 unchanged Final Review artifacts preserve the original July 1 reviewer baseline;
 this Phase 1 Closure review is the current issue-disposition source for `#38`.

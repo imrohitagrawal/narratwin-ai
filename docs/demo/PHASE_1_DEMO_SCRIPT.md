@@ -31,7 +31,9 @@ multi-worker, real video, cloned identity, or public synthetic-media claims.
 ## Required Talking Points
 
 - This is a local mock-provider demo.
-- The current state is single-process, process-local, and non-durable.
+- The current state is single-process and local-only: process-local by default,
+  with optional single-node JSON restart snapshots only when configured. It is
+  not multi-worker or production-durable.
 - The demo uses mock/local providers only and does not require provider keys.
 - The demo does not produce real video, cloned face, cloned voice, or public
   synthetic-media output.

@@ -33,18 +33,23 @@ REQUIRED_PHASE1_FILES = {
 }
 
 MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
+    ".github/CODEOWNERS",
+    ".github/pull_request_template.md",
     ".github/workflows/quality-gates.yml",
+    "AGENTS.md",
     "Makefile",
     "README.md",
     "docs/PRD.md",
     "docs/QUALITY_GATES.md",
     "docs/RECOMMENDED_REVIEW_ITEMS.md",
     "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/ENGINEERING_PROCESS_RCA.md",
     "docs/RELEASE_CHECKLIST.md",
     "docs/RUNBOOK.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
     "portfolio/README.md",
     "scripts/ci/verify_branch_protection.py",
     "scripts/quality/check_phase1_closure_docs.py",
@@ -75,6 +80,27 @@ ISSUE_42_ALLOWED_CHANGED_FILES = {
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/api/test_stage7_avatar_api.py",
     "tests/unit/test_stage7_avatar.py",
+}
+ISSUE_39_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
+    ".env.example",
+    "backend/app/main.py",
+    "backend/app/rag/store.py",
+    "backend/app/stage4.py",
+    "backend/app/stage6.py",
+    "backend/app/stage7.py",
+    "backend/app/storage/__init__.py",
+    "backend/app/storage/file_state.py",
+    "docs/API_CONTRACT.md",
+    "docs/ADR/0006-stage8-release-hardening.md",
+    "docs/LOCAL_DEVELOPMENT.md",
+    "docs/OBSERVABILITY_AND_COST.md",
+    "docs/PORTABILITY_STRATEGY.md",
+    "docs/RISK_REGISTER.md",
+    "docs/reviews/RISK_REGISTER.md",
+    "scripts/guardrails_check.py",
+    "tests/api/test_health_api.py",
+    "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_local_durability.py",
 }
 
 EXPECTED_ISSUE_PRIORITIES = {
@@ -213,6 +239,8 @@ def check_changed_files(failures: list[str]) -> None:
     branch = current_branch()
     if branch.startswith("phase-1-closure-37-"):
         allowed_files = ISSUE_37_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-"):
+        allowed_files = ISSUE_39_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-42-"):
         allowed_files = ISSUE_42_ALLOWED_CHANGED_FILES
     else:
@@ -413,8 +441,9 @@ def check_demo_docs(failures: list[str]) -> None:
         "eval result",
         "saved output",
         "single-process",
-        "process-local",
-        "non-durable",
+        "local-only",
+        "JSON restart snapshots",
+        "production durability",
         "mock/local providers only",
     ):
         if marker not in combined:
@@ -460,6 +489,92 @@ def check_release_docs(failures: list[str]) -> None:
                 fail(failures, f"{rel} missing marker: {marker}")
 
 
+def check_process_docs(failures: list[str]) -> None:
+    required_files = (
+        ".github/CODEOWNERS",
+        ".github/pull_request_template.md",
+        "AGENTS.md",
+        "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+    )
+    for rel in required_files:
+        if not (ROOT / rel).is_file():
+            fail(failures, f"Missing required process artifact: {rel}")
+            return
+
+    pr_template = read(".github/pull_request_template.md")
+    for marker in (
+        "Refs #",
+        "Preflight evidence",
+        "Artifact path / URL",
+        "Matrix IDs",
+        "Residual risk decision",
+        "automation-sensitive wording",
+    ):
+        if marker not in pr_template:
+            fail(failures, f".github/pull_request_template.md missing process marker: {marker}")
+
+    agents = read("AGENTS.md")
+    for marker in (
+        "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        "preflight evidence",
+    ):
+        if marker not in agents:
+            fail(failures, f"AGENTS.md missing process marker: {marker}")
+
+    codeowners = read(".github/CODEOWNERS")
+    for marker in (
+        ".github/workflows/",
+        "scripts/guardrails_check.py",
+        "scripts/ci/verify_branch_protection.py",
+        "scripts/quality/",
+        "tests/unit/test_guardrails_check.py",
+        "docs/ENGINEERING_PROCESS_RCA.md",
+    ):
+        if marker not in codeowners:
+            fail(failures, f".github/CODEOWNERS missing process marker: {marker}")
+
+    quality_gates = read(".github/workflows/quality-gates.yml")
+    if "types: [opened, synchronize, reopened, edited, ready_for_review]" not in quality_gates:
+        fail(failures, ".github/workflows/quality-gates.yml must rerun policy-gates on pull_request.edited")
+
+    rca = read("docs/ENGINEERING_PROCESS_RCA.md")
+    for marker in (
+        "PR `#54` Finding Evidence Table",
+        "Source Gate",
+        "Contract Gate",
+        "TDD Gate",
+        "Doubt Gate",
+        "Stop Rule",
+        "PR Evidence Gate",
+        "pull_request.edited",
+    ):
+        if marker not in rca:
+            fail(failures, f"docs/ENGINEERING_PROCESS_RCA.md missing process marker: {marker}")
+
+    playbook = read("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md")
+    for marker in (
+        "Gate -1: Project Bootstrap",
+        "Gate 0: Source Control And Delivery Model",
+        "NIST AI RMF",
+        "OWASP Top 10 for Large Language Model Applications",
+        "OpenSSF Scorecard",
+        "SLSA",
+        "Matrix variants",
+        "RCA Pause Artifact",
+        "Non-skippable gates",
+        "Allowed approvers",
+        "Skip Template",
+    ):
+        if marker not in playbook:
+            fail(
+                failures,
+                "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md missing process marker: "
+                f"{marker}",
+            )
+
+
 def main() -> int:
     failures: list[str] = []
     check_branch(failures)
@@ -471,6 +586,7 @@ def main() -> int:
         check_golden_questions(failures)
         check_demo_docs(failures)
         check_release_docs(failures)
+        check_process_docs(failures)
 
     if failures:
         print("Phase 1 Closure quality failures:")

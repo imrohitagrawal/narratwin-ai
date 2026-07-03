@@ -5,12 +5,14 @@ from __future__ import annotations
 import base64
 import binascii
 import json
+import logging
 import re
 import threading
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import timedelta
-from typing import Literal, Protocol, cast
+from pathlib import Path
+from typing import Any, Literal, Protocol, cast
 
 import langcodes
 from babel import Locale
@@ -18,6 +20,7 @@ from pydub import AudioSegment  # type: ignore[import-untyped]
 import srt  # type: ignore[import-untyped]
 
 from backend.app.rag.chunking import checksum_text
+from backend.app.storage import load_state, resolve_state_file, write_state
 from backend.app.stage4 import contains_secret_like_content
 
 SUPPORTED_LANGUAGES = {
@@ -34,6 +37,7 @@ MAX_CAPTION_COUNT = 250
 MAX_PROVIDER_ID_CHARS = 64
 MAX_IDEMPOTENCY_RECORDS_PER_SCOPE = 100
 PROVIDER_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+LOGGER = logging.getLogger(__name__)
 VOICE_MANIFEST_KEYS = frozenset(
     {
         "provider",
@@ -267,19 +271,106 @@ class Stage6Service:
         *,
         translation_provider: TranslationProvider | None = None,
         tts_provider: TTSProvider | None = None,
+        state_path: Path | None = None,
     ) -> None:
         self.translation_provider = translation_provider or MockTranslationProvider()
         self.tts_provider = tts_provider or MockTTSProvider()
+        self.state_path = state_path
         self.idempotency_records: dict[tuple[str, str, str], Stage6IdempotencyRecord] = {}
         self._operation_lock = threading.Lock()
         self._run_counter = 0
+        self._restore()
 
     def reset(self) -> None:
         with self._operation_lock:
             self.translation_provider = MockTranslationProvider()
             self.tts_provider = MockTTSProvider()
-            self.idempotency_records.clear()
-            self._run_counter = 0
+            self._clear_runtime_state()
+            self._persist_locked()
+
+    def _clear_runtime_state(self) -> None:
+        self.idempotency_records.clear()
+        self._run_counter = 0
+
+    def _restore(self) -> None:
+        payload = load_state(self.state_path)
+        if payload is None:
+            return
+        try:
+            if payload.get("schema") != "stage6-local-state-v1":
+                raise ValueError("Stage 6 state schema mismatch.")
+            counters = payload.get("counters", {})
+            run_counter = 0
+            if isinstance(counters, dict):
+                run_counter = int(counters.get("run", 0))
+            for row in payload.get("idempotencyRecords", []):
+                if not isinstance(row, dict):
+                    continue
+                if row.get("status") == "PENDING":
+                    continue
+                try:
+                    record = stage6_idempotency_record_from_dict(row)
+                except (KeyError, TypeError, ValueError, Stage6Error) as exc:
+                    LOGGER.warning("Skipping incompatible Stage 6 idempotency record at %s: %s", self.state_path, exc)
+                    continue
+                key = (record.idempotency_scope, record.endpoint, record.idempotency_key)
+                self.idempotency_records[key] = record
+            self._run_counter = max(run_counter, max_multilingual_run_suffix(self.idempotency_records))
+        except (KeyError, TypeError, ValueError, Stage6Error) as exc:
+            LOGGER.warning("Ignoring incompatible Stage 6 local state snapshot at %s: %s", self.state_path, exc)
+            self._clear_runtime_state()
+
+    def _runtime_snapshot_locked(self) -> dict[str, Any]:
+        return {
+            "idempotencyRecords": self.idempotency_records.copy(),
+            "runCounter": self._run_counter,
+        }
+
+    def _restore_runtime_snapshot_locked(self, snapshot: dict[str, Any]) -> None:
+        self.idempotency_records = snapshot["idempotencyRecords"].copy()
+        self._run_counter = int(snapshot["runCounter"])
+
+    def _restore_failed_operation_locked(
+        self,
+        snapshot: dict[str, Any] | None,
+        *,
+        record_key: tuple[str, str, str] | None,
+        result: MultilingualWalkthroughResult | None,
+    ) -> None:
+        if snapshot is None:
+            return
+        if record_key is not None:
+            prior_record = snapshot["idempotencyRecords"].get(record_key)
+            if prior_record is None:
+                self.idempotency_records.pop(record_key, None)
+            else:
+                self.idempotency_records[record_key] = prior_record
+        if result is not None:
+            for key, record in list(self.idempotency_records.items()):
+                if (
+                    key != record_key
+                    and isinstance(record.value, MultilingualWalkthroughResult)
+                    and record.value.multilingual_run_id == result.multilingual_run_id
+                ):
+                    self.idempotency_records.pop(key, None)
+        self._run_counter = max(
+            int(snapshot["runCounter"]),
+            max_multilingual_run_suffix(self.idempotency_records),
+        )
+
+    def _persist_locked(self) -> None:
+        write_state(
+            self.state_path,
+            {
+                "schema": "stage6-local-state-v1",
+                "idempotencyRecords": [
+                    stage6_idempotency_record_to_dict(record)
+                    for record in self.idempotency_records.values()
+                    if record.status != "PENDING"
+                ],
+                "counters": {"run": self._run_counter},
+            },
+        )
 
     def generate_multilingual_walkthrough(
         self,
@@ -311,6 +402,8 @@ class Stage6Service:
         )
         endpoint = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs"
         record_key: tuple[str, str, str] | None = None
+        snapshot: dict[str, Any] | None = None
+        result: MultilingualWalkthroughResult | None = None
         if idempotency_scope and idempotency_key:
             record_key = (idempotency_scope, endpoint, idempotency_key)
             with self._operation_lock:
@@ -337,6 +430,7 @@ class Stage6Service:
                         "RESOURCE_LIMIT_EXCEEDED",
                         "Idempotency record limit exceeded for this Stage 6 scope.",
                     )
+                snapshot = self._runtime_snapshot_locked()
                 self.idempotency_records[record_key] = Stage6IdempotencyRecord(
                     idempotency_scope=idempotency_scope,
                     endpoint=endpoint,
@@ -359,7 +453,7 @@ class Stage6Service:
                 raise Stage6Error(413, "SOURCE_SCRIPT_TOO_LARGE", "Source English script exceeds the Stage 6 limit.")
         except Stage6Error as exc:
             if record_key is not None:
-                self._store_idempotent_failure(record_key, exc)
+                self._store_idempotent_failure(record_key, exc, snapshot)
             raise
 
         try:
@@ -375,25 +469,47 @@ class Stage6Service:
             )
         except Stage6Error as exc:
             if record_key is not None:
-                self._store_idempotent_failure(record_key, exc)
+                self._store_idempotent_failure(record_key, exc, snapshot)
+            raise
+        except OSError:
+            if snapshot is not None:
+                with self._operation_lock:
+                    self._restore_failed_operation_locked(snapshot, record_key=record_key, result=result)
             raise
         except Exception:
             if record_key is not None:
                 with self._operation_lock:
-                    self.idempotency_records.pop(record_key, None)
+                    self._restore_failed_operation_locked(snapshot, record_key=record_key, result=result)
+                    self._persist_locked()
             raise
+        assert result is not None
         if record_key is not None:
             with self._operation_lock:
                 record = self.idempotency_records[record_key]
                 record.status = "COMPLETED"
                 record.value = result
+                try:
+                    self._persist_locked()
+                except OSError:
+                    self._restore_failed_operation_locked(snapshot, record_key=record_key, result=result)
+                    raise
         return result
 
-    def _store_idempotent_failure(self, record_key: tuple[str, str, str], error: Stage6Error) -> None:
+    def _store_idempotent_failure(
+        self,
+        record_key: tuple[str, str, str],
+        error: Stage6Error,
+        snapshot: dict[str, Any] | None,
+    ) -> None:
         with self._operation_lock:
             record = self.idempotency_records[record_key]
             record.status = "FAILED"
             record.value = error
+            try:
+                self._persist_locked()
+            except OSError:
+                self._restore_failed_operation_locked(snapshot, record_key=record_key, result=None)
+                raise error
 
     def _create_multilingual_walkthrough(
         self,
@@ -485,8 +601,173 @@ class Stage6Service:
         return sum(record.idempotency_scope == idempotency_scope for record in self.idempotency_records.values())
 
 
-def create_stage6_service() -> Stage6Service:
-    return Stage6Service()
+def stage6_idempotency_record_to_dict(record: Stage6IdempotencyRecord) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "idempotency_scope": record.idempotency_scope,
+        "endpoint": record.endpoint,
+        "idempotency_key": record.idempotency_key,
+        "request_checksum": record.request_checksum,
+        "status": record.status,
+    }
+    if isinstance(record.value, Stage6Error):
+        row["value"] = {
+            "kind": "error",
+            "status_code": record.value.status_code,
+            "code": record.value.code,
+            "message": record.value.message,
+        }
+    elif isinstance(record.value, MultilingualWalkthroughResult):
+        row["value"] = {"kind": "result", "result": multilingual_result_to_dict(record.value)}
+    else:
+        row["value"] = {"kind": "none"}
+    return row
+
+
+def stage6_idempotency_record_from_dict(row: dict[str, Any]) -> Stage6IdempotencyRecord:
+    value_ref = row.get("value", {})
+    value: MultilingualWalkthroughResult | Stage6Error | None = None
+    if isinstance(value_ref, dict):
+        if value_ref.get("kind") == "error":
+            value = Stage6Error(
+                int(value_ref.get("status_code", 500)),
+                str(value_ref.get("code", "INTERNAL_SERVER_ERROR")),
+                str(value_ref.get("message", "Request failed.")),
+            )
+        elif value_ref.get("kind") == "result" and isinstance(value_ref.get("result"), dict):
+            value = multilingual_result_from_dict(cast(dict[str, Any], value_ref["result"]))
+    status = str(row["status"])
+    if status not in {"PENDING", "COMPLETED", "FAILED"}:
+        raise ValueError(f"Unsupported Stage 6 idempotency status: {status}")
+    if status == "COMPLETED" and value is None:
+        raise ValueError("Completed Stage 6 idempotency record references missing value.")
+    return Stage6IdempotencyRecord(
+        idempotency_scope=str(row["idempotency_scope"]),
+        endpoint=str(row["endpoint"]),
+        idempotency_key=str(row["idempotency_key"]),
+        request_checksum=str(row["request_checksum"]),
+        status=cast(Literal["PENDING", "COMPLETED", "FAILED"], status),
+        value=value,
+    )
+
+
+def max_multilingual_run_suffix(records: dict[tuple[str, str, str], Stage6IdempotencyRecord]) -> int:
+    maximum = 0
+    for record in records.values():
+        if not isinstance(record.value, MultilingualWalkthroughResult):
+            continue
+        identifier = record.value.multilingual_run_id
+        if not identifier.startswith("mlrun_"):
+            continue
+        try:
+            maximum = max(maximum, int(identifier.removeprefix("mlrun_")))
+        except ValueError:
+            continue
+    return maximum
+
+
+def multilingual_result_to_dict(result: MultilingualWalkthroughResult) -> dict[str, Any]:
+    return asdict(result)
+
+
+def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroughResult:
+    artifacts = cast(dict[str, Any], row["artifacts"])
+    voice = cast(dict[str, Any], row["voice"])
+    translation_provider = cast(dict[str, Any], row["translation_provider"])
+    source_language = normalize_language_tag(str(row["source_language"]))
+    target_language = normalize_language_tag(str(row["target_language"]))
+    status = str(row["status"])
+    if status != "COMPLETED":
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 result status is invalid.")
+    translation_provider_id = validate_provider_id(
+        str(translation_provider["provider"]),
+        field_name="translation provider",
+    )
+    translation_provider_mode = validate_local_provider_mode(
+        str(translation_provider["provider_mode"]),
+        field_name="translation provider mode",
+    )
+    voice_provider_id = validate_provider_id(str(voice["provider"]), field_name="voice provider")
+    voice_provider_mode = validate_local_provider_mode(str(voice["provider_mode"]), field_name="voice provider mode")
+    requested_voice_provider = validate_provider_id(str(voice["requested_provider"]), field_name="requested voice provider")
+    fallback_reason = validate_voice_fallback_reason(
+        str(voice["fallback_reason"]) if voice.get("fallback_reason") is not None else None
+    )
+    if translation_provider_id != "mock" or voice_provider_id != "mock":
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 provider must be mock local.")
+    voice_artifact = validate_voice_manifest_artifact(
+        downloadable_artifact_from_dict(
+            cast(dict[str, Any], voice["artifact"]),
+            expected_mime_type="application/json",
+            expected_extension=".json",
+        )
+    )
+    return MultilingualWalkthroughResult(
+        multilingual_run_id=str(row["multilingual_run_id"]),
+        source_run_id=str(row["source_run_id"]),
+        source_language=source_language,
+        target_language=target_language,
+        status=status,
+        source_script_text=str(row["source_script_text"]),
+        translated_script_text=str(row["translated_script_text"]),
+        subtitles_text=str(row["subtitles_text"]),
+        glossary_terms=[str(term) for term in row.get("glossary_terms", [])],
+        preserved_terms=[str(term) for term in row.get("preserved_terms", [])],
+        translation_provider=TranslationProviderResult(
+            provider=translation_provider_id,
+            provider_mode=translation_provider_mode,
+            source_language=normalize_language_tag(str(translation_provider["source_language"])),
+            target_language=normalize_language_tag(str(translation_provider["target_language"])),
+            translated_text=str(translation_provider["translated_text"]),
+            preserved_terms=[str(term) for term in translation_provider.get("preserved_terms", [])],
+        ),
+        voice=VoiceProviderResult(
+            provider=voice_provider_id,
+            provider_mode=voice_provider_mode,
+            requested_provider=requested_voice_provider,
+            fallback_reason=fallback_reason,
+            language=normalize_language_tag(str(voice["language"])),
+            artifact=voice_artifact,
+        ),
+        artifacts=MultilingualArtifacts(
+            translated_script=downloadable_artifact_from_dict(
+                cast(dict[str, Any], artifacts["translated_script"]),
+                expected_mime_type="text/markdown",
+                expected_extension=".md",
+            ),
+            subtitles=downloadable_artifact_from_dict(
+                cast(dict[str, Any], artifacts["subtitles"]),
+                expected_mime_type="application/x-subrip",
+                expected_extension=".srt",
+            ),
+            voice_manifest=voice_artifact,
+        ),
+        trace_id=str(row["trace_id"]),
+        source_context_ref_count=int(row["source_context_ref_count"]),
+        source_citation_count=int(row["source_citation_count"]),
+    )
+
+
+def downloadable_artifact_from_dict(
+    row: dict[str, Any],
+    *,
+    expected_mime_type: str,
+    expected_extension: str,
+) -> DownloadableArtifact:
+    artifact = DownloadableArtifact(
+        file_name=str(row["file_name"]),
+        mime_type=str(row["mime_type"]),
+        content_base64=str(row["content_base64"]),
+        checksum=str(row["checksum"]),
+    )
+    return validate_downloadable_artifact(
+        artifact,
+        expected_mime_type=expected_mime_type,
+        expected_extension=expected_extension,
+    )
+
+
+def create_stage6_service(*, state_path: Path | None = None) -> Stage6Service:
+    return Stage6Service(state_path=state_path)
 
 
 def normalize_language_tag(language: str) -> str:
@@ -558,6 +839,41 @@ def validate_provider_mode(provider_mode: str) -> ProviderMode:
     if candidate not in {"LOCAL", "DISABLED", "OPTIONAL_EXTERNAL"}:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Invalid provider mode.")
     return cast(ProviderMode, candidate)
+
+
+def validate_local_provider_mode(provider_mode: str, *, field_name: str) -> ProviderMode:
+    candidate = validate_provider_mode(provider_mode)
+    if candidate != "LOCAL":
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", f"{field_name} must be local.")
+    return candidate
+
+
+def validate_voice_fallback_reason(fallback_reason: str | None) -> str | None:
+    if fallback_reason is None:
+        return None
+    candidate = fallback_reason.strip().upper()
+    if candidate != "REQUESTED_PROVIDER_UNAVAILABLE":
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Invalid voice provider fallback reason.")
+    return candidate
+
+
+def validate_downloadable_artifact(
+    artifact: DownloadableArtifact,
+    *,
+    expected_mime_type: str,
+    expected_extension: str,
+) -> DownloadableArtifact:
+    if artifact.mime_type != expected_mime_type:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Downloadable artifact MIME type is invalid.")
+    if not artifact.file_name.endswith(expected_extension) or not is_safe_artifact_filename(artifact.file_name):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Downloadable artifact filename is invalid.")
+    try:
+        decoded = base64.b64decode(artifact.content_base64, validate=True).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError) as exc:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Downloadable artifact content is invalid.") from exc
+    if artifact.checksum != checksum_text(decoded):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Downloadable artifact checksum is invalid.")
+    return artifact
 
 
 def validate_voice_manifest_artifact(artifact: DownloadableArtifact) -> DownloadableArtifact:
@@ -758,4 +1074,4 @@ def artifact_to_api(artifact: DownloadableArtifact) -> dict[str, str]:
     }
 
 
-stage6_service = create_stage6_service()
+stage6_service = create_stage6_service(state_path=resolve_state_file("stage6"))

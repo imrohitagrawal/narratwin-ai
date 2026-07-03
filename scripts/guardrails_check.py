@@ -120,6 +120,7 @@ PRD_IMPACT_PREFIXES = (
 )
 
 STATUS_IMPACT_PREFIXES = (
+    ".github/CODEOWNERS",
     ".github/pull_request_template.md",
     ".github/workflows/",
     ".stage/current",
@@ -132,6 +133,7 @@ STATUS_IMPACT_PREFIXES = (
     "docs/ARCHITECTURE.md",
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/DATA_MODEL.md",
+    "docs/ENGINEERING_PROCESS_RCA.md",
     "docs/METHODOLOGY.md",
     "docs/NORTH_STAR_METRICS.md",
     "docs/OBSERVABILITY_AND_COST.md",
@@ -152,11 +154,14 @@ STATUS_IMPACT_PREFIXES = (
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
     "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md",
+    "docs/templates/",
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/THREAT_MODEL.md",
     "docs/TRACEABILITY.md",
     "scripts/guardrails_check.py",
+    "scripts/ci/verify_branch_protection.py",
     "scripts/quality/",
+    "tests/unit/test_guardrails_check.py",
 )
 
 CODE_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs"}
@@ -196,6 +201,81 @@ def changed_files() -> list[str]:
     resolved_base = resolve_diff_base(head, base)
     output = run_git(["diff", "--name-only", resolved_base, head])
     return [line.strip() for line in output.splitlines() if line.strip()]
+
+
+def closing_issue_pattern(issue_number: str = r"\d+") -> str:
+    issue_ref = (
+        rf"#(?:{issue_number})\b|"
+        rf"[\w.-]+/[\w.-]+#(?:{issue_number})\b|"
+        rf"https://github\.com/[\w.-]+/[\w.-]+/issues/(?:{issue_number})\b"
+    )
+    return rf"(?i)\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b:?\s*(?:{issue_ref})"
+
+
+def issue_link_pattern(issue_number: str = r"\d+") -> str:
+    issue_ref = (
+        rf"#(?:{issue_number})\b|"
+        rf"[\w.-]+/[\w.-]+#(?:{issue_number})\b|"
+        rf"https://github\.com/[\w.-]+/[\w.-]+/issues/(?:{issue_number})\b"
+    )
+    return rf"(?i)\b(refs?|references?)\b:?\s*(?:{issue_ref})"
+
+
+def is_nontrivial_pull_request(changes: list[str]) -> bool:
+    if not changes:
+        return False
+    review_relevant_prefixes = (
+        ".github/",
+        "backend/",
+        "frontend/",
+        "scripts/",
+        "docs/ADR/",
+        "docs/templates/",
+    )
+    return any(
+        Path(path).suffix in CODE_SUFFIXES
+        or path.startswith(review_relevant_prefixes)
+        or any(path.startswith(prefix) for prefix in ARCHITECTURE_IMPACT_PREFIXES + PRD_IMPACT_PREFIXES + STATUS_IMPACT_PREFIXES)
+        for path in changes
+    )
+
+
+def has_completed_preflight_evidence(body: str) -> bool:
+    lines = body.splitlines()
+    start = next((index for index, line in enumerate(lines) if line.strip().lower() == "## preflight evidence"), None)
+    if start is None:
+        return False
+    rows: list[list[str]] = []
+    for line in lines[start + 1 :]:
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            break
+        if not stripped.startswith("|") or "---" in stripped:
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if cells and cells[0].lower() == "evidence":
+            continue
+        rows.append(cells)
+    completed_rows = 0
+    empty_markers = {"", "n/a", "na", "todo", "tbd", "pending"}
+    for cells in rows:
+        if len(cells) < 7:
+            continue
+        evidence, artifact, matrix_ids, command, reviewer, status, residual = cells[:7]
+        required = (evidence, artifact, matrix_ids, command, reviewer, status, residual)
+        if any(value.strip().lower() in empty_markers for value in required):
+            continue
+        if status.strip().lower() not in {"pass", "passed", "accepted", "tracked"}:
+            continue
+        completed_rows += 1
+    return completed_rows >= 3
+
+
+def pull_request_commit_messages() -> str:
+    base = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    head = os.environ.get("GITHUB_HEAD_SHA", "").strip() or "HEAD"
+    resolved_base = resolve_diff_base(head, base)
+    return run_git(["log", "--format=%B", f"{resolved_base}..{head}"])
 
 
 def iter_text_files() -> list[Path]:
@@ -272,6 +352,7 @@ def check_issue_linked_pull_request() -> None:
         failures.append(f"Could not read pull request event payload: {exc}")
         return
     pr = event.get("pull_request", {})
+    title = pr.get("title") or ""
     body = pr.get("body") or ""
     head_ref = (pr.get("head") or {}).get("ref")
     base_ref = (pr.get("base") or {}).get("ref")
@@ -279,15 +360,32 @@ def check_issue_linked_pull_request() -> None:
         failures.append("Pull request head branch must not be main.")
     if base_ref != "main":
         failures.append("Pull requests for guarded work must target main.")
-    if not re.search(r"(?i)(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+", body):
-        failures.append("Pull request body must link an issue using Closes #<issue>, Fixes #<issue>, or Resolves #<issue>.")
+    issue_39_closing_pattern = closing_issue_pattern("39")
+    if re.search(
+        issue_39_closing_pattern,
+        f"{title}\n{body}\n{pull_request_commit_messages()}",
+    ):
+        failures.append("Issue #39 pull requests must use reference-only wording and must not auto-close #39.")
+    changes = changed_files()
     canonical_stage_issues = {
         "stage2-": ("Stage 2", "2"),
         "stage3-": ("Stage 3", "5"),
     }
+    is_canonical_stage_branch = bool(
+        head_ref and any(head_ref.startswith(branch_prefix) for branch_prefix in canonical_stage_issues)
+    )
+    reference_only_issue_39 = bool(
+        head_ref
+        and head_ref.startswith("phase-1-closure-39-")
+        and re.search(r"(?i)\brefs\s+#39\b", body)
+    )
+    if not reference_only_issue_39 and not is_canonical_stage_branch and not re.search(issue_link_pattern(), body):
+        failures.append("Pull request body must link an issue using reference-only wording such as Refs #<issue>.")
+    if is_nontrivial_pull_request(changes) and not has_completed_preflight_evidence(body):
+        failures.append("Non-trivial pull requests must include completed preflight evidence rows.")
     for branch_prefix, (stage_name, issue_number) in canonical_stage_issues.items():
         if head_ref and head_ref.startswith(branch_prefix):
-            pattern = rf"(?i)(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#{issue_number}\b"
+            pattern = closing_issue_pattern(issue_number)
             if not re.search(pattern, body):
                 failures.append(
                     f"{stage_name} pull requests must close the canonical {stage_name} issue using "

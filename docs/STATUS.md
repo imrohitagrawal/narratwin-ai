@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-02
+- Last reviewed date: 2026-07-08
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only. No Phase 2 feature
   work, external provider enablement, production release tag, or public
@@ -31,9 +31,12 @@ Use it to answer:
   is closed. Phase 1 Closure issues `#35`, `#36`, `#37`, `#40`, `#41`, and
   `#42` are closed through merged PRs `#46`, `#47`, and `#50`; issue `#38`
   has live GitHub branch-protection evidence and required-context drift checking
-  recorded through PR `#53`, including the user-repository limitation on direct
-  pusher restrictions;
-  issues `#39`, `#43`, `#44`, `#48`, and `#49` remain open.
+  recorded through merged PR `#53` at merge commit `b5205083d0d11db060c83c1a5156394263b50de5`,
+  including the user-repository limitation on direct pusher restrictions; open
+  PR `#54` proposes branch-local implementation evidence for optional local
+  file-backed restart recovery and `/api/v1/ops/status`, but issue `#39`
+  remains open for production-grade durability and monitoring; issues `#43`,
+  `#44`, `#48`, and `#49` remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -56,6 +59,8 @@ Use these files together with this tracker:
 - [Project Learnings Tracker](PROJECT_LEARNINGS_TRACKER.md)
 - [Project Governance Learnings](PROJECT_GOVERNANCE_LEARNINGS.md)
 - [Review Rigor Retrospective](REVIEW_RIGOR_RETROSPECTIVE.md)
+- [Engineering Process RCA](ENGINEERING_PROCESS_RCA.md)
+- [New Project Engineering Playbook](templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md)
 - GitHub issues and pull requests for execution history
 
 ## Executive Status
@@ -127,8 +132,9 @@ Use these files together with this tracker:
   evidence checksum binding with a shared canonical route/service/mock-provider
   helper, explicit evidence IDs/indexes, duplicate-key JSON rejection, and
   structured idempotency request checksums.
-- Release posture remains No-Go until the remaining Phase 1 P0/P1 blocker `#39`
-  is resolved or explicitly downgraded with evidence.
+- Release posture remains No-Go until the remaining production-grade portion of
+  Phase 1 P0/P1 blocker `#39` is resolved or explicitly downgraded with
+  evidence.
 - PR `#47` independent review residual risks are now durable follow-ups:
   issue `#48` for scoped project-lookup hardening and issue `#49` for
   simulated-actor idempotency resource caps, mirrored as `RR-036` and `RR-037`.
@@ -147,7 +153,7 @@ Use these files together with this tracker:
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
 | Stage 8 | Complete, merged to `main` | `#13` closed | PR `#33` merged | Executable at merge | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and release-readiness review merged at `fb40113`. |
 | Final Review | Complete, merged to `main` | `#6` closed | PR `#45` merged | Executable artifact gate | Independent review artifacts merged at `5a294c7`; outcome is No-Go until Phase 1 Closure resolves blockers. |
-| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed; `#38` resolved with live settings evidence and required-context drift checking through PR `#53`; `#39`, `#43`, and `#44` open | PRs `#46`, `#47`, and `#50` merged; PR `#53` records branch-protection evidence and awaits review/merge; later branches remain `phase-1-closure-*` | Executable governance gate added | Remaining original release blocker is `#39` production durability/monitoring. `#43` and `#44` remain P2 unless they block Phase 1 correctness. |
+| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, and `#44` open | PRs `#46`, `#47`, `#50`, and `#53` merged; PR `#54` is open and adds local durability/ops evidence for `#39` without closing the production blocker | Executable governance gate added | `#39` now covers remaining production-grade durability/monitoring gaps after local restart recovery and ops status evidence. `#43` and `#44` remain P2 unless they block Phase 1 correctness. |
 
 ## Issue Ledger
 
@@ -170,7 +176,7 @@ Use these files together with this tracker:
 | `#36` | Closed | Phase 1 P0 | Reconciled executable Final Review gate and repository-tracked branch-policy evidence posture through merged PR `#46`; live branch-protection proof is recorded under issue `#38`. |
 | `#37` | Closed | Phase 1 P1 | Trusted local/dev/test-only `X-Local-User-Id` simulation reconciled with API behavior, docs, and tests through merged PR `#47`. |
 | `#38` | Resolved with evidence | Phase 1 P1 | Live GitHub `main` branch protection is enabled with strict required CI contexts, required PR review, admin enforcement, blocked force pushes, blocked deletions, and required conversation resolution through PR `#53`; `policy-gates` now runs `scripts/ci/verify_branch_protection.py` to fail on required-context drift visible through the branch summary API; direct pusher restrictions are unavailable on this user-owned repository per GitHub API validation. |
-| `#39` | Open | Phase 1 P1 | Resolve or explicitly maintain production durability and monitoring blockers. |
+| `#39` | Open, partially remediated | Phase 1 P1 | Optional local JSON snapshots now cover Stage 4 project/document/run/RAG state, Stage 6 multilingual idempotency replay, and Stage 7 render/idempotency/artifact metadata; `/api/v1/ops/status` exposes bounded local posture metadata. Production go-live remains blocked until ACID/CAS durable metadata, cross-worker locking, migrations, backup/restore, production idempotency semantics, dashboards/alerts, first-hour watch, and rollback communications are reviewed. |
 | `#40` | Closed | Phase 1 P0 | Canonical requirements traceability matrix reconciled through merged PR `#46`. |
 | `#41` | Closed | Phase 1 P0 | Local demo durability and provider limits disclosed in portfolio/demo docs through merged PR `#46`. |
 | `#42` | Closed | Phase 1 P1 | Stage 7 source evidence checksum binding hardened through merged PR `#50` by sharing one canonical route/service/mock-provider checksum definition, requiring explicit evidence IDs for positive counts, using structured idempotency checksums, and rejecting duplicate-key provider JSON artifacts. |
@@ -211,7 +217,8 @@ Use these files together with this tracker:
 | `#46` | Merged | 2026-07-01 | Phase 1 Closure Module A governance and traceability PR for issues `#35`, `#36`, `#40`, and `#41`, with release-readiness, demo, golden-question, and quality-gate hardening; merged at `3131b3932c921a33fb6f45142d7fd7dbedb41792`. |
 | `#47` | Merged | 2026-07-01 | Phase 1 Closure Module F security PR for issue `#37`; reconciles trusted local/dev/test-only principal simulation with implementation, API tests, and contract docs; merged at `cb53e33a75ff6837a5498dfb0cc01c06decab8c5`. |
 | `#50` | Merged | 2026-07-01 | Phase 1 Closure Module B functional-flow PR for issue `#42`; hardens Stage 7 source evidence checksum binding through a canonical helper shared by the API route, service, and mock provider, with explicit evidence IDs, structured idempotency checksums, and duplicate-key provider JSON rejection; merged at `b6235da1a5202ffc9dbde6284ad39f3e3ad70486`. |
-| `#53` | Open | Pending review/merge | Phase 1 Closure Module A governance PR for issue `#38`; records live `main` branch protection evidence, adds required-context drift checking to `policy-gates`, documents strict required CI contexts, required PR review, admin enforcement, blocked force pushes/deletions, required conversation resolution, and the user-repository limitation on direct pusher restrictions. |
+| `#53` | Merged | 2026-07-02 | Phase 1 Closure Module A governance PR for issue `#38`; merged at `b5205083d0d11db060c83c1a5156394263b50de5`, records live `main` branch protection evidence, adds required-context drift checking to `policy-gates`, documents strict required CI contexts, required PR review, admin enforcement, blocked force pushes/deletions, required conversation resolution, and the user-repository limitation on direct pusher restrictions. |
+| `#54` | Open | Pending review/merge | Phase 1 Closure PR for issue `#39`; adds optional local JSON restart recovery, sensitive-snapshot documentation, redacted ops status evidence, monitoring posture visibility, and a narrow guardrail exception that permits reference-only `#39` linkage so the production blocker is not auto-closed. |
 
 ## Completed Work
 
@@ -357,9 +364,9 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Complete the remaining Phase 1 Closure P0/P1 issue `#39` through an
-   issue-linked `phase-1-closure-*` branch and PR, or record a reviewed No-Go
-   exception with evidence.
+1. Complete the remaining production-grade portion of Phase 1 Closure P0/P1
+   issue `#39` through an issue-linked `phase-1-closure-*` branch and PR, or
+   record a reviewed No-Go exception with evidence.
 2. Keep Phase 2 feature work blocked until P0/P1 items are closed or explicitly
    downgraded with evidence.
 3. Keep production, multi-worker deployment, external provider use, real video
@@ -434,3 +441,7 @@ Required update rules:
 | 2026-07-02 | PRs `#47` and `#50` reconciled as merged and issues `#37` and `#42` reconciled as closed; original Phase 1 P0/P1 blockers now remain limited to `#38` branch-protection/ruleset evidence and `#39` production durability/monitoring, while `#48` and `#49` are classified as pre-production/P2 hardening that do not block local/mock Phase 1 demo review under the continuing production No-Go posture. |
 | 2026-07-02 | Live GitHub `main` branch protection was enabled and verified for issue `#38` through PR `#53`, requiring strict status checks for `policy-gates`, `quality / secrets`, `quality / markdown`, `lint / typecheck / unit / api`, `frontend tests / playwright smoke`, `ci / docker build`, `secret scan / bandit / audit / semgrep`, `security / docker build`, `eval smoke`, and `stage8 / performance lighthouse`, with required PR review, admin enforcement, blocked force pushes, blocked deletions, and conversation resolution; direct pusher restrictions were attempted but GitHub rejected them for this user-owned repository because only organization repositories can have users and team restrictions. |
 | 2026-07-03 | PR `#53` review feedback added `scripts/ci/verify_branch_protection.py` to the required `policy-gates` workflow so the branch summary API now fails CI if `main` loses `protected: true`, exact required CI contexts, `enforcement_level: everyone`, or GitHub Actions app bindings; the top-level risk register now treats Final Review risk artifacts as historical baseline for issue dispositions rather than the unreconciled current source. |
+| 2026-07-03 | Phase 1 Closure issue `#39` branch `phase-1-closure-39-durability-monitoring` added optional file-backed JSON snapshots for Stage 4/6/7 local restart recovery, `/api/v1/ops/status` for bounded durability/monitoring posture metadata, and direct unit/API evidence; production release remains No-Go pending ACID/CAS durable metadata, cross-worker locking, migrations, backup/restore, production idempotency, dashboards/alerts, first-hour watch, and rollback communications. |
+| 2026-07-08 | PR `#54` process-loop RCA added `docs/ENGINEERING_PROCESS_RCA.md` as a standing NarraTwin preflight reference and `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` as a reusable project-start operating model; release posture remains No-Go and issue `#39` remains open pending production-grade durability/monitoring review. |
+| 2026-07-08 | PR `#54` external-review hardening linked the RCA/playbook from `AGENTS.md`, added CODEOWNERS coverage for process-critical guardrail files, made the `#39` auto-close guard issue-based rather than branch-name-only, and added a Stage 7 concurrent persist-failure regression so one failed render cannot erase another committed render from memory. |
+| 2026-07-08 | PR `#54` adversarial sub-agent review hardening added `pull_request.edited` coverage for `policy-gates`, completed-preflight PR body validation, CODEOWNERS/status tracking for `.github/workflows/` and `scripts/ci/verify_branch_protection.py`, explicit issue `#39` branch-scope docs, Stage 6 concurrent rollback protection, and Stage 6/7 restore validation for tampered non-local provider claims. |

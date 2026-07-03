@@ -15,6 +15,8 @@ Before changing files, read:
 - `docs/QUALITY_GATES.md`
 - `docs/SKILL_LOCK.md`
 - `docs/STAGE_ISSUE_PLAN.md`
+- `docs/ENGINEERING_PROCESS_RCA.md`
+- `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md`
 
 ## Non-Negotiable Workflow
 
@@ -34,6 +36,7 @@ Before changing files, read:
 14. Update `docs/ADR/` for architecture-impacting changes.
 15. Update `docs/TRACEABILITY.md` for PRD-impacting changes.
 16. Update `docs/STATUS.md` when repository-tracked stage state, issue or PR mapping, governance policy, or stage progress changes.
+17. For non-trivial requirements, architecture, coding, release, or governance work, consult `docs/ENGINEERING_PROCESS_RCA.md` before implementation and record the preflight evidence required by `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md`.
 
 ## Approved Build Stages
 

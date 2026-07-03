@@ -19,6 +19,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.app.rag.models import OWNER_LOCAL
+from backend.app.observability import is_langfuse_enabled
 from backend.app.stage4 import (
     MAX_API_REQUEST_BYTES,
     LocalPrincipal,
@@ -64,6 +65,87 @@ class ReadinessResponse(HealthResponse):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     checked_at: str = Field(alias="checkedAt")
+
+
+class Stage4OpsRecordCountsResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    projects: int
+    documents: int
+    ingestion_runs: int = Field(alias="ingestionRuns")
+    walkthrough_runs: int = Field(alias="walkthroughRuns")
+    idempotency_records: int = Field(alias="idempotencyRecords")
+
+
+class Stage6OpsRecordCountsResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    idempotency_records: int = Field(alias="idempotencyRecords")
+
+
+class Stage7OpsRecordCountsResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    avatar_renders: int = Field(alias="avatarRenders")
+    artifact_metadata: int = Field(alias="artifactMetadata")
+    idempotency_records: int = Field(alias="idempotencyRecords")
+
+
+class OpsStage4DurabilityResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    durable_state_enabled: bool = Field(alias="durableStateEnabled")
+    state_backend: Literal["memory", "json-file"] = Field(alias="stateBackend")
+    record_counts: Stage4OpsRecordCountsResponse = Field(alias="recordCounts")
+
+
+class OpsStage6DurabilityResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    durable_state_enabled: bool = Field(alias="durableStateEnabled")
+    state_backend: Literal["memory", "json-file"] = Field(alias="stateBackend")
+    record_counts: Stage6OpsRecordCountsResponse = Field(alias="recordCounts")
+
+
+class OpsStage7DurabilityResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    durable_state_enabled: bool = Field(alias="durableStateEnabled")
+    state_backend: Literal["memory", "json-file"] = Field(alias="stateBackend")
+    record_counts: Stage7OpsRecordCountsResponse = Field(alias="recordCounts")
+
+
+class OpsDurabilityResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    stage4: OpsStage4DurabilityResponse
+    stage6: OpsStage6DurabilityResponse
+    stage7: OpsStage7DurabilityResponse
+
+
+class OpsMonitoringResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    health_endpoint: bool = Field(alias="healthEndpoint")
+    readiness_endpoint: bool = Field(alias="readinessEndpoint")
+    ops_status_endpoint: bool = Field(alias="opsStatusEndpoint")
+    structured_logging_configured: bool = Field(alias="structuredLoggingConfigured")
+    walkthrough_metrics_instrumented: bool = Field(alias="walkthroughMetricsInstrumented")
+    metrics_endpoint_exposed: bool = Field(alias="metricsEndpointExposed")
+    production_alerts_configured: bool = Field(alias="productionAlertsConfigured")
+    langfuse_configured: bool = Field(alias="langfuseConfigured")
+
+
+class OpsStatusResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    status: Literal["ok"]
+    service: Literal["narratwin-ai-backend"]
+    stage: Literal["8"]
+    checked_at: str = Field(alias="checkedAt")
+    operational_posture: Literal["LOCAL_ONLY"] = Field(alias="operationalPosture")
+    durability: OpsDurabilityResponse
+    monitoring: OpsMonitoringResponse
 
 
 class ErrorBody(BaseModel):
@@ -944,6 +1026,56 @@ def api_healthz() -> HealthResponse:
 @api_v1.get("/readyz", response_model=ReadinessResponse, tags=["health"])
 def api_readyz() -> ReadinessResponse:
     return readyz()
+
+
+@api_v1.get("/ops/status", response_model=OpsStatusResponse, tags=["operations"])
+def api_ops_status() -> OpsStatusResponse:
+    return OpsStatusResponse(
+        status="ok",
+        service="narratwin-ai-backend",
+        stage="8",
+        checkedAt=datetime.now(UTC).isoformat(),
+        operationalPosture="LOCAL_ONLY",
+        durability=OpsDurabilityResponse(
+            stage4=OpsStage4DurabilityResponse(
+                durableStateEnabled=stage4_service.state_path is not None,
+                stateBackend="json-file" if stage4_service.state_path is not None else "memory",
+                recordCounts=Stage4OpsRecordCountsResponse(
+                    projects=len(stage4_service.projects),
+                    documents=len(stage4_service.documents),
+                    ingestionRuns=len(stage4_service.ingestion_runs),
+                    walkthroughRuns=len(stage4_service.walkthrough_runs),
+                    idempotencyRecords=len(stage4_service.idempotency_records),
+                ),
+            ),
+            stage6=OpsStage6DurabilityResponse(
+                durableStateEnabled=stage6_service.state_path is not None,
+                stateBackend="json-file" if stage6_service.state_path is not None else "memory",
+                recordCounts=Stage6OpsRecordCountsResponse(
+                    idempotencyRecords=len(stage6_service.idempotency_records),
+                ),
+            ),
+            stage7=OpsStage7DurabilityResponse(
+                durableStateEnabled=stage7_service.state_path is not None,
+                stateBackend="json-file" if stage7_service.state_path is not None else "memory",
+                recordCounts=Stage7OpsRecordCountsResponse(
+                    avatarRenders=len(stage7_service.avatar_renders),
+                    artifactMetadata=len(stage7_service.artifact_metadata),
+                    idempotencyRecords=len(stage7_service.idempotency_records),
+                ),
+            ),
+        ),
+        monitoring=OpsMonitoringResponse(
+            healthEndpoint=True,
+            readinessEndpoint=True,
+            opsStatusEndpoint=True,
+            structuredLoggingConfigured=True,
+            walkthroughMetricsInstrumented=True,
+            metricsEndpointExposed=False,
+            productionAlertsConfigured=False,
+            langfuseConfigured=is_langfuse_enabled(),
+        ),
+    )
 
 
 @api_v1.post("/projects", status_code=201, response_model=ProjectResponse, tags=["projects"])

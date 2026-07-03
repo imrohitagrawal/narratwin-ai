@@ -22,12 +22,18 @@ This repository is protected by workflow, review, and policy-as-code guardrails.
 16. GitHub Actions workflows must be YAML-defined.
 17. Workflows must use least-privilege `GITHUB_TOKEN` permissions.
 18. Repository-tracked stage and governance changes require `docs/STATUS.md` updates.
+19. Non-trivial requirements, feature discussions, architecture locks,
+    implementation work, release claims, and governance-gate changes must consult
+    `docs/ENGINEERING_PROCESS_RCA.md` before coding or final review.
 
 ## What is enforced in CI
 
 The `Quality Gates` workflow runs `scripts/guardrails_check.py`,
 `scripts/ci/verify_branch_protection.py`, and `make quality` on pull requests
-into `main` and on pushes to non-main branches.
+into `main` and on pushes to non-main branches. The required policy gate also
+runs on `pull_request.edited` so PR title/body edits cannot add issue-closing
+or other automation-sensitive wording after checks are green without rerunning
+the guardrail.
 
 The policy check fails CI for:
 
@@ -39,6 +45,8 @@ The policy check fails CI for:
 - architecture-impacting changes without ADR updates
 - PRD-impacting changes without traceability updates
 - repository-tracked governance changes without `docs/STATUS.md` updates
+- non-trivial pull requests without completed preflight evidence rows in the PR
+  body
 - drift between live `main` branch-protection required status contexts and the
   documented required context set
 - LLM-generation code without trace/run metadata
@@ -91,6 +99,26 @@ Open issue
 → merge
 ```
 
+## Required preflight for non-trivial work
+
+Before starting implementation or locking a feature approach, create or link a
+reviewable preflight artifact that covers:
+
+- intent and non-goals
+- official source facts for platform/tool semantics
+- positive claims and negative invariants
+- failure-mode matrix
+- matrix-to-test mapping
+- architecture parity table when behavior repeats across modules
+- adversarial review disposition for high-risk work
+
+Use `docs/ENGINEERING_PROCESS_RCA.md` for the NarraTwin-specific failure lessons
+and `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` when creating a new
+project or reusable project template.
+
 ## Codex instruction
 
-Codex must not start coding from a vague request. It must first identify or create the linked issue, create a branch, apply a scoped change, open a PR, and preserve the guardrails listed here.
+Codex must not start coding from a vague request. It must first identify or
+create the linked issue, create a branch, apply a scoped change, open a PR, and
+preserve the guardrails listed here. For non-trivial work, Codex must also apply
+the preflight above before treating tests or CI as sufficient evidence.

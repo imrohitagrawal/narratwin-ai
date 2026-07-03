@@ -220,6 +220,22 @@ Every generated output must be linked to:
 - evaluation result
 - error or refusal reason when applicable
 
+## Local operational status
+
+`GET /api/v1/ops/status` reports bounded operational posture for the local
+backend:
+
+- whether optional file-backed durable state is enabled for Stage 4, Stage 6,
+  and Stage 7
+- non-sensitive state backend type, without filesystem paths
+- record counts for project/document/run/idempotency/render/artifact metadata
+- health, readiness, structured logging, walkthrough metrics instrumentation,
+  metrics-endpoint exposure, production-alert posture, and Langfuse
+  configuration flags
+
+The endpoint must not expose raw uploads, prompts, generated outputs, provider
+payloads, filesystem paths, environment values, or secrets.
+
 ## Future dashboard metrics
 
 - time to first walkthrough

@@ -7,8 +7,8 @@ Linked stage issue: `#6`
 | ID | Risk | Severity | Likelihood | Impact | Status | GitHub issue | Mitigation |
 |---|---|---|---|---|---|---|---|
 | FR-RISK-001 | Repository branch protection/rulesets may not require the documented Stage 8 status contexts. | High | Unknown | Merges or direct pushes could bypass the intended release gates. | Open | `#38` | Capture repository settings evidence for `main`, including required checks and direct-push prevention. |
-| FR-RISK-002 | Stage 4/6/7 state is process-local rather than durable ACID/CAS-backed metadata. | High | Certain for current implementation | Multi-worker deployment, restart recovery, and production idempotency are unsafe. | Open | `#39` | Implement durable metadata/job/idempotency/artifact state before production or multi-worker release. |
-| FR-RISK-003 | Production dashboards, alert routes, first-hour watch procedure, and rollback communication channels are undefined. | High | Certain for current implementation | Operators cannot detect or respond to release regressions with production-grade evidence. | Open | `#39` | Define ownership, dashboards, alerts, paging/escalation, and rollback communications. |
+| FR-RISK-002 | Stage 4/6/7 state now has optional single-node JSON snapshot restart recovery, but not durable ACID/CAS-backed production metadata. | High | Certain for production | Multi-worker deployment and production idempotency remain unsafe without database-backed locking, migrations, backup/restore, and recovery semantics. | Partially mitigated for local restart recovery; open for production | `#39` | Keep local JSON snapshots for local review only; implement durable metadata/job/idempotency/artifact state before production or multi-worker release. |
+| FR-RISK-003 | Local ops posture is visible through `/api/v1/ops/status`, but production dashboards, alert routes, first-hour watch procedure, and rollback communication channels are undefined. | High | Certain for production | Operators cannot detect or respond to release regressions with production-grade evidence. | Partially mitigated for local visibility; open for production | `#39` | Define ownership, dashboards, alerts, paging/escalation, and rollback communications. |
 | FR-RISK-004 | AI safety evaluation remains deterministic/local and not representative of external provider behavior. | Medium | High if external providers are enabled | Unsupported or unsafe generated media/script behavior may not be caught under real provider variability. | Open | `#39` | Keep external providers disabled; add provider-specific evals and red-team cases before enabling them. |
 | FR-RISK-005 | Moderate npm vulnerabilities exist in the Lighthouse dev-tool dependency chain. | Medium | Medium | Local/CI tooling dependency exposure remains below current high/critical blocking threshold but should not be ignored. | Accepted non-blocking for current gate | None | Reassess when Lighthouse updates are compatible; keep runtime image free of dev dependencies. |
 | FR-RISK-006 | Frontend smoke uses `next start` while Next reports standalone-output guidance. | Low | Medium | Future smoke portability may degrade across environments. | Open | None | Align Playwright webServer command with standalone output or document why local smoke intentionally uses `next start`. |
@@ -34,7 +34,7 @@ The risks that block production/public release are:
 For local mock-provider portfolio use only, the following limits are acceptable
 when clearly disclosed:
 
-- process-local in-memory state
+- optional single-node JSON snapshots for local restart recovery only
 - mock/local providers only
 - local deterministic evals
 - no real video export

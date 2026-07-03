@@ -96,6 +96,42 @@ Negative:
 - Dockerized Trivy introduces an additional third-party CI/tooling dependency
   that needs final release license review
 
+## Phase 1 Closure Addendum For Issue #39
+
+Date: 2026-07-03
+
+Phase 1 Closure issue `#39` adds a local durability and monitoring remediation
+without changing the production No-Go decision.
+
+Decision:
+
+- Stage 4, Stage 6, and Stage 7 services may opt into single-node JSON state
+  snapshots through `NARRATWIN_STATE_DIR` or service-specific state-file
+  variables.
+- Persistence remains disabled by default for test isolation and unchanged local
+  behavior.
+- Snapshot writes use atomic local file replacement and may contain sensitive
+  local data needed for restart recovery and idempotency replay: uploaded
+  document text, chunks/context, generated scripts, evaluation details,
+  translations/subtitles, avatar artifact payloads, base64 content, and
+  metadata. These files must remain local and uncommitted.
+- `GET /api/v1/ops/status` exposes local durability enablement, non-sensitive
+  backend type, bounded record counts, and monitoring flags.
+- The ops endpoint must not expose state-file paths, raw uploads, prompts,
+  generated outputs, provider payloads, environment values, or secrets.
+
+Consequences:
+
+- Local/mock review can now demonstrate restart recovery for Stage 4 project,
+  document, ingestion, walkthrough, RAG, and idempotency state; Stage 6
+  multilingual idempotency replay; and Stage 7 avatar render, idempotency, and
+  artifact metadata.
+- JSON snapshots are not a production database. They do not provide ACID/CAS
+  semantics, cross-worker locks, schema migrations, backup/restore policy, or
+  production idempotency guarantees.
+- Production go-live remains No-Go until a reviewed release phase adds
+  production-grade durable metadata and deployment monitoring.
+
 ## Related Documents
 
 - `docs/QUALITY_GATES.md`

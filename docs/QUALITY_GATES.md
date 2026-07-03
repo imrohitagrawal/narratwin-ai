@@ -439,15 +439,19 @@ Gate validates:
 - Final Review baseline artifacts exist and `docs/reviews/GO_NO_GO.md`
   preserves the five No-Go decision lines
 - changed files stay within the Phase 1 closure allowlist. Module A branches are
-  limited to governance/reporting files; issue `#38` may also update the
+  limited to governance/reporting files, `AGENTS.md`, and CODEOWNERS coverage
+  for process-critical guardrails; issue `#38` may also update the
   required `policy-gates` workflow and branch-protection verifier that make its
   evidence reproducible; Module F issue `#37` may also change
   the local-principal implementation, API tests, and active architecture/security
   contract docs needed to reconcile the trusted local principal behavior. Module
   B issue `#42` may change only the Stage 7 checksum-binding implementation,
-  Stage 7 unit/API tests, and active checksum contract/governance docs. Final
-  Review baseline artifacts are required inputs but not allowed closure-branch
-  edits
+  Stage 7 unit/API tests, and active checksum contract/governance docs. Issue
+  `#39` may also change the Stage 4/6/7 local durability implementation,
+  storage helper, ops status endpoint, local durability/API tests, and active
+  durability/monitoring docs needed to preserve the production No-Go while
+  proving local restart recovery. Final Review baseline artifacts are required
+  inputs but not allowed closure-branch edits
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md` parses as an issue table covering
   issues `#35` through `#44` with expected P0/P1/P2/P3 priorities
 - every P0/P1 issue maps to a valid closure module and the module table covers
@@ -460,7 +464,14 @@ Gate validates:
   and at least one prompt-injection and one safety-boundary fixture
 - Phase 1 demo docs and portfolio docs include runnable local startup,
   health/readiness, project/upload/generation/citation/eval/saved-output flow,
-  and single-process, process-local, non-durable, mock/local-only disclosures
+  and single-process, local-only, optional JSON restart snapshot,
+  no-production-durability, mock/local-only disclosures
+- process-loop governance artifacts preserve a reference-only PR template,
+  preflight evidence table, PR `#54` finding evidence table, NarraTwin-specific
+  RCA gates, and reusable new-project bootstrap/source-control/source-facts/
+  failure-matrix/RCA-pause controls
+- `policy-gates` reruns on `pull_request.edited`, so a PR title/body edit after
+  green checks cannot bypass the issue-linking and `#39` auto-close guard
 
 The Phase 1 Closure quality gate validates the static governance contract. It
 does not replace `make ci` and does not execute the Phase 1 golden questions
@@ -471,6 +482,11 @@ required `policy-gates` workflow step
 branch summary endpoint for `main` and fails if `protected: true`, exact
 required contexts, `enforcement_level: everyone`, or GitHub Actions app bindings
 drift.
+
+The repository guardrail also checks PR body content on pull-request events:
+generic PRs must use reference-only issue linkage such as `Refs #<issue>`, issue
+`#39` must not appear with auto-closing keywords in the title/body/branch commit
+messages, and non-trivial PRs must include completed preflight evidence rows.
 
 Changes to `scripts/quality/check_phase1_closure_docs.py`,
 `scripts/quality/check_quality_stage.py`, or
