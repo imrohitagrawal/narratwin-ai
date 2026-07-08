@@ -26,6 +26,7 @@ REQUIRED_PHASE1_FILES = {
     "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md",
     "docs/RISK_REGISTER.md",
     "docs/THIRD_PARTY_NOTICES.md",
+    "docs/reviews/PROCESS_HARDENING_FINDINGS.md",
     "docs/evals/phase1_golden_questions.jsonl",
     "docs/demo/PHASE_1_DEMO_SCRIPT.md",
     "docs/demo/PHASE_1_DEMO_CHECKLIST.md",
@@ -55,6 +56,11 @@ MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
     "scripts/quality/check_phase1_closure_docs.py",
     "scripts/quality/check_quality_stage.py",
     "scripts/quality/check_recommended_review_items.py",
+}
+PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
+    "scripts/guardrails_check.py",
+    "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_37_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "backend/app/main.py",
@@ -99,7 +105,9 @@ ISSUE_39_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/reviews/RISK_REGISTER.md",
     "scripts/guardrails_check.py",
     "tests/api/test_health_api.py",
+    "tests/unit/test_branch_protection_verifier.py",
     "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_local_durability.py",
 }
 
@@ -237,7 +245,9 @@ def check_required_files(failures: list[str]) -> None:
 
 def check_changed_files(failures: list[str]) -> None:
     branch = current_branch()
-    if branch.startswith("phase-1-closure-37-"):
+    if branch.startswith("phase-1-closure-process-"):
+        allowed_files = PROCESS_ONLY_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-37-"):
         allowed_files = ISSUE_37_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-"):
         allowed_files = ISSUE_39_ALLOWED_CHANGED_FILES
@@ -507,8 +517,17 @@ def check_process_docs(failures: list[str]) -> None:
         "Refs #",
         "Preflight evidence",
         "Artifact path / URL",
+        "Artifact reference",
         "Matrix IDs",
+        "Evidence type",
+        "Completion status",
         "Residual risk decision",
+        "invariant-to-test matrix link",
+        "Tests / old-behavior proof",
+        "Human-only review surfaces",
+        "Automation gap",
+        "Expiry / revisit trigger",
+        "Pre-implementation evidence",
         "automation-sensitive wording",
     ):
         if marker not in pr_template:
@@ -548,6 +567,12 @@ def check_process_docs(failures: list[str]) -> None:
         "Doubt Gate",
         "Stop Rule",
         "PR Evidence Gate",
+        "Why This RCA Was Still Insufficient",
+        "Durability Restore Invariant Checklist",
+        "Invariant-To-Test Matrix Template",
+        "Pre-implementation evidence template",
+        "Bad Partial Fixes Versus Complete Coverage",
+        "Partial overlap is a blocker",
         "pull_request.edited",
     ):
         if marker not in rca:
@@ -562,6 +587,15 @@ def check_process_docs(failures: list[str]) -> None:
         "OpenSSF Scorecard",
         "SLSA",
         "Matrix variants",
+        "Executable Invariants Before Implementation",
+        "Durability / Restore / Replay Checklist",
+        "Derived Artifact Consistency Checklist",
+        "Governance / CI False-Pass Checklist",
+        "Human-Only Review Surfaces",
+        "Invariant-to-Test Matrix Template",
+        "Pre-implementation evidence template",
+        "Definition of Done for Process-Sensitive Work",
+        "Partial matrix-ID overlap is insufficient",
         "RCA Pause Artifact",
         "Non-skippable gates",
         "Allowed approvers",

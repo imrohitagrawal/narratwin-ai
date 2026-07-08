@@ -60,6 +60,24 @@ def load_payload(args: argparse.Namespace) -> dict[str, Any]:
             raise RuntimeError("fixture payload must be a JSON object")
         return cast(dict[str, Any], payload)
 
+    payload = load_branch_payload(args)
+    protection_details = load_protection_payload(args)
+    branch_protection = payload.get("protection")
+    branch_status_checks = (
+        branch_protection.get("required_status_checks")
+        if isinstance(branch_protection, dict)
+        else None
+    )
+    detail_status_checks = protection_details.get("required_status_checks")
+    if isinstance(branch_status_checks, dict) and isinstance(detail_status_checks, dict):
+        for key in ("enforcement_level",):
+            if key not in detail_status_checks and key in branch_status_checks:
+                detail_status_checks[key] = branch_status_checks[key]
+    payload["protection_details"] = protection_details
+    return payload
+
+
+def load_branch_payload(args: argparse.Namespace) -> dict[str, Any]:
     api_base = args.api_url.rstrip("/")
     parsed_api_url = urllib.parse.urlparse(api_base)
     if parsed_api_url.scheme != "https" or not parsed_api_url.netloc:
@@ -102,6 +120,49 @@ def load_payload(args: argparse.Namespace) -> dict[str, Any]:
             ) from exc
 
 
+def load_protection_payload(args: argparse.Namespace) -> dict[str, Any]:
+    api_base = args.api_url.rstrip("/")
+    parsed_api_url = urllib.parse.urlparse(api_base)
+    if parsed_api_url.scheme != "https" or not parsed_api_url.netloc:
+        raise RuntimeError("GitHub API URL must use an https:// host")
+
+    url = f"{api_base}/repos/{args.repository}/branches/{args.branch}/protection"
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "narratwin-branch-protection-check",
+        },
+    )
+    github_auth = os.environ.get("GITHUB_TOKEN", "").strip()
+    if github_auth:
+        request.add_header("Authorization", f"Bearer {github_auth}")
+
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:  # nosec B310
+            payload = json.loads(response.read().decode("utf-8"))
+            if not isinstance(payload, dict):
+                raise RuntimeError("GitHub branch protection API response must be a JSON object")
+            return cast(dict[str, Any], payload)
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        try:
+            return load_protection_payload_with_gh(args)
+        except RuntimeError as gh_exc:
+            raise RuntimeError(
+                f"GitHub branch protection API request failed: HTTP {exc.code}: {body}; "
+                f"gh fallback failed: {gh_exc}"
+            ) from exc
+    except urllib.error.URLError as exc:
+        try:
+            return load_protection_payload_with_gh(args)
+        except RuntimeError as gh_exc:
+            raise RuntimeError(
+                f"GitHub branch protection API request failed: {exc.reason}; gh fallback failed: {gh_exc}"
+            ) from exc
+
+
 def load_payload_with_gh(args: argparse.Namespace) -> dict[str, Any]:
     if args.api_url.rstrip("/") != "https://api.github.com":
         raise RuntimeError("non-default GitHub API URL is not supported by gh fallback")
@@ -121,8 +182,29 @@ def load_payload_with_gh(args: argparse.Namespace) -> dict[str, Any]:
     return cast(dict[str, Any], payload)
 
 
+def load_protection_payload_with_gh(args: argparse.Namespace) -> dict[str, Any]:
+    if args.api_url.rstrip("/") != "https://api.github.com":
+        raise RuntimeError("non-default GitHub API URL is not supported by gh fallback")
+    result = subprocess.run(
+        ["gh", "api", f"repos/{args.repository}/branches/{args.branch}/protection"],
+        check=False,
+        cwd=Path.cwd(),
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        stderr = result.stderr.strip() or "no stderr"
+        raise RuntimeError(stderr)
+    payload = json.loads(result.stdout)
+    if not isinstance(payload, dict):
+        raise RuntimeError("gh branch protection API response must be a JSON object")
+    return cast(dict[str, Any], payload)
+
+
 def required_status_checks(payload: dict[str, Any]) -> dict[str, Any]:
-    protection = payload.get("protection")
+    protection = payload.get("protection_details")
+    if not isinstance(protection, dict):
+        protection = payload.get("protection")
     if not isinstance(protection, dict):
         return {}
     checks = protection.get("required_status_checks")
@@ -135,8 +217,13 @@ def validate(payload: dict[str, Any]) -> list[str]:
     if payload.get("protected") is not True:
         failures.append("main branch must report protected: true.")
 
-    protection = payload.get("protection")
-    if not isinstance(protection, dict) or protection.get("enabled") is not True:
+    protection = payload.get("protection_details")
+    if not isinstance(protection, dict):
+        protection = payload.get("protection")
+    if not isinstance(protection, dict):
+        failures.append("main branch protection summary must report protection.enabled: true.")
+        protection = {}
+    elif "enabled" in protection and protection.get("enabled") is not True:
         failures.append("main branch protection summary must report protection.enabled: true.")
 
     status_checks = required_status_checks(payload)
@@ -145,6 +232,8 @@ def validate(payload: dict[str, Any]) -> list[str]:
             "required status checks must enforce for everyone; "
             f"got {status_checks.get('enforcement_level')!r}."
         )
+    if status_checks.get("strict") is not True:
+        failures.append("required status checks must require branches to be up to date.")
 
     raw_contexts = status_checks.get("contexts")
     if not isinstance(raw_contexts, list) or not all(isinstance(item, str) for item in raw_contexts):
@@ -193,6 +282,36 @@ def validate(payload: dict[str, Any]) -> list[str]:
     else:
         failures.append("branch summary must expose required_status_checks.checks bindings.")
 
+    reviews = protection.get("required_pull_request_reviews")
+    if not isinstance(reviews, dict):
+        failures.append("required pull request review must be enabled.")
+    else:
+        if int(reviews.get("required_approving_review_count", 0)) < 1:
+            failures.append("at least one approving pull request review must be required.")
+        if reviews.get("dismiss_stale_reviews") is not True:
+            failures.append("stale pull request reviews must be dismissed.")
+        if reviews.get("require_last_push_approval") is not True:
+            failures.append("last push approval must be required.")
+
+    enforce_admins = protection.get("enforce_admins")
+    if not isinstance(enforce_admins, dict) or enforce_admins.get("enabled") is not True:
+        failures.append("administrator enforcement must be enabled.")
+
+    allow_force_pushes = protection.get("allow_force_pushes")
+    if not isinstance(allow_force_pushes, dict) or allow_force_pushes.get("enabled") is not False:
+        failures.append("force pushes must be blocked.")
+
+    allow_deletions = protection.get("allow_deletions")
+    if not isinstance(allow_deletions, dict) or allow_deletions.get("enabled") is not False:
+        failures.append("branch deletions must be blocked.")
+
+    required_conversation_resolution = protection.get("required_conversation_resolution")
+    if (
+        not isinstance(required_conversation_resolution, dict)
+        or required_conversation_resolution.get("enabled") is not True
+    ):
+        failures.append("conversation resolution must be required.")
+
     return failures
 
 
@@ -212,7 +331,7 @@ def main() -> int:
         return 1
 
     print(
-        "Branch protection context verification passed for "
+        "Branch protection settings verification passed for "
         f"{args.repository}@{args.branch}: {', '.join(EXPECTED_CONTEXTS)}"
     )
     return 0

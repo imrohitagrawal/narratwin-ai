@@ -325,6 +325,181 @@ Matrix variants to add when relevant:
 | CI/release/supply chain | missing required context, renamed status context, scanner unavailable, confirmed vulnerability, unpinned action, excessive workflow token permissions, release without signing or provenance |
 | Ops/observability | missing metrics, metrics without scrape path, alert absent, log redaction, trace correlation, readiness versus liveness ambiguity, rollback path |
 
+## Executable Invariants Before Implementation
+
+Before writing implementation code for a new project/app, copy and adapt this
+section into that project's preflight artifact. Do not leave it as generic
+boilerplate. Rename entities, artifacts, providers, and gates to match the new
+system, then create tests from the adapted rows.
+
+Required rule:
+
+- every process-sensitive or durability-sensitive claim must map to a test,
+  executable gate, official source fact, or explicitly human-only review item;
+- every failure-matrix ID must be fully covered by a test, executable gate,
+  official source fact, explicit human-only review row, or documented non-goal;
+- negative, mutation, break-test, RED, or "old behavior fails" evidence is
+  required for behavior that previously could false-pass;
+- implementation starts only after the invariant-to-test matrix is reviewable.
+
+## Durability / Restore / Replay Checklist
+
+Adapt this checklist for any project with persisted state, restart recovery,
+idempotency, queues, derived data, imports, exports, migrations, or local
+snapshot files.
+
+Core data graph invariants:
+
+- list every persisted entity and relationship before coding;
+- prove valid restored IDs are insufficient and relationship consistency is
+  checked across tenant/user/project/parent/child/run/artifact references;
+- validate restored child rows against the owning parent, including owner,
+  project, source filename, source checksum, approved or effective timestamp,
+  row checksum, and derived text/metadata;
+- completed jobs/runs must have the surviving records needed to justify their
+  terminal status;
+- parent status fields must reconcile with surviving child/job/artifact state;
+- terminal idempotency records must reference valid typed restored values or
+  serialized terminal errors;
+- stale `PENDING` or `RUNNING` records must not replay as terminal results;
+- corrupt `FAILED` records without serialized error details must be dropped;
+- counters and sequence numbers must derive from restored IDs and tolerate
+  missing or stale-low persisted counters;
+- rollback after terminal persist failure must remove only failed operation
+  effects and preserve concurrent successful operations;
+- state pruning must say whether corrupt rows remain on disk until the next
+  successful write.
+
+## Derived Artifact Consistency Checklist
+
+Use this when the project creates translations, exports, reports, media,
+provider results, downloadable files, manifests, embeddings, indexes, rendered
+views, or any other artifact derived from source data.
+
+Required invariants:
+
+- derived text, provider payload, manifest, downloadable artifact, metadata,
+  checksums, language/locale tags, provider mode, source references, and
+  idempotency records mutually agree;
+- restored artifacts are validated from payload bytes/content, not only IDs;
+- checksums are recomputed from restored content;
+- provider mode is explicit, and local/mock assumptions do not restore external
+  provider claims as trusted local state;
+- glossary, citation, source-evidence, and safety/disclosure fields survive
+  restore or the row is dropped;
+- corrupted or tampered provider/artifact payloads are rejected before replay,
+  display, export, or downstream processing;
+- idempotency retry semantics cover completed, failed, pending, running, stale,
+  and conflicting requests;
+- counters and rollback semantics match the durability checklist.
+
+## Governance / CI False-Pass Checklist
+
+Use this when the project has CI, branch protection, release gates, issue
+automation, PR templates, docs-as-gates, security scans, eval gates, or other
+process controls.
+
+Required invariants:
+
+- issue auto-close protections cover title, body, branch commits, edited PR
+  body, colon forms, cross-repo refs, full issue URLs, canonical-stage
+  exceptions, and extra issue closures;
+- final squash/merge message is listed as human-only because CI cannot inspect
+  the final editor text before merge;
+- preflight evidence requires concrete artifacts, not placeholder rows, empty
+  tables, or bare URLs;
+- branch-protection verification separates live API-verified settings from
+  human-only repository settings;
+- required CI contexts are exact and drift-checked when the platform exposes
+  them;
+- marker-string checks are not sufficient unless each required process claim
+  also maps to an executable gate, test, source fact, or human-only checklist
+  item;
+- security, eval, release, and governance gates include negative tests for known
+  bypass syntax and scanner-unavailable behavior.
+
+## Human-Only Review Surfaces
+
+Human-only does not mean optional. It means the repository cannot fully automate
+the check, so the PR must name the owner and residual risk.
+
+Common human-only surfaces:
+
+- final squash/merge commit title and body typed in the hosting-platform merge
+  dialog;
+- repository or organization settings not visible to CI credentials;
+- paid provider dashboard settings, billing limits, webhook secrets, and
+  production keys;
+- legal/license approvals, consent records, and public synthetic-media release
+  decisions;
+- production incident communications, first-hour launch watch ownership, and
+  rollback go/no-go decisions;
+- manual accessibility, visual, or user-acceptance checks not covered by
+  automated tooling.
+
+Record them like this:
+
+```markdown
+| Surface | Automation Gap | Owner | Evidence | Residual Risk Decision | Expiry / Revisit Trigger |
+|---|---|---|---|---|---|
+| Final squash message | CI runs before the merge dialog text is finalized | repo owner | reviewer checks exact text before merge | accepted for PR only | before merge |
+```
+
+## Invariant-to-Test Matrix Template
+
+Copy this table into the project preflight artifact before coding. Replace the
+example IDs with project-specific IDs.
+
+```markdown
+| ID | Area | Invariant | Old Failure / False-Pass Risk | Positive Test | Negative / Mutation Test | Gate / Source / Human-Only Evidence | Owner | Status |
+|---|---|---|---|---|---|---|---|---|
+| CORE-RESTORE-001 | Core graph restore | Child records match owning parent identity, source checksum, timestamp, content checksum, and derived metadata | Valid IDs restore while relationships are corrupt | `test_restore_valid_graph` | `test_restore_drops_tampered_child_source`; break-test proves old behavior failed | `make test`; restore gate | owner | pass |
+| DERIVED-ARTIFACT-001 | Derived artifact | Provider payload, artifact bytes, manifest, metadata, checksums, language tags, citations, and provider mode agree | Tampered artifact replays from idempotency | `test_replay_valid_derived_artifact` | `test_drop_tampered_artifact_payload`; mutation changes checksum/text | `make test` | owner | pass |
+| GOV-FALSEPASS-001 | Governance | PR evidence rows include concrete artifacts, full matrix-ID coverage, and old-behavior proof | Placeholder evidence table passes CI | `test_preflight_accepts_complete_mapping` | `test_preflight_rejects_partial_matrix_coverage`; `test_preflight_rejects_without_old_behavior_proof` | `scripts/guardrails_check.py` | owner | pass |
+| HUMAN-001 | Human-only surface | Final merge message is inspected before merge | CI passes but final squash message closes the wrong issue | N/A | N/A | human checklist item with owner | repo owner | pass |
+```
+
+Completion rules:
+
+- No row may stay `pending` when implementation starts.
+- Evidence may be `test`, `gate`, `source`, `human-only`, or `non-goal`.
+- Completed PR preflight status must be `pass` or `passed`; `tracked` and
+  `accepted` are residual-risk decisions, not completion statuses.
+- Partial matrix-ID overlap is insufficient; every failure-matrix ID must be
+  covered.
+- `human-only` rows need an owner and a residual-risk decision.
+- `non-goal` rows need docs that prevent overclaiming.
+- If a reviewer finds a missing case, add a matrix row before changing code.
+
+Pre-implementation evidence template:
+
+```markdown
+| Requirement | Pre-code artifact | Timestamp / commit / PR comment | Reviewer | Decision |
+|---|---|---|---|---|
+| Invariant/failure matrix | `docs/path/to/preflight.md` | pre-code timestamp: YYYY-MM-DDTHH:MM | reviewer | pass |
+| Source facts | `docs/path/to/sources.md` | reviewer signoff: reviewer YYYY-MM-DD | reviewer | pass |
+| Human-only surfaces, if any | `docs/path/to/preflight.md` | commit order: <matrix-commit> before <implementation-commit> | reviewer | pass |
+```
+
+## Definition of Done for Process-Sensitive Work
+
+Process-sensitive work includes durability, restore/replay, idempotency,
+rollback, migrations, provider boundaries, CI, branch protection, issue
+automation, release readiness, security gates, eval gates, and governance docs.
+
+It is done only when:
+
+- the adapted invariant checklist is in the PR artifact;
+- every invariant has a matrix ID;
+- every matrix ID maps to positive evidence and, where relevant, negative or
+  mutation evidence;
+- old false-pass behavior has RED, break-test, mutation, regression, or
+  fails-before evidence;
+- human-only surfaces are listed with owner and residual risk;
+- docs state what remains out of scope and what must not be claimed;
+- executable gates fail when required rows, artifacts, or mappings are missing;
+- reviewers can verify the matrix without reverse-engineering the code.
+
 ## Gate 4: Test-Driven Execution
 
 Convert the failure matrix into RED tests before coding.

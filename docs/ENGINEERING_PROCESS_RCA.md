@@ -32,7 +32,8 @@ Local repository and GitHub evidence collected on 2026-07-08:
   monitoring blockers`.
 - PR `#54` review state is `REVIEW_REQUIRED`; merge state is `BLOCKED` because
   approval is still required, while all listed GitHub status checks are green.
-- PR body validation evidence at `0665bc8` listed:
+- Earlier PR body validation evidence at `0665bc8` listed counts that were later
+  superseded as review follow-up tests expanded:
   - `tests/unit/test_guardrails_check.py`: 17 passed
   - `tests/unit/test_local_durability.py`: 19 passed
   - `tests/unit tests/api`: 166 passed
@@ -300,6 +301,245 @@ The following would have prevented or sharply reduced the loop:
    and perform an RCA before continuing.
 8. A PR requirement to attach the preflight matrix and matrix-to-test mapping,
    not just check a box.
+
+## Why This RCA Was Still Insufficient
+
+The first version of this RCA correctly identified the process loop, but it was
+not exhaustive or executable enough. It said "write a failure matrix" and
+"map tests to rows"; it did not force future durability/process PRs to enumerate
+the actual state graph that had failed across Stage 4, Stage 6, Stage 7, and
+GitHub governance.
+
+That made the RCA vulnerable to the same false-pass pattern it described:
+
+- a PR could include a preflight table without a complete invariant set;
+- tests could prove a few reviewed bugs while missing relationship consistency;
+- marker strings in docs could pass even when there was no negative test;
+- "valid restored IDs" could be mistaken for "valid restored graph";
+- guardrail wording could be present while title/body/commit/merge-message
+  behavior still closed issues or hid human-only surfaces.
+
+The correction is that future durability, restore/replay, process, release, and
+governance PRs must produce an executable invariant-to-test matrix before code
+changes. "Executable" means every invariant maps to one of:
+
+- an automated negative or positive test;
+- an automated gate;
+- an official source fact for behavior outside repository control;
+- an explicitly named human-only checklist item with owner and reason.
+
+Rows that do not map to one of those evidence types are unresolved. A reviewer
+must treat unresolved rows as blockers, not as future cleanup.
+
+## Durability Restore Invariant Checklist
+
+Use this checklist before implementing or reviewing restore, replay,
+persistence, rollback, artifact, or process-gate work. It is deliberately more
+specific than a generic failure matrix because PR `#54` proved that generic
+state validation misses graph and replay defects.
+
+### Stage 4 / Core Data Graph
+
+The invariant matrix must cover these entities as a connected graph, not as
+independent lists:
+
+- projects
+- documents
+- ingestion runs
+- RAG/vector chunks
+- generated runs
+- retrieved context
+- evaluations
+- claim supports
+- idempotency records
+
+Required Stage 4 invariants:
+
+- restored valid IDs are insufficient; relationship consistency must be checked
+  across tenant, actor, project, document, run, chunk, evaluation, and support
+  references;
+- every restored chunk must match its owning document by tenant, project,
+  document ID, source filename, source checksum, approved timestamp, chunk
+  checksum, and chunk text/metadata derived from the restored document text;
+- completed ingestion runs must have surviving chunks for their documents;
+- document ingestion status must reconcile with surviving ingestion/chunk state
+  instead of trusting stale `INGESTED` fields;
+- completed generated runs must have accepted output, a generated output object,
+  retrieved context, a passing evaluation, and claim supports;
+- claim supports must map to generated claims, retrieved context refs, chunks,
+  and documents;
+- terminal idempotency records must reference valid typed restored values;
+- stale `PENDING` or `RUNNING` idempotency records must not replay;
+- corrupt `FAILED` records without serialized error details must be dropped;
+- counters must derive from restored IDs and tolerate missing or stale-low
+  persisted counters;
+- terminal persist rollback must remove only failed operation effects and must
+  not erase concurrent successful operations;
+- restore pruning must explicitly state whether corrupt rows remain on disk
+  until the next write, and tests/docs must match that behavior.
+
+### Stage 6 / Derived Artifacts
+
+The matrix must cover translated/generated derivative text, provider payload,
+subtitles, downloadable artifacts, voice/audio manifests, checksums, language
+tags, provider mode, glossary preservation, citation preservation, and
+idempotency records as one consistency contract.
+
+Required Stage 6 invariants:
+
+- translated text, provider payload text, subtitle text, downloadable script
+  artifact, subtitle artifact, and voice manifest must mutually agree;
+- checksums must match restored artifact payloads and derivative text;
+- source and target language tags must normalize and agree across provider
+  result, artifacts, subtitle generation, and voice manifest;
+- provider mode must remain local/mock unless an approved external-provider
+  contract exists;
+- glossary-preserved terms and citation markers must survive restore and must
+  be rejected when corrupted or omitted;
+- corrupted or tampered restored provider/artifact payloads must be dropped;
+- local-only provider assumptions must not restore external-provider claims as
+  trusted local state;
+- terminal idempotency records must reference valid typed restored values;
+- failed idempotency records without serialized error details must be dropped;
+- stale pending/running idempotency records must not replay;
+- counters must derive from restored IDs and tolerate missing or stale-low
+  counters;
+- terminal persist rollback must preserve concurrent successful idempotency
+  completions while removing only the failed operation.
+
+### Stage 7 / Export And Render Artifacts
+
+The matrix must cover render result, provider metadata, provider config, render
+manifest, demo/export artifact, video placeholder artifact, artifact metadata,
+source evidence metadata, consent/disclosure fields, status history, checksums,
+and idempotency records as one consistency contract.
+
+Required Stage 7 invariants:
+
+- render result, provider metadata, provider config, render manifest, demo
+  artifact, video placeholder artifact, artifact metadata, source evidence
+  metadata, consent/disclosure fields, status history, checksums, and
+  idempotency records must mutually agree;
+- artifact metadata must match restored artifacts and render evidence, not just
+  the render ID;
+- corrupt `FAILED` records without error details must be dropped;
+- local-only provider assumptions must not restore external-provider claims as
+  trusted local state;
+- stale `RUNNING` records must not replay as terminal successes;
+- counters must derive from restored IDs and tolerate missing or stale-low
+  counters;
+- terminal rollback must remove only failed render/idempotency effects and
+  preserve concurrent successful renders;
+- source evidence metadata must remain bound to source run ID, trace ID, context
+  refs, citation indexes, evaluation ID/checksum, and status;
+- consent/disclosure fields must be restored only when they match the accepted
+  synthetic-media contract.
+
+### Governance / CI / False-Pass
+
+Process and CI guardrails need their own invariant matrix because repository
+automation mutates state too.
+
+Required governance invariants:
+
+- issue auto-close protections must cover PR title, PR body, branch commits,
+  edited PR body, colon forms, cross-repo refs, full GitHub issue URLs,
+  canonical-stage exceptions, and extra issue closures;
+- final squash/merge message remains human-only and must be explicitly called
+  out because CI cannot inspect text typed in the merge dialog before merge;
+- preflight evidence must require real, concrete artifacts, not placeholder rows
+  or bare URLs;
+- branch-protection verification must distinguish live verified settings from
+  human-only repository settings;
+- marker-string checks are insufficient; every required process claim must map
+  to an executable gate, a test, an official source fact, or an explicitly
+  human-only checklist item.
+
+## Invariant-To-Test Matrix Template
+
+Every future durability/process PR must include this matrix, or a stricter
+project-specific variant, before implementation starts.
+
+```markdown
+| ID | Area | Invariant | Old Failure / False-Pass Risk | Positive Test | Negative / Mutation Test | Gate / Source / Human-Only Evidence | Owner | Status |
+|---|---|---|---|---|---|---|---|---|
+| S4-RESTORE-001 | Stage 4 chunk restore | Restored chunks match owning document tenant/project/document/filename/source checksum/approved timestamp/chunk checksum/text-derived metadata | Valid chunk IDs can survive while chunk text belongs to another document | `test_stage4_restores_valid_chunk_graph` | `test_stage4_drops_chunk_with_tampered_document_checksum` and break-test evidence that old behavior failed | `uv run pytest tests/unit/test_local_durability.py`; gate in `make quality` | owner | pass |
+| S6-ARTIFACT-001 | Stage 6 derived artifact | Translated text, provider text, subtitle text, artifacts, checksums, language tags, provider mode, glossary, and citations agree | A provider/artifact payload can be tampered while the idempotency record still replays | `test_stage6_replays_valid_multilingual_result` | `test_stage6_drops_inconsistent_restored_artifact_payload`; mutation changes artifact checksum/text | `uv run pytest tests/unit/test_local_durability.py` | owner | pass |
+| S7-EXPORT-001 | Stage 7 render artifacts | Artifact metadata matches restored artifact payloads and render evidence, not only render ID | Metadata row can point at a valid render while artifact checksum differs | `test_stage7_restores_valid_artifact_metadata` | `test_stage7_drops_artifact_metadata_that_mismatches_render` | `uv run pytest tests/unit/test_local_durability.py` | owner | pass |
+| GOV-CLOSE-001 | Governance | Issue-closing keywords are rejected across title/body/commits/edited body/colon/cross-repo/URL forms except canonical-stage closures | CI passes while GitHub later auto-closes the wrong issue | `test_general_pull_request_allows_reference_only_issue_link` | `test_general_pull_request_rejects_closing_keyword_even_with_reference_link`; official GitHub source cited | `uv run pytest tests/unit/test_guardrails_check.py`; final squash text is human-only | owner | pass |
+```
+
+Rules:
+
+- Every matrix ID used in the failure-matrix rows must be fully covered by a
+  test, executable gate, official source fact, explicit human-only review row,
+  or documented non-goal. Partial overlap is a blocker.
+- Each non-trivial row needs negative or mutation evidence unless the behavior
+  is outside repository control and covered by an official source fact.
+- The PR body must name human-only surfaces or include an explicit `N/A` row.
+  Human-only is a residual risk classification, not a way to avoid tests.
+- The PR body must include pre-implementation evidence proving the matrix and
+  source facts existed before implementation or guardrail edits began.
+- For copied behavior across modules, include one row per module plus one
+  parity row that proves the modules share the same semantics.
+
+Pre-implementation evidence template:
+
+```markdown
+| Requirement | Pre-code artifact | Timestamp / commit / PR comment | Reviewer | Decision |
+|---|---|---|---|---|
+| Invariant/failure matrix | `docs/path/to/preflight.md` | pre-code timestamp: YYYY-MM-DDTHH:MM | reviewer | pass |
+| Source facts | `docs/path/to/sources.md` | reviewer signoff: reviewer YYYY-MM-DD | reviewer | pass |
+| Human-only surfaces, if any | `docs/path/to/preflight.md` | commit order: <matrix-commit> before <implementation-commit> | reviewer | pass |
+```
+
+## Bad Partial Fixes Versus Complete Coverage
+
+Bad partial fixes:
+
+- "Filter restored rows by valid IDs" without proving relationship consistency
+  across tenants, projects, documents, chunks, runs, evaluations, and supports.
+- "Drop corrupt JSON" without testing valid JSON with wrong nested types,
+  dangling references, stale-low counters, and stale in-flight idempotency.
+- "Check idempotency has a value" without verifying the value is the correct
+  typed object or serialized terminal error.
+- "Rollback on write failure" by restoring a whole old snapshot, which can erase
+  a concurrent operation that successfully committed later.
+- "Require a preflight table" while accepting placeholder artifact URLs,
+  unrelated matrix IDs, or tests that do not prove old behavior failed.
+- "Mention branch protection in docs" without a live verification command and
+  a separate human-only list for repository settings that CI cannot inspect.
+
+Complete invariant coverage:
+
+- validates graph relationships, not only identifiers;
+- tests stale, corrupted, tampered, dangling, and wrong-shape restored state;
+- proves counters derive from the restored graph;
+- verifies failed/pending/running/terminal idempotency semantics separately;
+- includes a terminal write-failure test that proves rollback is operation
+  scoped and preserves concurrent success;
+- links every invariant ID to positive tests, negative/mutation tests, gates,
+  source facts, or human-only review items;
+- records which corrupt rows are pruned from memory only and whether they remain
+  on disk until the next successful write.
+
+## Mandatory Rule For Future Durability And Process PRs
+
+Every future durability, restore/replay, persistence, rollback, artifact,
+release-readiness, CI, branch-protection, issue-linking, or governance-process
+PR must include an invariant-to-test mapping before implementation.
+
+Implementation may not start until:
+
+- the invariant checklist relevant to the change is copied or adapted;
+- every row has a concrete matrix ID;
+- tests/gates/source facts/human-only surfaces are mapped before code changes;
+- negative or mutation evidence is planned for old false-pass behavior;
+- a reviewer can inspect the matrix without reading the implementation first.
+
+If the work discovers a new invariant during implementation or review, update
+the matrix first, then add the test/gate/doc change. Do not patch code first and
+backfill the matrix later.
 
 ## Required Future Workflow For NarraTwin
 

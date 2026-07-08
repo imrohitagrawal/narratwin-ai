@@ -12,6 +12,8 @@ import os
 import re
 import subprocess
 import sys
+from typing import NamedTuple
+from urllib.parse import urlparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -162,12 +164,59 @@ STATUS_IMPACT_PREFIXES = (
     "scripts/ci/verify_branch_protection.py",
     "scripts/quality/",
     "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
 )
 
 CODE_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs"}
 
 failures: list[str] = []
 warnings: list[str] = []
+
+REQUIRED_PREFLIGHT_EVIDENCE = {
+    "intent/spec",
+    "source facts",
+    "failure matrix",
+    "tests",
+    "docs/gates",
+    "adversarial review",
+}
+
+OLD_BEHAVIOR_PROOF_TERMS = {
+    "break-test",
+    "fails before",
+    "failing test",
+    "mutation",
+    "old behavior fails",
+    "red confirmed",
+    "regression reproduced",
+}
+
+COMPLETED_PREFLIGHT_STATUSES = {"pass", "passed"}
+PREFLIGHT_EMPTY_MARKERS = {"", "n/a", "na", "todo", "tbd", "pending"}
+MATRIX_COVERAGE_EVIDENCE_TYPES = {"test", "gate", "source", "human-only", "non-goal"}
+PLACEHOLDER_URL_HOSTS = {"example.com", "localhost", "127.0.0.1", "0.0.0.0"}
+PLACEHOLDER_URL_TERMS = {"todo", "tbd", "placeholder", "example", "invalid"}
+LOCAL_REFERENCE_TYPES = {"repo-file"}
+URL_REFERENCE_TYPES = {"url", "source-url", "source", "pr-comment", "ci-run"}
+ALLOWED_REFERENCE_TYPES = LOCAL_REFERENCE_TYPES | URL_REFERENCE_TYPES
+REQUIRED_PREIMPLEMENTATION_ROWS = {
+    "invariant/failure matrix",
+    "source facts",
+    "human-only surfaces, if any",
+}
+
+
+class PreflightEvidenceRow(NamedTuple):
+    evidence_name: str
+    artifact: str
+    reference_type: str
+    matrix_ids: str
+    command: str
+    reviewer: str
+    evidence_type: str
+    status: str
+    residual: str
+    raw_cells: tuple[str, ...]
 
 
 def run_git(args: list[str]) -> str:
@@ -212,6 +261,21 @@ def closing_issue_pattern(issue_number: str = r"\d+") -> str:
     return rf"(?i)\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b:?\s*(?:{issue_ref})"
 
 
+def closing_issue_numbers(text: str) -> set[str]:
+    issue_ref = (
+        r"#(?P<short>\d+)\b|"
+        r"[\w.-]+/[\w.-]+#(?P<repo>\d+)\b|"
+        r"https://github\.com/[\w.-]+/[\w.-]+/issues/(?P<url>\d+)\b"
+    )
+    pattern = re.compile(rf"(?i)\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b:?\s*(?:{issue_ref})")
+    issue_numbers: set[str] = set()
+    for match in pattern.finditer(text):
+        issue_number = match.group("short") or match.group("repo") or match.group("url")
+        if issue_number:
+            issue_numbers.add(issue_number)
+    return issue_numbers
+
+
 def issue_link_pattern(issue_number: str = r"\d+") -> str:
     issue_ref = (
         rf"#(?:{issue_number})\b|"
@@ -241,10 +305,61 @@ def is_nontrivial_pull_request(changes: list[str]) -> bool:
 
 
 def has_completed_preflight_evidence(body: str) -> bool:
+    completed_rows: dict[str, list[PreflightEvidenceRow]] = {}
+    for cells in markdown_table_rows(body, "Preflight evidence"):
+        row = parse_preflight_row(cells)
+        if row is None:
+            continue
+        required = (
+            row.evidence_name,
+            row.artifact,
+            row.reference_type,
+            row.matrix_ids,
+            row.command,
+            row.reviewer,
+            row.evidence_type,
+            row.status,
+            row.residual,
+        )
+        if any(is_placeholder_value(value) for value in required):
+            continue
+        if row.status.strip().lower() not in COMPLETED_PREFLIGHT_STATUSES:
+            continue
+        if row.evidence_name not in REQUIRED_PREFLIGHT_EVIDENCE:
+            continue
+        if not reference_type_matches_artifact(row.reference_type, row.artifact):
+            continue
+        if matrix_id_cell_uses_range_shorthand(row.matrix_ids):
+            continue
+        if not preflight_artifact_exists(row.artifact):
+            continue
+        completed_rows.setdefault(row.evidence_name, []).append(row)
+
+    requires_human_only = any(
+        row.evidence_type == "human-only"
+        for evidence_rows in completed_rows.values()
+        for row in evidence_rows
+    )
+    return (
+        REQUIRED_PREFLIGHT_EVIDENCE.issubset(completed_rows)
+        and has_invariant_test_mapping(completed_rows)
+        and has_human_only_review_surfaces(body, requires_human_only=requires_human_only)
+        and has_pre_implementation_evidence(body)
+    )
+
+
+def markdown_table_rows(body: str, heading: str) -> list[list[str]]:
     lines = body.splitlines()
-    start = next((index for index, line in enumerate(lines) if line.strip().lower() == "## preflight evidence"), None)
+    start = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if line.strip().lower() == f"## {heading.lower()}"
+        ),
+        None,
+    )
     if start is None:
-        return False
+        return []
     rows: list[list[str]] = []
     for line in lines[start + 1 :]:
         stripped = line.strip()
@@ -253,22 +368,265 @@ def has_completed_preflight_evidence(body: str) -> bool:
         if not stripped.startswith("|") or "---" in stripped:
             continue
         cells = [cell.strip() for cell in stripped.strip("|").split("|")]
-        if cells and cells[0].lower() == "evidence":
+        if not cells:
+            continue
+        header_names = {"evidence", "surface", "requirement"}
+        if cells[0].strip().lower() in header_names:
             continue
         rows.append(cells)
-    completed_rows = 0
-    empty_markers = {"", "n/a", "na", "todo", "tbd", "pending"}
-    for cells in rows:
-        if len(cells) < 7:
-            continue
+    return rows
+
+
+def parse_preflight_row(cells: list[str]) -> PreflightEvidenceRow | None:
+    if len(cells) >= 9:
+        evidence, artifact, reference_type, matrix_ids, command, reviewer, evidence_type, status, residual = cells[:9]
+    elif len(cells) >= 7:
         evidence, artifact, matrix_ids, command, reviewer, status, residual = cells[:7]
-        required = (evidence, artifact, matrix_ids, command, reviewer, status, residual)
-        if any(value.strip().lower() in empty_markers for value in required):
+        reference_type = infer_reference_type(artifact)
+        evidence_type = infer_evidence_type(evidence, command, residual)
+    else:
+        return None
+    return PreflightEvidenceRow(
+        evidence_name=normalize_preflight_evidence_name(evidence),
+        artifact=artifact,
+        reference_type=reference_type,
+        matrix_ids=matrix_ids,
+        command=command,
+        reviewer=reviewer,
+        evidence_type=normalize_evidence_type(evidence_type),
+        status=status.strip().lower(),
+        residual=residual,
+        raw_cells=tuple(cells),
+    )
+
+
+def has_invariant_test_mapping(rows_by_evidence: dict[str, list[PreflightEvidenceRow]]) -> bool:
+    matrix_rows = rows_by_evidence.get("failure matrix", [])
+    test_rows = rows_by_evidence.get("tests", [])
+    docs_rows = rows_by_evidence.get("docs/gates", [])
+    coverage_rows = [
+        row
+        for evidence_name, rows in rows_by_evidence.items()
+        if evidence_name != "failure matrix"
+        for row in rows
+        if row.evidence_type in MATRIX_COVERAGE_EVIDENCE_TYPES
+    ]
+    matrix_ids = {matrix_id for row in matrix_rows for matrix_id in split_matrix_ids(row.matrix_ids)}
+    covered_ids = {matrix_id for row in coverage_rows for matrix_id in split_matrix_ids(row.matrix_ids)}
+    tested_ids = {matrix_id for row in test_rows for matrix_id in split_matrix_ids(row.matrix_ids)}
+    if not matrix_ids or not tested_ids or not matrix_ids.issubset(covered_ids):
+        return False
+    test_evidence_text = " ".join(" | ".join(row.raw_cells).lower() for row in test_rows)
+    if not any(term in test_evidence_text for term in OLD_BEHAVIOR_PROOF_TERMS):
+        return False
+    mapping_text = " ".join(
+        " | ".join(row.raw_cells).lower() for row in matrix_rows + test_rows + docs_rows
+    )
+    return "invariant" in mapping_text and "test" in mapping_text
+
+
+def has_human_only_review_surfaces(body: str, *, requires_human_only: bool) -> bool:
+    rows = markdown_table_rows(body, "Human-only review surfaces")
+    has_valid_na = False
+    has_valid_surface = False
+    for cells in rows:
+        if len(cells) < 6:
             continue
-        if status.strip().lower() not in {"pass", "passed", "accepted", "tracked"}:
+        surface, automation_gap, owner, evidence, residual, expiry = cells[:6]
+        if any(is_placeholder_value(value) for value in (automation_gap, owner, evidence, residual, expiry)):
             continue
-        completed_rows += 1
-    return completed_rows >= 3
+        if not preflight_artifact_exists(evidence):
+            continue
+        if is_na_value(surface):
+            has_valid_na = True
+            continue
+        if is_placeholder_value(surface):
+            continue
+        has_valid_surface = True
+    if requires_human_only:
+        return has_valid_surface
+    return has_valid_surface or has_valid_na
+
+
+def has_pre_implementation_evidence(body: str) -> bool:
+    rows = markdown_table_rows(body, "Pre-implementation evidence")
+    seen: set[str] = set()
+    for cells in rows:
+        if len(cells) < 5:
+            continue
+        requirement, artifact, timestamp_or_commit, reviewer, decision = cells[:5]
+        if any(
+            is_placeholder_value(value)
+            for value in (requirement, artifact, timestamp_or_commit, reviewer, decision)
+        ):
+            continue
+        requirement_name = normalize_requirement_name(requirement)
+        if requirement_name not in REQUIRED_PREIMPLEMENTATION_ROWS:
+            continue
+        if decision.strip().lower() not in COMPLETED_PREFLIGHT_STATUSES:
+            continue
+        if not preflight_artifact_exists(artifact):
+            continue
+        if not has_concrete_preimplementation_marker(timestamp_or_commit):
+            continue
+        seen.add(requirement_name)
+    return REQUIRED_PREIMPLEMENTATION_ROWS.issubset(seen)
+
+
+def normalize_preflight_evidence_name(value: str) -> str:
+    evidence_name = re.sub(r"\s+", " ", value.strip().lower())
+    if evidence_name == "docs":
+        return "docs/gates"
+    if evidence_name.startswith("failure matrix"):
+        return "failure matrix"
+    if evidence_name.startswith("tests"):
+        return "tests"
+    return evidence_name
+
+
+def normalize_evidence_type(value: str) -> str:
+    evidence_type = re.sub(r"\s+", " ", value.strip().lower())
+    aliases = {
+        "docs": "gate",
+        "docs/gates": "gate",
+        "human": "human-only",
+        "manual": "human-only",
+        "manual review": "human-only",
+        "source fact": "source",
+        "source facts": "source",
+        "not applicable": "non-goal",
+    }
+    return aliases.get(evidence_type, evidence_type)
+
+
+def infer_evidence_type(evidence: str, command: str, residual: str) -> str:
+    combined = f"{evidence} {command} {residual}".lower()
+    if "human-only" in combined or "manual" in combined:
+        return "human-only"
+    evidence_name = normalize_preflight_evidence_name(evidence)
+    if evidence_name == "tests":
+        return "test"
+    if evidence_name == "docs/gates":
+        return "gate"
+    if evidence_name in {"intent/spec", "source facts", "adversarial review"}:
+        return "source"
+    return "source"
+
+
+def infer_reference_type(artifact: str) -> str:
+    cleaned = clean_markdown_reference(artifact)
+    if cleaned.startswith(("https://", "http://")):
+        return "url"
+    return "repo-file"
+
+
+def normalize_reference_type(value: str) -> str:
+    return re.sub(r"[\s_]+", "-", value.strip().lower())
+
+
+def reference_type_matches_artifact(reference_type: str, artifact: str) -> bool:
+    normalized_type = normalize_reference_type(reference_type)
+    if normalized_type not in ALLOWED_REFERENCE_TYPES:
+        return False
+    cleaned = clean_markdown_reference(artifact)
+    is_url = cleaned.startswith(("https://", "http://"))
+    if is_url:
+        return normalized_type in URL_REFERENCE_TYPES
+    return normalized_type in LOCAL_REFERENCE_TYPES
+
+
+def split_matrix_ids(value: str) -> set[str]:
+    normalized = value.strip().strip("`")
+    if normalized.lower() in {"", "n/a", "na", "none", "todo", "tbd", "pending"}:
+        return set()
+    if matrix_id_cell_uses_range_shorthand(normalized):
+        return set()
+    return {
+        token.strip("` ")
+        for token in re.split(r"[\s,;]+", normalized)
+        if re.search(r"[A-Za-z]", token) and re.search(r"\d", token)
+    }
+
+
+def matrix_id_cell_uses_range_shorthand(value: str) -> bool:
+    normalized = value.strip().strip("`")
+    if re.search(r"\b(?:through|thru|to)\b", normalized, flags=re.I):
+        return True
+    matrix_id = r"[A-Za-z]+(?:-[A-Za-z]+)*-\d+"
+    return bool(re.search(rf"\b{matrix_id}\s*(?:\.{2,}|[-–—])\s*{matrix_id}\b", normalized))
+
+
+def preflight_artifact_exists(value: str) -> bool:
+    artifact = clean_markdown_reference(value)
+    if artifact.startswith(("https://", "http://")):
+        parsed = urlparse(artifact)
+        hostname = (parsed.hostname or "").lower()
+        path = parsed.path.strip("/")
+        if parsed.scheme not in {"http", "https"} or not hostname or not path:
+            return False
+        if hostname in PLACEHOLDER_URL_HOSTS or hostname.endswith(".example.com"):
+            return False
+        url_text = f"{hostname}/{path}".lower()
+        if any(term in url_text for term in PLACEHOLDER_URL_TERMS):
+            return False
+        return True
+    if not artifact or artifact.startswith(("/", "~")):
+        return False
+    artifact_path = strip_artifact_fragment_or_line(artifact)
+    return (ROOT / artifact_path).is_file()
+
+
+def clean_markdown_reference(value: str) -> str:
+    artifact = value.strip().strip("`").strip()
+    link_match = re.fullmatch(r"\[[^\]]+\]\(([^)]+)\)", artifact)
+    if link_match:
+        return link_match.group(1).strip()
+    return artifact
+
+
+def strip_artifact_fragment_or_line(value: str) -> str:
+    without_fragment = value.split("#", maxsplit=1)[0]
+    return re.sub(r":\d+$", "", without_fragment)
+
+
+def is_na_value(value: str) -> bool:
+    return value.strip().lower().strip("`") in {"n/a", "na"}
+
+
+def is_placeholder_value(value: str) -> bool:
+    normalized = value.strip().lower().strip("`")
+    return normalized in PREFLIGHT_EMPTY_MARKERS
+
+
+def normalize_requirement_name(value: str) -> str:
+    normalized = re.sub(r"\s+", " ", value.strip().lower())
+    if "invariant" in normalized or "failure matrix" in normalized:
+        return "invariant/failure matrix"
+    if "source fact" in normalized:
+        return "source facts"
+    if "human-only" in normalized or "human only" in normalized:
+        return "human-only surfaces, if any"
+    return normalized
+
+
+def has_concrete_preimplementation_marker(value: str) -> bool:
+    normalized = value.strip()
+    comment_or_draft_match = re.search(
+        r"(?:issue comment|draft pr):\s*(?P<url>https?://[^\s]+)",
+        normalized,
+        flags=re.I,
+    )
+    if comment_or_draft_match and preflight_artifact_exists(comment_or_draft_match.group("url")):
+        return True
+    return bool(
+        re.search(r"pre-code timestamp:\s*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}", normalized)
+        or re.search(r"reviewer signoff:\s*.+\s+\d{4}-\d{2}-\d{2}", normalized, flags=re.I)
+        or re.search(
+            r"commit order:\s*[0-9a-f]{7,40}\s+before\s+[0-9a-f]{7,40}",
+            normalized,
+            flags=re.I,
+        )
+    )
 
 
 def pull_request_commit_messages() -> str:
@@ -360,20 +718,34 @@ def check_issue_linked_pull_request() -> None:
         failures.append("Pull request head branch must not be main.")
     if base_ref != "main":
         failures.append("Pull requests for guarded work must target main.")
-    issue_39_closing_pattern = closing_issue_pattern("39")
-    if re.search(
-        issue_39_closing_pattern,
-        f"{title}\n{body}\n{pull_request_commit_messages()}",
-    ):
-        failures.append("Issue #39 pull requests must use reference-only wording and must not auto-close #39.")
-    changes = changed_files()
     canonical_stage_issues = {
         "stage2-": ("Stage 2", "2"),
         "stage3-": ("Stage 3", "5"),
     }
-    is_canonical_stage_branch = bool(
-        head_ref and any(head_ref.startswith(branch_prefix) for branch_prefix in canonical_stage_issues)
+    canonical_issue_number = next(
+        (
+            issue_number
+            for branch_prefix, (_stage_name, issue_number) in canonical_stage_issues.items()
+            if head_ref and head_ref.startswith(branch_prefix)
+        ),
+        None,
     )
+    is_canonical_stage_branch = canonical_issue_number is not None
+    visible_issue_text = f"{title}\n{body}\n{pull_request_commit_messages()}"
+    issue_39_closing_pattern = closing_issue_pattern("39")
+    if re.search(
+        issue_39_closing_pattern,
+        visible_issue_text,
+    ):
+        failures.append("Issue #39 pull requests must use reference-only wording and must not auto-close #39.")
+    closed_issue_numbers = closing_issue_numbers(visible_issue_text)
+    if not is_canonical_stage_branch and closed_issue_numbers:
+        failures.append("Pull request title/body/commit messages must use reference-only issue wording.")
+    if canonical_issue_number is not None and any(
+        issue_number != canonical_issue_number for issue_number in closed_issue_numbers
+    ):
+        failures.append("Pull request title/body/commit messages must not close non-canonical issues.")
+    changes = changed_files()
     reference_only_issue_39 = bool(
         head_ref
         and head_ref.startswith("phase-1-closure-39-")
