@@ -22,12 +22,18 @@ This repository is protected by workflow, review, and policy-as-code guardrails.
 16. GitHub Actions workflows must be YAML-defined.
 17. Workflows must use least-privilege `GITHUB_TOKEN` permissions.
 18. Repository-tracked stage and governance changes require `docs/STATUS.md` updates.
+19. Non-trivial requirements, feature discussions, architecture locks,
+    implementation work, release claims, and governance-gate changes must consult
+    `docs/ENGINEERING_PROCESS_RCA.md` before coding or final review.
 
 ## What is enforced in CI
 
 The `Quality Gates` workflow runs `scripts/guardrails_check.py`,
 `scripts/ci/verify_branch_protection.py`, and `make quality` on pull requests
-into `main` and on pushes to non-main branches.
+into `main` and on pushes to non-main branches. The required policy gate also
+runs on `pull_request.edited` so PR title/body edits cannot add issue-closing
+or other automation-sensitive wording after checks are green without rerunning
+the guardrail.
 
 The policy check fails CI for:
 
@@ -39,8 +45,18 @@ The policy check fails CI for:
 - architecture-impacting changes without ADR updates
 - PRD-impacting changes without traceability updates
 - repository-tracked governance changes without `docs/STATUS.md` updates
-- drift between live `main` branch-protection required status contexts and the
-  documented required context set
+- non-trivial pull requests without completed preflight evidence rows for the
+  required source, invariant/failure matrix, test, docs/gates, and
+  adversarial-review categories in the PR body
+- non-trivial pull requests whose failure-matrix IDs are not fully covered by
+  test, gate, source, human-only, or non-goal evidence, or whose tests lack
+  old-behavior proof language such as RED, mutation, break-test,
+  regression-reproduced, or fails-before evidence
+- issue-closing keywords in PR title/body/commit messages outside explicitly
+  allowed canonical stage issue closures
+- drift between live `main` branch-protection settings and the documented
+  required status checks, PR review, admin enforcement, force-push/deletion, and
+  conversation-resolution posture
 - LLM-generation code without trace/run metadata
 - generated-script/answer code without source chunk citations
 - failing eval result reports
@@ -91,6 +107,47 @@ Open issue
 → merge
 ```
 
+## Required preflight for non-trivial work
+
+Before starting implementation or locking a feature approach, create or link a
+reviewable preflight artifact that covers:
+
+- intent and non-goals
+- official source facts for platform/tool semantics
+- positive claims and negative invariants
+- failure-mode matrix
+- matrix-to-test mapping
+- architecture parity table when behavior repeats across modules
+- adversarial review disposition for high-risk work
+
+The pull-request preflight table must include completed rows for the executable
+gate categories: intent/spec, source facts, failure matrix, tests, docs/gates,
+and adversarial review. Completed means `pass` or `passed`; `tracked`,
+`accepted`, `pending`, `todo`, and placeholder values do not count as completed
+evidence. Every matrix ID named by the failure-matrix row must be covered by a
+test, executable gate, official source fact, explicit human-only row, or
+documented non-goal. Range shorthand such as `INV-1 through INV-6` is not a
+valid substitute for explicit matrix IDs. The declared reference type must match
+the artifact form, and human-only/pre-implementation evidence must use concrete
+repo-file or non-placeholder URL references. The tests row must state how old
+behavior was proven false for changed guardrails, bug fixes, restore/replay
+paths, and process-sensitive claims.
+
+Durability, restore/replay, derived-artifact, release, CI, and governance work
+must include an invariant-to-test matrix before implementation. Marker-string
+checks are not enough: every required process claim must map to a test, an
+executable gate, an official source fact, or an explicitly human-only checklist
+item with owner and residual-risk decision. Process-sensitive PRs must also show
+pre-implementation evidence proving that the invariant/failure matrix and source
+facts existed before implementation or guardrail edits began.
+
+Use `docs/ENGINEERING_PROCESS_RCA.md` for the NarraTwin-specific failure lessons
+and `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` when creating a new
+project or reusable project template.
+
 ## Codex instruction
 
-Codex must not start coding from a vague request. It must first identify or create the linked issue, create a branch, apply a scoped change, open a PR, and preserve the guardrails listed here.
+Codex must not start coding from a vague request. It must first identify or
+create the linked issue, create a branch, apply a scoped change, open a PR, and
+preserve the guardrails listed here. For non-trivial work, Codex must also apply
+the preflight above before treating tests or CI as sufficient evidence.

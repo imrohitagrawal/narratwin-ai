@@ -23,7 +23,8 @@ PR `#53`.
 - [x] Locust headless smoke records health endpoint traffic and keeps local p95 under 200 ms.
 - [x] Eval/security gates pass without paid providers or real provider keys in recorded Stage 8 and Final Review evidence.
 - [x] `main` branch protection is enabled with strict required CI status contexts, required PR review, admin enforcement, blocked force pushes, blocked deletions, and required conversation resolution; `policy-gates` runs `scripts/ci/verify_branch_protection.py` to fail on required-context drift visible through the branch summary API; direct pusher restrictions are unavailable on this user-owned repository per GitHub API validation.
-- [ ] Remaining Phase 1 P0/P1 blocker `#39` is closed or explicitly downgraded with evidence.
+- [x] Issue `#39` has local implementation evidence for optional file-backed restart recovery and `/api/v1/ops/status`.
+- [ ] Remaining production-grade portion of `#39` is closed or explicitly downgraded with evidence.
 - [ ] `make lint`, `make typecheck`, `make test`, `make api-test`, `make ui-test`, `make e2e`, `make eval`, `make security`, and `make ci` pass for the closure branch.
 - [ ] `make secrets-scan`, `make security-scan`, `make dependency-audit`, and `make container-scan` pass for the closure branch.
 - [ ] Docker Compose local readiness is verified or unused services are documented honestly.
@@ -31,7 +32,10 @@ PR `#53`.
 
 ## Release Blockers
 
-- Multi-worker production deployment is blocked until Stage 6 multilingual state and Stage 7 avatar render/job/idempotency/artifact state are durable; shorthand release marker: multi-worker deployment blocked.
+- Multi-worker production deployment is blocked until Stage 4/6/7 state moves
+  from single-node JSON snapshots to reviewed ACID/CAS durable metadata with
+  multi-worker locking, migrations, backup/restore, and production idempotency
+  semantics.
 - Real video export remains blocked until the selected renderer/provider path and license posture are reviewed.
 - Source-run based avatar export is the current local/mock export posture; multilingual/subtitle-bound timed media export remains blocked until a future reviewed product decision.
 - External avatar providers and public synthetic-media distribution remain blocked until persistent consent/provenance is implemented.

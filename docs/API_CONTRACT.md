@@ -35,6 +35,11 @@
 - Markdown uploads must use `text/markdown`; plain-text uploads must use
   `text/plain`. `application/octet-stream` compatibility is intentionally
   rejected until a validated compatibility exception is approved.
+- `GET /api/v1/ops/status` is a read-only operational posture endpoint. It
+  returns durable-state configuration and bounded record counts for Stage 4,
+  Stage 6, and Stage 7, plus local monitoring feature flags. It must not expose
+  uploaded document text, prompts, generated script text, provider payloads,
+  filesystem contents, environment values, or secrets.
 
 ## API Versioning
 

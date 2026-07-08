@@ -1,0 +1,15 @@
+# Process-critical governance paths should have explicit human ownership.
+AGENTS.md @imrohitagrawal
+.github/CODEOWNERS @imrohitagrawal
+.github/pull_request_template.md @imrohitagrawal
+.github/workflows/ @imrohitagrawal
+scripts/guardrails_check.py @imrohitagrawal
+scripts/ci/verify_branch_protection.py @imrohitagrawal
+scripts/quality/ @imrohitagrawal
+tests/unit/test_guardrails_check.py @imrohitagrawal
+docs/ENGINEERING_PROCESS_RCA.md @imrohitagrawal
+docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md @imrohitagrawal
+docs/REPOSITORY_GUARDRAILS.md @imrohitagrawal
+docs/QUALITY_GATES.md @imrohitagrawal
+docs/STATUS.md @imrohitagrawal
+docs/STAGE_ISSUE_PLAN.md @imrohitagrawal

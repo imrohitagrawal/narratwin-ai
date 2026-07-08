@@ -1,14 +1,15 @@
 # Phase 1 Closure Report
 
 Date: 2026-07-01
-Latest update: 2026-07-02
+Latest update: 2026-07-03
 
 Branches: `phase-1-closure-governance-traceability`,
 `phase-1-closure-37-local-principal-contract`,
 `phase-1-closure-42-stage7-checksum-binding`, and
-`phase-1-closure-38-branch-protection-evidence`
+`phase-1-closure-38-branch-protection-evidence`, and
+`phase-1-closure-39-durability-monitoring`
 
-Pull requests: `#46`, `#47`, `#50`, `#53`
+Pull requests: `#46`, `#47`, `#50`, `#53`, `#54`
 
 Baseline:
 
@@ -50,7 +51,7 @@ when reconciling reviewer findings against issues `#35` through `#44`.
 | `#36` | P0 | Module A: Governance and Traceability | Closed through merged PR `#46`. The executable Final Review gate and repository-tracked branch-policy evidence posture were reconciled; live branch-protection proof is now recorded under `#38`. |
 | `#37` | P1 | Module F: Security Closure | Closed through merged PR `#47`. Trusted local/dev/test-only `X-Local-User-Id` simulation is documented, production header identity is rejected, and API/docs evidence was added. |
 | `#38` | P1 | Module A: Governance and Traceability | Resolved with live GitHub evidence. `main` branch protection is enabled, strict required checks are configured, required reviews and admin enforcement are enabled, and force pushes/deletions are blocked. |
-| `#39` | P1 | Module C: Local Run and Portability | Release-blocking for production go-live. Local/mock demo readiness is distinct from production readiness; production durability, multi-worker, external-provider, monitoring, and public synthetic-media release remain No-Go. |
+| `#39` | P1 | Module C: Local Run and Portability | Partially remediated for local restart recovery and local ops posture visibility. Optional JSON snapshots cover Stage 4/6/7 local state, and `/api/v1/ops/status` reports bounded durability/monitoring metadata. Production durability, multi-worker, external-provider, production monitoring, and public synthetic-media release remain No-Go. |
 | `#40` | P0 | Module A: Governance and Traceability | Closed through merged PR `#46`. Canonical RTM statuses and evidence were reconciled to implemented Stage 4-8 behavior. |
 | `#41` | P0 | Module G: Demo Readiness | Closed through merged PR `#46`. Portfolio/demo docs disclose single-process, process-local, non-durable limits. |
 | `#42` | P1 | Module B: Functional Phase 1 Flow | Closed through merged PR `#50`. Stage 7 source-evaluation checksum binding was hardened before stronger evidence-integrity claims. |
@@ -84,7 +85,7 @@ release governance, or demo honesty.
 | Issue `#37` local principal contract | Complete | PR `#47` merged and closed `#37`, adding `APP_ENV`-gated `X-Local-User-Id` validation/rejection, keeping `user_local` fallback, preserving tenant/project/owner authorization predicates, and updating API/security/architecture docs. |
 | Issue `#42` source evidence checksum binding | Complete | PR `#50` merged and closed `#42`, adding canonical Stage 7 checksum helper usage in the API route and service, plus unit/API regression evidence for source run ID and trace ID binding. |
 | Issue `#38` branch protection/ruleset evidence | Complete through PR `#53` | Live GitHub API evidence confirms `main` branch protection is enabled with strict required status checks, required PR review, admin enforcement, blocked force pushes, blocked deletions, and required conversation resolution; direct pusher restrictions are unavailable for this user-owned repository per GitHub API validation. |
-| Issue `#39` production durability and monitoring | Blocking | Local/mock demo review can proceed only within the documented limits; production, multi-worker, external-provider, and public synthetic-media release remain No-Go. |
+| Issue `#39` production durability and monitoring | Partially remediated, still blocking production | Local JSON restart recovery and `/api/v1/ops/status` have implementation/test evidence. Production, multi-worker, external-provider, and public synthetic-media release remain No-Go until ACID/CAS durable metadata, migrations, backup/restore, locking, and production monitoring are reviewed. |
 | Release tag | Blocked | No tag until all Phase 1 P0/P1 gates pass and CI/review are complete. |
 
 ## Scope And Downgrade Rules
@@ -93,8 +94,10 @@ This governance branch may map, document, and gate Phase 1 closure evidence, but
 it does not land backend, frontend, RAG, provider, Docker, database, or runtime
 product-code fixes. P1 issues `#37` and `#42` have executable evidence through
 merged PRs `#47` and `#50`. P1 issue `#38` now has live GitHub
-repository-settings evidence. Remaining P1 blocker `#39` stays release-blocking
-until a separate Phase 1 PR or reviewed exception provides evidence.
+repository-settings evidence. P1 blocker `#39` now has local durability and ops
+visibility evidence on branch `phase-1-closure-39-durability-monitoring`, but
+the production-grade portion stays release-blocking until a reviewed PR or
+exception provides database, locking, backup/restore, and monitoring evidence.
 
 Downgrades are allowed only when the active closure reviewer records the issue,
 proposed priority change, evidence, reviewer/date, and release impact in this
@@ -197,6 +200,50 @@ endpoint to fail CI if `main` no longer reports `protected: true`,
 everyone`, the exact required CI contexts, and GitHub Actions app bindings for
 those contexts. Admin-only protection settings remain captured in the evidence
 above rather than inferred from repository files.
+
+## Issue #39 Evidence
+
+Chosen contract: local restart recovery and operational posture visibility are
+implemented as a reviewed Phase 1 remediation, while production release remains
+No-Go until production-grade durable metadata and monitoring exist.
+
+Evidence added on branch `phase-1-closure-39-durability-monitoring`:
+
+- implementation: `backend/app/storage/file_state.py`,
+  `backend/app/rag/store.py`, `backend/app/stage4.py`, `backend/app/stage6.py`,
+  `backend/app/stage7.py`, and `backend/app/main.py`
+- tests: `tests/unit/test_local_durability.py` and
+  `tests/api/test_health_api.py::test_api_v1_ops_status_reports_durability_and_monitoring_contract`
+- runtime config: `.env.example` documents optional `NARRATWIN_STATE_DIR`
+- docs: `docs/API_CONTRACT.md`, `docs/LOCAL_DEVELOPMENT.md`,
+  `docs/OBSERVABILITY_AND_COST.md`, `docs/PORTABILITY_STRATEGY.md`,
+  `docs/RUNBOOK.md`, `docs/RELEASE_CHECKLIST.md`,
+  `docs/RELEASE_READINESS_REVIEW.md`, and the risk registers
+
+The implementation keeps persistence disabled by default. When
+`NARRATWIN_STATE_DIR` or a service-specific `NARRATWIN_STAGE*_STATE_FILE` is
+configured, Stage 4 persists project/document/ingestion/walkthrough/RAG and
+idempotency state, Stage 6 persists multilingual idempotency replay state, and
+Stage 7 persists avatar render/idempotency/artifact metadata. Writes use atomic
+JSON replacement for local single-node recovery.
+
+The JSON snapshot files may contain uploaded document text, retrieved
+chunks/context, generated scripts, evaluation details, translations/subtitles,
+avatar artifact payloads, base64 content, and metadata. Treat them as sensitive
+local data: keep them ignored, do not commit them, and delete them when local
+review evidence is no longer needed.
+
+`GET /api/v1/ops/status` reports local durable-state enablement, non-sensitive
+state backend type, bounded record counts, local-only operational posture, and
+monitoring flags without exposing state-file paths, raw uploads, prompts,
+generated output, provider payloads, environment values, or secrets.
+
+This evidence reduces local restart and visibility blockers. It does not approve
+multi-worker production, external providers, public synthetic-media release, or
+a production go-live. Those remain blocked until a reviewed release phase adds
+ACID/CAS metadata, cross-worker locking, migrations, backup/restore, production
+idempotency semantics, dashboard/alert ownership, first-hour watch procedure,
+and rollback communication channels.
 
 ## Follow-Up Issue Classification
 

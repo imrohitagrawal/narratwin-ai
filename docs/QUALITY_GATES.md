@@ -439,17 +439,28 @@ Gate validates:
 - Final Review baseline artifacts exist and `docs/reviews/GO_NO_GO.md`
   preserves the five No-Go decision lines
 - changed files stay within the Phase 1 closure allowlist. Module A branches are
-  limited to governance/reporting files; issue `#38` may also update the
+  limited to governance/reporting files, `AGENTS.md`, and CODEOWNERS coverage
+  for process-critical guardrails; issue `#38` may also update the
   required `policy-gates` workflow and branch-protection verifier that make its
   evidence reproducible; Module F issue `#37` may also change
   the local-principal implementation, API tests, and active architecture/security
   contract docs needed to reconcile the trusted local principal behavior. Module
   B issue `#42` may change only the Stage 7 checksum-binding implementation,
-  Stage 7 unit/API tests, and active checksum contract/governance docs. Final
-  Review baseline artifacts are required inputs but not allowed closure-branch
-  edits
+  Stage 7 unit/API tests, and active checksum contract/governance docs. Issue
+  `#39` may also change the Stage 4/6/7 local durability implementation,
+  storage helper, ops status endpoint, local durability/API tests, and active
+  durability/monitoring docs needed to preserve the production No-Go while
+  proving local restart recovery. Process-only follow-ups must use
+  `phase-1-closure-process-<issue>-<phf-id>-<slug>` and may change governance
+  docs, `scripts/guardrails_check.py`, and guardrail/closure-gate unit tests,
+  but not backend, frontend, provider, RAG, avatar, database, Docker, or product
+  runtime files. Final Review baseline artifacts are required inputs but not
+  allowed closure-branch edits
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md` parses as an issue table covering
   issues `#35` through `#44` with expected P0/P1/P2/P3 priorities
+- `docs/reviews/PROCESS_HARDENING_FINDINGS.md` tracks deduplicated
+  process-hardening review findings from sub-agent, cross-model, and blind
+  reviews when those reviews produce actionable process gaps
 - every P0/P1 issue maps to a valid closure module and the module table covers
   the P0/P1 issue set with non-empty required evidence
 - `docs/RELEASE_READINESS_REVIEW.md` preserves the Final Review No-Go posture,
@@ -460,17 +471,48 @@ Gate validates:
   and at least one prompt-injection and one safety-boundary fixture
 - Phase 1 demo docs and portfolio docs include runnable local startup,
   health/readiness, project/upload/generation/citation/eval/saved-output flow,
-  and single-process, process-local, non-durable, mock/local-only disclosures
+  and single-process, local-only, optional JSON restart snapshot,
+  no-production-durability, mock/local-only disclosures
+- process-loop governance artifacts preserve a reference-only PR template,
+  preflight evidence table, PR `#54` finding evidence table, NarraTwin-specific
+  RCA gates, and reusable new-project bootstrap/source-control/source-facts/
+  failure-matrix/RCA-pause controls
+- `policy-gates` reruns on `pull_request.edited`, so a PR title/body edit after
+  green checks cannot bypass the issue-linking and `#39` auto-close guard
 
 The Phase 1 Closure quality gate validates the static governance contract. It
 does not replace `make ci` and does not execute the Phase 1 golden questions
 through the RAG pipeline until a later eval-runner PR wires that dataset into
-`make eval`. Live branch-protection context drift is verified remotely by the
-required `policy-gates` workflow step
-`scripts/ci/verify_branch_protection.py`, which queries the reviewer-readable
-branch summary endpoint for `main` and fails if `protected: true`, exact
-required contexts, `enforcement_level: everyone`, or GitHub Actions app bindings
-drift.
+`make eval`. Live branch-protection drift is verified remotely by the required
+`policy-gates` workflow step `scripts/ci/verify_branch_protection.py`, which
+queries GitHub's branch summary API for `main` and fails if `protected: true`,
+exact required contexts, `enforcement_level: everyone`, or GitHub Actions app
+bindings drift. When the workflow token can read GitHub's protected-branch
+detail endpoint, the verifier also checks strict up-to-date status checks,
+required PR review, administrator enforcement, blocked force pushes, blocked
+deletions, and required conversation resolution. When GitHub returns a
+permission boundary for that detail endpoint, missing detail-only fields such as
+`strict` remain an explicit human-only review surface while visible branch
+summary fields continue to fail closed.
+
+The repository guardrail also checks PR body content on pull-request events:
+generic PRs must use reference-only issue linkage such as `Refs #<issue>` and
+must not include issue-closing keywords in the title/body/branch commit
+messages except for explicitly allowed canonical stage issue closures. Issue
+`#39` must not appear with auto-closing keywords in the title/body/branch commit
+messages, and non-trivial PRs must include completed preflight evidence rows for
+the required intent/spec, source-facts, failure-matrix, test, docs/gates, and
+adversarial-review categories. The guardrail rejects false-pass preflight
+tables when the failure-matrix IDs are not fully covered by test, gate, source,
+human-only, or non-goal evidence; when completion status is not `pass` or
+`passed`; when artifacts are directories, placeholder URLs, or missing files; or
+when the tests row lacks old-behavior proof language such as RED, mutation,
+break-test, regression-reproduced, or fails-before evidence. Durability,
+restore/replay, derived-artifact, release, CI, and governance-process PRs must
+provide the invariant-to-test mapping before implementation; human-only
+surfaces, including the final squash/merge message, must be listed separately
+with owner and residual-risk decision, and pre-implementation evidence must show
+the matrix/source facts existed before implementation or guardrail edits began.
 
 Changes to `scripts/quality/check_phase1_closure_docs.py`,
 `scripts/quality/check_quality_stage.py`, or

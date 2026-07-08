@@ -105,6 +105,49 @@ def test_api_v1_ready_endpoint_returns_timestamped_ok() -> None:
     assert_foundation_headers(response)
 
 
+def test_api_v1_ops_status_reports_durability_and_monitoring_contract() -> None:
+    client = TestClient(app)
+
+    response = client.get("/api/v1/ops/status")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["service"] == "narratwin-ai-backend"
+    assert body["stage"] == "8"
+    assert body["operationalPosture"] == "LOCAL_ONLY"
+    datetime.fromisoformat(body["checkedAt"])
+    assert set(body["durability"]) == {"stage4", "stage6", "stage7"}
+    for service_status in body["durability"].values():
+        assert "stateFile" not in service_status
+        assert service_status["stateBackend"] in {"memory", "json-file"}
+        assert service_status["durableStateEnabled"] is (service_status["stateBackend"] == "json-file")
+    assert body["durability"]["stage4"]["recordCounts"].keys() >= {
+        "projects",
+        "documents",
+        "ingestionRuns",
+        "walkthroughRuns",
+        "idempotencyRecords",
+    }
+    assert body["durability"]["stage6"]["recordCounts"].keys() == {"idempotencyRecords"}
+    assert body["durability"]["stage7"]["recordCounts"].keys() >= {
+        "avatarRenders",
+        "artifactMetadata",
+        "idempotencyRecords",
+    }
+    assert body["monitoring"] == {
+        "healthEndpoint": True,
+        "readinessEndpoint": True,
+        "opsStatusEndpoint": True,
+        "structuredLoggingConfigured": True,
+        "walkthroughMetricsInstrumented": True,
+        "metricsEndpointExposed": False,
+        "productionAlertsConfigured": False,
+        "langfuseConfigured": body["monitoring"]["langfuseConfigured"],
+    }
+    assert_foundation_headers(response)
+
+
 def test_not_found_uses_locked_error_envelope_and_request_id_header() -> None:
     client = TestClient(app)
 

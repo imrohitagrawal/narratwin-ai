@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import re
 import time
-from collections.abc import Callable
-from dataclasses import dataclass, field
+from collections.abc import Callable, Mapping
+from copy import deepcopy
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
-from pathlib import PurePath
-from threading import Lock
+from pathlib import Path, PurePath
+from threading import RLock
 from typing import Any, Literal, TypeVar, cast
 
 from backend.app.rag.chunking import checksum_text, chunk_document
@@ -24,14 +26,18 @@ from backend.app.rag.models import (
     RETRIEVAL_STRATEGY_VERSION,
     RETRIEVAL_TOP_K,
     TENANT_LOCAL,
+    ClaimSupport,
     EvaluationResult,
     GeneratedScript,
     KnowledgeChunk,
     RetrievedContext,
+    ScriptClaim,
+    UnsupportedClaim,
 )
 from backend.app.rag.providers import MockEmbeddingProvider, MockLLMProvider
 from backend.app.rag.retrieval import retrieve_context
 from backend.app.rag.store import InMemoryRagStore
+from backend.app.storage import load_state, resolve_state_file, write_state
 from backend.app.eval.metrics import evaluate_token_usage, estimate_cost_usd
 from backend.app.observability import (
     langfuse_observation,
@@ -87,6 +93,7 @@ SECRET_REDACTION_PATTERNS = (
 )
 T = TypeVar("T")
 WalkthroughRunStatus = Literal["COMPLETED", "FAILED", "REFUSED"]
+LOGGER = logging.getLogger(__name__)
 
 
 def _now() -> str:
@@ -198,10 +205,11 @@ class Stage4Service:
     WALKTHROUGH_REFUSAL_REASON_UNSAFE_CONTEXT = "UNSAFE_RETRIEVED_CONTEXT"
     WALKTHROUGH_REFUSAL_REASON_UNSUPPORTED_FACT = "UNSUPPORTED_PROJECT_FACT"
 
-    def __init__(self) -> None:
+    def __init__(self, *, state_path: Path | None = None) -> None:
         self.embedder = MockEmbeddingProvider()
         self.llm = MockLLMProvider()
         self.rag_store = InMemoryRagStore()
+        self.state_path = state_path
         self.projects: dict[str, ProjectRecord] = {}
         self.documents: dict[str, DocumentRecord] = {}
         self.ingestion_runs: dict[str, IngestionRunRecord] = {}
@@ -209,13 +217,19 @@ class Stage4Service:
         self.idempotency_records: dict[tuple[str, str, str, str, str], IdempotencyRecord] = {}
         self._active_ingestions: set[tuple[str, str]] = set()
         self._active_generations: set[tuple[str, str]] = set()
-        self._operation_lock = Lock()
+        self._operation_lock = RLock()
         self._project_counter = 0
         self._document_counter = 0
         self._ingestion_counter = 0
         self._run_counter = 0
+        self._restore()
 
     def reset(self) -> None:
+        with self._operation_lock:
+            self._clear_runtime_state()
+            self._persist_locked()
+
+    def _clear_runtime_state(self) -> None:
         self.rag_store.clear()
         self.projects.clear()
         self.documents.clear()
@@ -228,6 +242,130 @@ class Stage4Service:
         self._document_counter = 0
         self._ingestion_counter = 0
         self._run_counter = 0
+
+    def _restore(self) -> None:
+        payload = load_state(self.state_path)
+        if payload is None:
+            return
+        try:
+            if payload.get("schema") != "stage4-local-state-v1":
+                raise ValueError("Stage 4 state schema mismatch.")
+            self.projects = {
+                str(row["project_id"]): ProjectRecord(**row)
+                for row in payload.get("projects", [])
+                if isinstance(row, dict) and "project_id" in row
+            }
+            self.documents = {
+                str(row["document_id"]): DocumentRecord(**row)
+                for row in payload.get("documents", [])
+                if isinstance(row, dict) and "document_id" in row
+            }
+            self.ingestion_runs = {
+                str(row["ingestion_run_id"]): IngestionRunRecord(**row)
+                for row in payload.get("ingestionRuns", [])
+                if isinstance(row, dict) and "ingestion_run_id" in row
+            }
+            self.rag_store = InMemoryRagStore.from_dict(cast(dict[str, Any], payload.get("ragStore", {})))
+            self.walkthrough_runs = {
+                str(row["run_id"]): walkthrough_run_from_dict(row)
+                for row in payload.get("walkthroughRuns", [])
+                if isinstance(row, dict) and "run_id" in row
+            }
+            self.idempotency_records = {}
+            for row in payload.get("idempotencyRecords", []):
+                if not isinstance(row, dict):
+                    continue
+                if row.get("status") == "PENDING":
+                    continue
+                try:
+                    record = idempotency_record_from_dict(row, self)
+                except (KeyError, TypeError, ValueError) as exc:
+                    LOGGER.warning("Skipping incompatible Stage 4 idempotency record at %s: %s", self.state_path, exc)
+                    continue
+                key = (
+                    record.tenant_id,
+                    record.actor_id,
+                    record.idempotency_scope,
+                    record.endpoint,
+                    record.idempotency_key,
+                )
+                self.idempotency_records[key] = record
+            counters = payload.get("counters", {})
+            project_counter = max_numeric_suffix(self.projects, "proj_")
+            document_counter = max_numeric_suffix(self.documents, "doc_")
+            ingestion_counter = max_numeric_suffix(self.ingestion_runs, "ing_")
+            run_counter = max_numeric_suffix(self.walkthrough_runs, "run_")
+            if isinstance(counters, dict):
+                self._project_counter = max(int(counters.get("project", project_counter)), project_counter)
+                self._document_counter = max(int(counters.get("document", document_counter)), document_counter)
+                self._ingestion_counter = max(int(counters.get("ingestion", ingestion_counter)), ingestion_counter)
+                self._run_counter = max(int(counters.get("run", run_counter)), run_counter)
+            else:
+                self._project_counter = project_counter
+                self._document_counter = document_counter
+                self._ingestion_counter = ingestion_counter
+                self._run_counter = run_counter
+        except (KeyError, TypeError, ValueError) as exc:
+            LOGGER.warning("Ignoring incompatible Stage 4 local state snapshot at %s: %s", self.state_path, exc)
+            self._clear_runtime_state()
+
+    def _runtime_snapshot_locked(self) -> dict[str, Any]:
+        return {
+            "ragStore": self.rag_store.to_dict(),
+            "projects": deepcopy(self.projects),
+            "documents": deepcopy(self.documents),
+            "ingestionRuns": deepcopy(self.ingestion_runs),
+            "walkthroughRuns": deepcopy(self.walkthrough_runs),
+            "idempotencyRecords": self.idempotency_records.copy(),
+            "activeIngestions": deepcopy(self._active_ingestions),
+            "activeGenerations": deepcopy(self._active_generations),
+            "counters": {
+                "project": self._project_counter,
+                "document": self._document_counter,
+                "ingestion": self._ingestion_counter,
+                "run": self._run_counter,
+            },
+        }
+
+    def _restore_runtime_snapshot_locked(self, snapshot: dict[str, Any]) -> None:
+        self.rag_store = InMemoryRagStore.from_dict(snapshot["ragStore"])
+        self.projects = deepcopy(snapshot["projects"])
+        self.documents = deepcopy(snapshot["documents"])
+        self.ingestion_runs = deepcopy(snapshot["ingestionRuns"])
+        self.walkthrough_runs = deepcopy(snapshot["walkthroughRuns"])
+        self.idempotency_records = snapshot["idempotencyRecords"].copy()
+        self._active_ingestions = deepcopy(snapshot["activeIngestions"])
+        self._active_generations = deepcopy(snapshot["activeGenerations"])
+        counters = snapshot["counters"]
+        self._project_counter = int(counters["project"])
+        self._document_counter = int(counters["document"])
+        self._ingestion_counter = int(counters["ingestion"])
+        self._run_counter = int(counters["run"])
+
+    def _persist_locked(self) -> None:
+        write_state(
+            self.state_path,
+            {
+                "schema": "stage4-local-state-v1",
+                "projects": [asdict(project) for project in self.projects.values()],
+                "documents": [asdict(document) for document in self.documents.values()],
+                "ingestionRuns": [asdict(run) for run in self.ingestion_runs.values()],
+                "walkthroughRuns": [
+                    walkthrough_run_to_dict(run) for run in self.walkthrough_runs.values()
+                ],
+                "idempotencyRecords": [
+                    idempotency_record_to_dict(record) for record in self.idempotency_records.values()
+                    if record.status != "PENDING"
+                ],
+                "ragStore": self.rag_store.to_dict(),
+                "counters": {
+                    "project": self._project_counter,
+                    "document": self._document_counter,
+                    "ingestion": self._ingestion_counter,
+                    "run": self._run_counter,
+                },
+            },
+        )
 
     def create_project(
         self,
@@ -896,23 +1034,36 @@ class Stage4Service:
                 created_at=now,
                 updated_at=now,
             )
+            snapshot = self._runtime_snapshot_locked()
             self.idempotency_records[record_key] = pending
         try:
-            value = create()
+            with self._operation_lock:
+                value = create()
         except Stage4Error as exc:
             with self._operation_lock:
                 pending.status = "FAILED"
                 pending.value = exc
                 pending.updated_at = _now()
+                try:
+                    self._persist_locked()
+                except OSError:
+                    self._restore_runtime_snapshot_locked(snapshot)
+                    raise exc
             raise
         except Exception:
             with self._operation_lock:
-                self.idempotency_records.pop(record_key, None)
+                self._restore_runtime_snapshot_locked(snapshot)
+                self._persist_locked()
             raise
         with self._operation_lock:
             pending.status = "COMPLETED"
             pending.value = value
             pending.updated_at = _now()
+            try:
+                self._persist_locked()
+            except OSError:
+                self._restore_runtime_snapshot_locked(snapshot)
+                raise
         return value
 
     def _project_count_for_tenant(self, *, principal: LocalPrincipal) -> int:
@@ -970,6 +1121,210 @@ class Stage4Service:
         finally:
             with self._operation_lock:
                 active.remove(lock_key)
+
+
+def walkthrough_run_to_dict(run: WalkthroughRunRecord) -> dict[str, Any]:
+    return {
+        **asdict(run),
+        "generated_script": asdict(run.generated_script) if run.generated_script is not None else None,
+        "retrieved_context": [retrieved_context_to_dict(context) for context in run.retrieved_context],
+        "evaluation": asdict(run.evaluation) if run.evaluation is not None else None,
+    }
+
+
+def walkthrough_run_from_dict(row: dict[str, Any]) -> WalkthroughRunRecord:
+    payload = dict(row)
+    generated_script = payload.pop("generated_script", None)
+    retrieved_context = payload.pop("retrieved_context", [])
+    evaluation = payload.pop("evaluation", None)
+    return WalkthroughRunRecord(
+        **payload,
+        generated_script=generated_script_from_dict(generated_script) if isinstance(generated_script, dict) else None,
+        retrieved_context=[
+            retrieved_context_from_dict(context)
+            for context in retrieved_context
+            if isinstance(context, dict)
+        ],
+        evaluation=evaluation_from_dict(evaluation) if isinstance(evaluation, dict) else None,
+    )
+
+
+def retrieved_context_to_dict(context: RetrievedContext) -> dict[str, Any]:
+    return {"context_ref_id": context.context_ref_id, "chunk": knowledge_chunk_to_dict(context.chunk), "score": context.score}
+
+
+def retrieved_context_from_dict(row: dict[str, Any]) -> RetrievedContext:
+    return RetrievedContext(
+        context_ref_id=str(row["context_ref_id"]),
+        chunk=knowledge_chunk_from_dict(cast(dict[str, Any], row["chunk"])),
+        score=float(row["score"]),
+    )
+
+
+def knowledge_chunk_to_dict(chunk: KnowledgeChunk) -> dict[str, Any]:
+    return asdict(chunk)
+
+
+def knowledge_chunk_from_dict(row: dict[str, Any]) -> KnowledgeChunk:
+    return KnowledgeChunk(
+        chunk_id=str(row["chunk_id"]),
+        tenant_id=str(row["tenant_id"]),
+        project_id=str(row["project_id"]),
+        document_id=str(row["document_id"]),
+        source_filename=str(row["source_filename"]),
+        source_document_checksum=str(row["source_document_checksum"]),
+        approved_at=str(row["approved_at"]),
+        chunk_index=int(row["chunk_index"]),
+        text=str(row["text"]),
+        token_count=int(row["token_count"]),
+        checksum=str(row["checksum"]),
+        heading_path=[str(part) for part in row.get("heading_path", [])],
+        line_start=int(row["line_start"]),
+        line_end=int(row["line_end"]),
+        embedding=tuple(float(value) for value in row.get("embedding", ())),
+    )
+
+
+def generated_script_from_dict(row: dict[str, Any]) -> GeneratedScript:
+    return GeneratedScript(
+        text=str(row["text"]),
+        claims=[
+            ScriptClaim(
+                claim_id=str(claim["claim_id"]),
+                text=str(claim["text"]),
+                citation_index=int(claim["citation_index"]),
+                chunk_id=str(claim["chunk_id"]) if claim.get("chunk_id") is not None else None,
+                script_span_start=int(claim["script_span_start"]),
+                script_span_end=int(claim["script_span_end"]),
+            )
+            for claim in row.get("claims", [])
+            if isinstance(claim, dict)
+        ],
+    )
+
+
+def evaluation_from_dict(row: dict[str, Any]) -> EvaluationResult:
+    return EvaluationResult(
+        evaluation_id=str(row["evaluation_id"]),
+        run_id=str(row["run_id"]),
+        tenant_id=str(row["tenant_id"]),
+        project_id=str(row["project_id"]),
+        evaluation_status=cast(Literal["PASSED", "FAILED"], row["evaluation_status"]),
+        groundedness_score=float(row["groundedness_score"]),
+        faithfulness_score=float(row["faithfulness_score"]),
+        answer_relevancy=float(row["answer_relevancy"]),
+        context_precision=float(row["context_precision"]),
+        context_recall=float(row["context_recall"]),
+        unsupported_claim_count=int(row["unsupported_claim_count"]),
+        unsupported_claims=[
+            UnsupportedClaim(
+                claim_id=str(claim["claim_id"]),
+                claim_text=str(claim["claim_text"]),
+                reason=str(claim["reason"]),
+            )
+            for claim in row.get("unsupported_claims", [])
+            if isinstance(claim, dict)
+        ],
+        claim_supports=[
+            ClaimSupport(
+                claim_support_id=str(support["claim_support_id"]),
+                claim_id=str(support["claim_id"]),
+                context_ref_id=str(support["context_ref_id"]),
+                chunk_id=str(support["chunk_id"]),
+                document_id=str(support["document_id"]),
+                support_status="SUPPORTED",
+                support_score=float(support["support_score"]),
+                support_reason=str(support["support_reason"]),
+                citation_index=int(support["citation_index"]),
+            )
+            for support in row.get("claim_supports", [])
+            if isinstance(support, dict)
+        ],
+        context_ref_coverage=float(row["context_ref_coverage"]),
+        policy_version=str(row["policy_version"]),
+        schema_version=str(row["schema_version"]),
+        safety_policy_version=str(row["safety_policy_version"]),
+    )
+
+
+def idempotency_record_to_dict(record: IdempotencyRecord) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "idempotency_record_id": record.idempotency_record_id,
+        "tenant_id": record.tenant_id,
+        "actor_id": record.actor_id,
+        "idempotency_scope": record.idempotency_scope,
+        "endpoint": record.endpoint,
+        "idempotency_key": record.idempotency_key,
+        "request_checksum": record.request_checksum,
+        "status": record.status,
+        "created_at": record.created_at,
+        "updated_at": record.updated_at,
+    }
+    value = record.value
+    if isinstance(value, Stage4Error):
+        row["value"] = {"kind": "error", "status_code": value.status_code, "code": value.code, "message": value.message}
+    elif isinstance(value, ProjectRecord):
+        row["value"] = {"kind": "project", "id": value.project_id}
+    elif isinstance(value, DocumentRecord):
+        row["value"] = {"kind": "document", "id": value.document_id}
+    elif isinstance(value, IngestionRunRecord):
+        row["value"] = {"kind": "ingestion", "id": value.ingestion_run_id}
+    elif isinstance(value, WalkthroughRunRecord):
+        row["value"] = {"kind": "walkthrough", "id": value.run_id}
+    else:
+        row["value"] = {"kind": "none"}
+    return row
+
+
+def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) -> IdempotencyRecord:
+    value_ref = row.get("value", {})
+    value: Any = None
+    if isinstance(value_ref, dict):
+        kind = value_ref.get("kind")
+        identifier = str(value_ref.get("id", ""))
+        if kind == "error":
+            value = Stage4Error(
+                int(value_ref.get("status_code", 500)),
+                str(value_ref.get("code", "INTERNAL_SERVER_ERROR")),
+                str(value_ref.get("message", "Request failed.")),
+            )
+        elif kind == "project":
+            value = service.projects.get(identifier)
+        elif kind == "document":
+            value = service.documents.get(identifier)
+        elif kind == "ingestion":
+            value = service.ingestion_runs.get(identifier)
+        elif kind == "walkthrough":
+            value = service.walkthrough_runs.get(identifier)
+    status = str(row["status"])
+    if status not in {"PENDING", "COMPLETED", "FAILED"}:
+        raise ValueError(f"Unsupported Stage 4 idempotency status: {status}")
+    if status == "COMPLETED" and value is None:
+        raise ValueError("Completed Stage 4 idempotency record references missing value.")
+    return IdempotencyRecord(
+        idempotency_record_id=str(row["idempotency_record_id"]),
+        tenant_id=str(row["tenant_id"]),
+        actor_id=str(row["actor_id"]),
+        idempotency_scope=str(row["idempotency_scope"]),
+        endpoint=str(row["endpoint"]),
+        idempotency_key=str(row["idempotency_key"]),
+        request_checksum=str(row["request_checksum"]),
+        status=cast(Literal["PENDING", "COMPLETED", "FAILED"], status),
+        value=value,
+        created_at=str(row["created_at"]),
+        updated_at=str(row["updated_at"]),
+    )
+
+
+def max_numeric_suffix(records: Mapping[str, object], prefix: str) -> int:
+    maximum = 0
+    for identifier in records:
+        if identifier.startswith(prefix):
+            try:
+                maximum = max(maximum, int(identifier.removeprefix(prefix)))
+            except ValueError:
+                continue
+    return maximum
 
 
 def sanitize_filename(filename: str) -> str:
@@ -1242,4 +1597,4 @@ def _context_ref_to_api(context: RetrievedContext, run: WalkthroughRunRecord) ->
     }
 
 
-stage4_service = Stage4Service()
+stage4_service = Stage4Service(state_path=resolve_state_file("stage4"))

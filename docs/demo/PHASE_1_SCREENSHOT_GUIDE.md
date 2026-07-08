@@ -26,7 +26,8 @@ Then verify `http://localhost:8000/api/v1/healthz`,
 ## Caption Rules
 
 - State "local mock-provider demo" in the screenshot caption.
-- State "single-process, process-local, non-durable" where saved output is shown.
+- State "single-process, local-only, optional JSON restart snapshots, no
+  multi-worker or production durability" where saved output is shown.
 - Do not caption screenshots as production-ready.
 - Do not imply real video export, cloned identity, external avatar provider use,
   or public synthetic-media distribution.

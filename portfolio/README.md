@@ -12,8 +12,9 @@ NarraTwin AI is a local-first AI avatar walkthrough platform. The current portfo
 Important limits for the current demo:
 
 - single-process runtime state
-- process-local project, run, idempotency, and artifact metadata
-- non-durable storage for demo outputs
+- process-local project, run, idempotency, and artifact metadata by default
+- optional single-node JSON restart snapshots when explicitly configured
+- no multi-worker or production-durable storage for demo outputs
 - mock/local providers only
 - no production or multi-worker readiness claim
 - no real video export, cloned identity, external avatar provider, or public synthetic-media distribution claim

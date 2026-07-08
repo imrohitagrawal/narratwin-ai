@@ -59,6 +59,24 @@ cp .env.example .env
 
 Do not commit `.env` or real provider keys.
 
+Optional local durable state can be enabled by setting `NARRATWIN_STATE_DIR` in
+`.env`, for example:
+
+```bash
+NARRATWIN_STATE_DIR=./outputs/state
+```
+
+When set, Stage 4 project/document/run/RAG state, Stage 6 multilingual
+idempotency replay state, and Stage 7 avatar render/idempotency/artifact metadata
+are written as local JSON snapshots. Leave it blank for process-local test
+isolation.
+
+Treat these snapshots as sensitive local data. They can include uploaded
+document text, retrieved chunks/context, generated scripts, evaluation details,
+translations/subtitles, avatar artifact payloads, base64 content, and metadata.
+Keep the directory ignored, do not commit it, and delete it when a local review
+session no longer needs restart replay evidence.
+
 ## Local quality commands
 
 Preferred command:
@@ -134,8 +152,13 @@ npm --prefix frontend run dev
 docker compose up --build
 ```
 
-Only `/healthz`, `/readyz`, `/api/v1/healthz`, and `/api/v1/readyz` are
-implemented in the backend during Stage 3.
+Health, readiness, and operational posture endpoints are:
+
+- `/healthz`
+- `/readyz`
+- `/api/v1/healthz`
+- `/api/v1/readyz`
+- `/api/v1/ops/status`
 
 ## Codex workflow
 

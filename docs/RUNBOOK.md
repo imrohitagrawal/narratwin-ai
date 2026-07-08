@@ -34,6 +34,7 @@ recorded through PR `#53`.
    docker compose up --build
    curl http://localhost:8000/api/v1/healthz
    curl http://localhost:8000/api/v1/readyz
+   curl http://localhost:8000/api/v1/ops/status
    ```
 
 6. If Lighthouse fails, inspect `reports/lighthouse/stage8-lighthouse.json` and
@@ -46,6 +47,9 @@ recorded through PR `#53`.
 
 - Health: `GET /api/v1/healthz` must return stage `8` and stay under 200 ms locally.
 - Readiness: `GET /api/v1/readyz` must return a timestamp and security headers.
+- Ops status: `GET /api/v1/ops/status` must report Stage 4/6/7 durable-state
+  enablement, bounded record counts, and local monitoring flags without exposing
+  user content or secrets.
 - Generation: mocked grounded script generation must stay under 2 sec locally.
 - Uploads: accepted files remain markdown/text only, UTF-8 only, size limited, and secret/prompt-injection screened.
 - Rate limiting: excessive local write requests return `RATE_LIMIT_EXCEEDED`.
@@ -77,9 +81,16 @@ Rollback owner: the release reviewer for the active PR. Expected local/demo roll
 Production launch remains blocked until Phase 1 or a later reviewed release phase
 defines dashboard locations, alert thresholds, paging/ownership, first-hour watch
 procedure, and rollback communication channels for a real deployment environment.
+The local `/api/v1/ops/status` endpoint is evidence for local posture visibility;
+it is not a production dashboard or paging substitute.
 
 ## Deployment Limits
 
-Stage 8 does not approve multi-worker production; multi-worker deployment blocked is the release marker until durable persistence is implemented. Process-local idempotency, multilingual artifact replay, avatar render jobs, and avatar artifact metadata remain single-process only.
+Stage 8 does not approve multi-worker production. Optional file-backed JSON
+state now provides local restart recovery for Stage 4 project/document/run/RAG
+state, Stage 6 idempotency replay, and Stage 7 render/idempotency/artifact
+metadata when `NARRATWIN_STATE_DIR` is configured. It is single-node only and
+does not provide ACID/CAS multi-writer semantics, database migrations, locking
+across workers, or production backup/restore guarantees.
 
 Avatar export remains source-run based avatar export for the local/mock demo path. Real timed media, multilingual/subtitle-bound avatar rendering, external provider export, and public synthetic-media distribution remain blocked until a future reviewed release phase implements durable consent/provenance, provider/license posture, and production monitoring.
