@@ -801,6 +801,77 @@ def test_stage4_file_state_ingest_embedding_failure_rolls_back_partial_chunks(tm
     assert restored.documents[document.document_id].ingestion_status == "INGESTED"
 
 
+def test_stage4_file_state_multidoc_embedding_failure_rolls_back_partial_ingestion(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(
+        principal=principal,
+        name="Multi-document embedding failure project",
+        idempotency_key="create-project",
+    )
+    first_document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="first.md",
+        content_type="text/markdown",
+        data=b"# First document\n\nFirst document content for ingestion.",
+        idempotency_key="upload-first-document",
+    )
+    second_document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="second.md",
+        content_type="text/markdown",
+        data=b"# Second document\n\nSecond document content for ingestion.",
+        idempotency_key="upload-second-document",
+    )
+    for document, key in (
+        (first_document, "approve-first-document"),
+        (second_document, "approve-second-document"),
+    ):
+        service.approve_document(
+            principal=principal,
+            project_id=project.project_id,
+            document_id=document.document_id,
+            idempotency_key=key,
+        )
+    service.embedder = cast(Any, FailingAfterFirstEmbeddingProvider())
+
+    with pytest.raises(RuntimeError, match="simulated embedding failure"):
+        service.ingest_documents(
+            principal=principal,
+            project_id=project.project_id,
+            document_ids=[first_document.document_id, second_document.document_id],
+            idempotency_key="ingest-documents",
+        )
+
+    assert service.rag_store.chunk_count_for_project(
+        tenant_id=principal.tenant_id,
+        project_id=project.project_id,
+    ) == 0
+    assert service.documents[first_document.document_id].ingestion_status == "NOT_STARTED"
+    assert service.documents[second_document.document_id].ingestion_status == "NOT_STARTED"
+    assert service.ingestion_runs == {}
+    assert all(record.idempotency_key != "ingest-documents" for record in service.idempotency_records.values())
+
+    restored = Stage4Service(state_path=state_path)
+    assert restored.rag_store.chunk_count_for_project(
+        tenant_id=principal.tenant_id,
+        project_id=project.project_id,
+    ) == 0
+    retried = restored.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[first_document.document_id, second_document.document_id],
+        idempotency_key="ingest-documents",
+    )
+
+    assert retried.ingestion_run_id == "ing_000001"
+    assert restored.documents[first_document.document_id].ingestion_status == "INGESTED"
+    assert restored.documents[second_document.document_id].ingestion_status == "INGESTED"
+
+
 def test_stage4_file_state_public_rollback_preserves_concurrent_success(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

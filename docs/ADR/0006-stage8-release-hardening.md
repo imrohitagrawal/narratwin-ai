@@ -157,18 +157,19 @@ Decision:
 - Stale-low counters must be derived from restored IDs, and failed-operation
   rollback must remain operation-scoped so it does not erase later successful
   operations.
-- Stage 4 RAG chunk insertion must stage embedding/provider work before
-  mutating the in-memory chunk indexes, so an unexpected local embedding
-  failure cannot leave partial orphan chunks behind the failed idempotent
-  operation.
+- Stage 4 RAG chunk insertion must stage embedding/provider work for all
+  prepared documents before mutating the in-memory chunk indexes or marking
+  documents ingested, so an unexpected local embedding failure cannot leave
+  partial orphan chunks behind the failed idempotent ingestion operation.
 
 Consequences:
 
 - Local restart-recovery evidence becomes stricter about restored graph and
   artifact consistency.
-- Stage 4 local ingestion rollback now has direct evidence for all-or-nothing
-  chunk insertion on unexpected local embedding failure while preserving
-  operation-scoped rollback for concurrent successful writes.
+- Stage 4 local ingestion rollback now has direct single-document and
+  multi-document evidence for all-or-nothing chunk insertion on unexpected
+  local embedding failure while preserving operation-scoped rollback for
+  concurrent successful writes.
 - Corrupt local snapshot rows may be pruned in memory and re-written on the
   next successful persist; this is still not a migration, backup, repair, or
   production recovery system.

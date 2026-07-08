@@ -803,9 +803,9 @@ class Stage4Service:
             pending_chunk_count += len(chunks)
             prepared_documents.append((document, chunks))
 
-        stored_chunks: list[KnowledgeChunk] = []
-        for document, chunks in prepared_documents:
-            stored_chunks.extend(self.rag_store.add_chunks(chunks, self.embedder))
+        all_chunks = [chunk for _document, chunks in prepared_documents for chunk in chunks]
+        stored_chunks = self.rag_store.add_chunks(all_chunks, self.embedder)
+        for document, _chunks in prepared_documents:
             document.ingestion_status = "INGESTED"
             document.ingested_at = _now()
         self._ingestion_counter += 1
