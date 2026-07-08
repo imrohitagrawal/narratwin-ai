@@ -485,11 +485,14 @@ does not replace `make ci` and does not execute the Phase 1 golden questions
 through the RAG pipeline until a later eval-runner PR wires that dataset into
 `make eval`. Live branch-protection drift is verified remotely by the required
 `policy-gates` workflow step `scripts/ci/verify_branch_protection.py`, which
-queries GitHub branch and branch-protection APIs for `main` and fails if
-`protected: true`, strict required status checks, exact required contexts,
-`enforcement_level: everyone`, GitHub Actions app bindings, required PR review,
-administrator enforcement, blocked force pushes, blocked deletions, or required
-conversation resolution drift.
+queries GitHub's branch summary API for `main` and fails if `protected: true`,
+strict required status checks, exact required contexts, `enforcement_level:
+everyone`, or GitHub Actions app bindings drift. When the workflow token can
+read GitHub's protected-branch detail endpoint, the verifier also checks
+required PR review, administrator enforcement, blocked force pushes, blocked
+deletions, and required conversation resolution. When GitHub returns a
+permission boundary for that detail endpoint, those detail settings remain an
+explicit human-only review surface.
 
 The repository guardrail also checks PR body content on pull-request events:
 generic PRs must use reference-only issue linkage such as `Refs #<issue>` and

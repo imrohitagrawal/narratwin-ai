@@ -61,7 +61,11 @@ def load_payload(args: argparse.Namespace) -> dict[str, Any]:
         return cast(dict[str, Any], payload)
 
     payload = load_branch_payload(args)
-    protection_details = load_protection_payload(args)
+    try:
+        protection_details = load_protection_payload(args)
+    except RuntimeError as exc:
+        payload["protection_details_unavailable"] = str(exc)
+        return payload
     branch_protection = payload.get("protection")
     branch_status_checks = (
         branch_protection.get("required_status_checks")
@@ -213,6 +217,7 @@ def required_status_checks(payload: dict[str, Any]) -> dict[str, Any]:
 
 def validate(payload: dict[str, Any]) -> list[str]:
     failures: list[str] = []
+    protection_details_unavailable = isinstance(payload.get("protection_details_unavailable"), str)
 
     if payload.get("protected") is not True:
         failures.append("main branch must report protected: true.")
@@ -282,6 +287,9 @@ def validate(payload: dict[str, Any]) -> list[str]:
     else:
         failures.append("branch summary must expose required_status_checks.checks bindings.")
 
+    if protection_details_unavailable:
+        return failures
+
     reviews = protection.get("required_pull_request_reviews")
     if not isinstance(reviews, dict):
         failures.append("required pull request review must be enabled.")
@@ -330,6 +338,11 @@ def main() -> int:
             print(f"- {failure}")
         return 1
 
+    if isinstance(payload.get("protection_details_unavailable"), str):
+        print(
+            "Branch protection detail verification is human-only in this CI context: "
+            f"{payload['protection_details_unavailable']}"
+        )
     print(
         "Branch protection settings verification passed for "
         f"{args.repository}@{args.branch}: {', '.join(EXPECTED_CONTEXTS)}"

@@ -72,6 +72,19 @@ def test_branch_protection_verifier_rejects_context_only_payload() -> None:
     assert "conversation resolution must be required." in failures
 
 
+def test_branch_protection_verifier_treats_permission_limited_details_as_human_only() -> None:
+    payload = protected_payload(protection_details_unavailable="HTTP 403 Resource not accessible")
+    protection = payload["protection"]
+    assert isinstance(protection, dict)
+    protection.pop("required_pull_request_reviews")
+    protection.pop("enforce_admins")
+    protection.pop("allow_force_pushes")
+    protection.pop("allow_deletions")
+    protection.pop("required_conversation_resolution")
+
+    assert verify_branch_protection.validate(payload) == []
+
+
 def test_branch_protection_verifier_rejects_non_strict_status_checks() -> None:
     payload = protected_payload()
     protection = payload["protection"]
