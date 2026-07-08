@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from typing import Any
 
@@ -37,6 +38,22 @@ class InMemoryRagStore:
             for chunk_id in sorted(self._chunks_by_project.get((tenant_id, project_id), set()))
             if (tenant_id, project_id, chunk_id) in self._chunks
         ]
+
+    def prune_to_documents(self, *, valid_project_ids: set[str], valid_document_ids: set[str]) -> None:
+        self.prune(
+            lambda chunk: chunk.project_id in valid_project_ids and chunk.document_id in valid_document_ids
+        )
+
+    def prune(self, predicate: Callable[[KnowledgeChunk], bool]) -> None:
+        for chunk_key, chunk in list(self._chunks.items()):
+            if not predicate(chunk):
+                self._chunks.pop(chunk_key, None)
+        self._chunks_by_project.clear()
+        for tenant_id, project_id, chunk_id in self._chunks:
+            self._chunks_by_project.setdefault((tenant_id, project_id), set()).add(chunk_id)
+
+    def has_chunk(self, *, tenant_id: str, project_id: str, chunk_id: str) -> bool:
+        return (tenant_id, project_id, chunk_id) in self._chunks
 
     def chunk_count_for_project(self, *, tenant_id: str, project_id: str) -> int:
         return len(self._chunks_by_project.get((tenant_id, project_id), set()))

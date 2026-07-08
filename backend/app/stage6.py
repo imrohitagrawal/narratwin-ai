@@ -640,6 +640,8 @@ def stage6_idempotency_record_from_dict(row: dict[str, Any]) -> Stage6Idempotenc
         raise ValueError(f"Unsupported Stage 6 idempotency status: {status}")
     if status == "COMPLETED" and value is None:
         raise ValueError("Completed Stage 6 idempotency record references missing value.")
+    if status == "FAILED" and not isinstance(value, Stage6Error):
+        raise ValueError("Failed Stage 6 idempotency record references missing error.")
     return Stage6IdempotencyRecord(
         idempotency_scope=str(row["idempotency_scope"]),
         endpoint=str(row["endpoint"]),
@@ -701,6 +703,39 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
             expected_extension=".json",
         )
     )
+    translated_script_artifact = downloadable_artifact_from_dict(
+        cast(dict[str, Any], artifacts["translated_script"]),
+        expected_mime_type="text/markdown",
+        expected_extension=".md",
+    )
+    subtitles_artifact = downloadable_artifact_from_dict(
+        cast(dict[str, Any], artifacts["subtitles"]),
+        expected_mime_type="application/x-subrip",
+        expected_extension=".srt",
+    )
+    translated_script_text = str(row["translated_script_text"])
+    subtitles_text = str(row["subtitles_text"])
+    provider_translated_text = str(translation_provider["translated_text"])
+    if translated_script_text != provider_translated_text:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 translated text is inconsistent.")
+    if artifact_text(translated_script_artifact) != translated_script_text:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 script artifact is inconsistent.")
+    if artifact_text(subtitles_artifact) != subtitles_text:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 subtitle artifact is inconsistent.")
+    if subtitles_text != generate_subtitles(script_text=translated_script_text, language=target_language):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 subtitles are inconsistent.")
+    voice_manifest = json.loads(artifact_text(voice_artifact))
+    if (
+        normalize_language_tag(str(translation_provider["source_language"])) != source_language
+        or normalize_language_tag(str(translation_provider["target_language"])) != target_language
+        or normalize_language_tag(str(voice["language"])) != target_language
+        or str(voice_manifest["textChecksum"]) != checksum_text(translated_script_text)
+        or normalize_language_tag(str(voice_manifest["language"])) != target_language
+        or str(voice_manifest["provider"]) != voice_provider_id
+        or validate_local_provider_mode(str(voice_manifest["providerMode"]), field_name="voice manifest provider mode")
+        != voice_provider_mode
+    ):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 voice manifest is inconsistent.")
     return MultilingualWalkthroughResult(
         multilingual_run_id=str(row["multilingual_run_id"]),
         source_run_id=str(row["source_run_id"]),
@@ -708,8 +743,8 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         target_language=target_language,
         status=status,
         source_script_text=str(row["source_script_text"]),
-        translated_script_text=str(row["translated_script_text"]),
-        subtitles_text=str(row["subtitles_text"]),
+        translated_script_text=translated_script_text,
+        subtitles_text=subtitles_text,
         glossary_terms=[str(term) for term in row.get("glossary_terms", [])],
         preserved_terms=[str(term) for term in row.get("preserved_terms", [])],
         translation_provider=TranslationProviderResult(
@@ -717,7 +752,7 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
             provider_mode=translation_provider_mode,
             source_language=normalize_language_tag(str(translation_provider["source_language"])),
             target_language=normalize_language_tag(str(translation_provider["target_language"])),
-            translated_text=str(translation_provider["translated_text"]),
+            translated_text=provider_translated_text,
             preserved_terms=[str(term) for term in translation_provider.get("preserved_terms", [])],
         ),
         voice=VoiceProviderResult(
@@ -729,22 +764,21 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
             artifact=voice_artifact,
         ),
         artifacts=MultilingualArtifacts(
-            translated_script=downloadable_artifact_from_dict(
-                cast(dict[str, Any], artifacts["translated_script"]),
-                expected_mime_type="text/markdown",
-                expected_extension=".md",
-            ),
-            subtitles=downloadable_artifact_from_dict(
-                cast(dict[str, Any], artifacts["subtitles"]),
-                expected_mime_type="application/x-subrip",
-                expected_extension=".srt",
-            ),
+            translated_script=translated_script_artifact,
+            subtitles=subtitles_artifact,
             voice_manifest=voice_artifact,
         ),
         trace_id=str(row["trace_id"]),
         source_context_ref_count=int(row["source_context_ref_count"]),
         source_citation_count=int(row["source_citation_count"]),
     )
+
+
+def artifact_text(artifact: DownloadableArtifact) -> str:
+    try:
+        return base64.b64decode(artifact.content_base64, validate=True).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError) as exc:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Downloadable artifact content is invalid.") from exc
 
 
 def downloadable_artifact_from_dict(

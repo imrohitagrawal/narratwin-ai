@@ -8,6 +8,7 @@ import pytest
 import backend.app.stage4 as stage4_module
 import backend.app.stage6 as stage6_module
 import backend.app.stage7 as stage7_module
+from backend.app.rag.chunking import checksum_text
 from backend.app.storage import write_state as storage_write_state
 from backend.app.stage4 import LocalPrincipal, Stage4Error, Stage4Service
 from backend.app.stage6 import create_stage6_service
@@ -29,7 +30,7 @@ def test_stage4_file_state_restores_projects_chunks_runs_and_idempotency(tmp_pat
         project_id=project.project_id,
         source_filename="project.md",
         content_type="text/markdown",
-        data=b"NarraTwin AI creates grounded walkthrough scripts for recruiters.",
+        data=Path("tests/fixtures/stage4_project.md").read_bytes(),
         idempotency_key="upload-document",
     )
     service.approve_document(
@@ -314,6 +315,330 @@ def test_stage4_file_state_drops_completed_idempotency_with_missing_value(tmp_pa
     assert len(restored.projects) == 1
 
 
+def test_stage4_file_state_drops_failed_idempotency_with_missing_error(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    request_checksum = checksum_text("Recovered project\n\nRECRUITER\nen")
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "stage4-local-state-v1",
+                "projects": [],
+                "documents": [],
+                "ingestionRuns": [],
+                "walkthroughRuns": [],
+                "ragStore": {},
+                "idempotencyRecords": [
+                    {
+                        "idempotency_record_id": "idem_bad_failed",
+                        "tenant_id": principal.tenant_id,
+                        "actor_id": principal.actor_id,
+                        "idempotency_scope": "project:create",
+                        "endpoint": "POST /api/v1/projects",
+                        "idempotency_key": "bad-failed",
+                        "request_checksum": request_checksum,
+                        "status": "FAILED",
+                        "value": {"kind": "none"},
+                        "created_at": "2026-07-08T00:00:00+00:00",
+                        "updated_at": "2026-07-08T00:00:00+00:00",
+                    }
+                ],
+                "counters": {"project": 0, "document": 0, "ingestion": 0, "run": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = Stage4Service(state_path=state_path)
+    project = restored.create_project(
+        principal=principal,
+        name="Recovered project",
+        idempotency_key="bad-failed",
+    )
+
+    assert project.project_id == "proj_000001"
+    assert len(restored.idempotency_records) == 1
+
+
+def test_stage4_file_state_drops_documents_for_missing_project(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "stage4-local-state-v1",
+                "projects": [],
+                "documents": [
+                    {
+                        "document_id": "doc_000001",
+                        "tenant_id": principal.tenant_id,
+                        "owner_id": principal.actor_id,
+                        "project_id": "proj_missing",
+                        "source_filename": "orphan.md",
+                        "content_type": "text/markdown",
+                        "size_bytes": 6,
+                        "checksum": "abc123",
+                        "text": "orphan",
+                        "document_status": "STORED",
+                        "approval_status": "PENDING",
+                        "ingestion_status": "NOT_STARTED",
+                        "created_at": "2026-07-08T00:00:00+00:00",
+                        "approved_at": None,
+                        "ingested_at": None,
+                    }
+                ],
+                "ingestionRuns": [],
+                "walkthroughRuns": [],
+                "ragStore": {},
+                "idempotencyRecords": [],
+                "counters": {"project": 0, "document": 1, "ingestion": 0, "run": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = Stage4Service(state_path=state_path)
+
+    assert restored.projects == {}
+    assert restored.documents == {}
+
+
+def test_stage4_file_state_prunes_tampered_rag_chunks(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(
+        principal=principal,
+        name="Grounded project",
+        idempotency_key="create-project",
+    )
+    document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="project.md",
+        content_type="text/markdown",
+        data=b"NarraTwin creates grounded walkthrough scripts for recruiters.",
+        idempotency_key="upload-document",
+    )
+    service.approve_document(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        idempotency_key="approve-document",
+    )
+    service.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ingest-document",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    injected_text = "Injected content that was never uploaded."
+    payload["ragStore"]["chunks"][0]["text"] = injected_text
+    payload["ragStore"]["chunks"][0]["tokenCount"] = len(injected_text.split())
+    payload["ragStore"]["chunks"][0]["checksum"] = checksum_text(injected_text)
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = Stage4Service(state_path=state_path)
+
+    assert restored.rag_store.chunk_count_for_project(
+        tenant_id=principal.tenant_id,
+        project_id=project.project_id,
+    ) == 0
+
+
+def test_stage4_file_state_drops_walkthrough_runs_with_missing_restored_chunks(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(
+        principal=principal,
+        name="Grounded project",
+        idempotency_key="create-project",
+    )
+    document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="project.md",
+        content_type="text/markdown",
+        data=Path("tests/fixtures/stage4_project.md").read_bytes(),
+        idempotency_key="upload-document",
+    )
+    service.approve_document(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        idempotency_key="approve-document",
+    )
+    service.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ingest-document",
+    )
+    run = service.generate_walkthrough(
+        principal=principal,
+        project_id=project.project_id,
+        audience="RECRUITER",
+        requested_language="en",
+        depth="CONCISE",
+        style="CONFIDENT",
+        prompt="Create a concise grounded walkthrough for a recruiter.",
+        idempotency_key="generate-walkthrough",
+    )
+    assert run.status == "COMPLETED"
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["ragStore"]["chunks"] = []
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = Stage4Service(state_path=state_path)
+
+    assert run.run_id == "run_000001"
+    assert restored.walkthrough_runs == {}
+    assert all(
+        not (record.endpoint.endswith("/walkthrough-runs") and record.idempotency_key == "generate-walkthrough")
+        for record in restored.idempotency_records.values()
+    )
+
+
+def test_stage4_file_state_drops_ingestion_runs_with_missing_restored_chunks(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(
+        principal=principal,
+        name="Grounded project",
+        idempotency_key="create-project",
+    )
+    document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="project.md",
+        content_type="text/markdown",
+        data=Path("tests/fixtures/stage4_project.md").read_bytes(),
+        idempotency_key="upload-document",
+    )
+    service.approve_document(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        idempotency_key="approve-document",
+    )
+    original = service.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ingest-document",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["ragStore"]["chunks"] = []
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = Stage4Service(state_path=state_path)
+    replayed = restored.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ingest-document",
+    )
+
+    assert original.ingestion_run_id == "ing_000001"
+    assert replayed.ingestion_run_id == "ing_000002"
+    assert restored.documents[document.document_id].ingestion_status == "INGESTED"
+
+
+def test_stage4_file_state_drops_completed_walkthrough_without_evaluation(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(principal=principal, name="Grounded project", idempotency_key="create-project")
+    document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="project.md",
+        content_type="text/markdown",
+        data=Path("tests/fixtures/stage4_project.md").read_bytes(),
+        idempotency_key="upload-document",
+    )
+    service.approve_document(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        idempotency_key="approve-document",
+    )
+    service.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ingest-document",
+    )
+    run = service.generate_walkthrough(
+        principal=principal,
+        project_id=project.project_id,
+        audience="RECRUITER",
+        requested_language="en",
+        depth="CONCISE",
+        style="CONFIDENT",
+        prompt="Create a concise grounded walkthrough for a recruiter.",
+        idempotency_key="generate-walkthrough",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["walkthroughRuns"][0]["evaluation"] = None
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = Stage4Service(state_path=state_path)
+
+    assert run.status == "COMPLETED"
+    assert restored.walkthrough_runs == {}
+
+
+def test_stage4_file_state_drops_walkthrough_with_tampered_evaluation_support(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(principal=principal, name="Grounded project", idempotency_key="create-project")
+    document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="project.md",
+        content_type="text/markdown",
+        data=Path("tests/fixtures/stage4_project.md").read_bytes(),
+        idempotency_key="upload-document",
+    )
+    service.approve_document(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        idempotency_key="approve-document",
+    )
+    service.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ingest-document",
+    )
+    run = service.generate_walkthrough(
+        principal=principal,
+        project_id=project.project_id,
+        audience="RECRUITER",
+        requested_language="en",
+        depth="CONCISE",
+        style="CONFIDENT",
+        prompt="Create a concise grounded walkthrough for a recruiter.",
+        idempotency_key="generate-walkthrough",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    support = payload["walkthroughRuns"][0]["evaluation"]["claim_supports"][0]
+    support["claim_id"] = "claim_missing"
+    support["context_ref_id"] = "ctx_missing"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = Stage4Service(state_path=state_path)
+
+    assert run.status == "COMPLETED"
+    assert restored.walkthrough_runs == {}
+
+
 def test_stage4_file_state_derives_missing_counters_from_restored_ids(tmp_path: Path) -> None:
     state_path = tmp_path / "stage4.json"
     principal = LocalPrincipal()
@@ -325,6 +650,31 @@ def test_stage4_file_state_derives_missing_counters_from_restored_ids(tmp_path: 
     )
     payload = json.loads(state_path.read_text(encoding="utf-8"))
     payload.pop("counters")
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = Stage4Service(state_path=state_path)
+    second = restored.create_project(
+        principal=principal,
+        name="Second project",
+        idempotency_key="second-project",
+    )
+
+    assert first.project_id == "proj_000001"
+    assert second.project_id == "proj_000002"
+    assert sorted(restored.projects) == ["proj_000001", "proj_000002"]
+
+
+def test_stage4_file_state_derives_stale_low_counters_from_restored_ids(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    first = service.create_project(
+        principal=principal,
+        name="First project",
+        idempotency_key="first-project",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["counters"]["project"] = 0
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
     restored = Stage4Service(state_path=state_path)
@@ -369,6 +719,35 @@ def test_stage4_file_state_write_failure_rolls_back_in_memory_completion(
     )
 
     assert retried.project_id == "proj_000001"
+
+
+def test_stage4_file_state_failed_operation_rollback_preserves_later_success(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    snapshot = service._runtime_snapshot_locked()
+    slow_project = service.create_project(
+        principal=principal,
+        name="Slow failed project",
+        idempotency_key="slow-project",
+    )
+    fast_project = service.create_project(
+        principal=principal,
+        name="Fast committed project",
+        idempotency_key="fast-project",
+    )
+    slow_key = (
+        principal.tenant_id,
+        principal.actor_id,
+        "project:create",
+        "POST /api/v1/projects",
+        "slow-project",
+    )
+
+    service._restore_failed_operation_locked(snapshot, record_key=slow_key, value=slow_project)
+
+    assert sorted(service.projects) == [fast_project.project_id]
+    assert sorted(record.idempotency_key for record in service.idempotency_records.values()) == ["fast-project"]
 
 
 def test_stage6_file_state_replays_completed_multilingual_idempotency(tmp_path: Path) -> None:
@@ -498,6 +877,74 @@ def test_stage6_file_state_drops_tampered_nonlocal_provider_result(tmp_path: Pat
     restored = create_stage6_service(state_path=state_path)
 
     assert restored.idempotency_records == {}
+
+
+def test_stage6_file_state_drops_inconsistent_restored_artifact_payload(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        source_context_ref_count=1,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    result = payload["idempotencyRecords"][0]["value"]["result"]
+    result["translated_script_text"] = "tampered restored field without citation"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.idempotency_records == {}
+
+
+def test_stage6_file_state_drops_failed_idempotency_with_missing_error(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    request_checksum = checksum_text(
+        json.dumps(
+            {
+                "sourceScript": "NarraTwin AI creates grounded walkthrough scripts. [1]",
+                "sourceLanguage": "en",
+                "targetLanguage": "es",
+                "requestedVoiceProvider": "mock",
+                "glossaryTerms": [],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    )
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "stage6-local-state-v1",
+                "idempotencyRecords": [
+                    {
+                        "idempotency_scope": "tenant:user:project:run",
+                        "endpoint": "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+                        "idempotency_key": "bad-failed",
+                        "request_checksum": request_checksum,
+                        "status": "FAILED",
+                        "value": {"kind": "none"},
+                    }
+                ],
+                "counters": {"run": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = create_stage6_service(state_path=state_path)
+    result = restored.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        source_context_ref_count=1,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="bad-failed",
+    )
+
+    assert result.multilingual_run_id == "mlrun_000001"
+    assert len(restored.idempotency_records) == 1
 
 
 def test_stage7_file_state_replays_completed_avatar_idempotency(tmp_path: Path) -> None:
@@ -752,6 +1199,130 @@ def test_stage7_file_state_drops_completed_idempotency_with_missing_value(tmp_pa
     assert len(restored.avatar_renders) == 1
 
 
+def test_stage7_file_state_drops_artifact_metadata_for_missing_render(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "stage7-local-state-v1",
+                "avatarRenders": [],
+                "artifactMetadata": [
+                    {
+                        "avatar_render_id": "avrun_missing",
+                        "metadata": [
+                            {
+                                "file_name": "demo.html",
+                                "mime_type": "text/html",
+                                "checksum": "abc123",
+                            }
+                        ],
+                    }
+                ],
+                "idempotencyRecords": [],
+                "counters": {"run": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert restored.avatar_renders == {}
+    assert restored.artifact_metadata == {}
+
+
+def test_stage7_file_state_drops_artifact_metadata_that_mismatches_render(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    result = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_metadata",
+        trace_id="trace_metadata",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_metadata",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_metadata",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["artifactMetadata"][0]["metadata"][0]["checksum"] = "sha256:tampered"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert result.avatar_render_id == "avrun_000001"
+    assert restored.avatar_renders[result.avatar_render_id].avatar_render_id == result.avatar_render_id
+    assert restored.artifact_metadata == {}
+
+
+def test_stage7_file_state_drops_failed_idempotency_with_missing_error(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    request_checksum = stage7_module.build_avatar_render_request_checksum(
+        source_text="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        cloned_identity_requested=False,
+        consent_to_use_synthetic_avatar=True,
+        source_run_id="run_failed",
+        trace_id="trace_failed",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_failed",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_failed",
+        source_evaluation_checksum=None,
+        evaluation_status="PASSED",
+    )
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "stage7-local-state-v1",
+                "avatarRenders": [],
+                "artifactMetadata": [],
+                "idempotencyRecords": [
+                    {
+                        "idempotency_scope": "tenant:user:project:run",
+                        "endpoint": "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders",
+                        "idempotency_key": "bad-failed",
+                        "request_checksum": request_checksum,
+                        "status": "FAILED",
+                        "error_status_code": None,
+                        "error_code": None,
+                        "error_message": None,
+                        "value": {"kind": "none"},
+                    }
+                ],
+                "counters": {"run": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+    result = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_failed",
+        trace_id="trace_failed",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_failed",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_failed",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="bad-failed",
+    )
+
+    assert result.avatar_render_id == "avrun_000001"
+    assert len(restored.idempotency_records) == 1
+
+
 def test_stage7_file_state_derives_missing_counters_from_restored_ids(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
@@ -772,6 +1343,50 @@ def test_stage7_file_state_derives_missing_counters_from_restored_ids(tmp_path: 
     )
     payload = json.loads(state_path.read_text(encoding="utf-8"))
     payload.pop("counters")
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+    second = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_second",
+        trace_id="trace_second",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_second",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_second",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render-second",
+    )
+
+    assert first.avatar_render_id == "avrun_000001"
+    assert second.avatar_render_id == "avrun_000002"
+    assert sorted(restored.avatar_renders) == ["avrun_000001", "avrun_000002"]
+
+
+def test_stage7_file_state_derives_stale_low_counters_from_restored_ids(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    first = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_first",
+        trace_id="trace_first",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_first",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_first",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render-first",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["counters"]["run"] = 0
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
     restored = create_stage7_service(state_path=state_path)

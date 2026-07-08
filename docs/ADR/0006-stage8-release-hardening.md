@@ -132,6 +132,43 @@ Consequences:
 - Production go-live remains No-Go until a reviewed release phase adds
   production-grade durable metadata and deployment monitoring.
 
+## Phase 1 Closure Addendum For Issue #55
+
+Date: 2026-07-09
+
+Issue `#55` is a follow-up triage issue for additional local restore-invariant
+hardening discovered after PR `#54` merged. It remains under the issue `#39`
+local-durability evidence scope and does not change the production No-Go
+decision.
+
+Decision:
+
+- Stage 4 restore may prune RAG chunks whose restored payload no longer matches
+  the owning document text and metadata, and may drop restored document,
+  ingestion, walkthrough, evaluation, claim-support, and idempotency rows whose
+  relationship graph no longer has the evidence needed to justify terminal
+  state.
+- Stage 6 restore may drop multilingual idempotency records whose restored
+  derivative text, provider payload, artifacts, language tags, citations,
+  glossary terms, or checksums no longer agree.
+- Stage 7 restore may drop artifact metadata and terminal idempotency records
+  that no longer match restored render artifacts, checksums, or serialized
+  terminal error details.
+- Stale-low counters must be derived from restored IDs, and failed-operation
+  rollback must remain operation-scoped so it does not erase later successful
+  operations.
+
+Consequences:
+
+- Local restart-recovery evidence becomes stricter about restored graph and
+  artifact consistency.
+- Corrupt local snapshot rows may be pruned in memory and re-written on the
+  next successful persist; this is still not a migration, backup, repair, or
+  production recovery system.
+- Production go-live remains No-Go until ACID/CAS durable metadata,
+  cross-worker locking, migrations, backup/restore, production idempotency,
+  dashboards/alerts, first-hour watch, and rollback communications are reviewed.
+
 ## Related Documents
 
 - `docs/QUALITY_GATES.md`
