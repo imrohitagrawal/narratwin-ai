@@ -85,6 +85,30 @@ def test_branch_protection_verifier_treats_permission_limited_details_as_human_o
     assert verify_branch_protection.validate(payload) == []
 
 
+def test_branch_protection_verifier_skips_missing_strict_when_detail_endpoint_is_unavailable() -> None:
+    payload = protected_payload(protection_details_unavailable="HTTP 403 Resource not accessible")
+    protection = payload["protection"]
+    assert isinstance(protection, dict)
+    status_checks = protection["required_status_checks"]
+    assert isinstance(status_checks, dict)
+    status_checks.pop("strict")
+
+    assert verify_branch_protection.validate(payload) == []
+
+
+def test_branch_protection_verifier_rejects_explicit_non_strict_even_when_details_unavailable() -> None:
+    payload = protected_payload(protection_details_unavailable="HTTP 403 Resource not accessible")
+    protection = payload["protection"]
+    assert isinstance(protection, dict)
+    status_checks = protection["required_status_checks"]
+    assert isinstance(status_checks, dict)
+    status_checks["strict"] = False
+
+    failures = verify_branch_protection.validate(payload)
+
+    assert "required status checks must require branches to be up to date." in failures
+
+
 def test_branch_protection_verifier_rejects_non_strict_status_checks() -> None:
     payload = protected_payload()
     protection = payload["protection"]

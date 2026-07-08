@@ -237,7 +237,10 @@ def validate(payload: dict[str, Any]) -> list[str]:
             "required status checks must enforce for everyone; "
             f"got {status_checks.get('enforcement_level')!r}."
         )
-    if status_checks.get("strict") is not True:
+    if (
+        status_checks.get("strict") is not True
+        and not (protection_details_unavailable and "strict" not in status_checks)
+    ):
         failures.append("required status checks must require branches to be up to date.")
 
     raw_contexts = status_checks.get("contexts")
