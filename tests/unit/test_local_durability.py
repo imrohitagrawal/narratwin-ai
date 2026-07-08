@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import threading
+from typing import Any, cast
 
 import pytest
 
@@ -13,6 +14,23 @@ from backend.app.storage import write_state as storage_write_state
 from backend.app.stage4 import LocalPrincipal, Stage4Error, Stage4Service
 from backend.app.stage6 import create_stage6_service
 from backend.app.stage7 import create_stage7_service
+
+
+class FailingAfterFirstEmbeddingProvider:
+    provider = "mock"
+    model = "mock-embedding"
+    model_version = "stage4-local-v1"
+    dimension = 16
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def embed(self, text: str) -> tuple[float, ...]:
+        del text
+        self.calls += 1
+        if self.calls > 1:
+            raise RuntimeError("simulated embedding failure")
+        return (1.0,) + (0.0,) * (self.dimension - 1)
 
 
 def test_stage4_file_state_restores_projects_chunks_runs_and_idempotency(tmp_path: Path) -> None:
@@ -719,6 +737,136 @@ def test_stage4_file_state_write_failure_rolls_back_in_memory_completion(
     )
 
     assert retried.project_id == "proj_000001"
+
+
+def test_stage4_file_state_ingest_embedding_failure_rolls_back_partial_chunks(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(
+        principal=principal,
+        name="Embedding failure project",
+        idempotency_key="create-project",
+    )
+    document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="project.md",
+        content_type="text/markdown",
+        data=(
+            "# Embedding failure project\n"
+            + " ".join(f"alpha-{index}" for index in range(900))
+            + "\n\n"
+            + " ".join(f"beta-{index}" for index in range(900))
+        ).encode(),
+        idempotency_key="upload-document",
+    )
+    service.approve_document(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        idempotency_key="approve-document",
+    )
+    service.embedder = cast(Any, FailingAfterFirstEmbeddingProvider())
+
+    with pytest.raises(RuntimeError, match="simulated embedding failure"):
+        service.ingest_documents(
+            principal=principal,
+            project_id=project.project_id,
+            document_ids=[document.document_id],
+            idempotency_key="ingest-document",
+        )
+
+    assert service.rag_store.chunk_count_for_project(
+        tenant_id=principal.tenant_id,
+        project_id=project.project_id,
+    ) == 0
+    assert service.documents[document.document_id].ingestion_status == "NOT_STARTED"
+    assert service.ingestion_runs == {}
+    assert all(record.idempotency_key != "ingest-document" for record in service.idempotency_records.values())
+
+    restored = Stage4Service(state_path=state_path)
+    assert restored.rag_store.chunk_count_for_project(
+        tenant_id=principal.tenant_id,
+        project_id=project.project_id,
+    ) == 0
+    retried = restored.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ingest-document",
+    )
+
+    assert retried.ingestion_run_id == "ing_000001"
+    assert restored.documents[document.document_id].ingestion_status == "INGESTED"
+
+
+def test_stage4_file_state_public_rollback_preserves_concurrent_success(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+
+    class GateLock:
+        def __init__(self) -> None:
+            self._lock = threading.RLock()
+            self._attempts: dict[str, int] = {}
+            self.slow_ready = threading.Event()
+            self.allow_slow = threading.Event()
+
+        def __enter__(self) -> "GateLock":
+            name = threading.current_thread().name
+            attempt = self._attempts.get(name, 0)
+            self._attempts[name] = attempt + 1
+            if name == "slow" and attempt == 1:
+                self.slow_ready.set()
+                assert self.allow_slow.wait(timeout=5)
+            self._lock.acquire()
+            return self
+
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            self._lock.release()
+
+    gate = GateLock()
+    service._operation_lock = cast(Any, gate)
+
+    def fail_slow_terminal_write(path: Path, payload: object) -> None:
+        assert isinstance(payload, dict)
+        if any(row.get("name") == "Slow failed project" for row in payload.get("projects", [])):
+            raise OSError("simulated slow terminal write failure")
+        storage_write_state(path, payload)
+
+    def create_slow_project() -> str:
+        threading.current_thread().name = "slow"
+        project = service.create_project(
+            principal=principal,
+            name="Slow failed project",
+            idempotency_key="slow-project",
+        )
+        return project.project_id
+
+    monkeypatch.setattr(stage4_module, "write_state", fail_slow_terminal_write)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        slow = executor.submit(create_slow_project)
+        assert gate.slow_ready.wait(timeout=5)
+        fast = executor.submit(
+            service.create_project,
+            principal=principal,
+            name="Fast committed project",
+            idempotency_key="fast-project",
+        )
+        fast_project = fast.result(timeout=5)
+        gate.allow_slow.set()
+        with pytest.raises(OSError, match="simulated slow terminal write failure"):
+            slow.result(timeout=5)
+
+    assert sorted(service.projects) == [fast_project.project_id]
+    assert sorted(record.idempotency_key for record in service.idempotency_records.values()) == ["fast-project"]
+    assert [row["name"] for row in json.loads(state_path.read_text(encoding="utf-8"))["projects"]] == [
+        "Fast committed project"
+    ]
 
 
 def test_stage4_file_state_failed_operation_rollback_preserves_later_success(tmp_path: Path) -> None:

@@ -20,12 +20,15 @@ class InMemoryRagStore:
         self._chunks_by_project.clear()
 
     def add_chunks(self, chunks: list[KnowledgeChunk], embedder: EmbeddingProvider) -> list[KnowledgeChunk]:
-        stored: list[KnowledgeChunk] = []
+        prepared: list[tuple[tuple[str, str, str], KnowledgeChunk]] = []
         for chunk in chunks:
             chunk_key = (chunk.tenant_id, chunk.project_id, chunk.chunk_id)
             if chunk_key in self._chunks:
                 continue
             chunk_with_embedding = replace(chunk, embedding=embedder.embed(chunk.text))
+            prepared.append((chunk_key, chunk_with_embedding))
+        stored: list[KnowledgeChunk] = []
+        for chunk_key, chunk_with_embedding in prepared:
             self._chunks[chunk_key] = chunk_with_embedding
             key = (chunk_with_embedding.tenant_id, chunk_with_embedding.project_id)
             self._chunks_by_project.setdefault(key, set()).add(chunk_with_embedding.chunk_id)
