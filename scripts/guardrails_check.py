@@ -214,6 +214,29 @@ REQUIRED_PREIMPLEMENTATION_ROWS = {
     "source facts",
     "human-only surfaces, if any",
 }
+REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS = {
+    "DUR-ACID-001",
+    "DUR-IDEMP-001",
+    "DUR-STAGE4-001",
+    "DUR-LEASE-001",
+    "DUR-OUTBOX-001",
+    "DUR-STAGE6-001",
+    "DUR-STAGE7-001",
+    "DUR-MIG-001",
+    "DUR-ROLLBACK-001",
+    "DUR-RESTORE-001",
+    "OPS-METRICS-001",
+    "OPS-ALERT-001",
+    "OPS-WATCH-001",
+    "OPS-ROLLBACK-001",
+    "MEDIA-CONSENT-001",
+    "MEDIA-REVOKE-001",
+    "MEDIA-PROVENANCE-001",
+    "MEDIA-DISCLOSURE-001",
+    "PROVIDER-POSTURE-001",
+    "SEC-RETENTION-001",
+    "GOV-SCOPE-001",
+}
 REQUIRED_PR_VALIDATION_COMMANDS = (
     "uv run pytest tests/unit/test_guardrails_check.py",
     "uv run pytest tests/unit/test_phase1_closure_docs.py",
@@ -330,15 +353,56 @@ def closing_issue_numbers(text: str) -> set[str]:
 
 def issue_39_closure_matrix_all_closed() -> bool:
     matrix_path = ROOT / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
-    rows = markdown_table_rows(read_text(matrix_path), "Master Evidence Matrix")
-    matrix_rows: list[list[str]] = []
+    plan_text = read_text(matrix_path)
+    matrix_rows = issue_39_matrix_rows_by_id(plan_text)
+    if matrix_rows is None:
+        return False
+    matrix_ids = set(matrix_rows)
+    if not REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS.issubset(matrix_ids):
+        return False
+    if not all(row[5].strip().lower() == "closed" for row in matrix_rows.values()):
+        return False
+    closure_records = issue_39_closure_record_ids(plan_text)
+    return matrix_ids.issubset(closure_records)
+
+
+def issue_39_matrix_rows_by_id(plan_text: str) -> dict[str, list[str]] | None:
+    rows = markdown_table_rows(plan_text, "Master Evidence Matrix")
+    matrix_rows: dict[str, list[str]] = {}
     for cells in rows:
         if len(cells) < 6:
-            continue
+            return None
         row_id = cells[0].strip("` ")
-        if re.fullmatch(r"[A-Z]+(?:-[A-Z]+)*-\d+", row_id):
-            matrix_rows.append(cells)
-    return bool(matrix_rows) and all(row[5].strip().lower() == "closed" for row in matrix_rows)
+        if row_id.lower() == "id":
+            continue
+        if not re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+", row_id):
+            return None
+        if row_id in matrix_rows:
+            return None
+        matrix_rows[row_id] = cells
+    return matrix_rows or None
+
+
+def issue_39_closure_record_ids(plan_text: str) -> set[str]:
+    record_ids: set[str] = set()
+    for cells in markdown_table_rows(plan_text, "Row Closure Records"):
+        if len(cells) < 9:
+            continue
+        row_id, child_issue_pr, artifact, evidence, owner, reviewer, residual, timestamp, reason = cells[:9]
+        row_id = row_id.strip("` ")
+        if row_id.lower() == "matrix id":
+            continue
+        required = (row_id, child_issue_pr, artifact, evidence, owner, reviewer, residual, timestamp, reason)
+        if any(is_placeholder_value(value) for value in required):
+            continue
+        if not re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+", row_id):
+            continue
+        if not re.search(r"#\d+", child_issue_pr) or not re.search(r"PR\s*#\d+", child_issue_pr, flags=re.I):
+            continue
+        if not preflight_artifact_exists(artifact):
+            continue
+        record_ids.add(row_id)
+    return record_ids
 
 
 def issue_link_pattern(issue_number: str = r"\d+") -> str:

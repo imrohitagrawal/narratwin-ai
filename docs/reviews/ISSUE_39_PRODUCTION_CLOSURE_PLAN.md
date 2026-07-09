@@ -82,9 +82,9 @@ record, and residual-risk decision.
 | `OPS-ALERT-001` | Dashboards and alerts | Severity routing, alert ownership, and paging runbook | SRE/Ops | Dashboard + alert matrix with tested routing, evidence loop, and acknowledgment rules | Open |
 | `OPS-WATCH-001` | First-hour watch with follow-up checkpoints | Triage cadence and owner communication for the first 60 minutes, plus explicit 120/180-minute follow-up checkpoints | Release/Operations | Active watch log template, handoff rules, timeout actions, rollback escalation threshold | Open |
 | `OPS-ROLLBACK-001` | Rollback communications | Pre/post rollback comms and ownership confirmation | Release/Operations | Freeze-window criteria, comms template, and required evidence captures | Open |
-| `MEDIA-CONSENT-001` | Consent capture | Affirmative consent record for synthetic-media generation | Security/Privacy | Consent schema with actor, timestamp, artifact refs, source-run binding, scope, and audit retention | Open |
+| `MEDIA-CONSENT-001` | Consent capture | Affirmative consent record for synthetic-media generation | Security/Privacy | Consent schema with actor, timestamp, consent text/version, artifact refs, source-run binding, scope, and audit retention | Open |
 | `MEDIA-REVOKE-001` | Consent revocation behavior | Revocation, takedown, retention, and already-published artifact handling | Security/Privacy + Release | Revocation decision table covering retain, block replay, takedown, and customer/user communication paths | Open |
-| `MEDIA-PROVENANCE-001` | Provenance binding | Durable source-run, prompt, provider, artifact checksum, and disclosure lineage | Security/Privacy + Media | Provenance schema and replay proof linking rendered artifacts to source run and consent record | Open |
+| `MEDIA-PROVENANCE-001` | Provenance binding | Durable source-run, prompt, provider, artifact checksum, cloned-identity denial provenance, and disclosure lineage | Security/Privacy + Media | Provenance schema and replay proof linking rendered artifacts to source run, consent record, and identity/likeness denial checks | Open |
 | `MEDIA-DISCLOSURE-001` | Synthetic-media disclosure | Durable disclosure text/version binding for exports and public-use posture | Security/Privacy + Release | Disclosure versioning record and validation that artifacts carry the expected disclosure state | Open |
 | `PROVIDER-POSTURE-001` | Provider release posture | External provider legal, license, network, egress, key, and rollout controls | Security/Privacy + Platform | Provider release checklist with legal/license review, key isolation, network egress policy, and rollback criteria | Open |
 | `SEC-RETENTION-001` | Sensitive metadata retention/redaction | PII/provenance/consent data in PostgreSQL, backups, logs, metrics, and restored environments | Security/Privacy + Ops | Data-class table with encryption, redaction, retention, access-control, and restore-disclosure requirements | Open |
@@ -126,6 +126,14 @@ change to `Closed`. The record must include:
 - residual-risk decision,
 - timestamp or merge commit,
 - explicit reason the evidence satisfies the row.
+
+Future final-disposition PRs must fill this table. Context 0 intentionally
+leaves it empty because all matrix rows are `Open`.
+
+## Row Closure Records
+
+| Matrix ID | Child issue / PR | Artifact reference | Validation or human evidence | Owner | Reviewer | Residual-risk decision | Timestamp / merge commit | Satisfies row because |
+|---|---|---|---|---|---|---|---|---|
 
 The repository guardrail checks PR title, body, and commit messages for issue
 `#39` closing keywords. A final disposition PR can use those keywords only after

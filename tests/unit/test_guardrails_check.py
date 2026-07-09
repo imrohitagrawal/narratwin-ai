@@ -22,6 +22,50 @@ ISSUE_39_REFERENCE_ONLY_FAILURE = "Issue #39 pull requests must use reference-on
 PREFLIGHT_FAILURE = "Non-trivial pull requests must include completed preflight evidence rows."
 
 
+def write_issue39_closure_plan(
+    root: Path,
+    *,
+    omitted_ids: set[str] | None = None,
+    include_records: bool = True,
+) -> None:
+    omitted = omitted_ids or set()
+    plan_path = root / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+    evidence_path = root / "docs/reviews/evidence.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    evidence_path.write_text("closure evidence\n", encoding="utf-8")
+    matrix_rows = []
+    record_rows = []
+    for matrix_id in sorted(guardrails.REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS - omitted):
+        matrix_rows.append(
+            f"| `{matrix_id}` | Requirement | Evidence target | Owner | Minimum evidence contract | Closed |"
+        )
+        record_rows.append(
+            f"| `{matrix_id}` | #39 / PR #64 | `docs/reviews/evidence.md` | human-only evidence passed | owner | reviewer | accepted | merge commit abc1234 | evidence satisfies row |"
+        )
+    records = "\n".join(record_rows) if include_records else ""
+    plan_path.write_text(
+        "\n".join(
+            [
+                "# Issue #39 Production Closure Plan (Context 0)",
+                "",
+                "## Master Evidence Matrix",
+                "",
+                "| ID | Requirement | Evidence target | Owner | Minimum evidence contract | Status |",
+                "|---|---|---|---|---|---|",
+                *matrix_rows,
+                "",
+                "## Row Closure Records",
+                "",
+                "| Matrix ID | Child issue / PR | Artifact reference | Validation or human evidence | Owner | Reviewer | Residual-risk decision | Timestamp / merge commit | Satisfies row because |",
+                "|---|---|---|---|---|---|---|---|---|",
+                records,
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
 def run_issue_link_check(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -171,7 +215,8 @@ def test_phase1_issue39_pull_request_allows_closing_keyword_only_after_matrix_cl
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(guardrails, "issue_39_closure_matrix_all_closed", lambda: True)
+    write_issue39_closure_plan(tmp_path)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
     failures = run_issue_link_check(
         tmp_path,
         monkeypatch,
@@ -182,6 +227,40 @@ def test_phase1_issue39_pull_request_allows_closing_keyword_only_after_matrix_cl
 
     assert ISSUE_39_REFERENCE_ONLY_FAILURE not in failures
     assert "Pull request title/body/commit messages must use reference-only issue wording." not in failures
+
+
+def test_phase1_issue39_pull_request_rejects_closing_keyword_when_matrix_id_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, omitted_ids={"DUR-STAGE4-001"})
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_closing_keyword_without_closure_records(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, include_records=False)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
 
 
 def test_phase1_issue39_pull_request_rejects_colon_closing_keyword_in_body(
