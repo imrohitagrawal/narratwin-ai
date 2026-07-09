@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-08
+- Last reviewed date: 2026-07-09
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only. No Phase 2 feature
   work, external provider enablement, production release tag, or public
@@ -185,7 +185,7 @@ Use these files together with this tracker:
 | `#44` | Open | Phase 1 P2 | Track telemetry, CSP, log-envelope, and stale risk-register hardening. |
 | `#48` | Open | Pre-production/P2 hardening | Track scoped project-lookup hardening before production auth, durable storage, or stronger authorization-proof claims; created from PR `#47` independent API integrity review. It does not block local/mock Phase 1 demo review while production remains No-Go. |
 | `#49` | Open | Pre-production/P2 hardening | Bound local idempotency records across simulated actors before local-demo durability, multi-worker, or production-readiness claims; created from PR `#47` independent performance/security review. It does not block local/mock Phase 1 demo review while production and multi-worker release remain No-Go. |
-| `#55` | Open | Phase 1 #39 follow-up | Tracks triage of preserved local durability restore-invariant work after PR `#54`, including Stage 4 graph/chunk/evaluation consistency, all-or-nothing local RAG chunk insertion across one or more prepared documents on embedding failure, Stage 6 derived artifact consistency, Stage 7 artifact metadata consistency, failed-idempotency drops, stale-low counters, and operation-scoped rollback. It must not close `#39` or claim production durability. |
+| `#55` | Open | Phase 1 #39 follow-up | Tracks triage of preserved local durability restore-invariant work after PR `#54`, including Stage 4 graph/chunk/evaluation consistency, all-or-nothing local RAG chunk insertion across one or more prepared documents on embedding failure, terminal local snapshot write failure cleanup for failed-ingestion chunks, Stage 6 derived artifact consistency, Stage 7 artifact metadata consistency, failed-idempotency drops, stale-low counters, and operation-scoped rollback. It must not close `#39` or claim production durability. |
 
 ### Additional Backlog And Governance Issues
 
@@ -457,5 +457,5 @@ Required update rules:
 | 2026-07-09 | PR `#54` branch-protection verifier follow-up preserves live required-context drift checks while treating protected-branch detail fields as human-only when GitHub returns `Resource not accessible by integration` to the CI workflow token. |
 | 2026-07-09 | PR `#54` guardrail follow-up marked the placeholder-host `0.0.0.0` string as a Bandit `B104` false positive because it is rejected input data, not a runtime bind address. |
 | 2026-07-09 | Issue `#55` started to triage preserved post-PR `#54` local durability restore-invariant work on a fresh `phase-1-closure-39-*` branch, with a pre-implementation matrix recorded in the issue before applying the runtime stash. |
-| 2026-07-09 | PR `#56` blind-review follow-up staged Stage 4 local RAG chunk embeddings before mutating the in-memory store, staged all prepared ingestion chunks before marking documents ingested, and added public rollback regressions for single-document embedding failure cleanup, multi-document embedding failure cleanup, and concurrent-success preservation; issue `#39` remains open and production durability remains No-Go. |
+| 2026-07-09 | PR `#56` blind-review follow-up staged Stage 4 local RAG chunk embeddings before mutating the in-memory store, staged all prepared ingestion chunks before marking documents ingested, pruned failed-ingestion chunks after terminal local snapshot write failures without restoring the whole RAG store, and added public rollback regressions for single-document embedding failure cleanup, multi-document embedding failure cleanup, terminal-persist failed-ingestion chunk cleanup, concurrent ingestion chunk preservation, and concurrent-success preservation; issue `#39` remains open and production durability remains No-Go. |
 | 2026-07-09 | PR `#56` governance-learning follow-up added a proactive next-step closeout practice to the new-project engineering playbook so agents state current state, recommended next action, alternatives, agent-owned next work, and human-owned gates before the owner has to ask. |

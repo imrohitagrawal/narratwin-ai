@@ -357,6 +357,20 @@ class Stage4Service:
             else:
                 self.documents.pop(value.document_id, None)
         elif isinstance(value, IngestionRunRecord):
+            prior_rag_store = InMemoryRagStore.from_dict(snapshot["ragStore"])
+            failed_document_ids = set(value.document_ids)
+            self.rag_store.prune(
+                lambda chunk: not (
+                    chunk.tenant_id == value.tenant_id
+                    and chunk.project_id == value.project_id
+                    and chunk.document_id in failed_document_ids
+                    and not prior_rag_store.has_chunk(
+                        tenant_id=chunk.tenant_id,
+                        project_id=chunk.project_id,
+                        chunk_id=chunk.chunk_id,
+                    )
+                )
+            )
             self.ingestion_runs.pop(value.ingestion_run_id, None)
             for document_id in value.document_ids:
                 if document_id in snapshot["documents"]:

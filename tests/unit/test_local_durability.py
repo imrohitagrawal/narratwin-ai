@@ -739,6 +739,68 @@ def test_stage4_file_state_write_failure_rolls_back_in_memory_completion(
     assert retried.project_id == "proj_000001"
 
 
+def test_stage4_file_state_ingest_write_failure_removes_failed_chunks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(
+        principal=principal,
+        name="Ingest terminal write failure project",
+        idempotency_key="create-project",
+    )
+    document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="project.md",
+        content_type="text/markdown",
+        data=b"# Project\n\nContent that should be removed from the live RAG store when persist fails.",
+        idempotency_key="upload-document",
+    )
+    service.approve_document(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        idempotency_key="approve-document",
+    )
+
+    def fail_ingestion_terminal_write(path: Path, payload: object) -> None:
+        assert isinstance(payload, dict)
+        if payload.get("ingestionRuns"):
+            raise OSError("simulated ingestion terminal write failure")
+        storage_write_state(path, payload)
+
+    monkeypatch.setattr(stage4_module, "write_state", fail_ingestion_terminal_write)
+    with pytest.raises(OSError, match="simulated ingestion terminal write failure"):
+        service.ingest_documents(
+            principal=principal,
+            project_id=project.project_id,
+            document_ids=[document.document_id],
+            idempotency_key="ingest-document",
+        )
+
+    assert service.rag_store.chunk_count_for_project(
+        tenant_id=principal.tenant_id,
+        project_id=project.project_id,
+    ) == 0
+    assert service.documents[document.document_id].ingestion_status == "NOT_STARTED"
+    assert service.ingestion_runs == {}
+    assert all(record.idempotency_key != "ingest-document" for record in service.idempotency_records.values())
+
+    monkeypatch.setattr(stage4_module, "write_state", storage_write_state)
+    retried = service.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ingest-document",
+    )
+
+    assert retried.ingestion_run_id == "ing_000001"
+    assert service.documents[document.document_id].ingestion_status == "INGESTED"
+
+
 def test_stage4_file_state_ingest_embedding_failure_rolls_back_partial_chunks(tmp_path: Path) -> None:
     state_path = tmp_path / "stage4.json"
     principal = LocalPrincipal()
@@ -937,6 +999,127 @@ def test_stage4_file_state_public_rollback_preserves_concurrent_success(
     assert sorted(record.idempotency_key for record in service.idempotency_records.values()) == ["fast-project"]
     assert [row["name"] for row in json.loads(state_path.read_text(encoding="utf-8"))["projects"]] == [
         "Fast committed project"
+    ]
+
+
+def test_stage4_file_state_ingest_write_failure_preserves_concurrent_chunks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    slow_project = service.create_project(
+        principal=principal,
+        name="Slow ingest write failure project",
+        idempotency_key="slow-create-project",
+    )
+    slow_document = service.upload_document(
+        principal=principal,
+        project_id=slow_project.project_id,
+        source_filename="slow.md",
+        content_type="text/markdown",
+        data=b"# Slow\n\nSlow document content.",
+        idempotency_key="slow-upload-document",
+    )
+    fast_project = service.create_project(
+        principal=principal,
+        name="Fast ingest committed project",
+        idempotency_key="fast-create-project",
+    )
+    fast_document = service.upload_document(
+        principal=principal,
+        project_id=fast_project.project_id,
+        source_filename="fast.md",
+        content_type="text/markdown",
+        data=b"# Fast\n\nFast document content.",
+        idempotency_key="fast-upload-document",
+    )
+    for project, document, key in (
+        (slow_project, slow_document, "slow-approve-document"),
+        (fast_project, fast_document, "fast-approve-document"),
+    ):
+        service.approve_document(
+            principal=principal,
+            project_id=project.project_id,
+            document_id=document.document_id,
+            idempotency_key=key,
+        )
+
+    class GateLock:
+        def __init__(self) -> None:
+            self._lock = threading.RLock()
+            self._attempts: dict[str, int] = {}
+            self.slow_ready = threading.Event()
+            self.allow_slow = threading.Event()
+
+        def __enter__(self) -> "GateLock":
+            name = threading.current_thread().name
+            attempt = self._attempts.get(name, 0)
+            self._attempts[name] = attempt + 1
+            if name == "slow" and attempt == 1:
+                self.slow_ready.set()
+                assert self.allow_slow.wait(timeout=5)
+            self._lock.acquire()
+            return self
+
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            self._lock.release()
+
+    gate = GateLock()
+    service._operation_lock = cast(Any, gate)
+
+    def fail_slow_terminal_write(path: Path, payload: object) -> None:
+        assert isinstance(payload, dict)
+        if any(row.get("project_id") == slow_project.project_id for row in payload.get("ingestionRuns", [])):
+            raise OSError("simulated slow ingestion terminal write failure")
+        storage_write_state(path, payload)
+
+    def ingest_slow_document() -> str:
+        threading.current_thread().name = "slow"
+        run = service.ingest_documents(
+            principal=principal,
+            project_id=slow_project.project_id,
+            document_ids=[slow_document.document_id],
+            idempotency_key="slow-ingest-document",
+        )
+        return run.ingestion_run_id
+
+    monkeypatch.setattr(stage4_module, "write_state", fail_slow_terminal_write)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        slow = executor.submit(ingest_slow_document)
+        assert gate.slow_ready.wait(timeout=5)
+        fast = executor.submit(
+            service.ingest_documents,
+            principal=principal,
+            project_id=fast_project.project_id,
+            document_ids=[fast_document.document_id],
+            idempotency_key="fast-ingest-document",
+        )
+        fast_run = fast.result(timeout=5)
+        gate.allow_slow.set()
+        with pytest.raises(OSError, match="simulated slow ingestion terminal write failure"):
+            slow.result(timeout=5)
+
+    assert service.rag_store.chunk_count_for_project(
+        tenant_id=principal.tenant_id,
+        project_id=slow_project.project_id,
+    ) == 0
+    assert service.rag_store.chunk_count_for_project(
+        tenant_id=principal.tenant_id,
+        project_id=fast_project.project_id,
+    ) == fast_run.chunk_count
+    assert service.documents[slow_document.document_id].ingestion_status == "NOT_STARTED"
+    assert service.documents[fast_document.document_id].ingestion_status == "INGESTED"
+    assert sorted(service.ingestion_runs) == [fast_run.ingestion_run_id]
+    assert sorted(record.idempotency_key for record in service.idempotency_records.values()) == [
+        "fast-approve-document",
+        "fast-create-project",
+        "fast-ingest-document",
+        "fast-upload-document",
+        "slow-approve-document",
+        "slow-create-project",
+        "slow-upload-document",
     ]
 
 

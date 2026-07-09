@@ -161,6 +161,9 @@ Decision:
   prepared documents before mutating the in-memory chunk indexes or marking
   documents ingested, so an unexpected local embedding failure cannot leave
   partial orphan chunks behind the failed idempotent ingestion operation.
+- Stage 4 failed-ingestion terminal-persist rollback must prune only RAG chunks
+  introduced after the operation snapshot for the failed ingestion's documents,
+  preserving prior and concurrent successful local chunks.
 
 Consequences:
 
@@ -169,7 +172,9 @@ Consequences:
 - Stage 4 local ingestion rollback now has direct single-document and
   multi-document evidence for all-or-nothing chunk insertion on unexpected
   local embedding failure while preserving operation-scoped rollback for
-  concurrent successful writes.
+  concurrent successful writes, and direct evidence that a terminal local
+  snapshot write failure removes failed-ingestion chunks without erasing
+  concurrent successful ingestion chunks.
 - Corrupt local snapshot rows may be pruned in memory and re-written on the
   next successful persist; this is still not a migration, backup, repair, or
   production recovery system.
