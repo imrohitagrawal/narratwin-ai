@@ -102,6 +102,7 @@ ISSUE_39_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/LOCAL_DEVELOPMENT.md",
     "docs/OBSERVABILITY_AND_COST.md",
     "docs/PORTABILITY_STRATEGY.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
     "docs/RISK_REGISTER.md",
     "docs/reviews/RISK_REGISTER.md",
     "scripts/guardrails_check.py",

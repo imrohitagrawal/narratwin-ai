@@ -593,6 +593,7 @@ Additional allowed implementation/evidence changes for Phase 1 Closure issue
 - `docs/LOCAL_DEVELOPMENT.md`
 - `docs/OBSERVABILITY_AND_COST.md`
 - `docs/PORTABILITY_STRATEGY.md`
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
 - `docs/RISK_REGISTER.md`
 - `docs/reviews/RISK_REGISTER.md`
 - `scripts/guardrails_check.py`
