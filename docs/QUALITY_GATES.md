@@ -504,9 +504,10 @@ summary fields continue to fail closed.
 The repository guardrail also checks PR body content on pull-request events:
 generic PRs must use reference-only issue linkage such as `Refs #<issue>` and
 must not include issue-closing keywords in the title/body/branch commit
-messages except for explicitly allowed canonical stage issue closures. Issue
-`#39` must not appear with auto-closing keywords in the title/body/branch commit
-messages, and non-trivial PRs must include completed preflight evidence rows for
+messages except for explicitly allowed canonical stage issue closures, which are
+`#2`, `#5`, `#4`, `#10`, `#11`, `#12`, and `#13`. Issue `#39` must not
+appear with auto-closing keywords in the title/body/branch commit messages, and
+non-trivial PRs must include completed preflight evidence rows for
 the required intent/spec, source-facts, failure-matrix, test, docs/gates,
 adversarial-review, review-prompt-set, stop-rule, and skill/tool-selection
 categories. The guardrail rejects false-pass preflight

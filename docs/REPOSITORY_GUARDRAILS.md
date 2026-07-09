@@ -58,7 +58,7 @@ The policy check fails CI for:
   old-behavior proof language such as RED, mutation, break-test,
   regression-reproduced, or fails-before evidence
 - issue-closing keywords in PR title/body/commit messages outside explicitly
-  allowed canonical stage issue closures
+  allowed canonical stage issue closures (`#2`, `#5`, `#4`, `#10`, `#11`, `#12`, `#13`)
 - drift between live `main` branch-protection settings and the documented
   required status checks and app bindings visible to CI; required PR review,
   admin enforcement, force-push/deletion, and conversation-resolution posture

@@ -40,7 +40,7 @@ Use it to answer:
   `#59` merged the governance-learning allowlist follow-up for issue `#58` at
   merge commit `38ec53b`; PR `#62` merged the Medium/Low PHF process-hardening
   follow-up for issue `#60` at merge commit `cf07ab8`; issues `#43`, `#44`,
-  `#48`, and `#49` remain open.
+  `#48`, `#49`, and `#71` remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
