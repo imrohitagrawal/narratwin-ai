@@ -178,6 +178,7 @@ def write_issue39_closure_plan(
     context0_pr64_evidence: bool = False,
     context0_pr64_text: str | None = None,
     weak_human_only_evidence: bool = False,
+    valid_human_only_evidence: bool = False,
     artifact_id_only: bool = False,
     artifact_label_id_only: bool = False,
     weakened_id: str | None = None,
@@ -227,6 +228,11 @@ def write_issue39_closure_plan(
             )
         elif weak_human_only_evidence:
             evidence = f"{matrix_id} human only"
+        elif valid_human_only_evidence:
+            evidence = (
+                f"{matrix_id} human-only evidence records owner approval "
+                "with residual risk decision for this production-grade row"
+            )
         elif artifact_id_only:
             evidence = "Concrete replay drill log shows invariant held under retry, failover, and reviewer audit conditions"
         elif padded_generic_evidence_only:
@@ -889,6 +895,24 @@ def test_phase1_issue39_pull_request_rejects_weak_human_only_sensitive_evidence(
     )
 
     assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_accepts_valid_human_only_sensitive_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path, valid_human_only_evidence=True)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE not in failures
 
 
 def test_phase1_issue39_pull_request_rejects_bare_child_issue_pr_references(
