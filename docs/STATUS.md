@@ -36,8 +36,9 @@ Use it to answer:
   `#54` merged local file-backed restart recovery, `/api/v1/ops/status`, and
   process-hardening evidence at merge commit `8b4ba05`, while issue `#39`
   remains open for production-grade durability and monitoring; issue `#55`
-  closed through PR `#56` for additional local restore-invariant hardening;
-  issues `#43`, `#44`, `#48`, `#49`, and `#58` remain open.
+  closed through PR `#56` for additional local restore-invariant hardening; PR
+  `#59` merged the governance-learning allowlist follow-up for issue `#58` at
+  merge commit `38ec53b`; issues `#43`, `#44`, `#48`, and `#49` remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -154,7 +155,7 @@ Use these files together with this tracker:
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
 | Stage 8 | Complete, merged to `main` | `#13` closed | PR `#33` merged | Executable at merge | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and release-readiness review merged at `fb40113`. |
 | Final Review | Complete, merged to `main` | `#6` closed | PR `#45` merged | Executable artifact gate | Independent review artifacts merged at `5a294c7`; outcome is No-Go until Phase 1 Closure resolves blockers. |
-| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, `#42`, and `#55` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, `#48`, `#49`, and `#58` open | PRs `#46`, `#47`, `#50`, `#53`, `#54`, and `#56` merged; issue `#58` tracks the governance-learning process follow-up without closing the production blocker | Executable governance gate added | `#39` now covers remaining production-grade durability/monitoring gaps after local restart recovery and ops status evidence. `#43`, `#44`, `#48`, `#49`, and `#58` remain P2/follow-up unless they block Phase 1 correctness. |
+| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, `#42`, `#55`, and `#58` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, `#48`, and `#49` open | PRs `#46`, `#47`, `#50`, `#53`, `#54`, `#56`, and `#59` merged | Executable governance gate added | `#39` now covers remaining production-grade durability/monitoring gaps after local restart recovery and ops status evidence. `#43`, `#44`, `#48`, and `#49` remain P2/follow-up unless they block Phase 1 correctness. |
 
 ## Issue Ledger
 
@@ -186,7 +187,7 @@ Use these files together with this tracker:
 | `#48` | Open | Pre-production/P2 hardening | Track scoped project-lookup hardening before production auth, durable storage, or stronger authorization-proof claims; created from PR `#47` independent API integrity review. It does not block local/mock Phase 1 demo review while production remains No-Go. |
 | `#49` | Open | Pre-production/P2 hardening | Bound local idempotency records across simulated actors before local-demo durability, multi-worker, or production-readiness claims; created from PR `#47` independent performance/security review. It does not block local/mock Phase 1 demo review while production and multi-worker release remain No-Go. |
 | `#55` | Closed | Phase 1 #39 follow-up | Preserved local durability restore-invariant work was triaged and hardened through PR `#56`, including Stage 4 graph/chunk/evaluation consistency, all-or-nothing local RAG chunk insertion across one or more prepared documents on embedding failure, terminal local snapshot write failure cleanup for failed-ingestion chunks, Stage 6 derived artifact consistency, Stage 7 artifact metadata consistency, failed-idempotency drops, stale-low counters, and operation-scoped rollback. It did not close `#39` or claim production durability. |
-| `#58` | Open | Phase 1 process follow-up | Tracks governance-learning process scope for `PHF-006`: add the reusable learning, allow `docs/PROJECT_GOVERNANCE_LEARNINGS.md` in Phase 1 process-only branches, and cover that allowance with focused tests without expanding runtime/product scope. |
+| `#58` | Closed | Phase 1 process follow-up | Governance-learning process scope for `PHF-006` merged through PR `#59`: added the reusable learning, allowed `docs/PROJECT_GOVERNANCE_LEARNINGS.md` in Phase 1 process-only branches, and covered that allowance with focused tests without expanding runtime/product scope. |
 
 ### Additional Backlog And Governance Issues
 
@@ -222,6 +223,7 @@ Use these files together with this tracker:
 | `#50` | Merged | 2026-07-01 | Phase 1 Closure Module B functional-flow PR for issue `#42`; hardens Stage 7 source evidence checksum binding through a canonical helper shared by the API route, service, and mock provider, with explicit evidence IDs, structured idempotency checksums, and duplicate-key provider JSON rejection; merged at `b6235da1a5202ffc9dbde6284ad39f3e3ad70486`. |
 | `#53` | Merged | 2026-07-02 | Phase 1 Closure Module A governance PR for issue `#38`; merged at `b5205083d0d11db060c83c1a5156394263b50de5`, records live `main` branch protection evidence, adds required-context drift checking to `policy-gates`, documents strict required CI contexts, required PR review, admin enforcement, blocked force pushes/deletions, required conversation resolution, and the user-repository limitation on direct pusher restrictions. |
 | `#54` | Merged | 2026-07-08 | Phase 1 Closure PR for issue `#39`; merged at `8b4ba05`, adding optional local JSON restart recovery, sensitive-snapshot documentation, redacted ops status evidence, monitoring posture visibility, process-hardening RCA/playbook gates, and reference-only `#39` protection so the production blocker is not auto-closed. |
+| `#59` | Merged | 2026-07-09 | Phase 1 Closure process follow-up for issue `#58`; merged at `38ec53b`, adding governance-learning allowlist coverage for `docs/PROJECT_GOVERNANCE_LEARNINGS.md` without runtime-scope expansion. |
 
 ## Completed Work
 
@@ -370,9 +372,9 @@ Use these files together with this tracker:
 1. Complete the remaining production-grade portion of Phase 1 Closure P0/P1
    issue `#39` through an issue-linked `phase-1-closure-*` branch and PR, or
    record a reviewed No-Go exception with evidence.
-   Issue `#55` may harden additional local restore invariants under the existing
-   `#39` local-durability scope, but it must not close `#39` or change the
-   production No-Go posture.
+   Closed follow-up issue `#55` hardened additional local restore invariants
+   under the existing `#39` local-durability scope, but did not close `#39` or
+   change the production No-Go posture.
 2. Keep Phase 2 feature work blocked until P0/P1 items are closed or explicitly
    downgraded with evidence.
 3. Keep production, multi-worker deployment, external provider use, real video
@@ -463,3 +465,4 @@ Required update rules:
 | 2026-07-09 | PR `#56` final review-note cleanup removed the unused local RAG `prune_to_documents` helper before merge; issue `#39` remains open and production durability remains No-Go. |
 | 2026-07-09 | PR `#56` final blind-review cleanup removed unused Stage 4, Stage 6, and Stage 7 full-snapshot restore helpers so operation-scoped rollback remains the only retained local rollback path; issue `#39` remains open and production durability remains No-Go. |
 | 2026-07-09 | Issue `#58` process-follow-up added a reusable governance lesson to `docs/PROJECT_GOVERNANCE_LEARNINGS.md` and updated the Phase 1 process-only allowlist in `docs/STAGE_ISSUE_PLAN.md` plus `scripts/quality/check_phase1_closure_docs.py` so governance-learning-only PRs are valid without runtime-scope expansion. |
+| 2026-07-09 | PR `#59` merged the issue `#58` governance-learning allowlist follow-up at `38ec53b`; issue `#58` is closed and issue `#39` remains open with production durability still No-Go. |
