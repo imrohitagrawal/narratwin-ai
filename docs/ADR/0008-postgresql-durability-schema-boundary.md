@@ -102,7 +102,7 @@ Conflict example:
 
 #### Entity state expectations
 
-- `project`: Open, Active, Terminal, Error
+- `project`: Open, Terminal, Error
 - `document`: Open, Ingesting, Terminal, Error
 - `chunk`: Open, Indexed, Terminal, Error
 - `run`: Open, Processing, Terminal, Error
