@@ -223,7 +223,8 @@ REQUIRED_PR_VALIDATION_COMMANDS = (
     "uv run mypy scripts tests",
     "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=",
 )
-VALIDATION_PASS_RESULT = re.compile(r"(?:->|:)\s*(?:\d+\s+)?(?:passed|success|succeeded|green)\b")
+VALIDATION_PASS_RESULT = re.compile(r"(?:->|:)\s*(?:(?:[1-9]\d*)\s+)?(?:passed|success|succeeded|green)\b")
+VALIDATION_ZERO_PASS_RESULT = re.compile(r"(?<!\d)0+\s+passed\b")
 VALIDATION_FAILURE_TERMS = (
     "example only",
     "failed",
@@ -442,16 +443,19 @@ def has_validation_evidence(body: str) -> bool:
 
 def validation_command_has_result(lines: list[str], command: str) -> bool:
     command_text = command.lower()
+    has_valid_result = False
     for line in lines:
         if not validation_line_matches_command(line, command_text):
             continue
+        if VALIDATION_ZERO_PASS_RESULT.search(line):
+            return False
         if any(term in line for term in VALIDATION_FAILURE_TERMS):
             continue
         if VALIDATION_PASS_RESULT.search(line):
-            return True
+            has_valid_result = True
         if "github.com/" in line and "/actions/runs/" in line:
-            return True
-    return False
+            has_valid_result = True
+    return has_valid_result
 
 
 def validation_line_matches_command(line: str, command_text: str) -> bool:

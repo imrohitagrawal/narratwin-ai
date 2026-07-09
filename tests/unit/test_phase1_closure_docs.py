@@ -424,3 +424,26 @@ def test_phf_automated_evidence_rejects_non_path_pytest_target() -> None:
     failures = phase1.phf_automated_evidence_failures("PHF-X", "uv run pytest not_a_real_target")
 
     assert "PHF-X Medium/Low matrix cites unsupported pytest target: not_a_real_target" in failures
+
+
+def test_phf_automated_evidence_rejects_pytest_node_id_test_from_wrong_file() -> None:
+    failures = phase1.phf_automated_evidence_failures(
+        "PHF-X",
+        "uv run pytest tests/unit/test_guardrails_check.py::"
+        "test_workflow_pull_request_edited_decoy_under_jobs_is_rejected",
+    )
+
+    assert (
+        "PHF-X Medium/Low matrix cites pytest node id with test outside target: "
+        "tests/unit/test_guardrails_check.py::test_workflow_pull_request_edited_decoy_under_jobs_is_rejected"
+    ) in failures
+
+
+def test_phf_automated_evidence_accepts_dot_prefixed_pytest_target() -> None:
+    failures = phase1.phf_automated_evidence_failures(
+        "PHF-X",
+        "uv run pytest "
+        "./tests/unit/test_phase1_closure_docs.py::test_phf_automated_evidence_accepts_dot_prefixed_pytest_target",
+    )
+
+    assert failures == []

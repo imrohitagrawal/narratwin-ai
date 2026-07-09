@@ -1080,6 +1080,111 @@ def test_nontrivial_pull_request_rejects_inline_validation_example_text(
     assert "Non-trivial pull requests must include validation evidence commands." in failures
 
 
+def test_nontrivial_pull_request_rejects_zero_pass_validation_count(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        "uv run pytest tests/unit/test_guardrails_check.py -> 0 passed",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+@pytest.mark.parametrize(
+    "invalid_line",
+    [
+        "uv run pytest tests/unit/test_guardrails_check.py -> 0 passed; rerun -> passed",
+        (
+            "uv run pytest tests/unit/test_guardrails_check.py -> 0 passed "
+            "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/123"
+        ),
+        (
+            "uv run pytest tests/unit/test_guardrails_check.py -> 0 tests collected, 0 passed "
+            "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/123"
+        ),
+        (
+            "uv run pytest tests/unit/test_guardrails_check.py -> 00 passed "
+            "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/123"
+        ),
+    ],
+)
+def test_nontrivial_pull_request_rejects_same_line_zero_pass_validation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    invalid_line: str,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        invalid_line,
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_zero_pass_before_later_valid_validation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        (
+            "uv run pytest tests/unit/test_guardrails_check.py -> 0 passed\n"
+            "uv run pytest tests/unit/test_guardrails_check.py -> 75 passed"
+        ),
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_later_zero_pass_validation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        (
+            "uv run pytest tests/unit/test_guardrails_check.py -> 75 passed\n"
+            "uv run pytest tests/unit/test_guardrails_check.py -> 0 passed"
+        ),
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
 @pytest.mark.parametrize(
     ("valid_line", "invalid_line"),
     [

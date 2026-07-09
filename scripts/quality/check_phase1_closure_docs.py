@@ -261,39 +261,54 @@ def read(rel: str) -> str:
 
 
 def known_test_names() -> set[str]:
-    names: set[str] = set()
-    for path in (ROOT / "tests").rglob("*.py"):
-        names.update(
+    return {test_name for test_names in known_tests_by_path().values() for test_name in test_names}
+
+
+def known_tests_by_path() -> dict[str, set[str]]:
+    tests_by_path: dict[str, set[str]] = {}
+    test_root = ROOT / "tests"
+    for path in test_root.rglob("*.py"):
+        relative_path = path.relative_to(ROOT).as_posix()
+        tests_by_path[relative_path] = set(
             re.findall(
                 r"^\s*def\s+(test_[A-Za-z0-9_]+)\s*\(",
                 path.read_text(encoding="utf-8"),
                 flags=re.M,
             )
         )
-    return names
+    return tests_by_path
 
 
 def pytest_target_paths(text: str) -> set[str]:
-    paths, _ = pytest_targets_and_invalid_targets(text)
+    paths, _, _ = pytest_targets_invalid_targets_and_node_ids(text)
     return paths
 
 
-def pytest_targets_and_invalid_targets(text: str) -> tuple[set[str], set[str]]:
+def pytest_targets_invalid_targets_and_node_ids(text: str) -> tuple[set[str], set[str], set[tuple[str, str, str]]]:
     paths: set[str] = set()
     invalid_targets: set[str] = set()
+    node_ids: set[tuple[str, str, str]] = set()
     for command_match in re.finditer(r"\buv run pytest (?P<targets>[^`|\n]+)", text):
         target_text = command_match.group("targets").split("->", maxsplit=1)[0]
         target_text = target_text.split("#", maxsplit=1)[0]
         for token in target_text.split():
-            cleaned = token.strip("` ,.;:")
+            cleaned = token.strip("` ,;:")
             if not cleaned or cleaned.startswith("-"):
                 continue
-            cleaned = cleaned.split("::", maxsplit=1)[0]
-            if cleaned.endswith(".py") or cleaned.startswith("tests/"):
-                paths.add(cleaned)
+            target_path, separator, node_part = cleaned.partition("::")
+            if target_path.startswith("./"):
+                target_path = target_path[2:]
+            if target_path.endswith(".py") or target_path.startswith("tests/"):
+                paths.add(target_path)
+                if separator:
+                    node_match = re.search(r"\b(test_[A-Za-z0-9_]+)\b", node_part)
+                    if node_match:
+                        node_ids.add((target_path, node_match.group(1), f"{target_path}::{node_match.group(1)}"))
+                    else:
+                        invalid_targets.add(cleaned)
             else:
                 invalid_targets.add(cleaned)
-    return paths, invalid_targets
+    return paths, invalid_targets, node_ids
 
 
 def phf_automated_evidence_failures(item: str, automated: str) -> list[str]:
@@ -306,11 +321,15 @@ def phf_automated_evidence_failures(item: str, automated: str) -> list[str]:
     for script_path in sorted(path for path in cited_scripts if not (ROOT / path).is_file()):
         failures.append(f"{item} Medium/Low matrix cites missing script evidence: {script_path}")
 
-    target_paths, invalid_targets = pytest_targets_and_invalid_targets(automated)
+    target_paths, invalid_targets, node_ids = pytest_targets_invalid_targets_and_node_ids(automated)
     for target_path in sorted(path for path in target_paths if not (ROOT / path).is_file()):
         failures.append(f"{item} Medium/Low matrix cites missing pytest target: {target_path}")
     for target in sorted(invalid_targets):
         failures.append(f"{item} Medium/Low matrix cites unsupported pytest target: {target}")
+    tests_by_path = known_tests_by_path()
+    for target_path, test_name, node_id in sorted(node_ids):
+        if (ROOT / target_path).is_file() and test_name not in tests_by_path.get(target_path, set()):
+            failures.append(f"{item} Medium/Low matrix cites pytest node id with test outside target: {node_id}")
 
     has_automated_evidence = bool(
         cited_tests or cited_scripts or AUTOMATED_EVIDENCE_COMMAND.search(automated)
