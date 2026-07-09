@@ -963,6 +963,76 @@ def test_nontrivial_pull_request_rejects_placeholder_preimplementation_evidence(
     assert PREFLIGHT_FAILURE in failures
 
 
+def body_with_commit_order_preimplementation_rows(commit_order_marker: str) -> str:
+    return (
+        completed_preflight_body()
+        .replace(
+            "issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-1",
+            commit_order_marker,
+        )
+        .replace(
+            "draft pr: https://github.com/imrohitagrawal/narratwin-ai/pull/60",
+            commit_order_marker,
+        )
+        .replace(
+            "issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-2",
+            commit_order_marker,
+        )
+    )
+
+
+def test_nontrivial_pull_request_accepts_verified_commit_order_preimplementation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    earlier = "1111111"
+    later = "2222222"
+
+    def fake_git_command_succeeds(args: list[str]) -> bool:
+        if args == ["cat-file", "-e", f"{earlier}^{{commit}}"]:
+            return True
+        if args == ["cat-file", "-e", f"{later}^{{commit}}"]:
+            return True
+        return args == ["merge-base", "--is-ancestor", earlier, later]
+
+    monkeypatch.setattr(guardrails, "git_command_succeeds", fake_git_command_succeeds)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body_with_commit_order_preimplementation_rows(f"commit order: {earlier} before {later}"),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE not in failures
+
+
+def test_nontrivial_pull_request_rejects_reversed_commit_order_preimplementation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    earlier = "1111111"
+    later = "2222222"
+
+    def fake_git_command_succeeds(args: list[str]) -> bool:
+        if args[0] == "cat-file":
+            return True
+        return args == ["merge-base", "--is-ancestor", earlier, later]
+
+    monkeypatch.setattr(guardrails, "git_command_succeeds", fake_git_command_succeeds)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body_with_commit_order_preimplementation_rows(f"commit order: {later} before {earlier}"),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
+
+
 def test_nontrivial_pull_request_rejects_missing_validation_evidence_commands(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
