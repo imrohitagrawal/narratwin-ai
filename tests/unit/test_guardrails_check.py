@@ -25,22 +25,29 @@ PREFLIGHT_FAILURE = "Non-trivial pull requests must include completed preflight 
 def write_issue39_closure_plan(
     root: Path,
     *,
+    child_issue: str = "#70",
+    malformed_id: str | None = None,
     omitted_ids: set[str] | None = None,
     include_records: bool = True,
 ) -> None:
     omitted = omitted_ids or set()
     plan_path = root / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
-    evidence_path = root / "docs/reviews/evidence.md"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
-    evidence_path.write_text("closure evidence\n", encoding="utf-8")
     matrix_rows = []
     record_rows = []
     for matrix_id in sorted(guardrails.REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS - omitted):
-        matrix_rows.append(
-            f"| `{matrix_id}` | Requirement | Evidence target | Owner | Minimum evidence contract | Closed |"
-        )
+        if matrix_id == malformed_id:
+            matrix_rows.append(
+                f"| `{matrix_id}` | Requirement | Evidence target | Owner | Minimum evidence contract | Closed | Open |"
+            )
+        else:
+            matrix_rows.append(
+                f"| `{matrix_id}` | Requirement | Evidence target | Owner | Minimum evidence contract | Closed |"
+            )
+        evidence_path = root / f"docs/reviews/{matrix_id}-evidence.md"
+        evidence_path.write_text(f"{matrix_id} closure evidence\n", encoding="utf-8")
         record_rows.append(
-            f"| `{matrix_id}` | #39 / PR #64 | `docs/reviews/evidence.md` | human-only evidence passed | owner | reviewer | accepted | merge commit abc1234 | evidence satisfies row |"
+            f"| `{matrix_id}` | {child_issue} / PR #71 | `docs/reviews/{matrix_id}-evidence.md` | {matrix_id} human-only evidence passed | {matrix_id.lower()}-owner | {matrix_id.lower()}-reviewer | {matrix_id} residual risk accepted | merge commit abc1234 | {matrix_id} evidence satisfies the closure row |"
         )
     records = "\n".join(record_rows) if include_records else ""
     plan_path.write_text(
@@ -251,6 +258,40 @@ def test_phase1_issue39_pull_request_rejects_closing_keyword_without_closure_rec
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     write_issue39_closure_plan(tmp_path, include_records=False)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_closing_keyword_with_malformed_matrix_row(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, malformed_id="DUR-STAGE4-001")
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_closing_keyword_with_parent_issue_as_child(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, child_issue="#39")
     monkeypatch.setattr(guardrails, "ROOT", tmp_path)
     failures = run_issue_link_check(
         tmp_path,

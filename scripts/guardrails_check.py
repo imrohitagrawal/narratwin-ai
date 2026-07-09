@@ -370,7 +370,7 @@ def issue_39_matrix_rows_by_id(plan_text: str) -> dict[str, list[str]] | None:
     rows = markdown_table_rows(plan_text, "Master Evidence Matrix")
     matrix_rows: dict[str, list[str]] = {}
     for cells in rows:
-        if len(cells) < 6:
+        if len(cells) != 6:
             return None
         row_id = cells[0].strip("` ")
         if row_id.lower() == "id":
@@ -386,7 +386,7 @@ def issue_39_matrix_rows_by_id(plan_text: str) -> dict[str, list[str]] | None:
 def issue_39_closure_record_ids(plan_text: str) -> set[str]:
     record_ids: set[str] = set()
     for cells in markdown_table_rows(plan_text, "Row Closure Records"):
-        if len(cells) < 9:
+        if len(cells) != 9:
             continue
         row_id, child_issue_pr, artifact, evidence, owner, reviewer, residual, timestamp, reason = cells[:9]
         row_id = row_id.strip("` ")
@@ -397,12 +397,41 @@ def issue_39_closure_record_ids(plan_text: str) -> set[str]:
             continue
         if not re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+", row_id):
             continue
-        if not re.search(r"#\d+", child_issue_pr) or not re.search(r"PR\s*#\d+", child_issue_pr, flags=re.I):
+        issue_text = re.sub(r"PR\s*#\d+", "", child_issue_pr, flags=re.I)
+        issue_numbers = set(re.findall(r"#(\d+)", issue_text))
+        pr_numbers = set(re.findall(r"PR\s*#(\d+)", child_issue_pr, flags=re.I))
+        if not any(issue_number != "39" for issue_number in issue_numbers) or not pr_numbers:
             continue
         if not preflight_artifact_exists(artifact):
             continue
+        row_binding = f"{artifact} {evidence} {reason}".lower()
+        if row_id.lower() not in row_binding:
+            continue
+        if closure_record_has_generic_values(evidence, owner, reviewer, residual, reason):
+            continue
         record_ids.add(row_id)
     return record_ids
+
+
+def closure_record_has_generic_values(
+    evidence: str,
+    owner: str,
+    reviewer: str,
+    residual: str,
+    reason: str,
+) -> bool:
+    generic_values = {
+        "accepted",
+        "closure evidence",
+        "evidence satisfies row",
+        "human-only evidence passed",
+        "owner",
+        "reviewer",
+    }
+    return any(
+        re.sub(r"\s+", " ", value.strip().lower()) in generic_values
+        for value in (evidence, owner, reviewer, residual, reason)
+    )
 
 
 def issue_link_pattern(issue_number: str = r"\d+") -> str:
