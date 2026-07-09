@@ -199,6 +199,7 @@ PLACEHOLDER_URL_TERMS = {"todo", "tbd", "placeholder", "example", "invalid"}
 LOCAL_REFERENCE_TYPES = {"repo-file"}
 URL_REFERENCE_TYPES = {"url", "source-url", "source", "pr-comment", "ci-run"}
 ALLOWED_REFERENCE_TYPES = LOCAL_REFERENCE_TYPES | URL_REFERENCE_TYPES
+CANONICAL_GITHUB_REPO = "imrohitagrawal/narratwin-ai"
 CANONICAL_STAGE_ISSUE_CLOSURE = (
     ("stage2-", "Stage 2", "2"),
     ("stage3-", "Stage 3", "5"),
@@ -226,6 +227,7 @@ REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS = {
     "DUR-ROLLBACK-001",
     "DUR-RESTORE-001",
     "OPS-METRICS-001",
+    "OPS-SLO-001",
     "OPS-ALERT-001",
     "OPS-WATCH-001",
     "OPS-ROLLBACK-001",
@@ -235,6 +237,7 @@ REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS = {
     "MEDIA-DISCLOSURE-001",
     "PROVIDER-POSTURE-001",
     "SEC-RETENTION-001",
+    "SEC-UNTRUSTED-001",
     "GOV-SCOPE-001",
 }
 REQUIRED_PR_VALIDATION_COMMANDS = (
@@ -397,10 +400,7 @@ def issue_39_closure_record_ids(plan_text: str) -> set[str]:
             continue
         if not re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+", row_id):
             continue
-        issue_text = re.sub(r"PR\s*#\d+", "", child_issue_pr, flags=re.I)
-        issue_numbers = set(re.findall(r"#(\d+)", issue_text))
-        pr_numbers = set(re.findall(r"PR\s*#(\d+)", child_issue_pr, flags=re.I))
-        if not any(issue_number != "39" for issue_number in issue_numbers) or not pr_numbers:
+        if not closure_record_has_required_child_references(child_issue_pr):
             continue
         if not preflight_artifact_exists(artifact):
             continue
@@ -411,6 +411,18 @@ def issue_39_closure_record_ids(plan_text: str) -> set[str]:
             continue
         record_ids.add(row_id)
     return record_ids
+
+
+def closure_record_has_required_child_references(child_issue_pr: str) -> bool:
+    issue_urls = re.findall(
+        rf"https://github\.com/{re.escape(CANONICAL_GITHUB_REPO)}/issues/(\d+)\b",
+        child_issue_pr,
+    )
+    pr_urls = re.findall(
+        rf"https://github\.com/{re.escape(CANONICAL_GITHUB_REPO)}/pull/(\d+)\b",
+        child_issue_pr,
+    )
+    return any(issue_number != "39" for issue_number in issue_urls) and bool(pr_urls)
 
 
 def closure_record_has_generic_values(
@@ -424,14 +436,22 @@ def closure_record_has_generic_values(
         "accepted",
         "closure evidence",
         "evidence satisfies row",
+        "evidence satisfies the closure row",
         "human-only evidence passed",
         "owner",
+        "residual risk accepted",
         "reviewer",
     }
     return any(
-        re.sub(r"\s+", " ", value.strip().lower()) in generic_values
+        normalize_closure_record_value(value) in generic_values
         for value in (evidence, owner, reviewer, residual, reason)
     )
+
+
+def normalize_closure_record_value(value: str) -> str:
+    normalized = re.sub(r"\b[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+\b", " ", value, flags=re.I)
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized.lower())
+    return re.sub(r"\s+", " ", normalized).strip()
 
 
 def issue_link_pattern(issue_number: str = r"\d+") -> str:

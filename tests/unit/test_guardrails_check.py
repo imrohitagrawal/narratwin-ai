@@ -25,10 +25,12 @@ PREFLIGHT_FAILURE = "Non-trivial pull requests must include completed preflight 
 def write_issue39_closure_plan(
     root: Path,
     *,
-    child_issue: str = "#70",
+    child_issue: str = "https://github.com/imrohitagrawal/narratwin-ai/issues/70",
+    child_pr: str = "https://github.com/imrohitagrawal/narratwin-ai/pull/71",
     malformed_id: str | None = None,
     omitted_ids: set[str] | None = None,
     include_records: bool = True,
+    generic_records: bool = False,
 ) -> None:
     omitted = omitted_ids or set()
     plan_path = root / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
@@ -46,8 +48,20 @@ def write_issue39_closure_plan(
             )
         evidence_path = root / f"docs/reviews/{matrix_id}-evidence.md"
         evidence_path.write_text(f"{matrix_id} closure evidence\n", encoding="utf-8")
+        if generic_records:
+            evidence = f"{matrix_id} human-only evidence passed"
+            reason = f"{matrix_id} evidence satisfies the closure row"
+        else:
+            evidence = (
+                f"{matrix_id} replay drill log shows the row-specific invariant held under retry, "
+                "failover, and reviewer audit conditions"
+            )
+            reason = (
+                f"{matrix_id} closure artifact proves the named invariant with a concrete command, "
+                "review owner, and residual-risk decision"
+            )
         record_rows.append(
-            f"| `{matrix_id}` | {child_issue} / PR #71 | `docs/reviews/{matrix_id}-evidence.md` | {matrix_id} human-only evidence passed | {matrix_id.lower()}-owner | {matrix_id.lower()}-reviewer | {matrix_id} residual risk accepted | merge commit abc1234 | {matrix_id} evidence satisfies the closure row |"
+            f"| `{matrix_id}` | {child_issue} / {child_pr} | `docs/reviews/{matrix_id}-evidence.md` | {evidence} | production durability accountable engineer | security reliability review approver | {matrix_id} reviewed residual risk is bounded by linked follow-up evidence | merge commit abc1234 | {reason} |"
         )
     records = "\n".join(record_rows) if include_records else ""
     plan_path.write_text(
@@ -236,11 +250,69 @@ def test_phase1_issue39_pull_request_allows_closing_keyword_only_after_matrix_cl
     assert "Pull request title/body/commit messages must use reference-only issue wording." not in failures
 
 
+def test_phase1_issue39_pull_request_rejects_id_prefixed_generic_closure_records(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, generic_records=True)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_bare_child_issue_pr_references(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, child_issue="#70", child_pr="PR #71")
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_issue39_required_matrix_ids_include_slo_and_untrusted_input_rows() -> None:
+    assert "OPS-SLO-001" in guardrails.REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS
+    assert "SEC-UNTRUSTED-001" in guardrails.REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS
+
+
 def test_phase1_issue39_pull_request_rejects_closing_keyword_when_matrix_id_missing(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     write_issue39_closure_plan(tmp_path, omitted_ids={"DUR-STAGE4-001"})
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+@pytest.mark.parametrize("missing_id", ["OPS-SLO-001", "SEC-UNTRUSTED-001"])
+def test_phase1_issue39_pull_request_rejects_closing_keyword_when_new_required_id_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    missing_id: str,
+) -> None:
+    write_issue39_closure_plan(tmp_path, omitted_ids={missing_id})
     monkeypatch.setattr(guardrails, "ROOT", tmp_path)
     failures = run_issue_link_check(
         tmp_path,
@@ -291,7 +363,10 @@ def test_phase1_issue39_pull_request_rejects_closing_keyword_with_parent_issue_a
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    write_issue39_closure_plan(tmp_path, child_issue="#39")
+    write_issue39_closure_plan(
+        tmp_path,
+        child_issue="https://github.com/imrohitagrawal/narratwin-ai/issues/39",
+    )
     monkeypatch.setattr(guardrails, "ROOT", tmp_path)
     failures = run_issue_link_check(
         tmp_path,
