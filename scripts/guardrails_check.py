@@ -252,6 +252,7 @@ REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS = {
     "SEC-UNTRUSTED-001",
     "GOV-SCOPE-001",
 }
+VALID_ISSUE_39_MATRIX_STATUSES = {"open", "closed"}
 REQUIRED_ISSUE_39_ROW_CONTRACT_TERMS = {
     "DUR-ACID-001": {
         "production transaction model",
@@ -578,6 +579,8 @@ def closing_issue_numbers(text: str) -> set[str]:
 
 def issue_39_closure_matrix_all_closed() -> bool:
     matrix_path = ROOT / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+    if issue_39_closure_matrix_validation_failures():
+        return False
     plan_text = read_text(matrix_path)
     matrix_rows = issue_39_matrix_rows_by_id(plan_text)
     if matrix_rows is None:
@@ -589,6 +592,58 @@ def issue_39_closure_matrix_all_closed() -> bool:
         return False
     closure_records = issue_39_closure_record_ids(plan_text)
     return matrix_ids.issubset(closure_records)
+
+
+def issue_39_closure_matrix_validation_failures() -> list[str]:
+    rel = "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+    path = ROOT / rel
+    if not path.is_file():
+        return [f"Missing required issue #39 production closure plan: {rel}"]
+
+    plan_text = read_text(path)
+    headers, rows = markdown_table_headers_and_rows(plan_text, "Master Evidence Matrix")
+    required_headers = ("ID", "Requirement", "Evidence target", "Owner", "Minimum evidence contract", "Status")
+    normalized_headers = [normalize_header(header) for header in headers]
+    missing_headers = [header for header in required_headers if normalize_header(header) not in normalized_headers]
+    if missing_headers:
+        return [
+            "Issue #39 production closure plan Master Evidence Matrix missing headers: "
+            + ", ".join(missing_headers)
+        ]
+
+    failures: list[str] = []
+    header_lookup = {header: normalized_headers.index(normalize_header(header)) for header in required_headers}
+    seen_ids: set[str] = set()
+
+    for row in rows:
+        if len(row) != len(required_headers):
+            failures.append(f"Issue #39 matrix row must have 6 columns: {row}")
+            continue
+        row_id = row[header_lookup["ID"]].strip("` ")
+        if row_id.lower() == "id":
+            continue
+        if row_id in seen_ids:
+            failures.append(f"Issue #39 production closure plan has duplicate matrix IDs: {row_id}")
+        seen_ids.add(row_id)
+        if not re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}", row_id):
+            failures.append(f"Issue #39 matrix row has invalid ID: {row_id}")
+        status = row[header_lookup["Status"]].strip().lower()
+        if status not in VALID_ISSUE_39_MATRIX_STATUSES:
+            failures.append(f"Issue #39 matrix row {row_id} status must be Open or Closed; got {row[header_lookup['Status']]}.")
+        for value in row[header_lookup["Requirement"] : header_lookup["Status"]]:
+            if is_placeholder_value(value):
+                failures.append(
+                    f"Issue #39 matrix row {row_id} has placeholder evidence contract content."
+                )
+                break
+
+    missing_ids = sorted(REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS - seen_ids)
+    if missing_ids:
+        failures.append("Issue #39 production closure plan missing matrix IDs: " + ", ".join(missing_ids))
+    unexpected_ids = sorted(seen_ids - REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS)
+    if unexpected_ids:
+        failures.append("Issue #39 production closure plan has unexpected matrix IDs: " + ", ".join(unexpected_ids))
+    return failures
 
 
 def issue_39_matrix_rows_by_id(plan_text: str) -> dict[str, list[str]] | None:
@@ -653,6 +708,17 @@ def issue_39_matrix_row_keeps_contract(row_id: str, cells: list[str]) -> bool:
 def normalize_contract_text(value: str) -> str:
     normalized = re.sub(r"[^a-z0-9]+", " ", value.lower())
     return re.sub(r"\s+", " ", normalized).strip()
+
+
+def normalize_header(value: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", value.strip().lower())).strip()
+
+
+def markdown_table_headers_and_rows(body: str, heading: str) -> tuple[list[str], list[list[str]]]:
+    lines = markdown_table_rows(body, heading)
+    if not lines:
+        return [], []
+    return lines[0], lines[1:]
 
 
 def closure_record_has_required_child_references(child_issue_pr: str) -> bool:
@@ -1342,6 +1408,8 @@ def check_no_direct_main_push() -> None:
 
 
 def check_issue_linked_pull_request() -> None:
+    for issue39_failure in issue_39_closure_matrix_validation_failures():
+        failures.append(issue39_failure)
     if not should_enforce_pull_request_issue_checks():
         return
     event_path = os.environ.get("GITHUB_EVENT_PATH")

@@ -47,7 +47,9 @@ The policy check fails CI for:
 - repository-tracked governance changes without `docs/STATUS.md` updates
 - Phase 1 Closure quality drift in the `#39` production-closure matrix, including
   missing required IDs, malformed rows, duplicate or unexpected IDs, and invalid
-  status values
+  status values. The same structural checks now run on every repository-guardrail
+  execution so malformed `#39` matrix updates are rejected even when the PR
+  text remains reference-only.
 - non-trivial pull requests without completed preflight evidence rows for the
   required source, invariant/failure matrix, test, docs/gates, and
   adversarial-review categories in the PR body
@@ -56,7 +58,7 @@ The policy check fails CI for:
   old-behavior proof language such as RED, mutation, break-test,
   regression-reproduced, or fails-before evidence
 - issue-closing keywords in PR title/body/commit messages outside explicitly
-  allowed canonical stage issue closures
+  allowed canonical stage issue closures (`#2`, `#5`, `#4`, `#10`, `#11`, `#12`, `#13`)
 - drift between live `main` branch-protection settings and the documented
   required status checks and app bindings visible to CI; required PR review,
   admin enforcement, force-push/deletion, and conversation-resolution posture
