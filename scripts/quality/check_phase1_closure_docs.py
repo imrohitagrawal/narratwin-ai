@@ -494,6 +494,25 @@ def workflow_has_pull_request_edited(yaml_text: str) -> bool:
     return False
 
 
+def guardrail_workflow_paths() -> list[str]:
+    workflow_dir = ROOT / ".github" / "workflows"
+    paths = sorted([*workflow_dir.glob("*.yml"), *workflow_dir.glob("*.yaml")])
+    return [
+        path.relative_to(ROOT).as_posix()
+        for path in paths
+        if "scripts/guardrails_check.py" in read(path.relative_to(ROOT).as_posix())
+    ]
+
+
+def workflow_has_guardrail_github_token_wiring(yaml_text: str) -> bool:
+    return (
+        "issues: read" in yaml_text
+        and "pull-requests: read" in yaml_text
+        and "GITHUB_TOKEN:" in yaml_text
+        and ("github.token" in yaml_text or "secrets.GITHUB_TOKEN" in yaml_text)
+    )
+
+
 def check_required_headings(failures: list[str], text: str, owner: str, headings: tuple[str, ...]) -> None:
     for heading in headings:
         if not has_heading(text, heading):
@@ -1028,9 +1047,15 @@ def check_process_docs(failures: list[str]) -> None:
         if marker not in codeowners:
             fail(failures, f".github/CODEOWNERS missing process marker: {marker}")
 
-    quality_gates = read(".github/workflows/quality-gates.yml")
-    if not workflow_has_pull_request_edited(quality_gates):
-        fail(failures, ".github/workflows/quality-gates.yml must rerun policy-gates on pull_request.edited")
+    for workflow_path in guardrail_workflow_paths():
+        workflow_text = read(workflow_path)
+        if not workflow_has_pull_request_edited(workflow_text):
+            fail(failures, f"{workflow_path} must rerun guardrails on pull_request.edited")
+        if not workflow_has_guardrail_github_token_wiring(workflow_text):
+            fail(
+                failures,
+                f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails",
+            )
 
     rca = read("docs/ENGINEERING_PROCESS_RCA.md")
     check_required_headings(

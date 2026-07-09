@@ -3,6 +3,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, cast
 
+import pytest
+
 
 def load_phase1_module() -> ModuleType:
     module_path = Path(__file__).parents[2] / "scripts" / "quality" / "check_phase1_closure_docs.py"
@@ -212,6 +214,45 @@ on:
 """
 
     assert not phase1.workflow_has_pull_request_edited(workflow_text)
+
+
+@pytest.mark.parametrize("workflow_path", [".github/workflows/quality.yml", ".github/workflows/security.yml"])
+def test_process_docs_rejects_guardrail_workflow_without_pull_request_edited(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("edited, ", "").replace(", edited", ""),
+        },
+    )
+
+    assert f"{workflow_path} must rerun guardrails on pull_request.edited" in failures
+
+
+@pytest.mark.parametrize("workflow_path", [".github/workflows/quality.yml", ".github/workflows/security.yml"])
+def test_process_docs_rejects_guardrail_workflow_without_token_permissions(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("  issues: read\n", "").replace("  pull-requests: read\n", ""),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
 
 
 def test_process_docs_rejects_missing_validation_command(monkeypatch: Any) -> None:

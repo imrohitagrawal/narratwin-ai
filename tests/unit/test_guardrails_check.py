@@ -22,6 +22,54 @@ ISSUE_39_REFERENCE_ONLY_FAILURE = "Issue #39 pull requests must use reference-on
 PREFLIGHT_FAILURE = "Non-trivial pull requests must include completed preflight evidence rows."
 PR_SPECIFIC_PREFLIGHT_ARTIFACT = "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
 ISSUE39_SENSITIVE_ROW_CELLS = {
+    "DUR-ACID-001": [
+        "ACID/CAS durable metadata",
+        "Production transaction model for durable identifiers, versioning, and compare-and-set invariants",
+        "Architecture + storage",
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist",
+    ],
+    "DUR-IDEMP-001": [
+        "Production idempotency semantics",
+        "Replay-safe request identity and dedupe behavior across retries and worker failover",
+        "Runtime/state + Security",
+        "Idempotency envelope contract including terminal/error/replay state transitions and failure dedupe proofs",
+    ],
+    "DUR-STAGE4-001": [
+        "Durable Stage 4 project/document/RAG/run graph",
+        "Durable project/document/chunk/run/eval graph and resume behavior",
+        "Storage + API",
+        "Entity/state graph contract with at-least-once execution and idempotent consumers; no exactly-once side-effect claim",
+    ],
+    "DUR-LEASE-001": [
+        "Cross-worker job leases",
+        "Lease acquisition, heartbeat renewal, expiry, reclaim, and stale-writer fencing",
+        "Runtime/state",
+        "Lease state machine with monotonic fencing token/epoch, stale-owner prevention, and ownership transfer proof",
+    ],
+    "DUR-OUTBOX-001": [
+        "Committed outbox side effects",
+        "Outbox transaction boundaries and side-effect dispatch contract",
+        "Runtime/integrations",
+        "Same-transaction outbox write with state change; at-least-once dispatch plus idempotent consumer policy",
+    ],
+    "DUR-STAGE6-001": [
+        "Durable multilingual artifact replay",
+        "Production replay of translated scripts/subtitles and derived assets",
+        "Stage 6",
+        "Replay contract with source-run linkage, checksum-based dedupe, and deterministic artifact provenance",
+    ],
+    "DUR-STAGE7-001": [
+        "Durable render/artifact/provenance state",
+        "Render status, artifact records, consent/disclosure binding",
+        "Stage 7",
+        "Persistent render/provenance record contract and synthetic-media release check points",
+    ],
+    "DUR-MIG-001": [
+        "Migrations",
+        "Versioned schema evolution, compatibility, and forward-only rollback safety",
+        "Platform/storage",
+        "Expand/contract migration plan with backward-compatible code windows, forward repair, and no mandatory down-migration claim",
+    ],
     "DUR-ROLLBACK-001": [
         "Technical rollback compatibility",
         "Code rollback against migrated production metadata",
@@ -105,6 +153,12 @@ ISSUE39_SENSITIVE_ROW_CELLS = {
         "Uploaded docs, prompts, transcripts, provider outputs, model outputs, restored artifacts, exported media metadata, and replayed provenance remain untrusted",
         "Security/Privacy + Runtime + Ops",
         "Validation, output encoding, log redaction, prompt-injection/poisoned-retrieval controls, restore-time revalidation, and replay/export safety evidence for durable untrusted content",
+    ],
+    "GOV-SCOPE-001": [
+        "Scope split",
+        "Context 0 does not absorb child PRs or remaining production blockers",
+        "Governance",
+        "Documented issue split with separate issue/PR mapping for every remaining blocker",
     ],
 }
 
@@ -349,11 +403,11 @@ def normalize_preflight_rows_for_current_contract(rows: str) -> str:
         )
     if "| stop rule" not in normalized_rows:
         missing_rows.append(
-            f"| Stop rule / repeated blocker reset | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | STOP-1 | repeated-blocker stop rule evaluated before next fix loop | reviewer | gate | pass | tracked |\n"
+            f"| Stop rule / repeated blocker reset | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | STOP-1 | repeated-blocker stop rule reset requires contract update before next fix loop | reviewer | gate | pass | tracked |\n"
         )
     if "| skill/tool selection" not in normalized_rows:
         missing_rows.append(
-            f"| Skill/tool selection | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | SKILL-1 | preinstalled skills and repo docs checked before custom skill creation | reviewer | gate | pass | tracked |\n"
+            f"| Skill/tool selection | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | SKILL-1 | preinstalled skills and repo docs checked first with no custom skill creation | reviewer | gate | pass | tracked |\n"
         )
     return rows + "".join(missing_rows)
 
@@ -1118,6 +1172,52 @@ def test_nontrivial_pull_request_rejects_generic_preimplementation_matrix_artifa
         monkeypatch,
         title="Harden local workflow evidence",
         body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
+
+
+@pytest.mark.parametrize(
+    ("row_label", "replacement"),
+    [
+        (
+            "Review prompt set",
+            f"| Review prompt set | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | PROMPT-1 | review done | reviewer | source | pass | tracked |",
+        ),
+        (
+            "Stop rule / repeated blocker reset",
+            f"| Stop rule / repeated blocker reset | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | STOP-1 | stop rule checked | reviewer | gate | pass | tracked |",
+        ),
+        (
+            "Skill/tool selection",
+            f"| Skill/tool selection | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | SKILL-1 | skills checked | reviewer | gate | pass | tracked |",
+        ),
+    ],
+)
+def test_nontrivial_pull_request_rejects_shallow_process_preflight_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    row_label: str,
+    replacement: str,
+) -> None:
+    rows = "\n".join(
+        replacement if row.startswith(f"| {row_label} |") else row
+        for row in normalize_preflight_rows_for_current_contract(
+            f"| Intent/spec | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | INT-1 | source interview | reviewer | source | pass | accepted |\n"
+            f"| Source facts | `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` | repo-file | SRC-1 | official docs | reviewer | source | pass | accepted |\n"
+            f"| Failure matrix | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | INV-1 | invariant-to-test matrix | reviewer | matrix | pass | tracked |\n"
+            f"| Tests | `tests/unit/test_guardrails_check.py` | repo-file | INV-1 | old behavior fails under break-test evidence | reviewer | test | pass | none |\n"
+            f"| Docs/gates | `scripts/quality/check_phase1_closure_docs.py` | repo-file | INV-1 | invariant test gate | reviewer | gate | pass | tracked |\n"
+            f"| Adversarial review | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | ADV-1 | subagent review | reviewer | source | pass | tracked |\n"
+        ).splitlines()
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body(rows + "\n", normalize_rows=False),
         head_ref="phase-1-closure-44-telemetry-hardening",
         changed_files=["backend/app/main.py"],
     )

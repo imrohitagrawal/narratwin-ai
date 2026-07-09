@@ -253,6 +253,70 @@ REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS = {
     "GOV-SCOPE-001",
 }
 REQUIRED_ISSUE_39_ROW_CONTRACT_TERMS = {
+    "DUR-ACID-001": {
+        "production transaction model",
+        "durable identifiers",
+        "versioning",
+        "compare-and-set",
+        "conflict example",
+        "replay invariant",
+    },
+    "DUR-IDEMP-001": {
+        "replay-safe request identity",
+        "dedupe",
+        "retries",
+        "worker failover",
+        "idempotency envelope",
+        "terminal/error/replay state transitions",
+        "failure dedupe proofs",
+    },
+    "DUR-STAGE4-001": {
+        "project/document/chunk/run/eval graph",
+        "resume behavior",
+        "at-least-once execution",
+        "idempotent consumers",
+        "no exactly-once side-effect claim",
+    },
+    "DUR-LEASE-001": {
+        "lease acquisition",
+        "heartbeat renewal",
+        "expiry",
+        "reclaim",
+        "stale-writer fencing",
+        "monotonic fencing token/epoch",
+        "ownership transfer proof",
+    },
+    "DUR-OUTBOX-001": {
+        "outbox transaction boundaries",
+        "side-effect dispatch contract",
+        "same-transaction outbox write",
+        "state change",
+        "at-least-once dispatch",
+        "idempotent consumer policy",
+    },
+    "DUR-STAGE6-001": {
+        "translated scripts/subtitles",
+        "derived assets",
+        "source-run linkage",
+        "checksum-based dedupe",
+        "deterministic artifact provenance",
+    },
+    "DUR-STAGE7-001": {
+        "render status",
+        "artifact records",
+        "consent/disclosure binding",
+        "persistent render/provenance record",
+        "synthetic-media release check points",
+    },
+    "DUR-MIG-001": {
+        "versioned schema evolution",
+        "compatibility",
+        "forward-only rollback safety",
+        "expand/contract migration plan",
+        "backward-compatible code windows",
+        "forward repair",
+        "no mandatory down-migration claim",
+    },
     "DUR-ROLLBACK-001": {
         "previous deploy",
         "expanded schema",
@@ -379,6 +443,13 @@ REQUIRED_ISSUE_39_ROW_CONTRACT_TERMS = {
         "log redaction",
         "prompt-injection",
         "poisoned-retrieval",
+    },
+    "GOV-SCOPE-001": {
+        "does not absorb",
+        "child PRs",
+        "documented issue split",
+        "remaining blocker",
+        "separate issue/PR mapping",
     },
 }
 REQUIRED_PR_VALIDATION_COMMANDS = (
@@ -761,6 +832,8 @@ def has_completed_preflight_evidence(body: str) -> bool:
         if row.evidence_name in {"failure matrix", "review prompt set", "stop rule", "skill/tool selection"}:
             if is_generic_governance_reference(row.artifact):
                 continue
+        if not preflight_row_has_required_process_content(row):
+            continue
         completed_rows.setdefault(row.evidence_name, []).append(row)
 
     return (
@@ -986,6 +1059,40 @@ def normalize_preflight_evidence_name(value: str) -> str:
     if evidence_name.startswith("skill") or evidence_name.startswith("tool selection"):
         return "skill/tool selection"
     return evidence_name
+
+
+def preflight_row_has_required_process_content(row: PreflightEvidenceRow) -> bool:
+    row_text = normalize_contract_text(" ".join(row.raw_cells))
+    if row.evidence_name == "review prompt set":
+        return all(
+            term in row_text
+            for term in (
+                "review",
+                "prompt",
+                "matrix",
+            )
+        ) and any(term in row_text for term in ("false pass", "false close", "adversarial"))
+    if row.evidence_name == "stop rule":
+        return all(
+            term in row_text
+            for term in (
+                "stop",
+                "blocker",
+                "contract",
+            )
+        ) and any(term in row_text for term in ("reset", "rewrite", "update"))
+    if row.evidence_name == "skill/tool selection":
+        has_reuse_first = (
+            "preinstalled" in row_text
+            or "approved skills" in row_text
+            or "repo docs" in row_text
+        )
+        has_custom_decision = (
+            "no custom" in row_text
+            or ("documented gap" in row_text and "approval" in row_text)
+        )
+        return has_reuse_first and has_custom_decision
+    return True
 
 
 def is_generic_governance_reference(value: str) -> bool:
