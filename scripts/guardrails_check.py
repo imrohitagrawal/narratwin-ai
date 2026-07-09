@@ -253,6 +253,8 @@ REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS = {
     "GOV-SCOPE-001",
 }
 VALID_ISSUE_39_MATRIX_STATUSES = {"open", "closed"}
+ISSUE_39_PRODUCTION_GRADE_ROW_PREFIXES = ("DUR-", "OPS-", "MEDIA-", "SEC-", "PROVIDER-")
+ISSUE_39_CONTEXT0_PR_NUMBERS = {"64"}
 REQUIRED_ISSUE_39_ROW_CONTRACT_TERMS = {
     "DUR-ACID-001": {
         "production transaction model",
@@ -683,6 +685,8 @@ def issue_39_closure_record_ids(plan_text: str) -> set[str]:
             continue
         if not preflight_artifact_exists(artifact):
             continue
+        if not closure_record_has_required_evidence_type(row_id, child_issue_pr, artifact, evidence, reason):
+            continue
         row_id_lower = row_id.lower()
         artifact_target = clean_markdown_reference(artifact)
         if row_id_lower not in artifact_target.lower():
@@ -734,8 +738,53 @@ def closure_record_has_required_child_references(child_issue_pr: str) -> bool:
         issue_number != "39" and github_reference_exists("issues", issue_number)
         for issue_number in issue_urls
     )
-    verified_pr = any(github_reference_exists("pulls", pr_number) for pr_number in pr_urls)
+    verified_pr = any(
+        pr_number not in ISSUE_39_CONTEXT0_PR_NUMBERS
+        and github_reference_exists("pulls", pr_number)
+        and github_pull_request_is_merged(pr_number)
+        for pr_number in pr_urls
+    )
     return verified_child_issue and verified_pr
+
+
+def closure_record_has_required_evidence_type(
+    row_id: str,
+    child_issue_pr: str,
+    artifact: str,
+    evidence: str,
+    reason: str,
+) -> bool:
+    if not row_id.startswith(ISSUE_39_PRODUCTION_GRADE_ROW_PREFIXES):
+        return True
+    combined = " ".join((child_issue_pr, artifact, evidence, reason))
+    normalized = normalize_contract_text(combined)
+    if "context 0" in normalized or references_issue_39_context0_pr(normalized):
+        return False
+    if "issue 39 production closure plan" in normalized and not closure_record_has_concrete_evidence(evidence):
+        return False
+    return closure_record_has_concrete_evidence(evidence)
+
+
+def references_issue_39_context0_pr(normalized_text: str) -> bool:
+    return any(
+        re.search(rf"\b(?:pr|pull(?: request)?)\s+(?:number\s+)?{re.escape(pr_number)}\b", normalized_text)
+        for pr_number in ISSUE_39_CONTEXT0_PR_NUMBERS
+    )
+
+
+def closure_record_has_concrete_evidence(value: str) -> bool:
+    normalized = normalize_contract_text(value)
+    if re.search(r"\btests?/[\w./-]+\.py::test_[A-Za-z0-9_]+", value):
+        return True
+    if re.search(r"https://github\.com/[\w.-]+/[\w.-]+/actions/runs/\d+", value):
+        return True
+    if re.search(r"\bci\s+(?:run|artifact)\b", normalized) and re.search(r"https?://", value):
+        return True
+    if "drill log" in normalized:
+        return True
+    if "human only" in normalized:
+        return all(term in normalized for term in ("owner", "risk")) or "residual risk" in normalized
+    return False
 
 
 def github_reference_exists(resource: str, number: str) -> bool:
@@ -764,6 +813,32 @@ def github_reference_exists(resource: str, number: str) -> bool:
             if resource == "issues" and "pull_request" in payload:
                 return False
             return True
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
+        return False
+
+
+def github_pull_request_is_merged(number: str) -> bool:
+    github_auth_value = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not github_auth_value:
+        return False
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Authorization": f"Bearer {github_auth_value}",
+    }
+    request = Request(
+        f"https://api.github.com/repos/{CANONICAL_GITHUB_REPO}/pulls/{number}",
+        headers=headers,
+    )
+    try:
+        with urlopen(request, timeout=5) as response:  # nosec B310 - canonical GitHub API URL only.
+            status = int(getattr(response, "status", 0))
+            if not 200 <= status < 300:
+                return False
+            payload = json.loads(response.read().decode("utf-8"))
+            if not isinstance(payload, dict):
+                return False
+            return bool(payload.get("merged") is True or payload.get("merged_at"))
     except (HTTPError, URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
         return False
 

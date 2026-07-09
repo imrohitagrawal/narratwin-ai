@@ -124,12 +124,30 @@ change to `Closed`. The record must include:
 - child issue and PR number,
 - concrete same-repository child issue URL and PR URL,
 - artifact reference,
-- validation command, CI run, drill log, or human-only evidence reference,
+- validation command, automated test node ID, CI run/artifact URL, drill log, or
+  explicit human-only evidence reference,
 - owner,
 - reviewer,
 - residual-risk decision,
 - timestamp or merge commit,
 - explicit reason the evidence satisfies the row.
+
+For durability, operations, media, security, and provider rows (`DUR-*`,
+`OPS-*`, `MEDIA-*`, `SEC-*`, and `PROVIDER-*`), final row closure requires
+production-grade evidence rather than generic documentation. Valid final proof
+must include at least one concrete evidence form:
+
+- automated test node ID,
+- GitHub Actions CI run or artifact URL,
+- drill log,
+- explicit `human-only` evidence with owner and residual-risk decision.
+
+Rows in those domains must not use Context 0 planning artifacts, PR `#64`, or
+`docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md` alone as sufficient final
+proof. They also require same-repository child issue and child PR URLs, with a
+child PR number distinct from `#64`; when GitHub API validation is available,
+the child PR must be verified as merged before the row can support final
+closure.
 
 Future final-disposition PRs must fill this table. Context 0 intentionally
 leaves it empty because all matrix rows are `Open`.
