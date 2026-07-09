@@ -22,6 +22,48 @@ ISSUE_39_REFERENCE_ONLY_FAILURE = "Issue #39 pull requests must use reference-on
 PREFLIGHT_FAILURE = "Non-trivial pull requests must include completed preflight evidence rows."
 PR_SPECIFIC_PREFLIGHT_ARTIFACT = "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
 ISSUE39_SENSITIVE_ROW_CELLS = {
+    "DUR-ROLLBACK-001": [
+        "Technical rollback compatibility",
+        "Code rollback against migrated production metadata",
+        "Platform + Release",
+        "Evidence that the previous deploy can run against the expanded schema or that rollback is blocked until forward repair completes",
+    ],
+    "DUR-RESTORE-001": [
+        "Backup/restore drill",
+        "Backup scope, integrity, restore smoke, and RTO/RPO verification",
+        "Ops",
+        "Operable restore playbook with evidence of at least one successful restore drill",
+    ],
+    "OPS-METRICS-001": [
+        "Production metrics",
+        "Queue, lease, idempotency, outbox, and restore metrics",
+        "Observability",
+        "Reviewer-approved metric catalog and scrape/query mapping to each operational failure mode",
+    ],
+    "OPS-SLO-001": [
+        "Production SLOs and error budgets",
+        "Threshold bindings for queue lag, lease staleness, outbox age/backlog, restore RTO/RPO, rollback, and watch escalation",
+        "SRE/Ops + Release",
+        "Reviewed SLO/error-budget catalog with alert threshold mapping and rollback/watch escalation bindings",
+    ],
+    "OPS-ALERT-001": [
+        "Dashboards and alerts",
+        "Severity routing, alert ownership, and paging runbook",
+        "SRE/Ops",
+        "Dashboard + alert matrix with tested routing, evidence loop, and acknowledgment rules",
+    ],
+    "OPS-WATCH-001": [
+        "First-hour watch with follow-up checkpoints",
+        "Triage cadence and owner communication for the first 60 minutes, plus explicit 120/180-minute follow-up checkpoints",
+        "Release/Operations",
+        "Active watch log template, handoff rules, timeout actions, rollback escalation threshold",
+    ],
+    "OPS-ROLLBACK-001": [
+        "Rollback communications",
+        "Pre/post rollback comms and ownership confirmation",
+        "Release/Operations",
+        "Freeze-window criteria, comms template, and required evidence captures",
+    ],
     "MEDIA-CONSENT-001": [
         "Consent capture",
         "Affirmative consent record for synthetic-media generation",

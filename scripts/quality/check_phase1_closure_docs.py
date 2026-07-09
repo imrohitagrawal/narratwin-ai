@@ -118,6 +118,20 @@ ISSUE_39_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_local_durability.py",
 }
+ISSUE_39_CONTEXT0_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
+    ".github/workflows/quality.yml",
+    ".github/workflows/security.yml",
+    "docs/PROJECT_LEARNINGS_TRACKER.md",
+    "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "docs/SKILLS_AND_CODEX_SETUP.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/SKILL_LOCK.md",
+    "docs/SKILL_TRUST_REVIEW.md",
+    "scripts/guardrails_check.py",
+    "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 
 EXPECTED_ISSUE_PRIORITIES = {
     "#35": "P0",
@@ -689,6 +703,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = PROCESS_ONLY_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-37-"):
         allowed_files = ISSUE_37_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-context0-"):
+        allowed_files = ISSUE_39_CONTEXT0_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-"):
         allowed_files = ISSUE_39_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-42-"):

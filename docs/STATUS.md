@@ -229,6 +229,7 @@ Use these files together with this tracker:
 | `#59` | Merged | 2026-07-09 | Phase 1 Closure process follow-up for issue `#58`; merged at `38ec53b`, adding governance-learning allowlist coverage for `docs/PROJECT_GOVERNANCE_LEARNINGS.md` without runtime-scope expansion. |
 | `#62` | Merged | 2026-07-09 | Phase 1 Closure process follow-up PR for issue `#60` on branch `phase-1-closure-process-60-phf-002-medium-low-hardening`; merged at `cf07ab8`, hardening Medium/Low PHF process gaps without product/runtime scope. |
 | `#63` | In progress | 2026-07-09 | Status ledger reconciliation PR for issue `#60` final disposition and PR/issue mapping consistency in `docs/STATUS.md`; awaiting normal review-path approval. |
+| `#64` | In progress | 2026-07-09 | Phase 1 Closure Context 0 contract PR for issue `#39` on branch `phase-1-closure-39-context0-production-durability`; docs/guardrails/tests/workflow-only scope, no runtime implementation, and reference-only `Refs #39` posture. |
 
 ## Completed Work
 

@@ -95,6 +95,8 @@ def test_issue39_context0_branch_allows_targeted_process_and_skill_docs(monkeypa
         monkeypatch,
         branch="phase-1-closure-39-context0-production-durability",
         files=[
+            ".github/workflows/quality.yml",
+            ".github/workflows/security.yml",
             "docs/ENGINEERING_PROCESS_RCA.md",
             "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
             "docs/PROJECT_LEARNINGS_TRACKER.md",
@@ -111,6 +113,18 @@ def test_issue39_context0_branch_allows_targeted_process_and_skill_docs(monkeypa
     )
 
     assert failures == []
+
+
+def test_issue39_context0_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        files=["backend/app/stage4.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-context0-production-durability may not change backend/app/stage4.py."
+    ]
 
 
 def test_issue39_context0_branch_still_rejects_unrelated_docs(monkeypatch: Any) -> None:
