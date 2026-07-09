@@ -370,6 +370,38 @@ The PR template should also require authors to check the learnings tracker and,
 for implementation or release-readiness changes, confirm invariant,
 exploit-matrix, and contract/gate review.
 
+## Learning 11: Process Allowlists Must Cover Governance Learning Updates
+
+### What Worked
+
+Process-learning PRs in Phase 1 are now required to update governance artifacts
+such as this file.
+
+This exposed an enforcement gap: `docs/PROJECT_GOVERNANCE_LEARNINGS.md` was not
+in the Phase 1 process-only allowlist. A process-only PR that only updates this
+file would be treated as changing an out-of-scope path even though it is a
+governance deliverable.
+
+### Why It Matters
+
+Reusable governance learnings are low-cost, high-value updates. If process-only
+allowlists block them, teams are incentivized to skip filing the lesson or route
+it through a wider branch pattern, increasing risk of drift.
+
+### Future Default
+
+Include governance learning files in Phase 1 process-only change scopes so
+process-learning updates are always possible without relaxing unrelated runtime
+scope.
+
+### Review Checklist
+
+- Is this update scoped to a governance artifact that is explicitly in the
+  process-only allowlist?
+- Does the same file have a clear requirement in the stage-issue plan and
+  checker scope?
+- Does the process PR still avoid backend/frontend/provider/runtime files?
+
 ## Summary Defaults For New Applications
 
 Start new applications with these files or equivalents:
