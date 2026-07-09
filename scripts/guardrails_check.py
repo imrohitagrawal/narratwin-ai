@@ -535,11 +535,21 @@ def resolve_diff_base(head: str, preferred_base: str) -> str:
 
 
 def changed_files() -> list[str]:
-    base = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    base = preferred_diff_base_for_current_event()
     head = os.environ.get("GITHUB_HEAD_SHA", "").strip() or "HEAD"
     resolved_base = resolve_diff_base(head, base)
     output = run_git(["diff", "--name-only", resolved_base, head])
     return [line.strip() for line in output.splitlines() if line.strip()]
+
+
+def preferred_diff_base_for_current_event() -> str:
+    base = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    if os.environ.get("GITHUB_EVENT_NAME", "").strip() != "push":
+        return base
+    ref_name = os.environ.get("GITHUB_REF_NAME", "").strip()
+    if ref_name and ref_name != "main":
+        return ""
+    return base
 
 
 def closing_issue_pattern(issue_number: str = r"\d+") -> str:

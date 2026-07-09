@@ -2223,3 +2223,48 @@ def test_new_governance_artifacts_pass_when_status_is_updated() -> None:
     )
 
     assert guardrails.failures == []
+
+
+def test_pr_branch_push_changed_files_uses_merge_base_not_previous_commit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "phase-1-closure-39-context0-production-durability")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-pushed-commit")
+    monkeypatch.setenv("GITHUB_HEAD_SHA", "current-head")
+    calls: list[list[str]] = []
+
+    def fake_run_git(args: list[str]) -> str:
+        calls.append(args)
+        if args == ["merge-base", "origin/main", "current-head"]:
+            return "pr-merge-base"
+        if args == ["diff", "--name-only", "pr-merge-base", "current-head"]:
+            return "docs/STATUS.md\nscripts/guardrails_check.py"
+        return ""
+
+    monkeypatch.setattr(guardrails, "run_git", fake_run_git)
+
+    assert guardrails.changed_files() == ["docs/STATUS.md", "scripts/guardrails_check.py"]
+    assert ["rev-parse", "--verify", "previous-pushed-commit^{commit}"] not in calls
+
+
+def test_main_push_changed_files_keeps_previous_commit_base(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-main")
+    monkeypatch.setenv("GITHUB_HEAD_SHA", "current-main")
+
+    def fake_run_git(args: list[str]) -> str:
+        if args == ["rev-parse", "--verify", "previous-main^{commit}"]:
+            return "previous-main"
+        if args == ["merge-base", "previous-main", "current-main"]:
+            return "previous-main"
+        if args == ["diff", "--name-only", "previous-main", "current-main"]:
+            return "docs/STATUS.md"
+        return ""
+
+    monkeypatch.setattr(guardrails, "run_git", fake_run_git)
+
+    assert guardrails.changed_files() == ["docs/STATUS.md"]
