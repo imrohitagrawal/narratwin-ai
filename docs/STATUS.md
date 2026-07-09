@@ -228,6 +228,7 @@ Use these files together with this tracker:
 | `#54` | Merged | 2026-07-08 | Phase 1 Closure PR for issue `#39`; merged at `8b4ba05`, adding optional local JSON restart recovery, sensitive-snapshot documentation, redacted ops status evidence, monitoring posture visibility, process-hardening RCA/playbook gates, and reference-only `#39` protection so the production blocker is not auto-closed. |
 | `#59` | Merged | 2026-07-09 | Phase 1 Closure process follow-up for issue `#58`; merged at `38ec53b`, adding governance-learning allowlist coverage for `docs/PROJECT_GOVERNANCE_LEARNINGS.md` without runtime-scope expansion. |
 | `#62` | Merged | 2026-07-09 | Phase 1 Closure process follow-up PR for issue `#60` on branch `phase-1-closure-process-60-phf-002-medium-low-hardening`; merged at `cf07ab8`, hardening Medium/Low PHF process gaps without product/runtime scope. |
+| `#63` | In progress | 2026-07-09 | Status ledger reconciliation PR for issue `#60` final disposition and PR/issue mapping consistency in `docs/STATUS.md`; awaiting normal review-path approval. |
 
 ## Completed Work
 
