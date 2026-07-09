@@ -512,7 +512,15 @@ restore/replay, derived-artifact, release, CI, and governance-process PRs must
 provide the invariant-to-test mapping before implementation; human-only
 surfaces, including the final squash/merge message, must be listed separately
 with owner and residual-risk decision, and pre-implementation evidence must show
-the matrix/source facts existed before implementation or guardrail edits began.
+the matrix/source facts existed before implementation or guardrail edits began
+through a specific issue-comment URL, PR URL, or verified commit ordering.
+Process-critical governance docs and process-review registers stay in the
+non-trivial category even for text-only edits because those files define future
+automation behavior and review-loop prevention.
+Local validation that claims to cover PR-body checks must run with a pull-request
+event payload and `NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1`; plain
+`python3 scripts/guardrails_check.py` covers repository files but not PR title,
+body, or branch commit-message semantics outside a pull-request event.
 
 Changes to `scripts/quality/check_phase1_closure_docs.py`,
 `scripts/quality/check_quality_stage.py`, or

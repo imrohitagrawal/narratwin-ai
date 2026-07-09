@@ -399,6 +399,9 @@ Required Stage 6 invariants:
 - corrupted or tampered restored provider/artifact payloads must be dropped;
 - local-only provider assumptions must not restore external-provider claims as
   trusted local state;
+- source run ID, retrieved context refs, source citation indexes, evaluation ID,
+  evaluation checksum/status, and claim-support records must remain mutually
+  bound before replay, export, or downstream artifact generation;
 - terminal idempotency records must reference valid typed restored values;
 - failed idempotency records without serialized error details must be dropped;
 - stale pending/running idempotency records must not replay;
@@ -435,7 +438,7 @@ Required Stage 7 invariants:
 - consent/disclosure fields must be restored only when they match the accepted
   synthetic-media contract.
 
-### Governance / CI / False-Pass
+## Governance / CI / False-Pass
 
 Process and CI guardrails need their own invariant matrix because repository
 automation mutates state too.
@@ -465,8 +468,9 @@ project-specific variant, before implementation starts.
 |---|---|---|---|---|---|---|---|---|
 | S4-RESTORE-001 | Stage 4 chunk restore | Restored chunks match owning document tenant/project/document/filename/source checksum/approved timestamp/chunk checksum/text-derived metadata | Valid chunk IDs can survive while chunk text belongs to another document | `test_stage4_restores_valid_chunk_graph` | `test_stage4_drops_chunk_with_tampered_document_checksum` and break-test evidence that old behavior failed | `uv run pytest tests/unit/test_local_durability.py`; gate in `make quality` | owner | pass |
 | S6-ARTIFACT-001 | Stage 6 derived artifact | Translated text, provider text, subtitle text, artifacts, checksums, language tags, provider mode, glossary, and citations agree | A provider/artifact payload can be tampered while the idempotency record still replays | `test_stage6_replays_valid_multilingual_result` | `test_stage6_drops_inconsistent_restored_artifact_payload`; mutation changes artifact checksum/text | `uv run pytest tests/unit/test_local_durability.py` | owner | pass |
-| S7-EXPORT-001 | Stage 7 render artifacts | Artifact metadata matches restored artifact payloads and render evidence, not only render ID | Metadata row can point at a valid render while artifact checksum differs | `test_stage7_restores_valid_artifact_metadata` | `test_stage7_drops_artifact_metadata_that_mismatches_render` | `uv run pytest tests/unit/test_local_durability.py` | owner | pass |
-| GOV-CLOSE-001 | Governance | Issue-closing keywords are rejected across title/body/commits/edited body/colon/cross-repo/URL forms except canonical-stage closures | CI passes while GitHub later auto-closes the wrong issue | `test_general_pull_request_allows_reference_only_issue_link` | `test_general_pull_request_rejects_closing_keyword_even_with_reference_link`; official GitHub source cited | `uv run pytest tests/unit/test_guardrails_check.py`; final squash text is human-only | owner | pass |
+| S6-SOURCE-001 | Stage 6 source evidence binding | Source run, retrieved context refs, evaluation ID/status/checksum, citation indexes, and claim-support records agree before translated or subtitle artifacts replay | Valid artifact IDs can survive while source evidence belongs to another run | `test_stage6_replays_valid_source_bound_artifact` | `test_stage6_drops_artifact_with_mismatched_source_run`; break-test evidence that old behavior failed | `uv run pytest tests/unit/test_local_durability.py` | owner | pass |
+| S7-EXPORT-001 | Stage 7 render artifacts | Artifact metadata matches restored artifact payloads and render evidence, not only render ID | Metadata row can point at a valid render while artifact checksum differs | `test_stage7_restores_valid_artifact_metadata` | `test_stage7_drops_artifact_metadata_that_mismatches_render`; mutation changes artifact checksum | `uv run pytest tests/unit/test_local_durability.py` | owner | pass |
+| GOV-CLOSE-001 | Governance | Issue-closing keywords are rejected across title/body/commits/edited body/colon/cross-repo/URL forms except canonical-stage closures | CI passes while GitHub later auto-closes the wrong issue | `test_general_pull_request_allows_reference_only_issue_link` | `test_general_pull_request_rejects_closing_keyword_even_with_reference_link`; break-test evidence that old behavior failed; official GitHub source cited | `uv run pytest tests/unit/test_guardrails_check.py`; final squash text is human-only | owner | pass |
 ```
 
 Rules:
@@ -476,8 +480,9 @@ Rules:
   or documented non-goal. Partial overlap is a blocker.
 - Each non-trivial row needs negative or mutation evidence unless the behavior
   is outside repository control and covered by an official source fact.
-- The PR body must name human-only surfaces or include an explicit `N/A` row.
-  Human-only is a residual risk classification, not a way to avoid tests.
+- The PR body must name human-only surfaces, including the final squash/merge
+  message for guarded PRs. Human-only is a residual risk classification, not a
+  way to avoid tests.
 - The PR body must include pre-implementation evidence proving the matrix and
   source facts existed before implementation or guardrail edits began.
 - For copied behavior across modules, include one row per module plus one
@@ -488,9 +493,9 @@ Pre-implementation evidence template:
 ```markdown
 | Requirement | Pre-code artifact | Timestamp / commit / PR comment | Reviewer | Decision |
 |---|---|---|---|---|
-| Invariant/failure matrix | `docs/path/to/preflight.md` | pre-code timestamp: YYYY-MM-DDTHH:MM | reviewer | pass |
-| Source facts | `docs/path/to/sources.md` | reviewer signoff: reviewer YYYY-MM-DD | reviewer | pass |
-| Human-only surfaces, if any | `docs/path/to/preflight.md` | commit order: <matrix-commit> before <implementation-commit> | reviewer | pass |
+| Invariant/failure matrix | `docs/path/to/preflight.md` | issue comment: https://github.com/org/repo/issues/<issue>#issuecomment-<id> | reviewer | pass |
+| Source facts | `docs/path/to/sources.md` | draft pr: https://github.com/org/repo/pull/<id> | reviewer | pass |
+| Human-only surfaces, if any | `docs/path/to/preflight.md` | verified commit order: <matrix-commit> before <implementation-commit> | reviewer | pass |
 ```
 
 ## Bad Partial Fixes Versus Complete Coverage

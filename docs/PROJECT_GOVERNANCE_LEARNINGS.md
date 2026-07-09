@@ -402,6 +402,47 @@ scope.
   checker scope?
 - Does the process PR still avoid backend/frontend/provider/runtime files?
 
+## Learning 12: Invariants Must Map to Tests, Gates, or Human-Only Checklist
+
+### What Worked
+
+`docs/ENGINEERING_PROCESS_RCA.md` and
+`docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` are now the single places
+that require process-invariant mapping before implementation starts.
+
+### Why It Matters
+
+PRs can still satisfy checklist-style text without proving negative behavior or old
+bug exposure. Medium/Low PHF follow-ups showed that marker strings and manual
+intent statements were not enough unless each invariant had a concrete mapping path.
+
+### Future Default
+
+For every non-trivial PR, require one of:
+
+- executable tests for the matrix ID,
+- executable gates/checkers,
+- official source facts,
+- explicit human-only review row with owner and residual-risk decision.
+
+Process-critical governance docs, PR templates, quality gates, guardrail scripts,
+and process-review registers count as non-trivial even when the edit looks
+text-only. The cost of a preflight row is lower than another review/fix loop
+caused by a marker-only process claim.
+
+Then require either:
+
+- old behavior fail evidence (RED, break-test, mutation, or regression reproduced), or
+- explicit non-goal status with owner and rationale for why no automated proof is
+  possible.
+
+### Review Checklist
+
+- Is there a matrix ID for every claimed process invariant?
+- Is each matrix ID mapped to test/gate/source/human-only/non-goal evidence?
+- Is old-behavior failure evidence present for false-pass-prone claims?
+- Is every required human-only surface listed with owner and residual-risk decision?
+
 ## Summary Defaults For New Applications
 
 Start new applications with these files or equivalents:
@@ -412,6 +453,8 @@ Start new applications with these files or equivalents:
 - `docs/TRACEABILITY.md`
 - `docs/THIRD_PARTY_NOTICES.md`
 - `docs/SKILL_LOCK.md` or tool/agent lock
+- `docs/ENGINEERING_PROCESS_RCA.md` or equivalent process-RCA artifact
+- `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` or equivalent project-start playbook
 - `docs/ADR/`
 - stage-specific quality gate scripts
 - root README links to the above

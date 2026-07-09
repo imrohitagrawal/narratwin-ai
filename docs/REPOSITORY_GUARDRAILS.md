@@ -55,8 +55,9 @@ The policy check fails CI for:
 - issue-closing keywords in PR title/body/commit messages outside explicitly
   allowed canonical stage issue closures
 - drift between live `main` branch-protection settings and the documented
-  required status checks, PR review, admin enforcement, force-push/deletion, and
-  conversation-resolution posture
+  required status checks and app bindings visible to CI; required PR review,
+  admin enforcement, force-push/deletion, and conversation-resolution posture
+  remain human-only when GitHub denies protected-branch detail access
 - LLM-generation code without trace/run metadata
 - generated-script/answer code without source chunk citations
 - failing eval result reports
@@ -128,8 +129,9 @@ evidence. Every matrix ID named by the failure-matrix row must be covered by a
 test, executable gate, official source fact, explicit human-only row, or
 documented non-goal. Range shorthand such as `INV-1 through INV-6` is not a
 valid substitute for explicit matrix IDs. The declared reference type must match
-the artifact form, and human-only/pre-implementation evidence must use concrete
-repo-file or non-placeholder URL references. The tests row must state how old
+the artifact form. Human-only evidence must use concrete repo-file or
+non-placeholder URL references, and pre-implementation URL evidence must use a
+specific issue-comment URL or PR URL rather than a generic issue page. The tests row must state how old
 behavior was proven false for changed guardrails, bug fixes, restore/replay
 paths, and process-sensitive claims.
 
@@ -140,6 +142,37 @@ executable gate, an official source fact, or an explicitly human-only checklist
 item with owner and residual-risk decision. Process-sensitive PRs must also show
 pre-implementation evidence proving that the invariant/failure matrix and source
 facts existed before implementation or guardrail edits began.
+Process-critical governance docs, process-review registers, PR templates, and
+quality/guardrail scripts remain non-trivial even for text-only edits. These
+files define the review loop and therefore must carry preflight evidence rather
+than relying on marker-only wording.
+
+For process and governance work, the PR template validation artifact is not optional:
+
+- `Validation evidence` in `.github/pull_request_template.md` must include
+  the required command references. Actual pull-request bodies must replace the
+  template examples with result-bearing lines such as `-> passed` or CI run URLs;
+  bare command names, TODO text, and placeholder event paths do not count.
+
+```text
+uv run pytest tests/unit/test_guardrails_check.py
+uv run pytest tests/unit/test_phase1_closure_docs.py
+python3 scripts/guardrails_check.py
+make quality
+uv run ruff check scripts tests
+uv run mypy scripts tests
+GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/path/to/pr-event.json NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py
+```
+
+- The optional branch-protection verifier command is expected when branch-protection
+  behavior changed or is directly reviewed:
+
+```text
+uv run pytest tests/unit/test_branch_protection_verifier.py
+```
+
+The phase-1 process check does not accept marker-only completion or placeholder
+values in these fields.
 
 Use `docs/ENGINEERING_PROCESS_RCA.md` for the NarraTwin-specific failure lessons
 and `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` when creating a new
