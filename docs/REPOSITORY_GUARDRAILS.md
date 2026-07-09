@@ -50,6 +50,12 @@ The policy check fails CI for:
   status values. The same structural checks now run on every repository-guardrail
   execution so malformed `#39` matrix updates are rejected even when the PR
   text remains reference-only.
+- Weak final row-closure proof for `#39` durability, operations, media,
+  security, and provider rows: `DUR-*`, `OPS-*`, `MEDIA-*`, `SEC-*`, and
+  `PROVIDER-*` rows require concrete evidence such as automated test node IDs,
+  CI run/artifact URLs, drill logs, or explicit human-only owner/risk evidence;
+  Context 0 artifacts, PR `#64`, docs-only evidence, and unmerged child PRs do
+  not satisfy production-grade row closure.
 - non-trivial pull requests without completed preflight evidence rows for the
   required source, invariant/failure matrix, test, docs/gates, and
   adversarial-review categories in the PR body

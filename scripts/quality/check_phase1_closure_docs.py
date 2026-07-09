@@ -63,6 +63,10 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_72_ALLOWED_CHANGED_FILES = PROCESS_ONLY_ALLOWED_CHANGED_FILES | {
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "docs/reviews/ISSUE_72_CLOSURE_EVIDENCE_HARDENING_PREFLIGHT.md",
+}
 ISSUE_37_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "backend/app/main.py",
     "docs/ADR/0007-local-principal-contract.md",
@@ -822,7 +826,9 @@ def check_required_files(failures: list[str]) -> None:
 
 def check_changed_files(failures: list[str]) -> None:
     branch = current_branch()
-    if branch.startswith("phase-1-closure-process-"):
+    if branch.startswith("phase-1-closure-process-72-"):
+        allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-"):
         allowed_files = PROCESS_ONLY_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-37-"):
         allowed_files = ISSUE_37_ALLOWED_CHANGED_FILES

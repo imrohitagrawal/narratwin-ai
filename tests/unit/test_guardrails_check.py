@@ -174,6 +174,8 @@ def write_issue39_closure_plan(
     generic_records: bool = False,
     generic_evidence_only: bool = False,
     padded_generic_evidence_only: bool = False,
+    doc_only_evidence: bool = False,
+    context0_pr64_evidence: bool = False,
     artifact_id_only: bool = False,
     artifact_label_id_only: bool = False,
     weakened_id: str | None = None,
@@ -206,7 +208,17 @@ def write_issue39_closure_plan(
             artifact = f"[{matrix_id} evidence](docs/reviews/shared-evidence.md)"
         else:
             artifact = f"`docs/reviews/{matrix_id}-evidence.md`"
-        if artifact_id_only:
+        if context0_pr64_evidence:
+            evidence = (
+                f"{matrix_id} Context 0 planning proof from PR #64 and "
+                "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+            )
+        elif doc_only_evidence:
+            evidence = (
+                f"{matrix_id} documented in docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md "
+                "with reviewer notes and process signoff"
+            )
+        elif artifact_id_only:
             evidence = "Concrete replay drill log shows invariant held under retry, failover, and reviewer audit conditions"
         elif padded_generic_evidence_only:
             evidence = f"{matrix_id} human-only evidence passed with reviewer evidence"
@@ -216,7 +228,11 @@ def write_issue39_closure_plan(
             evidence = (
                 f"{matrix_id} {closure_evidence_detail(matrix_id)}"
             )
-        if generic_records:
+        if context0_pr64_evidence:
+            reason = f"{matrix_id} Context 0 PR #64 planning artifact is cited as final row evidence"
+        elif doc_only_evidence:
+            reason = f"{matrix_id} documentation-only closure proof is cited with reviewer notes"
+        elif generic_records:
             reason = f"{matrix_id} evidence satisfies the closure row"
         elif artifact_id_only:
             reason = "Closure artifact proves the named invariant with a concrete command, review owner, and residual-risk decision"
@@ -252,20 +268,21 @@ def write_issue39_closure_plan(
 
 
 def closure_evidence_detail(matrix_id: str) -> str:
+    test_node = f"tests/unit/test_issue39_production_closure.py::test_{matrix_id.lower().replace('-', '_')}_closure"
     if matrix_id.startswith("DUR-"):
-        return "durability replay evidence records the transaction, lease, outbox, restore, or migration invariant for that exact row"
+        return f"{test_node} durability replay evidence records the transaction, lease, outbox, restore, or migration invariant for that exact row"
     if matrix_id.startswith("OPS-SLO"):
-        return "SLO and error-budget evidence binds queue lag, lease staleness, outbox age, restore targets, rollback, and watch thresholds"
+        return f"{test_node} SLO and error-budget evidence binds queue lag, lease staleness, outbox age, restore targets, rollback, and watch thresholds"
     if matrix_id.startswith("OPS-"):
-        return "operations evidence records metric, alert, watch, or rollback behavior with owner-reviewed production thresholds"
+        return f"{test_node} operations evidence records metric, alert, watch, or rollback behavior with owner-reviewed production thresholds"
     if matrix_id.startswith("MEDIA-"):
-        return "synthetic-media evidence records consent, revocation, provenance, or disclosure state with reviewer-approved privacy controls"
+        return f"{test_node} synthetic-media evidence records consent, revocation, provenance, or disclosure state with reviewer-approved privacy controls"
     if matrix_id.startswith("PROVIDER-"):
-        return "provider-posture evidence records local mock defaults, production enablement, egress denial, key isolation, and rollback disablement"
+        return f"{test_node} provider-posture evidence records local mock defaults, production enablement, egress denial, key isolation, and rollback disablement"
     if matrix_id.startswith("SEC-RETENTION"):
-        return "privacy evidence records deletion scope, tombstone policy, backup expiry, restore re-delete, audit exceptions, and replay blocking"
+        return f"{test_node} privacy evidence records deletion scope, tombstone policy, backup expiry, restore re-delete, audit exceptions, and replay blocking"
     if matrix_id.startswith("SEC-UNTRUSTED"):
-        return "security evidence records validation, output encoding, log redaction, injection controls, poisoned-retrieval checks, and restore revalidation"
+        return f"{test_node} security evidence records validation, output encoding, log redaction, injection controls, poisoned-retrieval checks, and restore revalidation"
     return "governance evidence records scope split review and non-absorb signoff"
 
 
@@ -288,7 +305,18 @@ def allow_github_reference_verification(monkeypatch: pytest.MonkeyPatch) -> None
         return (resource, number) in verified_refs
 
     monkeypatch.setattr(guardrails, "github_reference_exists", fake_github_reference_exists)
+    monkeypatch.setattr(guardrails, "github_pull_request_is_merged", lambda number: number == "71")
     monkeypatch.setattr(guardrails, "_test_github_reference_calls", calls, raising=False)
+
+
+def allow_github_reference_verification_for_context0_pr64(monkeypatch: pytest.MonkeyPatch) -> None:
+    verified_refs = {("issues", "70"), ("pulls", "64")}
+
+    def fake_github_reference_exists(resource: str, number: str) -> bool:
+        return (resource, number) in verified_refs
+
+    monkeypatch.setattr(guardrails, "github_reference_exists", fake_github_reference_exists)
+    monkeypatch.setattr(guardrails, "github_pull_request_is_merged", lambda number: number == "64")
 
 
 def run_issue_link_check(
@@ -729,6 +757,65 @@ def test_phase1_issue39_pull_request_rejects_markdown_label_only_artifact_bindin
     assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
 
 
+def test_phase1_issue39_pull_request_rejects_doc_only_sensitive_closure_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path, doc_only_evidence=True)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_context0_pr64_as_final_row_proof(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification_for_context0_pr64(monkeypatch)
+    write_issue39_closure_plan(
+        tmp_path,
+        child_pr="https://github.com/imrohitagrawal/narratwin-ai/pull/64",
+        context0_pr64_evidence=True,
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_unmerged_child_pr_url(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    monkeypatch.setattr(guardrails, "github_pull_request_is_merged", lambda number: False, raising=False)
+    write_issue39_closure_plan(tmp_path)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
 def test_phase1_issue39_pull_request_rejects_bare_child_issue_pr_references(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -818,6 +905,43 @@ def test_github_reference_exists_distinguishes_issue_from_pr_endpoint(
     assert guardrails.github_reference_exists("issues", "71") is False
     assert guardrails.github_reference_exists("pulls", "71") is True
     assert guardrails.github_reference_exists("pulls", "9999") is False
+
+
+def test_github_pull_request_is_merged_rejects_missing_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+
+    def fail_urlopen(*args: object, **kwargs: object) -> object:
+        raise AssertionError("urlopen must not be called without a token")
+
+    monkeypatch.setattr(guardrails, "urlopen", fail_urlopen)
+
+    assert guardrails.github_pull_request_is_merged("71") is False
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({"number": 71, "merged": True, "merged_at": "2026-07-10T00:00:00Z"}, True),
+        ({"number": 71, "merged": False, "merged_at": None}, False),
+        ({"number": 71, "state": "open"}, False),
+    ],
+)
+def test_github_pull_request_is_merged_uses_pull_payload(
+    monkeypatch: pytest.MonkeyPatch,
+    payload: dict[str, Any],
+    expected: bool,
+) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+
+    def fake_urlopen(request: object, timeout: int) -> FakeGitHubResponse:
+        assert timeout == 5
+        assert getattr(request, "full_url", "").endswith("/pulls/71")
+        return FakeGitHubResponse(200, payload)
+
+    monkeypatch.setattr(guardrails, "urlopen", fake_urlopen)
+
+    assert guardrails.github_pull_request_is_merged("71") is expected
 
 
 @pytest.mark.parametrize(

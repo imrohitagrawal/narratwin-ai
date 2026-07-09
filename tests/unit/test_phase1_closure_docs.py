@@ -85,6 +85,35 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
     assert failures == []
 
 
+def test_issue72_process_branch_allows_closure_evidence_contract_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-process-72-closure-evidence-hardening",
+        files=[
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "docs/reviews/ISSUE_72_CLOSURE_EVIDENCE_HARDENING_PREFLIGHT.md",
+            "scripts/guardrails_check.py",
+            "tests/unit/test_guardrails_check.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue72_process_branch_rejects_unrelated_review_docs(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-process-72-closure-evidence-hardening",
+        files=["docs/reviews/unrelated.md"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-process-72-closure-evidence-hardening may not change "
+        "docs/reviews/unrelated.md."
+    ]
+
+
 def test_issue39_closure_plan_accepts_current_matrix() -> None:
     failures: list[str] = []
     phase1.check_issue39_closure_plan(failures)
