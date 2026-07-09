@@ -62,17 +62,20 @@ be `pass` or `passed`.
 
 List surfaces CI cannot fully verify, such as final squash/merge message text,
 repository settings unavailable to CI, provider dashboards, legal/license
-approval, or release communications. Use an explicit `N/A` row only when no
-human-only surface remains.
+approval, or release communications. Guarded non-trivial PRs must include the
+final squash/merge message row because CI cannot inspect the merge dialog text
+before merge.
 
 | Surface | Automation gap | Owner | Evidence | Residual risk decision | Expiry / revisit trigger |
 |---|---|---|---|---|---|
-|  |  |  |  |  |  |
+| Final squash/merge message | CI cannot inspect the final merge dialog text before merge | repo owner | PR body / reviewer confirmation | reference-only final message with no issue-closing keyword accepted for PR only | before merge |
 
 ## Pre-implementation evidence
 
 For process-sensitive work, show that the invariant/failure matrix and source
-facts existed before implementation code or guardrail edits began.
+facts existed before implementation code or guardrail edits began. Use a
+specific `#issuecomment-...` URL, PR URL, or verified commit-order statement;
+generic issue-page URLs do not count.
 
 | Requirement | Pre-code artifact | Timestamp / commit / PR comment | Reviewer | Decision |
 |---|---|---|---|---|
@@ -82,10 +85,19 @@ facts existed before implementation code or guardrail edits began.
 
 ## Validation evidence
 
-Paste commands/results or link CI run:
+Paste commands/results or link CI run. Bare command names, `TODO`/`not run`
+markers, and placeholder event paths do not satisfy PR guardrails:
 
 ```text
-
+uv run pytest tests/unit/test_guardrails_check.py
+uv run pytest tests/unit/test_phase1_closure_docs.py
+python3 scripts/guardrails_check.py
+make quality
+uv run ruff check scripts tests
+uv run mypy scripts tests
+GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/path/to/pr-event.json NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py
+# Optional when changed:
+# uv run pytest tests/unit/test_branch_protection_verifier.py
 ```
 
 ## Notes for reviewer

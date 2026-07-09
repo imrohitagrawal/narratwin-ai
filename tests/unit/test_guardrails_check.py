@@ -31,6 +31,8 @@ def run_issue_link_check(
     head_ref: str = "phase-1-closure-39-durability-monitoring",
     commit_messages: str = "",
     changed_files: list[str] | None = None,
+    event_name: str = "pull_request",
+    force_pull_request_guards: bool = False,
 ) -> list[str]:
     event_path = tmp_path / "event.json"
     event_path.write_text(
@@ -46,8 +48,10 @@ def run_issue_link_check(
         ),
         encoding="utf-8",
     )
-    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", event_name)
     monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    if force_pull_request_guards:
+        monkeypatch.setenv(guardrails.FORCE_PULL_REQUEST_GUARDRAILS_ENV, "1")
 
     def fake_run_git(args: list[str]) -> str:
         if args and args[0] == "log":
@@ -71,8 +75,12 @@ def completed_preflight_body(preflight_rows: str | None = None, *, human_rows: s
         "| Docs/gates | `scripts/quality/check_phase1_closure_docs.py` | repo-file | INV-1 INV-2 | invariant test gate | reviewer | gate | pass | tracked |\n"
         "| Adversarial review | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | ADV-1 | subagent review | reviewer | source | pass | tracked |\n"
     )
-    human_surface_rows = human_rows or (
-        "| N/A | No human-only surface for this PR | reviewer | `docs/ENGINEERING_PROCESS_RCA.md` | accepted | next process PR |\n"
+    human_surface_rows = (
+        human_rows
+        if human_rows is not None
+        else (
+        "| Final squash message | CI cannot inspect the final merge dialog text before merge | repo owner | `docs/ENGINEERING_PROCESS_RCA.md` | reference-only final message with no issue-closing keyword accepted for PR only | before merge |\n"
+        )
     )
     return (
         "Refs #44\n\n"
@@ -87,9 +95,19 @@ def completed_preflight_body(preflight_rows: str | None = None, *, human_rows: s
         "## Pre-implementation evidence\n\n"
         "| Requirement | Pre-code artifact | Timestamp / commit / PR comment | Reviewer | Decision |\n"
         "|---|---|---|---|---|\n"
-        "| Invariant/failure matrix | `docs/ENGINEERING_PROCESS_RCA.md` | pre-code timestamp: 2026-07-09T10:00 | reviewer | pass |\n"
-        "| Source facts | `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` | reviewer signoff: reviewer 2026-07-09 | reviewer | pass |\n"
-        "| Human-only surfaces, if any | `docs/ENGINEERING_PROCESS_RCA.md` | commit order: 1234567 before 89abcde | reviewer | pass |\n"
+        "| Invariant/failure matrix | `docs/ENGINEERING_PROCESS_RCA.md` | issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-1 | reviewer | pass |\n"
+        "| Source facts | `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` | draft pr: https://github.com/imrohitagrawal/narratwin-ai/pull/60 | reviewer | pass |\n"
+        "| Human-only surfaces, if any | `docs/ENGINEERING_PROCESS_RCA.md` | issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-2 | reviewer | pass |\n"
+        "\n## Validation evidence\n\n"
+        "```text\n"
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed\n"
+        "uv run pytest tests/unit/test_phase1_closure_docs.py -> 14 passed\n"
+        "python3 scripts/guardrails_check.py -> passed\n"
+        "make quality -> passed\n"
+        "uv run ruff check scripts tests -> passed\n"
+        "uv run mypy scripts tests -> passed\n"
+        "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed\n"
+        "```\n"
     )
 
 
@@ -314,6 +332,82 @@ def test_canonical_stage_pull_request_rejects_extra_closing_issue(
     assert "Pull request title/body/commit messages must not close non-canonical issues." in failures
 
 
+@pytest.mark.parametrize(
+    ("head_ref", "canonical_issue"),
+    [
+        ("stage2-architecture-security-ai-safety", "2"),
+        ("stage3-governance-hardening", "5"),
+        ("stage4-multiple-state-contract", "4"),
+        ("stage5-local-evaluation-foundation", "10"),
+        ("stage6-multilingual-sourcing", "11"),
+        ("stage7-avatar-export", "12"),
+        ("stage8-release-hardening", "13"),
+    ],
+)
+def test_canonical_stage_pull_request_accepts_only_canonical_issue(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    head_ref: str,
+    canonical_issue: str,
+) -> None:
+    accepted = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title=f"Stage closure work for {head_ref}",
+        body=f"Closes #{canonical_issue}",
+        head_ref=head_ref,
+    )
+    assert accepted == []
+
+    rejected = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title=f"Stage closure work for {head_ref}",
+        body=f"Closes #{int(canonical_issue) + 1}",
+        head_ref=head_ref,
+    )
+    assert "Pull request title/body/commit messages must not close non-canonical issues." in rejected
+
+
+def test_force_pull_request_guardrails_enforced_in_non_pull_request_context(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Fixes #44",
+        body="Refs #44",
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        event_name="push",
+        force_pull_request_guards=True,
+        changed_files=["backend/app/main.py"],
+        commit_messages="",
+    )
+    assert "Pull request title/body/commit messages must use reference-only issue wording." in failures
+
+
+def test_push_context_without_pull_request_payload_when_force_enabled_fails_fast(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)
+    monkeypatch.setenv(guardrails.FORCE_PULL_REQUEST_GUARDRAILS_ENV, "1")
+
+    def fake_run_git(args: list[str]) -> str:
+        if args and args[0] == "log":
+            return ""
+        if args and args[0] == "diff":
+            return ""
+        return ""
+
+    monkeypatch.setattr(guardrails, "run_git", fake_run_git)
+    guardrails.failures.clear()
+    guardrails.check_issue_linked_pull_request()
+    assert "Pull request event payload is unavailable; cannot verify issue linkage." in guardrails.failures
+
+
 def test_general_pull_request_requires_issue_link(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -351,6 +445,22 @@ def test_nontrivial_pull_request_requires_completed_preflight_evidence(
     )
 
     assert "Non-trivial pull requests must include completed preflight evidence rows." in failures
+
+
+def test_process_critical_docs_are_nontrivial_and_require_preflight(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden process review evidence",
+        body="Refs #60",
+        head_ref="phase-1-closure-process-60-phf-002-medium-low-hardening",
+        changed_files=["docs/reviews/PROCESS_HARDENING_FINDINGS.md"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
 
 
 def test_nontrivial_pull_request_accepts_completed_preflight_evidence(
@@ -483,6 +593,29 @@ def test_nontrivial_pull_request_accepts_matrix_ids_covered_across_evidence_type
     )
 
     assert failures == []
+
+
+def test_nontrivial_pull_request_rejects_invariant_id_covered_only_by_source(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body(
+            "| Intent/spec | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | INT-1 | source interview | reviewer | source | pass | accepted |\n"
+            "| Source facts | `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` | repo-file | SRC-1 INV-2 | official docs for source and invariant | reviewer | source | pass | accepted |\n"
+            "| Failure matrix | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | INV-1 INV-2 | invariant-to-test matrix | reviewer | matrix | pass | tracked |\n"
+            "| Tests | `tests/unit/test_guardrails_check.py` | repo-file | INV-1 | old behavior fails under break-test evidence | reviewer | test | pass | none |\n"
+            "| Docs/gates | `scripts/quality/check_phase1_closure_docs.py` | repo-file | INV-1 | invariant test gate | reviewer | gate | pass | tracked |\n"
+            "| Adversarial review | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | ADV-1 | subagent review | reviewer | source | pass | tracked |\n"
+        ),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
 
 
 @pytest.mark.parametrize("status", ["tracked", "accepted"])
@@ -674,7 +807,7 @@ def test_nontrivial_pull_request_accepts_valid_human_only_surface(
         body=completed_preflight_body(
             rows,
             human_rows=(
-                "| Final squash message | CI cannot inspect the final message before merge | repo owner | `docs/ENGINEERING_PROCESS_RCA.md` | accepted | before merge |\n"
+                "| Final squash message | CI cannot inspect the final message before merge | repo owner | `docs/ENGINEERING_PROCESS_RCA.md` | reference-only final message with no issue-closing keyword accepted | before merge |\n"
             ),
         ),
         head_ref="phase-1-closure-44-telemetry-hardening",
@@ -682,6 +815,46 @@ def test_nontrivial_pull_request_accepts_valid_human_only_surface(
     )
 
     assert failures == []
+
+
+def test_nontrivial_pull_request_rejects_na_human_only_surface(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body(
+            human_rows=(
+                "| N/A | No human-only surface for this PR | reviewer | `docs/ENGINEERING_PROCESS_RCA.md` | accepted | next process PR |\n"
+            ),
+        ),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
+
+
+def test_nontrivial_pull_request_rejects_final_merge_surface_without_reference_only_decision(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body(
+            human_rows=(
+                "| Final squash message | CI cannot inspect the final message before merge | repo owner | `docs/ENGINEERING_PROCESS_RCA.md` | accepted | before merge |\n"
+            ),
+        ),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
 
 
 def test_nontrivial_pull_request_rejects_placeholder_human_only_evidence_url(
@@ -735,8 +908,28 @@ def test_nontrivial_pull_request_rejects_placeholder_preimplementation_comment_u
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     body = completed_preflight_body().replace(
-        "pre-code timestamp: 2026-07-09T10:00",
+        "issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-1",
         "issue comment: https://example.com/todo",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
+
+
+def test_nontrivial_pull_request_rejects_bare_issue_preimplementation_url(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-1",
+        "issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60",
     )
     failures = run_issue_link_check(
         tmp_path,
@@ -755,14 +948,434 @@ def test_nontrivial_pull_request_rejects_placeholder_preimplementation_evidence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     body = completed_preflight_body().replace(
+        "issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-1",
         "pre-code timestamp: 2026-07-09T10:00",
-        "checked before implementation",
     )
     failures = run_issue_link_check(
         tmp_path,
         monkeypatch,
         title="Harden local workflow evidence",
         body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
+
+
+def body_with_commit_order_preimplementation_rows(commit_order_marker: str) -> str:
+    return (
+        completed_preflight_body()
+        .replace(
+            "issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-1",
+            commit_order_marker,
+        )
+        .replace(
+            "draft pr: https://github.com/imrohitagrawal/narratwin-ai/pull/60",
+            commit_order_marker,
+        )
+        .replace(
+            "issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-2",
+            commit_order_marker,
+        )
+    )
+
+
+def test_nontrivial_pull_request_accepts_verified_commit_order_preimplementation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    earlier = "1111111"
+    later = "2222222"
+
+    def fake_git_command_succeeds(args: list[str]) -> bool:
+        if args == ["cat-file", "-e", f"{earlier}^{{commit}}"]:
+            return True
+        if args == ["cat-file", "-e", f"{later}^{{commit}}"]:
+            return True
+        return args == ["merge-base", "--is-ancestor", earlier, later]
+
+    monkeypatch.setattr(guardrails, "git_command_succeeds", fake_git_command_succeeds)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body_with_commit_order_preimplementation_rows(f"commit order: {earlier} before {later}"),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE not in failures
+
+
+def test_nontrivial_pull_request_rejects_reversed_commit_order_preimplementation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    earlier = "1111111"
+    later = "2222222"
+
+    def fake_git_command_succeeds(args: list[str]) -> bool:
+        if args[0] == "cat-file":
+            return True
+        return args == ["merge-base", "--is-ancestor", earlier, later]
+
+    monkeypatch.setattr(guardrails, "git_command_succeeds", fake_git_command_succeeds)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body_with_commit_order_preimplementation_rows(f"commit order: {later} before {earlier}"),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
+
+
+def test_nontrivial_pull_request_rejects_missing_validation_evidence_commands(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().split("## Validation evidence", maxsplit=1)[0]
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_unrun_validation_evidence_commands(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        "not run: uv run pytest tests/unit/test_guardrails_check.py",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_hyphenated_not_run_validation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        "not-run: uv run pytest tests/unit/test_guardrails_check.py -> passed",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_substring_validation_pass_terms(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "make quality -> passed",
+        "make quality -> unsuccessful",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_unrelated_validation_example_text(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        "Example only: uv run pytest tests/unit/test_guardrails_check.py -> passed",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_inline_validation_example_text(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        "uv run pytest tests/unit/test_guardrails_check.py -> passed (Example only)",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_zero_pass_validation_count(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        "uv run pytest tests/unit/test_guardrails_check.py -> 0 passed",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+@pytest.mark.parametrize(
+    "invalid_line",
+    [
+        "uv run pytest tests/unit/test_guardrails_check.py -> 0 passed; rerun -> passed",
+        (
+            "uv run pytest tests/unit/test_guardrails_check.py -> 0 passed "
+            "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/123"
+        ),
+        (
+            "uv run pytest tests/unit/test_guardrails_check.py -> 0 tests collected, 0 passed "
+            "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/123"
+        ),
+        (
+            "uv run pytest tests/unit/test_guardrails_check.py -> 00 passed "
+            "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/123"
+        ),
+    ],
+)
+def test_nontrivial_pull_request_rejects_same_line_zero_pass_validation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    invalid_line: str,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        invalid_line,
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_zero_pass_before_later_valid_validation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        (
+            "uv run pytest tests/unit/test_guardrails_check.py -> 0 passed\n"
+            "uv run pytest tests/unit/test_guardrails_check.py -> 75 passed"
+        ),
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_later_zero_pass_validation_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        (
+            "uv run pytest tests/unit/test_guardrails_check.py -> 75 passed\n"
+            "uv run pytest tests/unit/test_guardrails_check.py -> 0 passed"
+        ),
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+@pytest.mark.parametrize(
+    ("valid_line", "invalid_line"),
+    [
+        ("make quality -> passed", "make quality-check -> passed"),
+        (
+            "python3 scripts/guardrails_check.py -> passed",
+            "python3 scripts/guardrails_check.py.bak -> passed",
+        ),
+    ],
+)
+def test_nontrivial_pull_request_rejects_validation_command_suffix_false_passes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    valid_line: str,
+    invalid_line: str,
+) -> None:
+    body = completed_preflight_body().replace(valid_line, invalid_line)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_requires_full_forced_pr_validation_command(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        (
+            "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json "
+            "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed"
+        ),
+        "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 -> passed",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+@pytest.mark.parametrize(
+    "invalid_line",
+    [
+        (
+            "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json "
+            "python3 scripts/guardrails_check.py NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 -> passed"
+        ),
+        (
+            "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH= "
+            "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed"
+        ),
+    ],
+)
+def test_nontrivial_pull_request_rejects_malformed_forced_pr_validation_command(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    invalid_line: str,
+) -> None:
+    body = completed_preflight_body().replace(
+        (
+            "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json "
+            "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed"
+        ),
+        invalid_line,
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_rejects_placeholder_validation_event_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "GITHUB_EVENT_PATH=/tmp/pr-event.json",
+        "GITHUB_EVENT_PATH=/path/to/pr-event.json",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_nontrivial_pull_request_requires_final_merge_residual_decision(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rows = (
+        "| Final squash message | CI cannot inspect final merge text; reviewer checks reference-only no issue-closing wording | repo owner | `docs/ENGINEERING_PROCESS_RCA.md` | accepted | before merge |\n"
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body(human_rows=rows),
         head_ref="phase-1-closure-44-telemetry-hardening",
         changed_files=["backend/app/main.py"],
     )

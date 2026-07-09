@@ -162,6 +162,62 @@ GOLDEN_KEYS = {
     "unsupportedClaimsMax",
 }
 
+REQUIRED_PR_TEMPLATE_SECTIONS = (
+    "Preflight evidence",
+    "Human-only review surfaces",
+    "Pre-implementation evidence",
+    "Validation evidence",
+)
+
+REQUIRED_PR_PREFLIGHT_TABLE_HEADERS = (
+    "Evidence",
+    "Artifact reference",
+    "Matrix IDs",
+    "Command / CI / Source",
+    "Reviewer",
+    "Evidence type",
+    "Completion status",
+    "Residual risk decision",
+)
+
+REQUIRED_PR_HUMAN_ONLY_TABLE_HEADERS = (
+    "Surface",
+    "Automation gap",
+    "Owner",
+    "Evidence",
+    "Residual risk decision",
+    "Expiry / revisit trigger",
+)
+
+REQUIRED_PHASE1_VALIDATION_COMMANDS = (
+    "uv run pytest tests/unit/test_guardrails_check.py",
+    "uv run pytest tests/unit/test_phase1_closure_docs.py",
+    "python3 scripts/guardrails_check.py",
+    "make quality",
+    "uv run ruff check scripts tests",
+    "uv run mypy scripts tests",
+    "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1",
+)
+
+OPTIONAL_PHASE1_VALIDATION_COMMANDS = (
+    "uv run pytest tests/unit/test_branch_protection_verifier.py",
+)
+REQUIRED_MEDIUM_LOW_PHF_ITEMS = {
+    "PHF-007",
+    "PHF-008",
+    "PHF-009",
+    "PHF-010",
+    "PHF-011",
+    "PHF-012",
+    "PHF-013",
+}
+AUTOMATED_EVIDENCE_TEST = re.compile(r"(?<!/)\btest_[A-Za-z0-9_]+\b(?!\.py)")
+AUTOMATED_EVIDENCE_SCRIPT = re.compile(r"\bscripts/[A-Za-z0-9_./-]+\.py\b")
+AUTOMATED_EVIDENCE_COMMAND = re.compile(
+    r"\b(?:make quality|python3 scripts/guardrails_check\.py|uv run pytest [^`|\n]+)"
+)
+PHF_CLOSED_STATUSES = {"closed by local edits", "superseded by local edits"}
+
 
 def run_git(args: list[str]) -> str:
     result = subprocess.run(["git", *args], cwd=ROOT, check=False, text=True, capture_output=True)
@@ -204,6 +260,85 @@ def read(rel: str) -> str:
     return (ROOT / rel).read_text(encoding="utf-8")
 
 
+def known_test_names() -> set[str]:
+    return {test_name for test_names in known_tests_by_path().values() for test_name in test_names}
+
+
+def known_tests_by_path() -> dict[str, set[str]]:
+    tests_by_path: dict[str, set[str]] = {}
+    test_root = ROOT / "tests"
+    for path in test_root.rglob("*.py"):
+        relative_path = path.relative_to(ROOT).as_posix()
+        tests_by_path[relative_path] = set(
+            re.findall(
+                r"^\s*def\s+(test_[A-Za-z0-9_]+)\s*\(",
+                path.read_text(encoding="utf-8"),
+                flags=re.M,
+            )
+        )
+    return tests_by_path
+
+
+def pytest_target_paths(text: str) -> set[str]:
+    paths, _, _ = pytest_targets_invalid_targets_and_node_ids(text)
+    return paths
+
+
+def pytest_targets_invalid_targets_and_node_ids(text: str) -> tuple[set[str], set[str], set[tuple[str, str, str]]]:
+    paths: set[str] = set()
+    invalid_targets: set[str] = set()
+    node_ids: set[tuple[str, str, str]] = set()
+    for command_match in re.finditer(r"\buv run pytest (?P<targets>[^`|\n]+)", text):
+        target_text = command_match.group("targets").split("->", maxsplit=1)[0]
+        target_text = target_text.split("#", maxsplit=1)[0]
+        for token in target_text.split():
+            cleaned = token.strip("` ,;:")
+            if not cleaned or cleaned.startswith("-"):
+                continue
+            target_path, separator, node_part = cleaned.partition("::")
+            if target_path.startswith("./"):
+                target_path = target_path[2:]
+            if target_path.endswith(".py") or target_path.startswith("tests/"):
+                paths.add(target_path)
+                if separator:
+                    node_match = re.search(r"\b(test_[A-Za-z0-9_]+)\b", node_part)
+                    if node_match:
+                        node_ids.add((target_path, node_match.group(1), f"{target_path}::{node_match.group(1)}"))
+                    else:
+                        invalid_targets.add(cleaned)
+            else:
+                invalid_targets.add(cleaned)
+    return paths, invalid_targets, node_ids
+
+
+def phf_automated_evidence_failures(item: str, automated: str) -> list[str]:
+    failures: list[str] = []
+    cited_tests = set(AUTOMATED_EVIDENCE_TEST.findall(automated))
+    for test_name in sorted(cited_tests - known_test_names()):
+        failures.append(f"{item} Medium/Low matrix cites unknown test evidence: {test_name}")
+
+    cited_scripts = {match.strip("`") for match in AUTOMATED_EVIDENCE_SCRIPT.findall(automated)}
+    for script_path in sorted(path for path in cited_scripts if not (ROOT / path).is_file()):
+        failures.append(f"{item} Medium/Low matrix cites missing script evidence: {script_path}")
+
+    target_paths, invalid_targets, node_ids = pytest_targets_invalid_targets_and_node_ids(automated)
+    for target_path in sorted(path for path in target_paths if not (ROOT / path).is_file()):
+        failures.append(f"{item} Medium/Low matrix cites missing pytest target: {target_path}")
+    for target in sorted(invalid_targets):
+        failures.append(f"{item} Medium/Low matrix cites unsupported pytest target: {target}")
+    tests_by_path = known_tests_by_path()
+    for target_path, test_name, node_id in sorted(node_ids):
+        if (ROOT / target_path).is_file() and test_name not in tests_by_path.get(target_path, set()):
+            failures.append(f"{item} Medium/Low matrix cites pytest node id with test outside target: {node_id}")
+
+    has_automated_evidence = bool(
+        cited_tests or cited_scripts or AUTOMATED_EVIDENCE_COMMAND.search(automated)
+    )
+    if not has_automated_evidence:
+        failures.append(f"{item} Medium/Low matrix must map to an automated test/guardrail or human-only surface.")
+    return failures
+
+
 def fail(failures: list[str], message: str) -> None:
     failures.append(message)
 
@@ -224,6 +359,303 @@ def section(text: str, heading: str) -> str:
     pattern = rf"^## {re.escape(heading)}\n(?P<body>.*?)(?=^## |\Z)"
     match = re.search(pattern, text, flags=re.M | re.S)
     return match.group("body") if match else ""
+
+
+def has_heading(text: str, heading: str) -> bool:
+    return bool(re.search(rf"^##\s+{re.escape(heading)}\s*$", text, flags=re.M))
+
+
+def parse_table_lines(section_text: str) -> tuple[list[str], list[list[str]]]:
+    lines = section_text.splitlines()
+    headers: list[str] = []
+    rows: list[list[str]] = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            if headers and rows:
+                break
+            continue
+        if "---" in stripped:
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if not cells:
+            continue
+        if not headers:
+            headers = cells
+            continue
+        rows.append(cells)
+    return headers, rows
+
+
+def yaml_inline_list_contains_token(value: str, token: str) -> bool:
+    if "[" not in value or "]" not in value:
+        return False
+    start = value.find("[")
+    end = value.rfind("]")
+    if end <= start:
+        return False
+    list_body = value[start + 1 : end]
+    for item in list_body.split(","):
+        if item.strip().strip("\"'").lower() == token:
+            return True
+    return False
+
+
+def workflow_has_pull_request_edited(yaml_text: str) -> bool:
+    lines = yaml_text.splitlines()
+    for index, line in enumerate(lines):
+        on_match = re.match(r"^(?P<indent>\s*)on:\s*$", line)
+        if not on_match or on_match.group("indent"):
+            continue
+        on_indent = 0
+        i = index + 1
+        direct_child_indent: int | None = None
+        while i < len(lines):
+            current = lines[i]
+            if not current.strip() or current.lstrip().startswith("#"):
+                i += 1
+                continue
+            current_indent = len(current) - len(current.lstrip(" "))
+            if current_indent <= on_indent:
+                break
+            if direct_child_indent is None:
+                direct_child_indent = current_indent
+            if current_indent != direct_child_indent:
+                i += 1
+                continue
+            pull_match = re.match(r"^(?P<indent>\s*)pull_request:\s*$", current)
+            if not pull_match:
+                i += 1
+                continue
+            pull_indent = len(pull_match.group("indent"))
+            i += 1
+            pull_child_indent: int | None = None
+            while i < len(lines):
+                current = lines[i]
+                if not current.strip() or current.lstrip().startswith("#"):
+                    i += 1
+                    continue
+                indent = len(current) - len(current.lstrip(" "))
+                if indent <= pull_indent:
+                    break
+                if pull_child_indent is None:
+                    pull_child_indent = indent
+                if indent != pull_child_indent:
+                    i += 1
+                    continue
+                types_match = re.match(r"^(?P<indent>\s*)types:\s*(?P<value>.*)$", current)
+                if not types_match:
+                    i += 1
+                    continue
+                types_indent = len(types_match.group("indent"))
+                value = types_match.group("value").strip()
+                if value:
+                    if yaml_inline_list_contains_token(value, "edited"):
+                        return True
+                    i += 1
+                    continue
+                i += 1
+                while i < len(lines):
+                    item = lines[i]
+                    if not item.strip() or item.lstrip().startswith("#"):
+                        i += 1
+                        continue
+                    item_indent = len(item) - len(item.lstrip(" "))
+                    if item_indent <= types_indent:
+                        break
+                    item_value_match = re.match(r"^\s*-\s*(?P<value>[A-Za-z0-9_-]+)\s*$", item)
+                    if item_value_match and item_value_match.group("value").lower() == "edited":
+                        return True
+                    i += 1
+                continue
+            continue
+
+    return False
+
+
+def check_required_headings(failures: list[str], text: str, owner: str, headings: tuple[str, ...]) -> None:
+    for heading in headings:
+        if not has_heading(text, heading):
+            failures.append(f"{owner} missing required heading: {heading}")
+
+
+def normalize_header(value: str) -> str:
+    return re.sub(r"\s+", " ", value.strip().lower())
+
+
+def section_contains_required_commands(section_text: str, required: tuple[str, ...]) -> list[str]:
+    normalized = section_text.lower()
+    return [command for command in required if command.lower() not in normalized]
+
+
+def check_preflight_table_columns(
+    failures: list[str], *, section_name: str, section_text: str, required_headers: tuple[str, ...]
+) -> None:
+    headers, _ = parse_table_lines(section_text)
+    if not headers:
+        failures.append(f"{section_name} section in .github/pull_request_template.md is missing a table header row.")
+        return
+    normalized_headers = {normalize_header(header) for header in headers}
+    missing = [header for header in required_headers if normalize_header(header) not in normalized_headers]
+    if missing:
+        failures.append(
+            f"{section_name} table in .github/pull_request_template.md is missing headers: {', '.join(missing)}"
+        )
+
+
+def check_matrix_template_rows(
+    failures: list[str],
+    *,
+    section_name: str,
+    section_text: str,
+    required_keyword_groups: tuple[tuple[str, ...], ...],
+) -> None:
+    headers, rows = parse_table_lines(section_text)
+    normalized_headers = [normalize_header(header) for header in headers]
+    required_headers = (
+        "id",
+        "area",
+        "invariant",
+        "old failure / false-pass risk",
+        "positive test",
+        "negative / mutation test",
+        "status",
+    )
+    missing_headers = [header for header in required_headers if header not in normalized_headers]
+    if missing_headers:
+        failures.append(f"{section_name} matrix template missing headers: {', '.join(missing_headers)}")
+        return
+
+    index_by_header = {header: normalized_headers.index(header) for header in required_headers}
+    seen_ids: set[str] = set()
+    for row in rows:
+        if len(row) < len(headers):
+            failures.append(f"{section_name} matrix row has too few columns: {row}")
+            continue
+        row_id = row[index_by_header["id"]].strip("` ")
+        positive_test = row[index_by_header["positive test"]].strip()
+        negative_test = row[index_by_header["negative / mutation test"]].strip()
+        status = row[index_by_header["status"]].strip("` ").lower()
+        row_text = " ".join(row).lower()
+        if not re.fullmatch(r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d{3}", row_id):
+            failures.append(f"{section_name} matrix row has non-concrete ID: {row_id}")
+        if row_id in seen_ids:
+            failures.append(f"{section_name} matrix row duplicates ID: {row_id}")
+        seen_ids.add(row_id)
+        if status != "pass":
+            failures.append(f"{section_name} matrix row {row_id} must use status pass, not {status or '<empty>'}.")
+        if re.search(r"\b(?:through|thru|to)\b|\.{2,}|[–—]", row_id, flags=re.I):
+            failures.append(f"{section_name} matrix row {row_id} uses range or placeholder ID syntax.")
+        if row_id.startswith("HUMAN-"):
+            continue
+        if "test_" not in positive_test.lower() and "make test" not in positive_test.lower():
+            failures.append(f"{section_name} matrix row {row_id} must name positive test evidence.")
+        if "test_" not in negative_test.lower() and "make test" not in negative_test.lower():
+            failures.append(f"{section_name} matrix row {row_id} must name negative test evidence.")
+        if "test_" not in row_text and "make test" not in row_text:
+            failures.append(f"{section_name} matrix row {row_id} must name test evidence.")
+        if not any(
+            term in row_text
+            for term in ("break-test", "mutation", "old behavior failed", "old-behavior proof", "fails-before")
+        ):
+            failures.append(f"{section_name} matrix row {row_id} must name old-behavior or mutation proof.")
+
+    for keywords in required_keyword_groups:
+        if not any(all(keyword in " ".join(row).lower() for keyword in keywords) for row in rows):
+            failures.append(
+                f"{section_name} matrix template missing one row with required binding terms: {', '.join(keywords)}"
+            )
+
+
+def check_process_hardening_findings(failures: list[str], text: str) -> None:
+    remaining_headers, remaining_rows = parse_table_lines(section(text, "Medium/Low PHF Follow-up Matrix (Remaining)"))
+    required_remaining_headers = (
+        "item",
+        "risk",
+        "failure mode",
+        "prior review evidence",
+        "owning doc / script / template",
+        "automated test / guardrail",
+        "human-only surface (if not automatable)",
+        "residual risk",
+    )
+    normalized_remaining_headers = [normalize_header(header) for header in remaining_headers]
+    missing_remaining_headers = [
+        header for header in required_remaining_headers if header not in normalized_remaining_headers
+    ]
+    if missing_remaining_headers:
+        failures.append(
+            "docs/reviews/PROCESS_HARDENING_FINDINGS.md Medium/Low matrix missing headers: "
+            + ", ".join(missing_remaining_headers)
+        )
+        return
+
+    remaining_index = {header: normalized_remaining_headers.index(header) for header in required_remaining_headers}
+    seen_remaining: set[str] = set()
+    for row in remaining_rows:
+        if len(row) < len(remaining_headers):
+            failures.append(f"PHF Medium/Low matrix row has too few columns: {row}")
+            continue
+        item = row[remaining_index["item"]].strip("` ")
+        seen_remaining.add(item)
+        automated = row[remaining_index["automated test / guardrail"]]
+        human_only = row[remaining_index["human-only surface (if not automatable)"]]
+        residual = row[remaining_index["residual risk"]]
+        for field_name, value in (
+            ("failure mode", row[remaining_index["failure mode"]]),
+            ("prior review evidence", row[remaining_index["prior review evidence"]]),
+            ("owning doc / script / template", row[remaining_index["owning doc / script / template"]]),
+            ("automated test / guardrail", automated),
+            ("residual risk", residual),
+        ):
+            if value.strip().lower() in {"", "n/a", "na", "todo", "tbd", "pending"}:
+                failures.append(f"{item} Medium/Low matrix has placeholder {field_name}.")
+        if human_only.strip().lower() in {"", "todo", "tbd", "pending"}:
+            failures.append(f"{item} Medium/Low matrix has placeholder human-only surface.")
+        human_only_is_na = human_only.strip().lower() in {"n/a", "na"}
+        evidence_failures = phf_automated_evidence_failures(item, automated)
+        if human_only_is_na:
+            failures.extend(evidence_failures)
+        else:
+            failures.extend(
+                failure
+                for failure in evidence_failures
+                if "must map to an automated test/guardrail or human-only surface" not in failure
+            )
+
+    missing_remaining = sorted(REQUIRED_MEDIUM_LOW_PHF_ITEMS - seen_remaining)
+    if missing_remaining:
+        failures.append("Medium/Low PHF matrix missing items: " + ", ".join(missing_remaining))
+
+    register_headers, register_rows = parse_table_lines(section(text, "Findings Register"))
+    normalized_register_headers = [normalize_header(header) for header in register_headers]
+    required_register_headers = ("id", "severity", "status", "acceptance criteria")
+    missing_register_headers = [
+        header for header in required_register_headers if header not in normalized_register_headers
+    ]
+    if missing_register_headers:
+        failures.append(
+            "docs/reviews/PROCESS_HARDENING_FINDINGS.md Findings Register missing headers: "
+            + ", ".join(missing_register_headers)
+        )
+        return
+    register_index = {header: normalized_register_headers.index(header) for header in required_register_headers}
+    seen_register: set[str] = set()
+    for row in register_rows:
+        if len(row) < len(register_headers):
+            failures.append(f"PHF findings register row has too few columns: {row}")
+            continue
+        item = row[register_index["id"]].strip("` ")
+        if item in seen_register:
+            failures.append(f"PHF findings register duplicates item: {item}")
+        seen_register.add(item)
+        if item in REQUIRED_MEDIUM_LOW_PHF_ITEMS:
+            status = row[register_index["status"]].strip().lower()
+            acceptance = row[register_index["acceptance criteria"]].strip()
+            if status not in PHF_CLOSED_STATUSES:
+                failures.append(f"{item} must be closed or superseded in the findings register; got {status}.")
+            if acceptance.lower() in {"", "n/a", "na", "todo", "tbd", "pending"}:
+                failures.append(f"{item} findings register has placeholder acceptance criteria.")
 
 
 def issues_from_cell(value: str) -> set[str]:
@@ -511,28 +943,46 @@ def check_process_docs(failures: list[str]) -> None:
     for rel in required_files:
         if not (ROOT / rel).is_file():
             fail(failures, f"Missing required process artifact: {rel}")
-            return
 
     pr_template = read(".github/pull_request_template.md")
-    for marker in (
-        "Refs #",
-        "Preflight evidence",
-        "Artifact path / URL",
-        "Artifact reference",
-        "Matrix IDs",
-        "Evidence type",
-        "Completion status",
-        "Residual risk decision",
-        "invariant-to-test matrix link",
-        "Tests / old-behavior proof",
-        "Human-only review surfaces",
-        "Automation gap",
-        "Expiry / revisit trigger",
-        "Pre-implementation evidence",
-        "automation-sensitive wording",
-    ):
-        if marker not in pr_template:
-            fail(failures, f".github/pull_request_template.md missing process marker: {marker}")
+    changed = set(changed_files())
+    check_required_headings(
+        failures,
+        pr_template,
+        ".github/pull_request_template.md",
+        REQUIRED_PR_TEMPLATE_SECTIONS,
+    )
+    check_preflight_table_columns(
+        failures,
+        section_name=".github/pull_request_template.md preflight evidence table",
+        section_text=section(pr_template, "Preflight evidence"),
+        required_headers=REQUIRED_PR_PREFLIGHT_TABLE_HEADERS,
+    )
+    check_preflight_table_columns(
+        failures,
+        section_name=".github/pull_request_template.md human-only review table",
+        section_text=section(pr_template, "Human-only review surfaces"),
+        required_headers=REQUIRED_PR_HUMAN_ONLY_TABLE_HEADERS,
+    )
+    if "tests/unit/test_branch_protection_verifier.py" in changed:
+        missing_optional_validation = section_contains_required_commands(
+            section(pr_template, "Validation evidence"), OPTIONAL_PHASE1_VALIDATION_COMMANDS
+        )
+        if missing_optional_validation:
+            fail(
+                failures,
+                "Validation evidence section in .github/pull_request_template.md should include optional command "
+                f"{OPTIONAL_PHASE1_VALIDATION_COMMANDS[0]} when branch-protection verifier evidence is relevant.",
+            )
+    missing_required_validation = section_contains_required_commands(
+        section(pr_template, "Validation evidence"), REQUIRED_PHASE1_VALIDATION_COMMANDS
+    )
+    if missing_required_validation:
+        fail(
+            failures,
+            ".github/pull_request_template.md Validation evidence section missing required commands: "
+            + ", ".join(missing_required_validation),
+        )
 
     agents = read("AGENTS.md")
     for marker in (
@@ -556,58 +1006,76 @@ def check_process_docs(failures: list[str]) -> None:
             fail(failures, f".github/CODEOWNERS missing process marker: {marker}")
 
     quality_gates = read(".github/workflows/quality-gates.yml")
-    if "types: [opened, synchronize, reopened, edited, ready_for_review]" not in quality_gates:
+    if not workflow_has_pull_request_edited(quality_gates):
         fail(failures, ".github/workflows/quality-gates.yml must rerun policy-gates on pull_request.edited")
 
     rca = read("docs/ENGINEERING_PROCESS_RCA.md")
-    for marker in (
-        "PR `#54` Finding Evidence Table",
-        "Source Gate",
-        "Contract Gate",
-        "TDD Gate",
-        "Doubt Gate",
-        "Stop Rule",
-        "PR Evidence Gate",
-        "Why This RCA Was Still Insufficient",
-        "Durability Restore Invariant Checklist",
-        "Invariant-To-Test Matrix Template",
-        "Pre-implementation evidence template",
-        "Bad Partial Fixes Versus Complete Coverage",
-        "Partial overlap is a blocker",
-        "pull_request.edited",
-    ):
-        if marker not in rca:
-            fail(failures, f"docs/ENGINEERING_PROCESS_RCA.md missing process marker: {marker}")
+    check_required_headings(
+        failures,
+        rca,
+        "docs/ENGINEERING_PROCESS_RCA.md",
+        (
+            "Durability Restore Invariant Checklist",
+            "Governance / CI / False-Pass",
+            "Invariant-To-Test Matrix Template",
+            "Bad Partial Fixes Versus Complete Coverage",
+            "Mandatory Rule For Future Durability And Process PRs",
+            "Required Future Workflow For NarraTwin",
+        ),
+    )
+    check_preflight_table_columns(
+        failures,
+        section_name="docs/ENGINEERING_PROCESS_RCA.md matrix template",
+        section_text=section(rca, "Invariant-To-Test Matrix Template"),
+        required_headers=("ID", "Area", "Invariant"),
+    )
+    check_matrix_template_rows(
+        failures,
+        section_name="docs/ENGINEERING_PROCESS_RCA.md",
+        section_text=section(rca, "Invariant-To-Test Matrix Template"),
+        required_keyword_groups=(
+            ("source run", "retrieved context", "evaluation", "citation", "claim-support"),
+            ("canonical-stage", "issue-closing", "final squash"),
+        ),
+    )
 
     playbook = read("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md")
-    for marker in (
-        "Gate -1: Project Bootstrap",
-        "Gate 0: Source Control And Delivery Model",
-        "NIST AI RMF",
-        "OWASP Top 10 for Large Language Model Applications",
-        "OpenSSF Scorecard",
-        "SLSA",
-        "Matrix variants",
-        "Executable Invariants Before Implementation",
-        "Durability / Restore / Replay Checklist",
-        "Derived Artifact Consistency Checklist",
-        "Governance / CI False-Pass Checklist",
-        "Human-Only Review Surfaces",
-        "Invariant-to-Test Matrix Template",
-        "Pre-implementation evidence template",
-        "Definition of Done for Process-Sensitive Work",
-        "Partial matrix-ID overlap is insufficient",
-        "RCA Pause Artifact",
-        "Non-skippable gates",
-        "Allowed approvers",
-        "Skip Template",
-    ):
-        if marker not in playbook:
-            fail(
-                failures,
-                "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md missing process marker: "
-                f"{marker}",
-            )
+    check_required_headings(
+        failures,
+        playbook,
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        (
+            "Durability / Restore / Replay Checklist",
+            "Derived Artifact Consistency Checklist",
+            "Governance / CI / False-Pass Checklist",
+            "Human-Only Review Surfaces",
+            "Invariant-to-Test Matrix Template",
+            "Definition of Done for Process-Sensitive Work",
+            "RCA Pause Artifact",
+            "Stop Rules",
+            "Definition Of Done",
+        ),
+    )
+    check_preflight_table_columns(
+        failures,
+        section_name="docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md matrix template",
+        section_text=section(playbook, "Invariant-to-Test Matrix Template"),
+        required_headers=("ID", "Area", "Invariant"),
+    )
+    check_matrix_template_rows(
+        failures,
+        section_name="docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        section_text=section(playbook, "Invariant-to-Test Matrix Template"),
+        required_keyword_groups=(
+            ("source run", "retrieved context", "evaluation", "citation", "claim-support"),
+            ("concrete artifacts", "matrix-id coverage", "old-behavior proof"),
+        ),
+    )
+
+    check_process_hardening_findings(
+        failures,
+        read("docs/reviews/PROCESS_HARDENING_FINDINGS.md"),
+    )
 
 
 def main() -> int:

@@ -288,11 +288,11 @@ Write the contract as positive and negative claims.
 
 | ID | Case | Expected Behavior | Evidence Type | Test/Source/Doc |
 |---|---|---|---|---|
-| F1 | Valid small input | succeeds | test | pending |
-| F2 | Missing required field | typed validation error | test | pending |
-| F3 | Wrong nested type | rejected or degraded safely | test | pending |
-| F4 | Duplicate request | idempotent replay/conflict per contract | test | pending |
-| F5 | External tool unavailable | fail closed with clear error | test/manual | pending |
+| F1 | Valid small input | succeeds | test | draft-only; not implementation-ready |
+| F2 | Missing required field | typed validation error | test | draft-only; not implementation-ready |
+| F3 | Wrong nested type | rejected or degraded safely | test | draft-only; not implementation-ready |
+| F4 | Duplicate request | idempotent replay/conflict per contract | test | draft-only; not implementation-ready |
+| F5 | External tool unavailable | fail closed with clear error | test/manual | draft-only; not implementation-ready |
 ```
 
 Minimum rows for most backend/API/state features:
@@ -387,13 +387,16 @@ Required invariants:
   provider claims as trusted local state;
 - glossary, citation, source-evidence, and safety/disclosure fields survive
   restore or the row is dropped;
+- source run identity, retrieved context refs, source citation indexes,
+  evaluation ID/status/checksum, and claim-support records stay bound to the
+  derived artifact before replay, display, export, or downstream processing;
 - corrupted or tampered provider/artifact payloads are rejected before replay,
   display, export, or downstream processing;
 - idempotency retry semantics cover completed, failed, pending, running, stale,
   and conflicting requests;
 - counters and rollback semantics match the durability checklist.
 
-## Governance / CI False-Pass Checklist
+## Governance / CI / False-Pass Checklist
 
 Use this when the project has CI, branch protection, release gates, issue
 automation, PR templates, docs-as-gates, security scans, eval gates, or other
@@ -455,6 +458,7 @@ example IDs with project-specific IDs.
 |---|---|---|---|---|---|---|---|---|
 | CORE-RESTORE-001 | Core graph restore | Child records match owning parent identity, source checksum, timestamp, content checksum, and derived metadata | Valid IDs restore while relationships are corrupt | `test_restore_valid_graph` | `test_restore_drops_tampered_child_source`; break-test proves old behavior failed | `make test`; restore gate | owner | pass |
 | DERIVED-ARTIFACT-001 | Derived artifact | Provider payload, artifact bytes, manifest, metadata, checksums, language tags, citations, and provider mode agree | Tampered artifact replays from idempotency | `test_replay_valid_derived_artifact` | `test_drop_tampered_artifact_payload`; mutation changes checksum/text | `make test` | owner | pass |
+| DERIVED-SOURCE-001 | Derived source binding | Source run, retrieved context refs, evaluation status/checksum, citation indexes, and claim-support records stay bound to the derived artifact | A valid export/artifact ID can replay with source evidence from another run | `test_replay_valid_source_bound_artifact` | `test_drop_artifact_with_mismatched_source_run`; break-test proves old behavior failed | `make test`; source-evidence gate | owner | pass |
 | GOV-FALSEPASS-001 | Governance | PR evidence rows include concrete artifacts, full matrix-ID coverage, and old-behavior proof | Placeholder evidence table passes CI | `test_preflight_accepts_complete_mapping` | `test_preflight_rejects_partial_matrix_coverage`; `test_preflight_rejects_without_old_behavior_proof` | `scripts/guardrails_check.py` | owner | pass |
 | HUMAN-001 | Human-only surface | Final merge message is inspected before merge | CI passes but final squash message closes the wrong issue | N/A | N/A | human checklist item with owner | repo owner | pass |
 ```
@@ -476,9 +480,9 @@ Pre-implementation evidence template:
 ```markdown
 | Requirement | Pre-code artifact | Timestamp / commit / PR comment | Reviewer | Decision |
 |---|---|---|---|---|
-| Invariant/failure matrix | `docs/path/to/preflight.md` | pre-code timestamp: YYYY-MM-DDTHH:MM | reviewer | pass |
-| Source facts | `docs/path/to/sources.md` | reviewer signoff: reviewer YYYY-MM-DD | reviewer | pass |
-| Human-only surfaces, if any | `docs/path/to/preflight.md` | commit order: <matrix-commit> before <implementation-commit> | reviewer | pass |
+| Invariant/failure matrix | `docs/path/to/preflight.md` | issue comment: https://github.com/org/repo/issues/<issue>#issuecomment-<id> | reviewer | pass |
+| Source facts | `docs/path/to/sources.md` | draft pr: https://github.com/org/repo/pull/<id> | reviewer | pass |
+| Human-only surfaces, if any | `docs/path/to/preflight.md` | verified commit order: <matrix-commit> before <implementation-commit> | reviewer | pass |
 ```
 
 ## Definition of Done for Process-Sensitive Work

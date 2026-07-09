@@ -199,11 +199,52 @@ PLACEHOLDER_URL_TERMS = {"todo", "tbd", "placeholder", "example", "invalid"}
 LOCAL_REFERENCE_TYPES = {"repo-file"}
 URL_REFERENCE_TYPES = {"url", "source-url", "source", "pr-comment", "ci-run"}
 ALLOWED_REFERENCE_TYPES = LOCAL_REFERENCE_TYPES | URL_REFERENCE_TYPES
+CANONICAL_STAGE_ISSUE_CLOSURE = (
+    ("stage2-", "Stage 2", "2"),
+    ("stage3-", "Stage 3", "5"),
+    ("stage4-", "Stage 4", "4"),
+    ("stage5-", "Stage 5", "10"),
+    ("stage6-", "Stage 6", "11"),
+    ("stage7-", "Stage 7", "12"),
+    ("stage8-", "Stage 8", "13"),
+)
+FORCE_PULL_REQUEST_GUARDRAILS_ENV = "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS"
 REQUIRED_PREIMPLEMENTATION_ROWS = {
     "invariant/failure matrix",
     "source facts",
     "human-only surfaces, if any",
 }
+REQUIRED_PR_VALIDATION_COMMANDS = (
+    "uv run pytest tests/unit/test_guardrails_check.py",
+    "uv run pytest tests/unit/test_phase1_closure_docs.py",
+    "python3 scripts/guardrails_check.py",
+    "make quality",
+    "uv run ruff check scripts tests",
+    "uv run mypy scripts tests",
+    "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=",
+)
+VALIDATION_PASS_RESULT = re.compile(r"(?:->|:)\s*(?:(?:[1-9]\d*)\s+)?(?:passed|success|succeeded|green)\b")
+VALIDATION_ZERO_PASS_RESULT = re.compile(r"(?<!\d)0+\s+passed\b")
+VALIDATION_FAILURE_TERMS = (
+    "example only",
+    "failed",
+    "failure",
+    "not-run",
+    "not run",
+    "red",
+    "todo",
+    "tbd",
+    "pending",
+    "required local",
+    "unsuccessful",
+    "/path/to/",
+)
+FORCED_PR_VALIDATION_COMMAND = re.compile(
+    r"^github_event_name=pull_request "
+    r"github_event_path=(?P<event_path>\S+) "
+    r"narratwin_force_pull_request_guardrails=1 "
+    r"python3 scripts/guardrails_check\.py(?P<tail>(?:\s|:|$).*)$"
+)
 
 
 class PreflightEvidenceRow(NamedTuple):
@@ -224,6 +265,17 @@ def run_git(args: list[str]) -> str:
         return subprocess.check_output(["git", *args], cwd=ROOT, text=True, stderr=subprocess.DEVNULL).strip()
     except subprocess.CalledProcessError:
         return ""
+
+
+def git_command_succeeds(args: list[str]) -> bool:
+    return subprocess.run(
+        ["git", *args],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    ).returncode == 0
 
 
 def is_zero_sha(value: str) -> bool:
@@ -285,6 +337,25 @@ def issue_link_pattern(issue_number: str = r"\d+") -> str:
     return rf"(?i)\b(refs?|references?)\b:?\s*(?:{issue_ref})"
 
 
+PROCESS_CRITICAL_DOC_FILES = {
+    "AGENTS.md",
+    ".github/CODEOWNERS",
+    ".github/pull_request_template.md",
+    ".github/workflows/quality-gates.yml",
+    "docs/AI_BUILD_BRIEF.md",
+    "docs/CODEX_OPERATING_MODEL.md",
+    "docs/ENGINEERING_PROCESS_RCA.md",
+    "docs/QUALITY_GATES.md",
+    "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+    "docs/reviews/PROCESS_HARDENING_FINDINGS.md",
+}
+
+
 def is_nontrivial_pull_request(changes: list[str]) -> bool:
     if not changes:
         return False
@@ -293,15 +364,36 @@ def is_nontrivial_pull_request(changes: list[str]) -> bool:
         "backend/",
         "frontend/",
         "scripts/",
+        "tests/",
+    )
+    review_relevant_doc_prefixes = (
         "docs/ADR/",
         "docs/templates/",
+        "docs/reviews/",
     )
     return any(
         Path(path).suffix in CODE_SUFFIXES
+        or path in PROCESS_CRITICAL_DOC_FILES
         or path.startswith(review_relevant_prefixes)
+        or path.startswith(review_relevant_doc_prefixes)
         or any(path.startswith(prefix) for prefix in ARCHITECTURE_IMPACT_PREFIXES + PRD_IMPACT_PREFIXES + STATUS_IMPACT_PREFIXES)
         for path in changes
     )
+
+
+def should_enforce_pull_request_issue_checks() -> bool:
+    if os.environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
+        return True
+    return os.environ.get(FORCE_PULL_REQUEST_GUARDRAILS_ENV, "").strip().lower() in {"1", "true", "yes"}
+
+
+def canonical_stage_issue(head_ref: str | None) -> tuple[str, str] | None:
+    if not head_ref:
+        return None
+    for prefix, stage_name, issue_number in CANONICAL_STAGE_ISSUE_CLOSURE:
+        if head_ref.startswith(prefix):
+            return stage_name, issue_number
+    return None
 
 
 def has_completed_preflight_evidence(body: str) -> bool:
@@ -335,17 +427,44 @@ def has_completed_preflight_evidence(body: str) -> bool:
             continue
         completed_rows.setdefault(row.evidence_name, []).append(row)
 
-    requires_human_only = any(
-        row.evidence_type == "human-only"
-        for evidence_rows in completed_rows.values()
-        for row in evidence_rows
-    )
     return (
         REQUIRED_PREFLIGHT_EVIDENCE.issubset(completed_rows)
         and has_invariant_test_mapping(completed_rows)
-        and has_human_only_review_surfaces(body, requires_human_only=requires_human_only)
+        and has_human_only_review_surfaces(body)
         and has_pre_implementation_evidence(body)
     )
+
+
+def has_validation_evidence(body: str) -> bool:
+    section_text = markdown_section(body, "Validation evidence")
+    lines = [line.strip().lower() for line in section_text.splitlines()]
+    return all(validation_command_has_result(lines, command) for command in REQUIRED_PR_VALIDATION_COMMANDS)
+
+
+def validation_command_has_result(lines: list[str], command: str) -> bool:
+    command_text = command.lower()
+    has_valid_result = False
+    for line in lines:
+        if not validation_line_matches_command(line, command_text):
+            continue
+        if VALIDATION_ZERO_PASS_RESULT.search(line):
+            return False
+        if any(term in line for term in VALIDATION_FAILURE_TERMS):
+            continue
+        if VALIDATION_PASS_RESULT.search(line):
+            has_valid_result = True
+        if "github.com/" in line and "/actions/runs/" in line:
+            has_valid_result = True
+    return has_valid_result
+
+
+def validation_line_matches_command(line: str, command_text: str) -> bool:
+    if command_text.endswith("github_event_path="):
+        return FORCED_PR_VALIDATION_COMMAND.match(line) is not None
+    if not line.startswith(command_text):
+        return False
+    suffix = line[len(command_text) :]
+    return not suffix or suffix[0].isspace() or suffix.startswith(":")
 
 
 def markdown_table_rows(body: str, heading: str) -> list[list[str]]:
@@ -375,6 +494,26 @@ def markdown_table_rows(body: str, heading: str) -> list[list[str]]:
             continue
         rows.append(cells)
     return rows
+
+
+def markdown_section(body: str, heading: str) -> str:
+    lines = body.splitlines()
+    start = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if line.strip().lower() == f"## {heading.lower()}"
+        ),
+        None,
+    )
+    if start is None:
+        return ""
+    section_lines: list[str] = []
+    for line in lines[start + 1 :]:
+        if line.strip().startswith("## "):
+            break
+        section_lines.append(line)
+    return "\n".join(section_lines)
 
 
 def parse_preflight_row(cells: list[str]) -> PreflightEvidenceRow | None:
@@ -413,8 +552,20 @@ def has_invariant_test_mapping(rows_by_evidence: dict[str, list[PreflightEvidenc
     ]
     matrix_ids = {matrix_id for row in matrix_rows for matrix_id in split_matrix_ids(row.matrix_ids)}
     covered_ids = {matrix_id for row in coverage_rows for matrix_id in split_matrix_ids(row.matrix_ids)}
+    executable_rows = [
+        row
+        for row in test_rows + docs_rows
+        if row.evidence_type in {"test", "gate"}
+    ]
+    executable_ids = {matrix_id for row in executable_rows for matrix_id in split_matrix_ids(row.matrix_ids)}
     tested_ids = {matrix_id for row in test_rows for matrix_id in split_matrix_ids(row.matrix_ids)}
     if not matrix_ids or not tested_ids or not matrix_ids.issubset(covered_ids):
+        return False
+    non_executable_allowed_prefixes = ("SRC-", "HUMAN-", "NONGOAL-")
+    if any(
+        not matrix_id.startswith(non_executable_allowed_prefixes) and matrix_id not in executable_ids
+        for matrix_id in matrix_ids
+    ):
         return False
     test_evidence_text = " ".join(" | ".join(row.raw_cells).lower() for row in test_rows)
     if not any(term in test_evidence_text for term in OLD_BEHAVIOR_PROOF_TERMS):
@@ -425,10 +576,10 @@ def has_invariant_test_mapping(rows_by_evidence: dict[str, list[PreflightEvidenc
     return "invariant" in mapping_text and "test" in mapping_text
 
 
-def has_human_only_review_surfaces(body: str, *, requires_human_only: bool) -> bool:
+def has_human_only_review_surfaces(body: str) -> bool:
     rows = markdown_table_rows(body, "Human-only review surfaces")
-    has_valid_na = False
     has_valid_surface = False
+    has_final_merge_surface = False
     for cells in rows:
         if len(cells) < 6:
             continue
@@ -438,14 +589,23 @@ def has_human_only_review_surfaces(body: str, *, requires_human_only: bool) -> b
         if not preflight_artifact_exists(evidence):
             continue
         if is_na_value(surface):
-            has_valid_na = True
             continue
         if is_placeholder_value(surface):
             continue
         has_valid_surface = True
-    if requires_human_only:
-        return has_valid_surface
-    return has_valid_surface or has_valid_na
+        surface_text = f"{surface} {automation_gap}".lower()
+        residual_text = residual.lower()
+        if "final squash" in surface_text or "merge message" in surface_text:
+            if not (
+                "reference-only" in residual_text
+                and (
+                    "no issue-closing" in residual_text
+                    or "no issue closing" in residual_text
+                )
+            ):
+                continue
+            has_final_merge_surface = True
+    return has_valid_surface and has_final_merge_surface
 
 
 def has_pre_implementation_evidence(body: str) -> bool:
@@ -616,17 +776,35 @@ def has_concrete_preimplementation_marker(value: str) -> bool:
         normalized,
         flags=re.I,
     )
-    if comment_or_draft_match and preflight_artifact_exists(comment_or_draft_match.group("url")):
+    if comment_or_draft_match and preimplementation_url_has_concrete_shape(comment_or_draft_match.group("url")):
         return True
-    return bool(
-        re.search(r"pre-code timestamp:\s*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}", normalized)
-        or re.search(r"reviewer signoff:\s*.+\s+\d{4}-\d{2}-\d{2}", normalized, flags=re.I)
-        or re.search(
-            r"commit order:\s*[0-9a-f]{7,40}\s+before\s+[0-9a-f]{7,40}",
-            normalized,
-            flags=re.I,
-        )
+    commit_order_match = re.search(
+        r"commit order:\s*(?P<earlier>[0-9a-f]{7,40})\s+before\s+(?P<later>[0-9a-f]{7,40})",
+        normalized,
+        flags=re.I,
     )
+    if not commit_order_match:
+        return False
+    earlier = commit_order_match.group("earlier")
+    later = commit_order_match.group("later")
+    return (
+        git_command_succeeds(["cat-file", "-e", f"{earlier}^{{commit}}"])
+        and git_command_succeeds(["cat-file", "-e", f"{later}^{{commit}}"])
+        and git_command_succeeds(["merge-base", "--is-ancestor", earlier, later])
+    )
+
+
+def preimplementation_url_has_concrete_shape(value: str) -> bool:
+    if not preflight_artifact_exists(value):
+        return False
+    parsed = urlparse(clean_markdown_reference(value))
+    path = parsed.path.strip("/")
+    fragment = parsed.fragment.strip()
+    if re.fullmatch(r"[^/]+/[^/]+/issues/\d+", path):
+        return bool(re.fullmatch(r"issuecomment-\d+", fragment))
+    if re.fullmatch(r"[^/]+/[^/]+/pull/\d+", path):
+        return True
+    return False
 
 
 def pull_request_commit_messages() -> str:
@@ -698,7 +876,7 @@ def check_no_direct_main_push() -> None:
 
 
 def check_issue_linked_pull_request() -> None:
-    if os.environ.get("GITHUB_EVENT_NAME") != "pull_request":
+    if not should_enforce_pull_request_issue_checks():
         return
     event_path = os.environ.get("GITHUB_EVENT_PATH")
     if not event_path:
@@ -718,18 +896,7 @@ def check_issue_linked_pull_request() -> None:
         failures.append("Pull request head branch must not be main.")
     if base_ref != "main":
         failures.append("Pull requests for guarded work must target main.")
-    canonical_stage_issues = {
-        "stage2-": ("Stage 2", "2"),
-        "stage3-": ("Stage 3", "5"),
-    }
-    canonical_issue_number = next(
-        (
-            issue_number
-            for branch_prefix, (_stage_name, issue_number) in canonical_stage_issues.items()
-            if head_ref and head_ref.startswith(branch_prefix)
-        ),
-        None,
-    )
+    stage_name, canonical_issue_number = canonical_stage_issue(head_ref) or ("", None)
     is_canonical_stage_branch = canonical_issue_number is not None
     visible_issue_text = f"{title}\n{body}\n{pull_request_commit_messages()}"
     issue_39_closing_pattern = closing_issue_pattern("39")
@@ -753,16 +920,18 @@ def check_issue_linked_pull_request() -> None:
     )
     if not reference_only_issue_39 and not is_canonical_stage_branch and not re.search(issue_link_pattern(), body):
         failures.append("Pull request body must link an issue using reference-only wording such as Refs #<issue>.")
-    if is_nontrivial_pull_request(changes) and not has_completed_preflight_evidence(body):
-        failures.append("Non-trivial pull requests must include completed preflight evidence rows.")
-    for branch_prefix, (stage_name, issue_number) in canonical_stage_issues.items():
-        if head_ref and head_ref.startswith(branch_prefix):
-            pattern = closing_issue_pattern(issue_number)
-            if not re.search(pattern, body):
-                failures.append(
-                    f"{stage_name} pull requests must close the canonical {stage_name} issue using "
-                    f"Closes #{issue_number}, Fixes #{issue_number}, or Resolves #{issue_number}."
-                )
+    if is_nontrivial_pull_request(changes):
+        if not has_completed_preflight_evidence(body):
+            failures.append("Non-trivial pull requests must include completed preflight evidence rows.")
+        if not has_validation_evidence(body):
+            failures.append("Non-trivial pull requests must include validation evidence commands.")
+    if canonical_issue_number is not None:
+        pattern = closing_issue_pattern(canonical_issue_number)
+        if not re.search(pattern, body):
+            failures.append(
+                f"{stage_name} pull requests must close the canonical {stage_name} issue using "
+                f"Closes #{canonical_issue_number}, Fixes #{canonical_issue_number}, or Resolves #{canonical_issue_number}."
+            )
 
 
 def check_workflows_least_privilege() -> None:
