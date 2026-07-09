@@ -176,6 +176,7 @@ def write_issue39_closure_plan(
     padded_generic_evidence_only: bool = False,
     doc_only_evidence: bool = False,
     context0_pr64_evidence: bool = False,
+    context0_pr64_text: str | None = None,
     weak_human_only_evidence: bool = False,
     artifact_id_only: bool = False,
     artifact_label_id_only: bool = False,
@@ -209,7 +210,12 @@ def write_issue39_closure_plan(
             artifact = f"[{matrix_id} evidence](docs/reviews/shared-evidence.md)"
         else:
             artifact = f"`docs/reviews/{matrix_id}-evidence.md`"
-        if context0_pr64_evidence:
+        if context0_pr64_text is not None:
+            evidence = (
+                f"{matrix_id} {closure_evidence_detail(matrix_id)} "
+                f"with final proof copied from {context0_pr64_text}"
+            )
+        elif context0_pr64_evidence:
             evidence = (
                 f"{matrix_id} Context 0 planning proof from PR #64 and "
                 "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
@@ -788,6 +794,33 @@ def test_phase1_issue39_pull_request_rejects_context0_pr64_as_final_row_proof(
         child_pr="https://github.com/imrohitagrawal/narratwin-ai/pull/64",
         context0_pr64_evidence=True,
     )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+@pytest.mark.parametrize(
+    "context0_text",
+    [
+        "PR number 64",
+        "pull request 64",
+        "pull request number 64",
+    ],
+)
+def test_phase1_issue39_pull_request_rejects_context0_pr64_text_variants(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    context0_text: str,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path, context0_pr64_text=context0_text)
     monkeypatch.setattr(guardrails, "ROOT", tmp_path)
     failures = run_issue_link_check(
         tmp_path,

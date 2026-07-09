@@ -758,11 +758,18 @@ def closure_record_has_required_evidence_type(
         return True
     combined = " ".join((child_issue_pr, artifact, evidence, reason))
     normalized = normalize_contract_text(combined)
-    if "context 0" in normalized or "pr 64" in normalized or "pull 64" in normalized:
+    if "context 0" in normalized or references_issue_39_context0_pr(normalized):
         return False
     if "issue 39 production closure plan" in normalized and not closure_record_has_concrete_evidence(evidence):
         return False
     return closure_record_has_concrete_evidence(evidence)
+
+
+def references_issue_39_context0_pr(normalized_text: str) -> bool:
+    return any(
+        re.search(rf"\b(?:pr|pull(?: request)?)\s+(?:number\s+)?{re.escape(pr_number)}\b", normalized_text)
+        for pr_number in ISSUE_39_CONTEXT0_PR_NUMBERS
+    )
 
 
 def closure_record_has_concrete_evidence(value: str) -> bool:
