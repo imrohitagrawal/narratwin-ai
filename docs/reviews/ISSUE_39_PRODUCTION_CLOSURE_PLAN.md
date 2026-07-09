@@ -60,6 +60,32 @@ Local/test defaults (`in-memory`, local JSON, staged files, local mocks) remain 
 4. **Context 3:** Monitoring stack rollout, metrics, alerts, first-hour watch with follow-up checkpoints, and operations runbook.
 5. **Context 4:** Final closure evidence sweep, cross-context reconciliation, and final `#39` disposition decision.
 
+## Context 1: PostgreSQL Durability ADR and Schema Boundary
+
+Context 1 is now assigned to Issue `#65` and is implemented as the following:
+
+- Production durability boundary decision and contract: `docs/ADR/0008-postgresql-durability-schema-boundary.md`
+- Non-production artifacts remain in local file state and do not claim production
+  semantics.
+- Open/terminal/error transitions and replay-safe conflict handling for
+  `project`, `document`, `chunk`, `run`, and `evaluation` are defined as a
+  pre-implementation handoff.
+
+Boundary split for this design:
+
+| Surface | In-production durable boundary | Deferred/outside this context |
+|---|---|---|
+| `project` metadata | ✅ | - |
+| `document` metadata | ✅ | Raw upload/source document content |
+| `chunk` indices | ✅ | Provider/raw chunk payload binaries |
+| `run` state graph | ✅ | Provider/model outputs and transcripts |
+| `evaluation` records | ✅ | Generated scripts/subtitles/audio/video artifacts |
+| Migration DDL and rollout | ❌ | Migration/order scripts and execution |
+
+Approval requirement: this context is approved for architecture handoff only and
+must not introduce runtime implementation, SQL DDL execution, or API behavior
+change in this issue.
+
 ## Master Evidence Matrix
 
 All IDs are mandatory. `Status` is machine-relevant and may be changed from
@@ -99,7 +125,7 @@ All follow-on work must map every matrix ID to one or more child issues/PRs.
 
 | Child Issue / PR | Domain | Required Deliverables | Matrix IDs | Owner | Required Evidence |
 |---|---|---|---|---|---|
-| `ISSUE-39-1` (template) | Postgres durability architecture | PostgreSQL durability ADR + production schema boundary | DUR-ACID-001, DUR-STAGE4-001 | Architecture | ADR + storage design checklist |
+| `ISSUE-39-1` | Postgres durability architecture | PostgreSQL durability ADR + production schema boundary (`docs/ADR/0008-postgresql-durability-schema-boundary.md`) | DUR-ACID-001, DUR-STAGE4-001 | Architecture | ADR + schema boundary design checklist |
 | `ISSUE-39-2` (template) | Idempotency and leasing | Request identity, conflict rules, lease state machine, outbox skeleton contract | DUR-IDEMP-001, DUR-LEASE-001, DUR-OUTBOX-001 | Runtime | Contract tests and invariants |
 | `ISSUE-39-3` (template) | Migrations | Versioned expand/contract migration sequence and code-rollback posture | DUR-MIG-001, DUR-ROLLBACK-001, DUR-STAGE6-001, DUR-STAGE7-001 | Storage + API | Migration plan + backward-compatible deployment window proof |
 | `ISSUE-39-4` (template) | Backup and restore | RPO/RTO targets, backup design, restore drill evidence | DUR-RESTORE-001, OPS-METRICS-001, OPS-SLO-001 | Operations | Runbook + drill log + evidence bundle |

@@ -101,6 +101,7 @@ ISSUE_39_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "backend/app/stage7.py",
     "backend/app/storage/__init__.py",
     "backend/app/storage/file_state.py",
+    "docs/ADR/0008-postgresql-durability-schema-boundary.md",
     "docs/API_CONTRACT.md",
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/LOCAL_DEVELOPMENT.md",

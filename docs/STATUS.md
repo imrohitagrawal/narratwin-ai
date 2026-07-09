@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-09
+- Last reviewed date: 2026-07-10
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only. No Phase 2 feature
   work, external provider enablement, production release tag, or public
@@ -40,8 +40,8 @@ Use it to answer:
   `#59` merged the governance-learning allowlist follow-up for issue `#58` at
   merge commit `38ec53b`; PR `#62` merged the Medium/Low PHF process-hardening
   follow-up for issue `#60` at merge commit `cf07ab8`; PR `#74` is in
-  progress for issue `#72`; issues `#43`, `#44`, `#48`, `#49`, `#71`, and
-  `#72` remain open.
+  progress for issue `#72`; issue `#65` is now open for issue `#39` context
+  work; issues `#43`, `#44`, `#48`, `#49`, `#71`, and `#72` remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -158,7 +158,7 @@ Use these files together with this tracker:
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
 | Stage 8 | Complete, merged to `main` | `#13` closed | PR `#33` merged | Executable at merge | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and release-readiness review merged at `fb40113`. |
 | Final Review | Complete, merged to `main` | `#6` closed | PR `#45` merged | Executable artifact gate | Independent review artifacts merged at `5a294c7`; outcome is No-Go until Phase 1 Closure resolves blockers. |
-| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, `#42`, `#55`, `#58`, and `#60` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, `#48`, `#49`, `#71`, and `#72` open | PRs `#46`, `#47`, `#50`, `#53`, `#54`, `#56`, `#59`, and `#62` merged, and PRs `#73` and `#74` in progress | Executable governance gate added | `#39` now covers remaining production-grade durability/monitoring gaps after local restart recovery and ops status evidence. Issue `#72` is mapped to PR `#74` to harden future final row-closure proof requirements for durability/ops/media/security/provider rows without product/runtime scope. `#43`, `#44`, `#48`, and `#49` remain P2/follow-up unless they block Phase 1 correctness; `#60` is complete as a process-only PHF follow-up with no product/runtime scope. `#39` remains open. |
+| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, `#42`, `#55`, `#58`, and `#60` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, `#48`, `#49`, `#65`, `#71`, and `#72` open | PRs `#46`, `#47`, `#50`, `#53`, `#54`, `#56`, `#59`, and `#62` merged, and PRs `#64`, `#73` and `#74` in progress | Executable governance gate added | `#39` now covers remaining production-grade durability/monitoring gaps after local restart recovery and ops status evidence. Issue `#72` is mapped to PR `#74` to harden future final row-closure proof requirements for durability/ops/media/security/provider rows without product/runtime scope. `#43`, `#44`, `#48`, and `#49` remain P2/follow-up unless they block Phase 1 correctness; `#60` is complete as a process-only PHF follow-up with no product/runtime scope. `#39` remains open. |
 
 ## Issue Ledger
 
@@ -194,6 +194,7 @@ Use these files together with this tracker:
 | `#60` | Closed | Phase 1 process follow-up | Medium/Low PHF process-hardening completed through merged PR `#62` at `cf07ab8`: PHF matrix parsing, stricter result-bearing PR-body validation evidence, source-evidence binding inheritance, human-only merge-message surfacing, and related process-loop reduction landed without product/runtime feature implementation. |
 | `#71` | In progress | Phase 1 process follow-up | Adds always-on repository-guardrail structural checks for `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md` (`#39` matrix IDs, row shape, status, duplicates, unexpected IDs, and placeholders) and keeps `#39` close-attempt behavior unchanged. |
 | `#72` | In progress | Phase 1 process follow-up | PR `#74` hardens future `#39` final row-closure records so durability, operations, media, security, and provider rows require concrete evidence types, child PRs distinct from Context 0 PR `#64`, and merged child PR provenance when GitHub API validation is available. Runtime and infrastructure scope remain untouched. |
+| `#65` | Open | Phase 1 follow-on | PostgreSQL durability ADR and production schema-boundary contract for issue `#39` context 1 (`docs/ADR/0008-postgresql-durability-schema-boundary.md`). |
 
 ### Additional Backlog And Governance Issues
 
