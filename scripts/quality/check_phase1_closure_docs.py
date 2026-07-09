@@ -102,14 +102,35 @@ ISSUE_39_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/LOCAL_DEVELOPMENT.md",
     "docs/OBSERVABILITY_AND_COST.md",
     "docs/PORTABILITY_STRATEGY.md",
+    "docs/PROJECT_LEARNINGS_TRACKER.md",
+    "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
     "docs/RISK_REGISTER.md",
     "docs/reviews/RISK_REGISTER.md",
+    "docs/SKILLS_AND_CODEX_SETUP.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/SKILL_LOCK.md",
+    "docs/SKILL_TRUST_REVIEW.md",
     "scripts/guardrails_check.py",
     "tests/api/test_health_api.py",
     "tests/unit/test_branch_protection_verifier.py",
     "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_local_durability.py",
+}
+ISSUE_39_CONTEXT0_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
+    ".github/workflows/quality.yml",
+    ".github/workflows/security.yml",
+    "docs/PROJECT_LEARNINGS_TRACKER.md",
+    "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "docs/SKILLS_AND_CODEX_SETUP.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/SKILL_LOCK.md",
+    "docs/SKILL_TRUST_REVIEW.md",
+    "scripts/guardrails_check.py",
+    "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
 }
 
 EXPECTED_ISSUE_PRIORITIES = {
@@ -217,6 +238,32 @@ AUTOMATED_EVIDENCE_COMMAND = re.compile(
     r"\b(?:make quality|python3 scripts/guardrails_check\.py|uv run pytest [^`|\n]+)"
 )
 PHF_CLOSED_STATUSES = {"closed by local edits", "superseded by local edits"}
+REQUIRED_ISSUE_39_MATRIX_IDS = {
+    "DUR-ACID-001",
+    "DUR-IDEMP-001",
+    "DUR-STAGE4-001",
+    "DUR-LEASE-001",
+    "DUR-OUTBOX-001",
+    "DUR-STAGE6-001",
+    "DUR-STAGE7-001",
+    "DUR-MIG-001",
+    "DUR-ROLLBACK-001",
+    "DUR-RESTORE-001",
+    "OPS-METRICS-001",
+    "OPS-SLO-001",
+    "OPS-ALERT-001",
+    "OPS-WATCH-001",
+    "OPS-ROLLBACK-001",
+    "MEDIA-CONSENT-001",
+    "MEDIA-REVOKE-001",
+    "MEDIA-PROVENANCE-001",
+    "MEDIA-DISCLOSURE-001",
+    "PROVIDER-POSTURE-001",
+    "SEC-RETENTION-001",
+    "SEC-UNTRUSTED-001",
+    "GOV-SCOPE-001",
+}
+VALID_ISSUE_39_MATRIX_STATUSES = {"open", "closed"}
 
 
 def run_git(args: list[str]) -> str:
@@ -473,6 +520,57 @@ def workflow_has_pull_request_edited(yaml_text: str) -> bool:
     return False
 
 
+def guardrail_workflow_paths() -> list[str]:
+    workflow_dir = ROOT / ".github" / "workflows"
+    paths = sorted([*workflow_dir.glob("*.yml"), *workflow_dir.glob("*.yaml")])
+    return [
+        path.relative_to(ROOT).as_posix()
+        for path in paths
+        if "scripts/guardrails_check.py" in read(path.relative_to(ROOT).as_posix())
+    ]
+
+
+def workflow_has_guardrail_github_token_wiring(yaml_text: str) -> bool:
+    guardrail_steps = workflow_guardrail_step_blocks(yaml_text)
+    if not guardrail_steps:
+        return False
+    return (
+        "issues: read" in yaml_text
+        and "pull-requests: read" in yaml_text
+        and all(
+            "GITHUB_TOKEN:" in step and ("github.token" in step or "secrets.GITHUB_TOKEN" in step)
+            for step in guardrail_steps
+        )
+    )
+
+
+def workflow_guardrail_step_blocks(yaml_text: str) -> list[str]:
+    lines = yaml_text.splitlines()
+    blocks: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        step_match = re.match(r"^(?P<indent>\s*)-\s+name:\s+.*$", line)
+        if not step_match:
+            index += 1
+            continue
+        step_indent = len(step_match.group("indent"))
+        block_lines = [line]
+        index += 1
+        while index < len(lines):
+            current = lines[index]
+            if current.strip() and not current.lstrip().startswith("#"):
+                current_indent = len(current) - len(current.lstrip(" "))
+                if current_indent <= step_indent:
+                    break
+            block_lines.append(current)
+            index += 1
+        block = "\n".join(block_lines)
+        if "scripts/guardrails_check.py" in block:
+            blocks.append(block)
+    return blocks
+
+
 def check_required_headings(failures: list[str], text: str, owner: str, headings: tuple[str, ...]) -> None:
     for heading in headings:
         if not has_heading(text, heading):
@@ -658,6 +756,52 @@ def check_process_hardening_findings(failures: list[str], text: str) -> None:
                 failures.append(f"{item} findings register has placeholder acceptance criteria.")
 
 
+def check_issue39_closure_plan(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+    path = ROOT / rel
+    if not path.is_file():
+        failures.append(f"Missing required issue #39 production closure plan: {rel}")
+        return
+
+    headers, rows = parse_table_lines(section(read(rel), "Master Evidence Matrix"))
+    required_headers = ("ID", "Requirement", "Evidence target", "Owner", "Minimum evidence contract", "Status")
+    normalized_headers = [normalize_header(header) for header in headers]
+    missing_headers = [header for header in required_headers if normalize_header(header) not in normalized_headers]
+    if missing_headers:
+        failures.append(
+            "Issue #39 production closure plan Master Evidence Matrix missing headers: "
+            + ", ".join(missing_headers)
+        )
+        return
+
+    seen_ids: set[str] = set()
+    for row in rows:
+        if len(row) != len(headers):
+            failures.append(f"Issue #39 matrix row must have 6 columns: {row}")
+            continue
+        row_id = row[normalized_headers.index("id")].strip("` ")
+        status = row[normalized_headers.index("status")].strip("` ")
+        if row_id in seen_ids:
+            failures.append(f"Issue #39 production closure plan duplicates matrix ID: {row_id}")
+        seen_ids.add(row_id)
+        if not re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}", row_id):
+            failures.append(f"Issue #39 matrix row has invalid ID: {row_id}")
+        if status.lower() not in VALID_ISSUE_39_MATRIX_STATUSES:
+            failures.append(f"Issue #39 matrix row {row_id} status must be Open or Closed; got {status}.")
+        for value in row[1:5]:
+            if value.strip().lower() in {"", "n/a", "na", "todo", "tbd", "pending"}:
+                failures.append(f"Issue #39 matrix row {row_id} has placeholder evidence contract content.")
+                break
+
+    missing_ids = sorted(REQUIRED_ISSUE_39_MATRIX_IDS - seen_ids)
+    if missing_ids:
+        failures.append("Issue #39 production closure plan missing matrix IDs: " + ", ".join(missing_ids))
+
+    unexpected_ids = sorted(seen_ids - REQUIRED_ISSUE_39_MATRIX_IDS)
+    if unexpected_ids:
+        failures.append("Issue #39 production closure plan has unexpected matrix IDs: " + ", ".join(unexpected_ids))
+
+
 def issues_from_cell(value: str) -> set[str]:
     return set(re.findall(r"#\d+", value))
 
@@ -682,6 +826,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = PROCESS_ONLY_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-37-"):
         allowed_files = ISSUE_37_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-context0-"):
+        allowed_files = ISSUE_39_CONTEXT0_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-"):
         allowed_files = ISSUE_39_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-42-"):
@@ -1005,9 +1151,15 @@ def check_process_docs(failures: list[str]) -> None:
         if marker not in codeowners:
             fail(failures, f".github/CODEOWNERS missing process marker: {marker}")
 
-    quality_gates = read(".github/workflows/quality-gates.yml")
-    if not workflow_has_pull_request_edited(quality_gates):
-        fail(failures, ".github/workflows/quality-gates.yml must rerun policy-gates on pull_request.edited")
+    for workflow_path in guardrail_workflow_paths():
+        workflow_text = read(workflow_path)
+        if not workflow_has_pull_request_edited(workflow_text):
+            fail(failures, f"{workflow_path} must rerun guardrails on pull_request.edited")
+        if not workflow_has_guardrail_github_token_wiring(workflow_text):
+            fail(
+                failures,
+                f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails",
+            )
 
     rca = read("docs/ENGINEERING_PROCESS_RCA.md")
     check_required_headings(
@@ -1089,6 +1241,7 @@ def main() -> int:
         check_golden_questions(failures)
         check_demo_docs(failures)
         check_release_docs(failures)
+        check_issue39_closure_plan(failures)
         check_process_docs(failures)
 
     if failures:

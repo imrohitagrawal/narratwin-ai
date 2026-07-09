@@ -2,7 +2,7 @@ name: quality
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
   push:
     branches:
       - main
@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 
 concurrency:
   group: quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
@@ -27,6 +29,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      issues: read
+      pull-requests: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -36,6 +40,7 @@ jobs:
 
       - name: Compatibility secret guardrail
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}

@@ -577,6 +577,12 @@ database, Docker, or product runtime files. Issue-specific branches such as
 `phase-1-closure-39-*` retain their separate implementation/evidence allowlist
 only for the linked issue scope below.
 
+Context 0 issue `#39` closure-contract branches using
+`phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
+they may touch only docs, guardrails, tests, PR templates, and CI workflow
+guardrail wiring. They must not touch backend, frontend, schema, migration,
+worker, provider, monitoring, database, Docker, or runtime product files.
+
 Additional allowed implementation/evidence changes for Phase 1 Closure issue
 `#39`:
 
@@ -593,6 +599,7 @@ Additional allowed implementation/evidence changes for Phase 1 Closure issue
 - `docs/LOCAL_DEVELOPMENT.md`
 - `docs/OBSERVABILITY_AND_COST.md`
 - `docs/PORTABILITY_STRATEGY.md`
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
 - `docs/RISK_REGISTER.md`
 - `docs/reviews/RISK_REGISTER.md`
 - `scripts/guardrails_check.py`

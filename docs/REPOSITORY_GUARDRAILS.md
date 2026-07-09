@@ -45,6 +45,9 @@ The policy check fails CI for:
 - architecture-impacting changes without ADR updates
 - PRD-impacting changes without traceability updates
 - repository-tracked governance changes without `docs/STATUS.md` updates
+- Phase 1 Closure quality drift in the `#39` production-closure matrix, including
+  missing required IDs, malformed rows, duplicate or unexpected IDs, and invalid
+  status values
 - non-trivial pull requests without completed preflight evidence rows for the
   required source, invariant/failure matrix, test, docs/gates, and
   adversarial-review categories in the PR body
@@ -123,17 +126,21 @@ reviewable preflight artifact that covers:
 
 The pull-request preflight table must include completed rows for the executable
 gate categories: intent/spec, source facts, failure matrix, tests, docs/gates,
-and adversarial review. Completed means `pass` or `passed`; `tracked`,
-`accepted`, `pending`, `todo`, and placeholder values do not count as completed
-evidence. Every matrix ID named by the failure-matrix row must be covered by a
-test, executable gate, official source fact, explicit human-only row, or
-documented non-goal. Range shorthand such as `INV-1 through INV-6` is not a
-valid substitute for explicit matrix IDs. The declared reference type must match
-the artifact form. Human-only evidence must use concrete repo-file or
-non-placeholder URL references, and pre-implementation URL evidence must use a
-specific issue-comment URL or PR URL rather than a generic issue page. The tests row must state how old
-behavior was proven false for changed guardrails, bug fixes, restore/replay
-paths, and process-sensitive claims.
+adversarial review, review prompt set, stop rule, and skill/tool selection.
+Completed means `pass` or `passed`; `tracked`, `accepted`, `pending`, `todo`,
+and placeholder values do not count as completed evidence. Every matrix ID named
+by the failure-matrix row must be covered by a test, executable gate, official
+source fact, explicit human-only row, or documented non-goal. Range shorthand
+such as `INV-1 through INV-6` is not a valid substitute for explicit matrix IDs.
+The declared reference type must match the artifact form. Human-only evidence
+must use concrete repo-file or non-placeholder URL references, and
+pre-implementation URL evidence must use a specific issue-comment URL or PR URL
+rather than a generic issue page. The tests row must state how old behavior was
+proven false for changed guardrails, bug fixes, restore/replay paths, and
+process-sensitive claims. Failure matrix, review prompt set, stop rule, and
+skill/tool selection rows must link PR-specific artifacts; generic governance
+docs such as the RCA, learning tracker, retrospective, or new-project playbook
+do not count as proof for those rows.
 
 Durability, restore/replay, derived-artifact, release, CI, and governance work
 must include an invariant-to-test matrix before implementation. Marker-string
@@ -146,6 +153,15 @@ Process-critical governance docs, process-review registers, PR templates, and
 quality/guardrail scripts remain non-trivial even for text-only edits. These
 files define the review loop and therefore must carry preflight evidence rather
 than relying on marker-only wording.
+
+Skill/tool selection evidence must show that installed or approved repo skills,
+docs, and tools were checked before creating or installing any custom skill or
+plugin. A custom skill/plugin is allowed only when the PR links the unmet
+capability gap, rejected existing options, source/pin/license/telemetry and
+credential review, approval, `docs/SKILL_LOCK.md`, and
+`docs/THIRD_PARTY_NOTICES.md` updates. If a fresh review finds a new defect
+class after a fix, the stop-rule evidence must show that implementation paused
+for contract rewrite and review-prompt correction before another fix loop.
 
 For process and governance work, the PR template validation artifact is not optional:
 

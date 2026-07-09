@@ -1,7 +1,10 @@
 import importlib.util
+import re
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, cast
+
+import pytest
 
 
 def load_phase1_module() -> ModuleType:
@@ -52,6 +55,20 @@ def run_process_docs_check(
     return failures
 
 
+def run_issue39_closure_plan_check(monkeypatch: Any, *, plan_text: str) -> list[str]:
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {"docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md": plan_text},
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue39_closure_plan(failures)
+    return failures
+
+
 def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
@@ -66,6 +83,55 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
     )
 
     assert failures == []
+
+
+def test_issue39_closure_plan_accepts_current_matrix() -> None:
+    failures: list[str] = []
+    phase1.check_issue39_closure_plan(failures)
+
+    assert failures == []
+
+
+def test_issue39_closure_plan_rejects_missing_required_matrix_row(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=replace_text(
+            plan_text,
+            "| `OPS-WATCH-001` | First-hour watch with follow-up checkpoints | Triage cadence and owner communication for the first 60 minutes, plus explicit 120/180-minute follow-up checkpoints | Release/Operations | Active watch log template, handoff rules, timeout actions, rollback escalation threshold | Open |\n",
+            "",
+        ),
+    )
+
+    assert "Issue #39 production closure plan missing matrix IDs: OPS-WATCH-001" in failures
+
+
+def test_issue39_closure_plan_rejects_invalid_matrix_status(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=replace_text(
+            plan_text,
+            "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable identifiers, versioning, and compare-and-set invariants | Architecture + storage | PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |",
+            "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable identifiers, versioning, and compare-and-set invariants | Architecture + storage | PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Done |",
+        ),
+    )
+
+    assert "Issue #39 matrix row DUR-ACID-001 status must be Open or Closed; got Done." in failures
+
+
+def test_issue39_closure_plan_rejects_malformed_matrix_row(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=replace_text(
+            plan_text,
+            "| `SEC-UNTRUSTED-001` | Untrusted durable/replayed input handling | Uploaded docs, prompts, transcripts, provider outputs, model outputs, restored artifacts, exported media metadata, and replayed provenance remain untrusted | Security/Privacy + Runtime + Ops | Validation, output encoding, log redaction, prompt-injection/poisoned-retrieval controls, restore-time revalidation, and replay/export safety evidence for durable untrusted content | Open |",
+            "| `SEC-UNTRUSTED-001` | Untrusted durable/replayed input handling | Open |",
+        ),
+    )
+
+    assert "Issue #39 matrix row must have 6 columns:" in failures[0]
 
 
 def test_process_only_phase1_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
@@ -88,6 +154,56 @@ def test_issue39_durability_branch_keeps_existing_runtime_allowlist(monkeypatch:
     )
 
     assert failures == []
+
+
+def test_issue39_context0_branch_allows_targeted_process_and_skill_docs(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        files=[
+            ".github/workflows/quality.yml",
+            ".github/workflows/security.yml",
+            "docs/ENGINEERING_PROCESS_RCA.md",
+            "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
+            "docs/PROJECT_LEARNINGS_TRACKER.md",
+            "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
+            "docs/SKILLS_AND_CODEX_SETUP.md",
+            "docs/SKILL_EXECUTION_PLAN.md",
+            "docs/SKILL_LOCK.md",
+            "docs/SKILL_TRUST_REVIEW.md",
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+            "scripts/guardrails_check.py",
+            "tests/unit/test_guardrails_check.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_context0_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        files=["backend/app/stage4.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-context0-production-durability may not change backend/app/stage4.py."
+    ]
+
+
+def test_issue39_context0_branch_still_rejects_unrelated_docs(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        files=["docs/unrelated-process-note.md"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-context0-production-durability may not change "
+        "docs/unrelated-process-note.md."
+    ]
 
 
 def test_workflow_pull_request_edited_detected_from_multiline_yaml(monkeypatch: Any) -> None:
@@ -162,6 +278,100 @@ on:
 """
 
     assert not phase1.workflow_has_pull_request_edited(workflow_text)
+
+
+@pytest.mark.parametrize("workflow_path", [".github/workflows/quality.yml", ".github/workflows/security.yml"])
+def test_process_docs_rejects_guardrail_workflow_without_pull_request_edited(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("edited, ", "").replace(", edited", ""),
+        },
+    )
+
+    assert f"{workflow_path} must rerun guardrails on pull_request.edited" in failures
+
+
+@pytest.mark.parametrize("workflow_path", [".github/workflows/quality.yml", ".github/workflows/security.yml"])
+def test_process_docs_rejects_guardrail_workflow_without_token_permissions(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("  issues: read\n", "").replace("  pull-requests: read\n", ""),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/quality-gates.yml",
+        ".github/workflows/security.yml",
+    ],
+)
+def test_process_docs_rejects_guardrail_step_without_token_even_when_other_steps_have_token(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: remove_guardrail_step_token(workflow_text),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
+def remove_guardrail_step_token(workflow_text: str) -> str:
+    lines = workflow_text.splitlines()
+    output: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        step_match = re.match(r"^(?P<indent>\s*)-\s+name:\s+.*$", line)
+        if not step_match:
+            output.append(line)
+            index += 1
+            continue
+        step_indent = len(step_match.group("indent"))
+        block = [line]
+        index += 1
+        while index < len(lines):
+            current = lines[index]
+            if current.strip() and not current.lstrip().startswith("#"):
+                current_indent = len(current) - len(current.lstrip(" "))
+                if current_indent <= step_indent:
+                    break
+            block.append(current)
+            index += 1
+        if any("scripts/guardrails_check.py" in item for item in block):
+            block = [item for item in block if "GITHUB_TOKEN:" not in item]
+        output.extend(block)
+    return "\n".join(output) + "\n"
 
 
 def test_process_docs_rejects_missing_validation_command(monkeypatch: Any) -> None:

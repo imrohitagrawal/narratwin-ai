@@ -1,6 +1,11 @@
 # Skill Trust Review
 
-This file records Stage 0 trust posture for locked skill and workflow sources. No skills were installed or activated in Stage 0.
+This file is the historical Stage 0 trust review for locked skill and workflow
+sources. It is not the current activation ledger. Use `docs/SKILL_LOCK.md` as
+the authoritative current skill/tool activation record and
+`docs/SKILL_EXECUTION_PLAN.md` for allowed stage use.
+
+No skills were installed or activated for product implementation in Stage 0.
 
 ## Decision legend
 

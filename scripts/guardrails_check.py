@@ -13,7 +13,9 @@ import re
 import subprocess
 import sys
 from typing import NamedTuple
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -179,6 +181,9 @@ REQUIRED_PREFLIGHT_EVIDENCE = {
     "tests",
     "docs/gates",
     "adversarial review",
+    "review prompt set",
+    "stop rule",
+    "skill/tool selection",
 }
 
 OLD_BEHAVIOR_PROOF_TERMS = {
@@ -199,6 +204,7 @@ PLACEHOLDER_URL_TERMS = {"todo", "tbd", "placeholder", "example", "invalid"}
 LOCAL_REFERENCE_TYPES = {"repo-file"}
 URL_REFERENCE_TYPES = {"url", "source-url", "source", "pr-comment", "ci-run"}
 ALLOWED_REFERENCE_TYPES = LOCAL_REFERENCE_TYPES | URL_REFERENCE_TYPES
+CANONICAL_GITHUB_REPO = "imrohitagrawal/narratwin-ai"
 CANONICAL_STAGE_ISSUE_CLOSURE = (
     ("stage2-", "Stage 2", "2"),
     ("stage3-", "Stage 3", "5"),
@@ -213,6 +219,238 @@ REQUIRED_PREIMPLEMENTATION_ROWS = {
     "invariant/failure matrix",
     "source facts",
     "human-only surfaces, if any",
+}
+GENERIC_GOVERNANCE_REFERENCE_ARTIFACTS = {
+    "docs/ENGINEERING_PROCESS_RCA.md",
+    "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
+    "docs/PROJECT_LEARNINGS_TRACKER.md",
+    "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+}
+REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS = {
+    "DUR-ACID-001",
+    "DUR-IDEMP-001",
+    "DUR-STAGE4-001",
+    "DUR-LEASE-001",
+    "DUR-OUTBOX-001",
+    "DUR-STAGE6-001",
+    "DUR-STAGE7-001",
+    "DUR-MIG-001",
+    "DUR-ROLLBACK-001",
+    "DUR-RESTORE-001",
+    "OPS-METRICS-001",
+    "OPS-SLO-001",
+    "OPS-ALERT-001",
+    "OPS-WATCH-001",
+    "OPS-ROLLBACK-001",
+    "MEDIA-CONSENT-001",
+    "MEDIA-REVOKE-001",
+    "MEDIA-PROVENANCE-001",
+    "MEDIA-DISCLOSURE-001",
+    "PROVIDER-POSTURE-001",
+    "SEC-RETENTION-001",
+    "SEC-UNTRUSTED-001",
+    "GOV-SCOPE-001",
+}
+REQUIRED_ISSUE_39_ROW_CONTRACT_TERMS = {
+    "DUR-ACID-001": {
+        "production transaction model",
+        "durable identifiers",
+        "versioning",
+        "compare-and-set",
+        "conflict example",
+        "replay invariant",
+    },
+    "DUR-IDEMP-001": {
+        "replay-safe request identity",
+        "dedupe",
+        "retries",
+        "worker failover",
+        "idempotency envelope",
+        "terminal/error/replay state transitions",
+        "failure dedupe proofs",
+    },
+    "DUR-STAGE4-001": {
+        "project/document/chunk/run/eval graph",
+        "resume behavior",
+        "at-least-once execution",
+        "idempotent consumers",
+        "no exactly-once side-effect claim",
+    },
+    "DUR-LEASE-001": {
+        "lease acquisition",
+        "heartbeat renewal",
+        "expiry",
+        "reclaim",
+        "stale-writer fencing",
+        "monotonic fencing token/epoch",
+        "ownership transfer proof",
+    },
+    "DUR-OUTBOX-001": {
+        "outbox transaction boundaries",
+        "side-effect dispatch contract",
+        "same-transaction outbox write",
+        "state change",
+        "at-least-once dispatch",
+        "idempotent consumer policy",
+    },
+    "DUR-STAGE6-001": {
+        "translated scripts/subtitles",
+        "derived assets",
+        "source-run linkage",
+        "checksum-based dedupe",
+        "deterministic artifact provenance",
+    },
+    "DUR-STAGE7-001": {
+        "render status",
+        "artifact records",
+        "consent/disclosure binding",
+        "persistent render/provenance record",
+        "synthetic-media release check points",
+    },
+    "DUR-MIG-001": {
+        "versioned schema evolution",
+        "compatibility",
+        "forward-only rollback safety",
+        "expand/contract migration plan",
+        "backward-compatible code windows",
+        "forward repair",
+        "no mandatory down-migration claim",
+    },
+    "DUR-ROLLBACK-001": {
+        "previous deploy",
+        "expanded schema",
+        "rollback is blocked",
+        "forward repair",
+    },
+    "DUR-RESTORE-001": {
+        "backup scope",
+        "integrity",
+        "restore smoke",
+        "RTO/RPO",
+        "successful restore drill",
+    },
+    "OPS-METRICS-001": {
+        "queue",
+        "lease",
+        "idempotency",
+        "outbox",
+        "restore metrics",
+        "reviewer-approved metric catalog",
+        "scrape/query mapping",
+        "operational failure mode",
+    },
+    "OPS-SLO-001": {
+        "threshold bindings",
+        "queue lag",
+        "lease staleness",
+        "outbox age/backlog",
+        "restore RTO/RPO",
+        "rollback",
+        "watch escalation",
+        "SLO/error-budget",
+        "alert threshold mapping",
+    },
+    "OPS-ALERT-001": {
+        "severity routing",
+        "alert ownership",
+        "paging runbook",
+        "dashboard",
+        "alert matrix",
+        "tested routing",
+        "acknowledgment rules",
+    },
+    "OPS-WATCH-001": {
+        "first 60 minutes",
+        "120/180-minute",
+        "watch log template",
+        "handoff rules",
+        "timeout actions",
+        "rollback escalation threshold",
+    },
+    "OPS-ROLLBACK-001": {
+        "pre/post rollback comms",
+        "ownership confirmation",
+        "freeze-window criteria",
+        "comms template",
+        "evidence captures",
+    },
+    "MEDIA-CONSENT-001": {
+        "affirmative consent",
+        "actor",
+        "timestamp",
+        "consent text/version",
+        "artifact refs",
+        "source-run binding",
+        "scope",
+        "audit retention",
+    },
+    "MEDIA-REVOKE-001": {
+        "revocation",
+        "takedown",
+        "retain",
+        "block replay",
+        "customer/user communication",
+    },
+    "MEDIA-PROVENANCE-001": {
+        "source-run",
+        "prompt",
+        "provider",
+        "artifact checksum",
+        "cloned-identity denial provenance",
+        "consent record",
+        "identity/likeness denial",
+    },
+    "MEDIA-DISCLOSURE-001": {
+        "disclosure text/version",
+        "exports",
+        "public-use posture",
+        "disclosure state",
+    },
+    "PROVIDER-POSTURE-001": {
+        "legal/license review",
+        "mock/local default",
+        "no real keys",
+        "local/dev/test/CI",
+        "explicit production enablement",
+        "deny-by-default egress",
+        "key isolation",
+        "no secret logging",
+        "prompt inclusion",
+        "rollback disablement",
+    },
+    "SEC-RETENTION-001": {
+        "encryption",
+        "redaction",
+        "deletion/erasure scope",
+        "tombstone",
+        "hard-delete",
+        "access control",
+        "backup expiry",
+        "restore re-delete",
+        "audit retention exceptions",
+        "replay/export blocking after deletion",
+        "restore-disclosure requirements",
+    },
+    "SEC-UNTRUSTED-001": {
+        "uploaded docs",
+        "prompts",
+        "transcripts",
+        "provider outputs",
+        "model outputs",
+        "restore-time revalidation",
+        "output encoding",
+        "log redaction",
+        "prompt-injection",
+        "poisoned-retrieval",
+    },
+    "GOV-SCOPE-001": {
+        "does not absorb",
+        "child PRs",
+        "documented issue split",
+        "remaining blocker",
+        "separate issue/PR mapping",
+    },
 }
 REQUIRED_PR_VALIDATION_COMMANDS = (
     "uv run pytest tests/unit/test_guardrails_check.py",
@@ -297,11 +535,21 @@ def resolve_diff_base(head: str, preferred_base: str) -> str:
 
 
 def changed_files() -> list[str]:
-    base = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    base = preferred_diff_base_for_current_event()
     head = os.environ.get("GITHUB_HEAD_SHA", "").strip() or "HEAD"
     resolved_base = resolve_diff_base(head, base)
     output = run_git(["diff", "--name-only", resolved_base, head])
     return [line.strip() for line in output.splitlines() if line.strip()]
+
+
+def preferred_diff_base_for_current_event() -> str:
+    base = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    if os.environ.get("GITHUB_EVENT_NAME", "").strip() != "push":
+        return base
+    ref_name = os.environ.get("GITHUB_REF_NAME", "").strip()
+    if ref_name and ref_name != "main":
+        return ""
+    return base
 
 
 def closing_issue_pattern(issue_number: str = r"\d+") -> str:
@@ -326,6 +574,172 @@ def closing_issue_numbers(text: str) -> set[str]:
         if issue_number:
             issue_numbers.add(issue_number)
     return issue_numbers
+
+
+def issue_39_closure_matrix_all_closed() -> bool:
+    matrix_path = ROOT / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+    plan_text = read_text(matrix_path)
+    matrix_rows = issue_39_matrix_rows_by_id(plan_text)
+    if matrix_rows is None:
+        return False
+    matrix_ids = set(matrix_rows)
+    if not REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS.issubset(matrix_ids):
+        return False
+    if not all(row[5].strip().lower() == "closed" for row in matrix_rows.values()):
+        return False
+    closure_records = issue_39_closure_record_ids(plan_text)
+    return matrix_ids.issubset(closure_records)
+
+
+def issue_39_matrix_rows_by_id(plan_text: str) -> dict[str, list[str]] | None:
+    rows = markdown_table_rows(plan_text, "Master Evidence Matrix")
+    matrix_rows: dict[str, list[str]] = {}
+    for cells in rows:
+        if len(cells) != 6:
+            return None
+        row_id = cells[0].strip("` ")
+        if row_id.lower() == "id":
+            continue
+        if not re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+", row_id):
+            return None
+        if not issue_39_matrix_row_keeps_contract(row_id, cells):
+            return None
+        if row_id in matrix_rows:
+            return None
+        matrix_rows[row_id] = cells
+    return matrix_rows or None
+
+
+def issue_39_closure_record_ids(plan_text: str) -> set[str]:
+    record_ids: set[str] = set()
+    for cells in markdown_table_rows(plan_text, "Row Closure Records"):
+        if len(cells) != 9:
+            continue
+        row_id, child_issue_pr, artifact, evidence, owner, reviewer, residual, timestamp, reason = cells[:9]
+        row_id = row_id.strip("` ")
+        if row_id.lower() == "matrix id":
+            continue
+        required = (row_id, child_issue_pr, artifact, evidence, owner, reviewer, residual, timestamp, reason)
+        if any(is_placeholder_value(value) for value in required):
+            continue
+        if not re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+", row_id):
+            continue
+        if not closure_record_has_required_child_references(child_issue_pr):
+            continue
+        if not preflight_artifact_exists(artifact):
+            continue
+        row_id_lower = row_id.lower()
+        artifact_target = clean_markdown_reference(artifact)
+        if row_id_lower not in artifact_target.lower():
+            continue
+        if row_id_lower not in evidence.lower():
+            continue
+        if row_id_lower not in reason.lower():
+            continue
+        if closure_record_has_generic_values(evidence, owner, reviewer, residual, reason):
+            continue
+        record_ids.add(row_id)
+    return record_ids
+
+
+def issue_39_matrix_row_keeps_contract(row_id: str, cells: list[str]) -> bool:
+    required_terms = REQUIRED_ISSUE_39_ROW_CONTRACT_TERMS.get(row_id)
+    if not required_terms:
+        return True
+    row_text = normalize_contract_text(" ".join(cells[1:5]))
+    return all(normalize_contract_text(term) in row_text for term in required_terms)
+
+
+def normalize_contract_text(value: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.lower())
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+def closure_record_has_required_child_references(child_issue_pr: str) -> bool:
+    issue_urls = re.findall(
+        rf"https://github\.com/{re.escape(CANONICAL_GITHUB_REPO)}/issues/(\d+)\b",
+        child_issue_pr,
+    )
+    pr_urls = re.findall(
+        rf"https://github\.com/{re.escape(CANONICAL_GITHUB_REPO)}/pull/(\d+)\b",
+        child_issue_pr,
+    )
+    verified_child_issue = any(
+        issue_number != "39" and github_reference_exists("issues", issue_number)
+        for issue_number in issue_urls
+    )
+    verified_pr = any(github_reference_exists("pulls", pr_number) for pr_number in pr_urls)
+    return verified_child_issue and verified_pr
+
+
+def github_reference_exists(resource: str, number: str) -> bool:
+    if resource not in {"issues", "pulls"}:
+        return False
+    github_auth_value = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not github_auth_value:
+        return False
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    headers["Authorization"] = f"Bearer {github_auth_value}"
+    request = Request(
+        f"https://api.github.com/repos/{CANONICAL_GITHUB_REPO}/{resource}/{number}",
+        headers=headers,
+    )
+    try:
+        with urlopen(request, timeout=5) as response:  # nosec B310 - canonical GitHub API URL only.
+            status = int(getattr(response, "status", 0))
+            if not 200 <= status < 300:
+                return False
+            payload = json.loads(response.read().decode("utf-8"))
+            if not isinstance(payload, dict):
+                return False
+            if resource == "issues" and "pull_request" in payload:
+                return False
+            return True
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
+        return False
+
+
+def closure_record_has_generic_values(
+    evidence: str,
+    owner: str,
+    reviewer: str,
+    residual: str,
+    reason: str,
+) -> bool:
+    generic_exact_values = {
+        normalize_closure_record_value(value)
+        for value in {
+            "accepted",
+            "owner",
+            "reviewer",
+        }
+    }
+    generic_phrases = {
+        normalize_closure_record_value(value)
+        for value in {
+            "closure evidence",
+            "evidence satisfies row",
+            "evidence satisfies the closure row",
+            "human-only evidence passed",
+            "residual risk accepted",
+        }
+    }
+    for value in (evidence, owner, reviewer, residual, reason):
+        normalized = normalize_closure_record_value(value)
+        if normalized in generic_exact_values:
+            return True
+        if any(phrase and phrase in normalized for phrase in generic_phrases):
+            return True
+    return False
+
+
+def normalize_closure_record_value(value: str) -> str:
+    normalized = re.sub(r"\b[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+\b", " ", value, flags=re.I)
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized.lower())
+    return re.sub(r"\s+", " ", normalized).strip()
 
 
 def issue_link_pattern(issue_number: str = r"\d+") -> str:
@@ -424,6 +838,11 @@ def has_completed_preflight_evidence(body: str) -> bool:
         if matrix_id_cell_uses_range_shorthand(row.matrix_ids):
             continue
         if not preflight_artifact_exists(row.artifact):
+            continue
+        if row.evidence_name in {"failure matrix", "review prompt set", "stop rule", "skill/tool selection"}:
+            if is_generic_governance_reference(row.artifact):
+                continue
+        if not preflight_row_has_required_process_content(row):
             continue
         completed_rows.setdefault(row.evidence_name, []).append(row)
 
@@ -627,6 +1046,8 @@ def has_pre_implementation_evidence(body: str) -> bool:
             continue
         if not preflight_artifact_exists(artifact):
             continue
+        if requirement_name == "invariant/failure matrix" and is_generic_governance_reference(artifact):
+            continue
         if not has_concrete_preimplementation_marker(timestamp_or_commit):
             continue
         seen.add(requirement_name)
@@ -641,7 +1062,52 @@ def normalize_preflight_evidence_name(value: str) -> str:
         return "failure matrix"
     if evidence_name.startswith("tests"):
         return "tests"
+    if evidence_name.startswith("review prompt"):
+        return "review prompt set"
+    if evidence_name.startswith("stop rule"):
+        return "stop rule"
+    if evidence_name.startswith("skill") or evidence_name.startswith("tool selection"):
+        return "skill/tool selection"
     return evidence_name
+
+
+def preflight_row_has_required_process_content(row: PreflightEvidenceRow) -> bool:
+    row_text = normalize_contract_text(" ".join(row.raw_cells))
+    if row.evidence_name == "review prompt set":
+        return all(
+            term in row_text
+            for term in (
+                "review",
+                "prompt",
+                "matrix",
+            )
+        ) and any(term in row_text for term in ("false pass", "false close", "adversarial"))
+    if row.evidence_name == "stop rule":
+        return all(
+            term in row_text
+            for term in (
+                "stop",
+                "blocker",
+                "contract",
+            )
+        ) and any(term in row_text for term in ("reset", "rewrite", "update"))
+    if row.evidence_name == "skill/tool selection":
+        has_reuse_first = (
+            "preinstalled" in row_text
+            or "approved skills" in row_text
+            or "repo docs" in row_text
+        )
+        has_custom_decision = (
+            "no custom" in row_text
+            or ("documented gap" in row_text and "approval" in row_text)
+        )
+        return has_reuse_first and has_custom_decision
+    return True
+
+
+def is_generic_governance_reference(value: str) -> bool:
+    artifact = strip_artifact_fragment_or_line(clean_markdown_reference(value))
+    return artifact in GENERIC_GOVERNANCE_REFERENCE_ARTIFACTS
 
 
 def normalize_evidence_type(value: str) -> str:
@@ -900,12 +1366,18 @@ def check_issue_linked_pull_request() -> None:
     is_canonical_stage_branch = canonical_issue_number is not None
     visible_issue_text = f"{title}\n{body}\n{pull_request_commit_messages()}"
     issue_39_closing_pattern = closing_issue_pattern("39")
-    if re.search(
-        issue_39_closing_pattern,
-        visible_issue_text,
-    ):
+    issue_39_closing_attempt = re.search(issue_39_closing_pattern, visible_issue_text) is not None
+    issue_39_closure_allowed = bool(
+        issue_39_closing_attempt
+        and head_ref
+        and head_ref.startswith("phase-1-closure-39-")
+        and issue_39_closure_matrix_all_closed()
+    )
+    if issue_39_closing_attempt and not issue_39_closure_allowed:
         failures.append("Issue #39 pull requests must use reference-only wording and must not auto-close #39.")
     closed_issue_numbers = closing_issue_numbers(visible_issue_text)
+    if issue_39_closure_allowed:
+        closed_issue_numbers.discard("39")
     if not is_canonical_stage_branch and closed_issue_numbers:
         failures.append("Pull request title/body/commit messages must use reference-only issue wording.")
     if canonical_issue_number is not None and any(

@@ -461,6 +461,10 @@ Gate validates:
 - `docs/reviews/PROCESS_HARDENING_FINDINGS.md` tracks deduplicated
   process-hardening review findings from sub-agent, cross-model, and blind
   reviews when those reviews produce actionable process gaps
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md` keeps the exact required
+  `#39` production-closure matrix ID set, 6-column row shape, and `Open` or
+  `Closed` status values valid on every Phase 1 closure quality run, not only
+  when a PR attempts to close `#39`
 - every P0/P1 issue maps to a valid closure module and the module table covers
   the P0/P1 issue set with non-empty required evidence
 - `docs/RELEASE_READINESS_REVIEW.md` preserves the Final Review No-Go posture,
@@ -501,8 +505,9 @@ must not include issue-closing keywords in the title/body/branch commit
 messages except for explicitly allowed canonical stage issue closures. Issue
 `#39` must not appear with auto-closing keywords in the title/body/branch commit
 messages, and non-trivial PRs must include completed preflight evidence rows for
-the required intent/spec, source-facts, failure-matrix, test, docs/gates, and
-adversarial-review categories. The guardrail rejects false-pass preflight
+the required intent/spec, source-facts, failure-matrix, test, docs/gates,
+adversarial-review, review-prompt-set, stop-rule, and skill/tool-selection
+categories. The guardrail rejects false-pass preflight
 tables when the failure-matrix IDs are not fully covered by test, gate, source,
 human-only, or non-goal evidence; when completion status is not `pass` or
 `passed`; when artifacts are directories, placeholder URLs, or missing files; or
@@ -514,6 +519,11 @@ surfaces, including the final squash/merge message, must be listed separately
 with owner and residual-risk decision, and pre-implementation evidence must show
 the matrix/source facts existed before implementation or guardrail edits began
 through a specific issue-comment URL, PR URL, or verified commit ordering.
+Failure-matrix, review-prompt-set, stop-rule, and skill/tool-selection rows must
+link PR-specific artifacts rather than generic governance docs. Skill/tool rows
+must prove approved installed skills/docs were checked first and that custom
+skills/plugins were not used without documented gap, lock, notice, and approval
+evidence.
 Process-critical governance docs and process-review registers stay in the
 non-trivial category even for text-only edits because those files define future
 automation behavior and review-loop prevention.

@@ -26,6 +26,13 @@ This file records approved skill and workflow sources for NarraTwin AI. A source
 
 ## Lock Rules
 
+- Prefer preinstalled and repo-approved skills/docs before creating, installing,
+  or activating a custom skill/plugin. Record the checked options and unmet gap
+  in the PR preflight evidence.
+- Do not use a custom skill/plugin unless the PR links explicit approval,
+  rejected existing options, source, pin/version, license, telemetry,
+  filesystem/network, hook, credential, expiry/revisit, residual-risk,
+  `docs/SKILL_LOCK.md`, and `docs/THIRD_PARTY_NOTICES.md` evidence.
 - Do not activate a source with unclear license, telemetry, filesystem, network, hook, or credential behavior.
 - Do not commit `.codex` cache, vendor, auth, config, or plugin runtime state.
 - Do not run implementation-oriented skills in Stage 0.

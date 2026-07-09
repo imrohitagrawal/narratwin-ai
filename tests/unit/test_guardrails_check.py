@@ -20,6 +20,275 @@ def load_guardrails_module() -> ModuleType:
 guardrails: Any = load_guardrails_module()
 ISSUE_39_REFERENCE_ONLY_FAILURE = "Issue #39 pull requests must use reference-only wording and must not auto-close #39."
 PREFLIGHT_FAILURE = "Non-trivial pull requests must include completed preflight evidence rows."
+PR_SPECIFIC_PREFLIGHT_ARTIFACT = "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+ISSUE39_SENSITIVE_ROW_CELLS = {
+    "DUR-ACID-001": [
+        "ACID/CAS durable metadata",
+        "Production transaction model for durable identifiers, versioning, and compare-and-set invariants",
+        "Architecture + storage",
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist",
+    ],
+    "DUR-IDEMP-001": [
+        "Production idempotency semantics",
+        "Replay-safe request identity and dedupe behavior across retries and worker failover",
+        "Runtime/state + Security",
+        "Idempotency envelope contract including terminal/error/replay state transitions and failure dedupe proofs",
+    ],
+    "DUR-STAGE4-001": [
+        "Durable Stage 4 project/document/RAG/run graph",
+        "Durable project/document/chunk/run/eval graph and resume behavior",
+        "Storage + API",
+        "Entity/state graph contract with at-least-once execution and idempotent consumers; no exactly-once side-effect claim",
+    ],
+    "DUR-LEASE-001": [
+        "Cross-worker job leases",
+        "Lease acquisition, heartbeat renewal, expiry, reclaim, and stale-writer fencing",
+        "Runtime/state",
+        "Lease state machine with monotonic fencing token/epoch, stale-owner prevention, and ownership transfer proof",
+    ],
+    "DUR-OUTBOX-001": [
+        "Committed outbox side effects",
+        "Outbox transaction boundaries and side-effect dispatch contract",
+        "Runtime/integrations",
+        "Same-transaction outbox write with state change; at-least-once dispatch plus idempotent consumer policy",
+    ],
+    "DUR-STAGE6-001": [
+        "Durable multilingual artifact replay",
+        "Production replay of translated scripts/subtitles and derived assets",
+        "Stage 6",
+        "Replay contract with source-run linkage, checksum-based dedupe, and deterministic artifact provenance",
+    ],
+    "DUR-STAGE7-001": [
+        "Durable render/artifact/provenance state",
+        "Render status, artifact records, consent/disclosure binding",
+        "Stage 7",
+        "Persistent render/provenance record contract and synthetic-media release check points",
+    ],
+    "DUR-MIG-001": [
+        "Migrations",
+        "Versioned schema evolution, compatibility, and forward-only rollback safety",
+        "Platform/storage",
+        "Expand/contract migration plan with backward-compatible code windows, forward repair, and no mandatory down-migration claim",
+    ],
+    "DUR-ROLLBACK-001": [
+        "Technical rollback compatibility",
+        "Code rollback against migrated production metadata",
+        "Platform + Release",
+        "Evidence that the previous deploy can run against the expanded schema or that rollback is blocked until forward repair completes",
+    ],
+    "DUR-RESTORE-001": [
+        "Backup/restore drill",
+        "Backup scope, integrity, restore smoke, and RTO/RPO verification",
+        "Ops",
+        "Operable restore playbook with evidence of at least one successful restore drill",
+    ],
+    "OPS-METRICS-001": [
+        "Production metrics",
+        "Queue, lease, idempotency, outbox, and restore metrics",
+        "Observability",
+        "Reviewer-approved metric catalog and scrape/query mapping to each operational failure mode",
+    ],
+    "OPS-SLO-001": [
+        "Production SLOs and error budgets",
+        "Threshold bindings for queue lag, lease staleness, outbox age/backlog, restore RTO/RPO, rollback, and watch escalation",
+        "SRE/Ops + Release",
+        "Reviewed SLO/error-budget catalog with alert threshold mapping and rollback/watch escalation bindings",
+    ],
+    "OPS-ALERT-001": [
+        "Dashboards and alerts",
+        "Severity routing, alert ownership, and paging runbook",
+        "SRE/Ops",
+        "Dashboard + alert matrix with tested routing, evidence loop, and acknowledgment rules",
+    ],
+    "OPS-WATCH-001": [
+        "First-hour watch with follow-up checkpoints",
+        "Triage cadence and owner communication for the first 60 minutes, plus explicit 120/180-minute follow-up checkpoints",
+        "Release/Operations",
+        "Active watch log template, handoff rules, timeout actions, rollback escalation threshold",
+    ],
+    "OPS-ROLLBACK-001": [
+        "Rollback communications",
+        "Pre/post rollback comms and ownership confirmation",
+        "Release/Operations",
+        "Freeze-window criteria, comms template, and required evidence captures",
+    ],
+    "MEDIA-CONSENT-001": [
+        "Consent capture",
+        "Affirmative consent record for synthetic-media generation",
+        "Security/Privacy",
+        "Consent schema with actor, timestamp, consent text/version, artifact refs, source-run binding, scope, and audit retention",
+    ],
+    "MEDIA-REVOKE-001": [
+        "Consent revocation behavior",
+        "Revocation, takedown, retention, and already-published artifact handling",
+        "Security/Privacy + Release",
+        "Revocation decision table covering retain, block replay, takedown, and customer/user communication paths",
+    ],
+    "MEDIA-PROVENANCE-001": [
+        "Provenance binding",
+        "Durable source-run, prompt, provider, artifact checksum, cloned-identity denial provenance, and disclosure lineage",
+        "Security/Privacy + Media",
+        "Provenance schema and replay proof linking rendered artifacts to source run, consent record, and identity/likeness denial checks",
+    ],
+    "MEDIA-DISCLOSURE-001": [
+        "Synthetic-media disclosure",
+        "Durable disclosure text/version binding for exports and public-use posture",
+        "Security/Privacy + Release",
+        "Disclosure versioning record and validation that artifacts carry the expected disclosure state",
+    ],
+    "PROVIDER-POSTURE-001": [
+        "Provider release posture",
+        "External provider legal, license, network, egress, key, and rollout controls",
+        "Security/Privacy + Platform",
+        "Provider release checklist with legal/license review, mock/local default, no real keys in local/dev/test/CI, explicit production enablement, deny-by-default egress, key isolation, no secret logging or prompt inclusion, and rollback disablement evidence",
+    ],
+    "SEC-RETENTION-001": [
+        "Sensitive metadata retention/deletion/redaction",
+        "PII/provenance/consent data in PostgreSQL, backups, logs, metrics, and restored environments",
+        "Security/Privacy + Ops",
+        "Data-class table with encryption, redaction, deletion/erasure scope, tombstone vs hard-delete policy, backup expiry, restore re-delete behavior, audit retention exceptions, access control, replay/export blocking after deletion, and restore-disclosure requirements",
+    ],
+    "SEC-UNTRUSTED-001": [
+        "Untrusted durable/replayed input handling",
+        "Uploaded docs, prompts, transcripts, provider outputs, model outputs, restored artifacts, exported media metadata, and replayed provenance remain untrusted",
+        "Security/Privacy + Runtime + Ops",
+        "Validation, output encoding, log redaction, prompt-injection/poisoned-retrieval controls, restore-time revalidation, and replay/export safety evidence for durable untrusted content",
+    ],
+    "GOV-SCOPE-001": [
+        "Scope split",
+        "Context 0 does not absorb child PRs or remaining production blockers",
+        "Governance",
+        "Documented issue split with separate issue/PR mapping for every remaining blocker",
+    ],
+}
+
+
+def write_issue39_closure_plan(
+    root: Path,
+    *,
+    child_issue: str = "https://github.com/imrohitagrawal/narratwin-ai/issues/70",
+    child_pr: str = "https://github.com/imrohitagrawal/narratwin-ai/pull/71",
+    malformed_id: str | None = None,
+    omitted_ids: set[str] | None = None,
+    include_records: bool = True,
+    generic_records: bool = False,
+    generic_evidence_only: bool = False,
+    padded_generic_evidence_only: bool = False,
+    artifact_id_only: bool = False,
+    artifact_label_id_only: bool = False,
+    weakened_id: str | None = None,
+) -> None:
+    omitted = omitted_ids or set()
+    plan_path = root / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    matrix_rows = []
+    record_rows = []
+    for matrix_id in sorted(guardrails.REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS - omitted):
+        matrix_cells = ISSUE39_SENSITIVE_ROW_CELLS.get(
+            matrix_id,
+            ["Requirement", "Evidence target", "Owner", "Minimum evidence contract"],
+        )
+        if matrix_id == weakened_id:
+            matrix_cells = ["Requirement", "Evidence target", "Owner", "Minimum evidence contract"]
+        if matrix_id == malformed_id:
+            matrix_rows.append(
+                f"| `{matrix_id}` | {' | '.join(matrix_cells)} | Closed | Open |"
+            )
+        else:
+            matrix_rows.append(
+                f"| `{matrix_id}` | {' | '.join(matrix_cells)} | Closed |"
+            )
+        evidence_path = root / f"docs/reviews/{matrix_id}-evidence.md"
+        evidence_path.write_text(f"{matrix_id} closure evidence\n", encoding="utf-8")
+        if artifact_label_id_only:
+            shared_evidence_path = root / "docs/reviews/shared-evidence.md"
+            shared_evidence_path.write_text("shared closure evidence\n", encoding="utf-8")
+            artifact = f"[{matrix_id} evidence](docs/reviews/shared-evidence.md)"
+        else:
+            artifact = f"`docs/reviews/{matrix_id}-evidence.md`"
+        if artifact_id_only:
+            evidence = "Concrete replay drill log shows invariant held under retry, failover, and reviewer audit conditions"
+        elif padded_generic_evidence_only:
+            evidence = f"{matrix_id} human-only evidence passed with reviewer evidence"
+        elif generic_records or generic_evidence_only:
+            evidence = f"{matrix_id} human-only evidence passed"
+        else:
+            evidence = (
+                f"{matrix_id} {closure_evidence_detail(matrix_id)}"
+            )
+        if generic_records:
+            reason = f"{matrix_id} evidence satisfies the closure row"
+        elif artifact_id_only:
+            reason = "Closure artifact proves the named invariant with a concrete command, review owner, and residual-risk decision"
+        else:
+            reason = (
+                f"{matrix_id} {closure_reason_detail(matrix_id)}"
+            )
+        record_rows.append(
+            f"| `{matrix_id}` | {child_issue} / {child_pr} | {artifact} | {evidence} | production durability accountable engineer | security reliability review approver | {matrix_id} reviewed residual risk is bounded by linked follow-up evidence | merge commit abc1234 | {reason} |"
+        )
+    records = "\n".join(record_rows) if include_records else ""
+    plan_path.write_text(
+        "\n".join(
+            [
+                "# Issue #39 Production Closure Plan (Context 0)",
+                "",
+                "## Master Evidence Matrix",
+                "",
+                "| ID | Requirement | Evidence target | Owner | Minimum evidence contract | Status |",
+                "|---|---|---|---|---|---|",
+                *matrix_rows,
+                "",
+                "## Row Closure Records",
+                "",
+                "| Matrix ID | Child issue / PR | Artifact reference | Validation or human evidence | Owner | Reviewer | Residual-risk decision | Timestamp / merge commit | Satisfies row because |",
+                "|---|---|---|---|---|---|---|---|---|",
+                records,
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
+def closure_evidence_detail(matrix_id: str) -> str:
+    if matrix_id.startswith("DUR-"):
+        return "durability replay evidence records the transaction, lease, outbox, restore, or migration invariant for that exact row"
+    if matrix_id.startswith("OPS-SLO"):
+        return "SLO and error-budget evidence binds queue lag, lease staleness, outbox age, restore targets, rollback, and watch thresholds"
+    if matrix_id.startswith("OPS-"):
+        return "operations evidence records metric, alert, watch, or rollback behavior with owner-reviewed production thresholds"
+    if matrix_id.startswith("MEDIA-"):
+        return "synthetic-media evidence records consent, revocation, provenance, or disclosure state with reviewer-approved privacy controls"
+    if matrix_id.startswith("PROVIDER-"):
+        return "provider-posture evidence records local mock defaults, production enablement, egress denial, key isolation, and rollback disablement"
+    if matrix_id.startswith("SEC-RETENTION"):
+        return "privacy evidence records deletion scope, tombstone policy, backup expiry, restore re-delete, audit exceptions, and replay blocking"
+    if matrix_id.startswith("SEC-UNTRUSTED"):
+        return "security evidence records validation, output encoding, log redaction, injection controls, poisoned-retrieval checks, and restore revalidation"
+    return "governance evidence records scope split review and non-absorb signoff"
+
+
+def closure_reason_detail(matrix_id: str) -> str:
+    if matrix_id.startswith("DUR-"):
+        return "the closure proof exercises the named durability invariant and links it to a concrete child issue and PR"
+    if matrix_id.startswith("OPS-"):
+        return "the closure proof maps the named operational invariant to tested thresholds, ownership, and escalation evidence"
+    if matrix_id.startswith("MEDIA-") or matrix_id.startswith("SEC-") or matrix_id.startswith("PROVIDER-"):
+        return "the closure proof preserves the named security/privacy invariant with concrete policy, validation, and reviewer evidence"
+    return "the closure proof preserves the named governance boundary with reviewer signoff and a concrete scope decision"
+
+
+def allow_github_reference_verification(monkeypatch: pytest.MonkeyPatch) -> None:
+    verified_refs = {("issues", "70"), ("pulls", "71")}
+    calls: list[tuple[str, str]] = []
+
+    def fake_github_reference_exists(resource: str, number: str) -> bool:
+        calls.append((resource, number))
+        return (resource, number) in verified_refs
+
+    monkeypatch.setattr(guardrails, "github_reference_exists", fake_github_reference_exists)
+    monkeypatch.setattr(guardrails, "_test_github_reference_calls", calls, raising=False)
 
 
 def run_issue_link_check(
@@ -66,15 +335,22 @@ def run_issue_link_check(
     return list(guardrails.failures)
 
 
-def completed_preflight_body(preflight_rows: str | None = None, *, human_rows: str | None = None) -> str:
+def completed_preflight_body(
+    preflight_rows: str | None = None,
+    *,
+    human_rows: str | None = None,
+    normalize_rows: bool = True,
+) -> str:
     rows = preflight_rows or (
         "| Intent/spec | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | INT-1 | source interview | reviewer | source | pass | accepted |\n"
         "| Source facts | `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` | repo-file | SRC-1 | official docs | reviewer | source | pass | accepted |\n"
-        "| Failure matrix / invariant matrix | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | INV-1 INV-2 | invariant-to-test matrix | reviewer | matrix | pass | tracked |\n"
+        f"| Failure matrix / invariant matrix | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | INV-1 INV-2 | invariant-to-test matrix | reviewer | matrix | pass | tracked |\n"
         "| Tests / old-behavior proof | `tests/unit/test_guardrails_check.py` | repo-file | INV-1 INV-2 | old behavior fails under break-test evidence | reviewer | test | pass | none |\n"
         "| Docs/gates | `scripts/quality/check_phase1_closure_docs.py` | repo-file | INV-1 INV-2 | invariant test gate | reviewer | gate | pass | tracked |\n"
         "| Adversarial review | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | ADV-1 | subagent review | reviewer | source | pass | tracked |\n"
     )
+    if normalize_rows:
+        rows = normalize_preflight_rows_for_current_contract(rows)
     human_surface_rows = (
         human_rows
         if human_rows is not None
@@ -95,7 +371,7 @@ def completed_preflight_body(preflight_rows: str | None = None, *, human_rows: s
         "## Pre-implementation evidence\n\n"
         "| Requirement | Pre-code artifact | Timestamp / commit / PR comment | Reviewer | Decision |\n"
         "|---|---|---|---|---|\n"
-        "| Invariant/failure matrix | `docs/ENGINEERING_PROCESS_RCA.md` | issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-1 | reviewer | pass |\n"
+        f"| Invariant/failure matrix | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-1 | reviewer | pass |\n"
         "| Source facts | `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` | draft pr: https://github.com/imrohitagrawal/narratwin-ai/pull/60 | reviewer | pass |\n"
         "| Human-only surfaces, if any | `docs/ENGINEERING_PROCESS_RCA.md` | issue comment: https://github.com/imrohitagrawal/narratwin-ai/issues/60#issuecomment-2 | reviewer | pass |\n"
         "\n## Validation evidence\n\n"
@@ -109,6 +385,31 @@ def completed_preflight_body(preflight_rows: str | None = None, *, human_rows: s
         "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed\n"
         "```\n"
     )
+
+
+def normalize_preflight_rows_for_current_contract(rows: str) -> str:
+    rows = rows.replace(
+        "| Failure matrix / invariant matrix | `docs/ENGINEERING_PROCESS_RCA.md`",
+        f"| Failure matrix / invariant matrix | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}`",
+    ).replace(
+        "| Failure matrix | `docs/ENGINEERING_PROCESS_RCA.md`",
+        f"| Failure matrix | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}`",
+    )
+    missing_rows = []
+    normalized_rows = rows.lower()
+    if "| review prompt" not in normalized_rows:
+        missing_rows.append(
+            f"| Review prompt set | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | PROMPT-1 | adversarial prompt generated from invariant matrix | reviewer | source | pass | tracked |\n"
+        )
+    if "| stop rule" not in normalized_rows:
+        missing_rows.append(
+            f"| Stop rule / repeated blocker reset | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | STOP-1 | repeated-blocker stop rule reset requires contract update before next fix loop | reviewer | gate | pass | tracked |\n"
+        )
+    if "| skill/tool selection" not in normalized_rows:
+        missing_rows.append(
+            f"| Skill/tool selection | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | SKILL-1 | preinstalled skills and repo docs checked first with no custom skill creation | reviewer | gate | pass | tracked |\n"
+        )
+    return rows + "".join(missing_rows)
 
 
 def test_phase1_issue39_pull_request_allows_reference_only_body(
@@ -162,6 +463,321 @@ def test_phase1_issue39_pull_request_rejects_closing_keyword_in_body(
         monkeypatch,
         title="Phase 1 closure: local durability and ops status evidence (Refs #39)",
         body="Refs #39\nFixes #39",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_allows_closing_keyword_only_after_matrix_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE not in failures
+    assert "Pull request title/body/commit messages must use reference-only issue wording." not in failures
+    assert ("issues", "70") in guardrails._test_github_reference_calls
+    assert ("pulls", "71") in guardrails._test_github_reference_calls
+
+
+def test_phase1_issue39_pull_request_rejects_id_prefixed_generic_closure_records(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path, generic_records=True)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_id_prefixed_generic_evidence_only(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path, generic_evidence_only=True)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_padded_generic_evidence_only(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path, padded_generic_evidence_only=True)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_artifact_only_row_id_binding(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path, artifact_id_only=True)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_markdown_label_only_artifact_binding(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path, artifact_label_id_only=True)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_bare_child_issue_pr_references(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, child_issue="#70", child_pr="PR #71")
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_unverified_child_issue_pr_urls(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(guardrails, "github_reference_exists", lambda resource, number: False)
+    write_issue39_closure_plan(tmp_path)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_issue39_required_matrix_ids_include_slo_and_untrusted_input_rows() -> None:
+    assert "OPS-SLO-001" in guardrails.REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS
+    assert "SEC-UNTRUSTED-001" in guardrails.REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS
+
+
+class FakeGitHubResponse:
+    def __init__(self, status: int, payload: dict[str, Any]) -> None:
+        self.status = status
+        self.payload = payload
+
+    def __enter__(self) -> "FakeGitHubResponse":
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return json.dumps(self.payload).encode("utf-8")
+
+
+def test_github_reference_exists_rejects_missing_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+
+    def fail_urlopen(*args: object, **kwargs: object) -> object:
+        raise AssertionError("urlopen must not be called without a token")
+
+    monkeypatch.setattr(guardrails, "urlopen", fail_urlopen)
+
+    assert guardrails.github_reference_exists("issues", "70") is False
+
+
+def test_github_reference_exists_distinguishes_issue_from_pr_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+
+    def fake_urlopen(request: object, timeout: int) -> FakeGitHubResponse:
+        assert timeout == 5
+        request_url = getattr(request, "full_url", "")
+        if request_url.endswith("/issues/70"):
+            return FakeGitHubResponse(200, {"number": 70, "title": "child issue"})
+        if request_url.endswith("/issues/71"):
+            return FakeGitHubResponse(200, {"number": 71, "pull_request": {"url": "https://api.github.com/pr"}})
+        if request_url.endswith("/pulls/71"):
+            return FakeGitHubResponse(200, {"number": 71, "title": "evidence pr"})
+        return FakeGitHubResponse(404, {})
+
+    monkeypatch.setattr(guardrails, "urlopen", fake_urlopen)
+
+    assert guardrails.github_reference_exists("issues", "70") is True
+    assert guardrails.github_reference_exists("issues", "71") is False
+    assert guardrails.github_reference_exists("pulls", "71") is True
+    assert guardrails.github_reference_exists("pulls", "9999") is False
+
+
+@pytest.mark.parametrize(
+    "sensitive_id",
+    sorted(guardrails.REQUIRED_ISSUE_39_ROW_CONTRACT_TERMS),
+)
+def test_phase1_issue39_pull_request_rejects_weakened_sensitive_matrix_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    sensitive_id: str,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path, weakened_id=sensitive_id)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_closing_keyword_when_matrix_id_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, omitted_ids={"DUR-STAGE4-001"})
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+@pytest.mark.parametrize("missing_id", ["OPS-SLO-001", "SEC-UNTRUSTED-001"])
+def test_phase1_issue39_pull_request_rejects_closing_keyword_when_new_required_id_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    missing_id: str,
+) -> None:
+    write_issue39_closure_plan(tmp_path, omitted_ids={missing_id})
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_closing_keyword_without_closure_records(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, include_records=False)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_closing_keyword_with_malformed_matrix_row(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, malformed_id="DUR-STAGE4-001")
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_closing_keyword_with_parent_issue_as_child(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(
+        tmp_path,
+        child_issue="https://github.com/imrohitagrawal/narratwin-ai/issues/39",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
     )
 
     assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
@@ -501,6 +1117,121 @@ def test_nontrivial_pull_request_rejects_missing_required_preflight_categories(
     )
 
     assert "Non-trivial pull requests must include completed preflight evidence rows." in failures
+
+
+@pytest.mark.parametrize(
+    "row_label",
+    [
+        "Failure matrix",
+        "Review prompt set",
+        "Stop rule / repeated blocker reset",
+        "Skill/tool selection",
+    ],
+)
+def test_nontrivial_pull_request_rejects_generic_governance_docs_for_pr_specific_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    row_label: str,
+) -> None:
+    valid_rows = normalize_preflight_rows_for_current_contract(
+        f"| Intent/spec | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | INT-1 | source interview | reviewer | source | pass | accepted |\n"
+        f"| Source facts | `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` | repo-file | SRC-1 | official docs | reviewer | source | pass | accepted |\n"
+        f"| Failure matrix | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | INV-1 | invariant-to-test matrix | reviewer | matrix | pass | tracked |\n"
+        f"| Tests | `tests/unit/test_guardrails_check.py` | repo-file | INV-1 | old behavior fails under break-test evidence | reviewer | test | pass | none |\n"
+        f"| Docs/gates | `scripts/quality/check_phase1_closure_docs.py` | repo-file | INV-1 | invariant test gate | reviewer | gate | pass | tracked |\n"
+        f"| Adversarial review | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | ADV-1 | subagent review | reviewer | source | pass | tracked |\n"
+    )
+    generic_rows = "\n".join(
+        (
+            rebind_preflight_artifact_to_generic_governance_doc(row, row_label)
+            for row in valid_rows.splitlines()
+        )
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body(generic_rows + "\n", normalize_rows=False),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
+
+
+def test_nontrivial_pull_request_rejects_generic_preimplementation_matrix_artifact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        f"| Invariant/failure matrix | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}`",
+        "| Invariant/failure matrix | `docs/ENGINEERING_PROCESS_RCA.md`",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
+
+
+@pytest.mark.parametrize(
+    ("row_label", "replacement"),
+    [
+        (
+            "Review prompt set",
+            f"| Review prompt set | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | PROMPT-1 | review done | reviewer | source | pass | tracked |",
+        ),
+        (
+            "Stop rule / repeated blocker reset",
+            f"| Stop rule / repeated blocker reset | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | STOP-1 | stop rule checked | reviewer | gate | pass | tracked |",
+        ),
+        (
+            "Skill/tool selection",
+            f"| Skill/tool selection | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | SKILL-1 | skills checked | reviewer | gate | pass | tracked |",
+        ),
+    ],
+)
+def test_nontrivial_pull_request_rejects_shallow_process_preflight_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    row_label: str,
+    replacement: str,
+) -> None:
+    rows = "\n".join(
+        replacement if row.startswith(f"| {row_label} |") else row
+        for row in normalize_preflight_rows_for_current_contract(
+            f"| Intent/spec | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | INT-1 | source interview | reviewer | source | pass | accepted |\n"
+            f"| Source facts | `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` | repo-file | SRC-1 | official docs | reviewer | source | pass | accepted |\n"
+            f"| Failure matrix | `{PR_SPECIFIC_PREFLIGHT_ARTIFACT}` | repo-file | INV-1 | invariant-to-test matrix | reviewer | matrix | pass | tracked |\n"
+            f"| Tests | `tests/unit/test_guardrails_check.py` | repo-file | INV-1 | old behavior fails under break-test evidence | reviewer | test | pass | none |\n"
+            f"| Docs/gates | `scripts/quality/check_phase1_closure_docs.py` | repo-file | INV-1 | invariant test gate | reviewer | gate | pass | tracked |\n"
+            f"| Adversarial review | `docs/ENGINEERING_PROCESS_RCA.md` | repo-file | ADV-1 | subagent review | reviewer | source | pass | tracked |\n"
+        ).splitlines()
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body(rows + "\n", normalize_rows=False),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE in failures
+
+
+def rebind_preflight_artifact_to_generic_governance_doc(row: str, row_label: str) -> str:
+    if row.startswith(f"| {row_label} |"):
+        return row.replace(
+            f"`{PR_SPECIFIC_PREFLIGHT_ARTIFACT}`",
+            "`docs/ENGINEERING_PROCESS_RCA.md`",
+        )
+    return row
 
 
 def test_nontrivial_pull_request_accepts_pr_template_preflight_aliases(
@@ -1492,3 +2223,48 @@ def test_new_governance_artifacts_pass_when_status_is_updated() -> None:
     )
 
     assert guardrails.failures == []
+
+
+def test_pr_branch_push_changed_files_uses_merge_base_not_previous_commit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "phase-1-closure-39-context0-production-durability")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-pushed-commit")
+    monkeypatch.setenv("GITHUB_HEAD_SHA", "current-head")
+    calls: list[list[str]] = []
+
+    def fake_run_git(args: list[str]) -> str:
+        calls.append(args)
+        if args == ["merge-base", "origin/main", "current-head"]:
+            return "pr-merge-base"
+        if args == ["diff", "--name-only", "pr-merge-base", "current-head"]:
+            return "docs/STATUS.md\nscripts/guardrails_check.py"
+        return ""
+
+    monkeypatch.setattr(guardrails, "run_git", fake_run_git)
+
+    assert guardrails.changed_files() == ["docs/STATUS.md", "scripts/guardrails_check.py"]
+    assert ["rev-parse", "--verify", "previous-pushed-commit^{commit}"] not in calls
+
+
+def test_main_push_changed_files_keeps_previous_commit_base(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-main")
+    monkeypatch.setenv("GITHUB_HEAD_SHA", "current-main")
+
+    def fake_run_git(args: list[str]) -> str:
+        if args == ["rev-parse", "--verify", "previous-main^{commit}"]:
+            return "previous-main"
+        if args == ["merge-base", "previous-main", "current-main"]:
+            return "previous-main"
+        if args == ["diff", "--name-only", "previous-main", "current-main"]:
+            return "docs/STATUS.md"
+        return ""
+
+    monkeypatch.setattr(guardrails, "run_git", fake_run_git)
+
+    assert guardrails.changed_files() == ["docs/STATUS.md"]

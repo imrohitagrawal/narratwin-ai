@@ -90,6 +90,28 @@ closer to adversarial proof. That should have been the first pass.
 Sub-agent review should not merely ask "does this look right?" It should ask
 "show me how this invariant fails, or prove the tested cases cover it."
 
+### Governance artifacts were present but not made load-bearing
+
+Later Phase 1 Closure work repeated the same pattern even after this
+retrospective existed. The repository had the right documents, but the PR did
+not first convert those documents into an adapted invariant matrix,
+source-fact table, false-pass matrix, and negative-test plan.
+
+That is a distinct failure mode: documentation was used as context and
+justification, not as a blocking pre-code contract. The presence of a roadmap,
+RCA, learning tracker, RTM, or review retrospective is not evidence that the
+process ran.
+
+For future work, reviewers should reject any high-risk PR that says it followed
+these documents but cannot point to a PR-specific artifact showing:
+
+- the adapted invariants;
+- the false-pass cases;
+- the source facts;
+- the test/gate mapping;
+- adversarial review prompts generated from that matrix;
+- the stop rule used if review finds a new blocker class.
+
 ## Root Causes
 
 The root issue was review framing.

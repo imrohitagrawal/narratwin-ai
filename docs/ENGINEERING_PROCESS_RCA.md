@@ -258,6 +258,38 @@ loop because it did not require:
 Corrective interpretation: a checkbox without an inspectable artifact is weak
 evidence.
 
+### 9. Governance Documents Were Treated As Context, Not Load-Bearing Gates
+
+PR `#64` repeated the process failure after this RCA, even though the repository
+already had `docs/REVIEW_RIGOR_RETROSPECTIVE.md`,
+`docs/PROJECT_LEARNINGS_TRACKER.md`,
+`docs/PROJECT_GOVERNANCE_LEARNINGS.md`, and this file.
+
+The failure was not that the lesson was absent. The failure was that the lesson
+was not used as an entry criterion before implementation. The PR created a
+closure contract and tests, then used review agents to discover missing
+false-pass classes after implementation. That inverted the intended sequence.
+
+Correct sequence for high-risk guardrail, durability, privacy, security,
+release, or governance changes:
+
+1. Read the applicable governance documents.
+2. Adapt their checklists into a PR-specific preflight artifact.
+3. Write the positive claims, negative invariants, source facts, and
+   false-pass/exploit matrix before code.
+4. Add or name the tests/gates that prove each matrix row.
+5. Get adversarial review of the matrix before implementation.
+6. Implement only against the accepted matrix.
+7. Re-run adversarial review to verify coverage, not to discover the contract.
+
+Any PR that reaches review and repeatedly receives new classes of blocking
+findings must stop implementation work and return to matrix definition. More
+patches are not the remedy until the missing contract surface is explicit.
+
+Corrective interpretation: a governance file has not been followed unless the
+PR contains an adapted artifact and the quality gate can inspect evidence that
+the artifact was used before code changed.
+
 ## Root Causes
 
 1. **Entry criteria were advisory.** The project had good practices, but the

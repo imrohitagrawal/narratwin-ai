@@ -38,6 +38,8 @@ reference-only wording.
 - [ ] Negative tests were added or explicitly marked human-only/source/non-goal in the invariant matrix.
 - [ ] Old behavior fails, RED, mutation, break-test, or regression-reproduction evidence is listed for changed guardrails and bug fixes.
 - [ ] Human-only review surfaces are listed with owner and residual-risk decision.
+- [ ] Preinstalled repo docs/approved skills were checked first; no custom skill/plugin was created or used unless the gap, rejected existing options, approval, `docs/SKILL_LOCK.md`, and `docs/THIRD_PARTY_NOTICES.md` updates are linked.
+- [ ] Repeated-review stop rule was evaluated; if a fresh review found a new defect class after a fix, implementation paused for contract rewrite before another bug-fix loop.
 - [ ] Process/durability/governance work considered whether `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` should receive reusable lessons for future projects/apps.
 - [ ] Implementation or release-readiness changes completed invariant, exploit-matrix, and contract/gate review per `docs/REVIEW_RIGOR_RETROSPECTIVE.md`.
 - [ ] PR title, body, branch commit messages, and final merge/squash message plan were checked for automation-sensitive wording such as issue-closing keywords.
@@ -57,6 +59,9 @@ be `pass` or `passed`.
 | Tests / old-behavior proof |  | repo-file / CI-run |  |  |  | test |  |  |
 | Docs/gates |  | repo-file / CI-run |  |  |  | gate |  |  |
 | Adversarial review |  | repo-file / PR-comment |  |  |  | source / human-only |  |  |
+| Review prompt set |  | repo-file / PR-comment |  |  |  | source / human-only |  |  |
+| Stop rule / repeated blocker reset |  | repo-file / PR-comment |  |  |  | gate / human-only |  |  |
+| Skill/tool selection |  | repo-file / PR-comment |  |  |  | source / gate |  |  |
 
 ## Human-only review surfaces
 
