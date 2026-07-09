@@ -164,6 +164,8 @@ Decision:
 - Stage 4 failed-ingestion terminal-persist rollback must prune only RAG chunks
   introduced after the operation snapshot for the failed ingestion's documents,
   preserving prior and concurrent successful local chunks.
+- Dead full-snapshot restore helpers should not remain available as alternate
+  local rollback paths once operation-scoped rollback is the reviewed contract.
 
 Consequences:
 
@@ -175,6 +177,9 @@ Consequences:
   concurrent successful writes, and direct evidence that a terminal local
   snapshot write failure removes failed-ingestion chunks without erasing
   concurrent successful ingestion chunks.
+- Stage 4, Stage 6, and Stage 7 retain snapshot capture for operation-scoped
+  rollback but no longer retain unused full-snapshot restore helpers that could
+  reintroduce concurrent-success loss if reused later.
 - Corrupt local snapshot rows may be pruned in memory and re-written on the
   next successful persist; this is still not a migration, backup, repair, or
   production recovery system.

@@ -326,10 +326,6 @@ class Stage6Service:
             "runCounter": self._run_counter,
         }
 
-    def _restore_runtime_snapshot_locked(self, snapshot: dict[str, Any]) -> None:
-        self.idempotency_records = snapshot["idempotencyRecords"].copy()
-        self._run_counter = int(snapshot["runCounter"])
-
     def _restore_failed_operation_locked(
         self,
         snapshot: dict[str, Any] | None,

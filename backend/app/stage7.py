@@ -497,12 +497,6 @@ class Stage7Service:
             "runCounter": self._run_counter,
         }
 
-    def _restore_runtime_snapshot_locked(self, snapshot: dict[str, Any]) -> None:
-        self.idempotency_records = deepcopy(snapshot["idempotencyRecords"])
-        self.avatar_renders = deepcopy(snapshot["avatarRenders"])
-        self.artifact_metadata = deepcopy(snapshot["artifactMetadata"])
-        self._run_counter = int(snapshot["runCounter"])
-
     def _restore_failed_operation_locked(
         self,
         snapshot: dict[str, Any],

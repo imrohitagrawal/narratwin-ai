@@ -552,21 +552,6 @@ class Stage4Service:
             },
         }
 
-    def _restore_runtime_snapshot_locked(self, snapshot: dict[str, Any]) -> None:
-        self.rag_store = InMemoryRagStore.from_dict(snapshot["ragStore"])
-        self.projects = deepcopy(snapshot["projects"])
-        self.documents = deepcopy(snapshot["documents"])
-        self.ingestion_runs = deepcopy(snapshot["ingestionRuns"])
-        self.walkthrough_runs = deepcopy(snapshot["walkthroughRuns"])
-        self.idempotency_records = snapshot["idempotencyRecords"].copy()
-        self._active_ingestions = deepcopy(snapshot["activeIngestions"])
-        self._active_generations = deepcopy(snapshot["activeGenerations"])
-        counters = snapshot["counters"]
-        self._project_counter = int(counters["project"])
-        self._document_counter = int(counters["document"])
-        self._ingestion_counter = int(counters["ingestion"])
-        self._run_counter = int(counters["run"])
-
     def _persist_locked(self) -> None:
         write_state(
             self.state_path,
