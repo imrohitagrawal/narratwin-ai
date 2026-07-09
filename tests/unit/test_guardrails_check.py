@@ -412,6 +412,35 @@ def normalize_preflight_rows_for_current_contract(rows: str) -> str:
     return rows + "".join(missing_rows)
 
 
+def insert_duplicate_matrix_row(plan_path: Path, matrix_id: str) -> None:
+    lines = plan_path.read_text(encoding="utf-8").splitlines()
+    duplicate_line = next((line for line in lines if line.startswith(f"| `{matrix_id}` ")), None)
+    assert duplicate_line is not None
+    insert_index = next(i for i, line in enumerate(lines) if line.strip().startswith("## Row Closure Records"))
+    lines.insert(insert_index, duplicate_line)
+    plan_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def insert_matrix_row_before_closure_records(plan_path: Path, row: str) -> None:
+    lines = plan_path.read_text(encoding="utf-8").splitlines()
+    insert_index = next(i for i, line in enumerate(lines) if line.strip().startswith("## Row Closure Records"))
+    lines.insert(insert_index, row)
+    plan_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def replace_matrix_row_cell(plan_path: Path, matrix_id: str, index: int, replacement: str) -> None:
+    lines = plan_path.read_text(encoding="utf-8").splitlines()
+    row_index = next(
+        i for i, line in enumerate(lines) if line.startswith(f"| `{matrix_id}` ")
+    )
+    cells = [cell.strip() for cell in lines[row_index].strip("|").split("|")]
+    assert len(cells) >= 6
+    assert 0 <= index < len(cells)
+    cells[index] = replacement
+    lines[row_index] = "| " + " | ".join(cells) + " |"
+    plan_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def test_phase1_issue39_pull_request_allows_reference_only_body(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -424,6 +453,127 @@ def test_phase1_issue39_pull_request_allows_reference_only_body(
     )
 
     assert failures == []
+
+
+def test_phase1_issue39_pull_request_reference_only_body_still_fails_on_malformed_matrix(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, malformed_id="DUR-STAGE4-001")
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Phase 1 closure: local durability and ops status evidence",
+        body="Refs #39",
+    )
+
+    assert any("Issue #39 matrix row must have 6 columns:" in failure for failure in failures)
+
+
+def test_phase1_issue39_pull_request_rejects_issue_39_matrix_placeholder_contract_without_closing_keyword(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path)
+    replace_matrix_row_cell(
+        tmp_path / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+        "DUR-STAGE4-001",
+        4,
+        "TODO",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Phase 1 closure: local durability and ops status evidence",
+        body="Refs #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert (
+        "Issue #39 matrix row DUR-STAGE4-001 has placeholder evidence contract content."
+        in failures
+    )
+
+
+def test_phase1_issue39_pull_request_rejects_issue_39_matrix_missing_required_id_without_closing_keyword(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, omitted_ids={"DUR-STAGE4-001"})
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Phase 1 closure: local durability and ops status evidence",
+        body="Refs #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert "Issue #39 production closure plan missing matrix IDs: DUR-STAGE4-001" in failures
+
+
+def test_phase1_issue39_pull_request_rejects_issue_39_matrix_duplicate_row_without_closing_keyword(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path)
+    insert_duplicate_matrix_row(tmp_path / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md", "DUR-STAGE4-001")
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Phase 1 closure: local durability and ops status evidence",
+        body="Refs #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert "Issue #39 production closure plan has duplicate matrix IDs: DUR-STAGE4-001" in failures
+
+
+def test_phase1_issue39_pull_request_rejects_issue_39_matrix_unexpected_id_without_closing_keyword(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path)
+    insert_matrix_row_before_closure_records(
+        tmp_path / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+        "| `OPS-BOGUS-001` | Synthetic matrix placeholder | Placeholder evidence target | Owner | Contract text for placeholder row | Open |",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Phase 1 closure: local durability and ops status evidence",
+        body="Refs #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert "Issue #39 production closure plan has unexpected matrix IDs: OPS-BOGUS-001" in failures
+
+
+def test_phase1_issue39_pull_request_rejects_issue_39_matrix_invalid_status_without_closing_keyword(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path)
+    replace_matrix_row_cell(
+        tmp_path / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+        "DUR-STAGE4-001",
+        5,
+        "Done",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Phase 1 closure: local durability and ops status evidence",
+        body="Refs #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert "Issue #39 matrix row DUR-STAGE4-001 status must be Open or Closed; got Done." in failures
 
 
 def test_phase1_issue39_pull_request_rejects_closing_keyword_in_title(

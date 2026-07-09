@@ -47,7 +47,9 @@ The policy check fails CI for:
 - repository-tracked governance changes without `docs/STATUS.md` updates
 - Phase 1 Closure quality drift in the `#39` production-closure matrix, including
   missing required IDs, malformed rows, duplicate or unexpected IDs, and invalid
-  status values
+  status values. The same structural checks now run on every repository-guardrail
+  execution so malformed `#39` matrix updates are rejected even when the PR
+  text remains reference-only.
 - non-trivial pull requests without completed preflight evidence rows for the
   required source, invariant/failure matrix, test, docs/gates, and
   adversarial-review categories in the PR body

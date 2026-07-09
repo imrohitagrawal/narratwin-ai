@@ -464,7 +464,9 @@ Gate validates:
 - `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md` keeps the exact required
   `#39` production-closure matrix ID set, 6-column row shape, and `Open` or
   `Closed` status values valid on every Phase 1 closure quality run, not only
-  when a PR attempts to close `#39`
+  when a PR attempts to close `#39`. The same validator is also enforced from
+  the always-on repository guardrail so malformed matrix structure blocks PRs
+  with `Refs #39` reference-only wording.
 - every P0/P1 issue maps to a valid closure module and the module table covers
   the P0/P1 issue set with non-empty required evidence
 - `docs/RELEASE_READINESS_REVIEW.md` preserves the Final Review No-Go posture,
