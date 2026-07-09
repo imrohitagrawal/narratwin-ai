@@ -1,52 +1,47 @@
 # Skills and Codex Setup
 
-This file is the quick-start summary. The authoritative operating plan is `docs/SKILL_EXECUTION_PLAN.md`.
+This file is a pointer-only quick-start. The authoritative sources are:
 
-Do not install skills from this file alone. First complete `docs/SKILL_TRUST_REVIEW.md`.
+- `docs/SKILL_EXECUTION_PLAN.md` for stage-aligned skill use
+- `docs/SKILL_LOCK.md` for the current activation ledger
+- `docs/SKILL_TRUST_REVIEW.md` for the historical Stage 0 trust review
+- `docs/QUALITY_GATES.md` and `docs/REPOSITORY_GUARDRAILS.md` for executable gates
 
-## Operating rule
+Do not install, create, or activate skills from this file alone.
 
-Install or activate only the skill needed for the current stage. Do not install every skill at once.
+## Operating Rule
 
-## Stage order
+Use approved preinstalled/repo skills and docs first. Create or install a custom
+skill/plugin only after the PR records:
 
-| Stage | Install/use | Purpose | Stop condition |
-|---|---|---|---|
-| Stage -1 | No implementation skills yet | Verify skill source, license, install command, telemetry, filesystem/network behavior, and secrets risk | `docs/SKILL_TRUST_REVIEW.md` exists and flags each skill as approved, rejected, or manual-review |
-| Stage 0 | PM/spec skills only | Product discovery, strategy, PRD, roadmap, metrics, PRD red-team review | Product docs are implementation-ready |
-| Stage 1 | Spec Kit / architecture / security review skills | Constitution, specs, architecture, ADRs, trust zones, AI safety, privacy | Architecture and risk docs are reviewed |
-| Stage 2 | Engineering lifecycle and quality-gate skills | Local validation, CI contracts, PR templates, review checklist | Quality workflow and local commands are documented |
-| Stage 3 | TDD/backend/provider/RAG testing skills | Implement Slice 1 with tests and mocks/fakes | Slice 1 works, tests pass, docs updated |
-| Stage 4 | UI and E2E skills | Frontend flow, accessibility, Playwright/browser smoke tests | UI happy path and failure path are tested |
-| Stage 5 | Documentation, performance, codebase-intelligence skills | Runbooks, release readiness, performance review, dependency map | Release-readiness review is complete |
+- the capability gap
+- preinstalled/repo options checked and rejected
+- source, pin/version, license, telemetry, filesystem/network, hook, and
+  credential behavior
+- approval, expiry/revisit trigger, and residual risk
+- required `docs/SKILL_LOCK.md` and `docs/THIRD_PARTY_NOTICES.md` updates
 
-## Recommended skill families
+## Stage Order
 
-1. PM Skills: product discovery, product strategy, PRD, roadmap, metrics, red-team PRD.
-2. GitHub Spec Kit or equivalent: constitution, spec, plan, tasks, implementation control.
-3. Addy Osmani Agent Skills: plan-build-test-review-ship lifecycle.
-4. TDD workflow: red-green-refactor for backend, provider, RAG, and evaluation logic.
-5. Security hardening: uploads, secrets, LLM prompt injection, provider risk, license checks.
-6. Python testing patterns: FastAPI, provider mocks, RAG tests, pytest fixtures.
-7. Webapp/E2E testing: UI smoke, accessibility, Playwright flows.
-8. Vercel/Next.js skills: frontend structure, accessibility, performance.
-9. Project doc skills: README, runbooks, architecture docs, handoff docs.
-10. Wednesday AI agent skills: only after meaningful code exists.
+Follow the approved stage model in `docs/SKILL_EXECUTION_PLAN.md`. If this file
+and the execution plan disagree, this file is stale and the execution plan wins.
 
-## Conflict rule
+## Conflict Rule
 
 If two skills disagree, apply this order:
 
 1. Security, privacy, consent, and license constraints.
-2. PRD acceptance criteria.
-3. Architecture ADRs.
-4. Failing tests.
-5. Vertical-slice scope.
-6. Documentation and human review.
+2. Stage gate and quality gate requirements.
+3. Product strategy and PRD acceptance criteria.
+4. Architecture ADRs.
+5. Failing tests and evaluation evidence.
+6. Vertical-slice scope.
+7. Documentation and human review.
 
 ## Do not do this
 
 - Do not create `.agents/vendor` before a trust review approves manual vendoring.
+- Do not create custom skills/plugins when an approved installed skill/doc covers the need.
 - Do not let UI skills override architecture or PRD decisions.
 - Do not let PM skills generate implementation code.
 - Do not run codebase-intelligence skills on an empty repo as the primary plan.

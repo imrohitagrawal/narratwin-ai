@@ -443,6 +443,69 @@ Then require either:
 - Is old-behavior failure evidence present for false-pass-prone claims?
 - Is every required human-only surface listed with owner and residual-risk decision?
 
+## Learning 13: Governance Docs Need A Clear Enforcement Hierarchy
+
+### What Failed
+
+Phase 1 Closure issue `#39` showed that having many governance documents is not
+enough. The project had a roadmap, release-readiness review, requirements
+matrix, review retrospective, RCA, learnings tracker, governance learnings, and
+new-project playbook, but the active PR still repeated a review/fix loop.
+
+The failure was hierarchy and enforcement. The documents existed, but their
+roles were not explicit enough for the PR author or reviewer to know which file
+was the source of truth, which file was an index, which file was a reusable
+template, and which file had to be converted into PR-specific evidence before
+code.
+
+### Future Default
+
+Use this hierarchy for this repository and future applications:
+
+| Layer | Artifact role | NarraTwin file |
+|---|---|---|
+| Operating rules | Non-negotiable workflow and stage boundaries | `docs/CODEX_OPERATING_MODEL.md`, `docs/REPOSITORY_GUARDRAILS.md` |
+| Current state | Branch, issue, PR, blocker, and stage ledger | `docs/STATUS.md` |
+| Requirement source | Product and non-functional requirements | `docs/PRD.md`, `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`, `docs/TRACEABILITY.md` |
+| Root-cause record | Why a process failed and what must not recur | `docs/ENGINEERING_PROCESS_RCA.md` |
+| Review method | How reviewers must attack invariants and false-pass paths | `docs/REVIEW_RIGOR_RETROSPECTIVE.md` |
+| Skill/tool governance | Which agent skills/tools may be used and how custom skills are approved | `docs/SKILL_EXECUTION_PLAN.md`, `docs/SKILL_LOCK.md`, `docs/SKILL_TRUST_REVIEW.md`, `docs/SKILLS_AND_CODEX_SETUP.md` |
+| Learning index | Short register that points to the durable lesson pages | `docs/PROJECT_LEARNINGS_TRACKER.md` |
+| Governance patterns | Reusable governance defaults and hierarchy rules | `docs/PROJECT_GOVERNANCE_LEARNINGS.md` |
+| New-project template | Copy/adapt into new project preflight artifacts | `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` |
+| Executable enforcement | Commands and scripts that reject missing evidence | `docs/QUALITY_GATES.md`, `scripts/guardrails_check.py`, `scripts/quality/` |
+
+### Enforcement Rule
+
+For high-risk work, reading or linking these files is insufficient. The PR must
+produce a PR-specific preflight artifact that adapts the relevant rules into:
+
+- source facts,
+- positive claims,
+- negative invariants,
+- false-pass matrix,
+- test/gate/human-only evidence mapping,
+- adversarial review prompts,
+- stop rule for repeated blocker classes,
+- skill/tool selection evidence proving preinstalled and approved repo skills
+  were checked before any custom skill/plugin was created or used.
+
+If the PR cannot point to that adapted artifact, reviewers should treat the
+governance process as not executed, even if all governance documents exist.
+
+### Review Checklist
+
+- Does the PR state which governance files are sources of truth for the work?
+- Does it avoid duplicating the same rule in multiple places without a clear
+  hierarchy?
+- Does the PR-specific preflight artifact adapt the relevant rules instead of
+  merely citing them?
+- Does skill/tool evidence show reuse-first selection, or a documented gap and
+  approval before custom skill/plugin use?
+- Does the quality gate or guardrail inspect evidence from the adapted artifact?
+- If review finds repeated blocker classes, did the PR stop and return to
+  contract definition before continuing implementation?
+
 ## Summary Defaults For New Applications
 
 Start new applications with these files or equivalents:
@@ -453,6 +516,8 @@ Start new applications with these files or equivalents:
 - `docs/TRACEABILITY.md`
 - `docs/THIRD_PARTY_NOTICES.md`
 - `docs/SKILL_LOCK.md` or tool/agent lock
+- `docs/SKILL_EXECUTION_PLAN.md` or equivalent stage-aligned skill plan
+- `docs/SKILLS_AND_CODEX_SETUP.md` as pointer-only quick-start, not a parallel stage plan
 - `docs/ENGINEERING_PROCESS_RCA.md` or equivalent process-RCA artifact
 - `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` or equivalent project-start playbook
 - `docs/ADR/`

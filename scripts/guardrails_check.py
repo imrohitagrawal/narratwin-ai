@@ -13,7 +13,9 @@ import re
 import subprocess
 import sys
 from typing import NamedTuple
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -179,6 +181,9 @@ REQUIRED_PREFLIGHT_EVIDENCE = {
     "tests",
     "docs/gates",
     "adversarial review",
+    "review prompt set",
+    "stop rule",
+    "skill/tool selection",
 }
 
 OLD_BEHAVIOR_PROOF_TERMS = {
@@ -215,6 +220,13 @@ REQUIRED_PREIMPLEMENTATION_ROWS = {
     "source facts",
     "human-only surfaces, if any",
 }
+GENERIC_GOVERNANCE_REFERENCE_ARTIFACTS = {
+    "docs/ENGINEERING_PROCESS_RCA.md",
+    "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
+    "docs/PROJECT_LEARNINGS_TRACKER.md",
+    "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+}
 REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS = {
     "DUR-ACID-001",
     "DUR-IDEMP-001",
@@ -239,6 +251,77 @@ REQUIRED_ISSUE_39_CLOSURE_MATRIX_IDS = {
     "SEC-RETENTION-001",
     "SEC-UNTRUSTED-001",
     "GOV-SCOPE-001",
+}
+REQUIRED_ISSUE_39_ROW_CONTRACT_TERMS = {
+    "MEDIA-CONSENT-001": {
+        "affirmative consent",
+        "actor",
+        "timestamp",
+        "consent text/version",
+        "artifact refs",
+        "source-run binding",
+        "scope",
+        "audit retention",
+    },
+    "MEDIA-REVOKE-001": {
+        "revocation",
+        "takedown",
+        "retain",
+        "block replay",
+        "customer/user communication",
+    },
+    "MEDIA-PROVENANCE-001": {
+        "source-run",
+        "prompt",
+        "provider",
+        "artifact checksum",
+        "cloned-identity denial provenance",
+        "consent record",
+        "identity/likeness denial",
+    },
+    "MEDIA-DISCLOSURE-001": {
+        "disclosure text/version",
+        "exports",
+        "public-use posture",
+        "disclosure state",
+    },
+    "PROVIDER-POSTURE-001": {
+        "legal/license review",
+        "mock/local default",
+        "no real keys",
+        "local/dev/test/CI",
+        "explicit production enablement",
+        "deny-by-default egress",
+        "key isolation",
+        "no secret logging",
+        "prompt inclusion",
+        "rollback disablement",
+    },
+    "SEC-RETENTION-001": {
+        "encryption",
+        "redaction",
+        "deletion/erasure scope",
+        "tombstone",
+        "hard-delete",
+        "access control",
+        "backup expiry",
+        "restore re-delete",
+        "audit retention exceptions",
+        "replay/export blocking after deletion",
+        "restore-disclosure requirements",
+    },
+    "SEC-UNTRUSTED-001": {
+        "uploaded docs",
+        "prompts",
+        "transcripts",
+        "provider outputs",
+        "model outputs",
+        "restore-time revalidation",
+        "output encoding",
+        "log redaction",
+        "prompt-injection",
+        "poisoned-retrieval",
+    },
 }
 REQUIRED_PR_VALIDATION_COMMANDS = (
     "uv run pytest tests/unit/test_guardrails_check.py",
@@ -380,6 +463,8 @@ def issue_39_matrix_rows_by_id(plan_text: str) -> dict[str, list[str]] | None:
             continue
         if not re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+", row_id):
             return None
+        if not issue_39_matrix_row_keeps_contract(row_id, cells):
+            return None
         if row_id in matrix_rows:
             return None
         matrix_rows[row_id] = cells
@@ -404,13 +489,31 @@ def issue_39_closure_record_ids(plan_text: str) -> set[str]:
             continue
         if not preflight_artifact_exists(artifact):
             continue
-        row_binding = f"{artifact} {evidence} {reason}".lower()
-        if row_id.lower() not in row_binding:
+        row_id_lower = row_id.lower()
+        artifact_target = clean_markdown_reference(artifact)
+        if row_id_lower not in artifact_target.lower():
+            continue
+        if row_id_lower not in evidence.lower():
+            continue
+        if row_id_lower not in reason.lower():
             continue
         if closure_record_has_generic_values(evidence, owner, reviewer, residual, reason):
             continue
         record_ids.add(row_id)
     return record_ids
+
+
+def issue_39_matrix_row_keeps_contract(row_id: str, cells: list[str]) -> bool:
+    required_terms = REQUIRED_ISSUE_39_ROW_CONTRACT_TERMS.get(row_id)
+    if not required_terms:
+        return True
+    row_text = normalize_contract_text(" ".join(cells[1:5]))
+    return all(normalize_contract_text(term) in row_text for term in required_terms)
+
+
+def normalize_contract_text(value: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.lower())
+    return re.sub(r"\s+", " ", normalized).strip()
 
 
 def closure_record_has_required_child_references(child_issue_pr: str) -> bool:
@@ -422,7 +525,42 @@ def closure_record_has_required_child_references(child_issue_pr: str) -> bool:
         rf"https://github\.com/{re.escape(CANONICAL_GITHUB_REPO)}/pull/(\d+)\b",
         child_issue_pr,
     )
-    return any(issue_number != "39" for issue_number in issue_urls) and bool(pr_urls)
+    verified_child_issue = any(
+        issue_number != "39" and github_reference_exists("issues", issue_number)
+        for issue_number in issue_urls
+    )
+    verified_pr = any(github_reference_exists("pulls", pr_number) for pr_number in pr_urls)
+    return verified_child_issue and verified_pr
+
+
+def github_reference_exists(resource: str, number: str) -> bool:
+    if resource not in {"issues", "pulls"}:
+        return False
+    github_auth_value = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not github_auth_value:
+        return False
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    headers["Authorization"] = f"Bearer {github_auth_value}"
+    request = Request(
+        f"https://api.github.com/repos/{CANONICAL_GITHUB_REPO}/{resource}/{number}",
+        headers=headers,
+    )
+    try:
+        with urlopen(request, timeout=5) as response:  # nosec B310 - canonical GitHub API URL only.
+            status = int(getattr(response, "status", 0))
+            if not 200 <= status < 300:
+                return False
+            payload = json.loads(response.read().decode("utf-8"))
+            if not isinstance(payload, dict):
+                return False
+            if resource == "issues" and "pull_request" in payload:
+                return False
+            return True
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
+        return False
 
 
 def closure_record_has_generic_values(
@@ -432,20 +570,31 @@ def closure_record_has_generic_values(
     residual: str,
     reason: str,
 ) -> bool:
-    generic_values = {
-        "accepted",
-        "closure evidence",
-        "evidence satisfies row",
-        "evidence satisfies the closure row",
-        "human-only evidence passed",
-        "owner",
-        "residual risk accepted",
-        "reviewer",
+    generic_exact_values = {
+        normalize_closure_record_value(value)
+        for value in {
+            "accepted",
+            "owner",
+            "reviewer",
+        }
     }
-    return any(
-        normalize_closure_record_value(value) in generic_values
-        for value in (evidence, owner, reviewer, residual, reason)
-    )
+    generic_phrases = {
+        normalize_closure_record_value(value)
+        for value in {
+            "closure evidence",
+            "evidence satisfies row",
+            "evidence satisfies the closure row",
+            "human-only evidence passed",
+            "residual risk accepted",
+        }
+    }
+    for value in (evidence, owner, reviewer, residual, reason):
+        normalized = normalize_closure_record_value(value)
+        if normalized in generic_exact_values:
+            return True
+        if any(phrase and phrase in normalized for phrase in generic_phrases):
+            return True
+    return False
 
 
 def normalize_closure_record_value(value: str) -> str:
@@ -551,6 +700,9 @@ def has_completed_preflight_evidence(body: str) -> bool:
             continue
         if not preflight_artifact_exists(row.artifact):
             continue
+        if row.evidence_name in {"failure matrix", "review prompt set", "stop rule", "skill/tool selection"}:
+            if is_generic_governance_reference(row.artifact):
+                continue
         completed_rows.setdefault(row.evidence_name, []).append(row)
 
     return (
@@ -753,6 +905,8 @@ def has_pre_implementation_evidence(body: str) -> bool:
             continue
         if not preflight_artifact_exists(artifact):
             continue
+        if requirement_name == "invariant/failure matrix" and is_generic_governance_reference(artifact):
+            continue
         if not has_concrete_preimplementation_marker(timestamp_or_commit):
             continue
         seen.add(requirement_name)
@@ -767,7 +921,18 @@ def normalize_preflight_evidence_name(value: str) -> str:
         return "failure matrix"
     if evidence_name.startswith("tests"):
         return "tests"
+    if evidence_name.startswith("review prompt"):
+        return "review prompt set"
+    if evidence_name.startswith("stop rule"):
+        return "stop rule"
+    if evidence_name.startswith("skill") or evidence_name.startswith("tool selection"):
+        return "skill/tool selection"
     return evidence_name
+
+
+def is_generic_governance_reference(value: str) -> bool:
+    artifact = strip_artifact_fragment_or_line(clean_markdown_reference(value))
+    return artifact in GENERIC_GOVERNANCE_REFERENCE_ARTIFACTS
 
 
 def normalize_evidence_type(value: str) -> str:

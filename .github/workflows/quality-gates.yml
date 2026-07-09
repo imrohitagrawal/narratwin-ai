@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 
 concurrency:
   group: quality-gates-${{ github.ref }}
@@ -35,6 +37,7 @@ jobs:
 
       - name: Run repository guardrails
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           LLM_PROVIDER: mock
           EMBEDDING_PROVIDER: mock
           EVALUATION_PROVIDER: mock

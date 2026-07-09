@@ -342,6 +342,84 @@ Required rule:
   required for behavior that previously could false-pass;
 - implementation starts only after the invariant-to-test matrix is reviewable.
 
+## Gate 3A: Contract Freeze Before Code
+
+For high-risk work, the invariant matrix is not advisory. It is the entry
+criterion for coding.
+
+High-risk work includes:
+
+- guardrails, quality gates, CI policy, issue/PR automation, release gates, or
+  repository governance;
+- durability, restore, replay, idempotency, migrations, storage, queues, or
+  rollback;
+- privacy, deletion/erasure, consent, provenance, provider egress, secrets, or
+  untrusted input;
+- production-readiness, monitoring, alerts, SLOs, incident response, or
+  deployment posture;
+- AI/RAG/provider behavior, generated media, evaluations, or safety controls.
+
+Before implementation starts, the PR-specific preflight artifact must contain:
+
+| Required artifact | Minimum content | Blocking if missing? |
+|---|---|---:|
+| Intent/spec | objective, scope, non-goals, users/actors, success criteria | yes |
+| Source facts | official docs or standards for any platform behavior that can mutate state, close issues, leak data, deploy, delete, or change release posture | yes |
+| Positive claims | what the change is allowed to prove | yes |
+| Negative invariants | what the change must not allow, including false-pass and abuse paths | yes |
+| False-pass matrix | ways a weak implementation could appear compliant while violating intent | yes |
+| Test/gate mapping | positive, negative, mutation, RED, break-test, source, or human-only evidence for every row | yes |
+| Review prompt set | adversarial prompts generated from the matrix, not generic role prompts | yes |
+| Stop rule | criteria for pausing implementation and returning to contract definition | yes |
+| Skill/tool selection | preinstalled or approved skills/docs checked first; custom skill/plugin gap, rejected options, approval, lock, and notices when applicable | yes |
+
+No code, guardrail, workflow, release, or governance implementation may start
+until the adapted artifact exists and the PR body links it. A template copied
+without project-specific entities, threats, tests, and sources does not satisfy
+this gate.
+
+## Stop Rule: Review Finds New Defect Classes
+
+If adversarial review finds a new class of blocking issue after implementation
+has begun, do not continue patching one symptom at a time.
+
+Stop and reset to contract work when any of these happen:
+
+- two or more review passes find different blocker classes for the same
+  requirement;
+- a positive test fixture is discovered to encode weak or fake evidence;
+- reviewers find a false-pass path not represented in the matrix;
+- a governance or release document was cited but no adapted PR-specific artifact
+  exists;
+- a fix requires changing the definition of done, not just the implementation.
+
+Required reset actions:
+
+1. Add the missing blocker class to the invariant/false-pass matrix.
+2. Add a negative test, source-fact row, executable gate, or human-only evidence
+   row for it.
+3. Re-check whether sibling rows share the same weakness.
+4. Update the review prompts from the revised matrix.
+5. Resume implementation only after the revised matrix is coherent.
+
+This stop rule prevents the failure mode where review agents become the primary
+requirements-discovery mechanism after code is already moving.
+
+## Gate 3B: Skill/Tool Selection Before Customization
+
+Before creating, installing, or activating a custom skill/plugin:
+
+1. Search the preinstalled and repo-approved skills/docs for the needed
+   capability.
+2. Record the checked options and why they are insufficient.
+3. Document source, pin/version, license, telemetry, filesystem/network, hook,
+   and credential behavior.
+4. Record approval, expiry/revisit trigger, and residual risk.
+5. Update the skill lock and third-party notices before use.
+
+If an approved installed skill or repo doc covers the need, use it. Do not
+create a parallel custom skill.
+
 ## Durability / Restore / Replay Checklist
 
 Adapt this checklist for any project with persisted state, restart recovery,

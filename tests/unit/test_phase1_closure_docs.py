@@ -90,6 +90,42 @@ def test_issue39_durability_branch_keeps_existing_runtime_allowlist(monkeypatch:
     assert failures == []
 
 
+def test_issue39_context0_branch_allows_targeted_process_and_skill_docs(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        files=[
+            "docs/ENGINEERING_PROCESS_RCA.md",
+            "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
+            "docs/PROJECT_LEARNINGS_TRACKER.md",
+            "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
+            "docs/SKILLS_AND_CODEX_SETUP.md",
+            "docs/SKILL_EXECUTION_PLAN.md",
+            "docs/SKILL_LOCK.md",
+            "docs/SKILL_TRUST_REVIEW.md",
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+            "scripts/guardrails_check.py",
+            "tests/unit/test_guardrails_check.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_context0_branch_still_rejects_unrelated_docs(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        files=["docs/unrelated-process-note.md"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-context0-production-durability may not change "
+        "docs/unrelated-process-note.md."
+    ]
+
+
 def test_workflow_pull_request_edited_detected_from_multiline_yaml(monkeypatch: Any) -> None:
     workflow_text = """
 name: test

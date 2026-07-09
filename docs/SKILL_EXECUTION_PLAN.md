@@ -21,9 +21,16 @@ Stage 0 does not install product implementation tools. Stage 0 records the opera
 
 ## Activation Rules
 
+- Before creating, installing, or activating a custom skill/plugin, inspect the
+  preinstalled and repo-approved skills/docs for a matching capability. The PR
+  must record the checked options and why each was insufficient.
 - Every skill or external workflow source must be listed in `docs/SKILL_LOCK.md` before use.
 - Any source with an unresolved license, pin/version, telemetry, or credential risk is not approved for activation.
 - Skills may not override `docs/CODEX_OPERATING_MODEL.md`, `docs/QUALITY_GATES.md`, security/privacy constraints, or human review decisions.
+- Custom skills/plugins require explicit approval plus documented source, pin or
+  version, license, filesystem/network/telemetry behavior, credential behavior,
+  expiry or revisit trigger, `docs/SKILL_LOCK.md`, and
+  `docs/THIRD_PARTY_NOTICES.md` updates before use.
 - PM skills are not implementation skills.
 - Spec Kit implementation commands are blocked until Stage 4 and only after Stage 0, Stage 1, Stage 2, and Stage 3 gates allow the planned slice.
 - Engineering implementation skills are blocked during Stage 0, Stage 1, Stage 2, and Stage 3.
