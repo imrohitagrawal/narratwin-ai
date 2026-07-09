@@ -185,6 +185,28 @@ def test_issue39_durability_branch_keeps_existing_runtime_allowlist(monkeypatch:
     assert failures == []
 
 
+def test_issue39_context1_issue65_branch_allows_schema_boundary_adr(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context1-postgresql-durability-adr",
+        files=["docs/ADR/0008-postgresql-durability-schema-boundary.md"],
+    )
+
+    assert failures == []
+
+
+def test_issue39_context1_issue65_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context1-postgresql-durability-adr",
+        files=["backend/app/stage4.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-context1-postgresql-durability-adr may not change backend/app/stage4.py."
+    ]
+
+
 def test_issue39_context0_branch_allows_targeted_process_and_skill_docs(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,

@@ -101,6 +101,7 @@ ISSUE_39_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "backend/app/stage7.py",
     "backend/app/storage/__init__.py",
     "backend/app/storage/file_state.py",
+    "docs/ADR/0008-postgresql-durability-schema-boundary.md",
     "docs/API_CONTRACT.md",
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/LOCAL_DEVELOPMENT.md",
@@ -134,6 +135,14 @@ ISSUE_39_CONTEXT0_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/SKILL_TRUST_REVIEW.md",
     "scripts/guardrails_check.py",
     "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_39_CONTEXT1_ALLOWED_CHANGED_FILES = {
+    "docs/ADR/0008-postgresql-durability-schema-boundary.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
 
@@ -834,6 +843,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_37_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-context0-"):
         allowed_files = ISSUE_39_CONTEXT0_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-context1-"):
+        allowed_files = ISSUE_39_CONTEXT1_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-"):
         allowed_files = ISSUE_39_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-42-"):
