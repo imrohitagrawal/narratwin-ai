@@ -238,6 +238,32 @@ AUTOMATED_EVIDENCE_COMMAND = re.compile(
     r"\b(?:make quality|python3 scripts/guardrails_check\.py|uv run pytest [^`|\n]+)"
 )
 PHF_CLOSED_STATUSES = {"closed by local edits", "superseded by local edits"}
+REQUIRED_ISSUE_39_MATRIX_IDS = {
+    "DUR-ACID-001",
+    "DUR-IDEMP-001",
+    "DUR-STAGE4-001",
+    "DUR-LEASE-001",
+    "DUR-OUTBOX-001",
+    "DUR-STAGE6-001",
+    "DUR-STAGE7-001",
+    "DUR-MIG-001",
+    "DUR-ROLLBACK-001",
+    "DUR-RESTORE-001",
+    "OPS-METRICS-001",
+    "OPS-SLO-001",
+    "OPS-ALERT-001",
+    "OPS-WATCH-001",
+    "OPS-ROLLBACK-001",
+    "MEDIA-CONSENT-001",
+    "MEDIA-REVOKE-001",
+    "MEDIA-PROVENANCE-001",
+    "MEDIA-DISCLOSURE-001",
+    "PROVIDER-POSTURE-001",
+    "SEC-RETENTION-001",
+    "SEC-UNTRUSTED-001",
+    "GOV-SCOPE-001",
+}
+VALID_ISSUE_39_MATRIX_STATUSES = {"open", "closed"}
 
 
 def run_git(args: list[str]) -> str:
@@ -730,6 +756,52 @@ def check_process_hardening_findings(failures: list[str], text: str) -> None:
                 failures.append(f"{item} findings register has placeholder acceptance criteria.")
 
 
+def check_issue39_closure_plan(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+    path = ROOT / rel
+    if not path.is_file():
+        failures.append(f"Missing required issue #39 production closure plan: {rel}")
+        return
+
+    headers, rows = parse_table_lines(section(read(rel), "Master Evidence Matrix"))
+    required_headers = ("ID", "Requirement", "Evidence target", "Owner", "Minimum evidence contract", "Status")
+    normalized_headers = [normalize_header(header) for header in headers]
+    missing_headers = [header for header in required_headers if normalize_header(header) not in normalized_headers]
+    if missing_headers:
+        failures.append(
+            "Issue #39 production closure plan Master Evidence Matrix missing headers: "
+            + ", ".join(missing_headers)
+        )
+        return
+
+    seen_ids: set[str] = set()
+    for row in rows:
+        if len(row) != len(headers):
+            failures.append(f"Issue #39 matrix row must have 6 columns: {row}")
+            continue
+        row_id = row[normalized_headers.index("id")].strip("` ")
+        status = row[normalized_headers.index("status")].strip("` ")
+        if row_id in seen_ids:
+            failures.append(f"Issue #39 production closure plan duplicates matrix ID: {row_id}")
+        seen_ids.add(row_id)
+        if not re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}", row_id):
+            failures.append(f"Issue #39 matrix row has invalid ID: {row_id}")
+        if status.lower() not in VALID_ISSUE_39_MATRIX_STATUSES:
+            failures.append(f"Issue #39 matrix row {row_id} status must be Open or Closed; got {status}.")
+        for value in row[1:5]:
+            if value.strip().lower() in {"", "n/a", "na", "todo", "tbd", "pending"}:
+                failures.append(f"Issue #39 matrix row {row_id} has placeholder evidence contract content.")
+                break
+
+    missing_ids = sorted(REQUIRED_ISSUE_39_MATRIX_IDS - seen_ids)
+    if missing_ids:
+        failures.append("Issue #39 production closure plan missing matrix IDs: " + ", ".join(missing_ids))
+
+    unexpected_ids = sorted(seen_ids - REQUIRED_ISSUE_39_MATRIX_IDS)
+    if unexpected_ids:
+        failures.append("Issue #39 production closure plan has unexpected matrix IDs: " + ", ".join(unexpected_ids))
+
+
 def issues_from_cell(value: str) -> set[str]:
     return set(re.findall(r"#\d+", value))
 
@@ -1169,6 +1241,7 @@ def main() -> int:
         check_golden_questions(failures)
         check_demo_docs(failures)
         check_release_docs(failures)
+        check_issue39_closure_plan(failures)
         check_process_docs(failures)
 
     if failures:

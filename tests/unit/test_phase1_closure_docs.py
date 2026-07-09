@@ -55,6 +55,20 @@ def run_process_docs_check(
     return failures
 
 
+def run_issue39_closure_plan_check(monkeypatch: Any, *, plan_text: str) -> list[str]:
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {"docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md": plan_text},
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue39_closure_plan(failures)
+    return failures
+
+
 def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
@@ -69,6 +83,55 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
     )
 
     assert failures == []
+
+
+def test_issue39_closure_plan_accepts_current_matrix() -> None:
+    failures: list[str] = []
+    phase1.check_issue39_closure_plan(failures)
+
+    assert failures == []
+
+
+def test_issue39_closure_plan_rejects_missing_required_matrix_row(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=replace_text(
+            plan_text,
+            "| `OPS-WATCH-001` | First-hour watch with follow-up checkpoints | Triage cadence and owner communication for the first 60 minutes, plus explicit 120/180-minute follow-up checkpoints | Release/Operations | Active watch log template, handoff rules, timeout actions, rollback escalation threshold | Open |\n",
+            "",
+        ),
+    )
+
+    assert "Issue #39 production closure plan missing matrix IDs: OPS-WATCH-001" in failures
+
+
+def test_issue39_closure_plan_rejects_invalid_matrix_status(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=replace_text(
+            plan_text,
+            "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable identifiers, versioning, and compare-and-set invariants | Architecture + storage | PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |",
+            "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable identifiers, versioning, and compare-and-set invariants | Architecture + storage | PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Done |",
+        ),
+    )
+
+    assert "Issue #39 matrix row DUR-ACID-001 status must be Open or Closed; got Done." in failures
+
+
+def test_issue39_closure_plan_rejects_malformed_matrix_row(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=replace_text(
+            plan_text,
+            "| `SEC-UNTRUSTED-001` | Untrusted durable/replayed input handling | Uploaded docs, prompts, transcripts, provider outputs, model outputs, restored artifacts, exported media metadata, and replayed provenance remain untrusted | Security/Privacy + Runtime + Ops | Validation, output encoding, log redaction, prompt-injection/poisoned-retrieval controls, restore-time revalidation, and replay/export safety evidence for durable untrusted content | Open |",
+            "| `SEC-UNTRUSTED-001` | Untrusted durable/replayed input handling | Open |",
+        ),
+    )
+
+    assert "Issue #39 matrix row must have 6 columns:" in failures[0]
 
 
 def test_process_only_phase1_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:

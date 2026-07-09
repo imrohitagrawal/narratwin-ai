@@ -45,6 +45,9 @@ The policy check fails CI for:
 - architecture-impacting changes without ADR updates
 - PRD-impacting changes without traceability updates
 - repository-tracked governance changes without `docs/STATUS.md` updates
+- Phase 1 Closure quality drift in the `#39` production-closure matrix, including
+  missing required IDs, malformed rows, duplicate or unexpected IDs, and invalid
+  status values
 - non-trivial pull requests without completed preflight evidence rows for the
   required source, invariant/failure matrix, test, docs/gates, and
   adversarial-review categories in the PR body

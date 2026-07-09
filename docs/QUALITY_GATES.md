@@ -461,6 +461,10 @@ Gate validates:
 - `docs/reviews/PROCESS_HARDENING_FINDINGS.md` tracks deduplicated
   process-hardening review findings from sub-agent, cross-model, and blind
   reviews when those reviews produce actionable process gaps
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md` keeps the exact required
+  `#39` production-closure matrix ID set, 6-column row shape, and `Open` or
+  `Closed` status values valid on every Phase 1 closure quality run, not only
+  when a PR attempts to close `#39`
 - every P0/P1 issue maps to a valid closure module and the module table covers
   the P0/P1 issue set with non-empty required evidence
 - `docs/RELEASE_READINESS_REVIEW.md` preserves the Final Review No-Go posture,
