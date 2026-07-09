@@ -1153,6 +1153,22 @@ def test_force_pull_request_guardrails_enforced_in_non_pull_request_context(
     assert "Pull request title/body/commit messages must use reference-only issue wording." in failures
 
 
+def test_issue_39_matrix_validation_runs_even_without_pr_event_guardrails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_issue39_closure_plan(tmp_path, malformed_id="DUR-STAGE4-001")
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)
+    guardrails.failures.clear()
+    guardrails.check_issue_linked_pull_request()
+
+    assert any(
+        "Issue #39 matrix row must have 6 columns:" in failure for failure in guardrails.failures
+    )
+
+
 def test_push_context_without_pull_request_payload_when_force_enabled_fails_fast(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

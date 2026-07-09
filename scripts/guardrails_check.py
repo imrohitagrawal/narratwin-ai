@@ -1408,6 +1408,8 @@ def check_no_direct_main_push() -> None:
 
 
 def check_issue_linked_pull_request() -> None:
+    for issue39_failure in issue_39_closure_matrix_validation_failures():
+        failures.append(issue39_failure)
     if not should_enforce_pull_request_issue_checks():
         return
     event_path = os.environ.get("GITHUB_EVENT_PATH")
@@ -1424,8 +1426,6 @@ def check_issue_linked_pull_request() -> None:
     body = pr.get("body") or ""
     head_ref = (pr.get("head") or {}).get("ref")
     base_ref = (pr.get("base") or {}).get("ref")
-    for issue39_failure in issue_39_closure_matrix_validation_failures():
-        failures.append(issue39_failure)
     if head_ref == "main":
         failures.append("Pull request head branch must not be main.")
     if base_ref != "main":
