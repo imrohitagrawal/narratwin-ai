@@ -549,6 +549,7 @@ Allowed governance/reporting changes for Module A:
 - `docs/RUNBOOK.md`
 - `docs/STAGE_ISSUE_PLAN.md`
 - `docs/STATUS.md`
+- `docs/PROJECT_GOVERNANCE_LEARNINGS.md`
 - `docs/TRACEABILITY.md`
 - `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md`
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md`
