@@ -1,4 +1,5 @@
 import importlib.util
+import re
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, cast
@@ -253,6 +254,61 @@ def test_process_docs_rejects_guardrail_workflow_without_token_permissions(
         f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
         in failures
     )
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/quality-gates.yml",
+        ".github/workflows/security.yml",
+    ],
+)
+def test_process_docs_rejects_guardrail_step_without_token_even_when_other_steps_have_token(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: remove_guardrail_step_token(workflow_text),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
+def remove_guardrail_step_token(workflow_text: str) -> str:
+    lines = workflow_text.splitlines()
+    output: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        step_match = re.match(r"^(?P<indent>\s*)-\s+name:\s+.*$", line)
+        if not step_match:
+            output.append(line)
+            index += 1
+            continue
+        step_indent = len(step_match.group("indent"))
+        block = [line]
+        index += 1
+        while index < len(lines):
+            current = lines[index]
+            if current.strip() and not current.lstrip().startswith("#"):
+                current_indent = len(current) - len(current.lstrip(" "))
+                if current_indent <= step_indent:
+                    break
+            block.append(current)
+            index += 1
+        if any("scripts/guardrails_check.py" in item for item in block):
+            block = [item for item in block if "GITHUB_TOKEN:" not in item]
+        output.extend(block)
+    return "\n".join(output) + "\n"
 
 
 def test_process_docs_rejects_missing_validation_command(monkeypatch: Any) -> None:

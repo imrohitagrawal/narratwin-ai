@@ -505,12 +505,44 @@ def guardrail_workflow_paths() -> list[str]:
 
 
 def workflow_has_guardrail_github_token_wiring(yaml_text: str) -> bool:
+    guardrail_steps = workflow_guardrail_step_blocks(yaml_text)
+    if not guardrail_steps:
+        return False
     return (
         "issues: read" in yaml_text
         and "pull-requests: read" in yaml_text
-        and "GITHUB_TOKEN:" in yaml_text
-        and ("github.token" in yaml_text or "secrets.GITHUB_TOKEN" in yaml_text)
+        and all(
+            "GITHUB_TOKEN:" in step and ("github.token" in step or "secrets.GITHUB_TOKEN" in step)
+            for step in guardrail_steps
+        )
     )
+
+
+def workflow_guardrail_step_blocks(yaml_text: str) -> list[str]:
+    lines = yaml_text.splitlines()
+    blocks: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        step_match = re.match(r"^(?P<indent>\s*)-\s+name:\s+.*$", line)
+        if not step_match:
+            index += 1
+            continue
+        step_indent = len(step_match.group("indent"))
+        block_lines = [line]
+        index += 1
+        while index < len(lines):
+            current = lines[index]
+            if current.strip() and not current.lstrip().startswith("#"):
+                current_indent = len(current) - len(current.lstrip(" "))
+                if current_indent <= step_indent:
+                    break
+            block_lines.append(current)
+            index += 1
+        block = "\n".join(block_lines)
+        if "scripts/guardrails_check.py" in block:
+            blocks.append(block)
+    return blocks
 
 
 def check_required_headings(failures: list[str], text: str, owner: str, headings: tuple[str, ...]) -> None:
