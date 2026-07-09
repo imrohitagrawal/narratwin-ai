@@ -23,7 +23,7 @@ Create a durable, reviewed production-closure contract for GitHub issue `#39` th
   - committed outbox side effects,
   - production migrations,
   - durable Stage 4/6/7 replay state,
-  - backup/restore, monitoring, alerts, first-hour watch, rollback comms,
+  - backup/restore, monitoring, alerts, first-hour watch with follow-up checkpoints, rollback comms,
   - consent/provenance/provider release controls.
 - `Context 0` does not close `#39`; it defines the contract only.
 
@@ -56,29 +56,38 @@ Local/test defaults (`in-memory`, local JSON, staged files, local mocks) remain 
 1. **Context 0 (this context):** Contract-only planning for durability/monitoring; matrix and child decomposition only.
 2. **Context 1:** Storage ADR and schema blueprint, durable lease/state transition design, and migration ordering plan.
 3. **Context 2:** Durable state and outbox implementation for production metadata and rerun semantics.
-4. **Context 3:** Monitoring stack rollout, metrics, alerts, first-hour watch, and operations runbook.
+4. **Context 3:** Monitoring stack rollout, metrics, alerts, first-hour watch with follow-up checkpoints, and operations runbook.
 5. **Context 4:** Final closure evidence sweep, cross-context reconciliation, and final `#39` disposition decision.
 
 ## Master Evidence Matrix
 
-All IDs are mandatory and must have stable evidence before close.
+All IDs are mandatory. `Status` is machine-relevant and may be changed from
+`Open` to `Closed` only in the final disposition PR after the row has a concrete
+artifact reference, reviewer, owner, validation command or human-only evidence
+record, and residual-risk decision.
 
 | ID | Requirement | Evidence target | Owner | Minimum evidence contract | Status |
 |---|---|---|---|---|---|
 | `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable identifiers, versioning, and compare-and-set invariants | Architecture + storage | PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |
 | `DUR-IDEMP-001` | Production idempotency semantics | Replay-safe request identity and dedupe behavior across retries and worker failover | Runtime/state + Security | Idempotency envelope contract including terminal/error/replay state transitions and failure dedupe proofs | Open |
-| `DUR-STAGE4-001` | Durable Stage 4 project/document/RAG/run graph | Durable project/document/chunk/run/eval graph and resume behavior | Storage + API | Entity/state graph contract with at-least-once vs exactly-once behavior and durable graph recovery proof | Open |
-| `DUR-LEASE-001` | Cross-worker job leases | Lease acquisition, heartbeat renewal, expiry, and reclaim semantics | Runtime/state | Lease state machine and concurrency proof, including stale-owner prevention and ownership transfer | Open |
-| `DUR-OUTBOX-001` | Committed outbox side effects | Outbox transaction boundaries and side-effect dispatch contract | Runtime/integrations | At-least-once + idempotent dispatch policy with dispatch failure handling proof | Open |
+| `DUR-STAGE4-001` | Durable Stage 4 project/document/RAG/run graph | Durable project/document/chunk/run/eval graph and resume behavior | Storage + API | Entity/state graph contract with at-least-once execution and idempotent consumers; no exactly-once side-effect claim | Open |
+| `DUR-LEASE-001` | Cross-worker job leases | Lease acquisition, heartbeat renewal, expiry, reclaim, and stale-writer fencing | Runtime/state | Lease state machine with monotonic fencing token/epoch, stale-owner prevention, and ownership transfer proof | Open |
+| `DUR-OUTBOX-001` | Committed outbox side effects | Outbox transaction boundaries and side-effect dispatch contract | Runtime/integrations | Same-transaction outbox write with state change; at-least-once dispatch plus idempotent consumer policy | Open |
 | `DUR-STAGE6-001` | Durable multilingual artifact replay | Production replay of translated scripts/subtitles and derived assets | Stage 6 | Replay contract with source-run linkage, checksum-based dedupe, and deterministic artifact provenance | Open |
 | `DUR-STAGE7-001` | Durable render/artifact/provenance state | Render status, artifact records, consent/disclosure binding | Stage 7 | Persistent render/provenance record contract and synthetic-media release check points | Open |
-| `DUR-MIG-001` | Migrations | Versioned schema evolution, compatibility, and rollback safety | Platform/storage | Versioned migration plan with backward-compatibility, irreversible-safe boundary, and migration failure playbook | Open |
+| `DUR-MIG-001` | Migrations | Versioned schema evolution, compatibility, and forward-only rollback safety | Platform/storage | Expand/contract migration plan with backward-compatible code windows, forward repair, and no mandatory down-migration claim | Open |
+| `DUR-ROLLBACK-001` | Technical rollback compatibility | Code rollback against migrated production metadata | Platform + Release | Evidence that the previous deploy can run against the expanded schema or that rollback is blocked until forward repair completes | Open |
 | `DUR-RESTORE-001` | Backup/restore drill | Backup scope, integrity, restore smoke, and RTO/RPO verification | Ops | Operable restore playbook with evidence of at least one successful restore drill | Open |
-| `OPS-METRICS-001` | Production metrics | Queue, lease, idempotency, outbox, and restore metrics | Observability | Signed metric catalog and scrape/query mapping to each operational failure mode | Open |
+| `OPS-METRICS-001` | Production metrics | Queue, lease, idempotency, outbox, and restore metrics | Observability | Reviewer-approved metric catalog and scrape/query mapping to each operational failure mode | Open |
 | `OPS-ALERT-001` | Dashboards and alerts | Severity routing, alert ownership, and paging runbook | SRE/Ops | Dashboard + alert matrix with tested routing, evidence loop, and acknowledgment rules | Open |
-| `OPS-WATCH-001` | First-hour production watch | Triage cadence and owner communication within first 60/120/180 minutes | Release/Operations | Active watch log template, handoff rules, timeout actions, rollback escalation threshold | Open |
+| `OPS-WATCH-001` | First-hour watch with follow-up checkpoints | Triage cadence and owner communication for the first 60 minutes, plus explicit 120/180-minute follow-up checkpoints | Release/Operations | Active watch log template, handoff rules, timeout actions, rollback escalation threshold | Open |
 | `OPS-ROLLBACK-001` | Rollback communications | Pre/post rollback comms and ownership confirmation | Release/Operations | Freeze-window criteria, comms template, and required evidence captures | Open |
-| `MEDIA-CONSENT-001` | Consent/provenance/provider release posture | Consent capture, revocation, disclosure, provenance, and provider release gates | Security/Privacy | Consent record schema, provider posture gates, and evidence binding to source run artifacts | Open |
+| `MEDIA-CONSENT-001` | Consent capture | Affirmative consent record for synthetic-media generation | Security/Privacy | Consent schema with actor, timestamp, artifact refs, source-run binding, scope, and audit retention | Open |
+| `MEDIA-REVOKE-001` | Consent revocation behavior | Revocation, takedown, retention, and already-published artifact handling | Security/Privacy + Release | Revocation decision table covering retain, block replay, takedown, and customer/user communication paths | Open |
+| `MEDIA-PROVENANCE-001` | Provenance binding | Durable source-run, prompt, provider, artifact checksum, and disclosure lineage | Security/Privacy + Media | Provenance schema and replay proof linking rendered artifacts to source run and consent record | Open |
+| `MEDIA-DISCLOSURE-001` | Synthetic-media disclosure | Durable disclosure text/version binding for exports and public-use posture | Security/Privacy + Release | Disclosure versioning record and validation that artifacts carry the expected disclosure state | Open |
+| `PROVIDER-POSTURE-001` | Provider release posture | External provider legal, license, network, egress, key, and rollout controls | Security/Privacy + Platform | Provider release checklist with legal/license review, key isolation, network egress policy, and rollback criteria | Open |
+| `SEC-RETENTION-001` | Sensitive metadata retention/redaction | PII/provenance/consent data in PostgreSQL, backups, logs, metrics, and restored environments | Security/Privacy + Ops | Data-class table with encryption, redaction, retention, access-control, and restore-disclosure requirements | Open |
 | `GOV-SCOPE-001` | Scope separation from small governance/process cleanup | Prevent #39 from absorbing unrelated cleanup | Governance | Issue-split rule plus explicit non-absorb list and reviewer signoff before scope extension | Open |
 
 ## Child Issue / PR Mapping Template
@@ -89,30 +98,51 @@ All follow-on work must map every matrix ID to one or more child issues/PRs.
 |---|---|---|---|---|---|
 | `ISSUE-39-1` (template) | Postgres durability architecture | PostgreSQL durability ADR + production schema boundary | DUR-ACID-001, DUR-STAGE4-001 | Architecture | ADR + storage design checklist |
 | `ISSUE-39-2` (template) | Idempotency and leasing | Request identity, conflict rules, lease state machine, outbox skeleton contract | DUR-IDEMP-001, DUR-LEASE-001, DUR-OUTBOX-001 | Runtime | Contract tests and invariants |
-| `ISSUE-39-3` (template) | Migrations | Versioned migration sequence and rollback posture | DUR-MIG-001, DUR-STAGE6-001, DUR-STAGE7-001 | Storage + API | Migration plan + proof of reversible path |
+| `ISSUE-39-3` (template) | Migrations | Versioned expand/contract migration sequence and code-rollback posture | DUR-MIG-001, DUR-ROLLBACK-001, DUR-STAGE6-001, DUR-STAGE7-001 | Storage + API | Migration plan + backward-compatible deployment window proof |
 | `ISSUE-39-4` (template) | Backup and restore | RPO/RTO targets, backup design, restore drill evidence | DUR-RESTORE-001, OPS-METRICS-001 | Operations | Runbook + drill log + evidence bundle |
-| `ISSUE-39-5` (template) | Monitoring and alerts | Dashboard schema, alert routing, first-hour watch SOP | OPS-METRICS-001, OPS-ALERT-001, OPS-WATCH-001 | Observability | Dashboard definition + alert tests + watch evidence |
-| `ISSUE-39-6` (template) | Rollback + consent + scope | Rollback comms, consent/provenance schema, governance scope gate | MEDIA-CONSENT-001, OPS-ROLLBACK-001, GOV-SCOPE-001 | Security + Release + Governance | Signed schema, comms evidence, scope gate |
+| `ISSUE-39-5` (template) | Monitoring and alerts | Dashboard schema, alert routing, first-hour watch SOP with 120/180-minute follow-up checkpoints | OPS-METRICS-001, OPS-ALERT-001, OPS-WATCH-001 | Observability | Dashboard definition + alert tests + watch evidence |
+| `ISSUE-39-6` (template) | Rollback + media/privacy + scope | Rollback comms, consent/provenance schema, provider posture, retention/redaction, governance scope gate | MEDIA-CONSENT-001, MEDIA-REVOKE-001, MEDIA-PROVENANCE-001, MEDIA-DISCLOSURE-001, PROVIDER-POSTURE-001, SEC-RETENTION-001, OPS-ROLLBACK-001, GOV-SCOPE-001 | Security + Release + Governance | Signed schema, comms evidence, scope gate |
 
 ## Human-Only Gates
 
 - Matrix coverage is complete when every required ID has a mapped child issue/PR owner and a planned evidence artifact.
+- Template rows do not satisfy closure; final disposition requires real child issue/PR numbers and artifact links for every row.
 - PostgreSQL production durability and lock semantics must be reviewed and accepted by architecture/reliability reviewers before migration execution.
 - Rollback/freeze decision criteria and watch comms must be human-reviewed before any production deployment plan is approved.
 - Consent/provenance and provider release posture must be reviewed by security/privacy before any non-local synthetic-media release path can go active.
-- `#39` cannot be closed by branch name, PR title/body text, or commit text until all matrix IDs are closed by review evidence.
+- `#39` cannot be closed by branch name, PR title/body text, or commit text until all matrix rows in this file are marked `Closed` by review evidence.
+
+## Row Closure Record Schema
+
+Every final matrix row must have a row-level closure record before its status can
+change to `Closed`. The record must include:
+
+- matrix ID,
+- child issue and PR number,
+- artifact reference,
+- validation command, CI run, drill log, or human-only evidence reference,
+- owner,
+- reviewer,
+- residual-risk decision,
+- timestamp or merge commit,
+- explicit reason the evidence satisfies the row.
+
+The repository guardrail checks PR title, body, and commit messages for issue
+`#39` closing keywords. A final disposition PR can use those keywords only after
+all rows in the Master Evidence Matrix are already marked `Closed`.
 
 ## Final Closure Criteria
 
 Final disposition for `#39` is eligible only when all IDs below have evidence references (repo docs/PRs/tests/incident logs) and all required human gates above are signed:
 
-`DUR-ACID-001`, `DUR-IDEMP-001`, `DUR-STAGE4-001`, `DUR-LEASE-001`, `DUR-OUTBOX-001`, `DUR-STAGE6-001`, `DUR-STAGE7-001`, `DUR-MIG-001`, `DUR-RESTORE-001`, `OPS-METRICS-001`, `OPS-ALERT-001`, `OPS-WATCH-001`, `OPS-ROLLBACK-001`, `MEDIA-CONSENT-001`, `GOV-SCOPE-001`
+`DUR-ACID-001`, `DUR-IDEMP-001`, `DUR-STAGE4-001`, `DUR-LEASE-001`, `DUR-OUTBOX-001`, `DUR-STAGE6-001`, `DUR-STAGE7-001`, `DUR-MIG-001`, `DUR-ROLLBACK-001`, `DUR-RESTORE-001`, `OPS-METRICS-001`, `OPS-ALERT-001`, `OPS-WATCH-001`, `OPS-ROLLBACK-001`, `MEDIA-CONSENT-001`, `MEDIA-REVOKE-001`, `MEDIA-PROVENANCE-001`, `MEDIA-DISCLOSURE-001`, `PROVIDER-POSTURE-001`, `SEC-RETENTION-001`, `GOV-SCOPE-001`
 
 Closure is incomplete until:
 - every local/test default artifact remains marked non-production in release-facing documentation,
 - all non-local synthetic-media output paths are explicitly tied to provenance/consent/provider-posture review,
 - cross-worker and replay semantics are proven with operational evidence,
-- backup/restore and first-hour watch are executed as a recorded drill.
+- backup/restore and first-hour watch plus follow-up checkpoints are executed as a recorded drill.
+- every row has a final row-level closure record with owner, reviewer, artifact reference, validation result, and residual-risk decision.
 
 ## Explicit Scope Separation
 
@@ -128,7 +158,7 @@ This context is limited to `#39` production durability and monitoring closure pl
   - map `GOV-SCOPE-001` to ownership in `ISSUE-39-6`.
 - Ops/release review: completed. Findings to close:
   - add concrete metric catalog, dashboard query mapping, and alert-action tests,
-  - define first-hour watch evidence log and escalation thresholds,
+  - define first-hour watch evidence log, follow-up checkpoints, and escalation thresholds,
   - add explicit rollback comms protocol and freeze-window rules.
 - Security/privacy review: completed. Findings to close:
   - define consent/provenance record schema (actor, timestamp, artifact refs, revocation),

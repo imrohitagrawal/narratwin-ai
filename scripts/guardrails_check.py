@@ -328,6 +328,19 @@ def closing_issue_numbers(text: str) -> set[str]:
     return issue_numbers
 
 
+def issue_39_closure_matrix_all_closed() -> bool:
+    matrix_path = ROOT / "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+    rows = markdown_table_rows(read_text(matrix_path), "Master Evidence Matrix")
+    matrix_rows: list[list[str]] = []
+    for cells in rows:
+        if len(cells) < 6:
+            continue
+        row_id = cells[0].strip("` ")
+        if re.fullmatch(r"[A-Z]+(?:-[A-Z]+)*-\d+", row_id):
+            matrix_rows.append(cells)
+    return bool(matrix_rows) and all(row[5].strip().lower() == "closed" for row in matrix_rows)
+
+
 def issue_link_pattern(issue_number: str = r"\d+") -> str:
     issue_ref = (
         rf"#(?:{issue_number})\b|"
@@ -900,12 +913,18 @@ def check_issue_linked_pull_request() -> None:
     is_canonical_stage_branch = canonical_issue_number is not None
     visible_issue_text = f"{title}\n{body}\n{pull_request_commit_messages()}"
     issue_39_closing_pattern = closing_issue_pattern("39")
-    if re.search(
-        issue_39_closing_pattern,
-        visible_issue_text,
-    ):
+    issue_39_closing_attempt = re.search(issue_39_closing_pattern, visible_issue_text) is not None
+    issue_39_closure_allowed = bool(
+        issue_39_closing_attempt
+        and head_ref
+        and head_ref.startswith("phase-1-closure-39-")
+        and issue_39_closure_matrix_all_closed()
+    )
+    if issue_39_closing_attempt and not issue_39_closure_allowed:
         failures.append("Issue #39 pull requests must use reference-only wording and must not auto-close #39.")
     closed_issue_numbers = closing_issue_numbers(visible_issue_text)
+    if issue_39_closure_allowed:
+        closed_issue_numbers.discard("39")
     if not is_canonical_stage_branch and closed_issue_numbers:
         failures.append("Pull request title/body/commit messages must use reference-only issue wording.")
     if canonical_issue_number is not None and any(
