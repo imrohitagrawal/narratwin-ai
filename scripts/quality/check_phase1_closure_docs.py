@@ -274,16 +274,26 @@ def known_test_names() -> set[str]:
 
 
 def pytest_target_paths(text: str) -> set[str]:
+    paths, _ = pytest_targets_and_invalid_targets(text)
+    return paths
+
+
+def pytest_targets_and_invalid_targets(text: str) -> tuple[set[str], set[str]]:
     paths: set[str] = set()
+    invalid_targets: set[str] = set()
     for command_match in re.finditer(r"\buv run pytest (?P<targets>[^`|\n]+)", text):
-        for token in command_match.group("targets").split():
+        target_text = command_match.group("targets").split("->", maxsplit=1)[0]
+        target_text = target_text.split("#", maxsplit=1)[0]
+        for token in target_text.split():
             cleaned = token.strip("` ,.;:")
             if not cleaned or cleaned.startswith("-"):
                 continue
             cleaned = cleaned.split("::", maxsplit=1)[0]
             if cleaned.endswith(".py") or cleaned.startswith("tests/"):
                 paths.add(cleaned)
-    return paths
+            else:
+                invalid_targets.add(cleaned)
+    return paths, invalid_targets
 
 
 def phf_automated_evidence_failures(item: str, automated: str) -> list[str]:
@@ -296,8 +306,11 @@ def phf_automated_evidence_failures(item: str, automated: str) -> list[str]:
     for script_path in sorted(path for path in cited_scripts if not (ROOT / path).is_file()):
         failures.append(f"{item} Medium/Low matrix cites missing script evidence: {script_path}")
 
-    for target_path in sorted(path for path in pytest_target_paths(automated) if not (ROOT / path).is_file()):
+    target_paths, invalid_targets = pytest_targets_and_invalid_targets(automated)
+    for target_path in sorted(path for path in target_paths if not (ROOT / path).is_file()):
         failures.append(f"{item} Medium/Low matrix cites missing pytest target: {target_path}")
+    for target in sorted(invalid_targets):
+        failures.append(f"{item} Medium/Low matrix cites unsupported pytest target: {target}")
 
     has_automated_evidence = bool(
         cited_tests or cited_scripts or AUTOMATED_EVIDENCE_COMMAND.search(automated)
@@ -397,6 +410,7 @@ def workflow_has_pull_request_edited(yaml_text: str) -> bool:
                 continue
             pull_indent = len(pull_match.group("indent"))
             i += 1
+            pull_child_indent: int | None = None
             while i < len(lines):
                 current = lines[i]
                 if not current.strip() or current.lstrip().startswith("#"):
@@ -405,6 +419,11 @@ def workflow_has_pull_request_edited(yaml_text: str) -> bool:
                 indent = len(current) - len(current.lstrip(" "))
                 if indent <= pull_indent:
                     break
+                if pull_child_indent is None:
+                    pull_child_indent = indent
+                if indent != pull_child_indent:
+                    i += 1
+                    continue
                 types_match = re.match(r"^(?P<indent>\s*)types:\s*(?P<value>.*)$", current)
                 if not types_match:
                     i += 1

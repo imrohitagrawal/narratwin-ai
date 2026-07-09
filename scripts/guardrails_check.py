@@ -225,6 +225,7 @@ REQUIRED_PR_VALIDATION_COMMANDS = (
 )
 VALIDATION_PASS_RESULT = re.compile(r"(?:->|:)\s*(?:\d+\s+)?(?:passed|success|succeeded|green)\b")
 VALIDATION_FAILURE_TERMS = (
+    "example only",
     "failed",
     "failure",
     "not-run",
@@ -236,6 +237,12 @@ VALIDATION_FAILURE_TERMS = (
     "required local",
     "unsuccessful",
     "/path/to/",
+)
+FORCED_PR_VALIDATION_COMMAND = re.compile(
+    r"^github_event_name=pull_request "
+    r"github_event_path=(?P<event_path>\S+) "
+    r"narratwin_force_pull_request_guardrails=1 "
+    r"python3 scripts/guardrails_check\.py(?P<tail>(?:\s|:|$).*)$"
 )
 
 
@@ -436,12 +443,7 @@ def has_validation_evidence(body: str) -> bool:
 def validation_command_has_result(lines: list[str], command: str) -> bool:
     command_text = command.lower()
     for line in lines:
-        if not line.startswith(command_text):
-            continue
-        if command_text.endswith("github_event_path=") and not (
-            "narratwin_force_pull_request_guardrails=1" in line
-            and "python3 scripts/guardrails_check.py" in line
-        ):
+        if not validation_line_matches_command(line, command_text):
             continue
         if any(term in line for term in VALIDATION_FAILURE_TERMS):
             continue
@@ -450,6 +452,15 @@ def validation_command_has_result(lines: list[str], command: str) -> bool:
         if "github.com/" in line and "/actions/runs/" in line:
             return True
     return False
+
+
+def validation_line_matches_command(line: str, command_text: str) -> bool:
+    if command_text.endswith("github_event_path="):
+        return FORCED_PR_VALIDATION_COMMAND.match(line) is not None
+    if not line.startswith(command_text):
+        return False
+    suffix = line[len(command_text) :]
+    return not suffix or suffix[0].isspace() or suffix.startswith(":")
 
 
 def markdown_table_rows(body: str, heading: str) -> list[list[str]]:

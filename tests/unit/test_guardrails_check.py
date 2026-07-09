@@ -1060,6 +1060,55 @@ def test_nontrivial_pull_request_rejects_unrelated_validation_example_text(
     assert "Non-trivial pull requests must include validation evidence commands." in failures
 
 
+def test_nontrivial_pull_request_rejects_inline_validation_example_text(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "uv run pytest tests/unit/test_guardrails_check.py -> 58 passed",
+        "uv run pytest tests/unit/test_guardrails_check.py -> passed (Example only)",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+@pytest.mark.parametrize(
+    ("valid_line", "invalid_line"),
+    [
+        ("make quality -> passed", "make quality-check -> passed"),
+        (
+            "python3 scripts/guardrails_check.py -> passed",
+            "python3 scripts/guardrails_check.py.bak -> passed",
+        ),
+    ],
+)
+def test_nontrivial_pull_request_rejects_validation_command_suffix_false_passes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    valid_line: str,
+    invalid_line: str,
+) -> None:
+    body = completed_preflight_body().replace(valid_line, invalid_line)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
 def test_nontrivial_pull_request_requires_full_forced_pr_validation_command(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1070,6 +1119,43 @@ def test_nontrivial_pull_request_requires_full_forced_pr_validation_command(
             "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed"
         ),
         "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 -> passed",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+@pytest.mark.parametrize(
+    "invalid_line",
+    [
+        (
+            "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json "
+            "python3 scripts/guardrails_check.py NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 -> passed"
+        ),
+        (
+            "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH= "
+            "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed"
+        ),
+    ],
+)
+def test_nontrivial_pull_request_rejects_malformed_forced_pr_validation_command(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    invalid_line: str,
+) -> None:
+    body = completed_preflight_body().replace(
+        (
+            "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json "
+            "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed"
+        ),
+        invalid_line,
     )
     failures = run_issue_link_check(
         tmp_path,

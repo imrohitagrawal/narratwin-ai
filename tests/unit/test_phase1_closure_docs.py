@@ -153,6 +153,17 @@ on:
     assert not phase1.workflow_has_pull_request_edited(workflow_text)
 
 
+def test_workflow_pull_request_edited_nested_decoy_under_pull_request_is_rejected(monkeypatch: Any) -> None:
+    workflow_text = """
+on:
+  pull_request:
+    branches:
+      types: [edited]
+"""
+
+    assert not phase1.workflow_has_pull_request_edited(workflow_text)
+
+
 def test_process_docs_rejects_missing_validation_command(monkeypatch: Any) -> None:
     original_template = phase1.read(".github/pull_request_template.md")
     failures = run_process_docs_check(
@@ -407,3 +418,9 @@ def test_process_docs_rejects_nonexistent_pytest_node_id_target(monkeypatch: Any
     )
 
     assert "PHF-007 Medium/Low matrix cites missing pytest target: tests/unit/does_not_exist.py" in failures
+
+
+def test_phf_automated_evidence_rejects_non_path_pytest_target() -> None:
+    failures = phase1.phf_automated_evidence_failures("PHF-X", "uv run pytest not_a_real_target")
+
+    assert "PHF-X Medium/Low matrix cites unsupported pytest target: not_a_real_target" in failures
