@@ -176,6 +176,7 @@ def write_issue39_closure_plan(
     padded_generic_evidence_only: bool = False,
     doc_only_evidence: bool = False,
     context0_pr64_evidence: bool = False,
+    weak_human_only_evidence: bool = False,
     artifact_id_only: bool = False,
     artifact_label_id_only: bool = False,
     weakened_id: str | None = None,
@@ -218,6 +219,8 @@ def write_issue39_closure_plan(
                 f"{matrix_id} documented in docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md "
                 "with reviewer notes and process signoff"
             )
+        elif weak_human_only_evidence:
+            evidence = f"{matrix_id} human only"
         elif artifact_id_only:
             evidence = "Concrete replay drill log shows invariant held under retry, failover, and reviewer audit conditions"
         elif padded_generic_evidence_only:
@@ -797,6 +800,27 @@ def test_phase1_issue39_pull_request_rejects_context0_pr64_as_final_row_proof(
     assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
 
 
+def test_phase1_issue39_pull_request_rejects_context0_child_pr_number(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification_for_context0_pr64(monkeypatch)
+    write_issue39_closure_plan(
+        tmp_path,
+        child_pr="https://github.com/imrohitagrawal/narratwin-ai/pull/64",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
 def test_phase1_issue39_pull_request_rejects_unmerged_child_pr_url(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -804,6 +828,24 @@ def test_phase1_issue39_pull_request_rejects_unmerged_child_pr_url(
     allow_github_reference_verification(monkeypatch)
     monkeypatch.setattr(guardrails, "github_pull_request_is_merged", lambda number: False, raising=False)
     write_issue39_closure_plan(tmp_path)
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Refs #39 final production durability disposition",
+        body="Refs #39\nFixes #39",
+        head_ref="phase-1-closure-39-final-production-durability",
+    )
+
+    assert ISSUE_39_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_phase1_issue39_pull_request_rejects_weak_human_only_sensitive_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allow_github_reference_verification(monkeypatch)
+    write_issue39_closure_plan(tmp_path, weak_human_only_evidence=True)
     monkeypatch.setattr(guardrails, "ROOT", tmp_path)
     failures = run_issue_link_check(
         tmp_path,

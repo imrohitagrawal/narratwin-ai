@@ -685,7 +685,7 @@ def issue_39_closure_record_ids(plan_text: str) -> set[str]:
             continue
         if not preflight_artifact_exists(artifact):
             continue
-        if not closure_record_has_required_evidence_type(row_id, child_issue_pr, artifact, evidence, owner, residual, reason):
+        if not closure_record_has_required_evidence_type(row_id, child_issue_pr, artifact, evidence, reason):
             continue
         row_id_lower = row_id.lower()
         artifact_target = clean_markdown_reference(artifact)
@@ -752,19 +752,17 @@ def closure_record_has_required_evidence_type(
     child_issue_pr: str,
     artifact: str,
     evidence: str,
-    owner: str,
-    residual: str,
     reason: str,
 ) -> bool:
     if not row_id.startswith(ISSUE_39_PRODUCTION_GRADE_ROW_PREFIXES):
         return True
-    combined = " ".join((child_issue_pr, artifact, evidence, owner, residual, reason))
+    combined = " ".join((child_issue_pr, artifact, evidence, reason))
     normalized = normalize_contract_text(combined)
     if "context 0" in normalized or "pr 64" in normalized or "pull 64" in normalized:
         return False
-    if "issue 39 production closure plan" in normalized and not closure_record_has_concrete_evidence(combined):
+    if "issue 39 production closure plan" in normalized and not closure_record_has_concrete_evidence(evidence):
         return False
-    return closure_record_has_concrete_evidence(combined)
+    return closure_record_has_concrete_evidence(evidence)
 
 
 def closure_record_has_concrete_evidence(value: str) -> bool:

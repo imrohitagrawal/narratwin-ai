@@ -57,7 +57,7 @@ Out of scope:
 | CEH-002 | Context 0 proof | `PR #64` or Context 0 artifact-only references are reused as final row proof. | Reject PR `#64` and Context 0 artifact-only references for sensitive rows. | `test_phase1_issue39_pull_request_rejects_context0_pr64_as_final_row_proof` | pass |
 | CEH-003 | Child PR provenance | Existing same-repo PR URL passes even when it is unmerged. | Prefer GitHub API validation and require merged child PR evidence when present. | `test_phase1_issue39_pull_request_rejects_unmerged_child_pr_url` | pass |
 | CEH-004 | Child PR distinction | Placeholder or parent/context child PR reference stands in for production-grade child work. | Require same-repo child PR number distinct from `#64`. | `test_phase1_issue39_pull_request_rejects_context0_child_pr_number` | pass |
-| CEH-005 | Human-only evidence | Human-only text passes without concrete owner and residual-risk decision. | Accept only explicit `human-only` evidence with owner and risk/residual decision text. | Existing generic-evidence tests plus new sensitive-evidence tests | pass |
+| CEH-005 | Human-only evidence | Human-only text passes without concrete owner and residual-risk decision. | Accept only explicit `human-only` evidence with owner and risk/residual decision text. | `test_phase1_issue39_pull_request_rejects_weak_human_only_sensitive_evidence` | pass |
 
 ## Review Prompt Set
 
