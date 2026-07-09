@@ -450,6 +450,11 @@ class Stage7Service:
                         for item in metadata
                         if isinstance(item, dict)
                     )
+            self.artifact_metadata = {
+                render_id: metadata
+                for render_id, metadata in self.artifact_metadata.items()
+                if render_id in self.avatar_renders and self._artifact_metadata_matches_render(render_id, metadata)
+            }
             for row in payload.get("idempotencyRecords", []):
                 if not isinstance(row, dict):
                     continue
@@ -466,6 +471,24 @@ class Stage7Service:
             LOGGER.warning("Ignoring incompatible Stage 7 local state snapshot at %s: %s", self.state_path, exc)
             self._clear_runtime_state()
 
+    def _artifact_metadata_matches_render(self, render_id: str, metadata: tuple[ExportArtifactMetadata, ...]) -> bool:
+        result = self.avatar_renders.get(render_id)
+        if result is None:
+            return False
+        expected = tuple(
+            ExportArtifactMetadata(
+                file_name=artifact.file_name,
+                mime_type=artifact.mime_type,
+                checksum=artifact.checksum,
+            )
+            for artifact in (
+                result.artifacts.demo_export,
+                result.artifacts.render_manifest,
+                result.artifacts.video_export_placeholder,
+            )
+        )
+        return metadata == expected
+
     def _runtime_snapshot_locked(self) -> dict[str, Any]:
         return {
             "idempotencyRecords": deepcopy(self.idempotency_records),
@@ -473,12 +496,6 @@ class Stage7Service:
             "artifactMetadata": deepcopy(self.artifact_metadata),
             "runCounter": self._run_counter,
         }
-
-    def _restore_runtime_snapshot_locked(self, snapshot: dict[str, Any]) -> None:
-        self.idempotency_records = deepcopy(snapshot["idempotencyRecords"])
-        self.avatar_renders = deepcopy(snapshot["avatarRenders"])
-        self.artifact_metadata = deepcopy(snapshot["artifactMetadata"])
-        self._run_counter = int(snapshot["runCounter"])
 
     def _restore_failed_operation_locked(
         self,
@@ -961,6 +978,10 @@ def stage7_idempotency_record_from_dict(row: dict[str, Any], service: Stage7Serv
         raise ValueError(f"Unsupported Stage 7 idempotency status: {status}")
     if status == "SUCCEEDED" and value is None:
         raise ValueError("Succeeded Stage 7 idempotency record references missing value.")
+    if status == "FAILED" and not (
+        row.get("error_status_code") is not None and row.get("error_code") and row.get("error_message")
+    ):
+        raise ValueError("Failed Stage 7 idempotency record references missing error.")
     return Stage7IdempotencyRecord(
         idempotency_scope=str(row["idempotency_scope"]),
         endpoint=str(row["endpoint"]),

@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-08
+- Last reviewed date: 2026-07-09
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only. No Phase 2 feature
   work, external provider enablement, production release tag, or public
@@ -32,11 +32,12 @@ Use it to answer:
   `#42` are closed through merged PRs `#46`, `#47`, and `#50`; issue `#38`
   has live GitHub branch-protection evidence and required-context drift checking
   recorded through merged PR `#53` at merge commit `b5205083d0d11db060c83c1a5156394263b50de5`,
-  including the user-repository limitation on direct pusher restrictions; open
-  PR `#54` proposes branch-local implementation evidence for optional local
-  file-backed restart recovery and `/api/v1/ops/status`, but issue `#39`
-  remains open for production-grade durability and monitoring; issues `#43`,
-  `#44`, `#48`, and `#49` remain open.
+  including the user-repository limitation on direct pusher restrictions; PR
+  `#54` merged local file-backed restart recovery, `/api/v1/ops/status`, and
+  process-hardening evidence at merge commit `8b4ba05`, while issue `#39`
+  remains open for production-grade durability and monitoring; issue `#55`
+  tracks follow-up triage for additional local restore-invariant hardening;
+  issues `#43`, `#44`, `#48`, and `#49` remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -153,7 +154,7 @@ Use these files together with this tracker:
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
 | Stage 8 | Complete, merged to `main` | `#13` closed | PR `#33` merged | Executable at merge | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and release-readiness review merged at `fb40113`. |
 | Final Review | Complete, merged to `main` | `#6` closed | PR `#45` merged | Executable artifact gate | Independent review artifacts merged at `5a294c7`; outcome is No-Go until Phase 1 Closure resolves blockers. |
-| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, and `#44` open | PRs `#46`, `#47`, `#50`, and `#53` merged; PR `#54` is open and adds local durability/ops evidence for `#39` without closing the production blocker | Executable governance gate added | `#39` now covers remaining production-grade durability/monitoring gaps after local restart recovery and ops status evidence. `#43` and `#44` remain P2 unless they block Phase 1 correctness. |
+| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, and `#55` open | PRs `#46`, `#47`, `#50`, `#53`, and `#54` merged; issue `#55` branch triages additional local restore-invariant hardening without closing the production blocker | Executable governance gate added | `#39` now covers remaining production-grade durability/monitoring gaps after local restart recovery and ops status evidence. `#43`, `#44`, and `#55` remain P2/follow-up unless they block Phase 1 correctness. |
 
 ## Issue Ledger
 
@@ -184,6 +185,7 @@ Use these files together with this tracker:
 | `#44` | Open | Phase 1 P2 | Track telemetry, CSP, log-envelope, and stale risk-register hardening. |
 | `#48` | Open | Pre-production/P2 hardening | Track scoped project-lookup hardening before production auth, durable storage, or stronger authorization-proof claims; created from PR `#47` independent API integrity review. It does not block local/mock Phase 1 demo review while production remains No-Go. |
 | `#49` | Open | Pre-production/P2 hardening | Bound local idempotency records across simulated actors before local-demo durability, multi-worker, or production-readiness claims; created from PR `#47` independent performance/security review. It does not block local/mock Phase 1 demo review while production and multi-worker release remain No-Go. |
+| `#55` | Open | Phase 1 #39 follow-up | Tracks triage of preserved local durability restore-invariant work after PR `#54`, including Stage 4 graph/chunk/evaluation consistency, all-or-nothing local RAG chunk insertion across one or more prepared documents on embedding failure, terminal local snapshot write failure cleanup for failed-ingestion chunks, Stage 6 derived artifact consistency, Stage 7 artifact metadata consistency, failed-idempotency drops, stale-low counters, and operation-scoped rollback. It must not close `#39` or claim production durability. |
 
 ### Additional Backlog And Governance Issues
 
@@ -218,7 +220,7 @@ Use these files together with this tracker:
 | `#47` | Merged | 2026-07-01 | Phase 1 Closure Module F security PR for issue `#37`; reconciles trusted local/dev/test-only principal simulation with implementation, API tests, and contract docs; merged at `cb53e33a75ff6837a5498dfb0cc01c06decab8c5`. |
 | `#50` | Merged | 2026-07-01 | Phase 1 Closure Module B functional-flow PR for issue `#42`; hardens Stage 7 source evidence checksum binding through a canonical helper shared by the API route, service, and mock provider, with explicit evidence IDs, structured idempotency checksums, and duplicate-key provider JSON rejection; merged at `b6235da1a5202ffc9dbde6284ad39f3e3ad70486`. |
 | `#53` | Merged | 2026-07-02 | Phase 1 Closure Module A governance PR for issue `#38`; merged at `b5205083d0d11db060c83c1a5156394263b50de5`, records live `main` branch protection evidence, adds required-context drift checking to `policy-gates`, documents strict required CI contexts, required PR review, admin enforcement, blocked force pushes/deletions, required conversation resolution, and the user-repository limitation on direct pusher restrictions. |
-| `#54` | Open | Pending review/merge | Phase 1 Closure PR for issue `#39`; adds optional local JSON restart recovery, sensitive-snapshot documentation, redacted ops status evidence, monitoring posture visibility, and a narrow guardrail exception that permits reference-only `#39` linkage so the production blocker is not auto-closed. |
+| `#54` | Merged | 2026-07-08 | Phase 1 Closure PR for issue `#39`; merged at `8b4ba05`, adding optional local JSON restart recovery, sensitive-snapshot documentation, redacted ops status evidence, monitoring posture visibility, process-hardening RCA/playbook gates, and reference-only `#39` protection so the production blocker is not auto-closed. |
 
 ## Completed Work
 
@@ -367,6 +369,9 @@ Use these files together with this tracker:
 1. Complete the remaining production-grade portion of Phase 1 Closure P0/P1
    issue `#39` through an issue-linked `phase-1-closure-*` branch and PR, or
    record a reviewed No-Go exception with evidence.
+   Issue `#55` may harden additional local restore invariants under the existing
+   `#39` local-durability scope, but it must not close `#39` or change the
+   production No-Go posture.
 2. Keep Phase 2 feature work blocked until P0/P1 items are closed or explicitly
    downgraded with evidence.
 3. Keep production, multi-worker deployment, external provider use, real video
@@ -451,3 +456,8 @@ Required update rules:
 | 2026-07-09 | PR `#54` process-hardening follow-up closed the main false-pass loop by requiring full failure-matrix ID coverage, `pass`/`passed` completion statuses, concrete file/URL artifact references, human-only surface rows or explicit `N/A`, pre-implementation matrix/source evidence, and a separate `phase-1-closure-process-*` governance-only branch mode that rejects product runtime files. |
 | 2026-07-09 | PR `#54` branch-protection verifier follow-up preserves live required-context drift checks while treating protected-branch detail fields as human-only when GitHub returns `Resource not accessible by integration` to the CI workflow token. |
 | 2026-07-09 | PR `#54` guardrail follow-up marked the placeholder-host `0.0.0.0` string as a Bandit `B104` false positive because it is rejected input data, not a runtime bind address. |
+| 2026-07-09 | Issue `#55` started to triage preserved post-PR `#54` local durability restore-invariant work on a fresh `phase-1-closure-39-*` branch, with a pre-implementation matrix recorded in the issue before applying the runtime stash. |
+| 2026-07-09 | PR `#56` blind-review follow-up staged Stage 4 local RAG chunk embeddings before mutating the in-memory store, staged all prepared ingestion chunks before marking documents ingested, pruned failed-ingestion chunks after terminal local snapshot write failures without restoring the whole RAG store, and added public rollback regressions for single-document embedding failure cleanup, multi-document embedding failure cleanup, terminal-persist failed-ingestion chunk cleanup, concurrent ingestion chunk preservation, and concurrent-success preservation; issue `#39` remains open and production durability remains No-Go. |
+| 2026-07-09 | PR `#56` governance-learning follow-up added a proactive next-step closeout practice to the new-project engineering playbook so agents state current state, recommended next action, alternatives, agent-owned next work, and human-owned gates before the owner has to ask. |
+| 2026-07-09 | PR `#56` final review-note cleanup removed the unused local RAG `prune_to_documents` helper before merge; issue `#39` remains open and production durability remains No-Go. |
+| 2026-07-09 | PR `#56` final blind-review cleanup removed unused Stage 4, Stage 6, and Stage 7 full-snapshot restore helpers so operation-scoped rollback remains the only retained local rollback path; issue `#39` remains open and production durability remains No-Go. |

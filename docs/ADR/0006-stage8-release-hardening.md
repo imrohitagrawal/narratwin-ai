@@ -132,6 +132,61 @@ Consequences:
 - Production go-live remains No-Go until a reviewed release phase adds
   production-grade durable metadata and deployment monitoring.
 
+## Phase 1 Closure Addendum For Issue #55
+
+Date: 2026-07-09
+
+Issue `#55` is a follow-up triage issue for additional local restore-invariant
+hardening discovered after PR `#54` merged. It remains under the issue `#39`
+local-durability evidence scope and does not change the production No-Go
+decision.
+
+Decision:
+
+- Stage 4 restore may prune RAG chunks whose restored payload no longer matches
+  the owning document text and metadata, and may drop restored document,
+  ingestion, walkthrough, evaluation, claim-support, and idempotency rows whose
+  relationship graph no longer has the evidence needed to justify terminal
+  state.
+- Stage 6 restore may drop multilingual idempotency records whose restored
+  derivative text, provider payload, artifacts, language tags, citations,
+  glossary terms, or checksums no longer agree.
+- Stage 7 restore may drop artifact metadata and terminal idempotency records
+  that no longer match restored render artifacts, checksums, or serialized
+  terminal error details.
+- Stale-low counters must be derived from restored IDs, and failed-operation
+  rollback must remain operation-scoped so it does not erase later successful
+  operations.
+- Stage 4 RAG chunk insertion must stage embedding/provider work for all
+  prepared documents before mutating the in-memory chunk indexes or marking
+  documents ingested, so an unexpected local embedding failure cannot leave
+  partial orphan chunks behind the failed idempotent ingestion operation.
+- Stage 4 failed-ingestion terminal-persist rollback must prune only RAG chunks
+  introduced after the operation snapshot for the failed ingestion's documents,
+  preserving prior and concurrent successful local chunks.
+- Dead full-snapshot restore helpers should not remain available as alternate
+  local rollback paths once operation-scoped rollback is the reviewed contract.
+
+Consequences:
+
+- Local restart-recovery evidence becomes stricter about restored graph and
+  artifact consistency.
+- Stage 4 local ingestion rollback now has direct single-document and
+  multi-document evidence for all-or-nothing chunk insertion on unexpected
+  local embedding failure while preserving operation-scoped rollback for
+  concurrent successful writes, and direct evidence that a terminal local
+  snapshot write failure removes failed-ingestion chunks without erasing
+  concurrent successful ingestion chunks.
+- Stage 4, Stage 6, and Stage 7 retain snapshot capture for operation-scoped
+  rollback but no longer retain unused full-snapshot restore helpers that could
+  reintroduce concurrent-success loss if reused later.
+- Corrupt local snapshot rows may be pruned in memory and re-written on the
+  next successful persist; this is still not a migration, backup, repair, or
+  production recovery system.
+- Production go-live remains No-Go until ACID/CAS durable metadata,
+  cross-worker locking, migrations, backup/restore, production idempotency,
+  dashboards/alerts, first-hour watch, and rollback communications are reviewed.
+
 ## Related Documents
 
 - `docs/QUALITY_GATES.md`

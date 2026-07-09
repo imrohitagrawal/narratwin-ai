@@ -642,6 +642,47 @@ Every non-trivial PR must include an evidence table, not just checked boxes.
 | Release/ops | `docs/...` | O1-O4 | runbook/checklist/rollback | ... | pass/fail | ... |
 ```
 
+## Gate 8: Proactive Next-Step Closeout
+
+At the end of every non-trivial repo-governance, PR-review, release-readiness,
+durability, security, or implementation turn, the agent or reviewer must state
+the next step without waiting for the user to ask.
+
+Minimum closeout:
+
+- current state: branch, PR, issue, head commit, CI/review posture, and local
+  worktree posture when relevant;
+- recommended next action: the one action the owner should take next and why;
+- alternatives: reasonable options and trade-offs, including doing nothing;
+- agent-owned next work: what the agent can do without more user input;
+- human-owned gates: approvals, reviews, merge-dialog text, repository settings,
+  legal/provider decisions, production claims, or other surfaces automation
+  cannot safely complete;
+- stop conditions: what would keep the PR or release from advancing.
+
+For pull requests, include a merge posture:
+
+```markdown
+## Next Step
+
+Current state:
+Recommended action:
+Alternatives:
+I can do next:
+Needs human review/approval:
+Do not proceed if:
+```
+
+Rules:
+
+- Do not end a governance or review turn with only "tests pass" or "CI is
+  green" when another review, approval, merge, or human-only gate remains.
+- If the PR is not ready, say exactly what keeps it from being ready.
+- If the PR is ready, say whether it is ready for review, ready for merge, or
+  still waiting on a human-only check such as final squash-message inspection.
+- Preserve negative claims explicitly when they matter, such as "this does not
+  close the production blocker" or "this does not claim production readiness."
+
 ## Stop Rules
 
 Pause and run an RCA before continuing when:
@@ -720,6 +761,8 @@ The work is done only when:
 - review findings are reconciled
 - CI is green
 - residual risks are visible and accepted
+- the final response or review note states the recommended next action,
+  alternatives, and remaining human-owned gates
 
 ## Skip Template
 
@@ -778,13 +821,16 @@ media misuse.
 - Calling a local-only feature production-ready because it survives the happy
   path.
 - Recording a checklist item without linking the evidence artifact.
+- Ending a PR, release, or governance turn without telling the owner the
+  recommended next step, alternatives, and remaining human-only gates.
 
 ## Reusable Sequence
 
 ```text
 bootstrap -> source control gate -> interview -> spec -> source facts
 -> contract -> failure matrix -> RED tests -> implementation
--> adversarial review -> docs/gates -> PR evidence -> merge
+-> adversarial review -> docs/gates -> PR evidence
+-> proactive next-step closeout -> merge
 ```
 
 If a project skips one step, name the skip and why it is safe.

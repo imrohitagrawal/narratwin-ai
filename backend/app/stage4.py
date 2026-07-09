@@ -260,16 +260,40 @@ class Stage4Service:
                 for row in payload.get("documents", [])
                 if isinstance(row, dict) and "document_id" in row
             }
+            self.documents = {
+                document_id: document
+                for document_id, document in self.documents.items()
+                if document.project_id in self.projects
+                and self.projects[document.project_id].tenant_id == document.tenant_id
+                and self.projects[document.project_id].owner_id == document.owner_id
+            }
             self.ingestion_runs = {
                 str(row["ingestion_run_id"]): IngestionRunRecord(**row)
                 for row in payload.get("ingestionRuns", [])
                 if isinstance(row, dict) and "ingestion_run_id" in row
+            }
+            self.ingestion_runs = {
+                run_id: run
+                for run_id, run in self.ingestion_runs.items()
+                if self._restored_ingestion_run_is_valid(run)
             }
             self.rag_store = InMemoryRagStore.from_dict(cast(dict[str, Any], payload.get("ragStore", {})))
             self.walkthrough_runs = {
                 str(row["run_id"]): walkthrough_run_from_dict(row)
                 for row in payload.get("walkthroughRuns", [])
                 if isinstance(row, dict) and "run_id" in row
+            }
+            self.rag_store.prune(self._restored_chunk_is_valid)
+            self.ingestion_runs = {
+                run_id: run
+                for run_id, run in self.ingestion_runs.items()
+                if self._restored_ingestion_run_has_chunks(run)
+            }
+            self._reconcile_restored_document_ingestion_status()
+            self.walkthrough_runs = {
+                run_id: run
+                for run_id, run in self.walkthrough_runs.items()
+                if self._restored_walkthrough_run_is_valid(run)
             }
             self.idempotency_records = {}
             for row in payload.get("idempotencyRecords", []):
@@ -309,6 +333,207 @@ class Stage4Service:
             LOGGER.warning("Ignoring incompatible Stage 4 local state snapshot at %s: %s", self.state_path, exc)
             self._clear_runtime_state()
 
+    def _restore_failed_operation_locked(
+        self,
+        snapshot: dict[str, Any],
+        *,
+        record_key: tuple[str, str, str, str, str] | None,
+        value: object | None,
+    ) -> None:
+        if record_key is not None:
+            prior_record = snapshot["idempotencyRecords"].get(record_key)
+            if prior_record is None:
+                self.idempotency_records.pop(record_key, None)
+            else:
+                self.idempotency_records[record_key] = prior_record
+        if isinstance(value, ProjectRecord):
+            if value.project_id in snapshot["projects"]:
+                self.projects[value.project_id] = snapshot["projects"][value.project_id]
+            else:
+                self.projects.pop(value.project_id, None)
+        elif isinstance(value, DocumentRecord):
+            if value.document_id in snapshot["documents"]:
+                self.documents[value.document_id] = snapshot["documents"][value.document_id]
+            else:
+                self.documents.pop(value.document_id, None)
+        elif isinstance(value, IngestionRunRecord):
+            prior_rag_store = InMemoryRagStore.from_dict(snapshot["ragStore"])
+            failed_document_ids = set(value.document_ids)
+            self.rag_store.prune(
+                lambda chunk: not (
+                    chunk.tenant_id == value.tenant_id
+                    and chunk.project_id == value.project_id
+                    and chunk.document_id in failed_document_ids
+                    and not prior_rag_store.has_chunk(
+                        tenant_id=chunk.tenant_id,
+                        project_id=chunk.project_id,
+                        chunk_id=chunk.chunk_id,
+                    )
+                )
+            )
+            self.ingestion_runs.pop(value.ingestion_run_id, None)
+            for document_id in value.document_ids:
+                if document_id in snapshot["documents"]:
+                    self.documents[document_id] = snapshot["documents"][document_id]
+        elif isinstance(value, WalkthroughRunRecord):
+            self.walkthrough_runs.pop(value.run_id, None)
+        counters = snapshot["counters"]
+        self._project_counter = max(int(counters["project"]), max_numeric_suffix(self.projects, "proj_"))
+        self._document_counter = max(int(counters["document"]), max_numeric_suffix(self.documents, "doc_"))
+        self._ingestion_counter = max(int(counters["ingestion"]), max_numeric_suffix(self.ingestion_runs, "ing_"))
+        self._run_counter = max(int(counters["run"]), max_numeric_suffix(self.walkthrough_runs, "run_"))
+
+    def _restored_ingestion_run_is_valid(self, run: IngestionRunRecord) -> bool:
+        project = self.projects.get(run.project_id)
+        if project is None:
+            return False
+        if project.tenant_id != run.tenant_id or project.owner_id != run.actor_id:
+            return False
+        if not all(document_id in self.documents for document_id in run.document_ids):
+            return False
+        return all(
+            self.documents[document_id].tenant_id == run.tenant_id
+            and self.documents[document_id].owner_id == run.actor_id
+            and self.documents[document_id].project_id == run.project_id
+            for document_id in run.document_ids
+        )
+
+    def _restored_ingestion_run_has_chunks(self, run: IngestionRunRecord) -> bool:
+        if not self._restored_ingestion_run_is_valid(run):
+            return False
+        chunks = [
+            chunk
+            for chunk in self.rag_store.chunks_for_project(tenant_id=run.tenant_id, project_id=run.project_id)
+            if chunk.document_id in set(run.document_ids)
+        ]
+        chunk_document_ids = {chunk.document_id for chunk in chunks}
+        return (
+            run.chunk_count == len(chunks)
+            and run.embedding_count == len(chunks)
+            and all(document_id in chunk_document_ids for document_id in run.document_ids)
+        )
+
+    def _reconcile_restored_document_ingestion_status(self) -> None:
+        ingested_document_ids = {
+            document_id for run in self.ingestion_runs.values() for document_id in run.document_ids
+        }
+        for document in self.documents.values():
+            if document.ingestion_status == "INGESTED" and document.document_id not in ingested_document_ids:
+                document.ingestion_status = "NOT_STARTED"
+                document.ingested_at = None
+
+    def _restored_chunk_is_valid(self, chunk: KnowledgeChunk) -> bool:
+        document = self.documents.get(chunk.document_id)
+        if document is None:
+            return False
+        if (
+            chunk.tenant_id != document.tenant_id
+            or chunk.project_id != document.project_id
+            or chunk.source_filename != document.source_filename
+            or chunk.source_document_checksum != document.checksum
+            or chunk.approved_at != (document.approved_at or document.created_at)
+            or chunk.checksum != checksum_text(chunk.text)
+        ):
+            return False
+        try:
+            parsed_text = parse_document_text(document.text)
+        except Stage4Error:
+            return False
+        try:
+            expected_chunks = chunk_document(
+                document_id=document.document_id,
+                project_id=document.project_id,
+                tenant_id=document.tenant_id,
+                source_filename=document.source_filename,
+                text=parsed_text,
+                source_document_checksum=document.checksum,
+                approved_at=document.approved_at or document.created_at,
+                max_chunks=MAX_CHUNKS_PER_DOCUMENT,
+            )
+        except ValueError:
+            return False
+        return any(
+            candidate.chunk_id == chunk.chunk_id
+            and candidate.chunk_index == chunk.chunk_index
+            and candidate.text == chunk.text
+            and candidate.token_count == chunk.token_count
+            and candidate.checksum == chunk.checksum
+            and candidate.heading_path == chunk.heading_path
+            and candidate.line_start == chunk.line_start
+            and candidate.line_end == chunk.line_end
+            for candidate in expected_chunks
+        )
+
+    def _restored_walkthrough_run_is_valid(self, run: WalkthroughRunRecord) -> bool:
+        project = self.projects.get(run.project_id)
+        if project is None:
+            return False
+        if project.tenant_id != run.tenant_id or project.owner_id != run.actor_id:
+            return False
+        if run.status == "COMPLETED":
+            if (
+                run.accepted_script_text is None
+                or run.generated_script is None
+                or run.evaluation is None
+                or not run.retrieved_context
+                or run.evaluation_status != "PASSED"
+            ):
+                return False
+        elif run.status == "FAILED":
+            if run.generated_script is None or run.evaluation is None or run.evaluation_status != "FAILED":
+                return False
+        elif run.status == "REFUSED":
+            if (
+                run.accepted_script_text is not None
+                or run.generated_script is not None
+                or run.evaluation is not None
+                or run.retrieved_context
+                or run.evaluation_status is not None
+            ):
+                return False
+        else:
+            return False
+        if any(not self._restored_chunk_is_valid(context.chunk) for context in run.retrieved_context):
+            return False
+        if any(
+            not self.rag_store.has_chunk(
+                tenant_id=context.chunk.tenant_id,
+                project_id=context.chunk.project_id,
+                chunk_id=context.chunk.chunk_id,
+            )
+            for context in run.retrieved_context
+        ):
+            return False
+        if run.evaluation is None:
+            return True
+        if (
+            run.evaluation.run_id != run.run_id
+            or run.evaluation.tenant_id != run.tenant_id
+            or run.evaluation.project_id != run.project_id
+        ):
+            return False
+        context_by_ref = {context.context_ref_id: context for context in run.retrieved_context}
+        context_chunk_ids = {context.chunk.chunk_id for context in run.retrieved_context}
+        claim_ids = {claim.claim_id for claim in run.generated_script.claims} if run.generated_script is not None else set()
+        if run.generated_script is not None and any(
+            claim.chunk_id is not None and claim.chunk_id not in context_chunk_ids
+            for claim in run.generated_script.claims
+        ):
+            return False
+        return all(
+            support.document_id in self.documents
+            and support.claim_id in claim_ids
+            and support.context_ref_id in context_by_ref
+            and context_by_ref[support.context_ref_id].chunk.chunk_id == support.chunk_id
+            and context_by_ref[support.context_ref_id].chunk.document_id == support.document_id
+            and self.rag_store.has_chunk(
+                tenant_id=run.tenant_id,
+                project_id=run.project_id,
+                chunk_id=support.chunk_id,
+            )
+            for support in run.evaluation.claim_supports
+        )
+
     def _runtime_snapshot_locked(self) -> dict[str, Any]:
         return {
             "ragStore": self.rag_store.to_dict(),
@@ -326,21 +551,6 @@ class Stage4Service:
                 "run": self._run_counter,
             },
         }
-
-    def _restore_runtime_snapshot_locked(self, snapshot: dict[str, Any]) -> None:
-        self.rag_store = InMemoryRagStore.from_dict(snapshot["ragStore"])
-        self.projects = deepcopy(snapshot["projects"])
-        self.documents = deepcopy(snapshot["documents"])
-        self.ingestion_runs = deepcopy(snapshot["ingestionRuns"])
-        self.walkthrough_runs = deepcopy(snapshot["walkthroughRuns"])
-        self.idempotency_records = snapshot["idempotencyRecords"].copy()
-        self._active_ingestions = deepcopy(snapshot["activeIngestions"])
-        self._active_generations = deepcopy(snapshot["activeGenerations"])
-        counters = snapshot["counters"]
-        self._project_counter = int(counters["project"])
-        self._document_counter = int(counters["document"])
-        self._ingestion_counter = int(counters["ingestion"])
-        self._run_counter = int(counters["run"])
 
     def _persist_locked(self) -> None:
         write_state(
@@ -592,9 +802,9 @@ class Stage4Service:
             pending_chunk_count += len(chunks)
             prepared_documents.append((document, chunks))
 
-        stored_chunks: list[KnowledgeChunk] = []
-        for document, chunks in prepared_documents:
-            stored_chunks.extend(self.rag_store.add_chunks(chunks, self.embedder))
+        all_chunks = [chunk for _document, chunks in prepared_documents for chunk in chunks]
+        stored_chunks = self.rag_store.add_chunks(all_chunks, self.embedder)
+        for document, _chunks in prepared_documents:
             document.ingestion_status = "INGESTED"
             document.ingested_at = _now()
         self._ingestion_counter += 1
@@ -1047,12 +1257,12 @@ class Stage4Service:
                 try:
                     self._persist_locked()
                 except OSError:
-                    self._restore_runtime_snapshot_locked(snapshot)
+                    self._restore_failed_operation_locked(snapshot, record_key=record_key, value=None)
                     raise exc
             raise
         except Exception:
             with self._operation_lock:
-                self._restore_runtime_snapshot_locked(snapshot)
+                self._restore_failed_operation_locked(snapshot, record_key=record_key, value=None)
                 self._persist_locked()
             raise
         with self._operation_lock:
@@ -1062,7 +1272,7 @@ class Stage4Service:
             try:
                 self._persist_locked()
             except OSError:
-                self._restore_runtime_snapshot_locked(snapshot)
+                self._restore_failed_operation_locked(snapshot, record_key=record_key, value=value)
                 raise
         return value
 
@@ -1301,6 +1511,8 @@ def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) ->
         raise ValueError(f"Unsupported Stage 4 idempotency status: {status}")
     if status == "COMPLETED" and value is None:
         raise ValueError("Completed Stage 4 idempotency record references missing value.")
+    if status == "FAILED" and not isinstance(value, Stage4Error):
+        raise ValueError("Failed Stage 4 idempotency record references missing error.")
     return IdempotencyRecord(
         idempotency_record_id=str(row["idempotency_record_id"]),
         tenant_id=str(row["tenant_id"]),
