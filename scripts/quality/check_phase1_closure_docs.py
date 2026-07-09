@@ -50,6 +50,7 @@ MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
+    "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
     "portfolio/README.md",
     "scripts/ci/verify_branch_protection.py",

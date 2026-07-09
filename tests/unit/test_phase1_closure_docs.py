@@ -31,6 +31,7 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
         branch="phase-1-closure-process-55-phf-006-scope-gate",
         files=[
             "docs/reviews/PROCESS_HARDENING_FINDINGS.md",
+            "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
             "scripts/guardrails_check.py",
             "tests/unit/test_guardrails_check.py",
             "tests/unit/test_phase1_closure_docs.py",
