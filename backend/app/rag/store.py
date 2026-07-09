@@ -42,11 +42,6 @@ class InMemoryRagStore:
             if (tenant_id, project_id, chunk_id) in self._chunks
         ]
 
-    def prune_to_documents(self, *, valid_project_ids: set[str], valid_document_ids: set[str]) -> None:
-        self.prune(
-            lambda chunk: chunk.project_id in valid_project_ids and chunk.document_id in valid_document_ids
-        )
-
     def prune(self, predicate: Callable[[KnowledgeChunk], bool]) -> None:
         for chunk_key, chunk in list(self._chunks.items()):
             if not predicate(chunk):
