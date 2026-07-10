@@ -197,6 +197,11 @@ class AcidCasKernel:
 
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
+                self._assert_operation_owner(
+                    existing=existing,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                )
                 return replay_operation_result(existing)
 
             self._assert_operation_owner(
@@ -223,6 +228,11 @@ class AcidCasKernel:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state == "TERMINAL_SUCCESS":
+                self._assert_operation_owner(
+                    existing=existing,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                )
                 if existing.response_payload != response_payload:
                     raise AcidCasConflictError(
                         f"Operation {operation_id} terminal success replay payload does not match the durable response."
@@ -284,6 +294,11 @@ class AcidCasKernel:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state == "TERMINAL_ERROR":
+                self._assert_operation_owner(
+                    existing=existing,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                )
                 if existing.error_payload != error_payload:
                     raise AcidCasConflictError(
                         f"Operation {operation_id} terminal error replay payload does not match the durable error."
@@ -397,6 +412,11 @@ class AcidCasKernel:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
+                self._assert_operation_owner(
+                    existing=existing,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                )
                 return replay_operation_result(existing)
             self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
             self._assert_operation_state(
