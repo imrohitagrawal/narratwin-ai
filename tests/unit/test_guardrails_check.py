@@ -1043,6 +1043,105 @@ def test_github_pull_request_is_merged_uses_pull_payload(
     assert guardrails.github_pull_request_is_merged("71") is expected
 
 
+def test_github_pull_request_numbers_for_commit_rejects_missing_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+
+    assert guardrails.github_pull_request_numbers_for_commit("abcdef") == []
+
+
+def test_is_merged_pull_request_merge_push_checks_only_merged_prs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(guardrails, "github_pull_request_numbers_for_commit", lambda _sha: ["71", "72"])
+
+    calls: list[str] = []
+
+    def fake_github_pull_request_is_merged_to_main(number: str) -> bool:
+        calls.append(number)
+        return number == "72"
+
+    monkeypatch.setattr(
+        guardrails,
+        "github_pull_request_is_merged_to_main",
+        fake_github_pull_request_is_merged_to_main,
+    )
+
+    assert guardrails.is_merged_pull_request_merge_push("abcdef") is True
+    assert calls == ["71", "72"]
+
+
+def test_github_pull_request_is_merged_to_main_rejects_non_main_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+
+    def fake_urlopen(request: object, timeout: int) -> FakeGitHubResponse:
+        assert timeout == 5
+        assert str(getattr(request, "full_url", "")).endswith("/pulls/71")
+        return FakeGitHubResponse(
+            200,
+            {"number": 71, "merged": True, "base": {"ref": "release/v2"}},
+        )
+
+    monkeypatch.setattr(guardrails, "urlopen", fake_urlopen)
+
+    assert guardrails.github_pull_request_is_merged_to_main("71") is False
+
+
+def test_github_pull_request_is_merged_to_main_requires_merged_main_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+
+    def fake_urlopen(request: object, timeout: int) -> FakeGitHubResponse:
+        assert timeout == 5
+        assert str(getattr(request, "full_url", "")).endswith("/pulls/72")
+        return FakeGitHubResponse(
+            200,
+            {"number": 72, "merged": True, "base": {"ref": "main"}},
+        )
+
+    monkeypatch.setattr(guardrails, "urlopen", fake_urlopen)
+
+    assert guardrails.github_pull_request_is_merged_to_main("72") is True
+
+
+def test_github_pull_request_is_merged_to_main_rejects_non_dict_base(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+
+    def fake_urlopen(request: object, timeout: int) -> FakeGitHubResponse:
+        assert timeout == 5
+        assert str(getattr(request, "full_url", "")).endswith("/pulls/73")
+        return FakeGitHubResponse(
+            200,
+            {"number": 73, "merged": True, "base": "main"},
+        )
+
+    monkeypatch.setattr(guardrails, "urlopen", fake_urlopen)
+
+    assert guardrails.github_pull_request_is_merged_to_main("73") is False
+
+
+def test_github_pull_request_is_merged_to_main_rejects_missing_base(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+
+    def fake_urlopen(request: object, timeout: int) -> FakeGitHubResponse:
+        assert timeout == 5
+        assert str(getattr(request, "full_url", "")).endswith("/pulls/74")
+        return FakeGitHubResponse(200, {"number": 74, "merged": True})
+
+    monkeypatch.setattr(guardrails, "urlopen", fake_urlopen)
+
+    assert guardrails.github_pull_request_is_merged_to_main("74") is False
+
+
 @pytest.mark.parametrize(
     "sensitive_id",
     sorted(guardrails.REQUIRED_ISSUE_39_ROW_CONTRACT_TERMS),
@@ -2657,3 +2756,105 @@ def test_main_push_changed_files_keeps_previous_commit_base(
     monkeypatch.setattr(guardrails, "run_git", fake_run_git)
 
     assert guardrails.changed_files() == ["docs/STATUS.md"]
+
+
+def test_main_push_rejects_direct_push_to_main_without_pr_merge_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps({"head_commit": {"id": "abc123"}}), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    monkeypatch.setattr(guardrails, "is_merged_pull_request_merge_push", lambda _sha: False)
+
+    guardrails.failures.clear()
+    guardrails.check_no_direct_main_push()
+
+    assert "Direct push to main detected. All work must go through issue + branch + PR." in guardrails.failures
+
+
+def test_main_push_allows_merged_pr_push_to_main(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps({"head_commit": {"id": "abc123"}}), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    monkeypatch.setattr(guardrails, "is_merged_pull_request_merge_push", lambda _sha: True)
+
+    guardrails.failures.clear()
+    guardrails.check_no_direct_main_push()
+
+    assert guardrails.failures == []
+
+
+def test_main_push_without_event_payload_fails_push_merge_classification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)
+
+    guardrails.failures.clear()
+    guardrails.check_no_direct_main_push()
+
+    assert "Could not read push event payload; cannot verify whether this main push came from a merged PR." in guardrails.failures
+
+
+def test_main_push_rejects_malformed_payload_without_head_sha(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps({"not_head_commit": "broken"}), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+
+    guardrails.failures.clear()
+    guardrails.check_no_direct_main_push()
+
+    assert "Push payload is missing a head commit SHA; cannot verify whether this main push came from a merged PR." in guardrails.failures
+
+
+def test_main_push_uses_after_sha_when_head_commit_sha_is_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps({"after": "after-sha"}), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    monkeypatch.setattr(
+        guardrails,
+        "is_merged_pull_request_merge_push",
+        lambda sha: sha == "after-sha",
+    )
+
+    guardrails.failures.clear()
+    guardrails.check_no_direct_main_push()
+
+    assert guardrails.failures == []
+
+
+def test_main_push_without_github_token_treated_as_direct_push(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps({"head_commit": {"id": "abc123"}}), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+
+    guardrails.failures.clear()
+    guardrails.check_no_direct_main_push()
+
+    assert "Direct push to main detected. All work must go through issue + branch + PR." in guardrails.failures
