@@ -459,6 +459,9 @@ ISSUE_39_OPERATIONAL_CLOSURE_EVIDENCE_TERMS = {
     "SEC-RETENTION-001": (("retention",), ("deletion", "erasure"), ("redaction",), ("restore re-delete",)),
     "SEC-UNTRUSTED-001": (("untrusted",), ("validation",), ("output encoding",), ("log redaction",)),
 }
+ISSUE_39_PRODUCTION_GRADE_ROW_PREFIXES = ("DUR-", "OPS-", "MEDIA-", "SEC-", "PROVIDER-")
+ISSUE_39_DRILL_LOG_PREFIXES = ("docs/reviews/drills/", "reports/", "artifacts/", "logs/")
+ISSUE_39_DRILL_LOG_SUFFIXES = {".json", ".jsonl", ".log", ".md", ".txt"}
 
 
 def run_git(args: list[str]) -> str:
@@ -1065,17 +1068,18 @@ def check_issue39_closed_row_records(failures: list[str], text: str, closed_ids:
             )
         if "64" in pr_numbers:
             failures.append(f"Issue #39 closed row {row_id} must not use Context 0 PR #64 as final proof.")
-        artifact = record[index["Artifact reference"]].lower()
-        evidence = record[index["Validation or human evidence"]].lower()
-        reason = record[index["Satisfies row because"]].lower()
-        combined_evidence = " ".join((artifact, evidence, reason))
-        if "docs/reviews/issue_39_production_closure_plan.md" in artifact and not any(
+        artifact = record[index["Artifact reference"]]
+        evidence = record[index["Validation or human evidence"]]
+        reason = record[index["Satisfies row because"]]
+        combined_evidence = " ".join((artifact, evidence, reason)).lower()
+        if "docs/reviews/issue_39_production_closure_plan.md" in artifact.lower() and not any(
             token in combined_evidence for token in ("test_", "actions/runs/", "drill log", "human-only")
         ):
             failures.append(
                 f"Issue #39 closed row {row_id} must not use the production closure plan alone as final proof."
             )
         if not has_concrete_issue39_closure_evidence(
+            row_id=row_id,
             evidence=evidence,
             owner=record[index["Owner"]],
             residual_risk=record[index["Residual-risk decision"]],
@@ -1109,20 +1113,26 @@ def same_repo_pr_numbers(text: str) -> set[str]:
     )
 
 
-def has_concrete_issue39_closure_evidence(*, evidence: str, owner: str, residual_risk: str) -> bool:
-    cited_tests = set(AUTOMATED_EVIDENCE_TEST.findall(evidence))
-    valid_node_ids = valid_pytest_node_ids_in_text(evidence)
+def has_concrete_issue39_closure_evidence(
+    *, row_id: str, evidence: str, owner: str, residual_risk: str
+) -> bool:
+    normalized_evidence = evidence.lower()
+    cited_tests = set(AUTOMATED_EVIDENCE_TEST.findall(normalized_evidence))
+    valid_node_ids = valid_pytest_node_ids_in_text(normalized_evidence)
     if cited_tests and {test_name for _, test_name in valid_node_ids} != cited_tests:
         return False
-    has_actions_run = has_same_repo_actions_run_or_artifact_url(evidence)
-    has_drill_log = has_existing_drill_log_reference(evidence)
-    if valid_node_ids and (has_actions_run or has_drill_log):
+    has_actions_run = has_same_repo_actions_run_or_artifact_url(normalized_evidence)
+    has_drill_log = has_existing_drill_log_reference(normalized_evidence, row_id=row_id)
+    has_automated_evidence = bool(valid_node_ids and (has_actions_run or has_drill_log))
+    if row_id.startswith(ISSUE_39_PRODUCTION_GRADE_ROW_PREFIXES):
+        return has_automated_evidence
+    if has_automated_evidence:
         return True
     if has_actions_run:
         return True
     if has_drill_log:
         return True
-    if "human-only" in evidence and owner.strip() and residual_risk.strip().lower() not in {
+    if "human-only" in normalized_evidence and owner.strip() and residual_risk.strip().lower() not in {
         "",
         "n/a",
         "na",
@@ -1143,21 +1153,33 @@ def has_same_repo_actions_run_or_artifact_url(evidence: str) -> bool:
     return bool(re.search(run_pattern, evidence) or re.search(artifact_pattern, evidence))
 
 
-def has_existing_drill_log_reference(evidence: str) -> bool:
+def has_existing_drill_log_reference(evidence: str, *, row_id: str) -> bool:
     if "drill log" not in evidence:
         return False
     for match in re.finditer(r"\b(?P<path>(?:docs|reports|artifacts|logs)/[A-Za-z0-9_./-]+)", evidence):
         path = match.group("path").rstrip(".,;:)")
         if ".." in Path(path).parts:
             continue
+        if not path.startswith(ISSUE_39_DRILL_LOG_PREFIXES):
+            continue
         resolved = (ROOT / path).resolve()
         try:
             resolved.relative_to(ROOT)
         except ValueError:
             continue
-        if resolved.is_file():
+        if resolved.is_file() and drill_log_file_satisfies_row(resolved, row_id):
             return True
     return has_same_repo_actions_run_or_artifact_url(evidence)
+
+
+def drill_log_file_satisfies_row(path: Path, row_id: str) -> bool:
+    if path.suffix.lower() not in ISSUE_39_DRILL_LOG_SUFFIXES:
+        return False
+    content = path.read_text(encoding="utf-8").lower()
+    if "drill" not in content:
+        return False
+    required_groups = ISSUE_39_OPERATIONAL_CLOSURE_EVIDENCE_TERMS.get(row_id, ())
+    return all(any(term in content for term in group) for group in required_groups)
 
 
 def valid_pytest_node_ids_in_text(text: str) -> set[tuple[str, str]]:
@@ -1752,8 +1774,9 @@ def check_issue39_status_ledger(failures: list[str], status_text: str, closure_p
     if len(cells) < 2:
         failures.append("docs/STATUS.md issue #39 ledger row is malformed.")
         return
-    status = cells[1].lower()
-    if not issue39_all_matrix_rows_closed(closure_plan_text) and "open" not in status:
+    status_match = re.match(r"[a-z]+", cells[1].strip().lower())
+    status_token = status_match.group(0) if status_match else ""
+    if not issue39_all_matrix_rows_closed(closure_plan_text) and status_token != "open":
         failures.append("docs/STATUS.md issue #39 must remain Open while production closure matrix rows are Open.")
 
 

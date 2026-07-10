@@ -520,6 +520,27 @@ def test_issue39_closure_plan_rejects_drill_log_path_traversal(monkeypatch: Any)
     assert "Issue #39 closed row DUR-RESTORE-001 lacks concrete validation or human-only evidence." in failures
 
 
+def test_issue39_closure_plan_rejects_existing_unrelated_drill_log_file(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-RESTORE-001` | Backup/restore drill | Backup scope, integrity, restore smoke, and RTO/RPO "
+        "verification | Ops | Operable restore playbook with evidence of at least one successful restore drill | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="DUR-RESTORE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="docs/evals/phase1_golden_questions.jsonl drill log restore drill rto rpo",
+            satisfies="restore drill rto rpo evidence",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-RESTORE-001 lacks concrete validation or human-only evidence." in failures
+
+
 def test_issue39_closure_plan_rejects_malformed_actions_run_url(monkeypatch: Any) -> None:
     plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
     row_open = (
@@ -562,6 +583,27 @@ def test_issue39_closure_plan_rejects_ops_row_without_row_specific_evidence(monk
         "Issue #39 closed row DUR-RESTORE-001 missing operational closure evidence terms: "
         "restore drill; rto; rpo"
     ) in failures
+
+
+def test_issue39_closure_plan_rejects_operational_human_only_keyword_prose(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-RESTORE-001` | Backup/restore drill | Backup scope, integrity, restore smoke, and RTO/RPO "
+        "verification | Ops | Operable restore playbook with evidence of at least one successful restore drill | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="DUR-RESTORE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="human-only restore drill rto rpo reviewed by ops",
+            satisfies="restore drill rto rpo evidence",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-RESTORE-001 lacks concrete validation or human-only evidence." in failures
 
 
 def test_issue39_closure_plan_rejects_sensitive_row_without_row_specific_evidence(monkeypatch: Any) -> None:
@@ -895,6 +937,22 @@ def test_status_keeps_issue39_open_while_matrix_rows_are_open(monkeypatch: Any) 
             "docs/STATUS.md": status_text.replace(
                 "| `#39` | Open, partially remediated |",
                 "| `#39` | Closed |",
+                1,
+            )
+        },
+    )
+
+    assert "docs/STATUS.md issue #39 must remain Open while production closure matrix rows are Open." in failures
+
+
+def test_status_rejects_closed_issue39_with_open_substring(monkeypatch: Any) -> None:
+    status_text = phase1.read("docs/STATUS.md")
+    failures = run_release_docs_check(
+        monkeypatch,
+        read_overrides={
+            "docs/STATUS.md": status_text.replace(
+                "| `#39` | Open, partially remediated |",
+                "| `#39` | Closed (no reopening planned) |",
                 1,
             )
         },
