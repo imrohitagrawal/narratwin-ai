@@ -325,6 +325,7 @@ class AcidCasKernel:
         dispatcher_id: str,
         next_attempt_at: datetime,
         last_error: str,
+        now: datetime | None = None,
     ) -> StoredOutboxEvent:
         return self._transition_outbox_event(
             event_id=event_id,
@@ -332,6 +333,7 @@ class AcidCasKernel:
             state="PENDING",
             next_attempt_at=next_attempt_at.isoformat(),
             last_error=last_error,
+            now=now,
         )
 
     def mark_outbox_event_succeeded(
@@ -339,6 +341,7 @@ class AcidCasKernel:
         *,
         event_id: str,
         dispatcher_id: str,
+        now: datetime | None = None,
     ) -> StoredOutboxEvent:
         return self._transition_outbox_event(
             event_id=event_id,
@@ -346,6 +349,7 @@ class AcidCasKernel:
             state="SUCCEEDED",
             next_attempt_at=None,
             last_error=None,
+            now=now,
         )
 
     def mark_outbox_event_failed(
@@ -354,6 +358,7 @@ class AcidCasKernel:
         event_id: str,
         dispatcher_id: str,
         last_error: str,
+        now: datetime | None = None,
     ) -> StoredOutboxEvent:
         return self._transition_outbox_event(
             event_id=event_id,
@@ -361,6 +366,7 @@ class AcidCasKernel:
             state="FAILED",
             next_attempt_at=None,
             last_error=last_error,
+            now=now,
         )
 
     def record_consumer_delivery(
@@ -374,6 +380,13 @@ class AcidCasKernel:
         key = (event_type, event_id, consumer_name, resource_version)
         recorded_at = _now()
         with self._lock:
+            committed_event = self._outbox_events.get(event_id)
+            if committed_event is None:
+                raise AcidCasConflictError(f"No committed outbox event exists for {event_id}.")
+            if committed_event.event_type != event_type or committed_event.resource_version != resource_version:
+                raise AcidCasConflictError(
+                    f"Consumer delivery for {event_id} does not match committed outbox event identity/version."
+                )
             existing = self._consumer_deliveries.get(key)
             if existing is None:
                 record = ConsumerDeliveryRecord(
@@ -562,6 +575,7 @@ class AcidCasKernel:
         state: OutboxEventState,
         next_attempt_at: str | None,
         last_error: str | None,
+        now: datetime | None = None,
     ) -> StoredOutboxEvent:
         with self._lock:
             try:
@@ -571,6 +585,11 @@ class AcidCasKernel:
             if existing.state != "DELIVERING" or existing.locked_by != dispatcher_id:
                 raise AcidCasConflictError(
                     f"Dispatcher {dispatcher_id} does not own outbox event {event_id}."
+                )
+            current_time = _coerce_datetime(now)
+            if existing.locked_until is None or _parse_timestamp(existing.locked_until) < current_time:
+                raise AcidCasConflictError(
+                    f"Dispatcher {dispatcher_id} lock for outbox event {event_id} has expired."
                 )
             updated_at = _now()
             updated = StoredOutboxEvent(

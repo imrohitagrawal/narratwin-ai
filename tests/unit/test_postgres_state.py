@@ -780,6 +780,74 @@ def test_context2_outbox_writes_state_and_event_atomically() -> None:
     with pytest.raises(KeyError):
         kernel.get_outbox_event("evt-2")
 
+    with pytest.raises(AcidCasConflictError, match="same transaction"):
+        kernel.commit(
+            transaction_id="tx-outbox-3",
+            request_id="req-outbox-3",
+            request_checksum="sha256:req-outbox-3",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-3",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+            outbox_events=(
+                OutboxEventWrite(
+                    event_id="evt-3",
+                    event_type="run.status.changed",
+                    entity_type="run",
+                    entity_id="run-missing",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    resource_version=1,
+                    operation_id="op-3",
+                    payload_hash="sha256:evt-3",
+                    payload={"status": "queued"},
+                ),
+            ),
+        )
+
+    with pytest.raises(AcidCasConflictError, match="same transaction"):
+        kernel.commit(
+            transaction_id="tx-outbox-4",
+            request_id="req-outbox-4",
+            request_checksum="sha256:req-outbox-4",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-4",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+            outbox_events=(
+                OutboxEventWrite(
+                    event_id="evt-4",
+                    event_type="run.status.changed",
+                    entity_type="run",
+                    entity_id="run-4",
+                    tenant_id="tenant-2",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    resource_version=1,
+                    operation_id="op-4",
+                    payload_hash="sha256:evt-4",
+                    payload={"status": "queued"},
+                ),
+            ),
+        )
+
 
 def test_context2_outbox_redelivery_is_at_least_once() -> None:
     kernel = AcidCasKernel()
@@ -894,31 +962,188 @@ def test_context2_outbox_redelivery_is_at_least_once() -> None:
 def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
     kernel = AcidCasKernel()
 
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-2",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "processing"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-1",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-1",
+                payload_hash="sha256:evt-1",
+                payload={"status": "queued"},
+            ),
+            OutboxEventWrite(
+                event_id="evt-2",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-2",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-2",
+                payload_hash="sha256:evt-2",
+                payload={"status": "processing"},
+            ),
+        ),
+    )
+    kernel.commit(
+        transaction_id="tx-outbox-2",
+        request_id="req-outbox-2",
+        request_checksum="sha256:req-outbox-2",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-2",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=1,
+                state="OPEN",
+                payload={"status": "done"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-3",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-2",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=2,
+                operation_id="op-3",
+                payload_hash="sha256:evt-3",
+                payload={"status": "done"},
+            ),
+        ),
+    )
+
     first = kernel.record_consumer_delivery(
         event_id="evt-1",
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
-        resource_version=3,
+        resource_version=1,
     )
     duplicate = kernel.record_consumer_delivery(
         event_id="evt-1",
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
-        resource_version=3,
+        resource_version=1,
+    )
+    other_version = kernel.record_consumer_delivery(
+        event_id="evt-3",
+        event_type="run.status.changed",
+        consumer_name="walkthrough-consumer",
+        resource_version=2,
     )
     other_consumer = kernel.record_consumer_delivery(
-        event_id="evt-1",
+        event_id="evt-2",
         event_type="run.status.changed",
         consumer_name="audit-consumer",
-        resource_version=3,
+        resource_version=1,
     )
 
     assert first.duplicate is False
     assert first.delivery_count == 1
     assert duplicate.duplicate is True
     assert duplicate.delivery_count == 2
+    assert other_version.duplicate is False
+    assert other_version.delivery_count == 1
     assert other_consumer.duplicate is False
     assert other_consumer.delivery_count == 1
+
+
+def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -> None:
+    kernel = AcidCasKernel()
+
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-1",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-1",
+                payload_hash="sha256:evt-1",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="No committed outbox event"):
+        kernel.record_consumer_delivery(
+            event_id="evt-missing",
+            event_type="run.status.changed",
+            consumer_name="walkthrough-consumer",
+            resource_version=1,
+        )
+
+    with pytest.raises(AcidCasConflictError, match="does not match committed outbox event"):
+        kernel.record_consumer_delivery(
+            event_id="evt-1",
+            event_type="other.event",
+            consumer_name="walkthrough-consumer",
+            resource_version=1,
+        )
+
+    with pytest.raises(AcidCasConflictError, match="does not match committed outbox event"):
+        kernel.record_consumer_delivery(
+            event_id="evt-1",
+            event_type="run.status.changed",
+            consumer_name="walkthrough-consumer",
+            resource_version=2,
+        )
 
 
 def test_context2_outbox_marks_dispatch_failure_terminal() -> None:
@@ -984,3 +1209,56 @@ def test_context2_outbox_marks_dispatch_failure_terminal() -> None:
         )
         == ()
     )
+
+
+def test_context2_outbox_rejects_transition_after_lock_expiry() -> None:
+    kernel = AcidCasKernel()
+    base = datetime(2026, 7, 11, 13, 0, tzinfo=UTC)
+
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-1",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-1",
+                payload_hash="sha256:evt-1",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    acquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        now=base,
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    assert len(acquired) == 1
+
+    with pytest.raises(AcidCasConflictError, match="lock for outbox event evt-1 has expired"):
+        kernel.mark_outbox_event_succeeded(
+            event_id="evt-1",
+            dispatcher_id="worker-1",
+            now=base + timedelta(seconds=31),
+        )
