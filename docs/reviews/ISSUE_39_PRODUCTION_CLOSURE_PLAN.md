@@ -76,7 +76,7 @@ Local/test defaults (`in-memory`, local JSON, staged files, local mocks) remain 
    `DUR-ROLLBACK-001`, and artifact-state sequencing for `DUR-STAGE6-001` / `DUR-STAGE7-001`.
 5. **Context 4:** Backup and restore drill planning with durability artifacts,
    RTO/RPO targets, restore integrity checks, metrics/events contracts, and escalation runbook.
-6. **Context 5:** Final closure evidence sweep, cross-context reconciliation, and final `#39` disposition decision.
+6. **Context 5:** Operations monitoring, SLO/error-budget, alert-routing, and first-hour watch planning for Issue `#69`; final `#39` disposition remains deferred.
 
 ## Context 1: PostgreSQL Durability ADR and Schema Boundary
 
@@ -235,8 +235,8 @@ and paid-provider activation policy remain unchanged.
 
 | Matrix ID | Issue #69 evidence artifact | Planned deterministic evidence row |
 |---|---|---|
-| `OPS-METRICS-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (Metric catalog and failure-mode mapping) | `CTX5-METRICS-EVID-001`: planned queue/lease/idempotency/restore/outbox metric catalog with query mappings, backlog/backpressure thresholds, and ownership/failure-mode tests. |
-| `OPS-SLO-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (SLO/error-budget thresholds) | `CTX5-SLO-EVID-001`: planned SLO threshold matrix, error-budget burn policy, and evidence-row with watch-state escalation linkage. |
+| `OPS-METRICS-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (Metric catalog, failure-mode mapping, and advisory scrape/query contracts) | `CTX5-METRICS-EVID-001`: planned queue/lease/idempotency/restore/outbox metric catalog with advisory query contracts, backlog/backpressure thresholds, and ownership/failure-mode tests. |
+| `OPS-SLO-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (SLO/error-budget thresholds) | `CTX5-SLO-EVID-001`: planned SLO threshold matrix, per-SLO error-budget windows, burn policy, and evidence-row with watch-state escalation linkage. |
 | `OPS-ALERT-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (Alert severity matrix and routing) | `CTX5-ALERT-EVID-001`: planned severity matrix, ownership routing, ack SLA, and closure evidence requirements tied to watch log state. |
 | `OPS-WATCH-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (First-hour watch protocol) | `CTX5-WATCH-EVID-001`: planned 120m/180m checkpoint workflow, handoff path, unresolved-condition escalation, and closure evidence sequence. |
 
