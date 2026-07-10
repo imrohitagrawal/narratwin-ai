@@ -929,21 +929,26 @@ class AcidCasKernel:
         )
 
     def _validate_lease_guard(self, *, write: TransactionWrite, now: datetime) -> None:
+        expected_resource_id = lease_resource_id_for_write(write)
+        current = self._leases.get(expected_resource_id)
+        active_lease = current is not None and not _lease_is_expired(current, now)
         lease_fields = (write.lease_resource_id, write.lease_id, write.lease_epoch)
         if lease_fields == (None, None, None):
+            if active_lease:
+                raise AcidCasStaleWriteError(
+                    f"{write.entity_type}:{write.entity_id} has active lease {expected_resource_id} and requires lease fencing fields."
+                )
             return
         if write.lease_resource_id is None or write.lease_id is None or write.lease_epoch is None:
             raise AcidCasConflictError(
                 "Lease-guarded writes must include lease_resource_id, lease_id, and lease_epoch together."
             )
 
-        expected_resource_id = lease_resource_id_for_write(write)
         if write.lease_resource_id != expected_resource_id:
             raise AcidCasStaleWriteError(
                 f"{write.entity_type}:{write.entity_id} lease resource {write.lease_resource_id} does not match scoped row identity {expected_resource_id}."
             )
 
-        current = self._leases.get(write.lease_resource_id)
         if current is None or _lease_is_expired(current, now):
             raise AcidCasStaleWriteError(
                 f"{write.entity_type}:{write.entity_id} lease {write.lease_resource_id} is expired."
