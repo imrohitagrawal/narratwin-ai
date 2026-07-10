@@ -30,7 +30,10 @@ Each chunk must use:
 
 - a child GitHub issue or explicitly scoped issue comment linked with
   reference-only `Refs #39` wording
-- a dedicated branch named `phase-1-closure-39-<chunk-slug>`
+- a dedicated branch named `phase-1-closure-39-<chunk-slug>` after the chunk
+  has an explicit checker allowlist; unknown generic `phase-1-closure-39-*`
+  branches intentionally default to docs/checker/test scope until a reviewed
+  allowlist update binds that branch to one chunk
 - a pull request linked to the child issue or issue `#39`
 - a pre-code planning artifact in the issue or pull request before coding
 - row-specific evidence updates in the production closure plan only after the

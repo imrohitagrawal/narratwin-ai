@@ -327,6 +327,7 @@ REQUIRED_ISSUE_39_MATRIX_IDS = {
 }
 VALID_ISSUE_39_MATRIX_STATUSES = {"open", "closed"}
 REPOSITORY_FULL_NAME = "imrohitagrawal/narratwin-ai"
+ISSUE_39_PLANNING_PR_NUMBERS = {str(number) for number in range(64, 81)}
 EXPECTED_ISSUE_39_CHUNK_MATRIX_IDS = {
     "CH-00": {"GOV-SCOPE-001"},
     "CH-01": {"DUR-MIG-001"},
@@ -1056,6 +1057,12 @@ def check_issue39_closed_row_records(failures: list[str], text: str, closed_ids:
             )
         if "39" in issue_numbers:
             failures.append(f"Issue #39 closed row {row_id} must cite a child issue distinct from #39.")
+        planning_pr_numbers = sorted(pr_numbers & ISSUE_39_PLANNING_PR_NUMBERS, key=int)
+        if planning_pr_numbers:
+            failures.append(
+                f"Issue #39 closed row {row_id} must not use planning PRs #64-#80 as final proof: "
+                + ", ".join(f"#{number}" for number in planning_pr_numbers)
+            )
         if "64" in pr_numbers:
             failures.append(f"Issue #39 closed row {row_id} must not use Context 0 PR #64 as final proof.")
         artifact = record[index["Artifact reference"]].lower()
@@ -1103,19 +1110,24 @@ def same_repo_pr_numbers(text: str) -> set[str]:
 
 
 def has_concrete_issue39_closure_evidence(*, evidence: str, owner: str, residual_risk: str) -> bool:
-    cited_tests = set(re.findall(r"\btest_[A-Za-z0-9_]+\b", evidence))
-    if cited_tests:
-        return cited_tests <= known_test_names()
-    if re.search(rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+", evidence):
+    cited_tests = set(AUTOMATED_EVIDENCE_TEST.findall(evidence))
+    valid_node_ids = valid_pytest_node_ids_in_text(evidence)
+    if cited_tests and {test_name for _, test_name in valid_node_ids} != cited_tests:
+        return False
+    has_actions_run = bool(
+        re.search(rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+", evidence)
+    )
+    has_drill_log = bool(
+        re.search(r"\b(?:docs|reports|artifacts|logs)/[A-Za-z0-9_./-]+", evidence)
+        and "drill log" in evidence
+    )
+    if valid_node_ids and (has_actions_run or has_drill_log):
         return True
-    if re.search(
-        rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/(?:blob|tree)/[A-Za-z0-9_./-]+",
-        evidence,
-    ):
+    if re.search(rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+", evidence):
         return True
     if re.search(rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+/artifacts/\d+", evidence):
         return True
-    if re.search(r"\b(?:docs|reports|artifacts|logs)/[A-Za-z0-9_./-]+", evidence) and "drill log" in evidence:
+    if has_drill_log:
         return True
     if "human-only" in evidence and owner.strip() and residual_risk.strip().lower() not in {
         "",
@@ -1127,6 +1139,17 @@ def has_concrete_issue39_closure_evidence(*, evidence: str, owner: str, residual
     }:
         return True
     return False
+
+
+def valid_pytest_node_ids_in_text(text: str) -> set[tuple[str, str]]:
+    tests_by_path = known_tests_by_path()
+    valid_node_ids: set[tuple[str, str]] = set()
+    for match in re.finditer(r"\b(?P<path>tests/[A-Za-z0-9_./-]+\.py)::(?P<test>test_[A-Za-z0-9_]+)\b", text):
+        target_path = match.group("path")
+        test_name = match.group("test")
+        if test_name in tests_by_path.get(target_path, set()):
+            valid_node_ids.add((target_path, test_name))
+    return valid_node_ids
 
 
 def missing_issue39_operational_evidence_terms(row_id: str, evidence: str) -> list[tuple[str, ...]]:

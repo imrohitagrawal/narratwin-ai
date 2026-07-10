@@ -101,7 +101,10 @@ def issue39_plan_with_closed_row_and_record(
         "https://github.com/imrohitagrawal/narratwin-ai/pull/102"
     ),
     artifact_reference: str = "docs/ADR/0013-production-durability.md",
-    evidence: str = "test_issue39_closure_plan_accepts_current_matrix",
+    evidence: str = (
+        "tests/unit/test_phase1_closure_docs.py::test_issue39_closure_plan_accepts_current_matrix "
+        "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/123456789"
+    ),
     owner: str = "Storage owner",
     reviewer: str = "Architecture reviewer",
     residual_risk: str = "Accepted with production row evidence",
@@ -283,6 +286,29 @@ def test_issue39_closure_plan_rejects_context0_pr_as_final_proof(monkeypatch: An
     assert "Issue #39 closed row DUR-ACID-001 must not use Context 0 PR #64 as final proof." in failures
 
 
+def test_issue39_closure_plan_rejects_planning_pr_as_final_proof(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            child_reference=(
+                "https://github.com/imrohitagrawal/narratwin-ai/issues/101 "
+                "https://github.com/imrohitagrawal/narratwin-ai/pull/80"
+            ),
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 must not use planning PRs #64-#80 as final proof: #80" in failures
+
+
 def test_issue39_closure_plan_rejects_parent_issue_as_child_issue(monkeypatch: Any) -> None:
     plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
     row_open = (
@@ -363,6 +389,46 @@ def test_issue39_closure_plan_rejects_nonexistent_test_even_with_artifact_url(mo
                 "test_issue39_nonexistent_evidence "
                 "https://github.com/imrohitagrawal/narratwin-ai/blob/main/docs/STATUS.md"
             ),
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_bare_existing_test_name_without_node_and_ci(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="test_issue39_closure_plan_accepts_current_matrix restore drill rto rpo",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_node_id_without_ci_or_drill_artifact(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="tests/unit/test_phase1_closure_docs.py::test_issue39_closure_plan_accepts_current_matrix",
         ),
     )
 
@@ -743,6 +809,19 @@ def test_issue39_execution_strategy_branch_rejects_runtime_files(monkeypatch: An
 
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-execution-strategy may not change backend/app/stage4.py."
+    ]
+
+
+def test_issue39_unknown_generic_chunk_branch_rejects_runtime_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-02-acid-cas-kernel",
+        files=["backend/app/storage/postgres_state.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-02-acid-cas-kernel may not change "
+        "backend/app/storage/postgres_state.py."
     ]
 
 
