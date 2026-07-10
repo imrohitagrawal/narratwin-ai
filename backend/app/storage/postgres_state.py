@@ -399,6 +399,12 @@ class AcidCasKernel:
                 "Lease-guarded writes must include lease_resource_id, lease_id, and lease_epoch together."
             )
 
+        expected_resource_id = lease_resource_id_for_write(write)
+        if write.lease_resource_id != expected_resource_id:
+            raise AcidCasStaleWriteError(
+                f"{write.entity_type}:{write.entity_id} lease resource {write.lease_resource_id} does not match scoped row identity {expected_resource_id}."
+            )
+
         current = self._leases.get(write.lease_resource_id)
         if current is None or _lease_is_expired(current, now):
             raise AcidCasStaleWriteError(
@@ -478,6 +484,12 @@ def entity_key(
     project_id: str,
 ) -> EntityKey:
     return (entity_type, tenant_id, owner_id, project_id, entity_id)
+
+
+def lease_resource_id_for_write(write: TransactionWrite) -> str:
+    return (
+        f"{write.entity_type}:{write.tenant_id}:{write.owner_id}:{write.project_id}:{write.entity_id}"
+    )
 
 
 def _transaction_fingerprint(
