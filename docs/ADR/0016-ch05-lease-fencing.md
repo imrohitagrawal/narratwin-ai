@@ -78,6 +78,14 @@ lease before any compare-and-set record staging happens:
 This keeps stale writers from mutating durable rows even when their
 `expected_version` would otherwise satisfy the ACID/CAS checks.
 
+Exact committed transaction replay remains the one reviewed exception:
+
+- if `transaction_id`, `request_id`, `request_checksum`, and the full write
+  fingerprint match a previously committed transaction exactly, the kernel may
+  return the durable result without re-validating current lease ownership
+- this replay path is read-only; it must not stage or mutate any row
+- stale owners still lose authority for any fresh mutation attempt
+
 ### 4. Deterministic evidence
 
 `CH-05` implementation evidence is limited to focused unit tests in
