@@ -183,6 +183,18 @@ ISSUE_39_CH01_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_storage_migrations.py",
 }
+ISSUE_39_CH02_ALLOWED_CHANGED_FILES = {
+    "backend/app/storage/__init__.py",
+    "backend/app/storage/postgres_state.py",
+    "docs/ADR/0014-ch02-acid-cas-storage-kernel.md",
+    "docs/LOCAL_DEVELOPMENT.md",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_postgres_state.py",
+}
 ISSUE_39_CONTEXT4_ALLOWED_CHANGED_FILES = {
     "docs/ADR/0011-context4-backup-restore-drill.md",
     "docs/STATUS.md",
@@ -1517,6 +1529,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_39_CONTEXT3_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch01-"):
         allowed_files = ISSUE_39_CH01_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-ch-02-"):
+        allowed_files = ISSUE_39_CH02_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-context4-"):
         allowed_files = ISSUE_39_CONTEXT4_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-context5-"):
