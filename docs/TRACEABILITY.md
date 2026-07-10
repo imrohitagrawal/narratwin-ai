@@ -149,6 +149,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `docs/ADR/0008-postgresql-durability-schema-boundary.md` | PostgreSQL durability boundary contract for production metadata, entity scopes, Open/Terminal/Error replay semantics, compare-and-set concurrency behavior, and deferred migration/retry ownership for issue `#39` Context 1 | Phase 1 Closure / `#65` | Added |
 | `docs/ADR/0009-context2-idempotency-lease-outbox-contract.md` | Replay-safe idempotency, lease ownership, and outbox-at-least-once contracts for issue `#39` Context 2 | Phase 1 Closure / `#66` | Added |
 | `docs/ADR/0010-context3-migrations-rollback-compatibility.md` | Migration expand/contract strategy, forward-only rollback posture, schema compatibility windows, and artifact-state compatibility planning for issue `#39` Context 3 | Phase 1 Closure / `#67`, PR `#77` | Added |
+| `docs/ADR/0011-context4-backup-restore-drill.md` | Backup scope boundaries, excluded artifacts, retention and RTO/RPO assumptions, restore integrity verification, restore drill protocol, evidence-pack format, escalation and metrics/events contracts for issue `#39` Context 4 | Phase 1 Closure / `#68` | Added |
 
 ## Document Ownership
 
@@ -206,3 +207,5 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | 2026-07-10 | `#65` | Add PostgreSQL durability boundary ADR | Adds Context 1 design for production durability (`DUR-ACID-001`, `DUR-STAGE4-001`) with explicit entity boundary, state transition model, conflict semantics, and ownership/deferral points. |
 | 2026-07-10 | `#66` | Add Context 2 production contract planning | Adds advisory idempotency replay, lease ownership, and outbox contracts for `DUR-IDEMP-001`, `DUR-LEASE-001`, and `DUR-OUTBOX-001` plus matrix evidence mappings. |
 | 2026-07-10 | `#67` | Add Context 3 migration/rollback planning | Adds advisory migration-expand/contract, rollback compatibility, and artifact-ordering guidance for `DUR-MIG-001` and `DUR-ROLLBACK-001` plus phase-1 closure allowlist/tests updates for context3 scope. |
+| 2026-07-10 | `#77` | Close context 3 planning issue | Merged context 3 migration/rollback planning and advisory ADR, classifying issue `#67` as closed and keeping runtime migration implementation deferred to follow-on contexts. |
+| 2026-07-10 | `#68` | Add context 4 backup/restore planning | Adds advisory-only restore drill ADR and evidence protocol for `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` with runtime implementation deferred. |

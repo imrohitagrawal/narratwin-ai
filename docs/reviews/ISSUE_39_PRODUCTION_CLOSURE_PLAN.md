@@ -34,6 +34,9 @@ Create a durable, reviewed production-closure contract for GitHub issue `#39` th
   (`DUR-MIG-001`, `DUR-ROLLBACK-001`, plus optional artifact-state compatibility for
   `DUR-STAGE6-001` and `DUR-STAGE7-001`) and remains advisory-only until runtime
   implementation contexts are active.
+- Issue `#68` is the planning context for backup/restore drill planning
+  (`DUR-RESTORE-001`, `OPS-METRICS-001`, `OPS-SLO-001`), remains advisory-only,
+  and defers runtime backup tooling and restore execution.
 
 ## Non-Goals
 
@@ -67,7 +70,8 @@ Local/test defaults (`in-memory`, local JSON, staged files, local mocks) remain 
    metadata plus rerun semantics. This context is planning-only in Issue `#66`.
 4. **Context 3:** Migrations and rollback compatibility planning for `DUR-MIG-001`,
    `DUR-ROLLBACK-001`, and artifact-state sequencing for `DUR-STAGE6-001` / `DUR-STAGE7-001`.
-5. **Context 4:** Monitoring stack rollout, metrics, alerts, first-hour watch with follow-up checkpoints, and operations runbook.
+5. **Context 4:** Backup and restore drill planning with durability artifacts,
+   RTO/RPO targets, restore integrity checks, metrics/events contracts, and escalation runbook.
 6. **Context 5:** Final closure evidence sweep, cross-context reconciliation, and final `#39` disposition decision.
 
 ## Context 1: PostgreSQL Durability ADR and Schema Boundary
@@ -138,7 +142,7 @@ All follow-on work must map every matrix ID to one or more child issues/PRs.
 | `ISSUE-39-1` | Postgres durability architecture | PostgreSQL durability ADR + production schema boundary (`docs/ADR/0008-postgresql-durability-schema-boundary.md`) | DUR-ACID-001, DUR-STAGE4-001 | Architecture | ADR + schema boundary design checklist |
 | `#66` | Idempotency, leases, and outbox context2 decomposition for production durability | Replay-safe idempotency contract, lease fencing/ownership transfer contract, outbox-at-least-once contract, and one-to-one test/evidence matrix mapping | DUR-IDEMP-001, DUR-LEASE-001, DUR-OUTBOX-001 | Runtime | Advisory-only ADR + planned contract tests for implementation context |
 | `#67` | Migrations and rollback compatibility decomposition for production durability | Versioned expand/contract migration strategy, migration ordering constraints, rollback safety posture, and optional artifact-state compatibility planning for Stage 6/Stage 7 | DUR-MIG-001, DUR-ROLLBACK-001, DUR-STAGE6-001, DUR-STAGE7-001 | Runtime + Storage | Advisory-only migration ADR + planned execution-handoff matrix mapping |
-| `ISSUE-39-4` (template) | Backup and restore | RPO/RTO targets, backup design, restore drill evidence | DUR-RESTORE-001, OPS-METRICS-001, OPS-SLO-001 | Operations | Runbook + drill log + evidence bundle |
+| `#68` | Backup and restore drill planning and context handoff | Backup scope boundaries, exclusion policy, restore integrity checks, RTO/RPO targets, evidence pack definitions, and escalation protocol | DUR-RESTORE-001, OPS-METRICS-001, OPS-SLO-001 | Operations | `docs/ADR/0011-context4-backup-restore-drill.md` + row-specific planned evidence IDs |
 | `ISSUE-39-5` (template) | Monitoring and alerts | Dashboard schema, SLO/error-budget thresholds, alert routing, first-hour watch SOP with 120/180-minute follow-up checkpoints | OPS-METRICS-001, OPS-SLO-001, OPS-ALERT-001, OPS-WATCH-001 | Observability | Dashboard definition + alert tests + watch evidence |
 | `ISSUE-39-6` (template) | Rollback + media/privacy + scope | Rollback comms, consent/provenance schema, provider posture, retention/deletion/redaction, untrusted-input handling, governance scope gate | MEDIA-CONSENT-001, MEDIA-REVOKE-001, MEDIA-PROVENANCE-001, MEDIA-DISCLOSURE-001, PROVIDER-POSTURE-001, SEC-RETENTION-001, SEC-UNTRUSTED-001, OPS-ROLLBACK-001, GOV-SCOPE-001 | Security + Release + Governance | Signed schema, comms evidence, scope gate |
 
@@ -189,6 +193,26 @@ and paid-provider activation policy remain unchanged.
   production implementation contexts.
 - ADRs, planning matrices, and branch allowlist/checker updates are the only artifacts
   added in this context.
+
+## Issue #68 (Context 4) Status and Evidence Mapping
+
+### Matrix planning annotations for `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001`
+
+- Matrix status remains exactly `Open` for `DUR-RESTORE-001`, `OPS-METRICS-001`, and
+  `OPS-SLO-001`.
+- Issue `#68` is the planning handoff target for these rows; this context records
+  context handoff artifacts and evidence pack contracts only. Runtime implementation
+  remains deferred.
+- Runtime backup tooling, restore automation, storage operators, and restore execution
+  are explicitly deferred to follow-up implementation contexts.
+
+### One-to-one test/evidence row mappings
+
+| Matrix ID | Issue #68 evidence artifact | Planned deterministic evidence row |
+|---|---|---|
+| `DUR-RESTORE-001` | `docs/ADR/0011-context4-backup-restore-drill.md` (Scope, restore protocol, and evidence pack section) | `CTX4-RESTORE-EVID-001`: planned restore manifest, restore target definition, drill replay checklist, and evidence pack index. |
+| `OPS-METRICS-001` | `docs/ADR/0011-context4-backup-restore-drill.md` (Restore and operational metric contracts) | `CTX4-METRICS-EVID-001`: planned command/event catalog, queue/lease/outbox metric sampling, and restore-lag validation snapshots. |
+| `OPS-SLO-001` | `docs/ADR/0011-context4-backup-restore-drill.md` (RTO/RPO and escalation thresholds) | `CTX4-ESCALATION-EVID-001` plus `CTX4-POSTDRILL-EVID-001`: planned RTO/RPO proof pack, escalation matrix, and watch/closure summary. |
 
 ## Human-Only Gates
 

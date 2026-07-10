@@ -278,6 +278,35 @@ def test_issue39_context3_issue67_branch_rejects_unrelated_docs(monkeypatch: Any
     ]
 
 
+def test_issue39_context4_issue68_branch_allows_backup_restore_drill_artifacts(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context4-backup-restore-drill",
+        files=[
+            "docs/ADR/0011-context4-backup-restore-drill.md",
+            "docs/STATUS.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_context4_issue68_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context4-backup-restore-drill",
+        files=["backend/app/stage7.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-context4-backup-restore-drill may not change backend/app/stage7.py."
+    ]
+
+
 def test_issue39_context0_branch_allows_targeted_process_and_skill_docs(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
