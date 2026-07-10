@@ -207,6 +207,35 @@ def test_issue39_context1_issue65_branch_rejects_runtime_product_files(monkeypat
     ]
 
 
+def test_issue39_context2_issue66_branch_allows_idempotency_lease_outbox_adr(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context2-idempotency-lease-outbox",
+        files=[
+            "docs/ADR/0009-context2-idempotency-lease-outbox-contract.md",
+            "docs/STATUS.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_context2_issue66_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context2-idempotency-lease-outbox",
+        files=["backend/app/stage4.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-context2-idempotency-lease-outbox may not change backend/app/stage4.py."
+    ]
+
+
 def test_issue39_context0_branch_allows_targeted_process_and_skill_docs(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
