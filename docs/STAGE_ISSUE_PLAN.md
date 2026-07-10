@@ -584,6 +584,24 @@ they may touch only docs, guardrails, tests, PR templates, and CI workflow
 guardrail wiring. They must not touch backend, frontend, schema, migration,
 worker, provider, monitoring, database, Docker, or runtime product files.
 
+`phase-1-closure-39-ch01-*` is reserved for the `CH-01` migration baseline
+chunk for issue `#39` child issue `#86`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/migrations.py`
+- `docs/ADR/0013-ch01-migration-baseline-runner.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_storage_migrations.py`
+
+`phase-1-closure-39-ch01-*` must not touch Stage 4/6/7 runtime orchestration,
+provider/media logic, ACID/CAS durable metadata kernel work, backup/restore,
+monitoring, release posture, or unrelated governance/process files.
+
 Additional allowed implementation/evidence changes for Phase 1 Closure issue
 `#39`:
 

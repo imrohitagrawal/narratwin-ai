@@ -125,6 +125,13 @@ bash scripts/ci/docker-build.sh
 bash scripts/ci/eval-smoke.sh
 ```
 
+Focused CH-01 migration-baseline checks:
+
+```bash
+uv run pytest -p no:cacheprovider tests/unit/test_storage_migrations.py
+uv run pytest -p no:cacheprovider tests/unit/test_phase1_closure_docs.py
+```
+
 If `make` is unavailable, run the closest applicable checks manually:
 
 ```bash
