@@ -390,9 +390,12 @@ class AcidCasKernel:
         event_type: str,
         consumer_name: str,
         resource_version: int,
+        dispatcher_id: str,
+        now: datetime | None = None,
     ) -> ConsumerDeliveryRecord:
         key = (event_type, resource_id, event_id, consumer_name, resource_version)
         recorded_at = _now()
+        current_time = _coerce_datetime(now)
         with self._lock:
             committed_event = self._outbox_events.get((resource_id, event_id))
             if committed_event is None:
@@ -404,6 +407,15 @@ class AcidCasKernel:
             ):
                 raise AcidCasConflictError(
                     f"Consumer delivery for {resource_id}:{event_id} does not match committed outbox event identity/version."
+                )
+            if (
+                committed_event.state != "DELIVERING"
+                or committed_event.locked_by != dispatcher_id
+                or committed_event.locked_until is None
+                or _parse_timestamp(committed_event.locked_until) <= current_time
+            ):
+                raise AcidCasConflictError(
+                    f"Consumer delivery for {resource_id}:{event_id} requires active dispatcher ownership."
                 )
             existing = self._consumer_deliveries.get(key)
             if existing is None:

@@ -830,6 +830,50 @@ def test_context2_outbox_writes_state_and_event_atomically() -> None:
             ),
         )
 
+    with pytest.raises(AcidCasConflictError, match="already committed"):
+        kernel.commit(
+            transaction_id="tx-outbox-4",
+            request_id="req-outbox-4",
+            request_checksum="sha256:req-outbox-4",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=1,
+                    state="OPEN",
+                    payload={"status": "processing"},
+                ),
+            ),
+            outbox_events=(
+                OutboxEventWrite(
+                    event_id="evt-1",
+                    event_type="run.status.changed",
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    resource_version=2,
+                    operation_id="op-4",
+                    payload_hash="sha256:evt-1-dup",
+                    payload={"status": "processing"},
+                ),
+            ),
+        )
+
+    stored = kernel.get(
+        entity_type="run",
+        entity_id="run-1",
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+    )
+    assert stored.version == 1
+    assert stored.payload == {"status": "queued"}
+
 
 def test_context2_outbox_replays_committed_transaction_without_duplicate_events() -> None:
     kernel = AcidCasKernel()
@@ -1304,12 +1348,20 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
         ),
     )
 
+    acquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        lock_ttl_seconds=30,
+        limit=10,
+    )
+    assert {event.event_id for event in acquired} == {"evt-1", "evt-2", "evt-3"}
+
     first = kernel.record_consumer_delivery(
         event_id="evt-1",
         resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
         resource_version=1,
+        dispatcher_id="worker-1",
     )
     duplicate = kernel.record_consumer_delivery(
         event_id="evt-1",
@@ -1317,6 +1369,7 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
         resource_version=1,
+        dispatcher_id="worker-1",
     )
     other_version = kernel.record_consumer_delivery(
         event_id="evt-3",
@@ -1324,6 +1377,7 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
         resource_version=2,
+        dispatcher_id="worker-1",
     )
     other_consumer = kernel.record_consumer_delivery(
         event_id="evt-2",
@@ -1331,6 +1385,7 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
         event_type="run.status.changed",
         consumer_name="audit-consumer",
         resource_version=1,
+        dispatcher_id="worker-1",
     )
 
     assert first.duplicate is False
@@ -1386,7 +1441,25 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
             event_type="run.status.changed",
             consumer_name="walkthrough-consumer",
             resource_version=1,
+            dispatcher_id="worker-1",
         )
+
+    with pytest.raises(AcidCasConflictError, match="requires active dispatcher ownership"):
+        kernel.record_consumer_delivery(
+            event_id="evt-1",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+            event_type="run.status.changed",
+            consumer_name="walkthrough-consumer",
+            resource_version=1,
+            dispatcher_id="worker-1",
+        )
+
+    acquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    assert len(acquired) == 1
 
     with pytest.raises(AcidCasConflictError, match="does not match committed outbox event"):
         kernel.record_consumer_delivery(
@@ -1395,6 +1468,7 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
             event_type="other.event",
             consumer_name="walkthrough-consumer",
             resource_version=1,
+            dispatcher_id="worker-1",
         )
 
     with pytest.raises(AcidCasConflictError, match="does not match committed outbox event"):
@@ -1404,6 +1478,83 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
             event_type="run.status.changed",
             consumer_name="walkthrough-consumer",
             resource_version=2,
+            dispatcher_id="worker-1",
+        )
+
+
+def test_context2_outbox_consumer_delivery_rejects_expired_or_superseded_dispatch() -> None:
+    kernel = AcidCasKernel()
+    base = datetime(2026, 7, 11, 14, 0, tzinfo=UTC)
+
+    kernel.commit(
+        transaction_id="tx-outbox-stale-1",
+        request_id="req-outbox-stale-1",
+        request_checksum="sha256:req-outbox-stale-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-stale-1",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-stale-1",
+                payload_hash="sha256:evt-stale-1",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    acquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        now=base,
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    assert len(acquired) == 1
+
+    with pytest.raises(AcidCasConflictError, match="requires active dispatcher ownership"):
+        kernel.record_consumer_delivery(
+            event_id="evt-stale-1",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+            event_type="run.status.changed",
+            consumer_name="walkthrough-consumer",
+            resource_version=1,
+            dispatcher_id="worker-1",
+            now=base + timedelta(seconds=31),
+        )
+
+    reacquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-2",
+        now=base + timedelta(seconds=31),
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    assert len(reacquired) == 1
+
+    with pytest.raises(AcidCasConflictError, match="requires active dispatcher ownership"):
+        kernel.record_consumer_delivery(
+            event_id="evt-stale-1",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+            event_type="run.status.changed",
+            consumer_name="walkthrough-consumer",
+            resource_version=1,
+            dispatcher_id="worker-1",
+            now=base + timedelta(seconds=32),
         )
 
 
