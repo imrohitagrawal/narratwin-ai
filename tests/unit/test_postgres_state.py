@@ -1879,6 +1879,54 @@ def test_context2_lease_rejects_stale_writer_epoch() -> None:
     )
 
 
+def test_context2_lease_replays_guarded_transaction_after_lease_transfer() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+    writes = (
+        _lease_guarded_run_write(
+            expected_version=None,
+            status="queued",
+            lease_id="worker-1",
+            lease_epoch=lease.lease_epoch,
+        ),
+    )
+
+    first = kernel.commit(
+        transaction_id="tx-lease-replay-1",
+        request_id="req-lease-replay-1",
+        request_checksum="sha256:req-lease-replay-1",
+        writes=writes,
+        now=acquired_at + timedelta(seconds=1),
+    )
+
+    kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-2",
+        lease_ttl_ms=10_000,
+        now=acquired_at + timedelta(seconds=12),
+    )
+
+    replayed = kernel.commit(
+        transaction_id="tx-lease-replay-1",
+        request_id="req-lease-replay-1",
+        request_checksum="sha256:req-lease-replay-1",
+        writes=writes,
+        now=acquired_at + timedelta(seconds=13),
+    )
+
+    assert first.outcome == "applied"
+    assert replayed.outcome == "replayed"
+    assert replayed.replayed is True
+    assert replayed.records[0].version == 1
+
+
 def test_context2_lease_expiry_blocks_stale_owner_commit() -> None:
     kernel = AcidCasKernel()
     acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
@@ -2082,6 +2130,26 @@ def test_context2_lease_release_removes_active_lease_and_next_acquire_advances_e
         now=acquired_at + timedelta(seconds=2),
     )
     assert reacquired.lease_epoch == lease.lease_epoch + 1
+
+    with pytest.raises(AcidCasStaleWriteError, match="requires lease fencing fields"):
+        kernel.commit(
+            transaction_id="tx-lease-release-unguarded",
+            request_id="req-lease-release-unguarded",
+            request_checksum="sha256:req-lease-release-unguarded",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+            now=acquired_at + timedelta(seconds=1),
+        )
 
 
 def test_context2_lease_release_rejects_stale_owner() -> None:
