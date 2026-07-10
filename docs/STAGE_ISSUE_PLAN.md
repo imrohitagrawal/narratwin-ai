@@ -553,6 +553,7 @@ Allowed governance/reporting changes for Module A:
 - `docs/TRACEABILITY.md`
 - `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md`
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md`
+- `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md`
 - `docs/reviews/PROCESS_HARDENING_FINDINGS.md`
 - `docs/evals/phase1_golden_questions.jsonl`
 - `docs/demo/PHASE_1_DEMO_SCRIPT.md`
@@ -599,6 +600,7 @@ Additional allowed implementation/evidence changes for Phase 1 Closure issue
 - `docs/LOCAL_DEVELOPMENT.md`
 - `docs/OBSERVABILITY_AND_COST.md`
 - `docs/PORTABILITY_STRATEGY.md`
+- `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md`
 - `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
 - `docs/RISK_REGISTER.md`
 - `docs/reviews/RISK_REGISTER.md`

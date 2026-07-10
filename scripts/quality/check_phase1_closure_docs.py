@@ -31,6 +31,7 @@ REQUIRED_PHASE1_FILES = {
     "docs/demo/PHASE_1_DEMO_SCRIPT.md",
     "docs/demo/PHASE_1_DEMO_CHECKLIST.md",
     "docs/demo/PHASE_1_SCREENSHOT_GUIDE.md",
+    "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
 }
 
 MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
@@ -61,6 +62,15 @@ MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
 PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "scripts/guardrails_check.py",
     "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_72_ALLOWED_CHANGED_FILES = PROCESS_ONLY_ALLOWED_CHANGED_FILES | {
@@ -316,6 +326,142 @@ REQUIRED_ISSUE_39_MATRIX_IDS = {
     "GOV-SCOPE-001",
 }
 VALID_ISSUE_39_MATRIX_STATUSES = {"open", "closed"}
+REPOSITORY_FULL_NAME = "imrohitagrawal/narratwin-ai"
+ISSUE_39_PLANNING_PR_NUMBERS = {str(number) for number in range(64, 81)}
+EXPECTED_ISSUE_39_CHUNK_MATRIX_IDS = {
+    "CH-00": {"GOV-SCOPE-001"},
+    "CH-01": {"DUR-MIG-001"},
+    "CH-02": {"DUR-ACID-001"},
+    "CH-03": {"DUR-STAGE4-001"},
+    "CH-04": {"DUR-IDEMP-001"},
+    "CH-05": {"DUR-LEASE-001"},
+    "CH-06": {"DUR-OUTBOX-001"},
+    "CH-07": {"DUR-STAGE6-001"},
+    "CH-08": {"DUR-STAGE7-001"},
+    "CH-09": {"DUR-ROLLBACK-001"},
+    "CH-10": {"OPS-METRICS-001"},
+    "CH-11": {"OPS-SLO-001"},
+    "CH-12": {"OPS-ALERT-001"},
+    "CH-13": {"OPS-WATCH-001"},
+    "CH-14": {"DUR-RESTORE-001"},
+    "CH-15": {"OPS-ROLLBACK-001"},
+    "CH-16": {"MEDIA-CONSENT-001"},
+    "CH-17": {"MEDIA-REVOKE-001"},
+    "CH-18": {"MEDIA-PROVENANCE-001"},
+    "CH-19": {"MEDIA-DISCLOSURE-001"},
+    "CH-20": {"PROVIDER-POSTURE-001"},
+    "CH-21": {"SEC-RETENTION-001"},
+    "CH-22": {"SEC-UNTRUSTED-001"},
+    "CH-23": REQUIRED_ISSUE_39_MATRIX_IDS,
+}
+EXPECTED_ISSUE_39_CHUNK_DEPENDENCIES = {
+    "CH-00": set(),
+    "CH-01": {"CH-00"},
+    "CH-02": {"CH-01"},
+    "CH-03": {"CH-02", "CH-04", "CH-06"},
+    "CH-04": {"CH-02"},
+    "CH-05": {"CH-02"},
+    "CH-06": {"CH-02"},
+    "CH-07": {"CH-03", "CH-04"},
+    "CH-08": {"CH-03", "CH-04", "CH-16"},
+    "CH-09": {"CH-01", "CH-02", "CH-03"},
+    "CH-10": {"CH-04", "CH-05", "CH-06"},
+    "CH-11": {"CH-10"},
+    "CH-12": {"CH-10", "CH-11"},
+    "CH-13": {"CH-12"},
+    "CH-14": {"CH-01", "CH-02", "CH-10"},
+    "CH-15": {"CH-09", "CH-12", "CH-13"},
+    "CH-16": {"CH-02"},
+    "CH-17": {"CH-16"},
+    "CH-18": {"CH-08", "CH-16"},
+    "CH-19": {"CH-18"},
+    "CH-20": {"CH-18"},
+    "CH-21": {"CH-02", "CH-14", "CH-16", "CH-18"},
+    "CH-22": {"CH-03", "CH-07", "CH-08", "CH-21"},
+    "CH-23": {f"CH-{index:02d}" for index in range(23)},
+}
+ISSUE_39_SENSITIVE_ROW_REQUIRED_TERMS = {
+    "MEDIA-CONSENT-001": (
+        "actor",
+        "timestamp",
+        "consent text/version",
+        "artifact refs",
+        "source-run",
+        "scope",
+        "audit retention",
+    ),
+    "MEDIA-REVOKE-001": ("retain", "block replay", "takedown", "communication paths"),
+    "MEDIA-PROVENANCE-001": (
+        "source run",
+        "consent record",
+        "artifact checksum",
+        "identity/likeness denial",
+    ),
+    "MEDIA-DISCLOSURE-001": ("disclosure versioning", "validation", "artifacts"),
+    "PROVIDER-POSTURE-001": (
+        "legal/license",
+        "mock/local",
+        "no real keys in local/dev/test/ci",
+        "deny-by-default egress",
+        "key isolation",
+        "no secret logging",
+        "prompt inclusion",
+        "rollback disablement",
+        "explicit production enablement",
+    ),
+    "SEC-RETENTION-001": (
+        "encryption",
+        "redaction",
+        "retention",
+        "deletion/erasure",
+        "backup expiry",
+        "restore re-delete",
+        "access control",
+        "replay/export blocking",
+    ),
+    "SEC-UNTRUSTED-001": (
+        "uploaded docs",
+        "prompts",
+        "transcripts",
+        "provider outputs",
+        "model outputs",
+        "restored artifacts",
+        "exported media metadata",
+        "replayed provenance",
+        "validation",
+        "output encoding",
+        "log redaction",
+        "prompt-injection/poisoned-retrieval",
+        "restore-time revalidation",
+        "replay/export safety",
+    ),
+}
+ISSUE_39_OPERATIONAL_CLOSURE_EVIDENCE_TERMS = {
+    "DUR-MIG-001": (("migration",), ("dry run", "execution log", "migration log")),
+    "DUR-ROLLBACK-001": (("rollback",), ("compatibility", "forward repair")),
+    "DUR-RESTORE-001": (("restore drill",), ("rto",), ("rpo",)),
+    "OPS-METRICS-001": (("metric",), ("dashboard", "query")),
+    "OPS-SLO-001": (("slo",), ("threshold", "error budget")),
+    "OPS-ALERT-001": (("alert",), ("route", "routing")),
+    "OPS-WATCH-001": (("watch log",), ("120",), ("180",)),
+    "OPS-ROLLBACK-001": (("rollback comms", "rollback communication"),),
+    "MEDIA-CONSENT-001": (("consent",), ("actor",), ("scope",), ("audit",)),
+    "MEDIA-REVOKE-001": (("revocation",), ("block replay",), ("takedown",)),
+    "MEDIA-PROVENANCE-001": (("provenance",), ("source run",), ("checksum",)),
+    "MEDIA-DISCLOSURE-001": (("disclosure",), ("version",), ("export", "artifact")),
+    "PROVIDER-POSTURE-001": (
+        ("provider",),
+        ("legal/license",),
+        ("egress",),
+        ("key",),
+        ("explicit production enablement",),
+    ),
+    "SEC-RETENTION-001": (("retention",), ("deletion", "erasure"), ("redaction",), ("restore re-delete",)),
+    "SEC-UNTRUSTED-001": (("untrusted",), ("validation",), ("output encoding",), ("log redaction",)),
+}
+ISSUE_39_PRODUCTION_GRADE_ROW_PREFIXES = ("DUR-", "OPS-", "MEDIA-", "SEC-", "PROVIDER-")
+ISSUE_39_DRILL_LOG_PREFIXES = ("docs/reviews/drills/", "reports/", "artifacts/", "logs/")
+ISSUE_39_DRILL_LOG_SUFFIXES = {".json", ".jsonl", ".log", ".md", ".txt"}
 
 
 def run_git(args: list[str]) -> str:
@@ -827,6 +973,7 @@ def check_issue39_closure_plan(failures: list[str]) -> None:
         return
 
     seen_ids: set[str] = set()
+    closed_ids: set[str] = set()
     for row in rows:
         if len(row) != len(headers):
             failures.append(f"Issue #39 matrix row must have 6 columns: {row}")
@@ -840,10 +987,20 @@ def check_issue39_closure_plan(failures: list[str]) -> None:
             failures.append(f"Issue #39 matrix row has invalid ID: {row_id}")
         if status.lower() not in VALID_ISSUE_39_MATRIX_STATUSES:
             failures.append(f"Issue #39 matrix row {row_id} status must be Open or Closed; got {status}.")
+        if status.lower() == "closed":
+            closed_ids.add(row_id)
         for value in row[1:5]:
             if value.strip().lower() in {"", "n/a", "na", "todo", "tbd", "pending"}:
                 failures.append(f"Issue #39 matrix row {row_id} has placeholder evidence contract content.")
                 break
+        required_terms = ISSUE_39_SENSITIVE_ROW_REQUIRED_TERMS.get(row_id, ())
+        row_contract = " ".join(row[1:5]).lower()
+        missing_terms = [term for term in required_terms if term.lower() not in row_contract]
+        if missing_terms:
+            failures.append(
+                f"Issue #39 matrix row {row_id} missing required contract terms: "
+                + ", ".join(missing_terms)
+            )
 
     missing_ids = sorted(REQUIRED_ISSUE_39_MATRIX_IDS - seen_ids)
     if missing_ids:
@@ -852,6 +1009,462 @@ def check_issue39_closure_plan(failures: list[str]) -> None:
     unexpected_ids = sorted(seen_ids - REQUIRED_ISSUE_39_MATRIX_IDS)
     if unexpected_ids:
         failures.append("Issue #39 production closure plan has unexpected matrix IDs: " + ", ".join(unexpected_ids))
+
+    if closed_ids:
+        check_issue39_closed_row_records(failures, read(rel), closed_ids)
+
+
+def check_issue39_closed_row_records(failures: list[str], text: str, closed_ids: set[str]) -> None:
+    headers, rows = parse_table_lines(section(text, "Row Closure Records"))
+    normalized_headers = [normalize_header(header) for header in headers]
+    required_headers = (
+        "Matrix ID",
+        "Child issue / PR",
+        "Artifact reference",
+        "Validation or human evidence",
+        "Owner",
+        "Reviewer",
+        "Residual-risk decision",
+        "Timestamp / merge commit",
+        "Satisfies row because",
+    )
+    missing_headers = [header for header in required_headers if normalize_header(header) not in normalized_headers]
+    if missing_headers:
+        failures.append("Issue #39 Row Closure Records missing headers: " + ", ".join(missing_headers))
+        return
+
+    index = {header: normalized_headers.index(normalize_header(header)) for header in required_headers}
+    records_by_id: dict[str, list[str]] = {}
+    for row in rows:
+        if len(row) != len(headers):
+            failures.append(f"Issue #39 row closure record has wrong column count: {row}")
+            continue
+        row_id = row[index["Matrix ID"]].strip("` ")
+        records_by_id[row_id] = row
+
+    for row_id in sorted(closed_ids):
+        record = records_by_id.get(row_id)
+        if not record:
+            failures.append(f"Issue #39 matrix row {row_id} is Closed without a row closure record.")
+            continue
+        for header in required_headers[1:]:
+            value = record[index[header]].strip()
+            if value.lower() in {"", "n/a", "na", "todo", "tbd", "pending"}:
+                failures.append(f"Issue #39 closed row {row_id} has placeholder {header}.")
+        child_reference = record[index["Child issue / PR"]]
+        issue_numbers = same_repo_issue_numbers(child_reference)
+        pr_numbers = same_repo_pr_numbers(child_reference)
+        if not issue_numbers or not pr_numbers:
+            failures.append(
+                f"Issue #39 closed row {row_id} must cite concrete same-repository child issue and PR URLs."
+            )
+        if "39" in issue_numbers:
+            failures.append(f"Issue #39 closed row {row_id} must cite a child issue distinct from #39.")
+        planning_pr_numbers = sorted(pr_numbers & ISSUE_39_PLANNING_PR_NUMBERS, key=int)
+        if planning_pr_numbers:
+            failures.append(
+                f"Issue #39 closed row {row_id} must not use planning PRs #64-#80 as final proof: "
+                + ", ".join(f"#{number}" for number in planning_pr_numbers)
+            )
+        if "64" in pr_numbers:
+            failures.append(f"Issue #39 closed row {row_id} must not use Context 0 PR #64 as final proof.")
+        artifact = record[index["Artifact reference"]]
+        evidence = record[index["Validation or human evidence"]]
+        reason = record[index["Satisfies row because"]]
+        combined_evidence = " ".join((artifact, evidence, reason)).lower()
+        if "docs/reviews/issue_39_production_closure_plan.md" in artifact.lower() and not any(
+            token in combined_evidence for token in ("test_", "actions/runs/", "drill log", "human-only")
+        ):
+            failures.append(
+                f"Issue #39 closed row {row_id} must not use the production closure plan alone as final proof."
+            )
+        if not has_concrete_issue39_closure_evidence(
+            row_id=row_id,
+            evidence=evidence,
+            owner=record[index["Owner"]],
+            residual_risk=record[index["Residual-risk decision"]],
+        ):
+            failures.append(f"Issue #39 closed row {row_id} lacks concrete validation or human-only evidence.")
+        missing_groups = missing_issue39_operational_evidence_terms(row_id, combined_evidence)
+        if missing_groups:
+            failures.append(
+                f"Issue #39 closed row {row_id} missing operational closure evidence terms: "
+                + "; ".join(" or ".join(group) for group in missing_groups)
+            )
+
+
+def same_repo_issue_numbers(text: str) -> set[str]:
+    return set(
+        re.findall(
+            rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/issues/(\d+)\b",
+            text,
+            flags=re.I,
+        )
+    )
+
+
+def same_repo_pr_numbers(text: str) -> set[str]:
+    return set(
+        re.findall(
+            rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/pull/(\d+)\b",
+            text,
+            flags=re.I,
+        )
+    )
+
+
+def has_concrete_issue39_closure_evidence(
+    *, row_id: str, evidence: str, owner: str, residual_risk: str
+) -> bool:
+    normalized_evidence = evidence.lower()
+    cited_tests = set(AUTOMATED_EVIDENCE_TEST.findall(normalized_evidence))
+    valid_node_ids = valid_pytest_node_ids_in_text(normalized_evidence)
+    if cited_tests and {test_name for _, test_name in valid_node_ids} != cited_tests:
+        return False
+    has_actions_run = has_same_repo_actions_run_or_artifact_url(normalized_evidence)
+    has_drill_log = has_existing_drill_log_reference(normalized_evidence, row_id=row_id)
+    has_automated_evidence = bool(valid_node_ids and (has_actions_run or has_drill_log))
+    if row_id.startswith(ISSUE_39_PRODUCTION_GRADE_ROW_PREFIXES):
+        return has_automated_evidence
+    if has_automated_evidence:
+        return True
+    if has_actions_run:
+        return True
+    if has_drill_log:
+        return True
+    if "human-only" in normalized_evidence and owner.strip() and residual_risk.strip().lower() not in {
+        "",
+        "n/a",
+        "na",
+        "todo",
+        "tbd",
+        "pending",
+    }:
+        return True
+    return False
+
+
+def has_same_repo_actions_run_or_artifact_url(evidence: str) -> bool:
+    boundary = r"(?=$|[\s),.;:])"
+    run_pattern = rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+{boundary}"
+    artifact_pattern = (
+        rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+/artifacts/\d+{boundary}"
+    )
+    return bool(re.search(run_pattern, evidence) or re.search(artifact_pattern, evidence))
+
+
+def has_existing_drill_log_reference(evidence: str, *, row_id: str) -> bool:
+    if "drill log" not in evidence:
+        return False
+    for match in re.finditer(r"\b(?P<path>(?:docs|reports|artifacts|logs)/[A-Za-z0-9_./-]+)", evidence):
+        path = match.group("path").rstrip(".,;:)")
+        if ".." in Path(path).parts:
+            continue
+        if not path.startswith(ISSUE_39_DRILL_LOG_PREFIXES):
+            continue
+        resolved = (ROOT / path).resolve()
+        try:
+            resolved.relative_to(ROOT)
+        except ValueError:
+            continue
+        if resolved.is_file() and drill_log_file_satisfies_row(resolved, row_id):
+            return True
+    return has_same_repo_actions_run_or_artifact_url(evidence)
+
+
+def drill_log_file_satisfies_row(path: Path, row_id: str) -> bool:
+    if path.suffix.lower() not in ISSUE_39_DRILL_LOG_SUFFIXES:
+        return False
+    content = path.read_text(encoding="utf-8").lower()
+    if "drill" not in content:
+        return False
+    required_groups = ISSUE_39_OPERATIONAL_CLOSURE_EVIDENCE_TERMS.get(row_id, ())
+    return all(any(term in content for term in group) for group in required_groups)
+
+
+def valid_pytest_node_ids_in_text(text: str) -> set[tuple[str, str]]:
+    tests_by_path = known_tests_by_path()
+    valid_node_ids: set[tuple[str, str]] = set()
+    for match in re.finditer(r"\b(?P<path>tests/[A-Za-z0-9_./-]+\.py)::(?P<test>test_[A-Za-z0-9_]+)\b", text):
+        target_path = match.group("path")
+        test_name = match.group("test")
+        if test_name in tests_by_path.get(target_path, set()):
+            valid_node_ids.add((target_path, test_name))
+    return valid_node_ids
+
+
+def missing_issue39_operational_evidence_terms(row_id: str, evidence: str) -> list[tuple[str, ...]]:
+    required_groups = ISSUE_39_OPERATIONAL_CLOSURE_EVIDENCE_TERMS.get(row_id, ())
+    return [group for group in required_groups if not any(term in evidence for term in group)]
+
+
+def check_issue39_execution_strategy(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md"
+    path = ROOT / rel
+    if not path.is_file():
+        failures.append(f"Missing required issue #39 execution strategy: {rel}")
+        return
+
+    text = read(rel)
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Objective",
+            "Tracking Contract",
+            "Chunk Definition Of Done",
+            "Execution State Machine",
+            "Parallelization Model",
+            "Agent Review Protocol",
+            "Re-Review After Fixes",
+            "Chunk Work Plan",
+            "Deployment Transition Plan",
+            "Stop Rules And Handoffs",
+        ),
+    )
+
+    required_markers = (
+        "Refs #39",
+        "reference-only",
+        "pre-code",
+        "positive invariants",
+        "negative invariants",
+        "false-pass",
+        "RED tests",
+        "adversarial-review",
+        "re-review",
+        "GOV-SCOPE-001",
+        "DUR-ACID-001",
+        "OPS-WATCH-001",
+        "SEC-UNTRUSTED-001",
+        "No-Go",
+        "Go",
+        "phase-1-closure-39-",
+    )
+    missing_markers = [marker for marker in required_markers if marker not in text]
+    if missing_markers:
+        failures.append(
+            "Issue #39 execution strategy missing required markers: "
+            + ", ".join(missing_markers)
+        )
+
+    if re.search(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#39\b", text, flags=re.I):
+        failures.append("Issue #39 execution strategy must not use auto-closing #39 wording.")
+
+    check_issue39_strategy_required_terms(failures, text)
+
+    headers, rows = parse_table_lines(section(text, "Chunk Work Plan"))
+    required_headers = (
+        "Chunk",
+        "Matrix IDs",
+        "Dependencies",
+        "Parallel group",
+        "Required planning artifact",
+        "Required review agents",
+        "Done when",
+    )
+    normalized_headers = [normalize_header(header) for header in headers]
+    missing_headers = [header for header in required_headers if normalize_header(header) not in normalized_headers]
+    if missing_headers:
+        failures.append("Issue #39 execution strategy Chunk Work Plan missing headers: " + ", ".join(missing_headers))
+        return
+
+    matrix_index = normalized_headers.index("matrix ids")
+    chunk_index = normalized_headers.index("chunk")
+    dependencies_index = normalized_headers.index("dependencies")
+    parallel_index = normalized_headers.index("parallel group")
+    planning_index = normalized_headers.index("required planning artifact")
+    review_index = normalized_headers.index("required review agents")
+    done_index = normalized_headers.index("done when")
+
+    seen_ids: set[str] = set()
+    chunks_by_id: dict[str, set[str]] = {}
+    dependencies_by_chunk: dict[str, set[str]] = {}
+    for row in rows:
+        if len(row) != len(headers):
+            failures.append(f"Issue #39 execution strategy chunk row has wrong column count: {row}")
+            continue
+        chunk = row[chunk_index].strip("` ")
+        chunk_match = re.match(r"^(CH-\d{2})\b", chunk)
+        if not chunk_match:
+            failures.append(f"Issue #39 execution strategy chunk has invalid chunk label: {chunk}")
+            continue
+        chunk_id = chunk_match.group(1)
+        if chunk_id in chunks_by_id:
+            failures.append(f"Issue #39 execution strategy duplicates chunk: {chunk_id}")
+        matrix_ids = set(re.findall(r"[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}", row[matrix_index]))
+        if not matrix_ids:
+            failures.append(f"Issue #39 execution strategy chunk {chunk} has no matrix IDs.")
+        chunks_by_id[chunk_id] = matrix_ids
+        dependencies_by_chunk[chunk_id] = set(re.findall(r"CH-\d{2}", row[dependencies_index]))
+        seen_ids.update(matrix_ids)
+        for index, label in (
+            (dependencies_index, "Dependencies"),
+            (parallel_index, "Parallel group"),
+            (planning_index, "Required planning artifact"),
+            (review_index, "Required review agents"),
+            (done_index, "Done when"),
+        ):
+            if row[index].strip().lower() in {"", "n/a", "na", "todo", "tbd", "pending"}:
+                failures.append(f"Issue #39 execution strategy chunk {chunk} has placeholder {label}.")
+
+    missing_ids = sorted(REQUIRED_ISSUE_39_MATRIX_IDS - seen_ids)
+    if missing_ids:
+        failures.append("Issue #39 execution strategy missing matrix IDs: " + ", ".join(missing_ids))
+
+    unexpected_ids = sorted(seen_ids - REQUIRED_ISSUE_39_MATRIX_IDS)
+    if unexpected_ids:
+        failures.append("Issue #39 execution strategy has unexpected matrix IDs: " + ", ".join(unexpected_ids))
+
+    expected_chunks = set(EXPECTED_ISSUE_39_CHUNK_MATRIX_IDS)
+    actual_chunks = set(chunks_by_id)
+    missing_chunks = sorted(expected_chunks - actual_chunks)
+    if missing_chunks:
+        failures.append("Issue #39 execution strategy missing chunks: " + ", ".join(missing_chunks))
+    unexpected_chunks = sorted(actual_chunks - expected_chunks)
+    if unexpected_chunks:
+        failures.append("Issue #39 execution strategy has unexpected chunks: " + ", ".join(unexpected_chunks))
+
+    for chunk_id, expected_ids in EXPECTED_ISSUE_39_CHUNK_MATRIX_IDS.items():
+        if chunk_id not in chunks_by_id:
+            continue
+        actual_ids = chunks_by_id[chunk_id]
+        if actual_ids != expected_ids:
+            failures.append(
+                f"Issue #39 execution strategy chunk {chunk_id} matrix IDs must be "
+                f"{', '.join(sorted(expected_ids))}; got {', '.join(sorted(actual_ids))}."
+            )
+
+    for chunk_id, dependencies in dependencies_by_chunk.items():
+        unknown = sorted(dependencies - actual_chunks)
+        if unknown:
+            failures.append(
+                f"Issue #39 execution strategy chunk {chunk_id} depends on unknown chunks: "
+                + ", ".join(unknown)
+            )
+    for chunk_id, expected_dependencies in EXPECTED_ISSUE_39_CHUNK_DEPENDENCIES.items():
+        if chunk_id not in dependencies_by_chunk:
+            continue
+        actual_dependencies = dependencies_by_chunk[chunk_id]
+        if actual_dependencies != expected_dependencies:
+            failures.append(
+                f"Issue #39 execution strategy chunk {chunk_id} dependencies must be "
+                f"{', '.join(sorted(expected_dependencies)) or 'None'}; got "
+                f"{', '.join(sorted(actual_dependencies)) or 'None'}."
+            )
+    cycle = issue39_chunk_dependency_cycle(dependencies_by_chunk)
+    if cycle:
+        failures.append("Issue #39 execution strategy has dependency cycle: " + " -> ".join(cycle))
+
+
+def check_issue39_strategy_required_terms(failures: list[str], text: str) -> None:
+    required_by_section = {
+        "Chunk Definition Of Done": (
+            "pre-code plan exists before implementation",
+            "source facts",
+            "non-goals",
+            "positive invariants",
+            "negative invariants",
+            "failure or false-pass",
+            "test mapping",
+            "RED tests",
+            "executable negative tests",
+            "documented human-only evidence surface",
+            "implementation and tests",
+            "recorded disposition",
+            "fixed",
+            "rejected with evidence",
+            "non-goal with rationale",
+            "human-only follow-up",
+            "re-reviewed by a fresh reviewer",
+        ),
+        "Deployment Transition Plan": (
+            "Production deployment remains blocked",
+            "Staging/pre-production transition",
+            "make quality",
+            "make ci",
+            "make security",
+            "make dependency-audit",
+            "make container-scan",
+            "make secrets-scan",
+            "make eval",
+            "migration dry run",
+            "backup/restore drill evidence",
+            "dashboard, alert, and watch evidence",
+            "docs/reviews/GO_NO_GO.md",
+            "docs/RELEASE_CHECKLIST.md",
+            "health",
+            "readiness",
+            "metrics",
+            "alerts",
+            "rollback probes",
+            "Failed production transition probes halt before enablement",
+            "watch or SLO threshold",
+            "rollback communications",
+        ),
+    }
+    for heading, terms in required_by_section.items():
+        section_text = section(text, heading).lower()
+        missing_terms = [term for term in terms if term.lower() not in section_text]
+        if missing_terms:
+            failures.append(
+                f"docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md {heading} missing required terms: "
+                + ", ".join(missing_terms)
+            )
+    headers, rows = parse_table_lines(section(text, "Chunk Work Plan"))
+    normalized_headers = [normalize_header(header) for header in headers]
+    if "chunk" not in normalized_headers or "done when" not in normalized_headers:
+        return
+    chunk_index = normalized_headers.index("chunk")
+    done_index = normalized_headers.index("done when")
+    for row in rows:
+        if len(row) != len(headers):
+            continue
+        chunk = row[chunk_index]
+        if "`CH-10`" not in chunk:
+            continue
+        done_when = row[done_index].lower()
+        required_ch10_terms = (
+            "metric catalog",
+            "shared instrumentation contracts",
+            "restore and rollback metric emissions close with `ch-14` and `ch-15`",
+        )
+        missing_ch10_terms = [term for term in required_ch10_terms if term not in done_when]
+        if missing_ch10_terms:
+            failures.append(
+                "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md CH-10 row missing required terms: "
+                + ", ".join(missing_ch10_terms)
+            )
+
+
+def issue39_chunk_dependency_cycle(dependencies_by_chunk: dict[str, set[str]]) -> list[str]:
+    visiting: set[str] = set()
+    visited: set[str] = set()
+    stack: list[str] = []
+
+    def visit(chunk_id: str) -> list[str]:
+        if chunk_id in visiting:
+            start = stack.index(chunk_id)
+            return [*stack[start:], chunk_id]
+        if chunk_id in visited:
+            return []
+        visiting.add(chunk_id)
+        stack.append(chunk_id)
+        for dependency in sorted(dependencies_by_chunk.get(chunk_id, set())):
+            cycle = visit(dependency)
+            if cycle:
+                return cycle
+        stack.pop()
+        visiting.remove(chunk_id)
+        visited.add(chunk_id)
+        return []
+
+    for chunk_id in sorted(dependencies_by_chunk):
+        cycle = visit(chunk_id)
+        if cycle:
+            return cycle
+    return []
 
 
 def issues_from_cell(value: str) -> set[str]:
@@ -878,6 +1491,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):
         allowed_files = PROCESS_ONLY_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-39-execution-strategy":
+        allowed_files = ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-37-"):
         allowed_files = ISSUE_37_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-context0-"):
@@ -894,8 +1509,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_39_CONTEXT5_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-context6-"):
         allowed_files = ISSUE_39_CONTEXT6_ALLOWED_CHANGED_FILES
-    elif branch.startswith("phase-1-closure-39-"):
+    elif branch == "phase-1-closure-39-durability-monitoring":
         allowed_files = ISSUE_39_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-"):
+        allowed_files = ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-42-"):
         allowed_files = ISSUE_42_ALLOWED_CHANGED_FILES
     else:
@@ -1142,6 +1759,43 @@ def check_release_docs(failures: list[str]) -> None:
         for marker in markers:
             if marker not in files[rel]:
                 fail(failures, f"{rel} missing marker: {marker}")
+    check_issue39_status_ledger(failures, files["docs/STATUS.md"], read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"))
+
+
+def check_issue39_status_ledger(failures: list[str], status_text: str, closure_plan_text: str) -> None:
+    issue39_row = next(
+        (line for line in status_text.splitlines() if line.startswith("| `#39` |")),
+        "",
+    )
+    if not issue39_row:
+        failures.append("docs/STATUS.md missing issue #39 ledger row.")
+        return
+    cells = [cell.strip() for cell in issue39_row.strip("|").split("|")]
+    if len(cells) < 2:
+        failures.append("docs/STATUS.md issue #39 ledger row is malformed.")
+        return
+    status_match = re.match(r"[a-z]+", cells[1].strip().lower())
+    status_token = status_match.group(0) if status_match else ""
+    if not issue39_all_matrix_rows_closed(closure_plan_text) and status_token != "open":
+        failures.append("docs/STATUS.md issue #39 must remain Open while production closure matrix rows are Open.")
+
+
+def issue39_all_matrix_rows_closed(closure_plan_text: str) -> bool:
+    headers, rows = parse_table_lines(section(closure_plan_text, "Master Evidence Matrix"))
+    normalized_headers = [normalize_header(header) for header in headers]
+    if "id" not in normalized_headers or "status" not in normalized_headers:
+        return False
+    id_index = normalized_headers.index("id")
+    status_index = normalized_headers.index("status")
+    statuses = {
+        row[id_index].strip("` "): row[status_index].strip("` ").lower()
+        for row in rows
+        if len(row) == len(headers)
+    }
+    return (
+        set(statuses) == REQUIRED_ISSUE_39_MATRIX_IDS
+        and all(status == "closed" for status in statuses.values())
+    )
 
 
 def check_process_docs(failures: list[str]) -> None:
@@ -1308,6 +1962,7 @@ def main() -> int:
         check_demo_docs(failures)
         check_release_docs(failures)
         check_issue39_closure_plan(failures)
+        check_issue39_execution_strategy(failures)
         check_process_docs(failures)
 
     if failures:

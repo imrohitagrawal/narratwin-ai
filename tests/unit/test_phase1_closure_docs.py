@@ -69,6 +69,60 @@ def run_issue39_closure_plan_check(monkeypatch: Any, *, plan_text: str) -> list[
     return failures
 
 
+def run_issue39_execution_strategy_check(monkeypatch: Any, *, strategy_text: str) -> list[str]:
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {"docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md": strategy_text},
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue39_execution_strategy(failures)
+    return failures
+
+
+def run_release_docs_check(monkeypatch: Any, *, read_overrides: dict[str, str]) -> list[str]:
+    monkeypatch.setattr(phase1, "read", read_with_overrides(phase1, read_overrides))
+    failures: list[str] = []
+    phase1.check_release_docs(failures)
+    return failures
+
+
+def issue39_plan_with_closed_row_and_record(
+    plan_text: str,
+    *,
+    matrix_id: str = "DUR-ACID-001",
+    row_status_search: str,
+    row_status_replacement: str,
+    child_reference: str = (
+        "https://github.com/imrohitagrawal/narratwin-ai/issues/101 "
+        "https://github.com/imrohitagrawal/narratwin-ai/pull/102"
+    ),
+    artifact_reference: str = "docs/ADR/0013-production-durability.md",
+    evidence: str = (
+        "tests/unit/test_phase1_closure_docs.py::test_issue39_closure_plan_accepts_current_matrix "
+        "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/123456789"
+    ),
+    owner: str = "Storage owner",
+    reviewer: str = "Architecture reviewer",
+    residual_risk: str = "Accepted with production row evidence",
+    timestamp: str = "merge commit abc123",
+    satisfies: str = "production-grade evidence satisfies the row",
+) -> str:
+    plan_text = replace_text(plan_text, row_status_search, row_status_replacement)
+    record = (
+        f"| `{matrix_id}` | {child_reference} | {artifact_reference} | {evidence} | "
+        f"{owner} | {reviewer} | {residual_risk} | {timestamp} | {satisfies} |\n"
+    )
+    return plan_text.replace(
+        "|---|---|---|---|---|---|---|---|---|\n",
+        "|---|---|---|---|---|---|---|---|---|\n" + record,
+        1,
+    )
+
+
 def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
@@ -149,6 +203,529 @@ def test_issue39_closure_plan_rejects_invalid_matrix_status(monkeypatch: Any) ->
     assert "Issue #39 matrix row DUR-ACID-001 status must be Open or Closed; got Done." in failures
 
 
+def test_issue39_closure_plan_rejects_closed_row_without_closure_record(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=replace_text(
+            plan_text,
+            "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable identifiers, versioning, and compare-and-set invariants | Architecture + storage | PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |",
+            "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable identifiers, versioning, and compare-and-set invariants | Architecture + storage | PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Closed |",
+        ),
+    )
+
+    assert "Issue #39 matrix row DUR-ACID-001 is Closed without a row closure record." in failures
+
+
+def test_issue39_closure_plan_accepts_closed_row_with_valid_closure_record(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    row_closed = row_open.replace("| Open |", "| Closed |")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_closed,
+        ),
+    )
+
+    assert failures == []
+
+
+def test_issue39_closure_plan_rejects_closed_row_with_external_repo_pr(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            child_reference=(
+                "https://github.com/imrohitagrawal/narratwin-ai/issues/101 "
+                "https://github.com/example/other-repo/pull/102"
+            ),
+        ),
+    )
+
+    assert (
+        "Issue #39 closed row DUR-ACID-001 must cite concrete same-repository child issue and PR URLs."
+        in failures
+    )
+
+
+def test_issue39_closure_plan_rejects_context0_pr_as_final_proof(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            child_reference=(
+                "https://github.com/imrohitagrawal/narratwin-ai/issues/101 "
+                "https://github.com/imrohitagrawal/narratwin-ai/pull/64"
+            ),
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 must not use Context 0 PR #64 as final proof." in failures
+
+
+def test_issue39_closure_plan_rejects_planning_pr_as_final_proof(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            child_reference=(
+                "https://github.com/imrohitagrawal/narratwin-ai/issues/101 "
+                "https://github.com/imrohitagrawal/narratwin-ai/pull/80"
+            ),
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 must not use planning PRs #64-#80 as final proof: #80" in failures
+
+
+def test_issue39_closure_plan_rejects_parent_issue_as_child_issue(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            child_reference=(
+                "https://github.com/imrohitagrawal/narratwin-ai/issues/39 "
+                "https://github.com/imrohitagrawal/narratwin-ai/pull/102"
+            ),
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 must cite a child issue distinct from #39." in failures
+
+
+def test_issue39_closure_plan_rejects_vague_artifact_evidence(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="artifact attached in PR",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_nonexistent_test_evidence(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="test_issue39_nonexistent_evidence",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_nonexistent_test_even_with_artifact_url(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence=(
+                "test_issue39_nonexistent_evidence "
+                "https://github.com/imrohitagrawal/narratwin-ai/blob/main/docs/STATUS.md"
+            ),
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_bare_existing_test_name_without_node_and_ci(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="test_issue39_closure_plan_accepts_current_matrix restore drill rto rpo",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_node_id_without_ci_or_drill_artifact(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="tests/unit/test_phase1_closure_docs.py::test_issue39_closure_plan_accepts_current_matrix",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_issue_pr_urls_as_validation_evidence(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence=(
+                "https://github.com/imrohitagrawal/narratwin-ai/issues/101 "
+                "https://github.com/imrohitagrawal/narratwin-ai/pull/102"
+            ),
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_bare_drill_log_evidence(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="drill log reviewed",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_nonexistent_drill_log_path(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-RESTORE-001` | Backup/restore drill | Backup scope, integrity, restore smoke, and RTO/RPO "
+        "verification | Ops | Operable restore playbook with evidence of at least one successful restore drill | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="DUR-RESTORE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="docs/reviews/no_such_drill.md drill log restore drill rto rpo",
+            satisfies="restore drill rto rpo evidence",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-RESTORE-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_drill_log_path_traversal(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-RESTORE-001` | Backup/restore drill | Backup scope, integrity, restore smoke, and RTO/RPO "
+        "verification | Ops | Operable restore playbook with evidence of at least one successful restore drill | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="DUR-RESTORE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="docs/../.git/config drill log restore drill rto rpo",
+            satisfies="restore drill rto rpo evidence",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-RESTORE-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_existing_unrelated_drill_log_file(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-RESTORE-001` | Backup/restore drill | Backup scope, integrity, restore smoke, and RTO/RPO "
+        "verification | Ops | Operable restore playbook with evidence of at least one successful restore drill | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="DUR-RESTORE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="docs/evals/phase1_golden_questions.jsonl drill log restore drill rto rpo",
+            satisfies="restore drill rto rpo evidence",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-RESTORE-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_malformed_actions_run_url(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="https://github.com/imrohitagrawal/narratwin-ai/actions/runs/123fake",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_ops_row_without_row_specific_evidence(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-RESTORE-001` | Backup/restore drill | Backup scope, integrity, restore smoke, and RTO/RPO "
+        "verification | Ops | Operable restore playbook with evidence of at least one successful restore drill | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="DUR-RESTORE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="human-only evidence reviewed",
+            satisfies="generic production review evidence",
+        ),
+    )
+
+    assert (
+        "Issue #39 closed row DUR-RESTORE-001 missing operational closure evidence terms: "
+        "restore drill; rto; rpo"
+    ) in failures
+
+
+def test_issue39_closure_plan_rejects_operational_human_only_keyword_prose(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-RESTORE-001` | Backup/restore drill | Backup scope, integrity, restore smoke, and RTO/RPO "
+        "verification | Ops | Operable restore playbook with evidence of at least one successful restore drill | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="DUR-RESTORE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="human-only restore drill rto rpo reviewed by ops",
+            satisfies="restore drill rto rpo evidence",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-RESTORE-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_sensitive_row_without_row_specific_evidence(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `PROVIDER-POSTURE-001` | Provider release posture | External provider legal, license, network, "
+        "egress, key, and rollout controls | Security/Privacy + Platform | Provider release checklist with "
+        "legal/license review, mock/local default, no real keys in local/dev/test/CI, explicit production "
+        "enablement, deny-by-default egress, key isolation, no secret logging or prompt inclusion, and "
+        "rollback disablement evidence | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="PROVIDER-POSTURE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="test_issue39_closure_plan_accepts_current_matrix",
+            satisfies="generic production review evidence",
+        ),
+    )
+
+    assert (
+        "Issue #39 closed row PROVIDER-POSTURE-001 missing operational closure evidence terms: "
+        "provider; legal/license; egress; key; explicit production enablement"
+    ) in failures
+
+
+@pytest.mark.parametrize(
+    ("matrix_id", "row_open", "expected_terms"),
+    [
+        (
+            "MEDIA-CONSENT-001",
+            "| `MEDIA-CONSENT-001` | Consent capture | Affirmative consent record for synthetic-media generation | Security/Privacy | Consent schema with actor, timestamp, consent text/version, artifact refs, source-run binding, scope, and audit retention | Open |",
+            "consent; actor; scope; audit",
+        ),
+        (
+            "SEC-UNTRUSTED-001",
+            "| `SEC-UNTRUSTED-001` | Untrusted durable/replayed input handling | Uploaded docs, prompts, transcripts, provider outputs, model outputs, restored artifacts, exported media metadata, and replayed provenance remain untrusted | Security/Privacy + Runtime + Ops | Validation, output encoding, log redaction, prompt-injection/poisoned-retrieval controls, restore-time revalidation, and replay/export safety evidence for durable untrusted content | Open |",
+            "untrusted; validation; output encoding; log redaction",
+        ),
+    ],
+)
+def test_issue39_closure_plan_rejects_media_and_sec_rows_without_row_specific_evidence(
+    monkeypatch: Any,
+    matrix_id: str,
+    row_open: str,
+    expected_terms: str,
+) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id=matrix_id,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="test_issue39_closure_plan_accepts_current_matrix",
+            satisfies="generic production review evidence",
+        ),
+    )
+
+    assert (
+        f"Issue #39 closed row {matrix_id} missing operational closure evidence terms: "
+        f"{expected_terms}"
+    ) in failures
+
+
+def test_issue39_closure_plan_rejects_provider_closure_without_enablement_evidence(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `PROVIDER-POSTURE-001` | Provider release posture | External provider legal, license, network, "
+        "egress, key, and rollout controls | Security/Privacy + Platform | Provider release checklist with "
+        "legal/license review, mock/local default, no real keys in local/dev/test/CI, explicit production "
+        "enablement, deny-by-default egress, key isolation, no secret logging or prompt inclusion, and "
+        "rollback disablement evidence | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="PROVIDER-POSTURE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="test_issue39_closure_plan_accepts_current_matrix",
+            satisfies="provider legal/license egress key evidence",
+        ),
+    )
+
+    assert (
+        "Issue #39 closed row PROVIDER-POSTURE-001 missing operational closure evidence terms: "
+        "explicit production enablement"
+    ) in failures
+
+
+def test_issue39_closure_plan_rejects_weakened_sensitive_row(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=replace_text(plan_text, "restored artifacts", "restored records"),
+    )
+
+    assert (
+        "Issue #39 matrix row SEC-UNTRUSTED-001 missing required contract terms: restored artifacts"
+        in failures
+    )
+
+
+def test_issue39_closure_plan_rejects_weakened_provider_enablement(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=replace_text(plan_text, "explicit production enablement", "production review"),
+    )
+
+    assert (
+        "Issue #39 matrix row PROVIDER-POSTURE-001 missing required contract terms: "
+        "explicit production enablement"
+    ) in failures
+
+
 def test_issue39_closure_plan_rejects_malformed_matrix_row(monkeypatch: Any) -> None:
     plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
     failures = run_issue39_closure_plan_check(
@@ -161,6 +738,227 @@ def test_issue39_closure_plan_rejects_malformed_matrix_row(monkeypatch: Any) -> 
     )
 
     assert "Issue #39 matrix row must have 6 columns:" in failures[0]
+
+
+def test_issue39_execution_strategy_accepts_current_chunk_plan() -> None:
+    failures: list[str] = []
+    phase1.check_issue39_execution_strategy(failures)
+
+    assert failures == []
+
+
+def test_issue39_execution_strategy_rejects_missing_matrix_id(monkeypatch: Any) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    failures = run_issue39_execution_strategy_check(
+        monkeypatch,
+        strategy_text=strategy_text.replace("`SEC-UNTRUSTED-001`", "`SEC-RETENTION-001`"),
+    )
+
+    assert "Issue #39 execution strategy missing matrix IDs: SEC-UNTRUSTED-001" in failures
+
+
+def test_issue39_execution_strategy_rejects_missing_chunk_even_with_matrix_id_preserved(
+    monkeypatch: Any,
+) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    strategy_text = strategy_text.replace(
+        "| `CH-21` retention and erasure | `SEC-RETENTION-001` |",
+        "| `CH-21` retention and erasure | `SEC-RETENTION-001`, `SEC-UNTRUSTED-001` |",
+        1,
+    )
+    strategy_text = strategy_text.replace(
+        "| `CH-22` untrusted replayed input | `SEC-UNTRUSTED-001` | `CH-03`, `CH-07`, `CH-08`, `CH-21` | Security/runtime | Untrusted-input preflight covering uploads, prompts, transcripts, provider outputs, restored artifacts, metadata | Security/privacy reviewer, runtime reviewer, operations reviewer | Durable and replayed content is revalidated, encoded, redacted, and protected from poisoned retrieval and prompt injection. |\n",
+        "",
+        1,
+    )
+    failures = run_issue39_execution_strategy_check(monkeypatch, strategy_text=strategy_text)
+
+    assert "Issue #39 execution strategy missing chunks: CH-22" in failures
+    assert (
+        "Issue #39 execution strategy chunk CH-21 matrix IDs must be SEC-RETENTION-001; "
+        "got SEC-RETENTION-001, SEC-UNTRUSTED-001."
+    ) in failures
+
+
+def test_issue39_execution_strategy_rejects_dependency_cycle(monkeypatch: Any) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    failures = run_issue39_execution_strategy_check(
+        monkeypatch,
+        strategy_text=strategy_text.replace(
+            "| `CH-08` Stage 7 render artifact state | `DUR-STAGE7-001` | `CH-03`, `CH-04`, `CH-16` |",
+            "| `CH-08` Stage 7 render artifact state | `DUR-STAGE7-001` | `CH-03`, `CH-04`, `CH-16`, `CH-18` |",
+            1,
+        ),
+    )
+
+    assert "Issue #39 execution strategy has dependency cycle:" in "\n".join(failures)
+
+
+def test_issue39_execution_strategy_rejects_missing_final_dependency(monkeypatch: Any) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    failures = run_issue39_execution_strategy_check(
+        monkeypatch,
+        strategy_text=strategy_text.replace(", `CH-22` | Final sequential", " | Final sequential", 1),
+    )
+
+    assert "Issue #39 execution strategy chunk CH-23 dependencies must be" in "\n".join(failures)
+
+
+def test_issue39_execution_strategy_rejects_missing_deployment_stop_rule(monkeypatch: Any) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    failures = run_issue39_execution_strategy_check(
+        monkeypatch,
+        strategy_text=strategy_text.replace("Failed production transition probes halt before enablement", "Probe failures are handled", 1),
+    )
+
+    assert (
+        "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md Deployment Transition Plan missing required terms: "
+        "Failed production transition probes halt before enablement"
+    ) in failures
+
+
+def test_issue39_execution_strategy_rejects_weakened_dod_review_loop(monkeypatch: Any) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    failures = run_issue39_execution_strategy_check(
+        monkeypatch,
+        strategy_text=strategy_text.replace("re-reviewed by a fresh reviewer", "checked again", 1),
+    )
+
+    assert (
+        "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md Chunk Definition Of Done missing required terms: "
+        "re-reviewed by a fresh reviewer"
+    ) in failures
+
+
+@pytest.mark.parametrize(
+    "term",
+    [
+        "documented human-only evidence surface",
+        "fixed",
+        "rejected with evidence",
+        "non-goal with rationale",
+        "human-only follow-up",
+    ],
+)
+def test_issue39_execution_strategy_rejects_weakened_dod_disposition_terms(
+    monkeypatch: Any,
+    term: str,
+) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    failures = run_issue39_execution_strategy_check(
+        monkeypatch,
+        strategy_text=strategy_text.replace(term, "removed required DoD term", 1),
+    )
+
+    assert (
+        "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md Chunk Definition Of Done missing required terms: "
+        f"{term}"
+    ) in failures
+
+
+def test_issue39_execution_strategy_rejects_weakened_ch10_metric_contract(monkeypatch: Any) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    failures = run_issue39_execution_strategy_check(
+        monkeypatch,
+        strategy_text=strategy_text.replace(
+            "restore and rollback metric emissions close with `CH-14` and `CH-15` evidence",
+            "restore and rollback metric emissions are complete in this chunk",
+            1,
+        ),
+    )
+
+    assert (
+        "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md CH-10 row missing required terms: "
+        "restore and rollback metric emissions close with `ch-14` and `ch-15`"
+    ) in failures
+
+
+def test_issue39_execution_strategy_rejects_missing_rereview_protocol(monkeypatch: Any) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    failures = run_issue39_execution_strategy_check(
+        monkeypatch,
+        strategy_text=strategy_text.replace("## Re-Review After Fixes", "## Review Fix Handling", 1),
+    )
+
+    assert (
+        "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md missing required heading: Re-Review After Fixes"
+        in failures
+    )
+
+
+def test_issue39_execution_strategy_branch_allows_strategy_doc(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        files=[
+            "docs/QUALITY_GATES.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/STATUS.md",
+            "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_execution_strategy_branch_rejects_runtime_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        files=["backend/app/stage4.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-execution-strategy may not change backend/app/stage4.py."
+    ]
+
+
+def test_issue39_unknown_generic_chunk_branch_rejects_runtime_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-02-acid-cas-kernel",
+        files=["backend/app/storage/postgres_state.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-02-acid-cas-kernel may not change "
+        "backend/app/storage/postgres_state.py."
+    ]
+
+
+def test_status_keeps_issue39_open_while_matrix_rows_are_open(monkeypatch: Any) -> None:
+    status_text = phase1.read("docs/STATUS.md")
+    failures = run_release_docs_check(
+        monkeypatch,
+        read_overrides={
+            "docs/STATUS.md": status_text.replace(
+                "| `#39` | Open, partially remediated |",
+                "| `#39` | Closed |",
+                1,
+            )
+        },
+    )
+
+    assert "docs/STATUS.md issue #39 must remain Open while production closure matrix rows are Open." in failures
+
+
+def test_status_rejects_closed_issue39_with_open_substring(monkeypatch: Any) -> None:
+    status_text = phase1.read("docs/STATUS.md")
+    failures = run_release_docs_check(
+        monkeypatch,
+        read_overrides={
+            "docs/STATUS.md": status_text.replace(
+                "| `#39` | Open, partially remediated |",
+                "| `#39` | Closed (no reopening planned) |",
+                1,
+            )
+        },
+    )
+
+    assert "docs/STATUS.md issue #39 must remain Open while production closure matrix rows are Open." in failures
 
 
 def test_process_only_phase1_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:

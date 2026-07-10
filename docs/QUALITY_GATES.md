@@ -467,6 +467,10 @@ Gate validates:
   when a PR attempts to close `#39`. The same validator is also enforced from
   the always-on repository guardrail so malformed matrix structure blocks PRs
   with `Refs #39` reference-only wording.
+- `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md` exists and keeps the issue
+  `#39` per-chunk execution protocol complete, including Definition of Done,
+  pre-code planning, parallelization, review-agent, fix re-review, deployment
+  transition, and complete matrix-ID coverage.
 - every P0/P1 issue maps to a valid closure module and the module table covers
   the P0/P1 issue set with non-empty required evidence
 - `docs/RELEASE_READINESS_REVIEW.md` preserves the Final Review No-Go posture,

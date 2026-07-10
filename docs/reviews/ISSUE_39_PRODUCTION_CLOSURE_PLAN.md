@@ -11,6 +11,9 @@ Create a durable, reviewed production-closure contract for GitHub issue `#39` th
 ## Current State (as of 2026-07-10)
 
 - `#39` remains open and is the remaining Phase 1 P1 production blocker.
+- Execution sequencing, per-chunk Definition of Done, parallelization rules,
+  review-agent protocol, and production transition strategy are tracked in
+  `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md`.
 - Current implementation for `#39` is local/mock only:
   - optional local JSON snapshots for Stage 4 project/document/run/RAG state,
   - local optional restart recovery for Stage 6 multilingual artifacts,
@@ -71,7 +74,7 @@ Local/test defaults (`in-memory`, local JSON, staged files, local mocks) remain 
 
 ## Context Breakdown
 
-1. **Context 0 (this context):** Contract-only planning for durability/monitoring; matrix and child decomposition only.
+1. **Context 0 (this context):** Contract-only planning for durability/monitoring; matrix and child decomposition only. The chunk execution strategy is maintained in `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md`.
 2. **Context 1:** Storage ADR and schema blueprint, durable lease/state transition design, and migration ordering plan.
 3. **Context 2:** Durable state transitions and outbox contracts for production
    metadata plus rerun semantics. This context is planning-only in Issue `#66`.
@@ -144,6 +147,11 @@ record, and residual-risk decision.
 ## Child Issue / PR Mapping Template
 
 All follow-on work must map every matrix ID to one or more child issues/PRs.
+The rows below are historical planning-context mappings only. Implementation
+closure must use the per-chunk execution rows in
+`docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md`; final row closure records must
+cite concrete chunk implementation PRs rather than treating planning PRs
+`#64` through `#80` as production evidence.
 
 | Child Issue / PR | Domain | Required Deliverables | Matrix IDs | Owner | Required Evidence |
 |---|---|---|---|---|---|
