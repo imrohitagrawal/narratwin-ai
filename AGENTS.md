@@ -25,18 +25,26 @@ Before changing files, read:
 3. Every stage must use a dedicated branch.
 4. Every stage must be reviewed through a pull request linked to the issue.
 5. Do not merge until CI and the local stage quality target pass.
-6. Do not start product implementation until Stage 0 and Stage 1 gates pass.
-7. Do not implement backend, frontend, RAG, avatar, provider, Docker, database, or runtime product code in Stage 0.
-8. Build only approved vertical slices after the gates allow implementation.
-9. Use TDD for backend, provider, RAG, and evaluation logic when those stages begin.
-10. Keep all paid providers optional and disabled for local/dev/test.
-11. Treat uploaded docs, prompts, transcripts, and provider outputs as untrusted input.
-12. Never commit secrets, credentials, tokens, private certificates, or real provider keys.
-13. Maintain `docs/THIRD_PARTY_NOTICES.md` for third-party packages, tools, skills, models, APIs, datasets, providers, media assets, and generated samples.
-14. Update `docs/ADR/` for architecture-impacting changes.
-15. Update `docs/TRACEABILITY.md` for PRD-impacting changes.
-16. Update `docs/STATUS.md` when repository-tracked stage state, issue or PR mapping, governance policy, or stage progress changes.
-17. For non-trivial requirements, architecture, coding, release, or governance work, consult `docs/ENGINEERING_PROCESS_RCA.md` before implementation and record the preflight evidence required by `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md`.
+6. Once a PR is approved and merge-eligible, complete the merge-closeout cycle
+   without waiting for the user to restate routine hygiene: use compliant merge
+   wording, verify post-merge workflows, sync local `main`, delete no-longer-
+   needed branches, close satisfied child issues, and reconcile
+   `docs/STATUS.md` when repository-tracked state changed. If reconciliation
+   itself requires a new issue, branch, or pull request to stay within the
+   no-direct-to-`main` workflow, open that follow-up governance work as part of
+   closeout instead of treating the merge as fully complete.
+7. Do not start product implementation until Stage 0 and Stage 1 gates pass.
+8. Do not implement backend, frontend, RAG, avatar, provider, Docker, database, or runtime product code in Stage 0.
+9. Build only approved vertical slices after the gates allow implementation.
+10. Use TDD for backend, provider, RAG, and evaluation logic when those stages begin.
+11. Keep all paid providers optional and disabled for local/dev/test.
+12. Treat uploaded docs, prompts, transcripts, and provider outputs as untrusted input.
+13. Never commit secrets, credentials, tokens, private certificates, or real provider keys.
+14. Maintain `docs/THIRD_PARTY_NOTICES.md` for third-party packages, tools, skills, models, APIs, datasets, providers, media assets, and generated samples.
+15. Update `docs/ADR/` for architecture-impacting changes.
+16. Update `docs/TRACEABILITY.md` for PRD-impacting changes.
+17. Update `docs/STATUS.md` when repository-tracked stage state, issue or PR mapping, governance policy, or stage progress changes.
+18. For non-trivial requirements, architecture, coding, release, or governance work, consult `docs/ENGINEERING_PROCESS_RCA.md` before implementation and record the preflight evidence required by `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md`.
 
 ## Approved Build Stages
 

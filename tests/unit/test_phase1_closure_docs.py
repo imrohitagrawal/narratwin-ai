@@ -1533,6 +1533,45 @@ def test_process_docs_rejects_duplicate_matrix_template_id(monkeypatch: Any) -> 
     assert "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md matrix row duplicates ID: DERIVED-ARTIFACT-001" in failures
 
 
+def test_process_docs_rejects_agents_missing_merge_closeout_follow_up_marker(monkeypatch: Any) -> None:
+    original_agents = phase1.read("AGENTS.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-89-implicit-merge-closeout",
+        changed=["AGENTS.md"],
+        read_overrides={
+            "AGENTS.md": replace_text(
+                original_agents,
+                "new issue, branch, or pull request",
+                "follow-up governance work",
+            )
+        },
+    )
+
+    assert "AGENTS.md missing process marker: new issue, branch, or pull request" in failures
+
+
+def test_process_docs_rejects_playbook_missing_merge_closeout_follow_up_marker(monkeypatch: Any) -> None:
+    original_playbook = phase1.read("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-89-implicit-merge-closeout",
+        changed=["docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"],
+        read_overrides={
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": replace_text(
+                original_playbook,
+                "required follow-up issue/branch/PR",
+                "required follow-up work",
+            )
+        },
+    )
+
+    assert (
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md missing merge-closeout marker: "
+        "open the required follow-up issue/branch/pr"
+    ) in failures
+
+
 def test_process_docs_rejects_open_medium_low_phf_register_status(monkeypatch: Any) -> None:
     original_findings = phase1.read("docs/reviews/PROCESS_HARDENING_FINDINGS.md")
     failures = run_process_docs_check(

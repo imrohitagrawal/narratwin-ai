@@ -343,7 +343,52 @@ Required checks:
 - Are repository rulesets actually enabled?
 - Is any mismatch recorded as a blocker?
 
-## Learning 10: Root README Should Link Governance And Learnings
+## Learning 10: Approved PRs Need Agent-Owned Merge Closeout
+
+### What Worked
+
+The repository became more reliable when merge closeout was treated as part of
+the implementation cycle instead of a separate user reminder. The useful
+pattern was: once a PR is approved and merge-eligible, the agent continues
+through merge, post-merge verification, branch cleanup, issue closeout, and
+status-ledger reconciliation unless a real human-only gate blocks progress.
+
+### Why It Matters
+
+If merge closeout depends on the user remembering to restate hygiene steps in
+each session, the process is fragile. AI-assisted work spans sessions and
+review states. Without an explicit default, it is easy to leave stale branches,
+open child issues, outdated status text, or unverified post-merge workflows.
+
+### Future Default
+
+Treat merge closeout as agent-owned baseline work for approved green PRs.
+
+Minimum merge-closeout sequence:
+
+- verify approval and required checks
+- merge with policy-compliant, automation-safe wording
+- verify post-merge workflows on `main`
+- sync local `main` with `origin/main`
+- delete merged local and remote branches when no longer needed
+- close satisfied child issues with evidence
+- reconcile repository-tracked docs such as `docs/STATUS.md` if GitHub state
+  changed after the original PR docs were written
+- when that reconciliation cannot legally happen inside the merged PR, open the
+  required follow-up issue/branch/PR rather than editing the default branch
+  directly
+- state the next recommended action and any remaining human-only gate
+
+### Review Checklist
+
+- After approval, did the agent attempt the full merge-closeout cycle without
+  waiting for another user prompt?
+- If merge did not happen, was the blocking human-only gate named exactly?
+- Were stale branch, issue, PR, or status-ledger states reconciled?
+- Was any sensitive issue kept reference-only unless the guardrails explicitly
+  allowed closure?
+
+## Learning 11: Root README Should Link Governance And Learnings
 
 ### What Worked
 
@@ -370,7 +415,7 @@ The PR template should also require authors to check the learnings tracker and,
 for implementation or release-readiness changes, confirm invariant,
 exploit-matrix, and contract/gate review.
 
-## Learning 11: Process Allowlists Must Cover Governance Learning Updates
+## Learning 12: Process Allowlists Must Cover Governance Learning Updates
 
 ### What Worked
 
@@ -402,7 +447,7 @@ scope.
   checker scope?
 - Does the process PR still avoid backend/frontend/provider/runtime files?
 
-## Learning 12: Invariants Must Map to Tests, Gates, or Human-Only Checklist
+## Learning 13: Invariants Must Map to Tests, Gates, or Human-Only Checklist
 
 ### What Worked
 
@@ -443,7 +488,7 @@ Then require either:
 - Is old-behavior failure evidence present for false-pass-prone claims?
 - Is every required human-only surface listed with owner and residual-risk decision?
 
-## Learning 13: Governance Docs Need A Clear Enforcement Hierarchy
+## Learning 14: Governance Docs Need A Clear Enforcement Hierarchy
 
 ### What Failed
 
