@@ -145,6 +145,14 @@ ISSUE_39_CONTEXT1_ALLOWED_CHANGED_FILES = {
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_39_CONTEXT2_ALLOWED_CHANGED_FILES = {
+    "docs/ADR/0009-context2-idempotency-lease-outbox-contract.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 
 EXPECTED_ISSUE_PRIORITIES = {
     "#35": "P0",
@@ -845,6 +853,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_39_CONTEXT0_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-context1-"):
         allowed_files = ISSUE_39_CONTEXT1_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-context2-"):
+        allowed_files = ISSUE_39_CONTEXT2_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-"):
         allowed_files = ISSUE_39_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-42-"):

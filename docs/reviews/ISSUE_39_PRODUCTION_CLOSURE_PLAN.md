@@ -8,7 +8,7 @@ Create a durable, reviewed production-closure contract for GitHub issue `#39` th
 - It defines production durability and monitoring requirements before any durable runtime implementation starts.
 - It explicitly excludes all runtime product/database/provider/monitoring implementations.
 
-## Current State (as of 2026-07-09)
+## Current State (as of 2026-07-10)
 
 - `#39` remains open and is the remaining Phase 1 P1 production blocker.
 - Current implementation for `#39` is local/mock only:
@@ -27,6 +27,9 @@ Create a durable, reviewed production-closure contract for GitHub issue `#39` th
   - consent/provenance/provider release controls.
   - deletion/erasure semantics and untrusted-input handling across durable/replayed artifacts.
 - `Context 0` does not close `#39`; it defines the contract only.
+- Issue `#66` is the planning implementation-context for Context 2 (`DUR-IDEMP-001`,
+  `DUR-LEASE-001`, `DUR-OUTBOX-001`) and remains advisory-only until runtime contexts
+  start implementation.
 
 ## Non-Goals
 
@@ -56,7 +59,8 @@ Local/test defaults (`in-memory`, local JSON, staged files, local mocks) remain 
 
 1. **Context 0 (this context):** Contract-only planning for durability/monitoring; matrix and child decomposition only.
 2. **Context 1:** Storage ADR and schema blueprint, durable lease/state transition design, and migration ordering plan.
-3. **Context 2:** Durable state and outbox implementation for production metadata and rerun semantics.
+3. **Context 2:** Durable state transitions and outbox contracts for production
+   metadata plus rerun semantics. This context is planning-only in Issue `#66`.
 4. **Context 3:** Monitoring stack rollout, metrics, alerts, first-hour watch with follow-up checkpoints, and operations runbook.
 5. **Context 4:** Final closure evidence sweep, cross-context reconciliation, and final `#39` disposition decision.
 
@@ -96,10 +100,10 @@ record, and residual-risk decision.
 | ID | Requirement | Evidence target | Owner | Minimum evidence contract | Status |
 |---|---|---|---|---|---|
 | `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable identifiers, versioning, and compare-and-set invariants | Architecture + storage | PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |
-| `DUR-IDEMP-001` | Production idempotency semantics | Replay-safe request identity and dedupe behavior across retries and worker failover | Runtime/state + Security | Idempotency envelope contract including terminal/error/replay state transitions and failure dedupe proofs | Open |
 | `DUR-STAGE4-001` | Durable Stage 4 project/document/RAG/run graph | Durable project/document/chunk/run/eval graph and resume behavior | Storage + API | Entity/state graph contract with at-least-once execution and idempotent consumers; no exactly-once side-effect claim | Open |
-| `DUR-LEASE-001` | Cross-worker job leases | Lease acquisition, heartbeat renewal, expiry, reclaim, and stale-writer fencing | Runtime/state | Lease state machine with monotonic fencing token/epoch, stale-owner prevention, and ownership transfer proof | Open |
-| `DUR-OUTBOX-001` | Committed outbox side effects | Outbox transaction boundaries and side-effect dispatch contract | Runtime/integrations | Same-transaction outbox write with state change; at-least-once dispatch plus idempotent consumer policy | Open |
+| `DUR-IDEMP-001` | Production idempotency semantics | Replay-safe request identity and dedupe behavior across retries and worker failover | Runtime/state + Security | Canonical `(operation_id, scope)` idempotency key, payload-hash conflict guard, terminal replay behavior, transient recovery state, stale-owner rejection, plus Issue `#66` ADR/evidence table | Open |
+| `DUR-LEASE-001` | Cross-worker job leases | Lease acquisition, heartbeat renewal, expiry, reclaim, and stale-writer fencing | Runtime/state | Lease state machine with acquire/renew/expiry, monotonic fencing token, ownership transfer, stale-writer rejection, plus Issue `#66` ADR/evidence table | Open |
+| `DUR-OUTBOX-001` | Committed outbox side effects | Outbox transaction boundaries and side-effect dispatch contract | Runtime/integrations | Same-transaction state/event write, outbox row envelope, explicit dispatch transitions, at-least-once retry, idempotent consumer policy, plus Issue `#66` ADR/evidence table | Open |
 | `DUR-STAGE6-001` | Durable multilingual artifact replay | Production replay of translated scripts/subtitles and derived assets | Stage 6 | Replay contract with source-run linkage, checksum-based dedupe, and deterministic artifact provenance | Open |
 | `DUR-STAGE7-001` | Durable render/artifact/provenance state | Render status, artifact records, consent/disclosure binding | Stage 7 | Persistent render/provenance record contract and synthetic-media release check points | Open |
 | `DUR-MIG-001` | Migrations | Versioned schema evolution, compatibility, and forward-only rollback safety | Platform/storage | Expand/contract migration plan with backward-compatible code windows, forward repair, and no mandatory down-migration claim | Open |
@@ -126,11 +130,32 @@ All follow-on work must map every matrix ID to one or more child issues/PRs.
 | Child Issue / PR | Domain | Required Deliverables | Matrix IDs | Owner | Required Evidence |
 |---|---|---|---|---|---|
 | `ISSUE-39-1` | Postgres durability architecture | PostgreSQL durability ADR + production schema boundary (`docs/ADR/0008-postgresql-durability-schema-boundary.md`) | DUR-ACID-001, DUR-STAGE4-001 | Architecture | ADR + schema boundary design checklist |
-| `ISSUE-39-2` (template) | Idempotency and leasing | Request identity, conflict rules, lease state machine, outbox skeleton contract | DUR-IDEMP-001, DUR-LEASE-001, DUR-OUTBOX-001 | Runtime | Contract tests and invariants |
+| `#66` | Idempotency, leases, and outbox context2 decomposition for production durability | Replay-safe idempotency contract, lease fencing/ownership transfer contract, outbox-at-least-once contract, and one-to-one test/evidence matrix mapping | DUR-IDEMP-001, DUR-LEASE-001, DUR-OUTBOX-001 | Runtime | Advisory-only ADR + planned contract tests for implementation context |
 | `ISSUE-39-3` (template) | Migrations | Versioned expand/contract migration sequence and code-rollback posture | DUR-MIG-001, DUR-ROLLBACK-001, DUR-STAGE6-001, DUR-STAGE7-001 | Storage + API | Migration plan + backward-compatible deployment window proof |
 | `ISSUE-39-4` (template) | Backup and restore | RPO/RTO targets, backup design, restore drill evidence | DUR-RESTORE-001, OPS-METRICS-001, OPS-SLO-001 | Operations | Runbook + drill log + evidence bundle |
 | `ISSUE-39-5` (template) | Monitoring and alerts | Dashboard schema, SLO/error-budget thresholds, alert routing, first-hour watch SOP with 120/180-minute follow-up checkpoints | OPS-METRICS-001, OPS-SLO-001, OPS-ALERT-001, OPS-WATCH-001 | Observability | Dashboard definition + alert tests + watch evidence |
 | `ISSUE-39-6` (template) | Rollback + media/privacy + scope | Rollback comms, consent/provenance schema, provider posture, retention/deletion/redaction, untrusted-input handling, governance scope gate | MEDIA-CONSENT-001, MEDIA-REVOKE-001, MEDIA-PROVENANCE-001, MEDIA-DISCLOSURE-001, PROVIDER-POSTURE-001, SEC-RETENTION-001, SEC-UNTRUSTED-001, OPS-ROLLBACK-001, GOV-SCOPE-001 | Security + Release + Governance | Signed schema, comms evidence, scope gate |
+
+## Issue #66 (Context 2) Status and Evidence Mapping
+
+### Matrix planning annotations for `DUR-IDEMP-001`, `DUR-LEASE-001`, `DUR-OUTBOX-001`
+
+- Matrix status remains exactly `Open` for `DUR-IDEMP-001`, `DUR-LEASE-001`,
+  and `DUR-OUTBOX-001`.
+- Issue `#66` is the planning handoff target for these rows; this file records
+  planning-only contracts and test hypotheses. No runtime closure evidence is
+  added yet.
+
+### One-to-one test/evidence row mappings
+
+| Matrix ID | Issue #66 evidence artifact | Planned deterministic evidence row |
+|---|---|---|
+| `DUR-IDEMP-001` | `docs/ADR/0009-context2-idempotency-lease-outbox-contract.md` (Replay-safe idempotency section) | `CTX2-IDEMP-EVID-001`: planned tests `test_context2_idempotency_replays_terminal_success`, `test_context2_idempotency_replays_terminal_error`, `test_context2_idempotency_rejects_payload_hash_conflict`, and `test_context2_idempotency_recovery_rejects_stale_owner`. |
+| `DUR-LEASE-001` | `docs/ADR/0009-context2-idempotency-lease-outbox-contract.md` (Lease ownership section) | `CTX2-LEASE-EVID-001`: planned tests `test_context2_lease_rejects_stale_writer_epoch`, `test_context2_lease_renew_preserves_epoch_and_extends_expiry`, `test_context2_lease_transfer_increments_epoch`, and `test_context2_lease_expiry_blocks_stale_owner_commit`. |
+| `DUR-OUTBOX-001` | `docs/ADR/0009-context2-idempotency-lease-outbox-contract.md` (Outbox contract section) | `CTX2-OUTBOX-EVID-001`: planned tests `test_context2_outbox_writes_state_and_event_atomically`, `test_context2_outbox_redelivery_is_at_least_once`, and `test_context2_outbox_consumer_dedupes_duplicate_delivery`. |
+
+All Context 2 runtime behavior is explicitly deferred. Local/test provider posture
+and paid-provider activation policy remain unchanged.
 
 ## Human-Only Gates
 
