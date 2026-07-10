@@ -948,6 +948,63 @@ def test_context2_lease_rejects_unrelated_live_lease_for_different_row() -> None
         )
 
 
+def test_context2_lease_rejects_unguarded_write_while_row_has_active_lease() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="requires lease fencing fields"):
+        kernel.commit(
+            transaction_id="tx-lease-3a",
+            request_id="req-lease-3a",
+            request_checksum="sha256:req-lease-3a",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+            now=acquired_at + timedelta(seconds=1),
+        )
+
+
+def test_context2_lease_rejects_partial_fencing_tuple() -> None:
+    kernel = AcidCasKernel()
+
+    with pytest.raises(AcidCasConflictError, match="must include lease_resource_id, lease_id, and lease_epoch together"):
+        kernel.commit(
+            transaction_id="tx-lease-3b",
+            request_id="req-lease-3b",
+            request_checksum="sha256:req-lease-3b",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                    lease_resource_id="run:tenant-1:owner-1:project-1:run-1",
+                    lease_id="worker-1",
+                ),
+            ),
+        )
+
+
 def test_context2_lease_rejects_owner_mismatch_for_lease_guarded_write() -> None:
     kernel = AcidCasKernel()
     acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
@@ -972,5 +1029,58 @@ def test_context2_lease_rejects_owner_mismatch_for_lease_guarded_write() -> None
                     lease_epoch=lease.lease_epoch,
                 ),
             ),
+            now=acquired_at + timedelta(seconds=1),
+        )
+
+
+def test_context2_lease_release_removes_active_lease_and_next_acquire_advances_epoch() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    kernel.release_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_epoch=lease.lease_epoch,
+        now=acquired_at + timedelta(seconds=1),
+    )
+
+    with pytest.raises(KeyError, match="No active lease"):
+        kernel.get_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1",
+            now=acquired_at + timedelta(seconds=1),
+        )
+
+    reacquired = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-2",
+        lease_ttl_ms=10_000,
+        now=acquired_at + timedelta(seconds=2),
+    )
+    assert reacquired.lease_epoch == lease.lease_epoch + 1
+
+
+def test_context2_lease_release_rejects_stale_owner() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="expected owner worker-2"):
+        kernel.release_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1",
+            lease_id="worker-2",
+            lease_epoch=lease.lease_epoch,
             now=acquired_at + timedelta(seconds=1),
         )
