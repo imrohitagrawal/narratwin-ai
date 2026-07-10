@@ -12,6 +12,16 @@ from backend.app.storage.postgres_state import (
 )
 
 
+def scoped_resource_id(
+    entity_type: str,
+    tenant_id: str,
+    owner_id: str,
+    project_id: str,
+    entity_id: str,
+) -> str:
+    return f"{entity_type}:{tenant_id}:{owner_id}:{project_id}:{entity_id}"
+
+
 def test_ch02_kernel_applies_atomic_transaction_and_versions_new_rows() -> None:
     kernel = AcidCasKernel()
 
@@ -698,7 +708,7 @@ def test_context2_idempotency_replays_terminal_success() -> None:
         tenant_id="tenant-1",
         owner_id="owner-1",
         project_id="project-1",
-        resource_id="run:run-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
     )
 
     started = kernel.start_operation(
@@ -747,7 +757,7 @@ def test_context2_idempotency_replays_terminal_error() -> None:
         tenant_id="tenant-1",
         owner_id="owner-1",
         project_id="project-1",
-        resource_id="run:run-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
     )
 
     started = kernel.start_operation(
@@ -799,7 +809,7 @@ def test_context2_idempotency_rejects_payload_hash_conflict() -> None:
         tenant_id="tenant-1",
         owner_id="owner-1",
         project_id="project-1",
-        resource_id="run:run-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
     )
 
     kernel.start_operation(
@@ -824,13 +834,96 @@ def test_context2_idempotency_rejects_payload_hash_conflict() -> None:
         )
 
 
-def test_context2_idempotency_recovery_rejects_stale_owner() -> None:
+def test_context2_idempotency_scopes_identity_by_scope_dimension() -> None:
+    kernel = AcidCasKernel()
+    scope_one = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+    scope_two = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-2"),
+    )
+
+    first = kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope_one,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+    second = kernel.start_operation(
+        transaction_id="tx-op-2",
+        request_id="req-op-2",
+        operation_id="operation-1",
+        scope=scope_two,
+        payload_hash="sha256:payload-2",
+        lease_owner_id="worker-2",
+        lease_epoch=8,
+    )
+
+    assert first.outcome == "applied"
+    assert second.outcome == "applied"
+    assert first.record.version == 1
+    assert second.record.version == 1
+    assert kernel.get_operation(operation_id="operation-1", scope=scope_one).payload_hash == "sha256:payload-1"
+    assert kernel.get_operation(operation_id="operation-1", scope=scope_two).payload_hash == "sha256:payload-2"
+    assert (
+        kernel.get_operation(operation_id="operation-1", scope=scope_one).scope.resource_id
+        == scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1")
+    )
+    assert (
+        kernel.get_operation(operation_id="operation-1", scope=scope_two).scope.resource_id
+        == scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-2")
+    )
+
+
+def test_context2_idempotency_success_rejects_stale_owner() -> None:
     kernel = AcidCasKernel()
     scope = OperationScope(
         tenant_id="tenant-1",
         owner_id="owner-1",
         project_id="project-1",
-        resource_id="run:run-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    started = kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+
+    with pytest.raises(AcidCasStaleOwnerError, match="stale owner"):
+        kernel.commit_operation_success(
+            transaction_id="tx-op-2",
+            request_id="req-op-1",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            expected_version=started.record.version,
+            lease_owner_id="worker-2",
+            lease_epoch=8,
+            response_payload={"status": "done", "runId": "run-1"},
+        )
+
+
+def test_context2_idempotency_recovery_allows_explicit_higher_epoch_handoff() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
     )
 
     started = kernel.start_operation(
@@ -854,8 +947,8 @@ def test_context2_idempotency_recovery_rejects_stale_owner() -> None:
     )
 
     with pytest.raises(AcidCasStaleOwnerError, match="stale owner"):
-        kernel.recover_operation(
-            transaction_id="tx-op-3",
+        kernel.commit_operation_success(
+            transaction_id="tx-op-3a",
             request_id="req-op-1-replay",
             operation_id="operation-1",
             scope=scope,
@@ -863,4 +956,75 @@ def test_context2_idempotency_recovery_rejects_stale_owner() -> None:
             expected_version=failed.record.version,
             lease_owner_id="worker-2",
             lease_epoch=8,
+            response_payload={"status": "done", "runId": "run-1"},
+        )
+
+    recovered = kernel.recover_operation(
+        transaction_id="tx-op-3",
+        request_id="req-op-1-replay",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=failed.record.version,
+        lease_owner_id="worker-2",
+        lease_epoch=8,
+    )
+
+    assert recovered.outcome == "applied"
+    assert recovered.record.state == "REPLAYING"
+    assert recovered.record.lease_owner_id == "worker-2"
+    assert recovered.record.lease_epoch == 8
+
+
+def test_context2_idempotency_recovery_rejects_non_advancing_handoff() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    started = kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+    failed = kernel.fail_operation_transient(
+        transaction_id="tx-op-2",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=started.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+
+    with pytest.raises(AcidCasConflictError, match="explicit owner/epoch handoff"):
+        kernel.recover_operation(
+            transaction_id="tx-op-3",
+            request_id="req-op-1-replay",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            expected_version=failed.record.version,
+            lease_owner_id="worker-1",
+            lease_epoch=7,
+        )
+
+    with pytest.raises(AcidCasStaleOwnerError, match="stale owner handoff"):
+        kernel.recover_operation(
+            transaction_id="tx-op-4",
+            request_id="req-op-1-replay",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            expected_version=failed.record.version,
+            lease_owner_id="worker-2",
+            lease_epoch=7,
         )

@@ -398,16 +398,16 @@ class AcidCasKernel:
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
                 return replay_operation_result(existing)
-            self._assert_operation_owner(
-                existing=existing,
-                lease_owner_id=lease_owner_id,
-                lease_epoch=lease_epoch,
-            )
             self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
             self._assert_operation_state(
                 existing=existing,
                 allowed_states=("FAILED_TRANSIENT",),
                 next_state="REPLAYING",
+            )
+            self._assert_recovery_handoff(
+                existing=existing,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
             )
             stored = self._store_operation_record(
                 operation_id=operation_id,
@@ -606,6 +606,24 @@ class AcidCasKernel:
                 f"{existing.operation_id} stale owner: expected "
                 f"{existing.lease_owner_id}@{existing.lease_epoch} but received "
                 f"{lease_owner_id}@{lease_epoch}."
+            )
+
+    def _assert_recovery_handoff(
+        self,
+        *,
+        existing: OperationRecord,
+        lease_owner_id: str,
+        lease_epoch: int,
+    ) -> None:
+        if lease_owner_id == existing.lease_owner_id and lease_epoch == existing.lease_epoch:
+            raise AcidCasConflictError(
+                f"Operation {existing.operation_id} recovery requires an explicit owner/epoch handoff."
+            )
+        if lease_epoch <= existing.lease_epoch:
+            raise AcidCasStaleOwnerError(
+                "Operation "
+                f"{existing.operation_id} stale owner handoff: durable epoch is "
+                f"{existing.lease_epoch} but received {lease_owner_id}@{lease_epoch}."
             )
 
     def _assert_operation_expected_version(self, *, existing: OperationRecord, expected_version: int) -> None:
