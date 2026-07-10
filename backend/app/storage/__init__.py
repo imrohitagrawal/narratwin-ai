@@ -10,8 +10,19 @@ from .migrations import (
     MigrationRunner,
     MigrationStateError,
 )
+from .postgres_state import (
+    AcidCasConflictError,
+    AcidCasKernel,
+    AcidCasStaleWriteError,
+    StoredRecord,
+    TransactionCommitResult,
+    TransactionWrite,
+)
 
 __all__ = [
+    "AcidCasConflictError",
+    "AcidCasKernel",
+    "AcidCasStaleWriteError",
     "AppliedMigrationRecord",
     "MigrationContext",
     "MigrationRegistryError",
@@ -19,6 +30,9 @@ __all__ = [
     "MigrationRunResult",
     "MigrationRunner",
     "MigrationStateError",
+    "StoredRecord",
+    "TransactionCommitResult",
+    "TransactionWrite",
     "load_state",
     "resolve_state_file",
     "write_state",
