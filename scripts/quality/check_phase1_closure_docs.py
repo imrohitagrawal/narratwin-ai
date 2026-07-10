@@ -1114,18 +1114,11 @@ def has_concrete_issue39_closure_evidence(*, evidence: str, owner: str, residual
     valid_node_ids = valid_pytest_node_ids_in_text(evidence)
     if cited_tests and {test_name for _, test_name in valid_node_ids} != cited_tests:
         return False
-    has_actions_run = bool(
-        re.search(rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+", evidence)
-    )
-    has_drill_log = bool(
-        re.search(r"\b(?:docs|reports|artifacts|logs)/[A-Za-z0-9_./-]+", evidence)
-        and "drill log" in evidence
-    )
+    has_actions_run = has_same_repo_actions_run_or_artifact_url(evidence)
+    has_drill_log = has_existing_drill_log_reference(evidence)
     if valid_node_ids and (has_actions_run or has_drill_log):
         return True
-    if re.search(rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+", evidence):
-        return True
-    if re.search(rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+/artifacts/\d+", evidence):
+    if has_actions_run:
         return True
     if has_drill_log:
         return True
@@ -1139,6 +1132,32 @@ def has_concrete_issue39_closure_evidence(*, evidence: str, owner: str, residual
     }:
         return True
     return False
+
+
+def has_same_repo_actions_run_or_artifact_url(evidence: str) -> bool:
+    boundary = r"(?=$|[\s),.;:])"
+    run_pattern = rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+{boundary}"
+    artifact_pattern = (
+        rf"https://github\.com/{re.escape(REPOSITORY_FULL_NAME)}/actions/runs/\d+/artifacts/\d+{boundary}"
+    )
+    return bool(re.search(run_pattern, evidence) or re.search(artifact_pattern, evidence))
+
+
+def has_existing_drill_log_reference(evidence: str) -> bool:
+    if "drill log" not in evidence:
+        return False
+    for match in re.finditer(r"\b(?P<path>(?:docs|reports|artifacts|logs)/[A-Za-z0-9_./-]+)", evidence):
+        path = match.group("path").rstrip(".,;:)")
+        if ".." in Path(path).parts:
+            continue
+        resolved = (ROOT / path).resolve()
+        try:
+            resolved.relative_to(ROOT)
+        except ValueError:
+            continue
+        if resolved.is_file():
+            return True
+    return has_same_repo_actions_run_or_artifact_url(evidence)
 
 
 def valid_pytest_node_ids_in_text(text: str) -> set[tuple[str, str]]:

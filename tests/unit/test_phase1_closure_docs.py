@@ -478,6 +478,68 @@ def test_issue39_closure_plan_rejects_bare_drill_log_evidence(monkeypatch: Any) 
     assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
 
 
+def test_issue39_closure_plan_rejects_nonexistent_drill_log_path(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-RESTORE-001` | Backup/restore drill | Backup scope, integrity, restore smoke, and RTO/RPO "
+        "verification | Ops | Operable restore playbook with evidence of at least one successful restore drill | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="DUR-RESTORE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="docs/reviews/no_such_drill.md drill log restore drill rto rpo",
+            satisfies="restore drill rto rpo evidence",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-RESTORE-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_drill_log_path_traversal(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-RESTORE-001` | Backup/restore drill | Backup scope, integrity, restore smoke, and RTO/RPO "
+        "verification | Ops | Operable restore playbook with evidence of at least one successful restore drill | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            matrix_id="DUR-RESTORE-001",
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="docs/../.git/config drill log restore drill rto rpo",
+            satisfies="restore drill rto rpo evidence",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-RESTORE-001 lacks concrete validation or human-only evidence." in failures
+
+
+def test_issue39_closure_plan_rejects_malformed_actions_run_url(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    row_open = (
+        "| `DUR-ACID-001` | ACID/CAS durable metadata | Production transaction model for durable "
+        "identifiers, versioning, and compare-and-set invariants | Architecture + storage | "
+        "PostgreSQL-compatible ADR section with conflict example and replay invariant checklist | Open |"
+    )
+    failures = run_issue39_closure_plan_check(
+        monkeypatch,
+        plan_text=issue39_plan_with_closed_row_and_record(
+            plan_text,
+            row_status_search=row_open,
+            row_status_replacement=row_open.replace("| Open |", "| Closed |"),
+            evidence="https://github.com/imrohitagrawal/narratwin-ai/actions/runs/123fake",
+        ),
+    )
+
+    assert "Issue #39 closed row DUR-ACID-001 lacks concrete validation or human-only evidence." in failures
+
+
 def test_issue39_closure_plan_rejects_ops_row_without_row_specific_evidence(monkeypatch: Any) -> None:
     plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
     row_open = (
