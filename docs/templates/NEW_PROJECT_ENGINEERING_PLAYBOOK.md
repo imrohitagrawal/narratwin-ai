@@ -765,6 +765,22 @@ Rules:
 - Preserve negative claims explicitly when they matter, such as "this does not
   close the production blocker" or "this does not claim production readiness."
 
+When a PR becomes approved and merge-eligible, do not wait for the owner to
+restate routine hygiene. Treat merge closeout as the default continuation of
+the work unless an explicit human-only gate remains.
+
+Minimum merge-closeout checklist:
+
+- confirm approvals and required checks are satisfied
+- use compliant merge text that respects issue-closing and reference-only rules
+- verify post-merge workflows on the default branch
+- sync local default branch to the merged remote state
+- delete merged feature branches when no longer needed
+- close satisfied child issues or follow-up tickets with evidence
+- reconcile repository-tracked status/governance docs if GitHub merge events
+  changed the authoritative state after the PR docs were written
+- report the next action only after the repository is no longer left stale
+
 ## Stop Rules
 
 Pause and run an RCA before continuing when:
@@ -905,6 +921,8 @@ media misuse.
 - Recording a checklist item without linking the evidence artifact.
 - Ending a PR, release, or governance turn without telling the owner the
   recommended next step, alternatives, and remaining human-only gates.
+- Waiting for the owner to repeat routine merge-closeout hygiene after the PR
+  is already approved and green.
 
 ## Reusable Sequence
 
