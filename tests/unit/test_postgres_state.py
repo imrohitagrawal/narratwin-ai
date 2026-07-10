@@ -1028,6 +1028,18 @@ def test_context2_idempotency_recovery_allows_same_owner_higher_epoch_advance() 
     assert recovered.record.lease_owner_id == "worker-1"
     assert recovered.record.lease_epoch == 8
 
+    with pytest.raises(AcidCasStaleOwnerError, match="stale owner"):
+        kernel.fail_operation_transient(
+            transaction_id="tx-op-4",
+            request_id="req-op-1-replay-stale",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            expected_version=failed.record.version,
+            lease_owner_id="worker-2",
+            lease_epoch=8,
+        )
+
 
 def test_context2_idempotency_recovery_rejects_cross_owner_or_non_advancing_epoch() -> None:
     kernel = AcidCasKernel()

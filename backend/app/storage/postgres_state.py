@@ -19,7 +19,6 @@ OperationState = Literal[
     "TERMINAL_SUCCESS",
     "TERMINAL_ERROR",
 ]
-OperationKey = tuple[str, str, str, str, str]
 
 
 class AcidCasError(Exception):
@@ -121,7 +120,6 @@ class AcidCasKernel:
         self._records: dict[EntityKey, StoredRecord] = {}
         self._transactions: dict[str, TransactionCommitResult] = {}
         self._transaction_fingerprints: dict[str, str] = {}
-        self._operations: dict[OperationKey, OperationRecord] = {}
         self._lock = RLock()
 
     def get(
@@ -148,9 +146,9 @@ class AcidCasKernel:
             ) from exc
 
     def get_operation(self, *, operation_id: str, scope: OperationScope) -> OperationRecord:
-        key = operation_key(operation_id=operation_id, scope=scope)
+        key = operation_entity_key(operation_id=operation_id, scope=scope)
         try:
-            return clone_operation_record(self._operations[key])
+            return clone_operation_record(operation_record_from_stored_record(self._records[key]))
         except KeyError as exc:
             raise KeyError(
                 "No durable operation for "
@@ -168,9 +166,8 @@ class AcidCasKernel:
         lease_owner_id: str,
         lease_epoch: int,
     ) -> OperationCommitResult:
-        key = operation_key(operation_id=operation_id, scope=scope)
         with self._lock:
-            existing = self._operations.get(key)
+            existing = self._get_optional_operation(operation_id=operation_id, scope=scope)
             if existing is None:
                 stored = self._store_operation_record(
                     operation_id=operation_id,
@@ -359,8 +356,18 @@ class AcidCasKernel:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state == "FAILED_TRANSIENT":
+                self._assert_operation_owner(
+                    existing=existing,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                )
                 return replay_operation_result(existing)
             if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
+                self._assert_operation_owner(
+                    existing=existing,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                )
                 return replay_operation_result(existing)
             self._assert_operation_owner(
                 existing=existing,
@@ -565,14 +572,19 @@ class AcidCasKernel:
         return tuple(staged)
 
     def _get_required_operation(self, *, operation_id: str, scope: OperationScope) -> OperationRecord:
-        key = operation_key(operation_id=operation_id, scope=scope)
         try:
-            return self._operations[key]
+            return operation_record_from_stored_record(self._records[operation_entity_key(operation_id=operation_id, scope=scope)])
         except KeyError as exc:
             raise AcidCasConflictError(
                 "Operation does not exist for "
                 f"{operation_id}:{scope.tenant_id}:{scope.owner_id}:{scope.project_id}:{scope.resource_id}."
             ) from exc
+
+    def _get_optional_operation(self, *, operation_id: str, scope: OperationScope) -> OperationRecord | None:
+        stored = self._records.get(operation_entity_key(operation_id=operation_id, scope=scope))
+        if stored is None:
+            return None
+        return operation_record_from_stored_record(stored)
 
     def _store_operation_record(
         self,
@@ -589,23 +601,61 @@ class AcidCasKernel:
         response_payload: dict[str, Any] | None = None,
         error_payload: dict[str, Any] | None = None,
     ) -> OperationRecord:
-        committed_at = _now()
-        record = OperationRecord(
-            operation_id=operation_id,
-            scope=clone_operation_scope(scope),
-            payload_hash=payload_hash,
-            state=state,
-            version=version,
-            request_id=request_id,
-            transaction_id=transaction_id,
-            lease_owner_id=lease_owner_id,
-            lease_epoch=lease_epoch,
-            committed_at=committed_at,
-            response_payload=deepcopy(response_payload),
-            error_payload=deepcopy(error_payload),
+        key = operation_entity_key(operation_id=operation_id, scope=scope)
+        existing = self._records.get(key)
+        write = TransactionWrite(
+            entity_type="operation",
+            entity_id=operation_entity_id(operation_id=operation_id, scope=scope),
+            tenant_id=scope.tenant_id,
+            owner_id=scope.owner_id,
+            project_id=scope.project_id,
+            expected_version=None if existing is None else existing.version,
+            state=operation_record_state(state),
+            payload=operation_record_payload(
+                operation_id=operation_id,
+                scope=scope,
+                payload_hash=payload_hash,
+                state=state,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+                response_payload=response_payload,
+                error_payload=error_payload,
+            ),
         )
-        self._operations[operation_key(operation_id=operation_id, scope=scope)] = record
-        return record
+        staged = self._stage_write(
+            existing=existing,
+            write=write,
+            transaction_id=transaction_id,
+            request_id=request_id,
+            request_checksum=operation_request_checksum(
+                operation_id=operation_id,
+                scope=scope,
+                payload_hash=payload_hash,
+                state=state,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+                response_payload=response_payload,
+                error_payload=error_payload,
+            ),
+        )
+        committed_at = _now()
+        committed = StoredRecord(
+            entity_type=staged.entity_type,
+            entity_id=staged.entity_id,
+            tenant_id=staged.tenant_id,
+            owner_id=staged.owner_id,
+            project_id=staged.project_id,
+            state=staged.state,
+            version=staged.version,
+            request_id=staged.request_id,
+            request_checksum=staged.request_checksum,
+            transaction_id=staged.transaction_id,
+            payload=deepcopy(staged.payload),
+            committed_at=committed_at,
+            terminal_reason=staged.terminal_reason,
+        )
+        self._records[key] = committed
+        return operation_record_from_stored_record(committed)
 
     def _assert_operation_payload_hash(self, *, existing: OperationRecord, payload_hash: str) -> None:
         if existing.payload_hash != payload_hash:
@@ -830,13 +880,99 @@ def entity_key(
     return (entity_type, tenant_id, owner_id, project_id, entity_id)
 
 
-def operation_key(*, operation_id: str, scope: OperationScope) -> OperationKey:
-    return (
-        operation_id,
-        scope.tenant_id,
-        scope.owner_id,
-        scope.project_id,
-        scope.resource_id,
+def operation_entity_id(*, operation_id: str, scope: OperationScope) -> str:
+    return f"{operation_id}::{scope.resource_id}"
+
+
+def operation_entity_key(*, operation_id: str, scope: OperationScope) -> EntityKey:
+    return entity_key(
+        entity_type="operation",
+        entity_id=operation_entity_id(operation_id=operation_id, scope=scope),
+        tenant_id=scope.tenant_id,
+        owner_id=scope.owner_id,
+        project_id=scope.project_id,
+    )
+
+
+def operation_record_state(state: OperationState) -> RecordState:
+    if state == "TERMINAL_SUCCESS":
+        return "TERMINAL"
+    if state == "TERMINAL_ERROR":
+        return "ERROR"
+    return "OPEN"
+
+
+def operation_record_payload(
+    *,
+    operation_id: str,
+    scope: OperationScope,
+    payload_hash: str,
+    state: OperationState,
+    lease_owner_id: str,
+    lease_epoch: int,
+    response_payload: dict[str, Any] | None,
+    error_payload: dict[str, Any] | None,
+) -> dict[str, Any]:
+    return {
+        "operationId": operation_id,
+        "resourceId": scope.resource_id,
+        "payloadHash": payload_hash,
+        "operationState": state,
+        "leaseOwnerId": lease_owner_id,
+        "leaseEpoch": lease_epoch,
+        "responsePayload": deepcopy(response_payload),
+        "errorPayload": deepcopy(error_payload),
+    }
+
+
+def operation_request_checksum(
+    *,
+    operation_id: str,
+    scope: OperationScope,
+    payload_hash: str,
+    state: OperationState,
+    lease_owner_id: str,
+    lease_epoch: int,
+    response_payload: dict[str, Any] | None,
+    error_payload: dict[str, Any] | None,
+) -> str:
+    return json.dumps(
+        operation_record_payload(
+            operation_id=operation_id,
+            scope=scope,
+            payload_hash=payload_hash,
+            state=state,
+            lease_owner_id=lease_owner_id,
+            lease_epoch=lease_epoch,
+            response_payload=response_payload,
+            error_payload=error_payload,
+        ),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def operation_record_from_stored_record(record: StoredRecord) -> OperationRecord:
+    payload = record.payload
+    scope = OperationScope(
+        tenant_id=record.tenant_id,
+        owner_id=record.owner_id,
+        project_id=record.project_id,
+        resource_id=payload["resourceId"],
+    )
+    return OperationRecord(
+        operation_id=payload["operationId"],
+        scope=scope,
+        payload_hash=payload["payloadHash"],
+        state=payload["operationState"],
+        version=record.version,
+        request_id=record.request_id,
+        transaction_id=record.transaction_id,
+        lease_owner_id=payload["leaseOwnerId"],
+        lease_epoch=payload["leaseEpoch"],
+        committed_at=record.committed_at,
+        response_payload=deepcopy(payload["responsePayload"]),
+        error_payload=deepcopy(payload["errorPayload"]),
     )
 
 
