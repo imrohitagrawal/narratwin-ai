@@ -931,7 +931,6 @@ class AcidCasKernel:
     def _validate_lease_guard(self, *, write: TransactionWrite, now: datetime) -> None:
         expected_resource_id = lease_resource_id_for_write(write)
         current = self._leases.get(expected_resource_id)
-        active_lease = current is not None and not _lease_is_expired(current, now)
         requires_fencing = expected_resource_id in self._lease_epochs
         lease_fields = (write.lease_resource_id, write.lease_id, write.lease_epoch)
         if lease_fields == (None, None, None):
