@@ -150,6 +150,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 | `docs/ADR/0009-context2-idempotency-lease-outbox-contract.md` | Replay-safe idempotency, lease ownership, and outbox-at-least-once contracts for issue `#39` Context 2 | Phase 1 Closure / `#66` | Added |
 | `docs/ADR/0010-context3-migrations-rollback-compatibility.md` | Migration expand/contract strategy, forward-only rollback posture, schema compatibility windows, and artifact-state compatibility planning for issue `#39` Context 3 | Phase 1 Closure / `#67`, PR `#77` | Added |
 | `docs/ADR/0011-context4-backup-restore-drill.md` | Backup scope boundaries, excluded artifacts, retention and RTO/RPO assumptions, restore integrity verification, restore drill protocol, evidence-pack format, escalation and metrics/events contracts for issue `#39` Context 4 | Phase 1 Closure / `#68` | Added |
+| `docs/ADR/0012-context5-metrics-slos-watch.md` | Queue/lease/idempotency/outbox/restore metric catalog, SLO/error-budget thresholds, alert severity matrix, and first-hour watch protocol for issue `#39` Context 5 | Phase 1 Closure / `#69` | Added |
 
 ## Document Ownership
 
@@ -209,3 +210,5 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | 2026-07-10 | `#67` | Add Context 3 migration/rollback planning | Adds advisory migration-expand/contract, rollback compatibility, and artifact-ordering guidance for `DUR-MIG-001` and `DUR-ROLLBACK-001` plus phase-1 closure allowlist/tests updates for context3 scope. |
 | 2026-07-10 | `#77` | Close context 3 planning issue | Merged context 3 migration/rollback planning and advisory ADR, classifying issue `#67` as closed and keeping runtime migration implementation deferred to follow-on contexts. |
 | 2026-07-10 | `#68` | Add context 4 backup/restore planning | Adds advisory-only restore drill ADR and evidence protocol for `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` with runtime implementation deferred. |
+| 2026-07-10 | `#78` | Close context 4 planning issue | Context 4 backup/restore planning for issue `#39` closed through PR `#78`; runtime backup tooling, restore execution, and storage operators remain deferred. |
+| 2026-07-10 | `#69` | Add context 5 operations monitoring planning | Adds advisory-only metrics/SLO/alert/watch planning ADR and evidence mapping for `OPS-METRICS-001`, `OPS-SLO-001`, `OPS-ALERT-001`, and `OPS-WATCH-001`; runtime metrics emitters, alert integrations, dashboards, and watch automation remain deferred. |

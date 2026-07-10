@@ -42,8 +42,8 @@ Use it to answer:
   follow-up for issue `#60` at merge commit `cf07ab8`; PR `#74` is in
   progress for issue `#72`; issue `#65` is now open for issue `#39` context
   work; issue `#66` is in progress for issue `#39` Context 2 planning; issue
-  `#68` is now open for issue `#39` Context 4 backup/restore planning; and issues
-  `#43`, `#44`, `#48`, `#49`, `#71`, and `#72` remain open.
+  `#68` is now closed through PR `#78` as advisory planning complete for issue `#39`
+  Context 4; and issues `#43`, `#44`, `#48`, `#49`, `#71`, and `#72` remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -160,7 +160,7 @@ Use these files together with this tracker:
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
 | Stage 8 | Complete, merged to `main` | `#13` closed | PR `#33` merged | Executable at merge | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and release-readiness review merged at `fb40113`. |
 | Final Review | Complete, merged to `main` | `#6` closed | PR `#45` merged | Executable artifact gate | Independent review artifacts merged at `5a294c7`; outcome is No-Go until Phase 1 Closure resolves blockers. |
-| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, `#42`, `#55`, `#58`, and `#60` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, `#48`, `#49`, `#65`, `#66`, `#68`, `#71`, and `#72` open | PRs `#46`, `#47`, `#50`, `#53`, `#54`, `#56`, `#59`, and `#62` merged, and PRs `#64`, `#73`, `#74`, `#76`, and `#78` in progress | Executable governance gate added | `#39` now covers remaining production-grade durability/monitoring gaps after local restart recovery and ops status evidence. `#66` carries Context 2 decomposition of idempotency/leases/outbox planning through PR `#76`; `#67` is closed through PR `#77`; `#68` carries Context 4 backup/restore planning through PR `#78` with no runtime implementation. Issue `#72` is mapped to PR `#74` to harden future final row-closure proof requirements for durability/ops/media/security/provider rows without product/runtime scope. `#43`, `#44`, `#48`, and `#49` remain P2/follow-up unless they block Phase 1 correctness; `#60` is complete as a process-only PHF follow-up with no product/runtime scope. `#39` remains open. |
+| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, `#42`, `#55`, `#58`, and `#60` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, `#48`, `#49`, `#65`, `#66`, `#69`, `#71`, and `#72` open | PRs `#46`, `#47`, `#50`, `#53`, `#54`, `#56`, `#59`, and `#62` merged, and PRs `#64`, `#73`, `#74`, `#76` in progress | Executable governance gate added | `#39` now covers remaining production-grade durability/monitoring gaps after local restart recovery and ops status evidence. `#66` carries Context 2 decomposition of idempotency/leases/outbox planning through PR `#76`; `#67` is closed through PR `#77`; `#68` is closed through PR `#78`; `#69` carries Context 5 operations monitoring planning with no runtime implementation. Issue `#72` is mapped to PR `#74` to harden future final row-closure proof requirements for durability/ops/media/security/provider rows without product/runtime scope. `#43`, `#44`, `#48`, and `#49` remain P2/follow-up unless they block Phase 1 correctness; `#60` is complete as a process-only PHF follow-up with no product/runtime scope. `#39` remains open. |
 
 ## Issue Ledger
 
@@ -199,7 +199,8 @@ Use these files together with this tracker:
 | `#65` | Open | Phase 1 follow-on | PostgreSQL durability ADR and production schema-boundary contract for issue `#39` context 1 (`docs/ADR/0008-postgresql-durability-schema-boundary.md`). |
 | `#66` | Open | Phase 1 follow-on | Context 2 decomposition for issue `#39`: advisory idempotency/lease/outbox contract and one-to-one evidence mapping (`docs/ADR/0009-context2-idempotency-lease-outbox-contract.md`, `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`). |
 | `#67` | Closed | Phase 1 follow-on | Context 3 migration/rollback compatibility planning for issue `#39`; advisory-only `DUR-MIG-001` and `DUR-ROLLBACK-001` planning. Runtime migration execution remains deferred. |
-| `#68` | In progress | Phase 1 follow-on | Context 4 backup/restore drill planning for issue `#39`; advisory-only `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` planning. Runtime backup tooling, restore execution, and storage operators remain deferred. |
+| `#68` | Closed | Phase 1 follow-on | Context 4 backup/restore planning for issue `#39` completed in PR `#78`; advisory-only `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` planning. Runtime backup tooling, restore execution, and storage operators remain deferred. |
+| `#69` | In progress | Phase 1 follow-on | Context 5 operations monitoring planning for issue `#39` covering `OPS-METRICS-001`, `OPS-SLO-001`, `OPS-ALERT-001`, and `OPS-WATCH-001`; advisory planning only, runtime dashboards/alert integrations/watch automation deferred. |
 
 ### Additional Backlog And Governance Issues
 
@@ -241,7 +242,7 @@ Use these files together with this tracker:
 | `#64` | In progress | 2026-07-09 | Phase 1 Closure Context 0 contract PR for issue `#39` on branch `phase-1-closure-39-context0-production-durability`; docs/guardrails/tests/workflow-only scope, no runtime implementation, reference-only `Refs #39` posture, and always-on Phase 1 quality validation for the required `#39` production-closure matrix shape and ID set. |
 | `#76` | In progress | 2026-07-10 | Issue `#66` / issue `#39` Context 2 governance-planning PR for idempotency, lease, and outbox production contracts only; ADR + review matrix update only. |
 | `#77` | Merged | 2026-07-10 | Context 3 migration/rollback compatibility planning PR for issue `#67` / issue `#39`; advisory-only ADR + planned evidence mapping, branch-scope checks update only. |
-| `#78` | In progress | 2026-07-10 | Context 4 backup/restore drill planning PR for issue `#68` / issue `#39`; advisory-only ADR + planning matrix updates and branch-scope checks only. |
+| `#78` | Merged | 2026-07-10 | Context 4 backup/restore drill planning PR for issue `#68` / issue `#39`; advisory-only ADR + planning matrix updates and branch-scope checks only. |
 | `#73` | In progress | 2026-07-10 | Phase 1 Closure process PR on branch `phase-1-closure-process-71-issue39-matrix-integrity`; repository-guardrail-only updates to `scripts/guardrails_check.py`, tests, and docs to enforce `#39` matrix structural validation on every applicable PR-body validation path while keeping `#39` open. |
 | `#74` | In progress | 2026-07-10 | Phase 1 Closure process PR for issue `#72` on branch `phase-1-closure-process-72-closure-evidence-hardening`; repository-guardrail-only updates to harden future `#39` final row-closure proof for durability, operations, media, security, and provider rows while keeping `#39` open and preserving no-runtime scope. |
 

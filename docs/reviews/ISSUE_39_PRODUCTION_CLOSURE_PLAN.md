@@ -34,9 +34,13 @@ Create a durable, reviewed production-closure contract for GitHub issue `#39` th
   (`DUR-MIG-001`, `DUR-ROLLBACK-001`, plus optional artifact-state compatibility for
   `DUR-STAGE6-001` and `DUR-STAGE7-001`) and remains advisory-only until runtime
   implementation contexts are active.
-- Issue `#68` is the planning context for backup/restore drill planning
-  (`DUR-RESTORE-001`, `OPS-METRICS-001`, `OPS-SLO-001`), remains advisory-only,
-  and defers runtime backup tooling and restore execution.
+- Issue `#68` is the completed planning context for backup/restore drill planning
+  (`DUR-RESTORE-001`, `OPS-METRICS-001`, `OPS-SLO-001`), closed through PR
+  `#78`; runtime backup tooling and restore execution remain deferred.
+- Issue `#69` is the planning context for operations monitoring and first-hour watch
+  for issue `#39` (`OPS-METRICS-001`, `OPS-SLO-001`, `OPS-ALERT-001`,
+  `OPS-WATCH-001`), remains advisory-only, and defers runtime alerting/watch
+  implementation.
 
 ## Non-Goals
 
@@ -143,7 +147,7 @@ All follow-on work must map every matrix ID to one or more child issues/PRs.
 | `#66` | Idempotency, leases, and outbox context2 decomposition for production durability | Replay-safe idempotency contract, lease fencing/ownership transfer contract, outbox-at-least-once contract, and one-to-one test/evidence matrix mapping | DUR-IDEMP-001, DUR-LEASE-001, DUR-OUTBOX-001 | Runtime | Advisory-only ADR + planned contract tests for implementation context |
 | `#67` | Migrations and rollback compatibility decomposition for production durability | Versioned expand/contract migration strategy, migration ordering constraints, rollback safety posture, and optional artifact-state compatibility planning for Stage 6/Stage 7 | DUR-MIG-001, DUR-ROLLBACK-001, DUR-STAGE6-001, DUR-STAGE7-001 | Runtime + Storage | Advisory-only migration ADR + planned execution-handoff matrix mapping |
 | `#68` | Backup and restore drill planning and context handoff | Backup scope boundaries, exclusion policy, restore integrity checks, RTO/RPO targets, evidence pack definitions, and escalation protocol | DUR-RESTORE-001, OPS-METRICS-001, OPS-SLO-001 | Operations | `docs/ADR/0011-context4-backup-restore-drill.md` + row-specific planned evidence IDs |
-| `ISSUE-39-5` (template) | Monitoring and alerts | Dashboard schema, SLO/error-budget thresholds, alert routing, first-hour watch SOP with 120/180-minute follow-up checkpoints | OPS-METRICS-001, OPS-SLO-001, OPS-ALERT-001, OPS-WATCH-001 | Observability | Dashboard definition + alert tests + watch evidence |
+| `#69` | Operations monitoring and first-hour watch planning | Metric catalog, SLO/error-budget thresholds, alert routing, watch checkpoints, escalation, and rollout handoff with deferred runtime implementers | OPS-METRICS-001, OPS-SLO-001, OPS-ALERT-001, OPS-WATCH-001 | Observability/Operations | `docs/ADR/0012-context5-metrics-slos-watch.md` + stable planned evidence IDs |
 | `ISSUE-39-6` (template) | Rollback + media/privacy + scope | Rollback comms, consent/provenance schema, provider posture, retention/deletion/redaction, untrusted-input handling, governance scope gate | MEDIA-CONSENT-001, MEDIA-REVOKE-001, MEDIA-PROVENANCE-001, MEDIA-DISCLOSURE-001, PROVIDER-POSTURE-001, SEC-RETENTION-001, SEC-UNTRUSTED-001, OPS-ROLLBACK-001, GOV-SCOPE-001 | Security + Release + Governance | Signed schema, comms evidence, scope gate |
 
 ## Issue #66 (Context 2) Status and Evidence Mapping
@@ -213,6 +217,28 @@ and paid-provider activation policy remain unchanged.
 | `DUR-RESTORE-001` | `docs/ADR/0011-context4-backup-restore-drill.md` (Scope, restore protocol, and evidence pack section) | `CTX4-RESTORE-EVID-001`: planned restore manifest, restore target definition, drill replay checklist, and evidence pack index. |
 | `OPS-METRICS-001` | `docs/ADR/0011-context4-backup-restore-drill.md` (Restore and operational metric contracts) | `CTX4-METRICS-EVID-001`: planned command/event catalog, queue/lease/outbox metric sampling, and restore-lag validation snapshots. |
 | `OPS-SLO-001` | `docs/ADR/0011-context4-backup-restore-drill.md` (RTO/RPO and escalation thresholds) | `CTX4-ESCALATION-EVID-001` plus `CTX4-POSTDRILL-EVID-001`: planned RTO/RPO proof pack, escalation matrix, and watch/closure summary. |
+
+## Issue #69 (Context 5) Status and Evidence Mapping
+
+### Matrix planning annotations for `OPS-METRICS-001`, `OPS-SLO-001`, `OPS-ALERT-001`, and `OPS-WATCH-001`
+
+- Matrix status remains exactly `Open` for `OPS-METRICS-001`, `OPS-SLO-001`,
+  `OPS-ALERT-001`, and `OPS-WATCH-001`.
+- Issue `#69` is the planning handoff target for these rows; this context records
+  testable evidence contracts and review artifacts only. Runtime implementation,
+  integrations, automation execution, and external tooling changes are explicitly
+  deferred.
+- Runtime dashboards, alert integrations, metrics emitters, watch automation, and
+  alert-routing execution are explicitly deferred to follow-up production contexts.
+
+### One-to-one test/evidence row mappings
+
+| Matrix ID | Issue #69 evidence artifact | Planned deterministic evidence row |
+|---|---|---|
+| `OPS-METRICS-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (Metric catalog and failure-mode mapping) | `CTX5-METRICS-EVID-001`: planned queue/lease/idempotency/restore/outbox metric catalog with query mappings, backlog/backpressure thresholds, and ownership/failure-mode tests. |
+| `OPS-SLO-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (SLO/error-budget thresholds) | `CTX5-SLO-EVID-001`: planned SLO threshold matrix, error-budget burn policy, and evidence-row with watch-state escalation linkage. |
+| `OPS-ALERT-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (Alert severity matrix and routing) | `CTX5-ALERT-EVID-001`: planned severity matrix, ownership routing, ack SLA, and closure evidence requirements tied to watch log state. |
+| `OPS-WATCH-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (First-hour watch protocol) | `CTX5-WATCH-EVID-001`: planned 120m/180m checkpoint workflow, handoff path, unresolved-condition escalation, and closure evidence sequence. |
 
 ## Human-Only Gates
 

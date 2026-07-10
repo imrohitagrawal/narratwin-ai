@@ -307,6 +307,35 @@ def test_issue39_context4_issue68_branch_rejects_runtime_product_files(monkeypat
     ]
 
 
+def test_issue39_context5_issue69_branch_allows_metrics_slos_watch_planning_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context5-metrics-slos-watch",
+        files=[
+            "docs/ADR/0012-context5-metrics-slos-watch.md",
+            "docs/STATUS.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_context5_issue69_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context5-metrics-slos-watch",
+        files=["backend/app/stage4.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-context5-metrics-slos-watch may not change backend/app/stage4.py."
+    ]
+
+
 def test_issue39_context0_branch_allows_targeted_process_and_skill_docs(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
