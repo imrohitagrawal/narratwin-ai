@@ -40,9 +40,10 @@ Create a durable, reviewed production-closure contract for GitHub issue `#39` th
 - Issue `#69` is the completed planning context for operations monitoring and first-hour watch
   for issue `#39` (`OPS-METRICS-001`, `OPS-SLO-001`, `OPS-ALERT-001`,
   `OPS-WATCH-001`), closed through PR `#79`.
-- Issue `#70` is now the active planning context for rollback/media/privacy,
+- Issue `#70` is the completed planning context for rollback/media/privacy,
   provider posture, retention/deletion/erasure planning, and untrusted durable/replayed
-  input handling. No runtime/product implementation is authorized here.
+  input handling, closed through PR `#80`. No runtime/product implementation
+  was authorized in that context.
 
 ## Non-Goals
 
@@ -251,9 +252,9 @@ and paid-provider activation policy remain unchanged.
   `MEDIA-REVOKE-001`, `MEDIA-PROVENANCE-001`, `MEDIA-DISCLOSURE-001`,
   `PROVIDER-POSTURE-001`, `SEC-RETENTION-001`, `SEC-UNTRUSTED-001`, and
   `GOV-SCOPE-001`.
-- Issue `#70` is the planning handoff target for these rows; this context records
-  testable governance and contract planning only. No runtime implementation is
-  authorized.
+- Issue `#70` was the planning handoff target for these rows and was completed
+  through PR `#80`; this context records testable governance and contract
+  planning only. No runtime implementation is authorized.
 
 ### One-to-one test/evidence row mappings
 
