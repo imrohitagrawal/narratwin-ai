@@ -737,8 +737,8 @@ def test_context2_idempotency_replays_terminal_success() -> None:
         operation_id="operation-1",
         scope=scope,
         payload_hash="sha256:payload-1",
-        lease_owner_id="worker-2",
-        lease_epoch=8,
+        lease_owner_id="worker-1",
+        lease_epoch=7,
     )
 
     assert started.outcome == "applied"
@@ -749,6 +749,17 @@ def test_context2_idempotency_replays_terminal_success() -> None:
     assert replay.replayed is True
     assert replay.record.state == "TERMINAL_SUCCESS"
     assert replay.record.response_payload == {"status": "done", "runId": "run-1"}
+
+    with pytest.raises(AcidCasStaleOwnerError, match="stale owner"):
+        kernel.start_operation(
+            transaction_id="tx-op-4",
+            request_id="req-op-1-replay-stale",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            lease_owner_id="worker-2",
+            lease_epoch=8,
+        )
 
 
 def test_context2_idempotency_replays_terminal_error() -> None:
@@ -786,8 +797,8 @@ def test_context2_idempotency_replays_terminal_error() -> None:
         operation_id="operation-1",
         scope=scope,
         payload_hash="sha256:payload-1",
-        lease_owner_id="worker-2",
-        lease_epoch=8,
+        lease_owner_id="worker-1",
+        lease_epoch=7,
     )
 
     assert failed.record.state == "TERMINAL_ERROR"
@@ -801,6 +812,17 @@ def test_context2_idempotency_replays_terminal_error() -> None:
         "code": "UPSTREAM_FAILURE",
         "message": "provider timeout",
     }
+
+    with pytest.raises(AcidCasStaleOwnerError, match="stale owner"):
+        kernel.start_operation(
+            transaction_id="tx-op-4",
+            request_id="req-op-1-replay-stale",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            lease_owner_id="worker-2",
+            lease_epoch=8,
+        )
 
 
 def test_context2_idempotency_rejects_payload_hash_conflict() -> None:
@@ -914,6 +936,37 @@ def test_context2_idempotency_success_rejects_stale_owner() -> None:
             lease_owner_id="worker-2",
             lease_epoch=8,
             response_payload={"status": "done", "runId": "run-1"},
+        )
+
+
+def test_context2_idempotency_start_rejects_stale_owner_for_inflight_operation() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+
+    with pytest.raises(AcidCasStaleOwnerError, match="stale owner"):
+        kernel.start_operation(
+            transaction_id="tx-op-2",
+            request_id="req-op-2",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            lease_owner_id="worker-2",
+            lease_epoch=8,
         )
 
 
