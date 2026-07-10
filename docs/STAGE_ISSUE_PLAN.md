@@ -602,6 +602,25 @@ chunk for issue `#39` child issue `#86`. It may touch only:
 provider/media logic, ACID/CAS durable metadata kernel work, backup/restore,
 monitoring, release posture, or unrelated governance/process files.
 
+`phase-1-closure-39-ch-02-*` is reserved for the `CH-02` ACID/CAS storage
+kernel chunk for issue `#39` child issue `#93`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/postgres_state.py`
+- `docs/ADR/0014-ch02-acid-cas-storage-kernel.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_postgres_state.py`
+
+`phase-1-closure-39-ch-02-*` must not touch Stage 4/6/7 durable graph or
+artifact orchestration, idempotency/lease/outbox runtime semantics, backup or
+restore flows, monitoring/alerts/watch, release posture, provider/media/privacy
+controls, or unrelated governance/process files.
+
 Additional allowed implementation/evidence changes for Phase 1 Closure issue
 `#39`:
 

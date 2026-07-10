@@ -132,6 +132,13 @@ uv run pytest -p no:cacheprovider tests/unit/test_storage_migrations.py
 uv run pytest -p no:cacheprovider tests/unit/test_phase1_closure_docs.py
 ```
 
+Focused CH-02 ACID/CAS kernel checks:
+
+```bash
+uv run pytest -p no:cacheprovider tests/unit/test_postgres_state.py
+uv run pytest -p no:cacheprovider tests/unit/test_phase1_closure_docs.py -k ch02
+```
+
 If `make` is unavailable, run the closest applicable checks manually:
 
 ```bash

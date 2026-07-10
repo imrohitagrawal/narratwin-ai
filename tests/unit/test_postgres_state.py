@@ -1,0 +1,690 @@
+from __future__ import annotations
+
+import pytest
+
+from backend.app.storage.postgres_state import (
+    AcidCasConflictError,
+    AcidCasKernel,
+    AcidCasStaleWriteError,
+    TransactionWrite,
+)
+
+
+def test_ch02_kernel_applies_atomic_transaction_and_versions_new_rows() -> None:
+    kernel = AcidCasKernel()
+
+    result = kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="project",
+                entity_id="project-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"name": "Project One"},
+            ),
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    assert result.outcome == "applied"
+    assert result.replayed is False
+    assert [record.version for record in result.records] == [1, 1]
+    assert (
+        kernel.get(
+            entity_type="project",
+            entity_id="project-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).payload
+        == {"name": "Project One"}
+    )
+    assert (
+        kernel.get(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).payload
+        == {"status": "queued"}
+    )
+
+
+def test_ch02_kernel_replays_committed_transaction_without_new_versions() -> None:
+    kernel = AcidCasKernel()
+    writes = (
+        TransactionWrite(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+            expected_version=None,
+            state="OPEN",
+            payload={"status": "queued"},
+        ),
+    )
+
+    first = kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=writes,
+    )
+    second = kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=writes,
+    )
+
+    assert first.outcome == "applied"
+    assert second.outcome == "replayed"
+    assert second.replayed is True
+    assert second.records == first.records
+    assert (
+        kernel.get(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).version
+        == 1
+    )
+
+
+def test_ch02_kernel_rejects_conflicting_replay_checksum() -> None:
+    kernel = AcidCasKernel()
+
+    kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="checksum"):
+        kernel.commit(
+            transaction_id="tx-1",
+            request_id="req-1",
+            request_checksum="sha256:req-2",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+        )
+
+
+def test_ch02_kernel_rejects_replay_when_request_identity_changes() -> None:
+    kernel = AcidCasKernel()
+
+    kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="checksum"):
+        kernel.commit(
+            transaction_id="tx-1",
+            request_id="req-2",
+            request_checksum="sha256:req-1",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+        )
+
+
+def test_ch02_kernel_rejects_replay_when_write_payload_changes() -> None:
+    kernel = AcidCasKernel()
+
+    kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="checksum"):
+        kernel.commit(
+            transaction_id="tx-1",
+            request_id="req-1",
+            request_checksum="sha256:req-1",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "processing"},
+                ),
+            ),
+        )
+
+
+def test_ch02_kernel_rejects_stale_write_after_newer_commit() -> None:
+    kernel = AcidCasKernel()
+
+    kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+    kernel.commit(
+        transaction_id="tx-2",
+        request_id="req-2",
+        request_checksum="sha256:req-2",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=1,
+                state="OPEN",
+                payload={"status": "processing"},
+            ),
+        ),
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="expected version 1"):
+        kernel.commit(
+            transaction_id="tx-3",
+            request_id="req-3",
+            request_checksum="sha256:req-3",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=1,
+                    state="TERMINAL",
+                    payload={"status": "done"},
+                ),
+            ),
+        )
+
+
+def test_ch02_kernel_rejects_post_terminal_write_even_when_version_matches() -> None:
+    kernel = AcidCasKernel()
+
+    kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+    terminal = kernel.commit(
+        transaction_id="tx-2",
+        request_id="req-2",
+        request_checksum="sha256:req-2",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=1,
+                state="TERMINAL",
+                payload={"status": "done"},
+            ),
+        ),
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="already TERMINAL"):
+        kernel.commit(
+            transaction_id="tx-3",
+            request_id="req-3",
+            request_checksum="sha256:req-3",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=terminal.records[0].version,
+                    state="OPEN",
+                    payload={"status": "reopened"},
+                ),
+            ),
+        )
+
+
+def test_ch02_kernel_rolls_back_all_writes_when_any_write_is_stale() -> None:
+    kernel = AcidCasKernel()
+
+    kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="project",
+                entity_id="project-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"name": "Project One"},
+            ),
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+    kernel.commit(
+        transaction_id="tx-2",
+        request_id="req-2",
+        request_checksum="sha256:req-2",
+        writes=(
+            TransactionWrite(
+                entity_type="project",
+                entity_id="project-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=1,
+                state="OPEN",
+                payload={"name": "Project One v2"},
+            ),
+        ),
+    )
+
+    with pytest.raises(AcidCasStaleWriteError):
+        kernel.commit(
+            transaction_id="tx-3",
+            request_id="req-3",
+            request_checksum="sha256:req-3",
+            writes=(
+                TransactionWrite(
+                    entity_type="project",
+                    entity_id="project-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=1,
+                    state="OPEN",
+                    payload={"name": "Project One stale"},
+                ),
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=1,
+                    state="OPEN",
+                    payload={"status": "processing"},
+                ),
+            ),
+        )
+
+    assert (
+        kernel.get(
+            entity_type="project",
+            entity_id="project-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).payload
+        == {"name": "Project One v2"}
+    )
+    assert (
+        kernel.get(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).payload
+        == {"status": "queued"}
+    )
+
+
+def test_ch02_kernel_rolls_back_valid_earlier_write_when_later_write_is_stale() -> None:
+    kernel = AcidCasKernel()
+
+    kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="project",
+                entity_id="project-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"name": "Project One"},
+            ),
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+    kernel.commit(
+        transaction_id="tx-2",
+        request_id="req-2",
+        request_checksum="sha256:req-2",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=1,
+                state="OPEN",
+                payload={"status": "processing"},
+            ),
+        ),
+    )
+
+    with pytest.raises(AcidCasStaleWriteError):
+        kernel.commit(
+            transaction_id="tx-3",
+            request_id="req-3",
+            request_checksum="sha256:req-3",
+            writes=(
+                TransactionWrite(
+                    entity_type="project",
+                    entity_id="project-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=1,
+                    state="OPEN",
+                    payload={"name": "Project One v2"},
+                ),
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=1,
+                    state="TERMINAL",
+                    payload={"status": "done"},
+                ),
+            ),
+        )
+
+    assert (
+        kernel.get(
+            entity_type="project",
+            entity_id="project-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).payload
+        == {"name": "Project One"}
+    )
+    assert (
+        kernel.get(
+            entity_type="project",
+            entity_id="project-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).version
+        == 1
+    )
+    assert (
+        kernel.get(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).payload
+        == {"status": "processing"}
+    )
+    assert (
+        kernel.get(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).version
+        == 2
+    )
+
+
+def test_ch02_kernel_returns_copies_not_mutable_internal_aliases() -> None:
+    kernel = AcidCasKernel()
+
+    result = kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="project",
+                entity_id="project-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"name": "Project One"},
+            ),
+        ),
+    )
+
+    result.records[0].payload["name"] = "tampered"
+    fetched = kernel.get(
+        entity_type="project",
+        entity_id="project-1",
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+    )
+    fetched.payload["name"] = "tampered-again"
+    replay = kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="project",
+                entity_id="project-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"name": "Project One"},
+            ),
+        ),
+    )
+
+    assert replay.records[0].payload == {"name": "Project One"}
+    assert (
+        kernel.get(
+            entity_type="project",
+            entity_id="project-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).payload
+        == {"name": "Project One"}
+    )
+
+
+def test_ch02_kernel_scopes_identity_by_tenant_owner_and_project() -> None:
+    kernel = AcidCasKernel()
+
+    tenant_one = kernel.commit(
+        transaction_id="tx-1",
+        request_id="req-1",
+        request_checksum="sha256:req-1",
+        writes=(
+            TransactionWrite(
+                entity_type="project",
+                entity_id="project-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"name": "Tenant One"},
+            ),
+        ),
+    )
+    tenant_two = kernel.commit(
+        transaction_id="tx-2",
+        request_id="req-2",
+        request_checksum="sha256:req-2",
+        writes=(
+            TransactionWrite(
+                entity_type="project",
+                entity_id="project-1",
+                tenant_id="tenant-2",
+                owner_id="owner-2",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"name": "Tenant Two"},
+            ),
+        ),
+    )
+
+    assert tenant_one.records[0].version == 1
+    assert tenant_two.records[0].version == 1
+    assert (
+        kernel.get(
+            entity_type="project",
+            entity_id="project-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).payload
+        == {"name": "Tenant One"}
+    )
+    assert (
+        kernel.get(
+            entity_type="project",
+            entity_id="project-1",
+            tenant_id="tenant-2",
+            owner_id="owner-2",
+            project_id="project-1",
+        ).payload
+        == {"name": "Tenant Two"}
+    )

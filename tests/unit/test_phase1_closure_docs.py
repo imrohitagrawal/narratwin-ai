@@ -919,13 +919,62 @@ def test_issue39_execution_strategy_branch_rejects_runtime_files(monkeypatch: An
 def test_issue39_unknown_generic_chunk_branch_rejects_runtime_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
-        branch="phase-1-closure-39-ch-02-acid-cas-kernel",
+        branch="phase-1-closure-39-ch-99-unreviewed-kernel",
         files=["backend/app/storage/postgres_state.py"],
     )
 
     assert failures == [
-        "Phase 1 Closure branch phase-1-closure-39-ch-02-acid-cas-kernel may not change "
+        "Phase 1 Closure branch phase-1-closure-39-ch-99-unreviewed-kernel may not change "
         "backend/app/storage/postgres_state.py."
+    ]
+
+
+def test_issue39_ch02_branch_allows_storage_kernel_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-02-acid-cas-kernel",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/postgres_state.py",
+            "docs/ADR/0014-ch02-acid-cas-storage-kernel.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_postgres_state.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch02_branch_rejects_stage_runtime_or_later_chunk_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-02-acid-cas-kernel",
+        files=["backend/app/stage4.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-02-acid-cas-kernel may not change backend/app/stage4.py."
+    ]
+
+
+def test_issue39_ch02_branch_rejects_adjacent_chunk_or_issue39_doc_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-02-acid-cas-kernel",
+        files=[
+            "backend/app/storage/migrations.py",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-02-acid-cas-kernel may not change backend/app/storage/migrations.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-02-acid-cas-kernel may not change docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md.",
     ]
 
 
