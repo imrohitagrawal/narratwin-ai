@@ -1076,6 +1076,52 @@ def test_issue39_context3_issue67_branch_rejects_unrelated_docs(monkeypatch: Any
     ]
 
 
+def test_issue39_ch01_branch_allows_migration_baseline_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch01-migration-baseline",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/migrations.py",
+            "docs/ADR/0013-ch01-migration-baseline-runner.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_storage_migrations.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch01_branch_rejects_unrelated_runtime_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch01-migration-baseline",
+        files=["backend/app/stage4.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch01-migration-baseline may not change backend/app/stage4.py."
+    ]
+
+
+def test_issue39_ch01_branch_rejects_broader_issue39_runtime_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch01-migration-baseline",
+        files=["backend/app/storage/file_state.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch01-migration-baseline may not change "
+        "backend/app/storage/file_state.py."
+    ]
+
+
 def test_issue39_context4_issue68_branch_allows_backup_restore_drill_artifacts(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,

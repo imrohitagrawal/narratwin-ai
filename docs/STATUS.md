@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-10
+- Last reviewed date: 2026-07-11
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only. No Phase 2 feature
   work, external provider enablement, production release tag, or public
@@ -45,8 +45,11 @@ Use it to answer:
   issue `#39` Context 0 production-closure matrix; PR `#73` closed issue
   `#71`; PR `#74` closed issue `#72`; issues `#65`, `#66`, `#67`, `#68`,
   `#69`, and `#70` are closed through PRs `#75`, `#76`, `#77`, `#78`, `#79`,
-  and `#80` respectively; and issues `#43`, `#44`, `#48`, and `#49` remain
-  open.
+  and `#80` respectively; PR `#85` merged the issue `#84` post-merge-main
+  guardrail false-positive fix at merge commit `9cc2d767134c49dee234e59159b5010b6894bd2c`;
+  issue `#84` is closed; issue `#86` is open for `#39` chunk `CH-01`
+  migration-baseline execution; and issues `#43`, `#44`, `#48`, and `#49`
+  remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -163,7 +166,7 @@ Use these files together with this tracker:
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
 | Stage 8 | Complete, merged to `main` | `#13` closed | PR `#33` merged | Executable at merge | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and release-readiness review merged at `fb40113`. |
 | Final Review | Complete, merged to `main` | `#6` closed | PR `#45` merged | Executable artifact gate | Independent review artifacts merged at `5a294c7`; outcome is No-Go until Phase 1 Closure resolves blockers. |
-| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, `#42`, `#55`, `#58`, `#60`, `#65`, `#66`, `#67`, `#68`, `#69`, `#70`, `#71`, and `#72` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, `#48`, and `#49` open | PRs `#46`, `#47`, `#50`, `#53`, `#54`, `#56`, `#59`, `#62`, `#63`, `#64`, `#73`, `#74`, `#75`, `#76`, `#77`, `#78`, `#79`, and `#80` merged | Executable governance gate added | `#39` remains open as the remaining P1 production blocker despite context planning progress across `#65`-`#70`. Issues `#65`-`#70` are now closed through PRs `#75`-`#80` respectively. `#71` and `#72` are closed process-hardening follow-ups through PRs `#73` and `#74`. `#43`, `#44`, `#48`, and `#49` remain P2/follow-up unless they block Phase 1 correctness; `#60` is complete as a process-only PHF follow-up with no product/runtime scope. |
+| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, `#42`, `#55`, `#58`, `#60`, `#65`, `#66`, `#67`, `#68`, `#69`, `#70`, `#71`, `#72`, and `#84` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, `#48`, `#49`, and `#86` open | PRs `#46`, `#47`, `#50`, `#53`, `#54`, `#56`, `#59`, `#62`, `#63`, `#64`, `#73`, `#74`, `#75`, `#76`, `#77`, `#78`, `#79`, `#80`, and `#85` merged | Executable governance gate added | `#39` remains open as the remaining P1 production blocker despite context planning progress across `#65`-`#70`. Issues `#65`-`#70` are now closed through PRs `#75`-`#80` respectively. `#71` and `#72` are closed process-hardening follow-ups through PRs `#73` and `#74`. Issue `#86` is the active `CH-01` migration-baseline execution child issue for `DUR-MIG-001`. `#43`, `#44`, `#48`, and `#49` remain P2/follow-up unless they block Phase 1 correctness; `#60` is complete as a process-only PHF follow-up with no product/runtime scope. |
 
 ## Issue Ledger
 
@@ -199,13 +202,14 @@ Use these files together with this tracker:
 | `#60` | Closed | Phase 1 process follow-up | Medium/Low PHF process-hardening completed through merged PR `#62` at `cf07ab8`: PHF matrix parsing, stricter result-bearing PR-body validation evidence, source-evidence binding inheritance, human-only merge-message surfacing, and related process-loop reduction landed without product/runtime feature implementation. |
 | `#71` | Closed | Phase 1 process follow-up | Always-on repository-guardrail structural checks for `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md` (`#39` matrix IDs, row shape, status, duplicates, unexpected IDs, and placeholders) merged through PR `#73` while keeping `#39` close-attempt behavior unchanged. |
 | `#72` | Closed | Phase 1 process follow-up | PR `#74` hardened future `#39` final row-closure records so durability, operations, media, security, and provider rows require concrete evidence types, child PRs distinct from Context 0 PR `#64`, and merged child PR provenance when GitHub API validation is available. Runtime and infrastructure scope remain untouched. |
-| `#84` | Open | Phase 1 process follow-up | PR `#85` fixes the post-merge `main` push guardrail false positive so GitHub-generated merge pushes from PRs merged to `main` are allowed while true direct pushes remain rejected. Issue `#39` remains open and Phase 1 No-Go posture is unchanged. |
+| `#84` | Closed | Phase 1 process follow-up | PR `#85` fixed the post-merge `main` push guardrail false positive so GitHub-generated merge pushes from PRs merged to `main` are allowed while true direct pushes remain rejected. Issue `#39` remains open and Phase 1 No-Go posture is unchanged. |
 | `#65` | Closed | Phase 1 follow-on | PostgreSQL durability ADR and production schema-boundary contract for issue `#39` context 1 (`docs/ADR/0008-postgresql-durability-schema-boundary.md`), closed through PR `#75`. |
 | `#66` | Closed | Phase 1 follow-on | Context 2 decomposition for issue `#39`: advisory idempotency/lease/outbox contract and one-to-one evidence mapping (`docs/ADR/0009-context2-idempotency-lease-outbox-contract.md`, `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`), closed through PR `#76`. |
 | `#67` | Closed | Phase 1 follow-on | Context 3 migration/rollback compatibility planning for issue `#39`, completed in PR `#77`; advisory-only `DUR-MIG-001` and `DUR-ROLLBACK-001` planning. Runtime migration execution remains deferred. |
 | `#68` | Closed | Phase 1 follow-on | Context 4 backup/restore planning for issue `#39` completed in PR `#78`; advisory-only `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` planning. Runtime backup tooling, restore execution, and storage operators remain deferred. |
 | `#69` | Closed | Phase 1 follow-on | Context 5 operations monitoring and watch planning for issue `#39`, completed in PR `#79`; advisory planning only, runtime dashboards/alert integrations/watch automation deferred. |
 | `#70` | Closed | Phase 1 follow-on | Context 6 rollback/media/privacy/provider-posture/replay-input planning for issue `#39` completed through PR `#80` in `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`; planned evidence IDs are `CTX6-ROLLBACK-EVID-001`, `CTX6-MEDIA-CONSENT-EVID-001`, `CTX6-MEDIA-REVOKE-EVID-001`, `CTX6-MEDIA-PROVENANCE-EVID-001`, `CTX6-MEDIA-DISCLOSURE-EVID-001`, `CTX6-PROVIDER-POSTURE-EVID-001`, `CTX6-SEC-RETENTION-EVID-001`, `CTX6-SEC-UNTRUSTED-EVID-001`, and `CTX6-GOV-SCOPE-EVID-001`. Issue `#39` remains open and these production-grade matrix rows remain `Open`. |
+| `#86` | Open | Phase 1 follow-on | `CH-01` migration baseline execution for `DUR-MIG-001`, started from updated `main` on branch `phase-1-closure-39-ch01-migration-baseline`; scope is limited to a versioned migration runner, focused tests, branch-scope guardrails, and supporting ADR/docs with reference-only `Refs #39` posture. |
 
 ### Additional Backlog And Governance Issues
 
@@ -247,7 +251,7 @@ Use these files together with this tracker:
 | `#64` | Merged | 2026-07-09 | Phase 1 Closure Context 0 contract PR for issue `#39`; docs/guardrails/tests/workflow-only scope, no runtime implementation, reference-only `Refs #39` posture, and always-on Phase 1 quality validation for the required `#39` production-closure matrix shape and ID set. |
 | `#73` | Merged | 2026-07-09 | Phase 1 Closure process PR for issue `#71`; repository-guardrail-only updates to `scripts/guardrails_check.py`, tests, and docs to enforce `#39` matrix structural validation on every applicable PR-body validation path while keeping `#39` open. |
 | `#74` | Merged | 2026-07-09 | Phase 1 Closure process PR for issue `#72`; repository-guardrail-only updates to harden future `#39` final row-closure proof for durability, operations, media, security, and provider rows while keeping `#39` open and preserving no-runtime scope. |
-| `#85` | Open | 2026-07-11 | Issue `#84` guardrail false-positive fix; allows verified GitHub PR merge pushes to `main` only when the pushed head SHA maps to a PR merged into `main`, rejects missing/malformed metadata and true direct pushes, and preserves issue `#39` reference-only No-Go posture. |
+| `#85` | Merged | 2026-07-11 | Issue `#84` guardrail false-positive fix; allows verified GitHub PR merge pushes to `main` only when the pushed head SHA maps to a PR merged into `main`, rejects missing/malformed metadata and true direct pushes, and preserves issue `#39` reference-only No-Go posture. |
 | `#75` | Merged | 2026-07-10 | Context 1 planning PR for issue `#65` / issue `#39`; advisory-only PostgreSQL production durability planning, ADR + issue-status updates, and matrix scope allowlist updates only. |
 | `#76` | Merged | 2026-07-10 | Context 2 planning PR for issue `#66` / issue `#39`; advisory-only idempotency/lease/outbox production contracts and planning matrix mapping, no runtime implementation. |
 | `#77` | Merged | 2026-07-10 | Context 3 migration/rollback compatibility planning PR for issue `#67` / issue `#39`; advisory-only ADR + planned evidence mapping, branch-scope checks update only. |
@@ -507,7 +511,8 @@ Required update rules:
 | 2026-07-09 | PR `#62` blind-review follow-up added commit-order preimplementation evidence regression coverage so reversed or unrelated commit ancestry cannot silently satisfy process-sensitive PR evidence. |
 | 2026-07-09 | PR `#62` merged at `cf07ab8`; issue `#60` final disposition is complete/closed as a process-only PHF Medium/Low hardening follow-up, with no product/runtime scope and no change to the Phase 1 production No-Go posture. |
 | 2026-07-10 | PR `#73` started for issue `#71` process follow-up on branch `phase-1-closure-process-71-issue39-matrix-integrity`; repository-guardrail validation now enforces `#39` matrix row shape, ID set, duplicate/unexpected entry checks, status validity, and placeholder contract detection on every guardrail run while `#39` stays open. |
-| 2026-07-11 | PR `#85` opened for issue `#84` to fix the direct-main-push guardrail false positive after legitimate GitHub PR merges; the change is limited to repository guardrail classification and tests, with issue `#39` Phase 1 No-Go posture unchanged. |
+| 2026-07-11 | PR `#85` merged for issue `#84` at commit `9cc2d767134c49dee234e59159b5010b6894bd2c`; the direct-main-push guardrail now allows legitimate GitHub PR merge pushes to `main` while still rejecting true direct pushes, and issue `#39` Phase 1 No-Go posture remains unchanged. |
+| 2026-07-11 | Issue `#86` started on branch `phase-1-closure-39-ch01-migration-baseline` as the first post-planning implementation chunk for issue `#39`; `CH-01` is limited to the `DUR-MIG-001` migration baseline, a versioned migration runner, focused RED/GREEN test evidence, and branch-scope guardrail updates only. |
 | 2026-07-10 | PR `#76` opened for issue `#66` Context 2 planning for issue `#39` on branch `phase-1-closure-39-context2-idempotency-lease-outbox`; ADR `0009` defines advisory-only idempotency, lease, and outbox contracts while `#39` remains open and all runtime implementation remains deferred. |
 | 2026-07-10 | PR `#77` merged migration/rollback context planning for issue `#67`; issue `#67` is closed and runtime migration tooling remains deferred pending later implementation contexts. |
 | 2026-07-10 | PR `#78` opened for issue `#68` on branch `phase-1-closure-39-context4-backup-restore-drill`; advisory-only ADR and evidence-planning updates for `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` added no runtime implementation. |
