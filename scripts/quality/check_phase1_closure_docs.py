@@ -1869,6 +1869,8 @@ def check_process_docs(failures: list[str]) -> None:
         "docs/ENGINEERING_PROCESS_RCA.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
         "preflight evidence",
+        "merge-closeout cycle",
+        "new issue, branch, or pull request",
     ):
         if marker not in agents:
             fail(failures, f"AGENTS.md missing process marker: {marker}")
@@ -1957,6 +1959,18 @@ def check_process_docs(failures: list[str]) -> None:
             ("concrete artifacts", "matrix-id coverage", "old-behavior proof"),
         ),
     )
+    normalized_playbook = re.sub(r"\s+", " ", playbook)
+    for marker in (
+        "merge closeout as the default continuation",
+        "required workflow default, not proof that automation has already completed each post-merge step",
+        "open the required follow-up issue/branch/pr",
+    ):
+        if marker not in normalized_playbook.lower():
+            fail(
+                failures,
+                "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md missing merge-closeout marker: "
+                f"{marker}",
+            )
 
     check_process_hardening_findings(
         failures,

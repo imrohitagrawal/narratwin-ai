@@ -29,7 +29,10 @@ Before changing files, read:
    without waiting for the user to restate routine hygiene: use compliant merge
    wording, verify post-merge workflows, sync local `main`, delete no-longer-
    needed branches, close satisfied child issues, and reconcile
-   `docs/STATUS.md` when repository-tracked state changed.
+   `docs/STATUS.md` when repository-tracked state changed. If reconciliation
+   itself requires a new issue, branch, or pull request to stay within the
+   no-direct-to-`main` workflow, open that follow-up governance work as part of
+   closeout instead of treating the merge as fully complete.
 7. Do not start product implementation until Stage 0 and Stage 1 gates pass.
 8. Do not implement backend, frontend, RAG, avatar, provider, Docker, database, or runtime product code in Stage 0.
 9. Build only approved vertical slices after the gates allow implementation.

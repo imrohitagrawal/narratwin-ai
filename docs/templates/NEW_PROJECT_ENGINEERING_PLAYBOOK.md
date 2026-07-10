@@ -767,7 +767,9 @@ Rules:
 
 When a PR becomes approved and merge-eligible, do not wait for the owner to
 restate routine hygiene. Treat merge closeout as the default continuation of
-the work unless an explicit human-only gate remains.
+the work unless an explicit human-only gate remains. This is a required
+workflow default, not proof that automation has already completed each
+post-merge step.
 
 Minimum merge-closeout checklist:
 
@@ -779,6 +781,9 @@ Minimum merge-closeout checklist:
 - close satisfied child issues or follow-up tickets with evidence
 - reconcile repository-tracked status/governance docs if GitHub merge events
   changed the authoritative state after the PR docs were written
+- if that reconciliation cannot legally happen inside the merged PR, open the
+  required follow-up issue/branch/PR instead of editing the default branch
+  directly
 - report the next action only after the repository is no longer left stale
 
 ## Stop Rules

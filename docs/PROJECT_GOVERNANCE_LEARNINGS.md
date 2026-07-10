@@ -374,6 +374,9 @@ Minimum merge-closeout sequence:
 - close satisfied child issues with evidence
 - reconcile repository-tracked docs such as `docs/STATUS.md` if GitHub state
   changed after the original PR docs were written
+- when that reconciliation cannot legally happen inside the merged PR, open the
+  required follow-up issue/branch/PR rather than editing the default branch
+  directly
 - state the next recommended action and any remaining human-only gate
 
 ### Review Checklist
