@@ -1779,6 +1779,46 @@ def test_context2_lease_transfer_increments_epoch() -> None:
     assert transferred.lease_id == "worker-2"
 
 
+def test_context2_lease_rejects_double_acquire_while_active() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    with pytest.raises(AcidCasConflictError, match="already held"):
+        kernel.acquire_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1",
+            lease_id="worker-2",
+            lease_ttl_ms=10_000,
+            now=acquired_at + timedelta(seconds=5),
+        )
+
+
+def test_context2_lease_heartbeat_rejects_owner_mismatch() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="expected owner worker-2"):
+        kernel.heartbeat_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1",
+            lease_id="worker-2",
+            lease_epoch=lease.lease_epoch,
+            now=acquired_at + timedelta(seconds=5),
+        )
+
+
 def test_context2_lease_rejects_stale_writer_epoch() -> None:
     kernel = AcidCasKernel()
     acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
@@ -1889,3 +1929,66 @@ def test_context2_lease_expiry_blocks_stale_owner_commit() -> None:
     )
     assert stored.version == 1
     assert stored.payload == {"status": "queued"}
+
+
+def test_context2_lease_rejects_unrelated_live_lease_for_different_row() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    unrelated_lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-2",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="does not match"):
+        kernel.commit(
+            transaction_id="tx-lease-3",
+            request_id="req-lease-3",
+            request_checksum="sha256:req-lease-3",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                    lease_resource_id=unrelated_lease.resource_id,
+                    lease_id="worker-1",
+                    lease_epoch=unrelated_lease.lease_epoch,
+                ),
+            ),
+            now=acquired_at + timedelta(seconds=1),
+        )
+
+
+def test_context2_lease_rejects_owner_mismatch_for_lease_guarded_write() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="expected lease owner worker-2"):
+        kernel.commit(
+            transaction_id="tx-lease-4",
+            request_id="req-lease-4",
+            request_checksum="sha256:req-lease-4",
+            writes=(
+                _lease_guarded_run_write(
+                    expected_version=None,
+                    status="queued",
+                    lease_id="worker-2",
+                    lease_epoch=lease.lease_epoch,
+                ),
+            ),
+            now=acquired_at + timedelta(seconds=1),
+        )
