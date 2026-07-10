@@ -394,11 +394,12 @@ class AcidCasKernel:
         expected_resource_id = lease_resource_id_for_write(write)
         current = self._leases.get(expected_resource_id)
         active_lease = current is not None and not _lease_is_expired(current, now)
+        requires_fencing = expected_resource_id in self._lease_epochs
         lease_fields = (write.lease_resource_id, write.lease_id, write.lease_epoch)
         if lease_fields == (None, None, None):
-            if active_lease:
+            if requires_fencing:
                 raise AcidCasStaleWriteError(
-                    f"{write.entity_type}:{write.entity_id} has active lease {expected_resource_id} and requires lease fencing fields."
+                    f"{write.entity_type}:{write.entity_id} is lease-fenced by {expected_resource_id} and requires lease fencing fields."
                 )
             return
         if write.lease_resource_id is None or write.lease_id is None or write.lease_epoch is None:
