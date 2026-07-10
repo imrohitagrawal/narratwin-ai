@@ -33,8 +33,11 @@ The smallest reviewed contract for this chunk is:
 
 ## Decision
 
-Extend `backend/app/storage/postgres_state.py` with an operation-level
-idempotency kernel layered beside the existing CH-02 record transaction kernel.
+Extend `backend/app/storage/postgres_state.py` with operation-level
+idempotency semantics stored as operation-scoped durable rows inside the same
+CH-02 record kernel. `CH-04` does not introduce a parallel durability store;
+it reuses the shared row-versioning boundary while keeping the operation API
+surface local to this chunk.
 
 ### 1. Canonical operation identity
 
