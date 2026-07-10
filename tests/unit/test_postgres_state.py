@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
 from backend.app.storage.postgres_state import (
@@ -8,6 +10,28 @@ from backend.app.storage.postgres_state import (
     AcidCasStaleWriteError,
     TransactionWrite,
 )
+
+
+def _lease_guarded_run_write(
+    *,
+    expected_version: int | None,
+    status: str,
+    lease_id: str,
+    lease_epoch: int,
+) -> TransactionWrite:
+    return TransactionWrite(
+        entity_type="run",
+        entity_id="run-1",
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        expected_version=expected_version,
+        state="OPEN",
+        payload={"status": status},
+        lease_resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id=lease_id,
+        lease_epoch=lease_epoch,
+    )
 
 
 def test_ch02_kernel_applies_atomic_transaction_and_versions_new_rows() -> None:
@@ -688,3 +712,162 @@ def test_ch02_kernel_scopes_identity_by_tenant_owner_and_project() -> None:
         ).payload
         == {"name": "Tenant Two"}
     )
+
+
+def test_context2_lease_renew_preserves_epoch_and_extends_expiry() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=30_000,
+        now=acquired_at,
+    )
+
+    heartbeat_at = acquired_at + timedelta(seconds=10)
+    renewed = kernel.heartbeat_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_epoch=lease.lease_epoch,
+        now=heartbeat_at,
+    )
+
+    assert renewed.lease_epoch == lease.lease_epoch == 1
+    assert renewed.acquired_at == lease.acquired_at
+    assert renewed.heartbeat_at == heartbeat_at.isoformat()
+    assert renewed.expires_at == (heartbeat_at + timedelta(seconds=30)).isoformat()
+
+
+def test_context2_lease_transfer_increments_epoch() -> None:
+    kernel = AcidCasKernel()
+    first_acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    first = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=first_acquired_at,
+    )
+    transferred = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-2",
+        lease_ttl_ms=10_000,
+        now=first_acquired_at + timedelta(seconds=11),
+    )
+
+    assert first.lease_epoch == 1
+    assert transferred.lease_epoch == 2
+    assert transferred.lease_id == "worker-2"
+
+
+def test_context2_lease_rejects_stale_writer_epoch() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+    kernel.commit(
+        transaction_id="tx-lease-1",
+        request_id="req-lease-1",
+        request_checksum="sha256:req-lease-1",
+        writes=(
+            _lease_guarded_run_write(
+                expected_version=None,
+                status="queued",
+                lease_id="worker-1",
+                lease_epoch=lease.lease_epoch,
+            ),
+        ),
+        now=acquired_at + timedelta(seconds=1),
+    )
+    reclaimed = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-2",
+        lease_ttl_ms=10_000,
+        now=acquired_at + timedelta(seconds=12),
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="lease epoch"):
+        kernel.commit(
+            transaction_id="tx-lease-2",
+            request_id="req-lease-2",
+            request_checksum="sha256:req-lease-2",
+            writes=(
+                _lease_guarded_run_write(
+                    expected_version=1,
+                    status="stale-worker-update",
+                    lease_id="worker-1",
+                    lease_epoch=lease.lease_epoch,
+                ),
+            ),
+            now=acquired_at + timedelta(seconds=13),
+        )
+
+    assert reclaimed.lease_epoch == lease.lease_epoch + 1
+    assert (
+        kernel.get(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).payload
+        == {"status": "queued"}
+    )
+
+
+def test_context2_lease_expiry_blocks_stale_owner_commit() -> None:
+    kernel = AcidCasKernel()
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+    kernel.commit(
+        transaction_id="tx-lease-1",
+        request_id="req-lease-1",
+        request_checksum="sha256:req-lease-1",
+        writes=(
+            _lease_guarded_run_write(
+                expected_version=None,
+                status="queued",
+                lease_id="worker-1",
+                lease_epoch=lease.lease_epoch,
+            ),
+        ),
+        now=acquired_at + timedelta(seconds=1),
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="expired"):
+        kernel.commit(
+            transaction_id="tx-lease-2",
+            request_id="req-lease-2",
+            request_checksum="sha256:req-lease-2",
+            writes=(
+                _lease_guarded_run_write(
+                    expected_version=1,
+                    status="expired-owner-update",
+                    lease_id="worker-1",
+                    lease_epoch=lease.lease_epoch,
+                ),
+            ),
+            now=acquired_at + timedelta(seconds=11),
+        )
+
+    stored = kernel.get(
+        entity_type="run",
+        entity_id="run-1",
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+    )
+    assert stored.version == 1
+    assert stored.payload == {"status": "queued"}
