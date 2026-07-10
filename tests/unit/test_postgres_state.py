@@ -830,6 +830,66 @@ def test_context2_outbox_writes_state_and_event_atomically() -> None:
             ),
         )
 
+
+def test_context2_outbox_replays_committed_transaction_without_duplicate_events() -> None:
+    kernel = AcidCasKernel()
+    writes = (
+        TransactionWrite(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+            expected_version=None,
+            state="OPEN",
+            payload={"status": "queued"},
+        ),
+    )
+    outbox_events = (
+        OutboxEventWrite(
+            event_id="evt-replay-1",
+            event_type="run.status.changed",
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+            resource_version=1,
+            operation_id="op-replay-1",
+            payload_hash="sha256:evt-replay-1",
+            payload={"status": "queued"},
+        ),
+    )
+
+    first = kernel.commit(
+        transaction_id="tx-outbox-replay-1",
+        request_id="req-outbox-replay-1",
+        request_checksum="sha256:req-outbox-replay-1",
+        writes=writes,
+        outbox_events=outbox_events,
+    )
+    replayed = kernel.commit(
+        transaction_id="tx-outbox-replay-1",
+        request_id="req-outbox-replay-1",
+        request_checksum="sha256:req-outbox-replay-1",
+        writes=writes,
+        outbox_events=outbox_events,
+    )
+
+    assert first.outcome == "applied"
+    assert replayed.outcome == "replayed"
+    assert replayed.replayed is True
+    assert len(replayed.outbox_events) == 1
+    assert replayed.outbox_events[0].event_id == "evt-replay-1"
+    acquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        lock_ttl_seconds=30,
+        limit=10,
+    )
+    assert len(acquired) == 1
+    assert acquired[0].event_id == "evt-replay-1"
+    assert acquired[0].attempt_count == 1
+
     with pytest.raises(AcidCasConflictError, match="same transaction"):
         kernel.commit(
             transaction_id="tx-outbox-4",
@@ -1464,4 +1524,58 @@ def test_context2_outbox_rejects_transition_after_lock_expiry() -> None:
             resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             dispatcher_id="worker-1",
             now=base + timedelta(seconds=31),
+        )
+
+
+def test_context2_outbox_rejects_transition_at_exact_lock_expiry() -> None:
+    kernel = AcidCasKernel()
+    base = datetime(2026, 7, 11, 13, 30, tzinfo=UTC)
+
+    kernel.commit(
+        transaction_id="tx-outbox-exact-1",
+        request_id="req-outbox-exact-1",
+        request_checksum="sha256:req-outbox-exact-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-exact-1",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-exact-1",
+                payload_hash="sha256:evt-exact-1",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    acquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        now=base,
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    assert len(acquired) == 1
+
+    with pytest.raises(AcidCasConflictError, match="lock for outbox event .*evt-exact-1 has expired"):
+        kernel.mark_outbox_event_succeeded(
+            event_id="evt-exact-1",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+            dispatcher_id="worker-1",
+            now=base + timedelta(seconds=30),
         )

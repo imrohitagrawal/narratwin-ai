@@ -609,7 +609,7 @@ class AcidCasKernel:
                     f"Dispatcher {dispatcher_id} does not own outbox event {resource_id}:{event_id}."
                 )
             current_time = _coerce_datetime(now)
-            if existing.locked_until is None or _parse_timestamp(existing.locked_until) < current_time:
+            if existing.locked_until is None or _parse_timestamp(existing.locked_until) <= current_time:
                 raise AcidCasConflictError(
                     f"Dispatcher {dispatcher_id} lock for outbox event {resource_id}:{event_id} has expired."
                 )
