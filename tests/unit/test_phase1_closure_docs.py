@@ -236,6 +236,48 @@ def test_issue39_context2_issue66_branch_rejects_runtime_product_files(monkeypat
     ]
 
 
+def test_issue39_context3_issue67_branch_allows_migrations_and_plan_docs(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context3-migrations-rollback",
+        files=[
+            "docs/ADR/0010-context3-migrations-rollback-compatibility.md",
+            "docs/STATUS.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_context3_issue67_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context3-migrations-rollback",
+        files=["backend/app/stage6.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-context3-migrations-rollback may not change backend/app/stage6.py."
+    ]
+
+
+def test_issue39_context3_issue67_branch_rejects_unrelated_docs(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context3-migrations-rollback",
+        files=["docs/unrelated-runtime-plan.md"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-context3-migrations-rollback may not change "
+        "docs/unrelated-runtime-plan.md."
+    ]
+
+
 def test_issue39_context0_branch_allows_targeted_process_and_skill_docs(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,

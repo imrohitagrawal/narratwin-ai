@@ -30,6 +30,10 @@ Create a durable, reviewed production-closure contract for GitHub issue `#39` th
 - Issue `#66` is the planning implementation-context for Context 2 (`DUR-IDEMP-001`,
   `DUR-LEASE-001`, `DUR-OUTBOX-001`) and remains advisory-only until runtime contexts
   start implementation.
+- Issue `#67` is the planning context for migrations and rollback compatibility
+  (`DUR-MIG-001`, `DUR-ROLLBACK-001`, plus optional artifact-state compatibility for
+  `DUR-STAGE6-001` and `DUR-STAGE7-001`) and remains advisory-only until runtime
+  implementation contexts are active.
 
 ## Non-Goals
 
@@ -61,8 +65,10 @@ Local/test defaults (`in-memory`, local JSON, staged files, local mocks) remain 
 2. **Context 1:** Storage ADR and schema blueprint, durable lease/state transition design, and migration ordering plan.
 3. **Context 2:** Durable state transitions and outbox contracts for production
    metadata plus rerun semantics. This context is planning-only in Issue `#66`.
-4. **Context 3:** Monitoring stack rollout, metrics, alerts, first-hour watch with follow-up checkpoints, and operations runbook.
-5. **Context 4:** Final closure evidence sweep, cross-context reconciliation, and final `#39` disposition decision.
+4. **Context 3:** Migrations and rollback compatibility planning for `DUR-MIG-001`,
+   `DUR-ROLLBACK-001`, and artifact-state sequencing for `DUR-STAGE6-001` / `DUR-STAGE7-001`.
+5. **Context 4:** Monitoring stack rollout, metrics, alerts, first-hour watch with follow-up checkpoints, and operations runbook.
+6. **Context 5:** Final closure evidence sweep, cross-context reconciliation, and final `#39` disposition decision.
 
 ## Context 1: PostgreSQL Durability ADR and Schema Boundary
 
@@ -131,7 +137,7 @@ All follow-on work must map every matrix ID to one or more child issues/PRs.
 |---|---|---|---|---|---|
 | `ISSUE-39-1` | Postgres durability architecture | PostgreSQL durability ADR + production schema boundary (`docs/ADR/0008-postgresql-durability-schema-boundary.md`) | DUR-ACID-001, DUR-STAGE4-001 | Architecture | ADR + schema boundary design checklist |
 | `#66` | Idempotency, leases, and outbox context2 decomposition for production durability | Replay-safe idempotency contract, lease fencing/ownership transfer contract, outbox-at-least-once contract, and one-to-one test/evidence matrix mapping | DUR-IDEMP-001, DUR-LEASE-001, DUR-OUTBOX-001 | Runtime | Advisory-only ADR + planned contract tests for implementation context |
-| `ISSUE-39-3` (template) | Migrations | Versioned expand/contract migration sequence and code-rollback posture | DUR-MIG-001, DUR-ROLLBACK-001, DUR-STAGE6-001, DUR-STAGE7-001 | Storage + API | Migration plan + backward-compatible deployment window proof |
+| `#67` | Migrations and rollback compatibility decomposition for production durability | Versioned expand/contract migration strategy, migration ordering constraints, rollback safety posture, and optional artifact-state compatibility planning for Stage 6/Stage 7 | DUR-MIG-001, DUR-ROLLBACK-001, DUR-STAGE6-001, DUR-STAGE7-001 | Runtime + Storage Planning | Advisory-only migration ADR + planned execution-handoff matrix mapping |
 | `ISSUE-39-4` (template) | Backup and restore | RPO/RTO targets, backup design, restore drill evidence | DUR-RESTORE-001, OPS-METRICS-001, OPS-SLO-001 | Operations | Runbook + drill log + evidence bundle |
 | `ISSUE-39-5` (template) | Monitoring and alerts | Dashboard schema, SLO/error-budget thresholds, alert routing, first-hour watch SOP with 120/180-minute follow-up checkpoints | OPS-METRICS-001, OPS-SLO-001, OPS-ALERT-001, OPS-WATCH-001 | Observability | Dashboard definition + alert tests + watch evidence |
 | `ISSUE-39-6` (template) | Rollback + media/privacy + scope | Rollback comms, consent/provenance schema, provider posture, retention/deletion/redaction, untrusted-input handling, governance scope gate | MEDIA-CONSENT-001, MEDIA-REVOKE-001, MEDIA-PROVENANCE-001, MEDIA-DISCLOSURE-001, PROVIDER-POSTURE-001, SEC-RETENTION-001, SEC-UNTRUSTED-001, OPS-ROLLBACK-001, GOV-SCOPE-001 | Security + Release + Governance | Signed schema, comms evidence, scope gate |
@@ -156,6 +162,33 @@ All follow-on work must map every matrix ID to one or more child issues/PRs.
 
 All Context 2 runtime behavior is explicitly deferred. Local/test provider posture
 and paid-provider activation policy remain unchanged.
+
+## Issue #67 (Context 3) Status and Evidence Mapping
+
+### Matrix planning annotations for `DUR-MIG-001` and `DUR-ROLLBACK-001`
+
+- Matrix status remains exactly `Open` for `DUR-MIG-001` and `DUR-ROLLBACK-001`.
+- Issue `#67` is the planning handoff target for these rows; this context is
+  advisory-only and does not authorize migration execution.
+- Optional Stage 6 / Stage 7 compatibility planning is limited to artifact-shape
+  compatibility planning for migration ordering and rollback safety.
+
+### One-to-one test/evidence row mappings
+
+| Matrix ID | Issue #67 evidence artifact | Planned deterministic evidence row |
+|---|---|---|
+| `DUR-MIG-001` | `docs/ADR/0010-context3-migrations-rollback-compatibility.md` (Expand/contract strategy and schema-versioning section) | `CTX3-MIG-EVID-001`: planned tests `test_context3_expand_then_contract_strategy`, `test_context3_expand_is_backward_compatible`, and `test_context3_migration_ordering_with_idempotency_lease_outbox`. |
+| `DUR-ROLLBACK-001` | `docs/ADR/0010-context3-migrations-rollback-compatibility.md` (Rollback and forward-repair section) | `CTX3-ROLLBACK-EVID-001`: planned tests `test_context3_backward_compatible_window_enforced`, `test_context3_rollback_blocks_when_unsafe_without_repair`, and `test_context3_forward_repair_restores_rollback_compatibility`. |
+| `DUR-STAGE6-001` | `docs/ADR/0010-context3-migrations-rollback-compatibility.md` (Optional Stage 6 compatibility section) | `CTX3-STAGE6-EVID-001`: planned test `test_context3_stage6_artifact_state_readers_tolerate_schema_version_gap`. |
+| `DUR-STAGE7-001` | `docs/ADR/0010-context3-migrations-rollback-compatibility.md` (Optional Stage 7 compatibility section) | `CTX3-STAGE7-EVID-001`: planned test `test_context3_stage7_artifact_state_readers_tolerate_schema_version_gap`. |
+
+### Planning-only runtime posture for Issue #67
+
+- Runtime migration execution (migration runners, schema upgrades, lock-table migration
+  scripts, data backfills, and downgrade scripts) is explicitly deferred to later
+  production implementation contexts.
+- ADRs, planning matrices, and branch allowlist/checker updates are the only artifacts
+  added in this context.
 
 ## Human-Only Gates
 
