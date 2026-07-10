@@ -50,6 +50,15 @@ This materializes the planning contract that idempotency identity is
 `(operation_id, scope)`, while keeping `payload_hash` as a conflict guard rather
 than a second dedupe key.
 
+For CH-04, `scope.resource_id` is a canonical scoped row-identity string in the
+same field order as the CH-02 durable row key:
+
+- `entity_type:tenant_id:owner_id:project_id:entity_id`
+
+Example:
+
+- `run:tenant-1:owner-1:project-1:run-1`
+
 ### 2. Executable state subset
 
 `CH-04` implements only the minimal executable subset needed for the planned
@@ -88,10 +97,18 @@ Mutating non-terminal transitions also persist:
 - `lease_owner_id`
 - `lease_epoch`
 
-Every non-terminal mutation requires an exact match on both fields. Mismatches
-are rejected as stale-owner writes. This is only a rejection hook in `CH-04`;
-lease acquisition, renewal, expiry, and ownership transfer remain owned by
-`CH-05`.
+Every non-terminal mutation except reviewed recovery requires an exact match on
+both fields. Mismatches are rejected as stale-owner writes.
+
+`FAILED_TRANSIENT -> REPLAYING` is the one reviewed exception in `CH-04`:
+
+- recovery may persist an explicit ownership handoff with a different
+  `(lease_owner_id, lease_epoch)` pair
+- the new `lease_epoch` must be strictly greater than the durable epoch
+- same-owner/same-epoch or non-advancing epochs are rejected
+
+This keeps CH-04 compatible with later `CH-05` reclaim/fencing behavior without
+implementing the full lease lifecycle yet.
 
 ### 5. Local/test posture
 
@@ -118,7 +135,7 @@ Those remain open until later chunks land and are reviewed.
 Positive:
 
 - `CH-04` now has executable proof for terminal replay, payload-hash conflict,
-  and stale-owner rejection semantics.
+  stale-owner rejection semantics, and explicit recovery handoff.
 - Later chunks inherit one durable idempotency key and replay contract instead
   of redefining one per runtime path.
 - Ownership transfer can extend the persisted `lease_owner_id` and
@@ -127,7 +144,7 @@ Positive:
 Negative:
 
 - Recovery remains intentionally narrow until `CH-05` introduces lease
-  acquisition and fencing transfer semantics.
+  acquisition, expiry, and full fencing-transfer semantics.
 - Runtime/API layers still need separate integration work before callers
   actually receive these semantics through Stage 4/6/7 endpoints.
 
