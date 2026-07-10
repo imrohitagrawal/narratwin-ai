@@ -621,6 +621,63 @@ artifact orchestration, idempotency/lease/outbox runtime semantics, backup or
 restore flows, monitoring/alerts/watch, release posture, provider/media/privacy
 controls, or unrelated governance/process files.
 
+`phase-1-closure-39-ch-04-*` is reserved for the `CH-04` idempotency semantics
+chunk for issue `#39` child issue `#97`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/postgres_state.py`
+- `docs/ADR/0015-ch04-idempotency-semantics.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_postgres_state.py`
+
+`phase-1-closure-39-ch-04-*` must not touch Stage 4/6/7 durable graph or
+artifact orchestration, lease or outbox runtime semantics, backup or restore
+flows, monitoring/alerts/watch, release posture, provider/media/privacy
+controls, or unrelated governance/process files.
+
+`phase-1-closure-39-ch-05-*` is reserved for the `CH-05` lease fencing chunk
+for issue `#39` child issue `#95`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/postgres_state.py`
+- `docs/ADR/0016-ch05-lease-fencing.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_postgres_state.py`
+
+`phase-1-closure-39-ch-05-*` must not touch Stage 4/6/7 durable graph or
+artifact orchestration, idempotency or outbox runtime semantics, backup or
+restore flows, monitoring/alerts/watch, release posture, provider/media/privacy
+controls, or unrelated governance/process files.
+
+`phase-1-closure-39-ch-06-*` is reserved for the `CH-06` committed outbox chunk
+for issue `#39` child issue `#96`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/postgres_state.py`
+- `docs/ADR/0017-ch06-committed-outbox.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_postgres_state.py`
+
+`phase-1-closure-39-ch-06-*` must not touch Stage 4/6/7 durable graph or
+artifact orchestration, idempotency or lease runtime semantics, backup or
+restore flows, monitoring/alerts/watch, release posture, provider/media/privacy
+controls, or unrelated governance/process files.
+
 Additional allowed implementation/evidence changes for Phase 1 Closure issue
 `#39`:
 

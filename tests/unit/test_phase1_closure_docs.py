@@ -978,6 +978,117 @@ def test_issue39_ch02_branch_rejects_adjacent_chunk_or_issue39_doc_files(monkeyp
     ]
 
 
+def test_issue39_ch04_branch_allows_idempotency_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-04-idempotency-semantics",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/postgres_state.py",
+            "docs/ADR/0015-ch04-idempotency-semantics.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_postgres_state.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch04_branch_rejects_runtime_or_adjacent_chunk_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-04-idempotency-semantics",
+        files=[
+            "backend/app/stage4.py",
+            "docs/ADR/0016-ch05-lease-fencing.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-04-idempotency-semantics may not change backend/app/stage4.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-04-idempotency-semantics may not change docs/ADR/0016-ch05-lease-fencing.md.",
+    ]
+
+
+def test_issue39_ch05_branch_allows_lease_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-05-lease-fencing",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/postgres_state.py",
+            "docs/ADR/0016-ch05-lease-fencing.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_postgres_state.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch05_branch_rejects_runtime_or_adjacent_chunk_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-05-lease-fencing",
+        files=[
+            "backend/app/stage6.py",
+            "docs/ADR/0017-ch06-committed-outbox.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-05-lease-fencing may not change backend/app/stage6.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-05-lease-fencing may not change docs/ADR/0017-ch06-committed-outbox.md.",
+    ]
+
+
+def test_issue39_ch06_branch_allows_outbox_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-06-committed-outbox",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/postgres_state.py",
+            "docs/ADR/0017-ch06-committed-outbox.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_postgres_state.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch06_branch_rejects_runtime_or_adjacent_chunk_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-06-committed-outbox",
+        files=[
+            "backend/app/stage7.py",
+            "docs/ADR/0015-ch04-idempotency-semantics.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-06-committed-outbox may not change backend/app/stage7.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-06-committed-outbox may not change docs/ADR/0015-ch04-idempotency-semantics.md.",
+    ]
+
+
 def test_status_keeps_issue39_open_while_matrix_rows_are_open(monkeypatch: Any) -> None:
     status_text = phase1.read("docs/STATUS.md")
     failures = run_release_docs_check(
