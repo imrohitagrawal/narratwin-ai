@@ -43,6 +43,19 @@ def run_changed_files_check(monkeypatch: Any, *, branch: str, files: list[str]) 
     return failures
 
 
+def run_branch_check(
+    monkeypatch: Any,
+    *,
+    branch: str,
+    ancestor_ok: bool = True,
+) -> list[str]:
+    monkeypatch.setattr(phase1, "current_branch", lambda: branch)
+    monkeypatch.setattr(phase1, "git_ok", lambda args: ancestor_ok)
+    failures: list[str] = []
+    phase1.check_branch(failures)
+    return failures
+
+
 def run_process_docs_check(
     monkeypatch: Any, *, branch: str, changed: list[str], read_overrides: dict[str, str] | None = None
 ) -> list[str]:
@@ -166,6 +179,30 @@ def test_issue72_process_branch_rejects_unrelated_review_docs(monkeypatch: Any) 
         "Phase 1 Closure branch phase-1-closure-process-72-closure-evidence-hardening may not change "
         "docs/reviews/unrelated.md."
     ]
+
+
+def test_issue39_chunk_branch_requires_dependency_commit_ancestry(monkeypatch: Any) -> None:
+    failures = run_branch_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-04-idempotency-semantics",
+        ancestor_ok=False,
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-04-idempotency-semantics must contain dependency "
+        "commits: c47471d0c8218d59509cba936fe216b86c9ac1e9."
+    ]
+
+
+def test_issue39_chunk_branch_accepts_required_dependency_commit_ancestry(monkeypatch: Any) -> None:
+    assert (
+        run_branch_check(
+            monkeypatch,
+            branch="phase-1-closure-39-ch-05-lease-fencing",
+            ancestor_ok=True,
+        )
+        == []
+    )
 
 
 def test_issue39_closure_plan_accepts_current_matrix() -> None:

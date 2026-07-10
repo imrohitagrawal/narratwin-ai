@@ -522,11 +522,22 @@ ISSUE_39_OPERATIONAL_CLOSURE_EVIDENCE_TERMS = {
 ISSUE_39_PRODUCTION_GRADE_ROW_PREFIXES = ("DUR-", "OPS-", "MEDIA-", "SEC-", "PROVIDER-")
 ISSUE_39_DRILL_LOG_PREFIXES = ("docs/reviews/drills/", "reports/", "artifacts/", "logs/")
 ISSUE_39_DRILL_LOG_SUFFIXES = {".json", ".jsonl", ".log", ".md", ".txt"}
+ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
+    "phase-1-closure-39-ch-02-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
+    "phase-1-closure-39-ch-04-": ("c47471d0c8218d59509cba936fe216b86c9ac1e9",),
+    "phase-1-closure-39-ch-05-": ("c47471d0c8218d59509cba936fe216b86c9ac1e9",),
+    "phase-1-closure-39-ch-06-": ("c47471d0c8218d59509cba936fe216b86c9ac1e9",),
+}
 
 
 def run_git(args: list[str]) -> str:
     result = subprocess.run(["git", *args], cwd=ROOT, check=False, text=True, capture_output=True)
     return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def git_ok(args: list[str]) -> bool:
+    result = subprocess.run(["git", *args], cwd=ROOT, check=False, text=True, capture_output=True)
+    return result.returncode == 0
 
 
 def current_branch() -> str:
@@ -1537,6 +1548,20 @@ def check_branch(failures: list[str]) -> None:
         fail(failures, "Phase 1 Closure gate could not resolve the current branch; failing closed.")
     elif branch != "main" and not PHASE1_BRANCH.match(branch):
         fail(failures, f"Phase 1 Closure work must run on phase-1-closure-* or main; got {branch}.")
+    else:
+        for prefix, required_commits in ISSUE_39_BRANCH_REQUIRED_ANCESTORS.items():
+            if not branch.startswith(prefix):
+                continue
+            missing = [
+                commit
+                for commit in required_commits
+                if not git_ok(["merge-base", "--is-ancestor", commit, "HEAD"])
+            ]
+            if missing:
+                fail(
+                    failures,
+                    f"Phase 1 Closure branch {branch} must contain dependency commits: {', '.join(missing)}.",
+                )
 
 
 def check_required_files(failures: list[str]) -> None:
