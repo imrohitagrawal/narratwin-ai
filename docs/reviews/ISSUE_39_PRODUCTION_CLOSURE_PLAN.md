@@ -27,20 +27,22 @@ Create a durable, reviewed production-closure contract for GitHub issue `#39` th
   - consent/provenance/provider release controls.
   - deletion/erasure semantics and untrusted-input handling across durable/replayed artifacts.
 - `Context 0` does not close `#39`; it defines the contract only.
-- Issue `#66` is the planning implementation-context for Context 2 (`DUR-IDEMP-001`,
-  `DUR-LEASE-001`, `DUR-OUTBOX-001`) and remains advisory-only until runtime contexts
-  start implementation.
-- Issue `#67` is the planning context for migrations and rollback compatibility
-  (`DUR-MIG-001`, `DUR-ROLLBACK-001`, plus optional artifact-state compatibility for
-  `DUR-STAGE6-001` and `DUR-STAGE7-001`) and remains advisory-only until runtime
-  implementation contexts are active.
+- Issue `#66` is the completed planning context for Context 2 (`DUR-IDEMP-001`,
+  `DUR-LEASE-001`, `DUR-OUTBOX-001`), closed through PR `#76`; runtime
+  implementation remains deferred.
+- Issue `#67` is the completed planning context for migrations and rollback
+  compatibility (`DUR-MIG-001`, `DUR-ROLLBACK-001`, plus optional artifact-state
+  compatibility for `DUR-STAGE6-001` and `DUR-STAGE7-001`), closed through PR
+  `#77`.
 - Issue `#68` is the completed planning context for backup/restore drill planning
   (`DUR-RESTORE-001`, `OPS-METRICS-001`, `OPS-SLO-001`), closed through PR
   `#78`; runtime backup tooling and restore execution remain deferred.
-- Issue `#69` is the planning context for operations monitoring and first-hour watch
+- Issue `#69` is the completed planning context for operations monitoring and first-hour watch
   for issue `#39` (`OPS-METRICS-001`, `OPS-SLO-001`, `OPS-ALERT-001`,
-  `OPS-WATCH-001`), remains advisory-only, and defers runtime alerting/watch
-  implementation.
+  `OPS-WATCH-001`), closed through PR `#79`.
+- Issue `#70` is now the active planning context for rollback/media/privacy,
+  provider posture, retention/deletion/erasure planning, and untrusted durable/replayed
+  input handling. No runtime/product implementation is authorized here.
 
 ## Non-Goals
 
@@ -76,7 +78,8 @@ Local/test defaults (`in-memory`, local JSON, staged files, local mocks) remain 
    `DUR-ROLLBACK-001`, and artifact-state sequencing for `DUR-STAGE6-001` / `DUR-STAGE7-001`.
 5. **Context 4:** Backup and restore drill planning with durability artifacts,
    RTO/RPO targets, restore integrity checks, metrics/events contracts, and escalation runbook.
-6. **Context 5:** Operations monitoring, SLO/error-budget, alert-routing, and first-hour watch planning for Issue `#69`; final `#39` disposition remains deferred.
+6. **Context 5:** Operations monitoring, SLO/error-budget, alert-routing, and first-hour watch planning for Issue `#69`.
+7. **Context 6:** Rollback communications, media/privacy/provider/revocation/release controls, retention/deletion/erasure planning, and untrusted durable/replayed input handling for Issue `#70`.
 
 ## Context 1: PostgreSQL Durability ADR and Schema Boundary
 
@@ -148,7 +151,7 @@ All follow-on work must map every matrix ID to one or more child issues/PRs.
 | `#67` | Migrations and rollback compatibility decomposition for production durability | Versioned expand/contract migration strategy, migration ordering constraints, rollback safety posture, and optional artifact-state compatibility planning for Stage 6/Stage 7 | DUR-MIG-001, DUR-ROLLBACK-001, DUR-STAGE6-001, DUR-STAGE7-001 | Runtime + Storage | Advisory-only migration ADR + planned execution-handoff matrix mapping |
 | `#68` | Backup and restore drill planning and context handoff | Backup scope boundaries, exclusion policy, restore integrity checks, RTO/RPO targets, evidence pack definitions, and escalation protocol | DUR-RESTORE-001, OPS-METRICS-001, OPS-SLO-001 | Operations | `docs/ADR/0011-context4-backup-restore-drill.md` + row-specific planned evidence IDs |
 | `#69` | Operations monitoring and first-hour watch planning | Metric catalog, SLO/error-budget thresholds, alert routing, watch checkpoints, escalation, and rollout handoff with deferred runtime implementers | OPS-METRICS-001, OPS-SLO-001, OPS-ALERT-001, OPS-WATCH-001 | Observability/Operations | `docs/ADR/0012-context5-metrics-slos-watch.md` + stable planned evidence IDs |
-| `ISSUE-39-6` (template) | Rollback + media/privacy + scope | Rollback comms, consent/provenance schema, provider posture, retention/deletion/redaction, untrusted-input handling, governance scope gate | MEDIA-CONSENT-001, MEDIA-REVOKE-001, MEDIA-PROVENANCE-001, MEDIA-DISCLOSURE-001, PROVIDER-POSTURE-001, SEC-RETENTION-001, SEC-UNTRUSTED-001, OPS-ROLLBACK-001, GOV-SCOPE-001 | Security + Release + Governance | Signed schema, comms evidence, scope gate |
+| `#70` | Rollback + media/privacy + provider posture + scope | Rollback comms, consent/revocation/provenance schema, provider release posture, retention/deletion/redaction, and untrusted-input handling | MEDIA-CONSENT-001, MEDIA-REVOKE-001, MEDIA-PROVENANCE-001, MEDIA-DISCLOSURE-001, PROVIDER-POSTURE-001, SEC-RETENTION-001, SEC-UNTRUSTED-001, OPS-ROLLBACK-001, GOV-SCOPE-001 | Security + Release + Governance | Planning-only evidence anchors in this issue file plus stable IDs (`CTX6-*`) |
 
 ## Issue #66 (Context 2) Status and Evidence Mapping
 
@@ -156,7 +159,7 @@ All follow-on work must map every matrix ID to one or more child issues/PRs.
 
 - Matrix status remains exactly `Open` for `DUR-IDEMP-001`, `DUR-LEASE-001`,
   and `DUR-OUTBOX-001`.
-- Issue `#66` is the planning handoff target for these rows; this file records
+- Issue `#66` is closed for context planning and was completed in PR `#76`; this file records
   planning-only contracts and test hypotheses. No runtime closure evidence is
   added yet.
 
@@ -176,7 +179,7 @@ and paid-provider activation policy remain unchanged.
 ### Matrix planning annotations for `DUR-MIG-001` and `DUR-ROLLBACK-001`
 
 - Matrix status remains exactly `Open` for `DUR-MIG-001` and `DUR-ROLLBACK-001`.
-- Issue `#67` is the planning handoff target for these rows; this context is
+- Issue `#67` is closed for context planning and was completed in PR `#77`; this context is
   advisory-only and does not authorize migration execution.
 - Optional Stage 6 / Stage 7 compatibility planning is limited to artifact-shape
   compatibility planning for migration ordering and rollback safety.
@@ -204,9 +207,9 @@ and paid-provider activation policy remain unchanged.
 
 - Matrix status remains exactly `Open` for `DUR-RESTORE-001`, `OPS-METRICS-001`, and
   `OPS-SLO-001`.
-- Issue `#68` is the planning handoff target for these rows; this context records
-  context handoff artifacts and evidence pack contracts only. Runtime implementation
-  remains deferred.
+- Issue `#68` is closed for context planning and was completed in PR `#78`;
+  this context records context handoff artifacts and evidence pack contracts only.
+  Runtime implementation remains deferred.
 - Runtime backup tooling, restore automation, storage operators, and restore execution
   are explicitly deferred to follow-up implementation contexts.
 
@@ -224,7 +227,7 @@ and paid-provider activation policy remain unchanged.
 
 - Matrix status remains exactly `Open` for `OPS-METRICS-001`, `OPS-SLO-001`,
   `OPS-ALERT-001`, and `OPS-WATCH-001`.
-- Issue `#69` is the planning handoff target for these rows; this context records
+- Issue `#69` is closed for planning and was completed in PR `#79`; this context records
   testable evidence contracts and review artifacts only. Runtime implementation,
   integrations, automation execution, and external tooling changes are explicitly
   deferred.
@@ -239,6 +242,70 @@ and paid-provider activation policy remain unchanged.
 | `OPS-SLO-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (SLO/error-budget thresholds) | `CTX5-SLO-EVID-001`: planned SLO threshold matrix, per-SLO error-budget windows, burn policy, and evidence-row with watch-state escalation linkage. |
 | `OPS-ALERT-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (Alert severity matrix and routing) | `CTX5-ALERT-EVID-001`: planned severity matrix, ownership routing, ack SLA, and closure evidence requirements tied to watch log state. |
 | `OPS-WATCH-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (First-hour watch protocol) | `CTX5-WATCH-EVID-001`: planned 120m/180m checkpoint workflow, handoff path, unresolved-condition escalation, and closure evidence sequence. |
+
+## Issue #70 (Context 6) Status and Evidence Mapping
+
+### Matrix planning annotations for rollback/media/privacy/release controls
+
+- Matrix status remains exactly `Open` for `OPS-ROLLBACK-001`, `MEDIA-CONSENT-001`,
+  `MEDIA-REVOKE-001`, `MEDIA-PROVENANCE-001`, `MEDIA-DISCLOSURE-001`,
+  `PROVIDER-POSTURE-001`, `SEC-RETENTION-001`, `SEC-UNTRUSTED-001`, and
+  `GOV-SCOPE-001`.
+- Issue `#70` is the planning handoff target for these rows; this context records
+  testable governance and contract planning only. No runtime implementation is
+  authorized.
+
+### One-to-one test/evidence row mappings
+
+| Matrix ID | Issue #70 evidence artifact | Planned deterministic evidence row |
+|---|---|---|
+| `OPS-ROLLBACK-001` | `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md#ctx6-rollback` | `CTX6-ROLLBACK-EVID-001`: planned freeze-window rubric, rollback ownership confirmation path, comms template, and evidence capture checklist. |
+| `MEDIA-CONSENT-001` | `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md#ctx6-media-consent` | `CTX6-MEDIA-CONSENT-EVID-001`: planned affirmative consent schema including actor, timestamp, artifact references, text/version, and scope binding. |
+| `MEDIA-REVOKE-001` | `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md#ctx6-media-revoke` | `CTX6-MEDIA-REVOKE-EVID-001`: planned revocation decision table for retain/block-replay/takedown and communications paths. |
+| `MEDIA-PROVENANCE-001` | `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md#ctx6-media-provenance` | `CTX6-MEDIA-PROVENANCE-EVID-001`: planned provenance binding for source-run/providerversion/artifact checksums and identity/likeness denial evidence. |
+| `MEDIA-DISCLOSURE-001` | `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md#ctx6-media-disclosure` | `CTX6-MEDIA-DISCLOSURE-EVID-001`: planned disclosure text/version binding and artifact-flag validation for export/public-use posture. |
+| `PROVIDER-POSTURE-001` | `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md#ctx6-provider-posture` | `CTX6-PROVIDER-POSTURE-EVID-001`: planned provider release checklist for legal/license review, mock/local defaults, egress control, key isolation, prompt exclusion, and rollback disablement evidence. |
+| `SEC-RETENTION-001` | `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md#ctx6-retention` | `CTX6-SEC-RETENTION-EVID-001`: planned deletion/erasure and redaction matrix across metadata, backups, logs, restored environments, and replay/export controls. |
+| `SEC-UNTRUSTED-001` | `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md#ctx6-untrusted-input` | `CTX6-SEC-UNTRUSTED-EVID-001`: planned durable-replayed-input validation model, output encoding, prompt-injection controls, restore-time revalidation, and replay/export safety evidence. |
+| `GOV-SCOPE-001` | `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md#ctx6-governance-scope` | `CTX6-GOV-SCOPE-EVID-001`: planned governance split check with one-to-one follow-on issue/PR mapping and explicit scope-separation evidence requirements. |
+
+### Context 6 Evidence Pack
+
+#### ctx6-rollback
+
+- `CTX6-ROLLBACK-EVID-001`: freeze-window rubric, rollback ownership confirmation path, comms template, and evidence capture checklist.
+
+#### ctx6-media-consent
+
+- `CTX6-MEDIA-CONSENT-EVID-001`: consent schema includes actor identity, timestamp, artifact refs, versioned consent text, scope binding, and replay retention rules.
+
+#### ctx6-media-revoke
+
+- `CTX6-MEDIA-REVOKE-EVID-001`: revocation table covers block-replay vs takedown vs retain-only outcomes, plus customer/provisioner communication paths.
+
+#### ctx6-media-provenance
+
+- `CTX6-MEDIA-PROVENANCE-EVID-001`: provenance binding policy for source-run, provider version, artifact checksums, and identity/likeness denial evidence.
+
+#### ctx6-media-disclosure
+
+- `CTX6-MEDIA-DISCLOSURE-EVID-001`: disclosure text/version binding, artifact flagging, and release posture validation controls.
+
+#### ctx6-provider-posture
+
+- `CTX6-PROVIDER-POSTURE-EVID-001`: provider-disabled default for local/dev/test, legal/license review check, mock/local adapter posture, key isolation, prompt exclusion, and rollback disablement criteria.
+
+#### ctx6-retention
+
+- `CTX6-SEC-RETENTION-EVID-001`: retention/deletion/redaction matrix for metadata, consent, provenance, logs, backups, and restored environments.
+
+#### ctx6-untrusted-input
+
+- `CTX6-SEC-UNTRUSTED-EVID-001`: durable/replayed-input validation, output encoding, prompt-injection controls, restore-time revalidation, and replay/export safety controls.
+
+#### ctx6-governance-scope
+
+- `CTX6-GOV-SCOPE-EVID-001`: governance handoff matrix linking each remaining blocker to follow-on issue/PR ownership and explicit scope-delimitation checks.
 
 ## Human-Only Gates
 
@@ -323,7 +390,7 @@ This context is limited to `#39` production durability and monitoring closure pl
 
 - Architecture/state review: completed. Findings to close in child contexts:
   - fix table parseability for `OPS-WATCH-001`,
-  - map `GOV-SCOPE-001` to ownership in `ISSUE-39-6`.
+  - map `GOV-SCOPE-001` to ownership in Issue `#70`.
 - Ops/release review: completed. Findings to close:
   - add concrete metric catalog, dashboard query mapping, and alert-action tests,
   - define first-hour watch evidence log, follow-up checkpoints, and escalation thresholds,
