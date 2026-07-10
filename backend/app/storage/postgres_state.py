@@ -13,7 +13,8 @@ RecordState = Literal["OPEN", "TERMINAL", "ERROR"]
 CommitOutcome = Literal["applied", "replayed"]
 OutboxEventState = Literal["PENDING", "DELIVERING", "SUCCEEDED", "FAILED"]
 EntityKey = tuple[str, str, str, str, str]
-ConsumerDeliveryKey = tuple[str, str, str, int]
+OutboxEventKey = tuple[str, str]
+ConsumerDeliveryKey = tuple[str, str, str, str, int]
 
 
 class AcidCasError(Exception):
@@ -77,6 +78,7 @@ class StoredRecord:
 class StoredOutboxEvent:
     event_id: str
     event_type: str
+    resource_id: str
     entity_type: str
     entity_id: str
     tenant_id: str
@@ -100,6 +102,7 @@ class StoredOutboxEvent:
 class ConsumerDeliveryRecord:
     event_id: str
     event_type: str
+    resource_id: str
     consumer_name: str
     resource_version: int
     duplicate: bool
@@ -125,7 +128,7 @@ class AcidCasKernel:
 
     def __init__(self) -> None:
         self._records: dict[EntityKey, StoredRecord] = {}
-        self._outbox_events: dict[str, StoredOutboxEvent] = {}
+        self._outbox_events: dict[OutboxEventKey, StoredOutboxEvent] = {}
         self._transactions: dict[str, TransactionCommitResult] = {}
         self._transaction_fingerprints: dict[str, str] = {}
         self._consumer_deliveries: dict[ConsumerDeliveryKey, ConsumerDeliveryRecord] = {}
@@ -216,6 +219,7 @@ class AcidCasKernel:
                 StoredOutboxEvent(
                     event_id=event.event_id,
                     event_type=event.event_type,
+                    resource_id=outbox_resource_id_for_write(event),
                     entity_type=event.entity_type,
                     entity_id=event.entity_id,
                     tenant_id=event.tenant_id,
@@ -257,16 +261,16 @@ class AcidCasKernel:
                     )
                 ] = record
             for event in committed_outbox_events:
-                self._outbox_events[event.event_id] = event
+                self._outbox_events[outbox_event_key_for_record(event)] = event
             self._transactions[transaction_id] = stored_result
             self._transaction_fingerprints[transaction_id] = fingerprint
             return clone_result(stored_result)
 
-    def get_outbox_event(self, event_id: str) -> StoredOutboxEvent:
+    def get_outbox_event(self, *, event_id: str, resource_id: str) -> StoredOutboxEvent:
         try:
-            return clone_outbox_event(self._outbox_events[event_id])
+            return clone_outbox_event(self._outbox_events[(resource_id, event_id)])
         except KeyError as exc:
-            raise KeyError(f"No durable outbox event for {event_id}") from exc
+            raise KeyError(f"No durable outbox event for {resource_id}:{event_id}") from exc
 
     def acquire_outbox_events(
         self,
@@ -278,6 +282,8 @@ class AcidCasKernel:
     ) -> tuple[StoredOutboxEvent, ...]:
         if limit <= 0:
             return ()
+        if lock_ttl_seconds <= 0:
+            raise AcidCasConflictError("Outbox lock TTL must be a positive second value.")
 
         current_time = _coerce_datetime(now)
         current_iso = current_time.isoformat()
@@ -296,6 +302,7 @@ class AcidCasKernel:
                 updated = StoredOutboxEvent(
                     event_id=event.event_id,
                     event_type=event.event_type,
+                    resource_id=event.resource_id,
                     entity_type=event.entity_type,
                     entity_id=event.entity_id,
                     tenant_id=event.tenant_id,
@@ -314,7 +321,7 @@ class AcidCasKernel:
                     created_at=event.created_at,
                     updated_at=current_iso,
                 )
-                self._outbox_events[event.event_id] = updated
+                self._outbox_events[outbox_event_key_for_record(updated)] = updated
                 acquired.append(clone_outbox_event(updated))
             return tuple(acquired)
 
@@ -322,6 +329,7 @@ class AcidCasKernel:
         self,
         *,
         event_id: str,
+        resource_id: str,
         dispatcher_id: str,
         next_attempt_at: datetime,
         last_error: str,
@@ -329,6 +337,7 @@ class AcidCasKernel:
     ) -> StoredOutboxEvent:
         return self._transition_outbox_event(
             event_id=event_id,
+            resource_id=resource_id,
             dispatcher_id=dispatcher_id,
             state="PENDING",
             next_attempt_at=next_attempt_at.isoformat(),
@@ -340,11 +349,13 @@ class AcidCasKernel:
         self,
         *,
         event_id: str,
+        resource_id: str,
         dispatcher_id: str,
         now: datetime | None = None,
     ) -> StoredOutboxEvent:
         return self._transition_outbox_event(
             event_id=event_id,
+            resource_id=resource_id,
             dispatcher_id=dispatcher_id,
             state="SUCCEEDED",
             next_attempt_at=None,
@@ -356,12 +367,14 @@ class AcidCasKernel:
         self,
         *,
         event_id: str,
+        resource_id: str,
         dispatcher_id: str,
         last_error: str,
         now: datetime | None = None,
     ) -> StoredOutboxEvent:
         return self._transition_outbox_event(
             event_id=event_id,
+            resource_id=resource_id,
             dispatcher_id=dispatcher_id,
             state="FAILED",
             next_attempt_at=None,
@@ -373,25 +386,31 @@ class AcidCasKernel:
         self,
         *,
         event_id: str,
+        resource_id: str,
         event_type: str,
         consumer_name: str,
         resource_version: int,
     ) -> ConsumerDeliveryRecord:
-        key = (event_type, event_id, consumer_name, resource_version)
+        key = (event_type, resource_id, event_id, consumer_name, resource_version)
         recorded_at = _now()
         with self._lock:
-            committed_event = self._outbox_events.get(event_id)
+            committed_event = self._outbox_events.get((resource_id, event_id))
             if committed_event is None:
-                raise AcidCasConflictError(f"No committed outbox event exists for {event_id}.")
-            if committed_event.event_type != event_type or committed_event.resource_version != resource_version:
+                raise AcidCasConflictError(f"No committed outbox event exists for {resource_id}:{event_id}.")
+            if (
+                committed_event.event_type != event_type
+                or committed_event.resource_version != resource_version
+                or committed_event.resource_id != resource_id
+            ):
                 raise AcidCasConflictError(
-                    f"Consumer delivery for {event_id} does not match committed outbox event identity/version."
+                    f"Consumer delivery for {resource_id}:{event_id} does not match committed outbox event identity/version."
                 )
             existing = self._consumer_deliveries.get(key)
             if existing is None:
                 record = ConsumerDeliveryRecord(
                     event_id=event_id,
                     event_type=event_type,
+                    resource_id=resource_id,
                     consumer_name=consumer_name,
                     resource_version=resource_version,
                     duplicate=False,
@@ -403,6 +422,7 @@ class AcidCasKernel:
                 record = ConsumerDeliveryRecord(
                     event_id=event_id,
                     event_type=event_type,
+                    resource_id=resource_id,
                     consumer_name=consumer_name,
                     resource_version=resource_version,
                     duplicate=True,
@@ -521,18 +541,19 @@ class AcidCasKernel:
             ): record
             for record in staged_records
         }
-        seen_event_ids: set[str] = set()
+        seen_event_keys: set[OutboxEventKey] = set()
         staged_events: list[OutboxEventWrite] = []
         for event in outbox_events:
-            if event.event_id in seen_event_ids:
+            event_key = outbox_event_key_for_write(event)
+            if event_key in seen_event_keys:
                 raise AcidCasConflictError(
-                    f"Transaction {transaction_id} references outbox event {event.event_id} more than once."
+                    f"Transaction {transaction_id} references outbox event {event_key[0]}:{event.event_id} more than once."
                 )
-            if event.event_id in self._outbox_events:
+            if event_key in self._outbox_events:
                 raise AcidCasConflictError(
-                    f"Outbox event {event.event_id} is already committed."
+                    f"Outbox event {event_key[0]}:{event.event_id} is already committed."
                 )
-            seen_event_ids.add(event.event_id)
+            seen_event_keys.add(event_key)
             record_key = entity_key(
                 entity_type=event.entity_type,
                 entity_id=event.entity_id,
@@ -571,6 +592,7 @@ class AcidCasKernel:
         self,
         *,
         event_id: str,
+        resource_id: str,
         dispatcher_id: str,
         state: OutboxEventState,
         next_attempt_at: str | None,
@@ -579,22 +601,23 @@ class AcidCasKernel:
     ) -> StoredOutboxEvent:
         with self._lock:
             try:
-                existing = self._outbox_events[event_id]
+                existing = self._outbox_events[(resource_id, event_id)]
             except KeyError as exc:
-                raise KeyError(f"No durable outbox event for {event_id}") from exc
+                raise KeyError(f"No durable outbox event for {resource_id}:{event_id}") from exc
             if existing.state != "DELIVERING" or existing.locked_by != dispatcher_id:
                 raise AcidCasConflictError(
-                    f"Dispatcher {dispatcher_id} does not own outbox event {event_id}."
+                    f"Dispatcher {dispatcher_id} does not own outbox event {resource_id}:{event_id}."
                 )
             current_time = _coerce_datetime(now)
             if existing.locked_until is None or _parse_timestamp(existing.locked_until) < current_time:
                 raise AcidCasConflictError(
-                    f"Dispatcher {dispatcher_id} lock for outbox event {event_id} has expired."
+                    f"Dispatcher {dispatcher_id} lock for outbox event {resource_id}:{event_id} has expired."
                 )
             updated_at = _now()
             updated = StoredOutboxEvent(
                 event_id=existing.event_id,
                 event_type=existing.event_type,
+                resource_id=existing.resource_id,
                 entity_type=existing.entity_type,
                 entity_id=existing.entity_id,
                 tenant_id=existing.tenant_id,
@@ -613,7 +636,7 @@ class AcidCasKernel:
                 created_at=existing.created_at,
                 updated_at=updated_at,
             )
-            self._outbox_events[event_id] = updated
+            self._outbox_events[(resource_id, event_id)] = updated
             return clone_outbox_event(updated)
 
 
@@ -666,6 +689,7 @@ def clone_outbox_event(event: StoredOutboxEvent) -> StoredOutboxEvent:
     return StoredOutboxEvent(
         event_id=event.event_id,
         event_type=event.event_type,
+        resource_id=event.resource_id,
         entity_type=event.entity_type,
         entity_id=event.entity_id,
         tenant_id=event.tenant_id,
@@ -690,6 +714,7 @@ def clone_consumer_delivery_record(record: ConsumerDeliveryRecord) -> ConsumerDe
     return ConsumerDeliveryRecord(
         event_id=record.event_id,
         event_type=record.event_type,
+        resource_id=record.resource_id,
         consumer_name=record.consumer_name,
         resource_version=record.resource_version,
         duplicate=record.duplicate,
@@ -708,6 +733,18 @@ def entity_key(
     project_id: str,
 ) -> EntityKey:
     return (entity_type, tenant_id, owner_id, project_id, entity_id)
+
+
+def outbox_resource_id_for_write(event: OutboxEventWrite) -> str:
+    return f"{event.entity_type}:{event.tenant_id}:{event.owner_id}:{event.project_id}:{event.entity_id}"
+
+
+def outbox_event_key_for_write(event: OutboxEventWrite) -> OutboxEventKey:
+    return (outbox_resource_id_for_write(event), event.event_id)
+
+
+def outbox_event_key_for_record(event: StoredOutboxEvent) -> OutboxEventKey:
+    return (event.resource_id, event.event_id)
 
 
 def _transaction_fingerprint(
@@ -738,6 +775,7 @@ def _transaction_fingerprint(
             {
                 "eventId": event.event_id,
                 "eventType": event.event_type,
+                "resourceId": outbox_resource_id_for_write(event),
                 "entityType": event.entity_type,
                 "entityId": event.entity_id,
                 "tenantId": event.tenant_id,

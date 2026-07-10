@@ -13,6 +13,16 @@ from backend.app.storage.postgres_state import (
 )
 
 
+def scoped_resource_id(
+    entity_type: str,
+    tenant_id: str,
+    owner_id: str,
+    project_id: str,
+    entity_id: str,
+) -> str:
+    return f"{entity_type}:{tenant_id}:{owner_id}:{project_id}:{entity_id}"
+
+
 def test_ch02_kernel_applies_atomic_transaction_and_versions_new_rows() -> None:
     kernel = AcidCasKernel()
 
@@ -733,7 +743,10 @@ def test_context2_outbox_writes_state_and_event_atomically() -> None:
     assert result.outbox_events[0].state == "PENDING"
     assert result.outbox_events[0].attempt_count == 0
     assert result.outbox_events[0].resource_version == 1
-    assert kernel.get_outbox_event("evt-1").payload == {"status": "queued"}
+    assert kernel.get_outbox_event(
+        event_id="evt-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    ).payload == {"status": "queued"}
 
     with pytest.raises(AcidCasConflictError, match="resource version"):
         kernel.commit(
@@ -778,7 +791,10 @@ def test_context2_outbox_writes_state_and_event_atomically() -> None:
             project_id="project-1",
         )
     with pytest.raises(KeyError):
-        kernel.get_outbox_event("evt-2")
+        kernel.get_outbox_event(
+            event_id="evt-2",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-2"),
+        )
 
     with pytest.raises(AcidCasConflictError, match="same transaction"):
         kernel.commit(
@@ -911,6 +927,7 @@ def test_context2_outbox_redelivery_is_at_least_once() -> None:
 
     retry = kernel.retry_outbox_event(
         event_id="evt-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
         dispatcher_id="worker-2",
         next_attempt_at=base + timedelta(seconds=90),
         last_error="transient timeout",
@@ -943,6 +960,7 @@ def test_context2_outbox_redelivery_is_at_least_once() -> None:
 
     succeeded = kernel.mark_outbox_event_succeeded(
         event_id="evt-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
         dispatcher_id="worker-3",
     )
     assert succeeded.state == "SUCCEEDED"
@@ -957,6 +975,182 @@ def test_context2_outbox_redelivery_is_at_least_once() -> None:
         )
         == ()
     )
+
+
+def test_context2_outbox_rejects_non_positive_lock_ttl() -> None:
+    kernel = AcidCasKernel()
+    kernel.commit(
+        transaction_id="tx-outbox-ttl-1",
+        request_id="req-outbox-ttl-1",
+        request_checksum="sha256:req-outbox-ttl-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-ttl-1",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-ttl-1",
+                payload_hash="sha256:evt-ttl-1",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="Outbox lock TTL must be a positive second value"):
+        kernel.acquire_outbox_events(
+            dispatcher_id="worker-1",
+            lock_ttl_seconds=0,
+            limit=1,
+        )
+
+
+def test_context2_outbox_rejects_wrong_dispatcher_transition() -> None:
+    kernel = AcidCasKernel()
+    base = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+
+    kernel.commit(
+        transaction_id="tx-outbox-owner-1",
+        request_id="req-outbox-owner-1",
+        request_checksum="sha256:req-outbox-owner-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-owner-1",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-owner-1",
+                payload_hash="sha256:evt-owner-1",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    acquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        now=base,
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    assert len(acquired) == 1
+
+    with pytest.raises(AcidCasConflictError, match="does not own outbox event"):
+        kernel.mark_outbox_event_succeeded(
+            event_id="evt-owner-1",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+            dispatcher_id="worker-2",
+        )
+
+
+def test_context2_outbox_scopes_duplicate_event_ids_by_resource_identity() -> None:
+    kernel = AcidCasKernel()
+
+    first = kernel.commit(
+        transaction_id="tx-outbox-scope-1",
+        request_id="req-outbox-scope-1",
+        request_checksum="sha256:req-outbox-scope-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-shared",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-scope-1",
+                payload_hash="sha256:evt-shared-1",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+    second = kernel.commit(
+        transaction_id="tx-outbox-scope-2",
+        request_id="req-outbox-scope-2",
+        request_checksum="sha256:req-outbox-scope-2",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-2",
+                owner_id="owner-2",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-shared",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-2",
+                owner_id="owner-2",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-scope-2",
+                payload_hash="sha256:evt-shared-2",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    assert first.outbox_events[0].resource_id == scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1")
+    assert second.outbox_events[0].resource_id == scoped_resource_id("run", "tenant-2", "owner-2", "project-1", "run-1")
+    assert kernel.get_outbox_event(
+        event_id="evt-shared",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    ).payload_hash == "sha256:evt-shared-1"
+    assert kernel.get_outbox_event(
+        event_id="evt-shared",
+        resource_id=scoped_resource_id("run", "tenant-2", "owner-2", "project-1", "run-1"),
+    ).payload_hash == "sha256:evt-shared-2"
 
 
 def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
@@ -1052,24 +1246,28 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
 
     first = kernel.record_consumer_delivery(
         event_id="evt-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
         resource_version=1,
     )
     duplicate = kernel.record_consumer_delivery(
         event_id="evt-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
         resource_version=1,
     )
     other_version = kernel.record_consumer_delivery(
         event_id="evt-3",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-2"),
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
         resource_version=2,
     )
     other_consumer = kernel.record_consumer_delivery(
         event_id="evt-2",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-2"),
         event_type="run.status.changed",
         consumer_name="audit-consumer",
         resource_version=1,
@@ -1124,6 +1322,7 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
     with pytest.raises(AcidCasConflictError, match="No committed outbox event"):
         kernel.record_consumer_delivery(
             event_id="evt-missing",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             event_type="run.status.changed",
             consumer_name="walkthrough-consumer",
             resource_version=1,
@@ -1132,6 +1331,7 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
     with pytest.raises(AcidCasConflictError, match="does not match committed outbox event"):
         kernel.record_consumer_delivery(
             event_id="evt-1",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             event_type="other.event",
             consumer_name="walkthrough-consumer",
             resource_version=1,
@@ -1140,6 +1340,7 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
     with pytest.raises(AcidCasConflictError, match="does not match committed outbox event"):
         kernel.record_consumer_delivery(
             event_id="evt-1",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             event_type="run.status.changed",
             consumer_name="walkthrough-consumer",
             resource_version=2,
@@ -1193,6 +1394,7 @@ def test_context2_outbox_marks_dispatch_failure_terminal() -> None:
 
     failed = kernel.mark_outbox_event_failed(
         event_id="evt-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
         dispatcher_id="worker-1",
         last_error="permanent schema mismatch",
     )
@@ -1256,9 +1458,10 @@ def test_context2_outbox_rejects_transition_after_lock_expiry() -> None:
     )
     assert len(acquired) == 1
 
-    with pytest.raises(AcidCasConflictError, match="lock for outbox event evt-1 has expired"):
+    with pytest.raises(AcidCasConflictError, match="lock for outbox event .*evt-1 has expired"):
         kernel.mark_outbox_event_succeeded(
             event_id="evt-1",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             dispatcher_id="worker-1",
             now=base + timedelta(seconds=31),
         )
