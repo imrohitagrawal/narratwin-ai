@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
+ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 
 REQUIRED_FILES = [
     ".stage/current",
@@ -68,6 +69,16 @@ STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {
     "tests/unit/test_health_contract.py",
 }
 
+PROCESS_BRANCH_ALLOWED_FILES = {
+    ISSUE84_GUARDRAIL_BRANCH: {
+        "docs/STATUS.md",
+        "scripts/guardrails_check.py",
+        "scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_guardrails_check.py",
+        "tests/unit/test_stage8_quality_gate.py",
+    }
+}
+
 
 def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=ROOT, text=True, capture_output=True, check=False)
@@ -79,6 +90,13 @@ def read(path: str) -> str:
 
 def fail(message: str, failures: list[str]) -> None:
     failures.append(message)
+
+
+def current_branch() -> str:
+    env_branch = os.environ.get("GITHUB_HEAD_REF", "").strip()
+    if env_branch:
+        return env_branch
+    return run(["git", "branch", "--show-current"]).stdout.strip()
 
 
 def changed_files_for_stage_scope() -> list[str]:
@@ -116,14 +134,20 @@ def check_stage_marker_and_branch(failures: list[str]) -> None:
     if current != "8":
         fail(".stage/current must contain 8 for Stage 8 quality.", failures)
 
-    branch = run(["git", "branch", "--show-current"]).stdout.strip()
-    if branch and branch != "main" and not STAGE8_BRANCH_PATTERN.match(branch):
+    branch = current_branch()
+    if (
+        branch
+        and branch != "main"
+        and not STAGE8_BRANCH_PATTERN.match(branch)
+        and branch not in PROCESS_BRANCH_ALLOWED_FILES
+    ):
         fail(f"Stage 8 work must run on a stage8-* branch or main after merge; got {branch}.", failures)
 
 
 def check_stage_scope(failures: list[str]) -> None:
+    allowed_files = PROCESS_BRANCH_ALLOWED_FILES.get(current_branch(), STAGE8_ALLOWED_FILES)
     for path in changed_files_for_stage_scope():
-        if path not in STAGE8_ALLOWED_FILES:
+        if path not in allowed_files:
             fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
 
 

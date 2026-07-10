@@ -12,6 +12,8 @@ import os
 import re
 import subprocess
 import sys
+from typing import Any
+from typing import cast
 from typing import NamedTuple
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
@@ -843,6 +845,101 @@ def github_pull_request_is_merged(number: str) -> bool:
         return False
 
 
+def github_pull_request_is_merged_to_main(number: str) -> bool:
+    github_auth_value = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not github_auth_value:
+        return False
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Authorization": f"Bearer {github_auth_value}",
+    }
+    request = Request(
+        f"https://api.github.com/repos/{CANONICAL_GITHUB_REPO}/pulls/{number}",
+        headers=headers,
+    )
+    try:
+        with urlopen(request, timeout=5) as response:  # nosec B310 - canonical GitHub API URL only.
+            status = int(getattr(response, "status", 0))
+            if not 200 <= status < 300:
+                return False
+            payload = json.loads(response.read().decode("utf-8"))
+            if not isinstance(payload, dict):
+                return False
+            if not (payload.get("merged") is True or payload.get("merged_at")):
+                return False
+            base_payload = payload.get("base")
+            if not isinstance(base_payload, dict):
+                return False
+            base_ref = base_payload.get("ref")
+            return base_ref == "main"
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
+        return False
+
+
+def github_pull_request_numbers_for_commit(sha: str) -> list[str]:
+    github_auth_value = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not github_auth_value:
+        return []
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Authorization": f"Bearer {github_auth_value}",
+    }
+    request = Request(
+        f"https://api.github.com/repos/{CANONICAL_GITHUB_REPO}/commits/{sha}/pulls",
+        headers=headers,
+    )
+    try:
+        with urlopen(request, timeout=5) as response:  # nosec B310 - canonical GitHub API URL only.
+            status = int(getattr(response, "status", 0))
+            if not 200 <= status < 300:
+                return []
+            payload = json.loads(response.read().decode("utf-8"))
+            if not isinstance(payload, list):
+                return []
+            return [
+                str(pr.get("number"))
+                for pr in payload
+                if isinstance(pr, dict) and str(pr.get("number", "")).isdigit()
+            ]
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
+        return []
+
+
+def is_merged_pull_request_merge_push(sha: str) -> bool:
+    for pr_number in github_pull_request_numbers_for_commit(sha):
+        if github_pull_request_is_merged_to_main(pr_number):
+            return True
+    return False
+
+
+def _read_push_event_payload() -> dict[str, Any] | None:
+    event_path = os.environ.get("GITHUB_EVENT_PATH")
+    if not event_path:
+        return None
+    try:
+        payload = json.loads(Path(event_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return cast(dict[str, Any], payload)
+
+
+def _extract_push_head_sha(event: dict[str, Any]) -> str:
+    head_commit = event.get("head_commit")
+    if isinstance(head_commit, dict):
+        for key in ("id", "sha"):
+            value = head_commit.get(key)
+            if isinstance(value, str) and value:
+                return value
+    after_sha = event.get("after")
+    if isinstance(after_sha, str):
+        return after_sha
+    return ""
+
+
 def closure_record_has_generic_values(
     evidence: str,
     owner: str,
@@ -1479,7 +1576,22 @@ def check_no_direct_main_push() -> None:
     event = os.environ.get("GITHUB_EVENT_NAME", "")
     ref = os.environ.get("GITHUB_REF_NAME", "")
     if event == "push" and ref == "main":
-        failures.append("Direct push to main detected. All work must go through issue + branch + PR.")
+        payload = _read_push_event_payload()
+        if not payload:
+            failures.append(
+                "Could not read push event payload; cannot verify whether this main push came from a merged PR."
+            )
+            return
+        sha = _extract_push_head_sha(payload)
+        if not sha:
+            failures.append(
+                "Push payload is missing a head commit SHA; cannot verify whether this main push came from a merged PR."
+            )
+            return
+        if not is_merged_pull_request_merge_push(sha):
+            failures.append(
+                "Direct push to main detected. All work must go through issue + branch + PR."
+            )
 
 
 def check_issue_linked_pull_request() -> None:
