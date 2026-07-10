@@ -404,7 +404,7 @@ class AcidCasKernel:
                 allowed_states=("FAILED_TRANSIENT",),
                 next_state="REPLAYING",
             )
-            self._assert_recovery_handoff(
+            self._assert_recovery_epoch_advance(
                 existing=existing,
                 lease_owner_id=lease_owner_id,
                 lease_epoch=lease_epoch,
@@ -608,21 +608,27 @@ class AcidCasKernel:
                 f"{lease_owner_id}@{lease_epoch}."
             )
 
-    def _assert_recovery_handoff(
+    def _assert_recovery_epoch_advance(
         self,
         *,
         existing: OperationRecord,
         lease_owner_id: str,
         lease_epoch: int,
     ) -> None:
+        if lease_owner_id != existing.lease_owner_id:
+            raise AcidCasStaleOwnerError(
+                "Operation "
+                f"{existing.operation_id} recovery owner must remain {existing.lease_owner_id} until "
+                "CH-05 durable lease transfer semantics are enforced."
+            )
         if lease_owner_id == existing.lease_owner_id and lease_epoch == existing.lease_epoch:
             raise AcidCasConflictError(
-                f"Operation {existing.operation_id} recovery requires an explicit owner/epoch handoff."
+                f"Operation {existing.operation_id} recovery requires an explicit epoch advance."
             )
         if lease_epoch <= existing.lease_epoch:
             raise AcidCasStaleOwnerError(
                 "Operation "
-                f"{existing.operation_id} stale owner handoff: durable epoch is "
+                f"{existing.operation_id} stale recovery epoch: durable epoch is "
                 f"{existing.lease_epoch} but received {lease_owner_id}@{lease_epoch}."
             )
 

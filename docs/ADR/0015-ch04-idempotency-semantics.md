@@ -102,13 +102,16 @@ both fields. Mismatches are rejected as stale-owner writes.
 
 `FAILED_TRANSIENT -> REPLAYING` is the one reviewed exception in `CH-04`:
 
-- recovery may persist an explicit ownership handoff with a different
-  `(lease_owner_id, lease_epoch)` pair
+- recovery may persist a same-owner epoch advance
+- the durable `lease_owner_id` must remain unchanged in `CH-04`
 - the new `lease_epoch` must be strictly greater than the durable epoch
-- same-owner/same-epoch or non-advancing epochs are rejected
+- same-owner/same-epoch, cross-owner recovery, or non-advancing epochs are
+  rejected
 
-This keeps CH-04 compatible with later `CH-05` reclaim/fencing behavior without
-implementing the full lease lifecycle yet.
+Cross-owner handoff remains deferred to `CH-05`, where durable lease transfer
+and fencing evidence exist. This keeps CH-04 compatible with later reclaim
+behavior without inventing unauthenticated ownership transfer ahead of the lease
+lifecycle chunk.
 
 ### 5. Local/test posture
 

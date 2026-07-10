@@ -917,7 +917,7 @@ def test_context2_idempotency_success_rejects_stale_owner() -> None:
         )
 
 
-def test_context2_idempotency_recovery_allows_explicit_higher_epoch_handoff() -> None:
+def test_context2_idempotency_recovery_allows_same_owner_higher_epoch_advance() -> None:
     kernel = AcidCasKernel()
     scope = OperationScope(
         tenant_id="tenant-1",
@@ -966,17 +966,17 @@ def test_context2_idempotency_recovery_allows_explicit_higher_epoch_handoff() ->
         scope=scope,
         payload_hash="sha256:payload-1",
         expected_version=failed.record.version,
-        lease_owner_id="worker-2",
+        lease_owner_id="worker-1",
         lease_epoch=8,
     )
 
     assert recovered.outcome == "applied"
     assert recovered.record.state == "REPLAYING"
-    assert recovered.record.lease_owner_id == "worker-2"
+    assert recovered.record.lease_owner_id == "worker-1"
     assert recovered.record.lease_epoch == 8
 
 
-def test_context2_idempotency_recovery_rejects_non_advancing_handoff() -> None:
+def test_context2_idempotency_recovery_rejects_cross_owner_or_non_advancing_epoch() -> None:
     kernel = AcidCasKernel()
     scope = OperationScope(
         tenant_id="tenant-1",
@@ -1005,7 +1005,7 @@ def test_context2_idempotency_recovery_rejects_non_advancing_handoff() -> None:
         lease_epoch=7,
     )
 
-    with pytest.raises(AcidCasConflictError, match="explicit owner/epoch handoff"):
+    with pytest.raises(AcidCasConflictError, match="explicit epoch advance"):
         kernel.recover_operation(
             transaction_id="tx-op-3",
             request_id="req-op-1-replay",
@@ -1017,7 +1017,7 @@ def test_context2_idempotency_recovery_rejects_non_advancing_handoff() -> None:
             lease_epoch=7,
         )
 
-    with pytest.raises(AcidCasStaleOwnerError, match="stale owner handoff"):
+    with pytest.raises(AcidCasStaleOwnerError, match="must remain worker-1"):
         kernel.recover_operation(
             transaction_id="tx-op-4",
             request_id="req-op-1-replay",
@@ -1026,5 +1026,133 @@ def test_context2_idempotency_recovery_rejects_non_advancing_handoff() -> None:
             payload_hash="sha256:payload-1",
             expected_version=failed.record.version,
             lease_owner_id="worker-2",
+            lease_epoch=8,
+        )
+
+    with pytest.raises(AcidCasStaleOwnerError, match="stale recovery epoch"):
+        kernel.recover_operation(
+            transaction_id="tx-op-5",
+            request_id="req-op-1-replay",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            expected_version=failed.record.version,
+            lease_owner_id="worker-1",
+            lease_epoch=6,
+        )
+
+
+def test_context2_idempotency_terminal_success_replay_rejects_payload_drift() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    started = kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+    completed = kernel.commit_operation_success(
+        transaction_id="tx-op-2",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=started.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+        response_payload={"status": "done", "runId": "run-1"},
+    )
+
+    replayed = kernel.commit_operation_success(
+        transaction_id="tx-op-2-replay",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=completed.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+        response_payload={"status": "done", "runId": "run-1"},
+    )
+    assert replayed.outcome == "replayed"
+    assert replayed.record.response_payload == {"status": "done", "runId": "run-1"}
+
+    with pytest.raises(AcidCasConflictError, match="terminal success replay payload"):
+        kernel.commit_operation_success(
+            transaction_id="tx-op-2-drift",
+            request_id="req-op-1",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            expected_version=completed.record.version,
+            lease_owner_id="worker-1",
             lease_epoch=7,
+            response_payload={"status": "done", "runId": "run-1", "extra": "drift"},
+        )
+
+
+def test_context2_idempotency_terminal_error_replay_rejects_payload_drift() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    started = kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+    completed = kernel.commit_operation_error(
+        transaction_id="tx-op-2",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=started.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+        error_payload={"code": "timeout", "message": "retry later"},
+    )
+
+    replayed = kernel.commit_operation_error(
+        transaction_id="tx-op-2-replay",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=completed.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+        error_payload={"code": "timeout", "message": "retry later"},
+    )
+    assert replayed.outcome == "replayed"
+    assert replayed.record.error_payload == {"code": "timeout", "message": "retry later"}
+
+    with pytest.raises(AcidCasConflictError, match="terminal error replay payload"):
+        kernel.commit_operation_error(
+            transaction_id="tx-op-2-drift",
+            request_id="req-op-1",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            expected_version=completed.record.version,
+            lease_owner_id="worker-1",
+            lease_epoch=7,
+            error_payload={"code": "timeout", "message": "retry later", "extra": "drift"},
         )
