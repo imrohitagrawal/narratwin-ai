@@ -66,7 +66,10 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
 }
 ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
     ".github/pull_request_template.md",
+    ".github/workflows/ci.yml",
+    ".github/workflows/eval-smoke.yml",
     ".github/workflows/quality-gates.yml",
+    ".github/workflows/security.yml",
     "docs/QUALITY_GATES.md",
     "docs/ADR/0009-context2-idempotency-lease-outbox-contract.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -74,7 +77,9 @@ ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
     "docs/reviews/ISSUE_39_CH04_CH05_CH06_CONTRACT_DECISIONS.md",
     "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
     "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "scripts/guardrails_check.py",
     "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_72_ALLOWED_CHANGED_FILES = PROCESS_ONLY_ALLOWED_CHANGED_FILES | {
@@ -534,10 +539,15 @@ ISSUE_39_DRILL_LOG_PREFIXES = ("docs/reviews/drills/", "reports/", "artifacts/",
 ISSUE_39_DRILL_LOG_SUFFIXES = {".json", ".jsonl", ".log", ".md", ".txt"}
 ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
     "phase-1-closure-39-ch-02-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
-    "phase-1-closure-39-ch-04-": ("40cf11028d5dba56f4966e107aacba8c653407fc",),
-    "phase-1-closure-39-ch-05-": ("40cf11028d5dba56f4966e107aacba8c653407fc",),
-    "phase-1-closure-39-ch-06-": ("40cf11028d5dba56f4966e107aacba8c653407fc",),
+    "phase-1-closure-39-ch-04-": ("b23846991f4da232c2a59f81f39ba9a93232724e",),
+    "phase-1-closure-39-ch-05-": ("b23846991f4da232c2a59f81f39ba9a93232724e",),
+    "phase-1-closure-39-ch-06-": ("b23846991f4da232c2a59f81f39ba9a93232724e",),
 }
+PHASE1_STACKED_BASE_WORKFLOWS = (
+    ".github/workflows/ci.yml",
+    ".github/workflows/security.yml",
+    ".github/workflows/eval-smoke.yml",
+)
 
 
 def run_git(args: list[str]) -> str:
@@ -2008,6 +2018,11 @@ def check_process_docs(failures: list[str]) -> None:
         if workflow_path == ".github/workflows/quality-gates.yml" and not workflow_has_stage_quality_base_sha(workflow_text):
             fail(failures, f"{workflow_path} must pass GITHUB_BASE_SHA to make quality")
         if workflow_path == ".github/workflows/quality-gates.yml" and not workflow_allows_phase1_pull_request_bases(workflow_text):
+            fail(failures, f"{workflow_path} must run for phase-1-closure stacked pull request bases")
+
+    for workflow_path in PHASE1_STACKED_BASE_WORKFLOWS:
+        workflow_text = read(workflow_path)
+        if not workflow_allows_phase1_pull_request_bases(workflow_text):
             fail(failures, f"{workflow_path} must run for phase-1-closure stacked pull request bases")
 
     rca = read("docs/ENGINEERING_PROCESS_RCA.md")

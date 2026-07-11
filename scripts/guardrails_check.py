@@ -464,6 +464,12 @@ REQUIRED_PR_VALIDATION_COMMANDS = (
     "make quality",
     "uv run ruff check scripts tests",
     "uv run mypy scripts tests",
+    "make ci",
+    "make security",
+    "make dependency-audit",
+    "make container-scan",
+    "make secrets-scan",
+    "make eval",
     "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=",
 )
 VALIDATION_PASS_RESULT = re.compile(r"(?:->|:)\s*(?:(?:[1-9]\d*)\s+)?(?:passed|success|succeeded|green)\b")

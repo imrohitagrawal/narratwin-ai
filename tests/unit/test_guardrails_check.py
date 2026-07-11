@@ -425,6 +425,12 @@ def completed_preflight_body(
         "make quality -> passed\n"
         "uv run ruff check scripts tests -> passed\n"
         "uv run mypy scripts tests -> passed\n"
+        "make ci -> passed\n"
+        "make security -> passed\n"
+        "make dependency-audit -> passed\n"
+        "make container-scan -> passed\n"
+        "make secrets-scan -> passed\n"
+        "make eval -> passed\n"
         "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed\n"
         "```\n"
     )
@@ -2257,6 +2263,35 @@ def test_nontrivial_pull_request_rejects_missing_validation_evidence_commands(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     body = completed_preflight_body().split("## Validation evidence", maxsplit=1)[0]
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "make ci",
+        "make security",
+        "make dependency-audit",
+        "make container-scan",
+        "make secrets-scan",
+        "make eval",
+    ],
+)
+def test_nontrivial_pull_request_rejects_missing_runtime_validation_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command: str,
+) -> None:
+    body = completed_preflight_body().replace(f"{command} -> passed\n", "")
     failures = run_issue_link_check(
         tmp_path,
         monkeypatch,

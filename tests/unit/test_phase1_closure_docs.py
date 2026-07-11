@@ -190,7 +190,7 @@ def test_issue39_chunk_branch_requires_dependency_commit_ancestry(monkeypatch: A
 
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-ch-04-idempotency-semantics must contain dependency "
-        "commits: 40cf11028d5dba56f4966e107aacba8c653407fc."
+        "commits: b23846991f4da232c2a59f81f39ba9a93232724e."
     ]
 
 
@@ -928,13 +928,18 @@ def test_issue39_execution_strategy_branch_allows_strategy_doc(monkeypatch: Any)
         monkeypatch,
         branch="phase-1-closure-39-execution-strategy",
         files=[
+            ".github/workflows/ci.yml",
+            ".github/workflows/eval-smoke.yml",
+            ".github/workflows/security.yml",
             "docs/QUALITY_GATES.md",
             "docs/STAGE_ISSUE_PLAN.md",
             "docs/STATUS.md",
             "docs/reviews/ISSUE_39_CH04_CH05_CH06_CONTRACT_DECISIONS.md",
             "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
             "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/guardrails_check.py",
             "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_guardrails_check.py",
             "tests/unit/test_phase1_closure_docs.py",
         ],
     )
@@ -1617,6 +1622,31 @@ def test_quality_gates_workflow_must_pass_base_sha_to_make_quality(monkeypatch: 
 
 def test_quality_gates_workflow_must_run_for_phase1_stacked_pull_request_bases(monkeypatch: Any) -> None:
     workflow_path = ".github/workflows/quality-gates.yml"
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("      - phase-1-closure-**\n", ""),
+        },
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml",
+        ".github/workflows/eval-smoke.yml",
+    ],
+)
+def test_runtime_workflows_must_run_for_phase1_stacked_pull_request_bases(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
     workflow_text = phase1.read(workflow_path)
     failures = run_process_docs_check(
         monkeypatch,
