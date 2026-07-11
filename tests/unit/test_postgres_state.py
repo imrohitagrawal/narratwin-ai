@@ -1178,6 +1178,40 @@ def test_context2_outbox_rejects_non_canonical_resource_identity() -> None:
             ),
         )
 
+    with pytest.raises(AcidCasConflictError, match="non-empty colon-free entity_type:tenant_id:owner_id:project_id:entity_id"):
+        kernel.commit(
+            transaction_id="tx-outbox-padded-identity",
+            request_id="req-outbox-padded-identity",
+            request_checksum="sha256:req-outbox-padded-identity",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-3",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+            outbox_events=(
+                OutboxEventWrite(
+                    event_id="evt-padded-identity",
+                    event_type="run.status.changed",
+                    entity_type="run",
+                    entity_id="run-3",
+                    tenant_id="tenant-1",
+                    owner_id=" owner-1 ",
+                    project_id="project-1",
+                    resource_version=1,
+                    operation_id="op-padded-identity",
+                    payload_hash=payload_hash_for({"status": "queued"}),
+                    payload={"status": "queued"},
+                ),
+            ),
+        )
+
 
 def test_context2_outbox_replays_committed_transaction_without_duplicate_events() -> None:
     kernel = AcidCasKernel()

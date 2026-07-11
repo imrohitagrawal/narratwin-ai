@@ -842,7 +842,7 @@ def validate_non_empty_identifier(label: str, value: str) -> None:
 
 
 def _is_valid_identity_part(value: str) -> bool:
-    return bool(value.strip()) and ":" not in value
+    return bool(value.strip()) and value == value.strip() and ":" not in value
 
 
 def _is_valid_identifier(value: str) -> bool:
