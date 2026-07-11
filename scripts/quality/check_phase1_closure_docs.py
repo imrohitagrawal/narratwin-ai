@@ -826,11 +826,15 @@ def workflow_has_guardrail_github_token_wiring(yaml_text: str) -> bool:
     return (
         workflow_has_permission(yaml_text, "issues", "read")
         and workflow_has_permission(yaml_text, "pull-requests", "read")
-        and all(
-            "GITHUB_TOKEN:" in step and ("github.token" in step or "secrets.GITHUB_TOKEN" in step)
-            for step in guardrail_steps
-        )
+        and all(workflow_step_has_guardrail_github_token_env(step) for step in guardrail_steps)
     )
+
+
+def workflow_step_has_guardrail_github_token_env(step: str) -> bool:
+    token_env = re.compile(
+        r"^\s*GITHUB_TOKEN:\s*['\"]?\$\{\{\s*(?:github\.token|secrets\.GITHUB_TOKEN)\s*\}\}['\"]?\s*$"
+    )
+    return any(token_env.fullmatch(yaml_line_without_inline_comment(line)) for line in step.splitlines())
 
 
 def workflow_has_permission(yaml_text: str, permission: str, value: str) -> bool:

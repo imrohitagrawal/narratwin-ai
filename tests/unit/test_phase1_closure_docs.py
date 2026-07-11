@@ -1687,6 +1687,36 @@ def test_process_docs_rejects_commented_guardrail_step_token(
     )
 
 
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/quality-gates.yml",
+        ".github/workflows/security.yml",
+    ],
+)
+def test_process_docs_rejects_empty_guardrail_step_token_with_decoy_token_text(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace(
+                "          GITHUB_TOKEN: ${{ github.token }}",
+                "          GITHUB_TOKEN: \"\"\n          DECOY_TOKEN_TEXT: github.token",
+            ),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
 def test_quality_gates_workflow_must_pass_base_sha_to_make_quality(monkeypatch: Any) -> None:
     workflow_path = ".github/workflows/quality-gates.yml"
     workflow_text = phase1.read(workflow_path)

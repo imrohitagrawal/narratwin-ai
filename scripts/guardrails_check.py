@@ -1605,8 +1605,17 @@ def check_no_direct_main_push() -> None:
             )
 
 
-def pull_request_base_is_allowed(base_ref: str | None) -> bool:
-    return base_ref == "main" or base_ref in ALLOWED_STACKED_PULL_REQUEST_BASES
+def stacked_base_sha_is_reviewed(base_ref: str | None, base_sha: str, body: str) -> bool:
+    if base_ref not in ALLOWED_STACKED_PULL_REQUEST_BASES:
+        return False
+    if not re.fullmatch(r"[0-9a-f]{40}", base_sha):
+        return False
+    escaped_sha = re.escape(base_sha)
+    return re.search(rf"(?i)\bGITHUB_BASE_SHA={escaped_sha}\b", body) is not None
+
+
+def pull_request_base_is_allowed(base_ref: str | None, base_sha: str, body: str) -> bool:
+    return base_ref == "main" or stacked_base_sha_is_reviewed(base_ref, base_sha, body)
 
 
 def check_issue_linked_pull_request() -> None:
@@ -1628,10 +1637,14 @@ def check_issue_linked_pull_request() -> None:
     body = pr.get("body") or ""
     head_ref = (pr.get("head") or {}).get("ref")
     base_ref = (pr.get("base") or {}).get("ref")
+    base_sha = ((pr.get("base") or {}).get("sha") or "").strip()
     if head_ref == "main":
         failures.append("Pull request head branch must not be main.")
-    if not pull_request_base_is_allowed(base_ref):
-        failures.append("Pull requests for guarded work must target main or an explicitly reviewed stacked base.")
+    if not pull_request_base_is_allowed(base_ref, base_sha, body):
+        failures.append(
+            "Pull requests for guarded work must target main or an explicitly reviewed stacked base with exact "
+            "GITHUB_BASE_SHA evidence in the PR body."
+        )
     stage_name, canonical_issue_number = canonical_stage_issue(head_ref) or ("", None)
     is_canonical_stage_branch = canonical_issue_number is not None
     visible_issue_text = f"{title}\n{body}\n{pull_request_commit_messages()}"
@@ -1683,14 +1696,55 @@ def check_workflows_least_privilege() -> None:
         return
     for workflow in list(workflow_dir.glob("*.yml")) + list(workflow_dir.glob("*.yaml")):
         text = read_text(workflow)
-        active_text = "\n".join(yaml_line_without_inline_comment(line) for line in text.splitlines())
         rel = relative(workflow)
-        if "permissions:" not in active_text:
+        permission_entries = workflow_permission_entries(text)
+        if not permission_entries:
             failures.append(f"{rel} is missing explicit least-privilege permissions.")
-        if re.search(r"permissions:\s*write-all", active_text):
-            failures.append(f"{rel} uses write-all permissions. Use least privilege instead.")
-        if re.search(r"contents:\s*write", active_text) and "pull_request" in active_text:
-            failures.append(f"{rel} grants contents: write for PR validation. Use contents: read unless a write is required.")
+        for scope, value in permission_entries:
+            if scope == "permissions" and value == "write-all":
+                failures.append(f"{rel} uses write-all permissions. Use least privilege instead.")
+                continue
+            if value in {"write", "write-all"}:
+                failures.append(
+                    f"{rel} grants {scope}: {value}. Use read or none unless a write permission is explicitly required."
+                )
+
+
+def workflow_permission_entries(yaml_text: str) -> list[tuple[str, str]]:
+    entries: list[tuple[str, str]] = []
+    lines = yaml_text.splitlines()
+    for index, raw_line in enumerate(lines):
+        line = yaml_line_without_inline_comment(raw_line)
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if indent != 0:
+            continue
+        stripped = line.strip()
+        inline_match = re.fullmatch(r"permissions:\s*(?P<value>[A-Za-z0-9_-]+)", stripped)
+        if inline_match:
+            entries.append(("permissions", inline_match.group("value").lower()))
+            continue
+        if stripped != "permissions:":
+            continue
+        child_indent: int | None = None
+        for child_raw in lines[index + 1 :]:
+            child = yaml_line_without_inline_comment(child_raw)
+            if not child.strip():
+                continue
+            child_current_indent = len(child) - len(child.lstrip(" "))
+            if child_current_indent <= indent:
+                break
+            if child_indent is None:
+                child_indent = child_current_indent
+            if child_current_indent != child_indent:
+                continue
+            child_match = re.fullmatch(r"(?P<scope>[A-Za-z0-9_-]+):\s*(?P<value>[A-Za-z0-9_-]+)", child.strip())
+            if child_match:
+                entries.append(
+                    (child_match.group("scope").lower(), child_match.group("value").lower())
+                )
+    return entries
 
 
 def yaml_line_without_inline_comment(line: str) -> str:
