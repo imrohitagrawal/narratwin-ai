@@ -19,7 +19,7 @@ integration.
 
 | Question | Selected decision | Why this is the right Phase 1 choice | Main loophole to watch | Reviewer acceptance criteria |
 |---|---|---|---|---|
-| Can terminal idempotency replay cross owner changes? | Yes, exact terminal replay is read-only and owner-agnostic. | A finished answer is immutable history. Returning the cached success/error does not create work, change state, or grant write authority. This supports retries after failover. | A replay path could accidentally mutate state, skip payload-hash checks, or treat a different logical operation as the same operation. | Terminal replay must check `(operation_id, scope, payload_hash)` and exact terminal payload equality; `request_id` may differ because it identifies an attempt, not the durable replay identity; mutating non-terminal transitions remain stale-owner guarded. |
+| Can terminal idempotency replay cross worker-owner changes? | Yes, exact terminal replay is read-only and lease-owner-agnostic. Scope `owner_id` remains part of durable operation identity and cannot change. | A finished answer is immutable history. Returning the cached success/error does not create work, change state, or grant write authority. This supports retries after worker failover without widening tenant/owner/project scope. | A replay path could accidentally mutate state, skip payload-hash checks, treat a different logical operation as the same operation, or confuse lease owner with scoped owner. | Terminal replay lookup must use `(operation_id, scope)`, then require matching `payload_hash` and exact terminal payload equality; `request_id` may differ because it identifies an attempt, not the durable replay identity; mutating non-terminal transitions remain stale-owner guarded. |
 | Must CH-04 operation state use the CH-02 kernel? | Yes, operation rows are stored through the shared ACID/CAS row kernel. | Later chunks need one transaction boundary for durable state, idempotency state, and outbox publication. A parallel operation store would force coordination bugs. | A helper may write directly to operation storage and bypass transaction replay metadata. | Operation persistence must route through `commit(...)`/`TransactionWrite` semantics or an equivalent shared transaction path, not a separate operation store. |
 | Must every first write have a lease token? | No. CH-05 makes fencing mandatory after a resource enters the lease-managed domain. | Creation and worker assignment are different lifecycle moments. Requiring leases before a resource is lease-managed pulls runtime orchestration into this storage chunk. | A runtime path could forget to acquire a lease before updates that should be worker-owned. | Once a resource has a lease epoch, unguarded mutations fail; stale owner, stale epoch, expired lease, and partial lease tuples fail. |
 | Can exact committed transaction replay succeed after lease transfer? | Yes, if the replay fingerprint is exact and read-only. | A retry of an already committed transaction must be able to return the durable result even after ownership changes. It does not create a new mutation. | A replay path could ignore changed lease fields or restage writes under a stale owner. | Replay must require exact transaction identity and full fingerprint, including lease fields, and must return before staging or mutating rows. |
@@ -29,8 +29,12 @@ integration.
 ## Assumptions
 
 - These decisions are storage-kernel contract decisions only.
-- Idempotency replay identity is `(operation_id, scope, payload_hash)`;
-  `request_id` is attempt metadata and is not by itself a replay key.
+- Idempotency lookup identity is `(operation_id, scope)`. `payload_hash` is a
+  required conflict/replay guard, and `request_id` is attempt metadata rather
+  than a replay key.
+- Canonical durable resource identity is
+  `entity_type:tenant_id:owner_id:project_id:entity_id`. Lease resource IDs and
+  outbox resource IDs use this exact shape.
 - Paid providers remain optional and disabled for local, test, and CI paths.
 - Uploaded documents, prompts, transcripts, and provider outputs remain
   untrusted input and must not influence durable identity without validation.
@@ -45,7 +49,9 @@ integration.
 
 Rejected for Phase 1 because it treats immutable replay like a write. It blocks
 legitimate failover: a replacement worker could not retrieve a cached terminal
-result even though no durable state would change.
+result even though no durable state would change. This rejection applies to
+lease owner / worker owner, not to scoped `owner_id`; scoped owner remains part
+of the operation identity.
 
 ### Lease required before first-ever write
 
@@ -70,14 +76,32 @@ cross-resource suppression.
 ## Required Evidence
 
 - `CH-04` tests must cover payload-hash conflict, terminal success replay,
-  terminal error replay, terminal payload drift rejection, stale-owner rejection
-  for non-terminal paths, and operation storage through the shared row kernel.
+  terminal error replay, terminal replay across changed lease owner/epoch,
+  terminal payload drift rejection, stale-owner rejection for non-terminal
+  paths, and operation storage through the shared row kernel.
 - `CH-05` tests must cover acquire, heartbeat, release, expiry, reclaim,
-  monotonic epoch advancement, mandatory fencing after lease creation, exact
-  replay after transfer, and fingerprint drift for lease fields.
+  monotonic epoch advancement, canonical resource ID validation, mandatory
+  fencing after lease creation, exact replay after transfer, and fingerprint
+  drift for lease fields.
 - `CH-06` tests must cover same-transaction state/event write, duplicate event
-  rollback, outbox replay fingerprint drift, at-least-once redelivery, active
-  dispatcher ownership, stale dispatch rejection, and scoped consumer dedupe.
+  rollback, payload/hash binding to the staged durable row, outbox replay
+  fingerprint drift, at-least-once redelivery, active dispatcher ownership,
+  stale dispatch rejection, and scoped consumer dedupe with same-event-id
+  cross-resource collisions.
+
+## Combined Kernel Composition Contract
+
+When the chunk branches are composed after review, the shared storage-kernel
+transaction API must preserve one transaction boundary:
+
+- `TransactionWrite` may carry lease guard fields when a row is lease-managed.
+- `commit(...)` may carry outbox events that reference staged durable rows.
+- The transaction replay fingerprint must cover request identity/checksum, each
+  durable write, all lease guard fields, and each outbox event's identity,
+  resource version, payload, and payload hash.
+- CH-06 does not reimplement CH-05 fencing, but any later runtime path that
+  writes lease-managed state and publishes outbox events must call the combined
+  lease-guarded state-plus-event transaction path.
 
 ## Follow-Up Boundaries
 
