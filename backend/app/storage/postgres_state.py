@@ -12,6 +12,13 @@ from typing import Any, Literal
 RecordState = Literal["OPEN", "TERMINAL", "ERROR"]
 CommitOutcome = Literal["applied", "replayed"]
 EntityKey = tuple[str, str, str, str, str]
+OperationState = Literal[
+    "RUNNING",
+    "REPLAYING",
+    "FAILED_TRANSIENT",
+    "TERMINAL_SUCCESS",
+    "TERMINAL_ERROR",
+]
 
 
 class AcidCasError(Exception):
@@ -24,6 +31,10 @@ class AcidCasConflictError(AcidCasError):
 
 class AcidCasStaleWriteError(AcidCasError):
     """Raised when a write uses a stale version or targets a terminal row."""
+
+
+class AcidCasStaleOwnerError(AcidCasStaleWriteError):
+    """Raised when a non-terminal operation write uses a stale owner/epoch."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +78,41 @@ class TransactionCommitResult:
     records: tuple[StoredRecord, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class OperationScope:
+    tenant_id: str
+    owner_id: str
+    project_id: str
+    resource_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class OperationRecord:
+    operation_id: str
+    scope: OperationScope
+    payload_hash: str
+    state: OperationState
+    version: int
+    request_id: str
+    transaction_id: str
+    lease_owner_id: str
+    lease_epoch: int
+    committed_at: str
+    response_payload: dict[str, Any] | None = None
+    error_payload: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class OperationCommitResult:
+    operation_id: str
+    request_id: str
+    payload_hash: str
+    outcome: CommitOutcome
+    replayed: bool
+    committed_at: str
+    record: OperationRecord
+
+
 class AcidCasKernel:
     """Atomic compare-and-set storage kernel for durable metadata rows."""
 
@@ -99,6 +145,339 @@ class AcidCasKernel:
                 f"No durable record for {entity_type}:{tenant_id}:{owner_id}:{project_id}:{entity_id}"
             ) from exc
 
+    def get_operation(self, *, operation_id: str, scope: OperationScope) -> OperationRecord:
+        validate_operation_scope(scope)
+        key = operation_entity_key(operation_id=operation_id, scope=scope)
+        try:
+            return clone_operation_record(operation_record_from_stored_record(self._records[key]))
+        except KeyError as exc:
+            raise KeyError(
+                "No durable operation for "
+                f"{operation_id}:{scope.tenant_id}:{scope.owner_id}:{scope.project_id}:{scope.resource_id}"
+            ) from exc
+
+    def start_operation(
+        self,
+        *,
+        transaction_id: str,
+        request_id: str,
+        operation_id: str,
+        scope: OperationScope,
+        payload_hash: str,
+        lease_owner_id: str,
+        lease_epoch: int,
+    ) -> OperationCommitResult:
+        validate_operation_scope(scope)
+        validate_operation_identity(
+            operation_id=operation_id,
+            payload_hash=payload_hash,
+            lease_owner_id=lease_owner_id,
+        )
+        with self._lock:
+            existing = self._get_optional_operation(operation_id=operation_id, scope=scope)
+            if existing is None:
+                stored = self._store_operation_record(
+                    operation_id=operation_id,
+                    scope=scope,
+                    payload_hash=payload_hash,
+                    state="RUNNING",
+                    version=1,
+                    request_id=request_id,
+                    transaction_id=transaction_id,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                )
+                return clone_operation_result(
+                    OperationCommitResult(
+                        operation_id=operation_id,
+                        request_id=request_id,
+                        payload_hash=payload_hash,
+                        outcome="applied",
+                        replayed=False,
+                        committed_at=stored.committed_at,
+                        record=stored,
+                    )
+                )
+
+            self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
+            if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
+                return replay_operation_result(existing)
+
+            self._assert_operation_owner(
+                existing=existing,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+            )
+            return replay_operation_result(existing)
+
+    def commit_operation_success(
+        self,
+        *,
+        transaction_id: str,
+        request_id: str,
+        operation_id: str,
+        scope: OperationScope,
+        payload_hash: str,
+        expected_version: int,
+        lease_owner_id: str,
+        lease_epoch: int,
+        response_payload: dict[str, Any],
+    ) -> OperationCommitResult:
+        validate_operation_scope(scope)
+        validate_operation_identity(
+            operation_id=operation_id,
+            payload_hash=payload_hash,
+            lease_owner_id=lease_owner_id,
+        )
+        with self._lock:
+            existing = self._get_required_operation(operation_id=operation_id, scope=scope)
+            self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
+            if existing.state == "TERMINAL_SUCCESS":
+                if existing.response_payload != response_payload:
+                    raise AcidCasConflictError(
+                        f"Operation {operation_id} terminal success replay payload does not match the durable response."
+                    )
+                return replay_operation_result(existing)
+            if existing.state == "TERMINAL_ERROR":
+                raise AcidCasConflictError(
+                    f"Operation {operation_id} is already TERMINAL_ERROR and cannot transition to TERMINAL_SUCCESS."
+                )
+            self._assert_operation_owner(
+                existing=existing,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+            )
+            self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
+            self._assert_operation_state(
+                existing=existing,
+                allowed_states=("RUNNING", "REPLAYING"),
+                next_state="TERMINAL_SUCCESS",
+            )
+            stored = self._store_operation_record(
+                operation_id=operation_id,
+                scope=scope,
+                payload_hash=payload_hash,
+                state="TERMINAL_SUCCESS",
+                version=existing.version + 1,
+                request_id=request_id,
+                transaction_id=transaction_id,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+                response_payload=response_payload,
+            )
+            return clone_operation_result(
+                OperationCommitResult(
+                    operation_id=operation_id,
+                    request_id=request_id,
+                    payload_hash=payload_hash,
+                    outcome="applied",
+                    replayed=False,
+                    committed_at=stored.committed_at,
+                    record=stored,
+                )
+            )
+
+    def commit_operation_error(
+        self,
+        *,
+        transaction_id: str,
+        request_id: str,
+        operation_id: str,
+        scope: OperationScope,
+        payload_hash: str,
+        expected_version: int,
+        lease_owner_id: str,
+        lease_epoch: int,
+        error_payload: dict[str, Any],
+    ) -> OperationCommitResult:
+        validate_operation_scope(scope)
+        validate_operation_identity(
+            operation_id=operation_id,
+            payload_hash=payload_hash,
+            lease_owner_id=lease_owner_id,
+        )
+        with self._lock:
+            existing = self._get_required_operation(operation_id=operation_id, scope=scope)
+            self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
+            if existing.state == "TERMINAL_ERROR":
+                if existing.error_payload != error_payload:
+                    raise AcidCasConflictError(
+                        f"Operation {operation_id} terminal error replay payload does not match the durable error."
+                    )
+                return replay_operation_result(existing)
+            if existing.state == "TERMINAL_SUCCESS":
+                raise AcidCasConflictError(
+                    f"Operation {operation_id} is already TERMINAL_SUCCESS and cannot transition to TERMINAL_ERROR."
+                )
+            self._assert_operation_owner(
+                existing=existing,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+            )
+            self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
+            self._assert_operation_state(
+                existing=existing,
+                allowed_states=("RUNNING", "REPLAYING"),
+                next_state="TERMINAL_ERROR",
+            )
+            stored = self._store_operation_record(
+                operation_id=operation_id,
+                scope=scope,
+                payload_hash=payload_hash,
+                state="TERMINAL_ERROR",
+                version=existing.version + 1,
+                request_id=request_id,
+                transaction_id=transaction_id,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+                error_payload=error_payload,
+            )
+            return clone_operation_result(
+                OperationCommitResult(
+                    operation_id=operation_id,
+                    request_id=request_id,
+                    payload_hash=payload_hash,
+                    outcome="applied",
+                    replayed=False,
+                    committed_at=stored.committed_at,
+                    record=stored,
+                )
+            )
+
+    def fail_operation_transient(
+        self,
+        *,
+        transaction_id: str,
+        request_id: str,
+        operation_id: str,
+        scope: OperationScope,
+        payload_hash: str,
+        expected_version: int,
+        lease_owner_id: str,
+        lease_epoch: int,
+    ) -> OperationCommitResult:
+        validate_operation_scope(scope)
+        validate_operation_identity(
+            operation_id=operation_id,
+            payload_hash=payload_hash,
+            lease_owner_id=lease_owner_id,
+        )
+        with self._lock:
+            existing = self._get_required_operation(operation_id=operation_id, scope=scope)
+            self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
+            if existing.state == "FAILED_TRANSIENT":
+                self._assert_operation_owner(
+                    existing=existing,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                )
+                return replay_operation_result(existing)
+            if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
+                return replay_operation_result(existing)
+            self._assert_operation_owner(
+                existing=existing,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+            )
+            self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
+            self._assert_operation_state(
+                existing=existing,
+                allowed_states=("RUNNING", "REPLAYING"),
+                next_state="FAILED_TRANSIENT",
+            )
+            stored = self._store_operation_record(
+                operation_id=operation_id,
+                scope=scope,
+                payload_hash=payload_hash,
+                state="FAILED_TRANSIENT",
+                version=existing.version + 1,
+                request_id=request_id,
+                transaction_id=transaction_id,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+            )
+            return clone_operation_result(
+                OperationCommitResult(
+                    operation_id=operation_id,
+                    request_id=request_id,
+                    payload_hash=payload_hash,
+                    outcome="applied",
+                    replayed=False,
+                    committed_at=stored.committed_at,
+                    record=stored,
+                )
+            )
+
+    def recover_operation(
+        self,
+        *,
+        transaction_id: str,
+        request_id: str,
+        operation_id: str,
+        scope: OperationScope,
+        payload_hash: str,
+        expected_version: int,
+        lease_owner_id: str,
+        lease_epoch: int,
+    ) -> OperationCommitResult:
+        validate_operation_scope(scope)
+        validate_operation_identity(
+            operation_id=operation_id,
+            payload_hash=payload_hash,
+            lease_owner_id=lease_owner_id,
+        )
+        with self._lock:
+            existing = self._get_required_operation(operation_id=operation_id, scope=scope)
+            self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
+            if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
+                return replay_operation_result(existing)
+            if existing.state == "REPLAYING" and existing.transaction_id == transaction_id:
+                stored = self._store_operation_record(
+                    operation_id=operation_id,
+                    scope=scope,
+                    payload_hash=payload_hash,
+                    state="REPLAYING",
+                    version=expected_version + 1,
+                    request_id=request_id,
+                    transaction_id=transaction_id,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                )
+                return replay_operation_result(stored)
+            self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
+            self._assert_operation_state(
+                existing=existing,
+                allowed_states=("FAILED_TRANSIENT",),
+                next_state="REPLAYING",
+            )
+            self._assert_recovery_epoch_advance(
+                existing=existing,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+            )
+            stored = self._store_operation_record(
+                operation_id=operation_id,
+                scope=scope,
+                payload_hash=payload_hash,
+                state="REPLAYING",
+                version=existing.version + 1,
+                request_id=request_id,
+                transaction_id=transaction_id,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+            )
+            return clone_operation_result(
+                OperationCommitResult(
+                    operation_id=operation_id,
+                    request_id=request_id,
+                    payload_hash=payload_hash,
+                    outcome="applied",
+                    replayed=False,
+                    committed_at=stored.committed_at,
+                    record=stored,
+                )
+            )
+
     def commit(
         self,
         *,
@@ -106,6 +485,23 @@ class AcidCasKernel:
         request_id: str,
         request_checksum: str,
         writes: tuple[TransactionWrite, ...],
+    ) -> TransactionCommitResult:
+        return self._commit(
+            transaction_id=transaction_id,
+            request_id=request_id,
+            request_checksum=request_checksum,
+            writes=writes,
+            allow_operation_rows=False,
+        )
+
+    def _commit(
+        self,
+        *,
+        transaction_id: str,
+        request_id: str,
+        request_checksum: str,
+        writes: tuple[TransactionWrite, ...],
+        allow_operation_rows: bool,
     ) -> TransactionCommitResult:
         if not writes:
             raise AcidCasConflictError("ACID/CAS transactions must include at least one write.")
@@ -130,6 +526,7 @@ class AcidCasKernel:
                 request_id=request_id,
                 request_checksum=request_checksum,
                 writes=writes,
+                allow_operation_rows=allow_operation_rows,
             )
             committed_at = _now()
             committed_records = tuple(
@@ -180,10 +577,13 @@ class AcidCasKernel:
         request_id: str,
         request_checksum: str,
         writes: tuple[TransactionWrite, ...],
+        allow_operation_rows: bool,
     ) -> tuple[StoredRecord, ...]:
         seen_keys: set[EntityKey] = set()
         staged: list[StoredRecord] = []
         for write in writes:
+            if write.entity_type == "operation" and not allow_operation_rows:
+                raise AcidCasConflictError("Operation rows must be written through the operation API.")
             key = entity_key(
                 entity_type=write.entity_type,
                 entity_id=write.entity_id,
@@ -210,6 +610,142 @@ class AcidCasKernel:
                 )
             )
         return tuple(staged)
+
+    def _get_required_operation(self, *, operation_id: str, scope: OperationScope) -> OperationRecord:
+        try:
+            return operation_record_from_stored_record(self._records[operation_entity_key(operation_id=operation_id, scope=scope)])
+        except KeyError as exc:
+            raise AcidCasConflictError(
+                "Operation does not exist for "
+                f"{operation_id}:{scope.tenant_id}:{scope.owner_id}:{scope.project_id}:{scope.resource_id}."
+            ) from exc
+
+    def _get_optional_operation(self, *, operation_id: str, scope: OperationScope) -> OperationRecord | None:
+        stored = self._records.get(operation_entity_key(operation_id=operation_id, scope=scope))
+        if stored is None:
+            return None
+        return operation_record_from_stored_record(stored)
+
+    def _store_operation_record(
+        self,
+        *,
+        operation_id: str,
+        scope: OperationScope,
+        payload_hash: str,
+        state: OperationState,
+        version: int,
+        request_id: str,
+        transaction_id: str,
+        lease_owner_id: str,
+        lease_epoch: int,
+        response_payload: dict[str, Any] | None = None,
+        error_payload: dict[str, Any] | None = None,
+    ) -> OperationRecord:
+        result = self._commit(
+            transaction_id=transaction_id,
+            request_id=request_id,
+            request_checksum=operation_request_checksum(
+                operation_id=operation_id,
+                scope=scope,
+                payload_hash=payload_hash,
+                state=state,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+                response_payload=response_payload,
+                error_payload=error_payload,
+            ),
+            writes=(
+                TransactionWrite(
+                    entity_type="operation",
+                    entity_id=operation_entity_id(operation_id=operation_id, scope=scope),
+                    tenant_id=scope.tenant_id,
+                    owner_id=scope.owner_id,
+                    project_id=scope.project_id,
+                    expected_version=None if version == 1 else version - 1,
+                    state=operation_record_state(state),
+                    payload=operation_record_payload(
+                        operation_id=operation_id,
+                        scope=scope,
+                        payload_hash=payload_hash,
+                        state=state,
+                        lease_owner_id=lease_owner_id,
+                        lease_epoch=lease_epoch,
+                        response_payload=response_payload,
+                        error_payload=error_payload,
+                    ),
+                ),
+            ),
+            allow_operation_rows=True,
+        )
+        return operation_record_from_stored_record(result.records[0])
+
+    def _assert_operation_payload_hash(self, *, existing: OperationRecord, payload_hash: str) -> None:
+        if existing.payload_hash != payload_hash:
+            raise AcidCasConflictError(
+                f"Operation {existing.operation_id} payload hash does not match the durable operation."
+            )
+
+    def _assert_operation_owner(
+        self,
+        *,
+        existing: OperationRecord,
+        lease_owner_id: str,
+        lease_epoch: int,
+    ) -> None:
+        if existing.lease_owner_id != lease_owner_id or existing.lease_epoch != lease_epoch:
+            raise AcidCasStaleOwnerError(
+                "Operation "
+                f"{existing.operation_id} stale owner: expected "
+                f"{existing.lease_owner_id}@{existing.lease_epoch} but received "
+                f"{lease_owner_id}@{lease_epoch}."
+            )
+
+    def _assert_recovery_epoch_advance(
+        self,
+        *,
+        existing: OperationRecord,
+        lease_owner_id: str,
+        lease_epoch: int,
+    ) -> None:
+        if lease_owner_id != existing.lease_owner_id:
+            raise AcidCasStaleOwnerError(
+                "Operation "
+                f"{existing.operation_id} recovery owner must remain {existing.lease_owner_id} until "
+                "CH-05 durable lease transfer semantics are enforced."
+            )
+        if lease_owner_id == existing.lease_owner_id and lease_epoch == existing.lease_epoch:
+            raise AcidCasConflictError(
+                f"Operation {existing.operation_id} recovery requires an explicit epoch advance."
+            )
+        if lease_epoch <= existing.lease_epoch:
+            raise AcidCasStaleOwnerError(
+                "Operation "
+                f"{existing.operation_id} stale recovery epoch: durable epoch is "
+                f"{existing.lease_epoch} but received {lease_owner_id}@{lease_epoch}."
+            )
+
+    def _assert_operation_expected_version(self, *, existing: OperationRecord, expected_version: int) -> None:
+        if expected_version < existing.version:
+            raise AcidCasStaleWriteError(
+                f"Operation {existing.operation_id} expected version {expected_version} but durable version is {existing.version}."
+            )
+        if expected_version > existing.version:
+            raise AcidCasConflictError(
+                f"Operation {existing.operation_id} expected version {expected_version} but durable version is {existing.version}."
+            )
+
+    def _assert_operation_state(
+        self,
+        *,
+        existing: OperationRecord,
+        allowed_states: tuple[OperationState, ...],
+        next_state: OperationState,
+    ) -> None:
+        if existing.state not in allowed_states:
+            allowed = ", ".join(allowed_states)
+            raise AcidCasConflictError(
+                f"Operation {existing.operation_id} must be in one of [{allowed}] to transition to {next_state}; found {existing.state}."
+            )
 
     def _stage_write(
         self,
@@ -305,6 +841,56 @@ def clone_record(record: StoredRecord) -> StoredRecord:
     )
 
 
+def clone_operation_result(result: OperationCommitResult) -> OperationCommitResult:
+    return OperationCommitResult(
+        operation_id=result.operation_id,
+        request_id=result.request_id,
+        payload_hash=result.payload_hash,
+        outcome=result.outcome,
+        replayed=result.replayed,
+        committed_at=result.committed_at,
+        record=clone_operation_record(result.record),
+    )
+
+
+def replay_operation_result(record: OperationRecord) -> OperationCommitResult:
+    return OperationCommitResult(
+        operation_id=record.operation_id,
+        request_id=record.request_id,
+        payload_hash=record.payload_hash,
+        outcome="replayed",
+        replayed=True,
+        committed_at=record.committed_at,
+        record=clone_operation_record(record),
+    )
+
+
+def clone_operation_record(record: OperationRecord) -> OperationRecord:
+    return OperationRecord(
+        operation_id=record.operation_id,
+        scope=clone_operation_scope(record.scope),
+        payload_hash=record.payload_hash,
+        state=record.state,
+        version=record.version,
+        request_id=record.request_id,
+        transaction_id=record.transaction_id,
+        lease_owner_id=record.lease_owner_id,
+        lease_epoch=record.lease_epoch,
+        committed_at=record.committed_at,
+        response_payload=deepcopy(record.response_payload),
+        error_payload=deepcopy(record.error_payload),
+    )
+
+
+def clone_operation_scope(scope: OperationScope) -> OperationScope:
+    return OperationScope(
+        tenant_id=scope.tenant_id,
+        owner_id=scope.owner_id,
+        project_id=scope.project_id,
+        resource_id=scope.resource_id,
+    )
+
+
 def entity_key(
     *,
     entity_type: str,
@@ -314,6 +900,135 @@ def entity_key(
     project_id: str,
 ) -> EntityKey:
     return (entity_type, tenant_id, owner_id, project_id, entity_id)
+
+
+def operation_entity_id(*, operation_id: str, scope: OperationScope) -> str:
+    return f"{operation_id}::{scope.resource_id}"
+
+
+def validate_operation_scope(scope: OperationScope) -> None:
+    parts = scope.resource_id.split(":")
+    if len(parts) != 5 or any(not _is_valid_identity_part(part) for part in parts):
+        raise AcidCasConflictError(
+            "Operation scope resource_id must use canonical non-empty colon-free entity_type:tenant_id:owner_id:project_id:entity_id identity."
+        )
+    _, tenant_id, owner_id, project_id, _ = parts
+    if any(not _is_valid_identity_part(part) for part in (scope.tenant_id, scope.owner_id, scope.project_id)):
+        raise AcidCasConflictError("OperationScope tenant_id, owner_id, and project_id must be non-empty and colon-free.")
+    if (tenant_id, owner_id, project_id) != (scope.tenant_id, scope.owner_id, scope.project_id):
+        raise AcidCasConflictError(
+            "Operation scope resource_id tenant_id, owner_id, and project_id must match OperationScope."
+        )
+
+
+def validate_operation_identity(*, operation_id: str, payload_hash: str, lease_owner_id: str) -> None:
+    for label, value in (
+        ("operation_id", operation_id),
+        ("payload_hash", payload_hash),
+        ("lease_owner_id", lease_owner_id),
+    ):
+        if not _is_valid_identifier(value):
+            raise AcidCasConflictError(f"Operation {label} must be non-empty.")
+
+
+def _is_valid_identity_part(value: str) -> bool:
+    return bool(value.strip()) and value == value.strip() and ":" not in value
+
+
+def _is_valid_identifier(value: str) -> bool:
+    return bool(value.strip()) and value == value.strip()
+
+
+def operation_entity_key(*, operation_id: str, scope: OperationScope) -> EntityKey:
+    return entity_key(
+        entity_type="operation",
+        entity_id=operation_entity_id(operation_id=operation_id, scope=scope),
+        tenant_id=scope.tenant_id,
+        owner_id=scope.owner_id,
+        project_id=scope.project_id,
+    )
+
+
+def operation_record_state(state: OperationState) -> RecordState:
+    if state == "TERMINAL_SUCCESS":
+        return "TERMINAL"
+    if state == "TERMINAL_ERROR":
+        return "ERROR"
+    return "OPEN"
+
+
+def operation_record_payload(
+    *,
+    operation_id: str,
+    scope: OperationScope,
+    payload_hash: str,
+    state: OperationState,
+    lease_owner_id: str,
+    lease_epoch: int,
+    response_payload: dict[str, Any] | None,
+    error_payload: dict[str, Any] | None,
+) -> dict[str, Any]:
+    return {
+        "operationId": operation_id,
+        "resourceId": scope.resource_id,
+        "payloadHash": payload_hash,
+        "operationState": state,
+        "leaseOwnerId": lease_owner_id,
+        "leaseEpoch": lease_epoch,
+        "responsePayload": deepcopy(response_payload),
+        "errorPayload": deepcopy(error_payload),
+    }
+
+
+def operation_request_checksum(
+    *,
+    operation_id: str,
+    scope: OperationScope,
+    payload_hash: str,
+    state: OperationState,
+    lease_owner_id: str,
+    lease_epoch: int,
+    response_payload: dict[str, Any] | None,
+    error_payload: dict[str, Any] | None,
+) -> str:
+    return json.dumps(
+        operation_record_payload(
+            operation_id=operation_id,
+            scope=scope,
+            payload_hash=payload_hash,
+            state=state,
+            lease_owner_id=lease_owner_id,
+            lease_epoch=lease_epoch,
+            response_payload=response_payload,
+            error_payload=error_payload,
+        ),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def operation_record_from_stored_record(record: StoredRecord) -> OperationRecord:
+    payload = record.payload
+    scope = OperationScope(
+        tenant_id=record.tenant_id,
+        owner_id=record.owner_id,
+        project_id=record.project_id,
+        resource_id=payload["resourceId"],
+    )
+    return OperationRecord(
+        operation_id=payload["operationId"],
+        scope=scope,
+        payload_hash=payload["payloadHash"],
+        state=payload["operationState"],
+        version=record.version,
+        request_id=record.request_id,
+        transaction_id=record.transaction_id,
+        lease_owner_id=payload["leaseOwnerId"],
+        lease_epoch=payload["leaseEpoch"],
+        committed_at=record.committed_at,
+        response_payload=deepcopy(payload["responsePayload"]),
+        error_payload=deepcopy(payload["errorPayload"]),
+    )
 
 
 def _transaction_fingerprint(

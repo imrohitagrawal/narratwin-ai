@@ -539,9 +539,9 @@ ISSUE_39_DRILL_LOG_PREFIXES = ("docs/reviews/drills/", "reports/", "artifacts/",
 ISSUE_39_DRILL_LOG_SUFFIXES = {".json", ".jsonl", ".log", ".md", ".txt"}
 ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
     "phase-1-closure-39-ch-02-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
-    "phase-1-closure-39-ch-04-": ("b23846991f4da232c2a59f81f39ba9a93232724e",),
-    "phase-1-closure-39-ch-05-": ("b23846991f4da232c2a59f81f39ba9a93232724e",),
-    "phase-1-closure-39-ch-06-": ("b23846991f4da232c2a59f81f39ba9a93232724e",),
+    "phase-1-closure-39-ch-04-": ("b5992a599be06ea444ca66d3f088956eee8c70e6",),
+    "phase-1-closure-39-ch-05-": ("b5992a599be06ea444ca66d3f088956eee8c70e6",),
+    "phase-1-closure-39-ch-06-": ("b5992a599be06ea444ca66d3f088956eee8c70e6",),
 }
 PHASE1_STACKED_BASE_WORKFLOWS = (
     ".github/workflows/ci.yml",
