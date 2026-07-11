@@ -2315,7 +2315,10 @@ def test_guarded_pull_request_allows_phase1_stacked_base(
         tmp_path,
         monkeypatch,
         title="Harden stacked phase closure branch",
-        body=completed_preflight_body() + f"\nGITHUB_BASE_SHA={base_sha} make quality -> passed\n",
+        body=completed_preflight_body().replace(
+            "make quality -> passed",
+            f"GITHUB_BASE_SHA={base_sha} make quality -> passed",
+        ),
         head_ref="phase-1-closure-44-telemetry-hardening",
         base_ref="phase-1-closure-39-execution-strategy",
         base_sha=base_sha,
@@ -2323,6 +2326,28 @@ def test_guarded_pull_request_allows_phase1_stacked_base(
     )
 
     assert all("explicitly reviewed stacked base" not in failure for failure in failures)
+
+
+def test_guarded_pull_request_rejects_stacked_base_with_stray_sha_note(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    base_sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden stacked phase closure branch",
+        body=completed_preflight_body() + f"\nGITHUB_BASE_SHA={base_sha}\n",
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        base_ref="phase-1-closure-39-execution-strategy",
+        base_sha=base_sha,
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert (
+        "Pull requests for guarded work must target main or an explicitly reviewed stacked base with exact "
+        "GITHUB_BASE_SHA evidence in the PR body."
+    ) in failures
 
 
 @pytest.mark.parametrize(

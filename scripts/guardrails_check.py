@@ -1119,16 +1119,26 @@ def validation_command_has_result(lines: list[str], command: str) -> bool:
             return False
         if any(term in line for term in VALIDATION_FAILURE_TERMS):
             continue
-        if VALIDATION_PASS_RESULT.search(line):
+        if validation_line_has_pass_result(line):
             has_valid_result = True
         if "github.com/" in line and "/actions/runs/" in line:
             has_valid_result = True
     return has_valid_result
 
 
+def validation_line_has_pass_result(line: str) -> bool:
+    if VALIDATION_ZERO_PASS_RESULT.search(line):
+        return False
+    if any(term in line for term in VALIDATION_FAILURE_TERMS):
+        return False
+    return VALIDATION_PASS_RESULT.search(line) is not None
+
+
 def validation_line_matches_command(line: str, command_text: str) -> bool:
     if command_text.endswith("github_event_path="):
         return FORCED_PR_VALIDATION_COMMAND.match(line) is not None
+    if command_text == "make quality" and re.match(r"^github_base_sha=[0-9a-f]{40}\s+make quality(?:\s|:|$)", line):
+        return True
     if not line.startswith(command_text):
         return False
     suffix = line[len(command_text) :]
@@ -1610,8 +1620,12 @@ def stacked_base_sha_is_reviewed(base_ref: str | None, base_sha: str, body: str)
         return False
     if not re.fullmatch(r"[0-9a-f]{40}", base_sha):
         return False
-    escaped_sha = re.escape(base_sha)
-    return re.search(rf"(?i)\bGITHUB_BASE_SHA={escaped_sha}\b", body) is not None
+    expected_command = f"github_base_sha={base_sha} make quality"
+    validation_lines = [line.strip().lower() for line in markdown_section(body, "Validation evidence").splitlines()]
+    return any(
+        validation_line_matches_command(line, expected_command) and validation_line_has_pass_result(line)
+        for line in validation_lines
+    )
 
 
 def pull_request_base_is_allowed(base_ref: str | None, base_sha: str, body: str) -> bool:
