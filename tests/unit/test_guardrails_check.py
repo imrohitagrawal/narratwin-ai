@@ -2785,6 +2785,57 @@ def test_new_governance_artifacts_pass_when_status_is_updated() -> None:
     assert guardrails.failures == []
 
 
+def test_workflows_least_privilege_rejects_commented_permissions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workflow_dir = tmp_path / ".github" / "workflows"
+    workflow_dir.mkdir(parents=True)
+    (workflow_dir / "quality.yml").write_text(
+        "name: quality\n"
+        "# permissions:\n"
+        "on:\n"
+        "  pull_request:\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+
+    guardrails.failures.clear()
+    guardrails.check_workflows_least_privilege()
+
+    assert ".github/workflows/quality.yml is missing explicit least-privilege permissions." in guardrails.failures
+
+
+def test_workflows_least_privilege_ignores_commented_write_permissions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workflow_dir = tmp_path / ".github" / "workflows"
+    workflow_dir.mkdir(parents=True)
+    (workflow_dir / "quality.yml").write_text(
+        "name: quality\n"
+        "permissions:\n"
+        "  contents: read\n"
+        "# permissions: write-all\n"
+        "# contents: write\n"
+        "on:\n"
+        "  pull_request:\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+
+    guardrails.failures.clear()
+    guardrails.check_workflows_least_privilege()
+
+    assert guardrails.failures == []
+
+
 def test_pr_branch_push_changed_files_uses_merge_base_not_previous_commit(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -1683,13 +1683,24 @@ def check_workflows_least_privilege() -> None:
         return
     for workflow in list(workflow_dir.glob("*.yml")) + list(workflow_dir.glob("*.yaml")):
         text = read_text(workflow)
+        active_text = "\n".join(yaml_line_without_inline_comment(line) for line in text.splitlines())
         rel = relative(workflow)
-        if "permissions:" not in text:
+        if "permissions:" not in active_text:
             failures.append(f"{rel} is missing explicit least-privilege permissions.")
-        if re.search(r"permissions:\s*write-all", text):
+        if re.search(r"permissions:\s*write-all", active_text):
             failures.append(f"{rel} uses write-all permissions. Use least privilege instead.")
-        if re.search(r"contents:\s*write", text) and "pull_request" in text:
+        if re.search(r"contents:\s*write", active_text) and "pull_request" in active_text:
             failures.append(f"{rel} grants contents: write for PR validation. Use contents: read unless a write is required.")
+
+
+def yaml_line_without_inline_comment(line: str) -> str:
+    quote: str | None = None
+    for index, char in enumerate(line):
+        if char in {"'", '"'}:
+            quote = None if quote == char else char if quote is None else quote
+        if char == "#" and quote is None:
+            return line[:index].rstrip()
+    return line.rstrip()
 
 
 def check_secrets() -> None:

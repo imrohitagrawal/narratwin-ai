@@ -1609,6 +1609,30 @@ def test_process_docs_rejects_commented_guardrail_token_permissions(
     )
 
 
+@pytest.mark.parametrize("workflow_path", [".github/workflows/quality.yml", ".github/workflows/security.yml"])
+def test_process_docs_rejects_permission_decoys_outside_permissions_block(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("  issues: read\n", "").replace(
+                "  pull-requests: read\n",
+                "  env:\n    issues: read\n    pull-requests: read\n",
+            ),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
 @pytest.mark.parametrize(
     "workflow_path",
     [
@@ -1627,6 +1651,33 @@ def test_process_docs_rejects_guardrail_step_without_token_even_when_other_steps
         changed=[workflow_path],
         read_overrides={
             workflow_path: remove_guardrail_step_token(workflow_text),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/quality-gates.yml",
+        ".github/workflows/security.yml",
+    ],
+)
+def test_process_docs_rejects_commented_guardrail_step_token(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("          GITHUB_TOKEN:", "          # GITHUB_TOKEN:"),
         },
     )
 
@@ -1709,6 +1760,24 @@ def test_quality_gates_workflow_rejects_nested_phase1_base_decoy(monkeypatch: An
     decoy_workflow = workflow_text.replace(
         "    branches:\n      - main\n      - phase-1-closure-**\n",
         "    types:\n      branches: [phase-1-closure-**]\n",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+def test_quality_gates_workflow_rejects_pull_request_nested_under_push_decoy(monkeypatch: Any) -> None:
+    workflow_path = ".github/workflows/quality-gates.yml"
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace("      - phase-1-closure-**\n", "").replace(
+        "  push:\n",
+        "  push:\n    pull_request:\n      branches: [phase-1-closure-**]\n",
+        1,
     )
     failures = run_process_docs_check(
         monkeypatch,
@@ -1815,6 +1884,34 @@ def test_runtime_workflows_reject_nested_phase1_base_decoy(
     decoy_workflow = workflow_text.replace(
         "    branches:\n      - main\n      - phase-1-closure-**\n",
         "    types:\n      branches: [phase-1-closure-**]\n",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml",
+        ".github/workflows/eval-smoke.yml",
+    ],
+)
+def test_runtime_workflows_reject_pull_request_nested_under_push_decoy(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace("      - phase-1-closure-**\n", "").replace(
+        "  push:\n",
+        "  push:\n    pull_request:\n      branches: [phase-1-closure-**]\n",
+        1,
     )
     failures = run_process_docs_check(
         monkeypatch,

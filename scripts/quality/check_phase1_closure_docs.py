@@ -835,7 +835,27 @@ def workflow_has_guardrail_github_token_wiring(yaml_text: str) -> bool:
 
 def workflow_has_permission(yaml_text: str, permission: str, value: str) -> bool:
     expected = f"{permission}: {value}"
-    return any(yaml_line_without_inline_comment(line).strip() == expected for line in yaml_text.splitlines())
+    lines = yaml_text.splitlines()
+    for index, raw_line in enumerate(lines):
+        line = yaml_line_without_inline_comment(raw_line)
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if line.strip() != "permissions:":
+            continue
+        child_indent: int | None = None
+        for child_raw in lines[index + 1 :]:
+            child = yaml_line_without_inline_comment(child_raw)
+            if not child.strip():
+                continue
+            child_current_indent = len(child) - len(child.lstrip(" "))
+            if child_current_indent <= indent:
+                break
+            if child_indent is None:
+                child_indent = child_current_indent
+            if child_current_indent == child_indent and child.strip() == expected:
+                return True
+    return False
 
 
 def workflow_has_stage_quality_base_sha(yaml_text: str) -> bool:
@@ -847,6 +867,7 @@ def workflow_has_stage_quality_base_sha(yaml_text: str) -> bool:
 
 def workflow_allows_phase1_pull_request_bases(yaml_text: str) -> bool:
     in_on_block = False
+    on_child_indent: int | None = None
     pull_request_indent: int | None = None
     branches_indent: int | None = None
     for raw_line in yaml_text.splitlines():
@@ -857,13 +878,16 @@ def workflow_allows_phase1_pull_request_bases(yaml_text: str) -> bool:
         stripped = without_comment.strip()
         if indent == 0:
             in_on_block = stripped == "on:"
+            on_child_indent = None
             pull_request_indent = None
             branches_indent = None
             continue
         if not in_on_block:
             continue
+        if on_child_indent is None:
+            on_child_indent = indent
         if pull_request_indent is None:
-            if stripped == "pull_request:":
+            if indent == on_child_indent and stripped == "pull_request:":
                 pull_request_indent = indent
             continue
         if indent <= pull_request_indent:
@@ -929,7 +953,7 @@ def workflow_step_blocks(yaml_text: str) -> list[str]:
             index += 1
             continue
         step_indent = len(step_match.group("indent"))
-        block_lines = [line]
+        block_lines = [yaml_line_without_inline_comment(line)]
         index += 1
         while index < len(lines):
             current = lines[index]
@@ -937,9 +961,9 @@ def workflow_step_blocks(yaml_text: str) -> list[str]:
                 current_indent = len(current) - len(current.lstrip(" "))
                 if current_indent <= step_indent:
                     break
-            block_lines.append(current)
+            block_lines.append(yaml_line_without_inline_comment(current))
             index += 1
-        block = "\n".join(block_lines)
+        block = "\n".join(line for line in block_lines if line.strip())
         blocks.append(block)
     return blocks
 
