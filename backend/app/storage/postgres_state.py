@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import secrets
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
@@ -273,7 +274,7 @@ class AcidCasKernel:
 
     def get_outbox_event(self, *, event_id: str, resource_id: str) -> StoredOutboxEvent:
         try:
-            return clone_outbox_event(self._outbox_events[(resource_id, event_id)])
+            return clone_outbox_event(self._outbox_events[(resource_id, event_id)], include_lock_credentials=False)
         except KeyError as exc:
             raise KeyError(f"No durable outbox event for {resource_id}:{event_id}") from exc
 
@@ -306,13 +307,7 @@ class AcidCasKernel:
             acquired: list[StoredOutboxEvent] = []
             for event in eligible[:limit]:
                 attempt_count = event.attempt_count + 1
-                lock_token = outbox_lock_token(
-                    dispatcher_id=dispatcher_id,
-                    resource_id=event.resource_id,
-                    event_id=event.event_id,
-                    attempt_count=attempt_count,
-                    acquired_at=current_iso,
-                )
+                lock_token = secrets.token_urlsafe(32)
                 updated = StoredOutboxEvent(
                     event_id=event.event_id,
                     event_type=event.event_type,
@@ -337,7 +332,7 @@ class AcidCasKernel:
                     updated_at=current_iso,
                 )
                 self._outbox_events[outbox_event_key_for_record(updated)] = updated
-                acquired.append(clone_outbox_event(updated))
+                acquired.append(clone_outbox_event(updated, include_lock_credentials=True))
             return tuple(acquired)
 
     def retry_outbox_event(
@@ -742,7 +737,7 @@ def clone_record(record: StoredRecord) -> StoredRecord:
     )
 
 
-def clone_outbox_event(event: StoredOutboxEvent) -> StoredOutboxEvent:
+def clone_outbox_event(event: StoredOutboxEvent, *, include_lock_credentials: bool = False) -> StoredOutboxEvent:
     return StoredOutboxEvent(
         event_id=event.event_id,
         event_type=event.event_type,
@@ -758,9 +753,9 @@ def clone_outbox_event(event: StoredOutboxEvent) -> StoredOutboxEvent:
         state=event.state,
         attempt_count=event.attempt_count,
         next_attempt_at=event.next_attempt_at,
-        locked_by=event.locked_by,
+        locked_by=event.locked_by if include_lock_credentials else None,
         locked_until=event.locked_until,
-        lock_token=event.lock_token,
+        lock_token=event.lock_token if include_lock_credentials else None,
         last_error=event.last_error,
         payload=deepcopy(event.payload),
         created_at=event.created_at,
@@ -795,24 +790,6 @@ def entity_key(
 
 def outbox_resource_id_for_write(event: OutboxEventWrite) -> str:
     return f"{event.entity_type}:{event.tenant_id}:{event.owner_id}:{event.project_id}:{event.entity_id}"
-
-
-def outbox_lock_token(
-    *,
-    dispatcher_id: str,
-    resource_id: str,
-    event_id: str,
-    attempt_count: int,
-    acquired_at: str,
-) -> str:
-    token_payload = {
-        "dispatcher_id": dispatcher_id,
-        "resource_id": resource_id,
-        "event_id": event_id,
-        "attempt_count": attempt_count,
-        "acquired_at": acquired_at,
-    }
-    return payload_hash_for(token_payload)
 
 
 def validate_outbox_event_scope(event: OutboxEventWrite) -> None:

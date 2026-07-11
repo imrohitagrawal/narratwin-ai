@@ -1412,6 +1412,22 @@ def test_context2_outbox_redelivery_is_at_least_once() -> None:
     assert first_attempt[0].state == "DELIVERING"
     assert first_attempt[0].attempt_count == 1
     assert first_attempt[0].locked_by == "worker-1"
+    first_token = outbox_lock_token_for(first_attempt, "evt-1")
+    assert first_token != payload_hash_for(
+        {
+            "dispatcher_id": "worker-1",
+            "resource_id": scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+            "event_id": "evt-1",
+            "attempt_count": 1,
+            "acquired_at": base.isoformat(),
+        }
+    )
+    readable_event = kernel.get_outbox_event(
+        event_id="evt-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+    assert readable_event.locked_by is None
+    assert readable_event.lock_token is None
 
     clock.set(base + timedelta(seconds=31))
     redelivered = kernel.acquire_outbox_events(
