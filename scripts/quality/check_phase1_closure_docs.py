@@ -548,6 +548,12 @@ PHASE1_STACKED_BASE_WORKFLOWS = (
     ".github/workflows/security.yml",
     ".github/workflows/eval-smoke.yml",
 )
+ISSUE_39_STACKED_PUSH_BASE_BRANCH = "origin/phase-1-closure-39-execution-strategy"
+ISSUE_39_STACKED_PUSH_BRANCH_PREFIXES = (
+    "phase-1-closure-39-ch-04-",
+    "phase-1-closure-39-ch-05-",
+    "phase-1-closure-39-ch-06-",
+)
 
 
 def run_git(args: list[str]) -> str:
@@ -570,6 +576,8 @@ def preferred_diff_base_for_current_event() -> str:
         return base
     ref_name = os.environ.get("GITHUB_REF_NAME", "").strip() or os.environ.get("GITHUB_HEAD_REF", "").strip()
     if ref_name and ref_name != "main":
+        if ref_name.startswith(ISSUE_39_STACKED_PUSH_BRANCH_PREFIXES):
+            return ISSUE_39_STACKED_PUSH_BASE_BRANCH
         return ""
     return base
 

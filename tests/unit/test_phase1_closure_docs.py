@@ -205,7 +205,25 @@ def test_issue39_chunk_branch_accepts_required_dependency_commit_ancestry(monkey
     )
 
 
-def test_non_main_push_resolve_base_ignores_previous_branch_head(monkeypatch: Any) -> None:
+def test_stacked_child_push_resolve_base_uses_stacked_base_ref(monkeypatch: Any) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_git(args: list[str]) -> str:
+        calls.append(args)
+        if args == ["rev-parse", "--verify", "origin/phase-1-closure-39-execution-strategy^{commit}"]:
+            return "stacked-base"
+        return ""
+
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_HEAD_REF", "phase-1-closure-39-ch-05-lease-fencing")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-child-head")
+    monkeypatch.setattr(phase1, "run_git", fake_run_git)
+
+    assert phase1.resolve_base() == "origin/phase-1-closure-39-execution-strategy"
+    assert ["rev-parse", "--verify", "previous-child-head^{commit}"] not in calls
+
+
+def test_non_stacked_non_main_push_resolve_base_ignores_previous_branch_head(monkeypatch: Any) -> None:
     calls: list[list[str]] = []
 
     def fake_run_git(args: list[str]) -> str:
@@ -215,12 +233,12 @@ def test_non_main_push_resolve_base_ignores_previous_branch_head(monkeypatch: An
         return ""
 
     monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
-    monkeypatch.setenv("GITHUB_HEAD_REF", "phase-1-closure-39-ch-05-lease-fencing")
-    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-child-head")
+    monkeypatch.setenv("GITHUB_HEAD_REF", "feature-branch")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-feature-head")
     monkeypatch.setattr(phase1, "run_git", fake_run_git)
 
     assert phase1.resolve_base() == "main-merge-base"
-    assert ["rev-parse", "--verify", "previous-child-head^{commit}"] not in calls
+    assert ["rev-parse", "--verify", "previous-feature-head^{commit}"] not in calls
 
 
 def test_main_push_resolve_base_keeps_previous_commit(monkeypatch: Any) -> None:
