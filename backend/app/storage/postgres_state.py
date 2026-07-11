@@ -846,7 +846,7 @@ def _is_valid_identity_part(value: str) -> bool:
 
 
 def _is_valid_identifier(value: str) -> bool:
-    return bool(value.strip())
+    return bool(value.strip()) and value == value.strip()
 
 
 def payload_hash_for(payload: dict[str, Any]) -> str:
