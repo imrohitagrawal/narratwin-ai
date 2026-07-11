@@ -931,6 +931,7 @@ def test_issue39_execution_strategy_branch_allows_strategy_doc(monkeypatch: Any)
             "docs/QUALITY_GATES.md",
             "docs/STAGE_ISSUE_PLAN.md",
             "docs/STATUS.md",
+            "docs/reviews/ISSUE_39_CH04_CH05_CH06_CONTRACT_DECISIONS.md",
             "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
             "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
             "scripts/quality/check_phase1_closure_docs.py",
