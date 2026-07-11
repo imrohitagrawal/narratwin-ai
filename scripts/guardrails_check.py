@@ -217,6 +217,11 @@ CANONICAL_STAGE_ISSUE_CLOSURE = (
     ("stage8-", "Stage 8", "13"),
 )
 FORCE_PULL_REQUEST_GUARDRAILS_ENV = "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS"
+ALLOWED_STACKED_PULL_REQUEST_BASES = frozenset(
+    {
+        "phase-1-closure-39-execution-strategy",
+    }
+)
 REQUIRED_PREIMPLEMENTATION_ROWS = {
     "invariant/failure matrix",
     "source facts",
@@ -1601,7 +1606,7 @@ def check_no_direct_main_push() -> None:
 
 
 def pull_request_base_is_allowed(base_ref: str | None) -> bool:
-    return base_ref == "main" or bool(base_ref and base_ref.startswith("phase-1-closure-"))
+    return base_ref == "main" or base_ref in ALLOWED_STACKED_PULL_REQUEST_BASES
 
 
 def check_issue_linked_pull_request() -> None:
@@ -1626,7 +1631,7 @@ def check_issue_linked_pull_request() -> None:
     if head_ref == "main":
         failures.append("Pull request head branch must not be main.")
     if not pull_request_base_is_allowed(base_ref):
-        failures.append("Pull requests for guarded work must target main or a phase-1-closure stacked base.")
+        failures.append("Pull requests for guarded work must target main or an explicitly reviewed stacked base.")
     stage_name, canonical_issue_number = canonical_stage_issue(head_ref) or ("", None)
     is_canonical_stage_branch = canonical_issue_number is not None
     visible_issue_text = f"{title}\n{body}\n{pull_request_commit_messages()}"

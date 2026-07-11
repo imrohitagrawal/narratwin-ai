@@ -2319,12 +2319,14 @@ def test_guarded_pull_request_allows_phase1_stacked_base(
         changed_files=["backend/app/main.py"],
     )
 
-    assert "Pull requests for guarded work must target main or a phase-1-closure stacked base." not in failures
+    assert "Pull requests for guarded work must target main or an explicitly reviewed stacked base." not in failures
 
 
-def test_guarded_pull_request_rejects_non_phase1_stacked_base(
+@pytest.mark.parametrize("base_ref", ["feature/unreviewed-base", "phase-1-closure-unreviewed-base", "phase-1-closure-"])
+def test_guarded_pull_request_rejects_unreviewed_stacked_base(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    base_ref: str,
 ) -> None:
     failures = run_issue_link_check(
         tmp_path,
@@ -2332,11 +2334,11 @@ def test_guarded_pull_request_rejects_non_phase1_stacked_base(
         title="Harden stacked phase closure branch",
         body=completed_preflight_body(),
         head_ref="phase-1-closure-44-telemetry-hardening",
-        base_ref="feature/unreviewed-base",
+        base_ref=base_ref,
         changed_files=["backend/app/main.py"],
     )
 
-    assert "Pull requests for guarded work must target main or a phase-1-closure stacked base." in failures
+    assert "Pull requests for guarded work must target main or an explicitly reviewed stacked base." in failures
 
 
 def test_nontrivial_pull_request_rejects_unrun_validation_evidence_commands(

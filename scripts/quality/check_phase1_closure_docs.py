@@ -845,10 +845,11 @@ def workflow_allows_phase1_pull_request_bases(yaml_text: str) -> bool:
     pull_request_indent: int | None = None
     branches_indent: int | None = None
     for raw_line in yaml_text.splitlines():
-        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+        without_comment = yaml_line_without_inline_comment(raw_line)
+        if not without_comment.strip():
             continue
-        indent = len(raw_line) - len(raw_line.lstrip(" "))
-        stripped = raw_line.strip()
+        indent = len(without_comment) - len(without_comment.lstrip(" "))
+        stripped = without_comment.strip()
         if indent == 0:
             in_on_block = stripped == "on:"
             pull_request_indent = None
@@ -868,7 +869,7 @@ def workflow_allows_phase1_pull_request_bases(yaml_text: str) -> bool:
             if stripped.startswith("branches:"):
                 branches_indent = indent
                 inline_branches = stripped.removeprefix("branches:").strip()
-                if "phase-1-closure-**" in inline_branches:
+                if workflow_branch_tokens_include_phase1(inline_branches):
                     return True
             continue
         if indent <= branches_indent:
@@ -876,12 +877,32 @@ def workflow_allows_phase1_pull_request_bases(yaml_text: str) -> bool:
             if stripped.startswith("branches:"):
                 branches_indent = indent
                 inline_branches = stripped.removeprefix("branches:").strip()
-                if "phase-1-closure-**" in inline_branches:
+                if workflow_branch_tokens_include_phase1(inline_branches):
                     return True
             continue
-        if stripped in {"- phase-1-closure-**", "- 'phase-1-closure-**'", '- "phase-1-closure-**"'}:
+        if stripped.startswith("- ") and workflow_branch_tokens_include_phase1(stripped.removeprefix("- ").strip()):
             return True
     return False
+
+
+def yaml_line_without_inline_comment(line: str) -> str:
+    quote: str | None = None
+    for index, char in enumerate(line):
+        if char in {"'", '"'}:
+            quote = None if quote == char else char if quote is None else quote
+        if char == "#" and quote is None:
+            return line[:index].rstrip()
+    return line.rstrip()
+
+
+def workflow_branch_tokens_include_phase1(branches: str) -> bool:
+    if not branches:
+        return False
+    normalized = branches.strip()
+    if normalized.startswith("[") and normalized.endswith("]"):
+        normalized = normalized[1:-1]
+    tokens = [token.strip().strip("'\"") for token in normalized.split(",")]
+    return "phase-1-closure-**" in tokens
 
 
 def workflow_guardrail_step_blocks(yaml_text: str) -> list[str]:
