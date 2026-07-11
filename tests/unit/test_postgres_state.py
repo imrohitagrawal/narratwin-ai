@@ -904,6 +904,47 @@ def test_context2_idempotency_rejects_cross_scope_resource_identity() -> None:
         )
 
 
+def test_context2_idempotency_rejects_blank_operation_identity_fields() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="operation_id must be non-empty"):
+        kernel.start_operation(
+            transaction_id="tx-op-blank-1",
+            request_id="req-op-blank-1",
+            operation_id=" ",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            lease_owner_id="worker-1",
+            lease_epoch=7,
+        )
+    with pytest.raises(AcidCasConflictError, match="payload_hash must be non-empty"):
+        kernel.start_operation(
+            transaction_id="tx-op-blank-2",
+            request_id="req-op-blank-2",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash=" ",
+            lease_owner_id="worker-1",
+            lease_epoch=7,
+        )
+    with pytest.raises(AcidCasConflictError, match="lease_owner_id must be non-empty"):
+        kernel.start_operation(
+            transaction_id="tx-op-blank-3",
+            request_id="req-op-blank-3",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            lease_owner_id=" ",
+            lease_epoch=7,
+        )
+
+
 def test_context2_idempotency_replays_terminal_error() -> None:
     kernel = AcidCasKernel()
     scope = OperationScope(

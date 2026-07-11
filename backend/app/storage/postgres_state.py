@@ -168,6 +168,11 @@ class AcidCasKernel:
         lease_epoch: int,
     ) -> OperationCommitResult:
         validate_operation_scope(scope)
+        validate_operation_identity(
+            operation_id=operation_id,
+            payload_hash=payload_hash,
+            lease_owner_id=lease_owner_id,
+        )
         with self._lock:
             existing = self._get_optional_operation(operation_id=operation_id, scope=scope)
             if existing is None:
@@ -219,6 +224,11 @@ class AcidCasKernel:
         response_payload: dict[str, Any],
     ) -> OperationCommitResult:
         validate_operation_scope(scope)
+        validate_operation_identity(
+            operation_id=operation_id,
+            payload_hash=payload_hash,
+            lease_owner_id=lease_owner_id,
+        )
         with self._lock:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
@@ -281,6 +291,11 @@ class AcidCasKernel:
         error_payload: dict[str, Any],
     ) -> OperationCommitResult:
         validate_operation_scope(scope)
+        validate_operation_identity(
+            operation_id=operation_id,
+            payload_hash=payload_hash,
+            lease_owner_id=lease_owner_id,
+        )
         with self._lock:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
@@ -342,6 +357,11 @@ class AcidCasKernel:
         lease_epoch: int,
     ) -> OperationCommitResult:
         validate_operation_scope(scope)
+        validate_operation_identity(
+            operation_id=operation_id,
+            payload_hash=payload_hash,
+            lease_owner_id=lease_owner_id,
+        )
         with self._lock:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
@@ -401,6 +421,11 @@ class AcidCasKernel:
         lease_epoch: int,
     ) -> OperationCommitResult:
         validate_operation_scope(scope)
+        validate_operation_identity(
+            operation_id=operation_id,
+            payload_hash=payload_hash,
+            lease_owner_id=lease_owner_id,
+        )
         with self._lock:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
@@ -857,6 +882,16 @@ def validate_operation_scope(scope: OperationScope) -> None:
         raise AcidCasConflictError(
             "Operation scope resource_id tenant_id, owner_id, and project_id must match OperationScope."
         )
+
+
+def validate_operation_identity(*, operation_id: str, payload_hash: str, lease_owner_id: str) -> None:
+    for label, value in (
+        ("operation_id", operation_id),
+        ("payload_hash", payload_hash),
+        ("lease_owner_id", lease_owner_id),
+    ):
+        if not value.strip():
+            raise AcidCasConflictError(f"Operation {label} must be non-empty.")
 
 
 def operation_entity_key(*, operation_id: str, scope: OperationScope) -> EntityKey:
