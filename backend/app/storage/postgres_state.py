@@ -919,7 +919,7 @@ def validate_operation_identity(*, operation_id: str, payload_hash: str, lease_o
 
 
 def _is_valid_identity_part(value: str) -> bool:
-    return bool(value.strip()) and ":" not in value
+    return bool(value.strip()) and value == value.strip() and ":" not in value
 
 
 def operation_entity_key(*, operation_id: str, scope: OperationScope) -> EntityKey:

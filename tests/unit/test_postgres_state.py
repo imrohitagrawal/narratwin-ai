@@ -919,6 +919,22 @@ def test_context2_idempotency_rejects_cross_scope_resource_identity() -> None:
             lease_epoch=7,
         )
 
+    with pytest.raises(AcidCasConflictError, match="non-empty colon-free"):
+        kernel.start_operation(
+            transaction_id="tx-op-invalid-4",
+            request_id="req-op-invalid-4",
+            operation_id="operation-invalid",
+            scope=OperationScope(
+                tenant_id="tenant-1",
+                owner_id=" owner-1 ",
+                project_id="project-1",
+                resource_id=scoped_resource_id("run", "tenant-1", " owner-1 ", "project-1", "run-1"),
+            ),
+            payload_hash="sha256:payload-1",
+            lease_owner_id="worker-1",
+            lease_epoch=7,
+        )
+
 
 def test_context2_idempotency_rejects_generic_operation_row_commit() -> None:
     kernel = AcidCasKernel()
