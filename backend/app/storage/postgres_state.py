@@ -550,7 +550,7 @@ class AcidCasKernel:
                 request_checksum=request_checksum,
                 writes=writes,
                 allow_operation_rows=allow_operation_rows,
-                now=lease_check_time,
+                now=commit_time,
             )
             committed_at = _isoformat(commit_time)
             committed_records = tuple(
@@ -938,6 +938,8 @@ class AcidCasKernel:
         )
 
     def _validate_lease_guard(self, *, write: TransactionWrite, now: datetime) -> None:
+        if write.entity_type == "operation":
+            return
         validate_write_resource_identity(write)
         expected_resource_id = lease_resource_id_for_write(write)
         current = self._leases.get(expected_resource_id)
