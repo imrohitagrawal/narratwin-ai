@@ -206,7 +206,6 @@ ISSUE_39_CH02_ALLOWED_CHANGED_FILES = {
 }
 ISSUE_39_CH03_ALLOWED_CHANGED_FILES = {
     "backend/app/storage/__init__.py",
-    "backend/app/storage/postgres_state.py",
     "backend/app/storage/stage4_graph.py",
     "docs/ADR/0018-ch03-stage4-durable-graph.md",
     "docs/LOCAL_DEVELOPMENT.md",

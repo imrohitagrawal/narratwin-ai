@@ -17,6 +17,11 @@ from backend.app.storage.postgres_state import (
     outbox_payload_hash,
 )
 
+MAX_STAGE4_CONTEXT_REFS = 6
+MAX_STAGE4_GENERATED_CLAIMS = 24
+MAX_STAGE4_CLAIM_SUPPORTS = 24
+MAX_STAGE4_OUTBOX_PAYLOAD_BYTES = 4096
+
 
 @dataclass(frozen=True, slots=True)
 class Stage4ProjectMetadata:
@@ -115,11 +120,32 @@ class Stage4DurableGraphStore:
             self._document_write(document),
             *(self._chunk_write(chunk) for chunk in chunks),
         )
+        try:
+            return self._kernel.commit(
+                transaction_id=transaction_id,
+                request_id=request_id,
+                request_checksum=_request_checksum(writes),
+                writes=writes,
+            )
+        except AcidCasConflictError as exc:
+            conflict = str(exc)
+            project_already_exists = f"project:{project.project_id} already exists" in conflict
+            replay_checksum_mismatch = "replay checksum does not match" in conflict
+            if not project_already_exists and not replay_checksum_mismatch:
+                raise
+
+            try:
+                self._validate_existing_project(project)
+            except AcidCasConflictError:
+                if replay_checksum_mismatch:
+                    raise exc
+                raise
+        append_writes = writes[1:]
         return self._kernel.commit(
             transaction_id=transaction_id,
             request_id=request_id,
-            request_checksum=_request_checksum(writes),
-            writes=writes,
+            request_checksum=_request_checksum(append_writes),
+            writes=append_writes,
         )
 
     def commit_completed_run_evaluation(
@@ -132,6 +158,7 @@ class Stage4DurableGraphStore:
         graph_events: tuple[OutboxEventWrite, ...] = (),
     ) -> TransactionCommitResult:
         self._validate_run_evaluation(run=run, evaluation=evaluation)
+        self._validate_graph_events(graph_events)
         writes = (self._run_write(run), self._evaluation_write(evaluation))
         return self._kernel.commit(
             transaction_id=transaction_id,
@@ -140,6 +167,13 @@ class Stage4DurableGraphStore:
             writes=writes,
             outbox_events=graph_events,
         )
+
+    def _validate_graph_events(self, graph_events: tuple[OutboxEventWrite, ...]) -> None:
+        for event in graph_events:
+            if _payload_exceeds_encoded_size(event.payload, MAX_STAGE4_OUTBOX_PAYLOAD_BYTES):
+                raise AcidCasConflictError(
+                    "Stage 4 run completed event payload exceeds the bounded event payload size."
+                )
 
     def run_completed_event(
         self,
@@ -152,6 +186,8 @@ class Stage4DurableGraphStore:
         operation_id: str,
         payload: dict[str, object],
     ) -> OutboxEventWrite:
+        if _payload_exceeds_encoded_size(payload, MAX_STAGE4_OUTBOX_PAYLOAD_BYTES):
+            raise AcidCasConflictError("Stage 4 run completed event payload exceeds the bounded event payload size.")
         return OutboxEventWrite(
             event_id=event_id,
             event_type="stage4.run.completed",
@@ -175,6 +211,15 @@ class Stage4DurableGraphStore:
         return self._kernel.get(
             entity_type="chunk",
             entity_id=chunk_id,
+            tenant_id=tenant_id,
+            owner_id=owner_id,
+            project_id=project_id,
+        )
+
+    def get_document(self, tenant_id: str, owner_id: str, project_id: str, document_id: str) -> StoredRecord:
+        return self._kernel.get(
+            entity_type="document",
+            entity_id=document_id,
             tenant_id=tenant_id,
             owner_id=owner_id,
             project_id=project_id,
@@ -238,12 +283,28 @@ class Stage4DurableGraphStore:
             raise AcidCasConflictError("Stage 4 evaluation scope must match the durable run.")
         if run.status != "COMPLETED" or evaluation.evaluation_status != "PASSED":
             raise AcidCasConflictError("CH-03 only records completed Stage 4 runs with passing evaluations.")
+        if not evaluation.context_refs:
+            raise AcidCasConflictError("Stage 4 passed evaluation must include grounded context refs.")
+        if len(evaluation.context_refs) > MAX_STAGE4_CONTEXT_REFS:
+            raise AcidCasConflictError("Stage 4 evaluation context refs exceed the bounded retrieval context size.")
+        if not evaluation.claim_supports:
+            raise AcidCasConflictError("Stage 4 passed evaluation must include claim supports.")
+        if len(evaluation.claim_supports) > MAX_STAGE4_CLAIM_SUPPORTS:
+            raise AcidCasConflictError("Stage 4 claim supports exceed the bounded evaluation support size.")
         context_by_ref = {context.context_ref_id: context for context in evaluation.context_refs}
         if len(context_by_ref) != len(evaluation.context_refs):
             raise AcidCasConflictError("Stage 4 evaluation context refs must be unique.")
-        claim_ids = set(run.generated_claim_ids)
-        if not claim_ids:
+        if not run.generated_claim_ids:
             raise AcidCasConflictError("Stage 4 completed run must include generated claim IDs.")
+        if len(run.generated_claim_ids) > MAX_STAGE4_GENERATED_CLAIMS:
+            raise AcidCasConflictError("Stage 4 generated claim IDs exceed the bounded evaluation claim size.")
+        claim_ids = set(run.generated_claim_ids)
+        if len(claim_ids) != len(run.generated_claim_ids):
+            raise AcidCasConflictError("Stage 4 completed run generated claim IDs must be unique.")
+        supported_claim_ids = {support.claim_id for support in evaluation.claim_supports}
+        unsupported_claim_ids = claim_ids - supported_claim_ids
+        if unsupported_claim_ids:
+            raise AcidCasConflictError("Every Stage 4 generated claim must have support in a passed evaluation.")
         for context in evaluation.context_refs:
             _validate_identity(context.context_ref_id, "context_ref_id")
             chunk = self.get_chunk(run.tenant_id, run.owner_id, run.project_id, context.chunk_id)
@@ -257,6 +318,12 @@ class Stage4DurableGraphStore:
             context = context_by_ref[support.context_ref_id]
             if (support.chunk_id, support.document_id) != (context.chunk_id, context.document_id):
                 raise AcidCasConflictError("Stage 4 claim support must match its context ref chunk and document.")
+
+    def _validate_existing_project(self, project: Stage4ProjectMetadata) -> None:
+        payload = {"projectId": project.project_id, "name": project.name}
+        existing = self.get_project(project.tenant_id, project.owner_id, project.project_id)
+        if existing.payload != payload:
+            raise AcidCasConflictError("Stage 4 existing project metadata must match the durable project.")
 
     def _project_write(self, project: Stage4ProjectMetadata) -> TransactionWrite:
         return TransactionWrite(
@@ -278,13 +345,14 @@ class Stage4DurableGraphStore:
             owner_id=document.owner_id,
             project_id=document.project_id,
             expected_version=None,
-            state="OPEN",
+            state="TERMINAL",
             payload={
                 "documentId": document.document_id,
                 "sourceFilename": document.source_filename,
                 "sourceDocumentChecksum": document.source_document_checksum,
                 "approvedAt": document.approved_at,
             },
+            terminal_reason="APPROVED",
         )
 
     def _chunk_write(self, chunk: Stage4ChunkMetadata) -> TransactionWrite:
@@ -366,6 +434,16 @@ def _request_checksum(writes: tuple[TransactionWrite, ...]) -> str:
 
 def _resource_id(entity_type: str, tenant_id: str, owner_id: str, project_id: str, entity_id: str) -> str:
     return f"{entity_type}:{tenant_id}:{owner_id}:{project_id}:{entity_id}"
+
+
+def _payload_exceeds_encoded_size(payload: dict[str, object], max_bytes: int) -> bool:
+    total = 0
+    encoder = json.JSONEncoder(sort_keys=True, separators=(",", ":"))
+    for chunk in encoder.iterencode(payload):
+        total += len(chunk.encode("utf-8"))
+        if total > max_bytes:
+            return True
+    return False
 
 
 def _validate_document_fields(document: Stage4DocumentMetadata) -> None:

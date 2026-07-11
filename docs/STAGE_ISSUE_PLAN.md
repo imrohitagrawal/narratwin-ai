@@ -625,7 +625,6 @@ controls, or unrelated governance/process files.
 chunk for issue `#39` child issue `#107`. It may touch only:
 
 - `backend/app/storage/__init__.py`
-- `backend/app/storage/postgres_state.py`
 - `backend/app/storage/stage4_graph.py`
 - `docs/ADR/0018-ch03-stage4-durable-graph.md`
 - `docs/LOCAL_DEVELOPMENT.md`

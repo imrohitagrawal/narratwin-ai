@@ -40,7 +40,7 @@ Add a Stage 4 durable graph adapter on top of the existing storage kernel.
 The adapter owns graph validation for:
 
 - project metadata,
-- document metadata,
+- immutable approved document metadata,
 - chunk metadata derived from approved documents,
 - walkthrough run metadata,
 - evaluation and claim-support metadata.
@@ -50,13 +50,27 @@ uploaded bytes, parsed text buffers, provider prompts, provider outputs,
 generated script payloads, and media artifacts remain outside the durable
 production boundary for this chunk.
 
+The adapter permits additional approved documents to be appended to an existing
+durable project without changing the shared storage kernel. Exact transaction
+replay preserves the original create-project write fingerprint; new append
+transactions validate the existing project metadata and write only document and
+chunk rows. Approved document metadata is terminal to prevent later checksum or
+approval timestamp drift from invalidating already-indexed chunks.
+
+Passed evaluations are bounded to the Stage 4 retrieval/evaluation contract:
+at least one context ref, at least one claim support, no more than six context
+refs, no more than twenty-four generated claims, no more than twenty-four claim
+supports, support coverage for every generated claim, and run-completed outbox
+payloads of at most 4096 encoded bytes.
+
 ## Invariant-To-Test Matrix
 
 | ID | Area | Invariant | Old failure / false-pass risk | Positive test | Negative / mutation test | Evidence | Owner | Status |
 |---|---|---|---|---|---|---|---|---|
-| STAGE4-GRAPH-001 | Project/document/chunk graph | Documents and chunks must share tenant, owner, project, document checksum, source filename, approval timestamp, chunk checksum, and derived metadata. | Durable rows can have valid IDs while a chunk belongs to another document or stale upload. | `test_ch03_stage4_graph_commits_project_document_and_chunks_atomically` | `test_ch03_stage4_graph_rejects_chunk_with_mismatched_document_checksum`; RED proof required before implementation. | `uv run pytest tests/unit/test_stage4_durable_graph.py` | Storage + API | pass |
-| STAGE4-RUN-001 | Run/evaluation graph | A completed run must bind retrieved context refs, chunks, documents, generated claims, evaluation, and claim supports. | A run can resume with a passing evaluation whose supports point at unrelated chunks or claims. | `test_ch03_stage4_graph_commits_completed_run_with_evaluation_supports` | `test_ch03_stage4_graph_rejects_evaluation_support_for_unknown_context_ref`; RED proof required before implementation. | `uv run pytest tests/unit/test_stage4_durable_graph.py` | Storage + API | pass |
+| STAGE4-GRAPH-001 | Project/document/chunk graph | Documents and chunks must share tenant, owner, project, document checksum, source filename, approval timestamp, chunk checksum, and derived metadata; approved document metadata is immutable; additional documents can append to an existing project without mutating the shared kernel. | Durable rows can have valid IDs while a chunk belongs to another document or stale upload; approved document metadata can drift after chunks are indexed; a project can become one-upload-only. | `test_ch03_stage4_graph_commits_project_document_and_chunks_atomically`; `test_ch03_stage4_graph_appends_second_document_to_existing_project`; `test_ch03_stage4_graph_records_approved_document_as_terminal_metadata` | `test_ch03_stage4_graph_rejects_chunk_with_mismatched_document_checksum`; RED proof required before implementation and again after independent review findings. | `uv run pytest tests/unit/test_stage4_durable_graph.py` | Storage + API | pass |
+| STAGE4-RUN-001 | Run/evaluation graph | A completed run must bind retrieved context refs, chunks, documents, generated claims, evaluation, and claim supports; passed evaluations require non-empty context/support data and support coverage for every generated claim. | A run can resume with a passing evaluation whose supports point at unrelated chunks or claims, or with no grounded support evidence at all. | `test_ch03_stage4_graph_commits_completed_run_with_evaluation_supports` | `test_ch03_stage4_graph_rejects_passed_evaluation_without_context_refs`; `test_ch03_stage4_graph_rejects_passed_evaluation_without_claim_supports`; `test_ch03_stage4_graph_rejects_generated_claim_without_support`; `test_ch03_stage4_graph_rejects_evaluation_support_for_unknown_context_ref`; RED proof required before implementation and again after independent review findings. | `uv run pytest tests/unit/test_stage4_durable_graph.py` | Storage + API | pass |
 | STAGE4-REPLAY-001 | Replay semantics | Exact transaction replay returns the same graph records, while changed graph payloads conflict. | Retried graph writes can silently drift from the first durable graph. | `test_ch03_stage4_graph_replays_exact_transaction` | `test_ch03_stage4_graph_rejects_changed_replay_payload`; RED proof required before implementation. | `uv run pytest tests/unit/test_stage4_durable_graph.py` | Runtime/state | pass |
+| STAGE4-BOUNDS-001 | Runtime boundedness | Stage 4 graph validation is bounded by at most six context refs, twenty-four generated claims, twenty-four claim supports, and 4096 encoded bytes for run-completed event payloads. | A production durable graph path can become an unbounded N+1 lookup and serialization hot path. | `test_ch03_stage4_graph_commits_completed_run_with_evaluation_supports` | `test_ch03_stage4_graph_rejects_unbounded_context_refs`; `test_ch03_stage4_graph_rejects_unbounded_generated_claim_ids`; `test_ch03_stage4_graph_rejects_unbounded_claim_supports`; `test_ch03_stage4_graph_bounds_run_completed_event_payload_by_encoded_size`; RED proof required after independent review finding. | `uv run pytest tests/unit/test_stage4_durable_graph.py` | Runtime/performance | pass |
 | STAGE4-OUTBOX-001 | Side-effect posture | Graph events, when present, must use CH-06 outbox binding and remain at-least-once. | Stage 4 graph persistence can claim side effects without committed outbox evidence. | `test_ch03_stage4_graph_binds_outbox_event_to_run_version` | `test_ch03_stage4_graph_rejects_outbox_event_without_matching_graph_write`; RED proof required before implementation. | `uv run pytest tests/unit/test_stage4_durable_graph.py` | Runtime/integration | pass |
 | NONGOAL-STAGE4-001 | Scope | CH-03 does not implement Stage 6/7 replay, operations, restore, rollback, media, provider, retention, untrusted-input closure, or final `#39` disposition. | A durable graph PR could overclaim production readiness or close `#39`. | N/A | N/A | PR body, status, and reference-only merge wording keep `Refs #39` posture. | Governance | pass |
 | HUMAN-STAGE4-001 | Merge wording | Final merge/squash text remains reference-only for `#39`. | CI cannot inspect text typed into the final merge dialog before merge. | N/A | N/A | Human-only owner: repo owner; residual risk accepted for PR only with no issue-closing keyword. | Governance | pass |
