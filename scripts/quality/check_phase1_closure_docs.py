@@ -874,7 +874,7 @@ def workflow_has_permission(yaml_text: str, permission: str, value: str) -> bool
 
 def workflow_has_stage_quality_base_sha(yaml_text: str) -> bool:
     return any(
-        "run: make quality" in step and "GITHUB_BASE_SHA:" in step
+        "run: make quality" in step and "GITHUB_BASE_SHA:" in step and "GITHUB_EVENT_NAME:" in step
         for step in workflow_step_blocks(yaml_text)
     )
 

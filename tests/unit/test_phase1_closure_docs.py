@@ -241,6 +241,27 @@ def test_main_push_resolve_base_keeps_previous_commit(monkeypatch: Any) -> None:
     assert calls == [["rev-parse", "--verify", "previous-main^{commit}"]]
 
 
+def test_quality_gates_workflow_passes_event_name_to_stage_quality(monkeypatch: Any) -> None:
+    workflow_text = phase1.read(".github/workflows/quality-gates.yml")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[".github/workflows/quality-gates.yml"],
+        read_overrides={
+            ".github/workflows/quality-gates.yml": workflow_text.replace(
+                "          VECTOR_STORE: disabled\n"
+                "          GITHUB_EVENT_NAME: ${{ github.event_name }}\n"
+                "          GITHUB_HEAD_REF: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}",
+                "          VECTOR_STORE: disabled\n"
+                "          GITHUB_HEAD_REF: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}",
+                1,
+            ),
+        },
+    )
+
+    assert ".github/workflows/quality-gates.yml must pass GITHUB_BASE_SHA to make quality" in failures
+
+
 def test_issue39_closure_plan_accepts_current_matrix() -> None:
     failures: list[str] = []
     phase1.check_issue39_closure_plan(failures)
