@@ -76,5 +76,6 @@ jobs:
           STORAGE_PROVIDER: local
           VECTOR_STORE: disabled
           GITHUB_HEAD_REF: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          GITHUB_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           NARRATWIN_POLICY_ONLY: "1"
         run: make quality

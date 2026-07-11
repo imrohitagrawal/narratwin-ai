@@ -65,7 +65,9 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
+    ".github/workflows/quality-gates.yml",
     "docs/QUALITY_GATES.md",
+    "docs/ADR/0009-context2-idempotency-lease-outbox-contract.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "docs/reviews/ISSUE_39_CH04_CH05_CH06_CONTRACT_DECISIONS.md",
@@ -525,9 +527,9 @@ ISSUE_39_DRILL_LOG_PREFIXES = ("docs/reviews/drills/", "reports/", "artifacts/",
 ISSUE_39_DRILL_LOG_SUFFIXES = {".json", ".jsonl", ".log", ".md", ".txt"}
 ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
     "phase-1-closure-39-ch-02-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
-    "phase-1-closure-39-ch-04-": ("c47471d0c8218d59509cba936fe216b86c9ac1e9",),
-    "phase-1-closure-39-ch-05-": ("c47471d0c8218d59509cba936fe216b86c9ac1e9",),
-    "phase-1-closure-39-ch-06-": ("c47471d0c8218d59509cba936fe216b86c9ac1e9",),
+    "phase-1-closure-39-ch-04-": ("0ceda71a5ebefae440b09f706dd9d839c2aef875",),
+    "phase-1-closure-39-ch-05-": ("0ceda71a5ebefae440b09f706dd9d839c2aef875",),
+    "phase-1-closure-39-ch-06-": ("0ceda71a5ebefae440b09f706dd9d839c2aef875",),
 }
 
 
@@ -814,7 +816,22 @@ def workflow_has_guardrail_github_token_wiring(yaml_text: str) -> bool:
     )
 
 
+def workflow_has_stage_quality_base_sha(yaml_text: str) -> bool:
+    return any(
+        "run: make quality" in step and "GITHUB_BASE_SHA:" in step
+        for step in workflow_step_blocks(yaml_text)
+    )
+
+
 def workflow_guardrail_step_blocks(yaml_text: str) -> list[str]:
+    return [
+        step
+        for step in workflow_step_blocks(yaml_text)
+        if "scripts/guardrails_check.py" in step
+    ]
+
+
+def workflow_step_blocks(yaml_text: str) -> list[str]:
     lines = yaml_text.splitlines()
     blocks: list[str] = []
     index = 0
@@ -836,8 +853,7 @@ def workflow_guardrail_step_blocks(yaml_text: str) -> list[str]:
             block_lines.append(current)
             index += 1
         block = "\n".join(block_lines)
-        if "scripts/guardrails_check.py" in block:
-            blocks.append(block)
+        blocks.append(block)
     return blocks
 
 
@@ -1978,6 +1994,8 @@ def check_process_docs(failures: list[str]) -> None:
                 failures,
                 f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails",
             )
+        if workflow_path == ".github/workflows/quality-gates.yml" and not workflow_has_stage_quality_base_sha(workflow_text):
+            fail(failures, f"{workflow_path} must pass GITHUB_BASE_SHA to make quality")
 
     rca = read("docs/ENGINEERING_PROCESS_RCA.md")
     check_required_headings(

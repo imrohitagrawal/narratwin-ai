@@ -135,8 +135,8 @@ All side effects visible outside the local process must have outbox participatio
 3. Dispatch is **at least once**:
    - duplicate dispatch attempts are expected and allowed.
 4. Consumers must be idempotent:
-   - dedupe by `(event_type, event_id, consumer_name, resource_version)` or
-     equivalent deterministic key
+   - dedupe by `(event_type, resource_id, event_id, consumer_name,
+     resource_version)` or equivalent scoped deterministic key
    - repeated delivery of same logical message must preserve final system state.
 
 Outbox row envelope:
