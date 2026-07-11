@@ -697,6 +697,28 @@ artifact orchestration, idempotency or lease runtime semantics, backup or
 restore flows, monitoring/alerts/watch, release posture, provider/media/privacy
 controls, or unrelated governance/process files.
 
+`phase-1-closure-39-ch-16-*` is reserved for the `CH-16` consent capture chunk
+for issue `#39` child issue `#111`. It may touch only:
+
+- `backend/app/main.py`
+- `backend/app/stage7.py`
+- `docs/ADR/0019-ch16-consent-capture.md`
+- `docs/API_CONTRACT.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/api/test_stage7_avatar_api.py`
+- `tests/unit/test_local_durability.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_stage7_avatar.py`
+
+`phase-1-closure-39-ch-16-*` must not touch Stage 4 or Stage 6 durable replay,
+ACID/CAS kernel internals, lease or outbox semantics, provenance/disclosure or
+revocation closure, provider-release posture, retention/erasure,
+untrusted-input closure, frontend paths, or unrelated governance/process files.
+
 Additional allowed implementation/evidence changes for Phase 1 Closure issue
 `#39`:
 

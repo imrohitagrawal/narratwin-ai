@@ -68,16 +68,28 @@ def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
     return project_id, generation_response.json()["runId"]
 
 
+def _capture_avatar_consent(client: TestClient, project_id: str, run_id: str) -> str:
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-consents",
+        json={"consentToUseSyntheticAvatar": True},
+        headers=idempotency_headers("stage7-consent"),
+    )
+    assert response.status_code == 201
+    return response.json()["consentRecordId"]
+
+
 def test_avatar_render_api_returns_validated_demo_export_artifacts() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id, run_id = _create_completed_walkthrough(client)
+    consent_record_id = _capture_avatar_consent(client, project_id, run_id)
 
     response = client.post(
         f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders",
         json={
             "requestedAvatarProvider": "mock",
             "consentToUseSyntheticAvatar": True,
+            "consentRecordId": consent_record_id,
             "clonedIdentityRequested": False,
         },
         headers=idempotency_headers("stage7-avatar"),
@@ -86,6 +98,7 @@ def test_avatar_render_api_returns_validated_demo_export_artifacts() -> None:
     assert response.status_code == 201
     body = response.json()
     assert body["status"] == "COMPLETED"
+    assert body["consentRecordId"] == consent_record_id
     assert body["renderJobStatus"] == "COMPLETED"
     assert [event["status"] for event in body["renderJobStatusHistory"]] == ["QUEUED", "RUNNING", "COMPLETED"]
     assert body["sourceRunId"] == run_id
@@ -143,12 +156,14 @@ def test_avatar_render_api_falls_back_to_mock_provider() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id, run_id = _create_completed_walkthrough(client)
+    consent_record_id = _capture_avatar_consent(client, project_id, run_id)
 
     response = client.post(
         f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders",
         json={
             "requestedAvatarProvider": "external-avatar",
             "consentToUseSyntheticAvatar": True,
+            "consentRecordId": consent_record_id,
         },
         headers=idempotency_headers("stage7-avatar-fallback"),
     )
@@ -161,7 +176,7 @@ def test_avatar_render_api_falls_back_to_mock_provider() -> None:
     assert response.json()["providerConfig"]["allowNetworkEgress"] is False
 
 
-def test_avatar_render_api_requires_synthetic_avatar_consent() -> None:
+def test_avatar_render_api_requires_prior_durable_consent_record() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id, run_id = _create_completed_walkthrough(client)
@@ -178,17 +193,32 @@ def test_avatar_render_api_requires_synthetic_avatar_consent() -> None:
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "AVATAR_CONSENT_REQUIRED"
 
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders",
+        json={
+            "requestedAvatarProvider": "mock",
+            "consentToUseSyntheticAvatar": True,
+            "consentRecordId": "consent_missing",
+        },
+        headers=idempotency_headers("stage7-avatar-missing-consent-record"),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "AVATAR_CONSENT_RECORD_REQUIRED"
+
 
 def test_avatar_render_api_rejects_cloned_identity_request() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id, run_id = _create_completed_walkthrough(client)
+    consent_record_id = _capture_avatar_consent(client, project_id, run_id)
 
     response = client.post(
         f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders",
         json={
             "requestedAvatarProvider": "mock",
             "consentToUseSyntheticAvatar": True,
+            "consentRecordId": consent_record_id,
             "clonedIdentityRequested": True,
         },
         headers=idempotency_headers("stage7-avatar-clone"),
@@ -202,8 +232,13 @@ def test_avatar_render_api_replays_matching_idempotency_key() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id, run_id = _create_completed_walkthrough(client)
+    consent_record_id = _capture_avatar_consent(client, project_id, run_id)
     path = f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders"
-    request = {"requestedAvatarProvider": "mock", "consentToUseSyntheticAvatar": True}
+    request = {
+        "requestedAvatarProvider": "mock",
+        "consentToUseSyntheticAvatar": True,
+        "consentRecordId": consent_record_id,
+    }
 
     first = client.post(path, json=request, headers=idempotency_headers("stage7-avatar-replay"))
     second = client.post(path, json=request, headers=idempotency_headers("stage7-avatar-replay"))
@@ -217,6 +252,7 @@ def test_avatar_render_api_requires_evaluation_evidence() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id, run_id = _create_completed_walkthrough(client)
+    consent_record_id = _capture_avatar_consent(client, project_id, run_id)
     stage4_service.walkthrough_runs[run_id].evaluation = None
 
     response = client.post(
@@ -224,6 +260,7 @@ def test_avatar_render_api_requires_evaluation_evidence() -> None:
         json={
             "requestedAvatarProvider": "mock",
             "consentToUseSyntheticAvatar": True,
+            "consentRecordId": consent_record_id,
         },
         headers=idempotency_headers("stage7-avatar-missing-eval"),
     )

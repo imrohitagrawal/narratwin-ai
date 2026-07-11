@@ -228,6 +228,7 @@ Write endpoints requiring idempotency:
 - `POST /api/v1/projects/{projectId}/ingestion-runs`
 - `POST /api/v1/projects/{projectId}/walkthrough-runs`
 - `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/multilingual-runs`
+- `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/avatar-consents`
 - `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/avatar-renders`
 - `DELETE /api/v1/projects/{projectId}`
 - all future media-render endpoints
@@ -916,6 +917,71 @@ expected MIME type, file extension, base64 shape, and safe filename rules.
 
 ### Generate Avatar Demo Export
 
+### Capture Avatar Consent
+
+`POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/avatar-consents`
+
+Phase 1 Closure issue `#111` / `CH-16` adds a dedicated consent-capture step
+for Stage 7 durable synthetic-media paths. The endpoint stores or replays an
+affirmative consent record bound to the current principal, project, source run,
+trace, grounded-evaluation hooks, canonical consent statement version/text, and
+request checksum.
+
+This endpoint does not close revocation, provenance, disclosure, retention, or
+provider-release work. It creates the durable consent primitive those later
+chunks will depend on.
+
+Request:
+
+```json
+{
+  "consentToUseSyntheticAvatar": true
+}
+```
+
+Request boundary rules:
+
+- `consentToUseSyntheticAvatar`: required boolean; must be `true`
+- source run must be `COMPLETED`, `PASSED`, and include grounded evaluation
+  evidence
+- request must use the same project/run authorization checks as Stage 7 render
+  generation
+
+Response `201`:
+
+```json
+{
+  "consentRecordId": "consent_000001",
+  "tenantId": "tenant_local",
+  "projectId": "proj_123",
+  "actorId": "user_local",
+  "sourceRunId": "run_123",
+  "traceId": "trace_123",
+  "sourceContextRefIds": ["ctx_123_001"],
+  "sourceCitationIndexes": [1],
+  "sourceEvaluationId": "eval_123",
+  "sourceEvaluationChecksum": "sha256:evaluation",
+  "evaluationStatus": "PASSED",
+  "consentStatementVersion": "stage7-synthetic-avatar-consent-v1",
+  "consentStatementText": "I affirm that I am authorized to approve this Stage 7 synthetic local avatar demo for the selected walkthrough run.",
+  "grantedAt": "2026-07-12T00:00:00Z",
+  "requestChecksum": "sha256:consent-request",
+  "avatarRenderId": null,
+  "artifactChecksums": []
+}
+```
+
+Consent idempotency rules:
+
+- matching idempotency payloads replay the same consent record
+- changed-payload reuse returns `409 IDEMPOTENCY_CONFLICT`
+- stale `RUNNING` consent idempotency rows do not replay as success after
+  restore
+- malformed, incomplete, stale-version, cross-project, cross-run, or
+  cross-actor restored consent rows are dropped
+
+### Generate Avatar Demo Export
+
 `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/avatar-renders`
 
 Stage 7 renders a completed, passed grounded walkthrough run into a mock/local
@@ -949,6 +1015,7 @@ Request:
 {
   "requestedAvatarProvider": "mock",
   "consentToUseSyntheticAvatar": true,
+  "consentRecordId": "consent_000001",
   "clonedIdentityRequested": false
 }
 ```
@@ -959,6 +1026,9 @@ Request boundary limits:
   numbers, `_`, or `-`; normalized to lowercase before adapter use
 - `consentToUseSyntheticAvatar`: required boolean; must be `true` for the
   synthetic local presenter export
+- `consentRecordId`: optional string for the local/mock direct service helper,
+  but required on the API path because Stage 7 durable render generation must
+  bind to a previously captured consent record
 - `clonedIdentityRequested`: optional boolean; `true` is disabled in Stage 7
 - accepted source script: at most 20,000 characters
 - export artifacts: at most 512 KiB each after base64 decoding
@@ -967,6 +1037,9 @@ Post-provider validation:
 
 - source run must be `COMPLETED` with `evaluationStatus = PASSED` and accepted
   script text
+- durable API render paths require a previously captured consent record whose
+  tenant, project, actor, source run, trace, source evaluation ID/checksum, and
+  canonical consent statement version/text match the render request scope
 - avatar provider identifiers must satisfy the adapter identifier pattern
 - provider mode must be `LOCAL`, `DISABLED`, or `OPTIONAL_EXTERNAL`
 - provider config must be validated before storage or response; every successful
@@ -1017,6 +1090,7 @@ Response `201`:
 ```json
 {
   "avatarRenderId": "avrun_123",
+  "consentRecordId": "consent_000001",
   "sourceRunId": "run_123",
   "status": "COMPLETED",
   "renderJobStatus": "COMPLETED",
@@ -1109,6 +1183,8 @@ Provider response schema:
   Stage 7 semantic validation failures such as missing consent and cloned
   identity requests are retained when an idempotency key is supplied; replaying
   the key with a changed request returns `IDEMPOTENCY_CONFLICT`.
+- Missing or invalid durable consent state returns `AVATAR_CONSENT_RECORD_REQUIRED`
+  or `AVATAR_CONSENT_INVALID` even when the request boolean is `true`.
 - Current Stage 7 local/dev/test behavior uses `mock` and `LOCAL`.
 - Adding another adapter requires code changes in `backend/app/stage7.py`,
   API/contract updates in this file, tests in `tests/unit` and `tests/api`,
