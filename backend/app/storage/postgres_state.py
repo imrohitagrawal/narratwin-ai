@@ -473,6 +473,23 @@ class AcidCasKernel:
         request_checksum: str,
         writes: tuple[TransactionWrite, ...],
     ) -> TransactionCommitResult:
+        return self._commit(
+            transaction_id=transaction_id,
+            request_id=request_id,
+            request_checksum=request_checksum,
+            writes=writes,
+            allow_operation_rows=False,
+        )
+
+    def _commit(
+        self,
+        *,
+        transaction_id: str,
+        request_id: str,
+        request_checksum: str,
+        writes: tuple[TransactionWrite, ...],
+        allow_operation_rows: bool,
+    ) -> TransactionCommitResult:
         if not writes:
             raise AcidCasConflictError("ACID/CAS transactions must include at least one write.")
 
@@ -496,6 +513,7 @@ class AcidCasKernel:
                 request_id=request_id,
                 request_checksum=request_checksum,
                 writes=writes,
+                allow_operation_rows=allow_operation_rows,
             )
             committed_at = _now()
             committed_records = tuple(
@@ -546,10 +564,13 @@ class AcidCasKernel:
         request_id: str,
         request_checksum: str,
         writes: tuple[TransactionWrite, ...],
+        allow_operation_rows: bool,
     ) -> tuple[StoredRecord, ...]:
         seen_keys: set[EntityKey] = set()
         staged: list[StoredRecord] = []
         for write in writes:
+            if write.entity_type == "operation" and not allow_operation_rows:
+                raise AcidCasConflictError("Operation rows must be written through the operation API.")
             key = entity_key(
                 entity_type=write.entity_type,
                 entity_id=write.entity_id,
@@ -607,7 +628,7 @@ class AcidCasKernel:
         response_payload: dict[str, Any] | None = None,
         error_payload: dict[str, Any] | None = None,
     ) -> OperationRecord:
-        result = self.commit(
+        result = self._commit(
             transaction_id=transaction_id,
             request_id=request_id,
             request_checksum=operation_request_checksum(
@@ -641,6 +662,7 @@ class AcidCasKernel:
                     ),
                 ),
             ),
+            allow_operation_rows=True,
         )
         return operation_record_from_stored_record(result.records[0])
 
@@ -873,11 +895,13 @@ def operation_entity_id(*, operation_id: str, scope: OperationScope) -> str:
 
 def validate_operation_scope(scope: OperationScope) -> None:
     parts = scope.resource_id.split(":")
-    if len(parts) != 5 or any(part == "" for part in parts):
+    if len(parts) != 5 or any(not _is_valid_identity_part(part) for part in parts):
         raise AcidCasConflictError(
-            "Operation scope resource_id must use canonical entity_type:tenant_id:owner_id:project_id:entity_id identity."
+            "Operation scope resource_id must use canonical non-empty colon-free entity_type:tenant_id:owner_id:project_id:entity_id identity."
         )
     _, tenant_id, owner_id, project_id, _ = parts
+    if any(not _is_valid_identity_part(part) for part in (scope.tenant_id, scope.owner_id, scope.project_id)):
+        raise AcidCasConflictError("OperationScope tenant_id, owner_id, and project_id must be non-empty and colon-free.")
     if (tenant_id, owner_id, project_id) != (scope.tenant_id, scope.owner_id, scope.project_id):
         raise AcidCasConflictError(
             "Operation scope resource_id tenant_id, owner_id, and project_id must match OperationScope."
@@ -892,6 +916,10 @@ def validate_operation_identity(*, operation_id: str, payload_hash: str, lease_o
     ):
         if not value.strip():
             raise AcidCasConflictError(f"Operation {label} must be non-empty.")
+
+
+def _is_valid_identity_part(value: str) -> bool:
+    return bool(value.strip()) and ":" not in value
 
 
 def operation_entity_key(*, operation_id: str, scope: OperationScope) -> EntityKey:
