@@ -62,6 +62,10 @@ Example:
 
 - `run:tenant-1:owner-1:project-1:run-1`
 
+The operation kernel rejects non-canonical `scope.resource_id` values and
+rejects canonical resource IDs whose embedded tenant, owner, or project fields
+do not match `OperationScope`.
+
 ### 2. Executable state subset
 
 `CH-04` implements only the minimal executable subset needed for the planned
@@ -131,6 +135,9 @@ The operation kernel is executable local/test evidence only. It does not claim:
 - runtime endpoint idempotency wiring,
 - crash recovery ownership transfer,
 - worker heartbeat or lease expiry,
+- resource-row lease fencing for the operation-control row,
+- the later combined runtime API that must atomically terminalize an operation,
+  mutate a lease-guarded target resource, and publish outbox events,
 - production PostgreSQL adapter behavior,
 - side-effect ordering with committed outbox dispatch.
 
