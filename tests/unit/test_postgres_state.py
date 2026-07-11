@@ -737,8 +737,8 @@ def test_context2_idempotency_replays_terminal_success() -> None:
         operation_id="operation-1",
         scope=scope,
         payload_hash="sha256:payload-1",
-        lease_owner_id="worker-1",
-        lease_epoch=7,
+        lease_owner_id="worker-2",
+        lease_epoch=8,
     )
 
     assert started.outcome == "applied"
@@ -749,6 +749,41 @@ def test_context2_idempotency_replays_terminal_success() -> None:
     assert replay.replayed is True
     assert replay.record.state == "TERMINAL_SUCCESS"
     assert replay.record.response_payload == {"status": "done", "runId": "run-1"}
+
+
+def test_context2_idempotency_stores_operation_through_row_kernel() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    started = kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+
+    row_kernel_record = kernel.get(
+        entity_type="operation",
+        entity_id=f"operation-1::{scope.resource_id}",
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+    )
+
+    assert started.record.version == 1
+    assert row_kernel_record.version == started.record.version
+    assert row_kernel_record.transaction_id == "tx-op-1"
+    assert row_kernel_record.payload["operationId"] == "operation-1"
+    assert row_kernel_record.payload["operationState"] == "RUNNING"
+    assert row_kernel_record.payload["payloadHash"] == "sha256:payload-1"
 
 
 def test_context2_idempotency_replays_terminal_error() -> None:
@@ -786,8 +821,8 @@ def test_context2_idempotency_replays_terminal_error() -> None:
         operation_id="operation-1",
         scope=scope,
         payload_hash="sha256:payload-1",
-        lease_owner_id="worker-1",
-        lease_epoch=7,
+        lease_owner_id="worker-2",
+        lease_epoch=8,
     )
 
     assert failed.record.state == "TERMINAL_ERROR"

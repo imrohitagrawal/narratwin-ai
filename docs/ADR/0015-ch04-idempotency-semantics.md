@@ -79,15 +79,19 @@ first writer wins.
 
 ### 3. Terminal replay contract
 
-If a later request presents the same `(operation_id, scope, payload_hash)` and
-the durable state is terminal:
+If a later request presents the same `(operation_id, scope)` and matching
+`payload_hash`, and the durable state is terminal:
 
 - `TERMINAL_SUCCESS` replays the cached success payload exactly,
 - `TERMINAL_ERROR` replays the cached serialized error exactly.
-- exact terminal replay is read-only and may be returned across later owner
-  changes because it does not stage or mutate any durable row
+- exact terminal replay is read-only and may be returned across later lease
+  owner / worker owner changes because it does not stage or mutate any durable
+  row
+- scoped `owner_id` remains part of `scope` and therefore remains part of the
+  durable operation identity
 - `request_id` is attempt metadata; it may differ across retries and does not
-  replace `(operation_id, scope, payload_hash)` as the durable replay identity
+  replace `(operation_id, scope)` lookup identity or the required
+  `payload_hash` replay guard
 
 If a second terminalization attempt presents a different cached success/error
 payload for the same durable terminal record, the kernel rejects it as a
