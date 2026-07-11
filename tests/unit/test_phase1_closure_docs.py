@@ -215,6 +215,7 @@ def test_stacked_child_push_resolve_base_uses_stacked_base_ref(monkeypatch: Any)
         return ""
 
     monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "phase-1-closure-39-ch-05-lease-fencing")
     monkeypatch.setenv("GITHUB_HEAD_REF", "phase-1-closure-39-ch-05-lease-fencing")
     monkeypatch.setenv("GITHUB_BASE_SHA", "previous-child-head")
     monkeypatch.setattr(phase1, "run_git", fake_run_git)
@@ -233,6 +234,7 @@ def test_non_stacked_non_main_push_resolve_base_ignores_previous_branch_head(mon
         return ""
 
     monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "feature-branch")
     monkeypatch.setenv("GITHUB_HEAD_REF", "feature-branch")
     monkeypatch.setenv("GITHUB_BASE_SHA", "previous-feature-head")
     monkeypatch.setattr(phase1, "run_git", fake_run_git)
