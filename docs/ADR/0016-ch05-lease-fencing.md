@@ -78,6 +78,11 @@ lease before any compare-and-set record staging happens:
 This keeps stale writers from mutating durable rows even when their
 `expected_version` would otherwise satisfy the ACID/CAS checks.
 
+For this chunk, fencing becomes mandatory after a resource has entered the
+lease-managed domain through acquisition. First creation of a never-leased row
+does not itself create a lease requirement; runtime integration must decide
+which user-facing paths require lease acquisition before creation.
+
 Exact committed transaction replay remains the one reviewed exception:
 
 - if `transaction_id`, `request_id`, `request_checksum`, and the full write
@@ -128,6 +133,7 @@ Negative:
 
 ## Related Documents
 
+- `docs/reviews/ISSUE_39_CH04_CH05_CH06_CONTRACT_DECISIONS.md`
 - `docs/ADR/0009-context2-idempotency-lease-outbox-contract.md`
 - `docs/ADR/0014-ch02-acid-cas-storage-kernel.md`
 - `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
