@@ -86,8 +86,37 @@ def _capture_avatar_consent(
         headers=headers,
     )
     assert response.status_code == 201
-    consent_record_id = response.json()["consentRecordId"]
+    body = response.json()
+    consent_record_id = body["consentRecordId"]
     assert isinstance(consent_record_id, str)
+    source_run = stage4_service.walkthrough_runs[run_id]
+    evaluation = source_run.evaluation
+    assert evaluation is not None
+    assert body["tenantId"] == "tenant_local"
+    assert body["projectId"] == project_id
+    assert body["actorId"] == (local_user_id or "user_local")
+    assert body["sourceRunId"] == run_id
+    assert body["traceId"] == source_run.trace_id
+    assert body["sourceContextRefIds"] == [context.context_ref_id for context in source_run.retrieved_context]
+    assert body["sourceCitationIndexes"] == [support.citation_index for support in evaluation.claim_supports]
+    assert body["sourceEvaluationId"] == evaluation.evaluation_id
+    assert body["sourceEvaluationChecksum"] == build_source_evaluation_checksum(
+        source_evaluation_id=evaluation.evaluation_id,
+        source_run_id=source_run.run_id,
+        trace_id=source_run.trace_id,
+        evaluation_status=source_run.evaluation_status or "UNKNOWN",
+        source_context_ref_ids=tuple(context.context_ref_id for context in source_run.retrieved_context),
+        source_context_ref_count=len(source_run.retrieved_context),
+        source_citation_indexes=tuple(support.citation_index for support in evaluation.claim_supports),
+        source_citation_count=len(evaluation.claim_supports),
+    )
+    assert body["evaluationStatus"] == "PASSED"
+    assert body["consentStatementVersion"] == "stage7-synthetic-avatar-consent-v1"
+    assert body["consentStatementText"].startswith("I affirm that I am authorized")
+    assert body["grantedAt"].endswith("Z")
+    assert body["requestChecksum"].startswith("sha256:")
+    assert body["avatarRenderId"] is None
+    assert body["artifactChecksums"] == []
     return consent_record_id
 
 
@@ -360,3 +389,23 @@ def test_avatar_render_api_requires_evaluation_evidence() -> None:
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "SOURCE_RUN_NOT_RENDERABLE"
+
+
+def test_avatar_render_api_rejects_reuse_of_consumed_consent_record() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client)
+    consent_record_id = _capture_avatar_consent(client, project_id, run_id)
+    path = f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders"
+    request = {
+        "requestedAvatarProvider": "mock",
+        "consentToUseSyntheticAvatar": True,
+        "consentRecordId": consent_record_id,
+    }
+
+    first = client.post(path, json=request, headers=idempotency_headers("stage7-avatar-consumed-first"))
+    second = client.post(path, json=request, headers=idempotency_headers("stage7-avatar-consumed-second"))
+
+    assert first.status_code == 201
+    assert second.status_code == 422
+    assert second.json()["error"]["code"] == "AVATAR_CONSENT_INVALID"

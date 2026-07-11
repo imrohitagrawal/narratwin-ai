@@ -59,7 +59,8 @@ The API path is split into two steps:
 1. `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/avatar-consents`
    captures or replays a scoped affirmative consent record.
 2. `POST /api/v1/projects/{projectId}/walkthrough-runs/{runId}/avatar-renders`
-   requires both the request boolean and a matching `consentRecordId`.
+   requires both the request boolean and an explicit durable scope containing a
+   matching `consentRecordId`.
 
 Render-time validation checks:
 
@@ -70,6 +71,8 @@ Render-time validation checks:
 - same trace
 - same source evaluation ID/checksum
 - current canonical consent statement version/text
+- unused consent record; a consumed consent row bound to an earlier render is
+  invalid for future durable render attempts
 
 Restore-time validation drops:
 
@@ -93,6 +96,8 @@ Tradeoffs:
 
 - The API contract now requires a prior consent-capture call before durable
   Stage 7 render calls can succeed.
+- Consent records are modeled as single-use durable approvals once a successful
+  render binds `avatar_render_id` and artifact checksums.
 - Current implementation remains local/mock and single-process; this ADR does
   not claim production-grade multi-worker storage semantics.
 

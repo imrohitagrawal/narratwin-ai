@@ -946,6 +946,10 @@ Request boundary rules:
   evidence
 - request must use the same project/run authorization checks as Stage 7 render
   generation
+- each consent record is single-use for durable render binding; before render it
+  returns `avatarRenderId = null` and `artifactChecksums = []`, and after a
+  successful durable render it is considered consumed for future render
+  requests
 
 Response `201`:
 
@@ -980,6 +984,19 @@ Consent idempotency rules:
 - malformed, incomplete, stale-version, malformed-timestamp, request-checksum-
   mismatched, cross-project, cross-run, or cross-actor restored consent rows
   are dropped
+
+Failure modes:
+
+| Status | Code | Meaning |
+|---:|---|---|
+| 400 | `IDEMPOTENCY_KEY_REQUIRED` | Missing `Idempotency-Key` on the write request |
+| 403 | `FORBIDDEN` | Project or source run is not accessible to the principal |
+| 404 | `NOT_FOUND` | Project or source walkthrough run does not exist |
+| 409 | `IDEMPOTENCY_CONFLICT` | Idempotency key was reused with a different request body |
+| 409 | `IDEMPOTENCY_IN_PROGRESS` | Duplicate request arrived while the first request is still pending |
+| 422 | `SOURCE_RUN_NOT_RENDERABLE` | Source run is not completed, passed, or accepted |
+| 422 | `AVATAR_CONSENT_REQUIRED` | The request did not affirm synthetic-avatar consent |
+| 429 | `RESOURCE_LIMIT_EXCEEDED` | Stage 7 idempotency record limit is exceeded for the request scope |
 
 ### Generate Avatar Demo Export
 
@@ -1028,9 +1045,7 @@ Request boundary limits:
 - `consentToUseSyntheticAvatar`: required boolean; must be `true` for the
   synthetic local presenter export
 - `consentRecordId`: required string on the API path because Stage 7 durable
-  render generation must bind to a previously captured consent record. The
-  lower-level local/mock service helper accepts `None` only for direct internal
-  calls that do not provide durable scope fields.
+  render generation must bind to a previously captured consent record.
 - `clonedIdentityRequested`: optional boolean; `true` is disabled in Stage 7
 - accepted source script: at most 20,000 characters
 - export artifacts: at most 512 KiB each after base64 decoding
@@ -1042,6 +1057,10 @@ Post-provider validation:
 - durable API render paths require a previously captured consent record whose
   tenant, project, actor, source run, trace, source evaluation ID/checksum, and
   canonical consent statement version/text match the render request scope
+- a consent record can be consumed by at most one successful durable render;
+  after `avatarRenderId` and `artifactChecksums` are bound, later render
+  attempts with the same `consentRecordId` are rejected with
+  `AVATAR_CONSENT_INVALID`
 - avatar provider identifiers must satisfy the adapter identifier pattern
 - provider mode must be `LOCAL`, `DISABLED`, or `OPTIONAL_EXTERNAL`
 - provider config must be validated before storage or response; every successful
