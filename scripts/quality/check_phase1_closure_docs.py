@@ -527,9 +527,9 @@ ISSUE_39_DRILL_LOG_PREFIXES = ("docs/reviews/drills/", "reports/", "artifacts/",
 ISSUE_39_DRILL_LOG_SUFFIXES = {".json", ".jsonl", ".log", ".md", ".txt"}
 ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
     "phase-1-closure-39-ch-02-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
-    "phase-1-closure-39-ch-04-": ("0ceda71a5ebefae440b09f706dd9d839c2aef875",),
-    "phase-1-closure-39-ch-05-": ("0ceda71a5ebefae440b09f706dd9d839c2aef875",),
-    "phase-1-closure-39-ch-06-": ("0ceda71a5ebefae440b09f706dd9d839c2aef875",),
+    "phase-1-closure-39-ch-04-": ("0ceda71ff2711eab0687e76c6a3e4550353eddbf",),
+    "phase-1-closure-39-ch-05-": ("0ceda71ff2711eab0687e76c6a3e4550353eddbf",),
+    "phase-1-closure-39-ch-06-": ("0ceda71ff2711eab0687e76c6a3e4550353eddbf",),
 }
 
 

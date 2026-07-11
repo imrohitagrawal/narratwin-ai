@@ -190,7 +190,7 @@ def test_issue39_chunk_branch_requires_dependency_commit_ancestry(monkeypatch: A
 
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-ch-04-idempotency-semantics must contain dependency "
-        "commits: 0ceda71a5ebefae440b09f706dd9d839c2aef875."
+        "commits: 0ceda71ff2711eab0687e76c6a3e4550353eddbf."
     ]
 
 
