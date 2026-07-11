@@ -602,6 +602,7 @@ class AcidCasKernel:
     ) -> LeaseRecord:
         if lease_ttl_ms <= 0:
             raise AcidCasConflictError("Lease TTL must be a positive millisecond value.")
+        validate_canonical_resource_id(resource_id)
 
         effective_now = _coerce_now(now)
         with self._lock:
@@ -634,6 +635,7 @@ class AcidCasKernel:
         lease_epoch: int,
         now: datetime | None = None,
     ) -> LeaseRecord:
+        validate_canonical_resource_id(resource_id)
         effective_now = _coerce_now(now)
         with self._lock:
             current = self._leases.get(resource_id)
@@ -670,6 +672,7 @@ class AcidCasKernel:
         lease_epoch: int,
         now: datetime | None = None,
     ) -> None:
+        validate_canonical_resource_id(resource_id)
         effective_now = _coerce_now(now)
         with self._lock:
             current = self._leases.get(resource_id)
@@ -688,6 +691,7 @@ class AcidCasKernel:
             del self._leases[resource_id]
 
     def get_lease(self, *, resource_id: str, now: datetime | None = None) -> LeaseRecord:
+        validate_canonical_resource_id(resource_id)
         effective_now = _coerce_now(now)
         try:
             lease = self._leases[resource_id]
@@ -1210,6 +1214,14 @@ def operation_record_from_stored_record(record: StoredRecord) -> OperationRecord
 
 def lease_resource_id_for_write(write: TransactionWrite) -> str:
     return f"{write.entity_type}:{write.tenant_id}:{write.owner_id}:{write.project_id}:{write.entity_id}"
+
+
+def validate_canonical_resource_id(resource_id: str) -> None:
+    parts = resource_id.split(":")
+    if len(parts) != 5 or any(part == "" for part in parts):
+        raise AcidCasConflictError(
+            "Lease resource_id must use canonical entity_type:tenant_id:owner_id:project_id:entity_id identity."
+        )
 
 
 def _transaction_fingerprint(
