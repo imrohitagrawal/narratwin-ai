@@ -10,6 +10,7 @@ from backend.app.storage.postgres_state import (
     AcidCasStaleWriteError,
     OutboxEventWrite,
     TransactionWrite,
+    payload_hash_for,
 )
 
 
@@ -733,7 +734,7 @@ def test_context2_outbox_writes_state_and_event_atomically() -> None:
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-1",
-                payload_hash="sha256:evt-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),
@@ -776,7 +777,7 @@ def test_context2_outbox_writes_state_and_event_atomically() -> None:
                     project_id="project-1",
                     resource_version=2,
                     operation_id="op-2",
-                    payload_hash="sha256:evt-2",
+                    payload_hash=payload_hash_for({"status": "queued"}),
                     payload={"status": "queued"},
                 ),
             ),
@@ -824,7 +825,7 @@ def test_context2_outbox_writes_state_and_event_atomically() -> None:
                     project_id="project-1",
                     resource_version=1,
                     operation_id="op-3",
-                    payload_hash="sha256:evt-3",
+                    payload_hash=payload_hash_for({"status": "queued"}),
                     payload={"status": "queued"},
                 ),
             ),
@@ -858,7 +859,7 @@ def test_context2_outbox_writes_state_and_event_atomically() -> None:
                     project_id="project-1",
                     resource_version=2,
                     operation_id="op-4",
-                    payload_hash="sha256:evt-1-dup",
+                    payload_hash=payload_hash_for({"status": "processing"}),
                     payload={"status": "processing"},
                 ),
             ),
@@ -873,6 +874,95 @@ def test_context2_outbox_writes_state_and_event_atomically() -> None:
     )
     assert stored.version == 1
     assert stored.payload == {"status": "queued"}
+
+
+def test_context2_outbox_rejects_forged_payload_or_hash() -> None:
+    kernel = AcidCasKernel()
+
+    with pytest.raises(AcidCasConflictError, match="payload does not match"):
+        kernel.commit(
+            transaction_id="tx-outbox-forged-payload",
+            request_id="req-outbox-forged-payload",
+            request_checksum="sha256:req-outbox-forged-payload",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+            outbox_events=(
+                OutboxEventWrite(
+                    event_id="evt-forged-payload",
+                    event_type="run.status.changed",
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    resource_version=1,
+                    operation_id="op-forged-payload",
+                    payload_hash=payload_hash_for({"status": "done"}),
+                    payload={"status": "done"},
+                ),
+            ),
+        )
+
+    with pytest.raises(AcidCasConflictError, match="payload hash"):
+        kernel.commit(
+            transaction_id="tx-outbox-forged-hash",
+            request_id="req-outbox-forged-hash",
+            request_checksum="sha256:req-outbox-forged-hash",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-2",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+            outbox_events=(
+                OutboxEventWrite(
+                    event_id="evt-forged-hash",
+                    event_type="run.status.changed",
+                    entity_type="run",
+                    entity_id="run-2",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    resource_version=1,
+                    operation_id="op-forged-hash",
+                    payload_hash=payload_hash_for({"status": "done"}),
+                    payload={"status": "queued"},
+                ),
+            ),
+        )
+
+    with pytest.raises(KeyError):
+        kernel.get(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        )
+    with pytest.raises(KeyError):
+        kernel.get(
+            entity_type="run",
+            entity_id="run-2",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        )
 
 
 def test_context2_outbox_replays_committed_transaction_without_duplicate_events() -> None:
@@ -900,7 +990,7 @@ def test_context2_outbox_replays_committed_transaction_without_duplicate_events(
             project_id="project-1",
             resource_version=1,
             operation_id="op-replay-1",
-            payload_hash="sha256:evt-replay-1",
+            payload_hash=payload_hash_for({"status": "queued"}),
             payload={"status": "queued"},
         ),
     )
@@ -985,7 +1075,7 @@ def test_context2_outbox_replays_committed_transaction_without_duplicate_events(
                     project_id="project-1",
                     resource_version=1,
                     operation_id="op-4",
-                    payload_hash="sha256:evt-4",
+                    payload_hash=payload_hash_for({"status": "queued"}),
                     payload={"status": "queued"},
                 ),
             ),
@@ -1023,7 +1113,7 @@ def test_context2_outbox_redelivery_is_at_least_once() -> None:
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-1",
-                payload_hash="sha256:evt-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),
@@ -1133,7 +1223,7 @@ def test_context2_outbox_rejects_non_positive_lock_ttl() -> None:
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-ttl-1",
-                payload_hash="sha256:evt-ttl-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),
@@ -1178,7 +1268,7 @@ def test_context2_outbox_rejects_wrong_dispatcher_transition() -> None:
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-owner-1",
-                payload_hash="sha256:evt-owner-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),
@@ -1230,7 +1320,7 @@ def test_context2_outbox_scopes_duplicate_event_ids_by_resource_identity() -> No
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-scope-1",
-                payload_hash="sha256:evt-shared-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),
@@ -1262,7 +1352,7 @@ def test_context2_outbox_scopes_duplicate_event_ids_by_resource_identity() -> No
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-scope-2",
-                payload_hash="sha256:evt-shared-2",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),
@@ -1273,11 +1363,107 @@ def test_context2_outbox_scopes_duplicate_event_ids_by_resource_identity() -> No
     assert kernel.get_outbox_event(
         event_id="evt-shared",
         resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
-    ).payload_hash == "sha256:evt-shared-1"
+    ).payload_hash == payload_hash_for({"status": "queued"})
     assert kernel.get_outbox_event(
         event_id="evt-shared",
         resource_id=scoped_resource_id("run", "tenant-2", "owner-2", "project-1", "run-1"),
-    ).payload_hash == "sha256:evt-shared-2"
+    ).payload_hash == payload_hash_for({"status": "queued"})
+
+
+def test_context2_outbox_consumer_dedupe_scopes_same_event_id_by_resource_identity() -> None:
+    kernel = AcidCasKernel()
+
+    kernel.commit(
+        transaction_id="tx-outbox-scope-delivery-1",
+        request_id="req-outbox-scope-delivery-1",
+        request_checksum="sha256:req-outbox-scope-delivery-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-2",
+                owner_id="owner-2",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-shared",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-scope-delivery-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
+                payload={"status": "queued"},
+            ),
+            OutboxEventWrite(
+                event_id="evt-shared",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-2",
+                owner_id="owner-2",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-scope-delivery-2",
+                payload_hash=payload_hash_for({"status": "queued"}),
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    acquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        lock_ttl_seconds=30,
+        limit=10,
+    )
+    assert len(acquired) == 2
+
+    first_resource = kernel.record_consumer_delivery(
+        event_id="evt-shared",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+        event_type="run.status.changed",
+        consumer_name="walkthrough-consumer",
+        resource_version=1,
+        dispatcher_id="worker-1",
+    )
+    second_resource = kernel.record_consumer_delivery(
+        event_id="evt-shared",
+        resource_id=scoped_resource_id("run", "tenant-2", "owner-2", "project-1", "run-1"),
+        event_type="run.status.changed",
+        consumer_name="walkthrough-consumer",
+        resource_version=1,
+        dispatcher_id="worker-1",
+    )
+    duplicate_first = kernel.record_consumer_delivery(
+        event_id="evt-shared",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+        event_type="run.status.changed",
+        consumer_name="walkthrough-consumer",
+        resource_version=1,
+        dispatcher_id="worker-1",
+    )
+
+    assert first_resource.duplicate is False
+    assert second_resource.duplicate is False
+    assert duplicate_first.duplicate is True
 
 
 def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
@@ -1320,7 +1506,7 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-1",
-                payload_hash="sha256:evt-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
             OutboxEventWrite(
@@ -1333,7 +1519,7 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-2",
-                payload_hash="sha256:evt-2",
+                payload_hash=payload_hash_for({"status": "processing"}),
                 payload={"status": "processing"},
             ),
         ),
@@ -1365,7 +1551,7 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
                 project_id="project-1",
                 resource_version=2,
                 operation_id="op-3",
-                payload_hash="sha256:evt-3",
+                payload_hash=payload_hash_for({"status": "done"}),
                 payload={"status": "done"},
             ),
         ),
@@ -1451,7 +1637,7 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-1",
-                payload_hash="sha256:evt-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),
@@ -1536,7 +1722,7 @@ def test_context2_outbox_consumer_delivery_rejects_expired_or_superseded_dispatc
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-stale-1",
-                payload_hash="sha256:evt-stale-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),
@@ -1612,7 +1798,7 @@ def test_context2_outbox_marks_dispatch_failure_terminal() -> None:
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-1",
-                payload_hash="sha256:evt-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),
@@ -1678,7 +1864,7 @@ def test_context2_outbox_rejects_transition_after_lock_expiry() -> None:
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-1",
-                payload_hash="sha256:evt-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),
@@ -1732,7 +1918,7 @@ def test_context2_outbox_rejects_transition_at_exact_lock_expiry() -> None:
                 project_id="project-1",
                 resource_version=1,
                 operation_id="op-exact-1",
-                payload_hash="sha256:evt-exact-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
                 payload={"status": "queued"},
             ),
         ),

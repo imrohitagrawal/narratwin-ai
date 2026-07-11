@@ -42,8 +42,11 @@ state writes.
 Each outbox event must:
 
 - have a stable `event_id`
-- reference the same scoped durable row identity as a staged state write
+- reference the same scoped durable row identity as a staged state write, using
+  `entity_type:tenant_id:owner_id:project_id:entity_id`
 - bind to the staged durable `resource_version`
+- carry the same payload as the staged durable row
+- carry the canonical payload hash for that payload
 - be committed in the same transaction result as the state row
 
 If any outbox event is invalid, neither the state row nor the outbox row is
@@ -94,8 +97,18 @@ does not execute the consumer side effect itself.
 `tests/unit/test_postgres_state.py`:
 
 - `test_context2_outbox_writes_state_and_event_atomically`
+- `test_context2_outbox_rejects_forged_payload_or_hash`
+- `test_context2_outbox_replays_committed_transaction_without_duplicate_events`
 - `test_context2_outbox_redelivery_is_at_least_once`
+- `test_context2_outbox_rejects_wrong_dispatcher_transition`
+- `test_context2_outbox_scopes_duplicate_event_ids_by_resource_identity`
+- `test_context2_outbox_consumer_dedupe_scopes_same_event_id_by_resource_identity`
 - `test_context2_outbox_consumer_dedupes_duplicate_delivery`
+- `test_context2_outbox_consumer_delivery_requires_matching_committed_event`
+- `test_context2_outbox_consumer_delivery_rejects_expired_or_superseded_dispatch`
+- `test_context2_outbox_marks_dispatch_failure_terminal`
+- `test_context2_outbox_rejects_transition_after_lock_expiry`
+- `test_context2_outbox_rejects_transition_at_exact_lock_expiry`
 
 An additional terminal-failure regression covers the explicit dispatcher fail
 transition without widening scope beyond the kernel contract.

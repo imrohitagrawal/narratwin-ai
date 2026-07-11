@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from copy import deepcopy
 from dataclasses import dataclass
@@ -583,6 +584,15 @@ class AcidCasKernel:
                 raise AcidCasConflictError(
                     f"Outbox event {event.event_id} resource version {event.resource_version} does not match durable version {staged_record.version}."
                 )
+            if event.payload != staged_record.payload:
+                raise AcidCasConflictError(
+                    f"Outbox event {event.event_id} payload does not match the durable row payload."
+                )
+            expected_payload_hash = payload_hash_for(event.payload)
+            if event.payload_hash != expected_payload_hash:
+                raise AcidCasConflictError(
+                    f"Outbox event {event.event_id} payload hash does not match the canonical payload hash."
+                )
             staged_events.append(
                 OutboxEventWrite(
                     event_id=event.event_id,
@@ -749,6 +759,11 @@ def entity_key(
 
 def outbox_resource_id_for_write(event: OutboxEventWrite) -> str:
     return f"{event.entity_type}:{event.tenant_id}:{event.owner_id}:{event.project_id}:{event.entity_id}"
+
+
+def payload_hash_for(payload: dict[str, Any]) -> str:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
 
 
 def outbox_event_key_for_write(event: OutboxEventWrite) -> OutboxEventKey:
