@@ -194,11 +194,6 @@ class AcidCasKernel:
 
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
-                self._assert_operation_owner(
-                    existing=existing,
-                    lease_owner_id=lease_owner_id,
-                    lease_epoch=lease_epoch,
-                )
                 return replay_operation_result(existing)
 
             self._assert_operation_owner(
@@ -225,11 +220,6 @@ class AcidCasKernel:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state == "TERMINAL_SUCCESS":
-                self._assert_operation_owner(
-                    existing=existing,
-                    lease_owner_id=lease_owner_id,
-                    lease_epoch=lease_epoch,
-                )
                 if existing.response_payload != response_payload:
                     raise AcidCasConflictError(
                         f"Operation {operation_id} terminal success replay payload does not match the durable response."
@@ -291,11 +281,6 @@ class AcidCasKernel:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state == "TERMINAL_ERROR":
-                self._assert_operation_owner(
-                    existing=existing,
-                    lease_owner_id=lease_owner_id,
-                    lease_epoch=lease_epoch,
-                )
                 if existing.error_payload != error_payload:
                     raise AcidCasConflictError(
                         f"Operation {operation_id} terminal error replay payload does not match the durable error."
@@ -363,11 +348,6 @@ class AcidCasKernel:
                 )
                 return replay_operation_result(existing)
             if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
-                self._assert_operation_owner(
-                    existing=existing,
-                    lease_owner_id=lease_owner_id,
-                    lease_epoch=lease_epoch,
-                )
                 return replay_operation_result(existing)
             self._assert_operation_owner(
                 existing=existing,
@@ -419,11 +399,6 @@ class AcidCasKernel:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
-                self._assert_operation_owner(
-                    existing=existing,
-                    lease_owner_id=lease_owner_id,
-                    lease_epoch=lease_epoch,
-                )
                 return replay_operation_result(existing)
             self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
             self._assert_operation_state(
@@ -601,30 +576,7 @@ class AcidCasKernel:
         response_payload: dict[str, Any] | None = None,
         error_payload: dict[str, Any] | None = None,
     ) -> OperationRecord:
-        key = operation_entity_key(operation_id=operation_id, scope=scope)
-        existing = self._records.get(key)
-        write = TransactionWrite(
-            entity_type="operation",
-            entity_id=operation_entity_id(operation_id=operation_id, scope=scope),
-            tenant_id=scope.tenant_id,
-            owner_id=scope.owner_id,
-            project_id=scope.project_id,
-            expected_version=None if existing is None else existing.version,
-            state=operation_record_state(state),
-            payload=operation_record_payload(
-                operation_id=operation_id,
-                scope=scope,
-                payload_hash=payload_hash,
-                state=state,
-                lease_owner_id=lease_owner_id,
-                lease_epoch=lease_epoch,
-                response_payload=response_payload,
-                error_payload=error_payload,
-            ),
-        )
-        staged = self._stage_write(
-            existing=existing,
-            write=write,
+        result = self.commit(
             transaction_id=transaction_id,
             request_id=request_id,
             request_checksum=operation_request_checksum(
@@ -637,25 +589,29 @@ class AcidCasKernel:
                 response_payload=response_payload,
                 error_payload=error_payload,
             ),
+            writes=(
+                TransactionWrite(
+                    entity_type="operation",
+                    entity_id=operation_entity_id(operation_id=operation_id, scope=scope),
+                    tenant_id=scope.tenant_id,
+                    owner_id=scope.owner_id,
+                    project_id=scope.project_id,
+                    expected_version=None if version == 1 else version - 1,
+                    state=operation_record_state(state),
+                    payload=operation_record_payload(
+                        operation_id=operation_id,
+                        scope=scope,
+                        payload_hash=payload_hash,
+                        state=state,
+                        lease_owner_id=lease_owner_id,
+                        lease_epoch=lease_epoch,
+                        response_payload=response_payload,
+                        error_payload=error_payload,
+                    ),
+                ),
+            ),
         )
-        committed_at = _now()
-        committed = StoredRecord(
-            entity_type=staged.entity_type,
-            entity_id=staged.entity_id,
-            tenant_id=staged.tenant_id,
-            owner_id=staged.owner_id,
-            project_id=staged.project_id,
-            state=staged.state,
-            version=staged.version,
-            request_id=staged.request_id,
-            request_checksum=staged.request_checksum,
-            transaction_id=staged.transaction_id,
-            payload=deepcopy(staged.payload),
-            committed_at=committed_at,
-            terminal_reason=staged.terminal_reason,
-        )
-        self._records[key] = committed
-        return operation_record_from_stored_record(committed)
+        return operation_record_from_stored_record(result.records[0])
 
     def _assert_operation_payload_hash(self, *, existing: OperationRecord, payload_hash: str) -> None:
         if existing.payload_hash != payload_hash:

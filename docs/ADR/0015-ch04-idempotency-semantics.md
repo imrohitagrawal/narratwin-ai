@@ -84,6 +84,10 @@ the durable state is terminal:
 
 - `TERMINAL_SUCCESS` replays the cached success payload exactly,
 - `TERMINAL_ERROR` replays the cached serialized error exactly.
+- exact terminal replay is read-only and may be returned across later owner
+  changes because it does not stage or mutate any durable row
+- `request_id` is attempt metadata; it may differ across retries and does not
+  replace `(operation_id, scope, payload_hash)` as the durable replay identity
 
 If a second terminalization attempt presents a different cached success/error
 payload for the same durable terminal record, the kernel rejects it as a
@@ -100,8 +104,8 @@ Mutating non-terminal transitions also persist:
 - `lease_owner_id`
 - `lease_epoch`
 
-Every non-terminal mutation except reviewed recovery requires an exact match on
-both fields. Mismatches are rejected as stale-owner writes.
+Every mutating non-terminal transition except reviewed recovery requires an
+exact match on both fields. Mismatches are rejected as stale-owner writes.
 
 `FAILED_TRANSIENT -> REPLAYING` is the one reviewed exception in `CH-04`:
 
@@ -156,6 +160,7 @@ Negative:
 
 ## Related Documents
 
+- `docs/reviews/ISSUE_39_CH04_CH05_CH06_CONTRACT_DECISIONS.md`
 - `docs/ADR/0009-context2-idempotency-lease-outbox-contract.md`
 - `docs/ADR/0014-ch02-acid-cas-storage-kernel.md`
 - `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md`
