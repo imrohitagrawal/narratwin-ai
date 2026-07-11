@@ -866,7 +866,7 @@ def workflow_allows_phase1_pull_request_bases(yaml_text: str) -> bool:
             branches_indent = None
             continue
         if branches_indent is None:
-            if stripped.startswith("branches:"):
+            if indent == pull_request_indent + 2 and stripped.startswith("branches:"):
                 branches_indent = indent
                 inline_branches = stripped.removeprefix("branches:").strip()
                 if workflow_branch_tokens_include_phase1(inline_branches):
@@ -874,7 +874,7 @@ def workflow_allows_phase1_pull_request_bases(yaml_text: str) -> bool:
             continue
         if indent <= branches_indent:
             branches_indent = None
-            if stripped.startswith("branches:"):
+            if indent == pull_request_indent + 2 and stripped.startswith("branches:"):
                 branches_indent = indent
                 inline_branches = stripped.removeprefix("branches:").strip()
                 if workflow_branch_tokens_include_phase1(inline_branches):

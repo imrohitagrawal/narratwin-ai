@@ -1669,6 +1669,23 @@ def test_quality_gates_workflow_rejects_inline_comment_phase1_base_decoy(monkeyp
     assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
 
 
+def test_quality_gates_workflow_rejects_nested_phase1_base_decoy(monkeypatch: Any) -> None:
+    workflow_path = ".github/workflows/quality-gates.yml"
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace(
+        "    branches:\n      - main\n      - phase-1-closure-**\n",
+        "    types:\n      branches: [phase-1-closure-**]\n",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
 @pytest.mark.parametrize(
     "workflow_path",
     [
@@ -1737,6 +1754,33 @@ def test_runtime_workflows_reject_inline_comment_phase1_base_decoy(
     decoy_workflow = workflow_text.replace(
         "      - main\n      - phase-1-closure-**\n",
         "      - main # phase-1-closure-**\n",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml",
+        ".github/workflows/eval-smoke.yml",
+    ],
+)
+def test_runtime_workflows_reject_nested_phase1_base_decoy(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace(
+        "    branches:\n      - main\n      - phase-1-closure-**\n",
+        "    types:\n      branches: [phase-1-closure-**]\n",
     )
     failures = run_process_docs_check(
         monkeypatch,
