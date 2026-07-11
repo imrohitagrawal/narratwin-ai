@@ -78,13 +78,15 @@ limited to the row-level lock metadata required for outbox retries.
 
 The kernel now records consumer-delivery attempts by deterministic key:
 
-- `(event_type, event_id, consumer_name, resource_version)`
+- `(event_type, resource_id, event_id, consumer_name, resource_version)`
 
 `record_consumer_delivery(...)` returns whether the attempted delivery is a
 duplicate and increments the observed delivery count for that key.
 
-This is a storage primitive for idempotent consumers. It does not execute the
-consumer side effect itself.
+This is a storage primitive for idempotent consumers. It requires a committed
+event identity match and active dispatcher ownership; pending, expired,
+superseded, or terminal-failed dispatches cannot pre-seed consumer dedupe. It
+does not execute the consumer side effect itself.
 
 ### 4. Evidence contract
 
@@ -130,6 +132,7 @@ Negative:
 
 ## Related Documents
 
+- `docs/reviews/ISSUE_39_CH04_CH05_CH06_CONTRACT_DECISIONS.md`
 - `docs/ADR/0009-context2-idempotency-lease-outbox-contract.md`
 - `docs/ADR/0014-ch02-acid-cas-storage-kernel.md`
 - `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md`

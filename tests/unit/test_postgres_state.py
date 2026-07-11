@@ -934,6 +934,29 @@ def test_context2_outbox_replays_committed_transaction_without_duplicate_events(
     assert acquired[0].event_id == "evt-replay-1"
     assert acquired[0].attempt_count == 1
 
+    with pytest.raises(AcidCasConflictError, match="replay checksum"):
+        kernel.commit(
+            transaction_id="tx-outbox-replay-1",
+            request_id="req-outbox-replay-1",
+            request_checksum="sha256:req-outbox-replay-1",
+            writes=writes,
+            outbox_events=(
+                OutboxEventWrite(
+                    event_id="evt-replay-1",
+                    event_type="run.status.changed",
+                    entity_type="run",
+                    entity_id="run-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    resource_version=1,
+                    operation_id="op-replay-1",
+                    payload_hash="sha256:evt-replay-drift",
+                    payload={"status": "queued"},
+                ),
+            ),
+        )
+
     with pytest.raises(AcidCasConflictError, match="same transaction"):
         kernel.commit(
             transaction_id="tx-outbox-4",
