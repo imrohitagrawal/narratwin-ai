@@ -65,6 +65,9 @@ Example:
 The operation kernel rejects non-canonical `scope.resource_id` values and
 rejects canonical resource IDs whose embedded tenant, owner, or project fields
 do not match `OperationScope`.
+`operation_id`, `payload_hash`, and `lease_owner_id` must also be non-empty so
+identity, conflict guarding, and stale-owner checks cannot collapse to blank
+values.
 
 ### 2. Executable state subset
 
