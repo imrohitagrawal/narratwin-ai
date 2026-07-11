@@ -564,8 +564,18 @@ def current_branch() -> str:
     return os.environ.get("GITHUB_HEAD_REF", "").strip() or run_git(["branch", "--show-current"])
 
 
+def preferred_diff_base_for_current_event() -> str:
+    base = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    if os.environ.get("GITHUB_EVENT_NAME", "").strip() != "push":
+        return base
+    ref_name = os.environ.get("GITHUB_REF_NAME", "").strip() or os.environ.get("GITHUB_HEAD_REF", "").strip()
+    if ref_name and ref_name != "main":
+        return ""
+    return base
+
+
 def resolve_base() -> str:
-    preferred = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    preferred = preferred_diff_base_for_current_event()
     if preferred and not re.fullmatch(r"0+", preferred):
         verified = run_git(["rev-parse", "--verify", f"{preferred}^{{commit}}"])
         if verified:

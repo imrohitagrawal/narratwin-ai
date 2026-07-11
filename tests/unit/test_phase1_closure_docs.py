@@ -205,6 +205,42 @@ def test_issue39_chunk_branch_accepts_required_dependency_commit_ancestry(monkey
     )
 
 
+def test_non_main_push_resolve_base_ignores_previous_branch_head(monkeypatch: Any) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_git(args: list[str]) -> str:
+        calls.append(args)
+        if args == ["merge-base", "origin/main", "HEAD"]:
+            return "main-merge-base"
+        return ""
+
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_HEAD_REF", "phase-1-closure-39-ch-05-lease-fencing")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-child-head")
+    monkeypatch.setattr(phase1, "run_git", fake_run_git)
+
+    assert phase1.resolve_base() == "main-merge-base"
+    assert ["rev-parse", "--verify", "previous-child-head^{commit}"] not in calls
+
+
+def test_main_push_resolve_base_keeps_previous_commit(monkeypatch: Any) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_git(args: list[str]) -> str:
+        calls.append(args)
+        if args == ["rev-parse", "--verify", "previous-main^{commit}"]:
+            return "previous-main"
+        return ""
+
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-main")
+    monkeypatch.setattr(phase1, "run_git", fake_run_git)
+
+    assert phase1.resolve_base() == "previous-main"
+    assert calls == [["rev-parse", "--verify", "previous-main^{commit}"]]
+
+
 def test_issue39_closure_plan_accepts_current_matrix() -> None:
     failures: list[str] = []
     phase1.check_issue39_closure_plan(failures)
