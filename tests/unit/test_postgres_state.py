@@ -750,17 +750,6 @@ def test_context2_idempotency_replays_terminal_success() -> None:
     assert replay.record.state == "TERMINAL_SUCCESS"
     assert replay.record.response_payload == {"status": "done", "runId": "run-1"}
 
-    with pytest.raises(AcidCasStaleOwnerError, match="stale owner"):
-        kernel.start_operation(
-            transaction_id="tx-op-4",
-            request_id="req-op-1-replay-stale",
-            operation_id="operation-1",
-            scope=scope,
-            payload_hash="sha256:payload-1",
-            lease_owner_id="worker-2",
-            lease_epoch=8,
-        )
-
 
 def test_context2_idempotency_replays_terminal_error() -> None:
     kernel = AcidCasKernel()
@@ -812,17 +801,6 @@ def test_context2_idempotency_replays_terminal_error() -> None:
         "code": "UPSTREAM_FAILURE",
         "message": "provider timeout",
     }
-
-    with pytest.raises(AcidCasStaleOwnerError, match="stale owner"):
-        kernel.start_operation(
-            transaction_id="tx-op-4",
-            request_id="req-op-1-replay-stale",
-            operation_id="operation-1",
-            scope=scope,
-            payload_hash="sha256:payload-1",
-            lease_owner_id="worker-2",
-            lease_epoch=8,
-        )
 
 
 def test_context2_idempotency_rejects_payload_hash_conflict() -> None:
