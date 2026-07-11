@@ -400,6 +400,7 @@ class AcidCasKernel:
         )
 
     def _validate_lease_guard(self, *, write: TransactionWrite, now: datetime) -> None:
+        validate_write_resource_identity(write)
         expected_resource_id = lease_resource_id_for_write(write)
         current = self._leases.get(expected_resource_id)
         requires_fencing = expected_resource_id in self._lease_epochs
@@ -510,6 +511,10 @@ def lease_resource_id_for_write(write: TransactionWrite) -> str:
     return (
         f"{write.entity_type}:{write.tenant_id}:{write.owner_id}:{write.project_id}:{write.entity_id}"
     )
+
+
+def validate_write_resource_identity(write: TransactionWrite) -> None:
+    validate_canonical_resource_id(lease_resource_id_for_write(write))
 
 
 def validate_canonical_resource_id(resource_id: str) -> None:
