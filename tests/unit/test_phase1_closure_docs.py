@@ -190,7 +190,7 @@ def test_issue39_chunk_branch_requires_dependency_commit_ancestry(monkeypatch: A
 
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-ch-04-idempotency-semantics must contain dependency "
-        "commits: 0ceda71ff2711eab0687e76c6a3e4550353eddbf."
+        "commits: 40cf11028d5dba56f4966e107aacba8c653407fc."
     ]
 
 
@@ -1613,6 +1613,21 @@ def test_quality_gates_workflow_must_pass_base_sha_to_make_quality(monkeypatch: 
     )
 
     assert f"{workflow_path} must pass GITHUB_BASE_SHA to make quality" in failures
+
+
+def test_quality_gates_workflow_must_run_for_phase1_stacked_pull_request_bases(monkeypatch: Any) -> None:
+    workflow_path = ".github/workflows/quality-gates.yml"
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("      - phase-1-closure-**\n", ""),
+        },
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
 
 
 def remove_guardrail_step_token(workflow_text: str) -> str:

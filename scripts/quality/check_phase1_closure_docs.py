@@ -527,9 +527,9 @@ ISSUE_39_DRILL_LOG_PREFIXES = ("docs/reviews/drills/", "reports/", "artifacts/",
 ISSUE_39_DRILL_LOG_SUFFIXES = {".json", ".jsonl", ".log", ".md", ".txt"}
 ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
     "phase-1-closure-39-ch-02-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
-    "phase-1-closure-39-ch-04-": ("0ceda71ff2711eab0687e76c6a3e4550353eddbf",),
-    "phase-1-closure-39-ch-05-": ("0ceda71ff2711eab0687e76c6a3e4550353eddbf",),
-    "phase-1-closure-39-ch-06-": ("0ceda71ff2711eab0687e76c6a3e4550353eddbf",),
+    "phase-1-closure-39-ch-04-": ("40cf11028d5dba56f4966e107aacba8c653407fc",),
+    "phase-1-closure-39-ch-05-": ("40cf11028d5dba56f4966e107aacba8c653407fc",),
+    "phase-1-closure-39-ch-06-": ("40cf11028d5dba56f4966e107aacba8c653407fc",),
 }
 
 
@@ -821,6 +821,10 @@ def workflow_has_stage_quality_base_sha(yaml_text: str) -> bool:
         "run: make quality" in step and "GITHUB_BASE_SHA:" in step
         for step in workflow_step_blocks(yaml_text)
     )
+
+
+def workflow_allows_phase1_pull_request_bases(yaml_text: str) -> bool:
+    return "phase-1-closure-**" in yaml_text
 
 
 def workflow_guardrail_step_blocks(yaml_text: str) -> list[str]:
@@ -1996,6 +2000,8 @@ def check_process_docs(failures: list[str]) -> None:
             )
         if workflow_path == ".github/workflows/quality-gates.yml" and not workflow_has_stage_quality_base_sha(workflow_text):
             fail(failures, f"{workflow_path} must pass GITHUB_BASE_SHA to make quality")
+        if workflow_path == ".github/workflows/quality-gates.yml" and not workflow_allows_phase1_pull_request_bases(workflow_text):
+            fail(failures, f"{workflow_path} must run for phase-1-closure stacked pull request bases")
 
     rca = read("docs/ENGINEERING_PROCESS_RCA.md")
     check_required_headings(

@@ -34,8 +34,12 @@ integration.
   required conflict/replay guard, and `request_id` is attempt metadata rather
   than a replay key.
 - Canonical durable resource identity is
-  `entity_type:tenant_id:owner_id:project_id:entity_id`. Lease resource IDs and
-  outbox resource IDs use this exact shape.
+  `entity_type:tenant_id:owner_id:project_id:entity_id`. Each component is
+  non-empty and colon-free. Lease resource IDs and outbox resource IDs use this
+  exact shape.
+- Operation IDs, payload hashes, lease owners, lease IDs, outbox event IDs,
+  event types, operation IDs, dispatcher IDs, and consumer names are non-empty
+  durable identities.
 - Paid providers remain optional and disabled for local, test, and CI paths.
 - Uploaded documents, prompts, transcripts, and provider outputs remain
   untrusted input and must not influence durable identity without validation.

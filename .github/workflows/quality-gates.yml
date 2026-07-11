@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened, edited, ready_for_review]
     branches:
       - main
+      - phase-1-closure-**
   push:
     branches-ignore:
       - main
