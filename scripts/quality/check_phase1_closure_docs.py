@@ -767,7 +767,7 @@ def workflow_has_pull_request_edited(yaml_text: str) -> bool:
             i += 1
             pull_child_indent: int | None = None
             while i < len(lines):
-                current = lines[i]
+                current = yaml_line_without_inline_comment(lines[i])
                 if not current.strip() or current.lstrip().startswith("#"):
                     i += 1
                     continue
@@ -786,13 +786,13 @@ def workflow_has_pull_request_edited(yaml_text: str) -> bool:
                 types_indent = len(types_match.group("indent"))
                 value = types_match.group("value").strip()
                 if value:
-                    if yaml_inline_list_contains_token(value, "edited"):
+                    if yaml_inline_list_contains_token(yaml_line_without_inline_comment(value), "edited"):
                         return True
                     i += 1
                     continue
                 i += 1
                 while i < len(lines):
-                    item = lines[i]
+                    item = yaml_line_without_inline_comment(lines[i])
                     if not item.strip() or item.lstrip().startswith("#"):
                         i += 1
                         continue
@@ -824,13 +824,18 @@ def workflow_has_guardrail_github_token_wiring(yaml_text: str) -> bool:
     if not guardrail_steps:
         return False
     return (
-        "issues: read" in yaml_text
-        and "pull-requests: read" in yaml_text
+        workflow_has_permission(yaml_text, "issues", "read")
+        and workflow_has_permission(yaml_text, "pull-requests", "read")
         and all(
             "GITHUB_TOKEN:" in step and ("github.token" in step or "secrets.GITHUB_TOKEN" in step)
             for step in guardrail_steps
         )
     )
+
+
+def workflow_has_permission(yaml_text: str, permission: str, value: str) -> bool:
+    expected = f"{permission}: {value}"
+    return any(yaml_line_without_inline_comment(line).strip() == expected for line in yaml_text.splitlines())
 
 
 def workflow_has_stage_quality_base_sha(yaml_text: str) -> bool:

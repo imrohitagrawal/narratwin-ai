@@ -1499,6 +1499,16 @@ on:
     assert not phase1.workflow_has_pull_request_edited(workflow_text)
 
 
+def test_workflow_pull_request_edited_inline_comment_decoy_is_rejected(monkeypatch: Any) -> None:
+    workflow_text = """
+on:
+  pull_request:
+    types: [opened, synchronize] # , edited]
+"""
+
+    assert not phase1.workflow_has_pull_request_edited(workflow_text)
+
+
 def test_workflow_pull_request_edited_decoy_under_jobs_is_rejected(monkeypatch: Any) -> None:
     workflow_text = """
 on:
@@ -1566,6 +1576,30 @@ def test_process_docs_rejects_guardrail_workflow_without_token_permissions(
         changed=[workflow_path],
         read_overrides={
             workflow_path: workflow_text.replace("  issues: read\n", "").replace("  pull-requests: read\n", ""),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
+@pytest.mark.parametrize("workflow_path", [".github/workflows/quality.yml", ".github/workflows/security.yml"])
+def test_process_docs_rejects_commented_guardrail_token_permissions(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("  issues: read\n", "  # issues: read\n").replace(
+                "  pull-requests: read\n",
+                "  # pull-requests: read\n",
+            ),
         },
     )
 
