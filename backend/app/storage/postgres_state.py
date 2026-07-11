@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Callable
 from copy import deepcopy
@@ -1074,7 +1075,9 @@ class AcidCasKernel:
             seen_keys.add(key)
             bound_record = staged_by_resource.get(event.resource_id)
             if bound_record is None:
-                bound_record = self._record_for_resource_id(event.resource_id)
+                raise AcidCasConflictError(
+                    f"Outbox event {event.event_id} resource must be staged in the same transaction."
+                )
             if bound_record.version != event.resource_version:
                 raise AcidCasConflictError(
                     f"Outbox event {event.event_id} resource version {event.resource_version} "
@@ -1083,6 +1086,11 @@ class AcidCasKernel:
             if bound_record.payload != event.payload:
                 raise AcidCasConflictError(
                     f"Outbox event {event.event_id} payload must match the bound durable resource payload."
+                )
+            expected_payload_hash = outbox_payload_hash(event.payload)
+            if event.payload_hash != expected_payload_hash:
+                raise AcidCasConflictError(
+                    f"Outbox event {event.event_id} payload hash must be {expected_payload_hash}."
                 )
             timestamp = _isoformat(now)
             events.append(
@@ -1106,20 +1114,6 @@ class AcidCasKernel:
                 )
             )
         return tuple(events)
-
-    def _record_for_resource_id(self, resource_id: str) -> StoredRecord:
-        entity_type, tenant_id, owner_id, project_id, entity_id = resource_id.split(":", maxsplit=4)
-        key = entity_key(
-            entity_type=entity_type,
-            entity_id=entity_id,
-            tenant_id=tenant_id,
-            owner_id=owner_id,
-            project_id=project_id,
-        )
-        try:
-            return self._records[key]
-        except KeyError as exc:
-            raise AcidCasConflictError(f"Outbox event resource {resource_id} does not match a durable row.") from exc
 
     def _resolve_outbox_key(
         self,
@@ -1754,6 +1748,11 @@ def validate_outbox_event_write(event: OutboxEventWrite) -> None:
             raise AcidCasConflictError(f"Outbox {label} must be non-empty.")
     if event.resource_version <= 0:
         raise AcidCasConflictError("Outbox resource_version must be positive.")
+
+
+def outbox_payload_hash(payload: dict[str, Any]) -> str:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
 
 
 def validate_outbox_identity(*, dispatcher_id: str, lock_token: str) -> None:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -2917,18 +2919,24 @@ def _outbox_event(
     event_id: str = "event-1",
     resource_id: str = "run:tenant-1:owner-1:project-1:run-1",
     resource_version: int = 1,
-    payload_hash: str = "sha256:payload-1",
+    payload_hash: str | None = None,
     payload: dict[str, str] | None = None,
 ) -> OutboxEventWrite:
+    event_payload = payload or {"status": "queued"}
     return OutboxEventWrite(
         event_id=event_id,
         event_type="run.updated",
         resource_id=resource_id,
         resource_version=resource_version,
         operation_id="operation-1",
-        payload_hash=payload_hash,
-        payload=payload or {"status": "queued"},
+        payload_hash=payload_hash or _payload_hash(event_payload),
+        payload=event_payload,
     )
+
+
+def _payload_hash(payload: dict[str, str]) -> str:
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return "sha256:" + hashlib.sha256(canonical).hexdigest()
 
 
 def test_context2_outbox_writes_state_and_event_atomically() -> None:
@@ -2995,7 +3003,6 @@ def test_context2_outbox_binds_event_to_staged_resource_payload() -> None:
         outbox_events=(
             _outbox_event(
                 resource_version=1,
-                payload_hash="sha256:queued",
                 payload={"status": "queued"},
             ),
         ),
@@ -3003,7 +3010,7 @@ def test_context2_outbox_binds_event_to_staged_resource_payload() -> None:
 
     event = kernel.get_outbox_event(event_id="event-1")
     assert event.resource_version == 1
-    assert event.payload_hash == "sha256:queued"
+    assert event.payload_hash == _payload_hash({"status": "queued"})
     assert event.payload == {"status": "queued"}
 
 
@@ -3026,6 +3033,61 @@ def test_context2_outbox_rejects_unmatched_resource_version() -> None:
             tenant_id="tenant-1",
             owner_id="owner-1",
             project_id="project-1",
+        )
+
+
+def test_context2_outbox_rejects_event_without_same_transaction_state_change() -> None:
+    kernel = AcidCasKernel()
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(_outbox_event(),),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="same transaction"):
+        kernel.commit(
+            transaction_id="tx-outbox-detached",
+            request_id="req-outbox-detached",
+            request_checksum="sha256:req-outbox-detached",
+            writes=(
+                TransactionWrite(
+                    entity_type="project",
+                    entity_id="project-1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"name": "Project One"},
+                ),
+            ),
+            outbox_events=(
+                _outbox_event(
+                    event_id="event-detached",
+                    resource_version=1,
+                    payload={"status": "queued"},
+                ),
+            ),
+        )
+
+
+def test_context2_outbox_rejects_payload_hash_that_does_not_match_payload() -> None:
+    kernel = AcidCasKernel()
+
+    with pytest.raises(AcidCasConflictError, match="payload hash"):
+        kernel.commit(
+            transaction_id="tx-outbox-bad-hash",
+            request_id="req-outbox-bad-hash",
+            request_checksum="sha256:req-outbox-bad-hash",
+            writes=(_run_write(expected_version=None, status="queued"),),
+            outbox_events=(
+                _outbox_event(
+                    payload_hash="sha256:not-the-payload",
+                    payload={"status": "queued"},
+                ),
+            ),
         )
 
 
@@ -3079,7 +3141,7 @@ def test_context2_outbox_rejects_replay_when_event_payload_changes() -> None:
     ("event", "match"),
     (
         (_outbox_event(event_id="event-drift"), "checksum"),
-        (_outbox_event(payload_hash="sha256:payload-drift"), "checksum"),
+        (_outbox_event(payload_hash=_payload_hash({"status": "queued-drift"}), payload={"status": "queued-drift"}), "checksum"),
         (
             _outbox_event(
                 resource_id="run:tenant-1:owner-1:project-1:run-2",
