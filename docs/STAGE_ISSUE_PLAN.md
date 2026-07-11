@@ -29,7 +29,7 @@ Create or identify stage issue
 | Stage 7 | `#12` | Stage 7 - Avatar rendering adapter and export | `stage7-*` | `make stage7-quality` | Linked PR to `main` | Mock/local avatar renderer, export artifacts, provider contract tests |
 | Stage 8 | `#13` | Stage 8 - Performance, security hardening, release readiness | `stage8-*` | `make stage8-quality` | Linked PR to `main` | Performance evidence, security hardening, release-readiness report |
 | Final Review | `#6` | Final Review - Independent review | `final-review-*` | `make final-review-quality` | Linked PR to `main` | Independent review report and release decision |
-| Phase 1 Closure | `#35`-`#44` | Phase 1 Closure - Final Review blockers | `phase-1-closure-*` | `make phase1-closure-quality` | Linked PR to `main` | Closed or downgraded P0/P1 blockers, closure report, release readiness update |
+| Phase 1 Closure | `#35`-`#44` | Phase 1 Closure - Final Review blockers | `phase-1-closure-*` | `make phase1-closure-quality`; stacked chunk PRs use `GITHUB_BASE_SHA=<reviewed-prereq-head> make phase1-closure-quality` | Linked PR to `main` or reviewed `phase-1-closure-*` stacked base | Closed or downgraded P0/P1 blockers, closure report, release readiness update |
 
 ## Stage 0 Governance Branch Scope
 
@@ -618,6 +618,63 @@ kernel chunk for issue `#39` child issue `#93`. It may touch only:
 
 `phase-1-closure-39-ch-02-*` must not touch Stage 4/6/7 durable graph or
 artifact orchestration, idempotency/lease/outbox runtime semantics, backup or
+restore flows, monitoring/alerts/watch, release posture, provider/media/privacy
+controls, or unrelated governance/process files.
+
+`phase-1-closure-39-ch-04-*` is reserved for the `CH-04` idempotency semantics
+chunk for issue `#39` child issue `#97`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/postgres_state.py`
+- `docs/ADR/0015-ch04-idempotency-semantics.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_postgres_state.py`
+
+`phase-1-closure-39-ch-04-*` must not touch Stage 4/6/7 durable graph or
+artifact orchestration, lease or outbox runtime semantics, backup or restore
+flows, monitoring/alerts/watch, release posture, provider/media/privacy
+controls, or unrelated governance/process files.
+
+`phase-1-closure-39-ch-05-*` is reserved for the `CH-05` lease fencing chunk
+for issue `#39` child issue `#95`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/postgres_state.py`
+- `docs/ADR/0016-ch05-lease-fencing.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_postgres_state.py`
+
+`phase-1-closure-39-ch-05-*` must not touch Stage 4/6/7 durable graph or
+artifact orchestration, idempotency or outbox runtime semantics, backup or
+restore flows, monitoring/alerts/watch, release posture, provider/media/privacy
+controls, or unrelated governance/process files.
+
+`phase-1-closure-39-ch-06-*` is reserved for the `CH-06` committed outbox chunk
+for issue `#39` child issue `#96`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/postgres_state.py`
+- `docs/ADR/0017-ch06-committed-outbox.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_postgres_state.py`
+
+`phase-1-closure-39-ch-06-*` must not touch Stage 4/6/7 durable graph or
+artifact orchestration, idempotency or lease runtime semantics, backup or
 restore flows, monitoring/alerts/watch, release posture, provider/media/privacy
 controls, or unrelated governance/process files.
 

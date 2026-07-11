@@ -341,6 +341,8 @@ def run_issue_link_check(
     title: str,
     body: str,
     head_ref: str = "phase-1-closure-39-durability-monitoring",
+    base_ref: str = "main",
+    base_sha: str = "0123456789abcdef0123456789abcdef01234567",
     commit_messages: str = "",
     changed_files: list[str] | None = None,
     event_name: str = "pull_request",
@@ -354,7 +356,7 @@ def run_issue_link_check(
                     "title": title,
                     "body": body,
                     "head": {"ref": head_ref},
-                    "base": {"ref": "main"},
+                    "base": {"ref": base_ref, "sha": base_sha},
                 }
             }
         ),
@@ -425,6 +427,12 @@ def completed_preflight_body(
         "make quality -> passed\n"
         "uv run ruff check scripts tests -> passed\n"
         "uv run mypy scripts tests -> passed\n"
+        "make ci -> passed\n"
+        "make security -> passed\n"
+        "make dependency-audit -> passed\n"
+        "make container-scan -> passed\n"
+        "make secrets-scan -> passed\n"
+        "make eval -> passed\n"
         "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed\n"
         "```\n"
     )
@@ -2269,6 +2277,135 @@ def test_nontrivial_pull_request_rejects_missing_validation_evidence_commands(
     assert "Non-trivial pull requests must include validation evidence commands." in failures
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "make ci",
+        "make security",
+        "make dependency-audit",
+        "make container-scan",
+        "make secrets-scan",
+        "make eval",
+    ],
+)
+def test_nontrivial_pull_request_rejects_missing_runtime_validation_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command: str,
+) -> None:
+    body = completed_preflight_body().replace(f"{command} -> passed\n", "")
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_guarded_pull_request_allows_phase1_stacked_base(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    base_sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden stacked phase closure branch",
+        body=completed_preflight_body().replace(
+            "make quality -> passed",
+            f"GITHUB_BASE_SHA={base_sha} make quality -> passed",
+        ),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        base_ref="phase-1-closure-39-execution-strategy",
+        base_sha=base_sha,
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert all("explicitly reviewed stacked base" not in failure for failure in failures)
+
+
+def test_guarded_pull_request_rejects_stacked_base_with_stray_sha_note(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    base_sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden stacked phase closure branch",
+        body=completed_preflight_body() + f"\nGITHUB_BASE_SHA={base_sha}\n",
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        base_ref="phase-1-closure-39-execution-strategy",
+        base_sha=base_sha,
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert (
+        "Pull requests for guarded work must target main or an explicitly reviewed stacked base with exact "
+        "GITHUB_BASE_SHA evidence in the PR body."
+    ) in failures
+
+
+@pytest.mark.parametrize(
+    ("base_sha", "body_sha"),
+    [
+        ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", None),
+        ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+        ("not-a-sha", "not-a-sha"),
+    ],
+)
+def test_guarded_pull_request_rejects_stacked_base_without_exact_sha_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    base_sha: str,
+    body_sha: str | None,
+) -> None:
+    body = completed_preflight_body()
+    if body_sha:
+        body += f"\nGITHUB_BASE_SHA={body_sha} make quality -> passed\n"
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden stacked phase closure branch",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        base_ref="phase-1-closure-39-execution-strategy",
+        base_sha=base_sha,
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert (
+        "Pull requests for guarded work must target main or an explicitly reviewed stacked base with exact "
+        "GITHUB_BASE_SHA evidence in the PR body."
+    ) in failures
+
+
+@pytest.mark.parametrize("base_ref", ["feature/unreviewed-base", "phase-1-closure-unreviewed-base", "phase-1-closure-"])
+def test_guarded_pull_request_rejects_unreviewed_stacked_base(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    base_ref: str,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden stacked phase closure branch",
+        body=completed_preflight_body(),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        base_ref=base_ref,
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert (
+        "Pull requests for guarded work must target main or an explicitly reviewed stacked base with exact "
+        "GITHUB_BASE_SHA evidence in the PR body."
+    ) in failures
+
+
 def test_nontrivial_pull_request_rejects_unrun_validation_evidence_commands(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -2711,6 +2848,114 @@ def test_new_governance_artifacts_pass_when_status_is_updated() -> None:
     )
 
     assert guardrails.failures == []
+
+
+def test_workflows_least_privilege_rejects_commented_permissions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workflow_dir = tmp_path / ".github" / "workflows"
+    workflow_dir.mkdir(parents=True)
+    (workflow_dir / "quality.yml").write_text(
+        "name: quality\n"
+        "# permissions:\n"
+        "on:\n"
+        "  pull_request:\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+
+    guardrails.failures.clear()
+    guardrails.check_workflows_least_privilege()
+
+    assert ".github/workflows/quality.yml is missing explicit least-privilege permissions." in guardrails.failures
+
+
+def test_workflows_least_privilege_ignores_commented_write_permissions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workflow_dir = tmp_path / ".github" / "workflows"
+    workflow_dir.mkdir(parents=True)
+    (workflow_dir / "quality.yml").write_text(
+        "name: quality\n"
+        "permissions:\n"
+        "  contents: read\n"
+        "# permissions: write-all\n"
+        "# contents: write\n"
+        "on:\n"
+        "  pull_request:\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+
+    guardrails.failures.clear()
+    guardrails.check_workflows_least_privilege()
+
+    assert guardrails.failures == []
+
+
+def test_workflows_least_privilege_rejects_permission_decoys_outside_permissions_block(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workflow_dir = tmp_path / ".github" / "workflows"
+    workflow_dir.mkdir(parents=True)
+    (workflow_dir / "quality.yml").write_text(
+        "name: quality\n"
+        "on:\n"
+        "  pull_request:\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    env:\n"
+        "      permissions: read\n"
+        "    steps:\n"
+        "      - run: echo permissions:\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+
+    guardrails.failures.clear()
+    guardrails.check_workflows_least_privilege()
+
+    assert ".github/workflows/quality.yml is missing explicit least-privilege permissions." in guardrails.failures
+
+
+@pytest.mark.parametrize("write_scope", ["contents", "issues", "pull-requests"])
+def test_workflows_least_privilege_rejects_write_scopes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    write_scope: str,
+) -> None:
+    workflow_dir = tmp_path / ".github" / "workflows"
+    workflow_dir.mkdir(parents=True)
+    (workflow_dir / "quality.yml").write_text(
+        "name: quality\n"
+        "permissions:\n"
+        f"  {write_scope}: write\n"
+        "on:\n"
+        "  pull_request:\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+
+    guardrails.failures.clear()
+    guardrails.check_workflows_least_privilege()
+
+    assert (
+        f".github/workflows/quality.yml grants {write_scope}: write. Use read or none unless a write "
+        "permission is explicitly required."
+    ) in guardrails.failures
 
 
 def test_pr_branch_push_changed_files_uses_merge_base_not_previous_commit(

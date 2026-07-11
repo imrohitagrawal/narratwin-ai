@@ -43,6 +43,19 @@ def run_changed_files_check(monkeypatch: Any, *, branch: str, files: list[str]) 
     return failures
 
 
+def run_branch_check(
+    monkeypatch: Any,
+    *,
+    branch: str,
+    ancestor_ok: bool = True,
+) -> list[str]:
+    monkeypatch.setattr(phase1, "current_branch", lambda: branch)
+    monkeypatch.setattr(phase1, "git_ok", lambda args: ancestor_ok)
+    failures: list[str] = []
+    phase1.check_branch(failures)
+    return failures
+
+
 def run_process_docs_check(
     monkeypatch: Any, *, branch: str, changed: list[str], read_overrides: dict[str, str] | None = None
 ) -> list[str]:
@@ -166,6 +179,107 @@ def test_issue72_process_branch_rejects_unrelated_review_docs(monkeypatch: Any) 
         "Phase 1 Closure branch phase-1-closure-process-72-closure-evidence-hardening may not change "
         "docs/reviews/unrelated.md."
     ]
+
+
+def test_issue39_chunk_branch_requires_dependency_commit_ancestry(monkeypatch: Any) -> None:
+    failures = run_branch_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-04-idempotency-semantics",
+        ancestor_ok=False,
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-04-idempotency-semantics must contain dependency "
+        "commits: b23846991f4da232c2a59f81f39ba9a93232724e."
+    ]
+
+
+def test_issue39_chunk_branch_accepts_required_dependency_commit_ancestry(monkeypatch: Any) -> None:
+    assert (
+        run_branch_check(
+            monkeypatch,
+            branch="phase-1-closure-39-ch-05-lease-fencing",
+            ancestor_ok=True,
+        )
+        == []
+    )
+
+
+def test_stacked_child_push_resolve_base_uses_stacked_base_ref(monkeypatch: Any) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_git(args: list[str]) -> str:
+        calls.append(args)
+        if args == ["rev-parse", "--verify", "origin/phase-1-closure-39-execution-strategy^{commit}"]:
+            return "stacked-base"
+        return ""
+
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "phase-1-closure-39-ch-05-lease-fencing")
+    monkeypatch.setenv("GITHUB_HEAD_REF", "phase-1-closure-39-ch-05-lease-fencing")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-child-head")
+    monkeypatch.setattr(phase1, "run_git", fake_run_git)
+
+    assert phase1.resolve_base() == "origin/phase-1-closure-39-execution-strategy"
+    assert ["rev-parse", "--verify", "previous-child-head^{commit}"] not in calls
+
+
+def test_non_stacked_non_main_push_resolve_base_ignores_previous_branch_head(monkeypatch: Any) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_git(args: list[str]) -> str:
+        calls.append(args)
+        if args == ["merge-base", "origin/main", "HEAD"]:
+            return "main-merge-base"
+        return ""
+
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "feature-branch")
+    monkeypatch.setenv("GITHUB_HEAD_REF", "feature-branch")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-feature-head")
+    monkeypatch.setattr(phase1, "run_git", fake_run_git)
+
+    assert phase1.resolve_base() == "main-merge-base"
+    assert ["rev-parse", "--verify", "previous-feature-head^{commit}"] not in calls
+
+
+def test_main_push_resolve_base_keeps_previous_commit(monkeypatch: Any) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_git(args: list[str]) -> str:
+        calls.append(args)
+        if args == ["rev-parse", "--verify", "previous-main^{commit}"]:
+            return "previous-main"
+        return ""
+
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_BASE_SHA", "previous-main")
+    monkeypatch.setattr(phase1, "run_git", fake_run_git)
+
+    assert phase1.resolve_base() == "previous-main"
+    assert calls == [["rev-parse", "--verify", "previous-main^{commit}"]]
+
+
+def test_quality_gates_workflow_passes_event_name_to_stage_quality(monkeypatch: Any) -> None:
+    workflow_text = phase1.read(".github/workflows/quality-gates.yml")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[".github/workflows/quality-gates.yml"],
+        read_overrides={
+            ".github/workflows/quality-gates.yml": workflow_text.replace(
+                "          VECTOR_STORE: disabled\n"
+                "          GITHUB_EVENT_NAME: ${{ github.event_name }}\n"
+                "          GITHUB_HEAD_REF: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}",
+                "          VECTOR_STORE: disabled\n"
+                "          GITHUB_HEAD_REF: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}",
+                1,
+            ),
+        },
+    )
+
+    assert ".github/workflows/quality-gates.yml must pass GITHUB_BASE_SHA to make quality" in failures
 
 
 def test_issue39_closure_plan_accepts_current_matrix() -> None:
@@ -891,12 +1005,18 @@ def test_issue39_execution_strategy_branch_allows_strategy_doc(monkeypatch: Any)
         monkeypatch,
         branch="phase-1-closure-39-execution-strategy",
         files=[
+            ".github/workflows/ci.yml",
+            ".github/workflows/eval-smoke.yml",
+            ".github/workflows/security.yml",
             "docs/QUALITY_GATES.md",
             "docs/STAGE_ISSUE_PLAN.md",
             "docs/STATUS.md",
+            "docs/reviews/ISSUE_39_CH04_CH05_CH06_CONTRACT_DECISIONS.md",
             "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
             "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/guardrails_check.py",
             "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_guardrails_check.py",
             "tests/unit/test_phase1_closure_docs.py",
         ],
     )
@@ -975,6 +1095,117 @@ def test_issue39_ch02_branch_rejects_adjacent_chunk_or_issue39_doc_files(monkeyp
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-ch-02-acid-cas-kernel may not change backend/app/storage/migrations.py.",
         "Phase 1 Closure branch phase-1-closure-39-ch-02-acid-cas-kernel may not change docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md.",
+    ]
+
+
+def test_issue39_ch04_branch_allows_idempotency_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-04-idempotency-semantics",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/postgres_state.py",
+            "docs/ADR/0015-ch04-idempotency-semantics.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_postgres_state.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch04_branch_rejects_runtime_or_adjacent_chunk_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-04-idempotency-semantics",
+        files=[
+            "backend/app/stage4.py",
+            "docs/ADR/0016-ch05-lease-fencing.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-04-idempotency-semantics may not change backend/app/stage4.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-04-idempotency-semantics may not change docs/ADR/0016-ch05-lease-fencing.md.",
+    ]
+
+
+def test_issue39_ch05_branch_allows_lease_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-05-lease-fencing",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/postgres_state.py",
+            "docs/ADR/0016-ch05-lease-fencing.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_postgres_state.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch05_branch_rejects_runtime_or_adjacent_chunk_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-05-lease-fencing",
+        files=[
+            "backend/app/stage6.py",
+            "docs/ADR/0017-ch06-committed-outbox.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-05-lease-fencing may not change backend/app/stage6.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-05-lease-fencing may not change docs/ADR/0017-ch06-committed-outbox.md.",
+    ]
+
+
+def test_issue39_ch06_branch_allows_outbox_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-06-committed-outbox",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/postgres_state.py",
+            "docs/ADR/0017-ch06-committed-outbox.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_postgres_state.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch06_branch_rejects_runtime_or_adjacent_chunk_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-06-committed-outbox",
+        files=[
+            "backend/app/stage7.py",
+            "docs/ADR/0015-ch04-idempotency-semantics.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-06-committed-outbox may not change backend/app/stage7.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-06-committed-outbox may not change docs/ADR/0015-ch04-idempotency-semantics.md.",
     ]
 
 
@@ -1345,6 +1576,16 @@ on:
     assert not phase1.workflow_has_pull_request_edited(workflow_text)
 
 
+def test_workflow_pull_request_edited_inline_comment_decoy_is_rejected(monkeypatch: Any) -> None:
+    workflow_text = """
+on:
+  pull_request:
+    types: [opened, synchronize] # , edited]
+"""
+
+    assert not phase1.workflow_has_pull_request_edited(workflow_text)
+
+
 def test_workflow_pull_request_edited_decoy_under_jobs_is_rejected(monkeypatch: Any) -> None:
     workflow_text = """
 on:
@@ -1421,6 +1662,54 @@ def test_process_docs_rejects_guardrail_workflow_without_token_permissions(
     )
 
 
+@pytest.mark.parametrize("workflow_path", [".github/workflows/quality.yml", ".github/workflows/security.yml"])
+def test_process_docs_rejects_commented_guardrail_token_permissions(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("  issues: read\n", "  # issues: read\n").replace(
+                "  pull-requests: read\n",
+                "  # pull-requests: read\n",
+            ),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
+@pytest.mark.parametrize("workflow_path", [".github/workflows/quality.yml", ".github/workflows/security.yml"])
+def test_process_docs_rejects_permission_decoys_outside_permissions_block(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("  issues: read\n", "").replace(
+                "  pull-requests: read\n",
+                "  env:\n    issues: read\n    pull-requests: read\n",
+            ),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
 @pytest.mark.parametrize(
     "workflow_path",
     [
@@ -1446,6 +1735,299 @@ def test_process_docs_rejects_guardrail_step_without_token_even_when_other_steps
         f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
         in failures
     )
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/quality-gates.yml",
+        ".github/workflows/security.yml",
+    ],
+)
+def test_process_docs_rejects_commented_guardrail_step_token(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("          GITHUB_TOKEN:", "          # GITHUB_TOKEN:"),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/quality-gates.yml",
+        ".github/workflows/security.yml",
+    ],
+)
+def test_process_docs_rejects_empty_guardrail_step_token_with_decoy_token_text(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-context0-production-durability",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace(
+                "          GITHUB_TOKEN: ${{ github.token }}",
+                "          GITHUB_TOKEN: \"\"\n          DECOY_TOKEN_TEXT: github.token",
+            ),
+        },
+    )
+
+    assert (
+        f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails"
+        in failures
+    )
+
+
+def test_quality_gates_workflow_must_pass_base_sha_to_make_quality(monkeypatch: Any) -> None:
+    workflow_path = ".github/workflows/quality-gates.yml"
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace(
+                "          GITHUB_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}\n",
+                "",
+            ),
+        },
+    )
+
+    assert f"{workflow_path} must pass GITHUB_BASE_SHA to make quality" in failures
+
+
+def test_quality_gates_workflow_must_run_for_phase1_stacked_pull_request_bases(monkeypatch: Any) -> None:
+    workflow_path = ".github/workflows/quality-gates.yml"
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("      - phase-1-closure-**\n", ""),
+        },
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+def test_quality_gates_workflow_rejects_phase1_base_pattern_outside_pull_request_branches(monkeypatch: Any) -> None:
+    workflow_path = ".github/workflows/quality-gates.yml"
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace(
+        "      - phase-1-closure-**\n",
+        "  # decoy only: phase-1-closure-**\n",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+def test_quality_gates_workflow_rejects_inline_comment_phase1_base_decoy(monkeypatch: Any) -> None:
+    workflow_path = ".github/workflows/quality-gates.yml"
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace(
+        "      - main\n      - phase-1-closure-**\n",
+        "      - main # phase-1-closure-**\n",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+def test_quality_gates_workflow_rejects_nested_phase1_base_decoy(monkeypatch: Any) -> None:
+    workflow_path = ".github/workflows/quality-gates.yml"
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace(
+        "    branches:\n      - main\n      - phase-1-closure-**\n",
+        "    types:\n      branches: [phase-1-closure-**]\n",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+def test_quality_gates_workflow_rejects_pull_request_nested_under_push_decoy(monkeypatch: Any) -> None:
+    workflow_path = ".github/workflows/quality-gates.yml"
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace("      - phase-1-closure-**\n", "").replace(
+        "  push:\n",
+        "  push:\n    pull_request:\n      branches: [phase-1-closure-**]\n",
+        1,
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml",
+        ".github/workflows/eval-smoke.yml",
+    ],
+)
+def test_runtime_workflows_must_run_for_phase1_stacked_pull_request_bases(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={
+            workflow_path: workflow_text.replace("      - phase-1-closure-**\n", ""),
+        },
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml",
+        ".github/workflows/eval-smoke.yml",
+    ],
+)
+def test_runtime_workflows_reject_phase1_base_pattern_outside_pull_request_branches(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace(
+        "      - phase-1-closure-**\n",
+        "  # decoy only: phase-1-closure-**\n",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml",
+        ".github/workflows/eval-smoke.yml",
+    ],
+)
+def test_runtime_workflows_reject_inline_comment_phase1_base_decoy(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace(
+        "      - main\n      - phase-1-closure-**\n",
+        "      - main # phase-1-closure-**\n",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml",
+        ".github/workflows/eval-smoke.yml",
+    ],
+)
+def test_runtime_workflows_reject_nested_phase1_base_decoy(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace(
+        "    branches:\n      - main\n      - phase-1-closure-**\n",
+        "    types:\n      branches: [phase-1-closure-**]\n",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
+
+
+@pytest.mark.parametrize(
+    "workflow_path",
+    [
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml",
+        ".github/workflows/eval-smoke.yml",
+    ],
+)
+def test_runtime_workflows_reject_pull_request_nested_under_push_decoy(
+    monkeypatch: Any,
+    workflow_path: str,
+) -> None:
+    workflow_text = phase1.read(workflow_path)
+    decoy_workflow = workflow_text.replace("      - phase-1-closure-**\n", "").replace(
+        "  push:\n",
+        "  push:\n    pull_request:\n      branches: [phase-1-closure-**]\n",
+        1,
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-39-execution-strategy",
+        changed=[workflow_path],
+        read_overrides={workflow_path: decoy_workflow},
+    )
+
+    assert f"{workflow_path} must run for phase-1-closure stacked pull request bases" in failures
 
 
 def remove_guardrail_step_token(workflow_text: str) -> str:

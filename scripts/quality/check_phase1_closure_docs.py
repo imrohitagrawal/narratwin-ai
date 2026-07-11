@@ -65,12 +65,21 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
+    ".github/pull_request_template.md",
+    ".github/workflows/ci.yml",
+    ".github/workflows/eval-smoke.yml",
+    ".github/workflows/quality-gates.yml",
+    ".github/workflows/security.yml",
     "docs/QUALITY_GATES.md",
+    "docs/ADR/0009-context2-idempotency-lease-outbox-contract.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
+    "docs/reviews/ISSUE_39_CH04_CH05_CH06_CONTRACT_DECISIONS.md",
     "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
     "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "scripts/guardrails_check.py",
     "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_72_ALLOWED_CHANGED_FILES = PROCESS_ONLY_ALLOWED_CHANGED_FILES | {
@@ -195,6 +204,42 @@ ISSUE_39_CH02_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_postgres_state.py",
 }
+ISSUE_39_CH04_ALLOWED_CHANGED_FILES = {
+    "backend/app/storage/__init__.py",
+    "backend/app/storage/postgres_state.py",
+    "docs/ADR/0015-ch04-idempotency-semantics.md",
+    "docs/LOCAL_DEVELOPMENT.md",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_postgres_state.py",
+}
+ISSUE_39_CH05_ALLOWED_CHANGED_FILES = {
+    "backend/app/storage/__init__.py",
+    "backend/app/storage/postgres_state.py",
+    "docs/ADR/0016-ch05-lease-fencing.md",
+    "docs/LOCAL_DEVELOPMENT.md",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_postgres_state.py",
+}
+ISSUE_39_CH06_ALLOWED_CHANGED_FILES = {
+    "backend/app/storage/__init__.py",
+    "backend/app/storage/postgres_state.py",
+    "docs/ADR/0017-ch06-committed-outbox.md",
+    "docs/LOCAL_DEVELOPMENT.md",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_postgres_state.py",
+}
 ISSUE_39_CONTEXT4_ALLOWED_CHANGED_FILES = {
     "docs/ADR/0011-context4-backup-restore-drill.md",
     "docs/STATUS.md",
@@ -303,6 +348,12 @@ REQUIRED_PHASE1_VALIDATION_COMMANDS = (
     "make quality",
     "uv run ruff check scripts tests",
     "uv run mypy scripts tests",
+    "make ci",
+    "make security",
+    "make dependency-audit",
+    "make container-scan",
+    "make secrets-scan",
+    "make eval",
     "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1",
 )
 
@@ -486,6 +537,23 @@ ISSUE_39_OPERATIONAL_CLOSURE_EVIDENCE_TERMS = {
 ISSUE_39_PRODUCTION_GRADE_ROW_PREFIXES = ("DUR-", "OPS-", "MEDIA-", "SEC-", "PROVIDER-")
 ISSUE_39_DRILL_LOG_PREFIXES = ("docs/reviews/drills/", "reports/", "artifacts/", "logs/")
 ISSUE_39_DRILL_LOG_SUFFIXES = {".json", ".jsonl", ".log", ".md", ".txt"}
+ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
+    "phase-1-closure-39-ch-02-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
+    "phase-1-closure-39-ch-04-": ("b23846991f4da232c2a59f81f39ba9a93232724e",),
+    "phase-1-closure-39-ch-05-": ("b23846991f4da232c2a59f81f39ba9a93232724e",),
+    "phase-1-closure-39-ch-06-": ("b23846991f4da232c2a59f81f39ba9a93232724e",),
+}
+PHASE1_STACKED_BASE_WORKFLOWS = (
+    ".github/workflows/ci.yml",
+    ".github/workflows/security.yml",
+    ".github/workflows/eval-smoke.yml",
+)
+ISSUE_39_STACKED_PUSH_BASE_BRANCH = "origin/phase-1-closure-39-execution-strategy"
+ISSUE_39_STACKED_PUSH_BRANCH_PREFIXES = (
+    "phase-1-closure-39-ch-04-",
+    "phase-1-closure-39-ch-05-",
+    "phase-1-closure-39-ch-06-",
+)
 
 
 def run_git(args: list[str]) -> str:
@@ -493,12 +561,29 @@ def run_git(args: list[str]) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
+def git_ok(args: list[str]) -> bool:
+    result = subprocess.run(["git", *args], cwd=ROOT, check=False, text=True, capture_output=True)
+    return result.returncode == 0
+
+
 def current_branch() -> str:
     return os.environ.get("GITHUB_HEAD_REF", "").strip() or run_git(["branch", "--show-current"])
 
 
+def preferred_diff_base_for_current_event() -> str:
+    base = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    if os.environ.get("GITHUB_EVENT_NAME", "").strip() != "push":
+        return base
+    ref_name = os.environ.get("GITHUB_REF_NAME", "").strip() or os.environ.get("GITHUB_HEAD_REF", "").strip()
+    if ref_name and ref_name != "main":
+        if ref_name.startswith(ISSUE_39_STACKED_PUSH_BRANCH_PREFIXES):
+            return ISSUE_39_STACKED_PUSH_BASE_BRANCH
+        return ""
+    return base
+
+
 def resolve_base() -> str:
-    preferred = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    preferred = preferred_diff_base_for_current_event()
     if preferred and not re.fullmatch(r"0+", preferred):
         verified = run_git(["rev-parse", "--verify", f"{preferred}^{{commit}}"])
         if verified:
@@ -700,7 +785,7 @@ def workflow_has_pull_request_edited(yaml_text: str) -> bool:
             i += 1
             pull_child_indent: int | None = None
             while i < len(lines):
-                current = lines[i]
+                current = yaml_line_without_inline_comment(lines[i])
                 if not current.strip() or current.lstrip().startswith("#"):
                     i += 1
                     continue
@@ -719,13 +804,13 @@ def workflow_has_pull_request_edited(yaml_text: str) -> bool:
                 types_indent = len(types_match.group("indent"))
                 value = types_match.group("value").strip()
                 if value:
-                    if yaml_inline_list_contains_token(value, "edited"):
+                    if yaml_inline_list_contains_token(yaml_line_without_inline_comment(value), "edited"):
                         return True
                     i += 1
                     continue
                 i += 1
                 while i < len(lines):
-                    item = lines[i]
+                    item = yaml_line_without_inline_comment(lines[i])
                     if not item.strip() or item.lstrip().startswith("#"):
                         i += 1
                         continue
@@ -757,16 +842,129 @@ def workflow_has_guardrail_github_token_wiring(yaml_text: str) -> bool:
     if not guardrail_steps:
         return False
     return (
-        "issues: read" in yaml_text
-        and "pull-requests: read" in yaml_text
-        and all(
-            "GITHUB_TOKEN:" in step and ("github.token" in step or "secrets.GITHUB_TOKEN" in step)
-            for step in guardrail_steps
-        )
+        workflow_has_permission(yaml_text, "issues", "read")
+        and workflow_has_permission(yaml_text, "pull-requests", "read")
+        and all(workflow_step_has_guardrail_github_token_env(step) for step in guardrail_steps)
     )
 
 
+def workflow_step_has_guardrail_github_token_env(step: str) -> bool:
+    token_env = re.compile(
+        r"^\s*GITHUB_TOKEN:\s*['\"]?\$\{\{\s*(?:github\.token|secrets\.GITHUB_TOKEN)\s*\}\}['\"]?\s*$"
+    )
+    return any(token_env.fullmatch(yaml_line_without_inline_comment(line)) for line in step.splitlines())
+
+
+def workflow_has_permission(yaml_text: str, permission: str, value: str) -> bool:
+    expected = f"{permission}: {value}"
+    lines = yaml_text.splitlines()
+    for index, raw_line in enumerate(lines):
+        line = yaml_line_without_inline_comment(raw_line)
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if line.strip() != "permissions:":
+            continue
+        child_indent: int | None = None
+        for child_raw in lines[index + 1 :]:
+            child = yaml_line_without_inline_comment(child_raw)
+            if not child.strip():
+                continue
+            child_current_indent = len(child) - len(child.lstrip(" "))
+            if child_current_indent <= indent:
+                break
+            if child_indent is None:
+                child_indent = child_current_indent
+            if child_current_indent == child_indent and child.strip() == expected:
+                return True
+    return False
+
+
+def workflow_has_stage_quality_base_sha(yaml_text: str) -> bool:
+    return any(
+        "run: make quality" in step and "GITHUB_BASE_SHA:" in step and "GITHUB_EVENT_NAME:" in step
+        for step in workflow_step_blocks(yaml_text)
+    )
+
+
+def workflow_allows_phase1_pull_request_bases(yaml_text: str) -> bool:
+    in_on_block = False
+    on_child_indent: int | None = None
+    pull_request_indent: int | None = None
+    branches_indent: int | None = None
+    for raw_line in yaml_text.splitlines():
+        without_comment = yaml_line_without_inline_comment(raw_line)
+        if not without_comment.strip():
+            continue
+        indent = len(without_comment) - len(without_comment.lstrip(" "))
+        stripped = without_comment.strip()
+        if indent == 0:
+            in_on_block = stripped == "on:"
+            on_child_indent = None
+            pull_request_indent = None
+            branches_indent = None
+            continue
+        if not in_on_block:
+            continue
+        if on_child_indent is None:
+            on_child_indent = indent
+        if pull_request_indent is None:
+            if indent == on_child_indent and stripped == "pull_request:":
+                pull_request_indent = indent
+            continue
+        if indent <= pull_request_indent:
+            pull_request_indent = indent if stripped == "pull_request:" else None
+            branches_indent = None
+            continue
+        if branches_indent is None:
+            if indent == pull_request_indent + 2 and stripped.startswith("branches:"):
+                branches_indent = indent
+                inline_branches = stripped.removeprefix("branches:").strip()
+                if workflow_branch_tokens_include_phase1(inline_branches):
+                    return True
+            continue
+        if indent <= branches_indent:
+            branches_indent = None
+            if indent == pull_request_indent + 2 and stripped.startswith("branches:"):
+                branches_indent = indent
+                inline_branches = stripped.removeprefix("branches:").strip()
+                if workflow_branch_tokens_include_phase1(inline_branches):
+                    return True
+            continue
+        if stripped.startswith("- ") and workflow_branch_tokens_include_phase1(stripped.removeprefix("- ").strip()):
+            return True
+    return False
+
+
+def yaml_line_without_inline_comment(line: str) -> str:
+    quote: str | None = None
+    for index, char in enumerate(line):
+        if char in {"'", '"'}:
+            quote = None if quote == char else char if quote is None else quote
+        if char == "#" and quote is None:
+            return line[:index].rstrip()
+    return line.rstrip()
+
+
+def workflow_branch_tokens_include_phase1(branches: str) -> bool:
+    if not branches:
+        return False
+    normalized = branches.strip()
+    if normalized.startswith("[") and normalized.endswith("]"):
+        normalized = normalized[1:-1]
+    tokens = [token.strip().strip("'\"") for token in normalized.split(",")]
+    return "phase-1-closure-**" in tokens
+
+
 def workflow_guardrail_step_blocks(yaml_text: str) -> list[str]:
+    return [
+        step
+        for step in workflow_step_blocks(yaml_text)
+        if "scripts/guardrails_check.py" in step
+    ]
+
+
+def workflow_step_blocks(yaml_text: str) -> list[str]:
     lines = yaml_text.splitlines()
     blocks: list[str] = []
     index = 0
@@ -777,7 +975,7 @@ def workflow_guardrail_step_blocks(yaml_text: str) -> list[str]:
             index += 1
             continue
         step_indent = len(step_match.group("indent"))
-        block_lines = [line]
+        block_lines = [yaml_line_without_inline_comment(line)]
         index += 1
         while index < len(lines):
             current = lines[index]
@@ -785,11 +983,10 @@ def workflow_guardrail_step_blocks(yaml_text: str) -> list[str]:
                 current_indent = len(current) - len(current.lstrip(" "))
                 if current_indent <= step_indent:
                     break
-            block_lines.append(current)
+            block_lines.append(yaml_line_without_inline_comment(current))
             index += 1
-        block = "\n".join(block_lines)
-        if "scripts/guardrails_check.py" in block:
-            blocks.append(block)
+        block = "\n".join(line for line in block_lines if line.strip())
+        blocks.append(block)
     return blocks
 
 
@@ -1501,6 +1698,20 @@ def check_branch(failures: list[str]) -> None:
         fail(failures, "Phase 1 Closure gate could not resolve the current branch; failing closed.")
     elif branch != "main" and not PHASE1_BRANCH.match(branch):
         fail(failures, f"Phase 1 Closure work must run on phase-1-closure-* or main; got {branch}.")
+    else:
+        for prefix, required_commits in ISSUE_39_BRANCH_REQUIRED_ANCESTORS.items():
+            if not branch.startswith(prefix):
+                continue
+            missing = [
+                commit
+                for commit in required_commits
+                if not git_ok(["merge-base", "--is-ancestor", commit, "HEAD"])
+            ]
+            if missing:
+                fail(
+                    failures,
+                    f"Phase 1 Closure branch {branch} must contain dependency commits: {', '.join(missing)}.",
+                )
 
 
 def check_required_files(failures: list[str]) -> None:
@@ -1531,6 +1742,12 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_39_CH01_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-02-"):
         allowed_files = ISSUE_39_CH02_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-ch-04-"):
+        allowed_files = ISSUE_39_CH04_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-ch-05-"):
+        allowed_files = ISSUE_39_CH05_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-ch-06-"):
+        allowed_files = ISSUE_39_CH06_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-context4-"):
         allowed_files = ISSUE_39_CONTEXT4_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-context5-"):
@@ -1910,6 +2127,15 @@ def check_process_docs(failures: list[str]) -> None:
                 failures,
                 f"{workflow_path} must provide issues: read, pull-requests: read, and GITHUB_TOKEN to guardrails",
             )
+        if workflow_path == ".github/workflows/quality-gates.yml" and not workflow_has_stage_quality_base_sha(workflow_text):
+            fail(failures, f"{workflow_path} must pass GITHUB_BASE_SHA to make quality")
+        if workflow_path == ".github/workflows/quality-gates.yml" and not workflow_allows_phase1_pull_request_bases(workflow_text):
+            fail(failures, f"{workflow_path} must run for phase-1-closure stacked pull request bases")
+
+    for workflow_path in PHASE1_STACKED_BASE_WORKFLOWS:
+        workflow_text = read(workflow_path)
+        if not workflow_allows_phase1_pull_request_bases(workflow_text):
+            fail(failures, f"{workflow_path} must run for phase-1-closure stacked pull request bases")
 
     rca = read("docs/ENGINEERING_PROCESS_RCA.md")
     check_required_headings(

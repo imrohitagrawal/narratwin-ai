@@ -2,7 +2,9 @@ name: ci
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - phase-1-closure-**
   push:
     branches-ignore: [main]
   workflow_dispatch:

@@ -217,6 +217,11 @@ CANONICAL_STAGE_ISSUE_CLOSURE = (
     ("stage8-", "Stage 8", "13"),
 )
 FORCE_PULL_REQUEST_GUARDRAILS_ENV = "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS"
+ALLOWED_STACKED_PULL_REQUEST_BASES = frozenset(
+    {
+        "phase-1-closure-39-execution-strategy",
+    }
+)
 REQUIRED_PREIMPLEMENTATION_ROWS = {
     "invariant/failure matrix",
     "source facts",
@@ -464,6 +469,12 @@ REQUIRED_PR_VALIDATION_COMMANDS = (
     "make quality",
     "uv run ruff check scripts tests",
     "uv run mypy scripts tests",
+    "make ci",
+    "make security",
+    "make dependency-audit",
+    "make container-scan",
+    "make secrets-scan",
+    "make eval",
     "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=",
 )
 VALIDATION_PASS_RESULT = re.compile(r"(?:->|:)\s*(?:(?:[1-9]\d*)\s+)?(?:passed|success|succeeded|green)\b")
@@ -1108,16 +1119,26 @@ def validation_command_has_result(lines: list[str], command: str) -> bool:
             return False
         if any(term in line for term in VALIDATION_FAILURE_TERMS):
             continue
-        if VALIDATION_PASS_RESULT.search(line):
+        if validation_line_has_pass_result(line):
             has_valid_result = True
         if "github.com/" in line and "/actions/runs/" in line:
             has_valid_result = True
     return has_valid_result
 
 
+def validation_line_has_pass_result(line: str) -> bool:
+    if VALIDATION_ZERO_PASS_RESULT.search(line):
+        return False
+    if any(term in line for term in VALIDATION_FAILURE_TERMS):
+        return False
+    return VALIDATION_PASS_RESULT.search(line) is not None
+
+
 def validation_line_matches_command(line: str, command_text: str) -> bool:
     if command_text.endswith("github_event_path="):
         return FORCED_PR_VALIDATION_COMMAND.match(line) is not None
+    if command_text == "make quality" and re.match(r"^github_base_sha=[0-9a-f]{40}\s+make quality(?:\s|:|$)", line):
+        return True
     if not line.startswith(command_text):
         return False
     suffix = line[len(command_text) :]
@@ -1594,6 +1615,23 @@ def check_no_direct_main_push() -> None:
             )
 
 
+def stacked_base_sha_is_reviewed(base_ref: str | None, base_sha: str, body: str) -> bool:
+    if base_ref not in ALLOWED_STACKED_PULL_REQUEST_BASES:
+        return False
+    if not re.fullmatch(r"[0-9a-f]{40}", base_sha):
+        return False
+    expected_command = f"github_base_sha={base_sha} make quality"
+    validation_lines = [line.strip().lower() for line in markdown_section(body, "Validation evidence").splitlines()]
+    return any(
+        validation_line_matches_command(line, expected_command) and validation_line_has_pass_result(line)
+        for line in validation_lines
+    )
+
+
+def pull_request_base_is_allowed(base_ref: str | None, base_sha: str, body: str) -> bool:
+    return base_ref == "main" or stacked_base_sha_is_reviewed(base_ref, base_sha, body)
+
+
 def check_issue_linked_pull_request() -> None:
     for issue39_failure in issue_39_closure_matrix_validation_failures():
         failures.append(issue39_failure)
@@ -1613,10 +1651,14 @@ def check_issue_linked_pull_request() -> None:
     body = pr.get("body") or ""
     head_ref = (pr.get("head") or {}).get("ref")
     base_ref = (pr.get("base") or {}).get("ref")
+    base_sha = ((pr.get("base") or {}).get("sha") or "").strip()
     if head_ref == "main":
         failures.append("Pull request head branch must not be main.")
-    if base_ref != "main":
-        failures.append("Pull requests for guarded work must target main.")
+    if not pull_request_base_is_allowed(base_ref, base_sha, body):
+        failures.append(
+            "Pull requests for guarded work must target main or an explicitly reviewed stacked base with exact "
+            "GITHUB_BASE_SHA evidence in the PR body."
+        )
     stage_name, canonical_issue_number = canonical_stage_issue(head_ref) or ("", None)
     is_canonical_stage_branch = canonical_issue_number is not None
     visible_issue_text = f"{title}\n{body}\n{pull_request_commit_messages()}"
@@ -1669,12 +1711,64 @@ def check_workflows_least_privilege() -> None:
     for workflow in list(workflow_dir.glob("*.yml")) + list(workflow_dir.glob("*.yaml")):
         text = read_text(workflow)
         rel = relative(workflow)
-        if "permissions:" not in text:
+        permission_entries = workflow_permission_entries(text)
+        if not permission_entries:
             failures.append(f"{rel} is missing explicit least-privilege permissions.")
-        if re.search(r"permissions:\s*write-all", text):
-            failures.append(f"{rel} uses write-all permissions. Use least privilege instead.")
-        if re.search(r"contents:\s*write", text) and "pull_request" in text:
-            failures.append(f"{rel} grants contents: write for PR validation. Use contents: read unless a write is required.")
+        for scope, value in permission_entries:
+            if scope == "permissions" and value == "write-all":
+                failures.append(f"{rel} uses write-all permissions. Use least privilege instead.")
+                continue
+            if value in {"write", "write-all"}:
+                failures.append(
+                    f"{rel} grants {scope}: {value}. Use read or none unless a write permission is explicitly required."
+                )
+
+
+def workflow_permission_entries(yaml_text: str) -> list[tuple[str, str]]:
+    entries: list[tuple[str, str]] = []
+    lines = yaml_text.splitlines()
+    for index, raw_line in enumerate(lines):
+        line = yaml_line_without_inline_comment(raw_line)
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if indent != 0:
+            continue
+        stripped = line.strip()
+        inline_match = re.fullmatch(r"permissions:\s*(?P<value>[A-Za-z0-9_-]+)", stripped)
+        if inline_match:
+            entries.append(("permissions", inline_match.group("value").lower()))
+            continue
+        if stripped != "permissions:":
+            continue
+        child_indent: int | None = None
+        for child_raw in lines[index + 1 :]:
+            child = yaml_line_without_inline_comment(child_raw)
+            if not child.strip():
+                continue
+            child_current_indent = len(child) - len(child.lstrip(" "))
+            if child_current_indent <= indent:
+                break
+            if child_indent is None:
+                child_indent = child_current_indent
+            if child_current_indent != child_indent:
+                continue
+            child_match = re.fullmatch(r"(?P<scope>[A-Za-z0-9_-]+):\s*(?P<value>[A-Za-z0-9_-]+)", child.strip())
+            if child_match:
+                entries.append(
+                    (child_match.group("scope").lower(), child_match.group("value").lower())
+                )
+    return entries
+
+
+def yaml_line_without_inline_comment(line: str) -> str:
+    quote: str | None = None
+    for index, char in enumerate(line):
+        if char in {"'", '"'}:
+            quote = None if quote == char else char if quote is None else quote
+        if char == "#" and quote is None:
+            return line[:index].rstrip()
+    return line.rstrip()
 
 
 def check_secrets() -> None:
