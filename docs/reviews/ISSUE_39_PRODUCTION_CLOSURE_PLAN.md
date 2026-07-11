@@ -210,6 +210,23 @@ and paid-provider activation policy remain unchanged.
 - ADRs, planning matrices, and branch allowlist/checker updates are the only artifacts
   added in this context.
 
+## CH-07 Pre-Implementation Invariant Matrix
+
+This section is the repo-tracked pre-implementation artifact for child issue
+`#109` / chunk `CH-07`. It does not close `DUR-STAGE6-001`. It defines the
+required invariant-to-test mapping before Stage 6 durable replay implementation.
+The statuses below track branch-level implementation evidence only. Issue `#39`
+and matrix row `DUR-STAGE6-001` remain open until PR review, merge, and final
+row-level closure evidence are completed.
+
+| ID | Area | Invariant | Old failure / false-pass risk | Positive test | Negative / mutation test | Gate / source / human-only evidence | Owner | Status |
+|---|---|---|---|---|---|---|---|---|
+| `S6-SOURCE-001` | Stage 6 source evidence binding | Multilingual replay remains bound to source run ID, trace ID, retrieved context refs, citation indexes, evaluation ID/status/checksum, and claim-support records before replay/export. | Restored artifacts can remain internally consistent while pointing at mismatched source or evaluation evidence. | `test_stage6_replays_valid_source_bound_artifact` | `test_stage6_drops_artifact_with_mismatched_source_run`; mutate evaluation checksum or claim-support IDs and prove old behavior failed | `uv run pytest -p no:cacheprovider tests/unit/test_local_durability.py`; `docs/ENGINEERING_PROCESS_RCA.md`; `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md` | Stage 6 + architecture/state | Implemented on branch |
+| `S6-ARTIFACT-001` | Stage 6 derived artifact consistency | Translated text, provider text, subtitle text, metadata artifact, downloadable artifacts, checksums, language tags, provider mode/config, glossary, citations, and voice manifest mutually agree. | A tampered provider/artifact payload can replay if only a subset of fields is validated. | `test_stage6_replays_valid_source_bound_artifact` | `test_stage6_file_state_drops_inconsistent_restored_artifact_payload`; mutate metadata/checksum/glossary or citation preservation and prove replay is dropped | `uv run pytest -p no:cacheprovider tests/unit/test_local_durability.py`; `docs/ENGINEERING_PROCESS_RCA.md` | Stage 6 | Implemented on branch |
+| `S6-IDEMP-001` | Stage 6 idempotency replay | Replay uses only terminal valid records with matching operation scope and request checksum; changed payloads conflict; stale pending/running and corrupt failed records do not replay. | Stale in-flight rows or invalid failed rows can masquerade as durable success/failure. | `test_stage6_file_state_replays_completed_multilingual_idempotency` | `test_stage6_file_state_drops_failed_idempotency_with_missing_error`; `test_stage6_drops_running_idempotency_record_on_restore`; checksum conflict regression | `uv run pytest -p no:cacheprovider tests/unit/test_local_durability.py`; `docs/API_CONTRACT.md` idempotency contract | Stage 6 + test/evidence | Implemented on branch |
+| `S6-DEDUPE-001` | Stage 6 durable dedupe | Identical source/request payloads within scope dedupe to the same durable multilingual run and artifacts without claiming exactly-once side effects. | Different idempotency keys can create duplicate durable derived artifacts for the same request payload. | `test_stage6_dedupes_identical_request_checksum_to_existing_durable_run` | `test_multilingual_walkthrough_api_rejects_secret_like_glossary_terms`; cross-scope non-dedupe regression | `uv run pytest -p no:cacheprovider tests/unit/test_local_durability.py`; `uv run pytest -p no:cacheprovider tests/api/test_stage6_multilingual_api.py`; `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md` | Stage 6 + architecture/state | Implemented on branch |
+| `S6-RESTORE-001` | Stage 6 restore hardening | Corrupted, tampered, cross-run, cross-project, cross-language, stale-counter, missing-error, and provider-mode-invalid restored rows are dropped or rejected safely. | Restore can treat wrong-shape or cross-boundary data as trusted durable state. | `test_stage6_restore_derives_missing_counters_from_restored_ids` | `test_stage6_file_state_drops_tampered_nonlocal_provider_result`; `test_stage6_file_state_drops_failed_idempotency_with_missing_error`; `test_stage6_file_state_drops_inconsistent_restored_artifact_payload`; stale-low counter regression | `uv run pytest -p no:cacheprovider tests/unit/test_local_durability.py`; `docs/ENGINEERING_PROCESS_RCA.md` | Stage 6 + security/runtime | Implemented on branch |
+
 ## Issue #68 (Context 4) Status and Evidence Mapping
 
 ### Matrix planning annotations for `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001`

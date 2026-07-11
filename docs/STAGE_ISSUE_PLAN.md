@@ -697,6 +697,31 @@ artifact orchestration, idempotency or lease runtime semantics, backup or
 restore flows, monitoring/alerts/watch, release posture, provider/media/privacy
 controls, or unrelated governance/process files.
 
+`phase-1-closure-39-ch-07-*` is reserved for the `CH-07` Stage 6 durable replay
+chunk for issue `#39` child issue `#109`. It may touch only:
+
+- `backend/app/main.py`
+- `backend/app/stage6.py`
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/file_state.py`
+- `docs/API_CONTRACT.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/api/test_stage6_multilingual_api.py`
+- `tests/unit/test_local_durability.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_stage6_multilingual.py`
+
+`phase-1-closure-39-ch-07-*` must not touch Stage 4 durable graph storage
+contracts, Stage 7 render/export state, lease or outbox runtime semantics,
+backup or restore flows, monitoring/alerts/watch, release posture,
+provider/media/privacy controls, retention/untrusted-input closure, or unrelated
+governance/process files.
+
 `phase-1-closure-39-ch-16-*` is reserved for the `CH-16` consent capture chunk
 for issue `#39` child issue `#111`. It may touch only:
 

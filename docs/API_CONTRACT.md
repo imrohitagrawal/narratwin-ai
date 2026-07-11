@@ -764,12 +764,19 @@ Backpressure error example:
 
 Stage 6 translates an accepted English source walkthrough into a selected target
 language, preserves glossary/project terms, generates SubRip subtitles, and
-returns downloadable script/subtitle artifacts. The endpoint uses
+returns downloadable script/subtitle artifacts plus a deterministic metadata
+artifact. The endpoint uses
 `TranslationProvider` and `TTSProvider` adapter interfaces with mock/local
 defaults; no paid provider is hardcoded or required for local/dev/test.
 Stage 6 does not synthesize real audio, does not play audio, does not clone a
 voice, and does not call non-local providers. The voice output is a downloadable
 JSON manifest from the mock/local `TTSProvider`.
+
+Phase 1 Closure issue `#109` hardens Stage 6 durable replay for local durability
+evidence only. The API route now binds every multilingual run to a source run
+that is `COMPLETED`, `PASSED`, has accepted script text, carries retrieved
+context refs, and exposes claim-support/evaluation metadata from the accepted
+Stage 4 source graph before Stage 6 persists or replays derived artifacts.
 
 Request:
 
@@ -802,12 +809,19 @@ Request boundary limits:
 
 Post-provider validation:
 
+- source run must be `COMPLETED` with `evaluationStatus = PASSED`, accepted
+  script text, retrieved context refs, claim-support records, and evaluation
+  metadata before Stage 6 creates or replays a multilingual result
 - translated output must be non-empty
 - translated output must stay within the Stage 6 size limit
 - every configured glossary term present in the source script must remain present
   in translated output
 - every source citation marker such as `[1]` must remain present in translated
   output before subtitles or downloadable artifacts are returned
+- translated script, subtitles, metadata artifact, voice manifest, language
+  tags, glossary terms, citation counts, provider mode/config, and artifact
+  checksums must mutually agree before local durable replay accepts restored
+  Stage 6 state
 - provider identifiers must satisfy the adapter identifier pattern
 - Voice provider artifacts must be JSON manifests with safe `.json` filenames,
   `application/json` MIME type, decodable UTF-8 JSON object content, a checksum
@@ -867,6 +881,12 @@ Response `201`:
       "mimeType": "application/json",
       "contentBase64": "base64-json",
       "checksum": "sha256:voice"
+    },
+    "metadata": {
+      "fileName": "run_123-es-metadata.json",
+      "mimeType": "application/json",
+      "contentBase64": "base64-metadata",
+      "checksum": "sha256:metadata"
     }
   },
   "trace": {
@@ -884,6 +904,10 @@ Provider response schema:
 - `providerMode` is constrained to `LOCAL`, `DISABLED`, or
   `OPTIONAL_EXTERNAL`.
 - Current Stage 6 local/dev/test behavior uses `mock` and `LOCAL`.
+- `artifacts.metadata` is a JSON download that records source-run ID, trace ID,
+  request checksum, source citation indexes/counts, source evaluation
+  ID/status/checksum, claim-support IDs, glossary/preserved terms, provider
+  metadata, and derived artifact checksums for deterministic local replay.
 - Adding another adapter requires code changes in `backend/app/stage6.py`,
   API/contract updates in this file, tests in `tests/unit` and `tests/api`,
   third-party notices, and review of provider keys, egress, licensing, and
@@ -902,7 +926,7 @@ Failure modes:
 | 413 | `SOURCE_SCRIPT_TOO_LARGE` | Accepted source script exceeds the Stage 6 source limit |
 | 413 | `PROVIDER_OUTPUT_TOO_LARGE` | Translation provider output exceeds the Stage 6 output limit |
 | 422 | `SECRET_LIKE_CONTENT` | Glossary terms contain secret-like content and are rejected before provider calls |
-| 422 | `SOURCE_RUN_NOT_TRANSLATABLE` | Source run is not completed or has no accepted script |
+| 422 | `SOURCE_RUN_NOT_TRANSLATABLE` | Source run is not completed, did not pass evaluation, has no accepted script, or is missing required evaluation/context/claim-support evidence |
 | 422 | `UNSUPPORTED_LANGUAGE` | Target language is not supported by Stage 6 |
 | 422 | `PROVIDER_OUTPUT_INVALID` | Provider output is empty, invalid, or failed glossary/citation preservation |
 | 422 | `VALIDATION_ERROR` | Request boundary validation failed, including glossary/provider field limits |
@@ -914,6 +938,12 @@ artifacts, keep readable caption lengths, and preserve source citation markers s
 reviewers can compare multilingual output against accepted grounded evidence.
 Frontend download links remain disabled until the response artifact matches the
 expected MIME type, file extension, base64 shape, and safe filename rules.
+Local durable restore for Phase 1 Closure replays only terminal valid Stage 6
+records with matching request checksums inside the same idempotency scope, drops
+stale `PENDING`/`RUNNING` rows, rejects corrupt failed rows without serialized
+error details, and may dedupe identical request payloads to an existing durable
+multilingual run. This remains local durability evidence, not a production
+exactly-once guarantee.
 
 ### Generate Avatar Demo Export
 

@@ -241,6 +241,38 @@ def test_issue39_chunk_branches_check_exact_post_pr98_dependency_commit(
     ]
 
 
+def test_issue39_ch07_branch_checks_exact_stage4_and_stage6_dependency_commits(
+    monkeypatch: Any,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_git_ok(args: list[str]) -> bool:
+        calls.append(args)
+        return True
+
+    monkeypatch.setattr(phase1, "current_branch", lambda: "phase-1-closure-39-ch-07-stage6-durable-replay")
+    monkeypatch.setattr(phase1, "git_ok", fake_git_ok)
+
+    failures: list[str] = []
+    phase1.check_branch(failures)
+
+    assert failures == []
+    assert calls == [
+        [
+            "merge-base",
+            "--is-ancestor",
+            "6449786069dd38eeaa5a4a31f5ed73cbfc52d248",
+            "HEAD",
+        ],
+        [
+            "merge-base",
+            "--is-ancestor",
+            "947a96891fd84085b6fce433e604a8e249b25c23",
+            "HEAD",
+        ],
+    ]
+
+
 def test_stacked_child_push_resolve_base_uses_stacked_base_ref(monkeypatch: Any) -> None:
     calls: list[list[str]] = []
 
@@ -1286,6 +1318,32 @@ def test_issue39_ch06_branch_rejects_runtime_or_adjacent_chunk_files(monkeypatch
     ]
 
 
+def test_issue39_ch07_branch_allows_stage6_durable_replay_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-07-stage6-durable-replay",
+        files=[
+            "backend/app/main.py",
+            "backend/app/stage6.py",
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/file_state.py",
+            "docs/API_CONTRACT.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/api/test_stage6_multilingual_api.py",
+            "tests/unit/test_local_durability.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_stage6_multilingual.py",
+        ],
+    )
+
+    assert failures == []
+
+
 def test_issue39_ch16_branch_allows_consent_capture_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
@@ -1326,6 +1384,24 @@ def test_issue39_ch16_branch_rejects_adjacent_runtime_or_scope_files(monkeypatch
     ]
 
 
+def test_issue39_ch07_branch_rejects_adjacent_chunk_or_stage7_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-07-stage6-durable-replay",
+        files=[
+            "backend/app/stage7.py",
+            "backend/app/storage/postgres_state.py",
+            "docs/ADR/0017-ch06-committed-outbox.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-07-stage6-durable-replay may not change backend/app/stage7.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-07-stage6-durable-replay may not change backend/app/storage/postgres_state.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-07-stage6-durable-replay may not change docs/ADR/0017-ch06-committed-outbox.md.",
+    ]
+
+
 def test_issue39_ch16_branch_requires_ch02_dependency_commit_ancestry(monkeypatch: Any) -> None:
     failures = run_branch_check(
         monkeypatch,
@@ -1335,7 +1411,7 @@ def test_issue39_ch16_branch_requires_ch02_dependency_commit_ancestry(monkeypatc
 
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-ch-16-consent-capture must contain dependency "
-        "commits: 824a07c2bd546648b96d9ab555b63a8f2415898e."
+        "commits: 824a07c2bd546648b96d9ab555b63a8f2415898e.",
     ]
 
 

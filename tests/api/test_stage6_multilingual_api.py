@@ -93,6 +93,8 @@ def test_multilingual_walkthrough_api_returns_downloadable_script_and_subtitle_a
     assert body["artifacts"]["translatedScript"]["mimeType"] == "text/markdown"
     assert body["artifacts"]["subtitles"]["fileName"].endswith(".srt")
     assert body["artifacts"]["subtitles"]["contentBase64"]
+    assert body["artifacts"]["metadata"]["fileName"].endswith("-metadata.json")
+    assert body["artifacts"]["metadata"]["mimeType"] == "application/json"
 
 
 def test_multilingual_walkthrough_api_falls_back_to_mock_voice_provider() -> None:
