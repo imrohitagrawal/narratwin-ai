@@ -154,6 +154,7 @@ payload hash, and terminal payload match durable history.
 - `test_context2_lease_rejects_stale_operation_error_after_lease_transfer`
 - `test_context2_lease_rejects_stale_operation_transient_failure_after_lease_transfer`
 - `test_context2_lease_allows_terminal_operation_success_replay_after_lease_transfer`
+- `test_context2_lease_allows_terminal_operation_error_replay_after_lease_transfer`
 - `test_context2_lease_rejects_owner_mismatch_for_lease_guarded_write`
 - `test_context2_lease_release_removes_active_lease_and_next_acquire_advances_epoch`
 - `test_context2_lease_release_rejects_stale_owner`
