@@ -621,6 +621,25 @@ artifact orchestration, idempotency/lease/outbox runtime semantics, backup or
 restore flows, monitoring/alerts/watch, release posture, provider/media/privacy
 controls, or unrelated governance/process files.
 
+`phase-1-closure-39-ch-03-*` is reserved for the `CH-03` Stage 4 durable graph
+chunk for issue `#39` child issue `#107`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/stage4_graph.py`
+- `docs/ADR/0018-ch03-stage4-durable-graph.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_stage4_durable_graph.py`
+
+`phase-1-closure-39-ch-03-*` must not touch Stage 6/7 durable artifact
+orchestration, operations monitoring, backup or restore flows, release posture,
+provider/media/privacy controls, retention/untrusted-input closure, or unrelated
+governance/process files.
+
 `phase-1-closure-39-ch-04-*` is reserved for the `CH-04` idempotency semantics
 chunk for issue `#39` child issue `#97`. It may touch only:
 

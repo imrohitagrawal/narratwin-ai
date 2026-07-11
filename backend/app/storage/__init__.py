@@ -26,6 +26,16 @@ from .postgres_state import (
     TransactionCommitResult,
     TransactionWrite,
 )
+from .stage4_graph import (
+    Stage4ChunkMetadata,
+    Stage4ClaimSupportMetadata,
+    Stage4ContextRefMetadata,
+    Stage4DocumentMetadata,
+    Stage4DurableGraphStore,
+    Stage4EvaluationMetadata,
+    Stage4ProjectMetadata,
+    Stage4RunMetadata,
+)
 
 __all__ = [
     "AcidCasConflictError",
@@ -47,6 +57,14 @@ __all__ = [
     "OperationRecord",
     "OperationScope",
     "StoredRecord",
+    "Stage4ChunkMetadata",
+    "Stage4ClaimSupportMetadata",
+    "Stage4ContextRefMetadata",
+    "Stage4DocumentMetadata",
+    "Stage4DurableGraphStore",
+    "Stage4EvaluationMetadata",
+    "Stage4ProjectMetadata",
+    "Stage4RunMetadata",
     "TransactionCommitResult",
     "TransactionWrite",
     "load_state",

@@ -1133,6 +1133,47 @@ def test_issue39_ch02_branch_rejects_adjacent_chunk_or_issue39_doc_files(monkeyp
     ]
 
 
+def test_issue39_ch03_branch_allows_stage4_durable_graph_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-03-stage4-durable-graph",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/stage4_graph.py",
+            "docs/ADR/0018-ch03-stage4-durable-graph.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_stage4_durable_graph.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch03_branch_rejects_adjacent_chunk_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-03-stage4-durable-graph",
+        files=[
+            "backend/app/storage/postgres_state.py",
+            "backend/app/stage6.py",
+            "backend/app/stage7.py",
+            "docs/ADR/0017-ch06-committed-outbox.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-03-stage4-durable-graph may not change backend/app/storage/postgres_state.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-03-stage4-durable-graph may not change backend/app/stage6.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-03-stage4-durable-graph may not change backend/app/stage7.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-03-stage4-durable-graph may not change docs/ADR/0017-ch06-committed-outbox.md.",
+    ]
+
+
 def test_issue39_ch04_branch_allows_idempotency_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
