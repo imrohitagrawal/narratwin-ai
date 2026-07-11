@@ -76,6 +76,10 @@ runtime worker orchestration, or Stage 4/6/7 service integration.
   kernel-owned storage clock, not a caller-supplied timestamp. Tests may inject
   a deterministic kernel clock, but mutation callers cannot backdate lease
   authority or persisted commit time.
+- The kernel samples the trusted storage clock only after acquiring the storage
+  lock for lease-sensitive decisions, so expiry and commit timestamps are based
+  on the time authority held inside the critical section rather than a value
+  captured before lock contention resolves.
 - Reclaim after expiry creates a new active lease with a higher epoch.
 - Voluntary release removes the active lease while preserving the last epoch so
   the next acquire still increments monotonically.
@@ -112,6 +116,14 @@ Exact committed transaction replay remains the one reviewed exception:
 - this replay path is read-only; it must not stage or mutate any row
 - stale owners still lose authority for any fresh mutation attempt
 
+Operation-control rows remain written through the shared ACID/CAS kernel but do
+not use their operation row identity as the lease target. When an operation
+scope's target `resource_id` has entered the lease-managed domain, operation API
+fresh mutations validate the active lease for that target resource before
+transitioning non-terminal operation state. Exact terminal operation replay is
+read-only and remains allowed after lease transfer when operation identity,
+payload hash, and terminal payload match durable history.
+
 ### 4. Deterministic evidence
 
 `CH-05` implementation evidence is limited to focused unit tests in
@@ -132,6 +144,16 @@ Exact committed transaction replay remains the one reviewed exception:
 - `test_context2_lease_rejects_unrelated_live_lease_for_different_row`
 - `test_context2_lease_rejects_unguarded_write_while_row_has_active_lease`
 - `test_context2_lease_rejects_partial_fencing_tuple`
+- `test_context2_lease_rejects_non_canonical_write_identity_before_fencing_lookup`
+- `test_context2_lease_commit_samples_kernel_clock_inside_storage_lock`
+- `test_context2_lease_acquire_uses_kernel_clock_not_caller_timestamp`
+- `test_context2_lease_heartbeat_uses_kernel_clock_not_caller_timestamp`
+- `test_context2_lease_release_uses_kernel_clock_not_caller_timestamp`
+- `test_context2_lease_get_uses_kernel_clock_not_caller_timestamp`
+- `test_context2_lease_rejects_stale_operation_success_after_lease_transfer`
+- `test_context2_lease_rejects_stale_operation_error_after_lease_transfer`
+- `test_context2_lease_rejects_stale_operation_transient_failure_after_lease_transfer`
+- `test_context2_lease_allows_terminal_operation_success_replay_after_lease_transfer`
 - `test_context2_lease_rejects_owner_mismatch_for_lease_guarded_write`
 - `test_context2_lease_release_removes_active_lease_and_next_acquire_advances_epoch`
 - `test_context2_lease_release_rejects_stale_owner`

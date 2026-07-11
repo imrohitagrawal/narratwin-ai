@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from queue import Queue
+from threading import Event, Thread
 
 import pytest
 
@@ -33,6 +35,16 @@ class MutableClock:
 
     def set(self, value: datetime) -> None:
         self.value = value
+
+
+class NotifyingClock(MutableClock):
+    def __init__(self, value: datetime) -> None:
+        super().__init__(value)
+        self.called = Event()
+
+    def __call__(self) -> datetime:
+        self.called.set()
+        return self.value
 
 
 def _lease_guarded_run_write(
@@ -2195,6 +2207,141 @@ def test_context2_lease_commit_timestamp_uses_kernel_clock_not_caller_timestamp(
     assert result.records[0].committed_at == trusted_commit_time.isoformat()
 
 
+def test_context2_lease_commit_samples_kernel_clock_inside_storage_lock() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = NotifyingClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+    resource_id = "run:tenant-1:owner-1:project-1:run-1"
+
+    lease = kernel.acquire_lease(
+        resource_id=resource_id,
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+    clock.called.clear()
+    errors: Queue[BaseException] = Queue()
+
+    def commit_after_lock_release() -> None:
+        try:
+            kernel.commit(
+                transaction_id="tx-lease-clock-lock-1",
+                request_id="req-lease-clock-lock-1",
+                request_checksum="sha256:req-lease-clock-lock-1",
+                writes=(
+                    _lease_guarded_run_write(
+                        expected_version=None,
+                        status="queued",
+                        lease_id="worker-1",
+                        lease_epoch=lease.lease_epoch,
+                    ),
+                ),
+                now=acquired_at,
+            )
+        except BaseException as exc:  # pragma: no cover - asserted after join
+            errors.put(exc)
+
+    with kernel._lock:
+        thread = Thread(target=commit_after_lock_release)
+        thread.start()
+        assert not clock.called.wait(timeout=0.05)
+        clock.set(acquired_at + timedelta(seconds=11))
+
+    thread.join(timeout=1.0)
+
+    assert not thread.is_alive()
+    assert not errors.empty()
+    error = errors.get_nowait()
+    assert isinstance(error, AcidCasStaleWriteError)
+    assert "expired" in str(error)
+
+
+def test_context2_lease_acquire_uses_kernel_clock_not_caller_timestamp() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+
+    kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    clock.set(acquired_at + timedelta(seconds=5))
+    with pytest.raises(AcidCasConflictError, match="already held"):
+        kernel.acquire_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1",
+            lease_id="worker-2",
+            lease_ttl_ms=10_000,
+            now=acquired_at + timedelta(seconds=11),
+        )
+
+
+def test_context2_lease_heartbeat_uses_kernel_clock_not_caller_timestamp() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    clock.set(acquired_at + timedelta(seconds=11))
+    with pytest.raises(AcidCasStaleWriteError, match="expired"):
+        kernel.heartbeat_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1",
+            lease_id="worker-1",
+            lease_epoch=lease.lease_epoch,
+            now=acquired_at + timedelta(seconds=1),
+        )
+
+
+def test_context2_lease_release_uses_kernel_clock_not_caller_timestamp() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    clock.set(acquired_at + timedelta(seconds=11))
+    with pytest.raises(AcidCasStaleWriteError, match="expired"):
+        kernel.release_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1",
+            lease_id="worker-1",
+            lease_epoch=lease.lease_epoch,
+            now=acquired_at + timedelta(seconds=1),
+        )
+
+
+def test_context2_lease_get_uses_kernel_clock_not_caller_timestamp() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+
+    kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    clock.set(acquired_at + timedelta(seconds=11))
+    with pytest.raises(KeyError, match="No active lease"):
+        kernel.get_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1",
+            now=acquired_at + timedelta(seconds=1),
+        )
+
+
 def test_context2_lease_rejects_unrelated_live_lease_for_different_row() -> None:
     acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
     clock = MutableClock(acquired_at)
@@ -2311,26 +2458,271 @@ def test_context2_lease_rejects_non_canonical_write_identity_before_fencing_look
 def test_context2_lease_rejects_partial_fencing_tuple() -> None:
     kernel = AcidCasKernel()
 
-    with pytest.raises(AcidCasConflictError, match="must include lease_resource_id, lease_id, and lease_epoch together"):
-        kernel.commit(
-            transaction_id="tx-lease-3b",
-            request_id="req-lease-3b",
-            request_checksum="sha256:req-lease-3b",
-            writes=(
-                TransactionWrite(
-                    entity_type="run",
-                    entity_id="run-1",
-                    tenant_id="tenant-1",
-                    owner_id="owner-1",
-                    project_id="project-1",
-                    expected_version=None,
-                    state="OPEN",
-                    payload={"status": "queued"},
-                    lease_resource_id="run:tenant-1:owner-1:project-1:run-1",
-                    lease_id="worker-1",
-                ),
-            ),
+    partial_writes = (
+        TransactionWrite(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+            expected_version=None,
+            state="OPEN",
+            payload={"status": "queued"},
+            lease_id="worker-1",
+            lease_epoch=1,
+        ),
+        TransactionWrite(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+            expected_version=None,
+            state="OPEN",
+            payload={"status": "queued"},
+            lease_resource_id="run:tenant-1:owner-1:project-1:run-1",
+            lease_epoch=1,
+        ),
+        TransactionWrite(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+            expected_version=None,
+            state="OPEN",
+            payload={"status": "queued"},
+            lease_resource_id="run:tenant-1:owner-1:project-1:run-1",
+            lease_id="worker-1",
+        ),
+    )
+
+    for index, partial_write in enumerate(partial_writes, start=1):
+        with pytest.raises(
+            AcidCasConflictError,
+            match="must include lease_resource_id, lease_id, and lease_epoch together",
+        ):
+            kernel.commit(
+                transaction_id=f"tx-lease-partial-{index}",
+                request_id=f"req-lease-partial-{index}",
+                request_checksum=f"sha256:req-lease-partial-{index}",
+                writes=(partial_write,),
+            )
+
+
+def test_context2_lease_rejects_stale_operation_success_after_lease_transfer() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+    resource_id = scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1")
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=resource_id,
+    )
+
+    lease = kernel.acquire_lease(
+        resource_id=resource_id,
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+    started = kernel.start_operation(
+        transaction_id="tx-op-lease-1",
+        request_id="req-op-lease-1",
+        operation_id="operation-lease-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=lease.lease_epoch,
+    )
+
+    clock.set(acquired_at + timedelta(seconds=12))
+    kernel.acquire_lease(
+        resource_id=resource_id,
+        lease_id="worker-2",
+        lease_ttl_ms=10_000,
+        now=acquired_at + timedelta(seconds=12),
+    )
+
+    clock.set(acquired_at + timedelta(seconds=13))
+    with pytest.raises(AcidCasStaleOwnerError, match="lease epoch"):
+        kernel.commit_operation_success(
+            transaction_id="tx-op-lease-1-success",
+            request_id="req-op-lease-1",
+            operation_id="operation-lease-1",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            expected_version=started.record.version,
+            lease_owner_id="worker-1",
+            lease_epoch=lease.lease_epoch,
+            response_payload={"status": "done"},
         )
+
+
+def test_context2_lease_rejects_stale_operation_error_after_lease_transfer() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+    resource_id = scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1")
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=resource_id,
+    )
+
+    lease = kernel.acquire_lease(
+        resource_id=resource_id,
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+    started = kernel.start_operation(
+        transaction_id="tx-op-lease-2",
+        request_id="req-op-lease-2",
+        operation_id="operation-lease-2",
+        scope=scope,
+        payload_hash="sha256:payload-2",
+        lease_owner_id="worker-1",
+        lease_epoch=lease.lease_epoch,
+    )
+
+    clock.set(acquired_at + timedelta(seconds=12))
+    kernel.acquire_lease(
+        resource_id=resource_id,
+        lease_id="worker-2",
+        lease_ttl_ms=10_000,
+        now=acquired_at + timedelta(seconds=12),
+    )
+
+    clock.set(acquired_at + timedelta(seconds=13))
+    with pytest.raises(AcidCasStaleOwnerError, match="lease epoch"):
+        kernel.commit_operation_error(
+            transaction_id="tx-op-lease-2-error",
+            request_id="req-op-lease-2",
+            operation_id="operation-lease-2",
+            scope=scope,
+            payload_hash="sha256:payload-2",
+            expected_version=started.record.version,
+            lease_owner_id="worker-1",
+            lease_epoch=lease.lease_epoch,
+            error_payload={"code": "timeout"},
+        )
+
+
+def test_context2_lease_rejects_stale_operation_transient_failure_after_lease_transfer() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+    resource_id = scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1")
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=resource_id,
+    )
+
+    lease = kernel.acquire_lease(
+        resource_id=resource_id,
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+    started = kernel.start_operation(
+        transaction_id="tx-op-lease-3",
+        request_id="req-op-lease-3",
+        operation_id="operation-lease-3",
+        scope=scope,
+        payload_hash="sha256:payload-3",
+        lease_owner_id="worker-1",
+        lease_epoch=lease.lease_epoch,
+    )
+
+    clock.set(acquired_at + timedelta(seconds=12))
+    kernel.acquire_lease(
+        resource_id=resource_id,
+        lease_id="worker-2",
+        lease_ttl_ms=10_000,
+        now=acquired_at + timedelta(seconds=12),
+    )
+
+    clock.set(acquired_at + timedelta(seconds=13))
+    with pytest.raises(AcidCasStaleOwnerError, match="lease epoch"):
+        kernel.fail_operation_transient(
+            transaction_id="tx-op-lease-3-failed",
+            request_id="req-op-lease-3",
+            operation_id="operation-lease-3",
+            scope=scope,
+            payload_hash="sha256:payload-3",
+            expected_version=started.record.version,
+            lease_owner_id="worker-1",
+            lease_epoch=lease.lease_epoch,
+        )
+
+
+def test_context2_lease_allows_terminal_operation_success_replay_after_lease_transfer() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+    resource_id = scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1")
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=resource_id,
+    )
+
+    lease = kernel.acquire_lease(
+        resource_id=resource_id,
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+    started = kernel.start_operation(
+        transaction_id="tx-op-lease-4",
+        request_id="req-op-lease-4",
+        operation_id="operation-lease-4",
+        scope=scope,
+        payload_hash="sha256:payload-4",
+        lease_owner_id="worker-1",
+        lease_epoch=lease.lease_epoch,
+    )
+    completed = kernel.commit_operation_success(
+        transaction_id="tx-op-lease-4-success",
+        request_id="req-op-lease-4",
+        operation_id="operation-lease-4",
+        scope=scope,
+        payload_hash="sha256:payload-4",
+        expected_version=started.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=lease.lease_epoch,
+        response_payload={"status": "done"},
+    )
+
+    clock.set(acquired_at + timedelta(seconds=12))
+    kernel.acquire_lease(
+        resource_id=resource_id,
+        lease_id="worker-2",
+        lease_ttl_ms=10_000,
+        now=acquired_at + timedelta(seconds=12),
+    )
+
+    replayed = kernel.commit_operation_success(
+        transaction_id="tx-op-lease-4-success-replay",
+        request_id="req-op-lease-4",
+        operation_id="operation-lease-4",
+        scope=scope,
+        payload_hash="sha256:payload-4",
+        expected_version=completed.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=lease.lease_epoch,
+        response_payload={"status": "done"},
+    )
+
+    assert replayed.outcome == "replayed"
+    assert replayed.record.response_payload == {"status": "done"}
 
 
 def test_context2_lease_rejects_owner_mismatch_for_lease_guarded_write() -> None:

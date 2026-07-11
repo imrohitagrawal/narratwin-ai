@@ -195,6 +195,13 @@ class AcidCasKernel:
         with self._lock:
             existing = self._get_optional_operation(operation_id=operation_id, scope=scope)
             if existing is None:
+                self._assert_operation_active_lease(
+                    operation_id=operation_id,
+                    scope=scope,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                    now=self._trusted_now(),
+                )
                 stored = self._store_operation_record(
                     operation_id=operation_id,
                     scope=scope,
@@ -266,6 +273,13 @@ class AcidCasKernel:
                 lease_owner_id=lease_owner_id,
                 lease_epoch=lease_epoch,
             )
+            self._assert_operation_active_lease(
+                operation_id=operation_id,
+                scope=scope,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+                now=self._trusted_now(),
+            )
             self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
             self._assert_operation_state(
                 existing=existing,
@@ -333,6 +347,13 @@ class AcidCasKernel:
                 lease_owner_id=lease_owner_id,
                 lease_epoch=lease_epoch,
             )
+            self._assert_operation_active_lease(
+                operation_id=operation_id,
+                scope=scope,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+                now=self._trusted_now(),
+            )
             self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
             self._assert_operation_state(
                 existing=existing,
@@ -390,6 +411,13 @@ class AcidCasKernel:
                     lease_owner_id=lease_owner_id,
                     lease_epoch=lease_epoch,
                 )
+                self._assert_operation_active_lease(
+                    operation_id=operation_id,
+                    scope=scope,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                    now=self._trusted_now(),
+                )
                 return replay_operation_result(existing)
             if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
                 return replay_operation_result(existing)
@@ -397,6 +425,13 @@ class AcidCasKernel:
                 existing=existing,
                 lease_owner_id=lease_owner_id,
                 lease_epoch=lease_epoch,
+            )
+            self._assert_operation_active_lease(
+                operation_id=operation_id,
+                scope=scope,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+                now=self._trusted_now(),
             )
             self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
             self._assert_operation_state(
@@ -451,6 +486,13 @@ class AcidCasKernel:
             if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
                 return replay_operation_result(existing)
             if existing.state == "REPLAYING" and existing.transaction_id == transaction_id:
+                self._assert_operation_active_lease(
+                    operation_id=operation_id,
+                    scope=scope,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                    now=self._trusted_now(),
+                )
                 stored = self._store_operation_record(
                     operation_id=operation_id,
                     scope=scope,
@@ -473,6 +515,13 @@ class AcidCasKernel:
                 existing=existing,
                 lease_owner_id=lease_owner_id,
                 lease_epoch=lease_epoch,
+            )
+            self._assert_operation_active_lease(
+                operation_id=operation_id,
+                scope=scope,
+                lease_owner_id=lease_owner_id,
+                lease_epoch=lease_epoch,
+                now=self._trusted_now(),
             )
             stored = self._store_operation_record(
                 operation_id=operation_id,
@@ -528,7 +577,6 @@ class AcidCasKernel:
         if not writes:
             raise AcidCasConflictError("ACID/CAS transactions must include at least one write.")
 
-        commit_time = self._trusted_now()
         fingerprint = _transaction_fingerprint(
             request_id=request_id,
             request_checksum=request_checksum,
@@ -544,6 +592,7 @@ class AcidCasKernel:
                     )
                 return replay_result(replay)
 
+            commit_time = self._trusted_now()
             pending_records = self._validate_and_stage(
                 transaction_id=transaction_id,
                 request_id=request_id,
@@ -607,8 +656,8 @@ class AcidCasKernel:
         validate_canonical_resource_id(resource_id)
         validate_lease_id(lease_id)
 
-        effective_now = self._trusted_now()
         with self._lock:
+            effective_now = self._trusted_now()
             current = self._leases.get(resource_id)
             if current is not None and not _lease_is_expired(current, effective_now):
                 raise AcidCasConflictError(
@@ -640,8 +689,8 @@ class AcidCasKernel:
     ) -> LeaseRecord:
         validate_canonical_resource_id(resource_id)
         validate_lease_id(lease_id)
-        effective_now = self._trusted_now()
         with self._lock:
+            effective_now = self._trusted_now()
             current = self._leases.get(resource_id)
             if current is None or _lease_is_expired(current, effective_now):
                 raise AcidCasStaleWriteError(
@@ -678,8 +727,8 @@ class AcidCasKernel:
     ) -> None:
         validate_canonical_resource_id(resource_id)
         validate_lease_id(lease_id)
-        effective_now = self._trusted_now()
         with self._lock:
+            effective_now = self._trusted_now()
             current = self._leases.get(resource_id)
             if current is None or _lease_is_expired(current, effective_now):
                 raise AcidCasStaleWriteError(
@@ -697,14 +746,15 @@ class AcidCasKernel:
 
     def get_lease(self, *, resource_id: str, now: datetime | None = None) -> LeaseRecord:
         validate_canonical_resource_id(resource_id)
-        effective_now = self._trusted_now()
-        try:
-            lease = self._leases[resource_id]
-        except KeyError as exc:
-            raise KeyError(f"No active lease for {resource_id}") from exc
-        if _lease_is_expired(lease, effective_now):
-            raise KeyError(f"No active lease for {resource_id}")
-        return clone_lease(lease)
+        with self._lock:
+            effective_now = self._trusted_now()
+            try:
+                lease = self._leases[resource_id]
+            except KeyError as exc:
+                raise KeyError(f"No active lease for {resource_id}") from exc
+            if _lease_is_expired(lease, effective_now):
+                raise KeyError(f"No active lease for {resource_id}")
+            return clone_lease(lease)
 
     def _validate_and_stage(
         self,
@@ -836,6 +886,33 @@ class AcidCasKernel:
                 f"{existing.operation_id} stale owner: expected "
                 f"{existing.lease_owner_id}@{existing.lease_epoch} but received "
                 f"{lease_owner_id}@{lease_epoch}."
+            )
+
+    def _assert_operation_active_lease(
+        self,
+        *,
+        operation_id: str,
+        scope: OperationScope,
+        lease_owner_id: str,
+        lease_epoch: int,
+        now: datetime,
+    ) -> None:
+        if scope.resource_id not in self._lease_epochs:
+            return
+        current = self._leases.get(scope.resource_id)
+        if current is None or _lease_is_expired(current, now):
+            raise AcidCasStaleOwnerError(
+                f"Operation {operation_id} lease {scope.resource_id} is expired."
+            )
+        if current.lease_epoch != lease_epoch:
+            raise AcidCasStaleOwnerError(
+                f"Operation {operation_id} expected lease epoch {lease_epoch} "
+                f"but durable lease epoch is {current.lease_epoch}."
+            )
+        if current.lease_id != lease_owner_id:
+            raise AcidCasStaleOwnerError(
+                f"Operation {operation_id} expected lease owner {lease_owner_id} "
+                f"but durable owner is {current.lease_id}."
             )
 
     def _assert_recovery_epoch_advance(
