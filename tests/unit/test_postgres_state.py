@@ -819,6 +819,43 @@ def test_context2_lease_rejects_non_canonical_resource_identity() -> None:
         )
 
 
+def test_context2_lease_rejects_blank_lease_identity() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+
+    with pytest.raises(AcidCasConflictError, match="lease_id must be non-empty"):
+        kernel.acquire_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1",
+            lease_id=" ",
+            lease_ttl_ms=10_000,
+            now=acquired_at,
+        )
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    with pytest.raises(AcidCasConflictError, match="lease_id must be non-empty"):
+        kernel.commit(
+            transaction_id="tx-lease-blank-owner",
+            request_id="req-lease-blank-owner",
+            request_checksum="sha256:req-lease-blank-owner",
+            writes=(
+                _lease_guarded_run_write(
+                    expected_version=None,
+                    status="queued",
+                    lease_id=" ",
+                    lease_epoch=lease.lease_epoch,
+                ),
+            ),
+            now=acquired_at + timedelta(seconds=1),
+        )
+
+
 def test_context2_lease_heartbeat_rejects_owner_mismatch() -> None:
     acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
     clock = MutableClock(acquired_at)
@@ -1072,6 +1109,40 @@ def test_context2_lease_expiry_uses_kernel_clock_not_caller_timestamp() -> None:
             ),
             now=acquired_at + timedelta(seconds=1),
         )
+
+
+def test_context2_lease_commit_timestamp_uses_kernel_clock_not_caller_timestamp() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+
+    lease = kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+    trusted_commit_time = acquired_at + timedelta(seconds=5)
+    caller_backdated_time = acquired_at + timedelta(seconds=1)
+    clock.set(trusted_commit_time)
+
+    result = kernel.commit(
+        transaction_id="tx-lease-clock-3",
+        request_id="req-lease-clock-3",
+        request_checksum="sha256:req-lease-clock-3",
+        writes=(
+            _lease_guarded_run_write(
+                expected_version=None,
+                status="queued",
+                lease_id="worker-1",
+                lease_epoch=lease.lease_epoch,
+            ),
+        ),
+        now=caller_backdated_time,
+    )
+
+    assert result.committed_at == trusted_commit_time.isoformat()
+    assert result.records[0].committed_at == trusted_commit_time.isoformat()
 
 
 def test_context2_lease_rejects_unrelated_live_lease_for_different_row() -> None:

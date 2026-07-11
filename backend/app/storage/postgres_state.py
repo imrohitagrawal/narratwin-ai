@@ -130,8 +130,7 @@ class AcidCasKernel:
         if not writes:
             raise AcidCasConflictError("ACID/CAS transactions must include at least one write.")
 
-        commit_time = _coerce_now(now)
-        lease_check_time = self._trusted_now()
+        commit_time = self._trusted_now()
         fingerprint = _transaction_fingerprint(
             request_id=request_id,
             request_checksum=request_checksum,
@@ -152,7 +151,7 @@ class AcidCasKernel:
                 request_id=request_id,
                 request_checksum=request_checksum,
                 writes=writes,
-                now=lease_check_time,
+                now=commit_time,
             )
             committed_at = _isoformat(commit_time)
             committed_records = tuple(
@@ -207,6 +206,7 @@ class AcidCasKernel:
         if lease_ttl_ms <= 0:
             raise AcidCasConflictError("Lease TTL must be a positive millisecond value.")
         validate_canonical_resource_id(resource_id)
+        validate_lease_id(lease_id)
 
         effective_now = self._trusted_now()
         with self._lock:
@@ -240,6 +240,7 @@ class AcidCasKernel:
         now: datetime | None = None,
     ) -> LeaseRecord:
         validate_canonical_resource_id(resource_id)
+        validate_lease_id(lease_id)
         effective_now = self._trusted_now()
         with self._lock:
             current = self._leases.get(resource_id)
@@ -277,6 +278,7 @@ class AcidCasKernel:
         now: datetime | None = None,
     ) -> None:
         validate_canonical_resource_id(resource_id)
+        validate_lease_id(lease_id)
         effective_now = self._trusted_now()
         with self._lock:
             current = self._leases.get(resource_id)
@@ -412,6 +414,7 @@ class AcidCasKernel:
             raise AcidCasConflictError(
                 "Lease-guarded writes must include lease_resource_id, lease_id, and lease_epoch together."
             )
+        validate_lease_id(write.lease_id)
 
         if write.lease_resource_id != expected_resource_id:
             raise AcidCasStaleWriteError(
@@ -515,6 +518,11 @@ def validate_canonical_resource_id(resource_id: str) -> None:
         raise AcidCasConflictError(
             "Lease resource_id must use canonical entity_type:tenant_id:owner_id:project_id:entity_id identity."
         )
+
+
+def validate_lease_id(lease_id: str) -> None:
+    if not lease_id.strip():
+        raise AcidCasConflictError("Lease lease_id must be non-empty.")
 
 
 def _transaction_fingerprint(

@@ -56,6 +56,7 @@ Example:
 The lease API rejects non-canonical or partially empty identities so later
 runtime workers cannot accidentally fence a different scope from the row they
 intend to mutate.
+`lease_id` must be non-empty on acquire, heartbeat, release, and guarded writes.
 
 The kernel remains PostgreSQL-compatible contract code only. It does not add SQL,
 runtime worker orchestration, or Stage 4/6/7 service integration.
@@ -68,9 +69,10 @@ runtime worker orchestration, or Stage 4/6/7 service integration.
 - Heartbeat requires matching owner and epoch, preserves the current epoch, and
   extends `expires_at` by the stored TTL.
 - Expired leases immediately lose write authority.
-- Lease expiry and stale-writer checks use the kernel-owned storage clock, not a
-  caller-supplied timestamp. Tests may inject a deterministic kernel clock, but
-  mutation callers cannot backdate lease authority.
+- Lease expiry, stale-writer checks, and committed-at audit timestamps use the
+  kernel-owned storage clock, not a caller-supplied timestamp. Tests may inject
+  a deterministic kernel clock, but mutation callers cannot backdate lease
+  authority or persisted commit time.
 - Reclaim after expiry creates a new active lease with a higher epoch.
 - Voluntary release removes the active lease while preserving the last epoch so
   the next acquire still increments monotonically.
@@ -116,12 +118,14 @@ Exact committed transaction replay remains the one reviewed exception:
 - `test_context2_lease_transfer_increments_epoch`
 - `test_context2_lease_rejects_double_acquire_while_active`
 - `test_context2_lease_rejects_non_canonical_resource_identity`
+- `test_context2_lease_rejects_blank_lease_identity`
 - `test_context2_lease_heartbeat_rejects_owner_mismatch`
 - `test_context2_lease_rejects_stale_writer_epoch`
 - `test_context2_lease_replays_guarded_transaction_after_lease_transfer`
   including replay fingerprint drift for lease fields
 - `test_context2_lease_expiry_blocks_stale_owner_commit`
 - `test_context2_lease_expiry_uses_kernel_clock_not_caller_timestamp`
+- `test_context2_lease_commit_timestamp_uses_kernel_clock_not_caller_timestamp`
 - `test_context2_lease_rejects_unrelated_live_lease_for_different_row`
 - `test_context2_lease_rejects_unguarded_write_while_row_has_active_lease`
 - `test_context2_lease_rejects_partial_fencing_tuple`
