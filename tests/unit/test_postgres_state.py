@@ -3075,6 +3075,43 @@ def test_context2_outbox_rejects_replay_when_event_payload_changes() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("event", "match"),
+    (
+        (_outbox_event(event_id="event-drift"), "checksum"),
+        (_outbox_event(payload_hash="sha256:payload-drift"), "checksum"),
+        (
+            _outbox_event(
+                resource_id="run:tenant-1:owner-1:project-1:run-2",
+                payload={"status": "queued"},
+            ),
+            "checksum",
+        ),
+    ),
+)
+def test_context2_outbox_rejects_replay_when_event_identity_or_hash_changes(
+    event: OutboxEventWrite,
+    match: str,
+) -> None:
+    kernel = AcidCasKernel()
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(_outbox_event(),),
+    )
+
+    with pytest.raises(AcidCasConflictError, match=match):
+        kernel.commit(
+            transaction_id="tx-outbox-1",
+            request_id="req-outbox-1",
+            request_checksum="sha256:req-outbox-1",
+            writes=(_run_write(expected_version=None, status="queued"),),
+            outbox_events=(event,),
+        )
+
+
 def test_context2_outbox_redelivery_is_at_least_once() -> None:
     clock = MutableClock(datetime(2026, 7, 11, 12, 0, tzinfo=UTC))
     kernel = AcidCasKernel(clock=clock)
@@ -3185,6 +3222,39 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
     assert first.event_type == "run.updated"
     assert first.resource_id == "run:tenant-1:owner-1:project-1:run-1"
     assert first.resource_version == 1
+
+
+def test_context2_outbox_consumer_delivery_requires_active_dispatch_lock() -> None:
+    kernel = AcidCasKernel()
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(_outbox_event(),),
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="not actively delivering"):
+        kernel.record_outbox_consumer_delivery(
+            event_id="event-1",
+            consumer_name="script-indexer",
+            dispatcher_id="dispatcher-1",
+            lock_token="lock-1",
+        )
+
+    event = kernel.acquire_outbox_event(
+        event_id="event-1",
+        dispatcher_id="dispatcher-1",
+        lock_token="lock-1",
+        lock_ttl_ms=1_000,
+    )
+    with pytest.raises(AcidCasStaleWriteError, match="lock token"):
+        kernel.record_outbox_consumer_delivery(
+            event_id="event-1",
+            consumer_name="script-indexer",
+            dispatcher_id=event.locked_by or "",
+            lock_token="wrong-lock",
+        )
 
 
 def test_context2_outbox_consumer_dedupe_keeps_same_event_id_cross_resource_separate() -> None:
