@@ -70,6 +70,10 @@ Dispatcher transitions are storage-kernel primitives only:
   at-least-once redelivery
 - dispatcher lock expiry and consumer-delivery ownership checks use the
   kernel-owned storage clock, not caller-supplied timestamps
+- each acquire returns a per-attempt `lock_token`; retry, success, failure, and
+  consumer-delivery recording must present the current token so an expired
+  attempt cannot complete or record delivery after the same dispatcher
+  reacquires the row
 - `retry_outbox_event(...)` moves a dispatcher-owned row back to `PENDING`
   with a new `next_attempt_at`
 - `mark_outbox_event_succeeded(...)` moves a dispatcher-owned row to terminal
@@ -117,6 +121,8 @@ identities.
 - `test_context2_outbox_consumer_dedupes_duplicate_delivery`
 - `test_context2_outbox_consumer_delivery_requires_matching_committed_event`
 - `test_context2_outbox_consumer_delivery_rejects_expired_or_superseded_dispatch`
+- `test_context2_outbox_rejects_stale_same_dispatcher_lock_token`
+- `test_context2_outbox_retry_normalizes_naive_next_attempt_at`
 - `test_context2_outbox_marks_dispatch_failure_terminal`
 - `test_context2_outbox_rejects_transition_after_lock_expiry`
 - `test_context2_outbox_lock_expiry_uses_kernel_clock_not_caller_timestamp`

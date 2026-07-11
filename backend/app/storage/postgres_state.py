@@ -94,6 +94,7 @@ class StoredOutboxEvent:
     next_attempt_at: str
     locked_by: str | None
     locked_until: str | None
+    lock_token: str | None
     last_error: str | None
     payload: dict[str, Any]
     created_at: str
@@ -236,6 +237,7 @@ class AcidCasKernel:
                     next_attempt_at=committed_at,
                     locked_by=None,
                     locked_until=None,
+                    lock_token=None,
                     last_error=None,
                     payload=deepcopy(event.payload),
                     created_at=committed_at,
@@ -303,6 +305,14 @@ class AcidCasKernel:
             )
             acquired: list[StoredOutboxEvent] = []
             for event in eligible[:limit]:
+                attempt_count = event.attempt_count + 1
+                lock_token = outbox_lock_token(
+                    dispatcher_id=dispatcher_id,
+                    resource_id=event.resource_id,
+                    event_id=event.event_id,
+                    attempt_count=attempt_count,
+                    acquired_at=current_iso,
+                )
                 updated = StoredOutboxEvent(
                     event_id=event.event_id,
                     event_type=event.event_type,
@@ -316,10 +326,11 @@ class AcidCasKernel:
                     operation_id=event.operation_id,
                     payload_hash=event.payload_hash,
                     state="DELIVERING",
-                    attempt_count=event.attempt_count + 1,
+                    attempt_count=attempt_count,
                     next_attempt_at=event.next_attempt_at,
                     locked_by=dispatcher_id,
                     locked_until=lock_until,
+                    lock_token=lock_token,
                     last_error=event.last_error,
                     payload=deepcopy(event.payload),
                     created_at=event.created_at,
@@ -335,6 +346,7 @@ class AcidCasKernel:
         event_id: str,
         resource_id: str,
         dispatcher_id: str,
+        lock_token: str,
         next_attempt_at: datetime,
         last_error: str,
         now: datetime | None = None,
@@ -343,8 +355,9 @@ class AcidCasKernel:
             event_id=event_id,
             resource_id=resource_id,
             dispatcher_id=dispatcher_id,
+            lock_token=lock_token,
             state="PENDING",
-            next_attempt_at=next_attempt_at.isoformat(),
+            next_attempt_at=_coerce_datetime(next_attempt_at).isoformat(),
             last_error=last_error,
             now=now,
         )
@@ -355,12 +368,14 @@ class AcidCasKernel:
         event_id: str,
         resource_id: str,
         dispatcher_id: str,
+        lock_token: str,
         now: datetime | None = None,
     ) -> StoredOutboxEvent:
         return self._transition_outbox_event(
             event_id=event_id,
             resource_id=resource_id,
             dispatcher_id=dispatcher_id,
+            lock_token=lock_token,
             state="SUCCEEDED",
             next_attempt_at=None,
             last_error=None,
@@ -373,6 +388,7 @@ class AcidCasKernel:
         event_id: str,
         resource_id: str,
         dispatcher_id: str,
+        lock_token: str,
         last_error: str,
         now: datetime | None = None,
     ) -> StoredOutboxEvent:
@@ -380,6 +396,7 @@ class AcidCasKernel:
             event_id=event_id,
             resource_id=resource_id,
             dispatcher_id=dispatcher_id,
+            lock_token=lock_token,
             state="FAILED",
             next_attempt_at=None,
             last_error=last_error,
@@ -395,9 +412,11 @@ class AcidCasKernel:
         consumer_name: str,
         resource_version: int,
         dispatcher_id: str,
+        lock_token: str,
         now: datetime | None = None,
     ) -> ConsumerDeliveryRecord:
         validate_non_empty_identifier("dispatcher_id", dispatcher_id)
+        validate_non_empty_identifier("lock_token", lock_token)
         validate_non_empty_identifier("consumer_name", consumer_name)
         key = (event_type, resource_id, event_id, consumer_name, resource_version)
         current_time = self._trusted_now()
@@ -417,6 +436,7 @@ class AcidCasKernel:
             if (
                 committed_event.state != "DELIVERING"
                 or committed_event.locked_by != dispatcher_id
+                or committed_event.lock_token != lock_token
                 or committed_event.locked_until is None
                 or _parse_timestamp(committed_event.locked_until) <= current_time
             ):
@@ -622,18 +642,20 @@ class AcidCasKernel:
         event_id: str,
         resource_id: str,
         dispatcher_id: str,
+        lock_token: str,
         state: OutboxEventState,
         next_attempt_at: str | None,
         last_error: str | None,
         now: datetime | None = None,
     ) -> StoredOutboxEvent:
         validate_non_empty_identifier("dispatcher_id", dispatcher_id)
+        validate_non_empty_identifier("lock_token", lock_token)
         with self._lock:
             try:
                 existing = self._outbox_events[(resource_id, event_id)]
             except KeyError as exc:
                 raise KeyError(f"No durable outbox event for {resource_id}:{event_id}") from exc
-            if existing.state != "DELIVERING" or existing.locked_by != dispatcher_id:
+            if existing.state != "DELIVERING" or existing.locked_by != dispatcher_id or existing.lock_token != lock_token:
                 raise AcidCasConflictError(
                     f"Dispatcher {dispatcher_id} does not own outbox event {resource_id}:{event_id}."
                 )
@@ -660,6 +682,7 @@ class AcidCasKernel:
                 next_attempt_at=existing.next_attempt_at if next_attempt_at is None else next_attempt_at,
                 locked_by=None,
                 locked_until=None,
+                lock_token=None,
                 last_error=last_error,
                 payload=deepcopy(existing.payload),
                 created_at=existing.created_at,
@@ -737,6 +760,7 @@ def clone_outbox_event(event: StoredOutboxEvent) -> StoredOutboxEvent:
         next_attempt_at=event.next_attempt_at,
         locked_by=event.locked_by,
         locked_until=event.locked_until,
+        lock_token=event.lock_token,
         last_error=event.last_error,
         payload=deepcopy(event.payload),
         created_at=event.created_at,
@@ -771,6 +795,24 @@ def entity_key(
 
 def outbox_resource_id_for_write(event: OutboxEventWrite) -> str:
     return f"{event.entity_type}:{event.tenant_id}:{event.owner_id}:{event.project_id}:{event.entity_id}"
+
+
+def outbox_lock_token(
+    *,
+    dispatcher_id: str,
+    resource_id: str,
+    event_id: str,
+    attempt_count: int,
+    acquired_at: str,
+) -> str:
+    token_payload = {
+        "dispatcher_id": dispatcher_id,
+        "resource_id": resource_id,
+        "event_id": event_id,
+        "attempt_count": attempt_count,
+        "acquired_at": acquired_at,
+    }
+    return payload_hash_for(token_payload)
 
 
 def validate_outbox_event_scope(event: OutboxEventWrite) -> None:

@@ -9,6 +9,7 @@ from backend.app.storage.postgres_state import (
     AcidCasKernel,
     AcidCasStaleWriteError,
     OutboxEventWrite,
+    StoredOutboxEvent,
     TransactionWrite,
     payload_hash_for,
 )
@@ -33,6 +34,18 @@ def scoped_resource_id(
     entity_id: str,
 ) -> str:
     return f"{entity_type}:{tenant_id}:{owner_id}:{project_id}:{entity_id}"
+
+
+def outbox_lock_token_for(
+    events: tuple[StoredOutboxEvent, ...],
+    event_id: str,
+    resource_id: str | None = None,
+) -> str:
+    for event in events:
+        if event.event_id == event_id and (resource_id is None or event.resource_id == resource_id):
+            assert event.lock_token is not None
+            return event.lock_token
+    raise AssertionError(f"No acquired outbox event {event_id}")
 
 
 def test_ch02_kernel_applies_atomic_transaction_and_versions_new_rows() -> None:
@@ -1349,6 +1362,7 @@ def test_context2_outbox_redelivery_is_at_least_once() -> None:
         event_id="evt-1",
         resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
         dispatcher_id="worker-2",
+        lock_token=outbox_lock_token_for(redelivered, "evt-1"),
         next_attempt_at=base + timedelta(seconds=90),
         last_error="transient timeout",
     )
@@ -1384,6 +1398,7 @@ def test_context2_outbox_redelivery_is_at_least_once() -> None:
         event_id="evt-1",
         resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
         dispatcher_id="worker-3",
+        lock_token=outbox_lock_token_for(final_attempt, "evt-1"),
     )
     assert succeeded.state == "SUCCEEDED"
     assert succeeded.attempt_count == 3
@@ -1493,6 +1508,7 @@ def test_context2_outbox_rejects_wrong_dispatcher_transition() -> None:
             event_id="evt-owner-1",
             resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             dispatcher_id="worker-2",
+            lock_token=outbox_lock_token_for(acquired, "evt-owner-1"),
         )
 
 
@@ -1554,6 +1570,7 @@ def test_context2_outbox_rejects_blank_dispatcher_and_consumer_identity() -> Non
             event_id="evt-identity-1",
             resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             dispatcher_id=" ",
+            lock_token=outbox_lock_token_for(acquired, "evt-identity-1"),
         )
     with pytest.raises(AcidCasConflictError, match="consumer_name must be non-empty"):
         kernel.record_consumer_delivery(
@@ -1563,6 +1580,7 @@ def test_context2_outbox_rejects_blank_dispatcher_and_consumer_identity() -> Non
             consumer_name=" ",
             resource_version=1,
             dispatcher_id="worker-1",
+            lock_token=outbox_lock_token_for(acquired, "evt-identity-1"),
         )
 
 
@@ -1712,29 +1730,35 @@ def test_context2_outbox_consumer_dedupe_scopes_same_event_id_by_resource_identi
     )
     assert len(acquired) == 2
 
+    first_resource_id = scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1")
+    second_resource_id = scoped_resource_id("run", "tenant-2", "owner-2", "project-1", "run-1")
+
     first_resource = kernel.record_consumer_delivery(
         event_id="evt-shared",
-        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+        resource_id=first_resource_id,
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
         resource_version=1,
         dispatcher_id="worker-1",
+        lock_token=outbox_lock_token_for(acquired, "evt-shared", first_resource_id),
     )
     second_resource = kernel.record_consumer_delivery(
         event_id="evt-shared",
-        resource_id=scoped_resource_id("run", "tenant-2", "owner-2", "project-1", "run-1"),
+        resource_id=second_resource_id,
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
         resource_version=1,
         dispatcher_id="worker-1",
+        lock_token=outbox_lock_token_for(acquired, "evt-shared", second_resource_id),
     )
     duplicate_first = kernel.record_consumer_delivery(
         event_id="evt-shared",
-        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+        resource_id=first_resource_id,
         event_type="run.status.changed",
         consumer_name="walkthrough-consumer",
         resource_version=1,
         dispatcher_id="worker-1",
+        lock_token=outbox_lock_token_for(acquired, "evt-shared", first_resource_id),
     )
 
     assert first_resource.duplicate is False
@@ -1847,6 +1871,7 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
         consumer_name="walkthrough-consumer",
         resource_version=1,
         dispatcher_id="worker-1",
+        lock_token=outbox_lock_token_for(acquired, "evt-1"),
     )
     duplicate = kernel.record_consumer_delivery(
         event_id="evt-1",
@@ -1855,6 +1880,7 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
         consumer_name="walkthrough-consumer",
         resource_version=1,
         dispatcher_id="worker-1",
+        lock_token=outbox_lock_token_for(acquired, "evt-1"),
     )
     other_version = kernel.record_consumer_delivery(
         event_id="evt-3",
@@ -1863,6 +1889,7 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
         consumer_name="walkthrough-consumer",
         resource_version=2,
         dispatcher_id="worker-1",
+        lock_token=outbox_lock_token_for(acquired, "evt-3"),
     )
     other_consumer = kernel.record_consumer_delivery(
         event_id="evt-2",
@@ -1871,6 +1898,7 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
         consumer_name="audit-consumer",
         resource_version=1,
         dispatcher_id="worker-1",
+        lock_token=outbox_lock_token_for(acquired, "evt-2"),
     )
 
     assert first.duplicate is False
@@ -1927,6 +1955,7 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
             consumer_name="walkthrough-consumer",
             resource_version=1,
             dispatcher_id="worker-1",
+            lock_token="missing-lock-token",
         )
 
     with pytest.raises(AcidCasConflictError, match="requires active dispatcher ownership"):
@@ -1937,6 +1966,7 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
             consumer_name="walkthrough-consumer",
             resource_version=1,
             dispatcher_id="worker-1",
+            lock_token="stale-lock-token",
         )
 
     acquired = kernel.acquire_outbox_events(
@@ -1954,6 +1984,7 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
             consumer_name="walkthrough-consumer",
             resource_version=1,
             dispatcher_id="worker-1",
+            lock_token=outbox_lock_token_for(acquired, "evt-1"),
         )
 
     with pytest.raises(AcidCasConflictError, match="does not match committed outbox event"):
@@ -1964,6 +1995,7 @@ def test_context2_outbox_consumer_delivery_requires_matching_committed_event() -
             consumer_name="walkthrough-consumer",
             resource_version=2,
             dispatcher_id="worker-1",
+            lock_token=outbox_lock_token_for(acquired, "evt-1"),
         )
 
 
@@ -2022,6 +2054,7 @@ def test_context2_outbox_consumer_delivery_rejects_expired_or_superseded_dispatc
             consumer_name="walkthrough-consumer",
             resource_version=1,
             dispatcher_id="worker-1",
+            lock_token=outbox_lock_token_for(acquired, "evt-stale-1"),
             now=base + timedelta(seconds=31),
         )
 
@@ -2042,8 +2075,163 @@ def test_context2_outbox_consumer_delivery_rejects_expired_or_superseded_dispatc
             consumer_name="walkthrough-consumer",
             resource_version=1,
             dispatcher_id="worker-1",
+            lock_token=outbox_lock_token_for(acquired, "evt-stale-1"),
             now=base + timedelta(seconds=32),
         )
+
+
+def test_context2_outbox_rejects_stale_same_dispatcher_lock_token() -> None:
+    base = datetime(2026, 7, 11, 14, 30, tzinfo=UTC)
+    clock = MutableClock(base)
+    kernel = AcidCasKernel(clock=clock)
+    resource_id = scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1")
+
+    kernel.commit(
+        transaction_id="tx-outbox-stale-token-1",
+        request_id="req-outbox-stale-token-1",
+        request_checksum="sha256:req-outbox-stale-token-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-stale-token-1",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-stale-token-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    first_attempt = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        now=base,
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    first_token = outbox_lock_token_for(first_attempt, "evt-stale-token-1")
+
+    clock.set(base + timedelta(seconds=31))
+    second_attempt = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        now=base + timedelta(seconds=31),
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    second_token = outbox_lock_token_for(second_attempt, "evt-stale-token-1")
+    assert second_token != first_token
+
+    clock.set(base + timedelta(seconds=32))
+    with pytest.raises(AcidCasConflictError, match="does not own outbox event"):
+        kernel.mark_outbox_event_succeeded(
+            event_id="evt-stale-token-1",
+            resource_id=resource_id,
+            dispatcher_id="worker-1",
+            lock_token=first_token,
+            now=base + timedelta(seconds=32),
+        )
+    with pytest.raises(AcidCasConflictError, match="requires active dispatcher ownership"):
+        kernel.record_consumer_delivery(
+            event_id="evt-stale-token-1",
+            resource_id=resource_id,
+            event_type="run.status.changed",
+            consumer_name="walkthrough-consumer",
+            resource_version=1,
+            dispatcher_id="worker-1",
+            lock_token=first_token,
+            now=base + timedelta(seconds=32),
+        )
+
+    succeeded = kernel.mark_outbox_event_succeeded(
+        event_id="evt-stale-token-1",
+        resource_id=resource_id,
+        dispatcher_id="worker-1",
+        lock_token=second_token,
+        now=base + timedelta(seconds=32),
+    )
+    assert succeeded.state == "SUCCEEDED"
+
+
+def test_context2_outbox_retry_normalizes_naive_next_attempt_at() -> None:
+    base = datetime(2026, 7, 11, 15, 0, tzinfo=UTC)
+    clock = MutableClock(base)
+    kernel = AcidCasKernel(clock=clock)
+    resource_id = scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1")
+
+    kernel.commit(
+        transaction_id="tx-outbox-naive-retry-1",
+        request_id="req-outbox-naive-retry-1",
+        request_checksum="sha256:req-outbox-naive-retry-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-naive-retry-1",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-naive-retry-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    acquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        now=base,
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    retried = kernel.retry_outbox_event(
+        event_id="evt-naive-retry-1",
+        resource_id=resource_id,
+        dispatcher_id="worker-1",
+        lock_token=outbox_lock_token_for(acquired, "evt-naive-retry-1"),
+        next_attempt_at=datetime(2026, 7, 11, 15, 1),
+        last_error="transient",
+    )
+    assert retried.next_attempt_at == "2026-07-11T15:01:00+00:00"
+
+    clock.set(datetime(2026, 7, 11, 15, 2, tzinfo=UTC))
+    reacquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-2",
+        now=datetime(2026, 7, 11, 15, 2, tzinfo=UTC),
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    assert len(reacquired) == 1
+    assert reacquired[0].event_id == "evt-naive-retry-1"
 
 
 def test_context2_outbox_marks_dispatch_failure_terminal() -> None:
@@ -2096,6 +2284,7 @@ def test_context2_outbox_marks_dispatch_failure_terminal() -> None:
         event_id="evt-1",
         resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
         dispatcher_id="worker-1",
+        lock_token=outbox_lock_token_for(acquired, "evt-1"),
         last_error="permanent schema mismatch",
     )
     assert failed.state == "FAILED"
@@ -2166,6 +2355,7 @@ def test_context2_outbox_rejects_transition_after_lock_expiry() -> None:
             event_id="evt-1",
             resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             dispatcher_id="worker-1",
+            lock_token=outbox_lock_token_for(acquired, "evt-1"),
             now=base + timedelta(seconds=31),
         )
 
@@ -2221,6 +2411,7 @@ def test_context2_outbox_lock_expiry_uses_kernel_clock_not_caller_timestamp() ->
             event_id="evt-clock-1",
             resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             dispatcher_id="worker-1",
+            lock_token=outbox_lock_token_for(acquired, "evt-clock-1"),
             now=base + timedelta(seconds=1),
         )
     with pytest.raises(AcidCasConflictError, match="requires active dispatcher ownership"):
@@ -2231,6 +2422,7 @@ def test_context2_outbox_lock_expiry_uses_kernel_clock_not_caller_timestamp() ->
             consumer_name="walkthrough-consumer",
             resource_version=1,
             dispatcher_id="worker-1",
+            lock_token=outbox_lock_token_for(acquired, "evt-clock-1"),
             now=base + timedelta(seconds=1),
         )
 
@@ -2287,5 +2479,6 @@ def test_context2_outbox_rejects_transition_at_exact_lock_expiry() -> None:
             event_id="evt-exact-1",
             resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             dispatcher_id="worker-1",
+            lock_token=outbox_lock_token_for(acquired, "evt-exact-1"),
             now=base + timedelta(seconds=30),
         )
