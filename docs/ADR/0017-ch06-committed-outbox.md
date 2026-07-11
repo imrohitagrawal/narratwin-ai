@@ -67,18 +67,17 @@ Outbox `resource_id` must use the canonical durable row identity shape:
 
 `entity_type:tenant_id:owner_id:project_id:entity_id`
 
-The `resource_version` must match the version of a durable row staged or
-already committed in the same scoped resource. This binds the event to the state
-it describes and prevents event-only side effects from claiming a different
-resource version.
+The `resource_version` must match the version of a durable row staged in the
+same transaction. This binds the event to the state it describes and prevents
+event-only side effects from claiming a previously committed resource version.
 
 ### 2. Same-transaction atomicity
 
 If any durable state write or any outbox event fails validation, neither state
 nor event rows are committed. Duplicate event identity inside one transaction,
 duplicate event identity across committed history, conflicting transaction
-replay fingerprints, and events that do not match a staged/committed resource
-version all fail closed.
+replay fingerprints, and events that do not match a same-transaction staged
+resource version all fail closed.
 
 Exact committed transaction replay remains read-only and returns the prior state
 records plus the prior event rows. A changed outbox event payload, payload hash,
