@@ -682,7 +682,11 @@ class Stage7Service:
             self.avatar_renders.pop(avatar_render_id, None)
             self.artifact_metadata.pop(avatar_render_id, None)
         if consent_record_id is not None:
-            self.synthetic_media_consents.pop(consent_record_id, None)
+            prior_consent = snapshot["syntheticMediaConsents"].get(consent_record_id)
+            if prior_consent is None:
+                self.synthetic_media_consents.pop(consent_record_id, None)
+            else:
+                self.synthetic_media_consents[consent_record_id] = deepcopy(prior_consent)
         self._run_counter = max(
             int(snapshot["runCounter"]),
             max_numeric_suffix(self.avatar_renders, "avrun_"),
@@ -1126,6 +1130,7 @@ class Stage7Service:
                     snapshot,
                     render_record_key=record_key,
                     avatar_render_id=result.avatar_render_id,
+                    consent_record_id=required_consent.consent_record_id if required_consent is not None else None,
                 )
                 raise
         return result
@@ -1669,42 +1674,65 @@ def synthetic_avatar_consent_record_from_dict(row: dict[str, Any]) -> SyntheticA
     consent_statement_text = str(row["consent_statement_text"])
     if consent_statement_text != SYNTHETIC_AVATAR_CONSENT_TEXT:
         raise ValueError("Stage 7 consent statement text does not match the canonical text.")
-    granted_at = str(row["granted_at"])
-    if not granted_at:
-        raise ValueError("Stage 7 consent record granted_at is required.")
+    granted_at = validate_granted_at_timestamp(str(row["granted_at"]))
     artifact_checksums = tuple(str(value) for value in row.get("artifact_checksums", ()))
     for checksum in artifact_checksums:
         validate_checksum_component(checksum, field_name="Consent artifact checksum")
+    tenant_id = validate_checksum_component(str(row["tenant_id"]), field_name="Tenant identifier")
+    project_id = validate_checksum_component(str(row["project_id"]), field_name="Project identifier")
+    actor_id = validate_checksum_component(str(row["actor_id"]), field_name="Actor identifier")
+    source_run_id = validate_checksum_component(str(row["source_run_id"]), field_name="Source run identifier")
+    trace_id = validate_checksum_component(str(row["trace_id"]), field_name="Source trace identifier")
+    source_context_ref_ids = tuple(
+        normalize_evidence_ids(
+            tuple(str(value) for value in row.get("source_context_ref_ids", ())),
+            count=len(tuple(str(value) for value in row.get("source_context_ref_ids", ()))),
+            prefix="context_ref",
+        )
+    )
+    source_citation_indexes = tuple(
+        normalize_citation_indexes(
+            tuple(int(value) for value in row.get("source_citation_indexes", ())),
+            count=len(tuple(int(value) for value in row.get("source_citation_indexes", ()))),
+        )
+    )
+    source_evaluation_id = normalize_evaluation_id(str(row["source_evaluation_id"]))
+    source_evaluation_checksum = validate_checksum_component(
+        str(row["source_evaluation_checksum"]),
+        field_name="Source evaluation checksum",
+    )
+    evaluation_status = validate_evaluation_status(str(row["evaluation_status"]))
+    request_checksum = validate_checksum_component(str(row["request_checksum"]), field_name="Consent request checksum")
+    expected_request_checksum = build_avatar_consent_request_checksum(
+        tenant_id=tenant_id,
+        project_id=project_id,
+        actor_id=actor_id,
+        source_run_id=source_run_id,
+        trace_id=trace_id,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_evaluation_id=source_evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=evaluation_status,
+    )
+    if request_checksum != expected_request_checksum:
+        raise ValueError("Stage 7 consent request checksum does not match the restored scope.")
     return SyntheticAvatarConsentRecord(
         consent_record_id=str(row["consent_record_id"]),
-        tenant_id=validate_checksum_component(str(row["tenant_id"]), field_name="Tenant identifier"),
-        project_id=validate_checksum_component(str(row["project_id"]), field_name="Project identifier"),
-        actor_id=validate_checksum_component(str(row["actor_id"]), field_name="Actor identifier"),
-        source_run_id=validate_checksum_component(str(row["source_run_id"]), field_name="Source run identifier"),
-        trace_id=validate_checksum_component(str(row["trace_id"]), field_name="Source trace identifier"),
-        source_context_ref_ids=tuple(
-            normalize_evidence_ids(
-                tuple(str(value) for value in row.get("source_context_ref_ids", ())),
-                count=len(tuple(str(value) for value in row.get("source_context_ref_ids", ()))),
-                prefix="context_ref",
-            )
-        ),
-        source_citation_indexes=tuple(
-            normalize_citation_indexes(
-                tuple(int(value) for value in row.get("source_citation_indexes", ())),
-                count=len(tuple(int(value) for value in row.get("source_citation_indexes", ()))),
-            )
-        ),
-        source_evaluation_id=normalize_evaluation_id(str(row["source_evaluation_id"])),
-        source_evaluation_checksum=validate_checksum_component(
-            str(row["source_evaluation_checksum"]),
-            field_name="Source evaluation checksum",
-        ),
-        evaluation_status=validate_evaluation_status(str(row["evaluation_status"])),
+        tenant_id=tenant_id,
+        project_id=project_id,
+        actor_id=actor_id,
+        source_run_id=source_run_id,
+        trace_id=trace_id,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_evaluation_id=source_evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=evaluation_status,
         consent_statement_version=consent_statement_version,
         consent_statement_text=consent_statement_text,
         granted_at=granted_at,
-        request_checksum=validate_checksum_component(str(row["request_checksum"]), field_name="Consent request checksum"),
+        request_checksum=request_checksum,
         idempotency_scope=str(row["idempotency_scope"]) if row.get("idempotency_scope") is not None else None,
         idempotency_key=str(row["idempotency_key"]) if row.get("idempotency_key") is not None else None,
         avatar_render_id=str(row["avatar_render_id"]) if row.get("avatar_render_id") is not None else None,
@@ -2324,6 +2352,19 @@ def disclosure_metadata() -> DisclosureMetadata:
 
 def utc_now_isoformat() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def validate_granted_at_timestamp(value: str) -> str:
+    candidate = value.strip()
+    if not candidate:
+        raise ValueError("Stage 7 consent record granted_at is required.")
+    try:
+        parsed = datetime.fromisoformat(candidate.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("Stage 7 consent record granted_at must be an ISO-8601 timestamp.") from exc
+    if parsed.tzinfo is None:
+        raise ValueError("Stage 7 consent record granted_at must include a timezone offset.")
+    return candidate
 
 
 def estimate_scene_count(source_script: str) -> int:

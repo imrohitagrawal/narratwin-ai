@@ -245,7 +245,7 @@ class GenerateAvatarRenderRequest(BaseModel):
         pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$",
     )
     consent_to_use_synthetic_avatar: bool = Field(alias="consentToUseSyntheticAvatar")
-    consent_record_id: str | None = Field(default=None, alias="consentRecordId", min_length=1, max_length=128)
+    consent_record_id: str = Field(alias="consentRecordId", min_length=1, max_length=128)
     cloned_identity_requested: bool = Field(default=False, alias="clonedIdentityRequested")
 
 

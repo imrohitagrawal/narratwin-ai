@@ -75,6 +75,8 @@ Restore-time validation drops:
 
 - malformed or incomplete consent rows
 - rows with stale consent statement version/text
+- rows whose stored request checksum no longer matches restored scope fields
+- rows with malformed or timezone-less `granted_at` timestamps
 - rows whose render hook points to a mismatched or missing render
 - succeeded consent-idempotency rows whose value record is missing
 - running consent-idempotency rows

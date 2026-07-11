@@ -977,8 +977,9 @@ Consent idempotency rules:
 - changed-payload reuse returns `409 IDEMPOTENCY_CONFLICT`
 - stale `RUNNING` consent idempotency rows do not replay as success after
   restore
-- malformed, incomplete, stale-version, cross-project, cross-run, or
-  cross-actor restored consent rows are dropped
+- malformed, incomplete, stale-version, malformed-timestamp, request-checksum-
+  mismatched, cross-project, cross-run, or cross-actor restored consent rows
+  are dropped
 
 ### Generate Avatar Demo Export
 
@@ -1026,9 +1027,10 @@ Request boundary limits:
   numbers, `_`, or `-`; normalized to lowercase before adapter use
 - `consentToUseSyntheticAvatar`: required boolean; must be `true` for the
   synthetic local presenter export
-- `consentRecordId`: optional string for the local/mock direct service helper,
-  but required on the API path because Stage 7 durable render generation must
-  bind to a previously captured consent record
+- `consentRecordId`: required string on the API path because Stage 7 durable
+  render generation must bind to a previously captured consent record. The
+  lower-level local/mock service helper accepts `None` only for direct internal
+  calls that do not provide durable scope fields.
 - `clonedIdentityRequested`: optional boolean; `true` is disabled in Stage 7
 - accepted source script: at most 20,000 characters
 - export artifacts: at most 512 KiB each after base64 decoding
