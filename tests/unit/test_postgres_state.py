@@ -2266,6 +2266,48 @@ def test_context2_lease_rejects_unguarded_write_while_row_has_active_lease() -> 
         )
 
 
+def test_context2_lease_rejects_non_canonical_write_identity_before_fencing_lookup() -> None:
+    acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
+    clock = MutableClock(acquired_at)
+    kernel = AcidCasKernel(clock=clock)
+
+    kernel.acquire_lease(
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        lease_id="worker-1",
+        lease_ttl_ms=10_000,
+        now=acquired_at,
+    )
+
+    with pytest.raises(AcidCasConflictError, match="canonical entity_type:tenant_id:owner_id:project_id:entity_id"):
+        kernel.commit(
+            transaction_id="tx-lease-padded-row",
+            request_id="req-lease-padded-row",
+            request_checksum="sha256:req-lease-padded-row",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-1 ",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+            now=acquired_at + timedelta(seconds=1),
+        )
+
+    with pytest.raises(KeyError):
+        kernel.get(
+            entity_type="run",
+            entity_id="run-1 ",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        )
+
+
 def test_context2_lease_rejects_partial_fencing_tuple() -> None:
     kernel = AcidCasKernel()
 
