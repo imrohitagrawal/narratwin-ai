@@ -3141,7 +3141,7 @@ def test_context2_outbox_rejects_replay_when_event_payload_changes() -> None:
     ("event", "match"),
     (
         (_outbox_event(event_id="event-drift"), "checksum"),
-        (_outbox_event(payload_hash=_payload_hash({"status": "queued-drift"}), payload={"status": "queued-drift"}), "checksum"),
+        (_outbox_event(payload_hash="sha256:payload-drift"), "checksum"),
         (
             _outbox_event(
                 resource_id="run:tenant-1:owner-1:project-1:run-2",
@@ -3287,7 +3287,8 @@ def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
 
 
 def test_context2_outbox_consumer_delivery_requires_active_dispatch_lock() -> None:
-    kernel = AcidCasKernel()
+    clock = MutableClock(datetime(2026, 7, 11, 12, 0, tzinfo=UTC))
+    kernel = AcidCasKernel(clock=clock)
     kernel.commit(
         transaction_id="tx-outbox-1",
         request_id="req-outbox-1",
@@ -3316,6 +3317,15 @@ def test_context2_outbox_consumer_delivery_requires_active_dispatch_lock() -> No
             consumer_name="script-indexer",
             dispatcher_id=event.locked_by or "",
             lock_token="wrong-lock",
+        )
+
+    clock.set(datetime(2026, 7, 11, 12, 0, 2, tzinfo=UTC))
+    with pytest.raises(AcidCasStaleWriteError, match="expired"):
+        kernel.record_outbox_consumer_delivery(
+            event_id="event-1",
+            consumer_name="script-indexer",
+            dispatcher_id=event.locked_by or "",
+            lock_token=event.lock_token or "",
         )
 
 
