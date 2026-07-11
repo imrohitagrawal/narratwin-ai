@@ -1874,6 +1874,14 @@ def test_context2_lease_rejects_blank_lease_identity() -> None:
             now=acquired_at,
         )
 
+    with pytest.raises(AcidCasConflictError, match="lease_id must be non-empty"):
+        kernel.acquire_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1",
+            lease_id=" worker-1 ",
+            lease_ttl_ms=10_000,
+            now=acquired_at,
+        )
+
     lease = kernel.acquire_lease(
         resource_id="run:tenant-1:owner-1:project-1:run-1",
         lease_id="worker-1",
@@ -2306,6 +2314,22 @@ def test_context2_lease_rejects_owner_mismatch_for_lease_guarded_write() -> None
                     expected_version=None,
                     status="queued",
                     lease_id="worker-2",
+                    lease_epoch=lease.lease_epoch,
+                ),
+            ),
+            now=acquired_at + timedelta(seconds=1),
+        )
+
+    with pytest.raises(AcidCasConflictError, match="lease_id must be non-empty"):
+        kernel.commit(
+            transaction_id="tx-lease-padded-owner",
+            request_id="req-lease-padded-owner",
+            request_checksum="sha256:req-lease-padded-owner",
+            writes=(
+                _lease_guarded_run_write(
+                    expected_version=None,
+                    status="queued",
+                    lease_id=" worker-1 ",
                     lease_epoch=lease.lease_epoch,
                 ),
             ),
