@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -127,12 +128,13 @@ class TransactionCommitResult:
 class AcidCasKernel:
     """Atomic compare-and-set storage kernel for durable metadata rows."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, clock: Callable[[], datetime] | None = None) -> None:
         self._records: dict[EntityKey, StoredRecord] = {}
         self._outbox_events: dict[OutboxEventKey, StoredOutboxEvent] = {}
         self._transactions: dict[str, TransactionCommitResult] = {}
         self._transaction_fingerprints: dict[str, str] = {}
         self._consumer_deliveries: dict[ConsumerDeliveryKey, ConsumerDeliveryRecord] = {}
+        self._clock = clock
         self._lock = RLock()
 
     def get(
@@ -197,7 +199,7 @@ class AcidCasKernel:
                 outbox_events=outbox_events,
                 staged_records=pending_records,
             )
-            committed_at = _now()
+            committed_at = self._trusted_now().isoformat()
             committed_records = tuple(
                 StoredRecord(
                     entity_type=record.entity_type,
@@ -286,7 +288,7 @@ class AcidCasKernel:
         if lock_ttl_seconds <= 0:
             raise AcidCasConflictError("Outbox lock TTL must be a positive second value.")
 
-        current_time = _coerce_datetime(now)
+        current_time = self._trusted_now()
         current_iso = current_time.isoformat()
         lock_until = (current_time + timedelta(seconds=lock_ttl_seconds)).isoformat()
         with self._lock:
@@ -395,8 +397,8 @@ class AcidCasKernel:
         now: datetime | None = None,
     ) -> ConsumerDeliveryRecord:
         key = (event_type, resource_id, event_id, consumer_name, resource_version)
-        recorded_at = _now()
-        current_time = _coerce_datetime(now)
+        current_time = self._trusted_now()
+        recorded_at = current_time.isoformat()
         with self._lock:
             committed_event = self._outbox_events.get((resource_id, event_id))
             if committed_event is None:
@@ -557,6 +559,7 @@ class AcidCasKernel:
         seen_event_keys: set[OutboxEventKey] = set()
         staged_events: list[OutboxEventWrite] = []
         for event in outbox_events:
+            validate_outbox_event_scope(event)
             event_key = outbox_event_key_for_write(event)
             if event_key in seen_event_keys:
                 raise AcidCasConflictError(
@@ -630,12 +633,12 @@ class AcidCasKernel:
                 raise AcidCasConflictError(
                     f"Dispatcher {dispatcher_id} does not own outbox event {resource_id}:{event_id}."
                 )
-            current_time = _coerce_datetime(now)
+            current_time = self._trusted_now()
             if existing.locked_until is None or _parse_timestamp(existing.locked_until) <= current_time:
                 raise AcidCasConflictError(
                     f"Dispatcher {dispatcher_id} lock for outbox event {resource_id}:{event_id} has expired."
                 )
-            updated_at = _now()
+            updated_at = current_time.isoformat()
             updated = StoredOutboxEvent(
                 event_id=existing.event_id,
                 event_type=existing.event_type,
@@ -660,6 +663,11 @@ class AcidCasKernel:
             )
             self._outbox_events[(resource_id, event_id)] = updated
             return clone_outbox_event(updated)
+
+    def _trusted_now(self) -> datetime:
+        if self._clock is None:
+            return datetime.now(UTC)
+        return _coerce_datetime(self._clock())
 
 
 def replay_result(result: TransactionCommitResult) -> TransactionCommitResult:
@@ -759,6 +767,20 @@ def entity_key(
 
 def outbox_resource_id_for_write(event: OutboxEventWrite) -> str:
     return f"{event.entity_type}:{event.tenant_id}:{event.owner_id}:{event.project_id}:{event.entity_id}"
+
+
+def validate_outbox_event_scope(event: OutboxEventWrite) -> None:
+    parts = (
+        event.entity_type,
+        event.tenant_id,
+        event.owner_id,
+        event.project_id,
+        event.entity_id,
+    )
+    if any(part == "" for part in parts):
+        raise AcidCasConflictError(
+            "Outbox event resource identity must use non-empty entity_type:tenant_id:owner_id:project_id:entity_id fields."
+        )
 
 
 def payload_hash_for(payload: dict[str, Any]) -> str:

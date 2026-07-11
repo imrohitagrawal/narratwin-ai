@@ -44,6 +44,7 @@ Each outbox event must:
 - have a stable `event_id`
 - reference the same scoped durable row identity as a staged state write, using
   `entity_type:tenant_id:owner_id:project_id:entity_id`
+- use non-empty scoped identity fields
 - bind to the staged durable `resource_version`
 - carry the same payload as the staged durable row
 - carry the canonical payload hash for that payload
@@ -67,6 +68,8 @@ Dispatcher transitions are storage-kernel primitives only:
   `DELIVERING`
 - expired `DELIVERING` rows may be acquired again, which provides
   at-least-once redelivery
+- dispatcher lock expiry and consumer-delivery ownership checks use the
+  kernel-owned storage clock, not caller-supplied timestamps
 - `retry_outbox_event(...)` moves a dispatcher-owned row back to `PENDING`
   with a new `next_attempt_at`
 - `mark_outbox_event_succeeded(...)` moves a dispatcher-owned row to terminal
@@ -98,7 +101,10 @@ does not execute the consumer side effect itself.
 
 - `test_context2_outbox_writes_state_and_event_atomically`
 - `test_context2_outbox_rejects_forged_payload_or_hash`
+- `test_context2_outbox_rejects_duplicate_events_in_same_transaction_atomically`
+- `test_context2_outbox_rejects_non_canonical_resource_identity`
 - `test_context2_outbox_replays_committed_transaction_without_duplicate_events`
+  including outbox replay fingerprint drift
 - `test_context2_outbox_redelivery_is_at_least_once`
 - `test_context2_outbox_rejects_wrong_dispatcher_transition`
 - `test_context2_outbox_scopes_duplicate_event_ids_by_resource_identity`
@@ -108,6 +114,7 @@ does not execute the consumer side effect itself.
 - `test_context2_outbox_consumer_delivery_rejects_expired_or_superseded_dispatch`
 - `test_context2_outbox_marks_dispatch_failure_terminal`
 - `test_context2_outbox_rejects_transition_after_lock_expiry`
+- `test_context2_outbox_lock_expiry_uses_kernel_clock_not_caller_timestamp`
 - `test_context2_outbox_rejects_transition_at_exact_lock_expiry`
 
 An additional terminal-failure regression covers the explicit dispatcher fail
