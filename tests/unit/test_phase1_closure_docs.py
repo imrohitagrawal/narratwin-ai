@@ -130,8 +130,9 @@ def issue39_plan_with_closed_row_and_record(
         f"{owner} | {reviewer} | {residual_risk} | {timestamp} | {satisfies} |\n"
     )
     return plan_text.replace(
-        "|---|---|---|---|---|---|---|---|---|\n",
-        "|---|---|---|---|---|---|---|---|---|\n" + record,
+        "## Row Closure Records\n\n| Matrix ID | Child issue / PR | Artifact reference | Validation or human evidence | Owner | Reviewer | Residual-risk decision | Timestamp / merge commit | Satisfies row because |\n|---|---|---|---|---|---|---|---|---|\n",
+        "## Row Closure Records\n\n| Matrix ID | Child issue / PR | Artifact reference | Validation or human evidence | Owner | Reviewer | Residual-risk decision | Timestamp / merge commit | Satisfies row because |\n|---|---|---|---|---|---|---|---|---|\n"
+        + record,
         1,
     )
 
@@ -1282,6 +1283,59 @@ def test_issue39_ch06_branch_rejects_runtime_or_adjacent_chunk_files(monkeypatch
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-ch-06-committed-outbox may not change backend/app/stage7.py.",
         "Phase 1 Closure branch phase-1-closure-39-ch-06-committed-outbox may not change docs/ADR/0015-ch04-idempotency-semantics.md.",
+    ]
+
+
+def test_issue39_ch16_branch_allows_consent_capture_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-16-consent-capture",
+        files=[
+            "backend/app/main.py",
+            "backend/app/stage7.py",
+            "docs/ADR/0019-ch16-consent-capture.md",
+            "docs/API_CONTRACT.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/STATUS.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/api/test_stage7_avatar_api.py",
+            "tests/unit/test_local_durability.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_stage7_avatar.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch16_branch_rejects_adjacent_runtime_or_scope_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-16-consent-capture",
+        files=[
+            "backend/app/stage6.py",
+            "docs/ADR/0017-ch06-committed-outbox.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-16-consent-capture may not change backend/app/stage6.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-16-consent-capture may not change docs/ADR/0017-ch06-committed-outbox.md.",
+    ]
+
+
+def test_issue39_ch16_branch_requires_ch02_dependency_commit_ancestry(monkeypatch: Any) -> None:
+    failures = run_branch_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-16-consent-capture",
+        ancestor_ok=False,
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-16-consent-capture must contain dependency "
+        "commits: 824a07c2bd546648b96d9ab555b63a8f2415898e."
     ]
 
 

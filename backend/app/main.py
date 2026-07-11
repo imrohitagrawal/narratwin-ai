@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 import os
 import re
 import time
@@ -26,6 +27,7 @@ from backend.app.stage4 import (
     MAX_UPLOAD_BYTES,
     MAX_UPLOAD_REQUEST_BYTES,
     Stage4Error,
+    WalkthroughRunRecord,
     document_to_api,
     ingestion_to_api,
     project_to_api,
@@ -42,13 +44,23 @@ from backend.app.stage6 import (
 )
 from backend.app.stage7 import (
     MAX_PROVIDER_ID_CHARS as MAX_AVATAR_PROVIDER_ID_CHARS,
+    DurableAvatarRenderScope,
     Stage7Error,
+    avatar_consent_to_api,
     avatar_render_to_api,
     build_source_evaluation_checksum,
     stage7_service,
 )
 
 ErrorDetailValue = str | int | float | bool
+
+
+@dataclass(frozen=True)
+class Stage7RenderableSource:
+    source_run: WalkthroughRunRecord
+    source_context_ref_ids: tuple[str, ...]
+    source_citation_indexes: tuple[int, ...]
+    source_evaluation_checksum: str
 
 
 class HealthResponse(BaseModel):
@@ -244,7 +256,59 @@ class GenerateAvatarRenderRequest(BaseModel):
         pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$",
     )
     consent_to_use_synthetic_avatar: bool = Field(alias="consentToUseSyntheticAvatar")
+    consent_record_id: str = Field(alias="consentRecordId", min_length=1, max_length=128)
     cloned_identity_requested: bool = Field(default=False, alias="clonedIdentityRequested")
+
+
+class CaptureAvatarConsentRequest(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    consent_to_use_synthetic_avatar: bool = Field(alias="consentToUseSyntheticAvatar")
+
+
+def resolve_stage7_renderable_source(
+    project_id: str,
+    run_id: str,
+    principal: LocalPrincipal,
+) -> Stage7RenderableSource:
+    project = stage4_service.projects.get(project_id)
+    if project is None:
+        raise Stage7Error(404, "NOT_FOUND", "Project not found.")
+    if project.tenant_id != principal.tenant_id or project.owner_id != principal.actor_id:
+        raise Stage7Error(403, "FORBIDDEN", "Project is not accessible to this principal.")
+    source_run = stage4_service.walkthrough_runs.get(run_id)
+    if source_run is None or source_run.project_id != project_id:
+        raise Stage7Error(404, "NOT_FOUND", "Walkthrough run not found.")
+    if source_run.tenant_id != principal.tenant_id or source_run.actor_id != principal.actor_id:
+        raise Stage7Error(403, "FORBIDDEN", "Walkthrough run is not accessible to this principal.")
+    if source_run.status != "COMPLETED" or not source_run.accepted_script_text:
+        raise Stage7Error(422, "SOURCE_RUN_NOT_RENDERABLE", "Only completed grounded walkthrough runs can be rendered.")
+    if source_run.evaluation_status != "PASSED":
+        raise Stage7Error(422, "SOURCE_RUN_NOT_RENDERABLE", "Only passed grounded walkthrough runs can be rendered.")
+    if source_run.evaluation is None or not source_run.evaluation.claim_supports or not source_run.retrieved_context:
+        raise Stage7Error(
+            422,
+            "SOURCE_RUN_NOT_RENDERABLE",
+            "Avatar rendering requires grounded evaluation evidence.",
+        )
+
+    source_context_ref_ids = tuple(context.context_ref_id for context in source_run.retrieved_context)
+    source_citation_indexes = tuple(support.citation_index for support in source_run.evaluation.claim_supports)
+    return Stage7RenderableSource(
+        source_run=source_run,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_evaluation_checksum=build_source_evaluation_checksum(
+            source_evaluation_id=source_run.evaluation.evaluation_id,
+            source_run_id=source_run.run_id,
+            trace_id=source_run.trace_id,
+            evaluation_status=source_run.evaluation_status or "UNKNOWN",
+            source_context_ref_ids=source_context_ref_ids,
+            source_context_ref_count=len(source_run.retrieved_context),
+            source_citation_indexes=source_citation_indexes,
+            source_citation_count=len(source_run.evaluation.claim_supports),
+        ),
+    )
 
 
 class ProjectResponse(BaseModel):
@@ -587,6 +651,7 @@ class AvatarRenderResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     avatar_render_id: str = Field(alias="avatarRenderId")
+    consent_record_id: str | None = Field(default=None, alias="consentRecordId")
     source_run_id: str = Field(alias="sourceRunId")
     status: Literal["COMPLETED"]
     render_job_status: Literal["COMPLETED"] = Field(alias="renderJobStatus")
@@ -598,6 +663,28 @@ class AvatarRenderResponse(BaseModel):
     disclosure: AvatarDisclosureResponse
     artifacts: AvatarArtifactsResponse
     trace: AvatarTraceResponse
+
+
+class AvatarConsentResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    consent_record_id: str = Field(alias="consentRecordId")
+    tenant_id: str = Field(alias="tenantId")
+    project_id: str = Field(alias="projectId")
+    actor_id: str = Field(alias="actorId")
+    source_run_id: str = Field(alias="sourceRunId")
+    trace_id: str = Field(alias="traceId")
+    source_context_ref_ids: list[str] = Field(alias="sourceContextRefIds")
+    source_citation_indexes: list[int] = Field(alias="sourceCitationIndexes")
+    source_evaluation_id: str = Field(alias="sourceEvaluationId")
+    source_evaluation_checksum: str = Field(alias="sourceEvaluationChecksum")
+    evaluation_status: Literal["PASSED", "FAILED", "UNKNOWN"] = Field(alias="evaluationStatus")
+    consent_statement_version: str = Field(alias="consentStatementVersion")
+    consent_statement_text: str = Field(alias="consentStatementText")
+    granted_at: str = Field(alias="grantedAt")
+    request_checksum: str = Field(alias="requestChecksum")
+    avatar_render_id: str | None = Field(default=None, alias="avatarRenderId")
+    artifact_checksums: list[str] = Field(alias="artifactChecksums")
 
 
 def normalize_local_user_id_header(value: str | None, *, app_env: str | None = None) -> str:
@@ -1231,6 +1318,41 @@ def generate_multilingual_walkthrough_run(
 
 
 @api_v1.post(
+    "/projects/{project_id}/walkthrough-runs/{run_id}/avatar-consents",
+    status_code=201,
+    response_model=AvatarConsentResponse,
+    tags=["walkthrough"],
+)
+def capture_avatar_consent(
+    project_id: str,
+    run_id: str,
+    request: CaptureAvatarConsentRequest,
+    principal: LocalPrincipal = Depends(local_principal),
+    idempotency_key: str | None = Depends(idempotency_key_header),
+) -> AvatarConsentResponse:
+    renderable = resolve_stage7_renderable_source(project_id, run_id, principal)
+    source_run = renderable.source_run
+    evaluation = source_run.evaluation
+    assert evaluation is not None
+    consent = stage7_service.capture_synthetic_avatar_consent(
+        tenant_id=principal.tenant_id,
+        project_id=project_id,
+        actor_id=principal.actor_id,
+        source_run_id=source_run.run_id,
+        trace_id=source_run.trace_id,
+        source_context_ref_ids=renderable.source_context_ref_ids,
+        source_citation_indexes=renderable.source_citation_indexes,
+        source_evaluation_id=evaluation.evaluation_id,
+        source_evaluation_checksum=renderable.source_evaluation_checksum,
+        evaluation_status=source_run.evaluation_status or "UNKNOWN",
+        consent_to_use_synthetic_avatar=request.consent_to_use_synthetic_avatar,
+        idempotency_scope=f"{principal.tenant_id}:{principal.actor_id}:{project_id}:{run_id}",
+        idempotency_key=idempotency_key,
+    )
+    return AvatarConsentResponse.model_validate(avatar_consent_to_api(consent))
+
+
+@api_v1.post(
     "/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders",
     status_code=201,
     response_model=AvatarRenderResponse,
@@ -1243,54 +1365,33 @@ def generate_avatar_render(
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
 ) -> AvatarRenderResponse:
-    project = stage4_service.projects.get(project_id)
-    if project is None:
-        raise Stage7Error(404, "NOT_FOUND", "Project not found.")
-    if project.tenant_id != principal.tenant_id or project.owner_id != principal.actor_id:
-        raise Stage7Error(403, "FORBIDDEN", "Project is not accessible to this principal.")
-    source_run = stage4_service.walkthrough_runs.get(run_id)
-    if source_run is None or source_run.project_id != project_id:
-        raise Stage7Error(404, "NOT_FOUND", "Walkthrough run not found.")
-    if source_run.tenant_id != principal.tenant_id or source_run.actor_id != principal.actor_id:
-        raise Stage7Error(403, "FORBIDDEN", "Walkthrough run is not accessible to this principal.")
-    if source_run.status != "COMPLETED" or not source_run.accepted_script_text:
-        raise Stage7Error(422, "SOURCE_RUN_NOT_RENDERABLE", "Only completed grounded walkthrough runs can be rendered.")
-    if source_run.evaluation_status != "PASSED":
-        raise Stage7Error(422, "SOURCE_RUN_NOT_RENDERABLE", "Only passed grounded walkthrough runs can be rendered.")
-    if source_run.evaluation is None or not source_run.evaluation.claim_supports or not source_run.retrieved_context:
-        raise Stage7Error(
-            422,
-            "SOURCE_RUN_NOT_RENDERABLE",
-            "Avatar rendering requires grounded evaluation evidence.",
-        )
-
-    citation_count = len(source_run.evaluation.claim_supports)
-    source_context_ref_ids = tuple(context.context_ref_id for context in source_run.retrieved_context)
-    source_citation_indexes = tuple(support.citation_index for support in source_run.evaluation.claim_supports)
-    source_evaluation_checksum = build_source_evaluation_checksum(
-        source_evaluation_id=source_run.evaluation.evaluation_id,
-        source_run_id=source_run.run_id,
-        trace_id=source_run.trace_id,
-        evaluation_status=source_run.evaluation_status or "UNKNOWN",
-        source_context_ref_ids=source_context_ref_ids,
-        source_context_ref_count=len(source_run.retrieved_context),
-        source_citation_indexes=source_citation_indexes,
-        source_citation_count=citation_count,
-    )
+    renderable = resolve_stage7_renderable_source(project_id, run_id, principal)
+    source_run = renderable.source_run
+    evaluation = source_run.evaluation
+    accepted_script_text = source_run.accepted_script_text
+    assert evaluation is not None
+    assert accepted_script_text is not None
+    citation_count = len(renderable.source_citation_indexes)
     avatar_render = stage7_service.render_avatar_demo(
-        source_script=source_run.accepted_script_text,
+        source_script=accepted_script_text,
         requested_avatar_provider=request.requested_avatar_provider,
         source_run_id=source_run.run_id,
         trace_id=source_run.trace_id,
         source_context_ref_count=len(source_run.retrieved_context),
         source_citation_count=citation_count,
-        source_context_ref_ids=source_context_ref_ids,
-        source_citation_indexes=source_citation_indexes,
-        source_evaluation_id=source_run.evaluation.evaluation_id,
-        source_evaluation_checksum=source_evaluation_checksum,
+        source_context_ref_ids=renderable.source_context_ref_ids,
+        source_citation_indexes=renderable.source_citation_indexes,
+        source_evaluation_id=evaluation.evaluation_id,
+        source_evaluation_checksum=renderable.source_evaluation_checksum,
         evaluation_status=source_run.evaluation_status or "UNKNOWN",
         cloned_identity_requested=request.cloned_identity_requested,
         consent_to_use_synthetic_avatar=request.consent_to_use_synthetic_avatar,
+        durable_consent=DurableAvatarRenderScope(
+            tenant_id=principal.tenant_id,
+            project_id=project_id,
+            actor_id=principal.actor_id,
+            consent_record_id=request.consent_record_id,
+        ),
         idempotency_scope=f"{principal.tenant_id}:{principal.actor_id}:{project_id}:{run_id}",
         idempotency_key=idempotency_key,
     )

@@ -1811,3 +1811,432 @@ def test_stage7_file_state_derives_stale_low_counters_from_restored_ids(tmp_path
     assert first.avatar_render_id == "avrun_000001"
     assert second.avatar_render_id == "avrun_000002"
     assert sorted(restored.avatar_renders) == ["avrun_000001", "avrun_000002"]
+
+
+def test_stage7_records_durable_synthetic_media_consent_and_replays_it(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+        source_evaluation_id="eval_stage7",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_stage7",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+
+    record = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+    replayed = restored.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+
+    assert replayed.consent_record_id == record.consent_record_id
+    assert restored.synthetic_media_consents[record.consent_record_id].actor_id == "user_local"
+
+
+def test_stage7_file_state_terminal_persist_failure_restores_consent_bound_render_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+        source_evaluation_id="eval_stage7",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_stage7",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+    consent = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+
+    def fail_terminal_persist(path: Path | None, payload: object) -> None:
+        assert isinstance(payload, dict)
+        avatar_renders = payload.get("avatarRenders", [])
+        if avatar_renders:
+            raise OSError("simulated terminal write failure")
+        storage_write_state(path, payload)
+
+    monkeypatch.setattr(stage7_module, "write_state", fail_terminal_persist)
+
+    with pytest.raises(OSError, match="simulated terminal write failure"):
+        service.render_avatar_demo(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            requested_avatar_provider="mock",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7",
+            source_evaluation_checksum=source_evaluation_checksum,
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+            durable_consent=stage7_module.DurableAvatarRenderScope(
+                tenant_id="tenant_local",
+                project_id="proj_stage7",
+                actor_id="user_local",
+                consent_record_id=consent.consent_record_id,
+            ),
+            idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+            idempotency_key="render-stage7",
+        )
+
+    restored_consent = service.synthetic_media_consents[consent.consent_record_id]
+    assert restored_consent.avatar_render_id is None
+    assert restored_consent.artifact_checksums == ()
+    assert service.avatar_renders == {}
+    monkeypatch.setattr(stage7_module, "write_state", storage_write_state)
+    replay = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        durable_consent=stage7_module.DurableAvatarRenderScope(
+            tenant_id="tenant_local",
+            project_id="proj_stage7",
+            actor_id="user_local",
+            consent_record_id=consent.consent_record_id,
+        ),
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="render-stage7-retry",
+    )
+    assert replay.consent_record_id == consent.consent_record_id
+
+
+def test_stage7_restores_consumed_durable_consent_binding_after_successful_render(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+        source_evaluation_id="eval_stage7",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_stage7",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+    consent = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+    render = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        durable_consent=stage7_module.DurableAvatarRenderScope(
+            tenant_id="tenant_local",
+            project_id="proj_stage7",
+            actor_id="user_local",
+            consent_record_id=consent.consent_record_id,
+        ),
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="render-stage7",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+    restored_consent = restored.synthetic_media_consents[consent.consent_record_id]
+    restored_render = restored.avatar_renders[render.avatar_render_id]
+
+    assert restored_consent.avatar_render_id == render.avatar_render_id
+    assert restored_consent.artifact_checksums == (
+        render.artifacts.demo_export.checksum,
+        render.artifacts.render_manifest.checksum,
+        render.artifacts.video_export_placeholder.checksum,
+    )
+    assert restored_render.consent_record_id == consent.consent_record_id
+
+
+def test_stage7_drops_tampered_consumed_consent_binding_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+        source_evaluation_id="eval_stage7",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_stage7",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+    consent = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+    render = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        durable_consent=stage7_module.DurableAvatarRenderScope(
+            tenant_id="tenant_local",
+            project_id="proj_stage7",
+            actor_id="user_local",
+            consent_record_id=consent.consent_record_id,
+        ),
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="render-stage7",
+    )
+
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["syntheticMediaConsents"][0]["artifact_checksums"] = ["sha256:tampered"]
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert consent.consent_record_id not in restored.synthetic_media_consents
+    assert render.avatar_render_id not in restored.avatar_renders
+
+
+def test_stage7_drops_running_consent_idempotency_record_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    request_checksum = checksum_text(
+        json.dumps(
+            {
+                "actorId": "user_local",
+                "consentStatementVersion": "stage7-synthetic-avatar-consent-v1",
+                "projectId": "proj_stage7",
+                "sourceEvaluationChecksum": "sha256:eval",
+                "sourceEvaluationId": "eval_stage7",
+                "sourceRunId": "run_stage7",
+                "tenantId": "tenant_local",
+                "traceId": "trace_stage7",
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    )
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "stage7-local-state-v1",
+                "avatarRenders": [],
+                "artifactMetadata": [],
+                "syntheticMediaConsents": [],
+                "idempotencyRecords": [],
+                "consentIdempotencyRecords": [
+                    {
+                        "idempotency_scope": "tenant_local:user_local:proj_stage7:run_stage7",
+                        "endpoint": "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-consents",
+                        "idempotency_key": "capture-consent",
+                        "request_checksum": request_checksum,
+                        "status": "RUNNING",
+                        "value": {"kind": "none"},
+                    }
+                ],
+                "counters": {"run": 0, "consent": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+    consent = restored.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum="sha256:eval",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+
+    assert consent.consent_record_id == "consent_000001"
+    assert len(restored.consent_idempotency_records) == 1
+
+
+def test_stage7_drops_malformed_or_cross_boundary_consent_record_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    expected_checksum = stage7_module.build_avatar_consent_request_checksum(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum="sha256:eval",
+        evaluation_status="PASSED",
+    )
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "stage7-local-state-v1",
+                "avatarRenders": [],
+                "artifactMetadata": [],
+                "syntheticMediaConsents": [
+                    {
+                        "consent_record_id": "consent_000001",
+                        "tenant_id": "tenant_local",
+                        "project_id": "proj_stage7",
+                        "actor_id": "user_local",
+                        "source_run_id": "run_stage7",
+                        "trace_id": "trace_stage7",
+                        "source_evaluation_id": "eval_stage7",
+                        "source_evaluation_checksum": "sha256:eval",
+                        "source_context_ref_ids": ["ctx_stage7"],
+                        "source_citation_indexes": [1],
+                        "consent_statement_version": "stage7-synthetic-avatar-consent-v1",
+                        "consent_statement_text": "tampered text",
+                        "granted_at": "2026-07-12T00:00:00Z",
+                        "request_checksum": "sha256:req",
+                        "idempotency_scope": "tenant_local:user_local:proj_stage7:run_stage7",
+                        "idempotency_key": "capture-consent",
+                        "avatar_render_id": None,
+                        "artifact_checksums": [],
+                    },
+                    {
+                        "consent_record_id": "consent_000002",
+                        "tenant_id": "tenant_local",
+                        "project_id": "proj_other",
+                        "actor_id": "user_other",
+                        "source_run_id": "run_other",
+                        "trace_id": "trace_other",
+                        "source_evaluation_id": "eval_other",
+                        "source_evaluation_checksum": "sha256:other",
+                        "source_context_ref_ids": ["ctx_stage7"],
+                        "source_citation_indexes": [1],
+                        "consent_statement_version": "stage7-synthetic-avatar-consent-v1",
+                        "consent_statement_text": stage7_module.SYNTHETIC_AVATAR_CONSENT_TEXT,
+                        "granted_at": "2026-07-12T00:00:00Z",
+                        "request_checksum": expected_checksum,
+                        "idempotency_scope": "tenant_local:user_local:proj_stage7:run_stage7",
+                        "idempotency_key": "capture-consent",
+                        "avatar_render_id": None,
+                        "artifact_checksums": [],
+                    },
+                    {
+                        "consent_record_id": "consent_000003",
+                        "tenant_id": "tenant_local",
+                        "project_id": "proj_stage7",
+                        "actor_id": "user_local",
+                        "source_run_id": "run_stage7",
+                        "trace_id": "trace_stage7",
+                        "source_evaluation_id": "eval_stage7",
+                        "source_evaluation_checksum": "sha256:eval",
+                        "source_context_ref_ids": ["ctx_stage7"],
+                        "source_citation_indexes": [1],
+                        "consent_statement_version": "stage7-synthetic-avatar-consent-v1",
+                        "consent_statement_text": stage7_module.SYNTHETIC_AVATAR_CONSENT_TEXT,
+                        "granted_at": "not-a-timestamp",
+                        "request_checksum": expected_checksum,
+                        "idempotency_scope": "tenant_local:user_local:proj_stage7:run_stage7",
+                        "idempotency_key": "capture-consent",
+                        "avatar_render_id": None,
+                        "artifact_checksums": [],
+                    }
+                ],
+                "idempotencyRecords": [],
+                "consentIdempotencyRecords": [],
+                "counters": {"run": 0, "consent": 1},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert restored.synthetic_media_consents == {}

@@ -1,13 +1,16 @@
 import base64
+from dataclasses import replace
 import json
+from pathlib import Path
 import threading
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
 from backend.app.stage7 import (
     AvatarProviderResult,
     AvatarProvider,
+    DurableAvatarRenderScope,
     ExportArtifact,
     ExternalAvatarProviderStub,
     MockAvatarProvider,
@@ -1558,3 +1561,649 @@ def test_avatar_validation_failure_idempotency_key_conflicts_on_changed_request(
 
     assert first.value.code == "CLONED_IDENTITY_DISABLED"
     assert second.value.code == "IDEMPOTENCY_CONFLICT"
+
+
+def test_stage7_consent_idempotency_replays_terminal_success() -> None:
+    service = create_stage7_service()
+
+    first = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=build_source_evaluation_checksum(
+            source_evaluation_id="eval_stage7",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            evaluation_status="PASSED",
+            source_context_ref_ids=("ctx_stage7",),
+            source_context_ref_count=1,
+            source_citation_indexes=(1,),
+            source_citation_count=1,
+        ),
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+    replayed = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=build_source_evaluation_checksum(
+            source_evaluation_id="eval_stage7",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            evaluation_status="PASSED",
+            source_context_ref_ids=("ctx_stage7",),
+            source_context_ref_count=1,
+            source_citation_indexes=(1,),
+            source_citation_count=1,
+        ),
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+
+    assert replayed.consent_record_id == first.consent_record_id
+    assert replayed.request_checksum == first.request_checksum
+
+
+def test_stage7_consent_idempotency_conflicts_on_changed_payload() -> None:
+    service = create_stage7_service()
+    checksum = build_source_evaluation_checksum(
+        source_evaluation_id="eval_stage7",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_stage7",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+
+    service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+
+    with pytest.raises(Stage7Error) as exc:
+        service.capture_synthetic_avatar_consent(
+            tenant_id="tenant_local",
+            project_id="proj_stage7",
+            actor_id="user_local",
+            source_run_id="run_other",
+            trace_id="trace_stage7",
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7",
+            source_evaluation_checksum=checksum,
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+            idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+            idempotency_key="capture-consent",
+        )
+
+    assert exc.value.code == "IDEMPOTENCY_CONFLICT"
+
+
+def test_concurrent_duplicate_consent_idempotency_key_is_rejected_in_flight(
+    tmp_path: Path,
+) -> None:
+    service = create_stage7_service(state_path=tmp_path / "stage7.json")
+    entered = threading.Event()
+    release = threading.Event()
+    outcomes: list[str] = []
+    outcomes_lock = threading.Lock()
+
+    class PausingLock:
+        def __init__(self) -> None:
+            self._lock = threading.Lock()
+            self._release_count = 0
+
+        def __enter__(self) -> "PausingLock":
+            self._lock.acquire()
+            return self
+
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: object,
+        ) -> None:
+            self._release_count += 1
+            should_pause = self._release_count == 2
+            self._lock.release()
+            if should_pause:
+                entered.set()
+                assert release.wait(timeout=2)
+
+    service._operation_lock = cast(Any, PausingLock())
+
+    def capture() -> None:
+        try:
+            result = service.capture_synthetic_avatar_consent(
+                tenant_id="tenant_local",
+                project_id="proj_stage7",
+                actor_id="user_local",
+                source_run_id="run_stage7",
+                trace_id="trace_stage7",
+                source_context_ref_ids=("ctx_stage7",),
+                source_citation_indexes=(1,),
+                source_evaluation_id="eval_stage7",
+                source_evaluation_checksum=build_source_evaluation_checksum(
+                    source_evaluation_id="eval_stage7",
+                    source_run_id="run_stage7",
+                    trace_id="trace_stage7",
+                    evaluation_status="PASSED",
+                    source_context_ref_ids=("ctx_stage7",),
+                    source_context_ref_count=1,
+                    source_citation_indexes=(1,),
+                    source_citation_count=1,
+                ),
+                evaluation_status="PASSED",
+                consent_to_use_synthetic_avatar=True,
+                idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+                idempotency_key="capture-consent",
+            )
+            value = result.consent_record_id
+        except Stage7Error as exc:
+            value = exc.code
+        with outcomes_lock:
+            outcomes.append(value)
+
+    first = threading.Thread(target=capture)
+    second = threading.Thread(target=capture)
+    first.start()
+    assert entered.wait(timeout=2)
+    second.start()
+    second.join(timeout=2)
+    release.set()
+    first.join(timeout=2)
+
+    assert sorted(outcomes) == ["IDEMPOTENCY_IN_PROGRESS", "consent_000001"]
+
+
+def test_stage7_consent_idempotency_scope_limit_is_enforced() -> None:
+    service = create_stage7_service()
+
+    for index in range(100):
+        service.capture_synthetic_avatar_consent(
+            tenant_id="tenant_local",
+            project_id="proj_stage7",
+            actor_id="user_local",
+            source_run_id=f"run_stage7_{index}",
+            trace_id=f"trace_stage7_{index}",
+            source_context_ref_ids=(f"ctx_stage7_{index}",),
+            source_citation_indexes=(1,),
+            source_evaluation_id=f"eval_stage7_{index}",
+            source_evaluation_checksum=build_source_evaluation_checksum(
+                source_evaluation_id=f"eval_stage7_{index}",
+                source_run_id=f"run_stage7_{index}",
+                trace_id=f"trace_stage7_{index}",
+                evaluation_status="PASSED",
+                source_context_ref_ids=(f"ctx_stage7_{index}",),
+                source_context_ref_count=1,
+                source_citation_indexes=(1,),
+                source_citation_count=1,
+            ),
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+            idempotency_scope="tenant_local:user_local:proj_stage7",
+            idempotency_key=f"capture-consent-{index}",
+        )
+
+    with pytest.raises(Stage7Error) as exc:
+        service.capture_synthetic_avatar_consent(
+            tenant_id="tenant_local",
+            project_id="proj_stage7",
+            actor_id="user_local",
+            source_run_id="run_stage7_over_limit",
+            trace_id="trace_stage7_over_limit",
+            source_context_ref_ids=("ctx_stage7_over_limit",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7_over_limit",
+            source_evaluation_checksum=build_source_evaluation_checksum(
+                source_evaluation_id="eval_stage7_over_limit",
+                source_run_id="run_stage7_over_limit",
+                trace_id="trace_stage7_over_limit",
+                evaluation_status="PASSED",
+                source_context_ref_ids=("ctx_stage7_over_limit",),
+                source_context_ref_count=1,
+                source_citation_indexes=(1,),
+                source_citation_count=1,
+            ),
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+            idempotency_scope="tenant_local:user_local:proj_stage7",
+            idempotency_key="capture-consent-over-limit",
+        )
+
+    assert exc.value.code == "RESOURCE_LIMIT_EXCEEDED"
+
+
+def test_stage7_accepts_matching_consent_scope_for_render_gate() -> None:
+    service = create_stage7_service()
+    source_evaluation_checksum = build_source_evaluation_checksum(
+        source_evaluation_id="eval_stage7",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_stage7",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+    consent = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+
+    result = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        durable_consent=DurableAvatarRenderScope(
+            tenant_id="tenant_local",
+            project_id="proj_stage7",
+            actor_id="user_local",
+            consent_record_id=consent.consent_record_id,
+        ),
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="render-stage7",
+    )
+
+    assert result.avatar_render_id.startswith("avrun_")
+    assert result.consent_record_id == consent.consent_record_id
+    stored = service.synthetic_media_consents[consent.consent_record_id]
+    assert stored.avatar_render_id == result.avatar_render_id
+    assert stored.artifact_checksums == (
+        result.artifacts.demo_export.checksum,
+        result.artifacts.render_manifest.checksum,
+        result.artifacts.video_export_placeholder.checksum,
+    )
+
+
+def test_stage7_rejects_render_when_durable_consent_record_is_missing_or_invalid() -> None:
+    service = create_stage7_service()
+
+    with pytest.raises(Stage7Error) as missing_exc:
+        service.render_avatar_demo(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            requested_avatar_provider="mock",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7",
+            source_evaluation_checksum=build_source_evaluation_checksum(
+                source_evaluation_id="eval_stage7",
+                source_run_id="run_stage7",
+                trace_id="trace_stage7",
+                evaluation_status="PASSED",
+                source_context_ref_ids=("ctx_stage7",),
+                source_context_ref_count=1,
+                source_citation_indexes=(1,),
+                source_citation_count=1,
+            ),
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+            durable_consent=DurableAvatarRenderScope(
+                tenant_id="tenant_local",
+                project_id="proj_stage7",
+                actor_id="user_local",
+                consent_record_id="consent_missing",
+            ),
+        )
+    assert missing_exc.value.code == "AVATAR_CONSENT_RECORD_REQUIRED"
+
+    consent = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=build_source_evaluation_checksum(
+            source_evaluation_id="eval_stage7",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            evaluation_status="PASSED",
+            source_context_ref_ids=("ctx_stage7",),
+            source_context_ref_count=1,
+            source_citation_indexes=(1,),
+            source_citation_count=1,
+        ),
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+
+    with pytest.raises(Stage7Error) as invalid_exc:
+        service.render_avatar_demo(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            requested_avatar_provider="mock",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7",
+            source_evaluation_checksum=build_source_evaluation_checksum(
+                source_evaluation_id="eval_stage7",
+                source_run_id="run_stage7",
+                trace_id="trace_stage7",
+                evaluation_status="PASSED",
+                source_context_ref_ids=("ctx_stage7",),
+                source_context_ref_count=1,
+                source_citation_indexes=(1,),
+                source_citation_count=1,
+            ),
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+            durable_consent=DurableAvatarRenderScope(
+                tenant_id="tenant_local",
+                project_id="proj_stage7",
+                actor_id="different_actor",
+                consent_record_id=consent.consent_record_id,
+            ),
+        )
+    assert invalid_exc.value.code == "AVATAR_CONSENT_INVALID"
+
+
+def test_stage7_rejects_cross_scope_or_stale_version_consent_record() -> None:
+    service = create_stage7_service()
+    source_evaluation_checksum = build_source_evaluation_checksum(
+        source_evaluation_id="eval_stage7",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_stage7",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+    consent = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+    service.synthetic_media_consents[consent.consent_record_id] = replace(
+        consent,
+        consent_statement_version="stage7-synthetic-avatar-consent-v0",
+    )
+
+    with pytest.raises(Stage7Error) as exc:
+        service.render_avatar_demo(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            requested_avatar_provider="mock",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7",
+            source_evaluation_checksum=source_evaluation_checksum,
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+            durable_consent=DurableAvatarRenderScope(
+                tenant_id="tenant_local",
+                project_id="proj_stage7",
+                actor_id="user_local",
+                consent_record_id=consent.consent_record_id,
+            ),
+        )
+
+    assert exc.value.code == "AVATAR_CONSENT_INVALID"
+
+
+@pytest.mark.parametrize(
+    ("scope", "source_run_id", "trace_id", "source_evaluation_id", "source_evaluation_checksum"),
+    [
+        (
+            DurableAvatarRenderScope(
+                tenant_id="tenant_local",
+                project_id="other_project",
+                actor_id="user_local",
+                consent_record_id="consent_000001",
+            ),
+            "run_stage7",
+            "trace_stage7",
+            "eval_stage7",
+            "sha256:match",
+        ),
+        (
+            DurableAvatarRenderScope(
+                tenant_id="tenant_local",
+                project_id="proj_stage7",
+                actor_id="user_local",
+                consent_record_id="consent_000001",
+            ),
+            "run_other",
+            "trace_stage7",
+            "eval_stage7",
+            "sha256:match",
+        ),
+        (
+            DurableAvatarRenderScope(
+                tenant_id="tenant_local",
+                project_id="proj_stage7",
+                actor_id="user_local",
+                consent_record_id="consent_000001",
+            ),
+            "run_stage7",
+            "trace_other",
+            "eval_stage7",
+            "sha256:match",
+        ),
+        (
+            DurableAvatarRenderScope(
+                tenant_id="tenant_local",
+                project_id="proj_stage7",
+                actor_id="user_local",
+                consent_record_id="consent_000001",
+            ),
+            "run_stage7",
+            "trace_stage7",
+            "eval_other",
+            "sha256:match",
+        ),
+        (
+            DurableAvatarRenderScope(
+                tenant_id="tenant_local",
+                project_id="proj_stage7",
+                actor_id="user_local",
+                consent_record_id="consent_000001",
+            ),
+            "run_stage7",
+            "trace_stage7",
+            "eval_stage7",
+            "sha256:mismatch",
+        ),
+    ],
+)
+def test_stage7_rejects_scope_mismatches_for_durable_consent(
+    scope: DurableAvatarRenderScope,
+    source_run_id: str,
+    trace_id: str,
+    source_evaluation_id: str,
+    source_evaluation_checksum: str,
+) -> None:
+    service = create_stage7_service()
+    matching_checksum = build_source_evaluation_checksum(
+        source_evaluation_id="eval_stage7",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_stage7",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+    consent = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=matching_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+    scope = replace(scope, consent_record_id=consent.consent_record_id)
+    checksum = matching_checksum if source_evaluation_checksum == "sha256:match" else source_evaluation_checksum
+
+    with pytest.raises(Stage7Error) as exc:
+        service.render_avatar_demo(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            requested_avatar_provider="mock",
+            source_run_id=source_run_id,
+            trace_id=trace_id,
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id=source_evaluation_id,
+            source_evaluation_checksum=checksum,
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+            durable_consent=scope,
+        )
+
+    assert exc.value.code == "AVATAR_CONSENT_INVALID"
+
+
+def test_stage7_rejects_reuse_of_consumed_durable_consent_record() -> None:
+    service = create_stage7_service()
+    source_evaluation_checksum = build_source_evaluation_checksum(
+        source_evaluation_id="eval_stage7",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_stage7",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+    consent = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="capture-consent",
+    )
+    durable_scope = DurableAvatarRenderScope(
+        tenant_id="tenant_local",
+        project_id="proj_stage7",
+        actor_id="user_local",
+        consent_record_id=consent.consent_record_id,
+    )
+    service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_stage7",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        durable_consent=durable_scope,
+        idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
+        idempotency_key="render-stage7",
+    )
+
+    with pytest.raises(Stage7Error) as exc:
+        service.render_avatar_demo(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            requested_avatar_provider="mock",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7",
+            source_evaluation_checksum=source_evaluation_checksum,
+            evaluation_status="PASSED",
+            consent_to_use_synthetic_avatar=True,
+            durable_consent=durable_scope,
+            idempotency_scope="tenant_local:user_local:proj_stage7:run-stage7-second",
+            idempotency_key="render-stage7-second",
+        )
+
+    assert exc.value.code == "AVATAR_CONSENT_INVALID"
