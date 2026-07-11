@@ -44,6 +44,19 @@ Leases are resource-scoped and intentionally generic. The kernel stores:
 - `heartbeat_at`
 - `expires_at`
 
+`resource_id` is not an arbitrary caller label. It must use the canonical
+durable row identity shape:
+
+- `entity_type:tenant_id:owner_id:project_id:entity_id`
+
+Example:
+
+- `run:tenant-1:owner-1:project-1:run-1`
+
+The lease API rejects non-canonical or partially empty identities so later
+runtime workers cannot accidentally fence a different scope from the row they
+intend to mutate.
+
 The kernel remains PostgreSQL-compatible contract code only. It does not add SQL,
 runtime worker orchestration, or Stage 4/6/7 service integration.
 
@@ -96,10 +109,20 @@ Exact committed transaction replay remains the one reviewed exception:
 `CH-05` implementation evidence is limited to focused unit tests in
 `tests/unit/test_postgres_state.py`:
 
-- `test_context2_lease_rejects_stale_writer_epoch`
 - `test_context2_lease_renew_preserves_epoch_and_extends_expiry`
 - `test_context2_lease_transfer_increments_epoch`
+- `test_context2_lease_rejects_double_acquire_while_active`
+- `test_context2_lease_rejects_non_canonical_resource_identity`
+- `test_context2_lease_heartbeat_rejects_owner_mismatch`
+- `test_context2_lease_rejects_stale_writer_epoch`
+- `test_context2_lease_replays_guarded_transaction_after_lease_transfer`
 - `test_context2_lease_expiry_blocks_stale_owner_commit`
+- `test_context2_lease_rejects_unrelated_live_lease_for_different_row`
+- `test_context2_lease_rejects_unguarded_write_while_row_has_active_lease`
+- `test_context2_lease_rejects_partial_fencing_tuple`
+- `test_context2_lease_rejects_owner_mismatch_for_lease_guarded_write`
+- `test_context2_lease_release_removes_active_lease_and_next_acquire_advances_epoch`
+- `test_context2_lease_release_rejects_stale_owner`
 
 These map directly to `CTX2-LEASE-EVID-001` in
 `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`.
