@@ -914,12 +914,16 @@ def validate_operation_identity(*, operation_id: str, payload_hash: str, lease_o
         ("payload_hash", payload_hash),
         ("lease_owner_id", lease_owner_id),
     ):
-        if not value.strip():
+        if not _is_valid_identifier(value):
             raise AcidCasConflictError(f"Operation {label} must be non-empty.")
 
 
 def _is_valid_identity_part(value: str) -> bool:
     return bool(value.strip()) and value == value.strip() and ":" not in value
+
+
+def _is_valid_identifier(value: str) -> bool:
+    return bool(value.strip()) and value == value.strip()
 
 
 def operation_entity_key(*, operation_id: str, scope: OperationScope) -> EntityKey:
