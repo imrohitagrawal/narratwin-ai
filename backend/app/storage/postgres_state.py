@@ -146,6 +146,7 @@ class AcidCasKernel:
             ) from exc
 
     def get_operation(self, *, operation_id: str, scope: OperationScope) -> OperationRecord:
+        validate_operation_scope(scope)
         key = operation_entity_key(operation_id=operation_id, scope=scope)
         try:
             return clone_operation_record(operation_record_from_stored_record(self._records[key]))
@@ -166,6 +167,7 @@ class AcidCasKernel:
         lease_owner_id: str,
         lease_epoch: int,
     ) -> OperationCommitResult:
+        validate_operation_scope(scope)
         with self._lock:
             existing = self._get_optional_operation(operation_id=operation_id, scope=scope)
             if existing is None:
@@ -216,6 +218,7 @@ class AcidCasKernel:
         lease_epoch: int,
         response_payload: dict[str, Any],
     ) -> OperationCommitResult:
+        validate_operation_scope(scope)
         with self._lock:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
@@ -277,6 +280,7 @@ class AcidCasKernel:
         lease_epoch: int,
         error_payload: dict[str, Any],
     ) -> OperationCommitResult:
+        validate_operation_scope(scope)
         with self._lock:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
@@ -337,6 +341,7 @@ class AcidCasKernel:
         lease_owner_id: str,
         lease_epoch: int,
     ) -> OperationCommitResult:
+        validate_operation_scope(scope)
         with self._lock:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
@@ -395,6 +400,7 @@ class AcidCasKernel:
         lease_owner_id: str,
         lease_epoch: int,
     ) -> OperationCommitResult:
+        validate_operation_scope(scope)
         with self._lock:
             existing = self._get_required_operation(operation_id=operation_id, scope=scope)
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
@@ -838,6 +844,19 @@ def entity_key(
 
 def operation_entity_id(*, operation_id: str, scope: OperationScope) -> str:
     return f"{operation_id}::{scope.resource_id}"
+
+
+def validate_operation_scope(scope: OperationScope) -> None:
+    parts = scope.resource_id.split(":")
+    if len(parts) != 5 or any(part == "" for part in parts):
+        raise AcidCasConflictError(
+            "Operation scope resource_id must use canonical entity_type:tenant_id:owner_id:project_id:entity_id identity."
+        )
+    _, tenant_id, owner_id, project_id, _ = parts
+    if (tenant_id, owner_id, project_id) != (scope.tenant_id, scope.owner_id, scope.project_id):
+        raise AcidCasConflictError(
+            "Operation scope resource_id tenant_id, owner_id, and project_id must match OperationScope."
+        )
 
 
 def operation_entity_key(*, operation_id: str, scope: OperationScope) -> EntityKey:
