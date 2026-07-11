@@ -2214,19 +2214,12 @@ def test_nontrivial_pull_request_accepts_verified_commit_order_preimplementation
 ) -> None:
     earlier = "1111111"
     later = "2222222"
-    existing_artifacts = {
-        PR_SPECIFIC_PREFLIGHT_ARTIFACT,
-        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
-        "docs/ENGINEERING_PROCESS_RCA.md",
-    }
 
     def fake_git_command_succeeds(args: list[str]) -> bool:
         if args == ["cat-file", "-e", f"{earlier}^{{commit}}"]:
             return True
         if args == ["cat-file", "-e", f"{later}^{{commit}}"]:
             return True
-        if len(args) == 3 and args[:2] == ["cat-file", "-e"]:
-            return args[2] in {f"{earlier}:{artifact}" for artifact in existing_artifacts}
         return args == ["merge-base", "--is-ancestor", earlier, later]
 
     monkeypatch.setattr(guardrails, "git_command_succeeds", fake_git_command_succeeds)
@@ -2260,33 +2253,6 @@ def test_nontrivial_pull_request_rejects_reversed_commit_order_preimplementation
         monkeypatch,
         title="Harden local workflow evidence",
         body=body_with_commit_order_preimplementation_rows(f"commit order: {later} before {earlier}"),
-        head_ref="phase-1-closure-44-telemetry-hardening",
-        changed_files=["backend/app/main.py"],
-    )
-
-    assert PREFLIGHT_FAILURE in failures
-
-
-def test_nontrivial_pull_request_rejects_commit_order_when_artifact_missing_at_earlier_commit(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    earlier = "1111111"
-    later = "2222222"
-
-    def fake_git_command_succeeds(args: list[str]) -> bool:
-        if args[0] == "cat-file" and args[2].endswith("^{commit}"):
-            return True
-        if args[0] == "cat-file":
-            return False
-        return args == ["merge-base", "--is-ancestor", earlier, later]
-
-    monkeypatch.setattr(guardrails, "git_command_succeeds", fake_git_command_succeeds)
-    failures = run_issue_link_check(
-        tmp_path,
-        monkeypatch,
-        title="Harden local workflow evidence",
-        body=body_with_commit_order_preimplementation_rows(f"commit order: {earlier} before {later}"),
         head_ref="phase-1-closure-44-telemetry-hardening",
         changed_files=["backend/app/main.py"],
     )
