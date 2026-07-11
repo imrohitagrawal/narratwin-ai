@@ -139,6 +139,14 @@ uv run pytest -p no:cacheprovider tests/unit/test_postgres_state.py
 uv run pytest -p no:cacheprovider tests/unit/test_phase1_closure_docs.py -k ch02
 ```
 
+Focused CH-06 committed-outbox checks:
+
+```bash
+uv run pytest -p no:cacheprovider tests/unit/test_postgres_state.py -k outbox
+uv run pytest -p no:cacheprovider tests/unit/test_postgres_state.py
+uv run pytest -p no:cacheprovider tests/unit/test_phase1_closure_docs.py -k ch06
+```
+
 If `make` is unavailable, run the closest applicable checks manually:
 
 ```bash

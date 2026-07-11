@@ -9,6 +9,7 @@ from backend.app.storage.postgres_state import (
     AcidCasKernel,
     AcidCasStaleOwnerError,
     AcidCasStaleWriteError,
+    OutboxEventWrite,
     OperationScope,
     TransactionWrite,
 )
@@ -2896,3 +2897,359 @@ def test_context2_lease_release_rejects_stale_owner() -> None:
             lease_epoch=lease.lease_epoch,
             now=acquired_at + timedelta(seconds=1),
         )
+
+
+def _run_write(*, expected_version: int | None, status: str) -> TransactionWrite:
+    return TransactionWrite(
+        entity_type="run",
+        entity_id="run-1",
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        expected_version=expected_version,
+        state="OPEN",
+        payload={"status": status},
+    )
+
+
+def _outbox_event(
+    *,
+    event_id: str = "event-1",
+    resource_id: str = "run:tenant-1:owner-1:project-1:run-1",
+    resource_version: int = 1,
+    payload_hash: str = "sha256:payload-1",
+    payload: dict[str, str] | None = None,
+) -> OutboxEventWrite:
+    return OutboxEventWrite(
+        event_id=event_id,
+        event_type="run.updated",
+        resource_id=resource_id,
+        resource_version=resource_version,
+        operation_id="operation-1",
+        payload_hash=payload_hash,
+        payload=payload or {"status": "queued"},
+    )
+
+
+def test_context2_outbox_writes_state_and_event_atomically() -> None:
+    kernel = AcidCasKernel()
+
+    result = kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(_outbox_event(),),
+    )
+
+    event = kernel.get_outbox_event(event_id="event-1")
+    assert result.outcome == "applied"
+    assert result.outbox_events == (event,)
+    assert result.records[0].version == 1
+    assert event.state == "PENDING"
+    assert event.resource_id == "run:tenant-1:owner-1:project-1:run-1"
+    assert event.resource_version == result.records[0].version
+    assert event.payload == {"status": "queued"}
+
+
+def test_context2_outbox_rolls_back_state_when_event_identity_is_duplicate() -> None:
+    kernel = AcidCasKernel()
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(_outbox_event(),),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="outbox event"):
+        kernel.commit(
+            transaction_id="tx-outbox-2",
+            request_id="req-outbox-2",
+            request_checksum="sha256:req-outbox-2",
+            writes=(_run_write(expected_version=1, status="processing"),),
+            outbox_events=(_outbox_event(payload={"status": "processing"}),),
+        )
+
+    assert (
+        kernel.get(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        ).payload
+        == {"status": "queued"}
+    )
+    assert kernel.get_outbox_event(event_id="event-1").payload == {"status": "queued"}
+
+
+def test_context2_outbox_binds_event_to_staged_resource_payload() -> None:
+    kernel = AcidCasKernel()
+
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(
+            _outbox_event(
+                resource_version=1,
+                payload_hash="sha256:queued",
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    event = kernel.get_outbox_event(event_id="event-1")
+    assert event.resource_version == 1
+    assert event.payload_hash == "sha256:queued"
+    assert event.payload == {"status": "queued"}
+
+
+def test_context2_outbox_rejects_unmatched_resource_version() -> None:
+    kernel = AcidCasKernel()
+
+    with pytest.raises(AcidCasConflictError, match="resource version"):
+        kernel.commit(
+            transaction_id="tx-outbox-1",
+            request_id="req-outbox-1",
+            request_checksum="sha256:req-outbox-1",
+            writes=(_run_write(expected_version=None, status="queued"),),
+            outbox_events=(_outbox_event(resource_version=2),),
+        )
+
+    with pytest.raises(KeyError, match="No durable record"):
+        kernel.get(
+            entity_type="run",
+            entity_id="run-1",
+            tenant_id="tenant-1",
+            owner_id="owner-1",
+            project_id="project-1",
+        )
+
+
+def test_context2_outbox_replays_committed_state_and_event() -> None:
+    kernel = AcidCasKernel()
+    writes = (_run_write(expected_version=None, status="queued"),)
+    events = (_outbox_event(),)
+
+    first = kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=writes,
+        outbox_events=events,
+    )
+    second = kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=writes,
+        outbox_events=events,
+    )
+
+    assert second.outcome == "replayed"
+    assert second.replayed is True
+    assert second.records == first.records
+    assert second.outbox_events == first.outbox_events
+
+
+def test_context2_outbox_rejects_replay_when_event_payload_changes() -> None:
+    kernel = AcidCasKernel()
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(_outbox_event(payload={"status": "queued"}),),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="checksum"):
+        kernel.commit(
+            transaction_id="tx-outbox-1",
+            request_id="req-outbox-1",
+            request_checksum="sha256:req-outbox-1",
+            writes=(_run_write(expected_version=None, status="queued"),),
+            outbox_events=(_outbox_event(payload={"status": "tampered"}),),
+        )
+
+
+def test_context2_outbox_redelivery_is_at_least_once() -> None:
+    clock = MutableClock(datetime(2026, 7, 11, 12, 0, tzinfo=UTC))
+    kernel = AcidCasKernel(clock=clock)
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(_outbox_event(),),
+    )
+
+    first = kernel.acquire_outbox_event(
+        event_id="event-1",
+        dispatcher_id="dispatcher-1",
+        lock_token="lock-1",
+        lock_ttl_ms=1_000,
+    )
+    kernel.retry_outbox_event(
+        event_id="event-1",
+        dispatcher_id="dispatcher-1",
+        lock_token="lock-1",
+        last_error="temporary network failure",
+    )
+    second = kernel.acquire_outbox_event(
+        event_id="event-1",
+        dispatcher_id="dispatcher-1",
+        lock_token="lock-2",
+        lock_ttl_ms=1_000,
+    )
+
+    assert first.state == "DELIVERING"
+    assert first.attempt_count == 1
+    assert second.state == "DELIVERING"
+    assert second.attempt_count == 2
+    assert second.last_error == "temporary network failure"
+
+
+def test_context2_outbox_rejects_stale_dispatch_completion_after_reclaim() -> None:
+    clock = MutableClock(datetime(2026, 7, 11, 12, 0, tzinfo=UTC))
+    kernel = AcidCasKernel(clock=clock)
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(_outbox_event(),),
+    )
+    first = kernel.acquire_outbox_event(
+        event_id="event-1",
+        dispatcher_id="dispatcher-1",
+        lock_token="lock-1",
+        lock_ttl_ms=1_000,
+    )
+    clock.set(datetime(2026, 7, 11, 12, 0, 2, tzinfo=UTC))
+    reclaimed = kernel.acquire_outbox_event(
+        event_id="event-1",
+        dispatcher_id="dispatcher-1",
+        lock_token="lock-2",
+        lock_ttl_ms=1_000,
+    )
+
+    with pytest.raises(AcidCasStaleWriteError, match="lock token"):
+        kernel.complete_outbox_event(
+            event_id="event-1",
+            dispatcher_id=first.locked_by or "",
+            lock_token=first.lock_token or "",
+        )
+
+    completed = kernel.complete_outbox_event(
+        event_id="event-1",
+        dispatcher_id=reclaimed.locked_by or "",
+        lock_token=reclaimed.lock_token or "",
+    )
+    assert completed.state == "SUCCEEDED"
+
+
+def test_context2_outbox_consumer_dedupes_duplicate_delivery() -> None:
+    kernel = AcidCasKernel()
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(_outbox_event(),),
+    )
+    event = kernel.acquire_outbox_event(
+        event_id="event-1",
+        dispatcher_id="dispatcher-1",
+        lock_token="lock-1",
+        lock_ttl_ms=1_000,
+    )
+
+    first = kernel.record_outbox_consumer_delivery(
+        event_id="event-1",
+        consumer_name="script-indexer",
+        dispatcher_id=event.locked_by or "",
+        lock_token=event.lock_token or "",
+    )
+    second = kernel.record_outbox_consumer_delivery(
+        event_id="event-1",
+        consumer_name="script-indexer",
+        dispatcher_id=event.locked_by or "",
+        lock_token=event.lock_token or "",
+    )
+
+    assert first == second
+    assert first.consumer_name == "script-indexer"
+    assert first.event_type == "run.updated"
+    assert first.resource_id == "run:tenant-1:owner-1:project-1:run-1"
+    assert first.resource_version == 1
+
+
+def test_context2_outbox_consumer_dedupe_keeps_same_event_id_cross_resource_separate() -> None:
+    kernel = AcidCasKernel()
+    kernel.commit(
+        transaction_id="tx-outbox-1",
+        request_id="req-outbox-1",
+        request_checksum="sha256:req-outbox-1",
+        writes=(_run_write(expected_version=None, status="queued"),),
+        outbox_events=(_outbox_event(event_id="shared-event"),),
+    )
+    kernel.commit(
+        transaction_id="tx-outbox-2",
+        request_id="req-outbox-2",
+        request_checksum="sha256:req-outbox-2",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-2",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            _outbox_event(
+                event_id="shared-event",
+                resource_id="run:tenant-1:owner-1:project-1:run-2",
+                resource_version=1,
+            ),
+        ),
+    )
+
+    first_event = kernel.acquire_outbox_event(
+        event_id="shared-event",
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        dispatcher_id="dispatcher-1",
+        lock_token="lock-1",
+        lock_ttl_ms=1_000,
+    )
+    second_event = kernel.acquire_outbox_event(
+        event_id="shared-event",
+        resource_id="run:tenant-1:owner-1:project-1:run-2",
+        dispatcher_id="dispatcher-1",
+        lock_token="lock-2",
+        lock_ttl_ms=1_000,
+    )
+    first = kernel.record_outbox_consumer_delivery(
+        event_id="shared-event",
+        resource_id="run:tenant-1:owner-1:project-1:run-1",
+        consumer_name="script-indexer",
+        dispatcher_id=first_event.locked_by or "",
+        lock_token=first_event.lock_token or "",
+    )
+    second = kernel.record_outbox_consumer_delivery(
+        event_id="shared-event",
+        resource_id="run:tenant-1:owner-1:project-1:run-2",
+        consumer_name="script-indexer",
+        dispatcher_id=second_event.locked_by or "",
+        lock_token=second_event.lock_token or "",
+    )
+
+    assert first.event_id == "shared-event"
+    assert second.event_id == "shared-event"
+    assert first.resource_id != second.resource_id
