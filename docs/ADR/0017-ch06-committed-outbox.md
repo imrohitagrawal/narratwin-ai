@@ -44,7 +44,7 @@ Each outbox event must:
 - have a stable `event_id`
 - reference the same scoped durable row identity as a staged state write, using
   `entity_type:tenant_id:owner_id:project_id:entity_id`
-- use non-empty scoped identity fields
+- use non-empty and colon-free scoped identity fields
 - bind to the staged durable `resource_version`
 - carry the same payload as the staged durable row
 - carry the canonical payload hash for that payload
@@ -94,6 +94,10 @@ event identity match and active dispatcher ownership; pending, expired,
 superseded, or terminal-failed dispatches cannot pre-seed consumer dedupe. It
 does not execute the consumer side effect itself.
 
+Outbox `event_id`, `event_type`, `operation_id`, dispatcher ID, and consumer
+name must be non-empty so ownership and dedupe keys cannot collapse to blank
+identities.
+
 ### 4. Evidence contract
 
 `CH-06` adds focused `CTX2-OUTBOX-EVID-001` proof in
@@ -107,6 +111,7 @@ does not execute the consumer side effect itself.
   including outbox replay fingerprint drift
 - `test_context2_outbox_redelivery_is_at_least_once`
 - `test_context2_outbox_rejects_wrong_dispatcher_transition`
+- `test_context2_outbox_rejects_blank_dispatcher_and_consumer_identity`
 - `test_context2_outbox_scopes_duplicate_event_ids_by_resource_identity`
 - `test_context2_outbox_consumer_dedupe_scopes_same_event_id_by_resource_identity`
 - `test_context2_outbox_consumer_dedupes_duplicate_delivery`

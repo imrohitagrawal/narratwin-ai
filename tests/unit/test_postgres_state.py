@@ -1054,7 +1054,7 @@ def test_context2_outbox_rejects_duplicate_events_in_same_transaction_atomically
 def test_context2_outbox_rejects_non_canonical_resource_identity() -> None:
     kernel = AcidCasKernel()
 
-    with pytest.raises(AcidCasConflictError, match="non-empty entity_type:tenant_id:owner_id:project_id:entity_id"):
+    with pytest.raises(AcidCasConflictError, match="non-empty colon-free entity_type:tenant_id:owner_id:project_id:entity_id"):
         kernel.commit(
             transaction_id="tx-outbox-invalid-identity",
             request_id="req-outbox-invalid-identity",
@@ -1095,6 +1095,74 @@ def test_context2_outbox_rejects_non_canonical_resource_identity() -> None:
             tenant_id="tenant-1",
             owner_id="owner-1",
             project_id="project-1",
+        )
+
+    with pytest.raises(AcidCasConflictError, match="colon-free"):
+        kernel.commit(
+            transaction_id="tx-outbox-invalid-colon",
+            request_id="req-outbox-invalid-colon",
+            request_checksum="sha256:req-outbox-invalid-colon",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run:1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+            outbox_events=(
+                OutboxEventWrite(
+                    event_id="evt-invalid-colon",
+                    event_type="run.status.changed",
+                    entity_type="run",
+                    entity_id="run:1",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    resource_version=1,
+                    operation_id="op-invalid-colon",
+                    payload_hash=payload_hash_for({"status": "queued"}),
+                    payload={"status": "queued"},
+                ),
+            ),
+        )
+
+    with pytest.raises(AcidCasConflictError, match="event_id must be non-empty"):
+        kernel.commit(
+            transaction_id="tx-outbox-blank-event",
+            request_id="req-outbox-blank-event",
+            request_checksum="sha256:req-outbox-blank-event",
+            writes=(
+                TransactionWrite(
+                    entity_type="run",
+                    entity_id="run-2",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={"status": "queued"},
+                ),
+            ),
+            outbox_events=(
+                OutboxEventWrite(
+                    event_id=" ",
+                    event_type="run.status.changed",
+                    entity_type="run",
+                    entity_id="run-2",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    resource_version=1,
+                    operation_id="op-blank-event",
+                    payload_hash=payload_hash_for({"status": "queued"}),
+                    payload={"status": "queued"},
+                ),
+            ),
         )
 
 
@@ -1425,6 +1493,76 @@ def test_context2_outbox_rejects_wrong_dispatcher_transition() -> None:
             event_id="evt-owner-1",
             resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
             dispatcher_id="worker-2",
+        )
+
+
+def test_context2_outbox_rejects_blank_dispatcher_and_consumer_identity() -> None:
+    base = datetime(2026, 7, 11, 12, 30, tzinfo=UTC)
+    kernel = AcidCasKernel(clock=MutableClock(base))
+
+    kernel.commit(
+        transaction_id="tx-outbox-identity-1",
+        request_id="req-outbox-identity-1",
+        request_checksum="sha256:req-outbox-identity-1",
+        writes=(
+            TransactionWrite(
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                expected_version=None,
+                state="OPEN",
+                payload={"status": "queued"},
+            ),
+        ),
+        outbox_events=(
+            OutboxEventWrite(
+                event_id="evt-identity-1",
+                event_type="run.status.changed",
+                entity_type="run",
+                entity_id="run-1",
+                tenant_id="tenant-1",
+                owner_id="owner-1",
+                project_id="project-1",
+                resource_version=1,
+                operation_id="op-identity-1",
+                payload_hash=payload_hash_for({"status": "queued"}),
+                payload={"status": "queued"},
+            ),
+        ),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="dispatcher_id must be non-empty"):
+        kernel.acquire_outbox_events(
+            dispatcher_id=" ",
+            now=base,
+            lock_ttl_seconds=30,
+            limit=1,
+        )
+
+    acquired = kernel.acquire_outbox_events(
+        dispatcher_id="worker-1",
+        now=base,
+        lock_ttl_seconds=30,
+        limit=1,
+    )
+    assert len(acquired) == 1
+
+    with pytest.raises(AcidCasConflictError, match="dispatcher_id must be non-empty"):
+        kernel.mark_outbox_event_succeeded(
+            event_id="evt-identity-1",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+            dispatcher_id=" ",
+        )
+    with pytest.raises(AcidCasConflictError, match="consumer_name must be non-empty"):
+        kernel.record_consumer_delivery(
+            event_id="evt-identity-1",
+            resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+            event_type="run.status.changed",
+            consumer_name=" ",
+            resource_version=1,
+            dispatcher_id="worker-1",
         )
 
 

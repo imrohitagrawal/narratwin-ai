@@ -283,6 +283,7 @@ class AcidCasKernel:
         lock_ttl_seconds: int,
         limit: int,
     ) -> tuple[StoredOutboxEvent, ...]:
+        validate_non_empty_identifier("dispatcher_id", dispatcher_id)
         if limit <= 0:
             return ()
         if lock_ttl_seconds <= 0:
@@ -396,6 +397,8 @@ class AcidCasKernel:
         dispatcher_id: str,
         now: datetime | None = None,
     ) -> ConsumerDeliveryRecord:
+        validate_non_empty_identifier("dispatcher_id", dispatcher_id)
+        validate_non_empty_identifier("consumer_name", consumer_name)
         key = (event_type, resource_id, event_id, consumer_name, resource_version)
         current_time = self._trusted_now()
         recorded_at = current_time.isoformat()
@@ -624,6 +627,7 @@ class AcidCasKernel:
         last_error: str | None,
         now: datetime | None = None,
     ) -> StoredOutboxEvent:
+        validate_non_empty_identifier("dispatcher_id", dispatcher_id)
         with self._lock:
             try:
                 existing = self._outbox_events[(resource_id, event_id)]
@@ -777,10 +781,30 @@ def validate_outbox_event_scope(event: OutboxEventWrite) -> None:
         event.project_id,
         event.entity_id,
     )
-    if any(part == "" for part in parts):
+    if any(not _is_valid_identity_part(part) for part in parts):
         raise AcidCasConflictError(
-            "Outbox event resource identity must use non-empty entity_type:tenant_id:owner_id:project_id:entity_id fields."
+            "Outbox event resource identity must use non-empty colon-free entity_type:tenant_id:owner_id:project_id:entity_id fields."
         )
+    for label, value in (
+        ("event_id", event.event_id),
+        ("event_type", event.event_type),
+        ("operation_id", event.operation_id),
+    ):
+        if not _is_valid_identifier(value):
+            raise AcidCasConflictError(f"Outbox event {label} must be non-empty.")
+
+
+def validate_non_empty_identifier(label: str, value: str) -> None:
+    if not _is_valid_identifier(value):
+        raise AcidCasConflictError(f"{label} must be non-empty.")
+
+
+def _is_valid_identity_part(value: str) -> bool:
+    return bool(value.strip()) and ":" not in value
+
+
+def _is_valid_identifier(value: str) -> bool:
+    return bool(value.strip())
 
 
 def payload_hash_for(payload: dict[str, Any]) -> str:
