@@ -100,6 +100,12 @@ python3 scripts/guardrails_check.py
 make quality
 uv run ruff check scripts tests
 uv run mypy scripts tests
+make ci
+make security
+make dependency-audit
+make container-scan
+make secrets-scan
+make eval
 GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/path/to/pr-event.json NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py
 # Optional when changed:
 # uv run pytest tests/unit/test_branch_protection_verifier.py

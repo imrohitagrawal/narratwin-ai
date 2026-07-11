@@ -65,6 +65,7 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
+    ".github/pull_request_template.md",
     ".github/workflows/quality-gates.yml",
     "docs/QUALITY_GATES.md",
     "docs/ADR/0009-context2-idempotency-lease-outbox-contract.md",
@@ -342,6 +343,12 @@ REQUIRED_PHASE1_VALIDATION_COMMANDS = (
     "make quality",
     "uv run ruff check scripts tests",
     "uv run mypy scripts tests",
+    "make ci",
+    "make security",
+    "make dependency-audit",
+    "make container-scan",
+    "make secrets-scan",
+    "make eval",
     "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1",
 )
 
