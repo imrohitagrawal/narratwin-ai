@@ -887,7 +887,7 @@ def test_context2_idempotency_rejects_cross_scope_resource_identity() -> None:
             lease_epoch=7,
         )
 
-    with pytest.raises(AcidCasConflictError, match="canonical entity_type:tenant_id:owner_id:project_id:entity_id"):
+    with pytest.raises(AcidCasConflictError, match="canonical non-empty colon-free"):
         kernel.start_operation(
             transaction_id="tx-op-invalid-2",
             request_id="req-op-invalid-2",
@@ -902,6 +902,74 @@ def test_context2_idempotency_rejects_cross_scope_resource_identity() -> None:
             lease_owner_id="worker-1",
             lease_epoch=7,
         )
+
+    with pytest.raises(AcidCasConflictError, match="non-empty colon-free"):
+        kernel.start_operation(
+            transaction_id="tx-op-invalid-3",
+            request_id="req-op-invalid-3",
+            operation_id="operation-invalid",
+            scope=OperationScope(
+                tenant_id=" ",
+                owner_id=" ",
+                project_id=" ",
+                resource_id=scoped_resource_id("run", " ", " ", " ", "run-1"),
+            ),
+            payload_hash="sha256:payload-1",
+            lease_owner_id="worker-1",
+            lease_epoch=7,
+        )
+
+
+def test_context2_idempotency_rejects_generic_operation_row_commit() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+    started = kernel.start_operation(
+        transaction_id="tx-op-reserved-1",
+        request_id="req-op-reserved-1",
+        operation_id="operation-reserved",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+
+    with pytest.raises(AcidCasConflictError, match="Operation rows must be written through the operation API"):
+        kernel.commit(
+            transaction_id="tx-op-reserved-forgery",
+            request_id="req-op-reserved-forgery",
+            request_checksum="sha256:req-op-reserved-forgery",
+            writes=(
+                TransactionWrite(
+                    entity_type="operation",
+                    entity_id=f"operation-reserved::{scope.resource_id}",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=started.record.version,
+                    state="OPEN",
+                    payload={
+                        "operationId": "operation-reserved",
+                        "resourceId": scope.resource_id,
+                        "payloadHash": "sha256:forged",
+                        "operationState": "RUNNING",
+                        "leaseOwnerId": "attacker",
+                        "leaseEpoch": 99,
+                        "responsePayload": None,
+                        "errorPayload": None,
+                    },
+                ),
+            ),
+        )
+
+    stored = kernel.get_operation(operation_id="operation-reserved", scope=scope)
+    assert stored.payload_hash == "sha256:payload-1"
+    assert stored.lease_owner_id == "worker-1"
+    assert stored.lease_epoch == 7
 
 
 def test_context2_idempotency_rejects_blank_operation_identity_fields() -> None:

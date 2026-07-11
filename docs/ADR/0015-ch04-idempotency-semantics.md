@@ -69,6 +69,13 @@ do not match `OperationScope`.
 identity, conflict guarding, and stale-owner checks cannot collapse to blank
 values.
 
+Operation rows are reserved for the idempotency API. The generic ACID/CAS
+`commit(...)` path rejects `entity_type="operation"` writes so a caller cannot
+forge or widen operation payload hashes, terminal materialization, owner fields,
+or lease epochs outside the operation contract. Internal operation transitions
+still use the shared CH-02 row kernel, but only through the reviewed operation
+helpers.
+
 ### 2. Executable state subset
 
 `CH-04` implements only the minimal executable subset needed for the planned
