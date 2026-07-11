@@ -514,7 +514,7 @@ def lease_resource_id_for_write(write: TransactionWrite) -> str:
 
 def validate_canonical_resource_id(resource_id: str) -> None:
     parts = resource_id.split(":")
-    if len(parts) != 5 or any(part == "" for part in parts):
+    if len(parts) != 5 or any(not part.strip() or part != part.strip() for part in parts):
         raise AcidCasConflictError(
             "Lease resource_id must use canonical entity_type:tenant_id:owner_id:project_id:entity_id identity."
         )

@@ -56,6 +56,9 @@ Example:
 The lease API rejects non-canonical or partially empty identities so later
 runtime workers cannot accidentally fence a different scope from the row they
 intend to mutate.
+Canonical means each identity part is already trimmed and non-empty;
+whitespace-only or whitespace-padded fields are conflicts rather than alternate
+lease scopes.
 `lease_id` must be non-empty on acquire, heartbeat, release, and guarded writes.
 
 The kernel remains PostgreSQL-compatible contract code only. It does not add SQL,

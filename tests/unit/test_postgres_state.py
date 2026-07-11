@@ -818,6 +818,22 @@ def test_context2_lease_rejects_non_canonical_resource_identity() -> None:
             now=acquired_at,
         )
 
+    with pytest.raises(AcidCasConflictError, match="canonical entity_type:tenant_id:owner_id:project_id:entity_id"):
+        kernel.acquire_lease(
+            resource_id="run:tenant-1: :project-1:run-1",
+            lease_id="worker-1",
+            lease_ttl_ms=10_000,
+            now=acquired_at,
+        )
+
+    with pytest.raises(AcidCasConflictError, match="canonical entity_type:tenant_id:owner_id:project_id:entity_id"):
+        kernel.acquire_lease(
+            resource_id="run:tenant-1:owner-1:project-1:run-1:extra",
+            lease_id="worker-1",
+            lease_ttl_ms=10_000,
+            now=acquired_at,
+        )
+
 
 def test_context2_lease_rejects_blank_lease_identity() -> None:
     acquired_at = datetime(2026, 7, 11, 12, 0, tzinfo=UTC)
