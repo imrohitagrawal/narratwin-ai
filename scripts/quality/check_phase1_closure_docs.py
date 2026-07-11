@@ -841,7 +841,47 @@ def workflow_has_stage_quality_base_sha(yaml_text: str) -> bool:
 
 
 def workflow_allows_phase1_pull_request_bases(yaml_text: str) -> bool:
-    return "phase-1-closure-**" in yaml_text
+    in_on_block = False
+    pull_request_indent: int | None = None
+    branches_indent: int | None = None
+    for raw_line in yaml_text.splitlines():
+        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+            continue
+        indent = len(raw_line) - len(raw_line.lstrip(" "))
+        stripped = raw_line.strip()
+        if indent == 0:
+            in_on_block = stripped == "on:"
+            pull_request_indent = None
+            branches_indent = None
+            continue
+        if not in_on_block:
+            continue
+        if pull_request_indent is None:
+            if stripped == "pull_request:":
+                pull_request_indent = indent
+            continue
+        if indent <= pull_request_indent:
+            pull_request_indent = indent if stripped == "pull_request:" else None
+            branches_indent = None
+            continue
+        if branches_indent is None:
+            if stripped.startswith("branches:"):
+                branches_indent = indent
+                inline_branches = stripped.removeprefix("branches:").strip()
+                if "phase-1-closure-**" in inline_branches:
+                    return True
+            continue
+        if indent <= branches_indent:
+            branches_indent = None
+            if stripped.startswith("branches:"):
+                branches_indent = indent
+                inline_branches = stripped.removeprefix("branches:").strip()
+                if "phase-1-closure-**" in inline_branches:
+                    return True
+            continue
+        if stripped in {"- phase-1-closure-**", "- 'phase-1-closure-**'", '- "phase-1-closure-**"'}:
+            return True
+    return False
 
 
 def workflow_guardrail_step_blocks(yaml_text: str) -> list[str]:

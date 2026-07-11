@@ -341,6 +341,7 @@ def run_issue_link_check(
     title: str,
     body: str,
     head_ref: str = "phase-1-closure-39-durability-monitoring",
+    base_ref: str = "main",
     commit_messages: str = "",
     changed_files: list[str] | None = None,
     event_name: str = "pull_request",
@@ -354,7 +355,7 @@ def run_issue_link_check(
                     "title": title,
                     "body": body,
                     "head": {"ref": head_ref},
-                    "base": {"ref": "main"},
+                    "base": {"ref": base_ref},
                 }
             }
         ),
@@ -2302,6 +2303,40 @@ def test_nontrivial_pull_request_rejects_missing_runtime_validation_gate(
     )
 
     assert "Non-trivial pull requests must include validation evidence commands." in failures
+
+
+def test_guarded_pull_request_allows_phase1_stacked_base(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden stacked phase closure branch",
+        body=completed_preflight_body(),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        base_ref="phase-1-closure-39-execution-strategy",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Pull requests for guarded work must target main or a phase-1-closure stacked base." not in failures
+
+
+def test_guarded_pull_request_rejects_non_phase1_stacked_base(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden stacked phase closure branch",
+        body=completed_preflight_body(),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        base_ref="feature/unreviewed-base",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert "Pull requests for guarded work must target main or a phase-1-closure stacked base." in failures
 
 
 def test_nontrivial_pull_request_rejects_unrun_validation_evidence_commands(

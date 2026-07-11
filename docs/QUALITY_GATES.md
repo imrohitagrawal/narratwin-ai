@@ -431,6 +431,10 @@ Gate validates:
 Phase 1 Closure quality is executable through `make phase1-closure-quality`.
 On `phase-1-closure-*` branches, the top-level `make quality` dispatcher runs
 the Phase 1 Closure gate even though `.stage/current` remains `8`.
+For stacked Phase 1 Closure chunk PRs whose reviewed base is another
+`phase-1-closure-*` branch, local evidence must run against that reviewed base:
+`GITHUB_BASE_SHA=<reviewed-prereq-head> make phase1-closure-quality` or
+`GITHUB_BASE_SHA=<reviewed-prereq-head> make quality`.
 
 Gate validates:
 

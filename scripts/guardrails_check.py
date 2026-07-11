@@ -1600,6 +1600,10 @@ def check_no_direct_main_push() -> None:
             )
 
 
+def pull_request_base_is_allowed(base_ref: str | None) -> bool:
+    return base_ref == "main" or bool(base_ref and base_ref.startswith("phase-1-closure-"))
+
+
 def check_issue_linked_pull_request() -> None:
     for issue39_failure in issue_39_closure_matrix_validation_failures():
         failures.append(issue39_failure)
@@ -1621,8 +1625,8 @@ def check_issue_linked_pull_request() -> None:
     base_ref = (pr.get("base") or {}).get("ref")
     if head_ref == "main":
         failures.append("Pull request head branch must not be main.")
-    if base_ref != "main":
-        failures.append("Pull requests for guarded work must target main.")
+    if not pull_request_base_is_allowed(base_ref):
+        failures.append("Pull requests for guarded work must target main or a phase-1-closure stacked base.")
     stage_name, canonical_issue_number = canonical_stage_issue(head_ref) or ("", None)
     is_canonical_stage_branch = canonical_issue_number is not None
     visible_issue_text = f"{title}\n{body}\n{pull_request_commit_messages()}"

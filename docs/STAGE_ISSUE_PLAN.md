@@ -29,7 +29,7 @@ Create or identify stage issue
 | Stage 7 | `#12` | Stage 7 - Avatar rendering adapter and export | `stage7-*` | `make stage7-quality` | Linked PR to `main` | Mock/local avatar renderer, export artifacts, provider contract tests |
 | Stage 8 | `#13` | Stage 8 - Performance, security hardening, release readiness | `stage8-*` | `make stage8-quality` | Linked PR to `main` | Performance evidence, security hardening, release-readiness report |
 | Final Review | `#6` | Final Review - Independent review | `final-review-*` | `make final-review-quality` | Linked PR to `main` | Independent review report and release decision |
-| Phase 1 Closure | `#35`-`#44` | Phase 1 Closure - Final Review blockers | `phase-1-closure-*` | `make phase1-closure-quality` | Linked PR to `main` | Closed or downgraded P0/P1 blockers, closure report, release readiness update |
+| Phase 1 Closure | `#35`-`#44` | Phase 1 Closure - Final Review blockers | `phase-1-closure-*` | `make phase1-closure-quality`; stacked chunk PRs use `GITHUB_BASE_SHA=<reviewed-prereq-head> make phase1-closure-quality` | Linked PR to `main` or reviewed `phase-1-closure-*` stacked base | Closed or downgraded P0/P1 blockers, closure report, release readiness update |
 
 ## Stage 0 Governance Branch Scope
 
