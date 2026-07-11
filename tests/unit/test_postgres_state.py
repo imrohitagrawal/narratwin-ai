@@ -1007,6 +1007,16 @@ def test_context2_idempotency_rejects_blank_operation_identity_fields() -> None:
             lease_owner_id="worker-1",
             lease_epoch=7,
         )
+    with pytest.raises(AcidCasConflictError, match="operation_id must be non-empty"):
+        kernel.start_operation(
+            transaction_id="tx-op-padded-1",
+            request_id="req-op-padded-1",
+            operation_id=" operation-1 ",
+            scope=scope,
+            payload_hash="sha256:payload-1",
+            lease_owner_id="worker-1",
+            lease_epoch=7,
+        )
     with pytest.raises(AcidCasConflictError, match="payload_hash must be non-empty"):
         kernel.start_operation(
             transaction_id="tx-op-blank-2",
