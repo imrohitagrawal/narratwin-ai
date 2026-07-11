@@ -988,6 +988,47 @@ def test_context2_idempotency_rejects_generic_operation_row_commit() -> None:
     assert stored.lease_epoch == 7
 
 
+def test_context2_idempotency_rejects_initial_generic_operation_row_commit() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    with pytest.raises(AcidCasConflictError, match="Operation rows must be written through the operation API"):
+        kernel.commit(
+            transaction_id="tx-op-reserved-initial-forgery",
+            request_id="req-op-reserved-initial-forgery",
+            request_checksum="sha256:req-op-reserved-initial-forgery",
+            writes=(
+                TransactionWrite(
+                    entity_type="operation",
+                    entity_id=f"operation-reserved::{scope.resource_id}",
+                    tenant_id="tenant-1",
+                    owner_id="owner-1",
+                    project_id="project-1",
+                    expected_version=None,
+                    state="OPEN",
+                    payload={
+                        "operationId": "operation-reserved",
+                        "resourceId": scope.resource_id,
+                        "payloadHash": "sha256:forged",
+                        "operationState": "RUNNING",
+                        "leaseOwnerId": "attacker",
+                        "leaseEpoch": 99,
+                        "responsePayload": None,
+                        "errorPayload": None,
+                    },
+                ),
+            ),
+        )
+
+    with pytest.raises(KeyError, match="No durable operation"):
+        kernel.get_operation(operation_id="operation-reserved", scope=scope)
+
+
 def test_context2_idempotency_rejects_blank_operation_identity_fields() -> None:
     kernel = AcidCasKernel()
     scope = OperationScope(
@@ -1122,6 +1163,90 @@ def test_context2_idempotency_rejects_payload_hash_conflict() -> None:
         )
 
 
+def test_context2_idempotency_rejects_terminal_start_replay_payload_hash_conflict() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    started = kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+    kernel.commit_operation_success(
+        transaction_id="tx-op-2",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=started.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+        response_payload={"status": "done", "runId": "run-1"},
+    )
+
+    with pytest.raises(AcidCasConflictError, match="payload hash"):
+        kernel.start_operation(
+            transaction_id="tx-op-3",
+            request_id="req-op-1-drift",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-2",
+            lease_owner_id="worker-2",
+            lease_epoch=8,
+        )
+
+
+def test_context2_idempotency_rejects_terminal_error_start_replay_payload_hash_conflict() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    started = kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+    kernel.commit_operation_error(
+        transaction_id="tx-op-2",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=started.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+        error_payload={"code": "UPSTREAM_FAILURE", "message": "provider timeout"},
+    )
+
+    with pytest.raises(AcidCasConflictError, match="payload hash"):
+        kernel.start_operation(
+            transaction_id="tx-op-3",
+            request_id="req-op-1-drift",
+            operation_id="operation-1",
+            scope=scope,
+            payload_hash="sha256:payload-2",
+            lease_owner_id="worker-2",
+            lease_epoch=8,
+        )
+
+
 def test_context2_idempotency_scopes_identity_by_scope_dimension() -> None:
     kernel = AcidCasKernel()
     scope_one = OperationScope(
@@ -1170,6 +1295,42 @@ def test_context2_idempotency_scopes_identity_by_scope_dimension() -> None:
         kernel.get_operation(operation_id="operation-1", scope=scope_two).scope.resource_id
         == scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-2")
     )
+
+
+def test_context2_idempotency_allows_distinct_operation_ids_in_same_scope() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    first = kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+    second = kernel.start_operation(
+        transaction_id="tx-op-2",
+        request_id="req-op-2",
+        operation_id="operation-2",
+        scope=scope,
+        payload_hash="sha256:payload-2",
+        lease_owner_id="worker-2",
+        lease_epoch=8,
+    )
+
+    assert first.outcome == "applied"
+    assert second.outcome == "applied"
+    assert first.record.version == 1
+    assert second.record.version == 1
+    assert kernel.get_operation(operation_id="operation-1", scope=scope).payload_hash == "sha256:payload-1"
+    assert kernel.get_operation(operation_id="operation-2", scope=scope).payload_hash == "sha256:payload-2"
 
 
 def test_context2_idempotency_success_rejects_stale_owner() -> None:
@@ -1305,6 +1466,64 @@ def test_context2_idempotency_recovery_allows_same_owner_higher_epoch_advance() 
             lease_owner_id="worker-2",
             lease_epoch=8,
         )
+
+
+def test_context2_idempotency_recovery_replays_exact_transaction_after_epoch_advance() -> None:
+    kernel = AcidCasKernel()
+    scope = OperationScope(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        project_id="project-1",
+        resource_id=scoped_resource_id("run", "tenant-1", "owner-1", "project-1", "run-1"),
+    )
+
+    started = kernel.start_operation(
+        transaction_id="tx-op-1",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+    failed = kernel.fail_operation_transient(
+        transaction_id="tx-op-2",
+        request_id="req-op-1",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=started.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=7,
+    )
+    recovered = kernel.recover_operation(
+        transaction_id="tx-op-3",
+        request_id="req-op-1-replay",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=failed.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=8,
+    )
+
+    replayed = kernel.recover_operation(
+        transaction_id="tx-op-3",
+        request_id="req-op-1-replay",
+        operation_id="operation-1",
+        scope=scope,
+        payload_hash="sha256:payload-1",
+        expected_version=failed.record.version,
+        lease_owner_id="worker-1",
+        lease_epoch=8,
+    )
+
+    assert recovered.outcome == "applied"
+    assert replayed.outcome == "replayed"
+    assert replayed.replayed is True
+    assert replayed.record.state == "REPLAYING"
+    assert replayed.record.version == recovered.record.version
+    assert replayed.record.transaction_id == "tx-op-3"
 
 
 def test_context2_idempotency_recovery_rejects_cross_owner_or_non_advancing_epoch() -> None:

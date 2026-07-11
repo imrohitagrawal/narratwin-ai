@@ -431,6 +431,19 @@ class AcidCasKernel:
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state in ("TERMINAL_SUCCESS", "TERMINAL_ERROR"):
                 return replay_operation_result(existing)
+            if existing.state == "REPLAYING" and existing.transaction_id == transaction_id:
+                stored = self._store_operation_record(
+                    operation_id=operation_id,
+                    scope=scope,
+                    payload_hash=payload_hash,
+                    state="REPLAYING",
+                    version=expected_version + 1,
+                    request_id=request_id,
+                    transaction_id=transaction_id,
+                    lease_owner_id=lease_owner_id,
+                    lease_epoch=lease_epoch,
+                )
+                return replay_operation_result(stored)
             self._assert_operation_expected_version(existing=existing, expected_version=expected_version)
             self._assert_operation_state(
                 existing=existing,

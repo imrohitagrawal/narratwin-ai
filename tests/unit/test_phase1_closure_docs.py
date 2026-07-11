@@ -205,6 +205,41 @@ def test_issue39_chunk_branch_accepts_required_dependency_commit_ancestry(monkey
     )
 
 
+@pytest.mark.parametrize(
+    "branch",
+    [
+        "phase-1-closure-39-ch-04-idempotency-semantics",
+        "phase-1-closure-39-ch-05-lease-fencing",
+        "phase-1-closure-39-ch-06-committed-outbox",
+    ],
+)
+def test_issue39_chunk_branches_check_exact_post_pr98_dependency_commit(
+    monkeypatch: Any,
+    branch: str,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_git_ok(args: list[str]) -> bool:
+        calls.append(args)
+        return True
+
+    monkeypatch.setattr(phase1, "current_branch", lambda: branch)
+    monkeypatch.setattr(phase1, "git_ok", fake_git_ok)
+
+    failures: list[str] = []
+    phase1.check_branch(failures)
+
+    assert failures == []
+    assert calls == [
+        [
+            "merge-base",
+            "--is-ancestor",
+            "b5992a599be06ea444ca66d3f088956eee8c70e6",
+            "HEAD",
+        ]
+    ]
+
+
 def test_stacked_child_push_resolve_base_uses_stacked_base_ref(monkeypatch: Any) -> None:
     calls: list[list[str]] = []
 

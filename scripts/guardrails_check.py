@@ -1307,7 +1307,7 @@ def has_pre_implementation_evidence(body: str) -> bool:
             continue
         if requirement_name == "invariant/failure matrix" and is_generic_governance_reference(artifact):
             continue
-        if not has_concrete_preimplementation_marker(timestamp_or_commit):
+        if not has_concrete_preimplementation_marker(timestamp_or_commit, artifact):
             continue
         seen.add(requirement_name)
     return REQUIRED_PREIMPLEMENTATION_ROWS.issubset(seen)
@@ -1494,7 +1494,7 @@ def normalize_requirement_name(value: str) -> str:
     return normalized
 
 
-def has_concrete_preimplementation_marker(value: str) -> bool:
+def has_concrete_preimplementation_marker(value: str, artifact: str) -> bool:
     normalized = value.strip()
     comment_or_draft_match = re.search(
         r"(?:issue comment|draft pr):\s*(?P<url>https?://[^\s]+)",
@@ -1515,8 +1515,18 @@ def has_concrete_preimplementation_marker(value: str) -> bool:
     return (
         git_command_succeeds(["cat-file", "-e", f"{earlier}^{{commit}}"])
         and git_command_succeeds(["cat-file", "-e", f"{later}^{{commit}}"])
+        and preimplementation_artifact_exists_at_commit(artifact=artifact, commit=earlier)
         and git_command_succeeds(["merge-base", "--is-ancestor", earlier, later])
     )
+
+
+def preimplementation_artifact_exists_at_commit(*, artifact: str, commit: str) -> bool:
+    artifact_path = strip_artifact_fragment_or_line(clean_markdown_reference(artifact).strip("`"))
+    if not artifact_path or artifact_path.startswith(("/", "~")):
+        return False
+    if urlparse(artifact_path).scheme:
+        return False
+    return git_command_succeeds(["cat-file", "-e", f"{commit}:{artifact_path}"])
 
 
 def preimplementation_url_has_concrete_shape(value: str) -> bool:
