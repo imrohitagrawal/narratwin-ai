@@ -1926,6 +1926,22 @@ def test_context2_lease_replays_guarded_transaction_after_lease_transfer() -> No
     assert replayed.replayed is True
     assert replayed.records[0].version == 1
 
+    with pytest.raises(AcidCasConflictError, match="replay checksum"):
+        kernel.commit(
+            transaction_id="tx-lease-replay-1",
+            request_id="req-lease-replay-1",
+            request_checksum="sha256:req-lease-replay-1",
+            writes=(
+                _lease_guarded_run_write(
+                    expected_version=None,
+                    status="queued",
+                    lease_id="worker-2",
+                    lease_epoch=lease.lease_epoch + 1,
+                ),
+            ),
+            now=acquired_at + timedelta(seconds=14),
+        )
+
 
 def test_context2_lease_expiry_blocks_stale_owner_commit() -> None:
     kernel = AcidCasKernel()
@@ -2042,7 +2058,7 @@ def test_context2_lease_rejects_unguarded_write_while_row_has_active_lease() -> 
                     payload={"status": "queued"},
                 ),
             ),
-            now=acquired_at + timedelta(seconds=1),
+            now=acquired_at + timedelta(seconds=3),
         )
 
 
