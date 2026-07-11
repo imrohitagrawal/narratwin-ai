@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import timedelta
@@ -131,12 +132,13 @@ class OperationCommitResult:
 class AcidCasKernel:
     """Atomic compare-and-set storage kernel for durable metadata rows."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, clock: Callable[[], datetime] | None = None) -> None:
         self._records: dict[EntityKey, StoredRecord] = {}
         self._leases: dict[str, LeaseRecord] = {}
         self._lease_epochs: dict[str, int] = {}
         self._transactions: dict[str, TransactionCommitResult] = {}
         self._transaction_fingerprints: dict[str, str] = {}
+        self._clock = clock
         self._lock = RLock()
 
     def get(
@@ -527,6 +529,7 @@ class AcidCasKernel:
             raise AcidCasConflictError("ACID/CAS transactions must include at least one write.")
 
         commit_time = _coerce_now(now)
+        lease_check_time = self._trusted_now()
         fingerprint = _transaction_fingerprint(
             request_id=request_id,
             request_checksum=request_checksum,
@@ -548,7 +551,7 @@ class AcidCasKernel:
                 request_checksum=request_checksum,
                 writes=writes,
                 allow_operation_rows=allow_operation_rows,
-                now=commit_time,
+                now=lease_check_time,
             )
             committed_at = _isoformat(commit_time)
             committed_records = tuple(
@@ -604,7 +607,7 @@ class AcidCasKernel:
             raise AcidCasConflictError("Lease TTL must be a positive millisecond value.")
         validate_canonical_resource_id(resource_id)
 
-        effective_now = _coerce_now(now)
+        effective_now = self._trusted_now()
         with self._lock:
             current = self._leases.get(resource_id)
             if current is not None and not _lease_is_expired(current, effective_now):
@@ -636,7 +639,7 @@ class AcidCasKernel:
         now: datetime | None = None,
     ) -> LeaseRecord:
         validate_canonical_resource_id(resource_id)
-        effective_now = _coerce_now(now)
+        effective_now = self._trusted_now()
         with self._lock:
             current = self._leases.get(resource_id)
             if current is None or _lease_is_expired(current, effective_now):
@@ -673,7 +676,7 @@ class AcidCasKernel:
         now: datetime | None = None,
     ) -> None:
         validate_canonical_resource_id(resource_id)
-        effective_now = _coerce_now(now)
+        effective_now = self._trusted_now()
         with self._lock:
             current = self._leases.get(resource_id)
             if current is None or _lease_is_expired(current, effective_now):
@@ -692,7 +695,7 @@ class AcidCasKernel:
 
     def get_lease(self, *, resource_id: str, now: datetime | None = None) -> LeaseRecord:
         validate_canonical_resource_id(resource_id)
-        effective_now = _coerce_now(now)
+        effective_now = self._trusted_now()
         try:
             lease = self._leases[resource_id]
         except KeyError as exc:
@@ -965,6 +968,11 @@ class AcidCasKernel:
             raise AcidCasStaleWriteError(
                 f"{write.entity_type}:{write.entity_id} expected lease owner {write.lease_id} but durable owner is {current.lease_id}."
             )
+
+    def _trusted_now(self) -> datetime:
+        if self._clock is None:
+            return datetime.now(UTC)
+        return _coerce_now(self._clock())
 
 
 def replay_result(result: TransactionCommitResult) -> TransactionCommitResult:
