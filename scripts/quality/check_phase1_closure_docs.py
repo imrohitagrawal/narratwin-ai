@@ -204,6 +204,19 @@ ISSUE_39_CH02_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_postgres_state.py",
 }
+ISSUE_39_CH03_ALLOWED_CHANGED_FILES = {
+    "backend/app/storage/__init__.py",
+    "backend/app/storage/postgres_state.py",
+    "backend/app/storage/stage4_graph.py",
+    "docs/ADR/0018-ch03-stage4-durable-graph.md",
+    "docs/LOCAL_DEVELOPMENT.md",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_stage4_durable_graph.py",
+}
 ISSUE_39_CH04_ALLOWED_CHANGED_FILES = {
     "backend/app/storage/__init__.py",
     "backend/app/storage/postgres_state.py",
@@ -539,6 +552,10 @@ ISSUE_39_DRILL_LOG_PREFIXES = ("docs/reviews/drills/", "reports/", "artifacts/",
 ISSUE_39_DRILL_LOG_SUFFIXES = {".json", ".jsonl", ".log", ".md", ".txt"}
 ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
     "phase-1-closure-39-ch-02-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
+    "phase-1-closure-39-ch-03-": (
+        "947a96891fd84085b6fce433e604a8e249b25c23",
+        "d0a2c80f084d8ec9e25b24b841e4f22031953a73",
+    ),
     "phase-1-closure-39-ch-04-": ("b5992a599be06ea444ca66d3f088956eee8c70e6",),
     "phase-1-closure-39-ch-05-": ("b5992a599be06ea444ca66d3f088956eee8c70e6",),
     "phase-1-closure-39-ch-06-": ("b5992a599be06ea444ca66d3f088956eee8c70e6",),
@@ -1742,6 +1759,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_39_CH01_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-02-"):
         allowed_files = ISSUE_39_CH02_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-ch-03-"):
+        allowed_files = ISSUE_39_CH03_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-04-"):
         allowed_files = ISSUE_39_CH04_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-05-"):
