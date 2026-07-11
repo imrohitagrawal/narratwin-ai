@@ -521,7 +521,7 @@ def validate_canonical_resource_id(resource_id: str) -> None:
 
 
 def validate_lease_id(lease_id: str) -> None:
-    if not lease_id.strip():
+    if not lease_id.strip() or lease_id != lease_id.strip():
         raise AcidCasConflictError("Lease lease_id must be non-empty.")
 
 
