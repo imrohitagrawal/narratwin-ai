@@ -271,6 +271,22 @@ ISSUE_39_CH07_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_stage6_multilingual.py",
 }
+ISSUE_39_CH08_ALLOWED_CHANGED_FILES = {
+    "backend/app/main.py",
+    "backend/app/stage7.py",
+    "backend/app/storage/file_state.py",
+    "docs/API_CONTRACT.md",
+    "docs/LOCAL_DEVELOPMENT.md",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/api/test_stage7_avatar_api.py",
+    "tests/unit/test_local_durability.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_stage7_avatar.py",
+}
 ISSUE_39_CH16_ALLOWED_CHANGED_FILES = {
     "backend/app/main.py",
     "backend/app/stage7.py",
@@ -595,6 +611,12 @@ ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
     "phase-1-closure-39-ch-07-": (
         "6449786069dd38eeaa5a4a31f5ed73cbfc52d248",
         "947a96891fd84085b6fce433e604a8e249b25c23",
+    ),
+    "phase-1-closure-39-ch-08-": (
+        "6449786069dd38eeaa5a4a31f5ed73cbfc52d248",
+        "947a96891fd84085b6fce433e604a8e249b25c23",
+        "1f3d66d9b1b545e5d5c41e88a83cc731a2a8b31a",
+        "acccd6939ebe172b9a2d95f51fa96212035f55b0",
     ),
     "phase-1-closure-39-ch-16-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
 }
@@ -1807,6 +1829,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_39_CH06_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-07-"):
         allowed_files = ISSUE_39_CH07_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-ch-08-"):
+        allowed_files = ISSUE_39_CH08_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-16-"):
         allowed_files = ISSUE_39_CH16_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-context4-"):
