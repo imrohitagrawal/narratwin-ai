@@ -1928,6 +1928,40 @@ def test_issue39_context4_issue68_branch_rejects_runtime_product_files(monkeypat
     ]
 
 
+def test_issue39_restore_local_drill_branch_allows_local_restore_drill_artifacts(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-restore-local-drill",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/local_restore_drill.py",
+            "docs/ADR/0023-local-restore-integrity-drill.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_local_restore_drill.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_restore_local_drill_branch_rejects_unrelated_runtime_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-restore-local-drill",
+        files=["backend/app/stage7.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-restore-local-drill may not change backend/app/stage7.py."
+    ]
+
+
 def test_issue39_context5_issue69_branch_allows_metrics_slos_watch_planning_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,

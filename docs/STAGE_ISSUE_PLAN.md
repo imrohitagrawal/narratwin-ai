@@ -772,6 +772,29 @@ lease or outbox runtime semantics, backup or restore flows, monitoring/alerts/wa
 rollback communications, provider/media/privacy controls, retention/untrusted-input
 closure, or unrelated governance/process files.
 
+`phase-1-closure-39-restore-local-drill` is reserved for issue `#125`, the
+local restore-integrity and restore-replay-safety drill for `DUR-RESTORE-001`.
+This is a local file-backed evidence slice only and is explicitly not the
+production `CH-14` backup/restore drill. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/local_restore_drill.py`
+- `docs/ADR/0023-local-restore-integrity-drill.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_local_restore_drill.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+`phase-1-closure-39-restore-local-drill` must not touch production backup
+platform assumptions, cloud snapshot or database-managed restore services,
+metrics/SLO/alert/watch work, rollback communications, provider posture,
+retention/erasure, provenance/disclosure, untrusted-input closure, Stage 4/6/7
+runtime semantics, or unrelated governance/process files.
+
 `phase-1-closure-39-ch-10-*` is reserved for the `CH-10` production metrics
 contract chunk for issue `#39` child issue `#128`. It may touch only:
 

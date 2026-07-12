@@ -247,6 +247,19 @@ row-level closure evidence are completed.
 | `OPS-METRICS-001` | `docs/ADR/0011-context4-backup-restore-drill.md` (Restore and operational metric contracts) | `CTX4-METRICS-EVID-001`: planned command/event catalog, queue/lease/outbox metric sampling, and restore-lag validation snapshots. |
 | `OPS-SLO-001` | `docs/ADR/0011-context4-backup-restore-drill.md` (RTO/RPO and escalation thresholds) | `CTX4-ESCALATION-EVID-001` plus `CTX4-POSTDRILL-EVID-001`: planned RTO/RPO proof pack, escalation matrix, and watch/closure summary. |
 
+### Issue `#125` local restore-integrity drill status and evidence mapping
+
+- Matrix status remains exactly `Open` for `DUR-RESTORE-001`.
+- Issue `#125` is an executable local-only evidence slice for the optional
+  file-backed Stage 4/6/7 state already present in the repo.
+- Issue `#125` does not satisfy the production `CH-14` closure bar from
+  `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md` and must not be represented as
+  production backup/restore evidence.
+
+| Matrix ID | Issue #125 evidence artifact | Narrow executable evidence row |
+|---|---|---|
+| `DUR-RESTORE-001` | `docs/ADR/0023-local-restore-integrity-drill.md` and `backend/app/storage/local_restore_drill.py` | `CTX4-LOCAL-RESTORE-EVID-001`: `uv run python -m backend.app.storage.local_restore_drill --output outputs/restore-drill.json` seeds Stage 4/6/7 local state, copies source JSON state into a restored directory, verifies byte-identical file checksums, restores the services, checks record-count parity, and proves replay safety by reissuing the same idempotent operations without creating new durable identifiers. Production backup platform evidence, restore metrics, RTO/RPO proof, retention/re-delete behavior, and operational signoff remain open. |
+
 ## Issue #69 (Context 5) Status and Evidence Mapping
 
 ### Matrix planning annotations for `OPS-METRICS-001`, `OPS-SLO-001`, `OPS-ALERT-001`, and `OPS-WATCH-001`
