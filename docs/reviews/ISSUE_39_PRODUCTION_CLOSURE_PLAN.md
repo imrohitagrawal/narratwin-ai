@@ -258,7 +258,7 @@ row-level closure evidence are completed.
 
 | Matrix ID | Issue #125 evidence artifact | Narrow executable evidence row |
 |---|---|---|
-| `DUR-RESTORE-001` | `docs/ADR/0023-local-restore-integrity-drill.md` and `backend/app/storage/local_restore_drill.py` | `CTX4-LOCAL-RESTORE-EVID-001`: `uv run python -m backend.app.storage.local_restore_drill --output outputs/restore-drill.json` seeds Stage 4/6/7 local state, copies source JSON state into a restored directory, verifies byte-identical file checksums, restores the services, checks record-count parity, and proves replay safety by reissuing the same idempotent operations without creating new durable identifiers. Production backup platform evidence, restore metrics, RTO/RPO proof, retention/re-delete behavior, and operational signoff remain open. |
+| `DUR-RESTORE-001` | `docs/ADR/0023-local-restore-integrity-drill.md`, `docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md`, and `backend/app/storage/local_restore_drill.py` | `CTX4-LOCAL-RESTORE-EVID-001`: `uv run python -m backend.app.storage.local_restore_drill --output outputs/restore-drill.json` seeds Stage 4/6/7 local state, copies source JSON state into a restored directory, verifies byte-identical file checksums, restores the services, replays the same Stage 4 `create_project`/`upload_document`/`approve_document`/`ingest_documents`/`generate_walkthrough` operations plus the Stage 6/7 replay paths without creating new durable identifiers, checks record-count parity before and after replay, and persists inspectable evidence paths. Production backup platform evidence, restore metrics, RTO/RPO proof, retention/re-delete behavior, and operational signoff remain open. |
 
 ## Issue #69 (Context 5) Status and Evidence Mapping
 

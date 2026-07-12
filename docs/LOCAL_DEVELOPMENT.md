@@ -77,6 +77,10 @@ This drill is local-only. It proves restore integrity and replay safety for the
 optional JSON snapshot paths only. It does not prove production backup/restore,
 restore metrics, RTO/RPO, alerting, watch posture, or issue `#39` closure.
 
+When `--output` is set, the command also persists the copied source and restored
+JSON evidence under a sibling `*-artifacts/` directory so the reported checksum
+paths remain inspectable after the drill exits.
+
 When set, Stage 4 project/document/run/RAG state, Stage 6 multilingual
 idempotency replay state, and Stage 7 avatar render/idempotency/artifact metadata
 are written as local JSON snapshots. Leave it blank for process-local test

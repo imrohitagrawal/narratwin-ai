@@ -309,6 +309,7 @@ ISSUE_39_RESTORE_LOCAL_DRILL_ALLOWED_CHANGED_FILES = {
     "docs/STATUS.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/TRACEABILITY.md",
+    "docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md",
     "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_local_restore_drill.py",

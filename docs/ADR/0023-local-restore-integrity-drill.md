@@ -28,8 +28,10 @@ reproducible local drill that:
 - verifies copied-file integrity,
 - rehydrates the services from the restored files,
 - proves count parity across the restored services,
-- and proves replay safety by reissuing the same idempotent operations after
-  restore and observing the original durable identifiers.
+- proves replay safety by reissuing the same Stage 4/6/7 idempotent operations
+  after restore and observing the original durable identifiers,
+- and persists the emitted evidence snapshot so reviewers can inspect the copied
+  source and restored JSON state after the command exits.
 
 ## Decision
 
@@ -50,14 +52,18 @@ watch/alert evidence.
 The drill must prove all of the following in one executable path:
 
 1. Stage 4 local state restores project/document/ingestion/run/idempotency
-   state without changing durable identifiers.
+   state without changing durable identifiers when the drill replays
+   `create_project`, `upload_document`, `approve_document`, `ingest_documents`,
+   and `generate_walkthrough`.
 2. Stage 6 local state restores multilingual result/idempotency/dedupe state
    without producing a second durable run on replay.
 3. Stage 7 local state restores consent/render/artifact metadata/idempotency
    state without producing a second durable consent or render on replay.
 4. Copied local state files remain byte-identical across source and restored
-   directories.
+   directories and remain inspectable in the persisted evidence snapshot.
 5. Restored record counts match the seeded record counts before replay.
+6. Replayed operations do not increase any Stage 4/6/7 durable record counts
+   after restore.
 
 ## Non-Goals
 
