@@ -260,6 +260,20 @@ row-level closure evidence are completed.
 |---|---|---|
 | `DUR-RESTORE-001` | `docs/ADR/0023-local-restore-integrity-drill.md`, `docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md`, and `backend/app/storage/local_restore_drill.py` | `CTX4-LOCAL-RESTORE-EVID-001`: `uv run python -m backend.app.storage.local_restore_drill --output outputs/restore-drill.json` seeds Stage 4/6/7 local state, copies source JSON state into a restored directory, verifies byte-identical file checksums, restores the services, replays the same Stage 4 `create_project`/`upload_document`/`approve_document`/`ingest_documents`/`generate_walkthrough` operations plus the Stage 6/7 replay paths without creating new durable identifiers, checks record-count parity before and after replay, and persists inspectable evidence paths. Production backup platform evidence, restore metrics, RTO/RPO proof, retention/re-delete behavior, and operational signoff remain open. |
 
+### Issue `#126` CH-14 restore-readiness contract status and evidence mapping
+
+- Matrix status remains exactly `Open` for `DUR-RESTORE-001`.
+- Issue `#126` is a narrow repo-checked restore-readiness contract slice for
+  the current repo-supported `CH-14` boundary after merged issue `#125`,
+  plus the current repo-baselined `CH-10` and `CH-11` contract artifacts.
+- Issue `#126` does not satisfy final `CH-14` restore-drill closure, does not
+  satisfy `CTX4-RESTORE-EVID-001`, and must not be represented as successful
+  production backup/restore evidence or production restore readiness.
+
+| Matrix ID | Issue #126 evidence artifact | Narrow executable evidence row |
+|---|---|---|
+| `DUR-RESTORE-001` | `docs/ADR/0026-ch14-restore-readiness-contract.md` and `docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md` | `CTX4-RESTORE-READINESS-EVID-001`: reviewed repo docs compose the merged `CTX4-LOCAL-RESTORE-EVID-001` local restore drill with the current repo-baselined `CTX5-METRICS-EVID-001` restore-adjacent metric names and `CTX5-SLO-EVID-001` advisory restore SLO contract, enumerate the required human-only production drill surfaces (backup platform, restore target, operator roster, successful drill timestamp, restore metrics export, measured RTO/RPO, and operations/security signoff), and define explicit no-go criteria that keep issue `#39` and matrix row `DUR-RESTORE-001` open until final production drill evidence exists. Successful production restore execution, actual RTO/RPO proof, restore metrics export, retention/re-delete evidence, and operational signoff remain open. |
+
 ## Issue #69 (Context 5) Status and Evidence Mapping
 
 ### Matrix planning annotations for `OPS-METRICS-001`, `OPS-SLO-001`, `OPS-ALERT-001`, and `OPS-WATCH-001`
