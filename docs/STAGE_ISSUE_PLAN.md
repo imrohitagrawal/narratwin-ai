@@ -772,6 +772,30 @@ lease or outbox runtime semantics, backup or restore flows, monitoring/alerts/wa
 rollback communications, provider/media/privacy controls, retention/untrusted-input
 closure, or unrelated governance/process files.
 
+`phase-1-closure-39-ch-10-*` is reserved for the `CH-10` production metrics
+contract chunk for issue `#39` child issue `#128`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/file_state.py`
+- `backend/app/storage/migrations.py`
+- `backend/app/storage/ops_metrics.py`
+- `backend/app/storage/postgres_state.py`
+- `docs/ADR/0024-ch10-production-metrics-contract.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_ops_metrics.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+`phase-1-closure-39-ch-10-*` must not touch dashboards, alert routing, paging,
+first-hour watch execution, backup tooling, restore-drill execution evidence,
+rollback communications evidence, Stage 4/6/7 application flows, provider/media/
+privacy controls, retention/untrusted-input closure, or unrelated governance/
+process files.
+
 `phase-1-closure-39-ch-16-*` is reserved for the `CH-16` consent capture chunk
 for issue `#39` child issue `#111`. It may touch only:
 

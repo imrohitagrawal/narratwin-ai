@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from .file_state import write_state
+from .ops_metrics import counter_metric
 
 MIGRATION_STATE_SCHEMA = "storage-migration-state-v1"
 MigrationPhase = Literal["expand", "contract"]
@@ -283,18 +284,24 @@ class MigrationRunner:
         previous_code: PreviousCodeCompatibility,
         trusted_proof_ledger: TrustedRollbackProofLedger,
     ) -> RollbackCompatibilityResult:
-        state = self.load_rollback_compatibility()
-        if state is None:
-            raise UnsafeRollbackError("Rollback blocked until forward repair completes: persisted rollback compatibility is missing")
-        trusted_proof = trusted_proof_ledger.resolve(
-            compatibility_proof_reference=state.compatibility_proof_reference,
-            proof_revision_id=state.proof_revision_id,
-        )
-        return assert_previous_code_rollback_safe(
-            previous_code=previous_code,
-            state=state,
-            trusted_proof=trusted_proof,
-        )
+        try:
+            state = self.load_rollback_compatibility()
+            if state is None:
+                raise UnsafeRollbackError(
+                    "Rollback blocked until forward repair completes: persisted rollback compatibility is missing"
+                )
+            trusted_proof = trusted_proof_ledger.resolve(
+                compatibility_proof_reference=state.compatibility_proof_reference,
+                proof_revision_id=state.proof_revision_id,
+            )
+            return assert_previous_code_rollback_safe(
+                previous_code=previous_code,
+                state=state,
+                trusted_proof=trusted_proof,
+            )
+        except UnsafeRollbackError as exc:
+            counter_metric("rollback_block_total", reason=_rollback_block_reason(str(exc)))
+            raise
 
     def _validate_registry(self) -> None:
         seen: set[str] = set()
@@ -665,3 +672,16 @@ def _value_matches_expected_type(value: Any, expected_type: Literal["str", "int"
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _rollback_block_reason(message: str) -> str:
+    normalized = message.lower()
+    if "persisted rollback compatibility is missing" in normalized:
+        return "missing-compatibility"
+    if "reviewed rollback proof source is missing entry" in normalized:
+        return "missing-proof"
+    if "payload fingerprint" in normalized:
+        return "payload-fingerprint-mismatch"
+    if "compatibility window" in normalized or "schema version" in normalized:
+        return "compatibility-window"
+    return "blocked"

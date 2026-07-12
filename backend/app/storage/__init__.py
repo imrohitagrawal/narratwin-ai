@@ -22,6 +22,17 @@ from .migrations import (
     apply_forward_repair,
     assert_previous_code_rollback_safe,
 )
+from .ops_metrics import (
+    OPS_METRIC_CONTRACTS,
+    OpsMetricContract,
+    counter_metric,
+    gauge_metric,
+    histogram_metric,
+    record_restore_outcome,
+    reset_ops_metric_snapshots,
+    snapshot_ops_metrics,
+    timed_restore_load,
+)
 from .postgres_state import (
     AcidCasConflictError,
     AcidCasKernel,
@@ -77,6 +88,8 @@ __all__ = [
     "OperationCommitResult",
     "OperationRecord",
     "OperationScope",
+    "OPS_METRIC_CONTRACTS",
+    "OpsMetricContract",
     "StoredRecord",
     "Stage4ChunkMetadata",
     "Stage4ClaimSupportMetadata",
@@ -91,7 +104,14 @@ __all__ = [
     "apply_forward_repair_from_ledger",
     "apply_forward_repair",
     "assert_previous_code_rollback_safe",
+    "counter_metric",
+    "gauge_metric",
+    "histogram_metric",
     "load_state",
+    "record_restore_outcome",
+    "reset_ops_metric_snapshots",
     "resolve_state_file",
+    "snapshot_ops_metrics",
+    "timed_restore_load",
     "write_state",
 ]
