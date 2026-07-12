@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+import base64
 import json
 from pathlib import Path
 import threading
@@ -1152,6 +1153,45 @@ def test_stage4_file_state_failed_operation_rollback_preserves_later_success(tmp
     assert sorted(record.idempotency_key for record in service.idempotency_records.values()) == ["fast-project"]
 
 
+def stage6_source_binding_kwargs(
+    *,
+    tenant_id: str = "tenant",
+    project_id: str = "project",
+    actor_id: str = "user",
+    source_run_id: str,
+    trace_id: str,
+    source_context_ref_ids: tuple[str, ...] = ("ctx_durable",),
+    source_citation_indexes: tuple[int, ...] = (1,),
+    source_claim_support_ids: tuple[str, ...] = ("claimsup_durable",),
+    source_evaluation_id: str = "eval_durable",
+    evaluation_status: str = "PASSED",
+) -> dict[str, Any]:
+    return {
+        "tenant_id": tenant_id,
+        "project_id": project_id,
+        "actor_id": actor_id,
+        "source_run_id": source_run_id,
+        "trace_id": trace_id,
+        "source_context_ref_count": len(source_context_ref_ids),
+        "source_citation_count": len(source_citation_indexes),
+        "source_context_ref_ids": source_context_ref_ids,
+        "source_citation_indexes": source_citation_indexes,
+        "source_claim_support_ids": source_claim_support_ids,
+        "source_evaluation_id": source_evaluation_id,
+        "source_evaluation_checksum": stage7_module.build_source_evaluation_checksum(
+            source_evaluation_id=source_evaluation_id,
+            source_run_id=source_run_id,
+            trace_id=trace_id,
+            evaluation_status=evaluation_status,
+            source_context_ref_ids=source_context_ref_ids,
+            source_context_ref_count=len(source_context_ref_ids),
+            source_citation_indexes=source_citation_indexes,
+            source_citation_count=len(source_citation_indexes),
+        ),
+        "evaluation_status": evaluation_status,
+    }
+
+
 def test_stage6_file_state_replays_completed_multilingual_idempotency(tmp_path: Path) -> None:
     state_path = tmp_path / "stage6.json"
     service = create_stage6_service(state_path=state_path)
@@ -1160,7 +1200,7 @@ def test_stage6_file_state_replays_completed_multilingual_idempotency(tmp_path: 
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         target_language="es",
         glossary_terms=["NarraTwin AI"],
-        source_context_ref_count=1,
+        **stage6_source_binding_kwargs(source_run_id="run_durable", trace_id="trace_durable"),
         idempotency_scope="tenant:user:project:run",
         idempotency_key="translate",
     )
@@ -1170,13 +1210,58 @@ def test_stage6_file_state_replays_completed_multilingual_idempotency(tmp_path: 
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         target_language="es",
         glossary_terms=["NarraTwin AI"],
-        source_context_ref_count=1,
+        **stage6_source_binding_kwargs(source_run_id="run_durable", trace_id="trace_durable"),
         idempotency_scope="tenant:user:project:run",
         idempotency_key="translate",
     )
 
     assert replayed.multilingual_run_id == result.multilingual_run_id
     assert replayed.artifacts.subtitles.checksum == result.artifacts.subtitles.checksum
+
+
+def test_stage6_replays_valid_source_bound_artifact(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+
+    result = service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1] [2]",
+        target_language="fr",
+        glossary_terms=["NarraTwin AI"],
+        **stage6_source_binding_kwargs(
+            source_run_id="run_source_bound",
+            trace_id="trace_source_bound",
+            source_context_ref_ids=("ctx_001", "ctx_002"),
+            source_citation_indexes=(1, 2),
+            source_claim_support_ids=("claimsup_001", "claimsup_002"),
+            source_evaluation_id="eval_source_bound",
+        ),
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="translate-source-bound",
+    )
+
+    restored = create_stage6_service(state_path=state_path)
+    replayed = restored.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1] [2]",
+        target_language="fr",
+        glossary_terms=["NarraTwin AI"],
+        **stage6_source_binding_kwargs(
+            source_run_id="run_source_bound",
+            trace_id="trace_source_bound",
+            source_context_ref_ids=("ctx_001", "ctx_002"),
+            source_citation_indexes=(1, 2),
+            source_claim_support_ids=("claimsup_001", "claimsup_002"),
+            source_evaluation_id="eval_source_bound",
+        ),
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="translate-source-bound",
+    )
+
+    assert replayed.multilingual_run_id == result.multilingual_run_id
+    assert replayed.source_run_id == "run_source_bound"
+    assert replayed.source_context_ref_ids == ("ctx_001", "ctx_002")
+    assert replayed.source_claim_support_ids == ("claimsup_001", "claimsup_002")
+    assert replayed.source_evaluation_id == "eval_source_bound"
+    assert replayed.artifacts.metadata.checksum == result.artifacts.metadata.checksum
 
 
 def test_stage6_file_state_terminal_persist_failure_preserves_concurrent_success(
@@ -1233,9 +1318,7 @@ def test_stage6_file_state_terminal_persist_failure_preserves_concurrent_success
         return service.generate_multilingual_walkthrough(
             source_script=f"NarraTwin AI creates grounded walkthrough scripts. {marker} [1]",
             target_language="es",
-            source_context_ref_count=1,
-            source_run_id=run_id,
-            trace_id=f"trace_{run_id}",
+            **stage6_source_binding_kwargs(source_run_id=run_id, trace_id=f"trace_{run_id}"),
             idempotency_scope="tenant:user:project:run",
             idempotency_key=idempotency_key,
         )
@@ -1266,7 +1349,7 @@ def test_stage6_file_state_drops_tampered_nonlocal_provider_result(tmp_path: Pat
     service.generate_multilingual_walkthrough(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         target_language="es",
-        source_context_ref_count=1,
+        **stage6_source_binding_kwargs(source_run_id="run_tampered", trace_id="trace_tampered"),
         idempotency_scope="tenant:user:project:run",
         idempotency_key="translate",
     )
@@ -1281,13 +1364,37 @@ def test_stage6_file_state_drops_tampered_nonlocal_provider_result(tmp_path: Pat
     assert restored.idempotency_records == {}
 
 
+def test_stage6_file_state_drops_completed_idempotency_with_error_value(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(source_run_id="run_completed_error", trace_id="trace_completed_error"),
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["idempotencyRecords"][0]["value"] = {
+        "kind": "error",
+        "status_code": 500,
+        "code": "INTERNAL_SERVER_ERROR",
+        "message": "tampered completed row",
+    }
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.idempotency_records == {}
+
+
 def test_stage6_file_state_drops_inconsistent_restored_artifact_payload(tmp_path: Path) -> None:
     state_path = tmp_path / "stage6.json"
     service = create_stage6_service(state_path=state_path)
     service.generate_multilingual_walkthrough(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         target_language="es",
-        source_context_ref_count=1,
+        **stage6_source_binding_kwargs(source_run_id="run_artifact", trace_id="trace_artifact"),
         idempotency_scope="tenant:user:project:run",
         idempotency_key="translate",
     )
@@ -1301,25 +1408,188 @@ def test_stage6_file_state_drops_inconsistent_restored_artifact_payload(tmp_path
     assert restored.idempotency_records == {}
 
 
+def test_stage6_drops_artifact_with_mismatched_source_run(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(source_run_id="run_expected", trace_id="trace_expected"),
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    result = payload["idempotencyRecords"][0]["value"]["result"]
+    result["source_run_id"] = "run_other"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.idempotency_records == {}
+
+
+def test_stage6_file_state_drops_cross_scope_request_dedupe_rows_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(
+            project_id="proj_stage6",
+            source_run_id="run_stage6",
+            trace_id="trace_stage6",
+        ),
+        idempotency_scope="tenant:user:proj_stage6:run_stage6",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["idempotencyRecords"] = []
+    payload["requestDedupeIndex"][0]["idempotency_scope"] = "tenant_other:user_other:proj_other:run_other"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.multilingual_runs == {}
+    assert restored.request_dedupe_index == {}
+
+
+@pytest.mark.parametrize(
+    ("field_name", "mutated_value"),
+    [
+        ("tenant_id", "tenant_other"),
+        ("project_id", "proj_other"),
+        ("actor_id", "user_other"),
+        ("source_run_id", "run_other"),
+        ("source_text_checksum", "sha256:tampered"),
+    ],
+)
+def test_stage6_file_state_drops_cross_boundary_or_checksum_mismatched_rows_on_restore(
+    tmp_path: Path,
+    field_name: str,
+    mutated_value: str,
+) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    scope = "tenant:user:proj_stage6:run_stage6"
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(
+            project_id="proj_stage6",
+            source_run_id="run_stage6",
+            trace_id="trace_stage6",
+        ),
+        idempotency_scope=scope,
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    for container in (payload["multilingualRuns"][0], payload["idempotencyRecords"][0]["value"]["result"]):
+        container[field_name] = mutated_value
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.multilingual_runs == {}
+    assert restored.request_dedupe_index == {}
+    assert restored.idempotency_records == {}
+
+
+def test_stage6_file_state_drops_subtitle_checksum_mismatch_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(
+            project_id="proj_stage6",
+            source_run_id="run_stage6",
+            trace_id="trace_stage6",
+        ),
+        idempotency_scope="tenant:user:proj_stage6:run_stage6",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    for container in (payload["multilingualRuns"][0], payload["idempotencyRecords"][0]["value"]["result"]):
+        container["artifacts"]["subtitles"]["checksum"] = "sha256:tampered"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.multilingual_runs == {}
+    assert restored.request_dedupe_index == {}
+    assert restored.idempotency_records == {}
+
+
+def test_stage6_file_state_drops_corrupted_metadata_artifact_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(
+            project_id="proj_stage6",
+            source_run_id="run_stage6",
+            trace_id="trace_stage6",
+        ),
+        idempotency_scope="tenant:user:proj_stage6:run_stage6",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    for container in (payload["multilingualRuns"][0], payload["idempotencyRecords"][0]["value"]["result"]):
+        container["artifacts"]["metadata"]["content_base64"] = base64.b64encode(b"not-json").decode("ascii")
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.multilingual_runs == {}
+    assert restored.request_dedupe_index == {}
+    assert restored.idempotency_records == {}
+
+
+def test_stage6_file_state_drops_oversized_restored_metadata_artifact_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(source_run_id="run_oversized", trace_id="trace_oversized"),
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    oversized_text = "x" * (stage6_module.MAX_STAGE6_ARTIFACT_BYTES + 1)
+    oversized_b64 = base64.b64encode(oversized_text.encode("utf-8")).decode("ascii")
+    payload["multilingualRuns"][0]["artifacts"]["metadata"]["content_base64"] = oversized_b64
+    payload["multilingualRuns"][0]["artifacts"]["metadata"]["checksum"] = checksum_text(oversized_text)
+    payload["idempotencyRecords"][0]["value"]["result"]["artifacts"]["metadata"]["content_base64"] = oversized_b64
+    payload["idempotencyRecords"][0]["value"]["result"]["artifacts"]["metadata"]["checksum"] = checksum_text(
+        oversized_text
+    )
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.multilingual_runs == {}
+    assert restored.request_dedupe_index == {}
+    assert restored.idempotency_records == {}
+
+
 def test_stage6_file_state_drops_failed_idempotency_with_missing_error(tmp_path: Path) -> None:
     state_path = tmp_path / "stage6.json"
-    request_checksum = checksum_text(
-        json.dumps(
-            {
-                "sourceScript": "NarraTwin AI creates grounded walkthrough scripts. [1]",
-                "sourceLanguage": "en",
-                "targetLanguage": "es",
-                "requestedVoiceProvider": "mock",
-                "glossaryTerms": [],
-            },
-            sort_keys=True,
-            separators=(",", ":"),
-        )
+    request_checksum = stage6_module.build_multilingual_request_checksum(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        source_language="en",
+        target_language="es",
+        requested_voice_provider="mock",
+        glossary_terms=[],
+        **stage6_source_binding_kwargs(source_run_id="run_failed", trace_id="trace_failed"),
     )
     state_path.write_text(
         json.dumps(
             {
-                "schema": "stage6-local-state-v1",
+                "schema": "stage6-local-state-v2",
+                "multilingualRuns": [],
+                "requestDedupeIndex": [],
                 "idempotencyRecords": [
                     {
                         "idempotency_scope": "tenant:user:project:run",
@@ -1340,13 +1610,131 @@ def test_stage6_file_state_drops_failed_idempotency_with_missing_error(tmp_path:
     result = restored.generate_multilingual_walkthrough(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         target_language="es",
-        source_context_ref_count=1,
+        **stage6_source_binding_kwargs(source_run_id="run_failed", trace_id="trace_failed"),
         idempotency_scope="tenant:user:project:run",
         idempotency_key="bad-failed",
     )
 
     assert result.multilingual_run_id == "mlrun_000001"
     assert len(restored.idempotency_records) == 1
+
+
+def test_stage6_dedupes_identical_request_checksum_to_existing_durable_run(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+
+    first = service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        glossary_terms=["NarraTwin AI"],
+        **stage6_source_binding_kwargs(
+            project_id="proj_001",
+            source_run_id="run_dedupe",
+            trace_id="trace_dedupe",
+        ),
+        idempotency_scope="tenant:user:proj_001:run_dedupe",
+        idempotency_key="translate-first",
+    )
+
+    restored = create_stage6_service(state_path=state_path)
+    replayed = restored.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        glossary_terms=["NarraTwin AI"],
+        **stage6_source_binding_kwargs(
+            project_id="proj_001",
+            source_run_id="run_dedupe",
+            trace_id="trace_dedupe",
+        ),
+        idempotency_scope="tenant:user:proj_001:run_dedupe",
+        idempotency_key="translate-second",
+    )
+
+    assert replayed.multilingual_run_id == first.multilingual_run_id
+    assert sorted(restored.multilingual_runs) == [first.multilingual_run_id]
+    assert sorted(record.idempotency_key for record in restored.idempotency_records.values()) == [
+        "translate-first",
+        "translate-second",
+    ]
+
+
+def test_stage6_drops_running_idempotency_record_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    request_checksum = stage6_module.build_multilingual_request_checksum(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        source_language="en",
+        target_language="es",
+        requested_voice_provider="mock",
+        glossary_terms=[],
+        **stage6_source_binding_kwargs(source_run_id="run_running", trace_id="trace_running"),
+    )
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "stage6-local-state-v2",
+                "multilingualRuns": [],
+                "requestDedupeIndex": [],
+                "idempotencyRecords": [
+                    {
+                        "idempotency_scope": "tenant:user:project:run",
+                        "endpoint": "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+                        "idempotency_key": "running-key",
+                        "request_checksum": request_checksum,
+                        "status": "RUNNING",
+                        "value": {"kind": "none"},
+                    }
+                ],
+                "counters": {"run": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = create_stage6_service(state_path=state_path)
+    recreated = restored.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(source_run_id="run_running", trace_id="trace_running"),
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="running-key",
+    )
+
+    assert recreated.multilingual_run_id == "mlrun_000001"
+    assert len(restored.idempotency_records) == 1
+
+
+def test_stage6_restore_derives_missing_counters_from_restored_ids(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    first = service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(source_run_id="run_first", trace_id="trace_first"),
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="translate-first",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["counters"] = {}
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+    second = restored.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [2]",
+        target_language="fr",
+        **stage6_source_binding_kwargs(
+            source_run_id="run_second",
+            trace_id="trace_second",
+            source_context_ref_ids=("ctx_second",),
+            source_citation_indexes=(2,),
+            source_claim_support_ids=("claimsup_second",),
+            source_evaluation_id="eval_second",
+        ),
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="translate-second",
+    )
+
+    assert first.multilingual_run_id == "mlrun_000001"
+    assert second.multilingual_run_id == "mlrun_000002"
 
 
 def test_stage7_file_state_replays_completed_avatar_idempotency(tmp_path: Path) -> None:

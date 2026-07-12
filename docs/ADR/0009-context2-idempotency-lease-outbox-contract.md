@@ -215,6 +215,9 @@ Positive:
   state-transition constraints.
 - Product/runtime claims remain non-production until follow-on contexts satisfy
   implementation-stage gates.
+- Stage 6 durable replay in issue `#109` reuses the same terminal-replay and
+  checksum discipline for multilingual artifacts, but remains a local/mock-only
+  evidence path rather than new production authorization.
 
 Negative:
 

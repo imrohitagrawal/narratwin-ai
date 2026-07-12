@@ -2,7 +2,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from backend.app.rag.chunking import checksum_text
 from backend.app.main import app, reset_app_state_for_tests
+from backend.app.stage4 import stage4_service
 from backend.app.stage6 import TranslationProviderResult, stage6_service
 
 IDEMPOTENCY_HEADER = "Idempotency-" + "Key"
@@ -93,6 +95,21 @@ def test_multilingual_walkthrough_api_returns_downloadable_script_and_subtitle_a
     assert body["artifacts"]["translatedScript"]["mimeType"] == "text/markdown"
     assert body["artifacts"]["subtitles"]["fileName"].endswith(".srt")
     assert body["artifacts"]["subtitles"]["contentBase64"]
+    assert body["trace"]["tenantId"] == "tenant_local"
+    assert body["trace"]["projectId"] == project_id
+    assert body["trace"]["actorId"] == "user_local"
+    assert body["trace"]["sourceRunId"] == run_id
+    assert body["trace"]["sourceTextChecksum"] == checksum_text(
+        stage4_service.walkthrough_runs[run_id].accepted_script_text or ""
+    )
+    assert body["trace"]["sourceContextRefIds"]
+    assert body["trace"]["sourceCitationIndexes"]
+    assert body["trace"]["sourceClaimSupportIds"]
+    assert body["trace"]["sourceEvaluationId"]
+    assert body["trace"]["sourceEvaluationChecksum"]
+    assert body["trace"]["evaluationStatus"] == "PASSED"
+    assert body["artifacts"]["metadata"]["fileName"].endswith("-metadata.json")
+    assert body["artifacts"]["metadata"]["mimeType"] == "application/json"
 
 
 def test_multilingual_walkthrough_api_falls_back_to_mock_voice_provider() -> None:
@@ -175,6 +192,82 @@ def test_multilingual_walkthrough_api_replays_matching_idempotency_key() -> None
     assert first.status_code == 201
     assert second.status_code == 201
     assert second.json()["multilingualRunId"] == first.json()["multilingualRunId"]
+
+
+def test_multilingual_walkthrough_api_replays_equivalent_canonicalized_request() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client)
+    path = f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs"
+
+    first = client.post(
+        path,
+        json={
+            "targetLanguage": "es",
+            "glossaryTerms": ["NarraTwin AI"],
+            "requestedVoiceProvider": "mock",
+        },
+        headers=idempotency_headers("canon-1"),
+    )
+    second = client.post(
+        path,
+        json={
+            "targetLanguage": "es-ES",
+            "glossaryTerms": [" NarraTwin AI "],
+            "requestedVoiceProvider": "Mock",
+        },
+        headers=idempotency_headers("canon-2"),
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert second.json()["multilingualRunId"] == first.json()["multilingualRunId"]
+
+
+def test_multilingual_walkthrough_api_rejects_changed_payload_for_reused_idempotency_key() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client)
+    path = f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs"
+    request = {
+        "targetLanguage": "es",
+        "glossaryTerms": ["NarraTwin AI"],
+        "requestedVoiceProvider": "mock",
+    }
+
+    first = client.post(path, json=request, headers=idempotency_headers("stage6-conflict"))
+    conflict = client.post(
+        path,
+        json={
+            **request,
+            "targetLanguage": "fr",
+        },
+        headers=idempotency_headers("stage6-conflict"),
+    )
+
+    assert first.status_code == 201
+    assert conflict.status_code == 409
+    assert conflict.json()["error"]["code"] == "IDEMPOTENCY_CONFLICT"
+
+
+def test_multilingual_walkthrough_api_rejects_non_translatable_source_run() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client)
+    stage4_service.walkthrough_runs[run_id].status = "FAILED"
+
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+        json={
+            "targetLanguage": "es",
+            "glossaryTerms": ["NarraTwin AI"],
+            "requestedVoiceProvider": "mock",
+        },
+        headers=idempotency_headers("stage6-source-run-failed"),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "SOURCE_RUN_NOT_TRANSLATABLE"
 
 
 def test_multilingual_walkthrough_api_rejects_oversized_boundary_fields() -> None:

@@ -18,6 +18,7 @@ from backend.app.stage6 import (
     normalize_language_tag,
     split_captions,
 )
+from backend.app.stage7 import build_source_evaluation_checksum
 
 # Stage 6 multilingual tests preserve source run_id trace metadata and citation
 # counts from the accepted grounded walkthrough script.
@@ -43,6 +44,7 @@ def test_translation_preserves_project_terms_from_glossary() -> None:
     assert "source chunks" in result.translated_script_text
     assert "convierte" in result.translated_script_text
     assert result.translated_script_text != source_script
+    assert result.artifacts.metadata.mime_type == "application/json"
 
 
 def test_domain_service_rejects_blank_glossary_terms_directly() -> None:
@@ -179,6 +181,30 @@ def test_concurrent_duplicate_idempotency_key_is_rejected_in_flight() -> None:
     assert provider.call_count == 1
 
 
+def test_reused_idempotency_key_with_changed_payload_conflicts() -> None:
+    service = create_stage6_service()
+    first = service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts.",
+        target_language="es",
+        glossary_terms=["NarraTwin AI"],
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="same-key",
+    )
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            target_language="fr",
+            glossary_terms=["NarraTwin AI"],
+            idempotency_scope="tenant:user:project:run",
+            idempotency_key="same-key",
+        )
+
+    assert first.multilingual_run_id == "mlrun_000001"
+    assert exc.value.status_code == 409
+    assert exc.value.code == "IDEMPOTENCY_CONFLICT"
+
+
 def test_provider_output_must_preserve_glossary_terms_present_in_source() -> None:
     class DroppingTranslationProvider:
         provider = "dropping-local"
@@ -246,6 +272,22 @@ def test_provider_output_must_preserve_source_citation_markers() -> None:
             target_language="es",
             glossary_terms=["NarraTwin AI"],
             source_context_ref_count=1,
+            source_citation_count=1,
+            source_context_ref_ids=("ctx_001",),
+            source_citation_indexes=(1,),
+            source_claim_support_ids=("claimsup_001",),
+            source_evaluation_id="eval_001",
+            source_evaluation_checksum=build_source_evaluation_checksum(
+                source_evaluation_id="eval_001",
+                source_run_id="local_source_run",
+                trace_id="local_trace",
+                evaluation_status="PASSED",
+                source_context_ref_ids=("ctx_001",),
+                source_context_ref_count=1,
+                source_citation_indexes=(1,),
+                source_citation_count=1,
+            ),
+            evaluation_status="PASSED",
         )
 
     assert exc.value.status_code == 422

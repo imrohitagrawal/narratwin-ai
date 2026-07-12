@@ -538,14 +538,28 @@ class MultilingualArtifactsResponse(BaseModel):
     translated_script: DownloadableArtifactResponse = Field(alias="translatedScript")
     subtitles: DownloadableArtifactResponse
     voice_manifest: DownloadableArtifactResponse = Field(alias="voiceManifest")
+    metadata: DownloadableArtifactResponse
 
 
 class MultilingualTraceResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     trace_id: str = Field(alias="traceId")
+    tenant_id: str = Field(alias="tenantId")
+    project_id: str = Field(alias="projectId")
+    actor_id: str = Field(alias="actorId")
+    source_run_id: str = Field(alias="sourceRunId")
+    source_language: str = Field(alias="sourceLanguage")
+    target_language: str = Field(alias="targetLanguage")
+    source_text_checksum: str = Field(alias="sourceTextChecksum")
     source_context_ref_count: int = Field(alias="sourceContextRefCount")
     source_citation_count: int = Field(alias="sourceCitationCount")
+    source_context_ref_ids: list[str] = Field(alias="sourceContextRefIds")
+    source_citation_indexes: list[int] = Field(alias="sourceCitationIndexes")
+    source_claim_support_ids: list[str] = Field(alias="sourceClaimSupportIds")
+    source_evaluation_id: str = Field(alias="sourceEvaluationId")
+    source_evaluation_checksum: str = Field(alias="sourceEvaluationChecksum")
+    evaluation_status: Literal["PASSED", "FAILED", "UNKNOWN"] = Field(alias="evaluationStatus")
 
 
 class MultilingualWalkthroughResponse(BaseModel):
@@ -1301,16 +1315,49 @@ def generate_multilingual_walkthrough_run(
         raise Stage6Error(403, "FORBIDDEN", "Walkthrough run is not accessible to this principal.")
     if source_run.status != "COMPLETED" or not source_run.accepted_script_text:
         raise Stage6Error(422, "SOURCE_RUN_NOT_TRANSLATABLE", "Only completed grounded walkthrough runs can be translated.")
+    if source_run.evaluation_status != "PASSED":
+        raise Stage6Error(422, "SOURCE_RUN_NOT_TRANSLATABLE", "Only passed grounded walkthrough runs can be translated.")
+    if source_run.evaluation is None or not source_run.evaluation.claim_supports or not source_run.retrieved_context:
+        raise Stage6Error(
+            422,
+            "SOURCE_RUN_NOT_TRANSLATABLE",
+            "Multilingual replay requires grounded evaluation evidence.",
+        )
+
+    source_citation_count = len(source_run.evaluation.claim_supports)
+    source_context_ref_ids = tuple(context.context_ref_id for context in source_run.retrieved_context)
+    source_citation_indexes = tuple(support.citation_index for support in source_run.evaluation.claim_supports)
+    source_claim_support_ids = tuple(support.claim_support_id for support in source_run.evaluation.claim_supports)
+    source_evaluation_checksum = build_source_evaluation_checksum(
+        source_evaluation_id=source_run.evaluation.evaluation_id,
+        source_run_id=source_run.run_id,
+        trace_id=source_run.trace_id,
+        evaluation_status=source_run.evaluation_status or "UNKNOWN",
+        source_context_ref_ids=source_context_ref_ids,
+        source_context_ref_count=len(source_run.retrieved_context),
+        source_citation_indexes=source_citation_indexes,
+        source_citation_count=source_citation_count,
+    )
 
     multilingual_run = stage6_service.generate_multilingual_walkthrough(
         source_script=source_run.accepted_script_text,
         source_language=source_run.requested_language,
         target_language=request.target_language,
         glossary_terms=request.glossary_terms,
+        tenant_id=principal.tenant_id,
+        project_id=project_id,
+        actor_id=principal.actor_id,
         requested_voice_provider=request.requested_voice_provider,
         source_run_id=source_run.run_id,
         trace_id=source_run.trace_id,
         source_context_ref_count=len(source_run.retrieved_context),
+        source_citation_count=source_citation_count,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_claim_support_ids=source_claim_support_ids,
+        source_evaluation_id=source_run.evaluation.evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=source_run.evaluation_status or "UNKNOWN",
         idempotency_scope=f"{principal.tenant_id}:{principal.actor_id}:{project_id}:{run_id}",
         idempotency_key=idempotency_key,
     )

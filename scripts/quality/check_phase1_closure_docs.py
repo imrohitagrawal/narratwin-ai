@@ -252,6 +252,25 @@ ISSUE_39_CH06_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_postgres_state.py",
 }
+ISSUE_39_CH07_ALLOWED_CHANGED_FILES = {
+    "backend/app/main.py",
+    "backend/app/stage6.py",
+    "backend/app/storage/__init__.py",
+    "backend/app/storage/file_state.py",
+    "docs/ADR/0009-context2-idempotency-lease-outbox-contract.md",
+    "docs/ADR/0020-ch07-stage6-durable-replay.md",
+    "docs/API_CONTRACT.md",
+    "docs/LOCAL_DEVELOPMENT.md",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/api/test_stage6_multilingual_api.py",
+    "tests/unit/test_local_durability.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_stage6_multilingual.py",
+}
 ISSUE_39_CH16_ALLOWED_CHANGED_FILES = {
     "backend/app/main.py",
     "backend/app/stage7.py",
@@ -573,6 +592,10 @@ ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
     "phase-1-closure-39-ch-04-": ("b5992a599be06ea444ca66d3f088956eee8c70e6",),
     "phase-1-closure-39-ch-05-": ("b5992a599be06ea444ca66d3f088956eee8c70e6",),
     "phase-1-closure-39-ch-06-": ("b5992a599be06ea444ca66d3f088956eee8c70e6",),
+    "phase-1-closure-39-ch-07-": (
+        "6449786069dd38eeaa5a4a31f5ed73cbfc52d248",
+        "947a96891fd84085b6fce433e604a8e249b25c23",
+    ),
     "phase-1-closure-39-ch-16-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
 }
 PHASE1_STACKED_BASE_WORKFLOWS = (
@@ -1782,6 +1805,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_39_CH05_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-06-"):
         allowed_files = ISSUE_39_CH06_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-ch-07-"):
+        allowed_files = ISSUE_39_CH07_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-16-"):
         allowed_files = ISSUE_39_CH16_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-context4-"):
