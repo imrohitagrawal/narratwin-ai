@@ -33,6 +33,8 @@ SUPPORTED_LANGUAGES = {
 MAX_GLOSSARY_TERMS = 25
 MAX_GLOSSARY_TERM_CHARS = 80
 MAX_SOURCE_SCRIPT_CHARS = 20_000
+MAX_STAGE6_ARTIFACT_BYTES = 512 * 1024
+MAX_STAGE6_ARTIFACT_BASE64_CHARS = ((MAX_STAGE6_ARTIFACT_BYTES + 2) // 3) * 4
 MAX_CAPTION_CHARS = 96
 MAX_CAPTION_COUNT = 250
 MAX_PROVIDER_ID_CHARS = 64
@@ -345,7 +347,9 @@ class Stage6Service:
                     LOGGER.warning("Skipping incompatible Stage 6 idempotency record at %s: %s", self.state_path, exc)
                     continue
                 if record.status == "COMPLETED":
-                    result = cast(MultilingualWalkthroughResult, record.value)
+                    if not isinstance(record.value, MultilingualWalkthroughResult):
+                        continue
+                    result = record.value
                     if record.request_checksum != result.request_checksum:
                         continue
                     existing_result = restored_runs.get(result.multilingual_run_id)
@@ -370,6 +374,16 @@ class Stage6Service:
                     continue
                 restored_result: MultilingualWalkthroughResult | None = restored_runs.get(multilingual_run_id)
                 if restored_result is None or restored_result.request_checksum != request_checksum:
+                    continue
+                try:
+                    validate_stage6_scope(
+                        idempotency_scope=scope,
+                        tenant_id=restored_result.tenant_id,
+                        project_id=restored_result.project_id,
+                        actor_id=restored_result.actor_id,
+                        source_run_id=restored_result.source_run_id,
+                    )
+                except Stage6Error:
                     continue
                 dedupe_key = (scope, request_checksum)
                 existing_run_id = restored_dedupe_index.get(dedupe_key)
@@ -526,12 +540,21 @@ class Stage6Service:
             source_citation_indexes=raw_source_citation_indexes,
             source_citation_count=source_citation_count,
         )
+        normalized_source_language = normalize_language_tag(source_language)
+        normalized_target_language = normalize_language_tag(target_language)
+        normalized_terms = normalize_glossary_terms(raw_glossary_terms)
+        normalized_requested_voice_provider = validate_provider_id(
+            requested_voice_provider or "mock",
+            field_name="requested voice provider",
+        )
+        normalized_evaluation_status = validate_evaluation_status(raw_evaluation_status)
+        normalized_evaluation_id = normalize_evaluation_id(raw_source_evaluation_id)
         request_checksum = build_multilingual_request_checksum(
             source_script=source_text,
-            source_language=source_language,
-            target_language=target_language,
-            requested_voice_provider=requested_voice_provider,
-            glossary_terms=raw_glossary_terms,
+            source_language=normalized_source_language,
+            target_language=normalized_target_language,
+            requested_voice_provider=normalized_requested_voice_provider,
+            glossary_terms=normalized_terms,
             tenant_id=normalized_tenant_id,
             project_id=normalized_project_id,
             actor_id=normalized_actor_id,
@@ -542,9 +565,9 @@ class Stage6Service:
             source_context_ref_ids=raw_source_context_ref_ids,
             source_citation_indexes=raw_source_citation_indexes,
             source_claim_support_ids=raw_source_claim_support_ids,
-            source_evaluation_id=raw_source_evaluation_id,
+            source_evaluation_id=normalized_evaluation_id,
             source_evaluation_checksum=raw_source_evaluation_checksum,
-            evaluation_status=raw_evaluation_status,
+            evaluation_status=normalized_evaluation_status,
         )
         endpoint = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs"
         if idempotency_scope and idempotency_key:
@@ -611,9 +634,6 @@ class Stage6Service:
                 )
 
         try:
-            normalized_source_language = normalize_language_tag(source_language)
-            normalized_target_language = normalize_language_tag(target_language)
-            normalized_terms = normalize_glossary_terms(raw_glossary_terms)
             if any(contains_secret_like_content(term) for term in normalized_terms):
                 raise Stage6Error(422, "SECRET_LIKE_CONTENT", "Glossary terms contain secret-like content.")
             if not source_text:
@@ -636,8 +656,6 @@ class Stage6Service:
                 prefix="claimsup_",
                 field_name="source claim-support identifiers",
             )
-            normalized_evaluation_id = normalize_evaluation_id(raw_source_evaluation_id)
-            normalized_evaluation_status = validate_evaluation_status(raw_evaluation_status)
             normalized_evaluation_checksum = validate_source_evaluation_checksum(
                 source_evaluation_checksum=raw_source_evaluation_checksum,
                 source_evaluation_id=normalized_evaluation_id,
@@ -763,7 +781,10 @@ class Stage6Service:
             raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Translated output citation count is inconsistent.")
         translation = TranslationProviderResult(
             provider=validate_provider_id(translation.provider, field_name="translation provider"),
-            provider_mode=validate_provider_mode(translation.provider_mode),
+            provider_mode=validate_local_provider_mode(
+                translation.provider_mode,
+                field_name="translation provider mode",
+            ),
             source_language=normalized_source_language,
             target_language=normalized_target_language,
             translated_text=validated_text,
@@ -782,7 +803,7 @@ class Stage6Service:
         )
         voice = VoiceProviderResult(
             provider=validate_provider_id(voice.provider, field_name="voice provider"),
-            provider_mode=validate_provider_mode(voice.provider_mode),
+            provider_mode=validate_local_provider_mode(voice.provider_mode, field_name="voice provider mode"),
             requested_provider=provider_name,
             fallback_reason=voice.fallback_reason,
             language=normalized_target_language,
@@ -791,15 +812,23 @@ class Stage6Service:
         with self._operation_lock:
             self._run_counter += 1
             multilingual_run_id = f"mlrun_{self._run_counter:06d}"
-        script_artifact = artifact_from_text(
-            file_name=f"{source_run_id}-{normalized_target_language}-script.md",
-            mime_type="text/markdown",
-            text=translation.translated_text,
+        script_artifact = validate_downloadable_artifact(
+            artifact_from_text(
+                file_name=f"{source_run_id}-{normalized_target_language}-script.md",
+                mime_type="text/markdown",
+                text=translation.translated_text,
+            ),
+            expected_mime_type="text/markdown",
+            expected_extension=".md",
         )
-        subtitle_artifact = artifact_from_text(
-            file_name=f"{source_run_id}-{normalized_target_language}.srt",
-            mime_type="application/x-subrip",
-            text=subtitles_text,
+        subtitle_artifact = validate_downloadable_artifact(
+            artifact_from_text(
+                file_name=f"{source_run_id}-{normalized_target_language}.srt",
+                mime_type="application/x-subrip",
+                text=subtitles_text,
+            ),
+            expected_mime_type="application/x-subrip",
+            expected_extension=".srt",
         )
         metadata_text = build_stage6_metadata_text(
             multilingual_run_id=multilingual_run_id,
@@ -829,10 +858,14 @@ class Stage6Service:
             translated_script_artifact=script_artifact,
             subtitles_artifact=subtitle_artifact,
         )
-        metadata_artifact = artifact_from_text(
-            file_name=f"{source_run_id}-{normalized_target_language}-metadata.json",
-            mime_type="application/json",
-            text=metadata_text,
+        metadata_artifact = validate_downloadable_artifact(
+            artifact_from_text(
+                file_name=f"{source_run_id}-{normalized_target_language}-metadata.json",
+                mime_type="application/json",
+                text=metadata_text,
+            ),
+            expected_mime_type="application/json",
+            expected_extension=".json",
         )
         return MultilingualWalkthroughResult(
             multilingual_run_id=multilingual_run_id,
@@ -923,6 +956,8 @@ def stage6_idempotency_record_from_dict(row: dict[str, Any]) -> Stage6Idempotenc
         raise ValueError(f"Unsupported Stage 6 idempotency status: {status}")
     if status == "COMPLETED" and value is None:
         raise ValueError("Completed Stage 6 idempotency record references missing value.")
+    if status == "COMPLETED" and not isinstance(value, MultilingualWalkthroughResult):
+        raise ValueError("Completed Stage 6 idempotency record references invalid value.")
     if status == "FAILED" and not isinstance(value, Stage6Error):
         raise ValueError("Failed Stage 6 idempotency record references missing error.")
     record = Stage6IdempotencyRecord(
@@ -1215,9 +1250,26 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
 
 def artifact_text(artifact: DownloadableArtifact) -> str:
     try:
-        return base64.b64decode(artifact.content_base64, validate=True).decode("utf-8")
-    except (binascii.Error, UnicodeDecodeError) as exc:
+        return _decode_artifact_content(artifact.content_base64, field_name="Downloadable artifact")
+    except Stage6Error:
+        raise
+    except (binascii.Error, TypeError, UnicodeDecodeError) as exc:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Downloadable artifact content is invalid.") from exc
+
+
+def _decode_artifact_content(content_base64: str, *, field_name: str) -> str:
+    if len(content_base64) > MAX_STAGE6_ARTIFACT_BASE64_CHARS:
+        raise Stage6Error(413, "PROVIDER_OUTPUT_TOO_LARGE", f"{field_name} exceeds the Stage 6 limit.")
+    try:
+        decoded_bytes = base64.b64decode(content_base64, validate=True)
+    except (binascii.Error, TypeError) as exc:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", f"{field_name} content is invalid.") from exc
+    if len(decoded_bytes) > MAX_STAGE6_ARTIFACT_BYTES:
+        raise Stage6Error(413, "PROVIDER_OUTPUT_TOO_LARGE", f"{field_name} exceeds the Stage 6 limit.")
+    try:
+        return decoded_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", f"{field_name} content is invalid.") from exc
 
 
 def downloadable_artifact_from_dict(
@@ -1264,13 +1316,23 @@ def build_multilingual_request_checksum(
     source_evaluation_checksum: str,
     evaluation_status: str,
 ) -> str:
+    normalized_source_script = source_script.strip()
+    normalized_source_language = normalize_language_tag(source_language)
+    normalized_target_language = normalize_language_tag(target_language)
+    normalized_requested_voice_provider = validate_provider_id(
+        requested_voice_provider or "mock",
+        field_name="requested voice provider",
+    )
+    normalized_glossary_terms = normalize_glossary_terms(glossary_terms)
+    normalized_source_evaluation_id = normalize_evaluation_id(source_evaluation_id)
+    normalized_evaluation_status = validate_evaluation_status(evaluation_status)
     return checksum_text(
         json.dumps(
             {
-                "evaluationStatus": evaluation_status,
+                "evaluationStatus": normalized_evaluation_status,
                 "actorId": actor_id,
-                "glossaryTerms": glossary_terms,
-                "requestedVoiceProvider": requested_voice_provider,
+                "glossaryTerms": normalized_glossary_terms,
+                "requestedVoiceProvider": normalized_requested_voice_provider,
                 "projectId": project_id,
                 "sourceCitationCount": source_citation_count,
                 "sourceCitationIndexes": list(source_citation_indexes) if source_citation_indexes is not None else None,
@@ -1278,13 +1340,13 @@ def build_multilingual_request_checksum(
                 "sourceContextRefCount": source_context_ref_count,
                 "sourceContextRefIds": list(source_context_ref_ids) if source_context_ref_ids is not None else None,
                 "sourceEvaluationChecksum": source_evaluation_checksum,
-                "sourceEvaluationId": source_evaluation_id,
-                "sourceLanguage": source_language,
+                "sourceEvaluationId": normalized_source_evaluation_id,
+                "sourceLanguage": normalized_source_language,
                 "sourceRunId": source_run_id,
-                "sourceScript": source_script,
-                "sourceTextChecksum": checksum_text(source_script),
+                "sourceScript": normalized_source_script,
+                "sourceTextChecksum": checksum_text(normalized_source_script),
                 "tenantId": tenant_id,
-                "targetLanguage": target_language,
+                "targetLanguage": normalized_target_language,
                 "traceId": trace_id,
             },
             sort_keys=True,
@@ -1498,8 +1560,10 @@ def validate_downloadable_artifact(
     if not artifact.file_name.endswith(expected_extension) or not is_safe_artifact_filename(artifact.file_name):
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Downloadable artifact filename is invalid.")
     try:
-        decoded = base64.b64decode(artifact.content_base64, validate=True).decode("utf-8")
-    except (binascii.Error, UnicodeDecodeError) as exc:
+        decoded = _decode_artifact_content(artifact.content_base64, field_name="Downloadable artifact")
+    except Stage6Error:
+        raise
+    except (binascii.Error, TypeError, UnicodeDecodeError) as exc:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Downloadable artifact content is invalid.") from exc
     if artifact.checksum != checksum_text(decoded):
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Downloadable artifact checksum is invalid.")
@@ -1512,9 +1576,11 @@ def validate_voice_manifest_artifact(artifact: DownloadableArtifact) -> Download
     if not artifact.file_name.endswith(".json") or not is_safe_artifact_filename(artifact.file_name):
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider artifact filename is invalid.")
     try:
-        decoded = base64.b64decode(artifact.content_base64, validate=True).decode("utf-8")
+        decoded = _decode_artifact_content(artifact.content_base64, field_name="Voice provider artifact")
         parsed = json.loads(decoded)
-    except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except Stage6Error:
+        raise
+    except (binascii.Error, TypeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider artifact must contain valid JSON.") from exc
     if not isinstance(parsed, dict):
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest must be a JSON object.")
@@ -1522,7 +1588,7 @@ def validate_voice_manifest_artifact(artifact: DownloadableArtifact) -> Download
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest schema is invalid.")
     if parsed["provider"] != "mock":
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest provider is invalid.")
-    validate_provider_mode(str(parsed["providerMode"]))
+    validate_local_provider_mode(str(parsed["providerMode"]), field_name="voice provider manifest provider mode")
     normalize_language_tag(str(parsed["language"]))
     if not isinstance(parsed["languageDisplayName"], str) or not parsed["languageDisplayName"].strip():
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Voice provider manifest language display name is invalid.")

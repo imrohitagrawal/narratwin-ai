@@ -1364,6 +1364,30 @@ def test_stage6_file_state_drops_tampered_nonlocal_provider_result(tmp_path: Pat
     assert restored.idempotency_records == {}
 
 
+def test_stage6_file_state_drops_completed_idempotency_with_error_value(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(source_run_id="run_completed_error", trace_id="trace_completed_error"),
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["idempotencyRecords"][0]["value"] = {
+        "kind": "error",
+        "status_code": 500,
+        "code": "INTERNAL_SERVER_ERROR",
+        "message": "tampered completed row",
+    }
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.idempotency_records == {}
+
+
 def test_stage6_file_state_drops_inconsistent_restored_artifact_payload(tmp_path: Path) -> None:
     state_path = tmp_path / "stage6.json"
     service = create_stage6_service(state_path=state_path)
@@ -1402,6 +1426,31 @@ def test_stage6_drops_artifact_with_mismatched_source_run(tmp_path: Path) -> Non
     restored = create_stage6_service(state_path=state_path)
 
     assert restored.idempotency_records == {}
+
+
+def test_stage6_file_state_drops_cross_scope_request_dedupe_rows_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(
+            project_id="proj_stage6",
+            source_run_id="run_stage6",
+            trace_id="trace_stage6",
+        ),
+        idempotency_scope="tenant:user:proj_stage6:run_stage6",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["idempotencyRecords"] = []
+    payload["requestDedupeIndex"][0]["idempotency_scope"] = "tenant_other:user_other:proj_other:run_other"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.multilingual_runs == {}
+    assert restored.request_dedupe_index == {}
 
 
 @pytest.mark.parametrize(
@@ -1488,6 +1537,34 @@ def test_stage6_file_state_drops_corrupted_metadata_artifact_on_restore(tmp_path
     payload = json.loads(state_path.read_text(encoding="utf-8"))
     for container in (payload["multilingualRuns"][0], payload["idempotencyRecords"][0]["value"]["result"]):
         container["artifacts"]["metadata"]["content_base64"] = base64.b64encode(b"not-json").decode("ascii")
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.multilingual_runs == {}
+    assert restored.request_dedupe_index == {}
+    assert restored.idempotency_records == {}
+
+
+def test_stage6_file_state_drops_oversized_restored_metadata_artifact_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(source_run_id="run_oversized", trace_id="trace_oversized"),
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    oversized_text = "x" * (stage6_module.MAX_STAGE6_ARTIFACT_BYTES + 1)
+    oversized_b64 = base64.b64encode(oversized_text.encode("utf-8")).decode("ascii")
+    payload["multilingualRuns"][0]["artifacts"]["metadata"]["content_base64"] = oversized_b64
+    payload["multilingualRuns"][0]["artifacts"]["metadata"]["checksum"] = checksum_text(oversized_text)
+    payload["idempotencyRecords"][0]["value"]["result"]["artifacts"]["metadata"]["content_base64"] = oversized_b64
+    payload["idempotencyRecords"][0]["value"]["result"]["artifacts"]["metadata"]["checksum"] = checksum_text(
+        oversized_text
+    )
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
     restored = create_stage6_service(state_path=state_path)
