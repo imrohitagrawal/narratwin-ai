@@ -1353,6 +1353,7 @@ def test_issue39_ch08_branch_allows_stage7_render_artifact_files(monkeypatch: An
             "backend/app/stage7.py",
             "backend/app/storage/file_state.py",
             "docs/API_CONTRACT.md",
+            "docs/LOCAL_DEVELOPMENT.md",
             "docs/STATUS.md",
             "docs/STAGE_ISSUE_PLAN.md",
             "docs/TRACEABILITY.md",
@@ -1413,14 +1414,16 @@ def test_issue39_ch08_branch_rejects_adjacent_runtime_or_scope_files(monkeypatch
         monkeypatch,
         branch="phase-1-closure-39-ch-08-stage7-render-artifact-state",
         files=[
-            "backend/app/stage6.py",
-            "docs/ADR/0019-ch16-consent-capture.md",
+            "backend/app/storage/stage4_graph.py",
+            "backend/app/rag/providers.py",
+            "docs/ADR/0008-postgresql-durability-schema-boundary.md",
         ],
     )
 
     assert failures == [
-        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change backend/app/stage6.py.",
-        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change docs/ADR/0019-ch16-consent-capture.md.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change backend/app/storage/stage4_graph.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change backend/app/rag/providers.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change docs/ADR/0008-postgresql-durability-schema-boundary.md.",
     ]
 
 

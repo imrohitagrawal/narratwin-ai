@@ -276,6 +276,7 @@ ISSUE_39_CH08_ALLOWED_CHANGED_FILES = {
     "backend/app/stage7.py",
     "backend/app/storage/file_state.py",
     "docs/API_CONTRACT.md",
+    "docs/LOCAL_DEVELOPMENT.md",
     "docs/STATUS.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/TRACEABILITY.md",
