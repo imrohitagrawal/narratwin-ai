@@ -10,11 +10,15 @@ from pathlib import Path
 import shutil
 import tempfile
 from time import perf_counter
+from typing import TypeAlias
 
-from backend.app.stage4 import LocalPrincipal, Stage4Service
-from backend.app.stage6 import Stage6Service
+from backend.app.stage4 import LocalPrincipal, Stage4Service, WalkthroughRunRecord
+from backend.app.stage6 import MultilingualWalkthroughResult, Stage6Service
 from backend.app.stage7 import (
+    AvatarRenderResult,
     DurableAvatarRenderScope,
+    Stage7Service,
+    SyntheticAvatarConsentRecord,
     build_source_evaluation_checksum,
     create_stage7_service,
 )
@@ -48,6 +52,36 @@ class RestoreDrillSummary:
     replay_ids: dict[str, str]
 
 
+StageStatePaths: TypeAlias = dict[str, Path]
+
+
+@dataclass(frozen=True)
+class SeededDrillState:
+    principal: LocalPrincipal
+    project_id: str
+    document_id: str
+    walkthrough: WalkthroughRunRecord
+    stage4: Stage4Service
+    stage6: Stage6Service
+    stage7: Stage7Service
+    context_ref_ids: tuple[str, ...]
+    citation_indexes: tuple[int, ...]
+    claim_support_ids: tuple[str, ...]
+    evaluation_checksum: str
+    stage6_scope: str
+    stage7_scope: str
+    stage6_result: MultilingualWalkthroughResult
+    consent: SyntheticAvatarConsentRecord
+    render: AvatarRenderResult
+
+
+@dataclass(frozen=True)
+class RestoredDrillServices:
+    stage4: Stage4Service
+    stage6: Stage6Service
+    stage7: Stage7Service
+
+
 def run_local_restore_drill(
     *,
     workdir: Path | None = None,
@@ -65,10 +99,10 @@ def run_local_restore_drill(
         source_paths = _state_paths(source_dir)
         restored_paths = _state_paths(restored_dir)
         seeded = _seed_source_state(source_paths)
-        seeded_counts = _collect_counts(seeded["stage4"], seeded["stage6"], seeded["stage7"])
+        seeded_counts = _collect_counts(seeded.stage4, seeded.stage6, seeded.stage7)
         state_files = _copy_and_verify_state_files(source_paths, restored_paths)
         restored = _restore_services(restored_paths)
-        restored_counts = _collect_counts(restored["stage4"], restored["stage6"], restored["stage7"])
+        restored_counts = _collect_counts(restored.stage4, restored.stage6, restored.stage7)
         if restored_counts != seeded_counts:
             raise LocalRestoreDrillError("Restored record counts do not match the seeded local state.")
         replay_ids = _assert_replay_safety(seeded, restored)
@@ -92,7 +126,7 @@ def run_local_restore_drill(
         return summary
 
 
-def _state_paths(directory: Path) -> dict[str, Path]:
+def _state_paths(directory: Path) -> StageStatePaths:
     return {
         "stage4": directory / "stage4.json",
         "stage6": directory / "stage6.json",
@@ -100,7 +134,7 @@ def _state_paths(directory: Path) -> dict[str, Path]:
     }
 
 
-def _seed_source_state(paths: dict[str, Path]) -> dict[str, object]:
+def _seed_source_state(paths: StageStatePaths) -> SeededDrillState:
     principal = LocalPrincipal()
     stage4 = Stage4Service(state_path=paths["stage4"])
     project = stage4.create_project(
@@ -221,29 +255,29 @@ def _seed_source_state(paths: dict[str, Path]) -> dict[str, object]:
         idempotency_key="restore-drill-stage7-render",
     )
 
-    return {
-        "principal": principal,
-        "project_id": project.project_id,
-        "document_id": document.document_id,
-        "walkthrough": walkthrough,
-        "stage4": stage4,
-        "stage6": stage6,
-        "stage7": stage7,
-        "context_ref_ids": context_ref_ids,
-        "citation_indexes": citation_indexes,
-        "claim_support_ids": claim_support_ids,
-        "evaluation_checksum": evaluation_checksum,
-        "stage6_scope": stage6_scope,
-        "stage7_scope": stage7_scope,
-        "stage6_result": multilingual,
-        "consent": consent,
-        "render": render,
-    }
+    return SeededDrillState(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        walkthrough=walkthrough,
+        stage4=stage4,
+        stage6=stage6,
+        stage7=stage7,
+        context_ref_ids=context_ref_ids,
+        citation_indexes=citation_indexes,
+        claim_support_ids=claim_support_ids,
+        evaluation_checksum=evaluation_checksum,
+        stage6_scope=stage6_scope,
+        stage7_scope=stage7_scope,
+        stage6_result=multilingual,
+        consent=consent,
+        render=render,
+    )
 
 
 def _copy_and_verify_state_files(
-    source_paths: dict[str, Path],
-    restored_paths: dict[str, Path],
+    source_paths: StageStatePaths,
+    restored_paths: StageStatePaths,
 ) -> tuple[StateFileIntegrity, ...]:
     reports: list[StateFileIntegrity] = []
     for service in ("stage4", "stage6", "stage7"):
@@ -266,15 +300,15 @@ def _copy_and_verify_state_files(
     return tuple(reports)
 
 
-def _restore_services(paths: dict[str, Path]) -> dict[str, object]:
-    return {
-        "stage4": Stage4Service(state_path=paths["stage4"]),
-        "stage6": Stage6Service(state_path=paths["stage6"]),
-        "stage7": create_stage7_service(state_path=paths["stage7"]),
-    }
+def _restore_services(paths: StageStatePaths) -> RestoredDrillServices:
+    return RestoredDrillServices(
+        stage4=Stage4Service(state_path=paths["stage4"]),
+        stage6=Stage6Service(state_path=paths["stage6"]),
+        stage7=create_stage7_service(state_path=paths["stage7"]),
+    )
 
 
-def _collect_counts(stage4: Stage4Service, stage6: Stage6Service, stage7: object) -> dict[str, dict[str, int]]:
+def _collect_counts(stage4: Stage4Service, stage6: Stage6Service, stage7: Stage7Service) -> dict[str, dict[str, int]]:
     return {
         "stage4": {
             "projects": len(stage4.projects),
@@ -299,17 +333,17 @@ def _collect_counts(stage4: Stage4Service, stage6: Stage6Service, stage7: object
     }
 
 
-def _assert_replay_safety(seeded: dict[str, object], restored: dict[str, object]) -> dict[str, str]:
-    principal = seeded["principal"]
-    walkthrough = seeded["walkthrough"]
-    stage4 = restored["stage4"]
-    stage6 = restored["stage6"]
-    stage7 = restored["stage7"]
-    project_id = seeded["project_id"]
-    context_ref_ids = seeded["context_ref_ids"]
-    citation_indexes = seeded["citation_indexes"]
-    claim_support_ids = seeded["claim_support_ids"]
-    evaluation_checksum = seeded["evaluation_checksum"]
+def _assert_replay_safety(seeded: SeededDrillState, restored: RestoredDrillServices) -> dict[str, str]:
+    principal = seeded.principal
+    walkthrough = seeded.walkthrough
+    stage4 = restored.stage4
+    stage6 = restored.stage6
+    stage7 = restored.stage7
+    project_id = seeded.project_id
+    context_ref_ids = seeded.context_ref_ids
+    citation_indexes = seeded.citation_indexes
+    claim_support_ids = seeded.claim_support_ids
+    evaluation_checksum = seeded.evaluation_checksum
     source_script = walkthrough.accepted_script_text
     evaluation = walkthrough.evaluation
     if source_script is None or evaluation is None:
@@ -349,7 +383,7 @@ def _assert_replay_safety(seeded: dict[str, object], restored: dict[str, object]
         source_evaluation_id=evaluation.evaluation_id,
         source_evaluation_checksum=evaluation_checksum,
         evaluation_status=evaluation.evaluation_status,
-        idempotency_scope=seeded["stage6_scope"],
+        idempotency_scope=seeded.stage6_scope,
         idempotency_key="restore-drill-stage6",
     )
     replayed_consent = stage7.capture_synthetic_avatar_consent(
@@ -364,7 +398,7 @@ def _assert_replay_safety(seeded: dict[str, object], restored: dict[str, object]
         source_evaluation_checksum=evaluation_checksum,
         evaluation_status=evaluation.evaluation_status,
         consent_to_use_synthetic_avatar=True,
-        idempotency_scope=seeded["stage7_scope"],
+        idempotency_scope=seeded.stage7_scope,
         idempotency_key="restore-drill-stage7-consent",
     )
     replayed_render = stage7.render_avatar_demo(
@@ -384,18 +418,18 @@ def _assert_replay_safety(seeded: dict[str, object], restored: dict[str, object]
             tenant_id=principal.tenant_id,
             project_id=project_id,
             actor_id=principal.actor_id,
-            consent_record_id=seeded["consent"].consent_record_id,
+            consent_record_id=seeded.consent.consent_record_id,
         ),
-        idempotency_scope=seeded["stage7_scope"],
+        idempotency_scope=seeded.stage7_scope,
         idempotency_key="restore-drill-stage7-render",
     )
 
     expected_ids = {
-        "stage4ProjectId": seeded["project_id"],
+        "stage4ProjectId": seeded.project_id,
         "stage4RunId": walkthrough.run_id,
-        "stage6RunId": seeded["stage6_result"].multilingual_run_id,
-        "stage7ConsentId": seeded["consent"].consent_record_id,
-        "stage7RenderId": seeded["render"].avatar_render_id,
+        "stage6RunId": seeded.stage6_result.multilingual_run_id,
+        "stage7ConsentId": seeded.consent.consent_record_id,
+        "stage7RenderId": seeded.render.avatar_render_id,
     }
     replayed_ids = {
         "stage4ProjectId": replayed_project.project_id,
