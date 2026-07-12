@@ -796,6 +796,23 @@ rollback communications evidence, Stage 4/6/7 application flows, provider/media/
 privacy controls, retention/untrusted-input closure, or unrelated governance/
 process files.
 
+`phase-1-closure-39-ch-11-*` is reserved for the `CH-11` SLO and error-budget
+contract chunk for issue `#39` child issue `#127`. It may touch only:
+
+- `docs/ADR/0025-ch11-slo-error-budget.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+`phase-1-closure-39-ch-11-*` must not touch runtime metrics emitters,
+dashboards, alert routing, paging, first-hour watch execution, backup tooling,
+restore-drill execution evidence, rollback communications evidence, Stage 4/6/7
+application flows, provider/media/privacy controls, retention/untrusted-input
+closure, or unrelated governance/process files.
+
 `phase-1-closure-39-ch-16-*` is reserved for the `CH-16` consent capture chunk
 for issue `#39` child issue `#111`. It may touch only:
 
