@@ -1415,15 +1415,29 @@ def test_issue39_ch08_branch_rejects_adjacent_runtime_or_scope_files(monkeypatch
         branch="phase-1-closure-39-ch-08-stage7-render-artifact-state",
         files=[
             "backend/app/storage/stage4_graph.py",
+            "backend/app/stage6.py",
             "backend/app/rag/providers.py",
             "docs/ADR/0008-postgresql-durability-schema-boundary.md",
+            "docs/ADR/0009-context2-idempotency-lease-outbox-contract.md",
+            "docs/ADR/0011-context4-backup-restore-drill.md",
+            "docs/ADR/0012-context5-metrics-slos-watch.md",
+            "docs/ADR/0017-ch06-committed-outbox.md",
+            "docs/ADR/0019-ch16-consent-capture.md",
+            "docs/ADR/0020-ch07-stage6-durable-replay.md",
         ],
     )
 
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change backend/app/storage/stage4_graph.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change backend/app/stage6.py.",
         "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change backend/app/rag/providers.py.",
         "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change docs/ADR/0008-postgresql-durability-schema-boundary.md.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change docs/ADR/0009-context2-idempotency-lease-outbox-contract.md.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change docs/ADR/0011-context4-backup-restore-drill.md.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change docs/ADR/0012-context5-metrics-slos-watch.md.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change docs/ADR/0017-ch06-committed-outbox.md.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change docs/ADR/0019-ch16-consent-capture.md.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change docs/ADR/0020-ch07-stage6-durable-replay.md.",
     ]
 
 
@@ -1445,7 +1459,9 @@ def test_issue39_ch07_branch_rejects_adjacent_chunk_or_stage7_files(monkeypatch:
     ]
 
 
-def test_issue39_ch08_branch_requires_ch03_ch04_and_ch16_dependency_commits(monkeypatch: Any) -> None:
+def test_issue39_ch08_branch_requires_ch03_ch04_ch07_and_ch16_dependency_commits(
+    monkeypatch: Any,
+) -> None:
     failures = run_branch_check(
         monkeypatch,
         branch="phase-1-closure-39-ch-08-stage7-render-artifact-state",
@@ -1455,7 +1471,7 @@ def test_issue39_ch08_branch_requires_ch03_ch04_and_ch16_dependency_commits(monk
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state must contain dependency "
         "commits: 6449786069dd38eeaa5a4a31f5ed73cbfc52d248, 947a96891fd84085b6fce433e604a8e249b25c23, "
-        "1f3d66d9b1b545e5d5c41e88a83cc731a2a8b31a.",
+        "1f3d66d9b1b545e5d5c41e88a83cc731a2a8b31a, acccd6939ebe172b9a2d95f51fa96212035f55b0.",
     ]
 
 

@@ -616,6 +616,7 @@ ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
         "6449786069dd38eeaa5a4a31f5ed73cbfc52d248",
         "947a96891fd84085b6fce433e604a8e249b25c23",
         "1f3d66d9b1b545e5d5c41e88a83cc731a2a8b31a",
+        "acccd6939ebe172b9a2d95f51fa96212035f55b0",
     ),
     "phase-1-closure-39-ch-16-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
 }
