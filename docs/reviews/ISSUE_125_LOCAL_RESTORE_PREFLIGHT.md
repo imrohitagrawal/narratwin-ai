@@ -24,8 +24,10 @@ honestly support now for the existing file-backed Stage 4/6/7 state paths.
 
 - `docs/ADR/0011-context4-backup-restore-drill.md` defines the production
   planning-only restore contract and keeps runtime proof deferred.
-- `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md` keeps `CH-14` as the later
-  production-like restore drill for `DUR-RESTORE-001`.
+- `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md` keeps final `CH-14`
+  `DUR-RESTORE-001` closure tied to successful restore-drill evidence; later
+  issue `#126` may add only narrower readiness-contract guardrails until that
+  final proof exists.
 - The current repo already exposes optional file-backed Stage 4/6/7 state,
   which is the only executable restore surface in scope for `#125`.
 

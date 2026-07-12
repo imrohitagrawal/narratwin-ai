@@ -796,6 +796,29 @@ metrics/SLO/alert/watch work, rollback communications, provider posture,
 retention/erasure, provenance/disclosure, untrusted-input closure, Stage 4/6/7
 runtime semantics, or unrelated governance/process files.
 
+`phase-1-closure-39-ch-14-*` is reserved for issue `#126`, the narrow
+restore-readiness contract slice for `DUR-RESTORE-001`. This branch does not
+execute a successful production restore drill. It packages the merged `#125`
+local restore evidence with the current repo-baselined `CH-10` and `CH-11`
+restore-adjacent contract artifacts, records the remaining human-only proof
+surfaces, and adds anti-overclaim guardrails. It may touch only:
+
+- `docs/ADR/0026-ch14-restore-readiness-contract.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md`
+- `docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md`
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+`phase-1-closure-39-ch-14-*` must not touch backup tooling, cloud snapshot or
+database-managed restore services, local restore drill runtime code, metrics
+emitters, dashboards/alerts/watch, rollback communications, retention/erasure,
+provider posture, provenance/disclosure, consent revocation, untrusted-input
+closure, Stage 4/6/7 runtime semantics, or unrelated governance/process files.
+
 `phase-1-closure-39-ch-10-*` is reserved for the `CH-10` production metrics
 contract chunk for issue `#39` child issue `#128`. It may touch only:
 
