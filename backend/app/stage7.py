@@ -157,6 +157,9 @@ class AvatarRenderResult:
     source_evaluation_id: str
     source_evaluation_checksum: str
     evaluation_status: EvaluationStatus
+    request_checksum: str
+    idempotency_scope: str | None
+    idempotency_key: str | None
 
 
 @dataclass(frozen=True)
@@ -511,7 +514,11 @@ class Stage7Service:
             for row in payload.get("avatarRenders", []):
                 if not isinstance(row, dict):
                     continue
-                result = avatar_render_result_from_dict(row)
+                try:
+                    result = avatar_render_result_from_dict(row)
+                except (KeyError, TypeError, ValueError, Stage7Error) as exc:
+                    LOGGER.warning("Skipping incompatible Stage 7 avatar render at %s: %s", self.state_path, exc)
+                    continue
                 self.avatar_renders[result.avatar_render_id] = result
             run_counter = max(run_counter, max_numeric_suffix(self.avatar_renders, "avrun_"))
             self._run_counter = run_counter
@@ -529,18 +536,12 @@ class Stage7Service:
             for row in payload.get("artifactMetadata", []):
                 if not isinstance(row, dict):
                     continue
-                render_id = str(row.get("avatar_render_id", ""))
-                metadata = row.get("metadata", [])
-                if render_id and isinstance(metadata, list):
-                    self.artifact_metadata[render_id] = tuple(
-                        ExportArtifactMetadata(
-                            file_name=str(item["file_name"]),
-                            mime_type=str(item["mime_type"]),
-                            checksum=str(item["checksum"]),
-                        )
-                        for item in metadata
-                        if isinstance(item, dict)
-                    )
+                try:
+                    render_id, metadata = artifact_metadata_from_dict(row)
+                except (KeyError, TypeError, ValueError) as exc:
+                    LOGGER.warning("Skipping incompatible Stage 7 artifact metadata at %s: %s", self.state_path, exc)
+                    continue
+                self.artifact_metadata[render_id] = metadata
             self.artifact_metadata = {
                 render_id: metadata
                 for render_id, metadata in self.artifact_metadata.items()
@@ -566,6 +567,7 @@ class Stage7Service:
                 for consent_id, record in self.synthetic_media_consents.items()
                 if self._consent_record_is_valid(record)
             }
+            invalid_render_ids: set[str] = set()
             for row in payload.get("idempotencyRecords", []):
                 if not isinstance(row, dict):
                     continue
@@ -575,6 +577,13 @@ class Stage7Service:
                     idempotency_record = stage7_idempotency_record_from_dict(row, self)
                 except (KeyError, TypeError, ValueError) as exc:
                     LOGGER.warning("Skipping incompatible Stage 7 idempotency record at %s: %s", self.state_path, exc)
+                    value_ref = row.get("value", {})
+                    if (
+                        isinstance(value_ref, dict)
+                        and value_ref.get("kind") == "render"
+                        and "request checksum" in str(exc)
+                    ):
+                        invalid_render_ids.add(str(value_ref.get("id", "")))
                     continue
                 key = (
                     idempotency_record.idempotency_scope,
@@ -582,6 +591,7 @@ class Stage7Service:
                     idempotency_record.idempotency_key,
                 )
                 self.idempotency_records[key] = idempotency_record
+            self._drop_invalid_restored_renders_locked(invalid_render_ids)
             for row in payload.get("consentIdempotencyRecords", []):
                 if not isinstance(row, dict):
                     continue
@@ -677,6 +687,30 @@ class Stage7Service:
             and result.source_evaluation_id == record.source_evaluation_id
             and result.source_evaluation_checksum == record.source_evaluation_checksum
         )
+
+    def _drop_invalid_restored_renders_locked(self, render_ids: set[str]) -> None:
+        if not render_ids:
+            return
+        self.avatar_renders = {
+            render_id: result
+            for render_id, result in self.avatar_renders.items()
+            if render_id not in render_ids
+        }
+        self.artifact_metadata = {
+            render_id: metadata
+            for render_id, metadata in self.artifact_metadata.items()
+            if render_id in self.avatar_renders and self._artifact_metadata_matches_render(render_id, metadata)
+        }
+        self.idempotency_records = {
+            key: record
+            for key, record in self.idempotency_records.items()
+            if record.value is None or record.value.avatar_render_id in self.avatar_renders
+        }
+        self.synthetic_media_consents = {
+            consent_id: record
+            for consent_id, record in self.synthetic_media_consents.items()
+            if self._consent_record_is_valid(record)
+        }
 
     def _rebuild_idempotency_scope_counts_locked(self) -> None:
         counts: dict[str, int] = {}
@@ -852,6 +886,8 @@ class Stage7Service:
             source_evaluation_id=normalized_evaluation_id,
             source_evaluation_checksum=normalized_evaluation_checksum,
             evaluation_status=normalized_evaluation_status,
+            idempotency_scope=idempotency_scope,
+            idempotency_key=idempotency_key,
         )
         record_key: tuple[str, str, str] | None = None
         consent_record_id: str | None = None
@@ -977,6 +1013,21 @@ class Stage7Service:
         idempotency_key: str | None = None,
     ) -> AvatarRenderResult:
         source_text = source_script.strip()
+        canonical_evaluation_checksum = build_source_evaluation_checksum(
+            source_evaluation_id=source_evaluation_id,
+            source_run_id=source_run_id,
+            trace_id=trace_id,
+            evaluation_status=evaluation_status,
+            source_context_ref_ids=source_context_ref_ids,
+            source_context_ref_count=source_context_ref_count,
+            source_citation_indexes=source_citation_indexes,
+            source_citation_count=source_citation_count,
+        )
+        checksum_for_request = (
+            canonical_evaluation_checksum
+            if source_evaluation_checksum is None or source_evaluation_checksum == canonical_evaluation_checksum
+            else source_evaluation_checksum
+        )
         request_checksum = build_avatar_render_request_checksum(
             source_text=source_text,
             requested_avatar_provider=requested_avatar_provider,
@@ -989,9 +1040,11 @@ class Stage7Service:
             source_context_ref_ids=source_context_ref_ids,
             source_citation_indexes=source_citation_indexes,
             source_evaluation_id=source_evaluation_id,
-            source_evaluation_checksum=source_evaluation_checksum,
+            source_evaluation_checksum=checksum_for_request,
             evaluation_status=evaluation_status,
             consent_record_id=durable_consent.consent_record_id if durable_consent is not None else None,
+            idempotency_scope=idempotency_scope,
+            idempotency_key=idempotency_key,
         )
         normalized_tenant_id: str | None = None
         normalized_project_id: str | None = None
@@ -1094,6 +1147,12 @@ class Stage7Service:
                         source_evaluation_checksum=source_evaluation_checksum,
                         consent_record_id=durable_consent.consent_record_id,
                     )
+            if source_evaluation_checksum is not None and source_evaluation_checksum != canonical_evaluation_checksum:
+                raise Stage7Error(
+                    422,
+                    "VALIDATION_ERROR",
+                    "Source evaluation checksum does not match canonical source evidence.",
+                )
 
             requested_provider, fallback_reason = resolve_avatar_provider(requested_avatar_provider)
             normalized_evaluation_status = validate_evaluation_status(evaluation_status)
@@ -1107,22 +1166,6 @@ class Stage7Service:
                 count=source_citation_count,
             )
             normalized_evaluation_id = normalize_evaluation_id(source_evaluation_id)
-            canonical_evaluation_checksum = build_source_evaluation_checksum(
-                source_evaluation_id=source_evaluation_id,
-                source_run_id=source_run_id,
-                trace_id=trace_id,
-                evaluation_status=evaluation_status,
-                source_context_ref_ids=source_context_ref_ids,
-                source_context_ref_count=source_context_ref_count,
-                source_citation_indexes=source_citation_indexes,
-                source_citation_count=source_citation_count,
-            )
-            if source_evaluation_checksum is not None and source_evaluation_checksum != canonical_evaluation_checksum:
-                raise Stage7Error(
-                    422,
-                    "VALIDATION_ERROR",
-                    "Source evaluation checksum does not match canonical source evidence.",
-                )
             normalized_evaluation_checksum = canonical_evaluation_checksum
             result = self._create_avatar_render(
                 source_text=source_text,
@@ -1141,6 +1184,9 @@ class Stage7Service:
                 project_id=normalized_project_id,
                 actor_id=normalized_actor_id,
                 consent_record_id=durable_consent.consent_record_id if durable_consent is not None else None,
+                request_checksum=request_checksum,
+                idempotency_scope=idempotency_scope,
+                idempotency_key=idempotency_key,
             )
         except Stage7Error as exc:
             if record_key is not None:
@@ -1238,6 +1284,9 @@ class Stage7Service:
         project_id: str | None,
         actor_id: str | None,
         consent_record_id: str | None,
+        request_checksum: str,
+        idempotency_scope: str | None,
+        idempotency_key: str | None,
     ) -> AvatarRenderResult:
         status_history = [RenderJobStatusEvent(status="QUEUED", message="Avatar render job queued.")]
         if fallback_reason is not None:
@@ -1392,6 +1441,9 @@ class Stage7Service:
             source_evaluation_id=source_evaluation_id,
             source_evaluation_checksum=source_evaluation_checksum,
             evaluation_status=evaluation_status,
+            request_checksum=request_checksum,
+            idempotency_scope=idempotency_scope,
+            idempotency_key=idempotency_key,
         )
         with self._operation_lock:
             self.avatar_renders[avatar_render_id] = result
@@ -1545,17 +1597,28 @@ def stage7_idempotency_record_from_dict(row: dict[str, Any], service: Stage7Serv
     status = str(row["status"])
     if status not in {"RUNNING", "SUCCEEDED", "FAILED"}:
         raise ValueError(f"Unsupported Stage 7 idempotency status: {status}")
+    endpoint = str(row["endpoint"])
+    if endpoint != AVATAR_RENDER_ENDPOINT:
+        raise ValueError("Stage 7 render idempotency endpoint does not match the canonical endpoint.")
     if status == "SUCCEEDED" and value is None:
         raise ValueError("Succeeded Stage 7 idempotency record references missing value.")
-    if status == "FAILED" and not (
-        row.get("error_status_code") is not None and row.get("error_code") and row.get("error_message")
-    ):
-        raise ValueError("Failed Stage 7 idempotency record references missing error.")
+    request_checksum = str(row["request_checksum"])
+    idempotency_scope = str(row["idempotency_scope"])
+    idempotency_key = str(row["idempotency_key"])
+    if status == "SUCCEEDED" and value is not None:
+        if not restored_render_request_checksum_matches(value, request_checksum):
+            raise ValueError("Succeeded Stage 7 idempotency record request checksum does not match restored render.")
+        if value.idempotency_scope != idempotency_scope or value.idempotency_key != idempotency_key:
+            raise ValueError("Succeeded Stage 7 idempotency record does not match restored render idempotency binding.")
+        if not restored_render_idempotency_scope_matches(value, idempotency_scope):
+            raise ValueError("Succeeded Stage 7 idempotency record does not match restored render scope.")
+    if status == "FAILED":
+        raise ValueError("Failed Stage 7 idempotency records are not replayed from restored local state.")
     return Stage7IdempotencyRecord(
-        idempotency_scope=str(row["idempotency_scope"]),
-        endpoint=str(row["endpoint"]),
-        idempotency_key=str(row["idempotency_key"]),
-        request_checksum=str(row["request_checksum"]),
+        idempotency_scope=idempotency_scope,
+        endpoint=endpoint,
+        idempotency_key=idempotency_key,
+        request_checksum=request_checksum,
         status=cast(Literal["RUNNING", "SUCCEEDED", "FAILED"], status),
         value=value,
         error_status_code=int(row["error_status_code"]) if row.get("error_status_code") is not None else None,
@@ -1575,17 +1638,26 @@ def stage7_consent_idempotency_record_from_dict(
     status = str(row["status"])
     if status not in {"RUNNING", "SUCCEEDED", "FAILED"}:
         raise ValueError(f"Unsupported Stage 7 consent idempotency status: {status}")
+    endpoint = str(row["endpoint"])
+    if endpoint != AVATAR_CONSENT_ENDPOINT:
+        raise ValueError("Stage 7 consent idempotency endpoint does not match the canonical endpoint.")
     if status == "SUCCEEDED" and value is None:
         raise ValueError("Succeeded Stage 7 consent idempotency record references missing value.")
-    if status == "FAILED" and not (
-        row.get("error_status_code") is not None and row.get("error_code") and row.get("error_message")
-    ):
-        raise ValueError("Failed Stage 7 consent idempotency record references missing error.")
+    request_checksum = str(row["request_checksum"])
+    idempotency_scope = str(row["idempotency_scope"])
+    idempotency_key = str(row["idempotency_key"])
+    if status == "SUCCEEDED" and value is not None:
+        if value.request_checksum != request_checksum:
+            raise ValueError("Succeeded Stage 7 consent idempotency request checksum does not match restored consent.")
+        if value.idempotency_scope != idempotency_scope or value.idempotency_key != idempotency_key:
+            raise ValueError("Succeeded Stage 7 consent idempotency binding does not match restored consent.")
+    if status == "FAILED":
+        raise ValueError("Failed Stage 7 consent idempotency records are not replayed from restored local state.")
     return Stage7ConsentIdempotencyRecord(
-        idempotency_scope=str(row["idempotency_scope"]),
-        endpoint=str(row["endpoint"]),
-        idempotency_key=str(row["idempotency_key"]),
-        request_checksum=str(row["request_checksum"]),
+        idempotency_scope=idempotency_scope,
+        endpoint=endpoint,
+        idempotency_key=idempotency_key,
+        request_checksum=request_checksum,
         status=cast(Literal["RUNNING", "SUCCEEDED", "FAILED"], status),
         value=value,
         error_status_code=int(row["error_status_code"]) if row.get("error_status_code") is not None else None,
@@ -1669,8 +1741,78 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
     source_context_ref_ids = tuple(str(value) for value in row.get("source_context_ref_ids", ()))
     source_citation_indexes = tuple(int(value) for value in row.get("source_citation_indexes", ()))
     source_evaluation_id = normalize_evaluation_id(str(row["source_evaluation_id"]))
-    source_evaluation_checksum = str(row["source_evaluation_checksum"])
     evaluation_status = validate_evaluation_status(str(row["evaluation_status"]))
+    source_evaluation_checksum = validate_checksum_component(
+        str(row["source_evaluation_checksum"]),
+        field_name="Source evaluation checksum",
+    )
+    canonical_evaluation_checksum = build_source_evaluation_checksum(
+        source_evaluation_id=source_evaluation_id,
+        source_run_id=source_run_id,
+        trace_id=trace_id,
+        evaluation_status=evaluation_status,
+        source_context_ref_ids=source_context_ref_ids,
+        source_context_ref_count=source_context_ref_count,
+        source_citation_indexes=source_citation_indexes,
+        source_citation_count=source_citation_count,
+    )
+    if source_evaluation_checksum != canonical_evaluation_checksum:
+        raise ValueError("Stage 7 render source evaluation checksum does not match canonical source evidence.")
+    idempotency_scope = str(row["idempotency_scope"]) if row.get("idempotency_scope") is not None else None
+    idempotency_key = str(row["idempotency_key"]) if row.get("idempotency_key") is not None else None
+    if "request_checksum" not in row or row.get("request_checksum") is None:
+        raise ValueError("Stage 7 restored render is missing request checksum.")
+    request_checksum = validate_checksum_component(
+        str(row["request_checksum"]),
+        field_name="Render request checksum",
+    )
+    tenant_id = str(row["tenant_id"]) if row.get("tenant_id") is not None else None
+    project_id = str(row["project_id"]) if row.get("project_id") is not None else None
+    actor_id = str(row["actor_id"]) if row.get("actor_id") is not None else None
+    if (
+        tenant_id is not None
+        and project_id is not None
+        and actor_id is not None
+        and idempotency_scope != f"{tenant_id}:{actor_id}:{project_id}:{source_run_id}"
+    ):
+        raise ValueError("Stage 7 restored render idempotency scope does not match render ownership.")
+    status = str(row["status"])
+    render_job_status = str(row["render_job_status"])
+    if status != "COMPLETED" or render_job_status != "COMPLETED":
+        raise ValueError("Stage 7 restored render is not terminal completed state.")
+    raw_render_status_history = row.get("render_job_status_history", [])
+    if not isinstance(raw_render_status_history, list):
+        raise ValueError("Stage 7 restored render status history is invalid.")
+    if not all(isinstance(item, dict) for item in raw_render_status_history):
+        raise ValueError("Stage 7 restored render status history contains invalid events.")
+    render_status_history = tuple(
+        RenderJobStatusEvent(
+            status=validate_render_job_status(str(item["status"])),
+            message=str(item["message"]),
+        )
+        for item in raw_render_status_history
+    )
+    validate_restored_render_status_history(render_status_history, fallback_reason=restored_provider.fallback_reason)
+    if not render_request_checksum_matches(
+        source_text=source_script,
+        requested_avatar_provider=restored_provider.requested_provider,
+        cloned_identity_requested=False,
+        consent_to_use_synthetic_avatar=True,
+        source_run_id=source_run_id,
+        trace_id=trace_id,
+        source_context_ref_count=source_context_ref_count,
+        source_citation_count=source_citation_count,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_evaluation_id=source_evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=evaluation_status,
+        consent_record_id=str(row["consent_record_id"]) if row.get("consent_record_id") is not None else None,
+        idempotency_scope=idempotency_scope,
+        idempotency_key=idempotency_key,
+        request_checksum=request_checksum,
+    ):
+        raise ValueError("Stage 7 render request checksum does not match the restored render.")
     validate_demo_html_export(
         demo_export,
         source_script=source_script,
@@ -1711,21 +1853,14 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
     )
     return AvatarRenderResult(
         avatar_render_id=str(row["avatar_render_id"]),
-        tenant_id=str(row["tenant_id"]) if row.get("tenant_id") is not None else None,
-        project_id=str(row["project_id"]) if row.get("project_id") is not None else None,
-        actor_id=str(row["actor_id"]) if row.get("actor_id") is not None else None,
+        tenant_id=tenant_id,
+        project_id=project_id,
+        actor_id=actor_id,
         consent_record_id=str(row["consent_record_id"]) if row.get("consent_record_id") is not None else None,
         source_run_id=source_run_id,
-        status="COMPLETED",
-        render_job_status="COMPLETED",
-        render_job_status_history=tuple(
-            RenderJobStatusEvent(
-                status=validate_render_job_status(str(item["status"])),
-                message=str(item["message"]),
-            )
-            for item in row.get("render_job_status_history", [])
-            if isinstance(item, dict)
-        ),
+        status=cast(Literal["COMPLETED"], status),
+        render_job_status=cast(Literal["COMPLETED"], render_job_status),
+        render_job_status_history=render_status_history,
         source_script_text=source_script,
         avatar_provider=restored_provider,
         provider_config=restored_config,
@@ -1748,7 +1883,80 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         source_evaluation_id=source_evaluation_id,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
+        request_checksum=request_checksum,
+        idempotency_scope=idempotency_scope,
+        idempotency_key=idempotency_key,
     )
+
+
+def artifact_metadata_from_dict(row: dict[str, Any]) -> tuple[str, tuple[ExportArtifactMetadata, ...]]:
+    render_id = str(row["avatar_render_id"])
+    if not render_id:
+        raise ValueError("Stage 7 artifact metadata references missing render.")
+    metadata = row["metadata"]
+    if not isinstance(metadata, list):
+        raise ValueError("Stage 7 artifact metadata shape is invalid.")
+    parsed: list[ExportArtifactMetadata] = []
+    for item in metadata:
+        if not isinstance(item, dict):
+            raise ValueError("Stage 7 artifact metadata entry shape is invalid.")
+        parsed.append(
+            ExportArtifactMetadata(
+                file_name=str(item["file_name"]),
+                mime_type=str(item["mime_type"]),
+                checksum=str(item["checksum"]),
+            )
+        )
+    return render_id, tuple(parsed)
+
+
+def validate_restored_render_status_history(
+    history: tuple[RenderJobStatusEvent, ...],
+    *,
+    fallback_reason: str | None,
+) -> None:
+    statuses = tuple(event.status for event in history)
+    if not statuses:
+        raise ValueError("Stage 7 restored render status history is empty.")
+    if statuses[0] != "QUEUED" or statuses[-1] != "COMPLETED":
+        raise ValueError("Stage 7 restored render status history is not terminal.")
+    if "RUNNING" not in statuses:
+        raise ValueError("Stage 7 restored render status history is missing RUNNING.")
+    if statuses.count("COMPLETED") != 1:
+        raise ValueError("Stage 7 restored render status history has invalid terminal markers.")
+    completed_index = statuses.index("COMPLETED")
+    if completed_index != len(statuses) - 1:
+        raise ValueError("Stage 7 restored render status history has events after terminal completion.")
+    if "FAILED" in statuses and "FALLBACK" not in statuses:
+        raise ValueError("Stage 7 restored render status history has failed provider state without fallback.")
+    expected_statuses: tuple[RenderJobStatus, ...] = ("QUEUED", "RUNNING", "COMPLETED")
+    if "FALLBACK" in statuses:
+        if fallback_reason is None:
+            raise ValueError("Stage 7 restored render status history has fallback without provider fallback metadata.")
+        if fallback_reason == "REQUESTED_PROVIDER_UNAVAILABLE":
+            expected_statuses = ("QUEUED", "FALLBACK", "RUNNING", "COMPLETED")
+        else:
+            failed_fallback_statuses: tuple[tuple[RenderJobStatus, ...], ...] = (
+                ("QUEUED", "RUNNING", "FAILED", "FALLBACK", "COMPLETED"),
+                ("QUEUED", "FALLBACK", "RUNNING", "FAILED", "FALLBACK", "COMPLETED"),
+            )
+            if statuses not in failed_fallback_statuses:
+                raise ValueError("Stage 7 restored render status history has invalid transition order.")
+            return
+    elif fallback_reason is not None:
+        raise ValueError("Stage 7 restored render provider fallback metadata lacks fallback status history.")
+    if statuses != expected_statuses:
+        raise ValueError("Stage 7 restored render status history has invalid transition order.")
+
+
+def restored_render_request_checksum_matches(result: AvatarRenderResult, request_checksum: str) -> bool:
+    return result.request_checksum == request_checksum
+
+
+def restored_render_idempotency_scope_matches(result: AvatarRenderResult, idempotency_scope: str) -> bool:
+    if result.tenant_id is None or result.project_id is None or result.actor_id is None:
+        return True
+    return idempotency_scope == f"{result.tenant_id}:{result.actor_id}:{result.project_id}:{result.source_run_id}"
 
 
 def synthetic_avatar_consent_record_to_dict(record: SyntheticAvatarConsentRecord) -> dict[str, Any]:
@@ -1790,6 +1998,8 @@ def synthetic_avatar_consent_record_from_dict(row: dict[str, Any]) -> SyntheticA
         field_name="Source evaluation checksum",
     )
     evaluation_status = validate_evaluation_status(str(row["evaluation_status"]))
+    idempotency_scope = str(row["idempotency_scope"]) if row.get("idempotency_scope") is not None else None
+    idempotency_key = str(row["idempotency_key"]) if row.get("idempotency_key") is not None else None
     request_checksum = validate_checksum_component(str(row["request_checksum"]), field_name="Consent request checksum")
     expected_request_checksum = build_avatar_consent_request_checksum(
         tenant_id=tenant_id,
@@ -1802,6 +2012,8 @@ def synthetic_avatar_consent_record_from_dict(row: dict[str, Any]) -> SyntheticA
         source_evaluation_id=source_evaluation_id,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
+        idempotency_scope=idempotency_scope,
+        idempotency_key=idempotency_key,
     )
     if request_checksum != expected_request_checksum:
         raise ValueError("Stage 7 consent request checksum does not match the restored scope.")
@@ -1821,8 +2033,8 @@ def synthetic_avatar_consent_record_from_dict(row: dict[str, Any]) -> SyntheticA
         consent_statement_text=consent_statement_text,
         granted_at=granted_at,
         request_checksum=request_checksum,
-        idempotency_scope=str(row["idempotency_scope"]) if row.get("idempotency_scope") is not None else None,
-        idempotency_key=str(row["idempotency_key"]) if row.get("idempotency_key") is not None else None,
+        idempotency_scope=idempotency_scope,
+        idempotency_key=idempotency_key,
         avatar_render_id=str(row["avatar_render_id"]) if row.get("avatar_render_id") is not None else None,
         artifact_checksums=artifact_checksums,
     )
@@ -2071,28 +2283,107 @@ def build_avatar_render_request_checksum(
     source_evaluation_checksum: str | None,
     evaluation_status: str,
     consent_record_id: str | None = None,
+    idempotency_scope: str | None = None,
+    idempotency_key: str | None = None,
 ) -> str:
+    normalized_source_text = source_text.strip()
+    normalized_requested_avatar_provider = (requested_avatar_provider or "mock").strip().lower()
+    normalized_source_run_id = validate_checksum_component(source_run_id, field_name="Source run identifier")
+    normalized_trace_id = validate_checksum_component(trace_id, field_name="Source trace identifier")
+    normalized_context_ref_ids = normalize_evidence_ids(
+        source_context_ref_ids,
+        count=source_context_ref_count,
+        prefix="context_ref",
+    )
+    normalized_citation_indexes = normalize_citation_indexes(
+        source_citation_indexes,
+        count=source_citation_count,
+    )
+    normalized_evaluation_id = normalize_evaluation_id(source_evaluation_id)
+    normalized_evaluation_checksum = (
+        validate_checksum_component(source_evaluation_checksum, field_name="Source evaluation checksum")
+        if source_evaluation_checksum is not None
+        else None
+    )
+    normalized_evaluation_status = validate_evaluation_status(evaluation_status)
+    normalized_consent_record_id = (
+        validate_checksum_component(consent_record_id, field_name="Consent record identifier")
+        if consent_record_id is not None
+        else None
+    )
+    normalized_idempotency_scope = (
+        validate_checksum_component(idempotency_scope, field_name="Idempotency scope")
+        if idempotency_scope is not None
+        else None
+    )
+    normalized_idempotency_key = (
+        validate_checksum_component(idempotency_key, field_name="Idempotency key")
+        if idempotency_key is not None
+        else None
+    )
     return checksum_text(
         json.dumps(
             {
                 "clonedIdentityRequested": cloned_identity_requested,
-                "consentRecordId": consent_record_id,
+                "consentRecordId": normalized_consent_record_id,
                 "consentToUseSyntheticAvatar": consent_to_use_synthetic_avatar,
-                "evaluationStatus": evaluation_status,
-                "requestedAvatarProvider": requested_avatar_provider,
+                "evaluationStatus": normalized_evaluation_status,
+                "idempotencyKey": normalized_idempotency_key,
+                "idempotencyScope": normalized_idempotency_scope,
+                "requestedAvatarProvider": normalized_requested_avatar_provider,
                 "sourceCitationCount": source_citation_count,
-                "sourceCitationIndexes": list(source_citation_indexes) if source_citation_indexes is not None else None,
+                "sourceCitationIndexes": list(normalized_citation_indexes),
                 "sourceContextRefCount": source_context_ref_count,
-                "sourceContextRefIds": list(source_context_ref_ids) if source_context_ref_ids is not None else None,
-                "sourceEvaluationChecksum": source_evaluation_checksum,
-                "sourceEvaluationId": source_evaluation_id,
-                "sourceRunId": source_run_id,
-                "sourceText": source_text,
-                "traceId": trace_id,
+                "sourceContextRefIds": list(normalized_context_ref_ids),
+                "sourceEvaluationChecksum": normalized_evaluation_checksum,
+                "sourceEvaluationId": normalized_evaluation_id,
+                "sourceRunId": normalized_source_run_id,
+                "sourceText": normalized_source_text,
+                "traceId": normalized_trace_id,
             },
             sort_keys=True,
             separators=(",", ":"),
         )
+    )
+
+
+def render_request_checksum_matches(
+    *,
+    source_text: str,
+    requested_avatar_provider: str,
+    cloned_identity_requested: bool,
+    consent_to_use_synthetic_avatar: bool,
+    source_run_id: str,
+    trace_id: str,
+    source_context_ref_count: int,
+    source_citation_count: int,
+    source_context_ref_ids: tuple[str, ...] | None,
+    source_citation_indexes: tuple[int, ...] | None,
+    source_evaluation_id: str,
+    source_evaluation_checksum: str | None,
+    evaluation_status: str,
+    consent_record_id: str | None,
+    idempotency_scope: str | None,
+    idempotency_key: str | None,
+    request_checksum: str,
+) -> bool:
+    return request_checksum == build_avatar_render_request_checksum(
+        source_text=source_text,
+        requested_avatar_provider=requested_avatar_provider,
+        cloned_identity_requested=cloned_identity_requested,
+        consent_to_use_synthetic_avatar=consent_to_use_synthetic_avatar,
+        source_run_id=source_run_id,
+        trace_id=trace_id,
+        source_context_ref_count=source_context_ref_count,
+        source_citation_count=source_citation_count,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_evaluation_id=source_evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=evaluation_status,
+        consent_record_id=consent_record_id,
+        idempotency_scope=idempotency_scope,
+        idempotency_key=idempotency_key,
     )
 
 
@@ -2108,7 +2399,19 @@ def build_avatar_consent_request_checksum(
     source_evaluation_id: str,
     source_evaluation_checksum: str,
     evaluation_status: EvaluationStatus,
+    idempotency_scope: str | None = None,
+    idempotency_key: str | None = None,
 ) -> str:
+    normalized_idempotency_scope = (
+        validate_checksum_component(idempotency_scope, field_name="Idempotency scope")
+        if idempotency_scope is not None
+        else None
+    )
+    normalized_idempotency_key = (
+        validate_checksum_component(idempotency_key, field_name="Idempotency key")
+        if idempotency_key is not None
+        else None
+    )
     return checksum_text(
         json.dumps(
             {
@@ -2116,6 +2419,8 @@ def build_avatar_consent_request_checksum(
                 "consentStatementText": SYNTHETIC_AVATAR_CONSENT_TEXT,
                 "consentStatementVersion": SYNTHETIC_AVATAR_CONSENT_VERSION,
                 "evaluationStatus": evaluation_status,
+                "idempotencyKey": normalized_idempotency_key,
+                "idempotencyScope": normalized_idempotency_scope,
                 "projectId": project_id,
                 "sourceCitationIndexes": list(source_citation_indexes),
                 "sourceContextRefIds": list(source_context_ref_ids),

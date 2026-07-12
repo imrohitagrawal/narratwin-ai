@@ -1147,6 +1147,28 @@ Post-provider validation:
 - Stage 7 avatar render idempotency request checksums use structured JSON
   preimages so newline/comma characters in strings cannot collide across request
   fields
+- Phase 1 Closure CH-08 local restore accepts only terminal completed render
+  rows whose status history follows a legal terminal sequence:
+  `QUEUED` -> `RUNNING` -> `COMPLETED`, provider-unavailable fallback
+  `QUEUED` -> `FALLBACK` -> `RUNNING` -> `COMPLETED`, or provider-failed
+  fallback `QUEUED` -> `RUNNING` -> `FAILED` -> `FALLBACK` -> `COMPLETED`.
+  When an unavailable requested provider first falls back locally and that
+  provider then fails, restore also accepts `QUEUED` -> `FALLBACK` -> `RUNNING`
+  -> `FAILED` -> `FALLBACK` -> `COMPLETED`. Fallback histories require matching
+  provider fallback metadata.
+  Restored render rows must carry the canonical render request checksum,
+  canonical source-evaluation checksum, and original idempotency scope/key
+  binding. The render row's scope/key binding must match the restored
+  tenant/actor/project/source-run ownership when those fields are present. The
+  scope/key binding is part of the render request checksum preimage, and consent
+  idempotency scope/key are part of the consent request checksum preimage.
+  Restored succeeded idempotency rows are accepted only when their canonical
+  endpoint, stored request checksum, and scope/key match the restored render or
+  consent record. Checksum-mismatched rows, missing render checksums, failed
+  idempotency rows, and stale/cross-scope replay rows are dropped so the request
+  can be regenerated instead of replaying stale artifact state. These local
+  checks reject inconsistent snapshot data; they are not cryptographic
+  tamper-proofing for a fully rewritten local JSON snapshot.
 - video export placeholder artifact must use `application/json`, `.json`, a
   safe filename, valid base64 UTF-8 JSON object content, matching checksum,
   expected schema/version, source run ID, trace ID, local renderer, validated

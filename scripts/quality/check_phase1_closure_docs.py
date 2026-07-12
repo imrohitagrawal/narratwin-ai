@@ -275,6 +275,7 @@ ISSUE_39_CH08_ALLOWED_CHANGED_FILES = {
     "backend/app/main.py",
     "backend/app/stage7.py",
     "backend/app/storage/file_state.py",
+    "docs/ADR/0021-ch08-stage7-render-artifact-state.md",
     "docs/API_CONTRACT.md",
     "docs/LOCAL_DEVELOPMENT.md",
     "docs/STATUS.md",

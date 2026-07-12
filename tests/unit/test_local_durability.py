@@ -1989,6 +1989,861 @@ def test_stage7_file_state_drops_completed_idempotency_with_missing_value(tmp_pa
     assert len(restored.avatar_renders) == 1
 
 
+def test_stage7_file_state_drops_completed_idempotency_with_mismatched_request_checksum(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    original = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_checksum",
+        trace_id="trace_checksum",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_checksum",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_checksum",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["idempotencyRecords"][0]["request_checksum"] = "sha256:tampered"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+    recreated = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_checksum",
+        trace_id="trace_checksum",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_checksum",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_checksum",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    assert original.avatar_render_id == "avrun_000001"
+    assert recreated.avatar_render_id == "avrun_000002"
+    assert sorted(restored.avatar_renders) == ["avrun_000002"]
+    assert restored.idempotency_records[
+        ("tenant:user:project:run", stage7_module.AVATAR_RENDER_ENDPOINT, "render")
+    ].value == recreated
+
+
+def test_stage7_file_state_replays_completed_avatar_idempotency_after_canonicalizing_request(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    original = service.render_avatar_demo(
+        source_script="  NarraTwin AI creates grounded walkthrough scripts. [1]  ",
+        requested_avatar_provider="MOCK",
+        source_run_id="run_canonical",
+        trace_id="trace_canonical",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_canonical",),
+        source_citation_indexes=(1,),
+        source_evaluation_id=" eval_canonical ",
+        evaluation_status="passed",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+    replayed = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_canonical",
+        trace_id="trace_canonical",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_canonical",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_canonical",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    assert replayed.avatar_render_id == original.avatar_render_id
+    assert len(restored.avatar_renders) == 1
+
+
+def test_stage7_file_state_replays_idempotency_when_replay_supplies_canonical_evaluation_checksum(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    original = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_eval_checksum",
+        trace_id="trace_eval_checksum",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_eval_checksum",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_checksum",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    canonical_source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+        source_evaluation_id="eval_checksum",
+        source_run_id="run_eval_checksum",
+        trace_id="trace_eval_checksum",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_eval_checksum",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+    replayed = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_eval_checksum",
+        trace_id="trace_eval_checksum",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_eval_checksum",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_checksum",
+        source_evaluation_checksum=canonical_source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    assert replayed.avatar_render_id == original.avatar_render_id
+    assert len(restored.avatar_renders) == 1
+
+
+def test_stage7_file_state_replays_requested_provider_unavailable_fallback_history(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    original = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="heygen",
+        source_run_id="run_unavailable_fallback",
+        trace_id="trace_unavailable_fallback",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_unavailable_fallback",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_unavailable_fallback",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+    replayed = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="heygen",
+        source_run_id="run_unavailable_fallback",
+        trace_id="trace_unavailable_fallback",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_unavailable_fallback",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_unavailable_fallback",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    assert replayed.avatar_render_id == original.avatar_render_id
+    assert replayed.avatar_provider.fallback_reason == "REQUESTED_PROVIDER_UNAVAILABLE"
+    assert tuple(event.status for event in replayed.render_job_status_history) == (
+        "QUEUED",
+        "FALLBACK",
+        "RUNNING",
+        "COMPLETED",
+    )
+
+
+def test_stage7_file_state_replays_provider_failed_fallback_history(
+    tmp_path: Path,
+) -> None:
+    class FailingAvatarProvider:
+        provider = "mock"
+        provider_mode = "LOCAL"
+
+        def render(
+            self,
+            *,
+            source_script: str,
+            requested_provider: str,
+            fallback_reason: str | None,
+            source_run_id: str,
+            trace_id: str,
+            source_context_ref_count: int,
+            source_citation_count: int,
+            source_context_ref_ids: tuple[str, ...] = (),
+            source_citation_indexes: tuple[int, ...] = (),
+            source_evaluation_id: str = "local_evaluation",
+            source_evaluation_checksum: str = "",
+            evaluation_status: str = "UNKNOWN",
+        ) -> stage7_module.AvatarProviderResult:
+            raise RuntimeError("provider unavailable during local test")
+
+    state_path = tmp_path / "stage7.json"
+    service = stage7_module.Stage7Service(avatar_provider=FailingAvatarProvider(), state_path=state_path)
+    original = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="heygen",
+        source_run_id="run_failed_fallback",
+        trace_id="trace_failed_fallback",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_failed_fallback",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_failed_fallback",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+    replayed = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="heygen",
+        source_run_id="run_failed_fallback",
+        trace_id="trace_failed_fallback",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_failed_fallback",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_failed_fallback",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    assert replayed.avatar_render_id == original.avatar_render_id
+    assert replayed.avatar_provider.fallback_reason == "PROVIDER_RENDER_FAILED"
+    assert tuple(event.status for event in replayed.render_job_status_history) == (
+        "QUEUED",
+        "FALLBACK",
+        "RUNNING",
+        "FAILED",
+        "FALLBACK",
+        "COMPLETED",
+    )
+
+
+def test_stage7_file_state_replays_pure_provider_failed_fallback_history(
+    tmp_path: Path,
+) -> None:
+    class FailingAvatarProvider:
+        provider = "mock"
+        provider_mode = "LOCAL"
+
+        def render(
+            self,
+            *,
+            source_script: str,
+            requested_provider: str,
+            fallback_reason: str | None,
+            source_run_id: str,
+            trace_id: str,
+            source_context_ref_count: int,
+            source_citation_count: int,
+            source_context_ref_ids: tuple[str, ...] = (),
+            source_citation_indexes: tuple[int, ...] = (),
+            source_evaluation_id: str = "local_evaluation",
+            source_evaluation_checksum: str = "",
+            evaluation_status: str = "UNKNOWN",
+        ) -> stage7_module.AvatarProviderResult:
+            raise RuntimeError("provider failed during local restore replay test")
+
+    state_path = tmp_path / "stage7.json"
+    service = stage7_module.Stage7Service(avatar_provider=FailingAvatarProvider(), state_path=state_path)
+    original = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_pure_failed_fallback",
+        trace_id="trace_pure_failed_fallback",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_pure_failed_fallback",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_pure_failed_fallback",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+    replayed = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_pure_failed_fallback",
+        trace_id="trace_pure_failed_fallback",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_pure_failed_fallback",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_pure_failed_fallback",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    assert replayed.avatar_render_id == original.avatar_render_id
+    assert replayed.avatar_provider.fallback_reason == "PROVIDER_RENDER_FAILED"
+    assert tuple(event.status for event in replayed.render_job_status_history) == (
+        "QUEUED",
+        "RUNNING",
+        "FAILED",
+        "FALLBACK",
+        "COMPLETED",
+    )
+
+
+def test_stage7_file_state_drops_cross_scope_render_idempotency_record(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+        source_evaluation_id="eval_scope",
+        source_run_id="run_scope",
+        trace_id="trace_scope",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_scope",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+    consent = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_scope",
+        actor_id="user_local",
+        source_run_id="run_scope",
+        trace_id="trace_scope",
+        source_context_ref_ids=("ctx_scope",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_scope",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_scope:run_scope",
+        idempotency_key="capture-consent",
+    )
+    render = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_scope",
+        trace_id="trace_scope",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_scope",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_scope",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        durable_consent=stage7_module.DurableAvatarRenderScope(
+            tenant_id="tenant_local",
+            project_id="proj_scope",
+            actor_id="user_local",
+            consent_record_id=consent.consent_record_id,
+        ),
+        idempotency_scope="tenant_local:user_local:proj_scope:run_scope",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["idempotencyRecords"][0]["idempotency_scope"] = "tenant_local:other_user:proj_scope:run_scope"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert render.avatar_render_id in restored.avatar_renders
+    assert restored.idempotency_records == {}
+
+
+def test_stage7_file_state_drops_cross_scope_consent_idempotency_record(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_scope",
+        actor_id="user_local",
+        source_run_id="run_scope",
+        trace_id="trace_scope",
+        source_context_ref_ids=("ctx_scope",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_scope",
+        source_evaluation_checksum=stage7_module.build_source_evaluation_checksum(
+            source_evaluation_id="eval_scope",
+            source_run_id="run_scope",
+            trace_id="trace_scope",
+            evaluation_status="PASSED",
+            source_context_ref_ids=("ctx_scope",),
+            source_context_ref_count=1,
+            source_citation_indexes=(1,),
+            source_citation_count=1,
+        ),
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_scope:run_scope",
+        idempotency_key="capture-consent",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["consentIdempotencyRecords"][0]["idempotency_scope"] = "tenant_local:other_user:proj_scope:run_scope"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert len(restored.synthetic_media_consents) == 1
+    assert restored.consent_idempotency_records == {}
+
+
+def test_stage7_file_state_drops_render_idempotency_with_wrong_endpoint(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_endpoint",
+        trace_id="trace_endpoint",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_endpoint",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_endpoint",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["idempotencyRecords"][0]["endpoint"] = "POST /wrong"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert len(restored.avatar_renders) == 1
+    assert restored.idempotency_records == {}
+
+
+def test_stage7_file_state_drops_consent_idempotency_with_wrong_endpoint(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_endpoint",
+        actor_id="user_local",
+        source_run_id="run_endpoint",
+        trace_id="trace_endpoint",
+        source_context_ref_ids=("ctx_endpoint",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_endpoint",
+        source_evaluation_checksum=stage7_module.build_source_evaluation_checksum(
+            source_evaluation_id="eval_endpoint",
+            source_run_id="run_endpoint",
+            trace_id="trace_endpoint",
+            evaluation_status="PASSED",
+            source_context_ref_ids=("ctx_endpoint",),
+            source_context_ref_count=1,
+            source_citation_indexes=(1,),
+            source_citation_count=1,
+        ),
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_endpoint:run_endpoint",
+        idempotency_key="capture-consent",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["consentIdempotencyRecords"][0]["endpoint"] = "POST /wrong"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert len(restored.synthetic_media_consents) == 1
+    assert restored.consent_idempotency_records == {}
+
+
+def test_stage7_file_state_drops_render_with_forged_local_idempotency_scope(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_forged_scope",
+        trace_id="trace_forged_scope",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_forged_scope",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_forged_scope",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["avatarRenders"][0]["idempotency_scope"] = "tenant:other_user:project:run"
+    payload["idempotencyRecords"][0]["idempotency_scope"] = "tenant:other_user:project:run"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert restored.avatar_renders == {}
+    assert restored.idempotency_records == {}
+
+
+def test_stage7_file_state_drops_render_with_self_consistent_cross_scope_without_idempotency(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+        source_evaluation_id="eval_render_scope",
+        source_run_id="run_render_scope",
+        trace_id="trace_render_scope",
+        evaluation_status="PASSED",
+        source_context_ref_ids=("ctx_render_scope",),
+        source_context_ref_count=1,
+        source_citation_indexes=(1,),
+        source_citation_count=1,
+    )
+    consent = service.capture_synthetic_avatar_consent(
+        tenant_id="tenant_local",
+        project_id="proj_render_scope",
+        actor_id="user_local",
+        source_run_id="run_render_scope",
+        trace_id="trace_render_scope",
+        source_context_ref_ids=("ctx_render_scope",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_render_scope",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant_local:user_local:proj_render_scope:run_render_scope",
+        idempotency_key="capture-consent",
+    )
+    service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_render_scope",
+        trace_id="trace_render_scope",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_render_scope",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_render_scope",
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        durable_consent=stage7_module.DurableAvatarRenderScope(
+            tenant_id="tenant_local",
+            project_id="proj_render_scope",
+            actor_id="user_local",
+            consent_record_id=consent.consent_record_id,
+        ),
+        idempotency_scope="tenant_local:user_local:proj_render_scope:run_render_scope",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    render_row = payload["avatarRenders"][0]
+    render_row["idempotency_scope"] = "tenant_local:other_user:proj_render_scope:run_render_scope"
+    render_row["request_checksum"] = stage7_module.build_avatar_render_request_checksum(
+        source_text=render_row["source_script_text"],
+        requested_avatar_provider=render_row["avatar_provider"]["requested_provider"],
+        cloned_identity_requested=False,
+        consent_to_use_synthetic_avatar=True,
+        source_run_id=render_row["source_run_id"],
+        trace_id=render_row["trace_id"],
+        source_context_ref_count=render_row["source_context_ref_count"],
+        source_citation_count=render_row["source_citation_count"],
+        source_context_ref_ids=tuple(render_row["source_context_ref_ids"]),
+        source_citation_indexes=tuple(render_row["source_citation_indexes"]),
+        source_evaluation_id=render_row["source_evaluation_id"],
+        source_evaluation_checksum=render_row["source_evaluation_checksum"],
+        evaluation_status=render_row["evaluation_status"],
+        consent_record_id=render_row["consent_record_id"],
+        idempotency_scope=render_row["idempotency_scope"],
+        idempotency_key=render_row["idempotency_key"],
+    )
+    payload["idempotencyRecords"] = []
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert restored.avatar_renders == {}
+    assert restored.artifact_metadata == {}
+
+
+def test_stage7_file_state_drops_render_missing_request_checksum(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_missing_checksum",
+        trace_id="trace_missing_checksum",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_missing_checksum",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_missing_checksum",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    del payload["avatarRenders"][0]["request_checksum"]
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert restored.avatar_renders == {}
+    assert restored.artifact_metadata == {}
+    assert restored.idempotency_records == {}
+
+
+def test_stage7_file_state_drops_render_with_noncanonical_source_evaluation_checksum(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_restore_eval_checksum",
+        trace_id="trace_restore_eval_checksum",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_restore_eval_checksum",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_restore_checksum",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["avatarRenders"][0]["source_evaluation_checksum"] = "sha256:tampered"
+    payload["avatarRenders"][0]["request_checksum"] = stage7_module.build_avatar_render_request_checksum(
+        source_text=payload["avatarRenders"][0]["source_script_text"],
+        requested_avatar_provider=payload["avatarRenders"][0]["avatar_provider"]["requested_provider"],
+        cloned_identity_requested=False,
+        consent_to_use_synthetic_avatar=True,
+        source_run_id=payload["avatarRenders"][0]["source_run_id"],
+        trace_id=payload["avatarRenders"][0]["trace_id"],
+        source_context_ref_count=payload["avatarRenders"][0]["source_context_ref_count"],
+        source_citation_count=payload["avatarRenders"][0]["source_citation_count"],
+        source_context_ref_ids=tuple(payload["avatarRenders"][0]["source_context_ref_ids"]),
+        source_citation_indexes=tuple(payload["avatarRenders"][0]["source_citation_indexes"]),
+        source_evaluation_id=payload["avatarRenders"][0]["source_evaluation_id"],
+        source_evaluation_checksum=payload["avatarRenders"][0]["source_evaluation_checksum"],
+        evaluation_status=payload["avatarRenders"][0]["evaluation_status"],
+        consent_record_id=payload["avatarRenders"][0]["consent_record_id"],
+        idempotency_scope=payload["avatarRenders"][0]["idempotency_scope"],
+        idempotency_key=payload["avatarRenders"][0]["idempotency_key"],
+    )
+    payload["idempotencyRecords"][0]["request_checksum"] = payload["avatarRenders"][0]["request_checksum"]
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert restored.avatar_renders == {}
+    assert restored.idempotency_records == {}
+
+
+def test_stage7_file_state_prunes_idempotency_records_for_invalidated_render(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_prune",
+        trace_id="trace_prune",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_prune",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_prune",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    duplicate_record = dict(payload["idempotencyRecords"][0])
+    duplicate_record["idempotency_key"] = "render-copy"
+    payload["idempotencyRecords"].append(duplicate_record)
+    payload["idempotencyRecords"][0]["request_checksum"] = "sha256:tampered"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert restored.avatar_renders == {}
+    assert restored.artifact_metadata == {}
+    assert restored.idempotency_records == {}
+
+
+def test_stage7_file_state_drops_render_without_terminal_status_history(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    original = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_status",
+        trace_id="trace_status",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_status",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_status",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["avatarRenders"][0]["render_job_status_history"] = [
+        {"status": "QUEUED", "message": "Avatar render job queued."},
+        {"status": "RUNNING", "message": "Avatar provider render started."},
+    ]
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+    recreated = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_status",
+        trace_id="trace_status",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_status",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_status",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    assert original.avatar_render_id == "avrun_000001"
+    assert recreated.avatar_render_id == "avrun_000002"
+    assert sorted(restored.avatar_renders) == ["avrun_000002"]
+
+
+def test_stage7_file_state_drops_render_with_malformed_status_history_item(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    original = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_status",
+        trace_id="trace_status",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_status",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_status",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["avatarRenders"][0]["render_job_status_history"].append("tampered")
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+    recreated = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_status",
+        trace_id="trace_status",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_status",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_status",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    assert original.avatar_render_id == "avrun_000001"
+    assert recreated.avatar_render_id == "avrun_000002"
+    assert sorted(restored.avatar_renders) == ["avrun_000002"]
+
+
+def test_stage7_file_state_drops_render_with_impossible_status_history_order(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    original = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_status_order",
+        trace_id="trace_status_order",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_status_order",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_status_order",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["avatarRenders"][0]["render_job_status_history"] = [
+        {"status": "QUEUED", "message": "Avatar render job queued."},
+        {"status": "FAILED", "message": "Avatar provider render failed."},
+        {"status": "FALLBACK", "message": "Using local fallback renderer."},
+        {"status": "RUNNING", "message": "Avatar provider render started."},
+        {"status": "COMPLETED", "message": "Avatar render job completed."},
+    ]
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+    recreated = restored.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_status_order",
+        trace_id="trace_status_order",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_status_order",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_status_order",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+
+    assert original.avatar_render_id == "avrun_000001"
+    assert recreated.avatar_render_id == "avrun_000002"
+    assert sorted(restored.avatar_renders) == ["avrun_000002"]
+
+
 def test_stage7_file_state_drops_artifact_metadata_for_missing_render(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     state_path.write_text(
@@ -2019,6 +2874,37 @@ def test_stage7_file_state_drops_artifact_metadata_for_missing_render(tmp_path: 
 
     assert restored.avatar_renders == {}
     assert restored.artifact_metadata == {}
+
+
+def test_stage7_file_state_drops_malformed_artifact_metadata_without_clearing_valid_render(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    service = create_stage7_service(state_path=state_path)
+    result = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_metadata",
+        trace_id="trace_metadata",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_metadata",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_metadata",
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="render",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["artifactMetadata"][0]["metadata"][0].pop("mime_type")
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert restored.avatar_renders[result.avatar_render_id].avatar_render_id == result.avatar_render_id
+    assert restored.artifact_metadata == {}
+    assert restored.idempotency_records[
+        ("tenant:user:project:run", stage7_module.AVATAR_RENDER_ENDPOINT, "render")
+    ].value == restored.avatar_renders[result.avatar_render_id]
 
 
 def test_stage7_file_state_drops_artifact_metadata_that_mismatches_render(tmp_path: Path) -> None:
@@ -2111,6 +2997,81 @@ def test_stage7_file_state_drops_failed_idempotency_with_missing_error(tmp_path:
 
     assert result.avatar_render_id == "avrun_000001"
     assert len(restored.idempotency_records) == 1
+
+
+def test_stage7_file_state_drops_failed_render_idempotency_after_restart(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage7.json"
+    request_checksum = stage7_module.build_avatar_render_request_checksum(
+        source_text="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        cloned_identity_requested=False,
+        consent_to_use_synthetic_avatar=True,
+        source_run_id="run_failed_replay",
+        trace_id="trace_failed_replay",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_failed_replay",),
+        source_citation_indexes=(1,),
+        source_evaluation_id="eval_failed_replay",
+        source_evaluation_checksum=None,
+        evaluation_status="PASSED",
+    )
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "stage7-local-state-v1",
+                "avatarRenders": [],
+                "artifactMetadata": [],
+                "idempotencyRecords": [
+                    {
+                        "idempotency_scope": "tenant:user:project:run",
+                        "endpoint": stage7_module.AVATAR_RENDER_ENDPOINT,
+                        "idempotency_key": "failed-replay",
+                        "request_checksum": request_checksum,
+                        "status": "FAILED",
+                        "error_status_code": 409,
+                        "error_code": "AVATAR_RENDER_CONFLICT",
+                        "error_message": "Injected restored failure.",
+                        "value": {"kind": "none"},
+                    }
+                ],
+                "consentIdempotencyRecords": [
+                    {
+                        "idempotency_scope": "tenant:user:project:run",
+                        "endpoint": stage7_module.AVATAR_CONSENT_ENDPOINT,
+                        "idempotency_key": "failed-consent-replay",
+                        "request_checksum": stage7_module.build_avatar_consent_request_checksum(
+                            tenant_id="tenant",
+                            project_id="project",
+                            actor_id="user",
+                            source_run_id="run_failed_replay",
+                            trace_id="trace_failed_replay",
+                            source_context_ref_ids=("ctx_failed_replay",),
+                            source_citation_indexes=(1,),
+                            source_evaluation_id="eval_failed_replay",
+                            source_evaluation_checksum="sha256:consent",
+                            evaluation_status="PASSED",
+                            idempotency_scope="tenant:user:project:run",
+                            idempotency_key="failed-consent-replay",
+                        ),
+                        "status": "FAILED",
+                        "error_status_code": 409,
+                        "error_code": "AVATAR_CONSENT_CONFLICT",
+                        "error_message": "Injected restored consent failure.",
+                        "value": {"kind": "none"},
+                    }
+                ],
+                "syntheticMediaConsents": [],
+                "counters": {"run": 0, "consent": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = create_stage7_service(state_path=state_path)
+
+    assert restored.idempotency_records == {}
+    assert restored.consent_idempotency_records == {}
 
 
 def test_stage7_file_state_derives_missing_counters_from_restored_ids(tmp_path: Path) -> None:
