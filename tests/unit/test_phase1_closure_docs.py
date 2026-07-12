@@ -755,11 +755,38 @@ def test_issue126_restore_readiness_contract_rejects_adr_issue126_closure_overcl
 
     assert (
         "docs/ADR/0026-ch14-restore-readiness-contract.md contains issue #126 restore overclaim markers: "
-        "issue `#126` is closed"
+        "issue #126 closed or satisfied"
     ) in failures
 
 
-def test_issue126_restore_readiness_contract_rejects_production_restore_overclaim(monkeypatch: Any) -> None:
+@pytest.mark.parametrize(
+    ("overclaim_text", "expected_marker"),
+    [
+        (
+            "Successful production restore drill complete and production restore readiness achieved for DUR-RESTORE-001.",
+            "successful production restore drill complete, production restore readiness achieved",
+        ),
+        (
+            "Issue #126 is now fully satisfied by this readiness contract.",
+            "issue #126 closed or satisfied",
+        ),
+        (
+            "Matrix row DUR-RESTORE-001 is Closed by the CH-14 slice.",
+            "dur-restore-001 closed",
+        ),
+        (
+            "Production restore is ready based on this repo evidence.",
+            "production restore is ready",
+        ),
+        (
+            "Issue #39 is resolved for restore readiness.",
+            "issue #39 closed or resolved",
+        ),
+    ],
+)
+def test_issue126_restore_readiness_contract_rejects_production_restore_overclaim_variants(
+    monkeypatch: Any, overclaim_text: str, expected_marker: str
+) -> None:
     adr_text = phase1.read("docs/ADR/0026-ch14-restore-readiness-contract.md")
     monkeypatch.setattr(
         phase1,
@@ -767,10 +794,7 @@ def test_issue126_restore_readiness_contract_rejects_production_restore_overclai
         read_with_overrides(
             phase1,
             {
-                "docs/ADR/0026-ch14-restore-readiness-contract.md": (
-                    adr_text
-                    + "\n\nSuccessful production restore drill complete and production restore readiness achieved for DUR-RESTORE-001.\n"
-                ),
+                "docs/ADR/0026-ch14-restore-readiness-contract.md": adr_text + f"\n\n{overclaim_text}\n",
             },
         ),
     )
@@ -779,7 +803,7 @@ def test_issue126_restore_readiness_contract_rejects_production_restore_overclai
 
     assert (
         "docs/ADR/0026-ch14-restore-readiness-contract.md contains issue #126 restore overclaim markers: "
-        "successful production restore drill complete, production restore readiness achieved"
+        f"{expected_marker}"
     ) in failures
 
 
