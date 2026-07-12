@@ -317,6 +317,15 @@ ISSUE_39_CH10_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_ops_metrics.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_39_CH11_ALLOWED_CHANGED_FILES = {
+    "docs/ADR/0025-ch11-slo-error-budget.md",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_39_CH16_ALLOWED_CHANGED_FILES = {
     "backend/app/main.py",
     "backend/app/stage7.py",
@@ -653,6 +662,7 @@ ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
         "c47471d0c8218d59509cba936fe216b86c9ac1e9",
         "6449786069dd38eeaa5a4a31f5ed73cbfc52d248",
     ),
+    "phase-1-closure-39-ch-11-": ("384c15ac67810d30096794500da1c90ce056dd54",),
     "phase-1-closure-39-ch-16-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
 }
 PHASE1_STACKED_BASE_WORKFLOWS = (
@@ -1691,6 +1701,93 @@ def check_issue39_execution_strategy(failures: list[str]) -> None:
         failures.append("Issue #39 execution strategy has dependency cycle: " + " -> ".join(cycle))
 
 
+def check_issue39_ch11_slo_contract(failures: list[str]) -> None:
+    rel = "docs/ADR/0025-ch11-slo-error-budget.md"
+    path = ROOT / rel
+    if not path.is_file():
+        failures.append(f"Missing required issue #39 CH-11 contract ADR: {rel}")
+        return
+
+    text = read(rel)
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Status",
+            "Date",
+            "Context",
+            "Decision",
+            "SLO Catalog",
+            "Burn Policy And Breach Actions",
+            "Explicit Deferrals",
+            "Consequences",
+            "Related Documents",
+        ),
+    )
+    required_markers = (
+        "Issue `#127`",
+        "Issue `#128`",
+        "OPS-SLO-001",
+        "OPS-METRICS-001",
+        "CTX5-SLO-EVID-001",
+        "issue `#39` remains open",
+        "matrix row `OPS-SLO-001` remains `Open`",
+        "executable now",
+        "advisory-only",
+        "manual review contract",
+        "error budget",
+        "burn policy",
+        "release-blocking",
+        "`CH-12`",
+        "`CH-13`",
+        "`CH-14`",
+        "`CH-15`",
+    )
+    missing_markers = [marker for marker in required_markers if marker not in text]
+    if missing_markers:
+        failures.append(f"{rel} missing required markers: " + ", ".join(missing_markers))
+
+    required_metrics = (
+        "narratwin_ops_run_backlog_gauge",
+        "narratwin_ops_lease_state_count",
+        "narratwin_ops_lease_staleness_seconds",
+        "narratwin_ops_lease_reacquire_total",
+        "narratwin_ops_idempotency_contract_drift_total",
+        "narratwin_ops_idempotency_replay_total",
+        "narratwin_ops_idempotency_terminal_replay_fail_total",
+        "narratwin_ops_stale_writer_reject_total",
+        "narratwin_ops_outbox_backlog_count",
+        "narratwin_ops_outbox_age_seconds",
+        "narratwin_ops_outbox_redelivery_total",
+        "narratwin_ops_restore_attempts_total",
+        "narratwin_ops_restore_duration_seconds",
+        "narratwin_ops_rollback_block_total",
+    )
+    missing_metrics = [metric for metric in required_metrics if metric not in text]
+    if missing_metrics:
+        failures.append(f"{rel} missing CH-10 metric bindings: " + ", ".join(missing_metrics))
+
+    if re.search(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#39\b", text, flags=re.I):
+        failures.append(f"{rel} must not use auto-closing #39 wording.")
+
+    plan_text = read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    required_plan_markers = (
+        "### Issue `#127` CH-11 SLO and error-budget contract status and evidence mapping",
+        "Issue `#127` is the narrow executable `CH-11` slice",
+        "does not close `OPS-SLO-001`",
+        "does not satisfy `OPS-ALERT-001` or `OPS-WATCH-001`",
+        "does not create production restore-drill or rollback-communications evidence",
+        "`docs/ADR/0025-ch11-slo-error-budget.md`",
+    )
+    missing_plan_markers = [marker for marker in required_plan_markers if marker not in plan_text]
+    if missing_plan_markers:
+        failures.append(
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md missing CH-11 markers: "
+            + ", ".join(missing_plan_markers)
+        )
+
+
 def check_issue39_strategy_required_terms(failures: list[str], text: str) -> None:
     required_by_section = {
         "Chunk Definition Of Done": (
@@ -1868,6 +1965,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_39_CH08_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-09-"):
         allowed_files = ISSUE_39_CH09_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-ch-11-"):
+        allowed_files = ISSUE_39_CH11_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-10-"):
         allowed_files = ISSUE_39_CH10_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-16-"):
@@ -2355,6 +2454,7 @@ def main() -> int:
         check_release_docs(failures)
         check_issue39_closure_plan(failures)
         check_issue39_execution_strategy(failures)
+        check_issue39_ch11_slo_contract(failures)
         check_process_docs(failures)
 
     if failures:

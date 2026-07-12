@@ -96,6 +96,21 @@ def run_issue39_execution_strategy_check(monkeypatch: Any, *, strategy_text: str
     return failures
 
 
+def run_issue39_ch11_contract_check(
+    monkeypatch: Any,
+    *,
+    adr_text: str,
+    plan_text: str | None = None,
+) -> list[str]:
+    overrides = {"docs/ADR/0025-ch11-slo-error-budget.md": adr_text}
+    if plan_text is not None:
+        overrides["docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"] = plan_text
+    monkeypatch.setattr(phase1, "read", read_with_overrides(phase1, overrides))
+    failures: list[str] = []
+    phase1.check_issue39_ch11_slo_contract(failures)
+    return failures
+
+
 def run_release_docs_check(monkeypatch: Any, *, read_overrides: dict[str, str]) -> list[str]:
     monkeypatch.setattr(phase1, "read", read_with_overrides(phase1, read_overrides))
     failures: list[str] = []
@@ -375,6 +390,64 @@ def test_issue39_ch10_branch_rejects_alert_and_stage_runtime_files(monkeypatch: 
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-ch-10-production-metrics-contract may not change backend/app/stage4.py.",
         "Phase 1 Closure branch phase-1-closure-39-ch-10-production-metrics-contract may not change docs/ADR/0012-context5-metrics-slos-watch.md.",
+    ]
+
+
+def test_issue39_ch11_branch_checks_exact_ch10_dependency_commit(monkeypatch: Any) -> None:
+    calls: list[list[str]] = []
+
+    def fake_git_ok(args: list[str]) -> bool:
+        calls.append(args)
+        return True
+
+    monkeypatch.setattr(phase1, "current_branch", lambda: "phase-1-closure-39-ch-11-slo-error-budget")
+    monkeypatch.setattr(phase1, "git_ok", fake_git_ok)
+
+    failures: list[str] = []
+    phase1.check_branch(failures)
+
+    assert failures == []
+    assert calls == [
+        [
+            "merge-base",
+            "--is-ancestor",
+            "384c15ac67810d30096794500da1c90ce056dd54",
+            "HEAD",
+        ]
+    ]
+
+
+def test_issue39_ch11_branch_allows_only_slo_contract_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-11-slo-error-budget",
+        files=[
+            "docs/ADR/0025-ch11-slo-error-budget.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch11_branch_rejects_runtime_and_watch_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-11-slo-error-budget",
+        files=[
+            "backend/app/storage/ops_metrics.py",
+            "docs/ADR/0012-context5-metrics-slos-watch.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-11-slo-error-budget may not change backend/app/storage/ops_metrics.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-11-slo-error-budget may not change docs/ADR/0012-context5-metrics-slos-watch.md.",
     ]
 
 
@@ -1157,6 +1230,45 @@ def test_issue39_execution_strategy_rejects_weakened_ch10_metric_contract(monkey
     assert (
         "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md CH-10 row missing required terms: "
         "restore and rollback metric emissions close with `ch-14` and `ch-15`"
+    ) in failures
+
+
+def test_issue39_ch11_contract_accepts_current_docs(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0025-ch11-slo-error-budget.md")
+    failures = run_issue39_ch11_contract_check(monkeypatch, adr_text=adr_text)
+
+    assert failures == []
+
+
+def test_issue39_ch11_contract_rejects_missing_manual_review_contract_marker(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0025-ch11-slo-error-budget.md")
+    failures = run_issue39_ch11_contract_check(
+        monkeypatch,
+        adr_text=adr_text.replace("manual review contract", "unsupported wording"),
+    )
+
+    assert (
+        "docs/ADR/0025-ch11-slo-error-budget.md missing required markers: manual review contract"
+        in failures
+    )
+
+
+def test_issue39_ch11_contract_rejects_missing_plan_mapping(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0025-ch11-slo-error-budget.md")
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    failures = run_issue39_ch11_contract_check(
+        monkeypatch,
+        adr_text=adr_text,
+        plan_text=plan_text.replace(
+            "### Issue `#127` CH-11 SLO and error-budget contract status and evidence mapping",
+            "### Issue `#127` CH-11 mapping removed",
+            1,
+        ),
+    )
+
+    assert (
+        "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md missing CH-11 markers: "
+        "### Issue `#127` CH-11 SLO and error-budget contract status and evidence mapping"
     ) in failures
 
 

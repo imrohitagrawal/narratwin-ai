@@ -281,6 +281,18 @@ row-level closure evidence are completed.
 |---|---|---|
 | `OPS-METRICS-001` | `docs/ADR/0024-ch10-production-metrics-contract.md`, `backend/app/storage/ops_metrics.py`, `backend/app/storage/postgres_state.py`, `backend/app/storage/file_state.py`, `backend/app/storage/migrations.py`, and `tests/unit/test_ops_metrics.py` | `CTX5-METRICS-EVID-001`: focused tests prove named emission points for durable run backlog, lease state/staleness/reacquire, idempotency conflict/replay/stale-owner rejection, outbox backlog/age/redelivery, local restore-adjacent state-load attempts/duration, and rollback block counters. Queue-lag worker metrics, backup-lag metrics, SLO/error-budget thresholds, dashboard queries, alert routing, watch execution, successful restore drill timings, and rollback communications remain deferred to `CH-11`, `CH-12`, `CH-13`, `CH-14`, and `CH-15`. |
 
+### Issue `#127` CH-11 SLO and error-budget contract status and evidence mapping
+
+- Matrix status remains exactly `Open` for `OPS-SLO-001`.
+- Issue `#127` is the narrow executable `CH-11` slice for the reviewed SLO
+  catalog, threshold semantics, error-budget semantics, and release-breach
+  actions bound to the merged `CH-10` metric contract.
+- Issue `#127` does not close `OPS-SLO-001`, does not satisfy `OPS-ALERT-001` or `OPS-WATCH-001`, and does not create production restore-drill or rollback-communications evidence.
+
+| Matrix ID | Issue #127 evidence artifact | Narrow executable evidence row |
+|---|---|---|
+| `OPS-SLO-001` | `docs/ADR/0025-ch11-slo-error-budget.md` | `CTX5-SLO-EVID-001`: reviewed SLO catalog binds the merged `CH-10` metric names to executable now versus advisory-only threshold semantics, manual review contract error budget burn policy, and release-blocking breach actions for backlog, lease, idempotency, outbox, restore, and rollback decisions. Dashboard/query execution, alert routing, watch execution, successful restore drill timings, and rollback communications remain deferred to `CH-12`, `CH-13`, `CH-14`, and `CH-15`. |
+
 ## Issue #70 (Context 6) Status and Evidence Mapping
 
 ### Matrix planning annotations for rollback/media/privacy/release controls
