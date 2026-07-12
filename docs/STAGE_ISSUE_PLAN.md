@@ -725,11 +725,13 @@ provider/media/privacy controls, retention/untrusted-input closure, or unrelated
 governance/process files.
 
 `phase-1-closure-39-ch-08-*` is reserved for the `CH-08` Stage 7 render artifact
-state chunk for issue `#39` child issue `#115`. It may touch only:
+state chunk for issue `#39` child issue `#119`; issue `#115` remains the closed
+preflight-only child issue. It may touch only:
 
 - `backend/app/main.py`
 - `backend/app/stage7.py`
 - `backend/app/storage/file_state.py`
+- `docs/ADR/0021-ch08-stage7-render-artifact-state.md`
 - `docs/API_CONTRACT.md`
 - `docs/LOCAL_DEVELOPMENT.md`
 - `docs/STATUS.md`

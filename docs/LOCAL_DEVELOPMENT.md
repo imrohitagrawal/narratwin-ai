@@ -71,6 +71,19 @@ idempotency replay state, and Stage 7 avatar render/idempotency/artifact metadat
 are written as local JSON snapshots. Leave it blank for process-local test
 isolation.
 
+Stage 7 restored render rows are treated as untrusted local state. Local restore
+keeps only terminal completed render records with legal status-history order, a
+mandatory matching persisted render request checksum built from the canonical
+source evaluation checksum and idempotency scope/key, checksum-bound artifacts,
+matching consumed-consent bindings, and succeeded idempotency records whose
+stored request checksum, canonical endpoint, and scope/key still match the
+restored render or consent record. Corrupt render rows, stale checksum-bound
+replay rows, failed idempotency rows, inconsistent cross-scope render or
+idempotency rows, wrong-endpoint idempotency rows, and malformed artifact
+metadata rows are skipped without enabling external providers in local/dev/test.
+These checks detect malformed or inconsistent snapshot data; they do not make the
+local JSON snapshot tamper-proof against a fully rewritten self-consistent file.
+
 Treat these snapshots as sensitive local data. They can include uploaded
 document text, retrieved chunks/context, generated scripts, evaluation details,
 translations/subtitles, avatar artifact payloads, base64 content, and metadata.
