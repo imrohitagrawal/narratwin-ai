@@ -1456,36 +1456,57 @@ def check_issue126_restore_readiness_contract(failures: list[str]) -> None:
         if missing_markers:
             failures.append(f"{rel} missing issue #126 restore markers: " + ", ".join(missing_markers))
 
+    completed_status_terms = (
+        r"closed|complete|completed|satisfied|fully satisfied|"
+        r"resolved(?!\s+or\s+explicitly\s+downgraded)"
+    )
+    status_claim_prefix = r"(?:is\s+|has\s+been\s+)?(?:now\s+)?"
     issue_subject_prefix = r"(?<!for\s)(?<!on\s)\bissue\s+`?"
+    production_drill_claim = (
+        r"\b(?:successful\s+)?production restore drill\s+"
+        r"(?:(?:was\s+|has\s+been\s+)?(?:successful|complete|completed|passed|succeeded|verified|proven))\b"
+    )
+    production_readiness_claim = (
+        r"\bproduction restore readiness\s+"
+        r"(?:(?:is\s+|has\s+been\s+)?(?:achieved|ready|complete|completed|passed|succeeded|verified|proven))\b"
+    )
+    production_restore_claim = (
+        r"\bproduction restore\s+(?:(?:is\s+|has\s+been\s+)?(?:ready|verified|proven))\b"
+    )
+    dur_restore_claim = (
+        r"\b(?:matrix row\s+)?dur-restore-001\s+" + status_claim_prefix + r"(?:" + completed_status_terms + r")\b"
+    )
+    issue_126_claim = issue_subject_prefix + r"#126`?\s+" + status_claim_prefix + r"(?:" + completed_status_terms + r")\b"
+    issue_39_claim = issue_subject_prefix + r"#39`?\s+" + status_claim_prefix + r"(?:" + completed_status_terms + r")\b"
     forbidden_overclaims_by_file = {
         "docs/ADR/0026-ch14-restore-readiness-contract.md": (
-            ("successful production restore drill complete", r"\bsuccessful production restore drill\s+(?:complete|completed|passed|succeeded|verified|proven)\b"),
-            ("production restore readiness achieved", r"\bproduction restore readiness\s+(?:achieved|complete|completed|passed|succeeded|verified|proven)\b"),
-            ("production restore is ready", r"\bproduction restore\s+(?:is\s+)?(?:ready|verified|proven)\b"),
-            ("dur-restore-001 closed", r"\b(?:matrix row\s+)?dur-restore-001\s+(?:is\s+)?(?:now\s+)?(?:closed|complete|completed|satisfied|fully satisfied|resolved(?!\s+or\s+explicitly\s+downgraded))\b"),
-            ("issue #126 closed or satisfied", issue_subject_prefix + r"#126`?\s+(?:is\s+)?(?:now\s+)?(?:closed|complete|completed|satisfied|fully satisfied|resolved(?!\s+or\s+explicitly\s+downgraded))\b"),
-            ("issue #39 closed or resolved", issue_subject_prefix + r"#39`?\s+(?:is\s+)?(?:now\s+)?(?:closed|complete|completed|satisfied|fully satisfied|resolved(?!\s+or\s+explicitly\s+downgraded))\b"),
+            ("successful production restore drill complete", production_drill_claim),
+            ("production restore readiness achieved", production_readiness_claim),
+            ("production restore is ready", production_restore_claim),
+            ("dur-restore-001 closed", dur_restore_claim),
+            ("issue #126 closed or satisfied", issue_126_claim),
+            ("issue #39 closed or resolved", issue_39_claim),
         ),
         "docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md": (
-            ("successful production restore drill complete", r"\bsuccessful production restore drill\s+(?:complete|completed|passed|succeeded|verified|proven)\b"),
-            ("production restore readiness achieved", r"\bproduction restore readiness\s+(?:achieved|complete|completed|passed|succeeded|verified|proven)\b"),
-            ("production restore is ready", r"\bproduction restore\s+(?:is\s+)?(?:ready|verified|proven)\b"),
-            ("dur-restore-001 closed", r"\b(?:matrix row\s+)?dur-restore-001\s+(?:is\s+)?(?:now\s+)?(?:closed|complete|completed|satisfied|fully satisfied|resolved(?!\s+or\s+explicitly\s+downgraded))\b"),
-            ("issue #39 closed or resolved", issue_subject_prefix + r"#39`?\s+(?:is\s+)?(?:now\s+)?(?:closed|complete|completed|satisfied|fully satisfied|resolved(?!\s+or\s+explicitly\s+downgraded))\b"),
+            ("successful production restore drill complete", production_drill_claim),
+            ("production restore readiness achieved", production_readiness_claim),
+            ("production restore is ready", production_restore_claim),
+            ("dur-restore-001 closed", dur_restore_claim),
+            ("issue #39 closed or resolved", issue_39_claim),
         ),
         "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md": (
-            ("successful production restore drill complete", r"\bsuccessful production restore drill\s+(?:complete|completed|passed|succeeded|verified|proven)\b"),
-            ("production restore readiness achieved", r"\bproduction restore readiness\s+(?:achieved|complete|completed|passed|succeeded|verified|proven)\b"),
-            ("production restore is ready", r"\bproduction restore\s+(?:is\s+)?(?:ready|verified|proven)\b"),
-            ("dur-restore-001 closed", r"\b(?:matrix row\s+)?dur-restore-001\s+(?:is\s+)?(?:now\s+)?(?:closed|complete|completed|satisfied|fully satisfied|resolved(?!\s+or\s+explicitly\s+downgraded))\b"),
-            ("issue #39 closed or resolved", issue_subject_prefix + r"#39`?\s+(?:is\s+)?(?:now\s+)?(?:closed|complete|completed|satisfied|fully satisfied|resolved(?!\s+or\s+explicitly\s+downgraded))\b"),
+            ("successful production restore drill complete", production_drill_claim),
+            ("production restore readiness achieved", production_readiness_claim),
+            ("production restore is ready", production_restore_claim),
+            ("dur-restore-001 closed", dur_restore_claim),
+            ("issue #39 closed or resolved", issue_39_claim),
         ),
         "docs/STATUS.md": (
-            ("successful production restore drill complete", r"\bsuccessful production restore drill\s+(?:complete|completed|passed|succeeded|verified|proven)\b"),
-            ("production restore readiness achieved", r"\bproduction restore readiness\s+(?:achieved|complete|completed|passed|succeeded|verified|proven)\b"),
-            ("production restore is ready", r"\bproduction restore\s+(?:is\s+)?(?:ready|verified|proven)\b"),
-            ("dur-restore-001 closed", r"\b(?:matrix row\s+)?dur-restore-001\s+(?:is\s+)?(?:now\s+)?(?:closed|complete|completed|satisfied|fully satisfied|resolved(?!\s+or\s+explicitly\s+downgraded))\b"),
-            ("issue #39 closed or resolved", issue_subject_prefix + r"#39`?\s+(?:is\s+)?(?:now\s+)?(?:closed|complete|completed|satisfied|fully satisfied|resolved(?!\s+or\s+explicitly\s+downgraded))\b"),
+            ("successful production restore drill complete", production_drill_claim),
+            ("production restore readiness achieved", production_readiness_claim),
+            ("production restore is ready", production_restore_claim),
+            ("dur-restore-001 closed", dur_restore_claim),
+            ("issue #39 closed or resolved", issue_39_claim),
         ),
     }
     for rel, forbidden_patterns in forbidden_overclaims_by_file.items():

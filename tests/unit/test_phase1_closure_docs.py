@@ -782,6 +782,30 @@ def test_issue126_restore_readiness_contract_rejects_adr_issue126_closure_overcl
             "Issue #39 is resolved for restore readiness.",
             "issue #39 closed or resolved",
         ),
+        (
+            "Issue #39 has been resolved for restore readiness.",
+            "issue #39 closed or resolved",
+        ),
+        (
+            "Issue #126 has been closed by this readiness contract.",
+            "issue #126 closed or satisfied",
+        ),
+        (
+            "DUR-RESTORE-001 has been satisfied by this CH-14 slice.",
+            "dur-restore-001 closed",
+        ),
+        (
+            "Production restore readiness is achieved by this evidence.",
+            "production restore readiness achieved",
+        ),
+        (
+            "Production restore has been verified by this evidence.",
+            "production restore is ready",
+        ),
+        (
+            "The production restore drill was successful.",
+            "successful production restore drill complete",
+        ),
     ],
 )
 def test_issue126_restore_readiness_contract_rejects_production_restore_overclaim_variants(
