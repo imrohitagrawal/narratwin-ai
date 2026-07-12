@@ -66,6 +66,21 @@ Optional local durable state can be enabled by setting `NARRATWIN_STATE_DIR` in
 NARRATWIN_STATE_DIR=./outputs/state
 ```
 
+To run the local restore-integrity drill for the file-backed Stage 4/6/7 state
+surface and emit a JSON evidence summary:
+
+```bash
+uv run python -m backend.app.storage.local_restore_drill --output outputs/restore-drill.json
+```
+
+This drill is local-only. It proves restore integrity and replay safety for the
+optional JSON snapshot paths only. It does not prove production backup/restore,
+restore metrics, RTO/RPO, alerting, watch posture, or issue `#39` closure.
+
+When `--output` is set, the command also persists the copied source and restored
+JSON evidence under a sibling `*-artifacts/` directory so the reported checksum
+paths remain inspectable after the drill exits.
+
 When set, Stage 4 project/document/run/RAG state, Stage 6 multilingual
 idempotency replay state, and Stage 7 avatar render/idempotency/artifact metadata
 are written as local JSON snapshots. Leave it blank for process-local test

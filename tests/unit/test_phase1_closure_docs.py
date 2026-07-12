@@ -563,6 +563,38 @@ def test_issue39_closure_plan_rejects_invalid_matrix_status(monkeypatch: Any) ->
     assert "Issue #39 matrix row DUR-ACID-001 status must be Open or Closed; got Done." in failures
 
 
+def test_issue125_local_restore_contract_accepts_current_docs() -> None:
+    failures: list[str] = []
+    phase1.check_issue125_local_restore_contract(failures)
+
+    assert failures == []
+
+
+def test_issue125_local_restore_contract_rejects_missing_local_only_marker(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md": replace_text(
+                    plan_text,
+                    "Issue `#125` is an executable local-only evidence slice for the optional\n  file-backed Stage 4/6/7 state already present in the repo.",
+                    "Issue `#125` is an evidence slice for Stage 4/6/7 state already present in the repo.",
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue125_local_restore_contract(failures)
+
+    assert (
+        "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md missing issue #125 restore markers: "
+        "Issue `#125` is an executable local-only evidence slice"
+    ) in failures
+
+
 def test_issue39_closure_plan_rejects_closed_row_without_closure_record(monkeypatch: Any) -> None:
     plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
     failures = run_issue39_closure_plan_check(
@@ -1925,6 +1957,41 @@ def test_issue39_context4_issue68_branch_rejects_runtime_product_files(monkeypat
 
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-39-context4-backup-restore-drill may not change backend/app/stage7.py."
+    ]
+
+
+def test_issue39_restore_local_drill_branch_allows_local_restore_drill_artifacts(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-restore-local-drill",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/local_restore_drill.py",
+            "docs/ADR/0023-local-restore-integrity-drill.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_local_restore_drill.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_restore_local_drill_branch_rejects_unrelated_runtime_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-restore-local-drill",
+        files=["backend/app/stage7.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-restore-local-drill may not change backend/app/stage7.py."
     ]
 
 
