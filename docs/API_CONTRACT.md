@@ -776,7 +776,10 @@ Phase 1 Closure issue `#109` hardens Stage 6 durable replay for local durability
 evidence only. The API route now binds every multilingual run to a source run
 that is `COMPLETED`, `PASSED`, has accepted script text, carries retrieved
 context refs, and exposes claim-support/evaluation metadata from the accepted
-Stage 4 source graph before Stage 6 persists or replays derived artifacts.
+Stage 4 source graph before Stage 6 persists or replays derived artifacts. The
+stored and replayed trace metadata also carries tenant, project, actor, source
+run, source-text checksum, and evaluation checksum bindings so restored rows
+can be rejected when they cross scope or checksum boundaries.
 
 Request:
 
@@ -891,8 +894,21 @@ Response `201`:
   },
   "trace": {
     "traceId": "trace_123",
+    "tenantId": "tenant_local",
+    "projectId": "proj_123",
+    "actorId": "user_local",
+    "sourceRunId": "run_123",
+    "sourceLanguage": "en",
+    "targetLanguage": "es",
+    "sourceTextChecksum": "sha256:source",
     "sourceContextRefCount": 1,
-    "sourceCitationCount": 1
+    "sourceCitationCount": 1,
+    "sourceContextRefIds": ["ctx_123"],
+    "sourceCitationIndexes": [1],
+    "sourceClaimSupportIds": ["claimsup_123"],
+    "sourceEvaluationId": "eval_123",
+    "sourceEvaluationChecksum": "sha256:evaluation",
+    "evaluationStatus": "PASSED"
   }
 }
 ```
@@ -905,9 +921,10 @@ Provider response schema:
   `OPTIONAL_EXTERNAL`.
 - Current Stage 6 local/dev/test behavior uses `mock` and `LOCAL`.
 - `artifacts.metadata` is a JSON download that records source-run ID, trace ID,
-  request checksum, source citation indexes/counts, source evaluation
-  ID/status/checksum, claim-support IDs, glossary/preserved terms, provider
-  metadata, and derived artifact checksums for deterministic local replay.
+  tenant/project/actor binding, source-text checksum, request checksum, source
+  citation indexes/counts, source evaluation ID/status/checksum, claim-support
+  IDs, glossary/preserved terms, provider metadata, and derived artifact
+  checksums for deterministic local replay.
 - Adding another adapter requires code changes in `backend/app/stage6.py`,
   API/contract updates in this file, tests in `tests/unit` and `tests/api`,
   third-party notices, and review of provider keys, egress, licensing, and
@@ -939,11 +956,12 @@ reviewers can compare multilingual output against accepted grounded evidence.
 Frontend download links remain disabled until the response artifact matches the
 expected MIME type, file extension, base64 shape, and safe filename rules.
 Local durable restore for Phase 1 Closure replays only terminal valid Stage 6
-records with matching request checksums inside the same idempotency scope, drops
-stale `PENDING`/`RUNNING` rows, rejects corrupt failed rows without serialized
-error details, and may dedupe identical request payloads to an existing durable
-multilingual run. This remains local durability evidence, not a production
-exactly-once guarantee.
+records with matching request checksums inside the same idempotency scope,
+matching tenant/project/actor/source-run bindings, and matching source-text and
+evaluation checksums. It drops stale `PENDING`/`RUNNING` rows, rejects corrupt
+failed rows without serialized error details, and may dedupe identical request
+payloads to an existing durable multilingual run. This remains local durability
+evidence, not a production exactly-once guarantee.
 
 ### Generate Avatar Demo Export
 

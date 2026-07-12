@@ -181,6 +181,30 @@ def test_concurrent_duplicate_idempotency_key_is_rejected_in_flight() -> None:
     assert provider.call_count == 1
 
 
+def test_reused_idempotency_key_with_changed_payload_conflicts() -> None:
+    service = create_stage6_service()
+    first = service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts.",
+        target_language="es",
+        glossary_terms=["NarraTwin AI"],
+        idempotency_scope="tenant:user:project:run",
+        idempotency_key="same-key",
+    )
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            target_language="fr",
+            glossary_terms=["NarraTwin AI"],
+            idempotency_scope="tenant:user:project:run",
+            idempotency_key="same-key",
+        )
+
+    assert first.multilingual_run_id == "mlrun_000001"
+    assert exc.value.status_code == 409
+    assert exc.value.code == "IDEMPOTENCY_CONFLICT"
+
+
 def test_provider_output_must_preserve_glossary_terms_present_in_source() -> None:
     class DroppingTranslationProvider:
         provider = "dropping-local"

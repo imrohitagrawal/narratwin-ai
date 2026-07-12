@@ -105,11 +105,15 @@ class MultilingualArtifacts:
 class MultilingualWalkthroughResult:
     multilingual_run_id: str
     request_checksum: str
+    tenant_id: str
+    project_id: str
+    actor_id: str
     source_run_id: str
     source_language: str
     target_language: str
     status: str
     source_script_text: str
+    source_text_checksum: str
     translated_script_text: str
     subtitles_text: str
     glossary_terms: list[str]
@@ -364,8 +368,8 @@ class Stage6Service:
                     multilingual_run_id = str(row["multilingual_run_id"])
                 except KeyError:
                     continue
-                result = restored_runs.get(multilingual_run_id)
-                if result is None or result.request_checksum != request_checksum:
+                restored_result: MultilingualWalkthroughResult | None = restored_runs.get(multilingual_run_id)
+                if restored_result is None or restored_result.request_checksum != request_checksum:
                     continue
                 dedupe_key = (scope, request_checksum)
                 existing_run_id = restored_dedupe_index.get(dedupe_key)
@@ -430,9 +434,9 @@ class Stage6Service:
                     and record.value.multilingual_run_id == result.multilingual_run_id
                 ):
                     self.idempotency_records.pop(key, None)
-            for key, run_id in list(self.request_dedupe_index.items()):
+            for dedupe_index_key, run_id in list(self.request_dedupe_index.items()):
                 if run_id == result.multilingual_run_id:
-                    self.request_dedupe_index.pop(key, None)
+                    self.request_dedupe_index.pop(dedupe_index_key, None)
         if dedupe_key is not None:
             prior_run_id = snapshot["requestDedupeIndex"].get(dedupe_key)
             if prior_run_id is None:
@@ -482,6 +486,9 @@ class Stage6Service:
         target_language: str,
         glossary_terms: Iterable[str] = (),
         source_language: str = "en",
+        tenant_id: str = "tenant",
+        project_id: str = "project",
+        actor_id: str = "user",
         requested_voice_provider: str = "mock",
         source_run_id: str = "local_source_run",
         trace_id: str = "local_trace",
@@ -497,6 +504,13 @@ class Stage6Service:
         idempotency_key: str | None = None,
     ) -> MultilingualWalkthroughResult:
         raw_glossary_terms = list(glossary_terms)
+        normalized_tenant_id = validate_checksum_component(tenant_id, field_name="tenant identifier")
+        normalized_project_id = validate_checksum_component(project_id, field_name="project identifier")
+        normalized_actor_id = validate_checksum_component(actor_id, field_name="actor identifier")
+        normalized_source_run_id = validate_checksum_component(source_run_id, field_name="source run identifier")
+        normalized_trace_id = validate_checksum_component(trace_id, field_name="source trace identifier")
+        source_text = source_script.strip()
+        source_text_checksum = checksum_text(source_text)
         raw_source_context_ref_ids = tuple(source_context_ref_ids or ())
         raw_source_citation_indexes = tuple(source_citation_indexes or ())
         raw_source_claim_support_ids = tuple(source_claim_support_ids or ())
@@ -504,8 +518,8 @@ class Stage6Service:
         raw_evaluation_status = evaluation_status.strip().upper() or "UNKNOWN"
         raw_source_evaluation_checksum = source_evaluation_checksum.strip() or build_source_evaluation_checksum(
             source_evaluation_id=raw_source_evaluation_id,
-            source_run_id=source_run_id,
-            trace_id=trace_id,
+            source_run_id=normalized_source_run_id,
+            trace_id=normalized_trace_id,
             evaluation_status=cast(EvaluationStatus, raw_evaluation_status),
             source_context_ref_ids=raw_source_context_ref_ids,
             source_context_ref_count=source_context_ref_count,
@@ -513,13 +527,16 @@ class Stage6Service:
             source_citation_count=source_citation_count,
         )
         request_checksum = build_multilingual_request_checksum(
-            source_script=source_script,
+            source_script=source_text,
             source_language=source_language,
             target_language=target_language,
             requested_voice_provider=requested_voice_provider,
             glossary_terms=raw_glossary_terms,
-            source_run_id=source_run_id,
-            trace_id=trace_id,
+            tenant_id=normalized_tenant_id,
+            project_id=normalized_project_id,
+            actor_id=normalized_actor_id,
+            source_run_id=normalized_source_run_id,
+            trace_id=normalized_trace_id,
             source_context_ref_count=source_context_ref_count,
             source_citation_count=source_citation_count,
             source_context_ref_ids=raw_source_context_ref_ids,
@@ -530,6 +547,14 @@ class Stage6Service:
             evaluation_status=raw_evaluation_status,
         )
         endpoint = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs"
+        if idempotency_scope and idempotency_key:
+            validate_stage6_scope(
+                idempotency_scope=idempotency_scope,
+                tenant_id=normalized_tenant_id,
+                project_id=normalized_project_id,
+                actor_id=normalized_actor_id,
+                source_run_id=normalized_source_run_id,
+            )
         record_key: tuple[str, str, str] | None = None
         snapshot: dict[str, Any] | None = None
         result: MultilingualWalkthroughResult | None = None
@@ -591,7 +616,6 @@ class Stage6Service:
             normalized_terms = normalize_glossary_terms(raw_glossary_terms)
             if any(contains_secret_like_content(term) for term in normalized_terms):
                 raise Stage6Error(422, "SECRET_LIKE_CONTENT", "Glossary terms contain secret-like content.")
-            source_text = source_script.strip()
             if not source_text:
                 raise Stage6Error(422, "VALIDATION_ERROR", "Source English script is required.")
             if len(source_text) > MAX_SOURCE_SCRIPT_CHARS:
@@ -617,8 +641,8 @@ class Stage6Service:
             normalized_evaluation_checksum = validate_source_evaluation_checksum(
                 source_evaluation_checksum=raw_source_evaluation_checksum,
                 source_evaluation_id=normalized_evaluation_id,
-                source_run_id=source_run_id,
-                trace_id=trace_id,
+                source_run_id=normalized_source_run_id,
+                trace_id=normalized_trace_id,
                 evaluation_status=normalized_evaluation_status,
                 source_context_ref_ids=normalized_context_ref_ids,
                 source_context_ref_count=source_context_ref_count,
@@ -638,8 +662,12 @@ class Stage6Service:
                 normalized_terms=normalized_terms,
                 requested_voice_provider=requested_voice_provider,
                 request_checksum=request_checksum,
-                source_run_id=source_run_id,
-                trace_id=trace_id,
+                tenant_id=normalized_tenant_id,
+                project_id=normalized_project_id,
+                actor_id=normalized_actor_id,
+                source_run_id=normalized_source_run_id,
+                trace_id=normalized_trace_id,
+                source_text_checksum=source_text_checksum,
                 source_context_ref_count=source_context_ref_count,
                 source_citation_count=source_citation_count,
                 source_context_ref_ids=normalized_context_ref_ids,
@@ -705,8 +733,12 @@ class Stage6Service:
         normalized_terms: list[str],
         requested_voice_provider: str,
         request_checksum: str,
+        tenant_id: str,
+        project_id: str,
+        actor_id: str,
         source_run_id: str,
         trace_id: str,
+        source_text_checksum: str,
         source_context_ref_count: int,
         source_citation_count: int,
         source_context_ref_ids: tuple[str, ...],
@@ -772,39 +804,14 @@ class Stage6Service:
         metadata_text = build_stage6_metadata_text(
             multilingual_run_id=multilingual_run_id,
             request_checksum=request_checksum,
+            tenant_id=tenant_id,
+            project_id=project_id,
+            actor_id=actor_id,
             source_run_id=source_run_id,
             trace_id=trace_id,
             source_language=normalized_source_language,
             target_language=normalized_target_language,
-            source_context_ref_count=source_context_ref_count,
-            source_context_ref_ids=source_context_ref_ids,
-            source_citation_count=source_citation_count,
-            source_citation_indexes=source_citation_indexes,
-            source_claim_support_ids=source_claim_support_ids,
-            source_evaluation_id=source_evaluation_id,
-            source_evaluation_checksum=source_evaluation_checksum,
-            evaluation_status=evaluation_status,
-            glossary_terms=normalized_terms,
-            preserved_terms=translation.preserved_terms,
-            source_script_text=source_text,
-            translated_script_text=translation.translated_text,
-            translation_provider=translation,
-            voice=voice,
-            translated_script_artifact=script_artifact,
-            subtitles_artifact=subtitle_artifact,
-        )
-        metadata_artifact = artifact_from_text(
-            file_name=f"{source_run_id}-{normalized_target_language}-metadata.json",
-            mime_type="application/json",
-            text=metadata_text,
-        )
-        metadata_text = build_stage6_metadata_text(
-            multilingual_run_id=multilingual_run_id,
-            request_checksum=request_checksum,
-            source_run_id=source_run_id,
-            trace_id=trace_id,
-            source_language=normalized_source_language,
-            target_language=normalized_target_language,
+            source_text_checksum=source_text_checksum,
             source_context_ref_count=source_context_ref_count,
             source_context_ref_ids=source_context_ref_ids,
             source_citation_count=source_citation_count,
@@ -830,11 +837,15 @@ class Stage6Service:
         return MultilingualWalkthroughResult(
             multilingual_run_id=multilingual_run_id,
             request_checksum=request_checksum,
+            tenant_id=tenant_id,
+            project_id=project_id,
+            actor_id=actor_id,
             source_run_id=source_run_id,
             source_language=normalized_source_language,
             target_language=normalized_target_language,
             status="COMPLETED",
             source_script_text=source_text,
+            source_text_checksum=source_text_checksum,
             translated_script_text=translation.translated_text,
             subtitles_text=subtitles_text,
             glossary_terms=normalized_terms,
@@ -914,7 +925,7 @@ def stage6_idempotency_record_from_dict(row: dict[str, Any]) -> Stage6Idempotenc
         raise ValueError("Completed Stage 6 idempotency record references missing value.")
     if status == "FAILED" and not isinstance(value, Stage6Error):
         raise ValueError("Failed Stage 6 idempotency record references missing error.")
-    return Stage6IdempotencyRecord(
+    record = Stage6IdempotencyRecord(
         idempotency_scope=str(row["idempotency_scope"]),
         endpoint=str(row["endpoint"]),
         idempotency_key=str(row["idempotency_key"]),
@@ -922,6 +933,15 @@ def stage6_idempotency_record_from_dict(row: dict[str, Any]) -> Stage6Idempotenc
         status=cast(Literal["PENDING", "RUNNING", "COMPLETED", "FAILED"], status),
         value=value,
     )
+    if isinstance(record.value, MultilingualWalkthroughResult):
+        validate_stage6_scope(
+            idempotency_scope=record.idempotency_scope,
+            tenant_id=record.value.tenant_id,
+            project_id=record.value.project_id,
+            actor_id=record.value.actor_id,
+            source_run_id=record.value.source_run_id,
+        )
+    return record
 
 
 def max_multilingual_run_suffix(records: dict[tuple[str, str, str], Stage6IdempotencyRecord]) -> int:
@@ -960,6 +980,9 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
     voice = cast(dict[str, Any], row["voice"])
     translation_provider = cast(dict[str, Any], row["translation_provider"])
     request_checksum = str(row["request_checksum"])
+    tenant_id = validate_checksum_component(str(row["tenant_id"]), field_name="tenant identifier")
+    project_id = validate_checksum_component(str(row["project_id"]), field_name="project identifier")
+    actor_id = validate_checksum_component(str(row["actor_id"]), field_name="actor identifier")
     source_language = normalize_language_tag(str(row["source_language"]))
     target_language = normalize_language_tag(str(row["target_language"]))
     status = str(row["status"])
@@ -1004,6 +1027,9 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         expected_extension=".json",
     )
     source_script_text = str(row["source_script_text"])
+    source_text_checksum = validate_checksum_component(str(row["source_text_checksum"]), field_name="source text checksum")
+    if source_text_checksum != checksum_text(source_script_text):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 source text checksum is inconsistent.")
     translated_script_text = str(row["translated_script_text"])
     subtitles_text = str(row["subtitles_text"])
     provider_translated_text = str(translation_provider["translated_text"])
@@ -1059,6 +1085,28 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         source_citation_indexes=source_citation_indexes,
         source_citation_count=source_citation_count,
     )
+    expected_request_checksum = build_multilingual_request_checksum(
+        source_script=source_script_text,
+        source_language=source_language,
+        target_language=target_language,
+        requested_voice_provider=requested_voice_provider,
+        glossary_terms=[str(term) for term in row.get("glossary_terms", [])],
+        tenant_id=tenant_id,
+        project_id=project_id,
+        actor_id=actor_id,
+        source_run_id=str(row["source_run_id"]),
+        trace_id=str(row["trace_id"]),
+        source_context_ref_count=source_context_ref_count,
+        source_citation_count=source_citation_count,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_indexes=source_citation_indexes,
+        source_claim_support_ids=source_claim_support_ids,
+        source_evaluation_id=source_evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=evaluation_status,
+    )
+    if request_checksum != expected_request_checksum:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 request checksum is inconsistent.")
     voice_manifest = json.loads(artifact_text(voice_artifact))
     if (
         normalize_language_tag(str(translation_provider["source_language"])) != source_language
@@ -1074,10 +1122,14 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
     expected_metadata_text = build_stage6_metadata_text(
         multilingual_run_id=str(row["multilingual_run_id"]),
         request_checksum=request_checksum,
+        tenant_id=tenant_id,
+        project_id=project_id,
+        actor_id=actor_id,
         source_run_id=str(row["source_run_id"]),
         trace_id=str(row["trace_id"]),
         source_language=source_language,
         target_language=target_language,
+        source_text_checksum=source_text_checksum,
         source_context_ref_count=source_context_ref_count,
         source_context_ref_ids=source_context_ref_ids,
         source_citation_count=source_citation_count,
@@ -1114,11 +1166,15 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
     return MultilingualWalkthroughResult(
         multilingual_run_id=str(row["multilingual_run_id"]),
         request_checksum=request_checksum,
+        tenant_id=tenant_id,
+        project_id=project_id,
+        actor_id=actor_id,
         source_run_id=str(row["source_run_id"]),
         source_language=source_language,
         target_language=target_language,
         status=status,
         source_script_text=source_script_text,
+        source_text_checksum=source_text_checksum,
         translated_script_text=translated_script_text,
         subtitles_text=subtitles_text,
         glossary_terms=[str(term) for term in row.get("glossary_terms", [])],
@@ -1194,6 +1250,9 @@ def build_multilingual_request_checksum(
     target_language: str,
     requested_voice_provider: str,
     glossary_terms: list[str],
+    tenant_id: str = "tenant",
+    project_id: str = "project",
+    actor_id: str = "user",
     source_run_id: str,
     trace_id: str,
     source_context_ref_count: int,
@@ -1209,8 +1268,10 @@ def build_multilingual_request_checksum(
         json.dumps(
             {
                 "evaluationStatus": evaluation_status,
+                "actorId": actor_id,
                 "glossaryTerms": glossary_terms,
                 "requestedVoiceProvider": requested_voice_provider,
+                "projectId": project_id,
                 "sourceCitationCount": source_citation_count,
                 "sourceCitationIndexes": list(source_citation_indexes) if source_citation_indexes is not None else None,
                 "sourceClaimSupportIds": list(source_claim_support_ids) if source_claim_support_ids is not None else None,
@@ -1221,6 +1282,8 @@ def build_multilingual_request_checksum(
                 "sourceLanguage": source_language,
                 "sourceRunId": source_run_id,
                 "sourceScript": source_script,
+                "sourceTextChecksum": checksum_text(source_script),
+                "tenantId": tenant_id,
                 "targetLanguage": target_language,
                 "traceId": trace_id,
             },
@@ -1365,6 +1428,33 @@ def validate_source_evaluation_checksum(
     if source_evaluation_checksum != expected:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Source evaluation checksum is invalid.")
     return expected
+
+
+def validate_stage6_scope(
+    *,
+    idempotency_scope: str,
+    tenant_id: str,
+    project_id: str,
+    actor_id: str,
+    source_run_id: str,
+) -> None:
+    scope_parts = idempotency_scope.split(":")
+    if len(scope_parts) != 4:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Stage 6 idempotency scope is invalid.")
+    scope_tenant_id, scope_actor_id, scope_project_id, scope_source_run_id = scope_parts
+    if scope_source_run_id == "run":
+        scope_source_run_id = source_run_id
+    if (
+        scope_tenant_id != tenant_id
+        or scope_actor_id != actor_id
+        or scope_project_id != project_id
+        or scope_source_run_id != source_run_id
+    ):
+        raise Stage6Error(
+            422,
+            "PROVIDER_OUTPUT_INVALID",
+            "Stage 6 idempotency scope does not match the source binding.",
+        )
 
 
 def validate_provider_id(provider: str, *, field_name: str) -> str:
@@ -1572,10 +1662,14 @@ def build_stage6_metadata_text(
     *,
     multilingual_run_id: str,
     request_checksum: str,
+    tenant_id: str,
+    project_id: str,
+    actor_id: str,
     source_run_id: str,
     trace_id: str,
     source_language: str,
     target_language: str,
+    source_text_checksum: str,
     source_context_ref_count: int,
     source_context_ref_ids: tuple[str, ...],
     source_citation_count: int,
@@ -1597,10 +1691,14 @@ def build_stage6_metadata_text(
         "schemaVersion": "stage6-metadata-v1",
         "multilingualRunId": multilingual_run_id,
         "requestChecksum": request_checksum,
+        "tenantId": tenant_id,
+        "projectId": project_id,
+        "actorId": actor_id,
         "sourceRunId": source_run_id,
         "traceId": trace_id,
         "sourceLanguage": source_language,
         "targetLanguage": target_language,
+        "sourceTextChecksum": source_text_checksum,
         "sourceContextRefCount": source_context_ref_count,
         "sourceContextRefIds": list(source_context_ref_ids),
         "sourceCitationCount": source_citation_count,
@@ -1639,11 +1737,15 @@ def build_stage6_metadata_text(
 def multilingual_to_api(result: MultilingualWalkthroughResult) -> dict[str, object]:
     return {
         "multilingualRunId": result.multilingual_run_id,
+        "tenantId": result.tenant_id,
+        "projectId": result.project_id,
+        "actorId": result.actor_id,
         "sourceRunId": result.source_run_id,
         "sourceLanguage": result.source_language,
         "targetLanguage": result.target_language,
         "status": result.status,
         "sourceScriptText": result.source_script_text,
+        "sourceTextChecksum": result.source_text_checksum,
         "translatedScriptText": result.translated_script_text,
         "subtitlesText": result.subtitles_text,
         "glossaryTerms": result.glossary_terms,
@@ -1668,8 +1770,21 @@ def multilingual_to_api(result: MultilingualWalkthroughResult) -> dict[str, obje
         },
         "trace": {
             "traceId": result.trace_id,
+            "tenantId": result.tenant_id,
+            "projectId": result.project_id,
+            "actorId": result.actor_id,
+            "sourceRunId": result.source_run_id,
+            "sourceLanguage": result.source_language,
+            "targetLanguage": result.target_language,
+            "sourceTextChecksum": result.source_text_checksum,
             "sourceContextRefCount": result.source_context_ref_count,
             "sourceCitationCount": result.source_citation_count,
+            "sourceContextRefIds": list(result.source_context_ref_ids),
+            "sourceCitationIndexes": list(result.source_citation_indexes),
+            "sourceClaimSupportIds": list(result.source_claim_support_ids),
+            "sourceEvaluationId": result.source_evaluation_id,
+            "sourceEvaluationChecksum": result.source_evaluation_checksum,
+            "evaluationStatus": result.evaluation_status,
         },
     }
 

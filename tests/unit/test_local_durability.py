@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+import base64
 import json
 from pathlib import Path
 import threading
@@ -1154,6 +1155,9 @@ def test_stage4_file_state_failed_operation_rollback_preserves_later_success(tmp
 
 def stage6_source_binding_kwargs(
     *,
+    tenant_id: str = "tenant",
+    project_id: str = "project",
+    actor_id: str = "user",
     source_run_id: str,
     trace_id: str,
     source_context_ref_ids: tuple[str, ...] = ("ctx_durable",),
@@ -1163,6 +1167,9 @@ def stage6_source_binding_kwargs(
     evaluation_status: str = "PASSED",
 ) -> dict[str, Any]:
     return {
+        "tenant_id": tenant_id,
+        "project_id": project_id,
+        "actor_id": actor_id,
         "source_run_id": source_run_id,
         "trace_id": trace_id,
         "source_context_ref_count": len(source_context_ref_ids),
@@ -1397,6 +1404,99 @@ def test_stage6_drops_artifact_with_mismatched_source_run(tmp_path: Path) -> Non
     assert restored.idempotency_records == {}
 
 
+@pytest.mark.parametrize(
+    ("field_name", "mutated_value"),
+    [
+        ("tenant_id", "tenant_other"),
+        ("project_id", "proj_other"),
+        ("actor_id", "user_other"),
+        ("source_run_id", "run_other"),
+        ("source_text_checksum", "sha256:tampered"),
+    ],
+)
+def test_stage6_file_state_drops_cross_boundary_or_checksum_mismatched_rows_on_restore(
+    tmp_path: Path,
+    field_name: str,
+    mutated_value: str,
+) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    scope = "tenant:user:proj_stage6:run_stage6"
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(
+            project_id="proj_stage6",
+            source_run_id="run_stage6",
+            trace_id="trace_stage6",
+        ),
+        idempotency_scope=scope,
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    for container in (payload["multilingualRuns"][0], payload["idempotencyRecords"][0]["value"]["result"]):
+        container[field_name] = mutated_value
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.multilingual_runs == {}
+    assert restored.request_dedupe_index == {}
+    assert restored.idempotency_records == {}
+
+
+def test_stage6_file_state_drops_subtitle_checksum_mismatch_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(
+            project_id="proj_stage6",
+            source_run_id="run_stage6",
+            trace_id="trace_stage6",
+        ),
+        idempotency_scope="tenant:user:proj_stage6:run_stage6",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    for container in (payload["multilingualRuns"][0], payload["idempotencyRecords"][0]["value"]["result"]):
+        container["artifacts"]["subtitles"]["checksum"] = "sha256:tampered"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.multilingual_runs == {}
+    assert restored.request_dedupe_index == {}
+    assert restored.idempotency_records == {}
+
+
+def test_stage6_file_state_drops_corrupted_metadata_artifact_on_restore(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage6.json"
+    service = create_stage6_service(state_path=state_path)
+    service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        **stage6_source_binding_kwargs(
+            project_id="proj_stage6",
+            source_run_id="run_stage6",
+            trace_id="trace_stage6",
+        ),
+        idempotency_scope="tenant:user:proj_stage6:run_stage6",
+        idempotency_key="translate",
+    )
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    for container in (payload["multilingualRuns"][0], payload["idempotencyRecords"][0]["value"]["result"]):
+        container["artifacts"]["metadata"]["content_base64"] = base64.b64encode(b"not-json").decode("ascii")
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = create_stage6_service(state_path=state_path)
+
+    assert restored.multilingual_runs == {}
+    assert restored.request_dedupe_index == {}
+    assert restored.idempotency_records == {}
+
+
 def test_stage6_file_state_drops_failed_idempotency_with_missing_error(tmp_path: Path) -> None:
     state_path = tmp_path / "stage6.json"
     request_checksum = stage6_module.build_multilingual_request_checksum(
@@ -1450,7 +1550,11 @@ def test_stage6_dedupes_identical_request_checksum_to_existing_durable_run(tmp_p
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         target_language="es",
         glossary_terms=["NarraTwin AI"],
-        **stage6_source_binding_kwargs(source_run_id="run_dedupe", trace_id="trace_dedupe"),
+        **stage6_source_binding_kwargs(
+            project_id="proj_001",
+            source_run_id="run_dedupe",
+            trace_id="trace_dedupe",
+        ),
         idempotency_scope="tenant:user:proj_001:run_dedupe",
         idempotency_key="translate-first",
     )
@@ -1460,7 +1564,11 @@ def test_stage6_dedupes_identical_request_checksum_to_existing_durable_run(tmp_p
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         target_language="es",
         glossary_terms=["NarraTwin AI"],
-        **stage6_source_binding_kwargs(source_run_id="run_dedupe", trace_id="trace_dedupe"),
+        **stage6_source_binding_kwargs(
+            project_id="proj_001",
+            source_run_id="run_dedupe",
+            trace_id="trace_dedupe",
+        ),
         idempotency_scope="tenant:user:proj_001:run_dedupe",
         idempotency_key="translate-second",
     )

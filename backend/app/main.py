@@ -545,8 +545,21 @@ class MultilingualTraceResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     trace_id: str = Field(alias="traceId")
+    tenant_id: str = Field(alias="tenantId")
+    project_id: str = Field(alias="projectId")
+    actor_id: str = Field(alias="actorId")
+    source_run_id: str = Field(alias="sourceRunId")
+    source_language: str = Field(alias="sourceLanguage")
+    target_language: str = Field(alias="targetLanguage")
+    source_text_checksum: str = Field(alias="sourceTextChecksum")
     source_context_ref_count: int = Field(alias="sourceContextRefCount")
     source_citation_count: int = Field(alias="sourceCitationCount")
+    source_context_ref_ids: list[str] = Field(alias="sourceContextRefIds")
+    source_citation_indexes: list[int] = Field(alias="sourceCitationIndexes")
+    source_claim_support_ids: list[str] = Field(alias="sourceClaimSupportIds")
+    source_evaluation_id: str = Field(alias="sourceEvaluationId")
+    source_evaluation_checksum: str = Field(alias="sourceEvaluationChecksum")
+    evaluation_status: Literal["PASSED", "FAILED", "UNKNOWN"] = Field(alias="evaluationStatus")
 
 
 class MultilingualWalkthroughResponse(BaseModel):
@@ -1331,6 +1344,9 @@ def generate_multilingual_walkthrough_run(
         source_language=source_run.requested_language,
         target_language=request.target_language,
         glossary_terms=request.glossary_terms,
+        tenant_id=principal.tenant_id,
+        project_id=project_id,
+        actor_id=principal.actor_id,
         requested_voice_provider=request.requested_voice_provider,
         source_run_id=source_run.run_id,
         trace_id=source_run.trace_id,
