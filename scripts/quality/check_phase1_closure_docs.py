@@ -257,6 +257,8 @@ ISSUE_39_CH07_ALLOWED_CHANGED_FILES = {
     "backend/app/stage6.py",
     "backend/app/storage/__init__.py",
     "backend/app/storage/file_state.py",
+    "docs/ADR/0009-context2-idempotency-lease-outbox-contract.md",
+    "docs/ADR/0020-ch07-stage6-durable-replay.md",
     "docs/API_CONTRACT.md",
     "docs/LOCAL_DEVELOPMENT.md",
     "docs/STATUS.md",
