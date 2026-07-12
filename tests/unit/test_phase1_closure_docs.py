@@ -273,6 +273,70 @@ def test_issue39_ch07_branch_checks_exact_stage4_and_stage6_dependency_commits(
     ]
 
 
+def test_issue39_ch09_branch_checks_exact_migration_storage_graph_dependency_commits(
+    monkeypatch: Any,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_git_ok(args: list[str]) -> bool:
+        calls.append(args)
+        return True
+
+    monkeypatch.setattr(
+        phase1,
+        "current_branch",
+        lambda: "phase-1-closure-39-ch-09-technical-rollback-compatibility",
+    )
+    monkeypatch.setattr(phase1, "git_ok", fake_git_ok)
+
+    failures: list[str] = []
+    phase1.check_branch(failures)
+
+    assert failures == []
+    assert calls == [
+        [
+            "merge-base",
+            "--is-ancestor",
+            "824a07c2bd546648b96d9ab555b63a8f2415898e",
+            "HEAD",
+        ],
+        [
+            "merge-base",
+            "--is-ancestor",
+            "c47471d0c8218d59509cba936fe216b86c9ac1e9",
+            "HEAD",
+        ],
+        [
+            "merge-base",
+            "--is-ancestor",
+            "6449786069dd38eeaa5a4a31f5ed73cbfc52d248",
+            "HEAD",
+        ],
+    ]
+
+
+def test_issue39_ch09_branch_allows_only_rollback_compatibility_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-09-technical-rollback-compatibility",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/migrations.py",
+            "docs/ADR/0022-ch09-technical-rollback-compatibility.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_storage_migrations.py",
+        ],
+    )
+
+    assert failures == []
+
+
 def test_stacked_child_push_resolve_base_uses_stacked_base_ref(monkeypatch: Any) -> None:
     calls: list[list[str]] = []
 

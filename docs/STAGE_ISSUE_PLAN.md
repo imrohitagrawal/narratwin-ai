@@ -752,6 +752,26 @@ restore flows, monitoring/alerts/watch, release posture, provenance/disclosure
 closure, provider/media/privacy controls beyond the render-state checkpoint,
 retention/untrusted-input closure, or unrelated governance/process files.
 
+`phase-1-closure-39-ch-09-*` is reserved for the `CH-09` technical rollback
+compatibility chunk for issue `#39` child issue `#123`. It may touch only:
+
+- `backend/app/storage/__init__.py`
+- `backend/app/storage/migrations.py`
+- `docs/ADR/0022-ch09-technical-rollback-compatibility.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_storage_migrations.py`
+
+`phase-1-closure-39-ch-09-*` must not touch Stage 4/6/7 runtime orchestration,
+lease or outbox runtime semantics, backup or restore flows, monitoring/alerts/watch,
+rollback communications, provider/media/privacy controls, retention/untrusted-input
+closure, or unrelated governance/process files.
+
 `phase-1-closure-39-ch-16-*` is reserved for the `CH-16` consent capture chunk
 for issue `#39` child issue `#111`. It may touch only:
 
