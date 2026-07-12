@@ -42,14 +42,16 @@ honestly support now for the existing file-backed Stage 4/6/7 state paths.
 
 ## Old-Behavior Proof
 
-- Old behavior failed the intended contract because the drill replayed only
-  Stage 4 project creation and walkthrough generation, so upload/approve/ingest
-  restore idempotency could regress without failing the drill.
-- Old behavior also emitted evidence paths from a temporary directory that was
-  deleted before the command returned, weakening reviewer validation.
-- Old behavior also skipped post-replay count verification, so duplicate
-  idempotency or artifact rows could slip through while the returned IDs still
-  matched.
+- The initial branch implementation failed the intended contract because the
+  drill replayed only Stage 4 project creation and walkthrough generation, so
+  upload/approve/ingest restore idempotency could regress without failing the
+  drill.
+- The initial branch implementation also emitted evidence paths from a
+  temporary directory that was deleted before the command returned, weakening
+  reviewer validation.
+- The initial branch implementation also skipped post-replay count
+  verification, so duplicate idempotency or artifact rows could slip through
+  while the returned IDs still matched.
 
 ## Review Prompt Set
 
@@ -62,12 +64,12 @@ honestly support now for the existing file-backed Stage 4/6/7 state paths.
 
 ## Independent Review Disposition
 
-- Independent adversarial sub-agent review found that the original drill
-  over-claimed Stage 4 replay coverage because upload/approve/ingest replay was
-  not exercised.
-- Independent code-review-skill sub-agent review found that the original JSON
-  summary pointed at deleted temporary paths and lacked post-replay count
-  verification.
+- Independent adversarial sub-agent review found that the initial branch
+  implementation over-claimed Stage 4 replay coverage because
+  upload/approve/ingest replay was not exercised.
+- Independent code-review-skill sub-agent review found that the initial branch
+  implementation pointed the JSON summary at deleted temporary paths and lacked
+  post-replay count verification.
 - This branch resolves those blocker classes by replaying the full Stage 4
   create/upload/approve/ingest/generate path, asserting post-replay count
   stability, and persisting inspectable evidence paths.

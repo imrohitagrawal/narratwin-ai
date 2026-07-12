@@ -563,6 +563,38 @@ def test_issue39_closure_plan_rejects_invalid_matrix_status(monkeypatch: Any) ->
     assert "Issue #39 matrix row DUR-ACID-001 status must be Open or Closed; got Done." in failures
 
 
+def test_issue125_local_restore_contract_accepts_current_docs() -> None:
+    failures: list[str] = []
+    phase1.check_issue125_local_restore_contract(failures)
+
+    assert failures == []
+
+
+def test_issue125_local_restore_contract_rejects_missing_local_only_marker(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md": replace_text(
+                    plan_text,
+                    "Issue `#125` is an executable local-only evidence slice for the optional\n  file-backed Stage 4/6/7 state already present in the repo.",
+                    "Issue `#125` is an evidence slice for Stage 4/6/7 state already present in the repo.",
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue125_local_restore_contract(failures)
+
+    assert (
+        "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md missing issue #125 restore markers: "
+        "Issue `#125` is an executable local-only evidence slice"
+    ) in failures
+
+
 def test_issue39_closure_plan_rejects_closed_row_without_closure_record(monkeypatch: Any) -> None:
     plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
     failures = run_issue39_closure_plan_check(

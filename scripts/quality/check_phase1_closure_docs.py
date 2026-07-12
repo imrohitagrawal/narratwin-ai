@@ -1371,6 +1371,28 @@ def check_issue39_closure_plan(failures: list[str]) -> None:
         check_issue39_closed_row_records(failures, read(rel), closed_ids)
 
 
+def check_issue125_local_restore_contract(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+    text = read(rel)
+    normalized_text = re.sub(r"\s+", " ", text)
+    required_markers = (
+        "### Issue `#125` local restore-integrity drill status and evidence mapping",
+        "Matrix status remains exactly `Open` for `DUR-RESTORE-001`.",
+        "Issue `#125` is an executable local-only evidence slice",
+        "does not satisfy the production `CH-14` closure bar",
+        "must not be represented as production backup/restore evidence",
+        "`CTX4-LOCAL-RESTORE-EVID-001`",
+        "persists inspectable evidence paths",
+        "Production backup platform evidence, restore metrics, RTO/RPO proof, retention/re-delete behavior, and operational signoff remain open.",
+    )
+    missing_markers = [marker for marker in required_markers if marker not in normalized_text]
+    if missing_markers:
+        failures.append(
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md missing issue #125 restore markers: "
+            + ", ".join(missing_markers)
+        )
+
+
 def check_issue39_closed_row_records(failures: list[str], text: str, closed_ids: set[str]) -> None:
     headers, rows = parse_table_lines(section(text, "Row Closure Records"))
     normalized_headers = [normalize_header(header) for header in headers]
@@ -2469,6 +2491,7 @@ def main() -> int:
         check_demo_docs(failures)
         check_release_docs(failures)
         check_issue39_closure_plan(failures)
+        check_issue125_local_restore_contract(failures)
         check_issue39_execution_strategy(failures)
         check_issue39_ch11_slo_contract(failures)
         check_process_docs(failures)
