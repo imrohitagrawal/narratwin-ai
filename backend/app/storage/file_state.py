@@ -10,6 +10,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from .ops_metrics import timed_restore_load
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -33,15 +35,19 @@ def resolve_state_file(service_name: str) -> Path | None:
 def load_state(path: Path | None) -> dict[str, Any] | None:
     if path is None or not path.exists():
         return None
+    timer = timed_restore_load(surface=f"local-state:{path.stem}")
     try:
         with path.open("r", encoding="utf-8") as handle:
             payload = json.load(handle)
     except (OSError, json.JSONDecodeError) as exc:
         LOGGER.warning("Ignoring unreadable local state snapshot at %s: %s", path, exc)
+        timer.observe(result="unreadable")
         return None
     if not isinstance(payload, dict):
         LOGGER.warning("Ignoring local state snapshot at %s because it is not a JSON object.", path)
+        timer.observe(result="invalid-shape")
         return None
+    timer.observe(result="loaded")
     return payload
 
 

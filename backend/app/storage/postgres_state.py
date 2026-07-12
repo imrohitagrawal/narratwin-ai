@@ -12,6 +12,8 @@ from datetime import UTC, datetime
 from threading import RLock
 from typing import Any, Literal
 
+from .ops_metrics import counter_metric, gauge_metric, histogram_metric
+
 RecordState = Literal["OPEN", "TERMINAL", "ERROR"]
 CommitOutcome = Literal["applied", "replayed"]
 EntityKey = tuple[str, str, str, str, str]
@@ -308,6 +310,7 @@ class AcidCasKernel:
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state == "TERMINAL_SUCCESS":
                 if existing.response_payload != response_payload:
+                    counter_metric("idempotency_terminal_replay_fail_total", surface="operation-success-replay")
                     raise AcidCasConflictError(
                         f"Operation {operation_id} terminal success replay payload does not match the durable response."
                     )
@@ -382,6 +385,7 @@ class AcidCasKernel:
             self._assert_operation_payload_hash(existing=existing, payload_hash=payload_hash)
             if existing.state == "TERMINAL_ERROR":
                 if existing.error_payload != error_payload:
+                    counter_metric("idempotency_terminal_replay_fail_total", surface="operation-error-replay")
                     raise AcidCasConflictError(
                         f"Operation {operation_id} terminal error replay payload does not match the durable error."
                     )
@@ -721,6 +725,8 @@ class AcidCasKernel:
                 self._outbox[outbox_key_from_record(event)] = event
             self._transactions[transaction_id] = stored_result
             self._transaction_fingerprints[transaction_id] = fingerprint
+            self._refresh_run_backlog_metrics_locked()
+            self._refresh_outbox_metrics_locked(now=commit_time)
             return clone_result(stored_result)
 
     def get_outbox_event(
@@ -782,6 +788,8 @@ class AcidCasKernel:
                 updated_at=_isoformat(effective_now),
             )
             self._outbox[key] = updated
+            self._refresh_outbox_metrics_locked(now=effective_now)
+            self._observe_outbox_age(event=updated, phase="acquire", now=effective_now)
             return clone_outbox_record(updated)
 
     def retry_outbox_event(
@@ -817,6 +825,9 @@ class AcidCasKernel:
                 updated_at=_isoformat(effective_now),
             )
             self._outbox[key] = updated
+            counter_metric("outbox_redelivery_total", event_type=updated.event_type)
+            self._refresh_outbox_metrics_locked(now=effective_now)
+            self._observe_outbox_age(event=updated, phase="retry", now=effective_now)
             return clone_outbox_record(updated)
 
     def complete_outbox_event(
@@ -849,6 +860,8 @@ class AcidCasKernel:
                 updated_at=_isoformat(effective_now),
             )
             self._outbox[key] = updated
+            self._refresh_outbox_metrics_locked(now=effective_now)
+            self._observe_outbox_age(event=updated, phase="complete", now=effective_now)
             return clone_outbox_record(updated)
 
     def record_outbox_consumer_delivery(
@@ -912,6 +925,8 @@ class AcidCasKernel:
         with self._lock:
             effective_now = self._trusted_now()
             current = self._leases.get(resource_id)
+            if current is not None and _lease_is_expired(current, effective_now):
+                counter_metric("lease_reacquire_total", resource_type=_resource_type(resource_id))
             if current is not None and not _lease_is_expired(current, effective_now):
                 raise AcidCasConflictError(
                     f"Lease {resource_id} is already held by {current.lease_id} through {current.expires_at}."
@@ -930,6 +945,7 @@ class AcidCasKernel:
             )
             self._leases[resource_id] = lease
             self._lease_epochs[resource_id] = lease_epoch
+            self._refresh_lease_metrics_locked(now=effective_now)
             return clone_lease(lease)
 
     def heartbeat_lease(
@@ -946,14 +962,17 @@ class AcidCasKernel:
             effective_now = self._trusted_now()
             current = self._leases.get(resource_id)
             if current is None or _lease_is_expired(current, effective_now):
+                self._record_lease_stale_rejection(current=current, now=effective_now, surface="lease-heartbeat")
                 raise AcidCasStaleWriteError(
                     f"Lease {resource_id} is expired and owner {lease_id} must reacquire before heartbeating."
                 )
             if current.lease_epoch != lease_epoch:
+                counter_metric("stale_writer_reject_total", surface="lease-heartbeat")
                 raise AcidCasStaleWriteError(
                     f"Lease {resource_id} expected lease epoch {lease_epoch} but durable lease epoch is {current.lease_epoch}."
                 )
             if current.lease_id != lease_id:
+                counter_metric("stale_writer_reject_total", surface="lease-heartbeat")
                 raise AcidCasStaleWriteError(
                     f"Lease {resource_id} expected owner {lease_id} but durable owner is {current.lease_id}."
                 )
@@ -968,6 +987,7 @@ class AcidCasKernel:
                 expires_at=_isoformat(effective_now + timedelta(milliseconds=current.lease_ttl_ms)),
             )
             self._leases[resource_id] = renewed
+            self._refresh_lease_metrics_locked(now=effective_now)
             return clone_lease(renewed)
 
     def release_lease(
@@ -984,18 +1004,22 @@ class AcidCasKernel:
             effective_now = self._trusted_now()
             current = self._leases.get(resource_id)
             if current is None or _lease_is_expired(current, effective_now):
+                self._record_lease_stale_rejection(current=current, now=effective_now, surface="lease-release")
                 raise AcidCasStaleWriteError(
                     f"Lease {resource_id} is expired and cannot be released by owner {lease_id}."
                 )
             if current.lease_epoch != lease_epoch:
+                counter_metric("stale_writer_reject_total", surface="lease-release")
                 raise AcidCasStaleWriteError(
                     f"Lease {resource_id} expected lease epoch {lease_epoch} but durable lease epoch is {current.lease_epoch}."
                 )
             if current.lease_id != lease_id:
+                counter_metric("stale_writer_reject_total", surface="lease-release")
                 raise AcidCasStaleWriteError(
                     f"Lease {resource_id} expected owner {lease_id} but durable owner is {current.lease_id}."
                 )
             del self._leases[resource_id]
+            self._refresh_lease_metrics_locked(now=effective_now)
 
     def get_lease(self, *, resource_id: str, now: datetime | None = None) -> LeaseRecord:
         validate_canonical_resource_id(resource_id)
@@ -1243,6 +1267,7 @@ class AcidCasKernel:
 
     def _assert_operation_payload_hash(self, *, existing: OperationRecord, payload_hash: str) -> None:
         if existing.payload_hash != payload_hash:
+            counter_metric("idempotency_contract_drift_total", surface="operation-payload-hash")
             raise AcidCasConflictError(
                 f"Operation {existing.operation_id} payload hash does not match the durable operation."
             )
@@ -1255,6 +1280,7 @@ class AcidCasKernel:
         lease_epoch: int,
     ) -> None:
         if existing.lease_owner_id != lease_owner_id or existing.lease_epoch != lease_epoch:
+            counter_metric("stale_writer_reject_total", surface="operation-owner")
             raise AcidCasStaleOwnerError(
                 "Operation "
                 f"{existing.operation_id} stale owner: expected "
@@ -1275,15 +1301,18 @@ class AcidCasKernel:
             return
         current = self._leases.get(scope.resource_id)
         if current is None or _lease_is_expired(current, now):
+            self._record_lease_stale_rejection(current=current, now=now, surface="operation-active-lease")
             raise AcidCasStaleOwnerError(
                 f"Operation {operation_id} lease {scope.resource_id} is expired."
             )
         if current.lease_epoch != lease_epoch:
+            counter_metric("stale_writer_reject_total", surface="operation-active-lease")
             raise AcidCasStaleOwnerError(
                 f"Operation {operation_id} expected lease epoch {lease_epoch} "
                 f"but durable lease epoch is {current.lease_epoch}."
             )
         if current.lease_id != lease_owner_id:
+            counter_metric("stale_writer_reject_total", surface="operation-active-lease")
             raise AcidCasStaleOwnerError(
                 f"Operation {operation_id} expected lease owner {lease_owner_id} "
                 f"but durable owner is {current.lease_id}."
@@ -1297,6 +1326,7 @@ class AcidCasKernel:
         lease_epoch: int,
     ) -> None:
         if lease_owner_id != existing.lease_owner_id:
+            counter_metric("stale_writer_reject_total", surface="operation-recovery")
             raise AcidCasStaleOwnerError(
                 "Operation "
                 f"{existing.operation_id} recovery owner must remain {existing.lease_owner_id} until "
@@ -1307,6 +1337,7 @@ class AcidCasKernel:
                 f"Operation {existing.operation_id} recovery requires an explicit epoch advance."
             )
         if lease_epoch <= existing.lease_epoch:
+            counter_metric("stale_writer_reject_total", surface="operation-recovery")
             raise AcidCasStaleOwnerError(
                 "Operation "
                 f"{existing.operation_id} stale recovery epoch: durable epoch is "
@@ -1409,19 +1440,23 @@ class AcidCasKernel:
         validate_lease_id(write.lease_id)
 
         if write.lease_resource_id != expected_resource_id:
+            counter_metric("stale_writer_reject_total", surface="lease-guard")
             raise AcidCasStaleWriteError(
                 f"{write.entity_type}:{write.entity_id} lease resource {write.lease_resource_id} does not match scoped row identity {expected_resource_id}."
             )
 
         if current is None or _lease_is_expired(current, now):
+            self._record_lease_stale_rejection(current=current, now=now, surface="lease-guard")
             raise AcidCasStaleWriteError(
                 f"{write.entity_type}:{write.entity_id} lease {write.lease_resource_id} is expired."
             )
         if current.lease_epoch != write.lease_epoch:
+            counter_metric("stale_writer_reject_total", surface="lease-guard")
             raise AcidCasStaleWriteError(
                 f"{write.entity_type}:{write.entity_id} expected lease epoch {write.lease_epoch} but durable lease epoch is {current.lease_epoch}."
             )
         if current.lease_id != write.lease_id:
+            counter_metric("stale_writer_reject_total", surface="lease-guard")
             raise AcidCasStaleWriteError(
                 f"{write.entity_type}:{write.entity_id} expected lease owner {write.lease_id} but durable owner is {current.lease_id}."
             )
@@ -1430,6 +1465,60 @@ class AcidCasKernel:
         if self._clock is None:
             return datetime.now(UTC)
         return _coerce_now(self._clock())
+
+    def _observe_outbox_age(self, *, event: OutboxRecord, phase: str, now: datetime) -> None:
+        created_at = datetime.fromisoformat(event.created_at)
+        histogram_metric(
+            "outbox_age_seconds",
+            max(0.0, (now - created_at).total_seconds()),
+            event_type=event.event_type,
+            phase=phase,
+        )
+
+    def _record_lease_stale_rejection(
+        self,
+        *,
+        current: LeaseRecord | None,
+        now: datetime,
+        surface: str,
+    ) -> None:
+        counter_metric("stale_writer_reject_total", surface=surface)
+        if current is None:
+            return
+        heartbeat_at = datetime.fromisoformat(current.heartbeat_at)
+        histogram_metric(
+            "lease_staleness_seconds",
+            max(0.0, (now - heartbeat_at).total_seconds()),
+            event="stale-rejection",
+        )
+
+    def _refresh_run_backlog_metrics_locked(self) -> None:
+        counts: dict[str, int] = {"OPEN": 0, "TERMINAL": 0, "ERROR": 0}
+        for record in self._records.values():
+            if record.entity_type == "run":
+                counts[record.state] = counts.get(record.state, 0) + 1
+        for state, value in counts.items():
+            gauge_metric("run_backlog", value, state=state.lower())
+
+    def _refresh_outbox_metrics_locked(self, *, now: datetime) -> None:
+        del now
+        counts: dict[str, int] = {"PENDING": 0, "DELIVERING": 0}
+        for event in self._outbox.values():
+            if event.state in counts:
+                counts[event.state] += 1
+        for state, value in counts.items():
+            gauge_metric("outbox_backlog_count", value, state=state.lower())
+
+    def _refresh_lease_metrics_locked(self, *, now: datetime) -> None:
+        active_count = 0
+        stale_count = 0
+        for lease in self._leases.values():
+            if _lease_is_expired(lease, now):
+                stale_count += 1
+            else:
+                active_count += 1
+        gauge_metric("lease_state_count", active_count, state="active")
+        gauge_metric("lease_state_count", stale_count, state="stale")
 
 
 def replay_result(result: TransactionCommitResult) -> TransactionCommitResult:
@@ -1522,6 +1611,7 @@ def clone_operation_result(result: OperationCommitResult) -> OperationCommitResu
 
 
 def replay_operation_result(record: OperationRecord) -> OperationCommitResult:
+    counter_metric("idempotency_replay_total", state=record.state.lower())
     return OperationCommitResult(
         operation_id=record.operation_id,
         request_id=record.request_id,
@@ -1860,6 +1950,10 @@ def _isoformat(value: datetime) -> str:
 
 def _lease_is_expired(lease: LeaseRecord, now: datetime) -> bool:
     return now >= datetime.fromisoformat(lease.expires_at).astimezone(UTC)
+
+
+def _resource_type(resource_id: str) -> str:
+    return resource_id.split(":", 1)[0] if ":" in resource_id else "resource"
 
 
 def _outbox_lock_is_expired(record: OutboxRecord, now: datetime) -> bool:

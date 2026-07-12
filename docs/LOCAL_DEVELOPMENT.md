@@ -166,6 +166,13 @@ uv run pytest -p no:cacheprovider tests/unit/test_storage_migrations.py
 uv run pytest -p no:cacheprovider tests/unit/test_phase1_closure_docs.py -k ch09
 ```
 
+Focused CH-10 production metrics contract checks:
+
+```bash
+uv run pytest -p no:cacheprovider tests/unit/test_ops_metrics.py
+uv run pytest -p no:cacheprovider tests/unit/test_phase1_closure_docs.py -k ch10
+```
+
 Focused CH-06 committed-outbox checks:
 
 ```bash

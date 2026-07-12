@@ -269,6 +269,18 @@ row-level closure evidence are completed.
 | `OPS-ALERT-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (Alert severity matrix and routing) | `CTX5-ALERT-EVID-001`: planned severity matrix, ownership routing, ack SLA, and closure evidence requirements tied to watch log state. |
 | `OPS-WATCH-001` | `docs/ADR/0012-context5-metrics-slos-watch.md` (First-hour watch protocol) | `CTX5-WATCH-EVID-001`: planned 120m/180m checkpoint workflow, handoff path, unresolved-condition escalation, and closure evidence sequence. |
 
+### Issue `#128` CH-10 production metrics contract status and evidence mapping
+
+- Matrix status remains exactly `Open` for `OPS-METRICS-001`.
+- Issue `#128` is the narrow executable `CH-10` slice for metric names and
+  emission points only. It does not close `OPS-METRICS-001`, does not satisfy
+  `OPS-SLO-001`, `OPS-ALERT-001`, or `OPS-WATCH-001`, and does not create
+  production restore-drill or rollback-communications evidence.
+
+| Matrix ID | Issue #128 evidence artifact | Narrow executable evidence row |
+|---|---|---|
+| `OPS-METRICS-001` | `docs/ADR/0024-ch10-production-metrics-contract.md`, `backend/app/storage/ops_metrics.py`, `backend/app/storage/postgres_state.py`, `backend/app/storage/file_state.py`, `backend/app/storage/migrations.py`, and `tests/unit/test_ops_metrics.py` | `CTX5-METRICS-EVID-001`: focused tests prove named emission points for durable run backlog, lease state/staleness/reacquire, idempotency conflict/replay/stale-owner rejection, outbox backlog/age/redelivery, local restore-adjacent state-load attempts/duration, and rollback block counters. Queue-lag worker metrics, backup-lag metrics, SLO/error-budget thresholds, dashboard queries, alert routing, watch execution, successful restore drill timings, and rollback communications remain deferred to `CH-11`, `CH-12`, `CH-13`, `CH-14`, and `CH-15`. |
+
 ## Issue #70 (Context 6) Status and Evidence Mapping
 
 ### Matrix planning annotations for rollback/media/privacy/release controls

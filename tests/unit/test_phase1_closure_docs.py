@@ -337,6 +337,47 @@ def test_issue39_ch09_branch_allows_only_rollback_compatibility_files(monkeypatc
     assert failures == []
 
 
+def test_issue39_ch10_branch_allows_only_metrics_contract_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-10-production-metrics-contract",
+        files=[
+            "backend/app/storage/__init__.py",
+            "backend/app/storage/file_state.py",
+            "backend/app/storage/migrations.py",
+            "backend/app/storage/ops_metrics.py",
+            "backend/app/storage/postgres_state.py",
+            "docs/ADR/0024-ch10-production-metrics-contract.md",
+            "docs/LOCAL_DEVELOPMENT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_ops_metrics.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch10_branch_rejects_alert_and_stage_runtime_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-10-production-metrics-contract",
+        files=[
+            "backend/app/stage4.py",
+            "docs/ADR/0012-context5-metrics-slos-watch.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-10-production-metrics-contract may not change backend/app/stage4.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-10-production-metrics-contract may not change docs/ADR/0012-context5-metrics-slos-watch.md.",
+    ]
+
+
 def test_stacked_child_push_resolve_base_uses_stacked_base_ref(monkeypatch: Any) -> None:
     calls: list[list[str]] = []
 
