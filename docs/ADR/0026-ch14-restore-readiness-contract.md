@@ -39,8 +39,9 @@ documentation-and-guardrail contract that:
 
 ## Decision
 
-Issue `#126` is closed only by establishing a repo-checked restore-readiness
-contract, not by closing matrix row `DUR-RESTORE-001`.
+This slice establishes a repo-checked restore-readiness contract for issue
+`#126`. It does not close issue `#126` unless the live issue scope is formally
+updated to accept contract-only readiness evidence.
 
 The contract is represented by:
 

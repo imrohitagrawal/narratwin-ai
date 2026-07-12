@@ -1423,7 +1423,8 @@ def check_issue126_restore_readiness_contract(failures: list[str]) -> None:
             "Successful production restore execution, actual RTO/RPO proof, restore metrics export, retention/re-delete evidence, and operational signoff remain open.",
         ),
         "docs/ADR/0026-ch14-restore-readiness-contract.md": (
-            "Issue `#126` is closed only by establishing a repo-checked restore-readiness contract, not by closing matrix row `DUR-RESTORE-001`.",
+            "This slice establishes a repo-checked restore-readiness contract for issue `#126`.",
+            "It does not close issue `#126` unless the live issue scope is formally updated to accept contract-only readiness evidence.",
             "if evidence is limited to local file-backed replay, local restore-adjacent load metrics, or advisory SLO text, the row stays `Open` and issue `#39` stays open.",
             "The repo cannot claim a successful production restore drill, production restore readiness, or closure of `DUR-RESTORE-001`.",
             "Issue `#39` remains open.",
@@ -1454,6 +1455,44 @@ def check_issue126_restore_readiness_contract(failures: list[str]) -> None:
         missing_markers = [marker for marker in required_markers if marker not in normalized_text]
         if missing_markers:
             failures.append(f"{rel} missing issue #126 restore markers: " + ", ".join(missing_markers))
+
+    forbidden_overclaims_by_file = {
+        "docs/ADR/0026-ch14-restore-readiness-contract.md": (
+            "successful production restore drill complete",
+            "production restore readiness achieved",
+            "dur-restore-001 closed",
+            "issue `#126` is closed",
+            "issue #126 is closed",
+            "issue `#39` is closed",
+            "issue #39 is closed",
+        ),
+        "docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md": (
+            "successful production restore drill complete",
+            "production restore readiness achieved",
+            "dur-restore-001 closed",
+            "issue `#39` is closed",
+            "issue #39 is closed",
+        ),
+        "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md": (
+            "successful production restore drill complete",
+            "production restore readiness achieved",
+            "dur-restore-001 closed",
+            "issue `#39` is closed",
+            "issue #39 is closed",
+        ),
+        "docs/STATUS.md": (
+            "successful production restore drill complete",
+            "production restore readiness achieved",
+            "dur-restore-001 closed",
+            "issue `#39` is closed",
+            "issue #39 is closed",
+        ),
+    }
+    for rel, forbidden_markers in forbidden_overclaims_by_file.items():
+        normalized_text = re.sub(r"\s+", " ", read(rel)).lower()
+        present_markers = [marker for marker in forbidden_markers if marker in normalized_text]
+        if present_markers:
+            failures.append(f"{rel} contains issue #126 restore overclaim markers: " + ", ".join(present_markers))
 
 
 def check_issue39_closed_row_records(failures: list[str], text: str, closed_ids: set[str]) -> None:

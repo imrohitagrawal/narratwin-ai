@@ -736,6 +736,53 @@ def test_issue126_restore_readiness_contract_rejects_missing_adr_open_marker(mon
     ) in failures
 
 
+def test_issue126_restore_readiness_contract_rejects_adr_issue126_closure_overclaim(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0026-ch14-restore-readiness-contract.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/ADR/0026-ch14-restore-readiness-contract.md": (
+                    adr_text + "\n\nIssue `#126` is closed by this contract-only readiness slice.\n"
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert (
+        "docs/ADR/0026-ch14-restore-readiness-contract.md contains issue #126 restore overclaim markers: "
+        "issue `#126` is closed"
+    ) in failures
+
+
+def test_issue126_restore_readiness_contract_rejects_production_restore_overclaim(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0026-ch14-restore-readiness-contract.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/ADR/0026-ch14-restore-readiness-contract.md": (
+                    adr_text
+                    + "\n\nSuccessful production restore drill complete and production restore readiness achieved for DUR-RESTORE-001.\n"
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert (
+        "docs/ADR/0026-ch14-restore-readiness-contract.md contains issue #126 restore overclaim markers: "
+        "successful production restore drill complete, production restore readiness achieved"
+    ) in failures
+
+
 def test_issue126_restore_readiness_contract_rejects_missing_stage_issue_plan_marker(monkeypatch: Any) -> None:
     plan_text = phase1.read("docs/STAGE_ISSUE_PLAN.md")
     monkeypatch.setattr(
