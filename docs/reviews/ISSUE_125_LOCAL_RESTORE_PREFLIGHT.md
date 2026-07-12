@@ -60,6 +60,18 @@ honestly support now for the existing file-backed Stage 4/6/7 state paths.
 3. Evidence prompt: prove or disprove that the emitted JSON evidence remains
    inspectable after the command exits.
 
+## Independent Review Disposition
+
+- Independent adversarial sub-agent review found that the original drill
+  over-claimed Stage 4 replay coverage because upload/approve/ingest replay was
+  not exercised.
+- Independent code-review-skill sub-agent review found that the original JSON
+  summary pointed at deleted temporary paths and lacked post-replay count
+  verification.
+- This branch resolves those blocker classes by replaying the full Stage 4
+  create/upload/approve/ingest/generate path, asserting post-replay count
+  stability, and persisting inspectable evidence paths.
+
 ## Stop Rule
 
 If review finds a new blocker class where the executable drill and the written
