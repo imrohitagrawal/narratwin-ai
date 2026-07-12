@@ -1344,6 +1344,30 @@ def test_issue39_ch07_branch_allows_stage6_durable_replay_files(monkeypatch: Any
     assert failures == []
 
 
+def test_issue39_ch08_branch_allows_stage7_render_artifact_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-08-stage7-render-artifact-state",
+        files=[
+            "backend/app/main.py",
+            "backend/app/stage7.py",
+            "backend/app/storage/file_state.py",
+            "docs/API_CONTRACT.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/api/test_stage7_avatar_api.py",
+            "tests/unit/test_local_durability.py",
+            "tests/unit/test_phase1_closure_docs.py",
+            "tests/unit/test_stage7_avatar.py",
+        ],
+    )
+
+    assert failures == []
+
+
 def test_issue39_ch16_branch_allows_consent_capture_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
@@ -1384,6 +1408,22 @@ def test_issue39_ch16_branch_rejects_adjacent_runtime_or_scope_files(monkeypatch
     ]
 
 
+def test_issue39_ch08_branch_rejects_adjacent_runtime_or_scope_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-08-stage7-render-artifact-state",
+        files=[
+            "backend/app/stage6.py",
+            "docs/ADR/0019-ch16-consent-capture.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change backend/app/stage6.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state may not change docs/ADR/0019-ch16-consent-capture.md.",
+    ]
+
+
 def test_issue39_ch07_branch_rejects_adjacent_chunk_or_stage7_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
@@ -1399,6 +1439,20 @@ def test_issue39_ch07_branch_rejects_adjacent_chunk_or_stage7_files(monkeypatch:
         "Phase 1 Closure branch phase-1-closure-39-ch-07-stage6-durable-replay may not change backend/app/stage7.py.",
         "Phase 1 Closure branch phase-1-closure-39-ch-07-stage6-durable-replay may not change backend/app/storage/postgres_state.py.",
         "Phase 1 Closure branch phase-1-closure-39-ch-07-stage6-durable-replay may not change docs/ADR/0017-ch06-committed-outbox.md.",
+    ]
+
+
+def test_issue39_ch08_branch_requires_ch03_ch04_and_ch16_dependency_commits(monkeypatch: Any) -> None:
+    failures = run_branch_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-08-stage7-render-artifact-state",
+        ancestor_ok=False,
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-08-stage7-render-artifact-state must contain dependency "
+        "commits: 6449786069dd38eeaa5a4a31f5ed73cbfc52d248, 947a96891fd84085b6fce433e604a8e249b25c23, "
+        "1f3d66d9b1b545e5d5c41e88a83cc731a2a8b31a.",
     ]
 
 

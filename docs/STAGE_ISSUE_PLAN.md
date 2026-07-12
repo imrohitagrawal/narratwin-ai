@@ -724,6 +724,30 @@ backup or restore flows, monitoring/alerts/watch, release posture,
 provider/media/privacy controls, retention/untrusted-input closure, or unrelated
 governance/process files.
 
+`phase-1-closure-39-ch-08-*` is reserved for the `CH-08` Stage 7 render artifact
+state chunk for issue `#39` child issue `#115`. It may touch only:
+
+- `backend/app/main.py`
+- `backend/app/stage7.py`
+- `backend/app/storage/file_state.py`
+- `docs/API_CONTRACT.md`
+- `docs/LOCAL_DEVELOPMENT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/api/test_stage7_avatar_api.py`
+- `tests/unit/test_local_durability.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_stage7_avatar.py`
+
+`phase-1-closure-39-ch-08-*` must not touch Stage 4 durable graph storage
+contracts, Stage 6 durable replay, lease or outbox runtime semantics, backup or
+restore flows, monitoring/alerts/watch, release posture, provenance/disclosure
+closure, provider/media/privacy controls beyond the render-state checkpoint,
+retention/untrusted-input closure, or unrelated governance/process files.
+
 `phase-1-closure-39-ch-16-*` is reserved for the `CH-16` consent capture chunk
 for issue `#39` child issue `#111`. It may touch only:
 

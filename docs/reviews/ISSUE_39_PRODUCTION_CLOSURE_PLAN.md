@@ -333,6 +333,23 @@ row-level closure evidence are completed.
 
 - `CTX6-GOV-SCOPE-EVID-001`: governance handoff matrix linking each remaining blocker to follow-on issue/PR ownership and explicit scope-delimitation checks.
 
+## CH-08 Pre-Implementation Invariant Matrix
+
+This section is the repo-tracked pre-implementation artifact for child issue
+`#115` / chunk `CH-08`. It does not close `DUR-STAGE7-001`. It defines the
+required invariant-to-test mapping before Stage 7 render/artifact-state work is
+treated as evidence for the broader row. The statuses below track branch-level
+implementation evidence only. Issue `#39` and matrix row `DUR-STAGE7-001`
+remain open until PR review, merge, and the later provenance/disclosure rows
+provide the missing closure evidence.
+
+| ID | Area | Invariant | Old failure / false-pass risk | Positive test | Negative / mutation test | Gate / source / human-only evidence | Owner | Status |
+|---|---|---|---|---|---|---|---|---|
+| `S8-RENDER-001` | Stage 7 render state binding | Render records preserve source-run, trace, evaluation, consent, and render-status history, and restore replays only terminal render rows that still match their request checksum. | Restored render state can look complete while pointing at the wrong source run or replaying stale in-flight work. | `test_stage7_file_state_replays_completed_avatar_idempotency` | `test_stage7_file_state_drops_tampered_nonlocal_provider_result`; `test_stage7_file_state_drops_artifact_metadata_for_missing_render` | `uv run pytest -p no:cacheprovider tests/unit/test_local_durability.py tests/unit/test_stage7_avatar.py tests/api/test_stage7_avatar_api.py`; `docs/ENGINEERING_PROCESS_RCA.md`; `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md` | Stage 7 + architecture/state | Implemented on branch |
+| `S8-ARTIFACT-001` | Derived artifact consistency | Demo export, render manifest, and placeholder artifact metadata remain checksum-bound and reject mismatch, missing-render, or non-local provider drift. | A tampered artifact row can survive restore if only one file shape is checked. | `test_stage7_file_state_drops_artifact_metadata_that_mismatches_render` | `test_provider_artifacts_must_use_safe_expected_export_shapes`; `test_provider_html_export_must_exactly_match_trusted_renderer` | `uv run pytest -p no:cacheprovider tests/unit/test_local_durability.py tests/unit/test_stage7_avatar.py tests/api/test_stage7_avatar_api.py`; `docs/API_CONTRACT.md`; `docs/ENGINEERING_PROCESS_RCA.md` | Stage 7 + test/evidence | Implemented on branch |
+| `S8-CONSENT-001` | Consent checkpoint binding | Render artifacts stay bound to the consumed durable consent record and are rejected when the record is cross-scope, stale, or tampered. | A render can restore with a consent link that no longer matches the artifact state. | `test_stage7_restores_consumed_durable_consent_binding_after_successful_render` | `test_stage7_drops_tampered_consumed_consent_binding_on_restore`; `test_stage7_rejects_cross_scope_or_stale_version_consent_record`; `test_stage7_rejects_reuse_of_consumed_durable_consent_record` | `uv run pytest -p no:cacheprovider tests/unit/test_local_durability.py tests/unit/test_stage7_avatar.py tests/api/test_stage7_avatar_api.py`; `docs/API_CONTRACT.md`; `docs/ENGINEERING_PROCESS_RCA.md` | Stage 7 + security/privacy | Implemented on branch |
+| `S8-ROLLBACK-001` | Terminal persist rollback | A failed terminal persist removes orphan render state while preserving concurrent successful render work. | A write failure can leave an orphan avatar render or erase a later committed success. | `test_stage7_file_state_terminal_persist_failure_preserves_concurrent_success` | `test_stage7_file_state_terminal_persist_failure_does_not_leave_orphan_render` | `uv run pytest -p no:cacheprovider tests/unit/test_local_durability.py`; `docs/ENGINEERING_PROCESS_RCA.md` | Stage 7 + security/runtime | Implemented on branch |
+
 ## CH-16 Pre-Implementation Invariant Matrix
 
 This section is the repo-tracked pre-implementation artifact for child issue
