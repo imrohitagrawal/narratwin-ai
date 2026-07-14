@@ -63,7 +63,7 @@ No successful production-like durability or restore claim is permitted. Issue
 | `PLAT-ACCESS-001` | SSO/MFA, exact OIDC workflow/environment/branch/job trust, bounded single-copy S3/KMS permissions, private validator, IAM DB auth/Secrets Manager/CMK/TLS boundaries. | Remove any trust/permission/network/copy-limit marker; detailed docs gate fails. | Security approval and live policy inspection. |
 | `PLAT-RETENTION-001` | Backup/version/target/evidence retention, contiguous integrity-linked and separately signed journal manifest, cleanup/inventory escalation, CH-17 revocation and CH-14/CH-21 split. | Remove journal/signing/break-glass/inventory fields or CH-17 dependency; structural docs gate fails. | Security/privacy disposition. |
 | `PLAT-SLO-001` | Planned RTO/RPO owners, live target controls in the restore-ready boundary and version-written immutable source cutoff; negative/mismatched deltas invalidate evidence. | Reduced readiness, moving cutoff, discretionary cleanup and result/achieved/verified claims fail focused guardrails. | Business threshold and Operations risk acceptance. |
-| `PLAT-DEPS-001` | Exact dependency and acceptance table for issues `#142`-`#149`. | Delete a row or mutate a dependency set; structural docs gate fails. | Per-child reviewer approvals. |
+| `PLAT-DEPS-001` | Exact affirmative dependency and acceptance table for issues `#142`-`#149`, including tested `#130`/CH-12 routes before `#149` Go. | Delete/negate a row, mutate a dependency set or remove route severity/ack/escalation/runbook evidence; structural docs gate fails. | Per-child reviewer approvals. |
 | `PLAT-OVERCLAIM-001` | Explicit no-environment/no-backup/no-restore/launch evidence boundary. | Contradictory platform, approval, Go/launch and closure claims fail; truthful negations pass. | Actual environment inspection later. |
 | `HUMAN-PLAT-001` | Blocker list and named role responsibilities. | Remove blocked marker; docs gate fails. | AWS account/budget/region/owner assignments and independent Security decision. |
 
@@ -108,6 +108,11 @@ Remediation loop 3 RED evidence is 17 focused failures proving that OIDC,
 copy-IAM, private-network, evidence separation, journal/break-glass, STRIDE,
 PITR-default, reduced-RTO, moving-cutoff, cleanup, CH-12 and `#139`/`#141`
 closure regressions could bypass the prior checker.
+Final guardrail review additionally demonstrated negated dependency and
+adversarial negation lead-in false passes; final Operations review demonstrated
+that CH-12 routing was named but not a Go prerequisite. Affirmative dependency
+grammar, proposition-bound negation, and explicit `#130` route evidence close
+those gaps.
 The issue comment at
 <https://github.com/imrohitagrawal/narratwin-ai/issues/141#issuecomment-4968602415>
 records this pre-implementation plan. The correction at

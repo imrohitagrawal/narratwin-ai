@@ -847,7 +847,8 @@ execute a restore, or close issue `#126`, `DUR-RESTORE-001`, or issue `#39`.
 The contract must structurally validate all Stage 4/6/7 ownership rows and every
 `#142`-`#149` dependency/acceptance row. Issue `#144` owns the source and restore
 landing zone rather than a pre-created target DB; `#146` depends on the live
-environment/catalog foundation; `#148` depends on `#145`-`#147` handoffs; and
+environment/catalog foundation; `#148` and the `#149` Go decision require tested
+CH-12 alert routes from issue `#130` in addition to `#145`-`#147` handoffs; and
 the later `#126` drill alone creates the PITR target and records actual results.
 The target contract uses supported PITR inputs including IAM DB authentication,
 verifies engine/configuration after creation, bounds S3 recovery to single-copy

@@ -115,8 +115,8 @@ ISSUE_141_EXPECTED_CHILD_DEPENDENCIES = {
     "#145": {"#141", "#144"},
     "#146": {"#141", "#143", "#144", "#145"},
     "#147": {"#144", "#145", "#146"},
-    "#148": {"#141", "#144", "#145", "#146", "#147"},
-    "#149": {f"#{number}" for number in range(141, 149)},
+    "#148": {"#130", "#141", "#144", "#145", "#146", "#147"},
+    "#149": {"#130", *(f"#{number}" for number in range(141, 149))},
 }
 ISSUE_141_CHILD_ACCEPTANCE_TERMS = {
     "#142": ("connection-backed adapter", "migrations", "No cloud provisioning"),
@@ -131,8 +131,20 @@ ISSUE_141_CHILD_ACCEPTANCE_TERMS = {
         "SkipFinalSnapshot",
         "live-inventory block",
     ),
-    "#148": ("RDS/S3 restore", "target-configuration/isolation", "cleanup-deadline", "immutable-cutoff"),
-    "#149": ("later drill", "without actual RTO/RPO", "leave `#126`", "`DUR-RESTORE-001`", "`#39` open"),
+    "#148": (
+        "RDS/S3 restore",
+        "target-configuration/isolation",
+        "tested CH-12 route handoff",
+        "immutable-cutoff",
+    ),
+    "#149": (
+        "tested `#130`/CH-12 routes",
+        "later drill",
+        "without actual RTO/RPO",
+        "leave `#126`",
+        "`DUR-RESTORE-001`",
+        "`#39` open",
+    ),
 }
 ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
     ".github/pull_request_template.md",
@@ -640,7 +652,7 @@ EXPECTED_ISSUE_39_CHUNK_DEPENDENCIES = {
     "CH-11": {"CH-10"},
     "CH-12": {"CH-10", "CH-11"},
     "CH-13": {"CH-12"},
-    "CH-14": {"CH-01", "CH-02", "CH-10"},
+    "CH-14": {"CH-01", "CH-02", "CH-10", "CH-12"},
     "CH-15": {"CH-09", "CH-12", "CH-13"},
     "CH-16": {"CH-02"},
     "CH-17": {"CH-16"},
@@ -981,8 +993,13 @@ def expanded_issue_numbers(value: str) -> set[str]:
 
 def non_negated_pattern_present(text: str, pattern: str) -> bool:
     for match in re.finditer(pattern, text, flags=re.I):
-        prefix = text[max(0, match.start() - 48) : match.start()]
-        if re.search(r"\b(?:no|not|never|neither|without|does not|has not|is not)\b[^.;\n]{0,40}$", prefix, re.I):
+        prefix = text[max(0, match.start() - 64) : match.start()]
+        if re.search(
+            r"\b(?:there\s+(?:is|are)\s+)?"
+            r"(?:no|not|never|neither|without)\s+(?:an?\s+)?$",
+            prefix,
+            re.I,
+        ):
             continue
         return True
     return False
@@ -1576,6 +1593,8 @@ def check_issue141_structural_contract(failures: list[str], adr_text: str) -> No
         if not child_row:
             continue
         actual_dependencies = expanded_issue_numbers(child_row[1])
+        if re.search(r"\b(?:no|not|never|without|except|optional)\b", child_row[1], flags=re.I):
+            failures.append(f"ADR 0027 {issue_id} dependency statement must be affirmative.")
         if actual_dependencies != expected_dependencies:
             failures.append(
                 f"ADR 0027 {issue_id} dependencies must be "
@@ -1802,7 +1821,7 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
         "docs/STATUS.md": (
             "| `#141` | Open, architecture recorded; human approvals blocked |",
             "| `#142` | Open, depends on `#141` |",
-            "| `#149` | Open, depends on `#141`-`#148` |",
+            "| `#149` | Open, depends on `#130`, `#141`-`#148` |",
             "| `#126` | Open |",
             "No environment, backup/version source, restore target, or restore evidence has been verified.",
             "versioned S3 artifact/control buckets",

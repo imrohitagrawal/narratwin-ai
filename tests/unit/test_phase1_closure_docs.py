@@ -884,7 +884,7 @@ def test_issue141_platform_ownership_contract_rejects_child_dependency_drift(
     adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
     adr_text = phase1.read(adr_rel)
     mutated = adr_text.replace(
-        "| `#148` restore observability and evidence export | `#141`, `#144`, `#145`, `#146`, `#147`;",
+        "| `#148` restore observability and evidence export | `#130`, `#141`, `#144`, `#145`, `#146`, `#147`;",
         "| `#148` restore observability and evidence export | `#141`, `#144`;",
         1,
     )
@@ -896,6 +896,29 @@ def test_issue141_platform_ownership_contract_rejects_child_dependency_drift(
     )
 
     assert any("#148 dependencies" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement"),
+    [
+        ("`#141` approved baseline", "not `#141` approved baseline"),
+        ("`#130`, `#141` through `#148`", "not `#130` and not `#141` through `#148`"),
+    ],
+)
+def test_issue141_platform_contract_rejects_negated_dependencies(
+    monkeypatch: Any, search: str, replacement: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = replace_text(adr_text, search, replacement)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("dependency statement must be affirmative" in failure for failure in failures)
 
 
 def test_issue141_platform_ownership_contract_rejects_incomplete_journal_integrity_fields(
@@ -949,6 +972,28 @@ def test_issue141_platform_ownership_contract_accepts_truthful_backup_negation(
     )
 
     assert not any("contains issue #141 overclaim markers" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "overclaim_text",
+    [
+        "There is no question managed backup is verified.",
+        "No blocker remains because RDS has been provisioned.",
+        "There is not any doubt the restore drill succeeded.",
+    ],
+)
+def test_issue141_platform_contract_rejects_adversarial_negation_lead_ins(
+    monkeypatch: Any, overclaim_text: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: adr_text + f"\n\n{overclaim_text}\n"},
+    )
+
+    assert any("contains issue #141 overclaim markers" in failure for failure in failures)
 
 
 @pytest.mark.parametrize(
