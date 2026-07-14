@@ -378,6 +378,34 @@ Frontend/backend deployment must include:
 - restricted CORS origins
 - secure, httpOnly, sameSite cookies when session cookies exist
 
+### Isolated Security Tool Compatibility Exception
+
+Issue `#138` removes Semgrep from the application/development dependency graph
+so the backend, local test environment, and runtime image resolve a fixed Click
+release. Semgrep `1.168.0` remains in the separate `tools/semgrep` project with
+an exact `click==8.3.3` uv override because upstream declares
+`click~=8.1.8`.
+
+This is a narrow compatibility exception, not a vulnerability ignore and not a
+claim that every Semgrep CLI path supports Click `8.3.3`. The repository:
+
+- audits the root environment and exact isolated tool site-packages separately,
+  with no ignored advisory IDs;
+- verifies the installed tool inventory against the frozen tool lock;
+- runs only the hash-bound local-rule invocation with metrics disabled;
+- requires engine config validation, nonempty scan coverage, zero findings, and
+  exact target/rule manifests;
+- requires positive and clean Semgrep execution canaries;
+- verifies the backend image contains Click `>=8.3.3` and no Semgrep; and
+- fails the contract after `2026-08-13` unless a security/repo owner renews or
+  removes the exception through review.
+
+Any Semgrep version, lock, rule, target, canary, or invocation change breaks the
+reviewed-input hash manifest and requires renewed compatibility review. Remove
+the override when upstream publishes a reviewed
+Semgrep version compatible with a fixed Click release; issue `#150` tracks the
+deadline and removal work.
+
 ## Privacy Rules
 
 - Use local-first storage for MVP.
@@ -434,6 +462,8 @@ A PR or release is blocked if:
 - third-party license status is unresolved for used components
 - AI avatar or voice output lacks disclosure where relevant
 - cloned face or voice is enabled without explicit consent
+- the Semgrep compatibility exception expires or changes without security-owner
+  review
 
 ## Related Documents
 

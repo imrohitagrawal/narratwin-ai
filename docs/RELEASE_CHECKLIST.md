@@ -27,6 +27,12 @@ PR `#53`.
 - [ ] Remaining production-grade portion of `#39` is closed or explicitly downgraded with evidence.
 - [ ] `make lint`, `make typecheck`, `make test`, `make api-test`, `make ui-test`, `make e2e`, `make eval`, `make security`, and `make ci` pass for the closure branch.
 - [ ] `make secrets-scan`, `make security-scan`, `make dependency-audit`, and `make container-scan` pass for the closure branch.
+- [ ] Issue `#138` security evidence is merged and the dated Semgrep tool-only
+  compatibility exception is accepted by the security/repo owner; the exception
+  must not be expired or generalized beyond the committed scan invocation.
+- [ ] Issue `#151` resolves the stable CPython HIGH findings and Trivy/Grype
+  disagreement; both scanners report zero critical/high findings or a reviewed
+  consensus policy handles disagreement without ignoring confirmed findings.
 - [ ] Docker Compose local readiness is verified or unused services are documented honestly.
 - [ ] `docs/reviews/GO_NO_GO.md` is updated by a reviewed PR before any release tag.
 

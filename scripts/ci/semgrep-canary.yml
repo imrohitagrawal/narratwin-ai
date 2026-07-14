@@ -1,0 +1,6 @@
+rules:
+  - id: narratwin-semgrep-canary
+    languages: [python]
+    message: NarraTwin Semgrep execution canary
+    severity: ERROR
+    pattern: narratwin_semgrep_canary(...)

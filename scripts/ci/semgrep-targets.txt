@@ -1,0 +1,16 @@
+backend
+frontend/src
+frontend/tests
+scripts
+tests
+.github/workflows/ci.yml
+.github/workflows/security.yml
+.github/workflows/eval-smoke.yml
+.github/workflows/quality.yml
+.github/workflows/quality-gates.yml
+docker-compose.yml
+backend/Dockerfile
+frontend/Dockerfile
+.env.example
+pyproject.toml
+frontend/package.json

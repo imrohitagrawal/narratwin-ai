@@ -168,6 +168,29 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
     assert failures == []
 
 
+def test_issue138_branch_allows_only_click_security_remediation_files(
+    monkeypatch: Any,
+) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-138-click-security-remediation",
+        files=sorted(phase1.ISSUE_138_ALLOWED_CHANGED_FILES),
+    )
+
+    assert failures == []
+
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-138-click-security-remediation",
+        files=["backend/app/main.py"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-138-click-security-remediation "
+        "may not change backend/app/main.py."
+    ]
+
+
 def test_issue72_process_branch_allows_closure_evidence_contract_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
