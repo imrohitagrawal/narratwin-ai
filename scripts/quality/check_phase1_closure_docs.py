@@ -64,6 +64,31 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
+    "docs/ADR/0006-stage8-release-hardening.md",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md",
+    "pyproject.toml",
+    "scripts/__init__.py",
+    "scripts/ci/__init__.py",
+    "scripts/ci/backend-image-package-check.sh",
+    "scripts/ci/check_semgrep_security.py",
+    "scripts/ci/dependency-audit.sh",
+    "scripts/ci/dependency-security.sh",
+    "scripts/ci/docker-build.sh",
+    "scripts/ci/fixtures/semgrep/clean.py",
+    "scripts/ci/fixtures/semgrep/positive.py",
+    "scripts/ci/run-semgrep.sh",
+    "scripts/ci/semgrep-canary.yml",
+    "scripts/ci/semgrep-targets.txt",
+    "scripts/quality/check_stage3_docs.py",
+    "tests/unit/test_dependency_security_contract.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tools/semgrep/pyproject.toml",
+    "tools/semgrep/reviewed-inputs.sha256",
+    "tools/semgrep/uv.lock",
+    "uv.lock",
+}
 ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
     ".github/pull_request_template.md",
     ".github/workflows/ci.yml",
@@ -2092,7 +2117,9 @@ def check_required_files(failures: list[str]) -> None:
 
 def check_changed_files(failures: list[str]) -> None:
     branch = current_branch()
-    if branch.startswith("phase-1-closure-process-72-"):
+    if branch.startswith("phase-1-closure-138-"):
+        allowed_files = ISSUE_138_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):
         allowed_files = PROCESS_ONLY_ALLOWED_CHANGED_FILES

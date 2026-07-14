@@ -161,6 +161,13 @@ Gate validates:
 - dependency/security checks include secret scan, Bandit, `pip-audit`,
   `npm audit --audit-level=high`, Semgrep over source, workflow, Docker,
   Compose, manifest, and env-template files, and local-or-CI Gitleaks coverage
+- the application lock and isolated frozen Semgrep tool environment are audited
+  separately with no ignored advisories; Semgrep targets, rules, invocations,
+  canaries, and the tool lock are hash-bound as reviewed inputs, engine config
+  validation must pass, JSON output must prove nonempty file coverage with no
+  findings or parse/engine errors, and positive/clean canaries must pass
+- the backend Docker build explicitly verifies Click `>=8.3.3` and Semgrep
+  absence in addition to the critical/high image vulnerability scan
 - Docker build paths exist for backend and frontend foundation images; runtime
   containers run as non-root, base/service images are digest pinned, and local
   Compose port bindings are localhost-only

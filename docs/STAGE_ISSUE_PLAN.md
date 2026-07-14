@@ -796,6 +796,49 @@ metrics/SLO/alert/watch work, rollback communications, provider posture,
 retention/erasure, provenance/disclosure, untrusted-input closure, Stage 4/6/7
 runtime semantics, or unrelated governance/process files.
 
+`phase-1-closure-138-*` is reserved for issue `#138`, the Click
+`PYSEC-2026-2132` security remediation. It isolates Semgrep from the
+application/runtime graph, locks patched Click releases, and hardens the
+security gates without changing product runtime behavior. It may touch only:
+
+- `docs/QUALITY_GATES.md`
+- `docs/ADR/0006-stage8-release-hardening.md`
+- `docs/RELEASE_CHECKLIST.md`
+- `docs/RISK_REGISTER.md`
+- `docs/SECURITY_AND_PRIVACY.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md`
+- `pyproject.toml`
+- `scripts/__init__.py`
+- `scripts/ci/__init__.py`
+- `scripts/ci/backend-image-package-check.sh`
+- `scripts/ci/check_semgrep_security.py`
+- `scripts/ci/dependency-audit.sh`
+- `scripts/ci/dependency-security.sh`
+- `scripts/ci/docker-build.sh`
+- `scripts/ci/fixtures/semgrep/clean.py`
+- `scripts/ci/fixtures/semgrep/positive.py`
+- `scripts/ci/run-semgrep.sh`
+- `scripts/ci/semgrep-canary.yml`
+- `scripts/ci/semgrep-targets.txt`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `scripts/quality/check_stage3_docs.py`
+- `tests/unit/test_dependency_security_contract.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tools/semgrep/pyproject.toml`
+- `tools/semgrep/reviewed-inputs.sha256`
+- `tools/semgrep/uv.lock`
+- `uv.lock`
+
+`phase-1-closure-138-*` must not touch backend/frontend product behavior,
+production durability/restore implementation, provider/media paths, or issue
+`#39` closure evidence. The Semgrep tool-only compatibility override remains a
+human-reviewed, expiring exception and must not become a general dependency
+override or advisory suppression.
+
 `phase-1-closure-39-ch-14-*` is reserved for issue `#126`, the narrow
 restore-readiness contract slice for `DUR-RESTORE-001`. This branch does not
 execute a successful production restore drill. It packages the merged `#125`

@@ -3,9 +3,13 @@ set -euo pipefail
 
 export UV_CACHE_DIR="${UV_CACHE_DIR:-.uv-cache}"
 
-uv run pip-audit
+bash scripts/ci/dependency-audit.sh
+uv run uvicorn --version
+uv run locust --version
 uv run bandit -r backend scripts -x scripts/quality -ll
-uv run semgrep --config semgrep.yml --error backend frontend/src frontend/tests scripts tests .github/workflows/ci.yml .github/workflows/security.yml .github/workflows/eval-smoke.yml .github/workflows/quality.yml .github/workflows/quality-gates.yml docker-compose.yml backend/Dockerfile frontend/Dockerfile .env.example pyproject.toml frontend/package.json
+
+TOOL_ENVIRONMENT="${PWD}/.uv-cache/semgrep-venv"
+UV_PROJECT_ENVIRONMENT="${TOOL_ENVIRONMENT}" bash scripts/ci/run-semgrep.sh
 
 if [ -f frontend/package-lock.json ]; then
   npm --prefix frontend audit --audit-level=high

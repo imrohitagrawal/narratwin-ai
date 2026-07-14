@@ -158,7 +158,7 @@ security-scan:
 	bash scripts/ci/dependency-security.sh
 
 dependency-audit:
-	uv run pip-audit
+	bash scripts/ci/dependency-audit.sh
 	npm --prefix frontend audit --audit-level=high
 
 container-scan: docker-build

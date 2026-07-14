@@ -62,6 +62,13 @@ REQUIRED_FILES = [
     "scripts/ci/frontend-build.sh",
     "scripts/ci/frontend-smoke.sh",
     "scripts/ci/dependency-security.sh",
+    "scripts/ci/dependency-audit.sh",
+    "scripts/ci/run-semgrep.sh",
+    "scripts/ci/check_semgrep_security.py",
+    "scripts/ci/semgrep-targets.txt",
+    "tools/semgrep/reviewed-inputs.sha256",
+    "tools/semgrep/pyproject.toml",
+    "tools/semgrep/uv.lock",
     "scripts/guardrails_check.py",
     "scripts/quality/check_quality_stage.py",
     "scripts/quality/check_recommended_review_items.py",
@@ -172,7 +179,6 @@ PYTHON_DEV_DEPENDENCIES = {
     "pre-commit",
     "httpx",
     "httpx2",
-    "semgrep",
 }
 
 FRONTEND_DEPENDENCIES = {"next", "react", "react-dom"}
@@ -363,7 +369,11 @@ def check_ci_wrappers(failures: list[str]) -> None:
     required_commands = {
         "scripts/ci/backend-lint.sh": ["uv run ruff check", "uv run mypy"],
         "scripts/ci/backend-test.sh": ["uv run pytest", "py_compile"],
-        "scripts/ci/docker-build.sh": ["docker build -f backend/Dockerfile", "docker build -f frontend/Dockerfile"],
+        "scripts/ci/docker-build.sh": [
+            "docker build -f backend/Dockerfile",
+            "bash scripts/ci/backend-image-package-check.sh",
+            "docker build -f frontend/Dockerfile",
+        ],
         "scripts/ci/eval-smoke.sh": ["uv run python"],
         "scripts/ci/frontend-build.sh": [
             "npm ci --strict-allow-scripts=true",
@@ -378,12 +388,16 @@ def check_ci_wrappers(failures: list[str]) -> None:
             "npm run test:smoke",
         ],
         "scripts/ci/dependency-security.sh": [
-            "uv run pip-audit",
+            "bash scripts/ci/dependency-audit.sh",
             "uv run bandit",
-            "uv run semgrep",
+            "bash scripts/ci/run-semgrep.sh",
             "npm --prefix frontend audit --audit-level=high",
             "gitleaks",
             "NARRATWIN_ALLOW_LOCAL_SECRET_SCAN_FALLBACK",
+        ],
+        "scripts/ci/dependency-audit.sh": [
+            "uv run pip-audit --strict",
+            "python3 scripts/ci/check_semgrep_security.py installed-tool",
         ],
     }
     required_phrases = {
