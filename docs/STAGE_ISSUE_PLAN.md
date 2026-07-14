@@ -802,6 +802,7 @@ application/runtime graph, locks patched Click releases, and hardens the
 security gates without changing product runtime behavior. It may touch only:
 
 - `docs/QUALITY_GATES.md`
+- `docs/ADR/0006-stage8-release-hardening.md`
 - `docs/RELEASE_CHECKLIST.md`
 - `docs/RISK_REGISTER.md`
 - `docs/SECURITY_AND_PRIVACY.md`

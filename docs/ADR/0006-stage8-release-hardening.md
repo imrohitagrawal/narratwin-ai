@@ -187,6 +187,47 @@ Consequences:
   cross-worker locking, migrations, backup/restore, production idempotency,
   dashboards/alerts, first-hour watch, and rollback communications are reviewed.
 
+## Phase 1 Closure Security Addendum For Issue #138
+
+Date: 2026-07-14
+
+Issue `#138` remediates the Click command-injection advisory without removing
+Semgrep coverage or placing an unsupported override in the application/runtime
+dependency graph.
+
+Decision:
+
+- Semgrep is a security tool, not an application/runtime dependency. It runs
+  from an exact, separately locked `tools/semgrep` project and isolated
+  environment.
+- The tool-only Click `8.3.3` override is limited to Semgrep `1.168.0`, expires
+  on `2026-08-13`, and requires an accountable security/repository-owner
+  decision before merge.
+- Tool version, full lock, rules, targets, invocation, canary configuration, and
+  canary fixtures are hash-bound reviewed inputs. Any change invalidates the
+  compatibility evidence and requires renewed review.
+- Root and installed tool environments are audited separately without advisory
+  ignores. Semgrep engine configuration validation, a zero-finding repository
+  result validator, and a positive/clean execution canary fail independently.
+- Backend image inventory is tied to the image just built and requires fixed
+  Click with Semgrep absent.
+- A passing first-scanner result is not evidence that a known confirmed image
+  finding is absent. Issue `#151` owns the Trivy/Grype disagreement and three
+  PSF-confirmed HIGH CPython findings; that risk blocks merge without being
+  converted into a scanner waiver.
+
+Consequences:
+
+- Application/runtime Click can receive the fixed release independently of
+  Semgrep's older declared constraint.
+- The compatibility proof applies only to the committed, hash-bound Semgrep
+  execution surface; other CLI paths are not approved.
+- Security gates gain explicit false-green tests and installed-inventory proof.
+- Issue `#138` remains open until human acceptance and post-merge verification;
+  issue `#151` remains a separate merge blocker.
+- This decision adds no production durability, backup/restore, RTO/RPO,
+  monitoring, operator-signoff, or issue `#39` closure evidence.
+
 ## Related Documents
 
 - `docs/QUALITY_GATES.md`
@@ -195,4 +236,6 @@ Consequences:
 - `docs/RUNBOOK.md`
 - `docs/TRACEABILITY.md`
 - `scripts/ci/docker-image-scan.sh`
+- `scripts/ci/check_semgrep_security.py`
+- `tools/semgrep/pyproject.toml`
 - `.github/workflows/security.yml`

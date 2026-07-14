@@ -65,6 +65,7 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
+    "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
     "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md",
     "pyproject.toml",
