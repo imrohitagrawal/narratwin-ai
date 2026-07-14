@@ -801,6 +801,40 @@ def test_issue141_post_merge_reconciliation_rejects_stale_status(
     )
 
 
+@pytest.mark.parametrize(
+    ("rel", "stale_status"),
+    [
+        (
+            "docs/LAUNCH_LEVELS.md",
+            "Status: Proposed clarification for issue `#141` and draft PR `#153`.",
+        ),
+        (
+            "docs/STATUS.md",
+            "Documentation baseline remains proposed on the feature branch.",
+        ),
+        (
+            "docs/TRACEABILITY.md",
+            "Proposed on branch; external approvals blocked",
+        ),
+    ],
+)
+def test_issue141_post_merge_reconciliation_rejects_coexisting_stale_status(
+    monkeypatch: Any, rel: str, stale_status: str
+) -> None:
+    mutated = f"{phase1.read(rel)}\n{stale_status}\n"
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={rel: mutated},
+    )
+
+    assert any(
+        f"{rel} contains stale issue #141 lifecycle status" in failure
+        and stale_status in failure
+        for failure in failures
+    )
+
+
 def test_issue141_launch_level_contract_rejects_missing_level(monkeypatch: Any) -> None:
     launch_rel = "docs/LAUNCH_LEVELS.md"
     launch_text = phase1.read(launch_rel)

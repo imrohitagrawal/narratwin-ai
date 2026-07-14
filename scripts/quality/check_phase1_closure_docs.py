@@ -2012,6 +2012,25 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
         if missing_markers:
             failures.append(f"{rel} missing issue #141 markers: " + ", ".join(missing_markers))
 
+    stale_lifecycle_status_by_file = {
+        "docs/LAUNCH_LEVELS.md": (
+            "Status: Proposed clarification for issue `#141` and draft PR `#153`.",
+        ),
+        "docs/STATUS.md": (
+            "Documentation baseline remains proposed on the feature branch.",
+        ),
+        "docs/TRACEABILITY.md": (
+            "Proposed on branch; external approvals blocked",
+        ),
+    }
+    for rel, stale_statuses in stale_lifecycle_status_by_file.items():
+        normalized_text = re.sub(r"\s+", " ", read(rel)).casefold()
+        present = [status for status in stale_statuses if status.casefold() in normalized_text]
+        if present:
+            failures.append(
+                f"{rel} contains stale issue #141 lifecycle status: " + ", ".join(present)
+            )
+
     forbidden_patterns = (
         r"\bazure sql\b[^.]{0,120}\bauthoritative production-like\b",
         r"\bsingle-zone\b[^.]{0,120}\bauthoritative production-like\b",
