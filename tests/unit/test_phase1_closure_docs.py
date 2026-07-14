@@ -952,12 +952,126 @@ def test_issue141_platform_ownership_contract_accepts_truthful_backup_negation(
 
 
 @pytest.mark.parametrize(
+    ("search", "replacement"),
+    [
+        (
+            "`.github/workflows/durability-deploy.yml@refs/heads/main`",
+            "an unspecified deployment workflow",
+        ),
+        ("`id-token: write`", "broad token permission"),
+        ("`aud=sts.amazonaws.com`", "an unspecified audience"),
+        ("`refs/pull/*/merge`", "pull-request refs"),
+        ("prevents self-review", "permits self-review"),
+        ("disallows administrator bypass", "permits administrator bypass"),
+        ("no larger than `5 GB`", "of any size"),
+        ("`s3:GetObjectVersion`", "`s3:GetObject`"),
+        ("restore-key `kms:GenerateDataKey`", "restore-key administration"),
+        ("internet/NAT, source-VPC, application, provider, or production connectivity", "public internet connectivity"),
+        ("Reviewer exports use a field allowlist", "Reviewer exports copy the operational catalog"),
+        ("separate read roles and access audit", "a shared unaudited read role"),
+        ("writer has create-\nonly permissions and cannot overwrite", "writer may overwrite"),
+        ("every use is\nalerted, dated, and reviewed", "use is not audited"),
+        ("Control-key disablement/deletion safeguards and\nalarms are mandatory", "Control-key alarms are optional"),
+    ],
+)
+def test_issue141_platform_contract_rejects_security_control_regressions(
+    monkeypatch: Any, search: str, replacement: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = replace_text(adr_text, search, replacement)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("detailed security controls" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "row_prefix",
+    [
+        "| Versioned S3 artifact path |",
+        "| Security-control journal path |",
+    ],
+)
+def test_issue141_platform_contract_rejects_missing_s3_stride_rows(
+    monkeypatch: Any, row_prefix: str
+) -> None:
+    threat_rel = "docs/THREAT_MODEL.md"
+    threat_text = phase1.read(threat_rel)
+    mutated = re.sub(rf"^{re.escape(row_prefix)}.*\n", "", threat_text, count=1, flags=re.M)
+    assert mutated != threat_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={threat_rel: mutated},
+    )
+
+    assert any("S3/journal STRIDE rows" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement"),
+    [
+        (
+            "PITR API has no\n`EngineVersion` input",
+            "PITR request supplies an `EngineVersion` input",
+        ),
+        ("`EnableIAMDatabaseAuthentication=true`", "IAM database authentication defaults off"),
+        (
+            "request explicitly selects `MultiAZ=true`,\n`PubliclyAccessible=false`",
+            "request may accept service defaults",
+        ),
+        (
+            "only after DB availability, migration compatibility, database integrity",
+            "after DB availability",
+        ),
+        (
+            "At the\n  reviewed holdpoint and before any recovery action",
+            "After recovery, from a moving source query",
+        ),
+        (
+            "Automatically tear down the target/delete copied versions within 24 hours",
+            "optionally tear down the target when convenient",
+        ),
+        ("`SkipFinalSnapshot=true`", "`SkipFinalSnapshot=false`"),
+        ("`DeleteAutomatedBackups=true`", "`DeleteAutomatedBackups=false`"),
+        ("tag-based live-inventory discovery", "catalog-only discovery"),
+        ("both catalog and live inventory prove cleanup", "catalog says cleanup is complete"),
+        (
+            "alert routing owned by CH-12",
+            "alert routing is unassigned",
+        ),
+    ],
+)
+def test_issue141_platform_contract_rejects_operational_control_regressions(
+    monkeypatch: Any, search: str, replacement: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = replace_text(adr_text, search, replacement)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("detailed operational controls" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
     "overclaim_text",
     [
         "Production-like durability exists and has been verified.",
         "Issue #126 is closed by this platform decision.",
         "DUR-RESTORE-001 is complete.",
         "Issue #39 has been resolved by issue #141.",
+        "Issue #139 is complete and ready to close.",
+        "Issue #141 has been completed.",
         "Managed backup verified and queryable.",
         "The restore drill succeeded.",
         "Observed RTO 12m and RPO zero.",

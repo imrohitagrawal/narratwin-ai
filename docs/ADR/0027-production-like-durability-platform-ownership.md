@@ -43,8 +43,8 @@ without a local-file dependency.
 The source, restore-validation, and security-control S3 buckets are in the same
 non-production account and `ap-south-1`, are private, block public access, use
 SSE-KMS, and have distinct bucket names/ARNs, IAM policies, and KMS keys. The
-control bucket stores the sanitized backup catalog, evidence, and append-only
-deletion journal; it is never an application artifact bucket.
+control bucket stores the sanitized backup catalog, evidence, and unique-key,
+integrity-linked deletion journal; it is never an application artifact bucket.
 
 Production-like and eventual production deployments may differ in instance
 class, storage allocation, autoscaling limits, and synthetic data volume. They
@@ -79,17 +79,24 @@ re-baseline RPO assumptions.
 
 Issue `#144` provisions the source and isolated restore landing zone, not a
 placeholder DB instance. The later `RestoreDBInstanceToPointInTime` call creates
-a new target DB identifier and must explicitly select `MultiAZ=true`, the
-restore subnet group, restore security groups, restore parameter group, private
-accessibility, restore tags, TLS posture, and the reviewed automatic-minor-
-upgrade setting rather than accepting service defaults. The created target must
-have a distinct VPC ID, DB subnet group, security-group IDs, IAM restore role,
-DB identifier/ARN, and DNS suffix from the source. The catalog records that the
-storage KMS ARN is inherited rather than falsely asserting key inequality. The
-target never receives application or user traffic. Automation compares source
-and target identifiers before mutation, allows only the target through an
-explicit allowlist, and denies source DB/KMS/network mutation even when tags
-drift.
+a new target DB identifier. Before submission, automation verifies the source
+and approved baseline both report engine version `17.10`; the PITR API has no
+`EngineVersion` input. The request explicitly selects `MultiAZ=true`,
+`PubliclyAccessible=false`, `EnableIAMDatabaseAuthentication=true`, the restore
+subnet group, restore security groups, restore parameter group, restore tags,
+deletion protection, and the reviewed automatic-minor-upgrade setting rather
+than accepting service defaults. TLS is enforced by the selected parameter
+group. After creation, platform APIs must prove engine version `17.10`,
+Multi-AZ, private accessibility, IAM database authentication, the exact
+network/parameter/tag configuration, deletion protection, and no traffic path;
+any mismatch or forced engine drift invalidates readiness. The created target
+must have a distinct VPC ID, DB subnet group, security-group IDs, IAM restore
+role, DB identifier/ARN, and DNS suffix from the source. The catalog records
+that the storage KMS ARN is inherited rather than falsely asserting key
+inequality. The target never receives application or user traffic. Automation
+compares source and target identifiers before mutation, allows only the target
+through an explicit allowlist, and denies source DB/KMS/network mutation even
+when tags drift.
 
 ### Durable-state ownership for Stages 4, 6, and 7
 
@@ -114,9 +121,15 @@ operation is idempotent for the same operation identity and checksum and fails
 closed on a different checksum. Garbage collection proves that no committed
 row references a version before deleting it. Missing, inaccessible, mutable-
 alias, wrong-version, or checksum-mismatched objects block replay/export.
-Issue `#143` owns failure tests for S3-success/database-failure, database retry,
-checksum failure, unavailable object, orphan cleanup, and referenced-version
-protection.
+Before the object write, a durable publication-intent record binds the operation
+identity, immutable object key and cleanup deadline. Scheduled reconciliation
+discovers incomplete intents and matching unreferenced versions, including a
+process crash after object verification but before PostgreSQL publication or
+quarantine; it either completes the same verified publication or quarantines
+and safely cleans the orphan. Issue `#143` owns failure tests for S3-success/
+database-failure, database retry, crash-window discovery, checksum failure,
+unavailable object, bounded orphan reconciliation/cleanup, and referenced-
+version protection.
 
 The Application/Data owner (`@imrohitagrawal` for the current repository) owns
 the logical Stage 4/6/7 schema, write invariants, committed deletion-event
@@ -165,7 +178,13 @@ change, gap, out-of-order event, missing retention, delete marker, inaccessible
 version, or hash-chain mismatch fails closed. The authoritative high-watermark
 is the last contiguous, version-verified sequence—not the largest observed
 sequence. A signed/versioned manifest binds that watermark, ordered event
-digests, and evidence checksum. A deletion is not acknowledged as complete
+digests, and evidence checksum. A dedicated Security-owned manifest-signing
+principal uses a separate asymmetric KMS signing key and has no journal-write,
+reconciliation, retention-bypass, or catalog-mutation permission. The journal
+writer and reconciler cannot sign. Verification pins the signing-key ARN,
+algorithm, manifest policy version and prior signed watermark; a missing,
+invalid, unexpected-key, or rolled-back signature fails closed. A deletion is
+not acknowledged as complete
 until the committed PostgreSQL outbox event is version-verified in the journal.
 The journal contains no content or direct user attributes and is not rolled back
 with RDS PITR.
@@ -212,15 +231,25 @@ custody, and CH-21 deletion behavior for both surfaces.
 - Humans use AWS IAM Identity Center, MFA, short-lived role sessions, and
   least-privilege separation between platform deployer, restore operator,
   catalog reader, security auditor, and break-glass administrator.
+- The future deployment workflow identity is exactly
+  `.github/workflows/durability-deploy.yml@refs/heads/main`. Only its deployment
+  job references the `production-like-durability` environment and receives
+  `id-token: write`; all other jobs and workflows have no token permission.
+  Repository branch protection and CODEOWNERS require reviewed changes to that
+  workflow before it reaches `main`.
 - GitHub deployment uses environment-protected OIDC federation with
   `aud=sts.amazonaws.com` and the exact trust subject
   `repo:imrohitagrawal/narratwin-ai:environment:production-like-durability`.
-  Only the reviewed deployment workflow on an allowed branch can request that
-  protected environment, and named environment approvers authorize assumption.
-  Pull-request workflows, forks, untrusted ref subjects, wildcard repository
-  subjects, and workflow jobs without the protected environment cannot assume
-  cloud roles. Static AWS keys are forbidden in GitHub, repository files, CI
-  artifacts, and local examples.
+  AWS trust accepts only those exact `aud` and `sub` values; no wildcard subject
+  is allowed. The GitHub environment permits deployment only from
+  `refs/heads/main`, explicitly excludes `refs/pull/*/merge` and tags, requires
+  named approvers, prevents self-review, and disallows administrator bypass.
+  Consequently a PR job cannot qualify merely by naming the environment. Issue
+  `#144` must inspect the live token claims, workflow identity, branch policy,
+  environment rules and IAM trust before apply; this ADR does not claim they
+  exist. Pull-request workflows, forks, untrusted refs, and jobs without the
+  protected environment cannot assume cloud roles. Static AWS keys are
+  forbidden in GitHub, repository files, CI artifacts, and local examples.
 - The workload identity receives only its application database secret and
   network path plus scoped source-artifact object permissions. The RDS master
   secret is RDS-managed in Secrets Manager, rotated, excluded from application
@@ -231,7 +260,10 @@ custody, and CH-21 deletion behavior for both surfaces.
 - TLS certificate verification and `rds.force_ssl=1` are mandatory. Database
   roles are migration, application, read-only validation, and audited break-glass.
 - The restore operator can create and inspect restore-validation resources. For
-  exact-version artifact copying it receives only source
+  exact-version artifact copying, the accepted recovery contract is a single
+  `CopyObject` request for an object no larger than `5 GB`; larger objects fail
+  preflight before any copy until a separate multipart-copy IAM, KMS and abort-
+  cleanup contract is approved. The operator receives only source
   `s3:GetObjectVersion` and source-key `kms:Decrypt`, restricted to the source
   bucket prefix, cataloged manifest and expected encryption context, plus
   destination `s3:PutObject` and restore-key `kms:GenerateDataKey`. It cannot
@@ -257,7 +289,7 @@ custody, and CH-21 deletion behavior for both surfaces.
 | Automated backups/PITR logs | 14 days. Platform configures and proves the window; Security approves any change. |
 | S3 source artifact versions | S3 Versioning enabled with unique keys; current and noncurrent versions recoverable for at least 15 days. Permanent version deletion is denied to application and restore roles. |
 | Manual drill snapshot | Delete after accepted evidence or within 14 days, whichever is earlier. |
-| Restore DB and artifact bucket | Catalog `cleanup_due_utc` at evidence capture and automatically tear down the target/delete copied versions within 24 hours. A hard maximum 72 hours requires a dated Security and Operations exception with owner and reason. Scheduled detection retries cleanup, alerts Operations and Platform on overdue state, and records DB/artifact deletion evidence. An expired target blocks another exercise until cleanup is verified. |
+| Restore DB and artifact bucket | Persist the attempt and `cleanup_due_utc` before the create request, then tag the request/target and every copied object with the run ID and deadline immediately on API acceptance. Automatically tear down the target/delete copied versions within 24 hours even after timeout, partial restore/copy, or catalog-write failure. RDS deletion uses `SkipFinalSnapshot=true` and `DeleteAutomatedBackups=true`; post-delete evidence proves the DB, target-created snapshots, retained automated backups, copied versions and incomplete work are absent. A hard maximum 72 hours requires a dated Security and Operations exception with owner and reason. Scheduled catalog plus tag-based live-inventory discovery retries cleanup and alerts Operations and Platform on overdue/orphan state. The next exercise is blocked until both catalog and live inventory prove cleanup. |
 | Sanitized catalog, deletion journal, metrics, audit and evidence packet | Minimum 90 days and never less than the longest recoverable source window plus 7 days; later deletion follows CH-21 policy. |
 
 RDS storage, logs, automated backups, snapshots, and replicas use a
@@ -307,7 +339,10 @@ measurement.
   first backup-selection or recovery action. `restore_ready_utc` is captured
   only after DB availability, migration compatibility, database integrity,
   exact S3 Version-ID copy/checksum parity, last-contiguous journal validation,
-  persisted re-delete/revocation handoff, and replay-safe smoke checks pass.
+  persisted re-delete/revocation handoff, replay-safe smoke checks, and live API
+  proof of Multi-AZ, private/network/parameter/tag configuration, IAM database
+  authentication, engine version `17.10`, deletion protection and no-traffic
+  isolation pass.
   Drill-declared, holdpoint-entered/exited, API-submitted, API-accepted, and
   DB-available timestamps are retained as diagnostic sub-intervals; they do not
   shorten the end-to-end RTO clock.
@@ -315,8 +350,9 @@ measurement.
   `source_cutoff_watermark_utc - latest_restored_commit_watermark_utc`. At the
   reviewed holdpoint and before any recovery action, the operator freezes the
   scoped synthetic writer or records the incident/recovery-decision cutoff, then
-  persists that immutable source cutoff, database-server UTC, monotonic commit
-  sequence, seed-manifest digest and catalog/run ID. The restored watermark must
+  version-writes and checksum-verifies that immutable source cutoff in the
+  security-control catalog before recovery begins, together with database-server
+  UTC, monotonic commit sequence, seed-manifest digest and catalog/run ID. The restored watermark must
   use the same manifest and sequence domain. A moving post-start source query,
   negative delta, target-ahead sequence, clock ambiguity, cutoff mismatch, or
   manifest mismatch invalidates the evidence; it is never clamped to zero. RDS
@@ -344,12 +380,12 @@ each child issue must also obtain its role-specific approvals before closeout.
 | Issue | Dependencies | Acceptance owned by that issue |
 |---|---|---|
 | `#142` connection-backed PostgreSQL and migrations | `#141` approved baseline and named Platform owner | Real connection-backed adapter and migrations; fail-closed startup/config; no file-backed success path; migration/restart evidence on PostgreSQL 17.10. No cloud provisioning. |
-| `#143` Stage 4/6/7 durable adapters | `#141`, `#142` | In-scope business entities use PostgreSQL; approved bytes use the S3-version-first publication/compensation contract; committed deletion outbox delivers a unique, contiguous, integrity-linked journal event before deletion completion; restart/replay/CAS/idempotency/lease/outbox, locator/checksum, orphan/retry/unavailable-object, journal gap/duplicate/out-of-order and untrusted-input tests pass. |
-| `#144` pre-production source and isolated restore landing-zone IaC | `#141`; Security approval of same-account/shared-RDS-key exception | Reproducible private Multi-AZ RDS 17.10 source plus restore VPC/subnet/parameter/SG/DNS/private-endpoint template and distinct source/restore/control S3 buckets; IAM/KMS/OIDC/network isolation, source denies and target-creation parameter evidence. No pre-created target DB and no drill. |
-| `#145` backup and artifact catalog | `#141`, `#144` | 14-day RDS PITR and at least 15-day S3 noncurrent-version retention configured; immutable DB time/object Version IDs selected; unique-key/version-aware journal, Object Lock retention, integrity manifest, control-key safeguards, restricted catalog/reviewer-export split and KMS/access/status evidence complete. No restore execution. |
+| `#143` Stage 4/6/7 durable adapters | `#141`, `#142` | In-scope business entities use PostgreSQL; approved bytes use the S3-version-first publication/compensation contract with durable intent and crash-window reconciliation; committed deletion outbox delivers a unique, contiguous, integrity-linked journal event before deletion completion; restart/replay/CAS/idempotency/lease/outbox, locator/checksum, orphan/retry/unavailable-object, journal gap/duplicate/out-of-order and untrusted-input tests pass. |
+| `#144` pre-production source and isolated restore landing-zone IaC | `#141`; Security approval of same-account/shared-RDS-key exception | Reproducible private Multi-AZ RDS 17.10 source plus restore VPC/subnet/parameter/SG/DNS/private-endpoint template and distinct source/restore/control S3 buckets; exact workflow/environment/OIDC restrictions, IAM/KMS/network isolation, source denies and target-creation parameter evidence including IAM DB authentication and baseline/post-create engine verification. No pre-created target DB and no drill. |
+| `#145` backup and artifact catalog | `#141`, `#144` | 14-day RDS PITR and at least 15-day S3 noncurrent-version retention configured; immutable DB time/object Version IDs selected; unique-key/version-aware journal, Object Lock retention, separately signed integrity manifest and rollback anchor, control-key safeguards, restricted catalog/reviewer-export split and KMS/access/status evidence complete. No restore execution. |
 | `#146` synthetic seed and validator | `#141`, `#143`, `#144`, `#145` | Versioned synthetic Stage 4/6/7 graph and live test S3 objects, at least one contiguous integrity-linked deletion-journal event, immutable source cutoff/server UTC/commit sequence, expected counts/checksums/relationships and negative corruption cases in the selected landing zone. |
-| `#147` restore runbook and safety controls | `#144`, `#145`, `#146` | Executable but not yet executed runbook whose later `#126` invocation creates a new RDS target with explicit Multi-AZ/network/parameter/TLS/version settings; exact S3 Version ID copies; target allowlist/source deny; journal/revocation-derived handoff; target-only deletion-protection cleanup role; 24/72-hour deadline automation/escalation and next-exercise block; RTO/RPO holdpoints. |
-| `#148` restore observability and evidence export | `#141`, `#144`, `#145`, `#146`, `#147`; metric names aligned with CH-10/CH-11 and alert routing owned by CH-12 | RDS/S3 restore, backup/version, contiguous catalog/journal, cleanup-deadline and KMS-access events/metrics; restricted-catalog to allowlisted reviewer export; immutable-cutoff/negative-delta-invalidating RTO/RPO calculation tests. No successful-drill claim. |
+| `#147` restore runbook and safety controls | `#144`, `#145`, `#146` | Executable but not yet executed runbook whose later `#126` invocation creates a new RDS target with explicit Multi-AZ/private/network/parameter/tag/IAM-auth settings, pre/post engine verification, and no service defaults; exact single-copy `<=5 GB` S3 Version ID copies; target allowlist/source deny; journal/revocation-derived handoff; pre-create cleanup deadline, tag discovery, `SkipFinalSnapshot=true`/`DeleteAutomatedBackups=true`, target-only cleanup role; 24/72-hour escalation and next-exercise live-inventory block; RTO/RPO holdpoints. |
+| `#148` restore observability and evidence export | `#141`, `#144`, `#145`, `#146`, `#147`; metric names aligned with CH-10/CH-11 and alert routing owned by CH-12 | RDS/S3 restore, live target-configuration/isolation, backup/version, contiguous catalog/journal, cleanup-deadline/orphan/live-inventory and KMS-access events/metrics; restricted-catalog to allowlisted reviewer export; immutable-cutoff/negative-delta-invalidating RTO/RPO calculation tests. No successful-drill claim. |
 | `#149` production-like restore readiness review | `#141` through `#148` | Verify actual environment, backup/version sources, target, validator, runbook, calculation-test/fixture metrics and independent approvals; record Go/No-Go for a later drill without actual RTO/RPO or restore-success claims. Must leave `#126`, `DUR-RESTORE-001`, and `#39` open. |
 
 No child may use this ADR as evidence for a resource or backup that it must
@@ -403,11 +439,14 @@ external blockers.
 - [RDS and Secrets Manager](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-secrets-manager.html)
 - [Encrypted snapshot sharing constraints](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/share-encrypted-snapshot.html)
 - [RDS RestoreDBInstanceToPointInTime API](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_RestoreDBInstanceToPointInTime.html)
+- [RDS DeleteDBInstance API](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DeleteDBInstance.html)
 - [RDS engine upgrade behavior](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_UpgradeDBInstance.Upgrading.html)
 - [S3 Versioning](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html)
 - [S3 Object Lock](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html)
 - [S3 API permission mapping](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-policy-actions.html)
+- [S3 CopyObject API](https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 - [AWS IAM OIDC role trust](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_oidc.html)
+- [GitHub Actions OIDC reference](https://docs.github.com/en/actions/reference/security/oidc)
 - `docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md`
 - `docs/ADR/0008-postgresql-durability-schema-boundary.md`
 - `docs/ADR/0011-context4-backup-restore-drill.md`

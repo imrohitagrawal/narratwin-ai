@@ -849,6 +849,12 @@ The contract must structurally validate all Stage 4/6/7 ownership rows and every
 landing zone rather than a pre-created target DB; `#146` depends on the live
 environment/catalog foundation; `#148` depends on `#145`-`#147` handoffs; and
 the later `#126` drill alone creates the PITR target and records actual results.
+The target contract uses supported PITR inputs including IAM DB authentication,
+verifies engine/configuration after creation, bounds S3 recovery to single-copy
+objects `<=5 GB`, registers cleanup before creation, deletes without a final
+snapshot or retained automated backup, and blocks another exercise until live
+inventory is clean. Detailed security/operations controls and S3/journal STRIDE
+rows are mutation guarded.
 It may touch only:
 
 - `docs/ADR/0008-postgresql-durability-schema-boundary.md`

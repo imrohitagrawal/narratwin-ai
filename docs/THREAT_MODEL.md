@@ -52,7 +52,8 @@ Out of scope for implementation in Stage 2:
 | Future consent records | Critical | Required for identity media |
 | Production-like PostgreSQL state | Critical | Stage 4/6/7 synthetic business state, relationships, replay controls, provenance, and consent references |
 | Authoritative S3 artifact versions | Critical | Exact Stage 4/6/7 source/audio/render/export Version IDs and checksums; mutable aliases are not authoritative |
-| Independent deletion/revocation journal | Critical | Gap-free, integrity-linked current control state outside RDS PITR; incomplete or unavailable state can resurrect deleted/revoked data |
+| Independent deletion journal | Critical | Gap-free, integrity-linked deletion state outside RDS PITR; incomplete or unavailable state can resurrect deleted data |
+| Current CH-17 revocation/takedown state | Critical | Separate current consent-revocation source reconciled before restored render/export state can be enabled |
 | Backup/recovery-point catalog | High | Resource identities, restore timestamps, KMS references, status, retention, and evidence hashes; never credentials or payload data |
 | Restore-validation environment | Critical | Destructive-operation target that must be isolated from the source and user traffic |
 
@@ -319,6 +320,10 @@ Controls:
 - monotonic committed outbox sequence, last-contiguous high-watermark, gap and
   duplicate rejection, previous/event digest chain, versioned integrity manifest,
   version-aware enumeration and delete-marker rejection
+- a Security-owned asymmetric KMS signing principal is separate from journal
+  writer, reconciler and retention-bypass roles; verification pins key ARN,
+  algorithm, policy version and prior signed watermark to reject re-signing or
+  rollback
 - Platform/Storage reconciliation plus backlog/gap/KMS/retention alarms;
   Operations acknowledgment/escalation and Security-reviewed break-glass audit
 - control-key disable/deletion safeguards, default retention verification, and

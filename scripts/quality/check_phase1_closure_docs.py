@@ -120,12 +120,12 @@ ISSUE_141_EXPECTED_CHILD_DEPENDENCIES = {
 }
 ISSUE_141_CHILD_ACCEPTANCE_TERMS = {
     "#142": ("connection-backed adapter", "migrations", "No cloud provisioning"),
-    "#143": ("S3-version-first", "contiguous", "orphan", "unavailable-object"),
-    "#144": ("restore VPC/subnet", "No pre-created target DB", "no drill"),
-    "#145": ("15-day S3", "version-aware journal", "reviewer-export split"),
+    "#143": ("S3-version-first", "durable intent", "crash-window", "contiguous", "orphan"),
+    "#144": ("exact workflow/environment/OIDC", "IAM DB authentication", "No pre-created target DB"),
+    "#145": ("15-day S3", "version-aware journal", "separately signed", "reviewer-export split"),
     "#146": ("immutable source cutoff", "integrity-linked deletion-journal event", "negative corruption"),
-    "#147": ("creates a new RDS target", "target-only deletion-protection cleanup role", "next-exercise block"),
-    "#148": ("RDS/S3 restore", "cleanup-deadline", "immutable-cutoff", "No successful-drill claim"),
+    "#147": ("creates a new RDS target", "IAM-auth", "<=5 GB", "SkipFinalSnapshot", "live-inventory block"),
+    "#148": ("RDS/S3 restore", "target-configuration/isolation", "cleanup-deadline", "immutable-cutoff"),
     "#149": ("later drill", "without actual RTO/RPO", "leave `#126`", "`DUR-RESTORE-001`", "`#39` open"),
 }
 ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
@@ -1606,10 +1606,118 @@ def check_issue141_structural_contract(failures: list[str], adr_text: str) -> No
         )
 
 
+def check_issue141_detailed_controls(failures: list[str], adr_text: str) -> None:
+    normalized_sections = {
+        heading: re.sub(r"\s+", " ", subsection(adr_text, heading))
+        for heading in (
+            "Environment, account, and region boundaries",
+            "Backup mechanism and artifact catalog",
+            "Access control and secrets",
+            "Retention, encryption, and integrity",
+            "RTO/RPO ownership and measurement",
+            "Dependencies and acceptance for issues #142-#149",
+        )
+    }
+    security_terms_by_section = {
+        "Backup mechanism and artifact catalog": (
+            "writer has create- only permissions and cannot overwrite",
+            "every use is alerted, dated, and reviewed",
+            "Control-key disablement/deletion safeguards and alarms are mandatory",
+            "Reviewer exports use a field allowlist",
+            "separate read roles and access audit",
+            "dedicated Security-owned manifest-signing principal",
+            "journal writer and reconciler cannot sign",
+        ),
+        "Access control and secrets": (
+            ".github/workflows/durability-deploy.yml@refs/heads/main",
+            "id-token: write",
+            "aud=sts.amazonaws.com",
+            "repo:imrohitagrawal/narratwin-ai:environment:production-like-durability",
+            "refs/pull/*/merge",
+            "prevents self-review",
+            "disallows administrator bypass",
+            "no larger than `5 GB`",
+            "s3:GetObjectVersion",
+            "kms:Decrypt",
+            "s3:PutObject",
+            "kms:GenerateDataKey",
+            "internet/NAT, source-VPC, application, provider, or production connectivity",
+            "private AWS endpoints are the only egress",
+        ),
+    }
+    missing_security: list[str] = []
+    for heading, terms in security_terms_by_section.items():
+        section_text = normalized_sections[heading]
+        missing_security.extend(f"{heading}: {term}" for term in terms if term not in section_text)
+    if missing_security:
+        failures.append("ADR 0027 detailed security controls missing: " + ", ".join(missing_security))
+
+    operational_terms_by_section = {
+        "Environment, account, and region boundaries": (
+            "PITR API has no `EngineVersion` input",
+            "PubliclyAccessible=false",
+            "EnableIAMDatabaseAuthentication=true",
+            "rather than accepting service defaults",
+            "After creation, platform APIs must prove engine version `17.10`",
+        ),
+        "Retention, encryption, and integrity": (
+            "cleanup_due_utc` before the create request",
+            "Automatically tear down the target/delete copied versions within 24 hours",
+            "SkipFinalSnapshot=true",
+            "DeleteAutomatedBackups=true",
+            "tag-based live-inventory discovery",
+            "both catalog and live inventory prove cleanup",
+        ),
+        "RTO/RPO ownership and measurement": (
+            "only after DB availability, migration compatibility, database integrity",
+            "live API proof of Multi-AZ",
+            "IAM database authentication",
+            "no-traffic isolation pass",
+            "reviewed holdpoint and before any recovery action",
+            "version-writes and checksum-verifies that immutable source cutoff",
+            "moving post-start source query",
+        ),
+        "Dependencies and acceptance for issues #142-#149": (
+            "alert routing owned by CH-12",
+            "no service defaults",
+            "SkipFinalSnapshot=true",
+            "next-exercise live-inventory block",
+        ),
+    }
+    missing_operational: list[str] = []
+    for heading, terms in operational_terms_by_section.items():
+        section_text = normalized_sections[heading]
+        missing_operational.extend(f"{heading}: {term}" for term in terms if term not in section_text)
+    if missing_operational:
+        failures.append(
+            "ADR 0027 detailed operational controls missing: " + ", ".join(missing_operational)
+        )
+
+    threat_headers, threat_rows = parse_table_lines(section(read("docs/THREAT_MODEL.md"), "STRIDE Analysis"))
+    threat_rows_by_boundary = {
+        row[0]: row for row in threat_rows if len(row) == len(threat_headers) and row
+    }
+    required_threat_terms = {
+        "Versioned S3 artifact path": ("Version-ID substitution", "delete marker", "protected source versions"),
+        "Security-control journal path": ("high-watermark rollback", "retention bypass", "journal/KMS/manifest unavailable"),
+    }
+    missing_threat: list[str] = []
+    for boundary, terms in required_threat_terms.items():
+        row = threat_rows_by_boundary.get(boundary)
+        if not row:
+            missing_threat.append(boundary)
+            continue
+        row_text = " ".join(row[1:])
+        missing_threat.extend(f"{boundary}: {term}" for term in terms if term not in row_text)
+    if missing_threat:
+        failures.append("Threat model S3/journal STRIDE rows missing: " + ", ".join(missing_threat))
+
+
 def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
     adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
     adr_text = read(adr_rel)
     check_issue141_structural_contract(failures, adr_text)
+    check_issue141_detailed_controls(failures, adr_text)
     required_markers_by_file = {
         adr_rel: (
             "Amazon RDS for PostgreSQL `17.10`, Multi-AZ DB instance deployment",
@@ -1670,7 +1778,7 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
             "| `#126` | Open |",
             "No environment, backup/version source, restore target, or restore evidence has been verified.",
             "versioned S3 artifact/control buckets",
-            "contiguous integrity-linked deletion/revocation journal",
+            "separately signed contiguous deletion journal",
             "at least 15-day S3 version retention",
         ),
         "docs/TRACEABILITY.md": (
@@ -1741,6 +1849,8 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
         r"\bissue\s+`?#126`?\s+(?:is|has been)\s+(?:now\s+)?(?:closed|complete|resolved|satisfied)\b",
         r"\b(?:matrix row\s+)?`?dur-restore-001`?\s+(?:is|has been)\s+(?:now\s+)?(?:closed|complete|resolved|satisfied)\b",
         r"\bissue\s+`?#39`?\s+(?:is|has been)\s+(?:now\s+)?(?:closed|complete|resolved|satisfied)\b",
+        r"\bissue\s+`?#139`?\s+(?:is|has been)\s+(?:now\s+)?(?:closed|complete|completed|resolved|satisfied)\b",
+        r"\bissue\s+`?#141`?\s+(?:is|has been)\s+(?:now\s+)?(?:closed|complete|completed|resolved|satisfied)\b",
     )
     for rel in required_markers_by_file:
         normalized_text = re.sub(r"\s+", " ", read(rel)).lower()

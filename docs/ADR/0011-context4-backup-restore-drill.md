@@ -174,6 +174,12 @@ Versioning with at least a 15-day artifact-version recovery window, an immutable
 UTC restore point and S3 Version IDs, a Platform/Storage-owned restricted
 catalog plus allowlisted reviewer export, and a same-account/region separately
 isolated restore landing zone whose later PITR invocation creates a new target.
+That later request enables IAM DB authentication and explicit private/Multi-AZ
+configuration, while engine `17.10` is verified before and after creation rather
+than supplied as an unsupported PITR input. Exact S3 copy is bounded to the
+single-request `<=5 GB` contract until multipart permissions are separately
+approved. Cleanup is registered before creation and proves no final snapshot,
+automated backup, target DB, copied version or incomplete work remains.
 The previously listed seven-day change-log assumption is superseded by the
 14-day RDS/15-day S3 windows. Manual drill snapshots must be
 deleted after accepted evidence or within 14 days, restore targets within 24
