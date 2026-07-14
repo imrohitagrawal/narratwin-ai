@@ -1907,6 +1907,7 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
             "docs/LAUNCH_LEVELS.md",
         ),
         "docs/LAUNCH_LEVELS.md": (
+            "Status: Merged documentation baseline through PR `#153` at `2fb5569`",
             "ADR `0027` selects AWS for the production-like durability evidence and eventual production paths",
             "An AWS account is not required for local development or the controlled local mock demo.",
             "A free or low-cost resource does not, by price alone, prove security, durability, privacy, or operational readiness.",
@@ -1943,6 +1944,7 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
         ),
         "docs/STATUS.md": (
             "| `#141` | Open, architecture recorded; human approvals blocked |",
+            "Documentation baseline merged through PR `#153` at `2fb5569`.",
             "| `#142` | Open, depends on `#141` |",
             "| `#149` | Open, depends on `#130`, `#141`-`#148` |",
             "| `#126` | Open |",
@@ -1955,7 +1957,7 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
         ),
         "docs/TRACEABILITY.md": (
             "Issue `#141` production-like durability platform and ownership contract",
-            "Proposed on branch; external approvals blocked",
+            "Merged at `2fb5569`; external approvals blocked",
             "launch-level boundary",
             "docs/LAUNCH_LEVELS.md",
         ),

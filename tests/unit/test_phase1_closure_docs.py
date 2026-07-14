@@ -761,6 +761,46 @@ def test_issue141_platform_ownership_contract_accepts_current_docs(monkeypatch: 
     assert run_issue141_platform_contract_check(monkeypatch) == []
 
 
+@pytest.mark.parametrize(
+    ("rel", "search", "replacement", "missing_marker"),
+    [
+        (
+            "docs/LAUNCH_LEVELS.md",
+            "Status: Merged documentation baseline through PR `#153` at `2fb5569`;",
+            "Status: Proposed clarification for issue `#141` and draft PR `#153`.",
+            "Status: Merged documentation baseline through PR `#153` at `2fb5569`",
+        ),
+        (
+            "docs/STATUS.md",
+            "Documentation baseline merged through PR `#153` at `2fb5569`.",
+            "Documentation baseline remains proposed on the feature branch.",
+            "Documentation baseline merged through PR `#153` at `2fb5569`.",
+        ),
+        (
+            "docs/TRACEABILITY.md",
+            "Merged at `2fb5569`; external approvals blocked",
+            "Proposed on branch; external approvals blocked",
+            "Merged at `2fb5569`; external approvals blocked",
+        ),
+    ],
+)
+def test_issue141_post_merge_reconciliation_rejects_stale_status(
+    monkeypatch: Any, rel: str, search: str, replacement: str, missing_marker: str
+) -> None:
+    text = phase1.read(rel)
+    mutated = replace_text(text, search, replacement)
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={rel: mutated},
+    )
+
+    assert any(
+        f"{rel} missing issue #141 markers" in failure and missing_marker in failure
+        for failure in failures
+    )
+
+
 def test_issue141_launch_level_contract_rejects_missing_level(monkeypatch: Any) -> None:
     launch_rel = "docs/LAUNCH_LEVELS.md"
     launch_text = phase1.read(launch_rel)
