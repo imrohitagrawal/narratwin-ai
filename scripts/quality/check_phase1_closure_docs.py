@@ -46,8 +46,6 @@ MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
     "docs/RECOMMENDED_REVIEW_ITEMS.md",
     "docs/REPOSITORY_GUARDRAILS.md",
     "docs/ENGINEERING_PROCESS_RCA.md",
-    "docs/SKILL_EXECUTION_PLAN.md",
-    "docs/SKILL_SELECTION_AND_EVIDENCE.md",
     "docs/RELEASE_CHECKLIST.md",
     "docs/RUNBOOK.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -62,6 +60,8 @@ MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
     "scripts/quality/check_recommended_review_items.py",
 }
 PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/SKILL_SELECTION_AND_EVIDENCE.md",
     "scripts/guardrails_check.py",
     "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
@@ -1331,13 +1331,13 @@ def check_preflight_table_columns(
 ) -> None:
     headers, _ = parse_table_lines(section_text)
     if not headers:
-        failures.append(f"{section_name} section in .github/pull_request_template.md is missing a table header row.")
+        failures.append(f"{section_name} is missing a table header row.")
         return
     normalized_headers = {normalize_header(header) for header in headers}
     missing = [header for header in required_headers if normalize_header(header) not in normalized_headers]
     if missing:
         failures.append(
-            f"{section_name} table in .github/pull_request_template.md is missing headers: {', '.join(missing)}"
+            f"{section_name} is missing headers: {', '.join(missing)}"
         )
 
 
@@ -3180,14 +3180,20 @@ def check_process_docs(failures: list[str]) -> None:
             fail(failures, f"AGENTS.md missing process marker: {marker}")
 
     skill_execution_plan = read("docs/SKILL_EXECUTION_PLAN.md")
-    for marker in (
-        "docs/SKILL_SELECTION_AND_EVIDENCE.md",
-        "claim",
-        "boundary",
-        "evidence",
-    ):
-        if marker not in skill_execution_plan:
-            fail(failures, f"docs/SKILL_EXECUTION_PLAN.md missing selection marker: {marker}")
+    normalized_skill_execution_plan = re.sub(r"\s+", " ", skill_execution_plan.lower())
+    exact_selection_rule = (
+        "start from the claim and boundary, choose the smallest test that can disprove "
+        "the claim, use a skill to govern the method, and record the resulting evidence "
+        "or prevented unsafe action"
+    )
+    if "docs/skill_selection_and_evidence.md" not in normalized_skill_execution_plan:
+        fail(
+            failures,
+            "docs/SKILL_EXECUTION_PLAN.md missing selection marker: "
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+        )
+    if exact_selection_rule not in normalized_skill_execution_plan:
+        fail(failures, "docs/SKILL_EXECUTION_PLAN.md missing exact selection rule.")
 
     skill_selection = read("docs/SKILL_SELECTION_AND_EVIDENCE.md")
     check_required_headings(
@@ -3247,6 +3253,48 @@ def check_process_docs(failures: list[str]) -> None:
                 "docs/SKILL_SELECTION_AND_EVIDENCE.md missing selection contract marker: "
                 f"{marker}",
             )
+
+    normalized_trigger = re.sub(
+        r"\s+",
+        " ",
+        section(skill_selection, "Verification-Skill Activation Trigger").lower(),
+    )
+    trigger_and_contract = (
+        "when at least 3 eligible mode 1 prs have merged since the current evaluation baseline, "
+        "and at least 2 qualifying completion defect classes from those eligible prs have been "
+        "discovered after merge since that same baseline despite declared green evidence, set "
+        "the state to fired"
+    )
+    if trigger_and_contract not in normalized_trigger:
+        fail(
+            failures,
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md trigger must require both thresholds "
+            "since the same baseline.",
+        )
+    if "the following do not count:" not in normalized_trigger:
+        fail(
+            failures,
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md trigger exclusions must remain exclusions.",
+        )
+    if "a qualifying completion escape must: - be discovered after merge;" not in normalized_trigger:
+        fail(
+            failures,
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md qualifying escapes must be discovered after merge.",
+        )
+
+    forbidden_skill_selection_patterns = (
+        r"\b(?:install|activate)\b.{0,80}\bautomatic\w*\b",
+        r"\b(?:install|activate)\b.{0,120}\bwithout\s+(?:explicit\s+)?(?:repository-)?owner approval\b",
+        r"\bpresent on disk\b\s+is\s+(?:itself\s+)?(?:sufficient|enough)\b.{0,40}\bapproval\b",
+        r"\bcomposite skill (?:quality )?score\s*(?:=|:|\|)",
+    )
+    for pattern in forbidden_skill_selection_patterns:
+        if non_negated_pattern_present(normalized_skill_selection, pattern):
+            fail(
+                failures,
+                "docs/SKILL_SELECTION_AND_EVIDENCE.md contains a forbidden "
+                f"skill-selection contradiction: {pattern}",
+            )
     check_preflight_table_columns(
         failures,
         section_name="docs/SKILL_SELECTION_AND_EVIDENCE.md lifecycle routing matrix",
@@ -3260,6 +3308,36 @@ def check_process_docs(failures: list[str]) -> None:
             "Do not use it for",
         ),
     )
+    lifecycle_headers, lifecycle_rows = parse_table_lines(
+        section(skill_selection, "Development Lifecycle Routing Matrix")
+    )
+    normalized_lifecycle_headers = [normalize_header(header) for header in lifecycle_headers]
+    required_lifecycle_headers = (
+        "phase",
+        "required evidence",
+        "do not use it for",
+    )
+    if all(header in normalized_lifecycle_headers for header in required_lifecycle_headers):
+        lifecycle_index = {
+            header: normalized_lifecycle_headers.index(header) for header in required_lifecycle_headers
+        }
+        mocked_browser_rows = [
+            row
+            for row in lifecycle_rows
+            if len(row) == len(lifecycle_headers)
+            and row[lifecycle_index["phase"]].strip().lower() == "mocked browser workflow"
+        ]
+        mocked_browser_contract_holds = any(
+            "mocked browser smoke" in row[lifecycle_index["required evidence"]].lower()
+            and "real-stack e2e" in row[lifecycle_index["do not use it for"]].lower()
+            for row in mocked_browser_rows
+        )
+        if not mocked_browser_contract_holds:
+            fail(
+                failures,
+                "docs/SKILL_SELECTION_AND_EVIDENCE.md mocked browser workflow must not "
+                "claim real-stack E2E evidence.",
+            )
     check_preflight_table_columns(
         failures,
         section_name="docs/SKILL_SELECTION_AND_EVIDENCE.md measurement model",

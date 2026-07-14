@@ -233,6 +233,11 @@ present on disk
 - Approved and operational means the repository trust/activation requirements
   in `docs/SKILL_LOCK.md` are satisfied for the stage.
 
+Reading or consulting exposed guidance under an explicit user instruction is
+not the same as repository-approved invocation or activation. Record that case
+as guidance consulted in-session, name the unresolved lock state, and do not
+claim repository approval, activation, or completion evidence.
+
 Browser DevTools guidance, for example, may be present while its required MCP
 integration is unavailable. Superpowers may exist in a temporary cache while
 remaining neither invokable nor repository-approved. Neither may be claimed as
@@ -250,6 +255,7 @@ Allowed outcome classifications:
 
 - useful and produced accepted evidence;
 - useful and prevented an unsafe or unnecessary action;
+- guidance consulted in-session; repository activation not claimed;
 - considered but redundant;
 - unavailable or unapproved;
 - invoked but ineffective;
@@ -305,9 +311,10 @@ exact-commit verification, and merge closeout.
 The trigger is:
 
 ```text
-When at least 3 eligible Mode 1 PRs have merged since the last
-verification-skill evaluation, and at least 2 qualifying completion defect
-classes escaped despite declared green evidence, set the state to FIRED.
+When at least 3 eligible Mode 1 PRs have merged since the current evaluation
+baseline, and at least 2 qualifying completion defect classes from those
+eligible PRs have been discovered after merge since that same baseline despite
+declared green evidence, set the state to FIRED.
 ```
 
 FIRED authorizes a capability and trust evaluation only. It never authorizes
@@ -326,10 +333,15 @@ An eligible Mode 1 PR must:
 
 A qualifying completion escape must:
 
-- be discovered after merge or after an explicit completion claim;
-- violate that PR's approved acceptance contract;
+- be discovered after merge;
+- arise from an eligible PR counted after the current evaluation baseline;
+- violate that eligible PR's approved acceptance contract;
 - belong to a boundary the declared evidence claimed to cover;
 - represent a defect class, not repeated occurrences of one defect.
+
+Qualifying completion escapes are counted only when discovered after merge.
+An explicit pre-merge completion claim does not override the exclusion for
+findings caught before merge.
 
 The following do not count:
 
@@ -352,6 +364,25 @@ Allowed states are:
 - `EVALUATED_NO_INSTALL`;
 - `APPROVED_FOR_INSTALLATION`;
 - `ACTIVATED`.
+
+Legal transitions and their authority are:
+
+- `ARMED` → `FIRED` when both documented thresholds are met; the issue/PR
+  reviewer records the evidence and the repository owner confirms the state in
+  `#155`.
+- `FIRED` → `EVALUATING` when a dedicated read-only capability/trust evaluation
+  issue begins. This does not authorize installation.
+- `EVALUATING` → `EVALUATED_NO_INSTALL` when the evaluation concludes that
+  existing routing should be fixed or no capability gap exists.
+- `EVALUATING` → `APPROVED_FOR_INSTALLATION` only with explicit repository-owner
+  approval recorded in the dedicated issue.
+- `APPROVED_FOR_INSTALLATION` → `ACTIVATED` only after the dedicated
+  issue/branch/PR, trust review, lock, notices, CI, and merge closeout complete.
+- `EVALUATED_NO_INSTALL` → `ARMED` when the new evaluation baseline is recorded.
+
+All state changes are repository changes made through the issue/branch/PR
+workflow. No agent may infer installation authority from a counter or state
+label.
 
 When the threshold fires:
 
@@ -381,26 +412,19 @@ Update issue `#155` with a checkpoint summary when the state changes. Update
 `docs/STATUS.md` only when the trigger fires, an evaluation decision is
 recorded, or activation state changes.
 
-## Current Planning Ledger
+## Issue 164 Pilot Record
 
-| Phase | Skill/source | Decision | Evidence or prevented action | Outcome |
-|---|---|---|---|---|
-| Mode 1 audit | `pm-ai-shipping:intended-vs-implemented` | invoked | Grounded all five gaps in intent, code, tests, and docs | useful; produced evidence |
-| Planning | `planning-and-task-breakdown` | invoked | Dependency-ordered smallest chunks and parallel boundaries | useful; produced evidence |
-| Contract | `spec-driven-development` | invoked | This policy contract and the later Stage 6→7 contract boundary | useful; produced evidence |
-| Behavior planning | `test-driven-development` | invoked | Concrete RED cases for gates and Mode 1 behavior | useful; produced evidence |
-| Skill discovery | `using-agent-skills` | invoked | Avoided redundant and stage-inappropriate invocation | useful; prevented unnecessary work |
-| Documentation delivery | documentation/ADR, incremental implementation, git workflow | invoked | One issue-linked, bounded process change without an unnecessary ADR | useful; constrained scope |
-| Candidate | PM shipping artifacts | considered, not invoked | Avoided a competing documentation tree | considered but redundant |
-| Candidate | PM test scenarios | considered, not invoked now | Reserved for presenter/manual scenarios after contract freeze | considered but useful later |
-| Candidate | shipping, performance, design | considered, not invoked | Local correctness/governance is the current phase | wrong stage |
-| Candidate | Superpowers | considered, not invoked | Not active/locked and no demonstrated capability gap | unavailable or unapproved |
+The actual planning and review ledger for this policy belongs to issue `#164`
+and PR `#165`, as required by the Canonical Storage Model. It is not duplicated
+here. The issue record must distinguish guidance consulted in-session from a
+repository-approved invocation: the PM bundle and the broad Addy Osmani bundle
+remain pending or guidance-only under `docs/SKILL_LOCK.md`. Their appearance in
+the runtime catalog does not change that trust state.
 
-No "Adam Somanyi"-labelled PM source was identified in the installed catalog
-used for this review. The exposed PM bundle is `phuryn/pm-skills` version
-`2.1.0`; Addy Osmani engineering skills are vendored locally. Source/version/
-license approval remains governed by `docs/SKILL_LOCK.md` rather than this
-observation table.
+The durable learning promoted from the pilot is the selection order, outcome
+taxonomy, routing matrices, raw measures, and trigger contract on this page.
+Session-specific tool versions, invocation outcomes, and review evidence remain
+in the issue and PR preflight.
 
 ## Maintenance And Promotion
 

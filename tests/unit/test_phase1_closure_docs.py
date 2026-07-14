@@ -206,6 +206,29 @@ def test_skill_governance_process_branch_allows_only_governance_files(monkeypatc
     ]
 
 
+@pytest.mark.parametrize(
+    "skill_doc",
+    [
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+    ],
+)
+def test_skill_governance_docs_are_confined_to_process_branches(
+    monkeypatch: Any,
+    skill_doc: str,
+) -> None:
+    branch = "phase-1-closure-138-click-security-remediation"
+
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[skill_doc],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-138-click-security-remediation may not change "
+        f"{skill_doc}."
+    ]
+
+
 def test_process_docs_reject_skill_selection_contract_without_activation_trigger(
     monkeypatch: Any,
 ) -> None:
@@ -242,6 +265,26 @@ def test_process_docs_reject_skill_selection_contract_without_activation_trigger
             "| Initial — 2026-07-15 | 1 | 0 | ARMED |",
             "must keep the initial trigger baseline at 0 eligible PRs",
         ),
+        (
+            "baseline, and at least 2 qualifying",
+            "baseline, or at least 2 qualifying",
+            "trigger must require both thresholds",
+        ),
+        (
+            "The following do not count:",
+            "The following count toward the trigger:",
+            "trigger exclusions must remain exclusions",
+        ),
+        (
+            "| Mocked browser workflow | Does the assembled UI handle expected response shapes? | TDD plus frontend testing | Playwright with route interception | Explicitly labelled mocked browser smoke | Calling the result real-stack E2E |",
+            "| Mocked browser workflow | Does the assembled UI handle expected response shapes? | TDD plus frontend testing | Playwright with route interception | Real-stack E2E evidence | Nothing |",
+            "mocked browser workflow must not claim real-stack E2E evidence",
+        ),
+        (
+            "- be discovered after merge;",
+            "- be discovered after an explicit pre-merge completion claim;",
+            "qualifying escapes must be discovered after merge",
+        ),
     ],
 )
 def test_process_docs_reject_skill_selection_contract_mutations(
@@ -266,6 +309,81 @@ def test_process_docs_reject_skill_selection_contract_mutations(
     )
 
     assert any(expected_failure in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("contradiction", "expected_failure"),
+    [
+        (
+            "When FIRED persists, install the skill automatically.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Present on disk is sufficient for approval and operation.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Composite skill quality score = weighted mean of all measures.",
+            "forbidden skill-selection contradiction",
+        ),
+    ],
+)
+def test_process_docs_reject_additive_skill_selection_contradictions(
+    monkeypatch: Any,
+    contradiction: str,
+    expected_failure: str,
+) -> None:
+    skill_selection = phase1.read("docs/SKILL_SELECTION_AND_EVIDENCE.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_SELECTION_AND_EVIDENCE.md"],
+        read_overrides={
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md": f"{skill_selection}\n{contradiction}\n",
+        },
+    )
+
+    assert any(expected_failure in failure for failure in failures)
+
+
+def test_process_docs_require_exact_skill_execution_selection_rule(monkeypatch: Any) -> None:
+    skill_plan = phase1.read("docs/SKILL_EXECUTION_PLAN.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_EXECUTION_PLAN.md"],
+        read_overrides={
+            "docs/SKILL_EXECUTION_PLAN.md": skill_plan.replace(
+                "start from the claim and boundary, choose the smallest test that can disprove\n"
+                "the claim, use a skill to govern the method, and record the resulting evidence\n"
+                "or prevented unsafe action.",
+                "Review the claim, available boundaries, and evidence.",
+                1,
+            ),
+        },
+    )
+
+    assert any("missing exact selection rule" in failure for failure in failures)
+
+
+def test_skill_selection_table_failure_names_the_owning_document(monkeypatch: Any) -> None:
+    skill_selection = phase1.read("docs/SKILL_SELECTION_AND_EVIDENCE.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_SELECTION_AND_EVIDENCE.md"],
+        read_overrides={
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md": skill_selection.replace(
+                "| Phase | Question being answered | Preferred skill/workflow | Test/tool or artifact | Required evidence | Do not use it for |",
+                "| Phase | Question being answered | Preferred skill/workflow | Test/tool or artifact | Required evidence |",
+                1,
+            ),
+        },
+    )
+
+    matching = [failure for failure in failures if "missing headers: Do not use it for" in failure]
+    assert matching
+    assert all(".github/pull_request_template.md" not in failure for failure in matching)
 
 
 def test_current_skill_selection_and_evidence_contract_passes(monkeypatch: Any) -> None:

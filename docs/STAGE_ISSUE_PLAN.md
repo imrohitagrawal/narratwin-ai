@@ -542,8 +542,6 @@ Allowed governance/reporting changes for Module A:
 - `docs/ENGINEERING_PROCESS_RCA.md`
 - `docs/QUALITY_GATES.md`
 - `docs/REPOSITORY_GUARDRAILS.md`
-- `docs/SKILL_EXECUTION_PLAN.md`
-- `docs/SKILL_SELECTION_AND_EVIDENCE.md`
 - `docs/RELEASE_CHECKLIST.md`
 - `docs/RELEASE_READINESS_REVIEW.md`
 - `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
@@ -571,6 +569,8 @@ Process-only follow-up branches must use
 governance/reporting list above and may additionally change only the executable
 process guardrail and its tests:
 
+- `docs/SKILL_EXECUTION_PLAN.md`
+- `docs/SKILL_SELECTION_AND_EVIDENCE.md`
 - `scripts/guardrails_check.py`
 - `tests/unit/test_guardrails_check.py`
 - `tests/unit/test_phase1_closure_docs.py`
