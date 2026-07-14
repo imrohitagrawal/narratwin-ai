@@ -170,21 +170,24 @@ currently documented.
 ## Issue #141 platform and retention specialization
 
 ADR `0027` specializes this advisory plan as RDS automated backups/PITR plus S3
-Versioning with a 14-day recovery window, an immutable UTC restore point and S3
-Version IDs, a Platform/Storage-owned sanitized artifact catalog, and a
-same-account/region but separately isolated restore-validation target. The
-previously listed seven-day change-log assumption is superseded by the 14-day
-RDS/S3 window. Manual drill snapshots must be
+Versioning with at least a 15-day artifact-version recovery window, an immutable
+UTC restore point and S3 Version IDs, a Platform/Storage-owned restricted
+catalog plus allowlisted reviewer export, and a same-account/region separately
+isolated restore landing zone whose later PITR invocation creates a new target.
+The previously listed seven-day change-log assumption is superseded by the
+14-day RDS/15-day S3 windows. Manual drill snapshots must be
 deleted after accepted evidence or within 14 days, restore targets within 24
 hours (72 hours only by dated exception), and sanitized evidence is retained for
 at least 90 days.
 
 CH-14 owns backup/catalog/restore-target lifecycle, measurement, and the handoff
-of records/objects requiring re-delete. That handoff comes from the current
-append-only control-bucket deletion journal, not the point-in-time-restored
-database. CH-21 owns erasure enforcement and proof that restored deleted
-records/objects are re-deleted. This preserves the dependency direction: CH-14
-produces the handoff and CH-21 proves retention/erasure behavior later.
+of records/objects requiring re-delete. That handoff comes from the unique-key,
+last-contiguous, integrity-linked control-bucket deletion journal, not the
+point-in-time-restored database. CH-17 owns current consent-revocation state and
+CH-21 owns erasure enforcement plus proof that restored deleted or revoked
+records/objects are re-deleted or remain blocked. This preserves the dependency
+direction: CH-14 produces the handoff and CH-21 proves retention/erasure
+behavior later.
 
 RTO `<= 75 minutes` and RPO `<= 5 minutes` remain unmeasured planning targets.
 No environment, backup, target, or restore evidence exists merely because this

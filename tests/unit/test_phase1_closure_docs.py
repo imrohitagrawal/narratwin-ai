@@ -211,6 +211,23 @@ def test_issue141_branch_allows_only_durability_decision_files(monkeypatch: Any)
     assert failures == []
 
 
+def test_issue141_branch_allowlist_is_an_independent_literal_contract() -> None:
+    assert phase1.ISSUE_141_ALLOWED_CHANGED_FILES == {
+        "docs/ADR/0008-postgresql-durability-schema-boundary.md",
+        "docs/ADR/0011-context4-backup-restore-drill.md",
+        "docs/ADR/0027-production-like-durability-platform-ownership.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THREAT_MODEL.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+        "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md",
+        "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+
+
 def test_issue141_branch_rejects_runtime_or_infrastructure_changes(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
@@ -804,7 +821,7 @@ def test_issue141_platform_ownership_contract_rejects_rolled_back_deletion_sourc
         read_overrides={
             "docs/ADR/0027-production-like-durability-platform-ownership.md": replace_text(
                 adr_text,
-                "is not rolled back with RDS PITR",
+                "is not rolled back\nwith RDS PITR",
                 "is reconstructed from the restored database",
             )
         },
@@ -820,13 +837,118 @@ def test_issue141_platform_ownership_contract_rejects_clamped_negative_rpo(monke
         read_overrides={
             "docs/ADR/0027-production-like-durability-platform-ownership.md": replace_text(
                 adr_text,
-                "A negative delta, target-ahead sequence, clock\n  ambiguity, or manifest mismatch invalidates the evidence",
+                "negative delta, target-ahead sequence, clock ambiguity, cutoff mismatch, or\n  manifest mismatch invalidates the evidence",
                 "A negative delta is clamped to zero",
             )
         },
     )
 
-    assert any("A negative delta, target-ahead sequence" in item for item in failures)
+    assert any("negative delta, target-ahead sequence" in item for item in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_missing_stage_inventory_row(
+    monkeypatch: Any,
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = re.sub(r"^\| Stage 6 \|.*\n", "", adr_text, count=1, flags=re.M)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("durable-state ownership rows" in failure and "Stage 6" in failure for failure in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_missing_child_acceptance_row(
+    monkeypatch: Any,
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = re.sub(r"^\| `#146`.*\n", "", adr_text, count=1, flags=re.M)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("child acceptance rows" in failure and "#146" in failure for failure in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_child_dependency_drift(
+    monkeypatch: Any,
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = adr_text.replace(
+        "| `#148` restore observability and evidence export | `#141`, `#144`, `#145`, `#146`, `#147`;",
+        "| `#148` restore observability and evidence export | `#141`, `#144`;",
+        1,
+    )
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("#148 dependencies" in failure for failure in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_incomplete_journal_integrity_fields(
+    monkeypatch: Any,
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = adr_text.replace("event checksum, policy version", "policy version", 1)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("deletion-journal integrity fields" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "overclaim_text",
+    [
+        "Azure SQL in westus2, single-zone and publicly accessible, is the authoritative production-like datastore.",
+        "The platform is approved by Operations and Security and is Go for launch.",
+        "RDS has been provisioned and a backup artifact exists.",
+        "Measured RPO was 3 minutes; Platform/Storage signed off.",
+    ],
+)
+def test_issue141_platform_ownership_contract_rejects_structured_contradictions_and_overclaims(
+    monkeypatch: Any, overclaim_text: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: adr_text + f"\n\n{overclaim_text}\n"},
+    )
+
+    assert any("contains issue #141 overclaim markers" in failure for failure in failures)
+
+
+def test_issue141_platform_ownership_contract_accepts_truthful_backup_negation(
+    monkeypatch: Any,
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: adr_text + "\n\nNo managed backup is available.\n"},
+    )
+
+    assert not any("contains issue #141 overclaim markers" in failure for failure in failures)
 
 
 @pytest.mark.parametrize(

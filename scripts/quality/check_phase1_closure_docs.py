@@ -103,6 +103,31 @@ ISSUE_141_ALLOWED_CHANGED_FILES = {
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_141_EXPECTED_STAGE_ROWS = {
+    "Stage 4": ("PostgreSQL:", "S3:", "approved original upload version", "secrets"),
+    "Stage 6": ("translation/voice run", "generated audio/downloadable artifact versions", "Raw provider responses"),
+    "Stage 7": ("synthetic-media consent", "render/export artifact versions", "cloned-identity material"),
+}
+ISSUE_141_EXPECTED_CHILD_DEPENDENCIES = {
+    "#142": {"#141"},
+    "#143": {"#141", "#142"},
+    "#144": {"#141"},
+    "#145": {"#141", "#144"},
+    "#146": {"#141", "#143", "#144", "#145"},
+    "#147": {"#144", "#145", "#146"},
+    "#148": {"#141", "#144", "#145", "#146", "#147"},
+    "#149": {f"#{number}" for number in range(141, 149)},
+}
+ISSUE_141_CHILD_ACCEPTANCE_TERMS = {
+    "#142": ("connection-backed adapter", "migrations", "No cloud provisioning"),
+    "#143": ("S3-version-first", "contiguous", "orphan", "unavailable-object"),
+    "#144": ("restore VPC/subnet", "No pre-created target DB", "no drill"),
+    "#145": ("15-day S3", "version-aware journal", "reviewer-export split"),
+    "#146": ("immutable source cutoff", "integrity-linked deletion-journal event", "negative corruption"),
+    "#147": ("creates a new RDS target", "target-only deletion-protection cleanup role", "next-exercise block"),
+    "#148": ("RDS/S3 restore", "cleanup-deadline", "immutable-cutoff", "No successful-drill claim"),
+    "#149": ("later drill", "without actual RTO/RPO", "leave `#126`", "`DUR-RESTORE-001`", "`#39` open"),
+}
 ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
     ".github/pull_request_template.md",
     ".github/workflows/ci.yml",
@@ -616,7 +641,7 @@ EXPECTED_ISSUE_39_CHUNK_DEPENDENCIES = {
     "CH-18": {"CH-08", "CH-16"},
     "CH-19": {"CH-18"},
     "CH-20": {"CH-18"},
-    "CH-21": {"CH-02", "CH-14", "CH-16", "CH-18"},
+    "CH-21": {"CH-02", "CH-14", "CH-16", "CH-17", "CH-18"},
     "CH-22": {"CH-03", "CH-07", "CH-08", "CH-21"},
     "CH-23": {f"CH-{index:02d}" for index in range(23)},
 }
@@ -906,6 +931,12 @@ def section(text: str, heading: str) -> str:
     return match.group("body") if match else ""
 
 
+def subsection(text: str, heading: str) -> str:
+    pattern = rf"^### {re.escape(heading)}\n(?P<body>.*?)(?=^### |^## |\Z)"
+    match = re.search(pattern, text, flags=re.M | re.S)
+    return match.group("body") if match else ""
+
+
 def has_heading(text: str, heading: str) -> bool:
     return bool(re.search(rf"^##\s+{re.escape(heading)}\s*$", text, flags=re.M))
 
@@ -930,6 +961,25 @@ def parse_table_lines(section_text: str) -> tuple[list[str], list[list[str]]]:
             continue
         rows.append(cells)
     return headers, rows
+
+
+def expanded_issue_numbers(value: str) -> set[str]:
+    issues = set(re.findall(r"#\d+", value))
+    for start_text, end_text in re.findall(r"#(\d+)`?\s+(?:through|to)\s+`?#(\d+)", value):
+        start = int(start_text)
+        end = int(end_text)
+        if start <= end and end - start <= 100:
+            issues.update(f"#{number}" for number in range(start, end + 1))
+    return issues
+
+
+def non_negated_pattern_present(text: str, pattern: str) -> bool:
+    for match in re.finditer(pattern, text, flags=re.I):
+        prefix = text[max(0, match.start() - 48) : match.start()]
+        if re.search(r"\b(?:no|not|never|neither|without|does not|has not|is not)\b[^.;\n]{0,40}$", prefix, re.I):
+            continue
+        return True
+    return False
 
 
 def yaml_inline_list_contains_token(value: str, token: str) -> bool:
@@ -1448,19 +1498,132 @@ def check_issue125_local_restore_contract(failures: list[str]) -> None:
         )
 
 
+def check_issue141_structural_contract(failures: list[str], adr_text: str) -> None:
+    stage_section = subsection(adr_text, "Durable-state ownership for Stages 4, 6, and 7")
+    stage_headers, stage_rows = parse_table_lines(stage_section)
+    if [normalize_header(header) for header in stage_headers] != [
+        "stage",
+        "authoritative durable state",
+        "deliberately excluded from recovery scope",
+    ]:
+        failures.append("ADR 0027 durable-state ownership table headers are malformed.")
+    stage_rows_by_id: dict[str, list[str]] = {}
+    duplicate_stages: set[str] = set()
+    for row in stage_rows:
+        if len(row) != len(stage_headers):
+            continue
+        stage_id = row[0].strip()
+        if stage_id in stage_rows_by_id:
+            duplicate_stages.add(stage_id)
+        stage_rows_by_id[stage_id] = row
+    expected_stages = set(ISSUE_141_EXPECTED_STAGE_ROWS)
+    actual_stages = set(stage_rows_by_id)
+    if actual_stages != expected_stages or duplicate_stages:
+        failures.append(
+            "ADR 0027 durable-state ownership rows must be exactly Stage 4, Stage 6, Stage 7; "
+            f"missing {', '.join(sorted(expected_stages - actual_stages)) or 'none'}; "
+            f"unexpected {', '.join(sorted(actual_stages - expected_stages)) or 'none'}; "
+            f"duplicates {', '.join(sorted(duplicate_stages)) or 'none'}."
+        )
+    for stage_id, required_terms in ISSUE_141_EXPECTED_STAGE_ROWS.items():
+        stage_row = stage_rows_by_id.get(stage_id)
+        if not stage_row:
+            continue
+        row_text = " ".join(stage_row[1:])
+        missing_terms = [term for term in required_terms if term not in row_text]
+        if missing_terms:
+            failures.append(
+                f"ADR 0027 {stage_id} durable-state ownership row missing: " + ", ".join(missing_terms)
+            )
+
+    child_section = subsection(adr_text, "Dependencies and acceptance for issues #142-#149")
+    child_headers, child_rows = parse_table_lines(child_section)
+    if [normalize_header(header) for header in child_headers] != [
+        "issue",
+        "dependencies",
+        "acceptance owned by that issue",
+    ]:
+        failures.append("ADR 0027 child acceptance table headers are malformed.")
+    child_rows_by_id: dict[str, list[str]] = {}
+    duplicate_children: set[str] = set()
+    for row in child_rows:
+        if len(row) != len(child_headers):
+            continue
+        issue_match = re.search(r"#\d+", row[0])
+        if not issue_match:
+            continue
+        issue_id = issue_match.group(0)
+        if issue_id in child_rows_by_id:
+            duplicate_children.add(issue_id)
+        child_rows_by_id[issue_id] = row
+    expected_children = set(ISSUE_141_EXPECTED_CHILD_DEPENDENCIES)
+    actual_children = set(child_rows_by_id)
+    if actual_children != expected_children or duplicate_children:
+        failures.append(
+            "ADR 0027 child acceptance rows must be exactly #142 through #149; "
+            f"missing {', '.join(sorted(expected_children - actual_children)) or 'none'}; "
+            f"unexpected {', '.join(sorted(actual_children - expected_children)) or 'none'}; "
+            f"duplicates {', '.join(sorted(duplicate_children)) or 'none'}."
+        )
+    for issue_id, expected_dependencies in ISSUE_141_EXPECTED_CHILD_DEPENDENCIES.items():
+        child_row = child_rows_by_id.get(issue_id)
+        if not child_row:
+            continue
+        actual_dependencies = expanded_issue_numbers(child_row[1])
+        if actual_dependencies != expected_dependencies:
+            failures.append(
+                f"ADR 0027 {issue_id} dependencies must be "
+                f"{', '.join(sorted(expected_dependencies))}; got "
+                f"{', '.join(sorted(actual_dependencies)) or 'none'}."
+            )
+        missing_terms = [
+            term for term in ISSUE_141_CHILD_ACCEPTANCE_TERMS[issue_id] if term not in child_row[2]
+        ]
+        if missing_terms:
+            failures.append(
+                f"ADR 0027 {issue_id} acceptance contract missing: " + ", ".join(missing_terms)
+            )
+
+    journal_section = re.sub(r"\s+", " ", subsection(adr_text, "Backup mechanism and artifact catalog"))
+    journal_terms = (
+        "unique write-once key",
+        "monotonic outbox sequence",
+        "previous-event digest",
+        "event checksum",
+        "policy version",
+        "deletion time",
+        "opaque entity/object identities",
+        "confirmed S3 Version ID",
+        "last contiguous, version-verified sequence",
+        "signed/versioned manifest",
+        "delete marker",
+        "fails closed",
+    )
+    missing_journal_terms = [term for term in journal_terms if term not in journal_section]
+    if missing_journal_terms:
+        failures.append(
+            "ADR 0027 deletion-journal integrity fields missing: " + ", ".join(missing_journal_terms)
+        )
+
+
 def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = read(adr_rel)
+    check_issue141_structural_contract(failures, adr_text)
     required_markers_by_file = {
-        "docs/ADR/0027-production-like-durability-platform-ownership.md": (
+        adr_rel: (
             "Amazon RDS for PostgreSQL `17.10`, Multi-AZ DB instance deployment",
             "AWS region `ap-south-1` (Mumbai)",
             "dedicated non-production AWS account",
-            "same non-production account and region",
+            "Same non-production account and region",
             "point-in-time API has no target storage `KmsKeyId` parameter",
             "storage KMS ARN is inherited",
             "Amazon S3 general-purpose buckets with Versioning are authoritative",
             "source, restore-validation, and security-control S3 buckets",
             "S3 recovery uses Versioning",
-            "append-only deletion journal",
+            "unique write-once key",
+            "last contiguous, version-verified sequence",
+            "signed/versioned manifest",
             "is not rolled back with RDS PITR",
             "Platform/Storage owner is accountable for backup configuration",
             "Operations is accountable for measured RTO",
@@ -1468,7 +1631,11 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
             "RTO `<= 75 minutes` and RPO `<= 5 minutes`",
             "CH-14 owns backup configuration, catalog lifecycle, restore-target TTL",
             "CH-21 owns data-class erasure policy",
-            "A negative delta, target-ahead sequence, clock ambiguity, or manifest mismatch invalidates the evidence",
+            "negative delta, target-ahead sequence, clock ambiguity, cutoff mismatch, or manifest mismatch invalidates the evidence",
+            "No target DB exists before the later drill",
+            "repo:imrohitagrawal/narratwin-ai:environment:production-like-durability",
+            "restricted operational catalog",
+            "Reviewer exports use a field allowlist",
             "issue `#149` reviews only environment, tooling, calculation-test, and reviewer-handoff readiness",
             "Issues `#142` through `#149`",
             "No environment, backup, target, or restore evidence exists",
@@ -1486,8 +1653,10 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
             "`PLAT-OVERCLAIM-001`",
             "`HUMAN-PLAT-001` remains blocked",
             "No successful production-like durability or restore claim is permitted.",
-            "independent deletion journal",
-            "negative deltas invalidate evidence",
+            "deletion journal",
+            "immutable source cutoff",
+            "negative/mismatched deltas invalidate evidence",
+            "REV141-JOURNAL-001",
         ),
         "docs/STAGE_ISSUE_PLAN.md": (
             "`phase-1-closure-141-*` is reserved for issue `#141`",
@@ -1501,8 +1670,8 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
             "| `#126` | Open |",
             "No environment, backup/version source, restore target, or restore evidence has been verified.",
             "versioned S3 artifact/control buckets",
-            "committed deletion events into the independent journal",
-            "S3 version retention, control-bucket Object Lock",
+            "contiguous integrity-linked deletion/revocation journal",
+            "at least 15-day S3 version retention",
         ),
         "docs/TRACEABILITY.md": (
             "Issue `#141` production-like durability platform and ownership contract",
@@ -1511,6 +1680,8 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
         "docs/THREAT_MODEL.md": (
             "### A8: Source/Restore Target Confusion",
             "### A9: Backup, Catalog, or Restore Evidence Exfiltration",
+            "### A10: S3 Artifact Version Substitution Or Publication Split-Brain",
+            "### A11: Deletion Journal Suppression, Reordering, Or Rollback",
             "Same-account isolation has not been approved or deployed.",
             "shared account/key blast radius is an explicit residual",
             "versioned/Object-Locked control-bucket journal outside RDS PITR",
@@ -1525,7 +1696,8 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
             "environment readiness issues `#141`-`#149`",
             "CH-21 owns erasure behavior proof",
             "proof that restored deleted records are re-deleted",
-            "re-delete handoff derived from the current independent deletion journal",
+            "last-contiguous, integrity-verified current independent deletion journal",
+            "`CH-02`, `CH-14`, `CH-16`, `CH-17`, `CH-18`",
         ),
         "docs/ADR/0008-postgresql-durability-schema-boundary.md": (
             "ADR `0027` supersedes this ADR's provider-neutral platform boundary",
@@ -1534,7 +1706,7 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
         "docs/ADR/0011-context4-backup-restore-drill.md": (
             "ADR `0027` specializes this advisory plan",
             "RDS automated backups/PITR plus S3 Versioning",
-            "append-only control-bucket deletion journal",
+            "last-contiguous, integrity-linked control-bucket deletion journal",
             "CH-14 owns backup/catalog/restore-target lifecycle",
             "CH-21 owns erasure enforcement",
             "RTO `<= 75 minutes` and RPO `<= 5 minutes` remain unmeasured planning targets.",
@@ -1547,14 +1719,23 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
             failures.append(f"{rel} missing issue #141 markers: " + ", ".join(missing_markers))
 
     forbidden_patterns = (
+        r"\bazure sql\b[^.]{0,120}\bauthoritative production-like\b",
+        r"\bsingle-zone\b[^.]{0,120}\bauthoritative production-like\b",
+        r"\bpublicly accessible\b[^.]{0,120}\bauthoritative production-like\b",
         r"\bproduction-like durability (?:exists|is deployed|is verified|has been verified)\b",
         r"\b(?:managed\s+)?backup (?:is\s+|has\s+been\s+)?(?:created|available|queryable|verified)\b",
+        r"\bbackup artifact exists\b",
         r"\b(?:recoverable\s+)?(?:snapshot|recovery point) (?:exists|is available|has been created)\b",
+        r"\brds has been provisioned\b",
         r"\brestore (?:target is deployed|drill (?:succeeded|passed|completed))\b",
         r"\b(?:restoration|restore) (?:was|is|has been) (?:successful|completed|verified)\b",
         r"\b(?:observed|actual|measured) rto\s+(?:is\s+)?(?:\d|zero)\w*\b",
-        r"\brpo\s+(?:is\s+)?(?:\d|zero)\w*\b",
+        r"\b(?:observed|actual|measured) rpo\s+(?:is|was)?\s*(?:\d|zero)\w*\b",
         r"\b(?:rto|rpo) target (?:was|is|has been) (?:met|achieved|satisfied)\b",
+        r"\bplatform is approved by operations and security\b",
+        r"\bgo for launch\b",
+        r"\bapproved for launch\b",
+        r"\bplatform/storage signed off\b",
         r"\b(?:operations(?:/security)?|security(?:/operations)?) (?:has\s+|have\s+)?approved\b",
         r"\b(?:all|required) signoffs? (?:was|were|is|are|has been|have been) (?:obtained|complete|completed|approved)\b",
         r"\bissue\s+`?#126`?\s+(?:is|has been)\s+(?:now\s+)?(?:closed|complete|resolved|satisfied)\b",
@@ -1563,7 +1744,9 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
     )
     for rel in required_markers_by_file:
         normalized_text = re.sub(r"\s+", " ", read(rel)).lower()
-        present = [pattern for pattern in forbidden_patterns if re.search(pattern, normalized_text)]
+        present = [
+            pattern for pattern in forbidden_patterns if non_negated_pattern_present(normalized_text, pattern)
+        ]
         if present:
             failures.append(f"{rel} contains issue #141 overclaim markers: " + ", ".join(present))
 

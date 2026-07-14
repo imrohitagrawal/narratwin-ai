@@ -51,6 +51,8 @@ Out of scope for implementation in Stage 2:
 | Future avatar/voice/video artifacts | High | Consent, disclosure, and licensing risk |
 | Future consent records | Critical | Required for identity media |
 | Production-like PostgreSQL state | Critical | Stage 4/6/7 synthetic business state, relationships, replay controls, provenance, and consent references |
+| Authoritative S3 artifact versions | Critical | Exact Stage 4/6/7 source/audio/render/export Version IDs and checksums; mutable aliases are not authoritative |
+| Independent deletion/revocation journal | Critical | Gap-free, integrity-linked current control state outside RDS PITR; incomplete or unavailable state can resurrect deleted/revoked data |
 | Backup/recovery-point catalog | High | Resource identities, restore timestamps, KMS references, status, retention, and evidence hashes; never credentials or payload data |
 | Restore-validation environment | Critical | Destructive-operation target that must be isolated from the source and user traffic |
 
@@ -60,6 +62,8 @@ Out of scope for implementation in Stage 2:
 Browser/user input
 -> Backend API validation
 -> Storage and metadata boundary
+-> Versioned S3 artifact boundary
+-> Independent security-control journal boundary
 -> Ingestion worker
 -> RAG/vector-store boundary
 -> Prompt assembly boundary
@@ -111,6 +115,8 @@ project authorization guard has verified ownership on `Project`.
 | Observability | fake event actor | altered logs | missing audit trail | secret logging | log volume abuse | hide malicious actions |
 | Future avatar provider | fake consent | altered media output | denied render | identity/media leakage | render cost abuse | clone identity without consent |
 | RDS source and backup path | forged operator or workload role | retention, recovery point, DB or KMS mutation | missing CloudTrail/database audit | backup/catalog/secret disclosure | connection, storage or backup exhaustion | workload becomes administrator |
+| Versioned S3 artifact path | forged artifact/version identity | Version-ID substitution, checksum drift, delete marker or orphan/reference corruption | missing object/version audit | artifact or locator disclosure | KMS/object/version unavailable | workload or restore role mutates protected source versions |
+| Security-control journal path | forged writer/event identity | suppressed, duplicated, reordered or rewritten event; gap/high-watermark rollback; retention bypass | missing delivery/break-glass audit | pseudonymous scope/resource leakage | journal/KMS/manifest unavailable or delivery backlog | writer bypasses retention or reader trusts mutable current key |
 | Restore-validation target | forged target identity | source DB/KMS/VPC mutated instead of target | unsigned or incomplete evidence | restored data exposed through traffic/logs | orphaned target cost or restore flood | restore operator crosses into source boundary |
 
 The Stage 4 evaluator boundary is deterministic and rule-backed. Model-as-judge evaluation is future scope and requires an ADR before it can affect acceptance or security decisions.
@@ -266,15 +272,60 @@ Controls:
 - synthetic data only in pre-production; no production-to-pre-production copy
 - customer-managed KMS encryption, TLS, private RDS access, SSO/MFA, short-lived roles,
   GitHub OIDC, Secrets Manager rotation, and no application access to master secret
-- catalog allowlist containing sanitized resource/timestamp/status/hash metadata
-  and rejecting connection strings, credentials, tokens, content, and provider payloads
+- restricted catalog containing minimum operational identities plus a separate
+  allowlisted/keyed-pseudonym reviewer export; both reject connection strings,
+  credentials, tokens, content, direct user attributes, and provider payloads
 - S3 source/restore/control bucket separation, immutable Version IDs/checksums,
-  private SSE-KMS access, and at least 14-day noncurrent-version retention
+  private SSE-KMS access, and at least 15-day noncurrent-version retention
 - committed deletion outbox to a versioned/Object-Locked control-bucket journal
   outside RDS PITR; CH-14 derives its handoff from that current journal and
   CH-21 owns erasure/re-delete proof
 - 14-day RDS PITR, bounded manual-snapshot/target TTL, and at least 90-day
   sanitized evidence/journal retention
+
+### A10: S3 Artifact Version Substitution Or Publication Split-Brain
+
+Attack:
+
+- an actor publishes a PostgreSQL ready reference before the immutable object is
+  verified, swaps a mutable alias/version, hides a version behind a delete marker,
+  or deletes an orphan/reference without proving reachability
+
+Controls:
+
+- unique immutable keys and exact Version-ID/SHA-256 reads; unversioned/current
+  aliases are rejected
+- S3-version-first verification before transactional PostgreSQL publication;
+  failed database publication quarantines the unreferenced version
+- idempotent retry, referenced-version protection, and explicit tests for
+  S3-success/database-failure, checksum mismatch, unavailable object, delete
+  marker, orphan cleanup and garbage-collection reachability
+- source roles deny mutation/version deletion; restore copies use scoped
+  `GetObjectVersion`, KMS decrypt, destination put and data-key permissions only
+
+### A11: Deletion Journal Suppression, Reordering, Or Rollback
+
+Attack:
+
+- delivery drops or reorders committed deletion/revocation events, a writer
+  reuses a key/sequence, a delete marker masks a locked version, a privileged
+  actor bypasses governance retention, or KMS loss makes the current journal
+  unavailable while a stale high-watermark appears healthy
+
+Controls:
+
+- one create-only key per opaque scope/sequence/event ID; writer cannot overwrite,
+  delete, shorten retention or bypass governance mode
+- monotonic committed outbox sequence, last-contiguous high-watermark, gap and
+  duplicate rejection, previous/event digest chain, versioned integrity manifest,
+  version-aware enumeration and delete-marker rejection
+- Platform/Storage reconciliation plus backlog/gap/KMS/retention alarms;
+  Operations acknowledgment/escalation and Security-reviewed break-glass audit
+- control-key disable/deletion safeguards, default retention verification, and
+  negative tests for gaps, out-of-order delivery, missing retention, delete
+  markers, hash mismatch, key unavailability and governance bypass
+- restored consent/render/export state remains disabled until the journal and
+  current CH-17 revocation/takedown source are reconciled
 
 ## Control Matrix
 
@@ -292,6 +343,8 @@ Controls:
 | Identity media misuse | consent and disclosure | consent/disclosure tests |
 | Source/target confusion | identity inequality, target allowlist, source deny | platform API evidence and wrong-target negative tests in issues `#144`/`#147` |
 | Backup/evidence disclosure | KMS/private access/role separation/redacted schema | Security approval and negative redaction/access tests in issues `#145`/`#148` |
+| Artifact version/publication split-brain | immutable version binding and publication compensation | adapter/object failure tests in issue `#143` and recovery parity in `#147` |
+| Journal integrity/availability | contiguous sequence, integrity manifest, version-aware reads, alarms | writer/reconciliation/retention/KMS negative evidence in issues `#143`, `#145`, and `#148` |
 
 ## Issue #141 residual threats and blockers
 

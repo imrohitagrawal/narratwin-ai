@@ -844,6 +844,11 @@ ownership prerequisite for the production-like durability readiness sequence.
 It chooses a platform and handoff contract for issues `#142` through `#149`, but
 does not provision infrastructure, connect runtime code, configure backups,
 execute a restore, or close issue `#126`, `DUR-RESTORE-001`, or issue `#39`.
+The contract must structurally validate all Stage 4/6/7 ownership rows and every
+`#142`-`#149` dependency/acceptance row. Issue `#144` owns the source and restore
+landing zone rather than a pre-created target DB; `#146` depends on the live
+environment/catalog foundation; `#148` depends on `#145`-`#147` handoffs; and
+the later `#126` drill alone creates the PITR target and records actual results.
 It may touch only:
 
 - `docs/ADR/0008-postgresql-durability-schema-boundary.md`
