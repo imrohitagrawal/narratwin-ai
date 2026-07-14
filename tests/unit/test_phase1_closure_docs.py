@@ -216,11 +216,14 @@ def test_issue141_branch_allowlist_is_an_independent_literal_contract() -> None:
         "docs/ADR/0008-postgresql-durability-schema-boundary.md",
         "docs/ADR/0011-context4-backup-restore-drill.md",
         "docs/ADR/0027-production-like-durability-platform-ownership.md",
+        "docs/LAUNCH_LEVELS.md",
+        "docs/RELEASE_READINESS_REVIEW.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
         "docs/THREAT_MODEL.md",
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
+        "docs/demo/PHASE_1_DEMO_CHECKLIST.md",
         "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md",
         "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
         "scripts/quality/check_phase1_closure_docs.py",
@@ -756,6 +759,176 @@ def test_issue125_local_restore_contract_rejects_missing_local_only_marker(monke
 
 def test_issue141_platform_ownership_contract_accepts_current_docs(monkeypatch: Any) -> None:
     assert run_issue141_platform_contract_check(monkeypatch) == []
+
+
+def test_issue141_launch_level_contract_rejects_missing_level(monkeypatch: Any) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = re.sub(r"^\| Hosted internal synthetic demo \|.*\n", "", launch_text, count=1, flags=re.M)
+    assert mutated != launch_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "launch-level boundary rows" in failure and "Hosted internal synthetic demo" in failure
+        for failure in failures
+    )
+
+
+def test_issue141_launch_level_contract_rejects_aws_as_local_demo_prerequisite(
+    monkeypatch: Any,
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = replace_text(
+        launch_text,
+        "An AWS account is not required for local development or the controlled local mock demo.",
+        "An AWS account is required for every local demo.",
+    )
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "docs/LAUNCH_LEVELS.md missing issue #141 markers" in failure
+        and "An AWS account is not required" in failure
+        for failure in failures
+    )
+
+
+def test_issue141_launch_level_contract_rejects_soft_launch_as_demo(
+    monkeypatch: Any,
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = replace_text(
+        launch_text,
+        "External users or customer data make this production-adjacent regardless of the words `demo`, `beta`, or `soft launch`.",
+        "An invite-only external soft launch is treated as a local demo.",
+    )
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "docs/LAUNCH_LEVELS.md missing issue #141 markers" in failure
+        and "production-adjacent" in failure
+        for failure in failures
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_row", "expected_failure"),
+    [
+        (
+            "| Free external beta | External users. | Free database. | No. | Go. | Demo only. |\n",
+            "launch-level boundary contains unexpected rows: Free external beta",
+        ),
+        (
+            "| Local mock demo | Duplicate audience. | Duplicate stack. | No. | Go. | Demo only. |\n",
+            "launch-level boundary contains duplicate rows: Local mock demo",
+        ),
+        (
+            "| Malformed beta | External users. | Free database. | Go. | Demo only. |\n",
+            "launch-level boundary contains malformed rows",
+        ),
+    ],
+)
+def test_issue141_launch_level_contract_rejects_extra_duplicate_or_malformed_rows(
+    monkeypatch: Any, extra_row: str, expected_failure: str
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    table_end = (
+        "| Production | External users and approved production data/traffic. | Separate production "
+        "tenancy/account with reviewed application, durability, security, privacy, operations, "
+        "monitoring, rollback, and support controls. | Yes, a separate production AWS account under "
+        "the current baseline; an alternative requires a superseding ADR and equivalent evidence. | "
+        "No-Go. | Requires an independent production Go decision; production-like evidence does not "
+        "automatically authorize production. |\n"
+    )
+    mutated = replace_text(launch_text, table_end, table_end + extra_row)
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(expected_failure in failure for failure in failures)
+
+
+def test_issue141_launch_level_contract_rejects_aws_required_local_demo_cell(
+    monkeypatch: Any,
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = replace_text(
+        launch_text,
+        "| No. | Conditional Go only through `docs/demo/PHASE_1_DEMO_CHECKLIST.md`. |",
+        "| AWS required; No. exception applies. | Conditional Go only through `docs/demo/PHASE_1_DEMO_CHECKLIST.md`. |",
+    )
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "Local mock demo AWS requirement under ADR 0027 must equal: No." in failure
+        for failure in failures
+    )
+
+
+def test_issue141_launch_level_contract_rejects_soft_launch_go_posture(
+    monkeypatch: Any,
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = replace_text(
+        launch_text,
+        "before durability or launch claims. | No-Go. | External users or customer data",
+        "before durability or launch claims. | Go. | External users or customer data",
+    )
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "External/invite-only soft launch Current posture must equal: No-Go." in failure
+        for failure in failures
+    )
+
+
+def test_issue141_launch_level_contract_rejects_internal_auth_soft_launch_conflation(
+    monkeypatch: Any,
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = replace_text(
+        launch_text,
+        "Internal workforce\nauthentication and minimum identity/access audit metadata do not alone promote\nan otherwise qualifying hosted internal synthetic demo to soft launch.",
+        "Any authentication always promotes a hosted internal demo to soft launch.",
+    )
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "docs/LAUNCH_LEVELS.md missing issue #141 markers" in failure
+        and "Internal workforce authentication" in failure
+        for failure in failures
+    )
 
 
 def test_issue141_platform_ownership_contract_rejects_missing_platform_choice(monkeypatch: Any) -> None:

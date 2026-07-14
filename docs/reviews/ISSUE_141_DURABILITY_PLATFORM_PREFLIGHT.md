@@ -11,6 +11,14 @@ or a restore exercise are created.
 No successful production-like durability or restore claim is permitted. Issue
 `#126`, matrix row `DUR-RESTORE-001`, and issue `#39` remain open.
 
+AWS is the selected production-like evidence platform, not a prerequisite for
+local development or the controlled local mock demo. `docs/LAUNCH_LEVELS.md`
+owns the canonical launch-level boundary. Issue `#141` authorizes no AWS spend
+or resource creation; issue `#144` is the first possible provisioning gate after
+the recorded human decisions. A free or low-cost hosted resource may be assessed
+for an internal synthetic demo, but it is not production-like evidence merely
+because it is hosted or PostgreSQL-compatible.
+
 ## Source facts
 
 - Current runtime state is in-memory or optional local JSON; Compose PostgreSQL

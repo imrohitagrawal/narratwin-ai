@@ -93,15 +93,62 @@ ISSUE_141_ALLOWED_CHANGED_FILES = {
     "docs/ADR/0008-postgresql-durability-schema-boundary.md",
     "docs/ADR/0011-context4-backup-restore-drill.md",
     "docs/ADR/0027-production-like-durability-platform-ownership.md",
+    "docs/LAUNCH_LEVELS.md",
+    "docs/RELEASE_READINESS_REVIEW.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "docs/THREAT_MODEL.md",
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
+    "docs/demo/PHASE_1_DEMO_CHECKLIST.md",
     "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md",
     "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_141_EXPECTED_LAUNCH_LEVEL_ROWS = {
+    "Local development/test": (
+        "Developers; synthetic or local test data only.",
+        "Local Docker PostgreSQL, in-memory state, optional JSON snapshots, and local/mock artifact and provider paths.",
+        "No.",
+        "Not a launch.",
+        "Test evidence only; no availability, shared durability, backup, restore, RTO, or RPO claim.",
+    ),
+    "Local mock demo": (
+        "Controlled presenter-led reviewers; synthetic demo data only; no public endpoint.",
+        "The reviewed local Compose/mock stack and optional local restart snapshots.",
+        "No.",
+        "Conditional Go only through `docs/demo/PHASE_1_DEMO_CHECKLIST.md`.",
+        "Product-flow demonstration only; no production-like durability, real-provider, multi-worker, or service-level claim.",
+    ),
+    "Hosted internal synthetic demo": (
+        "Named internal workforce reviewers; synthetic product data only; internal environment access/SSO and minimum employee identity/access audit metadata under documented retention; non-public.",
+        "A free or low-cost hosted resource may be considered only after an environment owner documents access control, secret handling, retention, teardown, logging, limits, and incident contact.",
+        "No. If the environment is intended to produce production-like evidence, it must move to the production-like validation row and satisfy issues `#142` through `#149`.",
+        "No-Go until an environment-specific review records those controls and the applicable product gates pass.",
+        "Convenience hosting only; it is not production-like durability evidence and cannot inherit local-demo approval.",
+    ),
+    "External/invite-only soft launch": (
+        "Any external identity or user, customer/content personal data, customer-facing application authentication, public or customer-reachable endpoint, or reliability promise.",
+        "Reviewed hosted tenancy with durable data/artifact storage, backup, access control, secrets, monitoring, retention/deletion, incident response, rollback, and named owners.",
+        "AWS is the current durability baseline; a different provider requires a reviewed ADR amendment and re-baselined evidence before durability or launch claims.",
+        "No-Go.",
+        "External users or customer data make this production-adjacent regardless of the words `demo`, `beta`, or `soft launch`.",
+    ),
+    "Production-like durability validation": (
+        "Authorized reviewers; synthetic seed only; no application, customer, or public traffic.",
+        "The ADR `0027` non-production RDS/S3/KMS/private-network source and isolated restore-validation landing zone.",
+        "Yes, for the current selected baseline.",
+        "No-Go until issues `#142` through `#149`, named human approvals, and live environment evidence pass; actual restore results remain with later issue `#126`.",
+        "Validates production-shaped durability controls only; it is neither a demo launch nor production authorization.",
+    ),
+    "Production": (
+        "External users and approved production data/traffic.",
+        "Separate production tenancy/account with reviewed application, durability, security, privacy, operations, monitoring, rollback, and support controls.",
+        "Yes, a separate production AWS account under the current baseline; an alternative requires a superseding ADR and equivalent evidence.",
+        "No-Go.",
+        "Requires an independent production Go decision; production-like evidence does not automatically authorize production.",
+    ),
 }
 ISSUE_141_EXPECTED_STAGE_ROWS = {
     "Stage 4": ("PostgreSQL:", "S3:", "approved original upload version", "secrets"),
@@ -1767,11 +1814,65 @@ def check_issue141_detailed_controls(failures: list[str], adr_text: str) -> None
         failures.append("Threat model S3/journal STRIDE rows missing: " + ", ".join(missing_threat))
 
 
+def check_issue141_launch_level_contract(failures: list[str]) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    headers, rows = parse_table_lines(section(read(launch_rel), "Launch-level boundary"))
+    expected_headers = [
+        "Level",
+        "Audience and data",
+        "Permitted infrastructure",
+        "AWS requirement under ADR 0027",
+        "Current posture",
+        "Claim boundary",
+    ]
+    if headers != expected_headers:
+        failures.append(
+            f"{launch_rel} launch-level boundary headers must be: " + ", ".join(expected_headers)
+        )
+        return
+
+    malformed_rows = [row for row in rows if len(row) != len(headers)]
+    if malformed_rows:
+        failures.append(f"{launch_rel} launch-level boundary contains malformed rows")
+
+    valid_rows = [row for row in rows if len(row) == len(headers)]
+    levels = [row[0] for row in valid_rows]
+    duplicate_levels = sorted({level for level in levels if levels.count(level) > 1})
+    if duplicate_levels:
+        failures.append(
+            f"{launch_rel} launch-level boundary contains duplicate rows: "
+            + ", ".join(duplicate_levels)
+        )
+
+    rows_by_level = {row[0]: row for row in valid_rows}
+    unexpected_levels = sorted(set(rows_by_level) - set(ISSUE_141_EXPECTED_LAUNCH_LEVEL_ROWS))
+    if unexpected_levels:
+        failures.append(
+            f"{launch_rel} launch-level boundary contains unexpected rows: "
+            + ", ".join(unexpected_levels)
+        )
+    missing_levels = sorted(set(ISSUE_141_EXPECTED_LAUNCH_LEVEL_ROWS) - set(rows_by_level))
+    if missing_levels:
+        failures.append(f"{launch_rel} launch-level boundary rows missing: " + ", ".join(missing_levels))
+
+    for level, expected_cells in ISSUE_141_EXPECTED_LAUNCH_LEVEL_ROWS.items():
+        row = rows_by_level.get(level)
+        if not row:
+            continue
+        for column_name, actual, expected in zip(headers[1:], row[1:], expected_cells, strict=True):
+            if actual == expected:
+                continue
+            failures.append(
+                f"{launch_rel} {level} {column_name} must equal: {expected}"
+            )
+
+
 def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
     adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
     adr_text = read(adr_rel)
     check_issue141_structural_contract(failures, adr_text)
     check_issue141_detailed_controls(failures, adr_text)
+    check_issue141_launch_level_contract(failures)
     required_markers_by_file = {
         adr_rel: (
             "Amazon RDS for PostgreSQL `17.10`, Multi-AZ DB instance deployment",
@@ -1802,6 +1903,21 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
             "Issues `#142` through `#149`",
             "No environment, backup, target, or restore evidence exists",
             "issue `#126`, close matrix row `DUR-RESTORE-001`, or close issue `#39`",
+            "AWS is not required for local development or the controlled local mock demo",
+            "docs/LAUNCH_LEVELS.md",
+        ),
+        "docs/LAUNCH_LEVELS.md": (
+            "ADR `0027` selects AWS for the production-like durability evidence and eventual production paths",
+            "An AWS account is not required for local development or the controlled local mock demo.",
+            "A free or low-cost resource does not, by price alone, prove security, durability, privacy, or operational readiness.",
+            "External users or customer data make this production-adjacent regardless of the words `demo`, `beta`, or `soft launch`.",
+            "Internal workforce authentication and minimum identity/access audit metadata do not alone promote an otherwise qualifying hosted internal synthetic demo to soft launch.",
+            "Real provider credentials do not alone change the audience tier",
+            "a different provider requires a reviewed ADR amendment",
+            "issues `#142` through `#149`",
+            "later issue `#126`",
+            "No AWS spend or resource creation is authorized by issue `#141` or PR `#153`.",
+            "This document creates no account, resource, backup, target, restore evidence, or launch authorization.",
         ),
         "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md": (
             "`PLAT-DEC-001`",
@@ -1834,10 +1950,24 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
             "versioned S3 artifact/control buckets",
             "separately signed contiguous deletion journal",
             "at least 15-day S3 version retention",
+            "AWS is not required for local development or the controlled local mock demo",
+            "docs/LAUNCH_LEVELS.md",
         ),
         "docs/TRACEABILITY.md": (
             "Issue `#141` production-like durability platform and ownership contract",
             "Proposed on branch; external approvals blocked",
+            "launch-level boundary",
+            "docs/LAUNCH_LEVELS.md",
+        ),
+        "docs/RELEASE_READINESS_REVIEW.md": (
+            "docs/LAUNCH_LEVELS.md",
+            "External/invite-only soft launch remains No-Go",
+            "AWS is not required for the controlled local mock demo",
+        ),
+        "docs/demo/PHASE_1_DEMO_CHECKLIST.md": (
+            "docs/LAUNCH_LEVELS.md",
+            "An AWS account is not required",
+            "Hosted or external access requires a separate launch-level decision",
         ),
         "docs/THREAT_MODEL.md": (
             "### A8: Source/Restore Target Confusion",

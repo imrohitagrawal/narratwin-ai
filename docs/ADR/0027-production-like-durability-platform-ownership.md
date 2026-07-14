@@ -22,6 +22,16 @@ This ADR supersedes the provider-neutral parts of ADR `0008` and specializes the
 advisory backup plan in ADR `0011`. It does not implement a restore drill, close
 issue `#126`, close matrix row `DUR-RESTORE-001`, or close issue `#39`.
 
+The selected AWS boundary applies to production-like durability validation and
+eventual production, not to every way of running or presenting the product. AWS
+is not required for local development or the controlled local mock demo, and no
+AWS payer/account decision may block those local paths. The canonical audience,
+data, infrastructure, claim, and Go/No-Go demarcations are in
+`docs/LAUNCH_LEVELS.md`. A hosted internal demo needs its own environment review;
+an external/invite-only soft launch is production-adjacent; neither inherits
+local-demo approval. This clarification does not change the selected AWS
+production-like baseline or authorize spend, provisioning, launch, or restore.
+
 ## Decision
 
 ### Authoritative platform
