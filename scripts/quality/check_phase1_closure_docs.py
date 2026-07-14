@@ -135,6 +135,13 @@ ISSUE_141_CHILD_ACCEPTANCE_TERMS = {
         "RDS/S3 restore",
         "target-configuration/isolation",
         "tested CH-12 route handoff",
+        "restore timeout/failure",
+        "cleanup overdue/orphan",
+        "journal gap/backlog/signature failure",
+        "KMS loss",
+        "severity",
+        "owner acknowledgment/escalation",
+        "runbook links",
         "immutable-cutoff",
     ),
     "#149": (
@@ -2525,6 +2532,24 @@ def check_issue39_strategy_required_terms(failures: list[str], text: str) -> Non
             failures.append(
                 "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md CH-10 row missing required terms: "
                 + ", ".join(missing_ch10_terms)
+            )
+
+    for row in rows:
+        if len(row) != len(headers):
+            continue
+        chunk = row[chunk_index]
+        if "`CH-14`" not in chunk:
+            continue
+        row_contract = " ".join(row).lower()
+        required_ch14_terms = (
+            "tested failure/timeout/cleanup/journal/kms routes",
+            "tested alert severity/ack/escalation/runbook links",
+        )
+        missing_ch14_terms = [term for term in required_ch14_terms if term not in row_contract]
+        if missing_ch14_terms:
+            failures.append(
+                "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md CH-14 row missing required terms: "
+                + ", ".join(missing_ch14_terms)
             )
 
 

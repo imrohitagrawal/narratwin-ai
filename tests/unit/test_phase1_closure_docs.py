@@ -921,6 +921,55 @@ def test_issue141_platform_contract_rejects_negated_dependencies(
     assert any("dependency statement must be affirmative" in failure for failure in failures)
 
 
+@pytest.mark.parametrize(
+    "removed_term",
+    [
+        "restore timeout/failure",
+        "cleanup overdue/orphan",
+        "journal gap/backlog/signature failure",
+        "KMS loss",
+        "severity",
+        "owner acknowledgment/escalation",
+        "runbook links",
+    ],
+)
+def test_issue141_platform_contract_rejects_incomplete_ch12_route_acceptance(
+    monkeypatch: Any, removed_term: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    search = "KMS loss with severity" if removed_term == "severity" else removed_term
+    replacement = "KMS loss with route detail removed" if removed_term == "severity" else "route detail removed"
+    mutated = replace_text(adr_text, search, replacement)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("#148 acceptance contract missing" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "removed_term",
+    [
+        "tested failure/timeout/cleanup/journal/KMS routes",
+        "tested alert severity/ack/escalation/runbook links",
+    ],
+)
+def test_issue141_ch14_strategy_rejects_incomplete_alert_route_contract(
+    monkeypatch: Any, removed_term: str
+) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    mutated = replace_text(strategy_text, removed_term, "route evidence removed")
+    assert mutated != strategy_text
+
+    failures = run_issue39_execution_strategy_check(monkeypatch, strategy_text=mutated)
+
+    assert any("CH-14 row missing required terms" in failure for failure in failures)
+
+
 def test_issue141_platform_ownership_contract_rejects_incomplete_journal_integrity_fields(
     monkeypatch: Any,
 ) -> None:
