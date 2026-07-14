@@ -177,7 +177,9 @@ def markdown_lines_with_visibility(text: str) -> tuple[list[str], list[bool]]:
                 fence_character = ""
                 fence_length = 0
             continue
-        opening = re.match(r"^ {0,3}(`{3,}|~{3,})(?:[^`~].*)?$", line)
+        opening = re.match(r"^ {0,3}(`{3,})(?:[^`].*)?$", line) or re.match(
+            r"^ {0,3}(~{3,})(?:[^~].*)?$", line
+        )
         if opening:
             fence_character = opening.group(1)[0]
             fence_length = len(opening.group(1))

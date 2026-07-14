@@ -269,7 +269,7 @@ def test_mixed_fence_runs_cannot_expose_a_hidden_contract(
         ),
     ],
 )
-def test_mixed_fence_runs_are_not_treated_as_openers(
+def test_fence_info_strings_may_start_with_the_other_fence_character(
     monkeypatch: Any,
     path: str,
     checker: Any,
@@ -278,4 +278,4 @@ def test_mixed_fence_runs_are_not_treated_as_openers(
 
     failures = run_doc_check(monkeypatch, path, content, checker)
 
-    assert failures == []
+    assert failures
