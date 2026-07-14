@@ -178,6 +178,107 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
     assert failures == []
 
 
+def test_skill_governance_process_branch_allows_only_governance_files(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-164-phf-019-skill-evidence-governance"
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "AGENTS.md",
+            "docs/SKILL_EXECUTION_PLAN.md",
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/STATUS.md",
+            "docs/reviews/PROCESS_HARDENING_FINDINGS.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["backend/app/main.py"],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-process-164-phf-019-skill-evidence-governance "
+        "may not change backend/app/main.py."
+    ]
+
+
+def test_process_docs_reject_skill_selection_contract_without_activation_trigger(
+    monkeypatch: Any,
+) -> None:
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_SELECTION_AND_EVIDENCE.md"],
+        read_overrides={
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md": "# Skill Selection And Evidence\n",
+        },
+    )
+
+    assert (
+        "docs/SKILL_SELECTION_AND_EVIDENCE.md missing required heading: "
+        "Verification-Skill Activation Trigger"
+    ) in failures
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement", "expected_failure"),
+    [
+        (
+            "skills govern the method; evidence proves the claim",
+            "skills are evidence",
+            "skills govern the method; evidence proves the claim",
+        ),
+        (
+            "FIRED authorizes a capability and trust evaluation only.",
+            "FIRED authorizes installation.",
+            "fired authorizes a capability and trust evaluation only",
+        ),
+        (
+            "| Initial — 2026-07-15 | 0 | 0 | ARMED |",
+            "| Initial — 2026-07-15 | 1 | 0 | ARMED |",
+            "must keep the initial trigger baseline at 0 eligible PRs",
+        ),
+    ],
+)
+def test_process_docs_reject_skill_selection_contract_mutations(
+    monkeypatch: Any,
+    search: str,
+    replacement: str,
+    expected_failure: str,
+) -> None:
+    skill_selection = phase1.read("docs/SKILL_SELECTION_AND_EVIDENCE.md")
+    assert search in skill_selection
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_SELECTION_AND_EVIDENCE.md"],
+        read_overrides={
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md": skill_selection.replace(
+                search,
+                replacement,
+                1,
+            ),
+        },
+    )
+
+    assert any(expected_failure in failure for failure in failures)
+
+
+def test_current_skill_selection_and_evidence_contract_passes(monkeypatch: Any) -> None:
+    assert run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=[
+            "docs/SKILL_EXECUTION_PLAN.md",
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+        ],
+    ) == []
+
+
 def test_issue138_branch_allows_only_click_security_remediation_files(
     monkeypatch: Any,
 ) -> None:

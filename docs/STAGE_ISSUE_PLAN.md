@@ -542,6 +542,8 @@ Allowed governance/reporting changes for Module A:
 - `docs/ENGINEERING_PROCESS_RCA.md`
 - `docs/QUALITY_GATES.md`
 - `docs/REPOSITORY_GUARDRAILS.md`
+- `docs/SKILL_EXECUTION_PLAN.md`
+- `docs/SKILL_SELECTION_AND_EVIDENCE.md`
 - `docs/RELEASE_CHECKLIST.md`
 - `docs/RELEASE_READINESS_REVIEW.md`
 - `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`

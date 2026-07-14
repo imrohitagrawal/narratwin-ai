@@ -94,6 +94,7 @@ Use these files together with this tracker:
 - [Project Governance Learnings](PROJECT_GOVERNANCE_LEARNINGS.md)
 - [Review Rigor Retrospective](REVIEW_RIGOR_RETROSPECTIVE.md)
 - [Engineering Process RCA](ENGINEERING_PROCESS_RCA.md)
+- [Skill Selection And Evidence](SKILL_SELECTION_AND_EVIDENCE.md)
 - [New Project Engineering Playbook](templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md)
 - GitHub issues and pull requests for execution history
 
@@ -338,6 +339,7 @@ Use these files together with this tracker:
 - Skill governance exists through:
   - [Skill Lock](SKILL_LOCK.md)
   - [Skill Execution Plan](SKILL_EXECUTION_PLAN.md)
+  - [Skill Selection And Evidence](SKILL_SELECTION_AND_EVIDENCE.md)
   - [Skill Trust Review](SKILL_TRUST_REVIEW.md)
 - Third-party governance inventory exists in [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 - Stage 0 merged with green CI and no product implementation.
@@ -606,6 +608,7 @@ Required update rules:
 | 2026-07-14 | PR `#153` re-review wave 1 at `3b0a3e0` recorded `REV141-OIDC-002` through `REV141-SIGN-002`. Remediation loop 3 adds exact workflow/environment OIDC limits, supported PITR IAM-auth/post-create engine checks, exact-byte bounded S3 copy, crash-window publication reconciliation, separately signed journal manifests, pre-create cleanup and no-snapshot/no-backup inventory proof, separately scoped RDS/S3 cleanup authority, complete RTO readiness, and executable security/operations mutations; human blockers and the no-drill posture remain unchanged. |
 | 2026-07-14 | PR `#153` final guardrail/operations review added affirmative dependency grammar, proposition-bound negation handling, and explicit tested `#130`/CH-12 severity/ack/escalation/runbook routes as `#148` acceptance and a `#149` Go prerequisite. No environment or drill evidence was created. |
 | 2026-07-14 | PR `#153` merged the issue `#141` documentation baseline at `2fb5569`; issue `#141` stays open for the recorded cost/account/region, ownership, Security exception and live-environment approvals, while issue `#139`, issue `#126`, `DUR-RESTORE-001`, and issue `#39` remain open. The merge created no infrastructure, backup, restore, RTO/RPO or launch evidence. |
+| 2026-07-15 | Issue `#164`, under Mode 1 tracker `#155`, established the skill-selection and evidence-governance contract: claim/boundary-based routing, positive and negative usage outcomes, raw evidence measures, and an initial `ARMED` verification-skill evaluation trigger at 0 eligible PRs and 0 qualifying escapes. This records no Superpowers installation or activation and changes no Mode 1 runtime, launch, or production posture. |
 | 2026-07-10 | PR `#76` opened for issue `#66` Context 2 planning for issue `#39` on branch `phase-1-closure-39-context2-idempotency-lease-outbox`; ADR `0009` defines advisory-only idempotency, lease, and outbox contracts while `#39` remains open and all runtime implementation remains deferred. |
 | 2026-07-10 | PR `#77` merged migration/rollback context planning for issue `#67`; issue `#67` is closed and runtime migration tooling remains deferred pending later implementation contexts. |
 | 2026-07-10 | PR `#78` opened for issue `#68` on branch `phase-1-closure-39-context4-backup-restore-drill`; advisory-only ADR and evidence-planning updates for `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` added no runtime implementation. |

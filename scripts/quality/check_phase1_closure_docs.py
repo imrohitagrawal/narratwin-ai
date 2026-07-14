@@ -46,6 +46,8 @@ MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
     "docs/RECOMMENDED_REVIEW_ITEMS.md",
     "docs/REPOSITORY_GUARDRAILS.md",
     "docs/ENGINEERING_PROCESS_RCA.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/SKILL_SELECTION_AND_EVIDENCE.md",
     "docs/RELEASE_CHECKLIST.md",
     "docs/RUNBOOK.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -630,6 +632,7 @@ REQUIRED_MEDIUM_LOW_PHF_ITEMS = {
     "PHF-011",
     "PHF-012",
     "PHF-013",
+    "PHF-019",
 }
 AUTOMATED_EVIDENCE_TEST = re.compile(r"(?<!/)\btest_[A-Za-z0-9_]+\b(?!\.py)")
 AUTOMATED_EVIDENCE_SCRIPT = re.compile(r"\bscripts/[A-Za-z0-9_./-]+\.py\b")
@@ -3116,6 +3119,8 @@ def check_process_docs(failures: list[str]) -> None:
         ".github/pull_request_template.md",
         "AGENTS.md",
         "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/SKILL_SELECTION_AND_EVIDENCE.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
     )
     for rel in required_files:
@@ -3165,6 +3170,7 @@ def check_process_docs(failures: list[str]) -> None:
     agents = read("AGENTS.md")
     for marker in (
         "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/SKILL_SELECTION_AND_EVIDENCE.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
         "preflight evidence",
         "merge-closeout cycle",
@@ -3172,6 +3178,124 @@ def check_process_docs(failures: list[str]) -> None:
     ):
         if marker not in agents:
             fail(failures, f"AGENTS.md missing process marker: {marker}")
+
+    skill_execution_plan = read("docs/SKILL_EXECUTION_PLAN.md")
+    for marker in (
+        "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+        "claim",
+        "boundary",
+        "evidence",
+    ):
+        if marker not in skill_execution_plan:
+            fail(failures, f"docs/SKILL_EXECUTION_PLAN.md missing selection marker: {marker}")
+
+    skill_selection = read("docs/SKILL_SELECTION_AND_EVIDENCE.md")
+    check_required_headings(
+        failures,
+        skill_selection,
+        "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+        (
+            "Purpose And Decision",
+            "Canonical Storage Model",
+            "Vocabulary",
+            "Selection Rule",
+            "Development Lifecycle Routing Matrix",
+            "Mode 1 UI Testing Worked Example",
+            "Spec-Driven And Test-Driven Development",
+            "Skill Routing And Timing",
+            "Per-Change Skill Ledger",
+            "Measurement Model",
+            "Measures We Do Not Optimize",
+            "Verification-Skill Activation Trigger",
+            "Trigger Baseline",
+            "Maintenance And Promotion",
+        ),
+    )
+    normalized_skill_selection = re.sub(r"\s+", " ", skill_selection.lower())
+    for marker in (
+        "skills govern the method; evidence proves the claim",
+        "present on disk ≠ available to invoke in the current session ≠ approved and operational for narratwin",
+        "useful and prevented an unsafe or unnecessary action",
+        "considered but redundant",
+        "unavailable or unapproved",
+        "invoked but ineffective",
+        "invoked at the wrong stage",
+        "claim coverage",
+        "boundary coverage",
+        "negative-invariant coverage",
+        "skill evidence yield",
+        "selection rationale coverage",
+        "real e2e integrity",
+        "evidence freshness",
+        "late defect escape rate",
+        "duplicate-artifact rate",
+        "default reuse success",
+        "at least 3 eligible mode 1 prs",
+        "at least 2 qualifying completion defect",
+        "fired authorizes a capability and trust evaluation only",
+        "explicit repository-owner approval",
+        "superpowers not installed",
+        "new requirements",
+        "predeclared limitations",
+        "external cves",
+        "findings caught before merge",
+        "after every completed evaluation, record a new baseline",
+    ):
+        if marker not in normalized_skill_selection:
+            fail(
+                failures,
+                "docs/SKILL_SELECTION_AND_EVIDENCE.md missing selection contract marker: "
+                f"{marker}",
+            )
+    check_preflight_table_columns(
+        failures,
+        section_name="docs/SKILL_SELECTION_AND_EVIDENCE.md lifecycle routing matrix",
+        section_text=section(skill_selection, "Development Lifecycle Routing Matrix"),
+        required_headers=(
+            "Phase",
+            "Question being answered",
+            "Preferred skill/workflow",
+            "Test/tool or artifact",
+            "Required evidence",
+            "Do not use it for",
+        ),
+    )
+    check_preflight_table_columns(
+        failures,
+        section_name="docs/SKILL_SELECTION_AND_EVIDENCE.md measurement model",
+        section_text=section(skill_selection, "Measurement Model"),
+        required_headers=("Measure", "Formula", "Why it matters"),
+    )
+    trigger_headers, trigger_rows = parse_table_lines(section(skill_selection, "Trigger Baseline"))
+    normalized_trigger_headers = [normalize_header(header) for header in trigger_headers]
+    expected_trigger_headers = (
+        "evaluation baseline",
+        "eligible mode 1 prs",
+        "qualifying escapes",
+        "state",
+        "decision",
+    )
+    if any(header not in normalized_trigger_headers for header in expected_trigger_headers):
+        fail(failures, "docs/SKILL_SELECTION_AND_EVIDENCE.md trigger baseline table is malformed.")
+    else:
+        trigger_index = {
+            header: normalized_trigger_headers.index(header) for header in expected_trigger_headers
+        }
+        has_initial_armed_baseline = any(
+            len(row) == len(trigger_headers)
+            and row[trigger_index["evaluation baseline"]].strip().lower().startswith("initial")
+            and row[trigger_index["eligible mode 1 prs"]].strip() == "0"
+            and row[trigger_index["qualifying escapes"]].strip() == "0"
+            and row[trigger_index["state"]].strip("` ").upper() == "ARMED"
+            and "superpowers not installed" in row[trigger_index["decision"]].lower()
+            for row in trigger_rows
+        )
+        if not has_initial_armed_baseline:
+            fail(
+                failures,
+                "docs/SKILL_SELECTION_AND_EVIDENCE.md must keep the initial trigger baseline "
+                "at 0 eligible PRs, 0 qualifying escapes, ARMED, and Superpowers not installed.",
+            )
 
     codeowners = read(".github/CODEOWNERS")
     for marker in (
