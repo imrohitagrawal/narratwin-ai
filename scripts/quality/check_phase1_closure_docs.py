@@ -89,6 +89,20 @@ ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tools/semgrep/uv.lock",
     "uv.lock",
 }
+ISSUE_141_ALLOWED_CHANGED_FILES = {
+    "docs/ADR/0008-postgresql-durability-schema-boundary.md",
+    "docs/ADR/0011-context4-backup-restore-drill.md",
+    "docs/ADR/0027-production-like-durability-platform-ownership.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/THREAT_MODEL.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+    "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md",
+    "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES = {
     ".github/pull_request_template.md",
     ".github/workflows/ci.yml",
@@ -1434,6 +1448,126 @@ def check_issue125_local_restore_contract(failures: list[str]) -> None:
         )
 
 
+def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
+    required_markers_by_file = {
+        "docs/ADR/0027-production-like-durability-platform-ownership.md": (
+            "Amazon RDS for PostgreSQL `17.10`, Multi-AZ DB instance deployment",
+            "AWS region `ap-south-1` (Mumbai)",
+            "dedicated non-production AWS account",
+            "same non-production account and region",
+            "point-in-time API has no target storage `KmsKeyId` parameter",
+            "storage KMS ARN is inherited",
+            "Amazon S3 general-purpose buckets with Versioning are authoritative",
+            "source, restore-validation, and security-control S3 buckets",
+            "S3 recovery uses Versioning",
+            "append-only deletion journal",
+            "is not rolled back with RDS PITR",
+            "Platform/Storage owner is accountable for backup configuration",
+            "Operations is accountable for measured RTO",
+            "Platform/Storage is accountable for measured RPO",
+            "RTO `<= 75 minutes` and RPO `<= 5 minutes`",
+            "CH-14 owns backup configuration, catalog lifecycle, restore-target TTL",
+            "CH-21 owns data-class erasure policy",
+            "A negative delta, target-ahead sequence, clock ambiguity, or manifest mismatch invalidates the evidence",
+            "issue `#149` reviews only environment, tooling, calculation-test, and reviewer-handoff readiness",
+            "Issues `#142` through `#149`",
+            "No environment, backup, target, or restore evidence exists",
+            "issue `#126`, close matrix row `DUR-RESTORE-001`, or close issue `#39`",
+        ),
+        "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md": (
+            "`PLAT-DEC-001`",
+            "`PLAT-SCOPE-001`",
+            "`PLAT-BACKUP-001`",
+            "`PLAT-ISOLATION-001`",
+            "`PLAT-ACCESS-001`",
+            "`PLAT-RETENTION-001`",
+            "`PLAT-SLO-001`",
+            "`PLAT-DEPS-001`",
+            "`PLAT-OVERCLAIM-001`",
+            "`HUMAN-PLAT-001` remains blocked",
+            "No successful production-like durability or restore claim is permitted.",
+            "independent deletion journal",
+            "negative deltas invalidate evidence",
+        ),
+        "docs/STAGE_ISSUE_PLAN.md": (
+            "`phase-1-closure-141-*` is reserved for issue `#141`",
+            "does not provision infrastructure, connect runtime code, configure backups",
+            "issue `#126`, `DUR-RESTORE-001`, or issue `#39`",
+        ),
+        "docs/STATUS.md": (
+            "| `#141` | Open, architecture recorded; human approvals blocked |",
+            "| `#142` | Open, depends on `#141` |",
+            "| `#149` | Open, depends on `#141`-`#148` |",
+            "| `#126` | Open |",
+            "No environment, backup/version source, restore target, or restore evidence has been verified.",
+            "versioned S3 artifact/control buckets",
+            "committed deletion events into the independent journal",
+            "S3 version retention, control-bucket Object Lock",
+        ),
+        "docs/TRACEABILITY.md": (
+            "Issue `#141` production-like durability platform and ownership contract",
+            "Proposed on branch; external approvals blocked",
+        ),
+        "docs/THREAT_MODEL.md": (
+            "### A8: Source/Restore Target Confusion",
+            "### A9: Backup, Catalog, or Restore Evidence Exfiltration",
+            "Same-account isolation has not been approved or deployed.",
+            "shared account/key blast radius is an explicit residual",
+            "versioned/Object-Locked control-bucket journal outside RDS PITR",
+            "No platform, backup, target, RTO/RPO, or restore result is evidenced",
+        ),
+        "docs/THIRD_PARTY_NOTICES.md": (
+            "Amazon Web Services durability control plane",
+            "Proposed by issue `#141`; disabled/not provisioned",
+            "No account, resource, credential, backup, object, target, or restore evidence exists.",
+        ),
+        "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md": (
+            "environment readiness issues `#141`-`#149`",
+            "CH-21 owns erasure behavior proof",
+            "proof that restored deleted records are re-deleted",
+            "re-delete handoff derived from the current independent deletion journal",
+        ),
+        "docs/ADR/0008-postgresql-durability-schema-boundary.md": (
+            "ADR `0027` supersedes this ADR's provider-neutral platform boundary",
+            "No shared database or verified production-like durability is present.",
+        ),
+        "docs/ADR/0011-context4-backup-restore-drill.md": (
+            "ADR `0027` specializes this advisory plan",
+            "RDS automated backups/PITR plus S3 Versioning",
+            "append-only control-bucket deletion journal",
+            "CH-14 owns backup/catalog/restore-target lifecycle",
+            "CH-21 owns erasure enforcement",
+            "RTO `<= 75 minutes` and RPO `<= 5 minutes` remain unmeasured planning targets.",
+        ),
+    }
+    for rel, required_markers in required_markers_by_file.items():
+        normalized_text = re.sub(r"\s+", " ", read(rel))
+        missing_markers = [marker for marker in required_markers if marker not in normalized_text]
+        if missing_markers:
+            failures.append(f"{rel} missing issue #141 markers: " + ", ".join(missing_markers))
+
+    forbidden_patterns = (
+        r"\bproduction-like durability (?:exists|is deployed|is verified|has been verified)\b",
+        r"\b(?:managed\s+)?backup (?:is\s+|has\s+been\s+)?(?:created|available|queryable|verified)\b",
+        r"\b(?:recoverable\s+)?(?:snapshot|recovery point) (?:exists|is available|has been created)\b",
+        r"\brestore (?:target is deployed|drill (?:succeeded|passed|completed))\b",
+        r"\b(?:restoration|restore) (?:was|is|has been) (?:successful|completed|verified)\b",
+        r"\b(?:observed|actual|measured) rto\s+(?:is\s+)?(?:\d|zero)\w*\b",
+        r"\brpo\s+(?:is\s+)?(?:\d|zero)\w*\b",
+        r"\b(?:rto|rpo) target (?:was|is|has been) (?:met|achieved|satisfied)\b",
+        r"\b(?:operations(?:/security)?|security(?:/operations)?) (?:has\s+|have\s+)?approved\b",
+        r"\b(?:all|required) signoffs? (?:was|were|is|are|has been|have been) (?:obtained|complete|completed|approved)\b",
+        r"\bissue\s+`?#126`?\s+(?:is|has been)\s+(?:now\s+)?(?:closed|complete|resolved|satisfied)\b",
+        r"\b(?:matrix row\s+)?`?dur-restore-001`?\s+(?:is|has been)\s+(?:now\s+)?(?:closed|complete|resolved|satisfied)\b",
+        r"\bissue\s+`?#39`?\s+(?:is|has been)\s+(?:now\s+)?(?:closed|complete|resolved|satisfied)\b",
+    )
+    for rel in required_markers_by_file:
+        normalized_text = re.sub(r"\s+", " ", read(rel)).lower()
+        present = [pattern for pattern in forbidden_patterns if re.search(pattern, normalized_text)]
+        if present:
+            failures.append(f"{rel} contains issue #141 overclaim markers: " + ", ".join(present))
+
+
 def check_issue126_restore_readiness_contract(failures: list[str]) -> None:
     required_markers_by_file = {
         "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md": (
@@ -2117,7 +2251,9 @@ def check_required_files(failures: list[str]) -> None:
 
 def check_changed_files(failures: list[str]) -> None:
     branch = current_branch()
-    if branch.startswith("phase-1-closure-138-"):
+    if branch.startswith("phase-1-closure-141-"):
+        allowed_files = ISSUE_141_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-138-"):
         allowed_files = ISSUE_138_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
@@ -2646,6 +2782,7 @@ def main() -> int:
         check_release_docs(failures)
         check_issue39_closure_plan(failures)
         check_issue125_local_restore_contract(failures)
+        check_issue141_platform_ownership_contract(failures)
         check_issue126_restore_readiness_contract(failures)
         check_issue39_execution_strategy(failures)
         check_issue39_ch11_slo_contract(failures)

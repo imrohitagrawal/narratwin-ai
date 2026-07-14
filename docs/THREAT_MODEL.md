@@ -5,8 +5,9 @@
 - Version: 1.0
 - Stage: Stage 2 architecture, security, AI safety
 - Canonical issue: `#2`
-- Last updated: 2026-07-02
-- Scope: pre-implementation architecture and first vertical slice planning
+- Last updated: 2026-07-14
+- Scope: pre-implementation architecture, first vertical slice, and issue `#141`
+  production-like durability platform planning
 
 ## Scope
 
@@ -49,6 +50,9 @@ Out of scope for implementation in Stage 2:
 | Audit logs | Medium | Must not contain secrets |
 | Future avatar/voice/video artifacts | High | Consent, disclosure, and licensing risk |
 | Future consent records | Critical | Required for identity media |
+| Production-like PostgreSQL state | Critical | Stage 4/6/7 synthetic business state, relationships, replay controls, provenance, and consent references |
+| Backup/recovery-point catalog | High | Resource identities, restore timestamps, KMS references, status, retention, and evidence hashes; never credentials or payload data |
+| Restore-validation environment | Critical | Destructive-operation target that must be isolated from the source and user traffic |
 
 ## Trust Boundaries
 
@@ -106,6 +110,8 @@ project authorization guard has verified ownership on `Project`.
 | Storage | fake artifact IDs | overwritten outputs | denied changes | unauthorized download | storage exhaustion | path traversal |
 | Observability | fake event actor | altered logs | missing audit trail | secret logging | log volume abuse | hide malicious actions |
 | Future avatar provider | fake consent | altered media output | denied render | identity/media leakage | render cost abuse | clone identity without consent |
+| RDS source and backup path | forged operator or workload role | retention, recovery point, DB or KMS mutation | missing CloudTrail/database audit | backup/catalog/secret disclosure | connection, storage or backup exhaustion | workload becomes administrator |
+| Restore-validation target | forged target identity | source DB/KMS/VPC mutated instead of target | unsigned or incomplete evidence | restored data exposed through traffic/logs | orphaned target cost or restore flood | restore operator crosses into source boundary |
 
 The Stage 4 evaluator boundary is deterministic and rule-backed. Model-as-judge evaluation is future scope and requires an ADR before it can affect acceptance or security decisions.
 
@@ -229,6 +235,47 @@ Controls:
 - AI-generated media disclosure
 - third-party/license review
 
+### A8: Source/Restore Target Confusion
+
+Attack:
+
+- a privileged or faulty restore procedure treats the source RDS instance as the
+  disposable target and mutates, disables protection on, or deletes source state
+
+Controls:
+
+- distinct VPC, subnet group, security group, IAM role, DNS namespace, DB
+  resource identity, and required environment tags; direct PITR inherits the
+  source storage CMK, so the catalog records shared-key identity instead of
+  asserting false key inequality
+- explicit target allowlist plus immutable source resource denies; tags alone do
+  not authorize destructive action
+- no application/user traffic to the target
+- operator holdpoint, source/target inequality checks, teardown deadline, and
+  independent Operations/Security review
+
+### A9: Backup, Catalog, or Restore Evidence Exfiltration
+
+Attack:
+
+- backup access, restored content, catalog fields, logs, or evidence exports leak
+  secrets, document text, provider payloads, or customer data
+
+Controls:
+
+- synthetic data only in pre-production; no production-to-pre-production copy
+- customer-managed KMS encryption, TLS, private RDS access, SSO/MFA, short-lived roles,
+  GitHub OIDC, Secrets Manager rotation, and no application access to master secret
+- catalog allowlist containing sanitized resource/timestamp/status/hash metadata
+  and rejecting connection strings, credentials, tokens, content, and provider payloads
+- S3 source/restore/control bucket separation, immutable Version IDs/checksums,
+  private SSE-KMS access, and at least 14-day noncurrent-version retention
+- committed deletion outbox to a versioned/Object-Locked control-bucket journal
+  outside RDS PITR; CH-14 derives its handoff from that current journal and
+  CH-21 owns erasure/re-delete proof
+- 14-day RDS PITR, bounded manual-snapshot/target TTL, and at least 90-day
+  sanitized evidence/journal retention
+
 ## Control Matrix
 
 | Risk | Primary control | Evidence required |
@@ -243,6 +290,20 @@ Controls:
 | Supply-chain risk | dependency scanning | scan artifacts and notices |
 | Web baseline issues | OWASP ZAP baseline when web exists | scan artifact |
 | Identity media misuse | consent and disclosure | consent/disclosure tests |
+| Source/target confusion | identity inequality, target allowlist, source deny | platform API evidence and wrong-target negative tests in issues `#144`/`#147` |
+| Backup/evidence disclosure | KMS/private access/role separation/redacted schema | Security approval and negative redaction/access tests in issues `#145`/`#148` |
+
+## Issue #141 residual threats and blockers
+
+ADR `0027` proposes RDS PostgreSQL 17.10 Multi-AZ in `ap-south-1` and a
+same-account/region restore-validation target isolated by network, IAM, DNS,
+resource identity, and traffic boundaries. Direct PITR inherits the source
+storage CMK, so shared account/key blast radius is an explicit residual.
+Same-account isolation has not been approved or deployed. The AWS account/payer, budget owner, region/data
+residency approval, Operations owner, Platform/Storage owner, independent
+Security reviewer, GitHub environment approvers, service quotas, and live engine
+availability remain external blockers. No platform, backup, target, RTO/RPO, or
+restore result is evidenced by this threat-model update.
 
 ## Open Threats Before Stage 4
 

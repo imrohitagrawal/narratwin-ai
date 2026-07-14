@@ -118,6 +118,16 @@ def run_release_docs_check(monkeypatch: Any, *, read_overrides: dict[str, str]) 
     return failures
 
 
+def run_issue141_platform_contract_check(
+    monkeypatch: Any, *, read_overrides: dict[str, str] | None = None
+) -> list[str]:
+    if read_overrides:
+        monkeypatch.setattr(phase1, "read", read_with_overrides(phase1, read_overrides))
+    failures: list[str] = []
+    phase1.check_issue141_platform_ownership_contract(failures)
+    return failures
+
+
 def issue39_plan_with_closed_row_and_record(
     plan_text: str,
     *,
@@ -188,6 +198,31 @@ def test_issue138_branch_allows_only_click_security_remediation_files(
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-138-click-security-remediation "
         "may not change backend/app/main.py."
+    ]
+
+
+def test_issue141_branch_allows_only_durability_decision_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-141-durability-platform-ownership",
+        files=sorted(phase1.ISSUE_141_ALLOWED_CHANGED_FILES),
+    )
+
+    assert failures == []
+
+
+def test_issue141_branch_rejects_runtime_or_infrastructure_changes(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-141-durability-platform-ownership",
+        files=["backend/app/storage/postgres_state.py", "infra/rds.tf"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-141-durability-platform-ownership may not change "
+        "backend/app/storage/postgres_state.py.",
+        "Phase 1 Closure branch phase-1-closure-141-durability-platform-ownership may not change "
+        "infra/rds.tf.",
     ]
 
 
@@ -700,6 +735,129 @@ def test_issue125_local_restore_contract_rejects_missing_local_only_marker(monke
         "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md missing issue #125 restore markers: "
         "Issue `#125` is an executable local-only evidence slice"
     ) in failures
+
+
+def test_issue141_platform_ownership_contract_accepts_current_docs(monkeypatch: Any) -> None:
+    assert run_issue141_platform_contract_check(monkeypatch) == []
+
+
+def test_issue141_platform_ownership_contract_rejects_missing_platform_choice(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0027-production-like-durability-platform-ownership.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/ADR/0027-production-like-durability-platform-ownership.md": replace_text(
+                adr_text,
+                "Amazon RDS for PostgreSQL `17.10`,\nMulti-AZ DB instance deployment",
+                "A managed relational database selected later",
+            )
+        },
+    )
+
+    assert (
+        "docs/ADR/0027-production-like-durability-platform-ownership.md missing issue #141 markers: "
+        "Amazon RDS for PostgreSQL `17.10`, Multi-AZ DB instance deployment"
+    ) in failures
+
+
+def test_issue141_platform_ownership_contract_rejects_missing_human_blocker(monkeypatch: Any) -> None:
+    preflight_text = phase1.read("docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md": replace_text(
+                preflight_text,
+                "`HUMAN-PLAT-001` remains blocked",
+                "`HUMAN-PLAT-001` is documented",
+            )
+        },
+    )
+
+    assert (
+        "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md missing issue #141 markers: "
+        "`HUMAN-PLAT-001` remains blocked"
+    ) in failures
+
+
+def test_issue141_platform_ownership_contract_rejects_missing_object_store(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0027-production-like-durability-platform-ownership.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/ADR/0027-production-like-durability-platform-ownership.md": replace_text(
+                adr_text,
+                "Amazon S3\ngeneral-purpose buckets with Versioning are authoritative",
+                "A future object store may be authoritative",
+            )
+        },
+    )
+
+    assert any("Amazon S3 general-purpose buckets with Versioning are authoritative" in item for item in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_rolled_back_deletion_source(
+    monkeypatch: Any,
+) -> None:
+    adr_text = phase1.read("docs/ADR/0027-production-like-durability-platform-ownership.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/ADR/0027-production-like-durability-platform-ownership.md": replace_text(
+                adr_text,
+                "is not rolled back with RDS PITR",
+                "is reconstructed from the restored database",
+            )
+        },
+    )
+
+    assert any("is not rolled back with RDS PITR" in item for item in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_clamped_negative_rpo(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0027-production-like-durability-platform-ownership.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/ADR/0027-production-like-durability-platform-ownership.md": replace_text(
+                adr_text,
+                "A negative delta, target-ahead sequence, clock\n  ambiguity, or manifest mismatch invalidates the evidence",
+                "A negative delta is clamped to zero",
+            )
+        },
+    )
+
+    assert any("A negative delta, target-ahead sequence" in item for item in failures)
+
+
+@pytest.mark.parametrize(
+    "overclaim_text",
+    [
+        "Production-like durability exists and has been verified.",
+        "Issue #126 is closed by this platform decision.",
+        "DUR-RESTORE-001 is complete.",
+        "Issue #39 has been resolved by issue #141.",
+        "Managed backup verified and queryable.",
+        "The restore drill succeeded.",
+        "Observed RTO 12m and RPO zero.",
+        "Operations/Security approved the platform.",
+        "Restore target is deployed.",
+        "A recoverable snapshot exists; restoration was successful; the RTO target was met; all signoffs were obtained.",
+    ],
+)
+def test_issue141_platform_ownership_contract_rejects_evidence_and_closure_overclaims(
+    monkeypatch: Any, overclaim_text: str
+) -> None:
+    adr_text = phase1.read("docs/ADR/0027-production-like-durability-platform-ownership.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/ADR/0027-production-like-durability-platform-ownership.md": (
+                adr_text + f"\n\n{overclaim_text}\n"
+            )
+        },
+    )
+
+    assert any("contains issue #141 overclaim markers" in failure for failure in failures)
 
 
 def test_issue126_restore_readiness_contract_accepts_current_docs() -> None:
