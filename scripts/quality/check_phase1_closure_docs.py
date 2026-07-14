@@ -315,6 +315,17 @@ ISSUE_39_RESTORE_LOCAL_DRILL_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_local_restore_drill.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_39_CH14_ALLOWED_CHANGED_FILES = {
+    "docs/ADR/0026-ch14-restore-readiness-contract.md",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md",
+    "docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md",
+    "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_39_CH10_ALLOWED_CHANGED_FILES = {
     "backend/app/storage/__init__.py",
     "backend/app/storage/file_state.py",
@@ -675,6 +686,11 @@ ISSUE_39_BRANCH_REQUIRED_ANCESTORS = {
         "824a07c2bd546648b96d9ab555b63a8f2415898e",
         "c47471d0c8218d59509cba936fe216b86c9ac1e9",
         "6449786069dd38eeaa5a4a31f5ed73cbfc52d248",
+    ),
+    "phase-1-closure-39-ch-14-": (
+        "384c15ac67810d30096794500da1c90ce056dd54",
+        "4b7594c8ae14c6a91dff9f0916447b0e6dec39a9",
+        "f94776f6602d4c6feec2412b4764a7368049a080",
     ),
     "phase-1-closure-39-ch-11-": ("384c15ac67810d30096794500da1c90ce056dd54",),
     "phase-1-closure-39-ch-16-": ("824a07c2bd546648b96d9ab555b63a8f2415898e",),
@@ -1393,6 +1409,115 @@ def check_issue125_local_restore_contract(failures: list[str]) -> None:
         )
 
 
+def check_issue126_restore_readiness_contract(failures: list[str]) -> None:
+    required_markers_by_file = {
+        "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md": (
+            "### Issue `#126` CH-14 restore-readiness contract status and evidence mapping",
+            "Matrix status remains exactly `Open` for `DUR-RESTORE-001`.",
+            "Issue `#126` is a narrow repo-checked restore-readiness contract slice",
+            "does not satisfy final `CH-14` restore-drill closure",
+            "does not satisfy `CTX4-RESTORE-EVID-001`",
+            "must not be represented as successful production backup/restore evidence or production restore readiness",
+            "`CTX4-RESTORE-READINESS-EVID-001`",
+            "enumerate the required human-only production drill surfaces",
+            "Successful production restore execution, actual RTO/RPO proof, restore metrics export, retention/re-delete evidence, and operational signoff remain open.",
+        ),
+        "docs/ADR/0026-ch14-restore-readiness-contract.md": (
+            "This slice establishes a repo-checked restore-readiness contract for issue `#126`.",
+            "It does not close issue `#126` unless the live issue scope is formally updated to accept contract-only readiness evidence.",
+            "if evidence is limited to local file-backed replay, local restore-adjacent load metrics, or advisory SLO text, the row stays `Open` and issue `#39` stays open.",
+            "The repo cannot claim a successful production restore drill, production restore readiness, or closure of `DUR-RESTORE-001`.",
+            "Issue `#39` remains open.",
+        ),
+        "docs/STAGE_ISSUE_PLAN.md": (
+            "`phase-1-closure-39-ch-14-*` is reserved for issue `#126`, the narrow",
+            "current repo-baselined `CH-10` and `CH-11`",
+            "This branch does not execute a successful production restore drill.",
+            "adds anti-overclaim guardrails.",
+        ),
+        "docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md": (
+            "No successful production restore drill claim.",
+            "No closure of issue `#39` or matrix row `DUR-RESTORE-001`.",
+            "current repo-baselined restore-adjacent metrics/SLO contracts",
+            "Any fresh finding that identifies a new overclaim path resets this slice to",
+        ),
+        "docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md": (
+            "final `CH-14` `DUR-RESTORE-001` closure tied to successful restore-drill evidence; later issue `#126` may add only narrower readiness-contract guardrails until that final proof exists.",
+        ),
+        "docs/STATUS.md": (
+            "| `#125` | Closed |",
+            "| `#126` | Open |",
+            "It does not claim successful production restore execution, final RTO/RPO proof, restore metrics export, operational signoff, or issue `#39` closure.",
+        ),
+    }
+    for rel, required_markers in required_markers_by_file.items():
+        normalized_text = re.sub(r"\s+", " ", read(rel))
+        missing_markers = [marker for marker in required_markers if marker not in normalized_text]
+        if missing_markers:
+            failures.append(f"{rel} missing issue #126 restore markers: " + ", ".join(missing_markers))
+
+    completed_status_terms = (
+        r"closed|complete|completed|satisfied|fully satisfied|"
+        r"resolved(?!\s+or\s+explicitly\s+downgraded)"
+    )
+    status_claim_prefix = r"(?:is\s+|has\s+been\s+)?(?:now\s+)?"
+    issue_subject_prefix = r"(?<!for\s)(?<!on\s)\bissue\s+`?"
+    production_drill_claim = (
+        r"\b(?:successful\s+)?production restore drill\s+"
+        r"(?:(?:was\s+|has\s+been\s+)?(?:successful|complete|completed|passed|succeeded|verified|proven))\b"
+    )
+    production_readiness_claim = (
+        r"\bproduction restore readiness\s+"
+        r"(?:(?:is\s+|has\s+been\s+)?(?:achieved|ready|complete|completed|passed|succeeded|verified|proven))\b"
+    )
+    production_restore_claim = (
+        r"\bproduction restore\s+(?:(?:is\s+|has\s+been\s+)?(?:ready|verified|proven))\b"
+    )
+    dur_restore_claim = (
+        r"\b(?:matrix row\s+)?dur-restore-001\s+" + status_claim_prefix + r"(?:" + completed_status_terms + r")\b"
+    )
+    issue_126_claim = issue_subject_prefix + r"#126`?\s+" + status_claim_prefix + r"(?:" + completed_status_terms + r")\b"
+    issue_39_claim = issue_subject_prefix + r"#39`?\s+" + status_claim_prefix + r"(?:" + completed_status_terms + r")\b"
+    forbidden_overclaims_by_file = {
+        "docs/ADR/0026-ch14-restore-readiness-contract.md": (
+            ("successful production restore drill complete", production_drill_claim),
+            ("production restore readiness achieved", production_readiness_claim),
+            ("production restore is ready", production_restore_claim),
+            ("dur-restore-001 closed", dur_restore_claim),
+            ("issue #126 closed or satisfied", issue_126_claim),
+            ("issue #39 closed or resolved", issue_39_claim),
+        ),
+        "docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md": (
+            ("successful production restore drill complete", production_drill_claim),
+            ("production restore readiness achieved", production_readiness_claim),
+            ("production restore is ready", production_restore_claim),
+            ("dur-restore-001 closed", dur_restore_claim),
+            ("issue #39 closed or resolved", issue_39_claim),
+        ),
+        "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md": (
+            ("successful production restore drill complete", production_drill_claim),
+            ("production restore readiness achieved", production_readiness_claim),
+            ("production restore is ready", production_restore_claim),
+            ("dur-restore-001 closed", dur_restore_claim),
+            ("issue #39 closed or resolved", issue_39_claim),
+        ),
+        "docs/STATUS.md": (
+            ("successful production restore drill complete", production_drill_claim),
+            ("production restore readiness achieved", production_readiness_claim),
+            ("production restore is ready", production_restore_claim),
+            ("dur-restore-001 closed", dur_restore_claim),
+            ("issue #39 closed or resolved", issue_39_claim),
+        ),
+    }
+    for rel, forbidden_patterns in forbidden_overclaims_by_file.items():
+        normalized_text = re.sub(r"\s+", " ", read(rel)).lower()
+        present_markers = [
+            label for label, pattern in forbidden_patterns if re.search(pattern, normalized_text, flags=re.IGNORECASE)
+        ]
+        if present_markers:
+            failures.append(f"{rel} contains issue #126 restore overclaim markers: " + ", ".join(present_markers))
+
+
 def check_issue39_closed_row_records(failures: list[str], text: str, closed_ids: set[str]) -> None:
     headers, rows = parse_table_lines(section(text, "Row Closure Records"))
     normalized_headers = [normalize_header(header) for header in headers]
@@ -2003,6 +2128,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_39_CH09_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-39-restore-local-drill":
         allowed_files = ISSUE_39_RESTORE_LOCAL_DRILL_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-39-ch-14-"):
+        allowed_files = ISSUE_39_CH14_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-10-"):
         allowed_files = ISSUE_39_CH10_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-39-ch-11-"):
@@ -2492,6 +2619,7 @@ def main() -> int:
         check_release_docs(failures)
         check_issue39_closure_plan(failures)
         check_issue125_local_restore_contract(failures)
+        check_issue126_restore_readiness_contract(failures)
         check_issue39_execution_strategy(failures)
         check_issue39_ch11_slo_contract(failures)
         check_process_docs(failures)

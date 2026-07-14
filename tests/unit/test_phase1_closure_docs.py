@@ -451,6 +451,90 @@ def test_issue39_ch11_branch_rejects_runtime_and_watch_files(monkeypatch: Any) -
     ]
 
 
+def test_issue39_ch14_branch_checks_issue125_merge_baseline(monkeypatch: Any) -> None:
+    calls: list[list[str]] = []
+
+    def fake_git_ok(args: list[str]) -> bool:
+        calls.append(args)
+        return True
+
+    monkeypatch.setattr(phase1, "current_branch", lambda: "phase-1-closure-39-ch-14-restore-readiness-contract")
+    monkeypatch.setattr(phase1, "git_ok", fake_git_ok)
+
+    failures: list[str] = []
+    phase1.check_branch(failures)
+
+    assert failures == []
+    assert calls == [
+        [
+            "merge-base",
+            "--is-ancestor",
+            "384c15ac67810d30096794500da1c90ce056dd54",
+            "HEAD",
+        ],
+        [
+            "merge-base",
+            "--is-ancestor",
+            "4b7594c8ae14c6a91dff9f0916447b0e6dec39a9",
+            "HEAD",
+        ],
+        [
+            "merge-base",
+            "--is-ancestor",
+            "f94776f6602d4c6feec2412b4764a7368049a080",
+            "HEAD",
+        ]
+    ]
+
+
+def test_issue39_ch14_branch_rejects_missing_issue125_merge_baseline(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "current_branch", lambda: "phase-1-closure-39-ch-14-restore-readiness-contract")
+    monkeypatch.setattr(phase1, "git_ok", lambda args: False)
+
+    failures: list[str] = []
+    phase1.check_branch(failures)
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-14-restore-readiness-contract must contain dependency commits: 384c15ac67810d30096794500da1c90ce056dd54, 4b7594c8ae14c6a91dff9f0916447b0e6dec39a9, f94776f6602d4c6feec2412b4764a7368049a080."
+    ]
+
+
+def test_issue39_ch14_branch_allows_only_restore_readiness_contract_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-14-restore-readiness-contract",
+        files=[
+            "docs/ADR/0026-ch14-restore-readiness-contract.md",
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+            "docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md",
+            "docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md",
+            "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+
+
+def test_issue39_ch14_branch_rejects_runtime_and_local_restore_impl_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-39-ch-14-restore-readiness-contract",
+        files=[
+            "backend/app/storage/local_restore_drill.py",
+            "docs/LOCAL_DEVELOPMENT.md",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-39-ch-14-restore-readiness-contract may not change backend/app/storage/local_restore_drill.py.",
+        "Phase 1 Closure branch phase-1-closure-39-ch-14-restore-readiness-contract may not change docs/LOCAL_DEVELOPMENT.md.",
+    ]
+
+
 def test_stacked_child_push_resolve_base_uses_stacked_base_ref(monkeypatch: Any) -> None:
     calls: list[list[str]] = []
 
@@ -593,6 +677,255 @@ def test_issue125_local_restore_contract_rejects_missing_local_only_marker(monke
         "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md missing issue #125 restore markers: "
         "Issue `#125` is an executable local-only evidence slice"
     ) in failures
+
+
+def test_issue126_restore_readiness_contract_accepts_current_docs() -> None:
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert failures == []
+
+
+def test_issue126_restore_readiness_contract_rejects_missing_no_ready_claim_marker(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md": replace_text(
+                    plan_text,
+                    "must not be represented as successful\n  production backup/restore evidence or production restore readiness.",
+                    "must not be represented as successful production backup/restore evidence.",
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert (
+        "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md missing issue #126 restore markers: "
+        "must not be represented as successful production backup/restore evidence or production restore readiness"
+    ) in failures
+
+
+def test_issue126_restore_readiness_contract_rejects_missing_adr_open_marker(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0026-ch14-restore-readiness-contract.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/ADR/0026-ch14-restore-readiness-contract.md": replace_text(
+                    adr_text,
+                    "Issue `#39` remains open.",
+                    "Issue `#39` follows the usual closure workflow.",
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert (
+        "docs/ADR/0026-ch14-restore-readiness-contract.md missing issue #126 restore markers: "
+        "Issue `#39` remains open."
+    ) in failures
+
+
+def test_issue126_restore_readiness_contract_rejects_adr_issue126_closure_overclaim(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0026-ch14-restore-readiness-contract.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/ADR/0026-ch14-restore-readiness-contract.md": (
+                    adr_text + "\n\nIssue `#126` is closed by this contract-only readiness slice.\n"
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert (
+        "docs/ADR/0026-ch14-restore-readiness-contract.md contains issue #126 restore overclaim markers: "
+        "issue #126 closed or satisfied"
+    ) in failures
+
+
+@pytest.mark.parametrize(
+    ("overclaim_text", "expected_marker"),
+    [
+        (
+            "Successful production restore drill complete and production restore readiness achieved for DUR-RESTORE-001.",
+            "successful production restore drill complete, production restore readiness achieved",
+        ),
+        (
+            "Issue #126 is now fully satisfied by this readiness contract.",
+            "issue #126 closed or satisfied",
+        ),
+        (
+            "Matrix row DUR-RESTORE-001 is Closed by the CH-14 slice.",
+            "dur-restore-001 closed",
+        ),
+        (
+            "Production restore is ready based on this repo evidence.",
+            "production restore is ready",
+        ),
+        (
+            "Issue #39 is resolved for restore readiness.",
+            "issue #39 closed or resolved",
+        ),
+        (
+            "Issue #39 has been resolved for restore readiness.",
+            "issue #39 closed or resolved",
+        ),
+        (
+            "Issue #126 has been closed by this readiness contract.",
+            "issue #126 closed or satisfied",
+        ),
+        (
+            "DUR-RESTORE-001 has been satisfied by this CH-14 slice.",
+            "dur-restore-001 closed",
+        ),
+        (
+            "Production restore readiness is achieved by this evidence.",
+            "production restore readiness achieved",
+        ),
+        (
+            "Production restore has been verified by this evidence.",
+            "production restore is ready",
+        ),
+        (
+            "The production restore drill was successful.",
+            "successful production restore drill complete",
+        ),
+    ],
+)
+def test_issue126_restore_readiness_contract_rejects_production_restore_overclaim_variants(
+    monkeypatch: Any, overclaim_text: str, expected_marker: str
+) -> None:
+    adr_text = phase1.read("docs/ADR/0026-ch14-restore-readiness-contract.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/ADR/0026-ch14-restore-readiness-contract.md": adr_text + f"\n\n{overclaim_text}\n",
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert (
+        "docs/ADR/0026-ch14-restore-readiness-contract.md contains issue #126 restore overclaim markers: "
+        f"{expected_marker}"
+    ) in failures
+
+
+def test_issue126_restore_readiness_contract_rejects_missing_stage_issue_plan_marker(monkeypatch: Any) -> None:
+    plan_text = phase1.read("docs/STAGE_ISSUE_PLAN.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/STAGE_ISSUE_PLAN.md": replace_text(
+                    plan_text,
+                    "adds anti-overclaim guardrails.",
+                    "adds documentation updates.",
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert (
+        "docs/STAGE_ISSUE_PLAN.md missing issue #126 restore markers: "
+        "adds anti-overclaim guardrails."
+    ) in failures
+
+
+def test_issue126_restore_readiness_contract_rejects_missing_issue125_boundary_marker(monkeypatch: Any) -> None:
+    preflight_text = phase1.read("docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md": replace_text(
+                    preflight_text,
+                    "issue `#126` may add only narrower readiness-contract guardrails until that\n  final proof exists.",
+                    "issue `#126` may add later follow-up guardrails.",
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert (
+        "docs/reviews/ISSUE_125_LOCAL_RESTORE_PREFLIGHT.md missing issue #126 restore markers: "
+        "final `CH-14` `DUR-RESTORE-001` closure tied to successful restore-drill evidence; later issue `#126` may add only narrower readiness-contract guardrails until that final proof exists."
+    ) in failures
+
+
+def test_issue126_restore_readiness_contract_rejects_missing_issue126_preflight_marker(monkeypatch: Any) -> None:
+    preflight_text = phase1.read("docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md": replace_text(
+                    preflight_text,
+                    "current repo-baselined restore-adjacent metrics/SLO contracts",
+                    "restore-adjacent metrics/SLO contracts",
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert (
+        "docs/reviews/ISSUE_126_CH14_RESTORE_READINESS_PREFLIGHT.md missing issue #126 restore markers: "
+        "current repo-baselined restore-adjacent metrics/SLO contracts"
+    ) in failures
+
+
+def test_issue126_restore_readiness_contract_rejects_status_drift(monkeypatch: Any) -> None:
+    status_text = phase1.read("docs/STATUS.md")
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {
+                "docs/STATUS.md": replace_text(
+                    status_text,
+                    "| `#126` | Open |",
+                    "| `#126` | Closed |",
+                ),
+            },
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue126_restore_readiness_contract(failures)
+
+    assert "docs/STATUS.md missing issue #126 restore markers: | `#126` | Open |" in failures
 
 
 def test_issue39_closure_plan_rejects_closed_row_without_closure_record(monkeypatch: Any) -> None:
