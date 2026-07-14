@@ -1,6 +1,7 @@
 # NarraTwin AI Launch Levels and Infrastructure Boundaries
 
-Status: Proposed clarification for issue `#141` and draft PR `#153`.
+Status: Merged documentation baseline through PR `#153` at `2fb5569`;
+issue `#141` and activation remain blocked on the recorded human approvals.
 
 ## Purpose
 

@@ -1907,6 +1907,7 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
             "docs/LAUNCH_LEVELS.md",
         ),
         "docs/LAUNCH_LEVELS.md": (
+            "Status: Merged documentation baseline through PR `#153` at `2fb5569`",
             "ADR `0027` selects AWS for the production-like durability evidence and eventual production paths",
             "An AWS account is not required for local development or the controlled local mock demo.",
             "A free or low-cost resource does not, by price alone, prove security, durability, privacy, or operational readiness.",
@@ -1943,6 +1944,7 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
         ),
         "docs/STATUS.md": (
             "| `#141` | Open, architecture recorded; human approvals blocked |",
+            "Documentation baseline merged through PR `#153` at `2fb5569`.",
             "| `#142` | Open, depends on `#141` |",
             "| `#149` | Open, depends on `#130`, `#141`-`#148` |",
             "| `#126` | Open |",
@@ -1955,7 +1957,7 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
         ),
         "docs/TRACEABILITY.md": (
             "Issue `#141` production-like durability platform and ownership contract",
-            "Proposed on branch; external approvals blocked",
+            "Merged at `2fb5569`; external approvals blocked",
             "launch-level boundary",
             "docs/LAUNCH_LEVELS.md",
         ),
@@ -2009,6 +2011,25 @@ def check_issue141_platform_ownership_contract(failures: list[str]) -> None:
         missing_markers = [marker for marker in required_markers if marker not in normalized_text]
         if missing_markers:
             failures.append(f"{rel} missing issue #141 markers: " + ", ".join(missing_markers))
+
+    stale_lifecycle_status_by_file = {
+        "docs/LAUNCH_LEVELS.md": (
+            "Status: Proposed clarification for issue `#141` and draft PR `#153`.",
+        ),
+        "docs/STATUS.md": (
+            "Documentation baseline remains proposed on the feature branch.",
+        ),
+        "docs/TRACEABILITY.md": (
+            "Proposed on branch; external approvals blocked",
+        ),
+    }
+    for rel, stale_statuses in stale_lifecycle_status_by_file.items():
+        normalized_text = re.sub(r"\s+", " ", read(rel)).casefold()
+        present = [status for status in stale_statuses if status.casefold() in normalized_text]
+        if present:
+            failures.append(
+                f"{rel} contains stale issue #141 lifecycle status: " + ", ".join(present)
+            )
 
     forbidden_patterns = (
         r"\bazure sql\b[^.]{0,120}\bauthoritative production-like\b",
