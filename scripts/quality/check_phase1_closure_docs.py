@@ -1053,7 +1053,8 @@ def non_negated_pattern_present(text: str, pattern: str) -> bool:
         prefix = text[max(0, match.start() - 64) : match.start()]
         if re.search(
             r"\b(?:there\s+(?:is|are)\s+)?"
-            r"(?:no|not|never|neither|without)\s+(?:an?\s+)?$",
+            r"(?:no|not|never|neither|without)\s+"
+            r"(?:(?:an?|the|to|be|been|being)\s+){0,3}$",
             prefix,
             re.I,
         ):
@@ -3245,6 +3246,8 @@ def check_process_docs(failures: list[str]) -> None:
         "predeclared limitations",
         "external cves",
         "findings caught before merge",
+        "deferred real media",
+        "cosmetic preferences outside acceptance criteria",
         "after every completed evaluation, record a new baseline",
     ):
         if marker not in normalized_skill_selection:
@@ -3283,10 +3286,12 @@ def check_process_docs(failures: list[str]) -> None:
         )
 
     forbidden_skill_selection_patterns = (
-        r"\b(?:install|activate)\b.{0,80}\bautomatic\w*\b",
+        r"\b(?:install|activat)\w*\b(?!.{0,80}\b(?:not|never)\b).{0,80}\bautomatic\w*\b",
+        r"\bautomatic\w*\b(?!.{0,60}\b(?:not|never)\b).{0,60}\b(?:install|activat)\w*\b",
+        r"\b(?:allow|authoriz|enable|permit)\w*\b.{0,40}\bauto-?(?:install|activat)\w*\b",
         r"\b(?:install|activate)\b.{0,120}\bwithout\s+(?:explicit\s+)?(?:repository-)?owner approval\b",
-        r"\bpresent on disk\b\s+is\s+(?:itself\s+)?(?:sufficient|enough)\b.{0,40}\bapproval\b",
-        r"\bcomposite skill (?:quality )?score\s*(?:=|:|\|)",
+        r"\b(?:present on disk|disk presence)\b(?!.{0,60}\b(?:not|never|neither)\b).{0,60}\b(?:is\s+(?:itself\s+)?(?:sufficient|enough)|equals?|counts?\s+as)\b.{0,40}\b(?:repository\s+)?approval\b",
+        r"\bcomposite skill (?:quality )?score\s*(?:=|:|\||is\s+(?:the\s+)?weighted\b)",
     )
     for pattern in forbidden_skill_selection_patterns:
         if non_negated_pattern_present(normalized_skill_selection, pattern):

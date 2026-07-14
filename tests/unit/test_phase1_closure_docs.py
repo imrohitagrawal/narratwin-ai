@@ -285,6 +285,16 @@ def test_process_docs_reject_skill_selection_contract_without_activation_trigger
             "- be discovered after an explicit pre-merge completion claim;",
             "qualifying escapes must be discovered after merge",
         ),
+        (
+            "deferred real media",
+            "future media",
+            "deferred real media",
+        ),
+        (
+            "cosmetic preferences outside acceptance criteria",
+            "cosmetic preferences",
+            "cosmetic preferences outside acceptance criteria",
+        ),
     ],
 )
 def test_process_docs_reject_skill_selection_contract_mutations(
@@ -319,11 +329,43 @@ def test_process_docs_reject_skill_selection_contract_mutations(
             "forbidden skill-selection contradiction",
         ),
         (
+            "When FIRED persists, automatically install the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "When FIRED persists, the skill is installed automatically.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "When FIRED persists, the agent installs the skill automatically.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "FIRED enables auto-install of the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "At FIRED, activation is automatic.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
             "Present on disk is sufficient for approval and operation.",
             "forbidden skill-selection contradiction",
         ),
         (
+            "Present on disk counts as approval.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Disk presence equals repository approval.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
             "Composite skill quality score = weighted mean of all measures.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Composite skill quality score is the weighted mean of all measures.",
             "forbidden skill-selection contradiction",
         ),
     ],
@@ -344,6 +386,35 @@ def test_process_docs_reject_additive_skill_selection_contradictions(
     )
 
     assert any(expected_failure in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "negated_statement",
+    [
+        "Do not install the skill automatically.",
+        "Never activate the skill automatically.",
+        "The skill will not be installed automatically.",
+        "Activation is not automatic.",
+        "Present on disk does not count as approval.",
+        "Disk presence does not equal repository approval.",
+        "There is no composite skill quality score: use raw measures.",
+    ],
+)
+def test_process_docs_allow_negated_skill_selection_contradictions(
+    monkeypatch: Any,
+    negated_statement: str,
+) -> None:
+    skill_selection = phase1.read("docs/SKILL_SELECTION_AND_EVIDENCE.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_SELECTION_AND_EVIDENCE.md"],
+        read_overrides={
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md": f"{skill_selection}\n{negated_statement}\n",
+        },
+    )
+
+    assert not any("forbidden skill-selection contradiction" in failure for failure in failures)
 
 
 def test_process_docs_require_exact_skill_execution_selection_rule(monkeypatch: Any) -> None:
