@@ -37,10 +37,14 @@ No successful production-like durability or restore claim is permitted. Issue
   reasons even when automatic minor upgrades are disabled; version drift
   invalidates readiness until re-baselined.
 - AWS exact-version single-request copy needs source `GetObjectVersion`/KMS
-  decrypt and destination put/data-key permissions and is limited to `5 GB`;
+  decrypt and destination put/data-key permissions and is conservatively limited
+  to exactly `5,000,000,000 bytes`;
   larger objects require a separate multipart IAM/KMS/abort-cleanup contract.
 - RDS deletion must explicitly skip a final snapshot and delete automated
   backups, followed by inventory proof, to avoid retaining target-created state.
+- Fixed destination tags use scoped `s3:PutObjectTagging`; a distinct cleanup
+  role gets only target RDS describe/modify/delete and restore-bucket version
+  list/tag-read/version-delete actions, with immutable source/control denies.
 - GitHub OIDC trust must restrict audience and repository/environment subject;
   because an environment subject alone does not distinguish a PR job, the
   environment must allow only `main`, exclude PR refs, prevent self-review and
@@ -55,7 +59,7 @@ No successful production-like durability or restore claim is permitted. Issue
 | `PLAT-DEC-001` | RDS PostgreSQL 17.10, Multi-AZ, `ap-south-1`, private source boundary. | Remove provider/version/topology marker; docs gate fails. | Region, cost and account approval. |
 | `PLAT-SCOPE-001` | Exact Stage 4/6/7 PostgreSQL entity and S3 versioned-byte inventory. | Delete any complete Stage row; structural docs gate fails. | Data-class/legal review. |
 | `PLAT-BACKUP-001` | 14-day RDS PITR, 15-day S3-version mechanism, restricted catalog/reviewer export and owner. | Replace immutable timestamp/Version ID, remove evidence separation or owner; docs gate fails. | Platform owner assignment. |
-| `PLAT-ISOLATION-001` | Landing zone; PITR target with supported explicit parameters, IAM-auth input and post-create engine/config verification; inherited storage-CMK disclosure; source deny; pre-create deadline and exact cleanup. | Service defaults, impossible engine input, late/discretionary cleanup, missing final-snapshot/backup deletion or runtime/IaC on this branch fails. | Security same-account/shared-key exception. |
+| `PLAT-ISOLATION-001` | Landing zone; PITR target with supported explicit parameters, IAM-auth input and post-create engine/config verification; inherited storage-CMK disclosure; source deny; pre-create deadline and separately scoped RDS/S3 cleanup authority. | Service defaults, impossible engine input, late/discretionary cleanup, missing final-snapshot/backup deletion, missing cleanup action or runtime/IaC on this branch fails. | Security same-account/shared-key exception. |
 | `PLAT-ACCESS-001` | SSO/MFA, exact OIDC workflow/environment/branch/job trust, bounded single-copy S3/KMS permissions, private validator, IAM DB auth/Secrets Manager/CMK/TLS boundaries. | Remove any trust/permission/network/copy-limit marker; detailed docs gate fails. | Security approval and live policy inspection. |
 | `PLAT-RETENTION-001` | Backup/version/target/evidence retention, contiguous integrity-linked and separately signed journal manifest, cleanup/inventory escalation, CH-17 revocation and CH-14/CH-21 split. | Remove journal/signing/break-glass/inventory fields or CH-17 dependency; structural docs gate fails. | Security/privacy disposition. |
 | `PLAT-SLO-001` | Planned RTO/RPO owners, live target controls in the restore-ready boundary and version-written immutable source cutoff; negative/mismatched deltas invalidate evidence. | Reduced readiness, moving cutoff, discretionary cleanup and result/achieved/verified claims fail focused guardrails. | Business threshold and Operations risk acceptance. |

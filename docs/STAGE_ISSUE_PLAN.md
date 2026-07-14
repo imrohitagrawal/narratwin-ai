@@ -851,10 +851,11 @@ environment/catalog foundation; `#148` depends on `#145`-`#147` handoffs; and
 the later `#126` drill alone creates the PITR target and records actual results.
 The target contract uses supported PITR inputs including IAM DB authentication,
 verifies engine/configuration after creation, bounds S3 recovery to single-copy
-objects `<=5 GB`, registers cleanup before creation, deletes without a final
-snapshot or retained automated backup, and blocks another exercise until live
-inventory is clean. Detailed security/operations controls and S3/journal STRIDE
-rows are mutation guarded.
+objects `<=5,000,000,000 bytes`, registers cleanup before creation, uses
+separately scoped target RDS/S3 inventory/deletion authority, deletes without a
+final snapshot or retained automated backup, and blocks another exercise until
+live inventory is clean. Detailed security/operations controls and S3/journal
+STRIDE rows are mutation guarded.
 It may touch only:
 
 - `docs/ADR/0008-postgresql-durability-schema-boundary.md`

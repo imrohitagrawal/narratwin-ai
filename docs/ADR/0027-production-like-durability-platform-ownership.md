@@ -261,12 +261,14 @@ custody, and CH-21 deletion behavior for both surfaces.
   roles are migration, application, read-only validation, and audited break-glass.
 - The restore operator can create and inspect restore-validation resources. For
   exact-version artifact copying, the accepted recovery contract is a single
-  `CopyObject` request for an object no larger than `5 GB`; larger objects fail
-  preflight before any copy until a separate multipart-copy IAM, KMS and abort-
-  cleanup contract is approved. The operator receives only source
+  `CopyObject` request for an object no larger than `5,000,000,000 bytes` (the
+  conservative contract value for the service's 5-GB single-copy ceiling);
+  larger objects fail preflight before any copy until a separate multipart-copy
+  IAM, KMS and abort-cleanup contract is approved. The operator receives only source
   `s3:GetObjectVersion` and source-key `kms:Decrypt`, restricted to the source
   bucket prefix, cataloged manifest and expected encryption context, plus
-  destination `s3:PutObject` and restore-key `kms:GenerateDataKey`. It cannot
+  destination `s3:PutObject`, `s3:PutObjectTagging` for the fixed run/deadline
+  tag set, and restore-key `kms:GenerateDataKey`. It cannot
   read mutable aliases, administer either key, manage buckets, mutate the
   source, delete versions, or access the control journal beyond its sanitized
   manifest input. The workload role has no restore/control-bucket access.
@@ -279,8 +281,18 @@ custody, and CH-21 deletion behavior for both surfaces.
   administration, source VPC, backup retention changes, source/control S3
   mutation, Object Lock bypass, and source deletion-protection removal. A
   separate target-cleanup role may remove deletion protection only from the
-  cataloged restore target after evidence capture and dated Operations approval;
-  immutable ARN-based denies prevent it from changing source protection.
+  cataloged restore target after evidence capture and dated Operations approval.
+  On the run-tagged target ARN it receives only `rds:DescribeDBInstances`,
+  `rds:ModifyDBInstance`, and `rds:DeleteDBInstance`; post-delete inventory uses
+  `rds:DescribeDBSnapshots` and `rds:DescribeDBInstanceAutomatedBackups`, with
+  `rds:DeleteDBSnapshot` or `rds:DeleteDBInstanceAutomatedBackup` only for a
+  run-tagged orphan that the exact teardown should have removed. On the restore
+  bucket/run prefix it receives `s3:ListBucketVersions`,
+  `s3:GetObjectVersionTagging`, and `s3:DeleteObjectVersion`. It cannot put/read
+  object content, change tags, bypass retention, administer KMS/buckets, or act
+  on source/control buckets. Immutable source DB, source/control bucket and KMS
+  ARN denies apply independently of tags; tags narrow the target allowlist but
+  never authorize a source action.
 
 ### Retention, encryption, and integrity
 
@@ -384,7 +396,7 @@ each child issue must also obtain its role-specific approvals before closeout.
 | `#144` pre-production source and isolated restore landing-zone IaC | `#141`; Security approval of same-account/shared-RDS-key exception | Reproducible private Multi-AZ RDS 17.10 source plus restore VPC/subnet/parameter/SG/DNS/private-endpoint template and distinct source/restore/control S3 buckets; exact workflow/environment/OIDC restrictions, IAM/KMS/network isolation, source denies and target-creation parameter evidence including IAM DB authentication and baseline/post-create engine verification. No pre-created target DB and no drill. |
 | `#145` backup and artifact catalog | `#141`, `#144` | 14-day RDS PITR and at least 15-day S3 noncurrent-version retention configured; immutable DB time/object Version IDs selected; unique-key/version-aware journal, Object Lock retention, separately signed integrity manifest and rollback anchor, control-key safeguards, restricted catalog/reviewer-export split and KMS/access/status evidence complete. No restore execution. |
 | `#146` synthetic seed and validator | `#141`, `#143`, `#144`, `#145` | Versioned synthetic Stage 4/6/7 graph and live test S3 objects, at least one contiguous integrity-linked deletion-journal event, immutable source cutoff/server UTC/commit sequence, expected counts/checksums/relationships and negative corruption cases in the selected landing zone. |
-| `#147` restore runbook and safety controls | `#144`, `#145`, `#146` | Executable but not yet executed runbook whose later `#126` invocation creates a new RDS target with explicit Multi-AZ/private/network/parameter/tag/IAM-auth settings, pre/post engine verification, and no service defaults; exact single-copy `<=5 GB` S3 Version ID copies; target allowlist/source deny; journal/revocation-derived handoff; pre-create cleanup deadline, tag discovery, `SkipFinalSnapshot=true`/`DeleteAutomatedBackups=true`, target-only cleanup role; 24/72-hour escalation and next-exercise live-inventory block; RTO/RPO holdpoints. |
+| `#147` restore runbook and safety controls | `#144`, `#145`, `#146` | Executable but not yet executed runbook whose later `#126` invocation creates a new RDS target with explicit Multi-AZ/private/network/parameter/tag/IAM-auth settings, pre/post engine verification, and no service defaults; exact single-copy `<=5,000,000,000 bytes` S3 Version ID copies; target allowlist/source deny; journal/revocation-derived handoff; pre-create cleanup deadline, tag discovery, `SkipFinalSnapshot=true`/`DeleteAutomatedBackups=true`, separately scoped RDS/S3 target-cleanup/live-inventory actions; 24/72-hour escalation and next-exercise live-inventory block; RTO/RPO holdpoints. |
 | `#148` restore observability and evidence export | `#141`, `#144`, `#145`, `#146`, `#147`; metric names aligned with CH-10/CH-11 and alert routing owned by CH-12 | RDS/S3 restore, live target-configuration/isolation, backup/version, contiguous catalog/journal, cleanup-deadline/orphan/live-inventory and KMS-access events/metrics; restricted-catalog to allowlisted reviewer export; immutable-cutoff/negative-delta-invalidating RTO/RPO calculation tests. No successful-drill claim. |
 | `#149` production-like restore readiness review | `#141` through `#148` | Verify actual environment, backup/version sources, target, validator, runbook, calculation-test/fixture metrics and independent approvals; record Go/No-Go for a later drill without actual RTO/RPO or restore-success claims. Must leave `#126`, `DUR-RESTORE-001`, and `#39` open. |
 

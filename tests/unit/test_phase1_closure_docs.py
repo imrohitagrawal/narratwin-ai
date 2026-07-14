@@ -963,8 +963,9 @@ def test_issue141_platform_ownership_contract_accepts_truthful_backup_negation(
         ("`refs/pull/*/merge`", "pull-request refs"),
         ("prevents self-review", "permits self-review"),
         ("disallows administrator bypass", "permits administrator bypass"),
-        ("no larger than `5 GB`", "of any size"),
+        ("no larger than `5,000,000,000 bytes`", "of any size"),
         ("`s3:GetObjectVersion`", "`s3:GetObject`"),
+        ("`s3:PutObjectTagging`", "broad destination tag administration"),
         ("restore-key `kms:GenerateDataKey`", "restore-key administration"),
         ("internet/NAT, source-VPC, application, provider, or production connectivity", "public internet connectivity"),
         ("Reviewer exports use a field allowlist", "Reviewer exports copy the operational catalog"),
@@ -972,6 +973,39 @@ def test_issue141_platform_ownership_contract_accepts_truthful_backup_negation(
         ("writer has create-\nonly permissions and cannot overwrite", "writer may overwrite"),
         ("every use is\nalerted, dated, and reviewed", "use is not audited"),
         ("Control-key disablement/deletion safeguards and\nalarms are mandatory", "Control-key alarms are optional"),
+        ("separate asymmetric KMS signing key", "shared symmetric encryption key"),
+        (
+            "no journal-write,\nreconciliation, retention-bypass, or catalog-mutation permission",
+            "journal and catalog administrator permissions",
+        ),
+        (
+            "pins the signing-key ARN,\nalgorithm, manifest policy version and prior signed watermark",
+            "accepts any signing key and watermark",
+        ),
+        (
+            "missing,\ninvalid, unexpected-key, or rolled-back signature fails closed",
+            "signature errors are ignored",
+        ),
+        (
+            "separate target-cleanup role may remove deletion protection",
+            "restore operator may delete any resource",
+        ),
+        ("`rds:DescribeDBInstances`", "unscoped RDS inventory"),
+        ("`rds:ModifyDBInstance`", "unscoped RDS modification"),
+        ("`rds:DeleteDBInstance`", "unscoped RDS deletion"),
+        ("`rds:DescribeDBSnapshots`", "no snapshot inventory"),
+        ("`rds:DescribeDBInstanceAutomatedBackups`", "no automated-backup inventory"),
+        ("`s3:ListBucketVersions`", "unversioned bucket listing"),
+        ("`s3:GetObjectVersionTagging`", "no version tag inspection"),
+        ("`s3:DeleteObjectVersion`", "unversioned object deletion"),
+        (
+            "It cannot put/read\n  object content, change tags, bypass retention",
+            "It can read and mutate object content and tags",
+        ),
+        (
+            "source/control bucket and KMS\n  ARN denies apply independently of tags",
+            "source denies depend only on mutable tags",
+        ),
     ],
 )
 def test_issue141_platform_contract_rejects_security_control_regressions(
