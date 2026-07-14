@@ -70,7 +70,15 @@ Use it to answer:
   through PR `#120` at merge commit
   `af7215a5ceb7cefa81306773c1cfa8260435291e`; PR `#135` merged issue `#125`
   to `main` at merge commit `f94776f6602d4c6feec2412b4764a7368049a080`; and
-  issues `#43`, `#44`, `#48`, and `#49` remain open.
+  issues `#43`, `#44`, `#48`, and `#49` remain open. PR `#152` merged issue
+  `#138` at `648c81c`; issue `#138` is closed while issue `#151` remains open
+  and unresolved, so no clean-container-security or scanner-consensus claim is
+  permitted.
+- Mode 1 controlled-local-demo reconciliation is tracked by open parent `#155`.
+  Audit child `#156` is closed; corrective children `#157`, `#158`, and `#159`
+  are open; performance follow-up `#160` and Final Review GO/NO-GO evidence
+  child `#161` are open. Issue `#8` remains open until the Stage 1
+  validation-gate correction merges and is verified during closeout.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -96,6 +104,32 @@ Use these files together with this tracker:
 - [Engineering Process RCA](ENGINEERING_PROCESS_RCA.md)
 - [New Project Engineering Playbook](templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md)
 - GitHub issues and pull requests for execution history
+
+## Mode 1 Audited Status Contract
+
+```narratwin-contract
+contract=mode1-local-demo-audited-status
+issue-3=closed-superseded
+issue-8=open-pending-stage1-gate-correction
+issue-17=open-stage6-fallback-integrity
+issue-18=open-playable-audio-later
+artifact-18=json-voice-manifest-not-playable-audio-no-audio-bytes
+issue-19=open-timed-video-later
+artifact-19=html-json-placeholders-not-real-video-mp4-webm-unimplemented
+issue-43=open-real-stack-browser-e2e
+evidence-43=intercepted-api-insufficient-performance-split-to-160
+issue-138=closed-by-pr-152
+issue-151=open-unresolved
+security-151=blocks-clean-container-hosted-release-production-readiness
+issue-155=open-mode1-parent
+issue-156=closed-governance-audit
+issue-157=open-stage1-gate-status
+issue-158=open-security-history
+issue-159=open-release-security-evidence
+issue-160=open-performance-split-from-43
+issue-161=open-final-review-go-no-go-split-from-159
+pr-152=merged-648c81c-closes-138-not-151
+```
 
 ## Executive Status
 
@@ -217,7 +251,7 @@ Use these files together with this tracker:
 | `#40` | Closed | Phase 1 P0 | Canonical requirements traceability matrix reconciled through merged PR `#46`. |
 | `#41` | Closed | Phase 1 P0 | Local demo durability and provider limits disclosed in portfolio/demo docs through merged PR `#46`. |
 | `#42` | Closed | Phase 1 P1 | Stage 7 source evidence checksum binding hardened through merged PR `#50` by sharing one canonical route/service/mock-provider checksum definition, requiring explicit evidence IDs for positive counts, using structured idempotency checksums, and rejecting duplicate-key provider JSON artifacts. |
-| `#43` | Open | Phase 1 P2 | Expand performance and integrated E2E evidence beyond local smoke. |
+| `#43` | Open | Controlled local demo real-stack E2E | Prove the complete browser flow against the real backend with mock/local providers and durable consent; intercepted API success is insufficient. Broader workload/performance evidence is split to `#160`. |
 | `#44` | Open | Phase 1 P2 | Track telemetry, CSP, log-envelope, and stale risk-register hardening. |
 | `#48` | Open | Pre-production/P2 hardening | Track scoped project-lookup hardening before production auth, durable storage, or stronger authorization-proof claims; created from PR `#47` independent API integrity review. It does not block local/mock Phase 1 demo review while production remains No-Go. |
 | `#49` | Open | Pre-production/P2 hardening | Bound local idempotency records across simulated actors before local-demo durability, multi-worker, or production-readiness claims; created from PR `#47` independent performance/security review. It does not block local/mock Phase 1 demo review while production and multi-worker release remain No-Go. |
@@ -257,22 +291,29 @@ Use these files together with this tracker:
 | `#147` | Open, depends on `#144`, `#145`, `#146` | Phase 1 follow-on | Implement the not-yet-executed PITR/exact-S3-Version runbook, explicit supported target parameters and live checks, `<=5,000,000,000 bytes` copy bound, journal/revocation handoff, source deny, pre-create deadline, exact no-snapshot/no-backup teardown, separately scoped RDS/S3 cleanup/live-inventory authority and next-exercise block. |
 | `#148` | Open, depends on `#130`, `#141`, `#144`, `#145`, `#146`, `#147` | Phase 1 follow-on | Implement RDS/S3/journal/cleanup and live target-configuration/isolation observability, restricted reviewer export, tested CH-12 routes with severity/ack/escalation/runbook links, and immutable-cutoff RTO/RPO calculations that invalidate negative or mismatched watermarks. |
 | `#149` | Open, depends on `#130`, `#141`-`#148` | Phase 1 follow-on | Independently review actual environment/tooling/calculation-test readiness, tested CH-12 alert routes, and approvals without recording actual restore or RTO/RPO results; must leave issue `#126`, `DUR-RESTORE-001`, and issue `#39` open for the later exercise. |
-| `#138` | Open, remediation implemented but blocked | Security follow-up | `PYSEC-2026-2132` Click command-injection remediation: the application/runtime graph resolves Click `8.4.2`; Semgrep `1.168.0` is removed from the root/runtime lock and isolated in a frozen tool project using patched Click `8.3.3`. Root/tool audits, exact scan coverage, canaries, Uvicorn/Locust smoke, and backend-image inventory pass locally without advisory ignores. Human security/repo owner acceptance of the narrow override remains required, and issue `#151` independently blocks the critical/high container gate. This does not change production or restore readiness. |
+| `#138` | Closed | Security follow-up | PR `#152` merged at `648c81c` and GitHub closed `#138`. The implementation merge does not establish scanner consensus or resolve the three HIGH CPython findings; `#151` remains open and unresolved. Append-only security-history reconciliation is delegated to `#158`, and release-facing evidence reconciliation is delegated to `#159`. This does not change production or restore readiness. |
 | `#150` | Open | Security follow-up | Remove the Semgrep Click compatibility override by `2026-08-13` or earlier when upstream supports a fixed Click release; any tool version, lock, rule, target, invocation, or advisory change triggers immediate re-review. |
-| `#151` | Open, stable-runtime/scanner-consensus blocker | Security follow-up | Resolve `CVE-2026-11940`, `CVE-2026-11972`, and `CVE-2026-15308` in the backend runtime and reconcile the verified scanner disagreement: Grype reports three HIGH findings while freshly updated Trivy reports zero. The official `3.13.14-alpine3.24` image is already the pinned manifest, stable releases below `3.15.0` are recorded affected, and `3.15` is still beta. A green Trivy result is not absence evidence; no scanner waiver or production-readiness claim is permitted. This blocks #138 merge eligibility and keeps dependent PR `#140` draft. |
+| `#151` | Open, stable-runtime/scanner-consensus blocker | Security follow-up | Resolve `CVE-2026-11940`, `CVE-2026-11972`, and `CVE-2026-15308` in the backend runtime and reconcile the verified scanner disagreement: Grype reports three HIGH findings while freshly updated Trivy reports zero. The official `3.13.14-alpine3.24` image is already the pinned manifest, stable releases below `3.15.0` are recorded affected, and `3.15` is still beta. A green Trivy result is not absence evidence; no scanner waiver or production-readiness claim is permitted. Although PR `#152` has merged and `#138` is closed, this issue still blocks unqualified clean-container-security, hosted/release, and production-readiness claims. |
 
 ### Additional Backlog And Governance Issues
 
 | Issue | State | Role | Notes |
 |---|---|---|---|
-| `#3` | Open | Legacy governance issue | Uses obsolete `Stage -1` naming and should be reconciled or closed. |
-| `#8` | Open | Product-definition support | Captures two product modes and project-avatar-pack contract; concept already exists in docs but issue remains open. |
+| `#3` | Closed, superseded | Legacy governance issue | Closed as superseded by the canonical Stage 0 governance path under `#14`; this disposition does not claim that every obsolete legacy acceptance item was independently completed. |
+| `#8` | Open, pending corrective PR | Product-definition support | Both product modes and the project-avatar-pack exist in product docs, but the explicit Stage 1 PM/spec validation gate regressed from `docs/SKILL_EXECUTION_PLAN.md`. Keep open until the `#157` corrective PR merges and close only during compliant merge closeout. |
 | `#9` | Closed | Superseded placeholder | Explicitly marked as superseded. |
-| `#17` | Open | Future slice | Translation/localization and subtitles. |
-| `#18` | Open | Future slice | Optional TTS audio provider boundary. |
-| `#19` | Open | Future slice | Mock avatar video and FFmpeg assembly. |
+| `#17` | Open | Stage 6 residual | The multilingual script/SRT/voice-manifest path exists; remaining work is controlled fallback integrity so failures cannot mislabel source-language text as translated output or corrupt stored evidence. |
+| `#18` | Open | Later playable-audio track | The current Stage 6 JSON voice manifest is not playable audio and contains no audio bytes. Playable local audio remains a post-Checkpoint-B track. |
+| `#19` | Open | Later timed-video track | Current Stage 7 HTML/JSON placeholders are not real video; MP4/WebM output, FFmpeg assembly, timed-media binding, and renderer validation remain unimplemented. |
 | `#20` | Open | Future slice | Interactive Q&A over approved project knowledge. |
 | `#21` | Open | Future slice | Premium adapters, observability dashboard, and cost controls. |
+| `#155` | Open | Canonical Mode 1 local-demo tracker | Single source of truth for controlled artifact-only local mock demo readiness and its dependency-ordered child work. |
+| `#156` | Closed | Mode 1 governance audit | Reconciled live issue scopes and created disjoint corrective child issues; no runtime behavior changed. |
+| `#157` | Open | Stage 1 gate and status reconciliation | Restores the missing product-mode/project-avatar-pack validation gate and reconciles this canonical ledger. |
+| `#158` | Open | Security-history reconciliation | Owns append-only correction of the `#138`/`#151` security governance history outside this ledger. |
+| `#159` | Open | Release-security evidence reconciliation | Owns release-facing labels that distinguish historical scanner output from current unresolved `#151` posture. |
+| `#160` | Open | Performance follow-up split from `#43` | Expands workload/performance evidence beyond health-only Locust smoke; it is not a controlled artifact-only local-demo blocker unless it finds a correctness defect. |
+| `#161` | Open | Final Review GO/NO-GO reconciliation split from `#159` | Owns `docs/reviews/GO_NO_GO.md` reconciliation through the separate Final Review quality boundary; historical scanner results must not imply current absence evidence while `#151` remains unresolved. |
 
 ## Pull Request Ledger
 
@@ -313,6 +354,7 @@ Use these files together with this tracker:
 | `#112` | Merged | 2026-07-11 | `CH-16` consent capture execution PR for issue `#111` / issue `#39`; merged at `1f3d66d9b1b545e5d5c41e88a83cc731a2a8b31a`, adding durable synthetic-avatar consent capture, replay-safe consent idempotency, restore validation, explicit consent-capture API flow, Stage 7 durable consent gating, and supporting ADR/docs with reference-only `Refs #39` posture. |
 | `#135` | Merged | 2026-07-13 | Local restore-integrity drill execution PR for issue `#125` / issue `#39`; merged at `f94776f6602d4c6feec2412b4764a7368049a080`, proving only the existing file-backed Stage 4/6/7 restore surface, copied-file checksum parity, restored record-count parity, replay-safe idempotent re-execution, and persisted inspectable evidence paths without claiming production restore closure. |
 | `#137` | Merged | 2026-07-13 | Restore-readiness contract PR for issue `#126`; added only repo-checked composition and anti-overclaim evidence. Issue `#126`, `DUR-RESTORE-001`, and issue `#39` remain open. |
+| `#152` | Merged | 2026-07-14 | Click advisory remediation merged at `648c81c` and issue `#138` closed. Issue `#151` remains open and unresolved; the merge is not scanner-consensus, clean-container-security, hosted-release, or production-readiness evidence. |
 | `#75` | Merged | 2026-07-10 | Context 1 planning PR for issue `#65` / issue `#39`; advisory-only PostgreSQL production durability planning, ADR + issue-status updates, and matrix scope allowlist updates only. |
 | `#76` | Merged | 2026-07-10 | Context 2 planning PR for issue `#66` / issue `#39`; advisory-only idempotency/lease/outbox production contracts and planning matrix mapping, no runtime implementation. |
 | `#77` | Merged | 2026-07-10 | Context 3 migration/rollback compatibility planning PR for issue `#67` / issue `#39`; advisory-only ADR + planned evidence mapping, branch-scope checks update only. |
@@ -390,7 +432,8 @@ Use these files together with this tracker:
 ## Known Gaps And Reconciliation Items
 
 - Stage 1 is split across two open issues: `#1` for product/PRD hardening and `#16` for the follow-on Spec Kit constitution/spec/plan/tasks gate.
-- Legacy issue `#3` still uses `Stage -1` naming that no longer matches the operating model.
+- Legacy issue `#3` is closed as superseded by the canonical Stage 0 path; its
+  obsolete `Stage -1` naming is retained only as history.
 - Stage 3 issue/PR state still needs GitHub reconciliation after the Stage 3
   merge event.
 - `.stage/current` is `8` in the Stage 8 branch. `make quality` dispatches to
@@ -464,7 +507,13 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Complete the remaining production-grade portion of Phase 1 Closure P0/P1
+1. Execute the dependency-ordered controlled local mock demo plan under `#155`,
+   starting with open corrective children `#157`, `#158`, `#159`, and `#161`;
+   keep `#8` open until the Stage 1 validation-gate correction merges. Then
+   repair the consent chain and prove the real browser-to-backend path under `#43`.
+   Keep playable audio `#18`, timed video `#19`, and performance expansion
+   `#160` separate from the artifact-only checkpoint.
+2. Complete the remaining production-grade portion of Phase 1 Closure P0/P1
    issue `#39` through an issue-linked `phase-1-closure-*` branch and PR, or
    record a reviewed No-Go exception with evidence.
    Use `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md` as the durable
@@ -473,12 +522,12 @@ Use these files together with this tracker:
    Closed follow-up issue `#55` hardened additional local restore invariants
    under the existing `#39` local-durability scope, but did not close `#39` or
    change the production No-Go posture.
-2. Keep Phase 2 feature work blocked until P0/P1 items are closed or explicitly
+3. Keep Phase 2 feature work blocked until P0/P1 items are closed or explicitly
    downgraded with evidence.
-3. Keep production, multi-worker deployment, external provider use, real video
+4. Keep production, multi-worker deployment, external provider use, real video
    export, and public synthetic-media distribution No-Go.
-4. Run local quality and CI before merging each Phase 1 closure PR.
-5. Create a release tag only after all Phase 1 gates pass and the Go/No-Go
+5. Run local quality and CI before merging each Phase 1 closure PR.
+6. Create a release tag only after all Phase 1 gates pass and the Go/No-Go
    decision is updated by reviewed PR.
 
 ## Maintenance Protocol
@@ -509,6 +558,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-07-14 | Mode 1 governance reconciliation records `#3` closed as superseded, keeps `#8` open pending the restored Stage 1 validation gate, narrows `#17` to fallback integrity, distinguishes JSON/HTML placeholders from playable audio/video under `#18`/`#19`, splits real-stack E2E `#43` from performance `#160`, records open tracker `#155` and children `#156`-`#161`, and reconciles closed `#138`/merged PR `#152` while `#151` remains unresolved. |
 | 2026-06-29 | Initial canonical program status tracker added to consolidate stage, issue, PR, and governance status. |
 | 2026-06-29 | Tracker contract refined to be merge-stable and repository-scoped, with explicit limits on what local checks can enforce. |
 | 2026-06-29 | Stage 1 product/PRD hardening split clarified: `#1` covers PRD v1.0 hardening, while `#16` remains the follow-on Spec Kit gate. |

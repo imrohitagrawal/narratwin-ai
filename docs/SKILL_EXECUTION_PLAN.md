@@ -19,6 +19,28 @@ Stage 0 does not install product implementation tools. Stage 0 records the opera
 | Stage 8 | Performance, security hardening, release readiness | Performance, security hardening, release readiness, shipping skills | Release-hardening evidence |
 | Final Review | Independent review | Review-only skills and independent audit process | Independent review findings and sign-off record |
 
+## Stage 1 Product-Mode Validation Gate
+
+Slice 1 is pure grounding; this gate does not authorize avatar, video, audio, or interactive Q&A implementation.
+
+```narratwin-contract
+contract=stage1-product-mode-validation
+status=active
+owners=stage1-pm-spec
+timing=before-application-coding
+targets=prd,roadmap,architecture,first-vertical-slice-plan
+mode-1=pre-rendered-multilingual-demo-video
+mode-2=interactive-ai-avatar-guide
+avatar-pack=reusable-project-avatar-pack
+first-slice=pure-grounding
+avatar=blocked
+video=blocked
+audio=blocked
+interactive-q-and-a=blocked
+premature-implementation=blocked
+on-failure=repair-planning-documents-before-application-code
+```
+
 ## Activation Rules
 
 - Before creating, installing, or activating a custom skill/plugin, inspect the

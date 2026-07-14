@@ -13,6 +13,60 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
+ISSUE157_GOVERNANCE_BRANCH = "governance-mode1-status-157"
+HTML_COMMENT_PATTERN = re.compile(r"<!--.*?-->", re.DOTALL)
+CONTRACT_FENCE = "narratwin-contract"
+STAGE1_PRODUCT_MODE_PROSE = (
+    "Slice 1 is pure grounding; this gate does not authorize avatar, video, audio, or interactive Q&A implementation."
+)
+STAGE1_PRODUCT_MODE_CONTRACT = {
+    "contract": "stage1-product-mode-validation",
+    "status": "active",
+    "owners": "stage1-pm-spec",
+    "timing": "before-application-coding",
+    "targets": "prd,roadmap,architecture,first-vertical-slice-plan",
+    "mode-1": "pre-rendered-multilingual-demo-video",
+    "mode-2": "interactive-ai-avatar-guide",
+    "avatar-pack": "reusable-project-avatar-pack",
+    "first-slice": "pure-grounding",
+    "avatar": "blocked",
+    "video": "blocked",
+    "audio": "blocked",
+    "interactive-q-and-a": "blocked",
+    "premature-implementation": "blocked",
+    "on-failure": "repair-planning-documents-before-application-code",
+}
+MODE1_STATUS_CONTRACT = {
+    "contract": "mode1-local-demo-audited-status",
+    "issue-3": "closed-superseded",
+    "issue-8": "open-pending-stage1-gate-correction",
+    "issue-17": "open-stage6-fallback-integrity",
+    "issue-18": "open-playable-audio-later",
+    "artifact-18": "json-voice-manifest-not-playable-audio-no-audio-bytes",
+    "issue-19": "open-timed-video-later",
+    "artifact-19": "html-json-placeholders-not-real-video-mp4-webm-unimplemented",
+    "issue-43": "open-real-stack-browser-e2e",
+    "evidence-43": "intercepted-api-insufficient-performance-split-to-160",
+    "issue-138": "closed-by-pr-152",
+    "issue-151": "open-unresolved",
+    "security-151": "blocks-clean-container-hosted-release-production-readiness",
+    "issue-155": "open-mode1-parent",
+    "issue-156": "closed-governance-audit",
+    "issue-157": "open-stage1-gate-status",
+    "issue-158": "open-security-history",
+    "issue-159": "open-release-security-evidence",
+    "issue-160": "open-performance-split-from-43",
+    "issue-161": "open-final-review-go-no-go-split-from-159",
+    "pr-152": "merged-648c81c-closes-138-not-151",
+}
+MODE1_STATUS_MATRIX_IDS = {
+    "artifact-18": "STATUS-ARTIFACT-001",
+    "artifact-19": "STATUS-ARTIFACT-001",
+    "evidence-43": "STATUS-ARTIFACT-001",
+    "issue-151": "STATUS-SEC-001",
+    "security-151": "STATUS-SEC-001",
+    "pr-152": "STATUS-SEC-001",
+}
 
 REQUIRED_FILES = [
     ".stage/current",
@@ -43,6 +97,7 @@ REQUIRED_FILES = [
     "tests/api/test_stage6_multilingual_api.py",
     "tests/api/test_stage8_hardening_api.py",
     "tests/unit/test_stage6_multilingual.py",
+    "tests/unit/test_stage8_quality_gate.py",
     "demo/stage8_seed_project.md",
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/API_CONTRACT.md",
@@ -56,6 +111,7 @@ REQUIRED_FILES = [
     "docs/RELEASE_READINESS_REVIEW.md",
     "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
     "docs/RUNBOOK.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_LOCK.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
@@ -76,7 +132,13 @@ PROCESS_BRANCH_ALLOWED_FILES = {
         "scripts/quality/check_stage8_docs.py",
         "tests/unit/test_guardrails_check.py",
         "tests/unit/test_stage8_quality_gate.py",
-    }
+    },
+    ISSUE157_GOVERNANCE_BRANCH: {
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/STATUS.md",
+        "scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_stage8_quality_gate.py",
+    },
 }
 
 
@@ -90,6 +152,103 @@ def read(path: str) -> str:
 
 def fail(message: str, failures: list[str]) -> None:
     failures.append(message)
+
+
+def active_markdown(text: str) -> str:
+    """Return Markdown after removing content hidden in HTML comments."""
+    def erase_comment(match: re.Match[str]) -> str:
+        return "".join("\n" if character == "\n" else " " for character in match.group())
+
+    return HTML_COMMENT_PATTERN.sub(erase_comment, text)
+
+
+def markdown_lines_with_visibility(text: str) -> tuple[list[str], list[bool]]:
+    """Mark lines visible to Markdown heading parsing outside fenced code."""
+    lines = active_markdown(text).splitlines()
+    visibility: list[bool] = []
+    fence_character = ""
+    fence_length = 0
+    for line in lines:
+        is_visible = not fence_character
+        visibility.append(is_visible)
+        if fence_character:
+            closing = re.match(r"^ {0,3}(`{3,}|~{3,})\s*$", line)
+            if closing and closing.group(1)[0] == fence_character and len(closing.group(1)) >= fence_length:
+                fence_character = ""
+                fence_length = 0
+            continue
+        opening = re.match(r"^ {0,3}(`{3,}|~{3,})(?:[^`~].*)?$", line)
+        if opening:
+            fence_character = opening.group(1)[0]
+            fence_length = len(opening.group(1))
+    return lines, visibility
+
+
+def markdown_section(text: str, heading: str, level: int) -> str | None:
+    """Return one exact active Markdown section, excluding peer/parent sections."""
+    lines, visibility = markdown_lines_with_visibility(text)
+    expected = f"{'#' * level} {heading}"
+    starts = [index for index, line in enumerate(lines) if visibility[index] and line == expected]
+    if len(starts) != 1:
+        return None
+
+    start = starts[0] + 1
+    end = len(lines)
+    heading_pattern = re.compile(r"^(#{1," + str(level) + r"})\s+")
+    for index in range(start, len(lines)):
+        if visibility[index] and heading_pattern.match(lines[index]):
+            end = index
+            break
+    return "\n".join(lines[start:end]).strip()
+
+
+def check_exact_contract(
+    text: str,
+    heading: str,
+    expected: dict[str, str],
+    matrix_id: str,
+    failures: list[str],
+    key_matrix_ids: dict[str, str] | None = None,
+    required_prose: str | None = None,
+) -> None:
+    """Validate one comment-aware, bounded key/value contract section."""
+    section = markdown_section(text, heading, 2)
+    if section is None:
+        fail(f"[{matrix_id}] Must contain exactly one active `{heading}` section.", failures)
+        return
+
+    lines = section.splitlines()
+    if required_prose:
+        if lines[:2] != [required_prose, ""]:
+            fail(f"[{matrix_id}] Section must start with the canonical human-readable boundary.", failures)
+            return
+        lines = lines[2:]
+    if len(lines) < 3 or lines[0] != f"```{CONTRACT_FENCE}" or lines[-1] != "```":
+        fail(f"[{matrix_id}] Section must contain only one bounded `{CONTRACT_FENCE}` record.", failures)
+        return
+
+    record: dict[str, str] = {}
+    invalid = False
+    for line in lines[1:-1]:
+        if not re.fullmatch(r"[a-z0-9-]+=[a-z0-9,.-]+", line):
+            invalid = True
+            continue
+        key, value = line.split("=", 1)
+        if key in record:
+            invalid = True
+        record[key] = value
+    if invalid:
+        fail(f"[{matrix_id}] Contract has a duplicate, blank, or malformed extra line.", failures)
+    key_matrix_ids = key_matrix_ids or {}
+    for key in expected.keys() - record.keys():
+        key_matrix_id = key_matrix_ids.get(key, matrix_id)
+        fail(f"[{key_matrix_id}] Contract is missing canonical key `{key}`.", failures)
+    if record.keys() - expected.keys():
+        fail(f"[{matrix_id}] Contract contains an unknown key.", failures)
+    for key in record.keys() & expected.keys():
+        if record[key] != expected[key]:
+            key_matrix_id = key_matrix_ids.get(key, matrix_id)
+            fail(f"[{key_matrix_id}] Contract value for `{key}` must be `{expected[key]}`.", failures)
 
 
 def current_branch() -> str:
@@ -202,6 +361,28 @@ def check_backend_and_tests(failures: list[str]) -> None:
     for marker in ("/usr/local/lib/node_modules/npm", "/usr/local/bin/npm", "/usr/local/bin/npx"):
         if marker not in frontend_dockerfile:
             fail(f"Stage 8 frontend runtime image must remove {marker}.", failures)
+
+
+def check_stage1_product_mode_validation_gate(failures: list[str]) -> None:
+    check_exact_contract(
+        read("docs/SKILL_EXECUTION_PLAN.md"),
+        "Stage 1 Product-Mode Validation Gate",
+        STAGE1_PRODUCT_MODE_CONTRACT,
+        "M1-GATE-001",
+        failures,
+        required_prose=STAGE1_PRODUCT_MODE_PROSE,
+    )
+
+
+def check_mode1_status_contract(failures: list[str]) -> None:
+    check_exact_contract(
+        read("docs/STATUS.md"),
+        "Mode 1 Audited Status Contract",
+        MODE1_STATUS_CONTRACT,
+        "STATUS-LIVE-001",
+        failures,
+        MODE1_STATUS_MATRIX_IDS,
+    )
 
 
 def check_dependencies_and_scripts(failures: list[str]) -> None:
@@ -346,6 +527,8 @@ def main() -> int:
         check_stage_marker_and_branch(failures)
         check_stage_scope(failures)
         check_backend_and_tests(failures)
+        check_stage1_product_mode_validation_gate(failures)
+        check_mode1_status_contract(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)
 
