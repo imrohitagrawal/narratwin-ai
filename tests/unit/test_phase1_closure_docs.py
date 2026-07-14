@@ -118,6 +118,16 @@ def run_release_docs_check(monkeypatch: Any, *, read_overrides: dict[str, str]) 
     return failures
 
 
+def run_issue141_platform_contract_check(
+    monkeypatch: Any, *, read_overrides: dict[str, str] | None = None
+) -> list[str]:
+    if read_overrides:
+        monkeypatch.setattr(phase1, "read", read_with_overrides(phase1, read_overrides))
+    failures: list[str] = []
+    phase1.check_issue141_platform_ownership_contract(failures)
+    return failures
+
+
 def issue39_plan_with_closed_row_and_record(
     plan_text: str,
     *,
@@ -188,6 +198,51 @@ def test_issue138_branch_allows_only_click_security_remediation_files(
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-138-click-security-remediation "
         "may not change backend/app/main.py."
+    ]
+
+
+def test_issue141_branch_allows_only_durability_decision_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-141-durability-platform-ownership",
+        files=sorted(phase1.ISSUE_141_ALLOWED_CHANGED_FILES),
+    )
+
+    assert failures == []
+
+
+def test_issue141_branch_allowlist_is_an_independent_literal_contract() -> None:
+    assert phase1.ISSUE_141_ALLOWED_CHANGED_FILES == {
+        "docs/ADR/0008-postgresql-durability-schema-boundary.md",
+        "docs/ADR/0011-context4-backup-restore-drill.md",
+        "docs/ADR/0027-production-like-durability-platform-ownership.md",
+        "docs/LAUNCH_LEVELS.md",
+        "docs/RELEASE_READINESS_REVIEW.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THREAT_MODEL.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+        "docs/demo/PHASE_1_DEMO_CHECKLIST.md",
+        "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md",
+        "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+
+
+def test_issue141_branch_rejects_runtime_or_infrastructure_changes(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-141-durability-platform-ownership",
+        files=["backend/app/storage/postgres_state.py", "infra/rds.tf"],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-141-durability-platform-ownership may not change "
+        "backend/app/storage/postgres_state.py.",
+        "Phase 1 Closure branch phase-1-closure-141-durability-platform-ownership may not change "
+        "infra/rds.tf.",
     ]
 
 
@@ -700,6 +755,653 @@ def test_issue125_local_restore_contract_rejects_missing_local_only_marker(monke
         "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md missing issue #125 restore markers: "
         "Issue `#125` is an executable local-only evidence slice"
     ) in failures
+
+
+def test_issue141_platform_ownership_contract_accepts_current_docs(monkeypatch: Any) -> None:
+    assert run_issue141_platform_contract_check(monkeypatch) == []
+
+
+def test_issue141_launch_level_contract_rejects_missing_level(monkeypatch: Any) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = re.sub(r"^\| Hosted internal synthetic demo \|.*\n", "", launch_text, count=1, flags=re.M)
+    assert mutated != launch_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "launch-level boundary rows" in failure and "Hosted internal synthetic demo" in failure
+        for failure in failures
+    )
+
+
+def test_issue141_launch_level_contract_rejects_aws_as_local_demo_prerequisite(
+    monkeypatch: Any,
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = replace_text(
+        launch_text,
+        "An AWS account is not required for local development or the controlled local mock demo.",
+        "An AWS account is required for every local demo.",
+    )
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "docs/LAUNCH_LEVELS.md missing issue #141 markers" in failure
+        and "An AWS account is not required" in failure
+        for failure in failures
+    )
+
+
+def test_issue141_launch_level_contract_rejects_soft_launch_as_demo(
+    monkeypatch: Any,
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = replace_text(
+        launch_text,
+        "External users or customer data make this production-adjacent regardless of the words `demo`, `beta`, or `soft launch`.",
+        "An invite-only external soft launch is treated as a local demo.",
+    )
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "docs/LAUNCH_LEVELS.md missing issue #141 markers" in failure
+        and "production-adjacent" in failure
+        for failure in failures
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_row", "expected_failure"),
+    [
+        (
+            "| Free external beta | External users. | Free database. | No. | Go. | Demo only. |\n",
+            "launch-level boundary contains unexpected rows: Free external beta",
+        ),
+        (
+            "| Local mock demo | Duplicate audience. | Duplicate stack. | No. | Go. | Demo only. |\n",
+            "launch-level boundary contains duplicate rows: Local mock demo",
+        ),
+        (
+            "| Malformed beta | External users. | Free database. | Go. | Demo only. |\n",
+            "launch-level boundary contains malformed rows",
+        ),
+    ],
+)
+def test_issue141_launch_level_contract_rejects_extra_duplicate_or_malformed_rows(
+    monkeypatch: Any, extra_row: str, expected_failure: str
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    table_end = (
+        "| Production | External users and approved production data/traffic. | Separate production "
+        "tenancy/account with reviewed application, durability, security, privacy, operations, "
+        "monitoring, rollback, and support controls. | Yes, a separate production AWS account under "
+        "the current baseline; an alternative requires a superseding ADR and equivalent evidence. | "
+        "No-Go. | Requires an independent production Go decision; production-like evidence does not "
+        "automatically authorize production. |\n"
+    )
+    mutated = replace_text(launch_text, table_end, table_end + extra_row)
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(expected_failure in failure for failure in failures)
+
+
+def test_issue141_launch_level_contract_rejects_aws_required_local_demo_cell(
+    monkeypatch: Any,
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = replace_text(
+        launch_text,
+        "| No. | Conditional Go only through `docs/demo/PHASE_1_DEMO_CHECKLIST.md`. |",
+        "| AWS required; No. exception applies. | Conditional Go only through `docs/demo/PHASE_1_DEMO_CHECKLIST.md`. |",
+    )
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "Local mock demo AWS requirement under ADR 0027 must equal: No." in failure
+        for failure in failures
+    )
+
+
+def test_issue141_launch_level_contract_rejects_soft_launch_go_posture(
+    monkeypatch: Any,
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = replace_text(
+        launch_text,
+        "before durability or launch claims. | No-Go. | External users or customer data",
+        "before durability or launch claims. | Go. | External users or customer data",
+    )
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "External/invite-only soft launch Current posture must equal: No-Go." in failure
+        for failure in failures
+    )
+
+
+def test_issue141_launch_level_contract_rejects_internal_auth_soft_launch_conflation(
+    monkeypatch: Any,
+) -> None:
+    launch_rel = "docs/LAUNCH_LEVELS.md"
+    launch_text = phase1.read(launch_rel)
+    mutated = replace_text(
+        launch_text,
+        "Internal workforce\nauthentication and minimum identity/access audit metadata do not alone promote\nan otherwise qualifying hosted internal synthetic demo to soft launch.",
+        "Any authentication always promotes a hosted internal demo to soft launch.",
+    )
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={launch_rel: mutated},
+    )
+
+    assert any(
+        "docs/LAUNCH_LEVELS.md missing issue #141 markers" in failure
+        and "Internal workforce authentication" in failure
+        for failure in failures
+    )
+
+
+def test_issue141_platform_ownership_contract_rejects_missing_platform_choice(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0027-production-like-durability-platform-ownership.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/ADR/0027-production-like-durability-platform-ownership.md": replace_text(
+                adr_text,
+                "Amazon RDS for PostgreSQL `17.10`,\nMulti-AZ DB instance deployment",
+                "A managed relational database selected later",
+            )
+        },
+    )
+
+    assert (
+        "docs/ADR/0027-production-like-durability-platform-ownership.md missing issue #141 markers: "
+        "Amazon RDS for PostgreSQL `17.10`, Multi-AZ DB instance deployment"
+    ) in failures
+
+
+def test_issue141_platform_ownership_contract_rejects_missing_human_blocker(monkeypatch: Any) -> None:
+    preflight_text = phase1.read("docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md": replace_text(
+                preflight_text,
+                "`HUMAN-PLAT-001` remains blocked",
+                "`HUMAN-PLAT-001` is documented",
+            )
+        },
+    )
+
+    assert (
+        "docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md missing issue #141 markers: "
+        "`HUMAN-PLAT-001` remains blocked"
+    ) in failures
+
+
+def test_issue141_platform_ownership_contract_rejects_missing_object_store(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0027-production-like-durability-platform-ownership.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/ADR/0027-production-like-durability-platform-ownership.md": replace_text(
+                adr_text,
+                "Amazon S3\ngeneral-purpose buckets with Versioning are authoritative",
+                "A future object store may be authoritative",
+            )
+        },
+    )
+
+    assert any("Amazon S3 general-purpose buckets with Versioning are authoritative" in item for item in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_rolled_back_deletion_source(
+    monkeypatch: Any,
+) -> None:
+    adr_text = phase1.read("docs/ADR/0027-production-like-durability-platform-ownership.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/ADR/0027-production-like-durability-platform-ownership.md": replace_text(
+                adr_text,
+                "is not rolled back\nwith RDS PITR",
+                "is reconstructed from the restored database",
+            )
+        },
+    )
+
+    assert any("is not rolled back with RDS PITR" in item for item in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_clamped_negative_rpo(monkeypatch: Any) -> None:
+    adr_text = phase1.read("docs/ADR/0027-production-like-durability-platform-ownership.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/ADR/0027-production-like-durability-platform-ownership.md": replace_text(
+                adr_text,
+                "negative delta, target-ahead sequence, clock ambiguity, cutoff mismatch, or\n  manifest mismatch invalidates the evidence",
+                "A negative delta is clamped to zero",
+            )
+        },
+    )
+
+    assert any("negative delta, target-ahead sequence" in item for item in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_missing_stage_inventory_row(
+    monkeypatch: Any,
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = re.sub(r"^\| Stage 6 \|.*\n", "", adr_text, count=1, flags=re.M)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("durable-state ownership rows" in failure and "Stage 6" in failure for failure in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_missing_child_acceptance_row(
+    monkeypatch: Any,
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = re.sub(r"^\| `#146`.*\n", "", adr_text, count=1, flags=re.M)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("child acceptance rows" in failure and "#146" in failure for failure in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_child_dependency_drift(
+    monkeypatch: Any,
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = adr_text.replace(
+        "| `#148` restore observability and evidence export | `#130`, `#141`, `#144`, `#145`, `#146`, `#147`;",
+        "| `#148` restore observability and evidence export | `#141`, `#144`;",
+        1,
+    )
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("#148 dependencies" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement"),
+    [
+        ("`#141` approved baseline", "not `#141` approved baseline"),
+        ("`#130`, `#141` through `#148`", "not `#130` and not `#141` through `#148`"),
+    ],
+)
+def test_issue141_platform_contract_rejects_negated_dependencies(
+    monkeypatch: Any, search: str, replacement: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = replace_text(adr_text, search, replacement)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("dependency statement must be affirmative" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "removed_term",
+    [
+        "restore timeout/failure",
+        "cleanup overdue/orphan",
+        "journal gap/backlog/signature failure",
+        "KMS loss",
+        "severity",
+        "owner acknowledgment/escalation",
+        "runbook links",
+    ],
+)
+def test_issue141_platform_contract_rejects_incomplete_ch12_route_acceptance(
+    monkeypatch: Any, removed_term: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    search = "KMS loss with severity" if removed_term == "severity" else removed_term
+    replacement = "KMS loss with route detail removed" if removed_term == "severity" else "route detail removed"
+    mutated = replace_text(adr_text, search, replacement)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("#148 acceptance contract missing" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "removed_term",
+    [
+        "tested failure/timeout/cleanup/journal/KMS routes",
+        "tested alert severity/ack/escalation/runbook links",
+    ],
+)
+def test_issue141_ch14_strategy_rejects_incomplete_alert_route_contract(
+    monkeypatch: Any, removed_term: str
+) -> None:
+    strategy_text = phase1.read("docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md")
+    mutated = replace_text(strategy_text, removed_term, "route evidence removed")
+    assert mutated != strategy_text
+
+    failures = run_issue39_execution_strategy_check(monkeypatch, strategy_text=mutated)
+
+    assert any("CH-14 row missing required terms" in failure for failure in failures)
+
+
+def test_issue141_platform_ownership_contract_rejects_incomplete_journal_integrity_fields(
+    monkeypatch: Any,
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = adr_text.replace("event checksum, policy version", "policy version", 1)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("deletion-journal integrity fields" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "overclaim_text",
+    [
+        "Azure SQL in westus2, single-zone and publicly accessible, is the authoritative production-like datastore.",
+        "The platform is approved by Operations and Security and is Go for launch.",
+        "RDS has been provisioned and a backup artifact exists.",
+        "Measured RPO was 3 minutes; Platform/Storage signed off.",
+    ],
+)
+def test_issue141_platform_ownership_contract_rejects_structured_contradictions_and_overclaims(
+    monkeypatch: Any, overclaim_text: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: adr_text + f"\n\n{overclaim_text}\n"},
+    )
+
+    assert any("contains issue #141 overclaim markers" in failure for failure in failures)
+
+
+def test_issue141_platform_ownership_contract_accepts_truthful_backup_negation(
+    monkeypatch: Any,
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: adr_text + "\n\nNo managed backup is available.\n"},
+    )
+
+    assert not any("contains issue #141 overclaim markers" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "overclaim_text",
+    [
+        "There is no question managed backup is verified.",
+        "No blocker remains because RDS has been provisioned.",
+        "There is not any doubt the restore drill succeeded.",
+    ],
+)
+def test_issue141_platform_contract_rejects_adversarial_negation_lead_ins(
+    monkeypatch: Any, overclaim_text: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: adr_text + f"\n\n{overclaim_text}\n"},
+    )
+
+    assert any("contains issue #141 overclaim markers" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement"),
+    [
+        (
+            "`.github/workflows/durability-deploy.yml@refs/heads/main`",
+            "an unspecified deployment workflow",
+        ),
+        ("`id-token: write`", "broad token permission"),
+        ("`aud=sts.amazonaws.com`", "an unspecified audience"),
+        ("`refs/pull/*/merge`", "pull-request refs"),
+        ("prevents self-review", "permits self-review"),
+        ("disallows administrator bypass", "permits administrator bypass"),
+        ("no larger than `5,000,000,000 bytes`", "of any size"),
+        ("`s3:GetObjectVersion`", "`s3:GetObject`"),
+        ("destination `s3:PutObject`,", "destination copy action removed,"),
+        ("`s3:PutObjectTagging`", "broad destination tag administration"),
+        ("fixed run/deadline\n  tag set", "unrestricted tags"),
+        ("restore-key `kms:GenerateDataKey`", "restore-key administration"),
+        ("internet/NAT, source-VPC, application, provider, or production connectivity", "public internet connectivity"),
+        ("Reviewer exports use a field allowlist", "Reviewer exports copy the operational catalog"),
+        ("separate read roles and access audit", "a shared unaudited read role"),
+        ("writer has create-\nonly permissions and cannot overwrite", "writer may overwrite"),
+        ("every use is\nalerted, dated, and reviewed", "use is not audited"),
+        ("Control-key disablement/deletion safeguards and\nalarms are mandatory", "Control-key alarms are optional"),
+        ("separate asymmetric KMS signing key", "shared symmetric encryption key"),
+        (
+            "no journal-write,\nreconciliation, retention-bypass, or catalog-mutation permission",
+            "journal and catalog administrator permissions",
+        ),
+        (
+            "pins the signing-key ARN,\nalgorithm, manifest policy version and prior signed watermark",
+            "accepts any signing key and watermark",
+        ),
+        (
+            "missing,\ninvalid, unexpected-key, or rolled-back signature fails closed",
+            "signature errors are ignored",
+        ),
+        (
+            "separate target-cleanup role may remove deletion protection",
+            "restore operator may delete any resource",
+        ),
+        ("`rds:DescribeDBInstances`", "unscoped RDS inventory"),
+        ("`rds:ModifyDBInstance`", "unscoped RDS modification"),
+        ("`rds:DeleteDBInstance`", "unscoped RDS deletion"),
+        ("`rds:DescribeDBSnapshots`", "no snapshot inventory"),
+        ("`rds:DescribeDBInstanceAutomatedBackups`", "no automated-backup inventory"),
+        ("`rds:DeleteDBSnapshot`", "unscoped snapshot deletion"),
+        ("`rds:DeleteDBInstanceAutomatedBackup`", "unscoped automated-backup deletion"),
+        ("run-tagged target ARN", "any RDS resource"),
+        ("run-tagged orphan", "any retained resource"),
+        ("restore\n  bucket/run prefix", "all S3 buckets"),
+        ("`s3:ListBucketVersions`", "unversioned bucket listing"),
+        ("`s3:GetObjectVersionTagging`", "no version tag inspection"),
+        ("`s3:DeleteObjectVersion`", "unversioned object deletion"),
+        (
+            "It cannot put/read\n  object content, change tags, bypass retention",
+            "It can read and mutate object content and tags",
+        ),
+        (
+            "source/control bucket and KMS\n  ARN denies apply independently of tags",
+            "source denies depend only on mutable tags",
+        ),
+    ],
+)
+def test_issue141_platform_contract_rejects_security_control_regressions(
+    monkeypatch: Any, search: str, replacement: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = replace_text(adr_text, search, replacement)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("detailed security controls" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "row_prefix",
+    [
+        "| Versioned S3 artifact path |",
+        "| Security-control journal path |",
+    ],
+)
+def test_issue141_platform_contract_rejects_missing_s3_stride_rows(
+    monkeypatch: Any, row_prefix: str
+) -> None:
+    threat_rel = "docs/THREAT_MODEL.md"
+    threat_text = phase1.read(threat_rel)
+    mutated = re.sub(rf"^{re.escape(row_prefix)}.*\n", "", threat_text, count=1, flags=re.M)
+    assert mutated != threat_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={threat_rel: mutated},
+    )
+
+    assert any("S3/journal STRIDE rows" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement"),
+    [
+        (
+            "PITR API has no\n`EngineVersion` input",
+            "PITR request supplies an `EngineVersion` input",
+        ),
+        ("`EnableIAMDatabaseAuthentication=true`", "IAM database authentication defaults off"),
+        (
+            "request explicitly selects `MultiAZ=true`,\n`PubliclyAccessible=false`",
+            "request may accept service defaults",
+        ),
+        (
+            "only after DB availability, migration compatibility, database integrity",
+            "after DB availability",
+        ),
+        (
+            "At the\n  reviewed holdpoint and before any recovery action",
+            "After recovery, from a moving source query",
+        ),
+        (
+            "Automatically tear down the target/delete copied versions within 24 hours",
+            "optionally tear down the target when convenient",
+        ),
+        ("`SkipFinalSnapshot=true`", "`SkipFinalSnapshot=false`"),
+        ("`DeleteAutomatedBackups=true`", "`DeleteAutomatedBackups=false`"),
+        ("tag-based live-inventory discovery", "catalog-only discovery"),
+        ("both catalog and live inventory prove cleanup", "catalog says cleanup is complete"),
+        (
+            "alert routing owned by CH-12",
+            "alert routing is unassigned",
+        ),
+    ],
+)
+def test_issue141_platform_contract_rejects_operational_control_regressions(
+    monkeypatch: Any, search: str, replacement: str
+) -> None:
+    adr_rel = "docs/ADR/0027-production-like-durability-platform-ownership.md"
+    adr_text = phase1.read(adr_rel)
+    mutated = replace_text(adr_text, search, replacement)
+    assert mutated != adr_text
+
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={adr_rel: mutated},
+    )
+
+    assert any("detailed operational controls" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "overclaim_text",
+    [
+        "Production-like durability exists and has been verified.",
+        "Issue #126 is closed by this platform decision.",
+        "DUR-RESTORE-001 is complete.",
+        "Issue #39 has been resolved by issue #141.",
+        "Issue #139 is complete and ready to close.",
+        "Issue #141 has been completed.",
+        "Managed backup verified and queryable.",
+        "The restore drill succeeded.",
+        "Observed RTO 12m and RPO zero.",
+        "Operations/Security approved the platform.",
+        "Restore target is deployed.",
+        "A recoverable snapshot exists; restoration was successful; the RTO target was met; all signoffs were obtained.",
+    ],
+)
+def test_issue141_platform_ownership_contract_rejects_evidence_and_closure_overclaims(
+    monkeypatch: Any, overclaim_text: str
+) -> None:
+    adr_text = phase1.read("docs/ADR/0027-production-like-durability-platform-ownership.md")
+    failures = run_issue141_platform_contract_check(
+        monkeypatch,
+        read_overrides={
+            "docs/ADR/0027-production-like-durability-platform-ownership.md": (
+                adr_text + f"\n\n{overclaim_text}\n"
+            )
+        },
+    )
+
+    assert any("contains issue #141 overclaim markers" in failure for failure in failures)
 
 
 def test_issue126_restore_readiness_contract_accepts_current_docs() -> None:

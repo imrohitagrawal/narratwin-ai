@@ -29,7 +29,7 @@ Create or identify stage issue
 | Stage 7 | `#12` | Stage 7 - Avatar rendering adapter and export | `stage7-*` | `make stage7-quality` | Linked PR to `main` | Mock/local avatar renderer, export artifacts, provider contract tests |
 | Stage 8 | `#13` | Stage 8 - Performance, security hardening, release readiness | `stage8-*` | `make stage8-quality` | Linked PR to `main` | Performance evidence, security hardening, release-readiness report |
 | Final Review | `#6` | Final Review - Independent review | `final-review-*` | `make final-review-quality` | Linked PR to `main` | Independent review report and release decision |
-| Phase 1 Closure | `#35`-`#44` | Phase 1 Closure - Final Review blockers | `phase-1-closure-*` | `make phase1-closure-quality`; stacked chunk PRs use `GITHUB_BASE_SHA=<reviewed-prereq-head> make phase1-closure-quality` | Linked PR to `main` or reviewed `phase-1-closure-*` stacked base | Closed or downgraded P0/P1 blockers, closure report, release readiness update |
+| Phase 1 Closure | `#35`-`#44`, follow-ups including `#139`-`#149` | Phase 1 Closure - Final Review blockers | `phase-1-closure-*` | `make phase1-closure-quality`; stacked chunk PRs use `GITHUB_BASE_SHA=<reviewed-prereq-head> make phase1-closure-quality` | Linked PR to `main` or reviewed `phase-1-closure-*` stacked base | Closed or downgraded P0/P1 blockers, closure report, release readiness update |
 
 ## Stage 0 Governance Branch Scope
 
@@ -838,6 +838,44 @@ production durability/restore implementation, provider/media paths, or issue
 `#39` closure evidence. The Semgrep tool-only compatibility override remains a
 human-reviewed, expiring exception and must not become a general dependency
 override or advisory suppression.
+
+`phase-1-closure-141-*` is reserved for issue `#141`, the architecture and
+ownership prerequisite for the production-like durability readiness sequence.
+It chooses a platform and handoff contract for issues `#142` through `#149`, but
+does not provision infrastructure, connect runtime code, configure backups,
+execute a restore, or close issue `#126`, `DUR-RESTORE-001`, or issue `#39`.
+The contract must structurally validate all Stage 4/6/7 ownership rows and every
+`#142`-`#149` dependency/acceptance row. Issue `#144` owns the source and restore
+landing zone rather than a pre-created target DB; `#146` depends on the live
+environment/catalog foundation; `#148` and the `#149` Go decision require tested
+CH-12 alert routes from issue `#130` in addition to `#145`-`#147` handoffs; and
+the later `#126` drill alone creates the PITR target and records actual results.
+The target contract uses supported PITR inputs including IAM DB authentication,
+verifies engine/configuration after creation, bounds S3 recovery to single-copy
+objects `<=5,000,000,000 bytes`, registers cleanup before creation, uses
+separately scoped target RDS/S3 inventory/deletion authority, deletes without a
+final snapshot or retained automated backup, and blocks another exercise until
+live inventory is clean. Detailed security/operations controls and S3/journal
+STRIDE rows are mutation guarded.
+It may touch only:
+
+- `docs/ADR/0008-postgresql-durability-schema-boundary.md`
+- `docs/ADR/0011-context4-backup-restore-drill.md`
+- `docs/ADR/0027-production-like-durability-platform-ownership.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THREAT_MODEL.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/TRACEABILITY.md`
+- `docs/reviews/ISSUE_141_DURABILITY_PLATFORM_PREFLIGHT.md`
+- `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+`phase-1-closure-141-*` must reject backend/frontend/runtime, database migration,
+IaC, cloud provisioning, credentials, backup tooling, catalogs containing live
+secrets/data, restore execution, and evidence claims that require an actual
+environment. Human cost/account/region/owner/security approvals remain blockers.
 
 `phase-1-closure-39-ch-14-*` is reserved for issue `#126`, the narrow
 restore-readiness contract slice for `DUR-RESTORE-001`. This branch does not

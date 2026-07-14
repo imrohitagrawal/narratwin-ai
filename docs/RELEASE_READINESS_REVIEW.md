@@ -18,6 +18,14 @@ single-process demo readiness can be reviewed through the local gates and
 documented limitations. Production release remains No-Go. No release tag has
 been created.
 
+`docs/LAUNCH_LEVELS.md` is the canonical launch-level boundary. AWS is not
+required for the controlled local mock demo. A hosted internal synthetic demo
+requires a separate environment review and does not inherit local-demo approval.
+External/invite-only soft launch remains No-Go and is production-adjacent even
+when audience size is small or hosting is free. Production-like durability
+validation is also No-Go until its separate environment and evidence gates pass;
+it is not a user launch.
+
 ## Current Baseline
 
 - Stage 8 merged to `main` through PR `#33` at merge commit `fb40113`.
@@ -116,6 +124,9 @@ correctness.
 ## Conditional Local Demo Conditions
 
 The local demo can be reviewed only when:
+
+- the activity still satisfies the `Local mock demo` row in
+  `docs/LAUNCH_LEVELS.md`; hosted or external access requires a separate decision
 
 - mock/local providers remain the only active providers
 - no real provider keys are required

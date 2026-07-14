@@ -167,6 +167,41 @@ For issue `#68`, the following remain deferred:
 Paid providers remain mock/local only and disabled by default in local/dev/test/posture as
 currently documented.
 
+## Issue #141 platform and retention specialization
+
+ADR `0027` specializes this advisory plan as RDS automated backups/PITR plus S3
+Versioning with at least a 15-day artifact-version recovery window, an immutable
+UTC restore point and S3 Version IDs, a Platform/Storage-owned restricted
+catalog plus allowlisted reviewer export, and a same-account/region separately
+isolated restore landing zone whose later PITR invocation creates a new target.
+That later request enables IAM DB authentication and explicit private/Multi-AZ
+configuration, while engine `17.10` is verified before and after creation rather
+than supplied as an unsupported PITR input. Exact S3 copy is bounded to the
+single-request `<=5,000,000,000 bytes` contract until multipart permissions are separately
+approved. Cleanup is registered before creation and proves no final snapshot,
+automated backup, target DB, copied version or incomplete work remains.
+Fixed copy tags and cleanup use a separate run-scoped RDS/S3 role that cannot
+read or mutate source/control data and whose immutable source denies do not rely
+on tags.
+The previously listed seven-day change-log assumption is superseded by the
+14-day RDS/15-day S3 windows. Manual drill snapshots must be
+deleted after accepted evidence or within 14 days, restore targets within 24
+hours (72 hours only by dated exception), and sanitized evidence is retained for
+at least 90 days.
+
+CH-14 owns backup/catalog/restore-target lifecycle, measurement, and the handoff
+of records/objects requiring re-delete. That handoff comes from the unique-key,
+last-contiguous, integrity-linked control-bucket deletion journal, not the
+point-in-time-restored database. CH-17 owns current consent-revocation state and
+CH-21 owns erasure enforcement plus proof that restored deleted or revoked
+records/objects are re-deleted or remain blocked. This preserves the dependency
+direction: CH-14 produces the handoff and CH-21 proves retention/erasure
+behavior later.
+
+RTO `<= 75 minutes` and RPO `<= 5 minutes` remain unmeasured planning targets.
+No environment, backup, target, or restore evidence exists merely because this
+amendment is documented.
+
 ## Consequences
 
 This ADR creates a bounded, reviewable context handoff for Context 4 planning.
@@ -176,6 +211,7 @@ runbooks are added in separate issue slices. No behavior change is introduced by
 ## Related Documents
 
 - `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
+- `docs/ADR/0027-production-like-durability-platform-ownership.md`
 - `docs/STATUS.md`
 - `docs/TRACEABILITY.md`
 - `scripts/quality/check_phase1_closure_docs.py`

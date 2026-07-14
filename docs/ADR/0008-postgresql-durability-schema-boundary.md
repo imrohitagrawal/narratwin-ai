@@ -175,6 +175,21 @@ evidence for `DUR-STAGE4-001` conflict handling.
 - External paid providers remain optional and disabled by default outside explicit
   production enablement; this issue does not enable any provider runtime.
 
+## Issue #141 platform specialization
+
+ADR `0027` supersedes this ADR's provider-neutral platform boundary and the
+original Stage-4-only entity inventory. The authoritative planned platform is
+Amazon RDS for PostgreSQL 17.10 Multi-AZ in a private `ap-south-1`
+non-production boundary. The expanded PostgreSQL ownership includes current
+Stage 4, 6, and 7 business state plus immutable locators/checksums for external
+artifact bytes. ADR `0027` assigns approved upload/audio/render/export bytes to
+versioned S3 rather than leaving their durability provider deferred. Raw
+provider payloads, caches, secrets, temporary work files, local JSON, and large
+artifact bytes remain outside PostgreSQL.
+
+This is a design reconciliation only. No shared database or verified
+production-like durability is present.
+
 ## Alternatives Considered
 
 ### Keep local file state as production metadata for all stages
@@ -208,6 +223,7 @@ Negative:
 ## Related Documents
 
 - `docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md`
+- `docs/ADR/0027-production-like-durability-platform-ownership.md`
 - `docs/STATUS.md`
 - `docs/TRACEABILITY.md`
 - `scripts/quality/check_phase1_closure_docs.py`

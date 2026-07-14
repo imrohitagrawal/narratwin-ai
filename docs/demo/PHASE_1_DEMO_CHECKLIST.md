@@ -2,6 +2,11 @@
 
 Use this checklist for local mock-provider demo readiness.
 
+This checklist applies only to the `Local mock demo` row in
+`docs/LAUNCH_LEVELS.md`. An AWS account is not required. Hosted or external
+access requires a separate launch-level decision and must not inherit this
+checklist's conditional local-demo posture.
+
 - [ ] `.env` exists from `cp .env.example .env`.
 - [ ] `docker compose up --build` starts backend, frontend, Postgres, and Redis.
 - [ ] `curl http://localhost:8000/api/v1/healthz` returns successfully.
