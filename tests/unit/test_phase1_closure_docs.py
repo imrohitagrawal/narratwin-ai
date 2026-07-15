@@ -206,6 +206,99 @@ def test_skill_governance_process_branch_allows_only_governance_files(monkeypatc
     ]
 
 
+def test_product_mode_demarcation_process_branch_allows_only_plan_governance_files(
+    monkeypatch: Any,
+) -> None:
+    branch = "phase-1-closure-process-8-phf-020-product-mode-demarcation"
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "AGENTS.md",
+            "docs/PHASE_PLAN.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/STATUS.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["frontend/src/app/page.tsx"],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-process-8-phf-020-product-mode-demarcation "
+        "may not change frontend/src/app/page.tsx."
+    ]
+
+
+def test_process_docs_require_phase_plan_in_agent_context(monkeypatch: Any) -> None:
+    original_agents = phase1.read("AGENTS.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["AGENTS.md"],
+        read_overrides={
+            "AGENTS.md": original_agents.replace("docs/PHASE_PLAN.md", "docs/DELIVERY_PLAN.md"),
+        },
+    )
+
+    assert "AGENTS.md missing process marker: docs/PHASE_PLAN.md" in failures
+
+
+def test_process_docs_reject_phase_two_mode_two_conflation(monkeypatch: Any) -> None:
+    original_phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/PHASE_PLAN.md"],
+        read_overrides={
+            "docs/PHASE_PLAN.md": replace_text(
+                original_phase_plan,
+                "## Phase 2: Spec Kit Gate",
+                "## Phase 2: Interactive AI Avatar Walkthrough",
+            )
+        },
+    )
+
+    assert "docs/PHASE_PLAN.md must keep Phase 2 as the Spec Kit Gate, not Mode 2." in failures
+
+
+def test_process_docs_require_serial_mode_gate_and_duplicate_protocol(monkeypatch: Any) -> None:
+    original_phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/PHASE_PLAN.md"],
+        read_overrides={
+            "docs/PHASE_PLAN.md": original_phase_plan.replace(
+                "Mode 1 Checkpoint B must close before Mode 2 runtime implementation begins.",
+                "Mode 1 and Mode 2 may proceed independently.",
+                1,
+            )
+        },
+    )
+
+    assert "docs/PHASE_PLAN.md missing serial product-mode gate." in failures
+
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/PHASE_PLAN.md"],
+        read_overrides={
+            "docs/PHASE_PLAN.md": original_phase_plan.replace(
+                "transfer every unique acceptance criterion to the canonical tracker before closing a true duplicate",
+                "close duplicate trackers",
+                1,
+            )
+        },
+    )
+
+    assert "docs/PHASE_PLAN.md missing duplicate-reconciliation protocol." in failures
+
+
 @pytest.mark.parametrize(
     "skill_doc",
     [

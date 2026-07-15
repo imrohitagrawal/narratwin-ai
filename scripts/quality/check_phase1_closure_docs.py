@@ -60,6 +60,7 @@ MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
     "scripts/quality/check_recommended_review_items.py",
 }
 PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
+    "docs/PHASE_PLAN.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_SELECTION_AND_EVIDENCE.md",
     "scripts/guardrails_check.py",
@@ -3131,6 +3132,7 @@ def check_process_docs(failures: list[str]) -> None:
         ".github/pull_request_template.md",
         "AGENTS.md",
         "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/PHASE_PLAN.md",
         "docs/SKILL_EXECUTION_PLAN.md",
         "docs/SKILL_SELECTION_AND_EVIDENCE.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -3182,6 +3184,7 @@ def check_process_docs(failures: list[str]) -> None:
     agents = read("AGENTS.md")
     for marker in (
         "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/PHASE_PLAN.md",
         "docs/SKILL_SELECTION_AND_EVIDENCE.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
         "preflight evidence",
@@ -3190,6 +3193,45 @@ def check_process_docs(failures: list[str]) -> None:
     ):
         if marker not in agents:
             fail(failures, f"AGENTS.md missing process marker: {marker}")
+
+    phase_plan = read("docs/PHASE_PLAN.md")
+    check_required_headings(
+        failures,
+        phase_plan,
+        "docs/PHASE_PLAN.md",
+        (
+            "Product Modes, Delivery Phases, And Closure Programs",
+            "Phase 2: Spec Kit Gate",
+            "Phase 9: Interactive AI Avatar Walkthrough",
+        ),
+    )
+    normalized_phase_plan = re.sub(r"\s+", " ", phase_plan)
+    for subsection in (
+        "Canonical tracker and duplicate reconciliation",
+        "Serial execution contract",
+        "Fresh-context review boundary",
+        "Cross-chat handoff contract",
+    ):
+        if f"### {subsection}" not in phase_plan:
+            fail(failures, f"docs/PHASE_PLAN.md missing required subsection: {subsection}")
+    if "## Phase 2: Spec Kit Gate" not in phase_plan:
+        fail(failures, "docs/PHASE_PLAN.md must keep Phase 2 as the Spec Kit Gate, not Mode 2.")
+    if "Mode 1 Checkpoint B must close before Mode 2 runtime implementation begins." not in normalized_phase_plan:
+        fail(failures, "docs/PHASE_PLAN.md missing serial product-mode gate.")
+    if (
+        "transfer every unique acceptance criterion to the canonical tracker before closing a true duplicate"
+        not in normalized_phase_plan
+    ):
+        fail(failures, "docs/PHASE_PLAN.md missing duplicate-reconciliation protocol.")
+    for marker in (
+        "Phase 1 Closure is a closure program, not Product Mode 1.",
+        "Phase 2 is the Spec Kit gate, not Product Mode 2.",
+        "Product Mode 2 remains Phase 9 future work under issue `#20`.",
+        "A maximum of three substantive review/correction cycles",
+        "exactly one next authorized module",
+    ):
+        if marker not in normalized_phase_plan:
+            fail(failures, f"docs/PHASE_PLAN.md missing product-mode execution marker: {marker}")
 
     skill_execution_plan = read("docs/SKILL_EXECUTION_PLAN.md")
     normalized_skill_execution_plan = re.sub(r"\s+", " ", skill_execution_plan.lower())

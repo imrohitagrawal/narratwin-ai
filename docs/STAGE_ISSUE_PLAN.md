@@ -571,6 +571,7 @@ process guardrail and its tests:
 
 - `docs/SKILL_EXECUTION_PLAN.md`
 - `docs/SKILL_SELECTION_AND_EVIDENCE.md`
+- `docs/PHASE_PLAN.md`
 - `scripts/guardrails_check.py`
 - `tests/unit/test_guardrails_check.py`
 - `tests/unit/test_phase1_closure_docs.py`

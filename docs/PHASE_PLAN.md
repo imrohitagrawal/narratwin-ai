@@ -2,10 +2,10 @@
 
 ## Version
 
-- Version: 1.0
+- Version: 1.1
 - Stage: Stage 1 product strategy and PRD hardening
 - Canonical issue: `#1`
-- Last updated: 2026-06-29
+- Last updated: 2026-07-15
 
 ## Purpose
 
@@ -41,6 +41,111 @@ phases only to order planning work within or across stages.
 | Phase 8 | Stage 7 | `#12`, `#19`, `#21` | Slice-scoped avatar/video and optional provider adapters |
 | Phase 9 | Future approved stage | `#20` | Interactive Q&A only after stage-plan update |
 | Phase 10 | Stage 8 and Final Review | `#13`, `#6` | Hardening and review only |
+
+## Product Modes, Delivery Phases, And Closure Programs
+
+These are separate taxonomies. Number similarity does not create scope or
+dependency. The approved stage remains the delivery authority; numbered phases
+order the historical plan; product modes describe user experiences; closure
+programs reconcile evidence and risk.
+
+| Term | Meaning | Canonical tracker or artifact | Must not be interpreted as |
+|---|---|---|---|
+| Phase 1 | Historical Stage 1 product/PRD hardening | `#1` and this plan | Product Mode 1 or current Phase 1 Closure |
+| Phase 2 | Historical Stage 1 Spec Kit follow-on | `#16` | Product Mode 2 |
+| Phase 1 Closure | Final Review remediation, evidence, and closeout program | Phase 1 Closure issues and `docs/reviews/PHASE_1_CLOSURE_REPORT.md` | Product Mode 1 or authority for unrelated future features |
+| Product Mode 1 | Pre-rendered multilingual demo-video product direction; current checkpoint is artifact-only and local | `#155` | A claim that playable audio or MP4/WebM already exists |
+| Product Mode 2 | Interactive grounded AI avatar walkthrough | `#20`, Phase 9 after an approved stage-plan update | Phase 2 or work authorized by the Mode 1 tracker |
+
+Phase 1 Closure is a closure program, not Product Mode 1.
+Phase 2 is the Spec Kit gate, not Product Mode 2.
+Product Mode 2 remains Phase 9 future work under issue `#20`.
+
+### Canonical tracker and duplicate reconciliation
+
+`docs/PHASE_PLAN.md` is the canonical taxonomy and serial-order source for
+cross-chat work. Issue `#155` is the canonical Product Mode 1 local-demo runtime
+tracker. Issue `#20` is the existing Product Mode 2 implementation tracker and
+must be re-baselined before Mode 2 code starts. Supporting issues such as `#17`,
+`#18`, `#19`, and `#43` retain only their explicitly recorded child or later-track
+scope; they do not replace either canonical tracker.
+
+Before opening any GitHub, Jira, or other tracker item, search existing trackers
+by objective, acceptance criteria, affected boundary, and parent. When a true
+duplicate exists, add reciprocal links, identify the canonical owner, and
+transfer every unique acceptance criterion to the canonical tracker before closing a true duplicate.
+Do not invent an external tracker key or silently close an item whose unique
+requirements have not been preserved. If an external tracker exists, record its
+key and canonical GitHub link in both systems.
+
+Closed issue `#157` and closed PR `#163` are historical, not active execution
+paths. Security/evidence issues `#151`, `#158`, `#159`, and `#161`, plus PR
+`#162`, retain their own scopes. They must not be mixed into a product-mode PR;
+their verified residual risks may still be required checkpoint inputs.
+
+### Serial execution contract
+
+Only one product-mode implementation module is active in a chat, branch, and PR.
+An independent governance or security task may proceed only when explicitly
+assigned and must not cause the active product module to switch scope.
+
+Mode 1 Checkpoint B must close before Mode 2 runtime implementation begins.
+Mode 1 Checkpoint B is the approved artifact-only local checkpoint; playable
+audio or MP4/WebM remains a separate owner decision after that checkpoint.
+
+| Order | Module | Canonical scope | Completion gate before the next row |
+|---:|---|---|---|
+| 0 | Product-mode demarcation | `#8`; this plan, mandatory agent context, executable governance checks | Reviewed PR merged; duplicate/canonical map reconciled |
+| 1 | `CH-M1-01` durable-consent request chain | `#155` child; frontend captures consent and submits `consentRecordId` | RED/GREEN tests, exact-head checks, fresh-context review, merge closeout |
+| 2 | `CH-M1-02` real-stack browser path | `#43`; non-intercepted browser → proxy → backend success | Checkpoint A proves the real local request chain |
+| 3 | `CH-M1-03` multilingual media-bundle contract | `#155` child; Stage 6→7 provenance, checksum, replay, and ownership contract | Contract PR independently reviewed and merged before consumers change |
+| 4 | `CH-M1-04` backend multilingual binding | `#155` child; render only from the validated selected-language bundle | Backend/API/tamper evidence and fresh-context review pass |
+| 5 | `CH-M1-05` frontend artifact consistency | `#155` child; expose voice manifest and language-consistent script/SRT/avatar artifacts | Component plus real-stack evidence and fresh-context review pass |
+| 6 | Stage 6 controlled fallback | `#17`; honestly labelled translation/subtitle/voice failures | Residual fixed or explicitly accepted by the owner before Checkpoint B |
+| 7 | `CH-M1-06` demonstration evidence | `#155` child; checklist, presenter script, synthetic seed, exact-commit Compose/browser evidence | Checkpoint B records conditional artifact-only local-demo Go/No-Go |
+| 8 | Optional playable media | `#18` audio, then `#19` video assembly | Starts only after explicit post-Checkpoint-B owner approval; each issue remains separate |
+| 9 | Mode 2 contract reset | `#20`; single-turn grounded local interaction before broader conversation scope | Approved stage-plan/contract PR; no runtime change in the contract module |
+| 10 | Mode 2 grounded answer backend | `#20` child; retrieval, grounded answer/refusal, citations, evaluation, trace | Backend/API/prompt-injection evidence and fresh-context review pass |
+| 11 | Mode 2 local language/presentation binding | `#20` child; mock/local language-consistent answer bundle and synthetic presentation contract | Contract and tamper/fallback evidence pass |
+| 12 | Mode 2 question UI | `#20` child; question form, answer/refusal, citations, evaluation, synthetic-avatar panel | Component/accessibility review and real API integration pass |
+| 13 | Mode 2 real-stack demonstration | `#20` child; non-intercepted Compose/browser success and refusal paths | Mode 2 local-demo Go/No-Go with honest no-audio/video/public/production limits |
+
+The next row is not authorized merely because code exists. Its predecessor must
+have an approved PR, exact-head required checks, post-merge verification, child
+issue reconciliation, branch cleanup, and any genuinely required
+`docs/STATUS.md` update.
+
+### Fresh-context review boundary
+
+Authoring and independent review are separate sessions for every non-trivial
+implementation module. A fresh reviewer receives the approved contract, exact
+diff, tests, command evidence, and declared residuals—not the author's reasoning
+or conclusions—and attempts to disprove correctness, security, architecture,
+scope, and evidence claims. The authoring agent classifies each finding against
+the artifact rather than blindly implementing or rejecting it.
+
+A maximum of three substantive review/correction cycles is allowed for one
+reviewable artifact. A new defect class updates the contract, failure matrix, and
+tests before correction. Substantive findings after the third cycle stop the
+module for human decomposition or scope correction; they do not trigger an
+open-ended patch loop. Human approval and branch protection remain final merge
+conditions even when subagent review is clean.
+
+### Cross-chat handoff contract
+
+Every module closeout records, on its canonical issue or PR:
+
+- exact base and head commits, branch, changed files, and scope exclusions;
+- acceptance criteria and invariant-to-test mapping;
+- RED/old-behavior proof when behavior changed;
+- focused, full, CI, and manual evidence with honest residuals;
+- fresh-context findings and their dispositions;
+- merge/post-merge/issue/branch/status reconciliation state; and
+- exactly one next authorized module, or an explicit stop decision.
+
+A new chat reads `AGENTS.md`, this plan, the canonical tracker, and the last
+closeout record. It independently verifies live state but does not restart
+completed audits or begin a later row.
 
 ## Boundaries
 
