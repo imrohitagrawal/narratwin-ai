@@ -3283,6 +3283,39 @@ def test_process_only_phase1_branch_rejects_runtime_product_files(monkeypatch: A
     ]
 
 
+def test_issue172_branch_allows_only_offline_preflight_core_paths(monkeypatch: Any) -> None:
+    files = [
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+        "scripts/governance_preflight_v1.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_governance_preflight_v1.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    ]
+    assert phase1.ISSUE_172_ALLOWED_CHANGED_FILES == set(files)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-process-172-gpf-v1-offline-core",
+        files=files,
+    ) == []
+
+
+def test_issue172_branch_does_not_pre_authorize_repository_adapter(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-process-172-gpf-v1-offline-core",
+        files=["scripts/governance_preflight_repository.py", ".github/workflows/quality-gates.yml"],
+    )
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-process-172-gpf-v1-offline-core "
+        "may not change scripts/governance_preflight_repository.py.",
+        "Phase 1 Closure branch phase-1-closure-process-172-gpf-v1-offline-core "
+        "may not change .github/workflows/quality-gates.yml.",
+    ]
+
+
 def test_issue39_durability_branch_keeps_existing_runtime_allowlist(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,

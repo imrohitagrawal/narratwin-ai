@@ -5,6 +5,7 @@ import json
 import random
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -78,11 +79,28 @@ def _context() -> Context:
     }
 
 
+def _maximum_valid_fixture() -> tuple[Artifact, Context]:
+    artifact = _artifact()
+    required = ["docs/STATUS.md"] + [f"scripts/{i:03d}-{'r' * 149}.py" for i in range(1, 128)]
+    artifact["objective"] = "x" * 2000
+    artifact["scope"] = {
+        "required": required,
+        "allowed_prefixes": ["docs/STATUS.md", "scripts/"] + [
+            f"unused/{i:03d}-{'a' * 149}/" for i in range(2, 128)
+        ],
+        "forbidden": [f"forbidden/{i:03d}-{'f' * 147}/" for i in range(128)],
+    }
+    context = _context()
+    context["changed_files"] = required
+    return artifact, context
+
+
+def _serialized_size(artifact: Artifact) -> int:
+    return len(json.dumps(artifact, ensure_ascii=False, separators=(",", ":")).encode())
+
+
 def _codes(artifact: Artifact, context: Context) -> list[str]:
-    return [
-        finding.code
-        for finding in validate_governance_preflight(artifact, context=context)
-    ]
+    return [finding.code for finding in validate_governance_preflight(artifact, context=context)]
 
 
 def _baseline_for(case: MutationCase) -> tuple[Artifact, Context]:
@@ -144,6 +162,8 @@ def _apply_mutation(case: MutationCase, artifact: Artifact, context: Context) ->
 
 
 def test_exact_contract_baseline_has_zero_findings() -> None:
+    schema = json.loads(Path("docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json").read_text())
+    assert schema["properties"]["issue_number"] == {"type": "integer"}
     assert _codes(_artifact(), _context()) == []
 
 
@@ -153,34 +173,28 @@ def test_each_single_mutation_returns_only_its_stable_code(
 ) -> None:
     baseline_artifact, baseline_context = _baseline_for(case)
     assert _codes(baseline_artifact, baseline_context) == []
-
     mutated_artifact = copy.deepcopy(baseline_artifact)
     mutated_context = copy.deepcopy(baseline_context)
     _apply_mutation(case, mutated_artifact, mutated_context)
-
     assert _codes(mutated_artifact, mutated_context) == [case.code]
 
 
 @pytest.mark.parametrize(
     ("test_id", "code", "mutate"),
     (
-        (
-            "control-character-path",
-            "GPF.PATH.INVALID",
-            lambda artifact, _context: artifact["scope"]["required"].__setitem__(
-                1, "scripts/bad\nname.py"
-            ),
-        ),
+        ("control-character-path", "GPF.PATH.INVALID", lambda artifact, _: artifact["scope"]
+         ["required"].__setitem__(1, "scripts/bad\nname.py")),
         (
             "changed-file-type-confusion",
             "GPF.SCHEMA.TYPE",
             lambda _artifact, context: context["changed_files"].__setitem__(1, 172),
         ),
-        (
-            "serialized-artifact-limit",
-            "GPF.SCHEMA.LIMIT",
-            lambda artifact, _context: artifact.__setitem__("objective", "x" * 65537),
-        ),
+        ("invalid-unicode", "GPF.SCHEMA.TYPE", lambda artifact, _: artifact.__setitem__("objective", "\ud800")),
+        ("surrogate-path", "GPF.PATH.INVALID", lambda artifact, _: artifact["scope"]["required"].__setitem__(1, "scripts/\ud800.py")),
+        ("oversized-resource", "GPF.SCHEMA.LIMIT", lambda artifact, _: artifact.__setitem__("objective", "x" * 1_000_000)),
+        ("missing-scope-field", "GPF.SCHEMA.REQUIRED", lambda artifact, _: artifact["scope"].pop("forbidden")),
+        ("unknown-scope-field", "GPF.SCHEMA.UNKNOWN", lambda artifact, _: artifact["scope"].__setitem__("unexpected", [])),
+        ("missing-context-field", "GPF.SCHEMA.REQUIRED", lambda _, context: context.pop("branch")),
     ),
 )
 def test_untrusted_input_mutations_fail_closed_with_one_code(
@@ -192,17 +206,47 @@ def test_untrusted_input_mutations_fail_closed_with_one_code(
     baseline_artifact = _artifact()
     baseline_context = _context()
     assert _codes(baseline_artifact, baseline_context) == []
-
     mutated_artifact = copy.deepcopy(baseline_artifact)
     mutated_context = copy.deepcopy(baseline_context)
     mutate(mutated_artifact, mutated_context)
-
     assert _codes(mutated_artifact, mutated_context) == [code]
+
+
+@pytest.mark.parametrize(
+    ("artifact", "context", "code"),
+    (
+        ([], _context(), "GPF.SCHEMA.TYPE"),
+        (_artifact(), [], "GPF.SCHEMA.TYPE"),
+        (_artifact(), {**_context(), "unexpected": True}, "GPF.SCHEMA.UNKNOWN"),
+    ),
+)
+def test_untrusted_root_types_and_context_fields_fail_closed(
+    artifact: Any, context: Any, code: str
+) -> None:
+    assert _codes(artifact, context) == [code]
+
+
+def test_serialized_artifact_limit_is_independent_of_field_limits() -> None:
+    baseline_artifact, context = _maximum_valid_fixture()
+    assert _serialized_size(baseline_artifact) == 65268
+    assert _codes(baseline_artifact, context) == []
+    artifact = copy.deepcopy(baseline_artifact)
+    artifact["scope"]["forbidden"][0] = f"forbidden/{'z' * 501}/"
+    assert len(artifact["scope"]["forbidden"][0]) == 512
+    assert _serialized_size(artifact) == 65618
+    assert _codes(artifact, context) == ["GPF.SCHEMA.LIMIT"]
 
 
 def test_valid_boundaries_unicode_and_nested_paths() -> None:
     artifact = _artifact()
     context = _context()
+    artifact["issue_number"] = context["issue_number"] = 0
+    artifact["scope"] = {"required": ["docs/STATUS.md"], "allowed_prefixes": ["docs/STATUS.md"], "forbidden": []}
+    context["changed_files"] = ["docs/STATUS.md"]
+    assert _codes(artifact, context) == []
+    artifact["scope"]["forbidden"] = ["a"]
+    assert _codes(artifact, context) == []
+    artifact, context = _artifact(), _context()
     artifact["objective"] = "界"
     artifact["scope"]["required"][1] = f"scripts/{'x' * 501}.py"
     context["changed_files"][1] = artifact["scope"]["required"][1]
@@ -212,12 +256,10 @@ def test_valid_boundaries_unicode_and_nested_paths() -> None:
     artifact["scope"]["forbidden"].extend(
         f"forbidden/prefix-{index}/" for index in range(2, 128)
     )
-
     assert len(artifact["scope"]["required"][1]) == 512
     assert len(artifact["scope"]["allowed_prefixes"]) == 128
     assert len(artifact["scope"]["forbidden"]) == 128
     assert _codes(artifact, context) == []
-
     artifact["objective"] = "界" * 2000
     artifact["scope"]["required"][1] = "scripts/nested/path/example.py"
     context["changed_files"][1] = "scripts/nested/path/example.py"
@@ -233,26 +275,31 @@ def test_ordering_and_json_round_trip_preserve_zero_findings() -> None:
     reordered_artifact["scope"]["forbidden"].reverse()
     reordered_context = copy.deepcopy(context)
     reordered_context["changed_files"].reverse()
-
     assert _codes(artifact, context) == []
     assert _codes(reordered_artifact, reordered_context) == []
 
 
 def test_ordering_permutations_preserve_exact_finding_vector() -> None:
-    artifact = _artifact()
-    context = _context()
+    baseline_artifact = _artifact()
+    baseline_context = _context()
+    assert _codes(baseline_artifact, baseline_context) == []
+
+    artifact = copy.deepcopy(baseline_artifact)
+    context = copy.deepcopy(baseline_context)
     context["changed_files"].extend(
         ["tools/unapproved.py", "backend/forbidden.py"]
     )
-    expected = _codes(artifact, context)
-
+    expected = [
+        "GPF.SCOPE.CHANGE_FORBIDDEN",
+        "GPF.SCOPE.CHANGE_NOT_ALLOWED",
+    ]
+    assert _codes(artifact, context) == expected
     permuted_artifact = copy.deepcopy(artifact)
     permuted_context = copy.deepcopy(context)
     permuted_artifact["scope"]["allowed_prefixes"].reverse()
     permuted_artifact["scope"]["forbidden"].reverse()
     permuted_context["changed_files"].reverse()
 
-    assert expected != []
     assert _codes(permuted_artifact, permuted_context) == expected
 
 
@@ -275,55 +322,46 @@ def test_dot_segments_are_rejected_without_normalization(invalid_path: str) -> N
     assert _codes(artifact, context) == ["GPF.PATH.INVALID"]
 
 
-@pytest.mark.parametrize("seed", RANDOM_SEEDS)
-def test_seeded_valid_and_single_fault_documents(seed: int) -> None:
-    rng = random.Random(seed)
+def test_seeded_valid_and_single_fault_documents() -> None:
     started = time.perf_counter()
-
-    for case_index in range(50):
-        artifact = _artifact()
-        context = _context()
-        artifact["objective"] = f"Valid generated case {seed}:{case_index} 界"
-        if rng.choice((False, True)):
-            artifact["scope"]["allowed_prefixes"].reverse()
-            context["changed_files"].reverse()
-        assert _codes(artifact, context) == [], (
-            f"seed={seed} case={case_index} artifact={json.dumps(artifact)}"
-        )
-
-    for case_index in range(50):
-        case = rng.choice(MUTATION_CASES)
-        baseline_artifact, baseline_context = _baseline_for(case)
-        assert _codes(baseline_artifact, baseline_context) == []
-        artifact = copy.deepcopy(baseline_artifact)
-        context = copy.deepcopy(baseline_context)
-        _apply_mutation(case, artifact, context)
-        actual = _codes(artifact, context)
-        assert actual == [case.code], (
-            f"seed={seed} case={case_index} mutation={case.test_id} "
-            f"artifact={json.dumps(artifact)} context={json.dumps(context)} "
-            f"actual={actual}"
-        )
+    for seed in RANDOM_SEEDS:
+        rng = random.Random(seed)
+        for case_index in range(50):
+            artifact = _artifact()
+            context = _context()
+            artifact["objective"] = f"Valid generated case {seed}:{case_index} 界"
+            if rng.choice((False, True)):
+                artifact["scope"]["allowed_prefixes"].reverse()
+                context["changed_files"].reverse()
+            actual = _codes(artifact, context)
+            assert actual == [], (
+                f"seed={seed} case={case_index} artifact={json.dumps(artifact)} "
+                f"context={json.dumps(context)} actual={actual}"
+            )
+        for case_index in range(50):
+            case = rng.choice(MUTATION_CASES)
+            baseline_artifact, baseline_context = _baseline_for(case)
+            baseline = json.dumps(baseline_artifact, sort_keys=True)
+            assert _codes(baseline_artifact, baseline_context) == [], (
+                f"seed={seed} case={case_index} mutation={case.test_id} "
+                f"baseline={baseline} context={json.dumps(baseline_context)}"
+            )
+            artifact = copy.deepcopy(baseline_artifact)
+            context = copy.deepcopy(baseline_context)
+            _apply_mutation(case, artifact, context)
+            actual = _codes(artifact, context)
+            assert actual == [case.code], (
+                f"seed={seed} case={case_index} baseline={baseline} "
+                f"mutation={case.test_id} artifact={json.dumps(artifact)} "
+                f"context={json.dumps(context)} actual={actual}"
+            )
 
     assert time.perf_counter() - started < 10.0
 
 
 def test_maximum_fixture_completes_within_hard_ceiling() -> None:
-    artifact = _artifact()
-    context = _context()
-    required = ["docs/STATUS.md"] + [
-        f"scripts/path-{index:03d}.py" for index in range(1, 128)
-    ]
-    artifact["objective"] = "x" * 2000
-    artifact["scope"]["required"] = required
-    artifact["scope"]["allowed_prefixes"].extend(
-        f"unused/prefix-{index}/" for index in range(3, 128)
-    )
-    artifact["scope"]["forbidden"].extend(
-        f"forbidden/prefix-{index}/" for index in range(2, 128)
-    )
-    context["changed_files"] = required
-
+    artifact, context = _maximum_valid_fixture()
+    assert _serialized_size(artifact) == 65268
     started = time.perf_counter()
     assert _codes(artifact, context) == []
     assert time.perf_counter() - started < 1.0

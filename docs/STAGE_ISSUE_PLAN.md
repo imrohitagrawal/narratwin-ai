@@ -580,6 +580,14 @@ database, Docker, or product runtime files. Issue-specific branches such as
 `phase-1-closure-39-*` retain their separate implementation/evidence allowlist
 only for the linked issue scope below.
 
+PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
+change only the offline core paths below. This exception does not authorize a
+repository adapter or CI/GitHub evidence verifier:
+
+- `docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json`
+- `scripts/governance_preflight_v1.py`
+- `tests/unit/test_governance_preflight_v1.py`
+
 Context 0 issue `#39` closure-contract branches using
 `phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
 they may touch only docs, guardrails, tests, PR templates, and CI workflow
