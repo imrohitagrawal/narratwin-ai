@@ -70,6 +70,8 @@ ISSUE_169_BOOTSTRAP_ARTIFACTS = {
     "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
     "docs/governance/preflights/issue-169.json",
 }
+GOVERNANCE_PREFLIGHT_SCHEMA = "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json"
+PROCESS_BRANCH_ISSUE = re.compile(r"^phase-1-closure-process-(?P<issue>\d+)-.+")
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -2851,8 +2853,18 @@ def check_changed_files(failures: list[str]) -> None:
     else:
         allowed_files = MODULE_A_ALLOWED_CHANGED_FILES
     for rel in changed_files():
-        if rel not in allowed_files:
+        if rel not in allowed_files and not is_process_preflight_artifact(branch, rel):
             fail(failures, f"Phase 1 Closure branch {branch} may not change {rel}.")
+
+
+def is_process_preflight_artifact(branch: str, rel: str) -> bool:
+    match = PROCESS_BRANCH_ISSUE.fullmatch(branch)
+    if match is None:
+        return False
+    return rel in {
+        GOVERNANCE_PREFLIGHT_SCHEMA,
+        f"docs/governance/preflights/issue-{match.group('issue')}.json",
+    }
 
 
 def check_final_review_baseline(failures: list[str]) -> None:

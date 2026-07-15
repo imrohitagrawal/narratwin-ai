@@ -7,11 +7,13 @@ without paid providers, real API keys, or project-specific dependencies.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+from datetime import datetime
 from typing import Any
 from typing import cast
 from typing import NamedTuple
@@ -498,6 +500,53 @@ FORCED_PR_VALIDATION_COMMAND = re.compile(
     r"github_event_path=(?P<event_path>\S+) "
     r"narratwin_force_pull_request_guardrails=1 "
     r"python3 scripts/guardrails_check\.py(?P<tail>(?:\s|:|$).*)$"
+)
+
+GOVERNANCE_PREFLIGHT_SCHEMA_PATH = "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json"
+GOVERNANCE_PREFLIGHT_BOOTSTRAP_BRANCH = re.compile(r"^phase-1-closure-process-169-.+")
+GOVERNANCE_PREFLIGHT_BRANCH_ISSUE = re.compile(r"^phase-1-closure-process-(?P<issue>\d+)-.+")
+GOVERNANCE_CHANGE_PREFIXES = (
+    ".github/",
+    "docs/governance/",
+    "docs/templates/",
+    "scripts/quality/",
+)
+GOVERNANCE_CHANGE_CLASSES = {
+    "process-guardrail",
+    "governance-policy",
+    "governance-state",
+    "architecture-governance",
+    "release-governance",
+}
+GOVERNANCE_LOCAL_COMMANDS = (
+    ("guardrail-unit", "uv run pytest tests/unit/test_guardrails_check.py"),
+    ("phase1-unit", "uv run pytest tests/unit/test_phase1_closure_docs.py"),
+    ("repository-guardrails", "python3 scripts/guardrails_check.py"),
+    ("quality", "make quality"),
+    ("ruff", "uv run ruff check scripts tests"),
+    ("mypy", "uv run mypy scripts tests"),
+    ("ci", "make ci"),
+    ("security", "make security"),
+    ("dependency-audit", "make dependency-audit"),
+    ("container-scan", "make container-scan"),
+    ("secrets-scan", "make secrets-scan"),
+    ("eval", "make eval"),
+)
+GOVERNANCE_FORCED_PR_EVENT_COMMAND = (
+    "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH={event_path} "
+    "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py"
+)
+GOVERNANCE_GITHUB_CHECKS = (
+    "policy-gates",
+    "quality / secrets",
+    "quality / markdown",
+    "lint / typecheck / unit / api",
+    "frontend tests / playwright smoke",
+    "ci / docker build",
+    "secret scan / bandit / audit / semgrep",
+    "security / docker build",
+    "eval smoke",
+    "stage8 / performance lighthouse",
 )
 
 
@@ -1017,6 +1066,706 @@ PROCESS_CRITICAL_DOC_FILES = {
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
     "docs/reviews/PROCESS_HARDENING_FINDINGS.md",
 }
+GOVERNANCE_CHANGE_FILES = PROCESS_CRITICAL_DOC_FILES | {
+    "AGENTS.md",
+    GOVERNANCE_PREFLIGHT_SCHEMA_PATH,
+    "docs/PHASE_PLAN.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+    "scripts/guardrails_check.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+
+
+def _json_type_matches(value: Any, expected: str) -> bool:
+    if expected == "object":
+        return isinstance(value, dict)
+    if expected == "array":
+        return isinstance(value, list)
+    if expected == "string":
+        return isinstance(value, str)
+    if expected == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if expected == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if expected == "boolean":
+        return isinstance(value, bool)
+    if expected == "null":
+        return value is None
+    return False
+
+
+def _resolve_local_schema_ref(root_schema: dict[str, Any], reference: str) -> dict[str, Any] | None:
+    if not reference.startswith("#/"):
+        return None
+    value: Any = root_schema
+    for token in reference[2:].split("/"):
+        token = token.replace("~1", "/").replace("~0", "~")
+        if not isinstance(value, dict) or token not in value:
+            return None
+        value = value[token]
+    return value if isinstance(value, dict) else None
+
+
+def _json_schema_failures(
+    value: Any,
+    schema: dict[str, Any],
+    root_schema: dict[str, Any],
+    path: str,
+) -> list[str]:
+    schema_failures: list[str] = []
+    reference = schema.get("$ref")
+    if isinstance(reference, str):
+        resolved = _resolve_local_schema_ref(root_schema, reference)
+        if resolved is None:
+            return [f"{path} uses unresolved schema reference {reference}."]
+        return _json_schema_failures(value, resolved, root_schema, path)
+    for part in schema.get("allOf", []):
+        if isinstance(part, dict):
+            schema_failures.extend(_json_schema_failures(value, part, root_schema, path))
+
+    expected_type = schema.get("type")
+    if isinstance(expected_type, str) and not _json_type_matches(value, expected_type):
+        return [f"{path} must be {expected_type}."]
+    if "const" in schema and value != schema["const"]:
+        schema_failures.append(f"{path} must equal {schema['const']!r}.")
+    enum = schema.get("enum")
+    if isinstance(enum, list) and value not in enum:
+        schema_failures.append(f"{path} must use a declared enum value.")
+
+    if isinstance(value, dict):
+        required = schema.get("required", [])
+        if isinstance(required, list):
+            for field in required:
+                if isinstance(field, str) and field not in value:
+                    schema_failures.append(f"{path} missing required field {field}.")
+        properties = schema.get("properties", {})
+        if isinstance(properties, dict):
+            if schema.get("additionalProperties") is False:
+                for field in sorted(set(value) - set(properties)):
+                    schema_failures.append(f"{path} has unknown field {field}.")
+            for field, child in properties.items():
+                if field in value and isinstance(child, dict):
+                    schema_failures.extend(
+                        _json_schema_failures(value[field], child, root_schema, f"{path}.{field}")
+                    )
+    elif isinstance(value, list):
+        minimum_items = schema.get("minItems")
+        maximum_items = schema.get("maxItems")
+        if isinstance(minimum_items, int) and len(value) < minimum_items:
+            schema_failures.append(f"{path} must contain at least {minimum_items} items.")
+        if isinstance(maximum_items, int) and len(value) > maximum_items:
+            schema_failures.append(f"{path} must contain at most {maximum_items} items.")
+        if schema.get("uniqueItems") is True:
+            serialized = [json.dumps(item, sort_keys=True, separators=(",", ":")) for item in value]
+            if len(serialized) != len(set(serialized)):
+                schema_failures.append(f"{path} must contain unique items.")
+        item_schema = schema.get("items")
+        if isinstance(item_schema, dict):
+            for index, item in enumerate(value):
+                schema_failures.extend(
+                    _json_schema_failures(item, item_schema, root_schema, f"{path}[{index}]")
+                )
+    elif isinstance(value, str):
+        minimum_length = schema.get("minLength")
+        if isinstance(minimum_length, int) and len(value) < minimum_length:
+            schema_failures.append(f"{path} is shorter than {minimum_length} characters.")
+        pattern = schema.get("pattern")
+        if isinstance(pattern, str):
+            try:
+                if re.search(pattern, value) is None:
+                    schema_failures.append(f"{path} does not match its required pattern.")
+            except re.error:
+                schema_failures.append(f"{path} uses an invalid schema pattern.")
+        if schema.get("format") == "date-time" and parse_governance_timestamp(value) is None:
+            schema_failures.append(f"{path} must be an ISO-8601 date-time.")
+    elif isinstance(value, (int, float)) and not isinstance(value, bool):
+        minimum = schema.get("minimum")
+        maximum = schema.get("maximum")
+        if isinstance(minimum, (int, float)) and value < minimum:
+            schema_failures.append(f"{path} must be at least {minimum}.")
+        if isinstance(maximum, (int, float)) and value > maximum:
+            schema_failures.append(f"{path} must be at most {maximum}.")
+    return schema_failures
+
+
+def parse_governance_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def canonical_review_subject_digest(document: dict[str, Any]) -> str:
+    subject = document.get("review_subject")
+    canonical = json.dumps(subject, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def governance_path_is_valid(value: Any, *, prefix: bool = False) -> bool:
+    if not isinstance(value, str) or not value or value.startswith("/") or "\\" in value:
+        return False
+    if any(character in value for character in ("*", "?", "[")):
+        return False
+    segments = value.split("/")
+    if any(segment in {"", ".", ".."} for segment in segments[:-1]):
+        return False
+    if not prefix and segments[-1] in {"", ".", ".."}:
+        return False
+    return value.endswith("/") if prefix else not value.endswith("/")
+
+
+def governance_path_is_allowed(path: str, files: set[str], prefixes: tuple[str, ...]) -> bool:
+    return path in files or any(path.startswith(prefix) for prefix in prefixes)
+
+
+def governance_path_is_forbidden(path: str, files: set[str], prefixes: tuple[str, ...]) -> bool:
+    return path in files or any(path.startswith(prefix) for prefix in prefixes)
+
+
+def validate_governance_preflight_document(
+    document: dict[str, Any],
+    changed: list[str],
+) -> list[str]:
+    preflight_failures: list[str] = []
+    schema_path = ROOT / GOVERNANCE_PREFLIGHT_SCHEMA_PATH
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"GovernancePreflightV1 schema is unavailable or malformed: {exc}"]
+    if not isinstance(schema, dict):
+        return ["GovernancePreflightV1 schema root must be an object."]
+    preflight_failures.extend(_json_schema_failures(document, schema, schema, "$"))
+    subject = document.get("review_subject")
+    evidence = document.get("review_evidence")
+    if not isinstance(subject, dict) or not isinstance(evidence, dict):
+        return preflight_failures
+
+    expected_digest = evidence.get("review_subject_sha256")
+    actual_digest = canonical_review_subject_digest(document)
+    if expected_digest != actual_digest:
+        preflight_failures.append(
+            "Governance preflight review evidence digest does not match the canonical review_subject."
+        )
+
+    scope = subject.get("scope")
+    if isinstance(scope, dict):
+        list_names = (
+            "required_files",
+            "allowed_files",
+            "allowed_prefixes",
+            "forbidden_files",
+            "forbidden_prefixes",
+        )
+        if all(isinstance(scope.get(name), list) for name in list_names):
+            required_files = set(scope["required_files"])
+            allowed_files = set(scope["allowed_files"])
+            allowed_prefixes = tuple(scope["allowed_prefixes"])
+            forbidden_files = set(scope["forbidden_files"])
+            forbidden_prefixes = tuple(scope["forbidden_prefixes"])
+            for name in ("required_files", "allowed_files", "forbidden_files"):
+                values = scope[name]
+                if any(not governance_path_is_valid(value) for value in values):
+                    preflight_failures.append(f"Governance preflight {name} contains an invalid path.")
+            for name in ("allowed_prefixes", "forbidden_prefixes"):
+                values = scope[name]
+                if any(not governance_path_is_valid(value, prefix=True) for value in values):
+                    preflight_failures.append(f"Governance preflight {name} contains an invalid prefix.")
+            for path in required_files:
+                if not governance_path_is_allowed(path, allowed_files, allowed_prefixes):
+                    preflight_failures.append(f"Required governance path is outside the allowlist: {path}")
+                if governance_path_is_forbidden(path, forbidden_files, forbidden_prefixes):
+                    preflight_failures.append(f"Required governance path is forbidden: {path}")
+            for path in changed:
+                if not governance_path_is_valid(path):
+                    preflight_failures.append(f"Changed governance path is malformed: {path}")
+                    continue
+                if not governance_path_is_allowed(path, allowed_files, allowed_prefixes):
+                    preflight_failures.append(f"Changed governance path is outside the allowlist: {path}")
+                if governance_path_is_forbidden(path, forbidden_files, forbidden_prefixes):
+                    preflight_failures.append(f"Changed governance path is forbidden: {path}")
+            missing_required = sorted(required_files - set(changed))
+            if missing_required:
+                preflight_failures.append(
+                    "Governance preflight required files are absent from the change: "
+                    + ", ".join(missing_required)
+                )
+            status_path = "docs/STATUS.md"
+            if scope.get("status_decision") != "update-minimally":
+                preflight_failures.append("Governance preflight STATUS decision must be update-minimally.")
+            if status_path not in required_files or status_path not in allowed_files:
+                preflight_failures.append("Governance scope must require and allow docs/STATUS.md.")
+            if governance_path_is_forbidden(status_path, forbidden_files, forbidden_prefixes):
+                preflight_failures.append("Governance scope must not forbid docs/STATUS.md.")
+
+    authority_domains = subject.get("authority_domains")
+    if isinstance(authority_domains, list):
+        domains = [entry.get("domain") for entry in authority_domains if isinstance(entry, dict)]
+        if len(domains) != len(set(domains)):
+            preflight_failures.append("Governance authority domains must be unique.")
+        if any(not isinstance(value, str) or not value.strip() for value in domains):
+            preflight_failures.append("Governance authority domains must be nonblank.")
+        if any(
+            not isinstance(entry.get("owner"), str) or not entry["owner"].strip()
+            for entry in authority_domains
+            if isinstance(entry, dict)
+        ):
+            preflight_failures.append("Governance authority owners must be nonblank.")
+
+    invariants = subject.get("invariants")
+    if isinstance(invariants, list):
+        invariant_ids = [entry.get("id") for entry in invariants if isinstance(entry, dict)]
+        if len(invariant_ids) != len(set(invariant_ids)):
+            preflight_failures.append("Governance invariant IDs must be unique.")
+        for invariant in invariants:
+            if not isinstance(invariant, dict):
+                continue
+            claim = invariant.get("claim")
+            mutations = invariant.get("disproof_mutations")
+            targets = invariant.get("evidence_targets")
+            if not isinstance(claim, str) or not claim.strip():
+                preflight_failures.append("Governance invariant claims must be nonblank.")
+            if not isinstance(mutations, list) or not mutations:
+                preflight_failures.append("Every governance invariant requires disproof mutations.")
+            if not isinstance(targets, list) or not targets:
+                preflight_failures.append("Every governance invariant requires evidence targets.")
+                continue
+            for target in targets:
+                normalized = str(target).strip().lower()
+                if (
+                    normalized in PREFLIGHT_EMPTY_MARKERS
+                    or any(marker in normalized for marker in ("todo", "placeholder"))
+                    or re.search(r"\b(?:through|to)\b|\.{2,}|[–—]", normalized)
+                ):
+                    preflight_failures.append(f"Governance invariant evidence is not concrete: {target}")
+
+    validation = subject.get("validation")
+    if isinstance(validation, dict):
+        declared_commands = validation.get("local_commands")
+        command_pairs = (
+            tuple((entry.get("id"), entry.get("command")) for entry in declared_commands)
+            if isinstance(declared_commands, list) and all(isinstance(entry, dict) for entry in declared_commands)
+            else ()
+        )
+        if command_pairs != GOVERNANCE_LOCAL_COMMANDS:
+            preflight_failures.append("Governance preflight local validation profile drifted.")
+        if validation.get("forced_pr_event_command") != GOVERNANCE_FORCED_PR_EVENT_COMMAND:
+            preflight_failures.append("Governance preflight forced pull-request-event command drifted.")
+        github_checks = validation.get("github_checks")
+        if not isinstance(github_checks, list) or tuple(github_checks) != GOVERNANCE_GITHUB_CHECKS:
+            preflight_failures.append("Governance preflight GitHub check profile drifted.")
+    return preflight_failures
+
+
+def governance_preflight_required(
+    changes: list[str],
+    *,
+    head_ref: str,
+    base_has_schema: bool,
+) -> bool:
+    governance_change = any(
+        path in GOVERNANCE_CHANGE_FILES or path.startswith(GOVERNANCE_CHANGE_PREFIXES)
+        for path in changes
+    )
+    if not governance_change:
+        return False
+    return bool(base_has_schema or GOVERNANCE_PREFLIGHT_BOOTSTRAP_BRANCH.fullmatch(head_ref))
+
+
+def validate_governance_preflight_commits(
+    document: dict[str, Any],
+    commits: list[dict[str, Any]],
+) -> list[str]:
+    commit_failures: list[str] = []
+    if not commits:
+        return ["Governance preflight branch has no branch-exclusive commits."]
+    subject = document.get("review_subject", {})
+    policy = subject.get("commit_policy", {}) if isinstance(subject, dict) else {}
+    evidence = document.get("review_evidence", {})
+    bootstrap_files = policy.get("bootstrap_files", []) if isinstance(policy, dict) else []
+    first_files = commits[0].get("files", [])
+    if set(first_files) != set(bootstrap_files) or len(first_files) != len(bootstrap_files):
+        commit_failures.append("First governance commit must contain exactly the approved bootstrap files.")
+    if "Governance-Phase: bootstrap" not in str(commits[0].get("message", "")):
+        commit_failures.append("First governance commit must declare Governance-Phase: bootstrap.")
+    reviewed_at = parse_governance_timestamp(evidence.get("reviewed_at") if isinstance(evidence, dict) else None)
+    committed_at = parse_governance_timestamp(commits[0].get("committed_at"))
+    if reviewed_at is None or committed_at is None or reviewed_at >= committed_at:
+        commit_failures.append("Approved governance design review must predate the bootstrap commit.")
+    if not isinstance(evidence, dict) or evidence.get("decision") != "APPROVED":
+        commit_failures.append("Governance bootstrap requires an APPROVED design review.")
+    if not isinstance(evidence, dict) or evidence.get("review_subject_sha256") != canonical_review_subject_digest(document):
+        commit_failures.append("Governance bootstrap review digest does not match review_subject.")
+
+    steps = policy.get("implementation_steps", []) if isinstance(policy, dict) else []
+    correction_start = next(
+        (
+            index
+            for index, commit in enumerate(commits[1:], start=1)
+            if "Governance-Correction-" in str(commit.get("message", ""))
+        ),
+        len(commits),
+    )
+    implementation_commits = commits[1:correction_start]
+    if len(implementation_commits) != len(steps):
+        commit_failures.append("Governance implementation must use exactly one commit for each approved step.")
+    for index, step in enumerate(steps):
+        if not isinstance(step, dict) or index >= len(implementation_commits):
+            continue
+        commit = implementation_commits[index]
+        footer = step.get("commit_footer")
+        if not isinstance(footer, str) or footer not in str(commit.get("message", "")):
+            commit_failures.append(f"Governance implementation step {step.get('id')} is missing its exact footer.")
+        allowed_files = set(step.get("allowed_files", []))
+        changed_files = set(commit.get("files", []))
+        if not changed_files or not changed_files.issubset(allowed_files):
+            commit_failures.append(f"Governance implementation step {step.get('id')} escaped its file scope.")
+        if any(
+            isinstance(other.get("commit_footer"), str)
+            and other["commit_footer"] in str(commit.get("message", ""))
+            for other in steps
+            if isinstance(other, dict) and other is not step
+        ):
+            commit_failures.append("Governance implementation step footers are single-use and ordered.")
+    return commit_failures
+
+
+def validate_governance_correction_events(
+    document: dict[str, Any],
+    commits: list[dict[str, Any]],
+    events: list[dict[str, Any]],
+    *,
+    issue_number: int,
+    pr_number: int,
+) -> list[str]:
+    correction_failures: list[str] = []
+    subject = document.get("review_subject", {})
+    policy = subject.get("correction_policy", {}) if isinstance(subject, dict) else {}
+    commit_policy = subject.get("commit_policy", {}) if isinstance(subject, dict) else {}
+    digest = canonical_review_subject_digest(document)
+    implementation_events = [
+        event for event in events if event.get("marker") == "GOVERNANCE-IMPLEMENTATION-COMPLETE-V1"
+    ]
+    if len(implementation_events) != 1:
+        return ["Governance implementation requires exactly one completion ledger before review."]
+    implementation = implementation_events[0]
+    expected_steps = [
+        step.get("id") for step in commit_policy.get("implementation_steps", []) if isinstance(step, dict)
+    ]
+    planned_commits = commits[1 : 1 + len(expected_steps)]
+    if (
+        implementation.get("issue") != issue_number
+        or implementation.get("pr") != pr_number
+        or implementation.get("review_subject_sha256") != digest
+        or implementation.get("completed_step_ids") != expected_steps
+        or implementation.get("step_commit_shas") != [commit.get("sha") for commit in planned_commits]
+        or implementation.get("implementation_head_sha")
+        != (planned_commits[-1].get("sha") if planned_commits else None)
+        or implementation.get("decision") != "READY_FOR_REVIEW"
+    ):
+        correction_failures.append("Governance implementation completion ledger is inconsistent with the commit plan.")
+
+    resumes = [event for event in events if event.get("marker") == policy.get("ledger_marker") and event.get("event") == "RESUME"]
+    completes = [event for event in events if event.get("marker") == policy.get("ledger_marker") and event.get("event") == "COMPLETE"]
+    rereviews = [event for event in events if event.get("marker") == "GOVERNANCE-CORRECTION-REREVIEW-V1"]
+    cycle_numbers = [event.get("cycle_number") for event in resumes]
+    maximum = policy.get("max_post_implementation_cycles", 0)
+    if any(not isinstance(number, int) or number < 1 or number > maximum for number in cycle_numbers):
+        correction_failures.append("Governance correction cycles must be numbered from one and may not exceed two.")
+    if cycle_numbers != list(range(1, len(resumes) + 1)):
+        correction_failures.append("Governance correction cycles must be unique and contiguous from one.")
+    if len(completes) != len(resumes) or len(rereviews) != len(resumes):
+        correction_failures.append("Every governance correction requires one COMPLETE ledger and one rereview.")
+
+    findings = {event.get("url"): event for event in events if event.get("marker") == "GOVERNANCE-FINDING-V1"}
+    for cycle_number, resume in enumerate(resumes, start=1):
+        if resume.get("stricter_stop_active") is True:
+            correction_failures.append("A stricter repository stop rule prohibits this correction cycle.")
+        if resume.get("issue") != issue_number or resume.get("pr") != pr_number:
+            correction_failures.append("Governance correction ledger is bound to the wrong issue or pull request.")
+        reset_footer = f"Governance-Correction-Reset: {cycle_number}"
+        correction_footer = f"Governance-Correction-Cycle: {cycle_number}"
+        reset_commits = [commit for commit in commits if reset_footer in str(commit.get("message", ""))]
+        correction_commits = [commit for commit in commits if correction_footer in str(commit.get("message", ""))]
+        if len(reset_commits) != 1 or len(correction_commits) != 1:
+            correction_failures.append("Every governance correction needs exactly one reset and one implementation commit.")
+            continue
+        reset_commit = reset_commits[0]
+        correction_commit = correction_commits[0]
+        reset_allowed = set(policy.get("cycle_reset_allowed_files", []))
+        if not set(reset_commit.get("files", [])).issubset(reset_allowed):
+            correction_failures.append("Governance correction reset commit escaped its allowed test/contract scope.")
+        finding = findings.get(resume.get("finding_url"))
+        complete = next((event for event in completes if event.get("cycle_number") == cycle_number), None)
+        rereview = next((event for event in rereviews if event.get("cycle_number") == cycle_number), None)
+        timestamps = [
+            parse_governance_timestamp((finding or {}).get("timestamp")),
+            parse_governance_timestamp(reset_commit.get("committed_at")),
+            parse_governance_timestamp(resume.get("timestamp")),
+            parse_governance_timestamp(correction_commit.get("committed_at")),
+            parse_governance_timestamp((complete or {}).get("timestamp")),
+            parse_governance_timestamp((rereview or {}).get("timestamp")),
+        ]
+        if any(timestamp is None for timestamp in timestamps):
+            correction_failures.append("Governance correction evidence violates the required event/commit order.")
+        else:
+            ordered_timestamps = cast(list[datetime], timestamps)
+            if any(left > right for left, right in zip(ordered_timestamps, ordered_timestamps[1:])):
+                correction_failures.append("Governance correction evidence violates the required event/commit order.")
+        if (
+            resume.get("contract_reset_commit") != reset_commit.get("sha")
+            or resume.get("review_subject_sha256") != digest
+            or resume.get("approval_decision") != "APPROVED"
+            or resume.get("decision") != "RESUME"
+        ):
+            correction_failures.append("Governance correction RESUME ledger lacks reset-bound digest approval.")
+        if (
+            complete is None
+            or complete.get("issue") != issue_number
+            or complete.get("pr") != pr_number
+            or complete.get("correction_commit_sha") != correction_commit.get("sha")
+            or complete.get("correction_head_sha") != correction_commit.get("sha")
+            or complete.get("review_subject_sha256") != digest
+            or complete.get("decision") != "COMPLETE"
+        ):
+            correction_failures.append("Governance correction COMPLETE ledger is inconsistent.")
+        if (
+            rereview is None
+            or rereview.get("issue") != issue_number
+            or rereview.get("pr") != pr_number
+            or rereview.get("reviewed_head_sha") != correction_commit.get("sha")
+            or rereview.get("decision") not in {"APPROVED", "NOT_APPROVED"}
+        ):
+            correction_failures.append("Governance correction rereview is missing or bound to the wrong head.")
+        if rereview is not None and rereview.get("decision") == "APPROVED" and cycle_number < len(resumes):
+            correction_failures.append("No later correction cycle is allowed after an APPROVED rereview.")
+        if cycle_number > 1:
+            prior = next((event for event in rereviews if event.get("cycle_number") == cycle_number - 1), None)
+            if prior is None or prior.get("decision") != "NOT_APPROVED" or resume.get("finding_url") != prior.get("findings_url"):
+                correction_failures.append("Later correction cycles must bind the prior NOT_APPROVED rereview finding URL.")
+    return correction_failures
+
+
+def governance_branch_commit_records(base_sha: str, head_sha: str) -> list[dict[str, Any]]:
+    commit_shas = [
+        value.strip()
+        for value in run_git(["rev-list", "--reverse", f"{base_sha}..{head_sha}"]).splitlines()
+        if value.strip()
+    ]
+    records: list[dict[str, Any]] = []
+    for sha in commit_shas:
+        records.append(
+            {
+                "sha": sha,
+                "committed_at": run_git(["show", "-s", "--format=%cI", sha]),
+                "message": run_git(["show", "-s", "--format=%B", sha]),
+                "files": [
+                    value.strip()
+                    for value in run_git(
+                        ["diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha]
+                    ).splitlines()
+                    if value.strip()
+                ],
+            }
+        )
+    return records
+
+
+def github_api_json(path: str) -> Any:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    request = Request(f"https://api.github.com/repos/{CANONICAL_GITHUB_REPO}/{path.lstrip('/')}", headers=headers)
+    try:
+        with urlopen(request, timeout=10) as response:  # nosec B310 - canonical GitHub API URL only.
+            if not 200 <= int(getattr(response, "status", 0)) < 300:
+                return None
+            return json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
+        return None
+
+
+def github_comment_from_url(url: Any) -> dict[str, Any] | None:
+    if not isinstance(url, str):
+        return None
+    match = re.fullmatch(
+        r"https://github\.com/imrohitagrawal/narratwin-ai/issues/\d+#issuecomment-(?P<comment>\d+)",
+        url,
+    )
+    if match is None:
+        return None
+    payload = github_api_json(f"issues/comments/{match.group('comment')}")
+    return payload if isinstance(payload, dict) else None
+
+
+def validate_governance_review_evidence(document: dict[str, Any]) -> list[str]:
+    review_failures: list[str] = []
+    evidence = document.get("review_evidence")
+    if not isinstance(evidence, dict):
+        return ["Governance preflight review evidence must be an object."]
+    digest = canonical_review_subject_digest(document)
+    candidate = github_comment_from_url(evidence.get("candidate_comment_url"))
+    approval = github_comment_from_url(evidence.get("approval_comment_url"))
+    if candidate is None or approval is None:
+        return ["Governance preflight review comments could not be verified through GitHub."]
+    candidate_body = candidate.get("body")
+    approval_body = approval.get("body")
+    candidate_match = (
+        re.search(r"```json\s*(\{.*\})\s*```", candidate_body, flags=re.S)
+        if isinstance(candidate_body, str)
+        else None
+    )
+    try:
+        candidate_subject = json.loads(candidate_match.group(1)) if candidate_match else None
+    except json.JSONDecodeError:
+        candidate_subject = None
+    if (
+        not isinstance(candidate_subject, dict)
+        or hashlib.sha256(
+            json.dumps(candidate_subject, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        ).hexdigest()
+        != digest
+        or candidate_subject != document.get("review_subject")
+    ):
+        review_failures.append("Governance preflight candidate comment does not contain the digest-bound review_subject.")
+    reviewer = evidence.get("reviewer")
+    if (
+        not isinstance(approval_body, str)
+        or digest not in approval_body
+        or "Decision: APPROVED" not in approval_body
+        or not isinstance(reviewer, str)
+        or reviewer not in approval_body
+        or approval.get("created_at") != evidence.get("reviewed_at")
+    ):
+        review_failures.append("Governance preflight approval comment does not match its digest, reviewer, or timestamp.")
+    return review_failures
+
+
+def parse_governance_issue_events(comments: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    event_markers = (
+        "GOVERNANCE-IMPLEMENTATION-COMPLETE-V1",
+        "GOVERNANCE-FINDING-V1",
+        "GOVERNANCE-CORRECTION-CYCLE-V1",
+        "GOVERNANCE-CORRECTION-REREVIEW-V1",
+    )
+    parsed: list[dict[str, Any]] = []
+    for comment in comments:
+        body = comment.get("body")
+        if not isinstance(body, str):
+            continue
+        marker = next(
+            (
+                candidate
+                for candidate in event_markers
+                if re.search(rf"(?m)^(?:##\s*)?{re.escape(candidate)}\s*$", body)
+            ),
+            None,
+        )
+        if marker is None:
+            continue
+        payload_match = re.search(r"```json\s*(\{.*?\})\s*```", body, flags=re.S)
+        if payload_match is None:
+            parsed.append({"marker": marker, "timestamp": comment.get("created_at"), "url": comment.get("html_url")})
+            continue
+        try:
+            payload = json.loads(payload_match.group(1))
+        except json.JSONDecodeError:
+            parsed.append({"marker": marker, "timestamp": comment.get("created_at"), "url": comment.get("html_url")})
+            continue
+        if isinstance(payload, dict):
+            payload.setdefault("marker", marker)
+            payload.setdefault("timestamp", comment.get("created_at"))
+            payload.setdefault("url", comment.get("html_url"))
+            parsed.append(payload)
+    return parsed
+
+
+def pull_request_event_context() -> tuple[dict[str, Any], dict[str, Any]]:
+    event_path = os.environ.get("GITHUB_EVENT_PATH", "").strip()
+    if not event_path:
+        return {}, {}
+    try:
+        event = json.loads(Path(event_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}, {}
+    if not isinstance(event, dict):
+        return {}, {}
+    pull_request = event.get("pull_request")
+    return event, pull_request if isinstance(pull_request, dict) else {}
+
+
+def check_governance_preflight(changes: list[str]) -> None:
+    event, pull_request = pull_request_event_context()
+    head_ref = str(
+        (pull_request.get("head") or {}).get("ref")
+        if isinstance(pull_request.get("head"), dict)
+        else ""
+    ).strip()
+    if not head_ref:
+        head_ref = os.environ.get("GITHUB_HEAD_REF", "").strip() or run_git(["branch", "--show-current"])
+    base_sha = str(
+        (pull_request.get("base") or {}).get("sha")
+        if isinstance(pull_request.get("base"), dict)
+        else ""
+    ).strip()
+    head_sha = str(
+        (pull_request.get("head") or {}).get("sha")
+        if isinstance(pull_request.get("head"), dict)
+        else ""
+    ).strip() or os.environ.get("GITHUB_HEAD_SHA", "").strip() or "HEAD"
+    resolved_base = resolve_diff_base(head_sha, base_sha)
+    base_has_schema = git_command_succeeds(["cat-file", "-e", f"{resolved_base}:{GOVERNANCE_PREFLIGHT_SCHEMA_PATH}"])
+    if not governance_preflight_required(changes, head_ref=head_ref, base_has_schema=base_has_schema):
+        return
+    branch_match = GOVERNANCE_PREFLIGHT_BRANCH_ISSUE.fullmatch(head_ref)
+    if branch_match is None:
+        failures.append("Governance work must use a phase-1-closure-process-<issue>-* branch.")
+        return
+    issue_number = int(branch_match.group("issue"))
+    preflight_path = ROOT / f"docs/governance/preflights/issue-{issue_number}.json"
+    try:
+        document = json.loads(preflight_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        failures.append(f"Governance preflight instance is missing or malformed: {exc}")
+        return
+    if not isinstance(document, dict):
+        failures.append("Governance preflight instance root must be an object.")
+        return
+    failures.extend(validate_governance_preflight_document(document, changes))
+    linked_issue = document.get("review_subject", {}).get("linked_issue", {})
+    if not isinstance(linked_issue, dict) or linked_issue.get("number") != issue_number:
+        failures.append("Governance preflight linked issue must match the process branch issue.")
+    commits = governance_branch_commit_records(resolved_base, head_sha)
+    failures.extend(validate_governance_preflight_commits(document, commits))
+    failures.extend(validate_governance_review_evidence(document))
+    if pull_request:
+        pr_number_value = pull_request.get("number", event.get("number"))
+        if not isinstance(pr_number_value, int):
+            failures.append("Governance pull-request event is missing its pull request number.")
+            return
+        comments_payload = github_api_json(f"issues/{issue_number}/comments?per_page=100")
+        if not isinstance(comments_payload, list):
+            failures.append("Governance correction/completion ledger comments could not be verified through GitHub.")
+            return
+        comments = [comment for comment in comments_payload if isinstance(comment, dict)]
+        events = parse_governance_issue_events(comments)
+        failures.extend(
+            validate_governance_correction_events(
+                document,
+                commits,
+                events,
+                issue_number=issue_number,
+                pr_number=pr_number_value,
+            )
+        )
 
 
 def is_nontrivial_pull_request(changes: list[str]) -> bool:
@@ -1906,6 +2655,7 @@ def main() -> int:
     changes = changed_files()
     check_no_direct_main_push()
     check_issue_linked_pull_request()
+    check_governance_preflight(changes)
     check_workflows_least_privilege()
     check_secrets()
     check_provider_keys_are_env_only()
