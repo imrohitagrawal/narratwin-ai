@@ -66,6 +66,10 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_169_BOOTSTRAP_ARTIFACTS = {
+    "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+    "docs/governance/preflights/issue-169.json",
+}
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -2788,6 +2792,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_138_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-169-"):
+        allowed_files = PROCESS_ONLY_ALLOWED_CHANGED_FILES | ISSUE_169_BOOTSTRAP_ARTIFACTS
     elif branch.startswith("phase-1-closure-process-"):
         allowed_files = PROCESS_ONLY_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-39-execution-strategy":

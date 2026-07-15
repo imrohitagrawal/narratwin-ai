@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-14
+- Last reviewed date: 2026-07-15
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only. No Phase 2 feature
   work, external provider enablement, production release tag, or public
@@ -24,6 +24,12 @@ Use it to answer:
   the affected provider, media, export, and replay paths remain disabled.
 - Current repo mode: Final Review has merged; Phase 1 Closure is active and
   release posture is No-Go.
+- Current Product Mode 1 governance prerequisite: issue `#169` is the sole
+  authorized module under tracker `#155`. It must establish the reviewed
+  `GovernancePreflightV1` feasibility gate before a replacement PHF-020A issue
+  may start. Issues `#167` and PRs `#166`/`#168` are stopped/superseded
+  evidence sources only; PHF-020B and all Mode 1/Mode 2 runtime work remain
+  blocked.
 - Product implementation merged to `main`: Stage 8 performance, security
   hardening, and release-readiness work merged through PR `#33` at commit
   `fb40113`.
@@ -466,6 +472,11 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
+Under Product Mode 1 tracker `#155`, complete issue `#169` and its reviewed
+governance-preflight feasibility PR first. After merge-closeout, create exactly
+one replacement PHF-020A issue; do not resume the stopped branches or begin
+PHF-020B/runtime work.
+
 1. Complete the remaining production-grade portion of Phase 1 Closure P0/P1
    issue `#39` through an issue-linked `phase-1-closure-*` branch and PR, or
    record a reviewed No-Go exception with evidence.
@@ -609,6 +620,7 @@ Required update rules:
 | 2026-07-14 | PR `#153` final guardrail/operations review added affirmative dependency grammar, proposition-bound negation handling, and explicit tested `#130`/CH-12 severity/ack/escalation/runbook routes as `#148` acceptance and a `#149` Go prerequisite. No environment or drill evidence was created. |
 | 2026-07-14 | PR `#153` merged the issue `#141` documentation baseline at `2fb5569`; issue `#141` stays open for the recorded cost/account/region, ownership, Security exception and live-environment approvals, while issue `#139`, issue `#126`, `DUR-RESTORE-001`, and issue `#39` remain open. The merge created no infrastructure, backup, restore, RTO/RPO or launch evidence. |
 | 2026-07-15 | Issue `#164`, under Mode 1 tracker `#155`, established the skill-selection and evidence-governance contract: claim/boundary-based routing, positive and negative usage outcomes, raw evidence measures, and an initial `ARMED` verification-skill evaluation trigger at 0 eligible PRs and 0 qualifying escapes. This records no Superpowers installation or activation and changes no Mode 1 runtime, launch, or production posture. |
+| 2026-07-15 | Issue `#169` became the sole Product Mode 1 governance prerequisite under tracker `#155`. Its digest-approved `GovernancePreflightV1` bootstrap must precede global guardrail implementation; stopped issues/PRs `#167`, `#166`, and `#168` remain evidence-only, and PHF-020B plus runtime work remain blocked. |
 | 2026-07-10 | PR `#76` opened for issue `#66` Context 2 planning for issue `#39` on branch `phase-1-closure-39-context2-idempotency-lease-outbox`; ADR `0009` defines advisory-only idempotency, lease, and outbox contracts while `#39` remains open and all runtime implementation remains deferred. |
 | 2026-07-10 | PR `#77` merged migration/rollback context planning for issue `#67`; issue `#67` is closed and runtime migration tooling remains deferred pending later implementation contexts. |
 | 2026-07-10 | PR `#78` opened for issue `#68` on branch `phase-1-closure-39-context4-backup-restore-drill`; advisory-only ADR and evidence-planning updates for `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` added no runtime implementation. |

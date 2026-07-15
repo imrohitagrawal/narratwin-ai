@@ -178,6 +178,39 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
     assert failures == []
 
 
+def test_issue169_process_branch_allows_only_preflight_scope(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-169-gpf-v1-feasibility"
+    bootstrap_files = [
+        "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+        "docs/governance/preflights/issue-169.json",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    ]
+
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=bootstrap_files,
+    ) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["backend/app/main.py"],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-process-169-gpf-v1-feasibility "
+        "may not change backend/app/main.py."
+    ]
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["docs/PHASE_PLAN.md"],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-process-169-gpf-v1-feasibility "
+        "may not change docs/PHASE_PLAN.md."
+    ]
+
+
 def test_skill_governance_process_branch_allows_only_governance_files(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-164-phf-019-skill-evidence-governance"
     failures = run_changed_files_check(

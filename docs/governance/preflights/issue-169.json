@@ -1,0 +1,494 @@
+{
+  "review_subject": {
+    "schema_version": "GovernancePreflightV1",
+    "preflight_id": "GPF-169-001",
+    "linked_issue": {
+      "number": 169,
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169"
+    },
+    "objective": "Prevent unsatisfiable governance contracts from reaching implementation before resuming PHF-020A.",
+    "change_class": "process-guardrail",
+    "authority_domains": [
+      {
+        "domain": "preflight-schema",
+        "owner": "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json"
+      },
+      {
+        "domain": "preflight-validation",
+        "owner": "scripts/guardrails_check.py"
+      },
+      {
+        "domain": "phase-scope",
+        "owner": "scripts/quality/check_phase1_closure_docs.py"
+      },
+      {
+        "domain": "governance-state",
+        "owner": "docs/STATUS.md"
+      }
+    ],
+    "scope": {
+      "status_decision": "update-minimally",
+      "required_files": [
+        "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+        "docs/governance/preflights/issue-169.json",
+        "docs/STATUS.md",
+        "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/QUALITY_GATES.md",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        "scripts/guardrails_check.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_guardrails_check.py",
+        "tests/unit/test_phase1_closure_docs.py"
+      ],
+      "allowed_files": [
+        "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+        "docs/governance/preflights/issue-169.json",
+        "docs/STATUS.md",
+        "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/QUALITY_GATES.md",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        "scripts/guardrails_check.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_guardrails_check.py",
+        "tests/unit/test_phase1_closure_docs.py"
+      ],
+      "allowed_prefixes": [],
+      "forbidden_files": [
+        ".github/pull_request_template.md",
+        ".stage/current",
+        "Makefile",
+        "docs/PHASE_PLAN.md",
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+        "pyproject.toml",
+        "uv.lock"
+      ],
+      "forbidden_prefixes": [
+        ".github/workflows/",
+        "backend/",
+        "docker/",
+        "frontend/",
+        "infra/",
+        "tests/api/"
+      ]
+    },
+    "invariants": [
+      {
+        "id": "GPF-SCHEMA-001",
+        "claim": "The preflight instance is a closed GovernancePreflightV1 object with exact field types and enums.",
+        "disproof_mutations": [
+          "remove required field",
+          "add unknown field",
+          "use blank value",
+          "use wrong type",
+          "use unknown enum"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_guardrails_check.py::test_governance_preflight_rejects_closed_schema_mutations"
+        ]
+      },
+      {
+        "id": "GPF-SCOPE-001",
+        "claim": "Every required and changed path is allowed and no forbidden rule matches it.",
+        "disproof_mutations": [
+          "require file outside allowlist",
+          "change file outside allowlist",
+          "match forbidden exact file",
+          "match forbidden prefix",
+          "use traversal backslash or glob path"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_guardrails_check.py::test_governance_preflight_rejects_scope_feasibility_mutations"
+        ]
+      },
+      {
+        "id": "GPF-STATUS-001",
+        "claim": "Governance scope uses update-minimally and includes docs/STATUS.md as both required and allowed.",
+        "disproof_mutations": [
+          "omit STATUS from required",
+          "omit STATUS from allowed",
+          "forbid STATUS",
+          "change STATUS decision",
+          "use STATUS-impacting governance prefix without STATUS"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_guardrails_check.py::test_governance_preflight_rejects_issue167_status_contradiction"
+        ]
+      },
+      {
+        "id": "GPF-AUTH-001",
+        "claim": "Authority domains are unique and nonblank while one nonblank owner may own multiple domains.",
+        "disproof_mutations": [
+          "duplicate domain",
+          "blank domain",
+          "blank owner"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_guardrails_check.py::test_governance_preflight_validates_authority_domain_uniqueness"
+        ]
+      },
+      {
+        "id": "GPF-EVIDENCE-001",
+        "claim": "Every unique invariant has explicit disproof mutations and concrete evidence targets without shorthand or placeholders.",
+        "disproof_mutations": [
+          "duplicate invariant ID",
+          "blank claim",
+          "empty mutation list",
+          "range shorthand",
+          "placeholder evidence",
+          "unmapped invariant"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_guardrails_check.py::test_governance_preflight_rejects_malformed_invariant_evidence"
+        ]
+      },
+      {
+        "id": "GPF-PR-EVENT-001",
+        "claim": "The instance exactly declares the repository validation profile including forced pull-request-event validation and exact GitHub checks.",
+        "disproof_mutations": [
+          "omit forced command",
+          "alter forced command",
+          "omit local command",
+          "add unknown command",
+          "omit GitHub check",
+          "rename GitHub check"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_guardrails_check.py::test_governance_preflight_rejects_validation_profile_drift"
+        ]
+      },
+      {
+        "id": "GPF-ORDER-001",
+        "claim": "The digest-approved preflight bootstrap commit is the first branch-exclusive commit and precedes global guardrail implementation.",
+        "disproof_mutations": [
+          "implementation commit first",
+          "bootstrap missing exact file",
+          "bootstrap changes extra file",
+          "approval digest mismatch",
+          "review comment after bootstrap commit",
+          "unrelated commit ancestry"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_guardrails_check.py::test_governance_preflight_rejects_wrong_commit_order"
+        ]
+      },
+      {
+        "id": "GPF-CORRECTION-001",
+        "claim": "Canonical issue correction cycles are contiguous and capped at two while stricter stop rules may stop earlier.",
+        "disproof_mutations": [
+          "skip cycle number",
+          "duplicate cycle number",
+          "bind wrong issue or PR",
+          "omit contract reset",
+          "record third cycle",
+          "claim two-cycle entitlement over stricter stop rule"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_guardrails_check.py::test_governance_preflight_rejects_invalid_or_third_correction_cycle"
+        ]
+      },
+      {
+        "id": "GPF-COMPAT-001",
+        "claim": "Non-governance pull requests retain existing guardrail behavior and legacy governance PRs are grandfathered until rebased onto a schema-containing merge base.",
+        "disproof_mutations": [
+          "require preflight for ordinary product-only diff",
+          "require preflight for legacy merge base",
+          "skip preflight after schema-containing rebase"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_guardrails_check.py::test_governance_preflight_cutover_is_prospective"
+        ]
+      },
+      {
+        "id": "GPF-SERIAL-001",
+        "claim": "This prerequisite changes no product-mode policy, STATUS authority normalization, runtime, media, provider, or unrelated PR scope.",
+        "disproof_mutations": [
+          "change docs/PHASE_PLAN.md",
+          "change runtime prefix",
+          "change workflow",
+          "change dependency file",
+          "modify PR 162 or PR 163 artifacts"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_phase1_closure_docs.py::test_issue169_process_branch_allows_only_preflight_scope"
+        ]
+      }
+    ],
+    "validation": {
+      "profile": "repository-required-v1",
+      "local_commands": [
+        {
+          "id": "guardrail-unit",
+          "command": "uv run pytest tests/unit/test_guardrails_check.py"
+        },
+        {
+          "id": "phase1-unit",
+          "command": "uv run pytest tests/unit/test_phase1_closure_docs.py"
+        },
+        {
+          "id": "repository-guardrails",
+          "command": "python3 scripts/guardrails_check.py"
+        },
+        {
+          "id": "quality",
+          "command": "make quality"
+        },
+        {
+          "id": "ruff",
+          "command": "uv run ruff check scripts tests"
+        },
+        {
+          "id": "mypy",
+          "command": "uv run mypy scripts tests"
+        },
+        {
+          "id": "ci",
+          "command": "make ci"
+        },
+        {
+          "id": "security",
+          "command": "make security"
+        },
+        {
+          "id": "dependency-audit",
+          "command": "make dependency-audit"
+        },
+        {
+          "id": "container-scan",
+          "command": "make container-scan"
+        },
+        {
+          "id": "secrets-scan",
+          "command": "make secrets-scan"
+        },
+        {
+          "id": "eval",
+          "command": "make eval"
+        }
+      ],
+      "forced_pr_event_command": "GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH={event_path} NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py",
+      "github_checks": [
+        "policy-gates",
+        "quality / secrets",
+        "quality / markdown",
+        "lint / typecheck / unit / api",
+        "frontend tests / playwright smoke",
+        "ci / docker build",
+        "secret scan / bandit / audit / semgrep",
+        "security / docker build",
+        "eval smoke",
+        "stage8 / performance lighthouse"
+      ]
+    },
+    "commit_policy": {
+      "range": "merge-base(base,head)..head",
+      "bootstrap_branch_pattern": "phase-1-closure-process-169-*",
+      "bootstrap_files": [
+        "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+        "docs/governance/preflights/issue-169.json",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py"
+      ],
+      "implementation_begins_after_bootstrap": true,
+      "cutover": "bootstrap-or-schema-in-merge-base",
+      "grandfathered_pull_requests_until_rebase": [
+        162,
+        166,
+        168
+      ],
+      "bootstrap_constraints": {
+        "phase_gate_behavior": "admit-only-two-exact-issue169-artifact-paths",
+        "admitted_artifact_paths": [
+          "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+          "docs/governance/preflights/issue-169.json"
+        ],
+        "preserve_runtime_product_rejection": true,
+        "forbid_global_preflight_validation": true
+      },
+      "implementation_steps": [
+        {
+          "id": "red-tests",
+          "commit_footer": "Governance-Implementation-Step: red-tests",
+          "allowed_files": [
+            "tests/unit/test_guardrails_check.py",
+            "tests/unit/test_phase1_closure_docs.py"
+          ]
+        },
+        {
+          "id": "guardrail-green",
+          "commit_footer": "Governance-Implementation-Step: guardrail-green",
+          "allowed_files": [
+            "scripts/guardrails_check.py",
+            "scripts/quality/check_phase1_closure_docs.py"
+          ]
+        },
+        {
+          "id": "governance-docs",
+          "commit_footer": "Governance-Implementation-Step: governance-docs",
+          "allowed_files": [
+            "docs/ENGINEERING_PROCESS_RCA.md",
+            "docs/QUALITY_GATES.md",
+            "docs/REPOSITORY_GUARDRAILS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+            "docs/STATUS.md"
+          ]
+        }
+      ],
+      "implementation_steps_ordered": true,
+      "implementation_steps_single_use": true,
+      "implementation_steps_exhaustive_before_review": true,
+      "commits_after_bootstrap_before_completion": "exactly-one-commit-for-each-ordered-implementation-step",
+      "implementation_step_footer_reuse_after_completion": "forbidden",
+      "implementation_complete_ledger": {
+        "carrier": "linked-issue-comment",
+        "marker": "GOVERNANCE-IMPLEMENTATION-COMPLETE-V1",
+        "required_fields": [
+          "issue",
+          "pr",
+          "review_subject_sha256",
+          "completed_step_ids",
+          "step_commit_shas",
+          "implementation_head_sha",
+          "decision"
+        ],
+        "decision": "READY_FOR_REVIEW",
+        "timing": "after-last-planned-step-and-before-review-or-any-additional-commit"
+      }
+    },
+    "correction_policy": {
+      "design_review_counts_as_cycle": false,
+      "max_post_implementation_cycles": 2,
+      "ledger_marker": "GOVERNANCE-CORRECTION-CYCLE-V1",
+      "cycle_reset_commit_footer": "Governance-Correction-Reset: {cycle_number}",
+      "cycle_implementation_commit_footer": "Governance-Correction-Cycle: {cycle_number}",
+      "third_cycle_action": "STOP_DECOMPOSE",
+      "stricter_existing_stop_rules_take_precedence": true,
+      "cycle_numbers_contiguous_from_one": true,
+      "one_reset_commit_per_cycle": true,
+      "one_implementation_commit_per_cycle": true,
+      "footer_use_single_use_per_cycle": true,
+      "planned_step_footer_cannot_classify_correction": true,
+      "finding_url_must_postdate_implementation_complete": true,
+      "resume_event": {
+        "carrier": "linked-issue-comment",
+        "required_fields": [
+          "issue",
+          "pr",
+          "cycle_number",
+          "finding_class",
+          "finding_url",
+          "contract_reset_commit",
+          "review_prompt_reset_url",
+          "review_subject_sha256",
+          "approval_comment_url",
+          "approval_reviewer",
+          "approval_reviewed_at",
+          "approval_decision",
+          "decision"
+        ],
+        "decision": "RESUME",
+        "must_precede_cycle_implementation_commit": true,
+        "approval_comment_url_required": true,
+        "approval_reviewer_required": true,
+        "approval_reviewed_at_required": true,
+        "approval_decision": "APPROVED",
+        "approval_digest_must_equal_review_subject_sha256": true
+      },
+      "complete_event": {
+        "carrier": "linked-issue-comment",
+        "required_fields": [
+          "issue",
+          "pr",
+          "cycle_number",
+          "correction_commit_sha",
+          "correction_head_sha",
+          "review_subject_sha256",
+          "decision"
+        ],
+        "decision": "COMPLETE",
+        "must_follow_cycle_implementation_commit": true
+      },
+      "required_order": "finding-comment-before-reset-commit-before-resume-ledger-and-digest-reapproval-before-one-correction-commit-before-complete-ledger-before-rereview",
+      "commits_after_implementation_complete": "only-one-reset-and-one-correction-commit-for-each-ledgered-cycle",
+      "unledgered_or_extra_post_completion_commit_action": "FAIL",
+      "cycle_reset_allowed_files": [
+        "docs/governance/preflights/issue-169.json",
+        "tests/unit/test_guardrails_check.py",
+        "tests/unit/test_phase1_closure_docs.py"
+      ],
+      "cycle_reset_forbidden_content": "global-guardrail-or-phase-gate-implementation",
+      "rereview_event": {
+        "carrier": "linked-issue-comment",
+        "marker": "GOVERNANCE-CORRECTION-REREVIEW-V1",
+        "required_fields": [
+          "issue",
+          "pr",
+          "cycle_number",
+          "reviewed_head_sha",
+          "reviewer",
+          "reviewed_at",
+          "decision",
+          "findings_url"
+        ],
+        "decisions": [
+          "APPROVED",
+          "NOT_APPROVED"
+        ],
+        "must_follow_complete_event": true,
+        "reviewed_head_must_equal_correction_head_sha": true,
+        "approved_ends_corrections": true
+      },
+      "cycle_transition": {
+        "cycle_one_finding_must_postdate_implementation_complete": true,
+        "later_cycle_finding_must_equal_previous_not_approved_rereview_url": true,
+        "later_cycle_finding_must_postdate_previous_complete": true,
+        "later_cycle_forbidden_after_approved_rereview": true,
+        "final_ready_requires_latest_rereview_approved": true
+      }
+    },
+    "non_goals": [
+      "ProductModePolicyV1",
+      "StatusStateV1",
+      "Mode 1 or Mode 2 runtime work",
+      "audio video STT provider launch identity cloning or production readiness",
+      "PR 162 or PR 163 modification",
+      "PR 166 or PR 168 patching",
+      "Superpowers installation",
+      "external tracker key invention"
+    ],
+    "path_policy": {
+      "format": "repository-relative-posix",
+      "reject_leading_slash": true,
+      "reject_dot_segments": true,
+      "reject_parent_segments": true,
+      "reject_empty_segments": true,
+      "reject_backslashes": true,
+      "reject_globs": true,
+      "prefixes_require_terminal_slash": true,
+      "forbidden_precedence": true
+    },
+    "sequencing": {
+      "canonical_tracker_issue": 155,
+      "handoff_comment_url": "https://github.com/imrohitagrawal/narratwin-ai/issues/155#issuecomment-4981417608",
+      "sole_current_prerequisite_issue": 169,
+      "after_issue169_merge_closeout": "create-exactly-one-replacement-PHF-020A-issue",
+      "phf020b_state": "blocked-until-replacement-PHF-020A-merge-closeout",
+      "parallel_governance_or_runtime_lanes": "forbidden"
+    }
+  },
+  "review_evidence": {
+    "review_subject_sha256": "c0d21c822ec2fde70099276568b60aa40cbea91342954fef2468502b4283d35d",
+    "candidate_comment_url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169#issuecomment-4981644691",
+    "approval_comment_url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169#issuecomment-4981674952",
+    "reviewer": "fresh-context independent agent gpf_candidate_v6_review",
+    "reviewed_at": "2026-07-15T14:23:42Z",
+    "decision": "APPROVED"
+  },
+  "correction_history": []
+}
