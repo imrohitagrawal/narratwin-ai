@@ -68,6 +68,18 @@ def run_process_docs_check(
     return failures
 
 
+def run_product_mode_policy_check(
+    monkeypatch: Any,
+    *,
+    read_overrides: dict[str, str] | None = None,
+) -> list[str]:
+    if read_overrides:
+        monkeypatch.setattr(phase1, "read", read_with_overrides(phase1, read_overrides))
+    failures: list[str] = []
+    phase1.check_product_mode_policy(failures)
+    return failures
+
+
 def run_issue39_closure_plan_check(monkeypatch: Any, *, plan_text: str) -> list[str]:
     monkeypatch.setattr(
         phase1,
@@ -176,6 +188,504 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
     )
 
     assert failures == []
+
+
+def test_issue167_branch_has_exact_structured_policy_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-167-phf-020a-structured-policy-validation"
+    allowed = [
+        "AGENTS.md",
+        "docs/PHASE_PLAN.md",
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    ]
+
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[*allowed, "docs/STATUS.md"],
+    ) == [
+        "Phase 1 Closure branch "
+        "phase-1-closure-process-167-phf-020a-structured-policy-validation "
+        "may not change docs/STATUS.md."
+    ]
+
+
+def test_product_mode_policy_accepts_current_structured_contract(monkeypatch: Any) -> None:
+    assert run_product_mode_policy_check(monkeypatch) == []
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement", "expected_failure"),
+    [
+        (
+            "| Authority ID | Domain | Authoritative artifact | Authority class |",
+            "| Authority | Domain | Authoritative artifact | Authority class |",
+            "authority registry",
+        ),
+        (
+            "| `AUTH-POLICY-GATES` | cross-mode ordering | `docs/PHASE_PLAN.md#cross-mode-gate-graph` | policy |\n",
+            "",
+            "authority registry",
+        ),
+        (
+            "| `AUTH-CURRENT-STATE` | repository-tracked current state | `docs/STATUS.md#current-baseline` | STATUS state, not policy or live GitHub authority |",
+            "| `AUTH-CURRENT-STATE` | Repository-tracked current state | `docs/PHASE_PLAN.md#cross-mode-gate-graph` | Policy |",
+            "authority registry",
+        ),
+        (
+            "| `AUTH-POLICY-TAXONOMY` | delivery-phase/closure/product-mode taxonomy | `docs/PHASE_PLAN.md#product-mode-taxonomy` | policy |",
+            "| `AUTH-POLICY-TAXONOMY` | Delivery-phase/closure/product-mode taxonomy | `docs/PHASE_PLAN.md#product-mode-taxonomy` | Policy |",
+            "authority registry",
+        ),
+        (
+            "| `AUTH-ISSUE8-EVIDENCE` | original #8 acceptance map | `docs/PHASE_PLAN.md#issue-8-acceptance-evidence` | historical evidence, not current state |",
+            "| `AUTH-ISSUE8-EVIDENCE` | Original #8 acceptance map | `docs/PHASE_PLAN.md#issue-8-acceptance-evidence` | Historical evidence, not current state |",
+            "authority registry",
+        ),
+        (
+            "| `AUTH-CURRENT-STATE` | repository-tracked current state | `docs/STATUS.md#current-baseline` | STATUS state, not policy or live GitHub authority |",
+            "| `AUTH-CURRENT-STATE` | Repository-tracked current state | `docs/STATUS.md#current-baseline` | STATUS State, not policy or live GitHub authority |",
+            "authority registry",
+        ),
+        (
+            "| `AUTH-POLICY-GATES` | cross-mode ordering | `docs/PHASE_PLAN.md#cross-mode-gate-graph` | policy |",
+            "| `AUTH-POLICY-GATES` | cross-mode ordering | `docs/PHASE_PLAN.md#cross-mode-gate-graph` | Policy |",
+            "authority registry",
+        ),
+        (
+            "| Policy ID | Module | Canonical owner | Requires completed gate | Additional prerequisite | Blocks Mode 2 reset |",
+            "| Policy ID | Module | Canonical owner | Earliest gate | Additional prerequisite | Blocks Mode 2 reset |",
+            "optional-media relations",
+        ),
+        (
+            "| `DP-2` | Delivery Phase 2 | `delivery-phase` | `#16` |",
+            "| `PM-2` | Product Mode 2 | `product-mode` | `#20` |",
+            "product-mode taxonomy",
+        ),
+        (
+            "| `P1C` | Phase 1 Closure | `closure-program` | `docs/reviews/PHASE_1_CLOSURE_REPORT.md` |",
+            "| `P1C` | Phase 1 Closure | `product-mode` | `#155` |",
+            "product-mode taxonomy",
+        ),
+        (
+            "| `PM-GATE-20` | Mode 2 contract reset | `#20` | `PM-GATE-10` | `PM-GATE-30` | `no-runtime` |",
+            "| `PM-GATE-20` | Mode 2 contract reset | `#20` | `PM-GATE-00` | `PM-GATE-30` | `no-runtime` |",
+            "cross-mode gate graph",
+        ),
+        (
+            "| `PM-GATE-30` | Mode 2 local mock demo | `#20` children | `PM-GATE-20` | `none` | `local-mock-only` |",
+            "| `PM-GATE-30` | Mode 2 local mock demo | `#20` children | `PM-GATE-30` | `none` | `local-mock-only` |",
+            "cross-mode gate graph",
+        ),
+        (
+            "| `PM-MEDIA-18` | Mock/local audio binary | `#18` | `PM-GATE-10` | `owner-approval` | `no` |",
+            "| `PM-MEDIA-18` | Mock/local audio binary | `#18` | `PM-GATE-10` | `owner-approval` | `yes` |",
+            "optional-media relations",
+        ),
+        (
+            "| `PM-MEDIA-19` | Mock/local video assembly | `#19` | `PM-GATE-10` | `PM-MEDIA-18-contract;owner-approval` | `no` |",
+            "| `PM-MEDIA-19` | Mock/local video assembly | `#19` | `PM-GATE-10` | `none` | `no` |",
+            "optional-media relations",
+        ),
+        (
+            "| `DUP-TRANSFER` | `before-close` | Transfer every unique acceptance criterion to the canonical tracker. | No unique requirement remains only on the duplicate. |",
+            "| `DUP-TRANSFER` | `before-close` | Link the duplicate. | The link exists. |",
+            "duplicate-reconciliation obligations",
+        ),
+        (
+            "| `ISSUE8-AC-05` | Skill execution plan requires PM/spec validation of product modes and project-avatar-pack before coding. | `docs/SKILL_EXECUTION_PLAN.md` | Preserved by `PM-MODE-001` |",
+            "| `ISSUE8-AC-05` | Skill execution plan requires PM/spec validation of product modes and project-avatar-pack before coding. | `docs/SKILL_EXECUTION_PLAN.md` | Pending |",
+            "issue #8 acceptance evidence",
+        ),
+    ],
+)
+def test_product_mode_policy_rejects_structured_mutations(
+    monkeypatch: Any,
+    search: str,
+    replacement: str,
+    expected_failure: str,
+) -> None:
+    phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    assert search in phase_plan
+    mutated = replace_text(phase_plan, search, replacement)
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/PHASE_PLAN.md": mutated},
+    )
+
+    assert any(expected_failure in failure.lower() for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement", "expected_failure"),
+    [
+        (
+            "| `DP-1` | Delivery Phase 1 | `delivery-phase` | `#1` |",
+            "| `DP-1` | Delivery Phase 1 | `delivery-phase` | `#1` |\n"
+            "| `DP-1` | Delivery Phase 1 duplicate | `delivery-phase` | `#1` |",
+            "product-mode taxonomy",
+        ),
+        (
+            "| `DP-2` | Delivery Phase 2 | `delivery-phase` | `#16` |",
+            "| `DP-2` | Delivery Phase 2 | `delivery-phase` | `#16` |\n"
+            "| `DP-3` | Delivery Phase 3 | `delivery-phase` | `#2` |",
+            "product-mode taxonomy",
+        ),
+        (
+            "| `DP-2` | Delivery Phase 2 | `delivery-phase` | `#16` |",
+            "| `DP-2` | Delivery Phase 2 | `delivery-phase` |  |",
+            "product-mode taxonomy",
+        ),
+        (
+            "| `PM-GATE-00` | Product-mode demarcation | `#8` | `none` | `PM-GATE-10` | `governance-only` |\n"
+            "| `PM-GATE-10` | Mode 1 artifact-only Checkpoint B | `#155` | `PM-GATE-00` | `PM-GATE-20` | `mode-1-approved-scope` |",
+            "| `PM-GATE-10` | Mode 1 artifact-only Checkpoint B | `#155` | `PM-GATE-00` | `PM-GATE-20` | `mode-1-approved-scope` |\n"
+            "| `PM-GATE-00` | Product-mode demarcation | `#8` | `none` | `PM-GATE-10` | `governance-only` |",
+            "cross-mode gate graph",
+        ),
+        (
+            "| `PM-GATE-20` | Mode 2 contract reset | `#20` | `PM-GATE-10` | `PM-GATE-30` | `no-runtime` |",
+            "| `PM-GATE-20` | Mode 2 contract reset | `#20` | `PM-GATE-99` | `PM-GATE-30` | `no-runtime` |",
+            "cross-mode gate graph",
+        ),
+        (
+            "| `PM-GATE-00` | Product-mode demarcation | `#8` | `none` | `PM-GATE-10` | `governance-only` |",
+            "| `PM-GATE-00` | Product-mode demarcation | `#8` | `none` | `PM-GATE-20` | `governance-only` |",
+            "cross-mode gate graph",
+        ),
+        (
+            "| `DUP-SEARCH` | `before-new-tracker` | Search existing trackers by objective, acceptance criteria, affected boundary, and parent. | Search evidence is recorded before creation. |",
+            "| `DUP-SEARCH` | `before-new-tracker` | Search by title only. | Search evidence is recorded before creation. |",
+            "duplicate-reconciliation obligations",
+        ),
+        (
+            "| `DUP-LINK` | `before-close` | Add reciprocal links between the canonical tracker and each true duplicate. | Both directions are recorded before closure. |",
+            "| `DUP-LINK` | `before-close` | Add one link. | Both directions are recorded before closure. |",
+            "duplicate-reconciliation obligations",
+        ),
+        (
+            "| `DUP-CANON` | `before-close` | Identify the canonical owner for the shared objective. | The owner is recorded in every affected tracker. |",
+            "| `DUP-CANON` | `before-close` | Assume the newest issue is canonical. | The owner is recorded in every affected tracker. |",
+            "duplicate-reconciliation obligations",
+        ),
+        (
+            "| `DUP-EXTERNAL` | `when-external-key-supplied` | Record only an evidenced external tracker key in both systems. | The mapping remains `none` when no real key is supplied. |",
+            "| `DUP-EXTERNAL` | `when-external-key-supplied` | Invent a Jira key. | The mapping remains `none` when no real key is supplied. |",
+            "duplicate-reconciliation obligations",
+        ),
+        (
+            "| `ISSUE8-AC-03` | Roadmap keeps Slice 1 focused while preserving later video and interactive avatar phases. | `docs/ROADMAP.md` | Existing evidence retained |",
+            "| `ISSUE8-AC-03` | Roadmap preserves later video and interactive avatar phases. | `docs/ROADMAP.md` | Existing evidence retained |",
+            "issue #8 acceptance evidence",
+        ),
+    ],
+)
+def test_product_mode_policy_rejects_explicit_contract_shape_mutations(
+    monkeypatch: Any,
+    search: str,
+    replacement: str,
+    expected_failure: str,
+) -> None:
+    phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    assert search in phase_plan
+    mutated = phase_plan.replace(search, replacement, 1)
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/PHASE_PLAN.md": mutated},
+    )
+
+    assert any(expected_failure in failure.lower() for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("row", "expected_failure"),
+    [
+        (
+            "| `AUTH-POLICY-TAXONOMY` | delivery-phase/closure/product-mode taxonomy | `docs/PHASE_PLAN.md#product-mode-taxonomy` | policy |",
+            "authority registry",
+        ),
+        ("| `DP-1` | Delivery Phase 1 | `delivery-phase` | `#1` |", "product-mode taxonomy"),
+        ("| `DP-2` | Delivery Phase 2 | `delivery-phase` | `#16` |", "product-mode taxonomy"),
+        (
+            "| `P1C` | Phase 1 Closure | `closure-program` | `docs/reviews/PHASE_1_CLOSURE_REPORT.md` |",
+            "product-mode taxonomy",
+        ),
+        ("| `PM-1` | Product Mode 1 | `product-mode` | `#155` |", "product-mode taxonomy"),
+        ("| `PM-2` | Product Mode 2 | `product-mode` | `#20` |", "product-mode taxonomy"),
+        (
+            "| `PM-GATE-00` | Product-mode demarcation | `#8` | `none` | `PM-GATE-10` | `governance-only` |",
+            "cross-mode gate graph",
+        ),
+        (
+            "| `PM-GATE-10` | Mode 1 artifact-only Checkpoint B | `#155` | `PM-GATE-00` | `PM-GATE-20` | `mode-1-approved-scope` |",
+            "cross-mode gate graph",
+        ),
+        (
+            "| `PM-GATE-20` | Mode 2 contract reset | `#20` | `PM-GATE-10` | `PM-GATE-30` | `no-runtime` |",
+            "cross-mode gate graph",
+        ),
+        (
+            "| `PM-GATE-30` | Mode 2 local mock demo | `#20` children | `PM-GATE-20` | `none` | `local-mock-only` |",
+            "cross-mode gate graph",
+        ),
+        (
+            "| `PM-MEDIA-18` | Mock/local audio binary | `#18` | `PM-GATE-10` | `owner-approval` | `no` |",
+            "optional-media relations",
+        ),
+        (
+            "| `PM-MEDIA-19` | Mock/local video assembly | `#19` | `PM-GATE-10` | `PM-MEDIA-18-contract;owner-approval` | `no` |",
+            "optional-media relations",
+        ),
+        (
+            "| `DUP-SEARCH` | `before-new-tracker` | Search existing trackers by objective, acceptance criteria, affected boundary, and parent. | Search evidence is recorded before creation. |",
+            "duplicate-reconciliation obligations",
+        ),
+        (
+            "| `DUP-LINK` | `before-close` | Add reciprocal links between the canonical tracker and each true duplicate. | Both directions are recorded before closure. |",
+            "duplicate-reconciliation obligations",
+        ),
+        (
+            "| `DUP-CANON` | `before-close` | Identify the canonical owner for the shared objective. | The owner is recorded in every affected tracker. |",
+            "duplicate-reconciliation obligations",
+        ),
+        (
+            "| `DUP-TRANSFER` | `before-close` | Transfer every unique acceptance criterion to the canonical tracker. | No unique requirement remains only on the duplicate. |",
+            "duplicate-reconciliation obligations",
+        ),
+        (
+            "| `DUP-EXTERNAL` | `when-external-key-supplied` | Record only an evidenced external tracker key in both systems. | The mapping remains `none` when no real key is supplied. |",
+            "duplicate-reconciliation obligations",
+        ),
+        (
+            "| `ISSUE8-AC-01` | PRD explicitly names both product modes. | `docs/PRD.md` | Existing evidence retained |",
+            "issue #8 acceptance evidence",
+        ),
+        (
+            "| `ISSUE8-AC-02` | Project-avatar-pack contract is documented. | `docs/PROJECT_AVATAR_PACK.md` | Existing evidence retained |",
+            "issue #8 acceptance evidence",
+        ),
+        (
+            "| `ISSUE8-AC-03` | Roadmap keeps Slice 1 focused while preserving later video and interactive avatar phases. | `docs/ROADMAP.md` | Existing evidence retained |",
+            "issue #8 acceptance evidence",
+        ),
+        (
+            "| `ISSUE8-AC-04` | AI build brief instructs Codex to preserve the full product vision. | `docs/AI_BUILD_BRIEF.md` | Existing evidence retained |",
+            "issue #8 acceptance evidence",
+        ),
+        (
+            "| `ISSUE8-AC-05` | Skill execution plan requires PM/spec validation of product modes and project-avatar-pack before coding. | `docs/SKILL_EXECUTION_PLAN.md` | Preserved by `PM-MODE-001` |",
+            "issue #8 acceptance evidence",
+        ),
+        (
+            "| `ISSUE8-AC-06` | No application code is changed. | Exact PHF-020A and PHF-020B diffs and process allowlists | Verify before each merge |",
+            "issue #8 acceptance evidence",
+        ),
+    ],
+)
+def test_product_mode_policy_rejects_each_missing_authoritative_row(
+    monkeypatch: Any,
+    row: str,
+    expected_failure: str,
+) -> None:
+    phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    assert f"{row}\n" in phase_plan
+    mutated = phase_plan.replace(f"{row}\n", "", 1)
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/PHASE_PLAN.md": mutated},
+    )
+
+    assert any(expected_failure in failure.lower() for failure in failures)
+
+
+def test_product_mode_policy_rejects_missing_skill_activation_rule(monkeypatch: Any) -> None:
+    skill_plan = phase1.read("docs/SKILL_EXECUTION_PLAN.md")
+    mutated = skill_plan.replace(
+        "| `PM-MODE-001` | Before product-mode or project-avatar-pack work starts | PM/spec skills must validate Product Mode 1, Product Mode 2, and the project-avatar-pack contract before coding, including the approved stage, canonical tracker, grounding boundary, and local/mock limitations recorded in `docs/PHASE_PLAN.md` and `docs/PROJECT_AVATAR_PACK.md`. |\n",
+        "",
+        1,
+    )
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/SKILL_EXECUTION_PLAN.md": mutated},
+    )
+
+    assert any("pm-mode-001" in failure.lower() for failure in failures)
+
+
+def test_product_mode_policy_rejects_missing_required_reading_entry(monkeypatch: Any) -> None:
+    agents = phase1.read("AGENTS.md")
+    mutated = agents.replace("- `docs/PHASE_PLAN.md`\n", "", 1)
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"AGENTS.md": mutated},
+    )
+
+    assert any("required reading" in failure.lower() for failure in failures)
+
+
+def test_product_mode_policy_rejects_missing_agents_cross_mode_rule(monkeypatch: Any) -> None:
+    agents = phase1.read("AGENTS.md")
+    rule = (
+        "20. Follow `docs/PHASE_PLAN.md` for the canonical distinction and cross-mode boundary "
+        "between numbered delivery phases, Product Mode 1, Product Mode 2, and Phase 1 Closure. "
+        "Use issue `#155` for sequencing inside Product Mode 1, including its latest explicit "
+        "current-module handoff and any explicitly authorized dependency-safe preparation lanes; "
+        "do not infer current work from a superseded issue-body plan. Mode 1 Checkpoint B must "
+        "close before Mode 2 runtime work begins.\n"
+    )
+    assert rule in agents
+    mutated = agents.replace(rule, "", 1)
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"AGENTS.md": mutated},
+    )
+
+    assert any("cross-mode workflow rule" in failure.lower() for failure in failures)
+
+
+def test_product_mode_policy_rejects_missing_issue167_scope_contract(monkeypatch: Any) -> None:
+    stage_plan = phase1.read("docs/STAGE_ISSUE_PLAN.md")
+    mutated = stage_plan.replace(
+        "The PHF-020A issue `#167` structured-policy branch is narrower than the general\n"
+        "process allowlist.",
+        "Issue #167 uses the general process allowlist.",
+        1,
+    )
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/STAGE_ISSUE_PLAN.md": mutated},
+    )
+
+    assert any("exact-scope contract" in failure.lower() for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement"),
+    [
+        ("`AGENTS.md`, `docs/PHASE_PLAN.md`", "`README.md`, `docs/PHASE_PLAN.md`"),
+        (
+            "`tests/unit/test_phase1_closure_docs.py`. `docs/STATUS.md` is reserved for the\n"
+            "serial PHF-020B successor.",
+            "`tests/unit/test_phase1_closure_docs.py`.",
+        ),
+    ],
+)
+def test_product_mode_policy_rejects_issue167_scope_drift(
+    monkeypatch: Any,
+    search: str,
+    replacement: str,
+) -> None:
+    stage_plan = phase1.read("docs/STAGE_ISSUE_PLAN.md")
+    assert search in stage_plan
+    mutated = stage_plan.replace(search, replacement, 1)
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/STAGE_ISSUE_PLAN.md": mutated},
+    )
+
+    assert any("exact-scope contract" in failure.lower() for failure in failures)
+
+
+def test_product_mode_policy_rejects_duplicate_authoritative_section(monkeypatch: Any) -> None:
+    phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    mutated = phase_plan + (
+        "\n### Product-mode taxonomy\n\n"
+        "| Concept ID | Canonical label | Kind | Canonical owner |\n"
+        "|---|---|---|---|\n"
+        "| `PM-2` | Delivery Phase 2 | `delivery-phase` | `#16` |\n"
+    )
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/PHASE_PLAN.md": mutated},
+    )
+
+    assert any("product-mode taxonomy must appear exactly once" in failure.lower() for failure in failures)
+
+
+def test_product_mode_policy_rejects_duplicate_authoritative_container(monkeypatch: Any) -> None:
+    phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    mutated = phase_plan + (
+        "\n## Product Modes, Delivery Phases, And Closure Programs\n\n"
+        "A second policy container must not be accepted.\n"
+    )
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/PHASE_PLAN.md": mutated},
+    )
+
+    assert any("authoritative policy container must appear exactly once" in failure.lower() for failure in failures)
+
+
+def test_product_mode_policy_does_not_skip_extra_row_containing_dashes(monkeypatch: Any) -> None:
+    phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    row = "| `DP-2` | Delivery Phase 2 | `delivery-phase` | `#16` |"
+    assert row in phase_plan
+    mutated = phase_plan.replace(
+        row,
+        row + "\n| `DP-X` | Extra---row | `delivery-phase` | `#999` |",
+        1,
+    )
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/PHASE_PLAN.md": mutated},
+    )
+
+    assert any("product-mode taxonomy" in failure.lower() for failure in failures)
+
+
+def test_product_mode_policy_rejects_duplicate_activation_section(monkeypatch: Any) -> None:
+    skill_plan = phase1.read("docs/SKILL_EXECUTION_PLAN.md")
+    mutated = skill_plan + "\n## Activation Rules\n\nNo validation is required.\n"
+
+    failures = run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/SKILL_EXECUTION_PLAN.md": mutated},
+    )
+
+    assert any("activation rules must appear exactly once" in failure.lower() for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "narrative",
+    [
+        "Product Mode 2 is Phase 2.",
+        "Product Mode 1 is Phase 1 Closure.",
+        "Mode 2 runtime can begin before Mode 1 Checkpoint B closes.",
+        "Mock/local audio binary is a prerequisite for the Mode 2 contract reset.",
+        "For example, 'Phase 2 is Product Mode 2.' is a forbidden interpretation.",
+    ],
+)
+def test_product_mode_policy_treats_arbitrary_narrative_as_non_authoritative(
+    monkeypatch: Any,
+    narrative: str,
+) -> None:
+    phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    phase_plan = phase_plan.replace(
+        "Phase 1 Closure is a closure program, not Product Mode 1.\n",
+        "Phase 1 Closure is a closure program, not Product Mode 1.\n"
+        f"Narrative example: {narrative}\n",
+        1,
+    )
+
+    assert run_product_mode_policy_check(
+        monkeypatch,
+        read_overrides={"docs/PHASE_PLAN.md": phase_plan},
+    ) == []
 
 
 def test_skill_governance_process_branch_allows_only_governance_files(monkeypatch: Any) -> None:
