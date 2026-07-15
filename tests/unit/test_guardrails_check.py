@@ -1,5 +1,6 @@
 import importlib.util
 import json
+from copy import deepcopy
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -3103,3 +3104,391 @@ def test_main_push_without_github_token_treated_as_direct_push(
     guardrails.check_no_direct_main_push()
 
     assert "Direct push to main detected. All work must go through issue + branch + PR." in guardrails.failures
+
+
+def issue169_preflight() -> dict[str, Any]:
+    path = Path(__file__).parents[2] / "docs/governance/preflights/issue-169.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(document, dict)
+    return document
+
+
+def valid_governance_commits(document: dict[str, Any]) -> list[dict[str, Any]]:
+    policy = document["review_subject"]["commit_policy"]
+    return [
+        {
+            "sha": "1" * 40,
+            "committed_at": "2026-07-15T14:30:00Z",
+            "message": "docs: bootstrap governance feasibility preflight\n\nGovernance-Phase: bootstrap",
+            "files": policy["bootstrap_files"],
+        },
+        {
+            "sha": "2" * 40,
+            "committed_at": "2026-07-15T14:40:00Z",
+            "message": "test: add governance preflight mutations\n\nGovernance-Implementation-Step: red-tests",
+            "files": ["tests/unit/test_guardrails_check.py"],
+        },
+        {
+            "sha": "3" * 40,
+            "committed_at": "2026-07-15T14:50:00Z",
+            "message": "feat: enforce governance feasibility\n\nGovernance-Implementation-Step: guardrail-green",
+            "files": ["scripts/guardrails_check.py"],
+        },
+        {
+            "sha": "4" * 40,
+            "committed_at": "2026-07-15T15:00:00Z",
+            "message": "docs: document governance feasibility\n\nGovernance-Implementation-Step: governance-docs",
+            "files": [
+                "docs/ENGINEERING_PROCESS_RCA.md",
+                "docs/QUALITY_GATES.md",
+                "docs/REPOSITORY_GUARDRAILS.md",
+                "docs/STAGE_ISSUE_PLAN.md",
+                "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+                "docs/STATUS.md",
+            ],
+        },
+    ]
+
+
+def valid_correction_events(document: dict[str, Any]) -> list[dict[str, Any]]:
+    digest = document["review_evidence"]["review_subject_sha256"]
+    return [
+        {
+            "marker": "GOVERNANCE-IMPLEMENTATION-COMPLETE-V1",
+            "timestamp": "2026-07-15T15:05:00Z",
+            "issue": 169,
+            "pr": 170,
+            "review_subject_sha256": digest,
+            "completed_step_ids": ["red-tests", "guardrail-green", "governance-docs"],
+            "step_commit_shas": ["2" * 40, "3" * 40, "4" * 40],
+            "implementation_head_sha": "4" * 40,
+            "decision": "READY_FOR_REVIEW",
+        },
+        {
+            "marker": "GOVERNANCE-FINDING-V1",
+            "timestamp": "2026-07-15T15:10:00Z",
+            "cycle_number": 1,
+            "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169#issuecomment-11",
+        },
+        {
+            "marker": "GOVERNANCE-CORRECTION-CYCLE-V1",
+            "event": "RESUME",
+            "timestamp": "2026-07-15T15:20:00Z",
+            "issue": 169,
+            "pr": 170,
+            "cycle_number": 1,
+            "finding_class": "contract",
+            "finding_url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169#issuecomment-11",
+            "contract_reset_commit": "5" * 40,
+            "review_prompt_reset_url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169#issuecomment-12",
+            "review_subject_sha256": digest,
+            "approval_comment_url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169#issuecomment-13",
+            "approval_reviewer": "fresh reviewer",
+            "approval_reviewed_at": "2026-07-15T15:19:00Z",
+            "approval_decision": "APPROVED",
+            "decision": "RESUME",
+        },
+        {
+            "marker": "GOVERNANCE-CORRECTION-CYCLE-V1",
+            "event": "COMPLETE",
+            "timestamp": "2026-07-15T15:30:00Z",
+            "issue": 169,
+            "pr": 170,
+            "cycle_number": 1,
+            "correction_commit_sha": "6" * 40,
+            "correction_head_sha": "6" * 40,
+            "review_subject_sha256": digest,
+            "decision": "COMPLETE",
+        },
+        {
+            "marker": "GOVERNANCE-CORRECTION-REREVIEW-V1",
+            "timestamp": "2026-07-15T15:40:00Z",
+            "issue": 169,
+            "pr": 170,
+            "cycle_number": 1,
+            "reviewed_head_sha": "6" * 40,
+            "reviewer": "fresh reviewer",
+            "reviewed_at": "2026-07-15T15:40:00Z",
+            "decision": "APPROVED",
+            "findings_url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169#issuecomment-14",
+        },
+    ]
+
+
+@pytest.mark.parametrize("mutation", ["missing", "unknown", "blank", "wrong-type", "unknown-enum"])
+def test_governance_preflight_rejects_closed_schema_mutations(mutation: str) -> None:
+    document = issue169_preflight()
+    if mutation == "missing":
+        del document["review_subject"]["objective"]
+    elif mutation == "unknown":
+        document["review_subject"]["unexpected"] = True
+    elif mutation == "blank":
+        document["review_subject"]["objective"] = " "
+    elif mutation == "wrong-type":
+        document["review_subject"]["linked_issue"]["number"] = "169"
+    else:
+        document["review_subject"]["change_class"] = "unknown"
+
+    failures = guardrails.validate_governance_preflight_document(
+        document,
+        document["review_subject"]["scope"]["required_files"],
+    )
+
+    assert failures
+
+
+@pytest.mark.parametrize(
+    ("mutation", "changed_file"),
+    [
+        ("required-outside-allowlist", None),
+        ("changed-outside-allowlist", "README.md"),
+        ("forbidden-file", ".github/pull_request_template.md"),
+        ("forbidden-prefix", "backend/app/main.py"),
+        ("traversal", "docs/../README.md"),
+        ("backslash", "docs\\STATUS.md"),
+        ("glob", "docs/*.md"),
+    ],
+)
+def test_governance_preflight_rejects_scope_feasibility_mutations(
+    mutation: str,
+    changed_file: str | None,
+) -> None:
+    document = issue169_preflight()
+    scope = document["review_subject"]["scope"]
+    changed = list(scope["required_files"])
+    if mutation == "required-outside-allowlist":
+        scope["required_files"].append("README.md")
+    else:
+        assert changed_file is not None
+        changed.append(changed_file)
+
+    failures = guardrails.validate_governance_preflight_document(document, changed)
+
+    assert failures
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["missing-required", "missing-allowed", "forbidden", "decision", "governance-without-status"],
+)
+def test_governance_preflight_rejects_issue167_status_contradiction(mutation: str) -> None:
+    document = issue169_preflight()
+    scope = document["review_subject"]["scope"]
+    if mutation == "missing-required":
+        scope["required_files"].remove("docs/STATUS.md")
+    elif mutation == "missing-allowed":
+        scope["allowed_files"].remove("docs/STATUS.md")
+    elif mutation == "forbidden":
+        scope["forbidden_files"].append("docs/STATUS.md")
+    elif mutation == "decision":
+        scope["status_decision"] = "defer"
+    else:
+        scope["required_files"].remove("docs/STATUS.md")
+        scope["allowed_files"].remove("docs/STATUS.md")
+
+    failures = guardrails.validate_governance_preflight_document(
+        document,
+        scope["required_files"],
+    )
+
+    assert failures
+
+
+@pytest.mark.parametrize("mutation", ["duplicate-domain", "blank-domain", "blank-owner"])
+def test_governance_preflight_validates_authority_domain_uniqueness(mutation: str) -> None:
+    document = issue169_preflight()
+    domains = document["review_subject"]["authority_domains"]
+    if mutation == "duplicate-domain":
+        domains.append(deepcopy(domains[0]))
+    elif mutation == "blank-domain":
+        domains[0]["domain"] = " "
+    else:
+        domains[0]["owner"] = ""
+
+    failures = guardrails.validate_governance_preflight_document(
+        document,
+        document["review_subject"]["scope"]["required_files"],
+    )
+
+    assert failures
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["duplicate-id", "blank-claim", "empty-mutations", "range", "placeholder", "unmapped"],
+)
+def test_governance_preflight_rejects_malformed_invariant_evidence(mutation: str) -> None:
+    document = issue169_preflight()
+    invariants = document["review_subject"]["invariants"]
+    if mutation == "duplicate-id":
+        invariants.append(deepcopy(invariants[0]))
+    elif mutation == "blank-claim":
+        invariants[0]["claim"] = " "
+    elif mutation == "empty-mutations":
+        invariants[0]["disproof_mutations"] = []
+    elif mutation == "range":
+        invariants[0]["evidence_targets"] = ["tests/unit/test_guardrails_check.py::test_1..test_9"]
+    elif mutation == "placeholder":
+        invariants[0]["evidence_targets"] = ["TODO"]
+    else:
+        invariants[0]["evidence_targets"] = []
+
+    failures = guardrails.validate_governance_preflight_document(
+        document,
+        document["review_subject"]["scope"]["required_files"],
+    )
+
+    assert failures
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["missing-force", "alter-force", "missing-local", "extra-local", "missing-check", "rename-check"],
+)
+def test_governance_preflight_rejects_validation_profile_drift(mutation: str) -> None:
+    document = issue169_preflight()
+    validation = document["review_subject"]["validation"]
+    if mutation == "missing-force":
+        del validation["forced_pr_event_command"]
+    elif mutation == "alter-force":
+        validation["forced_pr_event_command"] += " --unsafe"
+    elif mutation == "missing-local":
+        validation["local_commands"].pop()
+    elif mutation == "extra-local":
+        validation["local_commands"].append({"id": "extra", "command": "true"})
+    elif mutation == "missing-check":
+        validation["github_checks"].pop()
+    else:
+        validation["github_checks"][0] = "renamed"
+
+    failures = guardrails.validate_governance_preflight_document(
+        document,
+        document["review_subject"]["scope"]["required_files"],
+    )
+
+    assert failures
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "implementation-first",
+        "bootstrap-missing-file",
+        "bootstrap-extra-file",
+        "digest-mismatch",
+        "review-after-commit",
+        "unrelated-ancestry",
+    ],
+)
+def test_governance_preflight_rejects_wrong_commit_order(mutation: str) -> None:
+    document = issue169_preflight()
+    commits = valid_governance_commits(document)
+    if mutation == "implementation-first":
+        commits[0], commits[1] = commits[1], commits[0]
+    elif mutation == "bootstrap-missing-file":
+        commits[0]["files"] = commits[0]["files"][:-1]
+    elif mutation == "bootstrap-extra-file":
+        commits[0]["files"] = [*commits[0]["files"], "README.md"]
+    elif mutation == "digest-mismatch":
+        document["review_evidence"]["review_subject_sha256"] = "0" * 64
+    elif mutation == "review-after-commit":
+        document["review_evidence"]["reviewed_at"] = "2026-07-15T16:00:00Z"
+    else:
+        commits.insert(
+            0,
+            {
+                "sha": "0" * 40,
+                "committed_at": "2026-07-15T14:25:00Z",
+                "message": "unrelated",
+                "files": ["README.md"],
+            },
+        )
+
+    failures = guardrails.validate_governance_preflight_commits(document, commits)
+
+    assert failures
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["skip-cycle", "duplicate-cycle", "wrong-binding", "missing-reset", "third-cycle", "stricter-stop"],
+)
+def test_governance_preflight_rejects_invalid_or_third_correction_cycle(mutation: str) -> None:
+    document = issue169_preflight()
+    commits = valid_governance_commits(document)
+    commits.extend(
+        [
+            {
+                "sha": "5" * 40,
+                "committed_at": "2026-07-15T15:15:00Z",
+                "message": "test: reset correction contract\n\nGovernance-Correction-Reset: 1",
+                "files": ["tests/unit/test_guardrails_check.py"],
+            },
+            {
+                "sha": "6" * 40,
+                "committed_at": "2026-07-15T15:25:00Z",
+                "message": "fix: correct governance guardrail\n\nGovernance-Correction-Cycle: 1",
+                "files": ["scripts/guardrails_check.py"],
+            },
+        ]
+    )
+    events = valid_correction_events(document)
+    if mutation == "skip-cycle":
+        for event in events:
+            if "cycle_number" in event:
+                event["cycle_number"] = 2
+    elif mutation == "duplicate-cycle":
+        events.append(deepcopy(events[2]))
+    elif mutation == "wrong-binding":
+        events[2]["pr"] = 999
+    elif mutation == "missing-reset":
+        commits.pop(-2)
+    elif mutation == "third-cycle":
+        events.append(
+            {
+                "marker": "GOVERNANCE-CORRECTION-CYCLE-V1",
+                "event": "RESUME",
+                "timestamp": "2026-07-15T16:00:00Z",
+                "issue": 169,
+                "pr": 170,
+                "cycle_number": 3,
+                "decision": "RESUME",
+            }
+        )
+    else:
+        events[2]["stricter_stop_active"] = True
+
+    failures = guardrails.validate_governance_correction_events(
+        document,
+        commits,
+        events,
+        issue_number=169,
+        pr_number=170,
+    )
+
+    assert failures
+
+
+def test_governance_preflight_cutover_is_prospective() -> None:
+    governance_changes = ["docs/PHASE_PLAN.md", "scripts/guardrails_check.py"]
+
+    assert not guardrails.governance_preflight_required(
+        ["backend/app/main.py"],
+        head_ref="stage8-product-only",
+        base_has_schema=True,
+    )
+    assert not guardrails.governance_preflight_required(
+        governance_changes,
+        head_ref="phase-1-closure-process-167-legacy",
+        base_has_schema=False,
+    )
+    assert guardrails.governance_preflight_required(
+        governance_changes,
+        head_ref="phase-1-closure-process-171-rebased",
+        base_has_schema=True,
+    )
+    assert guardrails.governance_preflight_required(
+        governance_changes,
+        head_ref="phase-1-closure-process-169-gpf-v1-feasibility",
+        base_has_schema=False,
+    )
