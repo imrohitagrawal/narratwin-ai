@@ -82,7 +82,7 @@ def _valid_repo(tmp_path: Path, *, name: str = "repo", branch: str = BRANCH, art
     _commit(repo, "preflight")
     for index in range(empty_commits):
         _commit(repo, f"empty-{index}", empty=True)
-    later = [path for path in dict.fromkeys(PATHS + value["scope"]["required"]) if path != PREFLIGHT]
+    later = [path for path in value["scope"]["required"] if path != preflight_path]
     groups = (later[:4], later[4:]) if split_later else (later,)
     for group_index, group in enumerate(groups):
         for path in group:
@@ -144,10 +144,11 @@ def test_each_repository_mutation_returns_complete_vector(tmp_path: Path, mutati
         head = _commit(repo, "remove required path")
     else:
         wrong = "docs/governance/preflights/issue-177.json"
-        if mutation == "filename-body":
-            head = _rewrite_artifact(repo, lambda value: value.__setitem__("issue_number", 177))
-        _git(repo, "mv", PREFLIGHT, wrong)
-        head = _commit(repo, "rename preflight")
+        wrong_paths = [wrong, *PATHS[1:]]
+        artifact = _artifact(issue=177 if mutation == "filename-body" else ISSUE,
+                             required=wrong_paths, allowed=wrong_paths)
+        repo, base, head = _valid_repo(tmp_path, name="mutated", artifact=artifact,
+                                      preflight_path=wrong)
     assert _codes(repo, base, head) == expected
 
 
@@ -368,7 +369,8 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path, mode
     source = Path(__file__).parents[2]
     repo = tmp_path / f"full-repository-{mode}"
     shutil.copytree(source, repo, ignore=shutil.ignore_patterns(
-        ".git", ".venv", "__pycache__", ".pytest_cache", ".ruff_cache", "node_modules"))
+        ".git", ".venv", ".uv-cache", ".mypy_cache", ".codex", "__pycache__",
+        ".pytest_cache", ".ruff_cache", "node_modules", "outputs", "reports"))
     _git(repo, "init", "-q")
     _git(repo, "config", "user.email", "tests@narratwin.local")
     _git(repo, "config", "user.name", "NarraTwin Tests")
@@ -399,7 +401,7 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path, mode
     blocker = tmp_path / "network-blocker"
     blocker.mkdir(exist_ok=True)
     loaded, attempted = tmp_path / f"loaded-{mode}", tmp_path / f"attempted-{mode}"
-    _write(blocker, "sitecustomize.py", f"import pathlib,socket\npathlib.Path({str(loaded)!r}).write_text('loaded')\ndef denied(*a,**k):\n pathlib.Path({str(attempted)!r}).write_text('attempted'); raise AssertionError('NETWORK_ATTEMPT')\nsocket.socket=denied\n")
+    _write(blocker, "sitecustomize.py", f"import pathlib,socket\npathlib.Path({str(loaded)!r}).write_text('loaded')\nclass denied(socket.socket):\n def __new__(cls,*a,**k):\n  pathlib.Path({str(attempted)!r}).write_text('attempted'); raise AssertionError('NETWORK_ATTEMPT')\nsocket.socket=denied\n")
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"), "PYTHONPATH": str(blocker),
         "PYTHONDONTWRITEBYTECODE": "1", "GITHUB_BASE_SHA": base,
