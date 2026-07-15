@@ -3354,6 +3354,13 @@ def test_issue176_branch_rejects_pr_c_workflow_and_runtime_paths(monkeypatch: An
     ]
 
 
+def test_issue176_allowlist_does_not_apply_to_near_match_branch(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-176-gpf-v1-repository-integration-suffix"
+    assert run_changed_files_check(
+        monkeypatch, branch=branch, files=["scripts/governance_preflight_repository.py"]
+    ) == [f"Phase 1 Closure branch {branch} may not change scripts/governance_preflight_repository.py."]
+
+
 def test_issue39_durability_branch_keeps_existing_runtime_allowlist(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,

@@ -30,10 +30,8 @@ PATHS = [
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
 ]
-FORBIDDEN = [
-    "backend/", "frontend/", ".github/workflows/", "docker/",
-    "pyproject.toml", "uv.lock", "package.json", "package-lock.json",
-]
+FORBIDDEN = ["backend/", "frontend/", ".github/workflows/", "docker/", "pyproject.toml",
+             "uv.lock", "package.json", "package-lock.json"]
 SEEDS = (32001, 32002, 32003, 32004)
 
 
@@ -134,7 +132,9 @@ def _rewrite_artifact(repo: Path, mutate: Callable[[dict[str, Any]], None]) -> s
 
 def test_exact_valid_repository_has_no_findings(tmp_path: Path) -> None:
     repo, base, head = _valid_repo(tmp_path)
+    before = (_git(repo, "rev-parse", "HEAD"), _git(repo, "status", "--porcelain"))
     assert _codes(repo, base, head) == []
+    assert (_git(repo, "rev-parse", "HEAD"), _git(repo, "status", "--porcelain")) == before
 
 
 @pytest.mark.parametrize(
@@ -145,6 +145,7 @@ def test_exact_valid_repository_has_no_findings(tmp_path: Path) -> None:
         ("not-first", ["GPF.REPO.PREFLIGHT_NOT_FIRST"]),
         ("first-extra", ["GPF.REPO.PREFLIGHT_NOT_FIRST"]),
         ("filename", ["GPF.REPO.ISSUE_REF_MISMATCH"]),
+        ("filename-body", ["GPF.REPO.ISSUE_REF_MISMATCH", "GPF.BINDING.ISSUE_MISMATCH"]),
     ),
 )
 def test_each_repository_mutation_returns_complete_vector(
@@ -159,13 +160,20 @@ def test_each_repository_mutation_returns_complete_vector(
         _write(repo, "docs/governance/preflights/issue-999.json", "{}\n")
         head = _commit(repo, "second preflight")
     elif mutation == "not-first":
-        first = _git(repo, "rev-list", "--reverse", f"{base}..{head}").splitlines()[0]
-        _git(repo, "filter-branch", "-f", "--tree-filter", f"rm -f {PREFLIGHT}", f"{first}^..{first}")
-        head = _git(repo, "rev-parse", "HEAD")
+        repo, base = _new_repo(tmp_path, "mutated")
+        _git(repo, "checkout", "-q", "-b", BRANCH)
+        _write(repo, PATHS[1], "first\n")
+        _commit(repo, "implementation first")
+        _write(repo, PREFLIGHT, json.dumps(_artifact()))
+        for path in PATHS[2:]:
+            _write(repo, path, "later\n")
+        head = _commit(repo, "preflight later")
     elif mutation == "first-extra":
-        repo, base, head = _valid_repo(tmp_path, name="mutated", first_extra="extra.txt")
+        repo, base, head = _valid_repo(tmp_path, name="mutated", first_extra=PATHS[1])
     else:
         wrong = "docs/governance/preflights/issue-177.json"
+        if mutation == "filename-body":
+            head = _rewrite_artifact(repo, lambda value: value.__setitem__("issue_number", 177))
         _git(repo, "mv", PREFLIGHT, wrong)
         head = _commit(repo, "rename preflight")
     assert _codes(repo, base, head) == expected
@@ -208,6 +216,17 @@ def test_non_ancestor_history_is_unavailable(tmp_path: Path) -> None:
         ("required-missing", lambda a: a["scope"]["required"].append("missing.txt"), ["GPF.SCOPE.REQUIRED_NOT_CHANGED"]),
         ("required-forbidden", lambda a: a["scope"]["forbidden"].append(PATHS[1]), ["GPF.SCOPE.REQUIRED_FORBIDDEN"]),
         ("required-not-allowed", lambda a: a["scope"]["allowed_prefixes"].remove(PATHS[1]), ["GPF.SCOPE.REQUIRED_NOT_ALLOWED"]),
+        ("required-objective", lambda a: a.pop("objective"), ["GPF.SCHEMA.REQUIRED"]),
+        ("blank-objective", lambda a: a.__setitem__("objective", " "), ["GPF.SCHEMA.BLANK"]),
+        ("version", lambda a: a.__setitem__("schema_version", "GovernancePreflightV2"), ["GPF.SCHEMA.VERSION"]),
+        ("issue-type", lambda a: a.__setitem__("issue_number", "176"), ["GPF.SCHEMA.TYPE"]),
+        ("objective-limit", lambda a: a.__setitem__("objective", "x" * 2_001), ["GPF.SCHEMA.LIMIT"]),
+        ("scope-required", lambda a: a["scope"].pop("forbidden"), ["GPF.SCHEMA.REQUIRED"]),
+        ("scope-unknown", lambda a: a["scope"].__setitem__("extra", []), ["GPF.SCHEMA.UNKNOWN"]),
+        ("absolute", lambda a: a["scope"]["required"].__setitem__(1, "/escape"), ["GPF.PATH.INVALID"]),
+        ("dot", lambda a: a["scope"]["required"].__setitem__(1, "scripts/./x.py"), ["GPF.PATH.INVALID"]),
+        ("status-required", lambda a: a["scope"]["required"].remove("docs/STATUS.md"), ["GPF.STATUS.REQUIRED_MISSING"]),
+        ("status-allowed", lambda a: a["scope"]["allowed_prefixes"].remove("docs/STATUS.md"), ["GPF.STATUS.ALLOWED_MISSING"]),
     ),
 )
 def test_pr_a_findings_pass_through_unchanged(
@@ -220,15 +239,35 @@ def test_pr_a_findings_pass_through_unchanged(
     assert _codes(repo, base, head) == expected
 
 
-def test_malformed_and_oversized_artifacts_use_pr_a_codes(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    (("{not-json\n", ["GPF.SCHEMA.TYPE"]), ("[]\n", ["GPF.SCHEMA.TYPE"]),
+     ("x" * 65_537, ["GPF.SCHEMA.LIMIT"])),
+)
+def test_raw_artifacts_use_pr_a_codes(tmp_path: Path, raw: str, expected: list[str]) -> None:
     repo, base, head = _valid_repo(tmp_path)
     assert _codes(repo, base, head) == []
-    _write(repo, PREFLIGHT, "{not-json\n")
-    head = _commit(repo, "malformed")
-    assert _codes(repo, base, head) == ["GPF.SCHEMA.TYPE"]
-    _write(repo, PREFLIGHT, "x" * 65_537)
-    head = _commit(repo, "oversized")
-    assert _codes(repo, base, head) == ["GPF.SCHEMA.LIMIT"]
+    _write(repo, PREFLIGHT, raw)
+    head = _commit(repo, "raw artifact")
+    assert _codes(repo, base, head) == expected
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    ((["backend/forbidden.py"], ["GPF.SCOPE.CHANGE_FORBIDDEN"]),
+     (["tools/unapproved.py"], ["GPF.SCOPE.CHANGE_NOT_ALLOWED"]),
+     (["backend/forbidden.py", "tools/unapproved.py"],
+      ["GPF.SCOPE.CHANGE_FORBIDDEN", "GPF.SCOPE.CHANGE_NOT_ALLOWED"])),
+)
+def test_changed_path_findings_pass_through(
+    tmp_path: Path, path: list[str], expected: list[str]
+) -> None:
+    repo, base, head = _valid_repo(tmp_path)
+    assert _codes(repo, base, head) == []
+    for changed in path:
+        _write(repo, changed, "declared fault\n")
+    head = _commit(repo, "changed path fault")
+    assert _codes(repo, base, head) == expected
 
 
 def test_order_and_later_commit_grouping_do_not_change_validity(tmp_path: Path) -> None:
@@ -253,7 +292,8 @@ def test_commit_limits_and_maximum_valid_performance(tmp_path: Path) -> None:
     validation_seconds = time.perf_counter() - started
     assert len(_git(repo, "rev-list", f"{base}..{head}").splitlines()) == 1_000
     assert validation_seconds < 5.0, (construction_seconds, validation_seconds)
-    _commit(repo, "limit", empty=True)
+    _write(repo, "docs/governance/preflights/issue-999.json", "{}\n")
+    _commit(repo, "limit and multiple")
     assert _codes(repo, base, _git(repo, "rev-parse", "HEAD")) == ["GPF.REPO.LIMIT_EXCEEDED"]
 
 
@@ -284,6 +324,30 @@ def test_prospective_cutover_preserves_legacy_and_unrelated_branches(tmp_path: P
     ) == []
 
 
+def test_later_branch_activates_only_when_adapter_is_in_base_tree(tmp_path: Path) -> None:
+    branch = "phase-1-closure-process-999-later"
+    preflight = "docs/governance/preflights/issue-999.json"
+    repo, _ = _new_repo(tmp_path)
+    _write(repo, "scripts/governance_preflight_repository.py", "merged adapter\n")
+    base = _commit(repo, "adapter merged")
+    _git(repo, "checkout", "-q", "-b", branch)
+    artifact = _artifact(issue=999, branch=branch, required=[preflight, "docs/STATUS.md"],
+                         allowed=[preflight, "docs/STATUS.md"])
+    _write(repo, preflight, json.dumps(artifact))
+    _commit(repo, "preflight")
+    _write(repo, "docs/STATUS.md", "later\n")
+    head = _commit(repo, "implementation")
+    assert _codes(repo, base, head, issue=999, branch=branch) == []
+    _git(repo, "rm", preflight)
+    head = _commit(repo, "single missing fault")
+    assert _codes(repo, base, head, issue=999, branch=branch) == ["GPF.REPO.PREFLIGHT_MISSING"]
+    one, one_base = _new_repo(tmp_path, "one-commit")
+    _git(one, "checkout", "-q", "-b", BRANCH)
+    _write(one, PREFLIGHT, json.dumps(_artifact()))
+    one_head = _commit(one, "preflight only")
+    assert _codes(one, one_base, one_head) == ["GPF.SCOPE.REQUIRED_NOT_CHANGED"]
+
+
 def test_exactly_40_seeded_histories_report_reproducible_diagnostics(tmp_path: Path) -> None:
     results: list[bool] = []
     for seed in SEEDS:
@@ -292,6 +356,8 @@ def test_exactly_40_seeded_histories_report_reproducible_diagnostics(tmp_path: P
             valid = case_index < 5
             name = f"seed-{seed}-{case_index}"
             repo, base, head = _valid_repo(tmp_path, name=name, split_later=bool(rng.getrandbits(1)))
+            baseline = _codes(repo, base, head)
+            assert baseline == [], f"seed={seed} case={case_index} baseline={baseline} base={base} head={head}"
             mutation = "none" if valid else ("missing" if case_index % 2 else "body-issue")
             expected: list[str] = []
             if mutation == "missing":
@@ -312,10 +378,18 @@ def test_exactly_40_seeded_histories_report_reproducible_diagnostics(tmp_path: P
     assert results.count(True) == results.count(False) == 20
 
 
-def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path) -> None:
+@pytest.mark.parametrize(("mode", "returncode", "stdout"), (
+    ("valid", 0, "All NarraTwin AI repository guardrails passed.\n"),
+    ("missing", 1, "Guardrail failures:\n- Governance preflight finding: GPF.REPO.PREFLIGHT_MISSING\n"),
+    ("invalid", 1, "Guardrail failures:\n- Governance preflight finding: GPF.SCHEMA.TYPE\n"),
+    ("unrelated", 1, "Guardrail failures:\n- Evaluation failures found in reports/eval-results.json. Eval failures block merge.\n")))
+def test_real_guardrail_subprocess_is_offline_and_sanitized(
+    tmp_path: Path, mode: str, returncode: int, stdout: str
+) -> None:
     source = Path(__file__).parents[2]
-    repo = tmp_path / "full-repository"
-    shutil.copytree(source, repo, ignore=shutil.ignore_patterns(".git", ".venv", "__pycache__", ".pytest_cache"))
+    repo = tmp_path / f"full-repository-{mode}"
+    shutil.copytree(source, repo, ignore=shutil.ignore_patterns(
+        ".git", ".venv", "__pycache__", ".pytest_cache", ".ruff_cache", "node_modules"))
     _git(repo, "init", "-q")
     _git(repo, "config", "user.email", "tests@narratwin.local")
     _git(repo, "config", "user.name", "NarraTwin Tests")
@@ -332,19 +406,23 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path) -> N
         target = repo / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(original)
+    if mode == "unrelated":
+        _write(repo, "reports/eval-results.json", '{"status":"failed"}\n')
     base = _commit(repo, "base")
     _git(repo, "checkout", "-q", "-b", BRANCH)
     (repo / PREFLIGHT).parent.mkdir(parents=True, exist_ok=True)
-    (repo / PREFLIGHT).write_bytes(saved[PREFLIGHT])
-    _commit(repo, "preflight")
+    if mode != "missing":
+        (repo / PREFLIGHT).write_bytes(b"{not-json\n" if mode == "invalid" else saved[PREFLIGHT])
+    _commit(repo, "preflight", empty=mode == "missing")
     for path in PATHS[1:]:
         target = repo / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(saved[path])
     head = _commit(repo, "implementation")
     blocker = tmp_path / "network-blocker"
-    blocker.mkdir()
-    _write(blocker, "sitecustomize.py", "import socket\ndef denied(*a, **k): raise AssertionError('NETWORK_ATTEMPT')\nsocket.socket = denied\n")
+    blocker.mkdir(exist_ok=True)
+    loaded, attempted = tmp_path / f"loaded-{mode}", tmp_path / f"attempted-{mode}"
+    _write(blocker, "sitecustomize.py", f"import pathlib,socket\npathlib.Path({str(loaded)!r}).write_text('loaded')\ndef denied(*a,**k):\n pathlib.Path({str(attempted)!r}).write_text('attempted'); raise AssertionError('NETWORK_ATTEMPT')\nsocket.socket=denied\n")
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"), "PYTHONPATH": str(blocker),
         "PYTHONDONTWRITEBYTECODE": "1", "GITHUB_BASE_SHA": base,
@@ -356,8 +434,10 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path) -> N
         text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         check=False, timeout=20,
     )
-    assert completed.returncode == 0
-    assert completed.stdout == "All NarraTwin AI repository guardrails passed.\n"
+    assert completed.returncode == returncode
+    assert completed.stdout == stdout
     assert completed.stderr == ""
+    assert loaded.exists() and not attempted.exists()
+    assert "GITHUB_TOKEN" not in env and "GH_TOKEN" not in env
     assert "must-not-appear" not in completed.stdout + completed.stderr
     assert "NETWORK_ATTEMPT" not in completed.stdout + completed.stderr
