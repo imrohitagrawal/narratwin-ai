@@ -349,6 +349,22 @@ def test_process_docs_reject_skill_selection_contract_mutations(
             "forbidden skill-selection contradiction",
         ),
         (
+            "Install the skill automatically; do not skip audit logging.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Activation is automatic, and never bypass the audit log.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Auto-install the skill whenever FIRED persists.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "The pipeline will auto-activate the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
             "Present on disk is sufficient for approval and operation.",
             "forbidden skill-selection contradiction",
         ),
@@ -358,6 +374,10 @@ def test_process_docs_reject_skill_selection_contract_mutations(
         ),
         (
             "Disk presence equals repository approval.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Disk presence counts as approval, not as execution consent.",
             "forbidden skill-selection contradiction",
         ),
         (
@@ -397,6 +417,9 @@ def test_process_docs_reject_additive_skill_selection_contradictions(
         "Activation is not automatic.",
         "Present on disk does not count as approval.",
         "Disk presence does not equal repository approval.",
+        "Do not auto-install the skill.",
+        "The pipeline will never auto-activate the skill.",
+        "Auto-install is not permitted.",
         "There is no composite skill quality score: use raw measures.",
     ],
 )

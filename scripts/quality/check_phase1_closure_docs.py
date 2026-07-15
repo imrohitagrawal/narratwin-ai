@@ -3285,12 +3285,20 @@ def check_process_docs(failures: list[str]) -> None:
             "docs/SKILL_SELECTION_AND_EVIDENCE.md qualifying escapes must be discovered after merge.",
         )
 
+    skill_clause_character = r"[^,.;:\n]"
     forbidden_skill_selection_patterns = (
-        r"\b(?:install|activat)\w*\b(?!.{0,80}\b(?:not|never)\b).{0,80}\bautomatic\w*\b",
-        r"\bautomatic\w*\b(?!.{0,60}\b(?:not|never)\b).{0,60}\b(?:install|activat)\w*\b",
-        r"\b(?:allow|authoriz|enable|permit)\w*\b.{0,40}\bauto-?(?:install|activat)\w*\b",
+        rf"\b(?:install|activat)\w*\b(?!{skill_clause_character}{{0,80}}\b(?:not|never)\b)"
+        rf"{skill_clause_character}{{0,80}}\bautomatic\w*\b",
+        rf"\bautomatic\w*\b(?!{skill_clause_character}{{0,60}}\b(?:not|never)\b)"
+        rf"{skill_clause_character}{{0,60}}\b(?:install|activat)\w*\b",
+        rf"\bauto-?(?:install|activat)\w*\b"
+        rf"(?!{skill_clause_character}{{0,60}}\b(?:not|never)\b)",
         r"\b(?:install|activate)\b.{0,120}\bwithout\s+(?:explicit\s+)?(?:repository-)?owner approval\b",
-        r"\b(?:present on disk|disk presence)\b(?!.{0,60}\b(?:not|never|neither)\b).{0,60}\b(?:is\s+(?:itself\s+)?(?:sufficient|enough)|equals?|counts?\s+as)\b.{0,40}\b(?:repository\s+)?approval\b",
+        rf"\b(?:present on disk|disk presence)\b"
+        rf"(?!{skill_clause_character}{{0,60}}\b(?:not|never|neither)\b)"
+        rf"{skill_clause_character}{{0,60}}\b"
+        rf"(?:is\s+(?:itself\s+)?(?:sufficient|enough)|equals?|counts?\s+as)\b"
+        rf"{skill_clause_character}{{0,40}}\b(?:repository\s+)?approval\b",
         r"\bcomposite skill (?:quality )?score\s*(?:=|:|\||is\s+(?:the\s+)?weighted\b)",
     )
     for pattern in forbidden_skill_selection_patterns:
