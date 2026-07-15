@@ -2,6 +2,12 @@
 
 This plan defines when Codex, PM, Spec Kit, engineering, security, testing, and release skills may be used for NarraTwin AI.
 
+Selection within a stage follows
+[`docs/SKILL_SELECTION_AND_EVIDENCE.md`](SKILL_SELECTION_AND_EVIDENCE.md):
+start from the claim and boundary, choose the smallest test that can disprove
+the claim, use a skill to govern the method, and record the resulting evidence
+or prevented unsafe action. Skill invocation is not completion evidence.
+
 Stage 0 does not install product implementation tools. Stage 0 records the operating model, lock requirements, and quality gates that future stages must follow.
 
 ## Stage-Aligned Skill Use
@@ -36,6 +42,12 @@ Stage 0 does not install product implementation tools. Stage 0 records the opera
 - Engineering implementation skills are blocked during Stage 0, Stage 1, Stage 2, and Stage 3.
 - Paid-provider skills or adapters must never be required for local/dev/test.
 - Skill installers must not receive secrets or personal tokens.
+- Actual child-issue and PR preflights must record invoked, rejected,
+  unavailable/unapproved, ineffective, and wrong-stage candidates when they
+  materially affect selection. Do not optimize for the number of skills used.
+- A verification-skill trigger may authorize evaluation only. Installation or
+  activation still requires explicit owner approval and the lock/notices review
+  in this plan.
 
 ## Required Lock Fields
 

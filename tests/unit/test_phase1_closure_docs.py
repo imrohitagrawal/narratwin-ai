@@ -178,6 +178,375 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
     assert failures == []
 
 
+def test_skill_governance_process_branch_allows_only_governance_files(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-164-phf-019-skill-evidence-governance"
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "AGENTS.md",
+            "docs/SKILL_EXECUTION_PLAN.md",
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/STATUS.md",
+            "docs/reviews/PROCESS_HARDENING_FINDINGS.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    )
+
+    assert failures == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["backend/app/main.py"],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-process-164-phf-019-skill-evidence-governance "
+        "may not change backend/app/main.py."
+    ]
+
+
+@pytest.mark.parametrize(
+    "skill_doc",
+    [
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+    ],
+)
+def test_skill_governance_docs_are_confined_to_process_branches(
+    monkeypatch: Any,
+    skill_doc: str,
+) -> None:
+    branch = "phase-1-closure-138-click-security-remediation"
+
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[skill_doc],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-138-click-security-remediation may not change "
+        f"{skill_doc}."
+    ]
+
+
+def test_process_docs_reject_skill_selection_contract_without_activation_trigger(
+    monkeypatch: Any,
+) -> None:
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_SELECTION_AND_EVIDENCE.md"],
+        read_overrides={
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md": "# Skill Selection And Evidence\n",
+        },
+    )
+
+    assert (
+        "docs/SKILL_SELECTION_AND_EVIDENCE.md missing required heading: "
+        "Verification-Skill Activation Trigger"
+    ) in failures
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement", "expected_failure"),
+    [
+        (
+            "skills govern the method; evidence proves the claim",
+            "skills are evidence",
+            "skills govern the method; evidence proves the claim",
+        ),
+        (
+            "FIRED authorizes a capability and trust evaluation only.",
+            "FIRED authorizes installation.",
+            "fired authorizes a capability and trust evaluation only",
+        ),
+        (
+            "| Initial — 2026-07-15 | 0 | 0 | ARMED |",
+            "| Initial — 2026-07-15 | 1 | 0 | ARMED |",
+            "must keep the initial trigger baseline at 0 eligible PRs",
+        ),
+        (
+            "baseline, and at least 2 qualifying",
+            "baseline, or at least 2 qualifying",
+            "trigger must require both thresholds",
+        ),
+        (
+            "The following do not count:",
+            "The following count toward the trigger:",
+            "trigger exclusions must remain exclusions",
+        ),
+        (
+            "| Mocked browser workflow | Does the assembled UI handle expected response shapes? | TDD plus frontend testing | Playwright with route interception | Explicitly labelled mocked browser smoke | Calling the result real-stack E2E |",
+            "| Mocked browser workflow | Does the assembled UI handle expected response shapes? | TDD plus frontend testing | Playwright with route interception | Real-stack E2E evidence | Nothing |",
+            "mocked browser workflow must not claim real-stack E2E evidence",
+        ),
+        (
+            "- be discovered after merge;",
+            "- be discovered after an explicit pre-merge completion claim;",
+            "qualifying escapes must be discovered after merge",
+        ),
+        (
+            "deferred real media",
+            "future media",
+            "deferred real media",
+        ),
+        (
+            "cosmetic preferences outside acceptance criteria",
+            "cosmetic preferences",
+            "cosmetic preferences outside acceptance criteria",
+        ),
+    ],
+)
+def test_process_docs_reject_skill_selection_contract_mutations(
+    monkeypatch: Any,
+    search: str,
+    replacement: str,
+    expected_failure: str,
+) -> None:
+    skill_selection = phase1.read("docs/SKILL_SELECTION_AND_EVIDENCE.md")
+    assert search in skill_selection
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_SELECTION_AND_EVIDENCE.md"],
+        read_overrides={
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md": skill_selection.replace(
+                search,
+                replacement,
+                1,
+            ),
+        },
+    )
+
+    assert any(expected_failure in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("contradiction", "expected_failure"),
+    [
+        (
+            "When FIRED persists, install the skill automatically.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "When FIRED persists, automatically install the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "When FIRED persists, the skill is installed automatically.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "When FIRED persists, the agent installs the skill automatically.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "FIRED enables auto-install of the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "At FIRED, activation is automatic.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Install the skill automatically; do not skip audit logging.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Activation is automatic, and never bypass the audit log.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Auto-install the skill whenever FIRED persists.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "The pipeline will auto-activate the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Installation happens, automatically, at FIRED.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "The skill is activated, automatically and silently.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Installation happens, automatically, at FIRED, and does not skip audit logging.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Automatically, the skill is installed, and never bypasses audit logging.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Silently and automatically, install the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Do not skip audit logging, but silently and automatically, install the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Do not, however, skip audit logging, but silently and automatically, install the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Whether or not, audited, silently and automatically, install the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Set the flag to not, then silently and automatically, install the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Present on disk is sufficient for approval and operation.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Present on disk counts as approval.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Disk presence equals repository approval.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Disk presence counts as approval, not as execution consent.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Disk presence, in effect, counts as approval.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Disk presence, in effect, counts as approval, not as execution consent.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Composite skill quality score = weighted mean of all measures.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Composite skill quality score is the weighted mean of all measures.",
+            "forbidden skill-selection contradiction",
+        ),
+    ],
+)
+def test_process_docs_reject_additive_skill_selection_contradictions(
+    monkeypatch: Any,
+    contradiction: str,
+    expected_failure: str,
+) -> None:
+    skill_selection = phase1.read("docs/SKILL_SELECTION_AND_EVIDENCE.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_SELECTION_AND_EVIDENCE.md"],
+        read_overrides={
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md": f"{skill_selection}\n{contradiction}\n",
+        },
+    )
+
+    assert any(expected_failure in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "negated_statement",
+    [
+        "Do not install the skill automatically.",
+        "Never activate the skill automatically.",
+        "The skill will not be installed automatically.",
+        "Activation is not automatic.",
+        "Present on disk does not count as approval.",
+        "Disk presence does not equal repository approval.",
+        "Do not auto-install the skill.",
+        "The pipeline will never auto-activate the skill.",
+        "Auto-install is not permitted.",
+        "Installation happens, not automatically, at FIRED.",
+        "The skill is activated, not automatically but manually.",
+        "Automatically, installation is not permitted.",
+        "Do not, automatically, install the skill.",
+        "Never, automatically, activate the skill.",
+        "Do not, silently and automatically, install the skill.",
+        "Do not, quietly but automatically, activate the skill.",
+        "Never, silently and automatically, install the skill.",
+        "The pipeline will not, quietly but automatically, activate the skill.",
+        "Do not, silently, and automatically, install the skill.",
+        "Never, under policy, silently and automatically, activate the skill.",
+        "Disk presence, in effect, does not count as approval.",
+        "There is no composite skill quality score: use raw measures.",
+    ],
+)
+def test_process_docs_allow_negated_skill_selection_contradictions(
+    monkeypatch: Any,
+    negated_statement: str,
+) -> None:
+    skill_selection = phase1.read("docs/SKILL_SELECTION_AND_EVIDENCE.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_SELECTION_AND_EVIDENCE.md"],
+        read_overrides={
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md": f"{skill_selection}\n{negated_statement}\n",
+        },
+    )
+
+    assert not any("forbidden skill-selection contradiction" in failure for failure in failures)
+
+
+def test_process_docs_require_exact_skill_execution_selection_rule(monkeypatch: Any) -> None:
+    skill_plan = phase1.read("docs/SKILL_EXECUTION_PLAN.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_EXECUTION_PLAN.md"],
+        read_overrides={
+            "docs/SKILL_EXECUTION_PLAN.md": skill_plan.replace(
+                "start from the claim and boundary, choose the smallest test that can disprove\n"
+                "the claim, use a skill to govern the method, and record the resulting evidence\n"
+                "or prevented unsafe action.",
+                "Review the claim, available boundaries, and evidence.",
+                1,
+            ),
+        },
+    )
+
+    assert any("missing exact selection rule" in failure for failure in failures)
+
+
+def test_skill_selection_table_failure_names_the_owning_document(monkeypatch: Any) -> None:
+    skill_selection = phase1.read("docs/SKILL_SELECTION_AND_EVIDENCE.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=["docs/SKILL_SELECTION_AND_EVIDENCE.md"],
+        read_overrides={
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md": skill_selection.replace(
+                "| Phase | Question being answered | Preferred skill/workflow | Test/tool or artifact | Required evidence | Do not use it for |",
+                "| Phase | Question being answered | Preferred skill/workflow | Test/tool or artifact | Required evidence |",
+                1,
+            ),
+        },
+    )
+
+    matching = [failure for failure in failures if "missing headers: Do not use it for" in failure]
+    assert matching
+    assert all(".github/pull_request_template.md" not in failure for failure in matching)
+
+
+def test_current_skill_selection_and_evidence_contract_passes(monkeypatch: Any) -> None:
+    assert run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-164-phf-019-skill-evidence-governance",
+        changed=[
+            "docs/SKILL_EXECUTION_PLAN.md",
+            "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+        ],
+    ) == []
+
+
 def test_issue138_branch_allows_only_click_security_remediation_files(
     monkeypatch: Any,
 ) -> None:
