@@ -3334,7 +3334,8 @@ def check_process_docs(failures: list[str]) -> None:
     )
     for pattern in forbidden_skill_selection_patterns:
         prefix_negation_pattern = (
-            r"\b(?:not|never),(?:(?!,\s*(?:but|however|yet)\b)[^.;:\n]){0,48}$"
+            r"(?:^|[.;:!?]\s+|\b(?:do|does|did|will|would|shall|should|must|may|might|can)\s+)"
+            r"(?:not|never),(?:(?!,\s*(?:but|however|yet)\b)[^.;:\n]){0,48}$"
             if pattern == automatic_parenthetical_install_pattern
             else None
         )

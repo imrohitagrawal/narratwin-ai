@@ -393,6 +393,14 @@ def test_process_docs_reject_skill_selection_contract_mutations(
             "forbidden skill-selection contradiction",
         ),
         (
+            "Whether or not, audited, silently and automatically, install the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Set the flag to not, then silently and automatically, install the skill.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
             "Present on disk is sufficient for approval and operation.",
             "forbidden skill-selection contradiction",
         ),
@@ -464,6 +472,7 @@ def test_process_docs_reject_additive_skill_selection_contradictions(
         "Do not, silently and automatically, install the skill.",
         "Do not, quietly but automatically, activate the skill.",
         "Never, silently and automatically, install the skill.",
+        "The pipeline will not, quietly but automatically, activate the skill.",
         "Do not, silently, and automatically, install the skill.",
         "Never, under policy, silently and automatically, activate the skill.",
         "Disk presence, in effect, does not count as approval.",
