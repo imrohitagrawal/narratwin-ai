@@ -12,6 +12,7 @@ from typing import Any, Callable
 
 import pytest
 
+import scripts.governance_preflight_repository as repository_adapter
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
 
 
@@ -118,6 +119,7 @@ def test_exact_valid_repository_has_no_findings(tmp_path: Path) -> None:
         ("filename", ["GPF.REPO.ISSUE_REF_MISMATCH"]),
         ("filename-body", ["GPF.REPO.ISSUE_REF_MISMATCH", "GPF.BINDING.ISSUE_MISMATCH"]),
         ("required-missing", ["GPF.SCOPE.REQUIRED_NOT_CHANGED"]),
+        ("deleted-base", ["GPF.REPO.PREFLIGHT_MISSING"]),
     ))
 def test_each_repository_mutation_returns_complete_vector(tmp_path: Path, mutation: str, expected: list[str]) -> None:
     repo, base, head = _valid_repo(tmp_path)
@@ -142,6 +144,19 @@ def test_each_repository_mutation_returns_complete_vector(tmp_path: Path, mutati
     elif mutation == "required-missing":
         _git(repo, "rm", PATHS[1])
         head = _commit(repo, "remove required path")
+    elif mutation == "deleted-base":
+        required = [PREFLIGHT, "docs/STATUS.md"]
+        repo, _ = _new_repo(tmp_path, "mutated")
+        _write(repo, PREFLIGHT, "old\n")
+        base = _commit(repo, "base preflight")
+        _git(repo, "checkout", "-q", "-b", BRANCH)
+        _write(repo, PREFLIGHT, json.dumps(_artifact(required=required, allowed=required)))
+        _commit(repo, "preflight")
+        _write(repo, "docs/STATUS.md", "status\n")
+        head = _commit(repo, "implementation")
+        assert _codes(repo, base, head) == []
+        _git(repo, "rm", PREFLIGHT)
+        head = _commit(repo, "single deletion fault")
     else:
         wrong = "docs/governance/preflights/issue-177.json"
         wrong_paths = [wrong, *PATHS[1:]]
@@ -164,7 +179,7 @@ def test_unavailable_or_injectable_history_fails_closed(tmp_path: Path, bad: str
     assert _codes(repo, base, head) == ["GPF.REPO.HISTORY_UNAVAILABLE"]
 
 
-def test_non_ancestor_history_is_unavailable(tmp_path: Path) -> None:
+def test_non_ancestor_history_is_unavailable(tmp_path: Path, monkeypatch: Any) -> None:
     repo, base, head = _valid_repo(tmp_path)
     assert _codes(repo, base, head) == []
     _git(repo, "rm", PREFLIGHT)
@@ -174,6 +189,8 @@ def test_non_ancestor_history_is_unavailable(tmp_path: Path) -> None:
     _git(repo, "rm", "-rf", ".")
     _write(repo, "other.txt", "other\n")
     unrelated = _commit(repo, "unrelated")
+    assert _codes(repo, unrelated, head) == ["GPF.REPO.HISTORY_UNAVAILABLE"]
+    monkeypatch.setattr(repository_adapter, "_GIT", "/missing/git")
     assert _codes(repo, unrelated, head) == ["GPF.REPO.HISTORY_UNAVAILABLE"]
 
 
@@ -264,6 +281,7 @@ def test_commit_limits_and_maximum_valid_performance(tmp_path: Path) -> None:
     validation_seconds = time.perf_counter() - started
     assert len(_git(repo, "rev-list", f"{base}..{head}").splitlines()) == 1_000
     assert validation_seconds < 5.0, (construction_seconds, validation_seconds)
+    print(f"maximum_fixture_construction_seconds={construction_seconds:.3f} maximum_validation_seconds={validation_seconds:.3f}")
     _commit(repo, "isolated limit", empty=True)
     assert _codes(repo, base, _git(repo, "rev-parse", "HEAD")) == ["GPF.REPO.LIMIT_EXCEEDED"]
     _write(repo, "docs/governance/preflights/issue-999.json", "{}\n")
@@ -285,6 +303,20 @@ def test_changed_path_limit_is_isolated(tmp_path: Path, count: int, expected: li
     head = _commit(repo, "paths")
     assert len(_git(repo, "diff", "--name-only", base, head).splitlines()) == count
     assert _codes(repo, base, head) == expected
+    if count == 2_000:
+        source = "generated/0000.txt"
+        for target, fault in (("backend/fault.txt", "GPF.SCOPE.CHANGE_FORBIDDEN"),
+                              ("tools/fault.txt", "GPF.SCOPE.CHANGE_NOT_ALLOWED"),
+                              ("bad\npath.txt", "GPF.PATH.INVALID")):
+            (repo / target).parent.mkdir(parents=True, exist_ok=True)
+            _git(repo, "mv", source, target)
+            head = _commit(repo, "large-diff fault")
+            assert _codes(repo, base, head) == [fault]
+            _git(repo, "mv", target, source)
+            head = _commit(repo, "restore valid large diff")
+            assert _codes(repo, base, head) == []
+        head = _rewrite_artifact(repo, lambda value: value.__setitem__("objective", "x" * 2_001))
+        assert _codes(repo, base, head) == ["GPF.SCHEMA.LIMIT"]
 
 
 @pytest.mark.parametrize(("path", "expected"), (
@@ -332,6 +364,7 @@ def test_later_branch_activates_only_when_adapter_is_in_base_tree(tmp_path: Path
 
 def test_exactly_40_seeded_histories_report_reproducible_diagnostics(tmp_path: Path) -> None:
     results: list[bool] = []
+    validation_times: list[float] = []
     for seed in SEEDS:
         rng = random.Random(seed)
         for case_index in range(10):
@@ -350,7 +383,9 @@ def test_exactly_40_seeded_histories_report_reproducible_diagnostics(tmp_path: P
                 head = _commit(repo, "single fault")
             elif mutation == "body-issue":
                 head = _rewrite_artifact(repo, lambda value: value.__setitem__("issue_number", 177))
+            started = time.perf_counter()
             actual = _codes(repo, base, head)
+            validation_times.append(time.perf_counter() - started)
             paths = _git(repo, "diff", "--name-only", base, head).splitlines()
             assert actual == expected, (f"seed={seed} case={case_index} mutation={mutation} "
                                         f"base={base} head={head} expected={expected} "
@@ -358,6 +393,7 @@ def test_exactly_40_seeded_histories_report_reproducible_diagnostics(tmp_path: P
             results.append(valid)
     assert len(results) == 40
     assert results.count(True) == results.count(False) == 20
+    print(f"generated_history_validation_p95_seconds={sorted(validation_times)[37]:.4f}")
 
 
 @pytest.mark.parametrize(("mode", "returncode", "stdout"), (

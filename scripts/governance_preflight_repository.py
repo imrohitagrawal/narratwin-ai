@@ -40,16 +40,14 @@ def _git(repository: Path, *args: str) -> bytes | None:
 
 
 def _paths(raw: bytes | None) -> list[str] | None:
-    if raw is None or (raw and not raw.endswith(b"\0")):
-        return None
-    return [item.decode("utf-8", errors="surrogateescape") for item in raw.split(b"\0")[:-1]]
+    return None if raw is None or (raw and not raw.endswith(b"\0")) else [
+        item.decode("utf-8", errors="surrogateescape") for item in raw.split(b"\0")[:-1]]
 
 
 def _valid_path(path: str) -> bool:
-    if path.startswith(("/", "\\", "~/")) or re.match(r"^[A-Za-z]:", path) or "\\" in path:
-        return False
-    return all(part not in {"", ".", ".."} for part in path.split("/")) and not any(
-        unicodedata.category(char).startswith("C") for char in path)
+    return (not path.startswith(("/", "\\", "~/")) and not re.match(r"^[A-Za-z]:", path)
+            and "\\" not in path and all(part not in {"", ".", ".."} for part in path.split("/"))
+            and not any(unicodedata.category(char).startswith("C") for char in path))
 
 
 def _matches(path: str, rules: list[str]) -> bool:
