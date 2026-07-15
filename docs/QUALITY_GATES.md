@@ -556,6 +556,41 @@ Changes to `scripts/quality/check_phase1_closure_docs.py`,
 attention because in-repo gate scripts are executed from the PR branch under
 review.
 
+## GovernancePreflightV1 feasibility gate
+
+New governance work, and legacy governance work rebased onto a merge base that
+contains `docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json`, must include
+`docs/governance/preflights/issue-<number>.json`. The issue number must match a
+`phase-1-closure-process-<number>-*` branch. The issue `#169` bootstrap branch
+is the one prospective cutover exception because its merge base predates the
+schema.
+
+The repository guardrail validates the closed JSON schema and relationships,
+not Markdown wording. It fails when:
+
+- a required file is not allowed, a changed path is outside the allowlist, or
+  any exact/prefix forbidden rule matches;
+- governance scope does not require and allow a minimal `docs/STATUS.md`
+  update;
+- authorities or invariant IDs are duplicated/blank, mutations are absent, or
+  evidence uses placeholders/range shorthand;
+- local commands, the forced PR-event command, or GitHub check names differ
+  from the exact repository profile;
+- the approved canonical digest or GitHub review evidence does not match;
+- the first commit is not the exact reviewed bootstrap or implementation step
+  commits are missing, reordered, repeated, or out of scope;
+- correction ledgers skip/duplicate a cycle, exceed two cycles, violate the
+  finding/reset/reapproval/correction/completion/rereview order, or continue
+  after an approved rereview or stricter STOP.
+
+Product-only diffs keep their existing behavior. PRs `#162`, `#166`, and
+`#168` remain grandfathered only while they retain a pre-schema merge base;
+rebasing them activates the new gate. The required local proof remains the
+focused unit suites, repository guardrail, `make quality`, lint, typecheck,
+`make ci`, security/dependency/container/secrets/eval targets, and a real
+forced pull-request-event run. GitHub checks must still pass at the exact head;
+local success cannot substitute for human approval or branch protection.
+
 ## CI Relationship
 
 GitHub Actions workflows remain the remote enforcement layer. Local stage targets are the developer and agent contract before pushing.

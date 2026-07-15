@@ -202,6 +202,43 @@ Use `docs/ENGINEERING_PROCESS_RCA.md` for the NarraTwin-specific failure lessons
 and `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` when creating a new
 project or reusable project template.
 
+## Machine-readable governance feasibility
+
+For every new or rebased governance/process PR, the first non-empty
+branch-exclusive commit must establish a reviewed `GovernancePreflightV1`
+instance before global guardrail implementation begins. The canonical files
+are:
+
+- `docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json`
+- `docs/governance/preflights/issue-<number>.json`
+
+The instance owns the exact objective, change class, authority domains, file
+contract, minimal STATUS decision, invariant/disproof/evidence map, local and
+remote validation profile, implementation commit plan, correction policy,
+non-goals, path grammar, and sequencing. Its `review_subject` is canonicalized
+as UTF-8 JSON with sorted keys and compact separators; the SHA-256 digest must
+match a pre-bootstrap fresh-context approval comment and the checked-in review
+evidence.
+
+Required files must be a subset of allowed files/prefixes, all required files
+must actually change, and forbidden rules take precedence. Paths are
+repository-relative POSIX paths: leading slashes, empty/dot/parent segments,
+backslashes, and glob syntax fail. Governance work always uses
+`status_decision = update-minimally` and both requires and allows
+`docs/STATUS.md`; there is no deferral exception.
+
+The first commit is exact-file bootstrap evidence, not permission to implement
+arbitrary policy. Later implementation commits must match the declared step
+order, footer, and per-step file set. After the declared implementation-complete
+issue comment, any correction must use one reset commit, digest reapproval, one
+correction commit, a COMPLETE ledger, and exact-head rereview. Cycles are
+contiguous from one and capped at two; a third cycle is `STOP_DECOMPOSE`.
+
+This gate is prospective. Ordinary non-governance changes are unchanged, and
+legacy governance PRs are not rewritten until they rebase onto a schema-bearing
+base. The issue `#169` bootstrap branch is explicitly gated even though its
+base predates the schema.
+
 ## Codex instruction
 
 Codex must not start coding from a vague request. It must first identify or

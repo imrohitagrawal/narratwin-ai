@@ -707,6 +707,59 @@ Before merge:
       issue-closing semantics matter, because PR CI cannot see the editor's
       final merge message.
 
+## 2026-07-15 Governance Contract Feasibility RCA
+
+Issue `#167` and draft PR `#168` exposed a defect that the earlier preflight
+tables could not prevent: the approved work contract itself was impossible to
+satisfy. Issue `#167` required product-mode policy edits to
+`docs/PHASE_PLAN.md` and `docs/STAGE_ISSUE_PLAN.md`, explicitly reserved
+`docs/STATUS.md` for later work, and required STATUS to remain unchanged. The
+existing global repository guardrail requires `docs/STATUS.md` whenever those
+governance surfaces change. The issue therefore simultaneously forbade and
+required the same file.
+
+Additional escape paths compounded the contradiction:
+
+- the issue allowlist did not include the global guardrail that owned the
+  conflicting STATUS rule;
+- PR `#168` claimed the STATUS checklist was satisfied by deferral even though
+  the executable rule had no deferral state;
+- its preflight rows used `through` and `all ... IDs` shorthand instead of the
+  explicit IDs already required by the PR-body parser;
+- its validation block omitted the forced pull-request-event command, so local
+  `make ci` did not exercise title, body, and commit-message policy;
+- implementation and three correction cycles happened before the contract was
+  made mechanically feasible, after which policy, secret, and quality checks
+  still failed at exact head `faf76d5`.
+
+PR `#168` is stopped rather than patched. `GovernancePreflightV1` now makes
+feasibility a first-commit entry gate for new or rebased governance work. The
+canonical schema is
+`docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json`; each instance is
+`docs/governance/preflights/issue-<number>.json`. The digest-approved
+`review_subject` must declare unique authorities, exact required/allowed/
+forbidden paths, mandatory minimal STATUS handling, explicit invariants and
+disproof mutations, the full validation profile, ordered implementation
+commits, and correction/STOP semantics.
+
+The first branch-exclusive commit must contain only the approved bootstrap
+files and must postdate the fresh-context approval. Global implementation
+starts only in the later declared steps. A correction finding may produce at
+most two contiguous, ledgered post-implementation cycles; a third cycle fails
+and requires STOP/decomposition. Stricter existing stop rules still win.
+
+### Issue `#169` preflight evidence
+
+| Decision | Selection | Evidence or prevented action |
+|---|---|---|
+| Invoked | planning/task breakdown, git workflow, TDD, incremental implementation, code review | approved digest `c0d21c822ec2fde70099276568b60aa40cbea91342954fef2468502b4283d35d`; separate bootstrap/RED/GREEN/docs commits; 45 mutation cases; forced PR-event validation; exact-head review still required |
+| Rejected | custom skill/plugin and Superpowers installation | existing repository docs and approved installed skills covered the claim; no capability gap, approval, lock, notice, or external key existed |
+| Rejected | product/API/interface, frontend, performance, provider, runtime, and release skills | issue `#169` changes only repository governance feasibility; those boundaries are explicit non-goals and their files are forbidden |
+
+Skill invocation is not evidence. The evidence is the digest match, old-behavior
+RED result, mutation outcomes, command results, commit topology, GitHub comment
+timestamps, and independent review decision.
+
 ## Reusable Lesson
 
 The missing capability was not "more skills." It was turning skills into

@@ -575,6 +575,22 @@ process guardrail and its tests:
 - `tests/unit/test_guardrails_check.py`
 - `tests/unit/test_phase1_closure_docs.py`
 
+New process branches may also add exactly their matching machine-readable
+preflight instance at
+`docs/governance/preflights/issue-<issue>.json`. The canonical
+`docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json` is admitted only as a
+governance-preflight artifact and remains subject to the instance allowlist and
+commit plan. The branch issue number, instance issue number, reviewed digest,
+required/allowed/forbidden path sets, minimal STATUS update, and implementation
+commit sequence must agree. This admission does not add runtime, workflow,
+dependency, product-mode, media, provider, or release scope.
+
+Issue `#169` is the sole current Product Mode 1 governance prerequisite under
+tracker `#155`. Only after its human-approved merge-closeout may one replacement
+PHF-020A issue start. PHF-020B and all runtime lanes remain blocked until the
+replacement PHF-020A merge-closeout. Stopped PRs `#166` and `#168` are evidence
+sources only and must not be patched by this process branch.
+
 Process-only branches must not touch backend, frontend, provider, RAG, avatar,
 database, Docker, or product runtime files. Issue-specific branches such as
 `phase-1-closure-39-*` retain their separate implementation/evidence allowlist

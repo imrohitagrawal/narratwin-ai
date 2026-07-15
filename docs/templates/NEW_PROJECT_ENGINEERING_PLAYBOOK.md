@@ -378,6 +378,46 @@ until the adapted artifact exists and the PR body links it. A template copied
 without project-specific entities, threats, tests, and sources does not satisfy
 this gate.
 
+### Machine-readable feasibility contract for governance work
+
+When the change itself alters governance, a prose preflight is insufficient.
+Create a versioned JSON contract as the first branch-exclusive commit and bind
+it to a fresh-context approval of the canonical JSON digest. At minimum, model:
+
+- the linked issue, objective, and governance change class;
+- unique authority domains and their owners;
+- exact required, allowed, and forbidden files/prefixes;
+- a mandatory minimal status-ledger update;
+- stable invariant IDs, claims, disproof mutations, and evidence targets;
+- exact local commands, forced pull-request-event validation, and remote check
+  names;
+- the bootstrap file set and ordered implementation commits;
+- prospective cutover behavior for legacy work;
+- a correction ledger capped at two contiguous post-implementation cycles,
+  with a third finding requiring STOP/decomposition.
+
+Validate relationships, not merely JSON syntax. A required file outside the
+allowlist, a forbidden required file, an omitted status update, an unknown or
+duplicate authority/invariant, shorthand evidence, a missing PR-event command,
+or implementation before the approved bootstrap must fail before coding.
+
+Treat path strings and GitHub/provider/reviewer output as untrusted input. Use
+closed objects, exact types/enums, repository-relative POSIX paths, forbidden
+precedence, digest verification, timestamps, exact commit ranges, and explicit
+issue/PR binding. Never interpolate untrusted fields into shell commands.
+
+Correction order is:
+
+```text
+finding -> contract/test reset commit -> fresh digest approval -> one fix commit
+-> completion ledger -> exact-head rereview
+```
+
+Do not call an invocation, review request, or green check evidence by itself.
+Record the concrete mutation result, command output, commit SHA, approval URL,
+and residual-risk decision. Keep human approval, merge-dialog text, repository
+settings, and other non-automatable surfaces explicitly human-owned.
+
 ## Stop Rule: Review Finds New Defect Classes
 
 If adversarial review finds a new class of blocking issue after implementation
