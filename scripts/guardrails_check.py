@@ -1194,6 +1194,64 @@ def markdown_section(body: str, heading: str) -> str:
     return "\n".join(section_lines)
 
 
+def reviewer_overview_failures(body: str) -> list[str]:
+    points = (
+        "1. What changed and why",
+        "2. Scope",
+        "3. Key files and components",
+        "4. Reviewer focus",
+        "5. Validation, limitations, and residual risks",
+    )
+    meaning_failures = tuple(
+        f"Reviewer overview point {index} must contain meaningful PR-specific content"
+        + (", including both In scope and Out of scope." if index == 2 else ".")
+        for index in range(1, 6)
+    )
+    placeholders = {"todo", "tbd", "pending", "add text here", "describe the change", "n a", "na", "not applicable"}
+    instructions = {
+        "explain the change and the problem or need it addresses in plain language",
+        "describe what the pr changes",
+        "describe what it intentionally does not change",
+        "identify the main files modules workflows or documents affected",
+        "tell the reviewer which decisions risks invariants or behaviors deserve close attention",
+        "summarize tests and checks known limitations remaining risks and human only decisions",
+    }
+
+    cleaned = re.sub(r"(?s)<!--.*?-->", "", body)
+    cleaned = re.sub(r"(?ms)^[ \t]*(```|~~~)[^\n]*\n.*?^[ \t]*\1[ \t]*$", "", cleaned)
+    headings = list(re.finditer(r"(?im)^[ \t]*(##|###)[ \t]+(.+?)[ \t]*#*[ \t]*$", cleaned))
+    overview = next((match for match in headings if match[1] == "##" and match[2].strip().lower() == "reviewer overview"), None)
+    if overview is None:
+        return ["Non-trivial pull requests must include a Reviewer overview section."]
+    section_end = next((match.start() for match in headings if match.start() > overview.start() and match[1] == "##"), len(cleaned))
+    evidence = {"guardrail checklist", "preflight evidence", "human-only review surfaces", "pre-implementation evidence", "validation evidence"}
+    result = []
+    if any(match.start() < overview.start() and match[1] == "##" and match[2].strip().lower() in evidence for match in headings):
+        result.append("Reviewer overview must appear before detailed governance and evidence sections.")
+    section_headings = [match for match in headings if overview.end() <= match.start() < section_end and match[1] == "###"]
+
+    def meaningful(value: str) -> bool:
+        normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+        return bool(normalized and normalized not in placeholders | instructions)
+
+    for index, point in enumerate(points):
+        heading = next((match for match in section_headings if match[2].strip().lower() == point.lower()), None)
+        if heading is None:
+            result.append(f"Reviewer overview must include point {point}.")
+            continue
+        content_end = next((match.start() for match in headings if heading.end() <= match.start() < section_end), section_end)
+        content = cleaned[heading.end() : content_end]
+        if index == 1:
+            parts = re.split(r"(?im)^[ \t]*[-*+]?[ \t]*(in scope|out of scope):[ \t]*", content)
+            values = {parts[i].lower(): parts[i + 1] for i in range(1, len(parts) - 1, 2)}
+            valid = all(label in values and meaningful(values[label]) for label in ("in scope", "out of scope"))
+        else:
+            valid = meaningful(content)
+        if not valid:
+            result.append(meaning_failures[index])
+    return result
+
+
 def parse_preflight_row(cells: list[str]) -> PreflightEvidenceRow | None:
     if len(cells) >= 9:
         evidence, artifact, reference_type, matrix_ids, command, reviewer, evidence_type, status, residual = cells[:9]
@@ -1690,6 +1748,7 @@ def check_issue_linked_pull_request() -> None:
     if not reference_only_issue_39 and not is_canonical_stage_branch and not re.search(issue_link_pattern(), body):
         failures.append("Pull request body must link an issue using reference-only wording such as Refs #<issue>.")
     if is_nontrivial_pull_request(changes):
+        failures.extend(reviewer_overview_failures(body))
         if not has_completed_preflight_evidence(body):
             failures.append("Non-trivial pull requests must include completed preflight evidence rows.")
         if not has_validation_evidence(body):
