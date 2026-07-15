@@ -465,8 +465,10 @@ Gate validates:
   `phase-1-closure-process-<issue>-<phf-id>-<slug>` and may change governance
   docs, `scripts/guardrails_check.py`, and guardrail/closure-gate unit tests,
   but not backend, frontend, provider, RAG, avatar, database, Docker, or product
-  runtime files. Final Review baseline artifacts are required inputs but not
-  allowed closure-branch edits
+  runtime files. Issue `#172` has a narrower named exception for only the
+  GovernancePreflightV1 schema, offline validator, and focused unit test; it
+  does not admit repository or GitHub integration paths. Final Review baseline
+  artifacts are required inputs but not allowed closure-branch edits
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md` parses as an issue table covering
   issues `#35` through `#44` with expected P0/P1/P2/P3 priorities
 - `docs/reviews/PROCESS_HARDENING_FINDINGS.md` tracks deduplicated

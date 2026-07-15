@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://narratwin.local/schemas/GOVERNANCE_PREFLIGHT_V1.schema.json",
+  "title": "GovernancePreflightV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "issue_number", "branch", "objective", "status_decision", "scope"],
+  "properties": {
+    "schema_version": {"const": "GovernancePreflightV1"},
+    "issue_number": {"type": "integer"},
+    "branch": {"type": "string", "minLength": 1},
+    "objective": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "status_decision": {"const": "update-minimally"},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "allowed_prefixes", "forbidden"],
+      "properties": {
+        "required": {"$ref": "#/$defs/pathList"},
+        "allowed_prefixes": {"$ref": "#/$defs/pathList"},
+        "forbidden": {"$ref": "#/$defs/pathList"}
+      }
+    }
+  },
+  "$defs": {
+    "pathList": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 512}
+    }
+  }
+}
