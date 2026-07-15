@@ -192,6 +192,18 @@
         ]
       },
       {
+        "id": "GPF-CORRECTION-SCOPE-001",
+        "claim": "Every correction implementation ledger and commit is bound exactly to scripts/guardrails_check.py.",
+        "disproof_mutations": [
+          "change ledger and correction commit to another allowed governance file",
+          "add a second correction implementation file",
+          "omit the correction implementation file"
+        ],
+        "evidence_targets": [
+          "tests/unit/test_guardrails_check.py::test_governance_preflight_rejects_invalid_or_third_correction_cycle"
+        ]
+      },
+      {
         "id": "GPF-COMPAT-001",
         "claim": "Non-governance pull requests retain existing guardrail behavior and legacy governance PRs are grandfathered until rebased onto a schema-containing merge base.",
         "disproof_mutations": [
@@ -382,6 +394,7 @@
           "pr",
           "cycle_number",
           "finding_class",
+          "correction_allowed_files",
           "finding_url",
           "contract_reset_commit",
           "review_prompt_reset_url",

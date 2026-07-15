@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 import json
 from copy import deepcopy
 from pathlib import Path
@@ -3151,14 +3152,22 @@ def valid_governance_commits(document: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def valid_correction_events(document: dict[str, Any]) -> list[dict[str, Any]]:
-    digest = document["review_evidence"]["review_subject_sha256"]
+    correction_digest = hashlib.sha256(
+        json.dumps(
+            document["review_subject"],
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    implementation_digest = document["review_evidence"]["review_subject_sha256"]
     return [
         {
             "marker": "GOVERNANCE-IMPLEMENTATION-COMPLETE-V1",
             "timestamp": "2026-07-15T15:05:00Z",
             "issue": 169,
             "pr": 170,
-            "review_subject_sha256": digest,
+            "review_subject_sha256": implementation_digest,
             "completed_step_ids": ["red-tests", "guardrail-green", "governance-docs"],
             "step_commit_shas": ["2" * 40, "3" * 40, "4" * 40],
             "implementation_head_sha": "4" * 40,
@@ -3178,10 +3187,11 @@ def valid_correction_events(document: dict[str, Any]) -> list[dict[str, Any]]:
             "pr": 170,
             "cycle_number": 1,
             "finding_class": "contract",
+            "correction_allowed_files": ["scripts/guardrails_check.py"],
             "finding_url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169#issuecomment-11",
             "contract_reset_commit": "5" * 40,
             "review_prompt_reset_url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169#issuecomment-12",
-            "review_subject_sha256": digest,
+            "review_subject_sha256": correction_digest,
             "approval_comment_url": "https://github.com/imrohitagrawal/narratwin-ai/issues/169#issuecomment-13",
             "approval_reviewer": "fresh reviewer",
             "approval_reviewed_at": "2026-07-15T15:19:00Z",
@@ -3197,7 +3207,7 @@ def valid_correction_events(document: dict[str, Any]) -> list[dict[str, Any]]:
             "cycle_number": 1,
             "correction_commit_sha": "6" * 40,
             "correction_head_sha": "6" * 40,
-            "review_subject_sha256": digest,
+            "review_subject_sha256": correction_digest,
             "decision": "COMPLETE",
         },
         {
@@ -3411,7 +3421,15 @@ def test_governance_preflight_rejects_wrong_commit_order(mutation: str) -> None:
 
 @pytest.mark.parametrize(
     "mutation",
-    ["skip-cycle", "duplicate-cycle", "wrong-binding", "missing-reset", "third-cycle", "stricter-stop"],
+    [
+        "skip-cycle",
+        "duplicate-cycle",
+        "wrong-binding",
+        "missing-reset",
+        "scope-expansion",
+        "third-cycle",
+        "stricter-stop",
+    ],
 )
 def test_governance_preflight_rejects_invalid_or_third_correction_cycle(mutation: str) -> None:
     document = issue169_preflight()
@@ -3443,6 +3461,9 @@ def test_governance_preflight_rejects_invalid_or_third_correction_cycle(mutation
         events[2]["pr"] = 999
     elif mutation == "missing-reset":
         commits.pop(-2)
+    elif mutation == "scope-expansion":
+        commits[-1]["files"] = ["docs/STATUS.md"]
+        events[2]["correction_allowed_files"] = ["docs/STATUS.md"]
     elif mutation == "third-cycle":
         events.append(
             {
@@ -3492,3 +3513,181 @@ def test_governance_preflight_cutover_is_prospective() -> None:
         head_ref="phase-1-closure-process-169-gpf-v1-feasibility",
         base_has_schema=False,
     )
+
+
+def test_governance_preflight_github_review_verification_uses_cli_auth_without_env(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+
+    cli_auth_value = f"test-auth-{id(monkeypatch)}"
+    calls: list[tuple[list[str], dict[str, Any]]] = []
+
+    class Completed:
+        returncode = 0
+        stdout = f"{cli_auth_value}\n"
+
+    def fake_run(args: list[str], **kwargs: Any) -> Completed:
+        calls.append((args, kwargs))
+        return Completed()
+
+    monkeypatch.setattr(guardrails.subprocess, "run", fake_run)
+    captured: dict[str, Any] = {}
+
+    class Response:
+        status = 200
+
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args: Any) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"verified": true}'
+
+    def fake_urlopen(request: Any, timeout: int) -> Response:
+        captured["authorization"] = request.get_header("Authorization")
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr(guardrails, "urlopen", fake_urlopen)
+
+    assert guardrails.github_api_json("issues/comments/1") == {"verified": True}
+    assert calls == [
+        (
+            ["gh", "auth", "token"],
+            {
+                "cwd": guardrails.ROOT,
+                "text": True,
+                "capture_output": True,
+                "check": False,
+                "timeout": 5,
+            },
+        )
+    ]
+    assert captured == {"authorization": f"Bearer {cli_auth_value}", "timeout": 10}
+    process_output = capsys.readouterr()
+    assert cli_auth_value not in process_output.out
+    assert cli_auth_value not in process_output.err
+
+
+def test_governance_preflight_github_review_verification_prefers_environment_auth(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    environment_auth_value = f"environment-auth-{id(monkeypatch)}"
+    monkeypatch.setenv("GITHUB_TOKEN", environment_auth_value)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    monkeypatch.setattr(
+        guardrails.subprocess,
+        "run",
+        lambda *args, **kwargs: pytest.fail("CLI fallback must not run when environment auth exists"),
+    )
+    captured: dict[str, Any] = {}
+
+    class Response:
+        status = 200
+
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args: Any) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"verified": true}'
+
+    def fake_urlopen(request: Any, timeout: int) -> Response:
+        captured["authorization"] = request.get_header("Authorization")
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr(guardrails, "urlopen", fake_urlopen)
+
+    assert guardrails.github_api_json("issues/comments/1") == {"verified": True}
+    assert captured == {"authorization": f"Bearer {environment_auth_value}", "timeout": 10}
+
+
+def test_governance_preflight_implementation_does_not_trigger_secret_scanner() -> None:
+    script = (Path(__file__).parents[2] / "scripts/guardrails_check.py").read_text(encoding="utf-8")
+    matches = [
+        (line_number, name)
+        for line_number, line in enumerate(script.splitlines(), start=1)
+        for name, pattern in guardrails.SECRET_PATTERNS
+        if pattern.search(line)
+    ]
+
+    assert matches == []
+
+
+def test_governance_preflight_accepts_digest_reapproved_correction_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    document = issue169_preflight()
+    digest = hashlib.sha256(
+        json.dumps(
+            document["review_subject"],
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    commits = valid_governance_commits(document)
+    commits.extend(
+        [
+            {
+                "sha": "5" * 40,
+                "committed_at": "2026-07-15T15:15:00Z",
+                "message": "test: reset correction contract\n\nGovernance-Correction-Reset: 1",
+                "files": [
+                    "docs/governance/preflights/issue-169.json",
+                    "tests/unit/test_guardrails_check.py",
+                ],
+            },
+            {
+                "sha": "6" * 40,
+                "committed_at": "2026-07-15T15:25:00Z",
+                "message": "fix: correct governance guardrail\n\nGovernance-Correction-Cycle: 1",
+                "files": ["scripts/guardrails_check.py"],
+            },
+        ]
+    )
+
+    approval_comment = {
+        "body": (
+            f"Digest verified: {digest}.\n\nDecision: APPROVED.\n\n"
+            "Reviewer: fresh correction reviewer"
+        ),
+        "created_at": "2026-07-15T15:19:00Z",
+    }
+    monkeypatch.setattr(
+        guardrails,
+        "github_comment_from_url",
+        lambda _url: approval_comment,
+    )
+    approved_digests, approval_failures = guardrails.validated_governance_correction_digests(
+        document,
+        valid_correction_events(document),
+    )
+
+    assert approval_failures == []
+    assert approved_digests == {digest}
+    assert guardrails.validate_governance_preflight_document(
+        document,
+        document["review_subject"]["scope"]["required_files"],
+        approved_review_subject_digests=approved_digests,
+    ) == []
+    assert guardrails.validate_governance_preflight_commits(
+        document,
+        commits,
+        approved_review_subject_digests=approved_digests,
+    ) == []
+    assert guardrails.validate_governance_correction_events(
+        document,
+        commits,
+        valid_correction_events(document),
+        issue_number=169,
+        pr_number=170,
+    ) == []
