@@ -66,6 +66,14 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_167_ALLOWED_CHANGED_FILES = {
+    "AGENTS.md",
+    "docs/PHASE_PLAN.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -992,9 +1000,11 @@ def table_rows(section_text: str) -> list[list[str]]:
     rows: list[list[str]] = []
     for line in section_text.splitlines():
         stripped = line.strip()
-        if not stripped.startswith("|") or "---" in stripped:
+        if not stripped.startswith("|"):
             continue
         cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if cells and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells):
+            continue
         if cells:
             rows.append(cells)
     return rows
@@ -1026,9 +1036,9 @@ def parse_table_lines(section_text: str) -> tuple[list[str], list[list[str]]]:
             if headers and rows:
                 break
             continue
-        if "---" in stripped:
-            continue
         cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if cells and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells):
+            continue
         if not cells:
             continue
         if not headers:
@@ -2788,6 +2798,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_138_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-167-"):
+        allowed_files = ISSUE_167_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):
         allowed_files = PROCESS_ONLY_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-39-execution-strategy":
@@ -3123,6 +3135,349 @@ def issue39_all_matrix_rows_closed(closure_plan_text: str) -> bool:
         set(statuses) == REQUIRED_ISSUE_39_MATRIX_IDS
         and all(status == "closed" for status in statuses.values())
     )
+
+
+def check_exact_policy_table(
+    failures: list[str],
+    *,
+    document: str,
+    heading: str,
+    expected_headers: tuple[str, ...],
+    expected_rows: tuple[tuple[str, ...], ...],
+    label: str,
+) -> None:
+    heading_count = len(re.findall(rf"^### {re.escape(heading)}\s*$", document, flags=re.M))
+    if heading_count != 1:
+        fail(
+            failures,
+            f"docs/PHASE_PLAN.md {label} must appear exactly once; found {heading_count}.",
+        )
+        return
+    headers, rows = parse_table_lines(subsection(document, heading))
+    if headers != list(expected_headers):
+        fail(
+            failures,
+            f"docs/PHASE_PLAN.md {label} headers must be exactly: "
+            + " | ".join(expected_headers),
+        )
+        return
+    malformed = [row for row in rows if len(row) != len(expected_headers)]
+    if malformed:
+        fail(failures, f"docs/PHASE_PLAN.md {label} contains malformed rows: {malformed}")
+        return
+    if rows != [list(row) for row in expected_rows]:
+        fail(failures, f"docs/PHASE_PLAN.md {label} rows do not match the exact registered contract.")
+
+
+def check_product_mode_policy(failures: list[str]) -> None:
+    phase_plan = read("docs/PHASE_PLAN.md")
+    container_heading = "Product Modes, Delivery Phases, And Closure Programs"
+    container_count = len(
+        re.findall(rf"^## {re.escape(container_heading)}\s*$", phase_plan, flags=re.M)
+    )
+    if container_count != 1:
+        fail(
+            failures,
+            "docs/PHASE_PLAN.md authoritative policy container must appear exactly once; "
+            f"found {container_count}.",
+        )
+    check_exact_policy_table(
+        failures,
+        document=phase_plan,
+        heading="Authority registry",
+        expected_headers=(
+            "Authority ID",
+            "Domain",
+            "Authoritative artifact",
+            "Authority class",
+        ),
+        expected_rows=(
+            (
+                "`AUTH-POLICY-TAXONOMY`",
+                "delivery-phase/closure/product-mode taxonomy",
+                "`docs/PHASE_PLAN.md#product-mode-taxonomy`",
+                "policy",
+            ),
+            (
+                "`AUTH-POLICY-GATES`",
+                "cross-mode ordering",
+                "`docs/PHASE_PLAN.md#cross-mode-gate-graph`",
+                "policy",
+            ),
+            (
+                "`AUTH-POLICY-MEDIA`",
+                "optional-media independence",
+                "`docs/PHASE_PLAN.md#optional-media-relations`",
+                "policy",
+            ),
+            (
+                "`AUTH-POLICY-DUPLICATES`",
+                "duplicate reconciliation",
+                "`docs/PHASE_PLAN.md#duplicate-reconciliation-obligations`",
+                "process policy",
+            ),
+            (
+                "`AUTH-SKILL-ACTIVATION`",
+                "PM/spec activation",
+                "`docs/SKILL_EXECUTION_PLAN.md#activation-rules`",
+                "activation policy",
+            ),
+            (
+                "`AUTH-ISSUE8-EVIDENCE`",
+                "original #8 acceptance map",
+                "`docs/PHASE_PLAN.md#issue-8-acceptance-evidence`",
+                "historical evidence, not current state",
+            ),
+            (
+                "`AUTH-CURRENT-STATE`",
+                "repository-tracked current state",
+                "`docs/STATUS.md#current-baseline`",
+                "STATUS state, not policy or live GitHub authority",
+            ),
+        ),
+        label="authority registry",
+    )
+    check_exact_policy_table(
+        failures,
+        document=phase_plan,
+        heading="Product-mode taxonomy",
+        expected_headers=("Concept ID", "Canonical label", "Kind", "Canonical owner"),
+        expected_rows=(
+            ("`DP-1`", "Delivery Phase 1", "`delivery-phase`", "`#1`"),
+            ("`DP-2`", "Delivery Phase 2", "`delivery-phase`", "`#16`"),
+            (
+                "`P1C`",
+                "Phase 1 Closure",
+                "`closure-program`",
+                "`docs/reviews/PHASE_1_CLOSURE_REPORT.md`",
+            ),
+            ("`PM-1`", "Product Mode 1", "`product-mode`", "`#155`"),
+            ("`PM-2`", "Product Mode 2", "`product-mode`", "`#20`"),
+        ),
+        label="product-mode taxonomy",
+    )
+    check_exact_policy_table(
+        failures,
+        document=phase_plan,
+        heading="Cross-mode gate graph",
+        expected_headers=(
+            "Gate ID",
+            "Gate",
+            "Canonical owner",
+            "Requires",
+            "Completion authorizes",
+            "Runtime permission",
+        ),
+        expected_rows=(
+            (
+                "`PM-GATE-00`",
+                "Product-mode demarcation",
+                "`#8`",
+                "`none`",
+                "`PM-GATE-10`",
+                "`governance-only`",
+            ),
+            (
+                "`PM-GATE-10`",
+                "Mode 1 artifact-only Checkpoint B",
+                "`#155`",
+                "`PM-GATE-00`",
+                "`PM-GATE-20`",
+                "`mode-1-approved-scope`",
+            ),
+            (
+                "`PM-GATE-20`",
+                "Mode 2 contract reset",
+                "`#20`",
+                "`PM-GATE-10`",
+                "`PM-GATE-30`",
+                "`no-runtime`",
+            ),
+            (
+                "`PM-GATE-30`",
+                "Mode 2 local mock demo",
+                "`#20` children",
+                "`PM-GATE-20`",
+                "`none`",
+                "`local-mock-only`",
+            ),
+        ),
+        label="cross-mode gate graph",
+    )
+    check_exact_policy_table(
+        failures,
+        document=phase_plan,
+        heading="Optional-media relations",
+        expected_headers=(
+            "Policy ID",
+            "Module",
+            "Canonical owner",
+            "Requires completed gate",
+            "Additional prerequisite",
+            "Blocks Mode 2 reset",
+        ),
+        expected_rows=(
+            (
+                "`PM-MEDIA-18`",
+                "Mock/local audio binary",
+                "`#18`",
+                "`PM-GATE-10`",
+                "`owner-approval`",
+                "`no`",
+            ),
+            (
+                "`PM-MEDIA-19`",
+                "Mock/local video assembly",
+                "`#19`",
+                "`PM-GATE-10`",
+                "`PM-MEDIA-18-contract;owner-approval`",
+                "`no`",
+            ),
+        ),
+        label="optional-media relations",
+    )
+    check_exact_policy_table(
+        failures,
+        document=phase_plan,
+        heading="Duplicate-reconciliation obligations",
+        expected_headers=("Obligation ID", "Trigger", "Required action", "Completion rule"),
+        expected_rows=(
+            (
+                "`DUP-SEARCH`",
+                "`before-new-tracker`",
+                "Search existing trackers by objective, acceptance criteria, affected boundary, and parent.",
+                "Search evidence is recorded before creation.",
+            ),
+            (
+                "`DUP-LINK`",
+                "`before-close`",
+                "Add reciprocal links between the canonical tracker and each true duplicate.",
+                "Both directions are recorded before closure.",
+            ),
+            (
+                "`DUP-CANON`",
+                "`before-close`",
+                "Identify the canonical owner for the shared objective.",
+                "The owner is recorded in every affected tracker.",
+            ),
+            (
+                "`DUP-TRANSFER`",
+                "`before-close`",
+                "Transfer every unique acceptance criterion to the canonical tracker.",
+                "No unique requirement remains only on the duplicate.",
+            ),
+            (
+                "`DUP-EXTERNAL`",
+                "`when-external-key-supplied`",
+                "Record only an evidenced external tracker key in both systems.",
+                "The mapping remains `none` when no real key is supplied.",
+            ),
+        ),
+        label="duplicate-reconciliation obligations",
+    )
+    check_exact_policy_table(
+        failures,
+        document=phase_plan,
+        heading="Issue #8 acceptance evidence",
+        expected_headers=(
+            "Evidence ID",
+            "Original `#8` acceptance criterion",
+            "Durable evidence",
+            "Disposition",
+        ),
+        expected_rows=(
+            (
+                "`ISSUE8-AC-01`",
+                "PRD explicitly names both product modes.",
+                "`docs/PRD.md`",
+                "Existing evidence retained",
+            ),
+            (
+                "`ISSUE8-AC-02`",
+                "Project-avatar-pack contract is documented.",
+                "`docs/PROJECT_AVATAR_PACK.md`",
+                "Existing evidence retained",
+            ),
+            (
+                "`ISSUE8-AC-03`",
+                "Roadmap keeps Slice 1 focused while preserving later video and interactive avatar phases.",
+                "`docs/ROADMAP.md`",
+                "Existing evidence retained",
+            ),
+            (
+                "`ISSUE8-AC-04`",
+                "AI build brief instructs Codex to preserve the full product vision.",
+                "`docs/AI_BUILD_BRIEF.md`",
+                "Existing evidence retained",
+            ),
+            (
+                "`ISSUE8-AC-05`",
+                "Skill execution plan requires PM/spec validation of product modes and project-avatar-pack before coding.",
+                "`docs/SKILL_EXECUTION_PLAN.md`",
+                "Preserved by `PM-MODE-001`",
+            ),
+            (
+                "`ISSUE8-AC-06`",
+                "No application code is changed.",
+                "Exact PHF-020A and PHF-020B diffs and process allowlists",
+                "Verify before each merge",
+            ),
+        ),
+        label="issue #8 acceptance evidence",
+    )
+
+    skill_plan = read("docs/SKILL_EXECUTION_PLAN.md")
+    activation_heading_count = len(
+        re.findall(r"^## Activation Rules\s*$", skill_plan, flags=re.M)
+    )
+    if activation_heading_count != 1:
+        fail(
+            failures,
+            "docs/SKILL_EXECUTION_PLAN.md Activation Rules must appear exactly once; "
+            f"found {activation_heading_count}.",
+        )
+    skill_headers, skill_rows = parse_table_lines(section(skill_plan, "Activation Rules"))
+    expected_skill_headers = ["Rule ID", "Trigger", "Required validation"]
+    expected_skill_rows = [[
+        "`PM-MODE-001`",
+        "Before product-mode or project-avatar-pack work starts",
+        "PM/spec skills must validate Product Mode 1, Product Mode 2, and the "
+        "project-avatar-pack contract before coding, including the approved stage, "
+        "canonical tracker, grounding boundary, and local/mock limitations recorded "
+        "in `docs/PHASE_PLAN.md` and `docs/PROJECT_AVATAR_PACK.md`.",
+    ]]
+    if skill_headers != expected_skill_headers or skill_rows != expected_skill_rows:
+        fail(
+            failures,
+            "docs/SKILL_EXECUTION_PLAN.md PM-MODE-001 must match the exact activation contract.",
+        )
+
+    agents = read("AGENTS.md")
+    required_reading = section(agents, "Required Reading")
+    if required_reading.count("- `docs/PHASE_PLAN.md`") != 1:
+        fail(failures, "AGENTS.md Required Reading must include docs/PHASE_PLAN.md.")
+    agents_cross_mode_rule = (
+        "20. Follow `docs/PHASE_PLAN.md` for the canonical distinction and cross-mode boundary "
+        "between numbered delivery phases, Product Mode 1, Product Mode 2, and Phase 1 Closure. "
+        "Use issue `#155` for sequencing inside Product Mode 1, including its latest explicit "
+        "current-module handoff and any explicitly authorized dependency-safe preparation lanes; "
+        "do not infer current work from a superseded issue-body plan. Mode 1 Checkpoint B must "
+        "close before Mode 2 runtime work begins.\n"
+    )
+    if agents.count(agents_cross_mode_rule) != 1:
+        fail(failures, "AGENTS.md must contain the exact cross-mode workflow rule exactly once.")
+    stage_plan = read("docs/STAGE_ISSUE_PLAN.md")
+    issue167_scope_contract = (
+        "The PHF-020A issue `#167` structured-policy branch is narrower than the general\n"
+        "process allowlist. It may change only `AGENTS.md`, `docs/PHASE_PLAN.md`,\n"
+        "`docs/SKILL_EXECUTION_PLAN.md`, `docs/STAGE_ISSUE_PLAN.md`,\n"
+        "`scripts/quality/check_phase1_closure_docs.py`, and\n"
+        "`tests/unit/test_phase1_closure_docs.py`. `docs/STATUS.md` is reserved for the\n"
+        "serial PHF-020B successor. Issue `#167` may not absorb PRD, workflow, runtime,\n"
+        "media, provider, security-evidence, or unrelated process files.\n"
+    )
+    if stage_plan.count(issue167_scope_contract) != 1:
+        fail(failures, "docs/STAGE_ISSUE_PLAN.md missing the issue #167 exact-scope contract.")
 
 
 def check_process_docs(failures: list[str]) -> None:
@@ -3559,6 +3914,7 @@ def main() -> int:
         check_issue39_execution_strategy(failures)
         check_issue39_ch11_slo_contract(failures)
         check_process_docs(failures)
+        check_product_mode_policy(failures)
 
     if failures:
         print("Phase 1 Closure quality failures:")

@@ -13,6 +13,7 @@ Before changing files, read:
 - `scripts/guardrails_check.py`
 - `docs/CODEX_OPERATING_MODEL.md`
 - `docs/QUALITY_GATES.md`
+- `docs/PHASE_PLAN.md`
 - `docs/SKILL_LOCK.md`
 - `docs/SKILL_SELECTION_AND_EVIDENCE.md`
 - `docs/STAGE_ISSUE_PLAN.md`
@@ -47,6 +48,7 @@ Before changing files, read:
 17. Update `docs/STATUS.md` when repository-tracked stage state, issue or PR mapping, governance policy, or stage progress changes.
 18. For non-trivial requirements, architecture, coding, release, or governance work, consult `docs/ENGINEERING_PROCESS_RCA.md` before implementation and record the preflight evidence required by `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md`.
 19. For non-trivial work, select skills and test levels from the claim and boundary being proved, record invoked and rejected options plus their evidence or prevented action, and follow `docs/SKILL_SELECTION_AND_EVIDENCE.md`. A skill invocation is not evidence by itself.
+20. Follow `docs/PHASE_PLAN.md` for the canonical distinction and cross-mode boundary between numbered delivery phases, Product Mode 1, Product Mode 2, and Phase 1 Closure. Use issue `#155` for sequencing inside Product Mode 1, including its latest explicit current-module handoff and any explicitly authorized dependency-safe preparation lanes; do not infer current work from a superseded issue-body plan. Mode 1 Checkpoint B must close before Mode 2 runtime work begins.
 
 ## Approved Build Stages
 
