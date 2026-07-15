@@ -1,0 +1,43 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 176,
+  "branch": "phase-1-closure-process-176-gpf-v1-repository-integration",
+  "objective": "Integrate GovernancePreflightV1 prospectively into offline repository guardrails.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-176.json",
+      "scripts/governance_preflight_repository.py",
+      "tests/unit/test_governance_preflight_repository.py",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-176.json",
+      "scripts/governance_preflight_repository.py",
+      "tests/unit/test_governance_preflight_repository.py",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker/",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json"
+    ]
+  }
+}

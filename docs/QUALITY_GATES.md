@@ -467,7 +467,12 @@ Gate validates:
   but not backend, frontend, provider, RAG, avatar, database, Docker, or product
   runtime files. Issue `#172` has a narrower named exception for only the
   GovernancePreflightV1 schema, offline validator, and focused unit test; it
-  does not admit repository or GitHub integration paths. Final Review baseline
+  does not admit repository or GitHub integration paths. Issue `#176` admits
+  only its frozen ten repository-integration paths. Its local adapter enforces
+  a preflight-only first commit and final scope for the exact PR B branch and
+  later process branches whose base tree contains the adapter; legacy and
+  non-process branches remain unchanged. GitHub evidence remains out of scope.
+  Final Review baseline
   artifacts are required inputs but not allowed closure-branch edits
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md` parses as an issue table covering
   issues `#35` through `#44` with expected P0/P1/P2/P3 priorities

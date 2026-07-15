@@ -76,6 +76,16 @@ ISSUE_172_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_governance_preflight_v1.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_176_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-176.json",
+    "scripts/governance_preflight_repository.py",
+    "tests/unit/test_governance_preflight_repository.py",
+    "scripts/guardrails_check.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "docs/REPOSITORY_GUARDRAILS.md", "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
+}
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -2798,6 +2808,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_138_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
+        allowed_files = ISSUE_176_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):

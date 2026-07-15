@@ -588,6 +588,14 @@ repository adapter or CI/GitHub evidence verifier:
 - `scripts/governance_preflight_v1.py`
 - `tests/unit/test_governance_preflight_v1.py`
 
+PR B branch `phase-1-closure-process-176-gpf-v1-repository-integration` is
+limited to the ten paths frozen in its issue-specific preflight and executable
+phase allowlist. It adds offline, prospective repository validation: the first
+branch commit contains only that preflight, later commits have no prescribed
+grouping, and validation is bounded at 1,000 commits and 2,000 final paths.
+Pre-PR-B bases, retained evidence, and unrelated branches stay exempt; GitHub
+API, reviewer, check, authentication, and lifecycle evidence is deferred.
+
 Context 0 issue `#39` closure-contract branches using
 `phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
 they may touch only docs, guardrails, tests, PR templates, and CI workflow

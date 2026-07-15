@@ -45,6 +45,11 @@ The policy check fails CI for:
 - architecture-impacting changes without ADR updates
 - PRD-impacting changes without traceability updates
 - repository-tracked governance changes without `docs/STATUS.md` updates
+- prospective governance-process branches without exactly one issue-bound
+  GovernancePreflightV1 file as the only first-commit path, or whose final diff
+  violates its required/allowed/forbidden scope. This offline Git check allows
+  up to 1,000 branch commits and 2,000 changed paths, imposes no later-commit
+  choreography, and exempts legacy bases and unrelated branches.
 - Phase 1 Closure quality drift in the `#39` production-closure matrix, including
   missing required IDs, malformed rows, duplicate or unexpected IDs, and invalid
   status values. The same structural checks now run on every repository-guardrail
