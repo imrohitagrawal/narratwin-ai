@@ -2,7 +2,7 @@
 
 ## Version
 
-- Version: 1.1
+- Version: 1.2
 - Stage: Stage 1 product strategy and PRD hardening
 - Canonical issue: `#1`
 - Last updated: 2026-07-15
@@ -70,13 +70,8 @@ must be re-baselined before Mode 2 code starts. Supporting issues such as `#17`,
 `#18`, `#19`, and `#43` retain only their explicitly recorded child or later-track
 scope; they do not replace either canonical tracker.
 
-Before opening any GitHub, Jira, or other tracker item, search existing trackers
-by objective, acceptance criteria, affected boundary, and parent. When a true
-duplicate exists, add reciprocal links, identify the canonical owner, and
-transfer every unique acceptance criterion to the canonical tracker before closing a true duplicate.
-Do not invent an external tracker key or silently close an item whose unique
-requirements have not been preserved. If an external tracker exists, record its
-key and canonical GitHub link in both systems.
+The exact duplicate-reconciliation duties are defined in the next subsection.
+Do not silently close an item whose unique requirements have not been preserved.
 
 Closed issue `#157` and closed PR `#163` are historical, not active execution
 paths. Security/evidence issues `#151`, `#158`, `#159`, and `#161`, plus PR
@@ -89,12 +84,25 @@ follows. After the reviewed demarcation PR merges, the repository owner may clos
 
 | Original `#8` acceptance criterion | Durable evidence | Disposition |
 |---|---|---|
-| PRD explicitly names both product modes | `docs/PRD.md` | Existing evidence retained |
-| Project-avatar-pack contract is documented | `docs/PROJECT_AVATAR_PACK.md` | Existing evidence retained |
-| Roadmap preserves later video and interactive-avatar phases | `docs/ROADMAP.md` | Existing evidence retained |
-| AI build brief preserves the full two-mode vision | `docs/AI_BUILD_BRIEF.md` | Existing evidence retained |
-| PM/spec validation covers both modes and the project-avatar-pack before coding | `docs/SKILL_EXECUTION_PLAN.md` | Reconciled by the issue `#8` demarcation PR |
-| No application code changes | Exact issue `#8` PR diff and process allowlist | Verify again before merge |
+| PRD explicitly names both product modes. | `docs/PRD.md` | Existing evidence retained |
+| Project-avatar-pack contract is documented. | `docs/PROJECT_AVATAR_PACK.md` | Existing evidence retained |
+| Roadmap keeps Slice 1 focused while preserving later video and interactive avatar phases. | `docs/ROADMAP.md` | Existing evidence retained |
+| AI build brief instructs Codex to preserve the full product vision. | `docs/AI_BUILD_BRIEF.md` | Existing evidence retained |
+| Skill execution plan requires PM/spec validation of product modes and project-avatar-pack before coding. | `docs/SKILL_EXECUTION_PLAN.md` | Reconciled by the issue `#8` demarcation PR |
+| No application code is changed. | Exact issue `#8` PR diff and process allowlist | Verify again before merge |
+
+### Duplicate reconciliation contract
+
+These rows are the authoritative minimum. Each obligation applies before a new
+tracker is created or a true duplicate is closed.
+
+| Obligation ID | Required action | Completion rule |
+|---|---|---|
+| `DUP-SEARCH` | Search existing trackers by objective, acceptance criteria, affected boundary, and parent. | Complete before opening a GitHub, Jira, or other tracker item. |
+| `DUP-LINK` | Add reciprocal links between the canonical tracker and each true duplicate. | Complete before closing the duplicate. |
+| `DUP-CANON` | Identify the canonical owner for the shared objective. | Record the owner in every affected tracker. |
+| `DUP-TRANSFER` | Transfer every unique acceptance criterion to the canonical tracker before closing a true duplicate. | Do not close until no unique requirement remains only on the duplicate. |
+| `DUP-EXTERNAL` | Do not invent an external tracker key; record a supplied key in both systems. | Leave the external mapping absent when no real key is evidenced. |
 
 ### Authority and concurrency contract
 

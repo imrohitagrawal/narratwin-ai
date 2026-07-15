@@ -305,6 +305,38 @@ def test_process_docs_reject_product_mode_taxonomy_mapping_mutations(
 
 
 @pytest.mark.parametrize(
+    ("search", "replacement"),
+    [
+        (
+            "| Term | Meaning | Canonical tracker or artifact | Must not be interpreted as |",
+            "| Label | Meaning | Owner | Warning |",
+        ),
+        (
+            "| Product Mode 2 | Interactive grounded AI avatar walkthrough | `#20`, Phase 9 after an approved stage-plan update | Phase 2 or work authorized by the Mode 1 tracker |",
+            "| Product Mode 2 | Interactive grounded AI avatar walkthrough | `#20`, Phase 9 after an approved stage-plan update | Phase 2 or work authorized by the Mode 1 tracker |\n"
+            "| Phase II | Interactive avatar delivery | `#20` | Product Mode 2 |",
+        ),
+    ],
+)
+def test_process_docs_require_exact_complete_product_mode_taxonomy_contract(
+    monkeypatch: Any,
+    search: str,
+    replacement: str,
+) -> None:
+    original_phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/PHASE_PLAN.md"],
+        read_overrides={
+            "docs/PHASE_PLAN.md": replace_text(original_phase_plan, search, replacement)
+        },
+    )
+
+    assert "docs/PHASE_PLAN.md has invalid product-mode taxonomy contract." in failures
+
+
+@pytest.mark.parametrize(
     "contradiction",
     [
         "Phase 2 is Product Mode 2.",
@@ -331,6 +363,53 @@ def test_process_docs_reject_direct_product_mode_contradictions(
     assert "docs/PHASE_PLAN.md contains a contradictory product-mode statement." in failures
 
 
+@pytest.mark.parametrize(
+    "contradiction",
+    [
+        "Phase 2 and Product Mode 2 are the same taxonomy.",
+        "The optional audio and video branch is mandatory before the Mode 2 contract reset.",
+    ],
+)
+def test_process_docs_reject_direct_product_mode_contradiction_neighbors(
+    monkeypatch: Any,
+    contradiction: str,
+) -> None:
+    original_phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/PHASE_PLAN.md"],
+        read_overrides={"docs/PHASE_PLAN.md": f"{original_phase_plan}\n{contradiction}\n"},
+    )
+
+    assert "docs/PHASE_PLAN.md contains a contradictory product-mode statement." in failures
+
+
+@pytest.mark.parametrize(
+    "legitimate_example",
+    [
+        'For example, "Phase 2 is Product Mode 2." is a forbidden interpretation.',
+        "> Phase 2 is Product Mode 2.",
+        "```text\nPhase 2 is Product Mode 2.\n```",
+    ],
+)
+def test_process_docs_ignore_quoted_product_mode_contradiction_examples(
+    monkeypatch: Any,
+    legitimate_example: str,
+) -> None:
+    original_phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/PHASE_PLAN.md"],
+        read_overrides={
+            "docs/PHASE_PLAN.md": f"{original_phase_plan}\n{legitimate_example}\n"
+        },
+    )
+
+    assert "docs/PHASE_PLAN.md contains a contradictory product-mode statement." not in failures
+
+
 def test_process_docs_require_cross_mode_order_and_optional_media_branch(monkeypatch: Any) -> None:
     original_phase_plan = phase1.read("docs/PHASE_PLAN.md")
     invalid_phase_plan = replace_text(
@@ -352,12 +431,12 @@ def test_process_docs_require_cross_mode_order_and_optional_media_branch(monkeyp
 @pytest.mark.parametrize(
     ("required_text", "replacement"),
     [
-        ("search existing trackers", "inspect current work"),
-        ("add reciprocal links", "add a note"),
-        ("identify the canonical owner", "choose an issue"),
+        ("Search existing trackers", "Inspect current work"),
+        ("Add reciprocal links", "Add a note"),
+        ("Identify the canonical owner", "Choose an issue"),
         (
-            "transfer every unique acceptance criterion to the canonical tracker before closing a true duplicate",
-            "close duplicate trackers",
+            "Transfer every unique acceptance criterion to the canonical tracker before closing a true duplicate",
+            "Close duplicate trackers",
         ),
         ("Do not invent an external tracker key", "Record external trackers when convenient"),
     ],
@@ -380,6 +459,150 @@ def test_process_docs_require_each_duplicate_reconciliation_obligation(
     assert "docs/PHASE_PLAN.md missing duplicate-reconciliation obligation." in failures
 
 
+def test_process_docs_reject_negated_duplicate_reconciliation_duty(monkeypatch: Any) -> None:
+    original_phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    invalid_phase_plan = replace_text(
+        original_phase_plan,
+        "Search existing trackers by objective, acceptance criteria, affected boundary, and parent.",
+        "Do not search existing trackers by objective, acceptance criteria, affected boundary, and parent.",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/PHASE_PLAN.md"],
+        read_overrides={"docs/PHASE_PLAN.md": invalid_phase_plan},
+    )
+
+    assert "docs/PHASE_PLAN.md has invalid duplicate-reconciliation contract." in failures
+
+
+@pytest.mark.parametrize(
+    ("search", "replacement"),
+    [
+        (
+            "| Original `#8` acceptance criterion | Durable evidence | Disposition |",
+            "| Criterion | Evidence | Result |",
+        ),
+        (
+            "| Skill execution plan requires PM/spec validation of product modes and project-avatar-pack before coding. | `docs/SKILL_EXECUTION_PLAN.md` | Reconciled by the issue `#8` demarcation PR |",
+            "| Skill execution plan requires PM/spec validation of product modes and project-avatar-pack before coding. | `docs/SKILL_EXECUTION_PLAN.md` | Unsatisfied; close anyway |",
+        ),
+        (
+            "| No application code is changed. | Exact issue `#8` PR diff and process allowlist | Verify again before merge |",
+            "| No application code is changed. | Exact issue `#8` PR diff and process allowlist | Verify again before merge |\n"
+            "| No application code is changed. | No evidence | Unsatisfied; close anyway |",
+        ),
+    ],
+)
+def test_process_docs_require_exact_issue8_acceptance_contract(
+    monkeypatch: Any,
+    search: str,
+    replacement: str,
+) -> None:
+    original_phase_plan = phase1.read("docs/PHASE_PLAN.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/PHASE_PLAN.md"],
+        read_overrides={
+            "docs/PHASE_PLAN.md": replace_text(original_phase_plan, search, replacement)
+        },
+    )
+
+    assert "docs/PHASE_PLAN.md has invalid issue #8 acceptance contract." in failures
+
+
+def test_phase_plan_preserves_exact_live_issue8_slice1_criterion() -> None:
+    phase_plan = phase1.read("docs/PHASE_PLAN.md")
+
+    assert "Roadmap keeps Slice 1 focused while preserving later video and interactive avatar phases" in phase_plan
+
+
+def test_process_docs_reject_negated_issue8_skill_validation_rule(monkeypatch: Any) -> None:
+    original_skill_plan = phase1.read("docs/SKILL_EXECUTION_PLAN.md")
+    invalid_skill_plan = replace_text(
+        original_skill_plan,
+        "PM/spec skills must validate Product Mode 1",
+        "PM/spec skills must not validate Product Mode 1",
+    )
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/SKILL_EXECUTION_PLAN.md"],
+        read_overrides={"docs/SKILL_EXECUTION_PLAN.md": invalid_skill_plan},
+    )
+
+    assert "docs/SKILL_EXECUTION_PLAN.md has invalid issue #8 product-mode validation contract." in failures
+
+
+def test_process_docs_accept_iso_status_review_date_without_code_change(monkeypatch: Any) -> None:
+    original_status = phase1.read("docs/STATUS.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/STATUS.md"],
+        read_overrides={
+            "docs/STATUS.md": replace_text(
+                original_status,
+                "Last reviewed date: 2026-07-15",
+                "Last reviewed date: 2026-07-16",
+            )
+        },
+    )
+
+    assert "docs/STATUS.md missing current product-mode tracker mapping." not in failures
+
+
+def test_process_docs_reject_invalid_iso_status_review_date(monkeypatch: Any) -> None:
+    original_status = phase1.read("docs/STATUS.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/STATUS.md"],
+        read_overrides={
+            "docs/STATUS.md": replace_text(
+                original_status,
+                "Last reviewed date: 2026-07-15",
+                "Last reviewed date: 2026-99-99",
+            )
+        },
+    )
+
+    assert "docs/STATUS.md has invalid current product-mode tracker contract." in failures
+
+
+def test_process_docs_reject_spoofed_status_tracker_marker(monkeypatch: Any) -> None:
+    original_status = phase1.read("docs/STATUS.md")
+    original_row = (
+        "| `#155` | Open, canonical | Product Mode 1 execution tracker | Owns current action, "
+        "dependency-safe preparation waves, merge order, Checkpoints A/B, and the artifact-only "
+        "controlled local mock-demo decision. Current module is issue `#8` / PR `#166` demarcation "
+        "closeout; no behavior-changing Mode 1 child is authorized concurrently. |"
+    )
+    invalid_status = replace_text(
+        original_status,
+        original_row,
+        original_row.replace("Open, canonical", "Closed"),
+    )
+    invalid_status += "\n| `#155` | Open, canonical |\n"
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="phase-1-closure-process-8-phf-020-product-mode-demarcation",
+        changed=["docs/STATUS.md"],
+        read_overrides={"docs/STATUS.md": invalid_status},
+    )
+
+    assert "docs/STATUS.md has invalid current product-mode tracker contract." in failures
+
+
+def test_status_records_unambiguous_current_mode1_handoff_and_history_corrections() -> None:
+    status = phase1.read("docs/STATUS.md")
+
+    assert "| Mode 1 current module | Issue `#8` / PR `#166` demarcation closeout |" in status
+    assert "This blocks #138 merge eligibility" not in status
+    assert "Correction to the earlier issue `#8` event" in status
+
+
 def test_process_docs_require_issue8_skill_validation_and_current_tracker_ledger(
     monkeypatch: Any,
 ) -> None:
@@ -397,8 +620,8 @@ def test_process_docs_require_issue8_skill_validation_and_current_tracker_ledger
             ),
             "docs/STATUS.md": replace_text(
                 original_status,
-                "Product Mode 1 execution: `#155`; Product Mode 2 future reset: `#20`",
-                "Product modes: future work",
+                "| Product Mode 1 owner | Issue `#155` |",
+                "| Product Mode 1 owner | Issue `#999` |",
             ),
         },
     )

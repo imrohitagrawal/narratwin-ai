@@ -26,9 +26,17 @@ Use it to answer:
   release posture is No-Go.
 - Product-mode authority: `docs/PHASE_PLAN.md` owns taxonomy and the cross-mode
   boundary. Product Mode 1 execution: `#155`; Product Mode 2 future reset: `#20`.
-  Issue `#155` currently authorizes `CH-M1-00` governance reconciliation before
-  behavior-changing Mode 1 work, and Mode 1 Checkpoint B must close before Mode 2
-  runtime work begins.
+  Issue `#155` currently authorizes only the issue `#8` / PR `#166` demarcation
+  closeout before another Mode 1 module is selected, and Mode 1 Checkpoint B must
+  close before Mode 2 runtime work begins.
+
+| Product-mode field | Current value |
+|---|---|
+| Taxonomy and cross-mode owner | `docs/PHASE_PLAN.md` |
+| Product Mode 1 owner | Issue `#155` |
+| Mode 1 current module | Issue `#8` / PR `#166` demarcation closeout |
+| Product Mode 2 next gate | Issue `#20` contract reset only after Mode 1 Checkpoint B |
+
 - Product implementation merged to `main`: Stage 8 performance, security
   hardening, and release-readiness work merged through PR `#33` at commit
   `fb40113`.
@@ -265,7 +273,7 @@ Use these files together with this tracker:
 | `#149` | Open, depends on `#130`, `#141`-`#148` | Phase 1 follow-on | Independently review actual environment/tooling/calculation-test readiness, tested CH-12 alert routes, and approvals without recording actual restore or RTO/RPO results; must leave issue `#126`, `DUR-RESTORE-001`, and issue `#39` open for the later exercise. |
 | `#138` | Closed | Security follow-up | Click advisory remediation merged through PR `#152` at `648c81c066127056334c5c2babae28585fd58d4d`; issue `#151` remains the independent stable-runtime/scanner-consensus blocker. This closure does not change production or restore readiness. |
 | `#150` | Open | Security follow-up | Remove the Semgrep Click compatibility override by `2026-08-13` or earlier when upstream supports a fixed Click release; any tool version, lock, rule, target, invocation, or advisory change triggers immediate re-review. |
-| `#151` | Open, stable-runtime/scanner-consensus blocker | Security follow-up | Resolve `CVE-2026-11940`, `CVE-2026-11972`, and `CVE-2026-15308` in the backend runtime and reconcile the verified scanner disagreement: Grype reports three HIGH findings while freshly updated Trivy reports zero. The official `3.13.14-alpine3.24` image is already the pinned manifest, stable releases below `3.15.0` are recorded affected, and `3.15` is still beta. A green Trivy result is not absence evidence; no scanner waiver or production-readiness claim is permitted. This blocks #138 merge eligibility and keeps dependent PR `#140` draft. |
+| `#151` | Open, stable-runtime/scanner-consensus blocker | Security follow-up | Resolve `CVE-2026-11940`, `CVE-2026-11972`, and `CVE-2026-15308` in the backend runtime and reconcile the verified scanner disagreement: Grype reports three HIGH findings while freshly updated Trivy reports zero. The official `3.13.14-alpine3.24` image is already the pinned manifest, stable releases below `3.15.0` are recorded affected, and `3.15` is still beta. A green Trivy result is not absence evidence; no scanner waiver or production-readiness claim is permitted. This blocks production-readiness claims and keeps dependent PR `#140` draft; issue `#138` is already closed through merged PR `#152`. |
 
 ### Additional Backlog And Governance Issues
 
@@ -279,7 +287,7 @@ Use these files together with this tracker:
 | `#19` | Open | Optional post-Checkpoint-B media branch | Mock/local video assembly follows an approved `#18` contract and separate owner approval; it does not gate Mode 2. |
 | `#20` | Open, future reset required | Product Mode 2 canonical tracker | Interactive grounded Q&A remains Phase 9 future work. Re-baseline its contract after Mode 1 Checkpoint B before any Mode 2 runtime implementation. |
 | `#21` | Open | Future slice | Premium adapters, observability dashboard, and cost controls. |
-| `#155` | Open, canonical | Product Mode 1 execution tracker | Owns current action, dependency-safe preparation waves, merge order, Checkpoints A/B, and the artifact-only controlled local mock-demo decision. Current next action remains `CH-M1-00` governance reconciliation. |
+| `#155` | Open, canonical | Product Mode 1 execution tracker | Owns current action, dependency-safe preparation waves, merge order, Checkpoints A/B, and the artifact-only controlled local mock-demo decision. Current module is issue `#8` / PR `#166` demarcation closeout; no behavior-changing Mode 1 child is authorized concurrently. |
 
 ## Pull Request Ledger
 
@@ -616,6 +624,7 @@ Required update rules:
 | 2026-07-14 | PR `#153` merged the issue `#141` documentation baseline at `2fb5569`; issue `#141` stays open for the recorded cost/account/region, ownership, Security exception and live-environment approvals, while issue `#139`, issue `#126`, `DUR-RESTORE-001`, and issue `#39` remain open. The merge created no infrastructure, backup, restore, RTO/RPO or launch evidence. |
 | 2026-07-15 | Issue `#164`, under Mode 1 tracker `#155`, established the skill-selection and evidence-governance contract: claim/boundary-based routing, positive and negative usage outcomes, raw evidence measures, and an initial `ARMED` verification-skill evaluation trigger at 0 eligible PRs and 0 qualifying escapes. This records no Superpowers installation or activation and changes no Mode 1 runtime, launch, or production posture. |
 | 2026-07-15 | Issue `#8` started the durable product-mode/delivery-phase demarcation on `phase-1-closure-process-8-phf-020-product-mode-demarcation`: `docs/PHASE_PLAN.md` remains the single canonical taxonomy and serial-order source; Phase 2 remains the Spec Kit gate, Mode 1 remains tracked by `#155`, and Mode 2 remains Phase 9 future work under `#20`. This governance-only work adds no Mode 1/Mode 2 runtime or playable media. |
+| 2026-07-15 | Correction to the earlier issue `#8` event: `docs/PHASE_PLAN.md` is the canonical taxonomy and cross-mode boundary source, while issue `#155` owns within-Mode-1 sequencing and the explicit current-module handoff. Issue `#8` / PR `#166` demarcation closeout is the sole current module; the earlier single-governance-PR plan is superseded. |
 | 2026-07-10 | PR `#76` opened for issue `#66` Context 2 planning for issue `#39` on branch `phase-1-closure-39-context2-idempotency-lease-outbox`; ADR `0009` defines advisory-only idempotency, lease, and outbox contracts while `#39` remains open and all runtime implementation remains deferred. |
 | 2026-07-10 | PR `#77` merged migration/rollback context planning for issue `#67`; issue `#67` is closed and runtime migration tooling remains deferred pending later implementation contexts. |
 | 2026-07-10 | PR `#78` opened for issue `#68` on branch `phase-1-closure-39-context4-backup-restore-drill`; advisory-only ADR and evidence-planning updates for `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` added no runtime implementation. |

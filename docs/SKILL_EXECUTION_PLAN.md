@@ -38,11 +38,11 @@ Stage 0 does not install product implementation tools. Stage 0 records the opera
   expiry or revisit trigger, `docs/SKILL_LOCK.md`, and
   `docs/THIRD_PARTY_NOTICES.md` updates before use.
 - PM skills are not implementation skills.
-- Before product-mode or project-avatar-pack work starts, PM/spec skills must
-  validate Product Mode 1, Product Mode 2, and the project-avatar-pack contract before coding,
-  including the approved stage, canonical tracker, grounding boundary, and
-  local/mock limitations recorded in `docs/PHASE_PLAN.md` and
-  `docs/PROJECT_AVATAR_PACK.md`.
+- Product-memory validation is governed by this exact contract:
+
+| Rule ID | Trigger | Required validation |
+|---|---|---|
+| `PM-MODE-001` | Before product-mode or project-avatar-pack work starts | PM/spec skills must validate Product Mode 1, Product Mode 2, and the project-avatar-pack contract before coding, including the approved stage, canonical tracker, grounding boundary, and local/mock limitations recorded in `docs/PHASE_PLAN.md` and `docs/PROJECT_AVATAR_PACK.md`. |
 - Spec Kit implementation commands are blocked until Stage 4 and only after Stage 0, Stage 1, Stage 2, and Stage 3 gates allow the planned slice.
 - Engineering implementation skills are blocked during Stage 0, Stage 1, Stage 2, and Stage 3.
 - Paid-provider skills or adapters must never be required for local/dev/test.
