@@ -524,7 +524,7 @@ must not include issue-closing keywords in the title/body/branch commit
 messages except for explicitly allowed canonical stage issue closures, which are
 `#2`, `#5`, `#4`, `#10`, `#11`, `#12`, and `#13`. Issue `#39` must not
 appear with auto-closing keywords in the title/body/branch commit messages.
-non-trivial PRs must provide the template's meaningful five-point `Reviewer
+Non-trivial PRs must provide the template's meaningful five-point `Reviewer
 overview` before detailed governance/evidence sections; placeholders and copied
 template instructions fail. Separately,
 non-trivial PRs must include completed preflight evidence rows for

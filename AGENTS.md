@@ -47,7 +47,7 @@ Before changing files, read:
 17. Update `docs/STATUS.md` when repository-tracked stage state, issue or PR mapping, governance policy, or stage progress changes.
 18. For non-trivial requirements, architecture, coding, release, or governance work, consult `docs/ENGINEERING_PROCESS_RCA.md` before implementation and record the preflight evidence required by `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md`.
 19. For non-trivial work, select skills and test levels from the claim and boundary being proved, record invoked and rejected options plus their evidence or prevented action, and follow `docs/SKILL_SELECTION_AND_EVIDENCE.md`. A skill invocation is not evidence by itself.
-20. Every non-trivial pull request body must begin its substantive content with the five-point `## Reviewer overview` from `.github/pull_request_template.md`, after only the linked-issue line if desired and before detailed governance/evidence tables. Replace every instruction or placeholder with meaningful PR-specific content; evidence tables are not a substitute for this overview.
+20. Every non-trivial pull request body must include the five-point `## Reviewer overview` from `.github/pull_request_template.md` before detailed governance/evidence tables. Replace every instruction or placeholder with meaningful PR-specific content; evidence tables are not a substitute for this overview.
 
 ## Approved Build Stages
 

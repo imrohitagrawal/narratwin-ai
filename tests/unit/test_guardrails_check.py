@@ -553,7 +553,7 @@ def test_reviewer_overview_rejects_missing_section_despite_evidence_table_words(
 
     table_inside_overview = body.replace("## Preflight evidence", "## Reviewer overview")
     assert guardrails.reviewer_overview_failures(table_inside_overview) == [
-        f"Reviewer overview must include point {heading}."
+        f"Reviewer overview must include point {heading.replace('.', ':', 1)}."
         for heading in REVIEWER_POINT_HEADINGS
     ]
 
@@ -565,7 +565,7 @@ def test_reviewer_overview_rejects_each_missing_point_independently(
 ) -> None:
     assert guardrails.reviewer_overview_failures(
         reviewer_overview_body(omit=missing_index)
-    ) == [f"Reviewer overview must include point {label}."]
+    ) == [f"Reviewer overview must include point {label.replace('.', ':', 1)}."]
 
 
 @pytest.mark.parametrize(
@@ -703,8 +703,8 @@ def test_reviewer_overview_parsing_is_deterministic_across_unrelated_markdown() 
         "",
     )
     assert guardrails.reviewer_overview_failures(multiple_missing) == [
-        "Reviewer overview must include point 1. What changed and why.",
-        "Reviewer overview must include point 3. Key files and components.",
+        "Reviewer overview must include point 1: What changed and why.",
+        "Reviewer overview must include point 3: Key files and components.",
     ]
 
 
@@ -712,7 +712,7 @@ def test_reviewer_overview_rejects_wrong_level_and_fenced_headings() -> None:
     for index, heading in enumerate(REVIEWER_POINT_HEADINGS):
         wrong_level = reviewer_overview_body().replace(f"### {heading}", f"#### {heading}")
         assert guardrails.reviewer_overview_failures(wrong_level) == [
-            f"Reviewer overview must include point {heading}."
+            f"Reviewer overview must include point {heading.replace('.', ':', 1)}."
         ], index
     for marker in ("#", "###"):
         wrong_overview = reviewer_overview_body().replace("## Reviewer overview", f"{marker} Reviewer overview")

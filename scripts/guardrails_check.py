@@ -1237,7 +1237,7 @@ def reviewer_overview_failures(body: str) -> list[str]:
     for index, point in enumerate(points):
         heading = next((match for match in section_headings if match[2].strip().lower() == point.lower()), None)
         if heading is None:
-            result.append(f"Reviewer overview must include point {point}.")
+            result.append(f"Reviewer overview must include point {point.replace('.', ':', 1)}.")
             continue
         content_end = next((match.start() for match in headings if heading.end() <= match.start() < section_end), section_end)
         content = cleaned[heading.end() : content_end]
