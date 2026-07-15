@@ -365,6 +365,22 @@ def test_process_docs_reject_skill_selection_contract_mutations(
             "forbidden skill-selection contradiction",
         ),
         (
+            "Installation happens, automatically, at FIRED.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "The skill is activated, automatically and silently.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Installation happens, automatically, at FIRED, and does not skip audit logging.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Automatically, the skill is installed, and never bypasses audit logging.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
             "Present on disk is sufficient for approval and operation.",
             "forbidden skill-selection contradiction",
         ),
@@ -378,6 +394,14 @@ def test_process_docs_reject_skill_selection_contract_mutations(
         ),
         (
             "Disk presence counts as approval, not as execution consent.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Disk presence, in effect, counts as approval.",
+            "forbidden skill-selection contradiction",
+        ),
+        (
+            "Disk presence, in effect, counts as approval, not as execution consent.",
             "forbidden skill-selection contradiction",
         ),
         (
@@ -420,6 +444,12 @@ def test_process_docs_reject_additive_skill_selection_contradictions(
         "Do not auto-install the skill.",
         "The pipeline will never auto-activate the skill.",
         "Auto-install is not permitted.",
+        "Installation happens, not automatically, at FIRED.",
+        "The skill is activated, not automatically but manually.",
+        "Automatically, installation is not permitted.",
+        "Do not, automatically, install the skill.",
+        "Never, automatically, activate the skill.",
+        "Disk presence, in effect, does not count as approval.",
         "There is no composite skill quality score: use raw measures.",
     ],
 )

@@ -3286,11 +3286,25 @@ def check_process_docs(failures: list[str]) -> None:
         )
 
     skill_clause_character = r"[^,.;:\n]"
+    skill_sentence_character = r"[^.;:\n]"
+    automatic_positive_character = (
+        rf"(?:(?!\b(?:not|never)\b){skill_sentence_character})"
+    )
+    approval_positive_character = (
+        rf"(?:(?!\b(?:not|never|neither)\b){skill_sentence_character})"
+    )
     forbidden_skill_selection_patterns = (
         rf"\b(?:install|activat)\w*\b(?!{skill_clause_character}{{0,80}}\b(?:not|never)\b)"
         rf"{skill_clause_character}{{0,80}}\bautomatic\w*\b",
         rf"\bautomatic\w*\b(?!{skill_clause_character}{{0,60}}\b(?:not|never)\b)"
         rf"{skill_clause_character}{{0,60}}\b(?:install|activat)\w*\b",
+        rf"\b(?:install|activat)\w*\b{automatic_positive_character}{{0,80}},\s*"
+        rf"{automatic_positive_character}{{0,40}}\bautomatic\w*\b"
+        rf"(?!{skill_clause_character}{{0,40}}\b(?:not|never)\b)",
+        rf"(?<!not, )(?<!never, )\bautomatic\w*\b"
+        rf"{automatic_positive_character}{{0,60}},\s*"
+        rf"{automatic_positive_character}{{0,40}}\b(?:install|activat)\w*\b"
+        rf"(?!{skill_clause_character}{{0,40}}\b(?:not|never)\b)",
         rf"\bauto-?(?:install|activat)\w*\b"
         rf"(?!{skill_clause_character}{{0,60}}\b(?:not|never)\b)",
         r"\b(?:install|activate)\b.{0,120}\bwithout\s+(?:explicit\s+)?(?:repository-)?owner approval\b",
@@ -3299,6 +3313,10 @@ def check_process_docs(failures: list[str]) -> None:
         rf"{skill_clause_character}{{0,60}}\b"
         rf"(?:is\s+(?:itself\s+)?(?:sufficient|enough)|equals?|counts?\s+as)\b"
         rf"{skill_clause_character}{{0,40}}\b(?:repository\s+)?approval\b",
+        rf"\b(?:present on disk|disk presence)\b{approval_positive_character}{{0,60}},\s*"
+        rf"{approval_positive_character}{{0,80}}\b"
+        rf"(?:is\s+(?:itself\s+)?(?:sufficient|enough)|equals?|counts?\s+as)\b"
+        rf"{approval_positive_character}{{0,40}}\b(?:repository\s+)?approval\b",
         r"\bcomposite skill (?:quality )?score\s*(?:=|:|\||is\s+(?:the\s+)?weighted\b)",
     )
     for pattern in forbidden_skill_selection_patterns:
