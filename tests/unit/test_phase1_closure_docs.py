@@ -3316,6 +3316,44 @@ def test_issue172_branch_does_not_pre_authorize_repository_adapter(monkeypatch: 
     ]
 
 
+def test_issue176_branch_allows_only_frozen_repository_integration_paths(monkeypatch: Any) -> None:
+    files = [
+        "docs/governance/preflights/issue-176.json",
+        "scripts/governance_preflight_repository.py",
+        "tests/unit/test_governance_preflight_repository.py",
+        "scripts/guardrails_check.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+    ]
+    assert phase1.ISSUE_176_ALLOWED_CHANGED_FILES == set(files)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-process-176-gpf-v1-repository-integration",
+        files=files,
+    ) == []
+
+
+def test_issue176_branch_rejects_pr_c_workflow_and_runtime_paths(monkeypatch: Any) -> None:
+    files = [
+        ".github/workflows/quality-gates.yml",
+        "scripts/governance_preflight_github.py",
+        "backend/app/main.py",
+    ]
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-process-176-gpf-v1-repository-integration",
+        files=files,
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-process-176-gpf-v1-repository-integration "
+        f"may not change {path}."
+        for path in files
+    ]
+
+
 def test_issue39_durability_branch_keeps_existing_runtime_allowlist(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
