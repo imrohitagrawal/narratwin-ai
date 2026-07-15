@@ -240,7 +240,7 @@ def test_order_and_later_commit_grouping_do_not_change_validity(tmp_path: Path) 
     repo, base, head = _valid_repo(tmp_path, name="grouped")
     assert _codes(repo, base, head) == []
     required = PATHS + [f"nested/{index:03d}/file.txt" for index in range(117)]
-    required.append(f"scripts/{'界' * 501}.py")
+    required.append(f"scripts/{'x' * 250}/{'y' * 250}.py")
     artifact = _artifact(required=required, allowed=required)
     artifact["objective"] = "界" * 2_000
     artifact["scope"]["forbidden"].extend(f"forbidden/{index:03d}/" for index in range(120))
