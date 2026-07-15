@@ -59,6 +59,9 @@ The policy check fails CI for:
 - non-trivial pull requests without completed preflight evidence rows for the
   required source, invariant/failure matrix, test, docs/gates, and
   adversarial-review categories in the PR body
+- non-trivial pull requests without a meaningful five-point `Reviewer overview`
+  before detailed governance/evidence sections; all template points and both
+  Scope labels are required, and placeholders or copied instructions do not count
 - non-trivial pull requests whose failure-matrix IDs are not fully covered by
   test, gate, source, human-only, or non-goal evidence, or whose tests lack
   old-behavior proof language such as RED, mutation, break-test,

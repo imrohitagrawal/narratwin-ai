@@ -6,6 +6,26 @@ If this PR is intentionally meant to close an issue, state the exact closing
 keyword and issue here and explain why closure is correct. Otherwise use
 reference-only wording.
 
+## Reviewer overview
+
+<!-- Required for non-trivial PRs. Complete all five points with PR-specific content before the evidence tables. -->
+
+### 1. What changed and why
+<!-- Explain the change and the problem or need it addresses in plain language. -->
+
+### 2. Scope
+- In scope: <!-- Describe what the PR changes. -->
+- Out of scope: <!-- Describe what it intentionally does not change. -->
+
+### 3. Key files and components
+<!-- Identify the main files, modules, workflows, or documents affected. -->
+
+### 4. Reviewer focus
+<!-- Tell the reviewer which decisions, risks, invariants, or behaviors deserve close attention. -->
+
+### 5. Validation, limitations, and residual risks
+<!-- Summarize tests and checks, known limitations, remaining risks, and human-only decisions. -->
+
 ## Stage / slice
 
 - Stage:

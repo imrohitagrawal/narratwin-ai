@@ -20,7 +20,44 @@ def load_guardrails_module() -> ModuleType:
 guardrails: Any = load_guardrails_module()
 ISSUE_39_REFERENCE_ONLY_FAILURE = "Issue #39 pull requests must use reference-only wording and must not auto-close #39."
 PREFLIGHT_FAILURE = "Non-trivial pull requests must include completed preflight evidence rows."
+MISSING_REVIEWER_OVERVIEW = "Non-trivial pull requests must include a Reviewer overview section."
+REVIEWER_OVERVIEW_ORDER = (
+    "Reviewer overview must appear before detailed governance and evidence sections."
+)
 PR_SPECIFIC_PREFLIGHT_ARTIFACT = "docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"
+REVIEWER_POINT_HEADINGS = (
+    "1. What changed and why",
+    "2. Scope",
+    "3. Key files and components",
+    "4. Reviewer focus",
+    "5. Validation, limitations, and residual risks",
+)
+REVIEWER_POINT_CONTENT = (
+    "Adds a local PR-body check so reviewers see the change before evidence tables.",
+    "- In scope: PR template and guardrail behavior.\n- Out of scope: Product and runtime behavior.",
+    "The PR template, repository guardrail, focused tests, and governance docs change.",
+    "Check heading scope, placeholder rejection, and preservation of existing PR checks.",
+    "Unit and forced-event checks cover the change; human judgment of clarity remains required.",
+)
+REVIEWER_MEANING_FAILURES = (
+    "Reviewer overview point 1 must contain meaningful PR-specific content.",
+    "Reviewer overview point 2 must contain meaningful PR-specific content, including both In scope and Out of scope.",
+    "Reviewer overview point 3 must contain meaningful PR-specific content.",
+    "Reviewer overview point 4 must contain meaningful PR-specific content.",
+    "Reviewer overview point 5 must contain meaningful PR-specific content.",
+)
+
+
+def reviewer_overview_body(
+    contents: tuple[str, ...] = REVIEWER_POINT_CONTENT,
+    *,
+    omit: int | None = None,
+) -> str:
+    rows = ["## Reviewer overview"]
+    for index, (heading, content) in enumerate(zip(REVIEWER_POINT_HEADINGS, contents, strict=True)):
+        if index != omit:
+            rows.extend(("", f"### {heading}", "", content))
+    return "\n".join(rows) + "\n"
 ISSUE39_SENSITIVE_ROW_CELLS = {
     "DUR-ACID-001": [
         "ACID/CAS durable metadata",
@@ -405,6 +442,7 @@ def completed_preflight_body(
     )
     return (
         "Refs #44\n\n"
+        f"{reviewer_overview_body()}\n"
         "## Preflight evidence\n\n"
         "| Evidence | Artifact reference | Reference type | Matrix IDs | Command / CI / Source | Reviewer | Evidence type | Completion status | Residual risk decision |\n"
         "|---|---|---|---|---|---|---|---|---|\n"
@@ -490,6 +528,267 @@ def replace_matrix_row_cell(plan_path: Path, matrix_id: str, index: int, replace
     cells[index] = replacement
     lines[row_index] = "| " + " | ".join(cells) + " |"
     plan_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def test_reviewer_overview_accepts_meaningful_short_and_multiline_content() -> None:
+    assert guardrails.reviewer_overview_failures(reviewer_overview_body()) == []
+    multiline = (
+        "Changed the guardrail.\n\n- Prevents evidence-first review\n- Keeps prose flexible",
+        "In scope:\n- Markdown parsing\n- Stable findings\n\nOut of scope:\n- Runtime code",
+        "- `.github/pull_request_template.md`\n- `scripts/guardrails_check.py`",
+        "- Ordering boundaries\n- False passes from unrelated tables",
+        "Tests pass locally.\n\nLimitations:\n- Human clarity remains a reviewer decision.",
+    )
+    assert guardrails.reviewer_overview_failures(reviewer_overview_body(multiline)) == []
+
+
+def test_reviewer_overview_rejects_missing_section_despite_evidence_table_words() -> None:
+    body = (
+        "## Preflight evidence\n\n"
+        "| 1. What changed and why | 2. Scope | 3. Key files and components | "
+        "4. Reviewer focus | 5. Validation, limitations, and residual risks |\n"
+        "|---|---|---|---|---|\n| meaningful | meaningful | meaningful | meaningful | meaningful |\n"
+    )
+    assert guardrails.reviewer_overview_failures(body) == [MISSING_REVIEWER_OVERVIEW]
+
+    table_inside_overview = body.replace("## Preflight evidence", "## Reviewer overview")
+    assert guardrails.reviewer_overview_failures(table_inside_overview) == [
+        f"Reviewer overview must include point {heading.replace('.', ':', 1)}."
+        for heading in REVIEWER_POINT_HEADINGS
+    ]
+
+
+@pytest.mark.parametrize(("missing_index", "label"), tuple(enumerate(REVIEWER_POINT_HEADINGS)))
+def test_reviewer_overview_rejects_each_missing_point_independently(
+    missing_index: int,
+    label: str,
+) -> None:
+    assert guardrails.reviewer_overview_failures(
+        reviewer_overview_body(omit=missing_index)
+    ) == [f"Reviewer overview must include point {label.replace('.', ':', 1)}."]
+
+
+@pytest.mark.parametrize(
+    "evidence_heading",
+    (
+        "Guardrail checklist",
+        "Preflight evidence",
+        "Human-only review surfaces",
+        "Pre-implementation evidence",
+        "Validation evidence",
+    ),
+)
+def test_reviewer_overview_rejects_overview_after_detailed_evidence(
+    evidence_heading: str,
+) -> None:
+    body = f"## {evidence_heading}\n\n| Evidence | Result |\n|---|---|\n| check | passed |\n\n"
+    assert guardrails.reviewer_overview_failures(body + reviewer_overview_body()) == [
+        REVIEWER_OVERVIEW_ORDER
+    ]
+    if evidence_heading == "Preflight evidence":
+        placeholders = ("TODO", "In scope: TODO\nOut of scope: TBD", "TBD", "pending", "N/A")
+        assert guardrails.reviewer_overview_failures(
+            body + reviewer_overview_body(placeholders)
+        ) == [REVIEWER_OVERVIEW_ORDER, *REVIEWER_MEANING_FAILURES]
+
+
+@pytest.mark.parametrize("point_index", range(5))
+@pytest.mark.parametrize(
+    "placeholder",
+    ("TODO", "tBd", "PENDING", "add text here", "describe the change", "N/A", "NA", "not applicable"),
+)
+def test_reviewer_overview_rejects_placeholder_only_content_for_each_point(
+    point_index: int,
+    placeholder: str,
+) -> None:
+    contents = list(REVIEWER_POINT_CONTENT)
+    contents[point_index] = (
+        f"In scope: {placeholder}\nOut of scope: {placeholder}"
+        if point_index == 1
+        else placeholder
+    )
+    assert guardrails.reviewer_overview_failures(reviewer_overview_body(tuple(contents))) == [
+        REVIEWER_MEANING_FAILURES[point_index]
+    ]
+
+
+@pytest.mark.parametrize(
+    "scope_content",
+    (
+        "In scope: Guardrail behavior.",
+        "Out of scope: Product behavior.",
+        "In scope: TODO\nOut of scope: Product behavior.",
+        "In scope: Guardrail behavior.\nOut of scope: TBD",
+    ),
+)
+def test_reviewer_overview_requires_meaningful_in_and_out_of_scope(scope_content: str) -> None:
+    contents = list(REVIEWER_POINT_CONTENT)
+    contents[1] = scope_content
+    assert guardrails.reviewer_overview_failures(reviewer_overview_body(tuple(contents))) == [
+        REVIEWER_MEANING_FAILURES[1]
+    ]
+
+
+def test_reviewer_overview_rejects_untouched_or_visible_template_instructions() -> None:
+    comments = tuple(f"<!-- {content} -->" for content in REVIEWER_POINT_CONTENT)
+    assert guardrails.reviewer_overview_failures(reviewer_overview_body(comments)) == list(
+        REVIEWER_MEANING_FAILURES
+    )
+    instructions = (
+        "Explain the change and the problem or need it addresses in plain language.",
+        "In scope: Describe what the PR changes.\nOut of scope: Describe what it intentionally does not change.",
+        "Identify the main files, modules, workflows, or documents affected.",
+        "Tell the reviewer which decisions, risks, invariants, or behaviors deserve close attention.",
+        "Summarize tests and checks, known limitations, remaining risks, and human-only decisions.",
+    )
+    assert guardrails.reviewer_overview_failures(reviewer_overview_body(instructions)) == list(
+        REVIEWER_MEANING_FAILURES
+    )
+    fenced = tuple(f"```text\n{instruction}\n```" for instruction in instructions)
+    assert guardrails.reviewer_overview_failures(reviewer_overview_body(fenced)) == list(
+        REVIEWER_MEANING_FAILURES
+    )
+    specific = (
+        instructions[0] + " This PR prevents evidence tables from hiding the purpose.",
+        "In scope: Describe what the PR changes. The template and local guardrail change.\n"
+        "Out of scope: Describe what it intentionally does not change. Runtime behavior remains unchanged.",
+        instructions[2] + " The template and local guardrail are affected.",
+        instructions[3] + " Check parser boundaries and stable findings.",
+        instructions[4] + " Focused tests pass; clarity remains human-reviewed.",
+    )
+    assert guardrails.reviewer_overview_failures(reviewer_overview_body(specific)) == []
+
+
+@pytest.mark.parametrize("point_index", range(5))
+@pytest.mark.parametrize("wrapper", ("**{}**", "`{}`", "_{}_"))
+def test_reviewer_overview_rejects_markdown_wrapped_placeholders(
+    point_index: int,
+    wrapper: str,
+) -> None:
+    contents = list(REVIEWER_POINT_CONTENT)
+    wrapped = wrapper.format("TODO")
+    contents[point_index] = (
+        f"In scope: {wrapped}\nOut of scope: {wrapped}"
+        if point_index == 1
+        else wrapped
+    )
+    assert guardrails.reviewer_overview_failures(reviewer_overview_body(tuple(contents))) == [
+        REVIEWER_MEANING_FAILURES[point_index]
+    ]
+
+
+def test_reviewer_overview_first_duplicate_is_authoritative_and_parsing_is_scoped() -> None:
+    placeholder = ("TODO", "In scope: TODO\nOut of scope: TBD", "TBD", "pending", "N/A")
+    body = (
+        "## Unrelated section\n\n### 1. What changed and why\nUnrelated prose.\n\n"
+        + reviewer_overview_body(placeholder)
+        + "\n"
+        + reviewer_overview_body()
+    )
+    assert guardrails.reviewer_overview_failures(body) == list(REVIEWER_MEANING_FAILURES)
+
+
+def test_reviewer_overview_parsing_is_deterministic_across_unrelated_markdown() -> None:
+    body = reviewer_overview_body().replace("## Reviewer overview", "##   rEvIeWeR OvErViEw   ")
+    for heading in REVIEWER_POINT_HEADINGS:
+        body = body.replace(f"### {heading}", f"###  {heading.swapcase()}  ")
+    assert guardrails.reviewer_overview_failures(
+        "## Stage\nGovernance\n\n## Summary\n| Note | Value |\n|---|---|\n| Scope | unrelated |\n\n"
+        + body
+        + "\n## Notes\nHuman review remains required.\n"
+    ) == []
+
+    multiple_missing = reviewer_overview_body(omit=0).replace(
+        "### 3. Key files and components\n\n" + REVIEWER_POINT_CONTENT[2] + "\n",
+        "",
+    )
+    assert guardrails.reviewer_overview_failures(multiple_missing) == [
+        "Reviewer overview must include point 1: What changed and why.",
+        "Reviewer overview must include point 3: Key files and components.",
+    ]
+
+
+def test_reviewer_overview_rejects_wrong_level_and_fenced_headings() -> None:
+    for index, heading in enumerate(REVIEWER_POINT_HEADINGS):
+        wrong_level = reviewer_overview_body().replace(f"### {heading}", f"#### {heading}")
+        assert guardrails.reviewer_overview_failures(wrong_level) == [
+            f"Reviewer overview must include point {heading.replace('.', ':', 1)}."
+        ], index
+    for marker in ("#", "###"):
+        wrong_overview = reviewer_overview_body().replace("## Reviewer overview", f"{marker} Reviewer overview")
+        assert guardrails.reviewer_overview_failures(wrong_overview) == [MISSING_REVIEWER_OVERVIEW]
+    fenced = "```markdown\n" + reviewer_overview_body() + "```\n"
+    assert guardrails.reviewer_overview_failures(fenced) == [MISSING_REVIEWER_OVERVIEW]
+
+
+def test_reviewer_overview_preserves_existing_guarded_pr_findings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    valid = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body(),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["scripts/guardrails_check.py"],
+    )
+    assert valid == []
+    prohibited = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body().replace("Refs #44", "Refs #44\nFixes #44", 1),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["scripts/guardrails_check.py"],
+    )
+    assert prohibited == [
+        "Pull request title/body/commit messages must use reference-only issue wording."
+    ]
+
+    missing = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body().replace(reviewer_overview_body() + "\n", ""),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["scripts/guardrails_check.py"],
+    )
+    assert missing == [MISSING_REVIEWER_OVERVIEW]
+
+    combined = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body().replace("Refs #44", "Fixes #44", 1).replace(
+            REVIEWER_POINT_CONTENT[0], "TODO", 1
+        ),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["scripts/guardrails_check.py"],
+    )
+    assert combined == [
+        "Pull request title/body/commit messages must use reference-only issue wording.",
+        "Pull request body must link an issue using reference-only wording such as Refs #<issue>.",
+        REVIEWER_MEANING_FAILURES[0],
+    ]
+
+
+def test_reviewer_overview_does_not_change_nontrivial_detection_or_add_external_lookups(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert guardrails.is_nontrivial_pull_request(["scripts/guardrails_check.py"]) is True
+    assert guardrails.is_nontrivial_pull_request(["docs/notes.md"]) is False
+
+    def fail_external_lookup(*args: object, **kwargs: object) -> object:
+        raise AssertionError("reviewer overview parsing must remain local")
+
+    monkeypatch.setattr(guardrails, "urlopen", fail_external_lookup)
+    monkeypatch.setattr(guardrails, "Request", fail_external_lookup)
+    monkeypatch.setattr(guardrails, "run_git", fail_external_lookup)
+    monkeypatch.setattr(guardrails, "github_reference_exists", fail_external_lookup)
+    monkeypatch.setattr(guardrails, "github_pull_request_is_merged", fail_external_lookup)
+    monkeypatch.setattr(guardrails, "os", type("NoEnvironment", (), {"__getattr__": fail_external_lookup})())
+    assert guardrails.reviewer_overview_failures(reviewer_overview_body()) == []
 
 
 def test_phase1_issue39_pull_request_allows_reference_only_body(
