@@ -7,6 +7,7 @@ import json
 import os
 import re
 import subprocess
+from datetime import date
 from pathlib import Path
 
 
@@ -60,10 +61,20 @@ MODULE_A_ALLOWED_CHANGED_FILES = REQUIRED_PHASE1_FILES | {
     "scripts/quality/check_recommended_review_items.py",
 }
 PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
+    "docs/PHASE_PLAN.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/SKILL_SELECTION_AND_EVIDENCE.md",
     "scripts/guardrails_check.py",
     "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_8_PRODUCT_MODE_ALLOWED_CHANGED_FILES = {
+    "AGENTS.md",
+    "docs/PHASE_PLAN.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
@@ -1036,6 +1047,18 @@ def parse_table_lines(section_text: str) -> tuple[list[str], list[list[str]]]:
             continue
         rows.append(cells)
     return headers, rows
+
+
+def policy_prose(text: str) -> str:
+    """Return policy-bearing prose while excluding quoted or code examples."""
+
+    without_fences = re.sub(r"```.*?```", " ", text, flags=re.S)
+    without_blockquotes = "\n".join(
+        line for line in without_fences.splitlines() if not line.lstrip().startswith(">")
+    )
+    without_quotes = re.sub(r'"[^"\n]*"|“[^”\n]*”', " ", without_blockquotes)
+    without_inline_code_markers = re.sub(r"`([^`\n]+)`", r"\1", without_quotes)
+    return re.sub(r"\s+", " ", without_inline_code_markers)
 
 
 def expanded_issue_numbers(value: str) -> set[str]:
@@ -2786,6 +2809,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_141_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-138-"):
         allowed_files = ISSUE_138_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-8-"):
+        allowed_files = ISSUE_8_PRODUCT_MODE_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):
@@ -3131,6 +3156,7 @@ def check_process_docs(failures: list[str]) -> None:
         ".github/pull_request_template.md",
         "AGENTS.md",
         "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/PHASE_PLAN.md",
         "docs/SKILL_EXECUTION_PLAN.md",
         "docs/SKILL_SELECTION_AND_EVIDENCE.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -3190,9 +3216,317 @@ def check_process_docs(failures: list[str]) -> None:
     ):
         if marker not in agents:
             fail(failures, f"AGENTS.md missing process marker: {marker}")
+    if "- `docs/PHASE_PLAN.md`" not in section(agents, "Required Reading"):
+        fail(failures, "AGENTS.md Required Reading missing docs/PHASE_PLAN.md.")
+    for marker in (
+        "Use issue `#155` for sequencing inside Product Mode 1",
+        "Mode 1 Checkpoint B must close before Mode 2 runtime work begins",
+    ):
+        if marker not in agents:
+            fail(failures, f"AGENTS.md missing product-mode workflow marker: {marker}")
+
+    phase_plan = read("docs/PHASE_PLAN.md")
+    check_required_headings(
+        failures,
+        phase_plan,
+        "docs/PHASE_PLAN.md",
+        (
+            "Product Modes, Delivery Phases, And Closure Programs",
+            "Phase 2: Spec Kit Gate",
+            "Phase 9: Interactive AI Avatar Walkthrough",
+        ),
+    )
+    normalized_phase_plan = re.sub(r"\s+", " ", phase_plan)
+    for subsection_name in (
+        "Canonical tracker and duplicate reconciliation",
+        "Duplicate reconciliation contract",
+        "Authority and concurrency contract",
+        "Cross-mode execution order",
+        "Optional post-checkpoint media branch",
+        "Fresh-context review boundary",
+        "Cross-chat handoff contract",
+    ):
+        if f"### {subsection_name}" not in phase_plan:
+            fail(failures, f"docs/PHASE_PLAN.md missing required subsection: {subsection_name}")
+
+    taxonomy_headers, taxonomy_rows = parse_table_lines(
+        section(phase_plan, "Product Modes, Delivery Phases, And Closure Programs")
+    )
+    expected_taxonomy_rows = [
+        [
+            "Phase 1",
+            "Historical Stage 1 product/PRD hardening",
+            "`#1` and this plan",
+            "Product Mode 1 or current Phase 1 Closure",
+        ],
+        [
+            "Phase 2",
+            "Historical Stage 1 Spec Kit follow-on",
+            "`#16`",
+            "Product Mode 2",
+        ],
+        [
+            "Phase 1 Closure",
+            "Final Review remediation, evidence, and closeout program",
+            "Phase 1 Closure issues and `docs/reviews/PHASE_1_CLOSURE_REPORT.md`",
+            "Product Mode 1 or authority for unrelated future features",
+        ],
+        [
+            "Product Mode 1",
+            "Pre-rendered multilingual demo-video product direction; current checkpoint is artifact-only and local",
+            "`#155`",
+            "A claim that playable audio or MP4/WebM already exists",
+        ],
+        [
+            "Product Mode 2",
+            "Interactive grounded AI avatar walkthrough",
+            "`#20`, Phase 9 after an approved stage-plan update",
+            "Phase 2 or work authorized by the Mode 1 tracker",
+        ],
+    ]
+    if taxonomy_headers != [
+        "Term",
+        "Meaning",
+        "Canonical tracker or artifact",
+        "Must not be interpreted as",
+    ] or taxonomy_rows != expected_taxonomy_rows:
+        fail(failures, "docs/PHASE_PLAN.md has invalid product-mode taxonomy contract.")
+    for expected_row in expected_taxonomy_rows:
+        term = expected_row[0]
+        matching_rows = [row for row in taxonomy_rows if row and row[0] == term]
+        if matching_rows != [expected_row]:
+            fail(failures, f"docs/PHASE_PLAN.md invalid product-mode taxonomy mapping: {term}.")
+
+    contradiction_patterns = (
+        r"\bphase 2 is (?:the )?product mode 2\b",
+        r"\bphase 2 and product mode 2 are (?:the )?(?:same|equivalent|interchangeable|synonyms?)\b",
+        r"\bphase 1 closure is (?:the )?product mode 1\b",
+        r"\bmode 2 runtime may begin before mode 1 checkpoint b closes\b",
+        r"\bissue #17 replaces #155 as the mode 1 canonical tracker\b",
+        r"\btrue duplicates may close before unique acceptance criteria transfer\b",
+        r"\bproduct mode 1 is production-ready and public\b",
+        r"\b(?:the )?optional (?:audio and video|playable media)(?: branch)? (?:is|are) "
+        r"(?:a )?(?:mandatory|required|prerequisite|precondition)\b.{0,80}\bmode 2\b",
+    )
+    if any(re.search(pattern, policy_prose(phase_plan), flags=re.I) for pattern in contradiction_patterns):
+        fail(failures, "docs/PHASE_PLAN.md contains a contradictory product-mode statement.")
+
+    _, cross_mode_rows = parse_table_lines(subsection(phase_plan, "Cross-mode execution order"))
+    expected_cross_mode_rows = [
+        [
+            "0",
+            "Product-mode demarcation",
+            "`#8`",
+            "Reviewed PR merged and original `#8` criteria reconciled",
+        ],
+        [
+            "1",
+            "Mode 1 artifact-only Checkpoint B",
+            "`#155`",
+            "Must close before the Mode 2 contract reset",
+        ],
+        [
+            "2",
+            "Mode 2 contract reset",
+            "`#20`",
+            "Approved stage/contract plan; no runtime change in the reset module",
+        ],
+        [
+            "3",
+            "Mode 2 local mock demo",
+            "`#20` children",
+            "Grounded local Q&A, refusal, citations, evaluation, synthetic presentation, and real-stack evidence",
+        ],
+    ]
+    if cross_mode_rows != expected_cross_mode_rows:
+        fail(failures, "docs/PHASE_PLAN.md has invalid cross-mode execution order.")
+    if any("optional playable media" in " ".join(row).lower() for row in cross_mode_rows):
+        fail(
+            failures,
+            "docs/PHASE_PLAN.md must keep optional playable media outside the Mode 2 predecessor chain.",
+        )
+
+    optional_media_section = subsection(phase_plan, "Optional post-checkpoint media branch")
+    _, optional_media_rows = parse_table_lines(optional_media_section)
+    if optional_media_rows != [
+        ["1", "Mock/local audio binary", "`#18`", "Explicit owner approval after Checkpoint B"],
+        [
+            "2",
+            "Mock/local video assembly",
+            "`#19`",
+            "Audio contract/evidence plus separate owner approval",
+        ],
+    ] or "This branch is not a predecessor to the Mode 2 contract reset." not in optional_media_section:
+        fail(
+            failures,
+            "docs/PHASE_PLAN.md must keep optional playable media outside the Mode 2 predecessor chain.",
+        )
+
+    duplicate_headers, duplicate_rows = parse_table_lines(
+        subsection(phase_plan, "Duplicate reconciliation contract")
+    )
+    expected_duplicate_rows = [
+        [
+            "`DUP-SEARCH`",
+            "Search existing trackers by objective, acceptance criteria, affected boundary, and parent.",
+            "Complete before opening a GitHub, Jira, or other tracker item.",
+        ],
+        [
+            "`DUP-LINK`",
+            "Add reciprocal links between the canonical tracker and each true duplicate.",
+            "Complete before closing the duplicate.",
+        ],
+        [
+            "`DUP-CANON`",
+            "Identify the canonical owner for the shared objective.",
+            "Record the owner in every affected tracker.",
+        ],
+        [
+            "`DUP-TRANSFER`",
+            "Transfer every unique acceptance criterion to the canonical tracker before closing a true duplicate.",
+            "Do not close until no unique requirement remains only on the duplicate.",
+        ],
+        [
+            "`DUP-EXTERNAL`",
+            "Do not invent an external tracker key; record a supplied key in both systems.",
+            "Leave the external mapping absent when no real key is evidenced.",
+        ],
+    ]
+    if duplicate_headers != ["Obligation ID", "Required action", "Completion rule"] or (
+        duplicate_rows != expected_duplicate_rows
+    ):
+        fail(failures, "docs/PHASE_PLAN.md has invalid duplicate-reconciliation contract.")
+        fail(failures, "docs/PHASE_PLAN.md missing duplicate-reconciliation obligation.")
+
+    issue8_headers, issue8_rows = parse_table_lines(
+        subsection(phase_plan, "Canonical tracker and duplicate reconciliation")
+    )
+    expected_issue8_rows = [
+        [
+            "PRD explicitly names both product modes.",
+            "`docs/PRD.md`",
+            "Existing evidence retained",
+        ],
+        [
+            "Project-avatar-pack contract is documented.",
+            "`docs/PROJECT_AVATAR_PACK.md`",
+            "Existing evidence retained",
+        ],
+        [
+            "Roadmap keeps Slice 1 focused while preserving later video and interactive avatar phases.",
+            "`docs/ROADMAP.md`",
+            "Existing evidence retained",
+        ],
+        [
+            "AI build brief instructs Codex to preserve the full product vision.",
+            "`docs/AI_BUILD_BRIEF.md`",
+            "Existing evidence retained",
+        ],
+        [
+            "Skill execution plan requires PM/spec validation of product modes and project-avatar-pack before coding.",
+            "`docs/SKILL_EXECUTION_PLAN.md`",
+            "Reconciled by the issue `#8` demarcation PR",
+        ],
+        [
+            "No application code is changed.",
+            "Exact issue `#8` PR diff and process allowlist",
+            "Verify again before merge",
+        ],
+    ]
+    if issue8_headers != [
+        "Original `#8` acceptance criterion",
+        "Durable evidence",
+        "Disposition",
+    ] or issue8_rows != expected_issue8_rows:
+        fail(failures, "docs/PHASE_PLAN.md has invalid issue #8 acceptance contract.")
+        fail(failures, "docs/PHASE_PLAN.md missing issue #8 acceptance mapping.")
+
+    for marker in (
+        "Phase 1 Closure is a closure program, not Product Mode 1.",
+        "Phase 2 is the Spec Kit gate, not Product Mode 2.",
+        "Product Mode 2 remains Phase 9 future work under issue `#20`.",
+        "Issue `#155` owns sequencing inside Product Mode 1",
+        "A maximum of three substantive review/correction cycles",
+        "exactly one next authorized module",
+    ):
+        if marker not in normalized_phase_plan:
+            fail(failures, f"docs/PHASE_PLAN.md missing product-mode execution marker: {marker}")
 
     skill_execution_plan = read("docs/SKILL_EXECUTION_PLAN.md")
-    normalized_skill_execution_plan = re.sub(r"\s+", " ", skill_execution_plan.lower())
+    normalized_skill_execution_plan = re.sub(r"\s+", " ", skill_execution_plan)
+    skill_contract_headers, skill_contract_rows = parse_table_lines(
+        section(skill_execution_plan, "Activation Rules")
+    )
+    expected_skill_contract_rows = [[
+        "`PM-MODE-001`",
+        "Before product-mode or project-avatar-pack work starts",
+        "PM/spec skills must validate Product Mode 1, Product Mode 2, and the project-avatar-pack contract before coding, including the approved stage, canonical tracker, grounding boundary, and local/mock limitations recorded in `docs/PHASE_PLAN.md` and `docs/PROJECT_AVATAR_PACK.md`.",
+    ]]
+    if skill_contract_headers != ["Rule ID", "Trigger", "Required validation"] or (
+        skill_contract_rows != expected_skill_contract_rows
+    ):
+        fail(
+            failures,
+            "docs/SKILL_EXECUTION_PLAN.md has invalid issue #8 product-mode validation contract.",
+        )
+        fail(failures, "docs/SKILL_EXECUTION_PLAN.md missing issue #8 product-mode validation rule.")
+
+    status = read("docs/STATUS.md")
+    current_baseline = section(status, "Current Baseline")
+    reviewed_dates = re.findall(r"^- Last reviewed date: (\d{4}-\d{2}-\d{2})$", current_baseline, flags=re.M)
+    reviewed_date_valid = False
+    if len(reviewed_dates) == 1:
+        try:
+            date.fromisoformat(reviewed_dates[0])
+        except ValueError:
+            pass
+        else:
+            reviewed_date_valid = True
+    baseline_headers, baseline_rows = parse_table_lines(current_baseline)
+    expected_baseline_rows = [
+        ["Taxonomy and cross-mode owner", "`docs/PHASE_PLAN.md`"],
+        ["Product Mode 1 owner", "Issue `#155`"],
+        ["Mode 1 current module", "Issue `#8` / PR `#166` demarcation closeout"],
+        ["Product Mode 2 next gate", "Issue `#20` contract reset only after Mode 1 Checkpoint B"],
+    ]
+    _, stage_issue_rows = parse_table_lines(subsection(status, "Stage Issues"))
+    _, backlog_rows = parse_table_lines(
+        subsection(status, "Additional Backlog And Governance Issues")
+    )
+    expected_tracker_prefixes = {
+        "`#43`": ["`#43`", "Open", "Mode 1 real-stack evidence"],
+        "`#138`": ["`#138`", "Closed", "Security follow-up"],
+        "`#3`": ["`#3`", "Closed", "Legacy governance issue"],
+        "`#8`": [
+            "`#8`",
+            "Open, pending reviewed demarcation merge",
+            "Product-mode definition and durable cross-chat demarcation",
+        ],
+        "`#17`": ["`#17`", "Open", "Mode 1 controlled fallback"],
+        "`#20`": ["`#20`", "Open, future reset required", "Product Mode 2 canonical tracker"],
+        "`#155`": ["`#155`", "Open, canonical", "Product Mode 1 execution tracker"],
+    }
+    product_tracker_rows = stage_issue_rows + backlog_rows
+    tracker_contract_valid = all(
+        [row[:3] for row in product_tracker_rows if row and row[0] == issue]
+        == [expected_prefix]
+        for issue, expected_prefix in expected_tracker_prefixes.items()
+    )
+    status_history_valid = (
+        "This blocks #138 merge eligibility" not in status
+        and "Correction to the earlier issue `#8` event" in status
+    )
+    if (
+        not reviewed_date_valid
+        or baseline_headers != ["Product-mode field", "Current value"]
+        or baseline_rows != expected_baseline_rows
+        or not tracker_contract_valid
+        or not status_history_valid
+    ):
+        fail(failures, "docs/STATUS.md has invalid current product-mode tracker contract.")
+        fail(failures, "docs/STATUS.md missing current product-mode tracker mapping.")
+
+    normalized_skill_execution_plan = normalized_skill_execution_plan.lower()
     exact_selection_rule = (
         "start from the claim and boundary, choose the smallest test that can disprove "
         "the claim, use a skill to govern the method, and record the resulting evidence "

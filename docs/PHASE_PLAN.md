@@ -2,10 +2,10 @@
 
 ## Version
 
-- Version: 1.0
+- Version: 1.2
 - Stage: Stage 1 product strategy and PRD hardening
 - Canonical issue: `#1`
-- Last updated: 2026-06-29
+- Last updated: 2026-07-15
 
 ## Purpose
 
@@ -41,6 +41,145 @@ phases only to order planning work within or across stages.
 | Phase 8 | Stage 7 | `#12`, `#19`, `#21` | Slice-scoped avatar/video and optional provider adapters |
 | Phase 9 | Future approved stage | `#20` | Interactive Q&A only after stage-plan update |
 | Phase 10 | Stage 8 and Final Review | `#13`, `#6` | Hardening and review only |
+
+## Product Modes, Delivery Phases, And Closure Programs
+
+These are separate taxonomies. Number similarity does not create scope or
+dependency. The approved stage remains the delivery authority; numbered phases
+order the historical plan; product modes describe user experiences; closure
+programs reconcile evidence and risk.
+
+| Term | Meaning | Canonical tracker or artifact | Must not be interpreted as |
+|---|---|---|---|
+| Phase 1 | Historical Stage 1 product/PRD hardening | `#1` and this plan | Product Mode 1 or current Phase 1 Closure |
+| Phase 2 | Historical Stage 1 Spec Kit follow-on | `#16` | Product Mode 2 |
+| Phase 1 Closure | Final Review remediation, evidence, and closeout program | Phase 1 Closure issues and `docs/reviews/PHASE_1_CLOSURE_REPORT.md` | Product Mode 1 or authority for unrelated future features |
+| Product Mode 1 | Pre-rendered multilingual demo-video product direction; current checkpoint is artifact-only and local | `#155` | A claim that playable audio or MP4/WebM already exists |
+| Product Mode 2 | Interactive grounded AI avatar walkthrough | `#20`, Phase 9 after an approved stage-plan update | Phase 2 or work authorized by the Mode 1 tracker |
+
+Phase 1 Closure is a closure program, not Product Mode 1.
+Phase 2 is the Spec Kit gate, not Product Mode 2.
+Product Mode 2 remains Phase 9 future work under issue `#20`.
+
+### Canonical tracker and duplicate reconciliation
+
+`docs/PHASE_PLAN.md` is the canonical cross-chat taxonomy and cross-mode boundary
+source. Issue `#155` is the canonical Product Mode 1 execution and current-action
+tracker. Issue `#20` is the existing Product Mode 2 implementation tracker and
+must be re-baselined before Mode 2 code starts. Supporting issues such as `#17`,
+`#18`, `#19`, and `#43` retain only their explicitly recorded child or later-track
+scope; they do not replace either canonical tracker.
+
+The exact duplicate-reconciliation duties are defined in the next subsection.
+Do not silently close an item whose unique requirements have not been preserved.
+
+Closed issue `#157` and closed PR `#163` are historical, not active execution
+paths. Security/evidence issues `#151`, `#158`, `#159`, and `#161`, plus PR
+`#162`, retain their own scopes. They must not be mixed into a product-mode PR;
+their verified residual risks may still be required checkpoint inputs.
+
+Issue `#8` remains open until its original acceptance criteria are reconciled as
+follows. After the reviewed demarcation PR merges, the repository owner may close
+`#8` manually with reference-only merge wording and a comment linking every row.
+
+| Original `#8` acceptance criterion | Durable evidence | Disposition |
+|---|---|---|
+| PRD explicitly names both product modes. | `docs/PRD.md` | Existing evidence retained |
+| Project-avatar-pack contract is documented. | `docs/PROJECT_AVATAR_PACK.md` | Existing evidence retained |
+| Roadmap keeps Slice 1 focused while preserving later video and interactive avatar phases. | `docs/ROADMAP.md` | Existing evidence retained |
+| AI build brief instructs Codex to preserve the full product vision. | `docs/AI_BUILD_BRIEF.md` | Existing evidence retained |
+| Skill execution plan requires PM/spec validation of product modes and project-avatar-pack before coding. | `docs/SKILL_EXECUTION_PLAN.md` | Reconciled by the issue `#8` demarcation PR |
+| No application code is changed. | Exact issue `#8` PR diff and process allowlist | Verify again before merge |
+
+### Duplicate reconciliation contract
+
+These rows are the authoritative minimum. Each obligation applies before a new
+tracker is created or a true duplicate is closed.
+
+| Obligation ID | Required action | Completion rule |
+|---|---|---|
+| `DUP-SEARCH` | Search existing trackers by objective, acceptance criteria, affected boundary, and parent. | Complete before opening a GitHub, Jira, or other tracker item. |
+| `DUP-LINK` | Add reciprocal links between the canonical tracker and each true duplicate. | Complete before closing the duplicate. |
+| `DUP-CANON` | Identify the canonical owner for the shared objective. | Record the owner in every affected tracker. |
+| `DUP-TRANSFER` | Transfer every unique acceptance criterion to the canonical tracker before closing a true duplicate. | Do not close until no unique requirement remains only on the duplicate. |
+| `DUP-EXTERNAL` | Do not invent an external tracker key; record a supplied key in both systems. | Leave the external mapping absent when no real key is evidenced. |
+
+### Authority and concurrency contract
+
+Only one product-mode implementation module is active in a chat, branch, and PR.
+Issue `#155` owns sequencing inside Product Mode 1, including its current
+`CH-M1-00` next action, dependency-safe preparation lanes, contract freezes, and
+merge/checkpoint order. Separate implementation or preparation lanes may overlap
+only when `#155` explicitly authorizes them, each lane has an isolated issue,
+branch, PR, and file/symbol boundary, and dependent work still merges in the
+tracker's declared order. This plan does not replace those within-Mode-1 rules.
+
+Issue `#20` owns Product Mode 2 only after its contract-reset gate is authorized.
+An independent governance, security, or review task may proceed only when
+explicitly assigned and must not silently switch the active product module.
+
+### Cross-mode execution order
+
+Mode 1 Checkpoint B must close before Mode 2 runtime implementation begins.
+Mode 1 Checkpoint B is the approved artifact-only local checkpoint; playable
+audio or MP4/WebM remains a separate owner decision after that checkpoint.
+
+| Order | Required gate | Canonical owner | Completion effect |
+|---:|---|---|---|
+| 0 | Product-mode demarcation | `#8` | Reviewed PR merged and original `#8` criteria reconciled |
+| 1 | Mode 1 artifact-only Checkpoint B | `#155` | Must close before the Mode 2 contract reset |
+| 2 | Mode 2 contract reset | `#20` | Approved stage/contract plan; no runtime change in the reset module |
+| 3 | Mode 2 local mock demo | `#20` children | Grounded local Q&A, refusal, citations, evaluation, synthetic presentation, and real-stack evidence |
+
+Each required row needs its approved PR, exact-head checks, post-merge
+verification, child-issue reconciliation, branch cleanup, and any genuinely
+required `docs/STATUS.md` update. Within row 1, issue `#155` remains authoritative
+for preparation concurrency and dependency-ordered merges.
+
+### Optional post-checkpoint media branch
+
+Playable media is a separate owner-approved branch after Checkpoint B:
+
+| Branch order | Optional module | Canonical owner | Start gate |
+|---:|---|---|---|
+| 1 | Mock/local audio binary | `#18` | Explicit owner approval after Checkpoint B |
+| 2 | Mock/local video assembly | `#19` | Audio contract/evidence plus separate owner approval |
+
+This branch is not a predecessor to the Mode 2 contract reset. The owner may
+approve, defer, or decline it without changing the Checkpoint-B-to-Mode-2 gate.
+
+### Fresh-context review boundary
+
+Authoring and independent review are separate sessions for every non-trivial
+implementation module. A fresh reviewer receives the approved contract, exact
+diff, tests, command evidence, and declared residuals—not the author's reasoning
+or conclusions—and attempts to disprove correctness, security, architecture,
+scope, and evidence claims. The authoring agent classifies each finding against
+the artifact rather than blindly implementing or rejecting it.
+
+A maximum of three substantive review/correction cycles is allowed for one
+reviewable artifact. A new defect class updates the contract, failure matrix, and
+tests before correction. Substantive findings after the third cycle stop the
+module for human decomposition or scope correction; they do not trigger an
+open-ended patch loop. Human approval and branch protection remain final merge
+conditions even when subagent review is clean.
+
+### Cross-chat handoff contract
+
+Every module closeout records, on its canonical issue or PR:
+
+- exact base and head commits, branch, changed files, and scope exclusions;
+- acceptance criteria and invariant-to-test mapping;
+- RED/old-behavior proof when behavior changed;
+- focused, full, CI, and manual evidence with honest residuals;
+- fresh-context findings and their dispositions;
+- merge/post-merge/issue/branch/status reconciliation state; and
+- exactly one next authorized module, or an explicit stop decision.
+
+A new chat reads `AGENTS.md`, this plan, the active canonical tracker, and the
+last closeout record. It independently verifies live state but does not restart
+completed audits or begin a later cross-mode gate. Within Mode 1 it follows the
+current action and dependency-safe wave rules recorded by `#155`.
 
 ## Boundaries
 
