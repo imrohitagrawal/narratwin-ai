@@ -18,28 +18,15 @@ from scripts.governance_preflight_repository import validate_governance_prefligh
 ISSUE = 176
 BRANCH = "phase-1-closure-process-176-gpf-v1-repository-integration"
 PREFLIGHT = "docs/governance/preflights/issue-176.json"
-PATHS = [
-    PREFLIGHT,
-    "scripts/governance_preflight_repository.py",
-    "tests/unit/test_governance_preflight_repository.py",
-    "scripts/guardrails_check.py",
-    "scripts/quality/check_phase1_closure_docs.py",
-    "tests/unit/test_phase1_closure_docs.py",
-    "docs/REPOSITORY_GUARDRAILS.md",
-    "docs/QUALITY_GATES.md",
-    "docs/STAGE_ISSUE_PLAN.md",
-    "docs/STATUS.md",
-]
-FORBIDDEN = ["backend/", "frontend/", ".github/workflows/", "docker/", "pyproject.toml",
-             "uv.lock", "package.json", "package-lock.json"]
+FROZEN = json.loads(Path(PREFLIGHT).read_text(encoding="utf-8"))
+PATHS = FROZEN["scope"]["required"]
+FORBIDDEN = FROZEN["scope"]["forbidden"]
 SEEDS = (32001, 32002, 32003, 32004)
 
 
 def _git(repo: Path, *args: str, check: bool = True) -> str:
-    completed = subprocess.run(
-        ["git", *args], cwd=repo, check=check, text=True,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20,
-    )
+    completed = subprocess.run(["git", *args], cwd=repo, check=check, text=True,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     return completed.stdout.strip()
 
 
@@ -58,10 +45,8 @@ def _commit(repo: Path, message: str, *, empty: bool = False) -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
-def _artifact(
-    *, issue: int = ISSUE, branch: str = BRANCH,
-    required: list[str] | None = None, allowed: list[str] | None = None,
-) -> dict[str, Any]:
+def _artifact(*, issue: int = ISSUE, branch: str = BRANCH,
+              required: list[str] | None = None, allowed: list[str] | None = None) -> dict[str, Any]:
     return {
         "schema_version": "GovernancePreflightV1",
         "issue_number": issue,
@@ -86,17 +71,10 @@ def _new_repo(tmp_path: Path, name: str = "repo") -> tuple[Path, str]:
     return repo, _commit(repo, "base")
 
 
-def _valid_repo(
-    tmp_path: Path,
-    *,
-    name: str = "repo",
-    branch: str = BRANCH,
-    artifact: dict[str, Any] | None = None,
-    first_extra: str | None = None,
-    preflight_path: str = PREFLIGHT,
-    empty_commits: int = 0,
-    split_later: bool = False,
-) -> tuple[Path, str, str]:
+def _valid_repo(tmp_path: Path, *, name: str = "repo", branch: str = BRANCH,
+                artifact: dict[str, Any] | None = None, first_extra: str | None = None,
+                preflight_path: str = PREFLIGHT, empty_commits: int = 0,
+                split_later: bool = False) -> tuple[Path, str, str]:
     repo, base = _new_repo(tmp_path, name)
     _git(repo, "checkout", "-q", "-b", branch)
     _write(repo, preflight_path, json.dumps(artifact or _artifact(), indent=2) + "\n")
@@ -115,12 +93,9 @@ def _valid_repo(
 
 
 def _codes(repo: Path, base: str, head: str, *, issue: int = ISSUE, branch: str = BRANCH) -> list[str]:
-    return [
-        finding.code
-        for finding in validate_governance_preflight_repository(
-            repo, base_sha=base, head_sha=head, issue_number=issue, branch=branch
-        )
-    ]
+    findings = validate_governance_preflight_repository(
+        repo, base_sha=base, head_sha=head, issue_number=issue, branch=branch)
+    return [finding.code for finding in findings]
 
 
 def _rewrite_artifact(repo: Path, mutate: Callable[[dict[str, Any]], None]) -> str:
@@ -137,20 +112,17 @@ def test_exact_valid_repository_has_no_findings(tmp_path: Path) -> None:
     assert (_git(repo, "rev-parse", "HEAD"), _git(repo, "status", "--porcelain")) == before
 
 
-@pytest.mark.parametrize(
-    ("mutation", "expected"),
-    (
+@pytest.mark.parametrize(("mutation", "expected"), (
         ("missing", ["GPF.REPO.PREFLIGHT_MISSING"]),
         ("multiple", ["GPF.REPO.PREFLIGHT_MULTIPLE"]),
         ("not-first", ["GPF.REPO.PREFLIGHT_NOT_FIRST"]),
         ("first-extra", ["GPF.REPO.PREFLIGHT_NOT_FIRST"]),
         ("filename", ["GPF.REPO.ISSUE_REF_MISMATCH"]),
         ("filename-body", ["GPF.REPO.ISSUE_REF_MISMATCH", "GPF.BINDING.ISSUE_MISMATCH"]),
-    ),
-)
+        ("required-missing", ["GPF.SCOPE.REQUIRED_NOT_CHANGED"]),
+    ))
 def test_each_repository_mutation_returns_complete_vector(
-    tmp_path: Path, mutation: str, expected: list[str]
-) -> None:
+    tmp_path: Path, mutation: str, expected: list[str]) -> None:
     repo, base, head = _valid_repo(tmp_path)
     assert _codes(repo, base, head) == []
     if mutation == "missing":
@@ -170,6 +142,9 @@ def test_each_repository_mutation_returns_complete_vector(
         head = _commit(repo, "preflight later")
     elif mutation == "first-extra":
         repo, base, head = _valid_repo(tmp_path, name="mutated", first_extra=PATHS[1])
+    elif mutation == "required-missing":
+        _git(repo, "rm", PATHS[1])
+        head = _commit(repo, "remove required path")
     else:
         wrong = "docs/governance/preflights/issue-177.json"
         if mutation == "filename-body":
@@ -182,8 +157,7 @@ def test_each_repository_mutation_returns_complete_vector(
 @pytest.mark.parametrize("bad", ("0" * 40, "not-a-sha", "-" + "a" * 39))
 @pytest.mark.parametrize("which", ("base", "head"))
 def test_unavailable_or_injectable_history_fails_closed(
-    tmp_path: Path, bad: str, which: str
-) -> None:
+    tmp_path: Path, bad: str, which: str) -> None:
     repo, base, head = _valid_repo(tmp_path)
     assert _codes(repo, base, head) == []
     if which == "base":
@@ -196,6 +170,9 @@ def test_unavailable_or_injectable_history_fails_closed(
 def test_non_ancestor_history_is_unavailable(tmp_path: Path) -> None:
     repo, base, head = _valid_repo(tmp_path)
     assert _codes(repo, base, head) == []
+    _git(repo, "rm", PREFLIGHT)
+    head = _commit(repo, "lower-priority missing preflight")
+    assert _codes(repo, base, head) == ["GPF.REPO.PREFLIGHT_MISSING"]
     _git(repo, "checkout", "-q", "--orphan", "unrelated")
     _git(repo, "rm", "-rf", ".")
     _write(repo, "other.txt", "other\n")
@@ -203,9 +180,7 @@ def test_non_ancestor_history_is_unavailable(tmp_path: Path) -> None:
     assert _codes(repo, unrelated, head) == ["GPF.REPO.HISTORY_UNAVAILABLE"]
 
 
-@pytest.mark.parametrize(
-    ("name", "mutate", "expected"),
-    (
+@pytest.mark.parametrize(("name", "mutate", "expected"), (
         ("body-issue", lambda a: a.__setitem__("issue_number", 177), ["GPF.BINDING.ISSUE_MISMATCH"]),
         ("body-branch", lambda a: a.__setitem__("branch", BRANCH + "-wrong"), ["GPF.BINDING.BRANCH_MISMATCH"]),
         ("status", lambda a: a.__setitem__("status_decision", "skip"), ["GPF.STATUS.DECISION_INVALID"]),
@@ -213,7 +188,6 @@ def test_non_ancestor_history_is_unavailable(tmp_path: Path) -> None:
         ("duplicate", lambda a: a["scope"]["required"].append(PATHS[0]), ["GPF.SCHEMA.DUPLICATE"]),
         ("traversal", lambda a: a["scope"]["required"].__setitem__(1, "../escape"), ["GPF.PATH.INVALID"]),
         ("control", lambda a: a["scope"]["required"].__setitem__(1, "bad\npath"), ["GPF.PATH.INVALID"]),
-        ("required-missing", lambda a: a["scope"]["required"].append("missing.txt"), ["GPF.SCOPE.REQUIRED_NOT_CHANGED"]),
         ("required-forbidden", lambda a: a["scope"]["forbidden"].append(PATHS[1]), ["GPF.SCOPE.REQUIRED_FORBIDDEN"]),
         ("required-not-allowed", lambda a: a["scope"]["allowed_prefixes"].remove(PATHS[1]), ["GPF.SCOPE.REQUIRED_NOT_ALLOWED"]),
         ("required-objective", lambda a: a.pop("objective"), ["GPF.SCHEMA.REQUIRED"]),
@@ -227,11 +201,13 @@ def test_non_ancestor_history_is_unavailable(tmp_path: Path) -> None:
         ("dot", lambda a: a["scope"]["required"].__setitem__(1, "scripts/./x.py"), ["GPF.PATH.INVALID"]),
         ("status-required", lambda a: a["scope"]["required"].remove("docs/STATUS.md"), ["GPF.STATUS.REQUIRED_MISSING"]),
         ("status-allowed", lambda a: a["scope"]["allowed_prefixes"].remove("docs/STATUS.md"), ["GPF.STATUS.ALLOWED_MISSING"]),
-    ),
-)
+        ("list-limit", lambda a: a["scope"]["allowed_prefixes"].extend(f"u/{i}/" for i in range(119)), ["GPF.SCHEMA.LIMIT"]),
+        ("path-limit", lambda a: a["scope"]["required"].__setitem__(1, "x" * 513), ["GPF.SCHEMA.LIMIT"]),
+        ("serialized-limit", lambda a: (a["scope"]["allowed_prefixes"].extend(f"u/{i:03d}/{'x' * 500}" for i in range(118)), a["scope"]["forbidden"].extend(f"f/{i:03d}/{'x' * 500}" for i in range(120))), ["GPF.SCHEMA.LIMIT"]),
+        ("surrogate", lambda a: a.__setitem__("objective", "\ud800"), ["GPF.SCHEMA.TYPE"]),
+    ))
 def test_pr_a_findings_pass_through_unchanged(
-    tmp_path: Path, name: str, mutate: Callable[[dict[str, Any]], None], expected: list[str]
-) -> None:
+    tmp_path: Path, name: str, mutate: Callable[[dict[str, Any]], None], expected: list[str]) -> None:
     del name
     repo, base, head = _valid_repo(tmp_path)
     assert _codes(repo, base, head) == []
@@ -239,11 +215,9 @@ def test_pr_a_findings_pass_through_unchanged(
     assert _codes(repo, base, head) == expected
 
 
-@pytest.mark.parametrize(
-    ("raw", "expected"),
-    (("{not-json\n", ["GPF.SCHEMA.TYPE"]), ("[]\n", ["GPF.SCHEMA.TYPE"]),
-     ("x" * 65_537, ["GPF.SCHEMA.LIMIT"])),
-)
+@pytest.mark.parametrize(("raw", "expected"), (
+    ("{not-json\n", ["GPF.SCHEMA.TYPE"]), ("[]\n", ["GPF.SCHEMA.TYPE"]),
+    ("x" * 65_537, ["GPF.SCHEMA.LIMIT"])))
 def test_raw_artifacts_use_pr_a_codes(tmp_path: Path, raw: str, expected: list[str]) -> None:
     repo, base, head = _valid_repo(tmp_path)
     assert _codes(repo, base, head) == []
@@ -252,16 +226,13 @@ def test_raw_artifacts_use_pr_a_codes(tmp_path: Path, raw: str, expected: list[s
     assert _codes(repo, base, head) == expected
 
 
-@pytest.mark.parametrize(
-    ("path", "expected"),
-    ((["backend/forbidden.py"], ["GPF.SCOPE.CHANGE_FORBIDDEN"]),
-     (["tools/unapproved.py"], ["GPF.SCOPE.CHANGE_NOT_ALLOWED"]),
-     (["backend/forbidden.py", "tools/unapproved.py"],
-      ["GPF.SCOPE.CHANGE_FORBIDDEN", "GPF.SCOPE.CHANGE_NOT_ALLOWED"])),
-)
+@pytest.mark.parametrize(("path", "expected"), (
+    (["backend/forbidden.py"], ["GPF.SCOPE.CHANGE_FORBIDDEN"]),
+    (["tools/unapproved.py"], ["GPF.SCOPE.CHANGE_NOT_ALLOWED"]),
+    (["backend/forbidden.py", "tools/unapproved.py"],
+     ["GPF.SCOPE.CHANGE_FORBIDDEN", "GPF.SCOPE.CHANGE_NOT_ALLOWED"])))
 def test_changed_path_findings_pass_through(
-    tmp_path: Path, path: list[str], expected: list[str]
-) -> None:
+    tmp_path: Path, path: list[str], expected: list[str]) -> None:
     repo, base, head = _valid_repo(tmp_path)
     assert _codes(repo, base, head) == []
     for changed in path:
@@ -274,12 +245,13 @@ def test_order_and_later_commit_grouping_do_not_change_validity(tmp_path: Path) 
     repo, base, head = _valid_repo(tmp_path, name="grouped")
     assert _codes(repo, base, head) == []
     artifact = _artifact()
+    artifact["objective"] = "界"
+    artifact["scope"]["allowed_prefixes"].append("unused/界/")
     artifact = json.loads(json.dumps(artifact, sort_keys=True))
     for value in artifact["scope"].values():
         value.reverse()
     other, other_base, other_head = _valid_repo(
-        tmp_path, name="split", artifact=artifact, split_later=True
-    )
+        tmp_path, name="split", artifact=artifact, split_later=True)
     assert _codes(other, other_base, other_head) == []
 
 
@@ -292,9 +264,11 @@ def test_commit_limits_and_maximum_valid_performance(tmp_path: Path) -> None:
     validation_seconds = time.perf_counter() - started
     assert len(_git(repo, "rev-list", f"{base}..{head}").splitlines()) == 1_000
     assert validation_seconds < 5.0, (construction_seconds, validation_seconds)
-    _write(repo, "docs/governance/preflights/issue-999.json", "{}\n")
-    _commit(repo, "limit and multiple")
+    _commit(repo, "isolated limit", empty=True)
     assert _codes(repo, base, _git(repo, "rev-parse", "HEAD")) == ["GPF.REPO.LIMIT_EXCEEDED"]
+    _write(repo, "docs/governance/preflights/issue-999.json", "{}\n")
+    head = _commit(repo, "lower-priority multiple")
+    assert _codes(repo, base, head) == ["GPF.REPO.LIMIT_EXCEEDED"]
 
 
 @pytest.mark.parametrize(("count", "expected"), ((2_000, []), (2_001, ["GPF.REPO.LIMIT_EXCEEDED"])))
@@ -313,15 +287,23 @@ def test_changed_path_limit_is_isolated(tmp_path: Path, count: int, expected: li
     assert _codes(repo, base, head) == expected
 
 
+@pytest.mark.parametrize(("path", "expected"), (
+    ("unicode/界.txt", []), ("bad\ncontrol.txt", ["GPF.PATH.INVALID"])))
+def test_git_path_decoding_is_exact(tmp_path: Path, path: str, expected: list[str]) -> None:
+    artifact = _artifact(allowed=PATHS + ["unicode/"])
+    repo, base, head = _valid_repo(tmp_path, artifact=artifact)
+    assert _codes(repo, base, head) == []
+    _write(repo, path, "single Git path mutation\n")
+    head = _commit(repo, "path mutation")
+    assert _codes(repo, base, head) == expected
+
+
 def test_prospective_cutover_preserves_legacy_and_unrelated_branches(tmp_path: Path) -> None:
     repo, base = _new_repo(tmp_path)
-    for branch in (
-        "feature/unrelated", "stage4-product", "phase-1-closure-process-169-retained-evidence"
-    ):
+    for branch in ("feature/unrelated", "stage4-product", "phase-1-closure-process-169-retained-evidence"):
         assert _codes(repo, "invalid", "invalid", issue=999, branch=branch) == []
-    assert _codes(
-        repo, base, base, issue=999, branch="phase-1-closure-process-999-later"
-    ) == []
+    assert _codes(repo, base, base, issue=999,
+                  branch="phase-1-closure-process-999-later") == []
 
 
 def test_later_branch_activates_only_when_adapter_is_in_base_tree(tmp_path: Path) -> None:
@@ -356,23 +338,23 @@ def test_exactly_40_seeded_histories_report_reproducible_diagnostics(tmp_path: P
             valid = case_index < 5
             name = f"seed-{seed}-{case_index}"
             repo, base, head = _valid_repo(tmp_path, name=name, split_later=bool(rng.getrandbits(1)))
-            baseline = _codes(repo, base, head)
-            assert baseline == [], f"seed={seed} case={case_index} baseline={baseline} base={base} head={head}"
             mutation = "none" if valid else ("missing" if case_index % 2 else "body-issue")
-            expected: list[str] = []
+            expected = [] if valid else (["GPF.REPO.PREFLIGHT_MISSING"] if mutation == "missing" else ["GPF.BINDING.ISSUE_MISMATCH"])
+            paths = _git(repo, "diff", "--name-only", base, head).splitlines()
+            baseline = _codes(repo, base, head)
+            detail = (f"seed={seed} case={case_index} mutation={mutation} base={base} head={head} "
+                      f"expected={expected} actual={baseline} paths={paths}")
+            assert baseline == [], detail
             if mutation == "missing":
                 _git(repo, "rm", PREFLIGHT)
                 head = _commit(repo, "single fault")
-                expected = ["GPF.REPO.PREFLIGHT_MISSING"]
             elif mutation == "body-issue":
                 head = _rewrite_artifact(repo, lambda value: value.__setitem__("issue_number", 177))
-                expected = ["GPF.BINDING.ISSUE_MISMATCH"]
             actual = _codes(repo, base, head)
-            assert actual == expected, (
-                f"seed={seed} case={case_index} mutation={mutation} base={base} head={head} "
-                f"expected={expected} actual={actual} "
-                f"paths={_git(repo, 'diff', '--name-only', base, head).splitlines()}"
-            )
+            paths = _git(repo, "diff", "--name-only", base, head).splitlines()
+            assert actual == expected, (f"seed={seed} case={case_index} mutation={mutation} "
+                                        f"base={base} head={head} expected={expected} "
+                                        f"actual={actual} paths={paths}")
             results.append(valid)
     assert len(results) == 40
     assert results.count(True) == results.count(False) == 20
@@ -384,8 +366,7 @@ def test_exactly_40_seeded_histories_report_reproducible_diagnostics(tmp_path: P
     ("invalid", 1, "Guardrail failures:\n- Governance preflight finding: GPF.SCHEMA.TYPE\n"),
     ("unrelated", 1, "Guardrail failures:\n- Evaluation failures found in reports/eval-results.json. Eval failures block merge.\n")))
 def test_real_guardrail_subprocess_is_offline_and_sanitized(
-    tmp_path: Path, mode: str, returncode: int, stdout: str
-) -> None:
+    tmp_path: Path, mode: str, returncode: int, stdout: str) -> None:
     source = Path(__file__).parents[2]
     repo = tmp_path / f"full-repository-{mode}"
     shutil.copytree(source, repo, ignore=shutil.ignore_patterns(
@@ -399,10 +380,8 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(
         if target.exists():
             target.unlink()
     for path in PATHS[3:]:
-        original = subprocess.run(
-            ["git", "show", f"origin/main:{path}"], cwd=source, check=True,
-            stdout=subprocess.PIPE, timeout=10,
-        ).stdout
+        original = subprocess.run(["git", "show", f"origin/main:{path}"], cwd=source,
+                                  check=True, stdout=subprocess.PIPE, timeout=10).stdout
         target = repo / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(original)
@@ -429,11 +408,9 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(
         "GITHUB_HEAD_SHA": head, "GITHUB_HEAD_REF": BRANCH,
         "NARRATWIN_TEST_PARENT_TOKEN": "must-not-appear",
     }
-    completed = subprocess.run(
-        [sys.executable, "scripts/guardrails_check.py"], cwd=repo, env=env,
-        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        check=False, timeout=20,
-    )
+    completed = subprocess.run([sys.executable, "scripts/guardrails_check.py"], cwd=repo,
+                               env=env, text=True, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, check=False, timeout=20)
     assert completed.returncode == returncode
     assert completed.stdout == stdout
     assert completed.stderr == ""
