@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-14
+- Last reviewed date: 2026-07-15
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only. No Phase 2 feature
   work, external provider enablement, production release tag, or public
@@ -24,6 +24,11 @@ Use it to answer:
   the affected provider, media, export, and replay paths remain disabled.
 - Current repo mode: Final Review has merged; Phase 1 Closure is active and
   release posture is No-Go.
+- Product-mode authority: `docs/PHASE_PLAN.md` owns taxonomy and the cross-mode
+  boundary. Product Mode 1 execution: `#155`; Product Mode 2 future reset: `#20`.
+  Issue `#155` currently authorizes `CH-M1-00` governance reconciliation before
+  behavior-changing Mode 1 work, and Mode 1 Checkpoint B must close before Mode 2
+  runtime work begins.
 - Product implementation merged to `main`: Stage 8 performance, security
   hardening, and release-readiness work merged through PR `#33` at commit
   `fb40113`.
@@ -218,7 +223,7 @@ Use these files together with this tracker:
 | `#40` | Closed | Phase 1 P0 | Canonical requirements traceability matrix reconciled through merged PR `#46`. |
 | `#41` | Closed | Phase 1 P0 | Local demo durability and provider limits disclosed in portfolio/demo docs through merged PR `#46`. |
 | `#42` | Closed | Phase 1 P1 | Stage 7 source evidence checksum binding hardened through merged PR `#50` by sharing one canonical route/service/mock-provider checksum definition, requiring explicit evidence IDs for positive counts, using structured idempotency checksums, and rejecting duplicate-key provider JSON artifacts. |
-| `#43` | Open | Phase 1 P2 | Expand performance and integrated E2E evidence beyond local smoke. |
+| `#43` | Open | Mode 1 real-stack evidence | Prove the non-intercepted real browser-to-backend local path under `#155`; this is Checkpoint A evidence, not production or hosted readiness. |
 | `#44` | Open | Phase 1 P2 | Track telemetry, CSP, log-envelope, and stale risk-register hardening. |
 | `#48` | Open | Pre-production/P2 hardening | Track scoped project-lookup hardening before production auth, durable storage, or stronger authorization-proof claims; created from PR `#47` independent API integrity review. It does not block local/mock Phase 1 demo review while production remains No-Go. |
 | `#49` | Open | Pre-production/P2 hardening | Bound local idempotency records across simulated actors before local-demo durability, multi-worker, or production-readiness claims; created from PR `#47` independent performance/security review. It does not block local/mock Phase 1 demo review while production and multi-worker release remain No-Go. |
@@ -258,7 +263,7 @@ Use these files together with this tracker:
 | `#147` | Open, depends on `#144`, `#145`, `#146` | Phase 1 follow-on | Implement the not-yet-executed PITR/exact-S3-Version runbook, explicit supported target parameters and live checks, `<=5,000,000,000 bytes` copy bound, journal/revocation handoff, source deny, pre-create deadline, exact no-snapshot/no-backup teardown, separately scoped RDS/S3 cleanup/live-inventory authority and next-exercise block. |
 | `#148` | Open, depends on `#130`, `#141`, `#144`, `#145`, `#146`, `#147` | Phase 1 follow-on | Implement RDS/S3/journal/cleanup and live target-configuration/isolation observability, restricted reviewer export, tested CH-12 routes with severity/ack/escalation/runbook links, and immutable-cutoff RTO/RPO calculations that invalidate negative or mismatched watermarks. |
 | `#149` | Open, depends on `#130`, `#141`-`#148` | Phase 1 follow-on | Independently review actual environment/tooling/calculation-test readiness, tested CH-12 alert routes, and approvals without recording actual restore or RTO/RPO results; must leave issue `#126`, `DUR-RESTORE-001`, and issue `#39` open for the later exercise. |
-| `#138` | Open, remediation implemented but blocked | Security follow-up | `PYSEC-2026-2132` Click command-injection remediation: the application/runtime graph resolves Click `8.4.2`; Semgrep `1.168.0` is removed from the root/runtime lock and isolated in a frozen tool project using patched Click `8.3.3`. Root/tool audits, exact scan coverage, canaries, Uvicorn/Locust smoke, and backend-image inventory pass locally without advisory ignores. Human security/repo owner acceptance of the narrow override remains required, and issue `#151` independently blocks the critical/high container gate. This does not change production or restore readiness. |
+| `#138` | Closed | Security follow-up | Click advisory remediation merged through PR `#152` at `648c81c066127056334c5c2babae28585fd58d4d`; issue `#151` remains the independent stable-runtime/scanner-consensus blocker. This closure does not change production or restore readiness. |
 | `#150` | Open | Security follow-up | Remove the Semgrep Click compatibility override by `2026-08-13` or earlier when upstream supports a fixed Click release; any tool version, lock, rule, target, invocation, or advisory change triggers immediate re-review. |
 | `#151` | Open, stable-runtime/scanner-consensus blocker | Security follow-up | Resolve `CVE-2026-11940`, `CVE-2026-11972`, and `CVE-2026-15308` in the backend runtime and reconcile the verified scanner disagreement: Grype reports three HIGH findings while freshly updated Trivy reports zero. The official `3.13.14-alpine3.24` image is already the pinned manifest, stable releases below `3.15.0` are recorded affected, and `3.15` is still beta. A green Trivy result is not absence evidence; no scanner waiver or production-readiness claim is permitted. This blocks #138 merge eligibility and keeps dependent PR `#140` draft. |
 
@@ -266,14 +271,15 @@ Use these files together with this tracker:
 
 | Issue | State | Role | Notes |
 |---|---|---|---|
-| `#3` | Open | Legacy governance issue | Uses obsolete `Stage -1` naming and should be reconciled or closed. |
-| `#8` | Open | Product-definition support | Captures two product modes and project-avatar-pack contract; concept already exists in docs but issue remains open. |
+| `#3` | Closed | Legacy governance issue | Historical `Stage -1` naming is superseded by the approved stage model; live issue state was reconciled before the issue `#8` product-mode demarcation review. |
+| `#8` | Open, pending reviewed demarcation merge | Product-mode definition and durable cross-chat demarcation | Existing PRD/avatar-pack/roadmap/build-brief evidence is mapped in `docs/PHASE_PLAN.md`; the remaining skill-plan validation criterion is included in draft PR `#166`. Manually close only after the reviewed PR merges and every original criterion is linked. |
 | `#9` | Closed | Superseded placeholder | Explicitly marked as superseded. |
-| `#17` | Open | Future slice | Translation/localization and subtitles. |
-| `#18` | Open | Future slice | Optional TTS audio provider boundary. |
-| `#19` | Open | Future slice | Mock avatar video and FFmpeg assembly. |
-| `#20` | Open | Future slice | Interactive Q&A over approved project knowledge. |
+| `#17` | Open | Mode 1 controlled fallback | Preserve honest translation/subtitle/voice-manifest fallback integrity under `#155`; resolve or explicitly accept residuals before Checkpoint B. |
+| `#18` | Open | Optional post-Checkpoint-B media branch | Mock/local audio binary work requires separate owner approval after Checkpoint B and does not gate Mode 2. |
+| `#19` | Open | Optional post-Checkpoint-B media branch | Mock/local video assembly follows an approved `#18` contract and separate owner approval; it does not gate Mode 2. |
+| `#20` | Open, future reset required | Product Mode 2 canonical tracker | Interactive grounded Q&A remains Phase 9 future work. Re-baseline its contract after Mode 1 Checkpoint B before any Mode 2 runtime implementation. |
 | `#21` | Open | Future slice | Premium adapters, observability dashboard, and cost controls. |
+| `#155` | Open, canonical | Product Mode 1 execution tracker | Owns current action, dependency-safe preparation waves, merge order, Checkpoints A/B, and the artifact-only controlled local mock-demo decision. Current next action remains `CH-M1-00` governance reconciliation. |
 
 ## Pull Request Ledger
 

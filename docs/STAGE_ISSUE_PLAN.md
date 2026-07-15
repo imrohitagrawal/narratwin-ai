@@ -581,6 +581,13 @@ database, Docker, or product runtime files. Issue-specific branches such as
 `phase-1-closure-39-*` retain their separate implementation/evidence allowlist
 only for the linked issue scope below.
 
+The issue `#8` product-mode demarcation branch is narrower than the general
+process allowlist. It may change only `AGENTS.md`, `docs/PHASE_PLAN.md`,
+`docs/SKILL_EXECUTION_PLAN.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/STATUS.md`,
+`scripts/quality/check_phase1_closure_docs.py`, and
+`tests/unit/test_phase1_closure_docs.py`. It may not absorb PRD, workflow,
+runtime, or unrelated process files.
+
 Context 0 issue `#39` closure-contract branches using
 `phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
 they may touch only docs, guardrails, tests, PR templates, and CI workflow

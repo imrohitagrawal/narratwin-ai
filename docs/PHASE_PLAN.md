@@ -63,8 +63,8 @@ Product Mode 2 remains Phase 9 future work under issue `#20`.
 
 ### Canonical tracker and duplicate reconciliation
 
-`docs/PHASE_PLAN.md` is the canonical taxonomy and serial-order source for
-cross-chat work. Issue `#155` is the canonical Product Mode 1 local-demo runtime
+`docs/PHASE_PLAN.md` is the canonical cross-chat taxonomy and cross-mode boundary
+source. Issue `#155` is the canonical Product Mode 1 execution and current-action
 tracker. Issue `#20` is the existing Product Mode 2 implementation tracker and
 must be re-baselined before Mode 2 code starts. Supporting issues such as `#17`,
 `#18`, `#19`, and `#43` retain only their explicitly recorded child or later-track
@@ -83,37 +83,62 @@ paths. Security/evidence issues `#151`, `#158`, `#159`, and `#161`, plus PR
 `#162`, retain their own scopes. They must not be mixed into a product-mode PR;
 their verified residual risks may still be required checkpoint inputs.
 
-### Serial execution contract
+Issue `#8` remains open until its original acceptance criteria are reconciled as
+follows. After the reviewed demarcation PR merges, the repository owner may close
+`#8` manually with reference-only merge wording and a comment linking every row.
+
+| Original `#8` acceptance criterion | Durable evidence | Disposition |
+|---|---|---|
+| PRD explicitly names both product modes | `docs/PRD.md` | Existing evidence retained |
+| Project-avatar-pack contract is documented | `docs/PROJECT_AVATAR_PACK.md` | Existing evidence retained |
+| Roadmap preserves later video and interactive-avatar phases | `docs/ROADMAP.md` | Existing evidence retained |
+| AI build brief preserves the full two-mode vision | `docs/AI_BUILD_BRIEF.md` | Existing evidence retained |
+| PM/spec validation covers both modes and the project-avatar-pack before coding | `docs/SKILL_EXECUTION_PLAN.md` | Reconciled by the issue `#8` demarcation PR |
+| No application code changes | Exact issue `#8` PR diff and process allowlist | Verify again before merge |
+
+### Authority and concurrency contract
 
 Only one product-mode implementation module is active in a chat, branch, and PR.
-An independent governance or security task may proceed only when explicitly
-assigned and must not cause the active product module to switch scope.
+Issue `#155` owns sequencing inside Product Mode 1, including its current
+`CH-M1-00` next action, dependency-safe preparation lanes, contract freezes, and
+merge/checkpoint order. Separate implementation or preparation lanes may overlap
+only when `#155` explicitly authorizes them, each lane has an isolated issue,
+branch, PR, and file/symbol boundary, and dependent work still merges in the
+tracker's declared order. This plan does not replace those within-Mode-1 rules.
+
+Issue `#20` owns Product Mode 2 only after its contract-reset gate is authorized.
+An independent governance, security, or review task may proceed only when
+explicitly assigned and must not silently switch the active product module.
+
+### Cross-mode execution order
 
 Mode 1 Checkpoint B must close before Mode 2 runtime implementation begins.
 Mode 1 Checkpoint B is the approved artifact-only local checkpoint; playable
 audio or MP4/WebM remains a separate owner decision after that checkpoint.
 
-| Order | Module | Canonical scope | Completion gate before the next row |
+| Order | Required gate | Canonical owner | Completion effect |
 |---:|---|---|---|
-| 0 | Product-mode demarcation | `#8`; this plan, mandatory agent context, executable governance checks | Reviewed PR merged; duplicate/canonical map reconciled |
-| 1 | `CH-M1-01` durable-consent request chain | `#155` child; frontend captures consent and submits `consentRecordId` | RED/GREEN tests, exact-head checks, fresh-context review, merge closeout |
-| 2 | `CH-M1-02` real-stack browser path | `#43`; non-intercepted browser → proxy → backend success | Checkpoint A proves the real local request chain |
-| 3 | `CH-M1-03` multilingual media-bundle contract | `#155` child; Stage 6→7 provenance, checksum, replay, and ownership contract | Contract PR independently reviewed and merged before consumers change |
-| 4 | `CH-M1-04` backend multilingual binding | `#155` child; render only from the validated selected-language bundle | Backend/API/tamper evidence and fresh-context review pass |
-| 5 | `CH-M1-05` frontend artifact consistency | `#155` child; expose voice manifest and language-consistent script/SRT/avatar artifacts | Component plus real-stack evidence and fresh-context review pass |
-| 6 | Stage 6 controlled fallback | `#17`; honestly labelled translation/subtitle/voice failures | Residual fixed or explicitly accepted by the owner before Checkpoint B |
-| 7 | `CH-M1-06` demonstration evidence | `#155` child; checklist, presenter script, synthetic seed, exact-commit Compose/browser evidence | Checkpoint B records conditional artifact-only local-demo Go/No-Go |
-| 8 | Optional playable media | `#18` audio, then `#19` video assembly | Starts only after explicit post-Checkpoint-B owner approval; each issue remains separate |
-| 9 | Mode 2 contract reset | `#20`; single-turn grounded local interaction before broader conversation scope | Approved stage-plan/contract PR; no runtime change in the contract module |
-| 10 | Mode 2 grounded answer backend | `#20` child; retrieval, grounded answer/refusal, citations, evaluation, trace | Backend/API/prompt-injection evidence and fresh-context review pass |
-| 11 | Mode 2 local language/presentation binding | `#20` child; mock/local language-consistent answer bundle and synthetic presentation contract | Contract and tamper/fallback evidence pass |
-| 12 | Mode 2 question UI | `#20` child; question form, answer/refusal, citations, evaluation, synthetic-avatar panel | Component/accessibility review and real API integration pass |
-| 13 | Mode 2 real-stack demonstration | `#20` child; non-intercepted Compose/browser success and refusal paths | Mode 2 local-demo Go/No-Go with honest no-audio/video/public/production limits |
+| 0 | Product-mode demarcation | `#8` | Reviewed PR merged and original `#8` criteria reconciled |
+| 1 | Mode 1 artifact-only Checkpoint B | `#155` | Must close before the Mode 2 contract reset |
+| 2 | Mode 2 contract reset | `#20` | Approved stage/contract plan; no runtime change in the reset module |
+| 3 | Mode 2 local mock demo | `#20` children | Grounded local Q&A, refusal, citations, evaluation, synthetic presentation, and real-stack evidence |
 
-The next row is not authorized merely because code exists. Its predecessor must
-have an approved PR, exact-head required checks, post-merge verification, child
-issue reconciliation, branch cleanup, and any genuinely required
-`docs/STATUS.md` update.
+Each required row needs its approved PR, exact-head checks, post-merge
+verification, child-issue reconciliation, branch cleanup, and any genuinely
+required `docs/STATUS.md` update. Within row 1, issue `#155` remains authoritative
+for preparation concurrency and dependency-ordered merges.
+
+### Optional post-checkpoint media branch
+
+Playable media is a separate owner-approved branch after Checkpoint B:
+
+| Branch order | Optional module | Canonical owner | Start gate |
+|---:|---|---|---|
+| 1 | Mock/local audio binary | `#18` | Explicit owner approval after Checkpoint B |
+| 2 | Mock/local video assembly | `#19` | Audio contract/evidence plus separate owner approval |
+
+This branch is not a predecessor to the Mode 2 contract reset. The owner may
+approve, defer, or decline it without changing the Checkpoint-B-to-Mode-2 gate.
 
 ### Fresh-context review boundary
 
@@ -143,9 +168,10 @@ Every module closeout records, on its canonical issue or PR:
 - merge/post-merge/issue/branch/status reconciliation state; and
 - exactly one next authorized module, or an explicit stop decision.
 
-A new chat reads `AGENTS.md`, this plan, the canonical tracker, and the last
-closeout record. It independently verifies live state but does not restart
-completed audits or begin a later row.
+A new chat reads `AGENTS.md`, this plan, the active canonical tracker, and the
+last closeout record. It independently verifies live state but does not restart
+completed audits or begin a later cross-mode gate. Within Mode 1 it follows the
+current action and dependency-safe wave rules recorded by `#155`.
 
 ## Boundaries
 
