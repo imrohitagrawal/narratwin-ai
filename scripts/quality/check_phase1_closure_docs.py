@@ -66,6 +66,13 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_159_BRANCH_PREFIX = "phase-1-closure-process-159-"
+ISSUE_159_ALLOWED_CHANGED_FILES = {
+    "docs/RELEASE_CHECKLIST.md",
+    "docs/RELEASE_READINESS_REVIEW.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_issue159_release_evidence.py",
+}
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -2786,6 +2793,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_141_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-138-"):
         allowed_files = ISSUE_138_ALLOWED_CHANGED_FILES
+    elif branch.startswith(ISSUE_159_BRANCH_PREFIX):
+        allowed_files = ISSUE_159_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):
@@ -3086,7 +3095,204 @@ def check_release_docs(failures: list[str]) -> None:
         for marker in markers:
             if marker not in files[rel]:
                 fail(failures, f"{rel} missing marker: {marker}")
+    check_issue159_release_security_evidence(
+        failures,
+        files["docs/RELEASE_CHECKLIST.md"],
+        files["docs/RELEASE_READINESS_REVIEW.md"],
+    )
     check_issue39_status_ledger(failures, files["docs/STATUS.md"], read("docs/reviews/ISSUE_39_PRODUCTION_CLOSURE_PLAN.md"))
+
+
+def check_issue159_release_security_evidence(
+    failures: list[str], checklist: str, readiness: str
+) -> None:
+    def normalize(text: str) -> str:
+        return " ".join(text.split())
+
+    def require(rel: str, location: str, text: str, markers: tuple[str, ...]) -> None:
+        normalized = normalize(text)
+        for marker in markers:
+            if marker not in normalized:
+                fail(
+                    failures,
+                    f"{rel} {location} missing issue #159 release-evidence marker: {marker}",
+                )
+
+    checklist_preamble = checklist.split("\n## ", maxsplit=1)[0]
+    checklist_merged = section(checklist, "Implemented And Merged Evidence")
+    checklist_unresolved = section(
+        checklist, "Unresolved Accountable Acceptance And Security Gates"
+    )
+    readiness_decision = section(readiness, "Decision")
+    readiness_historical = subsection(readiness, "Historical Scanner Evidence")
+    readiness_reconciliation = section(readiness, "Final Review Outcome")
+
+    require(
+        "docs/RELEASE_CHECKLIST.md",
+        "preamble",
+        checklist_preamble,
+        (
+            "production-grade durability and monitoring scope in issue `#39` is open",
+            "unresolved issue `#151` CPython HIGH/scanner-consensus security posture remains open",
+            "PR `#152`",
+            "Issue `#151` remains open",
+            "issue closure do not constitute explicit dated residual-risk acceptance",
+        ),
+    )
+    require(
+        "docs/RELEASE_CHECKLIST.md",
+        "Implemented And Merged Evidence section",
+        checklist_merged,
+        (
+            "PR `#152` merged",
+            "Historical Stage 8 and Final Review Docker scan evidence",
+            "superseded for any current clean-container-security claim",
+        ),
+    )
+    require(
+        "docs/RELEASE_CHECKLIST.md",
+        "Unresolved Accountable Acceptance And Security Gates section",
+        checklist_unresolved,
+        (
+            "Remaining production-grade portion of `#39`",
+            "Issue `#151` resolves the stable CPython HIGH findings",
+            "explicit dated residual-risk acceptance",
+            "collaborator approval or merge action does not constitute that acceptance",
+        ),
+    )
+    require(
+        "docs/RELEASE_READINESS_REVIEW.md",
+        "Decision section",
+        readiness_decision,
+        (
+            "Production release remains No-Go",
+            "No release tag has been created",
+            "local-only: no hosted",
+            "PR `#152`",
+            "merge commit `648c81c066127056334c5c2babae28585fd58d4d`",
+            "Issue `#151` remains open",
+            "issue closure do not constitute explicit dated residual-risk acceptance",
+        ),
+    )
+    require(
+        "docs/RELEASE_READINESS_REVIEW.md",
+        "Historical Scanner Evidence subsection",
+        readiness_historical,
+        (
+            "historical execution evidence, not current absence evidence",
+            "Grype `0.115.0`",
+            "Trivy `0.72.0`",
+            "CVE-2026-11940",
+            "CVE-2026-11972",
+            "CVE-2026-15308",
+            "superseded for any current clean-container-security claim",
+        ),
+    )
+    require(
+        "docs/RELEASE_READINESS_REVIEW.md",
+        "Final Review Outcome section",
+        readiness_reconciliation,
+        (
+            "`#138` Click dependency remediation",
+            "`#151` CPython HIGH findings and Trivy/Grype disagreement: open",
+            "does not resolve `#151`",
+        ),
+    )
+
+    expected_decisions = {
+        "implementation_152": "merged",
+        "issue_151": "open",
+        "explicit_dated_acceptance": "absent",
+        "historical_scan_role": "dated-history-not-current-absence",
+        "hosted_release": "blocked",
+        "production": "blocked",
+        "public_distribution": "blocked",
+    }
+    canonical_header = "| Decision key | Required value |"
+    canonical_separator = "|---|---|"
+    canonical_rows = {
+        f"| `{key}` | `{value}` |": key for key, value in expected_decisions.items()
+    }
+    for rel, text in (
+        ("docs/RELEASE_CHECKLIST.md", checklist),
+        ("docs/RELEASE_READINESS_REVIEW.md", readiness),
+    ):
+        heading_matches = list(
+            re.finditer(r"^## Current Security Decision Record[ \t]*$", text, flags=re.M)
+        )
+        if len(heading_matches) != 1:
+            fail(
+                failures,
+                f"{rel} must contain exactly one Current Security Decision Record section; "
+                f"got {len(heading_matches)}.",
+            )
+            continue
+
+        body_start = heading_matches[0].end()
+        next_heading = re.search(r"^## ", text[body_start:], flags=re.M)
+        body_end = body_start + next_heading.start() if next_heading else len(text)
+        record_lines = [line.strip() for line in text[body_start:body_end].splitlines()]
+
+        header_count = record_lines.count(canonical_header)
+        if header_count != 1:
+            fail(
+                failures,
+                f"{rel} Current Security Decision Record must contain exactly one canonical "
+                f"header row; got {header_count}.",
+            )
+        separator_count = record_lines.count(canonical_separator)
+        if separator_count != 1:
+            fail(
+                failures,
+                f"{rel} Current Security Decision Record must contain exactly one canonical "
+                f"separator row; got {separator_count}.",
+            )
+
+        seen: set[str] = set()
+        for line in record_lines:
+            if not line or line in {canonical_header, canonical_separator}:
+                continue
+            if not line.startswith("|"):
+                fail(
+                    failures,
+                    f"{rel} Current Security Decision Record contains non-table claim: {line}",
+                )
+                continue
+            key = canonical_rows.get(line)
+            if key is None:
+                cells = [cell.strip().strip("`") for cell in line.strip("|").split("|")]
+                unknown_detail = (
+                    f" with unknown decision key: {cells[0]}"
+                    if len(cells) == 2 and cells[0] not in expected_decisions
+                    else ""
+                )
+                fail(
+                    failures,
+                    f"{rel} Current Security Decision Record contains unexpected pipe row"
+                    f"{unknown_detail}: {line}",
+                )
+                continue
+            if key in seen:
+                fail(
+                    failures,
+                    f"{rel} Current Security Decision Record has duplicate decision key: {key}",
+                )
+                continue
+            seen.add(key)
+
+        for key in sorted(set(expected_decisions) - set(seen)):
+            fail(
+                failures,
+                f"{rel} Current Security Decision Record missing decision key: {key}",
+            )
+
+    prohibited_literal_markers = (
+        "[x] Docker image scan reports no critical/high vulnerabilities",
+        "| no critical/high container vulnerabilities |",
+    )
+    for marker in prohibited_literal_markers:
+        if marker in checklist or marker in readiness:
+            fail(failures, f"Issue #159 retains superseded clean-security marker: {marker}")
 
 
 def check_issue39_status_ledger(failures: list[str], status_text: str, closure_plan_text: str) -> None:

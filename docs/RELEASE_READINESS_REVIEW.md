@@ -5,6 +5,8 @@ through `#44`
 
 Review date: 2026-07-01
 
+Evidence reconciliation date: 2026-07-14
+
 ## Decision
 
 No-Go for production release, multi-worker deployment, external paid/provider-backed
@@ -18,6 +20,15 @@ single-process demo readiness can be reviewed through the local gates and
 documented limitations. Production release remains No-Go. No release tag has
 been created.
 
+This conditional checkpoint is local-only: no hosted deployment, external
+access, or production claim inherits from it. PR `#152` merged the issue `#138`
+Click dependency remediation and isolated Semgrep tooling at
+merge commit `648c81c066127056334c5c2babae28585fd58d4d`; issue `#138` is closed
+as an implementation item. Issue `#151` remains open, and that merge, its
+collaborator approval, and the issue closure do not constitute explicit dated
+residual-risk acceptance for the separately confirmed CPython HIGH findings or
+scanner disagreement.
+
 `docs/LAUNCH_LEVELS.md` is the canonical launch-level boundary. AWS is not
 required for the controlled local mock demo. A hosted internal synthetic demo
 requires a separate environment review and does not inherit local-demo approval.
@@ -25,6 +36,18 @@ External/invite-only soft launch remains No-Go and is production-adjacent even
 when audience size is small or hosting is free. Production-like durability
 validation is also No-Go until its separate environment and evidence gates pass;
 it is not a user launch.
+
+## Current Security Decision Record
+
+| Decision key | Required value |
+|---|---|
+| `implementation_152` | `merged` |
+| `issue_151` | `open` |
+| `explicit_dated_acceptance` | `absent` |
+| `historical_scan_role` | `dated-history-not-current-absence` |
+| `hosted_release` | `blocked` |
+| `production` | `blocked` |
+| `public_distribution` | `blocked` |
 
 ## Current Baseline
 
@@ -55,9 +78,11 @@ Stage 8 added release-readiness hardening evidence but did not approve productio
 | script generation mocked path < 2 sec | `tests/api/test_stage8_hardening_api.py::test_mocked_script_generation_path_stays_under_two_seconds` |
 | upload limit enforced | Fail-closed `Content-Length` checks, ASGI body-byte counting, upload content-size limits, and Stage 8 API tests |
 | no critical/high dependency vulnerabilities | `scripts/ci/dependency-security.sh` |
-| no critical/high container vulnerabilities | `scripts/ci/docker-image-scan.sh` using Trivy, Grype, pinned Dockerized Trivy, or Docker Scout |
+| historical "no critical/high container vulnerabilities" scanner result | `scripts/ci/docker-image-scan.sh` recorded dated Trivy/SARIF evidence; issue `#151` supersedes it for any current clean-container-security claim |
 | Locust and Lighthouse budgets | `scripts/ci/performance-smoke.sh`, `scripts/ci/frontend-lighthouse.sh`, and PR CI status `stage8 / performance lighthouse` |
 | eval/security gates | `make stage8-quality` plus PR CI policy, security, Docker scan, and Stage 8 budget statuses |
+
+### Historical Scanner Evidence
 
 Latest Stage 8 local evidence recorded before PR `#33` merged:
 
@@ -65,7 +90,13 @@ Latest Stage 8 local evidence recorded before PR `#33` merged:
 - Locust health smoke: 175 requests, 0 failures, p95 7 ms.
 - Lighthouse: performance 1.00, accessibility 1.00, best-practices 0.96, SEO
   1.00, LCP 1057 ms, CLS 0, TBT 0 ms, 10 network requests.
-- Docker scan SARIF: backend 0 results, frontend 0 results.
+- Docker scan SARIF: backend 0 results, frontend 0 results. This is historical
+  execution evidence, not current absence evidence: Grype `0.115.0` and the
+  upstream advisory records later identified `CVE-2026-11940`,
+  `CVE-2026-11972`, and `CVE-2026-15308` as HIGH in the pinned CPython runtime
+  while refreshed Trivy `0.72.0` reported zero critical/high results. Issue
+  `#151` owns that contradiction, so the zero-result evidence is superseded for
+  any current clean-container-security claim.
 - Dependency audit: no critical/high Python or frontend dependency findings;
   moderate Lighthouse dev-tool findings remain below the Stage 8 blocking
   threshold.
@@ -95,6 +126,14 @@ P0/P1 closure items must complete before Phase 2. Current reconciliation:
   `#46`.
 - `#42` Stage 7 source-evaluation checksum binding: closed through merged PR
   `#50`.
+- `#138` Click dependency remediation and isolated Semgrep tooling: merged
+  through PR `#152` at merge commit
+  `648c81c066127056334c5c2babae28585fd58d4d` and closed as an implementation
+  item. Its merge/approval does not resolve `#151` or itself supply an explicit
+  dated residual-risk decision.
+- `#151` CPython HIGH findings and Trivy/Grype disagreement: open and
+  release/security-blocking pending the issue's stable-runtime and accountable
+  scanner-consensus acceptance criteria.
 
 P2 follow-ups `#43` and `#44` remain deferred unless they block Phase 1
 correctness.

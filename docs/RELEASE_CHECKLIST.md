@@ -1,14 +1,34 @@
 # Stage 8 And Phase 1 Release Checklist
 
-Status: Stage 8 merged through PR `#33`; Final Review merged through PR `#45`;
-Phase 1 Closure remains No-Go for production until the remaining P0/P1 issues
-`#39` closes or is explicitly downgraded with evidence. Issues `#35`, `#36`,
-`#37`, `#40`, `#41`, and `#42` are closed through merged PRs `#46`, `#47`, and
-`#50`; issue `#38` has live GitHub branch-protection evidence and
+Status: Stage 8 merged through PR `#33`; Final Review merged through PR `#45`.
+Phase 1 Closure remains No-Go for production while the remaining
+production-grade durability and monitoring scope in issue `#39` is open and the
+unresolved issue `#151` CPython HIGH/scanner-consensus security posture remains
+open. Issues `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` are closed through
+merged PRs `#46`, `#47`, and `#50`; issue `#38` has live GitHub
+branch-protection evidence and
 required-context drift checking recorded in this Phase 1 Closure update through
-PR `#53`.
+PR `#53`. PR `#152` merged the issue `#138` Click dependency remediation and
+isolated Semgrep tooling at merge commit
+`648c81c066127056334c5c2babae28585fd58d4d`; issue `#138` is closed as an
+implementation item. Issue `#151` remains open for the independently confirmed
+CPython HIGH findings and Trivy/Grype disagreement. The PR approval, merge, and
+issue closure do not constitute explicit dated residual-risk acceptance for
+`#151` or a clean-container-security decision.
 
-## Required Gates
+## Current Security Decision Record
+
+| Decision key | Required value |
+|---|---|
+| `implementation_152` | `merged` |
+| `issue_151` | `open` |
+| `explicit_dated_acceptance` | `absent` |
+| `historical_scan_role` | `dated-history-not-current-absence` |
+| `hosted_release` | `blocked` |
+| `production` | `blocked` |
+| `public_distribution` | `blocked` |
+
+## Implemented And Merged Evidence
 
 - [x] Stage 8 `make quality` passed on `stage8-performance-security-release-readiness` before PR `#33` merge.
 - [x] Health endpoint < 200 ms local.
@@ -18,18 +38,29 @@ PR `#53`.
 - [x] Write rate limiting returns `RATE_LIMIT_EXCEEDED`.
 - [x] `uv run pip-audit` reports no critical/high active dependency vulnerabilities in recorded Stage 8 evidence.
 - [x] `npm --prefix frontend audit --audit-level=high` reports no high/critical frontend dependency vulnerabilities in recorded Stage 8 evidence.
-- [x] Docker image scan reports no critical/high vulnerabilities for backend and frontend images locally and in PR CI.
+- [x] Historical Stage 8 and Final Review Docker scan evidence recorded zero
+  backend/frontend SARIF results. This dated evidence is preserved as execution
+  history and is superseded for any current clean-container-security claim by
+  issue `#151`.
 - [x] Lighthouse checks run and meet Stage 8 local category and named audit thresholds.
 - [x] Locust headless smoke records health endpoint traffic and keeps local p95 under 200 ms.
 - [x] Eval/security gates pass without paid providers or real provider keys in recorded Stage 8 and Final Review evidence.
 - [x] `main` branch protection is enabled with strict required CI status contexts, required PR review, admin enforcement, blocked force pushes, blocked deletions, and required conversation resolution; `policy-gates` runs `scripts/ci/verify_branch_protection.py` to fail on required-context drift visible through the branch summary API; direct pusher restrictions are unavailable on this user-owned repository per GitHub API validation.
 - [x] Issue `#39` has local implementation evidence for optional file-backed restart recovery and `/api/v1/ops/status`.
+- [x] PR `#152` merged the issue `#138` Click dependency remediation and
+  isolated Semgrep tooling; this proves implementation landed, not that the
+  separate runtime/scanner risk in `#151` received an accountable decision.
+
+## Unresolved Accountable Acceptance And Security Gates
+
 - [ ] Remaining production-grade portion of `#39` is closed or explicitly downgraded with evidence.
 - [ ] `make lint`, `make typecheck`, `make test`, `make api-test`, `make ui-test`, `make e2e`, `make eval`, `make security`, and `make ci` pass for the closure branch.
 - [ ] `make secrets-scan`, `make security-scan`, `make dependency-audit`, and `make container-scan` pass for the closure branch.
-- [ ] Issue `#138` security evidence is merged and the dated Semgrep tool-only
-  compatibility exception is accepted by the security/repo owner; the exception
-  must not be expired or generalized beyond the committed scan invocation.
+- [ ] The accountable security/repository owner records any still-required,
+  explicit dated residual-risk acceptance for the narrowly bounded Semgrep
+  tool-only compatibility exception; collaborator approval or merge action does
+  not constitute that acceptance, and the exception must not be expired or
+  generalized beyond the committed scan invocation.
 - [ ] Issue `#151` resolves the stable CPython HIGH findings and Trivy/Grype
   disagreement; both scanners report zero critical/high findings or a reviewed
   consensus policy handles disagreement without ignoring confirmed findings.
