@@ -29,7 +29,7 @@ def _finding(code: str) -> GovernanceFinding:
 
 def _git(repository: Path, *args: str) -> bytes | None:
     env = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "GIT_CONFIG_NOSYSTEM": "1",
-           "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_OPTIONAL_LOCKS": "0"}
+           "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_OPTIONAL_LOCKS": "0", "GIT_NO_LAZY_FETCH": "1"}
     try:
         result = subprocess.run([_GIT, *args], cwd=repository, env=env, shell=False,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,

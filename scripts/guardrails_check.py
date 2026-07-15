@@ -1972,16 +1972,22 @@ def check_governance_preflight_repository() -> None:
     if issue_match is None:
         return
     head = os.environ.get("GITHUB_HEAD_SHA", "").strip() or run_git(["rev-parse", "HEAD"])
-    base = resolve_diff_base(head, os.environ.get("GITHUB_BASE_SHA", "").strip())
+    base = preferred_diff_base_for_current_event()
+    if not base and re.fullmatch(r"[0-9a-fA-F]{40}", head):
+        base = resolve_diff_base(head, "")
     findings = validate_governance_preflight_repository(
         ROOT, base_sha=base, head_sha=head, issue_number=int(issue_match.group(1)), branch=branch)
     failures.extend(f"Governance preflight finding: {finding.code}" for finding in findings)
 
 
 def main() -> int:
-    changes = changed_files()
     check_no_direct_main_push()
     check_governance_preflight_repository()
+    if failures == ["Governance preflight finding: GPF.REPO.HISTORY_UNAVAILABLE"]:
+        print("Guardrail failures:")
+        print(f"- {failures[0]}")
+        return 1
+    changes = changed_files()
     check_issue_linked_pull_request()
     check_workflows_least_privilege()
     check_secrets()

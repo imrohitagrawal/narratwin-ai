@@ -20,14 +20,12 @@ ISSUE = 176
 BRANCH = "phase-1-closure-process-176-gpf-v1-repository-integration"
 PREFLIGHT = "docs/governance/preflights/issue-176.json"
 FROZEN = json.loads(Path(PREFLIGHT).read_text(encoding="utf-8"))
-PATHS = FROZEN["scope"]["required"]
-FORBIDDEN = FROZEN["scope"]["forbidden"]
+PATHS, FORBIDDEN = FROZEN["scope"]["required"], FROZEN["scope"]["forbidden"]
 SEEDS = (32001, 32002, 32003, 32004)
 
 
 def _git(repo: Path, *args: str, check: bool = True) -> str:
-    completed = subprocess.run(["git", *args], cwd=repo, check=check, text=True,
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+    completed = subprocess.run(["git", *args], cwd=repo, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     return completed.stdout.strip()
 
 
@@ -53,12 +51,7 @@ def _artifact(*, issue: int = ISSUE, branch: str = BRANCH, required: list[str] |
         "branch": branch,
         "objective": "Integrate GovernancePreflightV1 prospectively into offline repository guardrails.",
         "status_decision": "update-minimally",
-        "scope": {
-            "required": list(required or PATHS),
-            "allowed_prefixes": list(allowed or PATHS),
-            "forbidden": list(FORBIDDEN),
-        },
-    }
+        "scope": {"required": list(required or PATHS), "allowed_prefixes": list(allowed or PATHS), "forbidden": list(FORBIDDEN)}}
 
 
 def _new_repo(tmp_path: Path, name: str = "repo") -> tuple[Path, str]:
@@ -71,9 +64,7 @@ def _new_repo(tmp_path: Path, name: str = "repo") -> tuple[Path, str]:
     return repo, _commit(repo, "base")
 
 
-def _valid_repo(tmp_path: Path, *, name: str = "repo", branch: str = BRANCH, artifact: dict[str, Any] | None = None, first_extra: str | None = None,
-                preflight_path: str = PREFLIGHT, empty_commits: int = 0,
-                split_later: bool = False) -> tuple[Path, str, str]:
+def _valid_repo(tmp_path: Path, *, name: str = "repo", branch: str = BRANCH, artifact: dict[str, Any] | None = None, first_extra: str | None = None, preflight_path: str = PREFLIGHT, empty_commits: int = 0, split_later: bool = False) -> tuple[Path, str, str]:
     repo, base = _new_repo(tmp_path, name)
     _git(repo, "checkout", "-q", "-b", branch)
     value = artifact or _artifact()
@@ -93,8 +84,8 @@ def _valid_repo(tmp_path: Path, *, name: str = "repo", branch: str = BRANCH, art
 
 
 def _codes(repo: Path, base: str, head: str, *, issue: int = ISSUE, branch: str = BRANCH) -> list[str]:
-    findings = validate_governance_preflight_repository(repo, base_sha=base, head_sha=head, issue_number=issue, branch=branch)
-    return [finding.code for finding in findings]
+    return [finding.code for finding in validate_governance_preflight_repository(
+        repo, base_sha=base, head_sha=head, issue_number=issue, branch=branch)]
 
 
 def _rewrite_artifact(repo: Path, mutate: Callable[[dict[str, Any]], None]) -> str:
@@ -334,8 +325,7 @@ def test_prospective_cutover_preserves_legacy_and_unrelated_branches(tmp_path: P
     repo, base = _new_repo(tmp_path)
     for branch in ("feature/unrelated", "stage4-product", "phase-1-closure-process-169-retained-evidence"):
         assert _codes(repo, "invalid", "invalid", issue=999, branch=branch) == []
-    assert _codes(repo, base, base, issue=999,
-                  branch="phase-1-closure-process-999-later") == []
+    assert _codes(repo, base, base, issue=999, branch="phase-1-closure-process-999-later") == []
 
 
 def test_later_branch_activates_only_when_adapter_is_in_base_tree(tmp_path: Path) -> None:
@@ -345,8 +335,7 @@ def test_later_branch_activates_only_when_adapter_is_in_base_tree(tmp_path: Path
     _write(repo, "scripts/governance_preflight_repository.py", "merged adapter\n")
     base = _commit(repo, "adapter merged")
     _git(repo, "checkout", "-q", "-b", branch)
-    artifact = _artifact(issue=999, branch=branch, required=[preflight, "docs/STATUS.md"],
-                         allowed=[preflight, "docs/STATUS.md"])
+    artifact = _artifact(issue=999, branch=branch, required=[preflight, "docs/STATUS.md"], allowed=[preflight, "docs/STATUS.md"])
     _write(repo, preflight, json.dumps(artifact))
     _commit(repo, "preflight")
     _write(repo, "docs/STATUS.md", "later\n")
@@ -375,8 +364,7 @@ def test_exactly_40_seeded_histories_report_reproducible_diagnostics(tmp_path: P
             expected = [] if valid else (["GPF.REPO.PREFLIGHT_MISSING"] if mutation == "missing" else ["GPF.BINDING.ISSUE_MISMATCH"])
             paths = _git(repo, "diff", "--name-only", base, head).splitlines()
             baseline = _codes(repo, base, head)
-            detail = (f"seed={seed} case={case_index} mutation={mutation} base={base} head={head} "
-                      f"expected={expected} actual={baseline} paths={paths}")
+            detail = f"seed={seed} case={case_index} mutation={mutation} base={base} head={head} expected={expected} actual={baseline} paths={paths}"
             assert baseline == [], detail
             if mutation == "missing":
                 _git(repo, "rm", PREFLIGHT)
@@ -387,12 +375,9 @@ def test_exactly_40_seeded_histories_report_reproducible_diagnostics(tmp_path: P
             actual = _codes(repo, base, head)
             validation_times.append(time.perf_counter() - started)
             paths = _git(repo, "diff", "--name-only", base, head).splitlines()
-            assert actual == expected, (f"seed={seed} case={case_index} mutation={mutation} "
-                                        f"base={base} head={head} expected={expected} "
-                                        f"actual={actual} paths={paths}")
+            assert actual == expected, f"seed={seed} case={case_index} mutation={mutation} base={base} head={head} expected={expected} actual={actual} paths={paths}"
             results.append(valid)
-    assert len(results) == 40
-    assert results.count(True) == results.count(False) == 20
+    assert len(results) == 40 and results.count(True) == results.count(False) == 20
     print(f"generated_history_validation_p95_seconds={sorted(validation_times)[37]:.4f}")
 
 
@@ -405,8 +390,7 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path, mode
     source = Path(__file__).parents[2]
     repo = tmp_path / f"full-repository-{mode}"
     shutil.copytree(source, repo, ignore=shutil.ignore_patterns(
-        ".git", ".venv", ".uv-cache", ".mypy_cache", ".codex", "__pycache__",
-        ".pytest_cache", ".ruff_cache", "node_modules", "outputs", "reports"))
+        ".git", ".venv", ".uv-cache", ".mypy_cache", ".codex", "__pycache__", ".pytest_cache", ".ruff_cache", "node_modules", "outputs", "reports"))
     _git(repo, "init", "-q")
     _git(repo, "config", "user.email", "tests@narratwin.local")
     _git(repo, "config", "user.name", "NarraTwin Tests")
@@ -416,14 +400,14 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path, mode
         if target.exists():
             target.unlink()
     for path in PATHS[3:]:
-        original = subprocess.run(["git", "show", f"origin/main:{path}"], cwd=source,
-                                  check=True, stdout=subprocess.PIPE, timeout=10).stdout
+        original = subprocess.run(["git", "show", f"origin/main:{path}"], cwd=source, check=True, stdout=subprocess.PIPE, timeout=10).stdout
         target = repo / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(original)
     if mode == "unrelated":
         _write(repo, "reports/eval-results.json", '{"status":"failed"}\n')
     base = _commit(repo, "base")
+    _git(repo, "update-ref", "refs/remotes/origin/main", base)
     _git(repo, "checkout", "-q", "-b", BRANCH)
     (repo / PREFLIGHT).parent.mkdir(parents=True, exist_ok=True)
     if mode != "missing":
@@ -444,13 +428,30 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path, mode
         "GITHUB_HEAD_SHA": head, "GITHUB_HEAD_REF": BRANCH,
         "NARRATWIN_TEST_PARENT_TOKEN": "must-not-appear",
     }
-    completed = subprocess.run([sys.executable, "scripts/guardrails_check.py"], cwd=repo,
-                               env=env, text=True, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, check=False, timeout=20)
-    assert completed.returncode == returncode
-    assert completed.stdout == stdout
-    assert completed.stderr == ""
+    completed = subprocess.run([sys.executable, "scripts/guardrails_check.py"], cwd=repo, env=env, text=True,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, timeout=20)
+    assert (completed.returncode, completed.stdout, completed.stderr) == (returncode, stdout, "")
+    if mode == "valid":
+        prior_head, head = head, _commit(repo, "second push", empty=True)
+        contexts = ((prior_head, "push", BRANCH, 0, stdout), ("invalid", "", "", 1, "Guardrail failures:\n- Governance preflight finding: GPF.REPO.HISTORY_UNAVAILABLE\n"))
+        for context_base, event, ref, expected_code, expected_out in contexts:
+            env.update(GITHUB_BASE_SHA=context_base, GITHUB_HEAD_SHA=head, GITHUB_EVENT_NAME=event, GITHUB_REF_NAME=ref)
+            completed = subprocess.run([sys.executable, "scripts/guardrails_check.py"], cwd=repo, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, timeout=20)
+            assert (completed.returncode, completed.stdout, completed.stderr) == (expected_code, expected_out, "")
     assert loaded.exists() and not attempted.exists()
     assert "GITHUB_TOKEN" not in env and "GH_TOKEN" not in env
     assert "must-not-appear" not in completed.stdout + completed.stderr
     assert "NETWORK_ATTEMPT" not in completed.stdout + completed.stderr
+
+
+def test_missing_promisor_object_cannot_start_git_transport(tmp_path: Path) -> None:
+    repo, base, head = _valid_repo(tmp_path)
+    assert _codes(repo, base, head) == []
+    marker, helper = tmp_path / "transport-attempted", tmp_path / "remote-helper"
+    helper.write_text(f"#!/bin/sh\ntouch {marker}\nexit 1\n", encoding="utf-8")
+    helper.chmod(0o700)
+    for key, value in (("extensions.partialClone", "origin"), ("remote.origin.promisor", "true"), ("remote.origin.url", f"ext::{helper}"), ("protocol.ext.allow", "always")):
+        _git(repo, "config", key, value)
+    (repo / ".git" / "objects" / head[:2] / head[2:]).unlink()
+    assert _codes(repo, base, head) == ["GPF.REPO.HISTORY_UNAVAILABLE"]
+    assert not marker.exists()
