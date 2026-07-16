@@ -58,24 +58,19 @@ PY
 }
 
 write_envelope() {
-  local name="$1" raw="$2" target="$3" tool="$4"
-  python3 - "$REPORT_DIR/${name}.envelope.json" "$raw" "$name" "$target" "$tool" "$SESSION" <<'PY'
+  local name="$1" raw="$2" target="$3" arch="$4" tool="$5" exit_code="$6"
+  python3 - "$REPORT_DIR/${name}.envelope.json" "$raw" "$name" "$target" "$arch" "$tool" "$SESSION" "$exit_code" <<'PY'
 import hashlib, json, sys, time
-out, raw_path, name, target, tool, session = sys.argv[1:]
+out, raw_path, name, target, arch, tool, session, exit_code = sys.argv[1:]
 payload = json.load(open(raw_path, encoding="utf-8"))
 blob = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-manifest = [{"path": "db/vulnerability.db", "size": 4, "sha256": "d" * 64}, {"path": "metadata.json", "size": 12, "sha256": "e" * 64}]
-db_hash = hashlib.sha256(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 now = time.time()
 json.dump({
   "schema_version": "ContainerScanEvidenceV1", "name": name, "session": session, "tool": tool,
   "argv": [tool, target], "artifact_path": raw_path, "target": target, "config_digest": target,
-  "architecture": "amd64", "rootfs": ["sha256:" + "f" * 64],
+  "architecture": arch,
   "started_at": now - 1, "completed_at": now,
-  "database_updated_at": now - 3600, "database_next_update": now + 3600,
-  "database_manifest_before": manifest, "database_manifest_after": manifest,
-  "database_manifest_before_sha256": db_hash, "database_manifest_after_sha256": db_hash,
-  "artifact_sha256": hashlib.sha256(blob).hexdigest(), "artifact_size": len(blob), "exit_code": 0
+  "artifact_sha256": hashlib.sha256(blob).hexdigest(), "artifact_size": len(blob), "exit_code": int(exit_code)
 }, open(out, "w", encoding="utf-8"), sort_keys=True)
 PY
 }
@@ -84,6 +79,9 @@ ensure_scanner trivy "${TRIVY_IMAGE}"
 ensure_scanner grype "${GRYPE_IMAGE}"
 BACKEND_CONFIG="$(image_config "${BACKEND_IMAGE}")"
 FRONTEND_CONFIG="$(image_config "${FRONTEND_IMAGE}")"
+BACKEND_ARCH="${BACKEND_ARCH:-$(docker image inspect "${BACKEND_IMAGE}" --format '{{.Architecture}}')}"
+FRONTEND_ARCH="${FRONTEND_ARCH:-$(docker image inspect "${FRONTEND_IMAGE}" --format '{{.Architecture}}')}"
+rm -f "${REPORT_DIR}"/*.raw.json "${REPORT_DIR}"/*.raw.sarif.json "${REPORT_DIR}"/*.envelope.json "${REPORT_DIR}/container-scan-case.json"
 
 set +e
 scan_trivy "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-trivy.raw.sarif.json"
@@ -133,17 +131,17 @@ payload["patch_sha256"] = {
 json.dump(payload, open(path, "w", encoding="utf-8"), sort_keys=True)
 PY
 
-write_envelope backend-trivy "${REPORT_DIR}/backend-trivy.raw.sarif.json" "${BACKEND_CONFIG}" trivy
-write_envelope backend-grype "${REPORT_DIR}/backend-grype.raw.sarif.json" "${BACKEND_CONFIG}" grype
-write_envelope frontend-trivy "${REPORT_DIR}/frontend-trivy.raw.sarif.json" "${FRONTEND_CONFIG}" trivy
-write_envelope frontend-grype "${REPORT_DIR}/frontend-grype.raw.sarif.json" "${FRONTEND_CONFIG}" grype
-write_envelope backend-sbom "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_CONFIG}" sbom
-write_envelope frontend-sbom "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_CONFIG}" sbom
-write_envelope backend-cpython-regressions "${REPORT_DIR}/backend-cpython-regressions.raw.json" "${BACKEND_CONFIG}" cpython-regressions
+write_envelope backend-trivy "${REPORT_DIR}/backend-trivy.raw.sarif.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" trivy "$bt"
+write_envelope backend-grype "${REPORT_DIR}/backend-grype.raw.sarif.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" grype "$bg"
+write_envelope frontend-trivy "${REPORT_DIR}/frontend-trivy.raw.sarif.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" trivy "$ft"
+write_envelope frontend-grype "${REPORT_DIR}/frontend-grype.raw.sarif.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" grype "$fg"
+write_envelope backend-sbom "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" sbom 0
+write_envelope frontend-sbom "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" sbom 0
+write_envelope backend-cpython-regressions "${REPORT_DIR}/backend-cpython-regressions.raw.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" cpython-regressions 0
 
-python3 - "$REPORT_DIR" "$BACKEND_CONFIG" "$FRONTEND_CONFIG" "$SESSION" <<'PY'
+python3 - "$REPORT_DIR" "$BACKEND_CONFIG" "$FRONTEND_CONFIG" "$BACKEND_ARCH" "$FRONTEND_ARCH" "$SESSION" <<'PY'
 import json, sys, time
-report_dir, backend, frontend, session = sys.argv[1:]
+report_dir, backend, frontend, backend_arch, frontend_arch, session = sys.argv[1:]
 names = ("backend-trivy", "backend-grype", "frontend-trivy", "frontend-grype", "backend-sbom", "frontend-sbom", "backend-cpython-regressions")
 reports, envelopes = {}, {}
 for name in names:
@@ -154,8 +152,8 @@ case = {
     "expected_session": session,
     "now": time.time(),
     "image_identity": {
-        "backend": {"config_digest": backend, "architecture": "amd64", "rootfs": ["sha256:" + "f" * 64]},
-        "frontend": {"config_digest": frontend, "architecture": "amd64", "rootfs": ["sha256:" + "f" * 64]},
+        "backend": {"config_digest": backend, "architecture": backend_arch},
+        "frontend": {"config_digest": frontend, "architecture": frontend_arch},
     },
     "component_purl": "pkg:generic/python@3.13.14",
     "patch_manifest": {

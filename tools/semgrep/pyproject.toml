@@ -10,4 +10,5 @@ dependencies = [
 package = false
 override-dependencies = [
     "click==8.3.3",
+    "mcp==1.28.1",
 ]

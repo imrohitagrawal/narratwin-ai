@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import hashlib
+import importlib.metadata
 import shutil
 import tomllib
 from pathlib import Path
@@ -11,12 +12,14 @@ from typing import Any
 import pytest
 from packaging.version import Version
 
+import scripts.ci.check_semgrep_security as semgrep_security
 from scripts.ci.check_semgrep_security import (
     ContractError,
     EXPECTED_TARGETS,
     REVIEWED_INPUTS,
     validate_audit_wrappers,
     validate_canary_result,
+    validate_installed_tool,
     validate_project_contract,
     validate_reviewed_inputs,
     validate_rule_ids,
@@ -52,9 +55,50 @@ def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
     assert len(root_packages["click"]) == 1
     assert Version(next(iter(root_packages["click"]))) >= Version("8.3.3")
     assert tool_project["project"]["dependencies"] == ["semgrep==1.168.0"]
-    assert tool_project["tool"]["uv"]["override-dependencies"] == ["click==8.3.3"]
+    assert tool_project["tool"]["uv"]["override-dependencies"] == ["click==8.3.3", "mcp==1.28.1"]
     assert tool_packages["semgrep"] == {"1.168.0"}
     assert tool_packages["click"] == {"8.3.3"}
+    assert tool_packages["mcp"] == {"1.28.1"}
+
+
+def test_semgrep_tool_contract_rejects_missing_wrong_or_extra_mcp_override(monkeypatch: pytest.MonkeyPatch) -> None:
+    root_project: dict[str, Any] = {"tool": {"uv": {}}}
+    root_lock: dict[str, set[str]] = {"click": {"8.3.3"}}
+    base_tool: dict[str, Any] = {"project": {"dependencies": ["semgrep==1.168.0"]}, "tool": {"uv": {"override-dependencies": ["click==8.3.3", "mcp==1.28.1"]}}}
+    base_lock: dict[str, set[str]] = {"semgrep": {"1.168.0"}, "click": {"8.3.3"}, "mcp": {"1.28.1"}}
+
+    def install(tool_project: dict[str, Any], tool_lock: dict[str, set[str]]) -> None:
+        monkeypatch.setattr(semgrep_security, "_toml", lambda path: tool_project if "tools/semgrep" in str(path) else root_project)
+        monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: tool_lock if "tools/semgrep" in str(path) else root_lock)
+        monkeypatch.setattr(semgrep_security, "_manifest_targets", lambda root: semgrep_security.EXPECTED_TARGETS)
+        monkeypatch.setattr(semgrep_security, "_configured_rule_ids", lambda path: semgrep_security.EXPECTED_RULE_IDS)
+        monkeypatch.setattr(semgrep_security, "validate_reviewed_inputs", lambda root: None)
+        monkeypatch.setattr(semgrep_security, "validate_audit_wrappers", lambda root: None)
+
+    for overrides in (["click==8.3.3"], ["click==8.3.3", "mcp==1.23.3"], ["click==8.3.3", "mcp==1.28.1", "other==1"]):
+        candidate = copy.deepcopy(base_tool)
+        candidate["tool"]["uv"]["override-dependencies"] = overrides
+        install(candidate, copy.deepcopy(base_lock))
+        with pytest.raises(ContractError, match="Click and MCP"):
+            validate_project_contract(ROOT, today=dt.date(2026, 7, 17))
+    install(copy.deepcopy(base_tool), {**base_lock, "mcp": {"1.23.3"}})
+    with pytest.raises(ContractError, match="MCP lock"):
+        validate_project_contract(ROOT, today=dt.date(2026, 7, 17))
+
+
+def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def dist(name: str, version: str) -> object:
+        return type("Dist", (), {"metadata": {"Name": name}, "version": version})()
+
+    site_packages = tmp_path / "semgrep-tool" / "lib"
+    site_packages.mkdir(parents=True)
+    monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
+    monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: {"semgrep": {"1.168.0"}, "click": {"8.3.3"}, "mcp": {"1.28.1"}})
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda path: [dist("semgrep", "1.168.0"), dist("click", "8.3.3"), dist("mcp", "1.28.1")])
+    validate_installed_tool(site_packages)
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda path: [dist("semgrep", "1.168.0"), dist("click", "8.3.3"), dist("mcp", "1.23.3")])
+    with pytest.raises(ContractError, match="MCP identity"):
+        validate_installed_tool(site_packages)
 
 
 def test_security_wrapper_is_fail_closed_without_advisory_suppression() -> None:

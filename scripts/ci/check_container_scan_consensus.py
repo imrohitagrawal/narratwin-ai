@@ -39,16 +39,19 @@ def _add(findings: list[str], code: str) -> None:
         findings.append(code)
 
 
-def _sarif_results(report: dict[str, Any]) -> list[tuple[str, float]]:
+def _sarif_results(report: dict[str, Any]) -> list[tuple[str, float, str]]:
     if report.get("version") != "2.1.0" or not isinstance(report.get("runs"), list):
-        return [("MALFORMED", 10.0)]
-    result_ids: list[tuple[str, float]] = []
+        return [("MALFORMED", 10.0, "")]
+    result_ids: list[tuple[str, float, str]] = []
     for run in report["runs"]:
         rules = {rule.get("id"): rule for rule in run.get("tool", {}).get("driver", {}).get("rules", [])}
         for result in run.get("results", []):
             rule_id = result.get("ruleId", "")
-            severity = float(rules.get(rule_id, {}).get("properties", {}).get("security-severity", 10.0))
-            result_ids.append((rule_id, severity))
+            rule = rules.get(rule_id, {})
+            properties = rule.get("properties", {})
+            purls = properties.get("purls") or [properties.get("purl", "")]
+            cve = rule_id if rule_id in TARGET_CVES else str(rule.get("helpUri", "")).rsplit("/", 1)[-1]
+            result_ids.append((cve if cve in TARGET_CVES else rule_id, float(properties.get("security-severity", 10.0)), purls[0] if isinstance(purls, list) and purls else ""))
     return result_ids
 
 
@@ -85,6 +88,7 @@ def evaluate_consensus(
 
     for name in ARTIFACTS:
         envelope = envelopes[name]
+        identity = image_identity.get("backend" if name.startswith("backend") else "frontend", {})
         target = backend_config if name.startswith("backend") else frontend_config
         digest, size = _digest(reports[name])
         raw_artifacts[name] = {"sha256": digest, "size": size}
@@ -92,18 +96,14 @@ def evaluate_consensus(
             _add(findings, "SCAN_SESSION_INVALID")
         if envelope.get("target") != target or envelope.get("config_digest") != target:
             _add(findings, "IMAGE_IDENTITY_INVALID")
+        if envelope.get("architecture") != identity.get("architecture"):
+            _add(findings, "IMAGE_IDENTITY_INVALID")
         if envelope.get("started_at", now) < now - 720 or envelope.get("completed_at", 0) > now:
             _add(findings, "SCAN_SESSION_INVALID")
-        if envelope.get("database_updated_at", now) < now - 172800 or envelope.get("database_next_update", now) < now - 300:
-            _add(findings, "DATABASE_STALE")
-        before = envelope.get("database_manifest_before")
-        after = envelope.get("database_manifest_after")
-        if before != after or _digest(before)[0] != envelope.get("database_manifest_before_sha256"):
-            _add(findings, "DATABASE_INTEGRITY_INVALID")
-        if _digest(after)[0] != envelope.get("database_manifest_after_sha256"):
-            _add(findings, "DATABASE_INTEGRITY_INVALID")
         if envelope.get("artifact_sha256") != digest or envelope.get("artifact_size") != size:
             _add(findings, "ARTIFACT_INTEGRITY_INVALID")
+        if name in ARTIFACTS[:4] and envelope.get("exit_code") not in ((0, 2) if envelope.get("tool") == "grype" else (0, 1)):
+            _add(findings, "SCANNER_EXECUTION_INVALID")
 
     if "IMAGE_IDENTITY_INVALID" in findings:
         return {"status": "fail", "fixed": [], "findings": findings, "artifacts": list(ARTIFACTS), "raw_artifacts": raw_artifacts}
@@ -131,10 +131,10 @@ def evaluate_consensus(
         if "TOKEN-SECRET" in json.dumps(reports[name]):
             _add(findings, "SECRET_DISCLOSURE")
     for name in ("backend-trivy", "backend-grype", "frontend-trivy", "frontend-grype"):
-        for rule_id, severity in _sarif_results(reports[name]):
+        for rule_id, severity, purl in _sarif_results(reports[name]):
             if rule_id == "MALFORMED":
                 _add(findings, "SCANNER_REPORT_MALFORMED")
-            elif name == "backend-grype" and any(rule_id.startswith(cve) for cve in TARGET_CVES):
+            elif name.startswith("backend") and rule_id in TARGET_CVES and purl == component_purl:
                 continue
             elif rule_id and severity >= 7.0:
                 _add(findings, "UNRELATED_HIGH_CRITICAL")

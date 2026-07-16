@@ -200,9 +200,10 @@ Decision:
 - Semgrep is a security tool, not an application/runtime dependency. It runs
   from an exact, separately locked `tools/semgrep` project and isolated
   environment.
-- The tool-only Click `8.3.3` override is limited to Semgrep `1.168.0`, expires
-  on `2026-08-13`, and requires an accountable security/repository-owner
-  decision before merge.
+- The tool-only Click `8.3.3` and MCP `1.28.1` overrides are limited to
+  Semgrep `1.168.0`, expire on `2026-08-13`, and require an accountable
+  security/repository-owner decision before merge. MCP functionality is not
+  started, exposed, or used by the repository scan.
 - Tool version, full lock, rules, targets, invocation, canary configuration, and
   canary fixtures are hash-bound reviewed inputs. Any change invalidates the
   compatibility evidence and requires renewed review.
@@ -221,7 +222,8 @@ Decision:
 Consequences:
 
 - Application/runtime Click can receive the fixed release independently of
-  Semgrep's older declared constraint.
+  Semgrep's older declared constraints; MCP remains isolated security tooling,
+  not an application/runtime dependency.
 - The compatibility proof applies only to the committed, hash-bound Semgrep
   execution surface; other CLI paths are not approved.
 - Security gates gain explicit false-green tests and installed-inventory proof.

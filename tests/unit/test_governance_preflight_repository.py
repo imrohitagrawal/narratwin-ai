@@ -60,6 +60,8 @@ def _new_repo(tmp_path: Path, name: str = "repo") -> tuple[Path, str]:
     _git(repo, "init", "-q")
     _git(repo, "config", "user.email", "tests@narratwin.local")
     _git(repo, "config", "user.name", "NarraTwin Tests")
+    _git(repo, "config", "gc.auto", "0")
+    _git(repo, "config", "maintenance.auto", "false")
     _write(repo, "README.md", "base\n")
     return repo, _commit(repo, "base")
 

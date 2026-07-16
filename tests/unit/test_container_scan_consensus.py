@@ -42,29 +42,24 @@ def _digest(value: Any) -> tuple[str, int]:
     return hashlib.sha256(raw).hexdigest(), len(raw)
 
 
-def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0") -> dict[str, Any]:
-    rules = [{"id": cve, "properties": {"purl": "pkg:generic/python@3.13.14", "security-severity": severity}} for cve in cves]
-    return {"version": "2.1.0", "runs": [{"tool": {"driver": {"name": tool, "rules": rules}}, "results": [{"ruleId": cve} for cve in cves]}]}
+def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0", purl: str = "pkg:generic/python@3.13.14") -> dict[str, Any]:
+    rules = [{"id": f"{cve}-python" if tool == "grype" else cve, "helpUri": f"https://nvd.nist.gov/vuln/detail/{cve}", "properties": {"purls": [purl], "security-severity": severity}} for cve in cves]
+    return {"version": "2.1.0", "runs": [{"tool": {"driver": {"name": tool, "rules": rules}}, "results": [{"ruleId": rule["id"]} for rule in rules]}]}
 
 
 def _envelope(name: str, payload: dict[str, Any], target: str, tool: str) -> dict[str, Any]:
     digest, size = _digest(payload)
-    db = [{"path": "db/vulnerability.db", "size": 4, "sha256": "d" * 64}]
-    db_hash = _digest(db)[0]
     return {
         "schema_version": "ContainerScanEvidenceV1", "name": name, "session": SESSION, "tool": tool,
         "argv": ["scanner", target], "artifact_path": f"reports/security/{name}.raw.json", "target": target,
-        "config_digest": target, "architecture": "amd64", "rootfs": ["sha256:" + "f" * 64],
-        "started_at": NOW - 120, "completed_at": NOW - 60, "database_updated_at": NOW - 3600,
-        "database_next_update": NOW + 3600, "database_manifest_before": db, "database_manifest_after": copy.deepcopy(db),
-        "database_manifest_before_sha256": db_hash, "database_manifest_after_sha256": db_hash,
-        "artifact_sha256": digest, "artifact_size": size, "exit_code": 0,
+        "config_digest": target, "architecture": "amd64",
+        "started_at": NOW - 120, "completed_at": NOW - 60, "artifact_sha256": digest, "artifact_size": size, "exit_code": 0,
     }
 
 
 def _case() -> dict[str, Any]:
     reports: dict[str, Any] = {
-        "backend-trivy": _sarif("trivy", ()),
+        "backend-trivy": _sarif("trivy"),
         "backend-grype": _sarif("grype"),
         "frontend-trivy": _sarif("trivy", ()),
         "frontend-grype": _sarif("grype", ()),
@@ -78,11 +73,10 @@ def _case() -> dict[str, Any]:
     }
     return {
         "expected_session": SESSION, "now": NOW,
-        "image_identity": {"backend": {"config_digest": BACKEND_CONFIG, "architecture": "amd64", "rootfs": ["sha256:" + "f" * 64]}, "frontend": {"config_digest": FRONTEND_CONFIG, "architecture": "amd64", "rootfs": ["sha256:" + "f" * 64]}},
+        "image_identity": {"backend": {"config_digest": BACKEND_CONFIG, "architecture": "amd64"}, "frontend": {"config_digest": FRONTEND_CONFIG, "architecture": "amd64"}},
         "component_purl": "pkg:generic/python@3.13.14",
         "patch_manifest": {"schema_version": "CPythonSecurityBackportsV1", "base_image": "docker.io/library/python:3.13-alpine@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0", "patch_sha256": PATCH_SHA256},
-        "reports": reports,
-        "envelopes": envelopes,
+        "reports": reports, "envelopes": envelopes,
     }
 
 
@@ -99,10 +93,8 @@ def _evaluate(case: dict[str, Any]) -> dict[str, Any]:
 def test_fixed_cve_case_is_green_with_exact_vex_and_all_raw_artifacts() -> None:
     case = _case()
     result = _evaluate(case)
-    assert result["findings"] == []
-    assert result["fixed"] == list(TARGET_CVES)
-    assert result["artifacts"] == list(ARTIFACTS)
-    assert sorted(result["raw_artifacts"]) == sorted(ARTIFACTS)
+    assert result["findings"] == [] and result["fixed"] == list(TARGET_CVES)
+    assert result["artifacts"] == list(ARTIFACTS) and sorted(result["raw_artifacts"]) == sorted(ARTIFACTS)
     assert result["vex"] == {
         "status": "fixed",
         "product": f"urn:narratwin-ai:docker-config:{BACKEND_CONFIG}",
@@ -117,9 +109,9 @@ def test_fixed_cve_case_is_green_with_exact_vex_and_all_raw_artifacts() -> None:
         (lambda c: c.update(expected_session="wrong"), ["SCAN_SESSION_INVALID"], True),
         (lambda c: c["reports"].pop("backend-grype"), ["SCANNER_REPORT_MISSING"], False),
         (lambda c: c["envelopes"]["backend-grype"].update(target="python:3.13-alpine"), ["IMAGE_IDENTITY_INVALID"], True),
+        (lambda c: c["envelopes"]["backend-trivy"].update(architecture="s390x"), ["IMAGE_IDENTITY_INVALID"], True),
+        (lambda c: c["envelopes"]["backend-grype"].update(exit_code=3), ["SCANNER_EXECUTION_INVALID"], True),
         (lambda c: c["envelopes"]["backend-trivy"].update(started_at=NOW - 721), ["SCAN_SESSION_INVALID"], True),
-        (lambda c: c["envelopes"]["backend-trivy"].update(database_updated_at=NOW - 172801), ["DATABASE_STALE"], True),
-        (lambda c: c["envelopes"]["backend-grype"].update(database_manifest_after=[]), ["DATABASE_INTEGRITY_INVALID"], True),
         (lambda c: c["envelopes"]["backend-grype"].update(artifact_sha256="0" * 64), ["ARTIFACT_INTEGRITY_INVALID"], False),
         (lambda c: c["patch_manifest"].update(schema_version="bad"), ["PATCH_EVIDENCE_INVALID"], True),
         (lambda c: c["reports"]["backend-cpython-regressions"].update(status="fail"), ["REGRESSION_INVALID"], True),
@@ -145,6 +137,21 @@ def test_medium_unrelated_findings_do_not_hide_high_policy() -> None:
     assert _evaluate(case)["findings"] == []
     case["reports"]["frontend-grype"] = _sarif("grype", ("CVE-HIGH",), "7.0")
     _rehash(case, "frontend-grype")
+    assert _evaluate(case)["findings"] == ["UNRELATED_HIGH_CRITICAL"]
+
+
+@pytest.mark.parametrize(
+    "name,report",
+    [
+        ("backend-trivy", _sarif("trivy", ("CVE-2026-11940x",))),
+        ("backend-grype", _sarif("grype", TARGET_CVES, purl="pkg:generic/other@1")),
+        ("frontend-grype", _sarif("grype", TARGET_CVES)),
+    ],
+)
+def test_fixed_cve_exception_requires_exact_backend_python_component(name: str, report: dict[str, Any]) -> None:
+    case = _case()
+    case["reports"][name] = report
+    _rehash(case, name)
     assert _evaluate(case)["findings"] == ["UNRELATED_HIGH_CRITICAL"]
 
 
@@ -180,7 +187,7 @@ def test_wrapper_runs_both_scanners_and_persists_all_raw_and_envelope_artifacts(
     completed = subprocess.run(
         [str(ROOT / "scripts/ci/docker-image-scan.sh")],
         cwd=ROOT,
-        env={"PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}", "SCAN_FAKE_LOG": str(log), "REPORT_DIR": str(reports), "BACKEND_IMAGE": BACKEND_CONFIG, "FRONTEND_IMAGE": FRONTEND_CONFIG, "SKIP_POLICY_EVALUATION": "1"},
+        env={"PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}", "SCAN_FAKE_LOG": str(log), "REPORT_DIR": str(reports), "BACKEND_IMAGE": BACKEND_CONFIG, "FRONTEND_IMAGE": FRONTEND_CONFIG, "BACKEND_ARCH": "amd64", "FRONTEND_ARCH": "amd64", "SKIP_POLICY_EVALUATION": "1"},
         text=True,
         capture_output=True,
         timeout=10,

@@ -3366,7 +3366,8 @@ def test_issue151_branch_allows_only_frozen_security_remediation_paths(monkeypat
         "docs/governance/preflights/issue-151.json", "backend/Dockerfile", "security/cpython-3.13.14/backports.json",
         "security/cpython-3.13.14/apply_backports.py", "scripts/ci/verify-cpython-backports.py",
         "scripts/ci/check_container_scan_consensus.py", "scripts/ci/docker-build.sh", "scripts/ci/docker-image-scan.sh",
-        "tests/unit/test_cpython_security_backports.py", "tests/unit/test_container_scan_consensus.py", "tests/unit/test_governance_preflight_repository.py",
+        "scripts/ci/check_semgrep_security.py", "tools/semgrep/pyproject.toml", "tools/semgrep/uv.lock", "tools/semgrep/reviewed-inputs.sha256",
+        "tests/unit/test_cpython_security_backports.py", "tests/unit/test_container_scan_consensus.py", "tests/unit/test_dependency_security_contract.py", "tests/unit/test_governance_preflight_repository.py",
         "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py", "docs/ADR/0006-stage8-release-hardening.md",
         "docs/QUALITY_GATES.md", "docs/REPOSITORY_GUARDRAILS.md", "docs/RELEASE_CHECKLIST.md", "docs/THIRD_PARTY_NOTICES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/TRACEABILITY.md", "docs/STATUS.md",
     }

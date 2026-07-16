@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import copy
+from functools import partial
 import importlib.util
 import json
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
-from collections.abc import Callable
 from typing import Any, cast
 
 import pytest
@@ -124,14 +125,11 @@ def test_runtime_regression_cli_is_bounded_and_probe_entrypoint_fails_closed() -
     module = _load(script, "issue151_regression_module")
     calls: list[str] = []
 
-    def passing_probe(name: str) -> Callable[[], bool]:
-        def probe() -> bool:
-            calls.append(name)
-            return True
+    def passing_probe(name: str) -> bool:
+        calls.append(name)
+        return True
 
-        return probe
-
-    probes = {name: passing_probe(name) for name in module.CHECK_TO_CVE}
+    probes: dict[str, Callable[[], bool]] = {name: partial(passing_probe, name) for name in module.CHECK_TO_CVE}
     assert module.run_regressions(expect="fixed", max_seconds=2.0, probes=probes)["status"] == "pass"
     assert calls == list(module.CHECK_TO_CVE)
     probes["streaming_tar_terminates"] = lambda: False
