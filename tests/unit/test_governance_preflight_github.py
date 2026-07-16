@@ -73,14 +73,7 @@ def _event(event_name: str = "pull_request", action: str = "opened") -> dict[str
         }
     return event
 def _review(state: str = "APPROVED", commit: str = HEAD) -> dict[str, Any]:
-    return {
-        "id": 20,
-        "user": _identity("reviewer", 2),
-        "state": state,
-        "commit_id": commit,
-        "author_association": "OWNER",
-        "submitted_at": "2026-07-16T00:00:00Z",
-    }
+    return {"id": 20, "user": _identity("reviewer", 2), "state": state, "commit_id": commit, "author_association": "OWNER", "submitted_at": "2026-07-16T00:00:00Z"}
 def _check(name: str, **overrides: Any) -> dict[str, Any]:
     value = {
         "id": 100 + CONTEXTS.index(name),
@@ -613,7 +606,7 @@ def test_workflow_contract_is_exact_not_comment_or_nesting_text() -> None:
     assert permissions == ["  contents: read", "  issues: read", "  pull-requests: read", "  checks: read"]
     assert "types: [opened, synchronize, reopened, edited, ready_for_review, converted_to_draft]" in workflow
     assert "pull_request_review:\n    types: [submitted, dismissed]\n    branches:\n      - main\n      - phase-1-closure-**" in workflow
-    assert "persist-credentials: false" in workflow and "scripts.governance_preflight_github" in workflow
+    assert "persist-credentials: false" in workflow and 'GITHUB_HEAD_REF="$NARRATWIN_HEAD_REF" make quality' in workflow and "scripts.governance_preflight_github" in workflow
     assert workflow.index("verify_branch_protection.py") < workflow.index("scripts.governance_preflight_github")
     assert workflow.count("python -m scripts.governance_preflight_github") == 1
     step = workflow.split("- name: Verify GovernancePreflightV1 GitHub evidence", 1)[1].split("\n      - name:", 1)[0]

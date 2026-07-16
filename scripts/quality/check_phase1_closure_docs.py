@@ -1243,7 +1243,7 @@ def workflow_has_permission(yaml_text: str, permission: str, value: str) -> bool
 
 def workflow_has_stage_quality_base_sha(yaml_text: str) -> bool:
     return any(
-        "run: make quality" in step and "GITHUB_BASE_SHA:" in step and "GITHUB_EVENT_NAME:" in step
+        (("run: make quality" in (commands := {line.strip() for line in step.splitlines()})) or ('run: GITHUB_HEAD_REF="$NARRATWIN_HEAD_REF" make quality' in commands and "NARRATWIN_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}" in commands)) and "GITHUB_BASE_SHA:" in step and "GITHUB_EVENT_NAME:" in step
         for step in workflow_step_blocks(yaml_text)
     )
 

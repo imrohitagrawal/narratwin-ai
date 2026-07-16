@@ -1,16 +1,13 @@
-#!/usr/bin/env python3
 """CI-only verification of live GovernancePreflightV1 GitHub evidence."""
 from __future__ import annotations
 import json
 import os
 import re
 import subprocess
-import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import urllib.response
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 from scripts.ci.verify_branch_protection import EXPECTED_CONTEXTS, GITHUB_ACTIONS_APP_ID
@@ -267,7 +264,6 @@ def main(
     run_command: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run, transport: Transport | None = None,
     clock: Callable[[], float] = time.monotonic, sleeper: Callable[[float], None] = time.sleep,
 ) -> int:
-    del argv
     try:
         with open(environ.get("GITHUB_EVENT_PATH", ""), encoding="utf-8") as handle:
             event: object = json.load(handle)
@@ -297,4 +293,4 @@ def main(
         print(finding.code)
     return int(bool(findings))
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

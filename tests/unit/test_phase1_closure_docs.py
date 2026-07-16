@@ -1048,9 +1048,9 @@ def test_quality_gates_workflow_passes_event_name_to_stage_quality(monkeypatch: 
             ".github/workflows/quality-gates.yml": workflow_text.replace(
                 "          VECTOR_STORE: disabled\n"
                 "          GITHUB_EVENT_NAME: ${{ github.event_name }}\n"
-                    "          GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}",
+                    "          NARRATWIN_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}",
                 "          VECTOR_STORE: disabled\n"
-                    "          GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}",
+                    "          NARRATWIN_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}",
                 1,
             ),
         },
@@ -3961,6 +3961,11 @@ def test_quality_gates_workflow_must_pass_base_sha_to_make_quality(monkeypatch: 
     )
 
     assert f"{workflow_path} must pass GITHUB_BASE_SHA to make quality" in failures
+
+@pytest.mark.parametrize(("old", "new"), (("NARRATWIN_HEAD_REF:", "REMOVED_NARRATWIN_HEAD_REF:"), ('run: GITHUB_HEAD_REF="$NARRATWIN_HEAD_REF" make quality', 'run: GITHUB_HEAD_REF="$NARRATWIN_HEAD_REF" make quality && echo unsafe')))
+def test_stage_quality_bridge_rejects_missing_source_and_command_suffix(old: str, new: str) -> None:
+    workflow = phase1.read(".github/workflows/quality-gates.yml")
+    assert phase1.workflow_has_stage_quality_base_sha(workflow) and not phase1.workflow_has_stage_quality_base_sha(workflow.replace(old, new, 1))
 
 
 def test_quality_gates_workflow_must_run_for_phase1_stacked_pull_request_bases(monkeypatch: Any) -> None:
