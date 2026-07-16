@@ -7,7 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from collections.abc import Callable
+from typing import Any, cast
 
 import pytest
 
@@ -37,7 +38,7 @@ def _load(path: Path, name: str) -> ModuleType:
 
 
 def _manifest() -> dict[str, Any]:
-    return json.loads((SECURITY / "backports.json").read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads((SECURITY / "backports.json").read_text(encoding="utf-8")))
 
 
 def _set(data: dict[str, Any], path: tuple[Any, ...], value: Any) -> dict[str, Any]:
@@ -122,7 +123,15 @@ def test_runtime_regression_cli_is_bounded_and_probe_entrypoint_fails_closed() -
     assert evidence["maximum_seconds"] < 2
     module = _load(script, "issue151_regression_module")
     calls: list[str] = []
-    probes = {name: (lambda name=name: calls.append(name) or True) for name in module.CHECK_TO_CVE}
+
+    def passing_probe(name: str) -> Callable[[], bool]:
+        def probe() -> bool:
+            calls.append(name)
+            return True
+
+        return probe
+
+    probes = {name: passing_probe(name) for name in module.CHECK_TO_CVE}
     assert module.run_regressions(expect="fixed", max_seconds=2.0, probes=probes)["status"] == "pass"
     assert calls == list(module.CHECK_TO_CVE)
     probes["streaming_tar_terminates"] = lambda: False

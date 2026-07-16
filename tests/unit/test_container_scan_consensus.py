@@ -8,7 +8,7 @@ import os
 import subprocess
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import pytest
 
@@ -93,7 +93,7 @@ def _rehash(case: dict[str, Any], name: str) -> None:
 
 
 def _evaluate(case: dict[str, Any]) -> dict[str, Any]:
-    return _load().evaluate_consensus(**case)
+    return cast(dict[str, Any], _load().evaluate_consensus(**case))
 
 
 def test_fixed_cve_case_is_green_with_exact_vex_and_all_raw_artifacts() -> None:
