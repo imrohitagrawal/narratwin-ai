@@ -63,6 +63,7 @@ def _event(event_name: str = "pull_request", action: str = "opened") -> dict[str
         "sender": _identity("author", 1),
     }
     if event_name == "pull_request_review":
+        event.pop("number")
         event["sender"] = _identity("reviewer", 2)
         event["review"] = {
             "id": 20,
@@ -76,8 +77,7 @@ def _review(state: str = "APPROVED", commit: str = HEAD) -> dict[str, Any]:
     return {"id": 20, "user": _identity("reviewer", 2), "state": state, "commit_id": commit, "author_association": "OWNER", "submitted_at": "2026-07-16T00:00:00Z"}
 def _check(name: str, **overrides: Any) -> dict[str, Any]:
     value = {
-        "id": 100 + CONTEXTS.index(name),
-        "name": name,
+        "id": 100 + CONTEXTS.index(name), "name": name,
         "head_sha": HEAD,
         "status": "completed",
         "conclusion": "success",
@@ -196,10 +196,11 @@ def test_auth_unavailable_is_exact() -> None:
     assert fixture["calls"] == []
     assert _codes(_fixture(), auth_value=RuntimeError("sentinel-token")) == ["GPF.GH.AUTH_UNAVAILABLE"]
     assert _codes(_fixture(), api_url="http://api.github.com") == ["GPF.GH.EVENT_PAYLOAD_INVALID"]
-@pytest.mark.parametrize(("field", "value"), (("user", None), ("id", True), ("state", None)))
+@pytest.mark.parametrize(("field", "value"), (("user", None), ("id", True), ("state", None), ("pull_number", True)))
 def test_malformed_review_event_payload_is_rejected(field: str, value: Any) -> None:
     fixture = _fixture("ready")
-    fixture["event"]["review"][field] = value
+    target = fixture["event"]["pull_request"] if field == "pull_number" else fixture["event"]["review"]
+    target["number" if field == "pull_number" else field] = value
     assert _codes(fixture) == ["GPF.GH.EVENT_PAYLOAD_INVALID"]
 @pytest.mark.parametrize("event_name", ("", "push", "workflow_dispatch"))
 def test_push_and_local_paths_make_no_auth_or_transport_attempt(event_name: str) -> None:

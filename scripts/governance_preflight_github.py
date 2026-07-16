@@ -31,7 +31,8 @@ def _user(value: Any) -> tuple[str, int] | None:
 def _event_values(event: object, event_name: str, repository: str) -> tuple[dict[str, Any], int, str] | None:
     if not isinstance(event, dict) or event_name not in _ACTIONS or event.get("action") not in _ACTIONS[event_name]:
         return None
-    pull, repo, number = event.get("pull_request"), event.get("repository"), event.get("number")
+    pull, repo = event.get("pull_request"), event.get("repository")
+    number = event.get("number") if event_name == "pull_request" else pull.get("number") if isinstance(pull, dict) else None
     if not isinstance(pull, dict) or not isinstance(repo, dict) or repo.get("full_name") != repository:
         return None
     if not isinstance(number, int) or isinstance(number, bool) or number < 1 or pull.get("number", number) != number:
