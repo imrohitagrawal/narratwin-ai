@@ -451,6 +451,10 @@ Required Stage 7 hardening within this scope:
 
 ## Stage 8 Performance, Security Hardening, Release Readiness Branch Scope
 
+Issue `#151` is the bounded security-remediation branch for patched Python
+runtime evidence and scanner-consensus hardening; it does not authorize product
+runtime behavior changes.
+
 Allowed changes:
 
 - `.stage/current`

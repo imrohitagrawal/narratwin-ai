@@ -60,6 +60,8 @@ def _new_repo(tmp_path: Path, name: str = "repo") -> tuple[Path, str]:
     _git(repo, "init", "-q")
     _git(repo, "config", "user.email", "tests@narratwin.local")
     _git(repo, "config", "user.name", "NarraTwin Tests")
+    _git(repo, "config", "gc.auto", "0")
+    _git(repo, "config", "maintenance.auto", "false")
     _write(repo, "README.md", "base\n")
     return repo, _commit(repo, "base")
 
@@ -399,11 +401,10 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path, mode
         target = repo / path
         if target.exists():
             target.unlink()
-    for path in PATHS[3:]:
-        original = subprocess.run(["git", "show", f"origin/main:{path}"], cwd=source, check=True, stdout=subprocess.PIPE, timeout=10).stdout
+    for path in PATHS[1:]:
         target = repo / path
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(original)
+        target.write_text(f"synthetic historical baseline for issue 176 fixture: {path}\n", encoding="utf-8")
     if mode == "unrelated":
         _write(repo, "reports/eval-results.json", '{"status":"failed"}\n')
     base = _commit(repo, "base")
@@ -442,6 +443,21 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path, mode
     assert "GITHUB_TOKEN" not in env and "GH_TOKEN" not in env
     assert "must-not-appear" not in completed.stdout + completed.stderr
     assert "NETWORK_ATTEMPT" not in completed.stdout + completed.stderr
+
+
+def test_historical_fixture_still_detects_unrestored_required_path(tmp_path: Path) -> None:
+    repo, _ = _new_repo(tmp_path, "issue-176-historical")
+    for path in PATHS[1:]:
+        _write(repo, path, f"synthetic historical baseline {path}\n")
+    base = _commit(repo, "historical baseline")
+    _git(repo, "checkout", "-q", "-b", BRANCH)
+    _write(repo, PREFLIGHT, json.dumps(FROZEN))
+    _commit(repo, "preflight")
+    for path in PATHS[1:]:
+        if path != PATHS[3]:
+            _write(repo, path, f"restored final {path}\n")
+    head = _commit(repo, "implementation")
+    assert _codes(repo, base, head) == ["GPF.SCOPE.REQUIRED_NOT_CHANGED"]
 
 
 def test_missing_promisor_object_cannot_start_git_transport(tmp_path: Path) -> None:

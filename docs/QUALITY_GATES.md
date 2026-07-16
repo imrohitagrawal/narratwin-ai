@@ -582,5 +582,7 @@ The CI layer must continue to enforce:
 - mock/local provider defaults
 - eval failures block merge when eval reports exist
 - critical or high security findings block merge when security reports exist
+- CPython image scanner disagreement may pass only through issue-specific fixed
+  evidence that still preserves raw Trivy and Grype reports.
 
 Direct pushes to `main` remain a repository-settings requirement enforced through branch protection or rulesets rather than the stage-quality workflow itself.

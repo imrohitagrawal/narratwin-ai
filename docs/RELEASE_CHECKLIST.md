@@ -30,9 +30,8 @@ PR `#53`.
 - [ ] Issue `#138` security evidence is merged and the dated Semgrep tool-only
   compatibility exception is accepted by the security/repo owner; the exception
   must not be expired or generalized beyond the committed scan invocation.
-- [ ] Issue `#151` resolves the stable CPython HIGH findings and Trivy/Grype
-  disagreement; both scanners report zero critical/high findings or a reviewed
-  consensus policy handles disagreement without ignoring confirmed findings.
+- [ ] Issue `#151` remediation PR is merged with patched Python `3.13.14`
+  runtime evidence and reviewed Trivy/Grype fixed-status consensus artifacts.
 - [ ] Docker Compose local readiness is verified or unused services are documented honestly.
 - [ ] `docs/reviews/GO_NO_GO.md` is updated by a reviewed PR before any release tag.
 
