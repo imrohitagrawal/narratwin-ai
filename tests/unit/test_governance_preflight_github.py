@@ -10,7 +10,7 @@ import socket
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 from urllib.parse import urlsplit
 import pytest
 import scripts.governance_preflight_github as github
@@ -120,7 +120,7 @@ def _fixture(lifecycle: str = "implementing") -> dict[str, Any]:
         },
     }
 def _codes(fixture: dict[str, Any], *, auth_value: str | None | BaseException = "sentinel-token",
-           clock: Clock | None = None, api_url: str = API) -> list[str]:
+           clock: Any = None, sleeper: Any = None, api_url: str = API) -> list[str]:
     boundary = Transport(fixture)
     fake_clock = clock or Clock()
     def provide() -> str | None:
@@ -130,7 +130,7 @@ def _codes(fixture: dict[str, Any], *, auth_value: str | None | BaseException = 
     findings = verify_governance_preflight_github(
         fixture["event"], event_name=fixture["event_name"], repository=REPOSITORY,
         api_url=api_url, required_contexts=CONTEXTS, expected_app_id=APP_ID, run_id=999,
-        token_provider=provide, transport=boundary, clock=fake_clock, sleeper=fake_clock.sleep,
+        token_provider=provide, transport=boundary, clock=fake_clock, sleeper=sleeper or fake_clock.sleep,
     )
     fixture["calls"] = boundary.calls
     return [finding.code for finding in findings]
@@ -285,14 +285,19 @@ def test_pending_checks_poll_to_success_with_fake_clock() -> None:
     assert _codes(fixture, clock=clock) == []
     assert clock.now == 5
 def test_pending_checks_expire_at_fake_deadline() -> None:
-    fixture = _fixture("ready")
-    fixture = _single(
-        fixture,
-        lambda f: f["responses"]["checks"][0][2]["check_runs"][1].update(status="in_progress", conclusion=None),
-    )
+    fixture = _single(_fixture("ready"), lambda f: f["responses"]["checks"][0][2]["check_runs"][1].update(status="in_progress", conclusion=None))
     clock = Clock()
     assert _codes(fixture, clock=clock) == ["GPF.GH.CHECK_PENDING_TIMEOUT"]
     assert clock.now == 360
+    sleeps: list[float] = []
+    def bounded_sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        assert len(sleeps) <= 72, "unbounded polling"
+    assert _codes(copy.deepcopy(fixture), clock=lambda: 0.0, sleeper=bounded_sleep) == ["GPF.GH.CHECK_PENDING_TIMEOUT"]
+    assert len(sleeps) == 72 and min(sleeps) >= 0
+    ticks, crossing = iter((0.0, 359.0, 359.0, 361.0)), cast(list[float], [])
+    assert _codes(copy.deepcopy(fixture), clock=lambda: next(ticks, 361.0), sleeper=crossing.append) == ["GPF.GH.CHECK_PENDING_TIMEOUT"]
+    assert crossing and min(crossing) >= 0
 def test_policy_self_check_requires_exact_run_identity() -> None:
     fixture = _fixture("ready")
     current = _single(
@@ -301,9 +306,7 @@ def test_policy_self_check_requires_exact_run_identity() -> None:
     )
     assert _codes(current) == []
     wrong = copy.deepcopy(current)
-    wrong["responses"]["checks"][0][2]["check_runs"][0]["details_url"] = (
-        "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/998/job/1"
-    )
+    wrong["responses"]["checks"][0][2]["check_runs"][0]["details_url"] = "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/998/job/1"
     assert _codes(wrong) == ["GPF.GH.CHECK_PENDING_TIMEOUT"]
 def test_duplicate_attempts_choose_latest_deterministically() -> None:
     fixture = _fixture("ready")
@@ -337,7 +340,7 @@ def test_policy_self_check_rejects_hostile_same_run_links(url: str) -> None:
     ("http", "<http://api.github.com/repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?page=2>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),
     ("userinfo", "<https://x@api.github.com/repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?page=2>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),
     ("wrong-path", "<https://api.github.com/repos/imrohitagrawal/narratwin-ai/pulls/179/reviews?page=2>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),
-    ("bad-query", "</repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?page=x>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),
+    ("bad-query", "</repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?page=x>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]), ("blank-page", "</repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?page=>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]), ("blank-unknown", "</repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?attacker=>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),
     ("malformed", "<::::>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),))
 def test_pagination_origin_contract(case: str, link: str, expected: list[str]) -> None:
     del case
@@ -425,10 +428,12 @@ def test_collection_page_record_and_timeout_bounds(collection: str) -> None:
     assert _codes(over_pages) == ["GPF.GH.PAGINATION_LIMIT"]
 def test_global_precedence_and_deduplication_complete_vector() -> None:
     fixture = _fixture("ready")
+    authoritative = _single(fixture, lambda f: f["responses"]["pr"][0][2].__setitem__("user", _identity("reviewer", 2)))
+    assert _codes(authoritative) == ["GPF.GH.PR_AUTHOR_MISMATCH", "GPF.GH.REVIEW_SELF_APPROVAL"]
     live = fixture["responses"]["pr"][0][2]
-    live["user"] = _identity("other", 9)
+    live.update(user=_identity("author", 1), state="closed")
+    fixture["event"]["pull_request"].update(user=_identity("other", 9))
     fixture["event"]["pull_request"]["head"]["sha"] = OTHER_HEAD
-    live["state"] = "closed"
     review = fixture["responses"]["reviews"][0][2][0]
     review.update(user=_identity("author", 1), author_association="CONTRIBUTOR", state="COMMENTED", commit_id=OTHER_HEAD)
     runs = fixture["responses"]["checks"][0][2]["check_runs"]
@@ -436,8 +441,7 @@ def test_global_precedence_and_deduplication_complete_vector() -> None:
     runs[0]["app"]["id"] = 9
     assert _codes(fixture) == [
         "GPF.GH.PR_AUTHOR_MISMATCH", "GPF.GH.PR_HEAD_MISMATCH", "GPF.GH.LIFECYCLE_INVALID",
-        "GPF.GH.REVIEW_IDENTITY_MISMATCH", "GPF.GH.REVIEW_SELF_APPROVAL",
-        "GPF.GH.REVIEW_ASSOCIATION_INVALID", "GPF.GH.REVIEW_STATE_INVALID", "GPF.GH.REVIEW_STALE",
+        "GPF.GH.REVIEW_IDENTITY_MISMATCH", "GPF.GH.REVIEW_SELF_APPROVAL", "GPF.GH.REVIEW_ASSOCIATION_INVALID", "GPF.GH.REVIEW_STATE_INVALID", "GPF.GH.REVIEW_STALE",
         "GPF.GH.CHECK_MISSING", "GPF.GH.CHECK_APP_MISMATCH",
     ]
 def test_terminal_and_complete_check_precedence_vectors() -> None:
@@ -483,15 +487,11 @@ def test_exactly_200_seeded_sequences_have_reproducible_oracles() -> None:
                 mutation, apply, code = mutations[rng.randrange(len(mutations))]
                 apply(fixture)
                 expected = [code]
-            serialized = json.dumps(
-                {"event_name": fixture["event_name"], "event": fixture["event"], "responses": fixture["responses"]},
-                sort_keys=True, default=str,
-            )
+            serialized = json.dumps({"event_name": fixture["event_name"], "event": fixture["event"], "responses": fixture["responses"]}, sort_keys=True, default=str)
             started = time.perf_counter()
             actual = _codes(fixture)
             durations.append(time.perf_counter() - started)
-            detail = json.dumps({"seed": seed, "sequence": index, "lifecycle": lifecycle, "mutation": mutation,
-                                 "expected": expected, "actual": actual, "fixture": serialized}, sort_keys=True)
+            detail = json.dumps({"seed": seed, "sequence": index, "lifecycle": lifecycle, "mutation": mutation, "expected": expected, "actual": actual, "fixture": serialized}, sort_keys=True)
             assert baseline == [], detail
             assert actual == expected, detail
             results.append(valid)

@@ -92,7 +92,7 @@ def _next_url(current: str, value: str, origin: tuple[str, str], path: str) -> s
     if parsed.scheme != "https" or parsed.username or parsed.password or (parsed.scheme, parsed.netloc.lower()) != origin:
         return ""
     try:
-        query = urllib.parse.parse_qs(parsed.query, strict_parsing=True)
+        query = urllib.parse.parse_qs(parsed.query, strict_parsing=True, keep_blank_values=True)
         bounded = set(query) <= {"page", "per_page"} and all(len(values) == 1 and len(values[0]) <= 6 and 0 < int(values[0]) <= (100 if key == "per_page" else 999999) for key, values in query.items())
     except ValueError:
         bounded = False
@@ -126,7 +126,7 @@ def _review_codes(event: dict[str, Any], live_pull: dict[str, Any], record: dict
     if record is None:
         return ["GPF.GH.REVIEW_MISSING"]
     codes: list[str] = []
-    reviewer, author = _user(record.get("user")), _user(event["pull_request"].get("user"))
+    reviewer, author = _user(record.get("user")), _user(live_pull.get("user"))
     event_review: dict[str, Any] = event["review"] if isinstance(event.get("review"), dict) else record
     if event.get("review") is not None and (reviewer != _user(event_review.get("user")) or reviewer != _user(event.get("sender"))):
         codes.append("GPF.GH.REVIEW_IDENTITY_MISMATCH")
@@ -173,12 +173,10 @@ def _check_codes(rows: list[dict[str, Any]], head: str, contexts: tuple[str, ...
         elif run.get("conclusion") != "success":
             codes.append("GPF.GH.CHECK_NOT_SUCCESSFUL")
     return codes, pending
-def verify_governance_preflight_github(
-    event: object, *, event_name: str, repository: str, api_url: str,
+def verify_governance_preflight_github(event: object, *, event_name: str, repository: str, api_url: str,
     required_contexts: tuple[str, ...], expected_app_id: int, run_id: int | None,
     token_provider: Callable[[], str | None], transport: Callable[[str, Mapping[str, str], float], tuple[int, Mapping[str, str], bytes]],
-    clock: Callable[[], float], sleeper: Callable[[float], None],
-) -> list[GovernanceFinding]:
+    clock: Callable[[], float], sleeper: Callable[[float], None]) -> list[GovernanceFinding]:
     if event_name not in _ACTIONS or isinstance(event, dict) and event.get("action") not in _ACTIONS[event_name]:
         return [GovernanceFinding("GPF.GH.EVENT_UNSUPPORTED")]
     values = _event_values(event, event_name, repository)
@@ -239,12 +237,14 @@ def verify_governance_preflight_github(
     if ready and not live.get("draft"):
         codes.extend(_review_codes(event_dict, live, record))
         start = clock()
-        while True:
-            check_findings, pending = _check_codes(checks, live_head, required_contexts, expected_app_id, repository, run_id, expired=clock() - start >= 360)
-            if not pending or clock() - start >= 360:
+        for attempt in range(73):
+            elapsed = max(0.0, clock() - start)
+            expired = elapsed >= 360 or attempt == 72
+            check_findings, pending = _check_codes(checks, live_head, required_contexts, expected_app_id, repository, run_id, expired=expired)
+            if not pending or expired:
                 codes.extend(check_findings)
                 break
-            sleeper(min(5.0, 360 - (clock() - start)))
+            sleeper(min(5.0, max(0.0, 360 - elapsed)))
             checks, check_terminal = _pages(check_url, "checks", auth_value, transport, origin)
             if check_terminal:
                 return _findings(check_terminal + codes)
