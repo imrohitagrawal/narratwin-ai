@@ -18,15 +18,11 @@ from scripts.governance_preflight_v1 import GovernanceFinding
 Transport = Callable[[str, Mapping[str, str], float], tuple[int, Mapping[str, str], bytes]]
 __all__ = ["GovernanceFinding", "verify_governance_preflight_github", "main"]
 _ORDER = (
-    "GPF.GH.PAGINATION_NEXT_INVALID", "GPF.GH.PAGINATION_LIMIT", "GPF.GH.RATE_LIMITED", "GPF.GH.REQUEST_TIMEOUT",
-    "GPF.GH.RESPONSE_INVALID", "GPF.GH.API_ERROR", "GPF.GH.PR_AUTHOR_MISMATCH", "GPF.GH.PR_HEAD_MISMATCH",
-    "GPF.GH.LIFECYCLE_INVALID", "GPF.GH.REVIEW_MISSING", "GPF.GH.REVIEW_IDENTITY_MISMATCH",
-    "GPF.GH.REVIEW_SELF_APPROVAL", "GPF.GH.REVIEW_ASSOCIATION_INVALID", "GPF.GH.REVIEW_STATE_INVALID",
-    "GPF.GH.REVIEW_STALE", "GPF.GH.CHECK_MISSING", "GPF.GH.CHECK_APP_MISMATCH", "GPF.GH.CHECK_PENDING_TIMEOUT",
+    "GPF.GH.PAGINATION_NEXT_INVALID", "GPF.GH.PAGINATION_LIMIT", "GPF.GH.RATE_LIMITED", "GPF.GH.REQUEST_TIMEOUT", "GPF.GH.RESPONSE_INVALID", "GPF.GH.API_ERROR", "GPF.GH.PR_AUTHOR_MISMATCH", "GPF.GH.PR_HEAD_MISMATCH", "GPF.GH.LIFECYCLE_INVALID", "GPF.GH.REVIEW_MISSING",
+    "GPF.GH.REVIEW_IDENTITY_MISMATCH", "GPF.GH.REVIEW_SELF_APPROVAL", "GPF.GH.REVIEW_ASSOCIATION_INVALID", "GPF.GH.REVIEW_STATE_INVALID", "GPF.GH.REVIEW_STALE", "GPF.GH.CHECK_MISSING", "GPF.GH.CHECK_APP_MISMATCH", "GPF.GH.CHECK_PENDING_TIMEOUT",
     "GPF.GH.CHECK_NOT_SUCCESSFUL",
 )
-_ACTIONS = {"pull_request": {"opened", "synchronize", "reopened", "edited", "ready_for_review", "converted_to_draft"},
-            "pull_request_review": {"submitted", "dismissed"}}
+_ACTIONS = {"pull_request": {"opened", "synchronize", "reopened", "edited", "ready_for_review", "converted_to_draft"}, "pull_request_review": {"submitted", "dismissed"}}
 def _findings(codes: Sequence[str]) -> list[GovernanceFinding]:
     unique = set(codes)
     return [GovernanceFinding(code) for code in _ORDER if code in unique]
@@ -208,7 +204,7 @@ def verify_governance_preflight_github(
     if live is None or _user(live.get("user")) is None or not isinstance(live.get("head"), dict):
         return _findings(["GPF.GH.RESPONSE_INVALID"])
     live_head, live_head_repo, live_base = live["head"].get("sha"), live["head"].get("repo"), live.get("base")
-    if not isinstance(live_head, str) or re.match(r"[0-9a-fA-F]{40}\Z", live_head) is None or not isinstance(live.get("draft"), bool) or not isinstance(live.get("merged"), bool):
+    if live.get("number") != number or not isinstance(live_head, str) or re.match(r"[0-9a-fA-F]{40}\Z", live_head) is None or not isinstance(live.get("draft"), bool) or not isinstance(live.get("merged"), bool):
         return _findings(["GPF.GH.RESPONSE_INVALID"])
     if not isinstance(live_head_repo, dict) or live_head_repo.get("full_name") != repository or not isinstance(live_base, dict) or not isinstance(live_base.get("repo"), dict) or live_base["repo"].get("full_name") != repository:
         return _findings(["GPF.GH.RESPONSE_INVALID"])
@@ -216,8 +212,10 @@ def verify_governance_preflight_github(
     reviews_url = f"{pull_url}/reviews?per_page=100"
     reviews, terminal = _pages(reviews_url, "reviews", auth_value, transport, origin)
     event_dict = event if isinstance(event, dict) else {}
-    submitted = event_name == "pull_request_review" and event_dict.get("action") == "submitted"
-    record = next((row for row in reviews if isinstance(event_dict.get("review"), dict) and row.get("id") == event_dict["review"].get("id")), None)
+    review_event = event_name == "pull_request_review"
+    submitted = review_event and event_dict.get("action") == "submitted"
+    event_record = next((row for row in reviews if isinstance(event_dict.get("review"), dict) and row.get("id") == event_dict["review"].get("id")), None)
+    record = event_record
     if not submitted:
         current = [row for row in reviews if row.get("state") == "APPROVED" and row.get("commit_id") == live_head]
         record = max(current, key=lambda row: (str(row.get("submitted_at", "")), row.get("id", -1)), default=None)
@@ -236,6 +234,8 @@ def verify_governance_preflight_github(
         codes.append("GPF.GH.PR_HEAD_MISMATCH")
     if live.get("state") != "open" or live.get("merged"):
         codes.append("GPF.GH.LIFECYCLE_INVALID")
+    if review_event and not submitted:
+        codes.extend(["GPF.GH.REVIEW_MISSING"] if event_record is None else ["GPF.GH.REVIEW_IDENTITY_MISMATCH"] if not (_user(event_record.get("user")) == _user(event_dict.get("review", {}).get("user")) == _user(event_dict.get("sender"))) else [])
     if ready and not live.get("draft"):
         codes.extend(_review_codes(event_dict, live, record))
         start = clock()
@@ -258,6 +258,8 @@ def _https(url: str, headers: Mapping[str, str], timeout: float) -> tuple[int, M
         response = urllib.request.build_opener(_NoRedirect(), urllib.request.HTTPSHandler()).open(request, timeout=timeout)  # nosec B310
     except urllib.error.HTTPError as exc:
         return exc.code, dict(exc.headers), exc.read((1 << 20) + 1)
+    except urllib.error.URLError as exc:
+        raise (TimeoutError() if isinstance(exc.reason, TimeoutError) else exc) from None
     with response:
         return response.status, dict(response.headers), response.read((1 << 20) + 1)
 def main(

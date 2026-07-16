@@ -156,6 +156,7 @@ def test_review_dismissed_enters_correcting_without_counting_approval() -> None:
     fixture["event_name"], fixture["event"] = "pull_request_review", _event("pull_request_review", "dismissed")
     fixture["responses"]["reviews"] = [(200, {}, [_review(state="DISMISSED")])]
     assert _codes(fixture) == []
+    assert _codes(_single(fixture, lambda f: f["event"].__setitem__("sender", _identity("other", 3)))) == ["GPF.GH.REVIEW_IDENTITY_MISMATCH"]
 def test_draft_with_historical_approval_defers_failing_checks() -> None:
     fixture = _fixture("ready")
     fixture["event_name"], fixture["event"] = "pull_request", _event("pull_request", "converted_to_draft")
@@ -222,6 +223,7 @@ def test_push_and_local_paths_make_no_auth_or_transport_attempt(event_name: str)
     ("author-id", lambda f: f["event"]["pull_request"]["user"].__setitem__("id", 9), "GPF.GH.PR_AUTHOR_MISMATCH"),
     ("author-login", lambda f: f["event"]["pull_request"]["user"].__setitem__("login", "other"), "GPF.GH.PR_AUTHOR_MISMATCH"),
     ("head", lambda f: f["event"]["pull_request"]["head"].__setitem__("sha", OTHER_HEAD), "GPF.GH.PR_HEAD_MISMATCH"),
+    ("live-number", lambda f: f["responses"]["pr"][0][2].__setitem__("number", 179), "GPF.GH.RESPONSE_INVALID"),
     ("lifecycle", lambda f: f["responses"]["pr"][0][2].__setitem__("state", "closed"), "GPF.GH.LIFECYCLE_INVALID"),
     ("merged", lambda f: f["responses"]["pr"][0][2].__setitem__("merged", True), "GPF.GH.LIFECYCLE_INVALID"),))
 def test_pr_identity_and_lifecycle_single_faults(name: str, mutate: Any, expected: str) -> None:
@@ -541,7 +543,7 @@ def test_default_transport_network_attempt_is_observed_blocked_and_sanitized(tmp
     class Denied(socket.socket):
         def __new__(cls, *args: Any, **kwargs: Any) -> Any:
             attempted.append(True)
-            raise OSError("sentinel-token NETWORK_ATTEMPT")
+            raise github.urllib.error.URLError(TimeoutError("sentinel-token NETWORK_ATTEMPT"))  # type: ignore[attr-defined]
     monkeypatch.setattr(socket, "socket", Denied)
     env = {"GITHUB_EVENT_NAME": "pull_request", "GITHUB_EVENT_PATH": str(event_path),
            "GITHUB_REPOSITORY": REPOSITORY, "GITHUB_API_URL": API, "GITHUB_TOKEN": "sentinel-token"}
