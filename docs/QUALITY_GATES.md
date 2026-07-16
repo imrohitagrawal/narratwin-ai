@@ -471,7 +471,7 @@ Gate validates:
   only its frozen ten repository-integration paths. Its local adapter enforces
   a preflight-only first commit and final scope for the exact PR B branch and
   later process branches whose base tree contains the adapter; legacy and
-  non-process branches remain unchanged. GitHub evidence remains out of scope.
+  non-process branches remain unchanged. Issue `#178` alone admits its frozen CI-only GitHub verifier, exact workflow, tests, and governance paths; local quality remains offline.
   Final Review baseline
   artifacts are required inputs but not allowed closure-branch edits
 - `docs/reviews/PHASE_1_CLOSURE_REPORT.md` parses as an issue table covering

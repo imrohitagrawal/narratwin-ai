@@ -197,6 +197,7 @@ Use these files together with this tracker:
 |---|---|---|---|---|
 | GPF-A | Offline GovernancePreflightV1 core | #172 | PR #173 | offline schema and semantic validator present |
 | GPF-B | Prospective repository integration | #176 | PR #177 | offline prospective preflight enforcement present |
+| GPF-C | CI-only GitHub evidence | #178 | PR #179 | CI GitHub evidence verifier present |
 | HPR | Human-readable pull-request reviewer overview | #174 | PR #175 | five-point template, agent policy, and bounded PR-body enforcement |
 
 ## Issue Ledger

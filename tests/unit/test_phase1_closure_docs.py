@@ -1048,9 +1048,9 @@ def test_quality_gates_workflow_passes_event_name_to_stage_quality(monkeypatch: 
             ".github/workflows/quality-gates.yml": workflow_text.replace(
                 "          VECTOR_STORE: disabled\n"
                 "          GITHUB_EVENT_NAME: ${{ github.event_name }}\n"
-                "          GITHUB_HEAD_REF: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}",
+                    "          GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}",
                 "          VECTOR_STORE: disabled\n"
-                "          GITHUB_HEAD_REF: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}",
+                    "          GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}",
                 1,
             ),
         },
@@ -3361,6 +3361,14 @@ def test_issue176_allowlist_does_not_apply_to_near_match_branch(monkeypatch: Any
     ) == [f"Phase 1 Closure branch {branch} may not change scripts/governance_preflight_repository.py."]
 
 
+def test_issue178_branch_uses_only_exact_ci_evidence_scope(monkeypatch: Any) -> None:
+    assert run_changed_files_check(monkeypatch, branch="phase-1-closure-process-178-gpf-v1-ci-evidence", files=sorted(phase1.ISSUE_178_ALLOWED_CHANGED_FILES)) == []
+    branch = "phase-1-closure-process-178-gpf-v1-ci-evidence-extra"
+    assert run_changed_files_check(monkeypatch, branch=branch, files=["scripts/governance_preflight_github.py"]) == [
+        f"Phase 1 Closure branch {branch} may not change scripts/governance_preflight_github.py."
+    ]
+
+
 def test_issue39_durability_branch_keeps_existing_runtime_allowlist(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
@@ -3946,7 +3954,7 @@ def test_quality_gates_workflow_must_pass_base_sha_to_make_quality(monkeypatch: 
         changed=[workflow_path],
         read_overrides={
             workflow_path: workflow_text.replace(
-                "          GITHUB_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}\n",
+                    "          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}\n",
                 "",
             ),
         },

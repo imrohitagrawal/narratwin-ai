@@ -49,7 +49,7 @@ The policy check fails CI for:
   GovernancePreflightV1 file as the only first-commit path, or whose final diff
   violates its required/allowed/forbidden scope. This offline Git check allows
   up to 1,000 branch commits and 2,000 changed paths, imposes no later-commit
-  choreography, and exempts legacy bases and unrelated branches.
+  choreography, and exempts legacy bases and unrelated branches; PR C adds live GitHub author, review, exact-head, lifecycle, and required-check proof only in supported pull-request CI.
 - Phase 1 Closure quality drift in the `#39` production-closure matrix, including
   missing required IDs, malformed rows, duplicate or unexpected IDs, and invalid
   status values. The same structural checks now run on every repository-guardrail

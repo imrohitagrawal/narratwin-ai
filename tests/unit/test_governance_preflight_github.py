@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import copy
 import email.message
 import io
@@ -13,13 +12,10 @@ import time
 from pathlib import Path
 from typing import Any, Mapping
 from urllib.parse import urlsplit
-
 import pytest
-
 import scripts.governance_preflight_github as github
 from scripts.governance_preflight_github import main, verify_governance_preflight_github
 from scripts.governance_preflight_v1 import GovernanceFinding
-
 REPOSITORY = "imrohitagrawal/narratwin-ai"
 API = "https://api.github.com"
 HEAD = "a" * 40
@@ -27,22 +23,17 @@ OTHER_HEAD = "b" * 40
 CONTEXTS = ("policy-gates", "quality / secrets")
 APP_ID = 15368
 SEEDS = tuple(range(33001, 33011))
-
 class Clock:
     def __init__(self) -> None:
         self.now = 0.0
-
     def __call__(self) -> float:
         return self.now
-
     def sleep(self, seconds: float) -> None:
         self.now += seconds
-
 class Transport:
     def __init__(self, fixture: dict[str, Any]) -> None:
         self.fixture = fixture
         self.calls: list[tuple[str, Mapping[str, str], float]] = []
-
     def __call__(self, url: str, headers: Mapping[str, str], timeout: float) -> tuple[int, Mapping[str, str], bytes]:
         self.calls.append((url, headers, timeout))
         path = urlsplit(url).path
@@ -54,10 +45,8 @@ class Transport:
         status, response_headers, payload = value
         raw = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
         return status, response_headers, raw
-
 def _identity(login: str, user_id: int) -> dict[str, Any]:
     return {"login": login, "id": user_id}
-
 def _event(event_name: str = "pull_request", action: str = "opened") -> dict[str, Any]:
     pull = {
         "number": 178,
@@ -83,7 +72,6 @@ def _event(event_name: str = "pull_request", action: str = "opened") -> dict[str
             "author_association": "OWNER",
         }
     return event
-
 def _review(state: str = "APPROVED", commit: str = HEAD) -> dict[str, Any]:
     return {
         "id": 20,
@@ -93,7 +81,6 @@ def _review(state: str = "APPROVED", commit: str = HEAD) -> dict[str, Any]:
         "author_association": "OWNER",
         "submitted_at": "2026-07-16T00:00:00Z",
     }
-
 def _check(name: str, **overrides: Any) -> dict[str, Any]:
     value = {
         "id": 100 + CONTEXTS.index(name),
@@ -108,7 +95,6 @@ def _check(name: str, **overrides: Any) -> dict[str, Any]:
     }
     value.update(overrides)
     return value
-
 def _fixture(lifecycle: str = "implementing") -> dict[str, Any]:
     event_name, action = ("pull_request_review", "submitted") if lifecycle == "ready" else ("pull_request", "opened")
     event = _event(event_name, action)
@@ -133,59 +119,56 @@ def _fixture(lifecycle: str = "implementing") -> dict[str, Any]:
             "checks": [(200, {}, {"total_count": len(checks), "check_runs": checks})],
         },
     }
-
-def _codes(fixture: dict[str, Any], *, token: str | None = "sentinel-token", clock: Clock | None = None) -> list[str]:
+def _codes(fixture: dict[str, Any], *, auth_value: str | None | BaseException = "sentinel-token",
+           clock: Clock | None = None, api_url: str = API) -> list[str]:
     boundary = Transport(fixture)
     fake_clock = clock or Clock()
+    def provide() -> str | None:
+        if isinstance(auth_value, BaseException):
+            raise auth_value
+        return auth_value
     findings = verify_governance_preflight_github(
         fixture["event"], event_name=fixture["event_name"], repository=REPOSITORY,
-        api_url=API, required_contexts=CONTEXTS, expected_app_id=APP_ID, run_id=999,
-        token_provider=lambda: token, transport=boundary, clock=fake_clock, sleeper=fake_clock.sleep,
+        api_url=api_url, required_contexts=CONTEXTS, expected_app_id=APP_ID, run_id=999,
+        token_provider=provide, transport=boundary, clock=fake_clock, sleeper=fake_clock.sleep,
     )
     fixture["calls"] = boundary.calls
     return [finding.code for finding in findings]
-
 def _single(fixture: dict[str, Any], mutation: Any) -> dict[str, Any]:
     baseline = copy.deepcopy(fixture)
     assert _codes(baseline) == []
     changed = copy.deepcopy(fixture)
     mutation(changed)
     return changed
-
+def _self_reviewer(fixture: dict[str, Any]) -> None:
+    for value in (fixture["event"]["review"]["user"], fixture["event"]["sender"], fixture["responses"]["reviews"][0][2][0]["user"]):
+        value.update(_identity("author", 1))
 @pytest.mark.parametrize("action", ("opened", "synchronize", "reopened", "edited", "ready_for_review", "converted_to_draft"))
 def test_supported_pull_request_events_are_non_circular(action: str) -> None:
     fixture = _fixture("draft" if action == "converted_to_draft" else "implementing")
     fixture["event"] = _event("pull_request", action)
     assert _codes(fixture) == []
-
 @pytest.mark.parametrize("lifecycle", ("draft", "implementing", "ready", "correcting"))
 def test_named_lifecycle_states_are_valid(lifecycle: str) -> None:
     assert _codes(_fixture(lifecycle)) == []
-
 def test_review_dismissed_enters_correcting_without_counting_approval() -> None:
     fixture = _fixture("correcting")
     fixture["event_name"], fixture["event"] = "pull_request_review", _event("pull_request_review", "dismissed")
     fixture["responses"]["reviews"] = [(200, {}, [_review(state="DISMISSED")])]
     assert _codes(fixture) == []
-
 def test_draft_with_historical_approval_defers_failing_checks() -> None:
     fixture = _fixture("ready")
     fixture["event_name"], fixture["event"] = "pull_request", _event("pull_request", "converted_to_draft")
     fixture["responses"]["pr"][0][2]["draft"] = True
     fixture["responses"]["checks"][0][2]["check_runs"][0]["conclusion"] = "failure"
     assert _codes(fixture) == []
-
 @pytest.mark.parametrize("action", ("opened", "synchronize", "reopened", "edited", "ready_for_review"))
 def test_original_pr_events_enforce_current_live_approval_and_checks(action: str) -> None:
     fixture = _fixture("ready")
     fixture["event_name"], fixture["event"] = "pull_request", _event("pull_request", action)
     assert _codes(copy.deepcopy(fixture)) == []
-    changed = _single(
-        fixture,
-        lambda f: f["responses"]["checks"][0][2]["check_runs"][1].__setitem__("conclusion", "failure"),
-    )
+    changed = _single(fixture, lambda f: f["responses"]["checks"][0][2]["check_runs"][1].__setitem__("conclusion", "failure"))
     assert _codes(changed) == ["GPF.GH.CHECK_NOT_SUCCESSFUL"]
-
 @pytest.mark.parametrize(("mutation", "expected"), (
     (lambda f: f.update(event_name="push"), "GPF.GH.EVENT_UNSUPPORTED"),
     (lambda f: f["event"].__setitem__("action", "closed"), "GPF.GH.EVENT_UNSUPPORTED"),
@@ -195,7 +178,9 @@ def test_original_pr_events_enforce_current_live_approval_and_checks(action: str
     (lambda f: f["event"]["pull_request"]["base"]["repo"].__setitem__("full_name", "attacker/repo"), "GPF.GH.EVENT_PAYLOAD_INVALID"),
     (lambda f: f["event"]["pull_request"]["base"].__setitem__("ref", "attacker"), "GPF.GH.EVENT_PAYLOAD_INVALID"),
     (lambda f: f["event"].__setitem__("number", 179), "GPF.GH.EVENT_PAYLOAD_INVALID"),
-))
+    (lambda f: f.__setitem__("event", None), "GPF.GH.EVENT_PAYLOAD_INVALID"),
+    (lambda f: f["event"]["pull_request"].__setitem__("draft", None), "GPF.GH.EVENT_PAYLOAD_INVALID"),
+    (lambda f: f["event"]["pull_request"]["head"].__setitem__("sha", "bad"), "GPF.GH.EVENT_PAYLOAD_INVALID"),))
 def test_event_single_faults_short_circuit_auth(mutation: Any, expected: str) -> None:
     fixture = _fixture()
     assert _codes(copy.deepcopy(fixture)) == []
@@ -210,13 +195,18 @@ def test_event_single_faults_short_circuit_auth(mutation: Any, expected: str) ->
     )
     assert [item.code for item in findings] == [expected]
     assert transport.calls == []
-
 def test_auth_unavailable_is_exact() -> None:
     fixture = _fixture()
     assert _codes(copy.deepcopy(fixture)) == []
-    assert _codes(fixture, token=None) == ["GPF.GH.AUTH_UNAVAILABLE"]
+    assert _codes(fixture, auth_value=None) == ["GPF.GH.AUTH_UNAVAILABLE"]
     assert fixture["calls"] == []
-
+    assert _codes(_fixture(), auth_value=RuntimeError("sentinel-token")) == ["GPF.GH.AUTH_UNAVAILABLE"]
+    assert _codes(_fixture(), api_url="http://api.github.com") == ["GPF.GH.EVENT_PAYLOAD_INVALID"]
+@pytest.mark.parametrize(("field", "value"), (("user", None), ("id", True), ("state", None)))
+def test_malformed_review_event_payload_is_rejected(field: str, value: Any) -> None:
+    fixture = _fixture("ready")
+    fixture["event"]["review"][field] = value
+    assert _codes(fixture) == ["GPF.GH.EVENT_PAYLOAD_INVALID"]
 @pytest.mark.parametrize("event_name", ("", "push", "workflow_dispatch"))
 def test_push_and_local_paths_make_no_auth_or_transport_attempt(event_name: str) -> None:
     fixture = _fixture()
@@ -228,19 +218,16 @@ def test_push_and_local_paths_make_no_auth_or_transport_attempt(event_name: str)
         token_provider=forbidden, transport=forbidden, clock=Clock(), sleeper=forbidden,
     )
     assert [item.code for item in findings] == ["GPF.GH.EVENT_UNSUPPORTED"]
-
 @pytest.mark.parametrize(("name", "mutate", "expected"), (
     ("author-id", lambda f: f["event"]["pull_request"]["user"].__setitem__("id", 9), "GPF.GH.PR_AUTHOR_MISMATCH"),
     ("author-login", lambda f: f["event"]["pull_request"]["user"].__setitem__("login", "other"), "GPF.GH.PR_AUTHOR_MISMATCH"),
     ("head", lambda f: f["event"]["pull_request"]["head"].__setitem__("sha", OTHER_HEAD), "GPF.GH.PR_HEAD_MISMATCH"),
     ("lifecycle", lambda f: f["responses"]["pr"][0][2].__setitem__("state", "closed"), "GPF.GH.LIFECYCLE_INVALID"),
-    ("merged", lambda f: f["responses"]["pr"][0][2].__setitem__("merged", True), "GPF.GH.LIFECYCLE_INVALID"),
-))
+    ("merged", lambda f: f["responses"]["pr"][0][2].__setitem__("merged", True), "GPF.GH.LIFECYCLE_INVALID"),))
 def test_pr_identity_and_lifecycle_single_faults(name: str, mutate: Any, expected: str) -> None:
     del name
     fixture = _fixture()
     assert _codes(_single(fixture, mutate)) == [expected]
-
 @pytest.mark.parametrize(("name", "mutate", "expected"), (
     ("missing", lambda f: f["responses"].__setitem__("reviews", [(200, {}, [])]), "GPF.GH.REVIEW_MISSING"),
     ("review-id", lambda f: f["event"]["review"].__setitem__("id", 21), "GPF.GH.REVIEW_MISSING"),
@@ -248,31 +235,27 @@ def test_pr_identity_and_lifecycle_single_faults(name: str, mutate: Any, expecte
     ("reviewer-login", lambda f: f["event"]["review"]["user"].__setitem__("login", "other"), "GPF.GH.REVIEW_IDENTITY_MISMATCH"),
     ("sender-id", lambda f: f["event"]["sender"].__setitem__("id", 3), "GPF.GH.REVIEW_IDENTITY_MISMATCH"),
     ("sender-login", lambda f: f["event"]["sender"].__setitem__("login", "other"), "GPF.GH.REVIEW_IDENTITY_MISMATCH"),
-    ("self", lambda f: f["responses"]["reviews"][0][2][0].__setitem__("user", _identity("author", 1)), "GPF.GH.REVIEW_SELF_APPROVAL"),
+    ("self", _self_reviewer, "GPF.GH.REVIEW_SELF_APPROVAL"),
     ("association", lambda f: f["responses"]["reviews"][0][2][0].__setitem__("author_association", "CONTRIBUTOR"), "GPF.GH.REVIEW_ASSOCIATION_INVALID"),
     ("commented", lambda f: f["responses"]["reviews"][0][2][0].__setitem__("state", "COMMENTED"), "GPF.GH.REVIEW_STATE_INVALID"),
     ("changes", lambda f: f["responses"]["reviews"][0][2][0].__setitem__("state", "CHANGES_REQUESTED"), "GPF.GH.REVIEW_STATE_INVALID"),
     ("dismissed", lambda f: f["responses"]["reviews"][0][2][0].__setitem__("state", "DISMISSED"), "GPF.GH.REVIEW_STATE_INVALID"),
-    ("stale", lambda f: f["responses"]["reviews"][0][2][0].__setitem__("commit_id", OTHER_HEAD), "GPF.GH.REVIEW_STALE"),
-))
+    ("stale", lambda f: f["responses"]["reviews"][0][2][0].__setitem__("commit_id", OTHER_HEAD), "GPF.GH.REVIEW_STALE"),))
 def test_review_single_fault_matrix(name: str, mutate: Any, expected: str) -> None:
     del name
     fixture = _fixture("ready")
     assert _codes(_single(fixture, mutate)) == [expected]
-
 @pytest.mark.parametrize("association", ("OWNER", "MEMBER", "COLLABORATOR"))
 def test_all_approved_reviewer_associations_are_valid(association: str) -> None:
     fixture = _fixture("ready")
     fixture["event"]["review"]["author_association"] = association
     fixture["responses"]["reviews"][0][2][0]["author_association"] = association
     assert _codes(fixture) == []
-
 def test_approval_like_mutable_prose_never_counts() -> None:
     fixture = _fixture()
     fixture["event"]["pull_request"]["body"] = "APPROVED by reviewer"
     fixture["event"]["comment"] = {"body": "reviewer approved exact head"}
     assert _codes(fixture) == []
-
 @pytest.mark.parametrize(("name", "mutate", "expected"), (
     ("missing", lambda runs: runs.pop(), "GPF.GH.CHECK_MISSING"),
     ("app", lambda runs: runs[0]["app"].__setitem__("id", 9), "GPF.GH.CHECK_APP_MISMATCH"),
@@ -283,14 +266,12 @@ def test_approval_like_mutable_prose_never_counts() -> None:
     ("neutral", lambda runs: runs[0].__setitem__("conclusion", "neutral"), "GPF.GH.CHECK_NOT_SUCCESSFUL"),
     ("timed-out", lambda runs: runs[0].__setitem__("conclusion", "timed_out"), "GPF.GH.CHECK_NOT_SUCCESSFUL"),
     ("action-required", lambda runs: runs[0].__setitem__("conclusion", "action_required"), "GPF.GH.CHECK_NOT_SUCCESSFUL"),
-    ("success-incomplete", lambda runs: runs[0].__setitem__("status", "queued"), "GPF.GH.CHECK_PENDING_TIMEOUT"),
-))
+    ("success-incomplete", lambda runs: runs[1].__setitem__("status", "queued"), "GPF.GH.CHECK_PENDING_TIMEOUT"),))
 def test_check_single_fault_matrix(name: str, mutate: Any, expected: str) -> None:
     del name
     fixture = _fixture("ready")
     changed = _single(fixture, lambda f: mutate(f["responses"]["checks"][0][2]["check_runs"]))
     assert _codes(changed) == [expected]
-
 def test_pending_checks_poll_to_success_with_fake_clock() -> None:
     fixture = _fixture("ready")
     def mutate(value: dict[str, Any]) -> None:
@@ -301,7 +282,6 @@ def test_pending_checks_poll_to_success_with_fake_clock() -> None:
     clock = Clock()
     assert _codes(fixture, clock=clock) == []
     assert clock.now == 5
-
 def test_pending_checks_expire_at_fake_deadline() -> None:
     fixture = _fixture("ready")
     fixture = _single(
@@ -311,7 +291,6 @@ def test_pending_checks_expire_at_fake_deadline() -> None:
     clock = Clock()
     assert _codes(fixture, clock=clock) == ["GPF.GH.CHECK_PENDING_TIMEOUT"]
     assert clock.now == 360
-
 def test_policy_self_check_requires_exact_run_identity() -> None:
     fixture = _fixture("ready")
     current = _single(
@@ -324,7 +303,6 @@ def test_policy_self_check_requires_exact_run_identity() -> None:
         "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/998/job/1"
     )
     assert _codes(wrong) == ["GPF.GH.CHECK_PENDING_TIMEOUT"]
-
 def test_duplicate_attempts_choose_latest_deterministically() -> None:
     fixture = _fixture("ready")
     runs = fixture["responses"]["checks"][0][2]["check_runs"]
@@ -332,28 +310,24 @@ def test_duplicate_attempts_choose_latest_deterministically() -> None:
     old.update(id=1, conclusion="failure", completed_at="2026-07-15T00:00:01Z")
     runs.insert(0, old)
     assert _codes(fixture) == []
-
     fixture = _fixture("ready")
     runs = fixture["responses"]["checks"][0][2]["check_runs"]
     tied = copy.deepcopy(runs[1])
     tied.update(id=runs[1]["id"] + 1, conclusion="failure")
     runs.append(tied)
     assert _codes(fixture) == ["GPF.GH.CHECK_NOT_SUCCESSFUL"]
-
 @pytest.mark.parametrize("url", (
     "https://evil.example/imrohitagrawal/narratwin-ai/actions/runs/999/job/1",
     "https://github.com/attacker/repo/actions/runs/999/job/1",
     "https://github.com/imrohitagrawal/narratwin-ai/actions/workflows/999",
     "http://github.com/imrohitagrawal/narratwin-ai/actions/runs/999/job/1",
-    "https://x@github.com/imrohitagrawal/narratwin-ai/actions/runs/999/job/1",
-))
+    "https://x@github.com/imrohitagrawal/narratwin-ai/actions/runs/999/job/1",))
 def test_policy_self_check_rejects_hostile_same_run_links(url: str) -> None:
     fixture = _fixture("ready")
     def mutate(value: dict[str, Any]) -> None:
         run = value["responses"]["checks"][0][2]["check_runs"][0]
         run.update(status="in_progress", conclusion=None, details_url=url)
     assert _codes(_single(fixture, mutate)) == ["GPF.GH.CHECK_PENDING_TIMEOUT"]
-
 @pytest.mark.parametrize(("case", "link", "expected"), (
     ("relative", "</repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?per_page=100&page=2>; rel=\"next\"", []),
     ("absolute", "<https://api.github.com/repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?per_page=100&page=2>; rel=\"next\"", []),
@@ -361,8 +335,8 @@ def test_policy_self_check_rejects_hostile_same_run_links(url: str) -> None:
     ("http", "<http://api.github.com/repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?page=2>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),
     ("userinfo", "<https://x@api.github.com/repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?page=2>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),
     ("wrong-path", "<https://api.github.com/repos/imrohitagrawal/narratwin-ai/pulls/179/reviews?page=2>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),
-    ("malformed", "<::::>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),
-))
+    ("bad-query", "</repos/imrohitagrawal/narratwin-ai/pulls/178/reviews?page=x>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),
+    ("malformed", "<::::>; rel=\"next\"", ["GPF.GH.PAGINATION_NEXT_INVALID"]),))
 def test_pagination_origin_contract(case: str, link: str, expected: list[str]) -> None:
     del case
     fixture = _fixture("ready")
@@ -372,15 +346,13 @@ def test_pagination_origin_contract(case: str, link: str, expected: list[str]) -
     if not expected:
         mutation(changed)
     assert _codes(changed) == expected
-
 @pytest.mark.parametrize(("fault", "response", "expected"), (
     ("rate403", (403, {"X-RateLimit-Remaining": "0"}, {}), "GPF.GH.RATE_LIMITED"),
     ("rate429", (429, {}, {}), "GPF.GH.RATE_LIMITED"),
     ("bad-json", (200, {}, b"{"), "GPF.GH.RESPONSE_INVALID"),
     ("wrong-shape", (200, {}, {}), "GPF.GH.RESPONSE_INVALID"),
     ("redirect", (302, {"Location": "https://evil.example/x"}, {}), "GPF.GH.API_ERROR"),
-    ("api", (500, {}, {"message": "sentinel-token hostile"}), "GPF.GH.API_ERROR"),
-))
+    ("api", (500, {}, {"message": "sentinel-token hostile"}), "GPF.GH.API_ERROR"),))
 @pytest.mark.parametrize("endpoint", ("pr", "reviews", "checks"))
 def test_terminal_transport_faults_are_sanitized(fault: str, response: Any, expected: str, endpoint: str, capsys: Any) -> None:
     fixture = _fixture("ready")
@@ -393,14 +365,20 @@ def test_terminal_transport_faults_are_sanitized(fault: str, response: Any, expe
         assert clock.now == 0
     output = capsys.readouterr()
     assert "sentinel-token" not in output.out + output.err
-
 def test_timeout_maps_exactly_without_exposing_exception(capsys: Any) -> None:
     fixture = _fixture("ready")
     changed = _single(fixture, lambda f: f["responses"].__setitem__("reviews", [TimeoutError("sentinel-token")]))
     assert _codes(changed) == ["GPF.GH.REQUEST_TIMEOUT"]
     output = capsys.readouterr()
     assert "sentinel-token" not in output.out + output.err
-
+@pytest.mark.parametrize(("endpoint", "record"), (("reviews", {"id": True}), ("checks", {"id": True})))
+def test_malformed_collection_record_is_response_invalid(endpoint: str, record: dict[str, Any]) -> None:
+    fixture = _fixture("ready")
+    payload: Any = [record] if endpoint == "reviews" else {"check_runs": [record]}
+    assert _codes(_single(fixture, lambda f: f["responses"].__setitem__(endpoint, [(200, {}, payload)]))) == ["GPF.GH.RESPONSE_INVALID"]
+def test_live_cross_repository_response_is_invalid() -> None:
+    fixture = _fixture()
+    assert _codes(_single(fixture, lambda f: f["responses"]["pr"][0][2]["head"]["repo"].__setitem__("full_name", "evil/repo"))) == ["GPF.GH.RESPONSE_INVALID"]
 def _padded(payload: Any, size: int) -> bytes:
     value = copy.deepcopy(payload)
     target = value[0] if isinstance(value, list) else value
@@ -410,7 +388,6 @@ def _padded(payload: Any, size: int) -> bytes:
     result = json.dumps(value, separators=(",", ":")).encode()
     assert len(result) == size
     return result
-
 @pytest.mark.parametrize("endpoint", ("pr", "reviews", "checks"))
 @pytest.mark.parametrize(("size", "expected"), ((1 << 20, []), ((1 << 20) + 1, ["GPF.GH.RESPONSE_INVALID"])))
 def test_each_response_byte_boundary(endpoint: str, size: int, expected: list[str]) -> None:
@@ -422,7 +399,6 @@ def test_each_response_byte_boundary(endpoint: str, size: int, expected: list[st
     if not expected:
         mutation(changed)
     assert _codes(changed) == expected
-
 @pytest.mark.parametrize("collection", ("reviews", "checks"))
 def test_collection_page_record_and_timeout_bounds(collection: str) -> None:
     fixture = _fixture("ready")
@@ -445,7 +421,6 @@ def test_collection_page_record_and_timeout_bounds(collection: str) -> None:
     assert _codes(over_page) == ["GPF.GH.PAGINATION_LIMIT"]
     over_pages = _single(fixture, lambda f: f["responses"].__setitem__(collection, pages(10, True)))
     assert _codes(over_pages) == ["GPF.GH.PAGINATION_LIMIT"]
-
 def test_global_precedence_and_deduplication_complete_vector() -> None:
     fixture = _fixture("ready")
     live = fixture["responses"]["pr"][0][2]
@@ -463,7 +438,6 @@ def test_global_precedence_and_deduplication_complete_vector() -> None:
         "GPF.GH.REVIEW_ASSOCIATION_INVALID", "GPF.GH.REVIEW_STATE_INVALID", "GPF.GH.REVIEW_STALE",
         "GPF.GH.CHECK_MISSING", "GPF.GH.CHECK_APP_MISMATCH",
     ]
-
 def test_terminal_and_complete_check_precedence_vectors() -> None:
     fixture = _fixture("ready")
     assert _codes(copy.deepcopy(fixture)) == []
@@ -481,13 +455,12 @@ def test_terminal_and_complete_check_precedence_vectors() -> None:
     for run in deduped["responses"]["checks"][0][2]["check_runs"]:
         run["app"]["id"] = 9
     assert _codes(deduped) == ["GPF.GH.CHECK_APP_MISMATCH"]
-
 def test_exactly_200_seeded_sequences_have_reproducible_oracles() -> None:
     results: list[bool] = []
     durations: list[float] = []
     mutations = (
         ("author", lambda f: f["responses"]["pr"][0][2].__setitem__("user", _identity("x", 9)), "GPF.GH.PR_AUTHOR_MISMATCH"),
-        ("review-self", lambda f: f["responses"]["reviews"][0][2][0].__setitem__("user", _identity("author", 1)), "GPF.GH.REVIEW_SELF_APPROVAL"),
+        ("review-self", _self_reviewer, "GPF.GH.REVIEW_SELF_APPROVAL"),
         ("review-stale", lambda f: f["responses"]["reviews"][0][2][0].__setitem__("commit_id", OTHER_HEAD), "GPF.GH.REVIEW_STALE"),
         ("check-app", lambda f: f["responses"]["checks"][0][2]["check_runs"][0]["app"].__setitem__("id", 9), "GPF.GH.CHECK_APP_MISMATCH"),
         ("check-missing", lambda f: f["responses"]["checks"][0][2]["check_runs"].pop(), "GPF.GH.CHECK_MISSING"),
@@ -522,10 +495,8 @@ def test_exactly_200_seeded_sequences_have_reproducible_oracles() -> None:
             results.append(valid)
     assert len(results) == 200 and results.count(True) == results.count(False) == 100
     assert max(durations) < 1
-
 @pytest.mark.parametrize(("github_token", "gh_token", "cli_token", "expected"), (
-    ("g", "h", "c", "g"), (" ", "h", "c", "h"), ("", " ", "c", "c"),
-))
+    ("g", "h", "c", "g"), (" ", "h", "c", "h"), ("", " ", "c", "c"),))
 def test_cli_auth_precedence_and_fixed_fallback(tmp_path: Path, github_token: str, gh_token: str, cli_token: str, expected: str) -> None:
     fixture = _fixture()
     event_path = tmp_path / "event.json"
@@ -545,11 +516,9 @@ def test_cli_auth_precedence_and_fixed_fallback(tmp_path: Path, github_token: st
         assert kwargs["capture_output"] is True
     else:
         assert calls == []
-
 @pytest.mark.parametrize(("returncode", "stdout", "exception"), (
     (1, "x", None), (0, " ", None), (0, "\x00bad", None),
-    (0, "x", subprocess.TimeoutExpired("gh", 10)),
-))
+    (0, "x", subprocess.TimeoutExpired("gh", 10)),))
 def test_cli_auth_failure_is_sanitized(tmp_path: Path, returncode: int, stdout: str, exception: BaseException | None, capsys: Any) -> None:
     fixture = _fixture()
     assert _codes(copy.deepcopy(fixture)) == []
@@ -564,7 +533,6 @@ def test_cli_auth_failure_is_sanitized(tmp_path: Path, returncode: int, stdout: 
     output = capsys.readouterr()
     assert "GPF.GH.AUTH_UNAVAILABLE" in output.out
     assert "sentinel-secret" not in output.out + output.err
-
 def test_default_transport_network_attempt_is_observed_blocked_and_sanitized(tmp_path: Path, monkeypatch: Any, capsys: Any) -> None:
     fixture = _fixture()
     event_path = tmp_path / "event.json"
@@ -583,29 +551,27 @@ def test_default_transport_network_attempt_is_observed_blocked_and_sanitized(tmp
     assert "sentinel-token" not in event_path.read_text(encoding="utf-8")
     config = subprocess.run(["git", "config", "--local", "--list"], capture_output=True, text=True, check=True)
     assert "sentinel-token" not in config.stdout + config.stderr
-
 def test_default_https_transport_refuses_cross_origin_redirect(tmp_path: Path, monkeypatch: Any) -> None:
     fixture = _fixture()
     event_path = tmp_path / "event.json"
     event_path.write_text(json.dumps(fixture["event"]), encoding="utf-8")
     seen: list[str] = []
-    real_build_opener = github.urllib.request.build_opener
-    class Probe(github.urllib.request.BaseHandler):
+    real_build_opener = github.urllib.request.build_opener  # type: ignore[attr-defined]
+    class Probe(github.urllib.request.BaseHandler):  # type: ignore[name-defined,misc]
         def https_open(self, request: Any) -> Any:
             seen.append(request.full_url)
             if request.full_url.startswith("https://evil.example"):
                 raise AssertionError("FOREIGN_REDIRECT")
             headers = email.message.Message()
             headers["Location"] = "https://evil.example/x"
-            response = github.urllib.response.addinfourl(io.BytesIO(b"{}"), headers, request.full_url, 302)
+            response = github.urllib.response.addinfourl(io.BytesIO(b"{}"), headers, request.full_url, 302)  # type: ignore[attr-defined]
             response.msg = "Found"
             return response
-    monkeypatch.setattr(github.urllib.request, "build_opener", lambda *handlers: real_build_opener(Probe(), *handlers))
+    monkeypatch.setattr(github.urllib.request, "build_opener", lambda *handlers: real_build_opener(Probe(), *handlers))  # type: ignore[attr-defined]
     env = {"GITHUB_EVENT_NAME": "pull_request", "GITHUB_EVENT_PATH": str(event_path),
            "GITHUB_REPOSITORY": REPOSITORY, "GITHUB_API_URL": API, "GITHUB_TOKEN": "token"}
     assert main(environ=env, clock=Clock(), sleeper=lambda _: None) == 1
     assert len(seen) == 1 and seen[0].startswith(f"{API}/repos/{REPOSITORY}/pulls/178")
-
 def test_public_interface_is_exact_and_has_no_mutation_surface() -> None:
     verify = inspect.signature(verify_governance_preflight_github)
     cli = inspect.signature(main)
@@ -639,7 +605,6 @@ def test_public_interface_is_exact_and_has_no_mutation_surface() -> None:
     assert github.__all__ == ["GovernanceFinding", "verify_governance_preflight_github", "main"]
     assert github.GovernanceFinding is GovernanceFinding
     assert not {"correct", "mutate", "approve", "dismiss", "persist"} & set(dir(github))
-
 def test_workflow_contract_is_exact_not_comment_or_nesting_text() -> None:
     workflow = Path(".github/workflows/quality-gates.yml").read_text(encoding="utf-8")
     permissions = workflow.split("permissions:\n", 1)[1].split("\n\n", 1)[0].splitlines()
@@ -656,7 +621,6 @@ def test_workflow_contract_is_exact_not_comment_or_nesting_text() -> None:
     assert workflow.count("\npermissions:\n") == 1
     assert "write-all" not in workflow and not any(": write" in line for line in workflow.splitlines())
     assert "actions: read" not in workflow and "github.event.issue" not in workflow
-
 def test_phase_scope_exact_branch_and_near_match(monkeypatch: Any) -> None:
     from scripts.quality import check_phase1_closure_docs as phase1
     files = set(json.loads(Path("docs/governance/preflights/issue-178.json").read_text())["scope"]["required"])
@@ -670,7 +634,6 @@ def test_phase_scope_exact_branch_and_near_match(monkeypatch: Any) -> None:
     failures = []
     phase1.check_changed_files(failures)
     assert any("may not change scripts/governance_preflight_github.py" in item for item in failures)
-
 def test_pr_a_pr_b_and_branch_protection_regressions_remain_importable() -> None:
     from scripts.ci.verify_branch_protection import EXPECTED_CONTEXTS, GITHUB_ACTIONS_APP_ID
     from scripts.governance_preflight_repository import validate_governance_preflight_repository
