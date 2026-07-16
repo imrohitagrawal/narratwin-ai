@@ -8,7 +8,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 ## Version
 
-- Last updated: 2026-07-14
+- Last updated: 2026-07-17
 - Current PRD source: `docs/PRD.md` v1.0
 - Canonical source: `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
 
@@ -257,5 +257,6 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | 2026-07-14 | `#138` | Isolate Semgrep and remediate vulnerable Click in application/runtime graphs | Removes Semgrep from the root dependency graph, resolves root Click to `8.4.2`, and runs exact Semgrep `1.168.0` in a separately locked tool environment with patched Click `8.3.3`. ADR `0006` records separate fail-closed audits, hash-bound reviewed inputs, engine validation, exact targets/rules, positive/clean canaries, Uvicorn/Locust smoke, backend-image inventory, and an expiring human-reviewed compatibility exception without changing production or restore readiness. |
 | 2026-07-14 | `#150` | Track removal of the Semgrep Click override | Sets a hard `2026-08-13` removal/re-review deadline and earlier triggers for upstream compatibility or any tool/lock/rule/target/invocation change. |
 | 2026-07-14 | `#151` | Track stable CPython HIGH findings and scanner disagreement | Records the independent runtime prerequisite discovered during #138 validation: Grype and PSF/NVD identify three HIGH CPython advisories in the current stable image while freshly updated Trivy reports zero. The passing Trivy command is not treated as absence evidence, and #138/PR #140 remain non-merge-ready pending a stable patched runtime and reviewed scanner-consensus decision. |
+| 2026-07-17 | `#151` | Apply authorized CPython security backports in the backend Docker runtime and require dual Trivy/Grype consensus | Changes runtime security posture only; PRD requirements, product behavior, user flows, provider behavior, and production-readiness claims remain unchanged. |
 | 2026-07-14 | `#141` | Select the production-like durability platform and ownership boundary | Adds the RDS PostgreSQL 17.10 Multi-AZ and versioned-S3 `ap-south-1` technical baseline, deletion-journal source, explicit Operations/Platform/Security responsibilities, Stage 4/6/7 state/object ownership, backup/version/catalog/restore isolation/access/retention/integrity contracts, invalidating RTO/RPO definitions, issue `#142`-`#149` acceptance handoffs, and a canonical launch-level boundary that keeps AWS off the local/mock-demo critical path while separating hosted-internal, soft-launch, production-like-validation, and production decisions; claims no environment, backup, restore, result, or closure of `#126`, `DUR-RESTORE-001`, or `#39`. |
 | 2026-07-14 | `#141` / PR `#153` | Merge the durability platform documentation baseline | Records squash merge `2fb5569` while keeping issue `#141` open for external approvals and preserving open issue `#139`, issue `#126`, `DUR-RESTORE-001`, and issue `#39`; no infrastructure, restore, RTO/RPO, or launch evidence is claimed. |

@@ -3368,7 +3368,7 @@ def test_issue151_branch_allows_only_frozen_security_remediation_paths(monkeypat
         "scripts/ci/check_container_scan_consensus.py", "scripts/ci/docker-build.sh", "scripts/ci/docker-image-scan.sh",
         "tests/unit/test_cpython_security_backports.py", "tests/unit/test_container_scan_consensus.py", "tests/unit/test_governance_preflight_repository.py",
         "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py", "docs/ADR/0006-stage8-release-hardening.md",
-        "docs/QUALITY_GATES.md", "docs/REPOSITORY_GUARDRAILS.md", "docs/RELEASE_CHECKLIST.md", "docs/THIRD_PARTY_NOTICES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
+        "docs/QUALITY_GATES.md", "docs/REPOSITORY_GUARDRAILS.md", "docs/RELEASE_CHECKLIST.md", "docs/THIRD_PARTY_NOTICES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/TRACEABILITY.md", "docs/STATUS.md",
     }
     assert phase1.ISSUE_151_ALLOWED_CHANGED_FILES == expected
     assert run_changed_files_check(

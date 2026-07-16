@@ -25,6 +25,7 @@
       "docs/RELEASE_CHECKLIST.md",
       "docs/THIRD_PARTY_NOTICES.md",
       "docs/STAGE_ISSUE_PLAN.md",
+      "docs/TRACEABILITY.md",
       "docs/STATUS.md"
     ],
     "allowed_prefixes": [
@@ -47,6 +48,7 @@
       "docs/RELEASE_CHECKLIST.md",
       "docs/THIRD_PARTY_NOTICES.md",
       "docs/STAGE_ISSUE_PLAN.md",
+      "docs/TRACEABILITY.md",
       "docs/STATUS.md"
     ],
     "forbidden": [
