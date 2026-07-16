@@ -215,6 +215,8 @@ Decision:
   finding is absent. Issue `#151` owns the Trivy/Grype disagreement and three
   PSF-confirmed HIGH CPython findings; that risk blocks merge without being
   converted into a scanner waiver.
+- Issue `#151` may use fixed-status scanner consensus only when the exact image
+  digest, patch checksums, raw reports, and exploit regressions are all retained.
 
 Consequences:
 

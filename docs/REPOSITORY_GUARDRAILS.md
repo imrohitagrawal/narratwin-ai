@@ -81,6 +81,7 @@ The policy check fails CI for:
 - generated-script/answer code without source chunk citations
 - failing eval result reports
 - security reports with critical/high findings
+- scanner-consensus artifacts that hide raw Trivy or Grype findings
 
 Direct pushes to `main` must be prevented by repository settings such as branch protection or rulesets; the CI policy check is not the enforcement layer for that event.
 
