@@ -98,7 +98,6 @@ ISSUE_151_ALLOWED_CHANGED_FILES = {
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
     "tests/unit/test_governance_preflight_github.py", ".github/workflows/quality-gates.yml",
-    "tests/unit/test_governance_preflight_repository.py",
     "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py",
     "docs/REPOSITORY_GUARDRAILS.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
