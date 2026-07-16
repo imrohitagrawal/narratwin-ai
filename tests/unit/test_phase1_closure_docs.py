@@ -3361,6 +3361,40 @@ def test_issue176_allowlist_does_not_apply_to_near_match_branch(monkeypatch: Any
     ) == [f"Phase 1 Closure branch {branch} may not change scripts/governance_preflight_repository.py."]
 
 
+def test_issue151_branch_allows_only_frozen_security_remediation_paths(monkeypatch: Any) -> None:
+    expected = {
+        "docs/governance/preflights/issue-151.json", "backend/Dockerfile", "security/cpython-3.13.14/backports.json",
+        "security/cpython-3.13.14/apply_backports.py", "scripts/ci/verify-cpython-backports.py",
+        "scripts/ci/check_container_scan_consensus.py", "scripts/ci/docker-build.sh", "scripts/ci/docker-image-scan.sh",
+        "scripts/ci/check_semgrep_security.py", "tools/semgrep/pyproject.toml", "tools/semgrep/uv.lock", "tools/semgrep/reviewed-inputs.sha256",
+        "tests/unit/test_cpython_security_backports.py", "tests/unit/test_container_scan_consensus.py", "tests/unit/test_dependency_security_contract.py", "tests/unit/test_governance_preflight_repository.py",
+        "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py", "docs/ADR/0006-stage8-release-hardening.md",
+        "docs/QUALITY_GATES.md", "docs/REPOSITORY_GUARDRAILS.md", "docs/RELEASE_CHECKLIST.md", "docs/THIRD_PARTY_NOTICES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/TRACEABILITY.md", "docs/STATUS.md",
+    }
+    assert phase1.ISSUE_151_ALLOWED_CHANGED_FILES == expected
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-process-151-cpython313-security-remediation",
+        files=sorted(expected),
+    ) == []
+
+
+def test_issue151_allowlist_rejects_near_match_and_unauthorized_path(monkeypatch: Any) -> None:
+    allowed_path = "backend/Dockerfile"
+    for branch in (
+        "phase-1-closure-process-151-cpython313-security-remediation-extra",
+        "phase-1-closure-process-115-cpython313-security-remediation",
+    ):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=[allowed_path]) == [
+            f"Phase 1 Closure branch {branch} may not change {allowed_path}."
+        ]
+    branch = "phase-1-closure-process-151-cpython313-security-remediation"
+    for path in ("backend/app/main.py", "scripts/governance_preflight_github.py"):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=[path]) == [
+            f"Phase 1 Closure branch {branch} may not change {path}."
+        ]
+
+
 def test_issue178_branch_uses_only_exact_ci_evidence_scope(monkeypatch: Any) -> None:
     assert run_changed_files_check(monkeypatch, branch="phase-1-closure-process-178-gpf-v1-ci-evidence", files=sorted(phase1.ISSUE_178_ALLOWED_CHANGED_FILES)) == []
     branch = "phase-1-closure-process-178-gpf-v1-ci-evidence-extra"

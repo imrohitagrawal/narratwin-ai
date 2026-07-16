@@ -1,0 +1,44 @@
+{
+  "schema_version": "CPythonSecurityBackportsV1",
+  "base": {
+    "image": "docker.io/library/python:3.13-alpine@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0",
+    "python": "3.13.14",
+    "platform_digests": {
+      "linux/amd64": "sha256:c25cdd83c6d9613de985ca971f41913c039f8f4d448c3058fd17c7f5f00a36be",
+      "linux/arm64": "sha256:051506d858e750104f80a63465684f260ce2eeb220a24446a56f5ecc1609ecc8"
+    },
+    "file_sha256": {
+      "Lib/tarfile.py": "f99f0cbe945dd0519029612b74f60821371aeeea04c68ad424673ff49fde8da8",
+      "Lib/html/parser.py": "9e905368ac7fdc15d335aa7678655ee397c955107fb3b8424f66d02824632c10"
+    }
+  },
+  "patches": [
+    {
+      "cve": "CVE-2026-11972",
+      "commit": "3f031d431f80668e14f3bc066bbf4369cd9281b9",
+      "path": "Lib/tarfile.py",
+      "before_sha256": "f99f0cbe945dd0519029612b74f60821371aeeea04c68ad424673ff49fde8da8",
+      "after_sha256": "4941bef22e9ac4dec298ebf05268a93fb1eecd768177fc89cba5f06630484c1b",
+      "old": "            for i in range(blocks):\n                self.read(self.bufsize)\n            self.read(remainder)\n",
+      "new": "            for i in range(blocks):\n                data = self.read(self.bufsize)\n                if not data:\n                    break\n            self.read(remainder)\n"
+    },
+    {
+      "cve": "CVE-2026-11940",
+      "commit": "771d12dda5140313db0ac550292987975651bbde",
+      "path": "Lib/tarfile.py",
+      "before_sha256": "4941bef22e9ac4dec298ebf05268a93fb1eecd768177fc89cba5f06630484c1b",
+      "after_sha256": "0ad8c3869f9ab172fc5fc539528eb94c44d0745aef15dc8a0f1a773fae3b6c52",
+      "old": "            try:\n                filtered = filter_function(unfiltered, extraction_root)\n",
+      "new": "            try:\n                filter_function(\n                    unfiltered.replace(name=tarinfo.name, deep=False),\n                    extraction_root)\n                filtered = filter_function(unfiltered, extraction_root)\n"
+    },
+    {
+      "cve": "CVE-2026-15308",
+      "commit": "7933f4bf7131aa4140750f9404f5de0aa2969ced",
+      "path": "Lib/html/parser.py",
+      "before_sha256": "9e905368ac7fdc15d335aa7678655ee397c955107fb3b8424f66d02824632c10",
+      "after_sha256": "c78e38322aa131f9b8b95ae96a796262990d12051dfcd418543142608c5deac2",
+      "old": "        self._escapable = True\n        super().reset()\n\n    def feed(self, data):\n        r\"\"\"Feed data to the parser.\n\n        Call this as often as you want, with as little or as much text\n        as you want (may include '\\n').\n        \"\"\"\n        self.rawdata = self.rawdata + data\n        self.goahead(0)\n\n    def close(self):\n        \"\"\"Handle any buffered data.\"\"\"\n        self.goahead(1)\n",
+      "new": "        self._escapable = True\n        self._pending = []\n        self._pending_len = 0\n        self._parse_threshold = 1\n        super().reset()\n\n    def feed(self, data):\n        r\"\"\"Feed data to the parser.\n\n        Call this as often as you want, with as little or as much text\n        as you want (may include '\\n').\n        \"\"\"\n        # Accumulate new data in a list and only join and parse it once\n        # enough has piled up. Rescanning an unparsed buffer (e.g. an\n        # unterminated tag) and concatenating onto it on every call would\n        # both be quadratic in the input size.\n        self._pending_len += len(data)\n        if self._pending_len < self._parse_threshold:\n            self._pending.append(data)\n        else:\n            if not self._pending:\n                self.rawdata += data\n            else:\n                self._pending.append(data)\n                self.rawdata += ''.join(self._pending)\n                self._pending.clear()\n                self._pending_len = 0\n            n = len(self.rawdata)\n            self.goahead(0)\n            if len(self.rawdata) < n:\n                # Some data was parsed; resume on the next call.\n                self._parse_threshold = 1\n            else:\n                # Nothing was parsed; wait until the buffer doubles.\n                self._parse_threshold = len(self.rawdata)\n\n    def close(self):\n        \"\"\"Handle any buffered data.\"\"\"\n        if self._pending:\n            self.rawdata += ''.join(self._pending)\n            self._pending.clear()\n            self._pending_len = 0\n        self.goahead(1)\n"
+    }
+  ]
+}
