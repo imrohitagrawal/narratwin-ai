@@ -199,3 +199,41 @@ def test_wrapper_runs_both_scanners_and_persists_all_raw_and_envelope_artifacts(
     assert all((reports / f"{name}.envelope.json").is_file() for name in ARTIFACTS)
     assert all((reports / f"{name}.raw.sarif.json").is_file() for name in ARTIFACTS[:4])
     assert all((reports / f"{name}.raw.json").is_file() for name in ARTIFACTS[4:])
+
+
+def test_dockerized_scanner_fallback_writes_to_mounted_report_path(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "bin"
+    reports = tmp_path / "reports"
+    log = tmp_path / "docker.log"
+    fake_bin.mkdir()
+    reports.mkdir()
+    (fake_bin / "docker").write_text(
+        "#!/bin/sh\n"
+        "echo \"$@\" >> \"$SCAN_FAKE_LOG\"\n"
+        "host_reports=''\n"
+        "while [ \"$#\" -gt 0 ]; do\n"
+        "  if [ \"$1\" = '-v' ]; then shift; case \"$1\" in *:/reports) host_reports=\"${1%:/reports}\" ;; esac; fi\n"
+        "  shift || true\n"
+        "done\n"
+        "for arg in $(cat \"$SCAN_FAKE_LOG\"); do\n"
+        "  case \"$arg\" in /reports/*) out=\"$host_reports/${arg#/reports/}\" ;; sarif=/reports/*) out=\"$host_reports/${arg#sarif=/reports/}\" ;; *) continue ;; esac\n"
+        "  mkdir -p \"$(dirname \"$out\")\"\n"
+        "  echo '{\"version\":\"2.1.0\",\"runs\":[]}' > \"$out\"\n"
+        "done\n",
+        encoding="utf-8",
+    )
+    (fake_bin / "docker").chmod(0o755)
+    completed = subprocess.run(
+        [str(ROOT / "scripts/ci/docker-image-scan.sh")],
+        cwd=ROOT,
+        env={"PATH": f"{fake_bin}{os.pathsep}/usr/bin:/bin:/usr/sbin:/sbin", "SCAN_FAKE_LOG": str(log), "REPORT_DIR": str(reports), "BACKEND_IMAGE": BACKEND_CONFIG, "FRONTEND_IMAGE": FRONTEND_CONFIG, "BACKEND_ARCH": "amd64", "FRONTEND_ARCH": "amd64", "SKIP_POLICY_EVALUATION": "1"},
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    calls = log.read_text(encoding="utf-8")
+    assert "/reports/backend-trivy.raw.sarif.json" in calls
+    assert "sarif=/reports/backend-grype.raw.sarif.json" in calls
+    assert all((reports / f"{name}.raw.sarif.json").is_file() for name in ARTIFACTS[:4])

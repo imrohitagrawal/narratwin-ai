@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPORT_DIR="${REPORT_DIR:-reports/security}"
 mkdir -p "${REPORT_DIR}"
+REPORT_DIR_ABS="$(cd "${REPORT_DIR}" && pwd -P)"
 
 BACKEND_IMAGE="${BACKEND_IMAGE:-narratwin-ai-backend:ci}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-narratwin-ai-frontend:ci}"
@@ -28,10 +29,20 @@ ensure_scanner() {
   if command -v docker >/dev/null 2>&1; then
     cat >"${REPORT_DIR}/${name}" <<SH
 #!/usr/bin/env bash
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}/${REPORT_DIR}:/reports" "${image}" "\$@"
+args=()
+for arg in "\$@"; do
+  case "\${arg}" in
+    ${REPORT_DIR}/*) args+=("/reports/\${arg#${REPORT_DIR}/}") ;;
+    ${REPORT_DIR_ABS}/*) args+=("/reports/\${arg#${REPORT_DIR_ABS}/}") ;;
+    sarif=${REPORT_DIR}/*) args+=("sarif=/reports/\${arg#sarif=${REPORT_DIR}/}") ;;
+    sarif=${REPORT_DIR_ABS}/*) args+=("sarif=/reports/\${arg#sarif=${REPORT_DIR_ABS}/}") ;;
+    *) args+=("\${arg}") ;;
+  esac
+done
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "${REPORT_DIR_ABS}:/reports" "${image}" "\${args[@]}"
 SH
     chmod +x "${REPORT_DIR}/${name}"
-    PATH="${PWD}/${REPORT_DIR}:${PATH}"
+    PATH="${REPORT_DIR_ABS}:${PATH}"
     export PATH
     return
   fi
