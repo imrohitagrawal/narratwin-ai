@@ -613,12 +613,12 @@ def test_workflow_contract_is_exact_not_comment_or_nesting_text() -> None:
     assert permissions == ["  contents: read", "  issues: read", "  pull-requests: read", "  checks: read"]
     assert "types: [opened, synchronize, reopened, edited, ready_for_review, converted_to_draft]" in workflow
     assert "pull_request_review:\n    types: [submitted, dismissed]\n    branches:\n      - main\n      - phase-1-closure-**" in workflow
-    assert "persist-credentials: false" in workflow and "governance_preflight_github.py" in workflow
-    assert workflow.index("verify_branch_protection.py") < workflow.index("governance_preflight_github.py")
-    assert workflow.count("python scripts/governance_preflight_github.py") == 1
+    assert "persist-credentials: false" in workflow and "scripts.governance_preflight_github" in workflow
+    assert workflow.index("verify_branch_protection.py") < workflow.index("scripts.governance_preflight_github")
+    assert workflow.count("python -m scripts.governance_preflight_github") == 1
     step = workflow.split("- name: Verify GovernancePreflightV1 GitHub evidence", 1)[1].split("\n      - name:", 1)[0]
     assert "if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'" in step
-    assert "python scripts/governance_preflight_github.py" in step
+    assert "python -m scripts.governance_preflight_github" in step
     assert "GITHUB_TOKEN: ${{ github.token }}" in step
     assert workflow.count("\npermissions:\n") == 1
     assert "write-all" not in workflow and not any(": write" in line for line in workflow.splitlines())
