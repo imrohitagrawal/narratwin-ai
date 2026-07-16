@@ -400,7 +400,7 @@ def test_real_guardrail_subprocess_is_offline_and_sanitized(tmp_path: Path, mode
         if target.exists():
             target.unlink()
     for path in PATHS[3:]:
-        original = subprocess.run(["git", "show", f"origin/main:{path}"], cwd=source, check=True, stdout=subprocess.PIPE, timeout=10).stdout
+        original = subprocess.run(["git", "show", f"93ec63e2574701bf62bd3fa745f18cca560d5f09:{path}"], cwd=source, check=True, stdout=subprocess.PIPE, timeout=10).stdout
         target = repo / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(original)
