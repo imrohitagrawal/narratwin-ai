@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PHASE1_BRANCH = re.compile(r"^phase-1-closure-.+")
+PROCESS_BRANCH = re.compile(r"^phase-1-closure-process-(\d+)-.+$")
 
 REQUIRED_INPUT_FILES = {
     "docs/reviews/FINAL_REVIEW.md",
@@ -2830,6 +2831,7 @@ def check_required_files(failures: list[str]) -> None:
 
 def check_changed_files(failures: list[str]) -> None:
     branch = current_branch()
+    allowed_process_preflight: str | None = None
     if branch.startswith("phase-1-closure-141-"):
         allowed_files = ISSUE_141_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-138-"):
@@ -2848,6 +2850,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):
         allowed_files = PROCESS_ONLY_ALLOWED_CHANGED_FILES
+        if match := PROCESS_BRANCH.fullmatch(branch):
+            allowed_process_preflight = f"docs/governance/preflights/issue-{match.group(1)}.json"
     elif branch == "phase-1-closure-39-execution-strategy":
         allowed_files = ISSUE_39_EXECUTION_STRATEGY_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-37-"):
@@ -2903,6 +2907,8 @@ def check_changed_files(failures: list[str]) -> None:
     else:
         allowed_files = MODULE_A_ALLOWED_CHANGED_FILES
     for rel in changed_files():
+        if rel == allowed_process_preflight:
+            continue
         if rel not in allowed_files:
             fail(failures, f"Phase 1 Closure branch {branch} may not change {rel}.")
 

@@ -14,15 +14,18 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-17
+- Last reviewed date: 2026-07-18
 - Current stage marker: `.stage/current = 8`
-- Current implementation permission: Phase 1 Closure only. No Phase 2 feature
-  work, external provider enablement, production release tag, or public
-  synthetic-media distribution claim is permitted until Phase 1 P0/P1 blockers
-  close or are explicitly downgraded with evidence. Issue `#39`
-  media/provider/security rows are non-downgradeable for production Go unless
-  the affected provider, media, export, and replay paths remain disabled.
-- Current repo mode: Final Review has merged; Phase 1 Closure is active and
+- Current implementation permission: Phase 1 Closure only, with the active
+  serialized path limited to the controlled local, synthetic, artifact-only
+  Product Mode 1 checkpoint governed by issue `#155`. No Phase 2 feature work,
+  external provider enablement, production release tag, real audio/video,
+  hosted launch, public synthetic-media distribution claim, or Product Mode 2
+  work is permitted. Issue `#39` media/provider/security rows are
+  non-downgradeable for production Go unless the affected provider, media,
+  export, and replay paths remain disabled.
+- Current repo mode: Final Review has merged; Phase 1 Closure is active,
+  Product Mode 1 checkpoint work is in post-PR-C governance reconciliation, and
   release posture is No-Go.
 - Product implementation merged to `main`: Stage 8 performance, security
   hardening, and release-readiness work merged through PR `#33` at commit
@@ -69,8 +72,18 @@ Use it to answer:
   `#119` is closed for the `CH-08` Stage 7 render artifact-state implementation
   through PR `#120` at merge commit
   `af7215a5ceb7cefa81306773c1cfa8260435291e`; PR `#135` merged issue `#125`
-  to `main` at merge commit `f94776f6602d4c6feec2412b4764a7368049a080`; and
-  issues `#43`, `#44`, `#48`, and `#49` remain open.
+  to `main` at merge commit `f94776f6602d4c6feec2412b4764a7368049a080`; issue
+  `#138` and prerequisite issue `#151` are closed; issue `#181` is closed
+  through PR `#182` at merge commit
+  `3ea049cff0bf2157bea0bb5aedf73eb562753d17`, unblocking issue `#155`
+  validation after the local Lighthouse `NO_FCP` prerequisite without product
+  runtime, launch, provider, or production-posture change; GPF-A issue `#172`/PR
+  `#173`, HPR issue `#174`/PR `#175`, GPF-B issue `#176`/PR `#177`, and GPF-C
+  issue `#178`/PR `#179` are merged and closed out on `main` at
+  `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; stopped PRs `#166`, `#168`, and
+  `#170` remain preserved evidence, not active implementation branches; issue
+  `#155` is the serialized Product Mode 1 checkpoint controller; issue `#8`
+  remains open; and issues `#43`, `#44`, `#48`, and `#49` remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -195,10 +208,10 @@ Use these files together with this tracker:
 
 | GPF prerequisite | Capability | Issue | Pull request | Repository-tree evidence |
 |---|---|---|---|---|
-| GPF-A | Offline GovernancePreflightV1 core | #172 | PR #173 | offline schema and semantic validator present |
-| GPF-B | Prospective repository integration | #176 | PR #177 | offline prospective preflight enforcement present |
-| GPF-C | CI-only GitHub evidence | #178 | PR #179 | CI GitHub evidence verifier present |
-| HPR | Human-readable pull-request reviewer overview | #174 | PR #175 | five-point template, agent policy, and bounded PR-body enforcement |
+| GPF-A | Offline GovernancePreflightV1 core | `#172` closed | PR `#173` merged | offline schema and semantic validator present |
+| GPF-B | Prospective repository integration | `#176` closed | PR `#177` merged | offline prospective preflight enforcement present |
+| GPF-C | CI-only GitHub evidence | `#178` closed | PR `#179` merged | CI GitHub evidence verifier present |
+| HPR | Human-readable pull-request reviewer overview | `#174` closed | PR `#175` merged | five-point template, agent policy, and bounded PR-body enforcement |
 
 ## Issue Ledger
 
@@ -265,9 +278,9 @@ Use these files together with this tracker:
 | `#147` | Open, depends on `#144`, `#145`, `#146` | Phase 1 follow-on | Implement the not-yet-executed PITR/exact-S3-Version runbook, explicit supported target parameters and live checks, `<=5,000,000,000 bytes` copy bound, journal/revocation handoff, source deny, pre-create deadline, exact no-snapshot/no-backup teardown, separately scoped RDS/S3 cleanup/live-inventory authority and next-exercise block. |
 | `#148` | Open, depends on `#130`, `#141`, `#144`, `#145`, `#146`, `#147` | Phase 1 follow-on | Implement RDS/S3/journal/cleanup and live target-configuration/isolation observability, restricted reviewer export, tested CH-12 routes with severity/ack/escalation/runbook links, and immutable-cutoff RTO/RPO calculations that invalidate negative or mismatched watermarks. |
 | `#149` | Open, depends on `#130`, `#141`-`#148` | Phase 1 follow-on | Independently review actual environment/tooling/calculation-test readiness, tested CH-12 alert routes, and approvals without recording actual restore or RTO/RPO results; must leave issue `#126`, `DUR-RESTORE-001`, and issue `#39` open for the later exercise. |
-| `#138` | Open, remediation implemented but blocked | Security follow-up | `PYSEC-2026-2132` Click command-injection remediation: the application/runtime graph resolves Click `8.4.2`; Semgrep `1.168.0` is removed from the root/runtime lock and isolated in a frozen tool project using patched Click `8.3.3`. Root/tool audits, exact scan coverage, canaries, Uvicorn/Locust smoke, and backend-image inventory pass locally without advisory ignores. Human security/repo owner acceptance of the narrow override remains required, and issue `#151` independently blocks the critical/high container gate. This does not change production or restore readiness. |
+| `#138` | Closed | Security follow-up | `PYSEC-2026-2132` Click command-injection remediation completed and closed on 2026-07-14. This did not change production or restore readiness. |
 | `#150` | Open | Security follow-up | Remove the Semgrep Click and MCP compatibility overrides by `2026-08-13` or earlier when upstream supports fixed compatible dependencies; any tool version, lock, rule, target, invocation, or advisory change triggers immediate re-review. |
-| `#151` | Open, remediation implemented for review | Security follow-up | Backend runtime now derives from the pinned Python `3.13.14` image with the three authorized CPython backports applied; scanner consensus requires both Trivy and Grype plus fixed-status evidence for only `CVE-2026-11940`, `CVE-2026-11972`, and `CVE-2026-15308`; the isolated Semgrep tool audit also requires exact Click/MCP overrides with no MCP server use; merge remains subject to PR review, CI, and closeout. |
+| `#151` | Closed | Security follow-up | CPython `3.13.14` security remediation and scanner-consensus work closed on 2026-07-16. This does not change production, restore, hosted launch, or Product Mode 1 local-demo posture. |
 
 ### Additional Backlog And Governance Issues
 
@@ -281,7 +294,10 @@ Use these files together with this tracker:
 | `#19` | Open | Future slice | Mock avatar video and FFmpeg assembly. |
 | `#20` | Open | Future slice | Interactive Q&A over approved project knowledge. |
 | `#21` | Open | Future slice | Premium adapters, observability dashboard, and cost controls. |
-| `#181` | Open, prerequisite maintenance | Phase 1 process follow-up | Pre-existing local `frontend-lighthouse` `NO_FCP` gate failure reproduced on clean `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`. This issue is a bounded prerequisite before resuming issue `#155`; it changes no product runtime, launch level, provider posture, or production claim. |
+| `#155` | Open | Product Mode 1 checkpoint controller | Canonical serialized tracker for the controlled local, synthetic, artifact-only Product Mode 1 checkpoint. Post-PR-C live reconciliation is active; replacement PHF-020A must be created only after this repository-ledger reconciliation PR merges and closes out. |
+| `#167` | Open, stopped predecessor evidence | Product Mode 1 governance predecessor | Original PHF-020A attempt superseded by stopped PR `#168`; do not resume, patch, merge, rebase, or delete its evidence. |
+| `#169` | Closed, frozen feasibility evidence | GovernancePreflight feasibility predecessor | Closed/stopped feasibility evidence for PR `#170`; do not modify its frozen evidence. |
+| `#181` | Closed | Phase 1 process prerequisite | Bounded local Lighthouse browser-selection maintenance completed through PR `#182` at merge commit `3ea049cff0bf2157bea0bb5aedf73eb562753d17`; it unblocked issue `#155` validation and changed no product runtime, launch level, provider posture, or production claim. |
 
 ## Pull Request Ledger
 
@@ -328,6 +344,13 @@ Use these files together with this tracker:
 | `#78` | Merged | 2026-07-10 | Context 4 backup/restore drill planning PR for issue `#68` / issue `#39`; advisory-only ADR + planning matrix updates and branch-scope checks only. |
 | `#79` | Merged | 2026-07-10 | Context 5 operations monitoring and first-hour watch planning PR for issue `#69` / issue `#39`; advisory-only ADR + planning matrix updates and branch-scope checks only. |
 | `#80` | Merged | 2026-07-10 | Context 6 rollback/media/privacy/provider posture/retention/untrusted-input planning PR for issue `#70` / issue `#39`; advisory-only planning updates and branch-scope checks only. |
+| `#166` | Open draft, stopped | Not merged | Stopped predecessor evidence for the superseded PHF-020 attempt under issue `#8`; preserve evidence and do not resume or merge. |
+| `#168` | Open draft, stopped | Not merged | Stopped predecessor evidence for issue `#167` / PHF-020A; preserve evidence and do not resume, patch, rebase, or merge. |
+| `#170` | Closed, stopped | Not merged | Frozen GovernancePreflight feasibility evidence for issue `#169`; preserve evidence and do not modify. |
+| `#173` | Merged | 2026-07-16 | GPF-A offline GovernancePreflightV1 core for issue `#172`; merged at `022d9b61519fa72e094e078ba5ca62802a6f2030`. |
+| `#175` | Merged | 2026-07-16 | HPR reviewer-overview hardening for issue `#174`; merged at `93ec63e2574701bf62bd3fa745f18cca560d5f09`. |
+| `#177` | Merged | 2026-07-16 | GPF-B prospective repository integration for issue `#176`; merged at `cee9fa099de6c3f01cbd2e5d670fa407ffa54d54`. |
+| `#179` | Merged | 2026-07-17 | GPF-C supported pull-request CI evidence for issue `#178`; merged at `22d48b9edc0338d613d4926059fa9ef1ef329d1f` after exact-head approval and closeout. |
 
 ## Completed Work
 
@@ -471,30 +494,31 @@ Use these files together with this tracker:
   Stage 8 decision on source-run versus multilingual/subtitle-bound avatar
   rendering before real timed media export.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
-- Issue `#181` is the current prerequisite maintenance item before issue `#155`
-  can resume, because local `make ci` reproduced the pre-existing
-  `frontend-lighthouse` `NO_FCP` failure on clean `origin/main`.
+- Issue `#155` is the live Product Mode 1 checkpoint controller. This file must
+  stay aligned with its serialized ledger after each material decision, PR,
+  blocker decomposition, merge, and checkpoint.
+- Issue `#181` is closed through merged PR `#182`; the local Lighthouse
+  prerequisite is no longer the current action.
 
 ## Next Approved Actions
 
-1. Complete issue `#181` through a bounded prerequisite maintenance PR so local
-   `frontend-lighthouse` and `make ci` can pass before issue `#155` resumes.
-2. Complete the remaining production-grade portion of Phase 1 Closure P0/P1
-   issue `#39` through an issue-linked `phase-1-closure-*` branch and PR, or
-   record a reviewed No-Go exception with evidence.
-   Use `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md` as the durable
-   per-chunk execution contract for planning, parallelization, review,
-   re-review, and production transition sequencing.
-   Closed follow-up issue `#55` hardened additional local restore invariants
-   under the existing `#39` local-durability scope, but did not close `#39` or
-   change the production No-Go posture.
-3. Keep Phase 2 feature work blocked until P0/P1 items are closed or explicitly
-   downgraded with evidence.
-4. Keep production, multi-worker deployment, external provider use, real video
-   export, and public synthetic-media distribution No-Go.
-5. Run local quality and CI before merging each Phase 1 closure PR.
-6. Create a release tag only after all Phase 1 gates pass and the Go/No-Go
-   decision is updated by reviewed PR.
+1. Complete the current issue `#155` post-PR-C repository-ledger reconciliation
+   PR from `origin/main` at `3ea049cff0bf2157bea0bb5aedf73eb562753d17`, pass
+   local quality and exact-head CI, then stop at the latest-head human approval
+   gate.
+2. After that PR merges and closes out, create the replacement PHF-020A issue
+   and branch from current `main`. Do not reuse stopped issue `#167` or PR
+   `#168` implementation history.
+3. After replacement PHF-020A merges and closes out, create and complete the
+   smallest PHF-020B/StatusStateV1 successor required by the live contracts.
+4. Keep issue `#8` and issue `#155` open until their actual acceptance
+   contracts are satisfied.
+5. Continue the controlled local mock-demo path only as serialized issue-linked
+   PRs: CH-M1-01, CH-M1-02, Checkpoint A, CH-M1-03 through CH-M1-05, CH-M1-06,
+   then Checkpoint B decision.
+6. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
+   external provider use, real audio/video export, and public synthetic-media
+   distribution No-Go.
 
 ## Maintenance Protocol
 
@@ -525,6 +549,8 @@ Required update rules:
 | Date | Change |
 |---|---|
 | 2026-07-17 | Issue `#181` opened as a prerequisite maintenance item after local `frontend-lighthouse` failed with Lighthouse `NO_FCP` on both the issue `#155` branch and clean `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; scope is limited to local Lighthouse browser selection and guardrail/status updates, with no product runtime, launch, provider, or production-posture change. |
+| 2026-07-17 | PR `#182` merged issue `#181` at `3ea049cff0bf2157bea0bb5aedf73eb562753d17`, closing the bounded local Lighthouse browser-selection prerequisite and unblocking issue `#155` validation without product runtime, launch, provider, or production-posture change. |
+| 2026-07-17 | Post-PR-C reconciliation verified GPF-A `#172`/`#173`, HPR `#174`/`#175`, GPF-B `#176`/`#177`, and GPF-C `#178`/`#179` as merged and closed out on `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; preserved stopped predecessor evidence in `#166`, `#168`, and `#170`; reconciled issue `#155` as the serialized Product Mode 1 checkpoint controller; repaired the Phase 1 process-branch allowlist so a branch may change only its matching GovernancePreflightV1 artifact; and kept issue `#8` open with Product Mode 2, real audio/video, providers, hosted launch, and production out of scope. |
 | 2026-06-29 | Initial canonical program status tracker added to consolidate stage, issue, PR, and governance status. |
 | 2026-06-29 | Tracker contract refined to be merge-stable and repository-scoped, with explicit limits on what local checks can enforce. |
 | 2026-06-29 | Stage 1 product/PRD hardening split clarified: `#1` covers PRD v1.0 hardening, while `#16` remains the follow-on Spec Kit gate. |
