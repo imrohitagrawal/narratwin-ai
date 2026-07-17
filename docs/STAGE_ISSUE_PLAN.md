@@ -600,6 +600,24 @@ grouping, and validation is bounded at 1,000 commits and 2,000 final paths.
 Pre-PR-B bases, retained evidence, and unrelated branches stay exempt; GitHub
 PR C issue `#178` adds those live API, identity, exact-head approval, lifecycle, and required-check proofs only in supported pull-request CI with bounded polling and no correction automation.
 
+Issue `#181` is a bounded prerequisite maintenance branch for the pre-existing
+local Lighthouse `NO_FCP` gate failure that blocked issue `#155` validation. It
+may change only:
+
+- `docs/governance/preflights/issue-181.json`
+- `scripts/ci/frontend-lighthouse.sh`
+- `frontend/scripts/run-lighthouse.mjs`
+- `frontend/src/app/lighthouse-runner.test.ts`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `docs/ADR/0028-local-lighthouse-browser-selection.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `docs/STATUS.md`
+
+It must not change frontend product UI files, backend/runtime behavior,
+provider behavior, hosted-launch policy, or production posture.
+
 Context 0 issue `#39` closure-contract branches using
 `phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
 they may touch only docs, guardrails, tests, PR templates, and CI workflow

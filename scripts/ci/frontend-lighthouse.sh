@@ -21,6 +21,10 @@ else
   npx playwright install chromium
 fi
 
+if [ -z "${CHROME_PATH:-}" ] && [ -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]; then
+  export CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+fi
+
 NARRATWIN_API_PROXY_TARGET="${NARRATWIN_API_PROXY_TARGET:-http://127.0.0.1:8000}" \
 HOSTNAME=127.0.0.1 \
 PORT="${PORT}" \
