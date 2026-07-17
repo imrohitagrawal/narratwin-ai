@@ -178,6 +178,26 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
     assert failures == []
 
 
+def test_issue181_process_branch_allows_only_lighthouse_maintenance_files(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-181-lighthouse-browser-selection"
+
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=sorted(phase1.ISSUE_181_ALLOWED_CHANGED_FILES),
+    ) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["frontend/src/app/page.tsx", "frontend/src/app/page.module.css"],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-process-181-lighthouse-browser-selection "
+        "may not change frontend/src/app/page.tsx.",
+        "Phase 1 Closure branch phase-1-closure-process-181-lighthouse-browser-selection "
+        "may not change frontend/src/app/page.module.css.",
+    ]
+
+
 def test_skill_governance_process_branch_allows_only_governance_files(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-164-phf-019-skill-evidence-governance"
     failures = run_changed_files_check(

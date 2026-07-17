@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-14
+- Last reviewed date: 2026-07-17
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only. No Phase 2 feature
   work, external provider enablement, production release tag, or public
@@ -281,6 +281,7 @@ Use these files together with this tracker:
 | `#19` | Open | Future slice | Mock avatar video and FFmpeg assembly. |
 | `#20` | Open | Future slice | Interactive Q&A over approved project knowledge. |
 | `#21` | Open | Future slice | Premium adapters, observability dashboard, and cost controls. |
+| `#181` | Open, prerequisite maintenance | Phase 1 process follow-up | Pre-existing local `frontend-lighthouse` `NO_FCP` gate failure reproduced on clean `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`. This issue is a bounded prerequisite before resuming issue `#155`; it changes no product runtime, launch level, provider posture, or production claim. |
 
 ## Pull Request Ledger
 
@@ -470,10 +471,15 @@ Use these files together with this tracker:
   Stage 8 decision on source-run versus multilingual/subtitle-bound avatar
   rendering before real timed media export.
 - GitHub issue and pull request state can drift from this file until the next governance PR updates the ledger, because repository checks are diff-scoped rather than GitHub-event-synced.
+- Issue `#181` is the current prerequisite maintenance item before issue `#155`
+  can resume, because local `make ci` reproduced the pre-existing
+  `frontend-lighthouse` `NO_FCP` failure on clean `origin/main`.
 
 ## Next Approved Actions
 
-1. Complete the remaining production-grade portion of Phase 1 Closure P0/P1
+1. Complete issue `#181` through a bounded prerequisite maintenance PR so local
+   `frontend-lighthouse` and `make ci` can pass before issue `#155` resumes.
+2. Complete the remaining production-grade portion of Phase 1 Closure P0/P1
    issue `#39` through an issue-linked `phase-1-closure-*` branch and PR, or
    record a reviewed No-Go exception with evidence.
    Use `docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md` as the durable
@@ -482,12 +488,12 @@ Use these files together with this tracker:
    Closed follow-up issue `#55` hardened additional local restore invariants
    under the existing `#39` local-durability scope, but did not close `#39` or
    change the production No-Go posture.
-2. Keep Phase 2 feature work blocked until P0/P1 items are closed or explicitly
+3. Keep Phase 2 feature work blocked until P0/P1 items are closed or explicitly
    downgraded with evidence.
-3. Keep production, multi-worker deployment, external provider use, real video
+4. Keep production, multi-worker deployment, external provider use, real video
    export, and public synthetic-media distribution No-Go.
-4. Run local quality and CI before merging each Phase 1 closure PR.
-5. Create a release tag only after all Phase 1 gates pass and the Go/No-Go
+5. Run local quality and CI before merging each Phase 1 closure PR.
+6. Create a release tag only after all Phase 1 gates pass and the Go/No-Go
    decision is updated by reviewed PR.
 
 ## Maintenance Protocol
@@ -518,6 +524,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-07-17 | Issue `#181` opened as a prerequisite maintenance item after local `frontend-lighthouse` failed with Lighthouse `NO_FCP` on both the issue `#155` branch and clean `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; scope is limited to local Lighthouse browser selection and guardrail/status updates, with no product runtime, launch, provider, or production-posture change. |
 | 2026-06-29 | Initial canonical program status tracker added to consolidate stage, issue, PR, and governance status. |
 | 2026-06-29 | Tracker contract refined to be merge-stable and repository-scoped, with explicit limits on what local checks can enforce. |
 | 2026-06-29 | Stage 1 product/PRD hardening split clarified: `#1` covers PRD v1.0 hardening, while `#16` remains the follow-on Spec Kit gate. |
