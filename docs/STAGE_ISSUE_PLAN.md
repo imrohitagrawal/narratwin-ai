@@ -579,6 +579,12 @@ process guardrail and its tests:
 - `tests/unit/test_guardrails_check.py`
 - `tests/unit/test_phase1_closure_docs.py`
 
+When a process-only branch is governed by GovernancePreflightV1, it may also
+change exactly one matching preflight artifact:
+`docs/governance/preflights/issue-<issue>.json`, where `<issue>` is the issue
+number embedded in the branch name. It must not change a preflight artifact for
+any other issue.
+
 Process-only branches must not touch backend, frontend, provider, RAG, avatar,
 database, Docker, or product runtime files. Issue-specific branches such as
 `phase-1-closure-39-*` retain their separate implementation/evidence allowlist

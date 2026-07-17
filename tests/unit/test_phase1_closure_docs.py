@@ -198,6 +198,35 @@ def test_issue181_process_branch_allows_only_lighthouse_maintenance_files(monkey
     ]
 
 
+def test_process_only_phase1_branch_allows_matching_governance_preflight(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-155-post-pr-c-reconciliation"
+
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-155.json",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/STATUS.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+            "tests/unit/test_phase1_closure_docs.py",
+        ],
+    ) == []
+
+
+def test_process_only_phase1_branch_rejects_mismatched_governance_preflight(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-155-post-pr-c-reconciliation"
+
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["docs/governance/preflights/issue-156.json"],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-process-155-post-pr-c-reconciliation "
+        "may not change docs/governance/preflights/issue-156.json."
+    ]
+
+
 def test_skill_governance_process_branch_allows_only_governance_files(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-164-phf-019-skill-evidence-governance"
     failures = run_changed_files_check(
