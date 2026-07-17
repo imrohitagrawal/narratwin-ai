@@ -231,7 +231,7 @@ def verify_governance_preflight_github(event: object, *, event_name: str, reposi
     if live.get("state") != "open" or live.get("merged"):
         codes.append("GPF.GH.LIFECYCLE_INVALID")
     if review_event and not submitted:
-        codes.extend(["GPF.GH.REVIEW_MISSING"] if event_record is None else ["GPF.GH.REVIEW_IDENTITY_MISMATCH"] if not (_user(event_record.get("user")) == _user(event_dict.get("review", {}).get("user")) == _user(event_dict.get("sender"))) else [])
+        codes.extend(["GPF.GH.REVIEW_MISSING"] if event_record is None else ["GPF.GH.REVIEW_IDENTITY_MISMATCH"] if _user(event_record.get("user")) != _user(event_dict.get("review", {}).get("user")) else [])
     if ready and not live.get("draft"):
         codes.extend(_review_codes(event_dict, live, record))
         start = clock()

@@ -147,9 +147,12 @@ def test_named_lifecycle_states_are_valid(lifecycle: str) -> None:
 def test_review_dismissed_enters_correcting_without_counting_approval() -> None:
     fixture = _fixture("correcting")
     fixture["event_name"], fixture["event"] = "pull_request_review", _event("pull_request_review", "dismissed")
-    fixture["responses"]["reviews"] = [(200, {}, [_review(state="DISMISSED")])]
+    fixture["event"]["sender"] = _identity("dismisser", 3)
+    fixture["event"]["review"]["commit_id"] = OTHER_HEAD
+    fixture["responses"]["reviews"] = [(200, {}, [_review(state="DISMISSED", commit=OTHER_HEAD)])]
+    fixture["responses"]["checks"][0][2]["check_runs"][0]["conclusion"] = "failure"
     assert _codes(fixture) == []
-    assert _codes(_single(fixture, lambda f: f["event"].__setitem__("sender", _identity("other", 3)))) == ["GPF.GH.REVIEW_IDENTITY_MISMATCH"]
+    assert _codes(_single(fixture, lambda f: f["event"]["review"].__setitem__("user", _identity("other", 3)))) == ["GPF.GH.REVIEW_IDENTITY_MISMATCH"]
 def test_draft_with_historical_approval_defers_failing_checks() -> None:
     fixture = _fixture("ready")
     fixture["event_name"], fixture["event"] = "pull_request", _event("pull_request", "converted_to_draft")
