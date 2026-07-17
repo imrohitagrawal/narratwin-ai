@@ -95,6 +95,13 @@ ISSUE_151_ALLOWED_CHANGED_FILES = {
     "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py", "docs/ADR/0006-stage8-release-hardening.md",
     "docs/QUALITY_GATES.md", "docs/REPOSITORY_GUARDRAILS.md", "docs/RELEASE_CHECKLIST.md", "docs/THIRD_PARTY_NOTICES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/TRACEABILITY.md", "docs/STATUS.md",
 }
+ISSUE_178_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
+    "tests/unit/test_governance_preflight_github.py", ".github/workflows/quality-gates.yml",
+    "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py",
+    "docs/REPOSITORY_GUARDRAILS.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+}
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -1244,7 +1251,7 @@ def workflow_has_permission(yaml_text: str, permission: str, value: str) -> bool
 
 def workflow_has_stage_quality_base_sha(yaml_text: str) -> bool:
     return any(
-        "run: make quality" in step and "GITHUB_BASE_SHA:" in step and "GITHUB_EVENT_NAME:" in step
+        (("run: make quality" in (commands := {line.strip() for line in step.splitlines()})) or ('run: GITHUB_HEAD_REF="$NARRATWIN_HEAD_REF" make quality' in commands and "NARRATWIN_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}" in commands)) and "GITHUB_BASE_SHA:" in step and "GITHUB_EVENT_NAME:" in step
         for step in workflow_step_blocks(yaml_text)
     )
 
@@ -2821,6 +2828,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
         allowed_files = ISSUE_176_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-178-gpf-v1-ci-evidence":
+        allowed_files = ISSUE_178_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):

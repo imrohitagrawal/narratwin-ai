@@ -598,7 +598,7 @@ phase allowlist. It adds offline, prospective repository validation: the first
 branch commit contains only that preflight, later commits have no prescribed
 grouping, and validation is bounded at 1,000 commits and 2,000 final paths.
 Pre-PR-B bases, retained evidence, and unrelated branches stay exempt; GitHub
-API, reviewer, check, authentication, and lifecycle evidence is deferred.
+PR C issue `#178` adds those live API, identity, exact-head approval, lifecycle, and required-check proofs only in supported pull-request CI with bounded polling and no correction automation.
 
 Context 0 issue `#39` closure-contract branches using
 `phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
