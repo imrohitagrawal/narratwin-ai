@@ -1,0 +1,40 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 184,
+  "branch": "phase-1-closure-process-184-phf-020a-structured-policy-replacement",
+  "objective": "Replace stopped PHF-020A prose scanning with structured Product Mode policy authority.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-184.json",
+      "AGENTS.md",
+      "docs/PHASE_PLAN.md",
+      "docs/SKILL_EXECUTION_PLAN.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-184.json",
+      "AGENTS.md",
+      "docs/PHASE_PLAN.md",
+      "docs/SKILL_EXECUTION_PLAN.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker/",
+      "Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json"
+    ]
+  }
+}
