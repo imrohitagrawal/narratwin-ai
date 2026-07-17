@@ -118,6 +118,289 @@ def run_release_docs_check(monkeypatch: Any, *, read_overrides: dict[str, str]) 
     return failures
 
 
+PHF020A_VALID_POLICY = """
+# Phase Plan
+
+## Product Mode Policy Authority
+
+Only the registered tables in this section are authoritative for PHF-020A.
+
+### Authority Registry
+
+| ID | Table | Parent heading | Authority |
+|---|---|---|---|
+| AUTH-TAXONOMY | Product mode taxonomy | Product Mode Policy Authority | structured |
+| AUTH-GATES | Cross-mode gate graph | Product Mode Policy Authority | structured |
+| AUTH-MEDIA | Optional media relation | Product Mode Policy Authority | structured |
+| AUTH-DUPLICATES | Duplicate reconciliation duties | Product Mode Policy Authority | structured |
+| AUTH-ISSUE8 | Issue #8 acceptance transfer | Product Mode Policy Authority | structured |
+| AUTH-ACTIVATION | PM-MODE-001 activation evidence | Product Mode Policy Authority | structured |
+
+### Product Mode Taxonomy
+
+| ID | Kind | Owner issue | Definition |
+|---|---|---|---|
+| DP-1 | delivery-phase | #1 | Product and PRD hardening; no product implementation |
+| DP-2 | delivery-phase | #16 | Spec Kit constitution/spec/plan/tasks gate |
+| P1C | closure-context | #39 | Phase 1 Closure context; not a product mode owner |
+| PM-1 | product-mode | #155 | Controlled local synthetic artifact checkpoint |
+| PM-2 | product-mode | #20 | Future interactive Q&A after Mode 1 Checkpoint B and reset |
+
+### Cross-Mode Gate Graph
+
+| Gate ID | From | To | Next gate | Prohibits |
+|---|---|---|---|---|
+| PM-GATE-00 | DP-1 | DP-2 | PM-GATE-10 | product runtime |
+| PM-GATE-10 | DP-2 | PM-1 | PM-GATE-20 | Product Mode 2 |
+| PM-GATE-20 | PM-1 | PM-2 | PM-GATE-30 | real media mandatory dependency |
+| PM-GATE-30 | PM-2 | Future reset | none | no PHF020A implementation permission |
+
+### Optional Media Relation
+
+| Issue | Relation | Required before gate | Notes |
+|---|---|---|---|
+| #18 | optional-branch | PM-GATE-10 | TTS audio is not mandatory for PM-GATE-20 |
+| #19 | optional-branch | PM-GATE-10 | Avatar video is not mandatory for PM-GATE-20 |
+
+### Duplicate Reconciliation Duties
+
+| Duty ID | Owner | Required action | Evidence |
+|---|---|---|---|
+| DUP-01 | #155 | Maintain one current module | STATUS row |
+| DUP-02 | #8 | Preserve parent acceptance | Issue #8 link |
+| DUP-03 | #167 | Preserve stopped predecessor evidence | PR #168 |
+| DUP-04 | #184 | Replace prose scanning with structure | PHF020A tests |
+| DUP-05 | PHF-020B | Normalize mutable current state later | successor issue |
+
+### Issue #8 Acceptance Transfer
+
+| Acceptance ID | Source | Stable policy row | Evidence |
+|---|---|---|---|
+| ISSUE8-01 | #8 | taxonomy distinctions | DP-1/DP-2/P1C/PM-1/PM-2 |
+| ISSUE8-02 | #8 | Product Mode 1 local checkpoint | PM-1 |
+| ISSUE8-03 | #8 | Product Mode 2 future reset | PM-2 |
+| ISSUE8-04 | #8 | optional media independence | #18/#19 |
+| ISSUE8-05 | #8 | duplicate reconciliation | DUP-01..DUP-05 |
+| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |
+
+### PM-MODE-001 Activation Evidence
+
+| Evidence ID | Mode | Gate | Status |
+|---|---|---|---|
+| PM-MODE-001 | PM-1 | PM-GATE-10 | active-local-checkpoint |
+""".strip()
+
+
+PHF020A_SEEDS = (1103, 2207, 3301, 4409, 5519, 6619, 7723, 8837, 9941, 10039)
+PHF020A_INVALID_TOTALS = {
+    "structure/section": 20,
+    "table schema/delimiter": 25,
+    "containment/parent": 25,
+    "required/unknown/duplicate/reference": 50,
+    "taxonomy/enum": 20,
+    "graph/gate": 30,
+    "optional-media relation": 15,
+    "issue-#8 acceptance mapping": 15,
+    "current-state mixing": 15,
+    "resource/unicode/format bounds": 20,
+    "scope/preflight binding": 15,
+}
+
+
+def phf020a_generated_cases() -> list[dict[str, Any]]:
+    cases: list[dict[str, Any]] = []
+    invalid_sequence = [
+        family
+        for family, count in PHF020A_INVALID_TOTALS.items()
+        for _ in range(count)
+    ]
+    assert len(invalid_sequence) == 250
+    for seed_index, seed in enumerate(PHF020A_SEEDS):
+        for index in range(25):
+            cases.append(
+                {
+                    "id": f"{seed}:valid:{index}",
+                    "seed": seed,
+                    "valid": True,
+                    "family": "valid",
+                    "text": PHF020A_VALID_POLICY + f"\n\nSafe explanatory prose {seed}-{index}.\n",
+                    "expected": [],
+                }
+            )
+        for index in range(25):
+            family = invalid_sequence[seed_index * 25 + index]
+            text, expected = phf020a_mutated_policy(family)
+            cases.append(
+                {
+                    "id": f"{seed}:invalid:{index}:{family}",
+                    "seed": seed,
+                    "valid": False,
+                    "family": family,
+                    "text": text,
+                    "expected": expected,
+                }
+            )
+    return cases
+
+
+def phf020a_mutated_policy(family: str) -> tuple[str, list[str]]:
+    text = PHF020A_VALID_POLICY
+    if family == "structure/section":
+        return text.replace("## Product Mode Policy Authority", "## Product Mode Notes"), ["PHF020A.STRUCTURE.MISSING_PARENT"]
+    if family == "table schema/delimiter":
+        return text.replace("|---|---|---|---|", "| ID | Table | Parent heading | Authority |", 1), ["PHF020A.TABLE.DELIMITER_MISSING"]
+    if family == "containment/parent":
+        return text.replace("## Product Mode Policy Authority", "## Relocated Policy"), ["PHF020A.STRUCTURE.MISSING_PARENT"]
+    if family == "required/unknown/duplicate/reference":
+        return text.replace("| AUTH-GATES | Cross-mode gate graph | Product Mode Policy Authority | structured |\n", ""), ["PHF020A.REQUIRED.MISSING_AUTHORITY"]
+    if family == "taxonomy/enum":
+        return text.replace("| PM-2 | product-mode | #20 |", "| PM-3 | product-mode | #20 |"), ["PHF020A.ENUM.UNKNOWN_TAXONOMY"]
+    if family == "graph/gate":
+        return text.replace("| PM-GATE-20 | PM-1 | PM-2 | PM-GATE-30 |", "| PM-GATE-20 | PM-1 | PM-2 | none |"), ["PHF020A.GRAPH.EDGE_INVALID"]
+    if family == "optional-media relation":
+        return text.replace("TTS audio is not mandatory for PM-GATE-20", "TTS audio is mandatory for PM-GATE-20"), ["PHF020A.MEDIA.MANDATORY"]
+    if family == "issue-#8 acceptance mapping":
+        return text.replace("| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |\n", ""), ["PHF020A.ACCEPTANCE.MISSING"]
+    if family == "current-state mixing":
+        return text + "\n\nCurrent module is CH-M1-01.\n", ["PHF020A.STATE.MUTABLE_CURRENT_STATE"]
+    if family == "resource/unicode/format bounds":
+        return ("# Phase Plan\n" + ("x" * (256 * 1024 + 1))), ["PHF020A.LIMIT.BYTES"]
+    if family == "scope/preflight binding":
+        return text.replace("PHF020A tests", "backend/app/main.py"), ["PHF020A.SCOPE.FORBIDDEN_REFERENCE"]
+    raise AssertionError(f"unhandled family: {family}")
+
+
+def test_issue184_branch_allows_only_exact_replacement_scope(monkeypatch: Any) -> None:
+    expected = {
+        "docs/governance/preflights/issue-184.json",
+        "AGENTS.md",
+        "docs/PHASE_PLAN.md",
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+    assert phase1.ISSUE_184_ALLOWED_CHANGED_FILES == expected
+    branch = "phase-1-closure-process-184-phf-020a-structured-policy-replacement"
+    assert run_changed_files_check(monkeypatch, branch=branch, files=sorted(expected)) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["docs/SKILL_SELECTION_AND_EVIDENCE.md", "scripts/guardrails_check.py"],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/SKILL_SELECTION_AND_EVIDENCE.md.",
+        f"Phase 1 Closure branch {branch} may not change scripts/guardrails_check.py.",
+    ]
+    near_match = branch + "-extra"
+    assert run_changed_files_check(monkeypatch, branch=near_match, files=["docs/PHASE_PLAN.md"]) == [
+        f"Phase 1 Closure branch {near_match} may not change docs/PHASE_PLAN.md."
+    ]
+
+
+def test_phf020a_valid_policy_has_no_findings() -> None:
+    assert phase1.phf020a_policy_findings(PHF020A_VALID_POLICY) == []
+
+
+@pytest.mark.parametrize(
+    ("name", "text", "expected"),
+    (
+        (
+            "data-row-with-dashes",
+            PHF020A_VALID_POLICY.replace(
+                "| DUP-05 | PHF-020B | Normalize mutable current state later | successor issue |",
+                "| DUP-05 | PHF-020B | Normalize mutable current state later | successor---issue |",
+            ),
+            [],
+        ),
+        (
+            "missing-delimiter",
+            PHF020A_VALID_POLICY.replace("|---|---|---|---|", "| ID | Table | Parent heading | Authority |", 1),
+            ["PHF020A.TABLE.DELIMITER_MISSING"],
+        ),
+        (
+            "wrong-width-delimiter",
+            PHF020A_VALID_POLICY.replace("|---|---|---|---|", "|---|---|---|", 1),
+            ["PHF020A.TABLE.DELIMITER_WIDTH"],
+        ),
+        (
+            "wrong-parent-container",
+            PHF020A_VALID_POLICY.replace("## Product Mode Policy Authority", "## Relocated Policy"),
+            ["PHF020A.STRUCTURE.MISSING_PARENT"],
+        ),
+        (
+            "permissive-enum",
+            PHF020A_VALID_POLICY.replace("| PM-2 | product-mode | #20 |", "| PM-3 | product-mode | #20 |"),
+            ["PHF020A.ENUM.UNKNOWN_TAXONOMY"],
+        ),
+        (
+            "graph-node-only",
+            PHF020A_VALID_POLICY.replace("| PM-GATE-20 | PM-1 | PM-2 | PM-GATE-30 |", "| PM-GATE-20 | PM-1 | PM-2 | none |"),
+            ["PHF020A.GRAPH.EDGE_INVALID"],
+        ),
+        (
+            "global-marker-only",
+            "# Phase Plan\n\nProduct Mode Policy Authority marker only.\nPM-GATE-00 PM-GATE-10 PM-GATE-20 PM-GATE-30\n",
+            ["PHF020A.STRUCTURE.MISSING_PARENT"],
+        ),
+        (
+            "duplicate-parent-container",
+            PHF020A_VALID_POLICY + "\n\n## Product Mode Policy Authority\n\nDuplicate.\n",
+            ["PHF020A.DUPLICATE.PARENT"],
+        ),
+        (
+            "mutable-current-state",
+            PHF020A_VALID_POLICY + "\n\nCurrent module is CH-M1-01.\n",
+            ["PHF020A.STATE.MUTABLE_CURRENT_STATE"],
+        ),
+        (
+            "forbidden-scope-reference",
+            PHF020A_VALID_POLICY.replace("PHF020A tests", "backend/app/main.py"),
+            ["PHF020A.SCOPE.FORBIDDEN_REFERENCE"],
+        ),
+    ),
+)
+def test_phf020a_policy_single_faults_return_exact_vectors(name: str, text: str, expected: list[str]) -> None:
+    del name
+    assert phase1.phf020a_policy_findings(PHF020A_VALID_POLICY) == []
+    assert phase1.phf020a_policy_findings(text) == expected
+
+
+@pytest.mark.parametrize(
+    ("limit_name", "text", "expected"),
+    (
+        ("bytes", "# Phase Plan\n" + ("x" * (256 * 1024 + 1)), ["PHF020A.LIMIT.BYTES"]),
+        ("lines", "\n".join("# h" for _ in range(10_001)), ["PHF020A.LIMIT.LINES"]),
+        ("headings", "\n".join(f"## h{i}" for i in range(257)), ["PHF020A.LIMIT.HEADINGS"]),
+        ("cell", PHF020A_VALID_POLICY.replace("structured |", ("x" * 2049) + " |", 1), ["PHF020A.LIMIT.CELL"]),
+        ("control", PHF020A_VALID_POLICY + "\x00", ["PHF020A.LIMIT.CONTROL"]),
+    ),
+)
+def test_phf020a_resource_limits_fail_closed(limit_name: str, text: str, expected: list[str]) -> None:
+    del limit_name
+    assert phase1.phf020a_policy_findings(text) == expected
+
+
+def test_phf020a_generated_suite_contract_is_exact() -> None:
+    cases = phf020a_generated_cases()
+    assert len(cases) == 500
+    assert {case["seed"] for case in cases} == set(PHF020A_SEEDS)
+    assert len({case["id"] for case in cases}) == 500
+    for seed in PHF020A_SEEDS:
+        seed_cases = [case for case in cases if case["seed"] == seed]
+        assert len(seed_cases) == 50
+        assert sum(1 for case in seed_cases if case["valid"]) == 25
+        assert sum(1 for case in seed_cases if not case["valid"]) == 25
+    family_totals = {
+        family: sum(1 for case in cases if case["family"] == family)
+        for family in PHF020A_INVALID_TOTALS
+    }
+    assert family_totals == PHF020A_INVALID_TOTALS
+    for case in cases:
+        actual = phase1.phf020a_policy_findings(case["text"])
+        assert actual == case["expected"], case["id"]
+
+
 def run_issue141_platform_contract_check(
     monkeypatch: Any, *, read_overrides: dict[str, str] | None = None
 ) -> list[str]:
