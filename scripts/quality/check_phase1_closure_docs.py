@@ -125,6 +125,14 @@ ISSUE_184_ALLOWED_CHANGED_FILES = {
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_188_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-188.json",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -1098,6 +1106,7 @@ def parse_table_lines(section_text: str) -> tuple[list[str], list[list[str]]]:
 
 
 PHF020A_BRANCH = "phase-1-closure-process-184-phf-020a-structured-policy-replacement"
+STATUS_STATE_V1_BRANCH = "phase-1-closure-process-188-phf-020b-status-state-v1"
 PHF020A_PARENT = "Product Mode Policy Authority"
 PHF020A_TABLE_HEADERS = {
     "Authority Registry": ["ID", "Table", "Parent heading", "Authority"],
@@ -1203,6 +1212,67 @@ PHF020A_FORBIDDEN_SCOPE_REFERENCES = (
     "package.json",
     "package-lock.json",
 )
+
+STATUS_STATE_V1_PARENT = "StatusStateV1"
+STATUS_STATE_V1_HEADERS = [
+    "ID",
+    "State kind",
+    "Owner",
+    "Expected status",
+    "Current status",
+    "Contract",
+]
+STATUS_STATE_V1_ROWS = {
+    "SSV1-BASELINE": (
+        "merge-baseline",
+        "PR #187",
+        "merged",
+        "merged",
+        "Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926.",
+    ),
+    "SSV1-MODE": (
+        "repo-mode",
+        "Phase 1 Closure",
+        "phase1-closure",
+        "phase1-closure",
+        "Phase 1 Closure remains active; release posture remains No-Go.",
+    ),
+    "SSV1-NEXT": (
+        "next-action",
+        "StatusStateV1",
+        "normalized",
+        "normalized",
+        "StatusStateV1 is the normalized mutable current-state authority in docs/STATUS.md.",
+    ),
+    "SSV1-ISSUE8": (
+        "product-definition-parent",
+        "#8",
+        "open",
+        "open",
+        "Issue #8 remains open for its separate product-definition acceptance contract.",
+    ),
+    "SSV1-ISSUE155": (
+        "product-mode-controller",
+        "#155",
+        "open",
+        "open",
+        "Issue #155 remains the serialized Product Mode 1 checkpoint controller; PHF-020B does not satisfy or close it.",
+    ),
+    "SSV1-PREDECESSOR": (
+        "stopped-evidence",
+        "#167/#168",
+        "preserved",
+        "preserved",
+        "Stopped PHF-020A predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, or deleted.",
+    ),
+    "SSV1-FORBIDDEN": (
+        "prohibited-work",
+        "repository",
+        "forbidden",
+        "forbidden",
+        "Product Mode 2, hosted launch, provider enablement, public media distribution, production-readiness claims, and product/runtime implementation remain forbidden.",
+    ),
+}
 
 
 def phf020a_cells(line: str) -> list[str]:
@@ -1447,6 +1517,35 @@ def phf020a_policy_findings(text: str) -> list[str]:
     if activation_rows != [PHF020A_ACTIVATION]:
         return ["PHF020A.REQUIRED.MISSING_ACTIVATION"]
 
+    return []
+
+
+def status_state_v1_findings(text: str) -> list[str]:
+    if len(re.findall(rf"^##\s+{re.escape(STATUS_STATE_V1_PARENT)}\s*$", text, flags=re.M)) > 1:
+        return ["SSV1.STRUCTURE.DUPLICATE"]
+    body = section(text, STATUS_STATE_V1_PARENT)
+    if not body:
+        return ["SSV1.STRUCTURE.MISSING"]
+    headers, rows = parse_table_lines(body)
+    if headers != STATUS_STATE_V1_HEADERS:
+        return ["SSV1.TABLE.HEADER"]
+    if len(rows) != len(STATUS_STATE_V1_ROWS):
+        return ["SSV1.TABLE.ROW_COUNT"]
+    seen: set[str] = set()
+    for row in rows:
+        if len(row) != len(STATUS_STATE_V1_HEADERS):
+            return ["SSV1.TABLE.ROW_WIDTH"]
+        row_id = row[0].strip("` ")
+        if row_id in seen:
+            return ["SSV1.DUPLICATE.ROW"]
+        seen.add(row_id)
+        expected = STATUS_STATE_V1_ROWS.get(row_id)
+        if expected is None:
+            return ["SSV1.UNKNOWN.ROW"]
+        if tuple(row[1:]) != expected:
+            return ["SSV1.STATE.INVALID"]
+    if seen != set(STATUS_STATE_V1_ROWS):
+        return ["SSV1.REQUIRED.MISSING"]
     return []
 
 
@@ -3211,6 +3310,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_181_ALLOWED_CHANGED_FILES
     elif branch == PHF020A_BRANCH:
         allowed_files = ISSUE_184_ALLOWED_CHANGED_FILES
+    elif branch == STATUS_STATE_V1_BRANCH:
+        allowed_files = ISSUE_188_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):
@@ -3563,8 +3664,8 @@ def check_phf020a_policy_contract(failures: list[str]) -> None:
         "## Product Mode Policy Authority Handoff",
         "Only `docs/PHASE_PLAN.md` registered tables are authoritative",
         "`PM-GATE-00 -> PM-GATE-10 -> PM-GATE-20 -> PM-GATE-30`",
-        "`docs/STATUS.md` remains mutable current-state authority until PHF-020B",
-        "No PHF-020B, Product Mode 2, runtime, media, provider, hosted, public, or production work",
+        "`docs/STATUS.md` StatusStateV1 table is the normalized mutable current-state authority",
+        "No Product Mode 2, runtime, media, provider, hosted, public, or production work",
     )
     for marker in required_skill_plan_markers:
         if marker not in skill_plan:
@@ -3573,6 +3674,11 @@ def check_phf020a_policy_contract(failures: list[str]) -> None:
     agents = read("AGENTS.md")
     if "- `docs/PHASE_PLAN.md`" not in agents:
         fail(failures, "AGENTS.md required reading must include docs/PHASE_PLAN.md.")
+
+
+def check_status_state_v1_contract(failures: list[str]) -> None:
+    for finding in status_state_v1_findings(read("docs/STATUS.md")):
+        fail(failures, f"docs/STATUS.md StatusStateV1 finding: {finding}")
 
 
 def check_process_docs(failures: list[str]) -> None:
@@ -4010,6 +4116,7 @@ def main() -> int:
         check_issue39_execution_strategy(failures)
         check_issue39_ch11_slo_contract(failures)
         check_phf020a_policy_contract(failures)
+        check_status_state_v1_contract(failures)
         check_process_docs(failures)
 
     if failures:

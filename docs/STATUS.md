@@ -26,8 +26,8 @@ Use it to answer:
   export, and replay paths remain disabled.
 - Current repo mode: Final Review has merged; Phase 1 Closure is active,
   PHF-020A structured-policy replacement has merged through issue `#184` and
-  PR `#185`, the next policy successor is PHF-020B/StatusStateV1, and release
-  posture is No-Go.
+  PR `#185`, mutable current-state authority is normalized through the
+  StatusStateV1 table below, and release posture is No-Go.
 - Product implementation merged to `main`: Stage 8 performance, security
   hardening, and release-readiness work merged through PR `#33` at commit
   `fb40113`.
@@ -96,6 +96,23 @@ Use it to answer:
   including semantic-failure idempotency replay, exact Stage 6 voice-manifest
   validation, Docker scan exit-code handling, and branch-protection context
   documentation.
+
+## StatusStateV1
+
+This table is the normalized mutable current-state authority for PHF-020B. It
+does not replace the PHF-020A Product Mode policy tables in `docs/PHASE_PLAN.md`;
+it records only the current repository state, open issue boundaries, preserved
+evidence, next action posture, and prohibited work.
+
+| ID | State kind | Owner | Expected status | Current status | Contract |
+|---|---|---|---|---|---|
+| SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
+| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
+| SSV1-NEXT | next-action | StatusStateV1 | normalized | normalized | StatusStateV1 is the normalized mutable current-state authority in docs/STATUS.md. |
+| SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
+| SSV1-ISSUE155 | product-mode-controller | #155 | open | open | Issue #155 remains the serialized Product Mode 1 checkpoint controller; PHF-020B does not satisfy or close it. |
+| SSV1-PREDECESSOR | stopped-evidence | #167/#168 | preserved | preserved | Stopped PHF-020A predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, or deleted. |
+| SSV1-FORBIDDEN | prohibited-work | repository | forbidden | forbidden | Product Mode 2, hosted launch, provider enablement, public media distribution, production-readiness claims, and product/runtime implementation remain forbidden. |
 
 ## Source Of Truth
 
@@ -507,17 +524,14 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Create and complete the smallest PHF-020B/StatusStateV1 successor required
-   by the live contracts now that replacement PHF-020A has merged and closed
-   out.
-2. Preserve stopped issue `#167` and PR `#168` as evidence only. Do not resume,
+1. Preserve stopped issue `#167` and PR `#168` as evidence only. Do not resume,
    patch, rebase, merge, close, or delete that implementation history in PHF-020A.
-3. Keep issue `#8` and issue `#155` open until their actual acceptance
+2. Keep issue `#8` and issue `#155` open until their actual acceptance
    contracts are satisfied.
-4. Continue the controlled local mock-demo path only as serialized issue-linked
+3. Continue the controlled local mock-demo path only as serialized issue-linked
    PRs: CH-M1-01, CH-M1-02, Checkpoint A, CH-M1-03 through CH-M1-05, CH-M1-06,
    then Checkpoint B decision.
-5. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
+4. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
    external provider use, real audio/video export, and public synthetic-media
    distribution No-Go.
 
@@ -554,6 +568,7 @@ Required update rules:
 | 2026-07-17 | Post-PR-C reconciliation verified GPF-A `#172`/`#173`, HPR `#174`/`#175`, GPF-B `#176`/`#177`, and GPF-C `#178`/`#179` as merged and closed out on `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; preserved stopped predecessor evidence in `#166`, `#168`, and `#170`; reconciled issue `#155` as the serialized Product Mode 1 checkpoint controller; repaired the Phase 1 process-branch allowlist so a branch may change only its matching GovernancePreflightV1 artifact; and kept issue `#8` open with Product Mode 2, real audio/video, providers, hosted launch, and production out of scope. |
 | 2026-07-19 | Issue `#184` and PR `#185` are active as the replacement PHF-020A structured-policy branch. The repository now tracks closed Product Mode authority in `docs/PHASE_PLAN.md` and `docs/SKILL_EXECUTION_PLAN.md`, keeps `docs/STATUS.md` as mutable current-state authority until PHF-020B, and does not claim issue `#8`, issue `#155`, Product Mode 2, runtime, media, provider, hosted/public launch, or production completion. |
 | 2026-07-19 | PR `#185` merged PHF-020A structured Product Mode policy authority at `1179760d342d126c78ff7bd09002d064dc7aaa0e`; issue `#184` is complete, issue `#8` and issue `#155` remain open for their separate acceptance contracts, stopped issue `#167` and PR `#168` remain preserved evidence, and the next approved policy action is the smallest PHF-020B/StatusStateV1 successor. |
+| 2026-07-19 | Issue `#188` started the PHF-020B/StatusStateV1 successor after PR `#187`; the repository now records a normalized StatusStateV1 current-state table in `docs/STATUS.md`, keeps PHF-020A Product Mode authority in `docs/PHASE_PLAN.md`, preserves stopped issue `#167` and PR `#168`, keeps issue `#8` and issue `#155` open, and does not authorize Product Mode 2, runtime, providers, media, hosted/public launch, or production work. |
 | 2026-06-29 | Initial canonical program status tracker added to consolidate stage, issue, PR, and governance status. |
 | 2026-06-29 | Tracker contract refined to be merge-stable and repository-scoped, with explicit limits on what local checks can enforce. |
 | 2026-06-29 | Stage 1 product/PRD hardening split clarified: `#1` covers PRD v1.0 hardening, while `#16` remains the follow-on Spec Kit gate. |

@@ -18,11 +18,11 @@ relocated tables do not authorize policy changes.
 
 Skill selection and execution must respect the gate order
 `PM-GATE-00 -> PM-GATE-10 -> PM-GATE-20 -> PM-GATE-30` before any Product Mode
-claim is made. `docs/STATUS.md` remains mutable current-state authority until PHF-020B,
+claim is made. `docs/STATUS.md` StatusStateV1 table is the normalized mutable current-state authority,
 alongside live GitHub issue and PR state.
 
-No PHF-020B, Product Mode 2, runtime, media, provider, hosted, public, or production work
-is authorized by this handoff.
+No Product Mode 2, runtime, media, provider, hosted, public, or production work
+is authorized by this handoff or by StatusStateV1.
 
 ## Stage-Aligned Skill Use
 
