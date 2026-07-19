@@ -1,0 +1,36 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 188,
+  "branch": "phase-1-closure-process-188-phf-020b-status-state-v1",
+  "objective": "Normalize the mutable PHF-020B StatusStateV1 current-state contract after PR #187 without changing product, runtime, provider, media, launch, or production posture.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-188.json",
+      "docs/STATUS.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/SKILL_EXECUTION_PLAN.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-188.json",
+      "docs/STATUS.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/SKILL_EXECUTION_PLAN.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker/",
+      "Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json"
+    ]
+  }
+}
