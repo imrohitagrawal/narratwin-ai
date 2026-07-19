@@ -1,0 +1,28 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 196,
+  "branch": "phase-1-closure-process-196-post-pr-195-status-reconciliation",
+  "objective": "Reconcile docs/STATUS.md after PR #195 merged issue #194 at 409376eac66ffb17d80e816ec87b0e54df2ebb22, without changing product, runtime, provider, media, hosted/public launch, public distribution, or production posture.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-196.json",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-196.json",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker/",
+      "Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json"
+    ]
+  }
+}
