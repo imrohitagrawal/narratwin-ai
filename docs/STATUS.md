@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-18
+- Last reviewed date: 2026-07-19
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only, with the active
   serialized path limited to the controlled local, synthetic, artifact-only
@@ -25,8 +25,9 @@ Use it to answer:
   non-downgradeable for production Go unless the affected provider, media,
   export, and replay paths remain disabled.
 - Current repo mode: Final Review has merged; Phase 1 Closure is active,
-  Product Mode 1 checkpoint work is in post-PR-C governance reconciliation, and
-  release posture is No-Go.
+  Product Mode 1 checkpoint work is in the PHF-020A structured-policy
+  replacement branch for issue `#184` and PR `#185`, and release posture is
+  No-Go.
 - Product implementation merged to `main`: Stage 8 performance, security
   hardening, and release-readiness work merged through PR `#33` at commit
   `fb40113`.
@@ -82,8 +83,9 @@ Use it to answer:
   issue `#178`/PR `#179` are merged and closed out on `main` at
   `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; stopped PRs `#166`, `#168`, and
   `#170` remain preserved evidence, not active implementation branches; issue
-  `#155` is the serialized Product Mode 1 checkpoint controller; issue `#8`
-  remains open; and issues `#43`, `#44`, `#48`, and `#49` remain open.
+  `#155` is the serialized Product Mode 1 checkpoint controller; issue `#184`
+  and PR `#185` are the active PHF-020A structured-policy replacement; issue
+  `#8` remains open; and issues `#43`, `#44`, `#48`, and `#49` remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -294,10 +296,11 @@ Use these files together with this tracker:
 | `#19` | Open | Future slice | Mock avatar video and FFmpeg assembly. |
 | `#20` | Open | Future slice | Interactive Q&A over approved project knowledge. |
 | `#21` | Open | Future slice | Premium adapters, observability dashboard, and cost controls. |
-| `#155` | Open | Product Mode 1 checkpoint controller | Canonical serialized tracker for the controlled local, synthetic, artifact-only Product Mode 1 checkpoint. Post-PR-C live reconciliation is active; replacement PHF-020A must be created only after this repository-ledger reconciliation PR merges and closes out. |
+| `#155` | Open | Product Mode 1 checkpoint controller | Canonical serialized tracker for the controlled local, synthetic, artifact-only Product Mode 1 checkpoint. The replacement PHF-020A work now runs under issue `#184` and PR `#185`; this tracker remains open until its actual acceptance contracts are satisfied. |
 | `#167` | Open, stopped predecessor evidence | Product Mode 1 governance predecessor | Original PHF-020A attempt superseded by stopped PR `#168`; do not resume, patch, merge, rebase, or delete its evidence. |
 | `#169` | Closed, frozen feasibility evidence | GovernancePreflight feasibility predecessor | Closed/stopped feasibility evidence for PR `#170`; do not modify its frozen evidence. |
 | `#181` | Closed | Phase 1 process prerequisite | Bounded local Lighthouse browser-selection maintenance completed through PR `#182` at merge commit `3ea049cff0bf2157bea0bb5aedf73eb562753d17`; it unblocked issue `#155` validation and changed no product runtime, launch level, provider posture, or production claim. |
+| `#184` | Open | PHF-020A structured-policy replacement | Active replacement for stopped issue `#167` and draft PR `#168`; creates closed Product Mode policy authority in `docs/PHASE_PLAN.md` and `docs/SKILL_EXECUTION_PLAN.md` while keeping PHF-020B, Product Mode 2, runtime, media, providers, hosted/public launch, and production out of scope. |
 
 ## Pull Request Ledger
 
@@ -351,6 +354,7 @@ Use these files together with this tracker:
 | `#175` | Merged | 2026-07-16 | HPR reviewer-overview hardening for issue `#174`; merged at `93ec63e2574701bf62bd3fa745f18cca560d5f09`. |
 | `#177` | Merged | 2026-07-16 | GPF-B prospective repository integration for issue `#176`; merged at `cee9fa099de6c3f01cbd2e5d670fa407ffa54d54`. |
 | `#179` | Merged | 2026-07-17 | GPF-C supported pull-request CI evidence for issue `#178`; merged at `22d48b9edc0338d613d4926059fa9ef1ef329d1f` after exact-head approval and closeout. |
+| `#185` | Open | Not merged | Active PR for issue `#184`; initial preflight-only head received Gate 1 approval, while final implementation must pass local gates, exact-head CI, and fresh latest-head human approval before merge. |
 
 ## Completed Work
 
@@ -502,13 +506,12 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Complete the current issue `#155` post-PR-C repository-ledger reconciliation
-   PR from `origin/main` at `3ea049cff0bf2157bea0bb5aedf73eb562753d17`, pass
-   local quality and exact-head CI, then stop at the latest-head human approval
-   gate.
-2. After that PR merges and closes out, create the replacement PHF-020A issue
-   and branch from current `main`. Do not reuse stopped issue `#167` or PR
-   `#168` implementation history.
+1. Complete issue `#184` / PR `#185` as the replacement PHF-020A
+   structured-policy branch: keep the exact eight-file scope, pass local gates
+   and exact-head CI, then stop for fresh latest-head human approval before
+   merge.
+2. Preserve stopped issue `#167` and PR `#168` as evidence only. Do not resume,
+   patch, rebase, merge, close, or delete that implementation history in PHF-020A.
 3. After replacement PHF-020A merges and closes out, create and complete the
    smallest PHF-020B/StatusStateV1 successor required by the live contracts.
 4. Keep issue `#8` and issue `#155` open until their actual acceptance
@@ -551,6 +554,7 @@ Required update rules:
 | 2026-07-17 | Issue `#181` opened as a prerequisite maintenance item after local `frontend-lighthouse` failed with Lighthouse `NO_FCP` on both the issue `#155` branch and clean `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; scope is limited to local Lighthouse browser selection and guardrail/status updates, with no product runtime, launch, provider, or production-posture change. |
 | 2026-07-17 | PR `#182` merged issue `#181` at `3ea049cff0bf2157bea0bb5aedf73eb562753d17`, closing the bounded local Lighthouse browser-selection prerequisite and unblocking issue `#155` validation without product runtime, launch, provider, or production-posture change. |
 | 2026-07-17 | Post-PR-C reconciliation verified GPF-A `#172`/`#173`, HPR `#174`/`#175`, GPF-B `#176`/`#177`, and GPF-C `#178`/`#179` as merged and closed out on `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; preserved stopped predecessor evidence in `#166`, `#168`, and `#170`; reconciled issue `#155` as the serialized Product Mode 1 checkpoint controller; repaired the Phase 1 process-branch allowlist so a branch may change only its matching GovernancePreflightV1 artifact; and kept issue `#8` open with Product Mode 2, real audio/video, providers, hosted launch, and production out of scope. |
+| 2026-07-19 | Issue `#184` and PR `#185` are active as the replacement PHF-020A structured-policy branch. The repository now tracks closed Product Mode authority in `docs/PHASE_PLAN.md` and `docs/SKILL_EXECUTION_PLAN.md`, keeps `docs/STATUS.md` as mutable current-state authority until PHF-020B, and does not claim issue `#8`, issue `#155`, Product Mode 2, runtime, media, provider, hosted/public launch, or production completion. |
 | 2026-06-29 | Initial canonical program status tracker added to consolidate stage, issue, PR, and governance status. |
 | 2026-06-29 | Tracker contract refined to be merge-stable and repository-scoped, with explicit limits on what local checks can enforce. |
 | 2026-06-29 | Stage 1 product/PRD hardening split clarified: `#1` covers PRD v1.0 hardening, while `#16` remains the follow-on Spec Kit gate. |

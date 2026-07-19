@@ -10,6 +10,20 @@ or prevented unsafe action. Skill invocation is not completion evidence.
 
 Stage 0 does not install product implementation tools. Stage 0 records the operating model, lock requirements, and quality gates that future stages must follow.
 
+## Product Mode Policy Authority Handoff
+
+Only `docs/PHASE_PLAN.md` registered tables are authoritative for durable
+Product Mode policy. Explanatory prose, examples, comments, quoted text, and
+relocated tables do not authorize policy changes.
+
+Skill selection and execution must respect the gate order
+`PM-GATE-00 -> PM-GATE-10 -> PM-GATE-20 -> PM-GATE-30` before any Product Mode
+claim is made. `docs/STATUS.md` remains mutable current-state authority until PHF-020B,
+alongside live GitHub issue and PR state.
+
+No PHF-020B, Product Mode 2, runtime, media, provider, hosted, public, or production work
+is authorized by this handoff.
+
 ## Stage-Aligned Skill Use
 
 | Stage | Stage name | Skill/tool posture | Allowed outputs |

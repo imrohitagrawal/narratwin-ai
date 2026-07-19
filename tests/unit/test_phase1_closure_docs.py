@@ -192,6 +192,44 @@ Only the registered tables in this section are authoritative for PHF-020A.
 
 
 PHF020A_SEEDS = (1103, 2207, 3301, 4409, 5519, 6619, 7723, 8837, 9941, 10039)
+PHF020A_FAMILY_ORDER = (
+    "structure/section",
+    "table schema/delimiter",
+    "containment/parent",
+    "required/unknown/duplicate/reference",
+    "taxonomy/enum",
+    "graph/gate",
+    "optional-media relation",
+    "issue-#8 acceptance mapping",
+    "current-state mixing",
+    "resource/unicode/format bounds",
+    "scope/preflight binding",
+)
+PHF020A_BASE_INVALID_COUNTS = {
+    "structure/section": 2,
+    "table schema/delimiter": 2,
+    "containment/parent": 2,
+    "required/unknown/duplicate/reference": 5,
+    "taxonomy/enum": 2,
+    "graph/gate": 3,
+    "optional-media relation": 1,
+    "issue-#8 acceptance mapping": 1,
+    "current-state mixing": 1,
+    "resource/unicode/format bounds": 2,
+    "scope/preflight binding": 1,
+}
+PHF020A_SEED_EXTRA_FAMILIES = {
+    1103: ("table schema/delimiter", "containment/parent", "optional-media relation"),
+    2207: ("table schema/delimiter", "containment/parent", "issue-#8 acceptance mapping"),
+    3301: ("table schema/delimiter", "containment/parent", "current-state mixing"),
+    4409: ("table schema/delimiter", "containment/parent", "scope/preflight binding"),
+    5519: ("table schema/delimiter", "optional-media relation", "issue-#8 acceptance mapping"),
+    6619: ("containment/parent", "current-state mixing", "scope/preflight binding"),
+    7723: ("optional-media relation", "issue-#8 acceptance mapping", "current-state mixing"),
+    8837: ("optional-media relation", "issue-#8 acceptance mapping", "scope/preflight binding"),
+    9941: ("optional-media relation", "current-state mixing", "scope/preflight binding"),
+    10039: ("issue-#8 acceptance mapping", "current-state mixing", "scope/preflight binding"),
+}
 PHF020A_INVALID_TOTALS = {
     "structure/section": 20,
     "table schema/delimiter": 25,
@@ -205,16 +243,54 @@ PHF020A_INVALID_TOTALS = {
     "resource/unicode/format bounds": 20,
     "scope/preflight binding": 15,
 }
+PHF020A_SEED_INVALID_TOTALS = {
+    seed: {
+        family: PHF020A_BASE_INVALID_COUNTS[family]
+        + (1 if family in PHF020A_SEED_EXTRA_FAMILIES[seed] else 0)
+        for family in PHF020A_FAMILY_ORDER
+    }
+    for seed in PHF020A_SEEDS
+}
+PHF020A_ALLOWED_FINDING_FAMILIES = {
+    "PHF020A.STRUCTURE",
+    "PHF020A.TABLE",
+    "PHF020A.CONTAINMENT",
+    "PHF020A.REQUIRED",
+    "PHF020A.UNKNOWN",
+    "PHF020A.DUPLICATE",
+    "PHF020A.TYPE",
+    "PHF020A.ENUM",
+    "PHF020A.REFERENCE",
+    "PHF020A.TAXONOMY",
+    "PHF020A.GRAPH",
+    "PHF020A.MEDIA",
+    "PHF020A.ACCEPTANCE",
+    "PHF020A.STATE",
+    "PHF020A.LIMIT",
+    "PHF020A.SCOPE",
+}
+PHF020A_FAMILY_CODE_PREFIXES = {
+    "structure/section": {"PHF020A.STRUCTURE"},
+    "table schema/delimiter": {"PHF020A.TABLE"},
+    "containment/parent": {"PHF020A.CONTAINMENT"},
+    "required/unknown/duplicate/reference": {
+        "PHF020A.REQUIRED",
+        "PHF020A.UNKNOWN",
+        "PHF020A.DUPLICATE",
+        "PHF020A.REFERENCE",
+    },
+    "taxonomy/enum": {"PHF020A.ENUM"},
+    "graph/gate": {"PHF020A.GRAPH"},
+    "optional-media relation": {"PHF020A.MEDIA"},
+    "issue-#8 acceptance mapping": {"PHF020A.ACCEPTANCE"},
+    "current-state mixing": {"PHF020A.STATE"},
+    "resource/unicode/format bounds": {"PHF020A.LIMIT"},
+    "scope/preflight binding": {"PHF020A.SCOPE"},
+}
 
 
 def phf020a_generated_cases() -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
-    invalid_sequence = [
-        family
-        for family, count in PHF020A_INVALID_TOTALS.items()
-        for _ in range(count)
-    ]
-    assert len(invalid_sequence) == 250
     for seed_index, seed in enumerate(PHF020A_SEEDS):
         for index in range(25):
             cases.append(
@@ -225,11 +301,19 @@ def phf020a_generated_cases() -> list[dict[str, Any]]:
                     "family": "valid",
                     "text": PHF020A_VALID_POLICY + f"\n\nSafe explanatory prose {seed}-{index}.\n",
                     "expected": [],
+                    "mutation_id": None,
+                    "mutation_count": 0,
                 }
             )
-        for index in range(25):
-            family = invalid_sequence[seed_index * 25 + index]
-            text, expected = phf020a_mutated_policy(family)
+        invalid_families = [
+            family
+            for family in PHF020A_FAMILY_ORDER
+            for _ in range(PHF020A_SEED_INVALID_TOTALS[seed][family])
+        ]
+        assert len(invalid_families) == 25
+        for index, family in enumerate(invalid_families):
+            mutation_id = f"{family}:{seed}:{index}"
+            text, expected = phf020a_mutated_policy(family, seed=seed, variant=index)
             cases.append(
                 {
                     "id": f"{seed}:invalid:{index}:{family}",
@@ -238,35 +322,71 @@ def phf020a_generated_cases() -> list[dict[str, Any]]:
                     "family": family,
                     "text": text,
                     "expected": expected,
+                    "mutation_id": mutation_id,
+                    "mutation_count": 1,
                 }
             )
     return cases
 
 
-def phf020a_mutated_policy(family: str) -> tuple[str, list[str]]:
+def phf020a_mutated_policy(family: str, *, seed: int = 0, variant: int = 0) -> tuple[str, list[str]]:
     text = PHF020A_VALID_POLICY
     if family == "structure/section":
-        return text.replace("## Product Mode Policy Authority", "## Product Mode Notes"), ["PHF020A.STRUCTURE.MISSING_PARENT"]
+        replacements = ("## Product Mode Notes", "### Product Mode Policy Authority")
+        return text.replace("## Product Mode Policy Authority", replacements[variant % len(replacements)]), ["PHF020A.STRUCTURE.MISSING_PARENT"]
     if family == "table schema/delimiter":
-        return text.replace("|---|---|---|---|", "| ID | Table | Parent heading | Authority |", 1), ["PHF020A.TABLE.DELIMITER_MISSING"]
+        if variant % 2 == 0:
+            return text.replace("|---|---|---|---|", "| ID | Table | Parent heading | Authority |", 1), ["PHF020A.TABLE.DELIMITER_MISSING"]
+        return text.replace("|---|---|---|---|", "|---|---|---|", 1), ["PHF020A.TABLE.DELIMITER_WIDTH"]
     if family == "containment/parent":
-        return text.replace("## Product Mode Policy Authority", "## Relocated Policy"), ["PHF020A.STRUCTURE.MISSING_PARENT"]
+        return text.replace("Product Mode Policy Authority | structured |", f"Relocated Policy {seed}-{variant} | structured |", 1), ["PHF020A.CONTAINMENT.PARENT"]
     if family == "required/unknown/duplicate/reference":
-        return text.replace("| AUTH-GATES | Cross-mode gate graph | Product Mode Policy Authority | structured |\n", ""), ["PHF020A.REQUIRED.MISSING_AUTHORITY"]
+        selector = variant % 4
+        if selector == 0:
+            return text.replace("| AUTH-GATES | Cross-mode gate graph | Product Mode Policy Authority | structured |\n", ""), ["PHF020A.REQUIRED.MISSING_AUTHORITY"]
+        if selector == 1:
+            return text.replace("| AUTH-ACTIVATION | PM-MODE-001 activation evidence | Product Mode Policy Authority | structured |", f"| AUTH-UNKNOWN-{seed}-{variant} | PM-MODE-001 activation evidence | Product Mode Policy Authority | structured |"), ["PHF020A.UNKNOWN.AUTHORITY"]
+        if selector == 2:
+            return text.replace("| AUTH-ACTIVATION | PM-MODE-001 activation evidence | Product Mode Policy Authority | structured |", "| AUTH-GATES | PM-MODE-001 activation evidence | Product Mode Policy Authority | structured |"), ["PHF020A.DUPLICATE.AUTHORITY"]
+        return text.replace("| PM-1 | product-mode | #155 |", "| PM-1 | product-mode | #8 |"), ["PHF020A.REFERENCE.OWNER"]
     if family == "taxonomy/enum":
-        return text.replace("| PM-2 | product-mode | #20 |", "| PM-3 | product-mode | #20 |"), ["PHF020A.ENUM.UNKNOWN_TAXONOMY"]
+        if variant % 2 == 0:
+            return text.replace("| PM-2 | product-mode | #20 |", f"| PM-X-{seed}-{variant} | product-mode | #20 |"), ["PHF020A.ENUM.UNKNOWN_TAXONOMY"]
+        return text.replace("| PM-2 | product-mode | #20 |", "| PM-2 | launch-mode | #20 |"), ["PHF020A.ENUM.INVALID_KIND"]
     if family == "graph/gate":
-        return text.replace("| PM-GATE-20 | PM-1 | PM-2 | PM-GATE-30 |", "| PM-GATE-20 | PM-1 | PM-2 | none |"), ["PHF020A.GRAPH.EDGE_INVALID"]
+        if variant % 2 == 0:
+            return text.replace("| PM-GATE-20 | PM-1 | PM-2 | PM-GATE-30 |", "| PM-GATE-20 | PM-1 | PM-2 | none |"), ["PHF020A.GRAPH.EDGE_INVALID"]
+        return text.replace("| PM-GATE-30 | PM-2 | Future reset | none |", f"| PM-GATE-X-{seed}-{variant} | PM-2 | Future reset | none |"), ["PHF020A.GRAPH.NODE_INVALID"]
     if family == "optional-media relation":
-        return text.replace("TTS audio is not mandatory for PM-GATE-20", "TTS audio is mandatory for PM-GATE-20"), ["PHF020A.MEDIA.MANDATORY"]
+        if variant % 2 == 0:
+            return text.replace("TTS audio is not mandatory for PM-GATE-20", "TTS audio is mandatory for PM-GATE-20"), ["PHF020A.MEDIA.MANDATORY"]
+        return text.replace("| #19 | optional-branch | PM-GATE-10 |", "| #19 | required-branch | PM-GATE-20 |"), ["PHF020A.MEDIA.RELATION_INVALID"]
     if family == "issue-#8 acceptance mapping":
-        return text.replace("| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |\n", ""), ["PHF020A.ACCEPTANCE.MISSING"]
+        if variant % 2 == 0:
+            return text.replace("| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |\n", ""), ["PHF020A.ACCEPTANCE.MISSING"]
+        return text.replace("| ISSUE8-04 | #8 | optional media independence | #18/#19 |", "| ISSUE8-04 | #155 | optional media independence | #18/#19 |"), ["PHF020A.ACCEPTANCE.SOURCE_INVALID"]
     if family == "current-state mixing":
-        return text + "\n\nCurrent module is CH-M1-01.\n", ["PHF020A.STATE.MUTABLE_CURRENT_STATE"]
+        return text + f"\n\nCurrent module is CH-M1-{variant + 1:02d}.\n", ["PHF020A.STATE.MUTABLE_CURRENT_STATE"]
     if family == "resource/unicode/format bounds":
-        return ("# Phase Plan\n" + ("x" * (256 * 1024 + 1))), ["PHF020A.LIMIT.BYTES"]
+        selector = variant % 7
+        if selector == 0:
+            return ("# Phase Plan\n" + ("x" * (256 * 1024 + 1))), ["PHF020A.LIMIT.BYTES"]
+        if selector == 1:
+            return "\n".join("# h" for _ in range(10_001)), ["PHF020A.LIMIT.LINES"]
+        if selector == 2:
+            return "\n".join(f"## h{i}" for i in range(257)), ["PHF020A.LIMIT.HEADINGS"]
+        if selector == 3:
+            return text.replace("structured |", ("x" * 2049) + " |", 1), ["PHF020A.LIMIT.CELL"]
+        if selector == 4:
+            return text + "\x00", ["PHF020A.LIMIT.CONTROL"]
+        if selector == 5:
+            decoys = "\n".join("| A |\n|---|\n| B |" for _ in range(65))
+            return text + "\n\n" + decoys, ["PHF020A.LIMIT.TABLES"]
+        long_rows = "\n".join("| A |" for _ in range(2049))
+        return text + "\n\n" + long_rows, ["PHF020A.LIMIT.ROWS"]
     if family == "scope/preflight binding":
-        return text.replace("PHF020A tests", "backend/app/main.py"), ["PHF020A.SCOPE.FORBIDDEN_REFERENCE"]
+        forbidden = ("backend/app/main.py", "frontend/src/app/page.tsx", "package.json")
+        return text.replace("PHF020A tests", forbidden[variant % len(forbidden)]), ["PHF020A.SCOPE.FORBIDDEN_REFERENCE"]
     raise AssertionError(f"unhandled family: {family}")
 
 
@@ -344,6 +464,29 @@ def test_phf020a_valid_policy_has_no_findings() -> None:
             ["PHF020A.STRUCTURE.MISSING_PARENT"],
         ),
         (
+            "global-search-satisfaction",
+            PHF020A_VALID_POLICY.replace("## Product Mode Policy Authority", "## Relocated Policy")
+            + "\n\n## Product Mode Policy Authority\n\nPM-GATE-00 PM-GATE-10 PM-GATE-20 PM-GATE-30\n",
+            ["PHF020A.TABLE.MISSING"],
+        ),
+        (
+            "fenced-code-authority",
+            "# Phase Plan\n\n## Product Mode Policy Authority\n\n```md\n"
+            + PHF020A_VALID_POLICY.split("## Product Mode Policy Authority", 1)[1].strip()
+            + "\n```\n",
+            ["PHF020A.TABLE.MISSING"],
+        ),
+        (
+            "blockquote-authority",
+            "# Phase Plan\n\n" + "\n".join("> " + line for line in PHF020A_VALID_POLICY.splitlines()[2:]),
+            ["PHF020A.STRUCTURE.MISSING_PARENT"],
+        ),
+        (
+            "comment-authority",
+            "# Phase Plan\n\n<!--\n" + PHF020A_VALID_POLICY + "\n-->\n",
+            ["PHF020A.STRUCTURE.MISSING_PARENT"],
+        ),
+        (
             "duplicate-parent-container",
             PHF020A_VALID_POLICY + "\n\n## Product Mode Policy Authority\n\nDuplicate.\n",
             ["PHF020A.DUPLICATE.PARENT"],
@@ -386,19 +529,34 @@ def test_phf020a_generated_suite_contract_is_exact() -> None:
     assert len(cases) == 500
     assert {case["seed"] for case in cases} == set(PHF020A_SEEDS)
     assert len({case["id"] for case in cases}) == 500
+    invalid_cases = [case for case in cases if not case["valid"]]
+    assert len({case["mutation_id"] for case in invalid_cases}) == 250
+    assert all(case["mutation_count"] == 1 for case in invalid_cases)
     for seed in PHF020A_SEEDS:
         seed_cases = [case for case in cases if case["seed"] == seed]
         assert len(seed_cases) == 50
         assert sum(1 for case in seed_cases if case["valid"]) == 25
         assert sum(1 for case in seed_cases if not case["valid"]) == 25
+        seed_invalid_totals = {
+            family: sum(1 for case in seed_cases if case["family"] == family)
+            for family in PHF020A_INVALID_TOTALS
+        }
+        assert {
+            family: count for family, count in seed_invalid_totals.items() if count
+        } == PHF020A_SEED_INVALID_TOTALS[seed]
     family_totals = {
         family: sum(1 for case in cases if case["family"] == family)
         for family in PHF020A_INVALID_TOTALS
     }
     assert family_totals == PHF020A_INVALID_TOTALS
     for case in cases:
+        assert phase1.phf020a_policy_findings(PHF020A_VALID_POLICY) == []
         actual = phase1.phf020a_policy_findings(case["text"])
         assert actual == case["expected"], case["id"]
+        for code in actual:
+            family = ".".join(code.split(".")[:2])
+            assert family in PHF020A_ALLOWED_FINDING_FAMILIES, case["id"]
+            assert family in PHF020A_FAMILY_CODE_PREFIXES[case["family"]], case["id"]
 
 
 def run_issue141_platform_contract_check(
