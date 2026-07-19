@@ -1,0 +1,28 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 206,
+  "branch": "phase-1-closure-process-206-post-pr-205-status-reconcile",
+  "objective": "Reconcile docs/STATUS.md after PR #205 merged, issue #204 closed during closeout, and post-merge main quality run 29703386168 passed at bba8cc5baf9bdfc6cbb0cf442ded91e6a01afb63, without changing product, runtime, provider, media, hosted/public launch, public distribution, Product Mode 2, CH-M1-02 implementation, or production posture. This schema-valid artifact is the issue-scoped scope envelope; the PR body carries the detailed source-fact, invariant, evidence, prompt, stop-rule, and skill/tool preflight tables.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-206.json",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-206.json",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker/",
+      "Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json"
+    ]
+  }
+}
