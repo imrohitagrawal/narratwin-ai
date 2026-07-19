@@ -439,8 +439,73 @@ def test_issue184_branch_allows_only_exact_replacement_scope(monkeypatch: Any) -
     ]
 
 
+def test_issue188_branch_allows_only_status_state_v1_scope(monkeypatch: Any) -> None:
+    expected = {
+        "docs/governance/preflights/issue-188.json",
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+    assert phase1.ISSUE_188_ALLOWED_CHANGED_FILES == expected
+    branch = "phase-1-closure-process-188-phf-020b-status-state-v1"
+    assert run_changed_files_check(monkeypatch, branch=branch, files=sorted(expected)) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["AGENTS.md", "scripts/guardrails_check.py"],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change AGENTS.md.",
+        f"Phase 1 Closure branch {branch} may not change scripts/guardrails_check.py.",
+    ]
+
+
 def test_phf020a_valid_policy_has_no_findings() -> None:
     assert phase1.phf020a_policy_findings(PHF020A_VALID_POLICY) == []
+
+
+def test_status_state_v1_contract_rejects_missing_table() -> None:
+    status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
+    mutated = re.sub(
+        r"\n## StatusStateV1\n.*?(?=\n## )",
+        "\n",
+        status_text,
+        count=1,
+        flags=re.S,
+    )
+
+    assert "SSV1.STRUCTURE.MISSING" in phase1.status_state_v1_findings(mutated)
+
+
+def test_status_state_v1_contract_rejects_status_overclaim() -> None:
+    status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
+    expected = (
+        "| SSV1-ISSUE155 | product-mode-controller | #155 | open | open | "
+        "Issue #155 remains the serialized Product Mode 1 checkpoint controller; "
+        "PHF-020B does not satisfy or close it. |"
+    )
+    assert expected in status_text
+    mutated = status_text.replace(
+        expected,
+        expected.replace("| open | open |", "| closed | closed |"),
+        1,
+    )
+
+    assert phase1.status_state_v1_findings(status_text) == []
+    assert "SSV1.STATE.INVALID" in phase1.status_state_v1_findings(mutated)
+
+
+def test_status_state_v1_contract_rejects_duplicate_authority_section() -> None:
+    status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
+    duplicate = (
+        "\n## StatusStateV1\n\n"
+        "| ID | State kind | Owner | Expected status | Current status | Contract |\n"
+        "| --- | --- | --- | --- | --- | --- |\n"
+        "| SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Contradictory duplicate authority. |\n"
+    )
+
+    assert "SSV1.STRUCTURE.DUPLICATE" in phase1.status_state_v1_findings(status_text + duplicate)
 
 
 @pytest.mark.parametrize(

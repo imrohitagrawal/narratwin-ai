@@ -647,6 +647,24 @@ It must not authorize PHF-020B, Product Mode 2, runtime/CH-M1 work, real media,
 providers, hosted/public launch, production, backend, frontend, workflow, Docker,
 dependency, RAG, avatar, database, or product implementation work.
 
+Issue `#188` is the PHF-020B StatusStateV1 successor after PR `#187`. Branch
+`phase-1-closure-process-188-phf-020b-status-state-v1` may change only:
+
+- `docs/governance/preflights/issue-188.json`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/SKILL_EXECUTION_PLAN.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+It normalizes mutable current-state authority in `docs/STATUS.md` without
+replacing the PHF-020A Product Mode authority tables in `docs/PHASE_PLAN.md`.
+It must not close or satisfy issue `#8` or issue `#155`, must preserve stopped
+issue `#167` and PR `#168`, and must not authorize Product Mode 2, runtime,
+CH-M1 implementation, real media, providers, hosted/public launch, production,
+backend, frontend, workflow, Docker, dependency, RAG, avatar, database, or
+product implementation work.
+
 Context 0 issue `#39` closure-contract branches using
 `phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
 they may touch only docs, guardrails, tests, PR templates, and CI workflow
