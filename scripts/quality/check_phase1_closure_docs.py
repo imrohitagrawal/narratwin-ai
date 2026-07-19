@@ -1217,6 +1217,10 @@ def phf020a_is_delimiter(line: str) -> bool:
     return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell.replace(" ", "")) for cell in cells)
 
 
+def phf020a_resource_table_line(line: str) -> str:
+    return re.sub(r"^\s*(?:>\s*)+", "", line).strip()
+
+
 def phf020a_table(parent_text: str, heading: str) -> tuple[str | None, list[dict[str, str]]]:
     heading_matches = re.findall(rf"^###\s+{re.escape(heading)}\s*$", parent_text, flags=re.M)
     if len(heading_matches) > 1:
@@ -1282,7 +1286,10 @@ def phf020a_policy_findings(text: str) -> list[str]:
         return ["PHF020A.LIMIT.UNICODE"]
     if len(encoded_text) > 256 * 1024:
         return ["PHF020A.LIMIT.BYTES"]
-    if any(ord(char) < 32 and char not in "\n\r\t" for char in text):
+    if any(
+        (ord(char) < 32 and char not in "\n\r\t") or 0x7F <= ord(char) <= 0x9F
+        for char in text
+    ):
         return ["PHF020A.LIMIT.CONTROL"]
     if len(text.splitlines()) > 10_000:
         return ["PHF020A.LIMIT.LINES"]
@@ -1293,7 +1300,7 @@ def phf020a_policy_findings(text: str) -> list[str]:
     row_count = 0
     cell_count = 0
     for line in text.splitlines():
-        stripped = line.strip()
+        stripped = phf020a_resource_table_line(line)
         if not stripped.startswith("|"):
             continue
         cells = phf020a_cells(stripped)

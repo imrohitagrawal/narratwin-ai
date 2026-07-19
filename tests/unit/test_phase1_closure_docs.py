@@ -606,7 +606,14 @@ def test_phf020a_policy_single_faults_return_exact_vectors(name: str, text: str,
         ("headings", "\n".join(f"## h{i}" for i in range(257)), ["PHF020A.LIMIT.HEADINGS"]),
         ("cell", PHF020A_VALID_POLICY.replace("structured |", ("x" * 2049) + " |", 1), ["PHF020A.LIMIT.CELL"]),
         ("control", PHF020A_VALID_POLICY + "\x00", ["PHF020A.LIMIT.CONTROL"]),
+        ("del-control", PHF020A_VALID_POLICY + "\x7f", ["PHF020A.LIMIT.CONTROL"]),
+        ("c1-control", PHF020A_VALID_POLICY + "\x80", ["PHF020A.LIMIT.CONTROL"]),
         ("unicode", PHF020A_VALID_POLICY + "\ud800", ["PHF020A.LIMIT.UNICODE"]),
+        (
+            "blockquoted-tables",
+            PHF020A_VALID_POLICY + "\n\n" + "\n".join("> | A |\n> |---|\n> | B |" for _ in range(65)),
+            ["PHF020A.LIMIT.TABLES"],
+        ),
     ),
 )
 def test_phf020a_resource_limits_fail_closed(limit_name: str, text: str, expected: list[str]) -> None:
