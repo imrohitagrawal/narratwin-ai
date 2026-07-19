@@ -1,13 +1,20 @@
 import { expect, test } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 
 test.skip(process.env.NARRATWIN_REAL_STACK !== "1", "Requires the local Compose stack.");
 
 test("CH-M1-02 real browser path reaches frontend, backend, and Compose services without API interception", async ({
   page,
 }, testInfo) => {
+  const startedAt = performance.now();
   const apiCalls: string[] = [];
   const failedRequests: string[] = [];
+  const requestOrigins = new Set<string>();
 
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    requestOrigins.add(url.origin);
+  });
   page.on("requestfinished", (request) => {
     const url = new URL(request.url());
     if (url.pathname.startsWith("/api/v1/")) {
@@ -20,6 +27,7 @@ test("CH-M1-02 real browser path reaches frontend, backend, and Compose services
 
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
+  const appOrigin = new URL(response?.url() ?? page.url()).origin;
 
   await expect(page.getByRole("heading", { name: "Avatar demo export" })).toBeVisible();
   await page.getByLabel("Knowledge document").fill(`# NarraTwin AI
@@ -57,7 +65,48 @@ Every generated walkthrough claim must cite retrieved source chunks from approve
     fullPage: true,
   });
 
+  const durationMs = Math.round(performance.now() - startedAt);
+  await writeFile(
+    testInfo.outputPath("ch-m1-02-evidence.json"),
+    JSON.stringify(
+      {
+        commit: process.env.NARRATWIN_EVIDENCE_COMMIT ?? "not-provided",
+        baseURL: process.env.NARRATWIN_REAL_STACK_BASE_URL ?? "not-provided",
+        caseCount: 1,
+        durationMs,
+        apiCallCount: apiCalls.length,
+        requestOrigins: Array.from(requestOrigins).sort(),
+        noApiInterception: true,
+        providers: {
+          llm: "mock",
+          embedding: "mock",
+          evaluation: "mock",
+          translation: "mock",
+          avatar: "mock",
+          tts: "mock",
+          stt: "mock",
+          subtitle: "mock",
+          videoRenderer: "local",
+        },
+        limitations: [
+          "controlled local/mock evidence only",
+          "no Product Mode 2",
+          "no real audio",
+          "no real video export",
+          "no external/paid provider enablement",
+          "no hosted/public launch",
+          "production/public release remains No-Go",
+        ],
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
   expect(failedRequests).toEqual([]);
+  expect(Array.from(requestOrigins).sort()).toEqual([appOrigin]);
+  expect(durationMs).toBeLessThan(15_000);
   expect(apiCalls).toHaveLength(8);
   expect(apiCalls[0]).toBe("POST /api/v1/projects");
   expect(apiCalls[1]).toMatch(/^POST \/api\/v1\/projects\/proj_\d+\/knowledge-documents$/);
