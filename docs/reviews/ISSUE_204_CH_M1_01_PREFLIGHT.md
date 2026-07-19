@@ -51,7 +51,7 @@ Out of scope:
 |---|---|---|
 | M1C01-CHAIN-001 | UI captures durable consent before render and sends returned `consentRecordId` to `/avatar-renders`. | Mocked Playwright smoke asserts request order and render body. |
 | M1C01-IDEMP-002 | Render idempotency no longer reuses the old boolean-only seed; it includes the durable consent record identity. | Mocked Playwright smoke asserts the new render idempotency key. |
-| M1C01-ERROR-003 | Durable consent backend errors are safe to display through the existing bounded error path. | Frontend safe-error-code update plus focused review. |
+| M1C01-ERROR-003 | Durable consent backend errors are safe to display through the existing bounded error path. | Mocked Playwright smoke returns `AVATAR_CONSENT_INVALID` from `/avatar-renders` and asserts the bounded alert path. |
 | M1C01-SCOPE-004 | CH-M1-01 branch can touch only the approved frontend, smoke, governance, and traceability files. | `tests/unit/test_phase1_closure_docs.py` and `scripts/quality/check_phase1_closure_docs.py`. |
 | M1C01-EVIDENCE-005 | Mocked browser evidence is not mislabeled as real-stack E2E evidence. | PR body and status text must call it mocked browser smoke; CH-M1-02 remains the real-stack step. |
 | HUMAN-MERGE-001 | Merge and issue closeout remain human-gated and reference-only unless approval explicitly makes closeout eligible. | Reviewer approval, green CI, and final merge message review. |
