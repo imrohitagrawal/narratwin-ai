@@ -1286,10 +1286,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-PREDECESSOR": (
         "stopped-evidence",
-        "#167/#168",
+        "#162/#163/#166/#167/#168",
         "preserved",
         "preserved",
-        "Stopped PHF-020A predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, or deleted.",
+        "Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten.",
     ),
     "SSV1-FORBIDDEN": (
         "prohibited-work",

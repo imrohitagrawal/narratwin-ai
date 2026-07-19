@@ -6,7 +6,7 @@ export default defineConfig({
   outputDir: "../reports/ch-m1-02/playwright-output",
   use: {
     baseURL: process.env.NARRATWIN_REAL_STACK_BASE_URL ?? "http://127.0.0.1:3000",
-    trace: "retain-on-failure",
+    trace: "on",
     screenshot: "only-on-failure",
   },
   projects: [

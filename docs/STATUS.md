@@ -148,7 +148,7 @@ evidence, next action posture, and prohibited work.
 | SSV1-NEXT | next-action | #208/#209 | active | active | Issue #208 is the active CH-M1-02 real-stack local evidence item; issue #209 is included only for the directly coupled local Phase 1 Closure quality-dispatch clarification. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | open | open | Issue #155 remains the serialized Product Mode 1 checkpoint controller; PHF-020B does not satisfy or close it. |
-| SSV1-PREDECESSOR | stopped-evidence | #167/#168 | preserved | preserved | Stopped PHF-020A predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, or deleted. |
+| SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
 | SSV1-FORBIDDEN | prohibited-work | repository | forbidden | forbidden | Product Mode 2, hosted launch, provider enablement, public media distribution, production-readiness claims, and product/runtime implementation remain forbidden. |
 
 ## Source Of Truth
@@ -605,8 +605,9 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Preserve stopped issue `#167` and PR `#168` as evidence only. Do not resume,
-   patch, rebase, merge, close, or delete that implementation history in PHF-020A.
+1. Preserve stopped evidence surfaces `#162`, `#163`, `#166`, `#167`, and
+   `#168` as evidence only. Do not resume, patch, rebase, merge, close, delete,
+   or rewrite that implementation history.
 2. Keep issue `#8` and issue `#155` open until their actual acceptance
    contracts are satisfied.
 3. Complete issue `#208` CH-M1-02 in one consolidated PR that also addresses

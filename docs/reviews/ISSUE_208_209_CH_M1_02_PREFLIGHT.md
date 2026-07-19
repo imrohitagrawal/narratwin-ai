@@ -124,4 +124,39 @@ if review finds a new material defect class after two correction loops.
 
 ## Runtime Evidence
 
-Pending until the exact-head Compose/browser validation run.
+The exact-head runtime validation command, commit SHA, duration, CI links, and
+issue/PR URLs are recorded in the PR body and durable issue comments after the
+final local run, because a committed file cannot name its own final commit SHA
+without becoming stale.
+
+Required local evidence packet for `CH-M1-02`:
+
+- Commands: `reports/ch-m1-02/commands.txt`.
+- Compose state: `reports/ch-m1-02/compose-ps.jsonl`.
+- Backend/frontend logs: `reports/ch-m1-02/compose-backend-frontend.log`.
+- Browser screenshot:
+  `reports/ch-m1-02/playwright-output/real-stack-CH-M1-02-real-b-fef05-es-without-API-interception-chromium/ch-m1-02-avatar-export.png`.
+- Browser run summary:
+  `reports/ch-m1-02/playwright-output/.last-run.json`.
+- Browser trace after final validation:
+  `reports/ch-m1-02/playwright-output/real-stack-CH-M1-02-real-b-fef05-es-without-API-interception-chromium/trace.zip`.
+
+Evidence acceptance facts:
+
+- Case count: one Chromium Playwright case,
+  `CH-M1-02 real browser path reaches frontend, backend, and Compose services
+  without API interception`.
+- Browser path: real page load and form submission through the frontend, with
+  passive request observation only and no application API interception.
+- Service path: browser -> Compose frontend -> internal Compose backend ->
+  internal Compose Postgres/Redis dependencies.
+- Provider posture: `docker-compose.yml` keeps LLM, embedding, evaluation,
+  translation, avatar, TTS, STT, and subtitle providers set to `mock`; video
+  renderer remains local placeholder-only.
+- Local port assumptions: host frontend port may be remapped when local ports
+  are occupied; the accepted evidence command must point
+  `NARRATWIN_REAL_STACK_BASE_URL` at localhost.
+- Limitations: no hosted/public launch, no production readiness, no Product Mode
+  2, no real audio, no real video export, no external/paid provider enablement,
+  and no public media distribution.
+- Release posture: production/public release remains No-Go.
