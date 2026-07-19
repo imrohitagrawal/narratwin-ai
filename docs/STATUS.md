@@ -33,9 +33,11 @@ Use it to answer:
   merged through issue `#194` and PR `#195`, post-PR-195 status reconciliation
   has merged through issue `#196` and PR `#197`, post-PR-197 status
   reconciliation has merged through issue `#198` and PR `#199`, post-PR-199
-  status reconciliation has merged through issue `#200` and PR `#201`, mutable
-  current-state authority is normalized through the StatusStateV1 table below,
-  and release posture is No-Go.
+  status reconciliation has merged through issue `#200` and PR `#201`,
+  post-PR-201 status reconciliation has merged through issue `#202` and PR
+  `#203`, CH-M1-01 local/mock durable consent-chain repair has merged through
+  issue `#204` and PR `#205`, mutable current-state authority is normalized
+  through the StatusStateV1 table below, and release posture is No-Go.
 - Product implementation merged to `main`: Stage 8 performance, security
   hardening, and release-readiness work merged through PR `#33` at commit
   `fb40113`.
@@ -360,7 +362,8 @@ Use these files together with this tracker:
 | `#198` | Closed | Post-PR-197 status reconciliation | Post-PR-197 repository-ledger reconciliation completed through merged PR `#199` at `a295bd18b6491ee794610d366d19c9548e046c56`; issue `#8`, issue `#155`, stopped issue `#167`, PR `#168`, issue `#39`, issue `#126`, Product Mode 2, runtime, media, providers, hosted/public launch, public distribution, and production remain out of scope. |
 | `#200` | Closed | Post-PR-199 status reconciliation | Post-PR-199 repository-ledger reconciliation completed through merged PR `#201` at `f01236756fa268bd4b90c7f536c57c0f96ba9cdc`; issue `#8`, issue `#155`, stopped issue `#167`, PR `#168`, issue `#39`, issue `#126`, Product Mode 2, runtime, media, providers, hosted/public launch, public distribution, and production remain out of scope. |
 | `#202` | Closed | Post-PR-201 status reconciliation | Post-PR-201 repository-ledger reconciliation completed through merged PR `#203` at `9041718387776f50beb34a2403f69c47232ef26d`; the next-action selection proceeds to issue `#204` rather than another pure status-only reconciliation. |
-| `#204` | Open | Product Mode 1 CH-M1-01 child | Selected local/mock frontend durable consent-chain repair under issue `#155`; it may call existing `/avatar-consents` before `/avatar-renders` and pass the returned `consentRecordId`, without changing backend consent semantics, real media, providers, hosted/public launch, Product Mode 2, or production release posture. |
+| `#204` | Closed | Product Mode 1 CH-M1-01 child | Local/mock frontend durable consent-chain repair completed through merged PR `#205` at `bba8cc5baf9bdfc6cbb0cf442ded91e6a01afb63`; post-merge main quality run `29703386168` passed. It calls existing `/avatar-consents` before `/avatar-renders` and passes the returned `consentRecordId`, without changing backend consent semantics, real media, providers, hosted/public launch, Product Mode 2, or production release posture. |
+| `#206` | Open | Post-PR-205 status reconciliation | Current repository-ledger reconciliation for the live PR `#205` / issue `#204` closeout. It may update checked-in status text only and must not start CH-M1-02 implementation, Product Mode 2, real media, providers, hosted/public launch, or production release work. |
 
 ## Pull Request Ledger
 
@@ -425,6 +428,8 @@ Use these files together with this tracker:
 | `#197` | Merged | 2026-07-19 | Post-PR-195 status reconciliation for issue `#196`; merged at `924e378af611930decaba428ffcd1b5b69c00512` with issue `#196` closed during post-merge closeout, post-merge main workflow quality run passing at `https://github.com/imrohitagrawal/narratwin-ai/actions/runs/29686868800`, and no Product Mode 2, runtime, media, provider, hosted/public launch, public distribution, or production authorization. |
 | `#199` | Merged | 2026-07-19 | Post-PR-197 status reconciliation for issue `#198`; merged at `a295bd18b6491ee794610d366d19c9548e046c56` with issue `#198` closed during post-merge closeout, post-merge main workflow quality run passing at `https://github.com/imrohitagrawal/narratwin-ai/actions/runs/29689512124`, and no Product Mode 2, runtime, media, provider, hosted/public launch, public distribution, or production authorization. |
 | `#201` | Merged | 2026-07-19 | Post-PR-199 status reconciliation for issue `#200`; merged at `f01236756fa268bd4b90c7f536c57c0f96ba9cdc` with issue `#200` closed during post-merge closeout, post-merge main workflow quality run passing at `https://github.com/imrohitagrawal/narratwin-ai/actions/runs/29691443045`, and no Product Mode 2, runtime, media, provider, hosted/public launch, public distribution, or production authorization. |
+| `#203` | Merged | 2026-07-19 | Post-PR-201 status reconciliation for issue `#202`; merged at `9041718387776f50beb34a2403f69c47232ef26d` with issue `#202` closed during post-merge closeout, post-merge main workflow quality run `29700261138` passing, and next-action selection proceeding to issue `#204`. |
+| `#205` | Merged | 2026-07-19 | CH-M1-01 local/mock durable consent-chain repair for issue `#204`; merged at `bba8cc5baf9bdfc6cbb0cf442ded91e6a01afb63` with issue `#204` closed during post-merge closeout, post-merge main workflow quality run `29703386168` passing, and no CH-M1-02 real-stack, Product Mode 2, real media, provider, hosted/public launch, or production authorization. |
 
 ## Completed Work
 
@@ -577,11 +582,13 @@ Use these files together with this tracker:
   through merged PR `#195`, and issue `#196` is closed through merged PR
   `#197`; issue `#198` is closed through merged PR `#199`; issue `#200` is
   closed through merged PR `#201`; issue `#202` is closed through merged PR
-  `#203`; those status reconciliations are no longer the current action.
-- Issue `#204` is the selected `CH-M1-01` Product Mode 1 child under issue
-  `#155`; it is limited to repairing the local/mock frontend durable
-  avatar-consent request chain before the later `CH-M1-02` real-stack local
-  evidence step.
+  `#203`; issue `#204` is closed through merged PR `#205`; those completed
+  status and CH-M1-01 items are no longer the current action.
+- Issue `#206` is the current repository-ledger reconciliation for the live PR
+  `#205` / issue `#204` closeout.
+- The next Product Mode 1 implementation step after this reconciliation is
+  `CH-M1-02`: real-stack local browser-to-frontend-to-backend-to-Compose
+  evidence with no intercepted application APIs.
 
 ## Next Approved Actions
 
@@ -589,9 +596,10 @@ Use these files together with this tracker:
    patch, rebase, merge, close, or delete that implementation history in PHF-020A.
 2. Keep issue `#8` and issue `#155` open until their actual acceptance
    contracts are satisfied.
-3. Continue the controlled local mock-demo path only as serialized issue-linked
-   PRs: CH-M1-01 under issue `#204`, CH-M1-02, Checkpoint A, CH-M1-03 through
-   CH-M1-05, CH-M1-06, then Checkpoint B decision.
+3. Complete issue `#206` status reconciliation, then continue the controlled
+   local mock-demo path only as serialized issue-linked PRs: CH-M1-02,
+   Checkpoint A, CH-M1-03 through CH-M1-05, CH-M1-06, then Checkpoint B
+   decision.
 4. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
    external provider use, real audio/video export, and public synthetic-media
    distribution No-Go.
@@ -631,6 +639,8 @@ Required update rules:
 | 2026-07-19 | PR `#193` merged the issue `#192` post-PR-191 status reconciliation at `7131924937e5433d7de2517e14dd1a328d97a063`; live GitHub shows issue `#192` closed and post-merge main workflow run `29683438416` passed, while issue `#8`, issue `#155`, stopped issue `#167`, PR `#168`, issue `#39`, Product Mode 2, runtime, media, provider, hosted/public launch, public distribution, and production No-Go boundaries remain unchanged. |
 | 2026-07-19 | PR `#191` merged the issue `#190` post-PR-189 status reconciliation at `5d6704e746fac76d8c6703df81b16f21eb2dba60`; live GitHub shows issue `#190` closed, while issue `#8`, issue `#155`, stopped issue `#167`, PR `#168`, issue `#39`, Product Mode 2, runtime, media, provider, hosted/public launch, public distribution, and production No-Go boundaries remain unchanged. |
 | 2026-07-19 | Live GitHub reconciliation records issue `#123` closed through PR `#124` at `ec2456cba9874d4289c91236de43f73786556503`, issue `#128` closed through PR `#133` at `384c15ac67810d30096794500da1c90ce056dd54`, and issue `#127` closed through PR `#134` at `4b7594c8ae14c6a91dff9f0916447b0e6dec39a9`; these were narrow child slices only, and issue `#39`, `DUR-ROLLBACK-001`, `OPS-METRICS-001`, and `OPS-SLO-001` remain open for broader production closure evidence. |
+| 2026-07-19 | PR `#203` merged the issue `#202` post-PR-201 status reconciliation at `9041718387776f50beb34a2403f69c47232ef26d`; live GitHub shows issue `#202` closed and post-merge main workflow run `29700261138` passed, and next-action selection proceeded to issue `#204` rather than another pure PR `#203` closeout reconciliation. |
+| 2026-07-19 | PR `#205` merged the issue `#204` CH-M1-01 local/mock durable consent-chain repair at `bba8cc5baf9bdfc6cbb0cf442ded91e6a01afb63`; live GitHub shows issue `#204` closed and post-merge main workflow run `29703386168` passed, while issue `#155` remains open, CH-M1-02 real-stack local evidence is next, and production/public release posture remains No-Go. |
 | 2026-07-17 | Issue `#181` opened as a prerequisite maintenance item after local `frontend-lighthouse` failed with Lighthouse `NO_FCP` on both the issue `#155` branch and clean `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; scope is limited to local Lighthouse browser selection and guardrail/status updates, with no product runtime, launch, provider, or production-posture change. |
 | 2026-07-17 | PR `#182` merged issue `#181` at `3ea049cff0bf2157bea0bb5aedf73eb562753d17`, closing the bounded local Lighthouse browser-selection prerequisite and unblocking issue `#155` validation without product runtime, launch, provider, or production-posture change. |
 | 2026-07-17 | Post-PR-C reconciliation verified GPF-A `#172`/`#173`, HPR `#174`/`#175`, GPF-B `#176`/`#177`, and GPF-C `#178`/`#179` as merged and closed out on `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; preserved stopped predecessor evidence in `#166`, `#168`, and `#170`; reconciled issue `#155` as the serialized Product Mode 1 checkpoint controller; repaired the Phase 1 process-branch allowlist so a branch may change only its matching GovernancePreflightV1 artifact; and kept issue `#8` open with Product Mode 2, real audio/video, providers, hosted launch, and production out of scope. |
