@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CURRENT_STAGE = ROOT / ".stage" / "current"
+STATUS_DOC = ROOT / "docs" / "STATUS.md"
 FINAL_REVIEW_BRANCH_PREFIX = "final-review-"
 PHASE1_CLOSURE_BRANCH_PREFIX = "phase-1-closure-"
 
@@ -36,6 +37,16 @@ def run_recommended_review_item_check(stage: str) -> int:
     )
 
 
+def phase1_closure_mode_active() -> bool:
+    if not STATUS_DOC.exists():
+        return False
+    status_text = STATUS_DOC.read_text(encoding="utf-8")
+    return (
+        "| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |"
+        in status_text
+    )
+
+
 def main() -> int:
     if not CURRENT_STAGE.exists():
         print("Missing .stage/current. Cannot determine quality stage.")
@@ -46,6 +57,8 @@ def main() -> int:
     if branch.startswith(FINAL_REVIEW_BRANCH_PREFIX):
         stage = "Final Review"
     if branch.startswith(PHASE1_CLOSURE_BRANCH_PREFIX):
+        stage = "Phase 1 Closure"
+    if branch == "main" and stage == "8" and phase1_closure_mode_active():
         stage = "Phase 1 Closure"
 
     recommendation_status = run_recommended_review_item_check(stage)

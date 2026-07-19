@@ -687,6 +687,34 @@ real audio/video, imported media, cloned identity, public media distribution,
 production durability, backup/restore, monitoring, release posture, or stopped
 predecessor surfaces.
 
+Issue `#208` is the `CH-M1-02` Product Mode 1 child under controller issue
+`#155`; issue `#209` may be included only as the directly coupled local
+Phase 1 Closure quality-dispatch clarification. Branches using
+`phase-1-closure-208-*` may change only:
+
+- `docs/governance/preflights/issue-208.json`
+- `docs/reviews/ISSUE_208_209_CH_M1_02_PREFLIGHT.md`
+- `docs/ADR/0029-ch-m1-02-real-stack-evidence.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `frontend/playwright.real-stack.config.ts`
+- `frontend/tests/real-stack.spec.ts`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `scripts/quality/check_quality_stage.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_quality_dispatcher.py`
+
+They are limited to proving a controlled local/mock real browser -> frontend ->
+backend -> Compose path without application API interception and clarifying
+local Phase 1 Closure quality behavior on `main`. They must not change backend
+product behavior, frontend product UI, Compose topology, workflows,
+dependencies, providers, hosted/public launch, Product Mode 2, real audio/video,
+imported media, cloned identity, public media distribution, production
+durability, backup/restore, monitoring, release posture, or stopped predecessor
+surfaces.
+
 Context 0 issue `#39` closure-contract branches using
 `phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
 they may touch only docs, guardrails, tests, PR templates, and CI workflow
