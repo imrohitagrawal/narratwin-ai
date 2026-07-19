@@ -359,6 +359,8 @@ Use these files together with this tracker:
 | `#196` | Closed | Post-PR-195 status reconciliation | Post-PR-195 repository-ledger reconciliation completed through merged PR `#197` at `924e378af611930decaba428ffcd1b5b69c00512`; issue `#8`, issue `#155`, stopped issue `#167`, PR `#168`, issue `#39`, issue `#126`, Product Mode 2, runtime, media, providers, hosted/public launch, public distribution, and production remain out of scope. |
 | `#198` | Closed | Post-PR-197 status reconciliation | Post-PR-197 repository-ledger reconciliation completed through merged PR `#199` at `a295bd18b6491ee794610d366d19c9548e046c56`; issue `#8`, issue `#155`, stopped issue `#167`, PR `#168`, issue `#39`, issue `#126`, Product Mode 2, runtime, media, providers, hosted/public launch, public distribution, and production remain out of scope. |
 | `#200` | Closed | Post-PR-199 status reconciliation | Post-PR-199 repository-ledger reconciliation completed through merged PR `#201` at `f01236756fa268bd4b90c7f536c57c0f96ba9cdc`; issue `#8`, issue `#155`, stopped issue `#167`, PR `#168`, issue `#39`, issue `#126`, Product Mode 2, runtime, media, providers, hosted/public launch, public distribution, and production remain out of scope. |
+| `#202` | Closed | Post-PR-201 status reconciliation | Post-PR-201 repository-ledger reconciliation completed through merged PR `#203` at `9041718387776f50beb34a2403f69c47232ef26d`; the next-action selection proceeds to issue `#204` rather than another pure status-only reconciliation. |
+| `#204` | Open | Product Mode 1 CH-M1-01 child | Selected local/mock frontend durable consent-chain repair under issue `#155`; it may call existing `/avatar-consents` before `/avatar-renders` and pass the returned `consentRecordId`, without changing backend consent semantics, real media, providers, hosted/public launch, Product Mode 2, or production release posture. |
 
 ## Pull Request Ledger
 
@@ -574,8 +576,12 @@ Use these files together with this tracker:
 - Issue `#192` is closed through merged PR `#193`, issue `#194` is closed
   through merged PR `#195`, and issue `#196` is closed through merged PR
   `#197`; issue `#198` is closed through merged PR `#199`; issue `#200` is
-  closed through merged PR `#201`; those status reconciliations are no longer
-  the current action.
+  closed through merged PR `#201`; issue `#202` is closed through merged PR
+  `#203`; those status reconciliations are no longer the current action.
+- Issue `#204` is the selected `CH-M1-01` Product Mode 1 child under issue
+  `#155`; it is limited to repairing the local/mock frontend durable
+  avatar-consent request chain before the later `CH-M1-02` real-stack local
+  evidence step.
 
 ## Next Approved Actions
 
@@ -584,8 +590,8 @@ Use these files together with this tracker:
 2. Keep issue `#8` and issue `#155` open until their actual acceptance
    contracts are satisfied.
 3. Continue the controlled local mock-demo path only as serialized issue-linked
-   PRs: CH-M1-01, CH-M1-02, Checkpoint A, CH-M1-03 through CH-M1-05, CH-M1-06,
-   then Checkpoint B decision.
+   PRs: CH-M1-01 under issue `#204`, CH-M1-02, Checkpoint A, CH-M1-03 through
+   CH-M1-05, CH-M1-06, then Checkpoint B decision.
 4. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
    external provider use, real audio/video export, and public synthetic-media
    distribution No-Go.

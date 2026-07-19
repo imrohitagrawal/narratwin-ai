@@ -4058,6 +4058,55 @@ def test_issue178_branch_uses_only_exact_ci_evidence_scope(monkeypatch: Any) -> 
     ]
 
 
+def test_issue155_ch_m1_01_branch_allows_only_durable_consent_chain_scope(monkeypatch: Any) -> None:
+    expected = {
+        "docs/ADR/0019-ch16-consent-capture.md",
+        "docs/reviews/ISSUE_204_CH_M1_01_PREFLIGHT.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "frontend/src/app/page.tsx",
+        "frontend/tests/smoke.spec.ts",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+
+    assert phase1.ISSUE_155_CH_M1_01_ALLOWED_CHANGED_FILES == expected
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-155-ch-m1-01-durable-consent-chain",
+        files=sorted(expected),
+    ) == []
+
+
+def test_issue155_ch_m1_01_branch_rejects_backend_provider_and_unrelated_files(
+    monkeypatch: Any,
+) -> None:
+    files = [
+        "backend/app/stage7.py",
+        "frontend/package.json",
+        "docs/API_CONTRACT.md",
+    ]
+
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-155-ch-m1-01-durable-consent-chain",
+        files=files,
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-155-ch-m1-01-durable-consent-chain "
+        f"may not change {path}."
+        for path in files
+    ]
+
+
+def test_issue155_ch_m1_01_allowlist_does_not_apply_to_near_match_branch(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-155-ch-m1-010-durable-consent-chain"
+
+    assert run_changed_files_check(monkeypatch, branch=branch, files=["frontend/src/app/page.tsx"]) == [
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx."
+    ]
+
+
 def test_issue39_durability_branch_keeps_existing_runtime_allowlist(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
