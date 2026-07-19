@@ -80,6 +80,22 @@ multilingual run and does not call `/avatar-consents` or pass
 | Checkpoint A decision | Requires CH-M1-01 and CH-M1-02 evidence review. | repo owner/reviewer |
 | Production/public release approval | Requires external accounts, platform, backup/restore, monitoring, security, and release authorization not available in this local slice. | repo owner/release authority |
 
+## Advisory Sub-Agent Final Review
+
+Sub-agent final review for PR `#205` covered frontend/API correctness,
+governance/guardrails, security/release posture, and validation adequacy before
+manual approval was requested. The review found two required gaps: executable
+durable-consent render-error smoke coverage and clearer governance handoff
+evidence for the parent `#155` ledger. Both were re-reviewed after correction:
+the smoke coverage now exercises the bounded `AVATAR_CONSENT_INVALID` alert
+path, the PR body records the preflight-order caveat, and the `#155` ledger has
+a durable handoff comment.
+
+This sub-agent review is advisory pre-manual-review evidence only. A
+self-authored GitHub `COMMENTED` review is not approval evidence and is rejected
+by the GovernancePreflightV1 `pull_request_review` guardrail by design. Human
+approval, final merge wording, and issue closeout remain human-only surfaces.
+
 ## Skill Selection Evidence
 
 | Skill | Decision | Evidence or reason |
