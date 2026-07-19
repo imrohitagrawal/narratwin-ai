@@ -8,6 +8,7 @@ Before changing files, read:
 
 - `docs/AI_BUILD_BRIEF.md`
 - `docs/STATUS.md`
+- `docs/PHASE_PLAN.md`
 - `docs/REPOSITORY_GUARDRAILS.md`
 - `.github/pull_request_template.md`
 - `scripts/guardrails_check.py`

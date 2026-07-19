@@ -42,6 +42,74 @@ phases only to order planning work within or across stages.
 | Phase 9 | Future approved stage | `#20` | Interactive Q&A only after stage-plan update |
 | Phase 10 | Stage 8 and Final Review | `#13`, `#6` | Hardening and review only |
 
+## Product Mode Policy Authority
+
+Only the registered tables in this section are authoritative for PHF-020A.
+
+### Authority Registry
+
+| ID | Table | Parent heading | Authority |
+|---|---|---|---|
+| AUTH-TAXONOMY | Product mode taxonomy | Product Mode Policy Authority | structured |
+| AUTH-GATES | Cross-mode gate graph | Product Mode Policy Authority | structured |
+| AUTH-MEDIA | Optional media relation | Product Mode Policy Authority | structured |
+| AUTH-DUPLICATES | Duplicate reconciliation duties | Product Mode Policy Authority | structured |
+| AUTH-ISSUE8 | Issue #8 acceptance transfer | Product Mode Policy Authority | structured |
+| AUTH-ACTIVATION | PM-MODE-001 activation evidence | Product Mode Policy Authority | structured |
+
+### Product Mode Taxonomy
+
+| ID | Kind | Owner issue | Definition |
+|---|---|---|---|
+| DP-1 | delivery-phase | #1 | Product and PRD hardening; no product implementation |
+| DP-2 | delivery-phase | #16 | Spec Kit constitution/spec/plan/tasks gate |
+| P1C | closure-context | #39 | Phase 1 Closure context; not a product mode owner |
+| PM-1 | product-mode | #155 | Controlled local synthetic artifact checkpoint |
+| PM-2 | product-mode | #20 | Future interactive Q&A after Mode 1 Checkpoint B and reset |
+
+### Cross-Mode Gate Graph
+
+| Gate ID | From | To | Next gate | Prohibits |
+|---|---|---|---|---|
+| PM-GATE-00 | DP-1 | DP-2 | PM-GATE-10 | product runtime |
+| PM-GATE-10 | DP-2 | PM-1 | PM-GATE-20 | Product Mode 2 |
+| PM-GATE-20 | PM-1 | PM-2 | PM-GATE-30 | real media mandatory dependency |
+| PM-GATE-30 | PM-2 | Future reset | none | no PHF020A implementation permission |
+
+### Optional Media Relation
+
+| Issue | Relation | Required before gate | Notes |
+|---|---|---|---|
+| #18 | optional-branch | PM-GATE-10 | TTS audio is not mandatory for PM-GATE-20 |
+| #19 | optional-branch | PM-GATE-10 | Avatar video is not mandatory for PM-GATE-20 |
+
+### Duplicate Reconciliation Duties
+
+| Duty ID | Owner | Required action | Evidence |
+|---|---|---|---|
+| DUP-01 | #155 | Maintain one current module | STATUS row |
+| DUP-02 | #8 | Preserve parent acceptance | Issue #8 link |
+| DUP-03 | #167 | Preserve stopped predecessor evidence | PR #168 |
+| DUP-04 | #184 | Replace prose scanning with structure | PHF020A tests |
+| DUP-05 | PHF-020B | Normalize mutable current state later | successor issue |
+
+### Issue #8 Acceptance Transfer
+
+| Acceptance ID | Source | Stable policy row | Evidence |
+|---|---|---|---|
+| ISSUE8-01 | #8 | taxonomy distinctions | DP-1/DP-2/P1C/PM-1/PM-2 |
+| ISSUE8-02 | #8 | Product Mode 1 local checkpoint | PM-1 |
+| ISSUE8-03 | #8 | Product Mode 2 future reset | PM-2 |
+| ISSUE8-04 | #8 | optional media independence | #18/#19 |
+| ISSUE8-05 | #8 | duplicate reconciliation | DUP-01..DUP-05 |
+| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |
+
+### PM-MODE-001 Activation Evidence
+
+| Evidence ID | Mode | Gate | Status |
+|---|---|---|---|
+| PM-MODE-001 | PM-1 | PM-GATE-10 | active-local-checkpoint |
+
 ## Boundaries
 
 Always:

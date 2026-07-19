@@ -624,6 +624,29 @@ may change only:
 It must not change frontend product UI files, backend/runtime behavior,
 provider behavior, hosted-launch policy, or production posture.
 
+Issue `#184` is the PHF-020A replacement for stopped issue `#167` and retained
+draft PR `#168`. Branch
+`phase-1-closure-process-184-phf-020a-structured-policy-replacement` may change
+only:
+
+- `docs/governance/preflights/issue-184.json`
+- `AGENTS.md`
+- `docs/PHASE_PLAN.md`
+- `docs/SKILL_EXECUTION_PLAN.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+It replaces Product Mode free-form prose scanning with closed structured policy
+authority. It must preserve exact-path scope, keep `docs/STATUS.md` as mutable
+current-state authority until PHF-020B, and must not mutate stopped PRs or issues
+`#166`, `#167`, `#168`, `#169`, or `#170`.
+
+It must not authorize PHF-020B, Product Mode 2, runtime/CH-M1 work, real media,
+providers, hosted/public launch, production, backend, frontend, workflow, Docker,
+dependency, RAG, avatar, database, or product implementation work.
+
 Context 0 issue `#39` closure-contract branches using
 `phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
 they may touch only docs, guardrails, tests, PR templates, and CI workflow

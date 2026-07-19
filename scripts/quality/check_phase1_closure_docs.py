@@ -115,6 +115,16 @@ ISSUE_181_ALLOWED_CHANGED_FILES = {
     "docs/TRACEABILITY.md",
     "docs/STATUS.md",
 }
+ISSUE_184_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-184.json",
+    "AGENTS.md",
+    "docs/PHASE_PLAN.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -1085,6 +1095,359 @@ def parse_table_lines(section_text: str) -> tuple[list[str], list[list[str]]]:
             continue
         rows.append(cells)
     return headers, rows
+
+
+PHF020A_BRANCH = "phase-1-closure-process-184-phf-020a-structured-policy-replacement"
+PHF020A_PARENT = "Product Mode Policy Authority"
+PHF020A_TABLE_HEADERS = {
+    "Authority Registry": ["ID", "Table", "Parent heading", "Authority"],
+    "Product Mode Taxonomy": ["ID", "Kind", "Owner issue", "Definition"],
+    "Cross-Mode Gate Graph": ["Gate ID", "From", "To", "Next gate", "Prohibits"],
+    "Optional Media Relation": ["Issue", "Relation", "Required before gate", "Notes"],
+    "Duplicate Reconciliation Duties": ["Duty ID", "Owner", "Required action", "Evidence"],
+    "Issue #8 Acceptance Transfer": ["Acceptance ID", "Source", "Stable policy row", "Evidence"],
+    "PM-MODE-001 Activation Evidence": ["Evidence ID", "Mode", "Gate", "Status"],
+}
+PHF020A_REQUIRED_AUTHORITY = {
+    "AUTH-TAXONOMY": "Product mode taxonomy",
+    "AUTH-GATES": "Cross-mode gate graph",
+    "AUTH-MEDIA": "Optional media relation",
+    "AUTH-DUPLICATES": "Duplicate reconciliation duties",
+    "AUTH-ISSUE8": "Issue #8 acceptance transfer",
+    "AUTH-ACTIVATION": "PM-MODE-001 activation evidence",
+}
+PHF020A_TAXONOMY = {
+    "DP-1": (
+        "delivery-phase",
+        "#1",
+        "Product and PRD hardening; no product implementation",
+    ),
+    "DP-2": (
+        "delivery-phase",
+        "#16",
+        "Spec Kit constitution/spec/plan/tasks gate",
+    ),
+    "P1C": (
+        "closure-context",
+        "#39",
+        "Phase 1 Closure context; not a product mode owner",
+    ),
+    "PM-1": (
+        "product-mode",
+        "#155",
+        "Controlled local synthetic artifact checkpoint",
+    ),
+    "PM-2": (
+        "product-mode",
+        "#20",
+        "Future interactive Q&A after Mode 1 Checkpoint B and reset",
+    ),
+}
+PHF020A_GATE_GRAPH = {
+    "PM-GATE-00": ("DP-1", "DP-2", "PM-GATE-10", "product runtime"),
+    "PM-GATE-10": ("DP-2", "PM-1", "PM-GATE-20", "Product Mode 2"),
+    "PM-GATE-20": (
+        "PM-1",
+        "PM-2",
+        "PM-GATE-30",
+        "real media mandatory dependency",
+    ),
+    "PM-GATE-30": (
+        "PM-2",
+        "Future reset",
+        "none",
+        "no PHF020A implementation permission",
+    ),
+}
+PHF020A_MEDIA = {
+    "#18": (
+        "optional-branch",
+        "PM-GATE-10",
+        "TTS audio is not mandatory for PM-GATE-20",
+    ),
+    "#19": (
+        "optional-branch",
+        "PM-GATE-10",
+        "Avatar video is not mandatory for PM-GATE-20",
+    ),
+}
+PHF020A_DUPLICATE_DUTIES = {
+    "DUP-01": ("#155", "Maintain one current module", "STATUS row"),
+    "DUP-02": ("#8", "Preserve parent acceptance", "Issue #8 link"),
+    "DUP-03": ("#167", "Preserve stopped predecessor evidence", "PR #168"),
+    "DUP-04": ("#184", "Replace prose scanning with structure", "PHF020A tests"),
+    "DUP-05": ("PHF-020B", "Normalize mutable current state later", "successor issue"),
+}
+PHF020A_ACCEPTANCE_TRANSFER = {
+    "ISSUE8-01": ("#8", "taxonomy distinctions", "DP-1/DP-2/P1C/PM-1/PM-2"),
+    "ISSUE8-02": ("#8", "Product Mode 1 local checkpoint", "PM-1"),
+    "ISSUE8-03": ("#8", "Product Mode 2 future reset", "PM-2"),
+    "ISSUE8-04": ("#8", "optional media independence", "#18/#19"),
+    "ISSUE8-05": ("#8", "duplicate reconciliation", "DUP-01..DUP-05"),
+    "ISSUE8-06": ("#8", "no runtime authorization", "PM-GATE prohibitions"),
+}
+PHF020A_ACTIVATION = {
+    "Evidence ID": "PM-MODE-001",
+    "Mode": "PM-1",
+    "Gate": "PM-GATE-10",
+    "Status": "active-local-checkpoint",
+}
+PHF020A_FORBIDDEN_SCOPE_REFERENCES = (
+    "backend/",
+    "frontend/",
+    ".github/workflows/",
+    "docker/",
+    "Dockerfile",
+    "pyproject.toml",
+    "uv.lock",
+    "package.json",
+    "package-lock.json",
+)
+
+
+def phf020a_cells(line: str) -> list[str]:
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def phf020a_is_delimiter(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped.startswith("|"):
+        return False
+    cells = phf020a_cells(stripped)
+    return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell.replace(" ", "")) for cell in cells)
+
+
+def phf020a_resource_table_line(line: str) -> str:
+    return re.sub(r"^\s*(?:>\s*)+", "", line).strip()
+
+
+def phf020a_table(parent_text: str, heading: str) -> tuple[str | None, list[dict[str, str]]]:
+    heading_matches = re.findall(rf"^###\s+{re.escape(heading)}\s*$", parent_text, flags=re.M)
+    if len(heading_matches) > 1:
+        return "PHF020A.DUPLICATE.TABLE", []
+    body = subsection(parent_text, heading)
+    if not body:
+        return "PHF020A.TABLE.MISSING", []
+    table_lines = [line.strip() for line in body.splitlines() if line.strip().startswith("|")]
+    if len(table_lines) < 2:
+        return "PHF020A.TABLE.DELIMITER_MISSING", []
+
+    expected_header = PHF020A_TABLE_HEADERS[heading]
+    header = phf020a_cells(table_lines[0])
+    if header != expected_header:
+        return "PHF020A.TABLE.HEADER", []
+
+    if not phf020a_is_delimiter(table_lines[1]):
+        return "PHF020A.TABLE.DELIMITER_MISSING", []
+    if len(phf020a_cells(table_lines[1])) != len(header):
+        return "PHF020A.TABLE.DELIMITER_WIDTH", []
+
+    rows: list[dict[str, str]] = []
+    for line in table_lines[2:]:
+        if phf020a_is_delimiter(line):
+            continue
+        cells = phf020a_cells(line)
+        if len(cells) != len(header):
+            return "PHF020A.TABLE.ROW_WIDTH", []
+        rows.append(dict(zip(header, cells)))
+    return None, rows
+
+
+def phf020a_first_duplicate(values: list[str]) -> str | None:
+    seen: set[str] = set()
+    for value in values:
+        if value in seen:
+            return value
+        seen.add(value)
+    return None
+
+
+def phf020a_authority_surface(text: str) -> str:
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+    lines: list[str] = []
+    in_fence = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+            lines.append("")
+            continue
+        if in_fence or line.lstrip().startswith(">"):
+            lines.append("")
+            continue
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def phf020a_policy_findings(text: str) -> list[str]:
+    try:
+        encoded_text = text.encode("utf-8")
+    except UnicodeEncodeError:
+        return ["PHF020A.LIMIT.UNICODE"]
+    if len(encoded_text) > 256 * 1024:
+        return ["PHF020A.LIMIT.BYTES"]
+    if any(
+        (ord(char) < 32 and char not in "\n\r\t") or 0x7F <= ord(char) <= 0x9F
+        for char in text
+    ):
+        return ["PHF020A.LIMIT.CONTROL"]
+    if len(text.splitlines()) > 10_000:
+        return ["PHF020A.LIMIT.LINES"]
+    if len(re.findall(r"^#{1,6}\s+", text, flags=re.M)) > 256:
+        return ["PHF020A.LIMIT.HEADINGS"]
+
+    table_count = 0
+    row_count = 0
+    cell_count = 0
+    for line in text.splitlines():
+        stripped = phf020a_resource_table_line(line)
+        if not stripped.startswith("|"):
+            continue
+        cells = phf020a_cells(stripped)
+        if any(len(cell) > 2048 for cell in cells):
+            return ["PHF020A.LIMIT.CELL"]
+        row_count += 1
+        cell_count += len(cells)
+        if phf020a_is_delimiter(stripped):
+            table_count += 1
+    if table_count > 64:
+        return ["PHF020A.LIMIT.TABLES"]
+    if row_count > 2048:
+        return ["PHF020A.LIMIT.ROWS"]
+    if cell_count > 16_384:
+        return ["PHF020A.LIMIT.CELLS"]
+
+    authority_text = phf020a_authority_surface(text)
+    parent_matches = re.findall(rf"^##\s+{re.escape(PHF020A_PARENT)}\s*$", authority_text, flags=re.M)
+    if not parent_matches:
+        return ["PHF020A.STRUCTURE.MISSING_PARENT"]
+    if len(parent_matches) > 1:
+        return ["PHF020A.DUPLICATE.PARENT"]
+
+    parent_text = section(authority_text, PHF020A_PARENT)
+    if re.search(r"\bCurrent module\b|\bCH-M1-\d+\b", parent_text):
+        return ["PHF020A.STATE.MUTABLE_CURRENT_STATE"]
+    if any(reference in parent_text for reference in PHF020A_FORBIDDEN_SCOPE_REFERENCES):
+        return ["PHF020A.SCOPE.FORBIDDEN_REFERENCE"]
+
+    parsed: dict[str, list[dict[str, str]]] = {}
+    for heading in PHF020A_TABLE_HEADERS:
+        error, rows = phf020a_table(parent_text, heading)
+        if error:
+            return [error]
+        parsed[heading] = rows
+
+    authority_rows = parsed["Authority Registry"]
+    authority_ids = [row["ID"] for row in authority_rows]
+    if phf020a_first_duplicate(authority_ids):
+        return ["PHF020A.DUPLICATE.AUTHORITY"]
+    unknown_authorities = sorted(set(authority_ids) - set(PHF020A_REQUIRED_AUTHORITY))
+    if unknown_authorities:
+        return ["PHF020A.UNKNOWN.AUTHORITY"]
+    missing_authorities = sorted(set(PHF020A_REQUIRED_AUTHORITY) - set(authority_ids))
+    if missing_authorities:
+        return ["PHF020A.REQUIRED.MISSING_AUTHORITY"]
+    for row in authority_rows:
+        if row["Table"] != PHF020A_REQUIRED_AUTHORITY[row["ID"]]:
+            return ["PHF020A.REFERENCE.AUTHORITY"]
+        if row["Parent heading"] != PHF020A_PARENT:
+            return ["PHF020A.CONTAINMENT.PARENT"]
+        if row["Authority"] != "structured":
+            return ["PHF020A.TYPE.AUTHORITY"]
+
+    taxonomy_rows = parsed["Product Mode Taxonomy"]
+    taxonomy_ids = [row["ID"] for row in taxonomy_rows]
+    if phf020a_first_duplicate(taxonomy_ids):
+        return ["PHF020A.DUPLICATE.TAXONOMY"]
+    unknown_taxonomy = sorted(set(taxonomy_ids) - set(PHF020A_TAXONOMY))
+    if unknown_taxonomy:
+        return ["PHF020A.ENUM.UNKNOWN_TAXONOMY"]
+    missing_taxonomy = sorted(set(PHF020A_TAXONOMY) - set(taxonomy_ids))
+    if missing_taxonomy:
+        return ["PHF020A.REQUIRED.MISSING_TAXONOMY"]
+    for row in taxonomy_rows:
+        expected_kind, expected_owner, expected_definition = PHF020A_TAXONOMY[row["ID"]]
+        if row["Kind"] != expected_kind:
+            return ["PHF020A.ENUM.INVALID_KIND"]
+        if row["Owner issue"] != expected_owner:
+            return ["PHF020A.REFERENCE.OWNER"]
+        if row["Definition"] != expected_definition:
+            return ["PHF020A.TAXONOMY.DEFINITION"]
+
+    graph_rows = parsed["Cross-Mode Gate Graph"]
+    graph_ids = [row["Gate ID"] for row in graph_rows]
+    if phf020a_first_duplicate(graph_ids):
+        return ["PHF020A.DUPLICATE.GATE"]
+    if set(graph_ids) != set(PHF020A_GATE_GRAPH):
+        return ["PHF020A.GRAPH.NODE_INVALID"]
+    for row in graph_rows:
+        expected_from, expected_to, expected_next, expected_prohibits = PHF020A_GATE_GRAPH[row["Gate ID"]]
+        if (row["From"], row["To"], row["Next gate"]) != (expected_from, expected_to, expected_next):
+            return ["PHF020A.GRAPH.EDGE_INVALID"]
+        if row["Prohibits"] != expected_prohibits:
+            return ["PHF020A.GRAPH.PROHIBITS_INVALID"]
+
+    media_rows = parsed["Optional Media Relation"]
+    media_ids = [row["Issue"] for row in media_rows]
+    if phf020a_first_duplicate(media_ids):
+        return ["PHF020A.DUPLICATE.MEDIA"]
+    media_by_issue = {row["Issue"]: row for row in media_rows}
+    if set(media_by_issue) != set(PHF020A_MEDIA):
+        return ["PHF020A.MEDIA.MISSING"]
+    for issue, expected_media in PHF020A_MEDIA.items():
+        media_row = media_by_issue.get(issue)
+        if media_row is None:
+            return ["PHF020A.MEDIA.MISSING"]
+        expected_relation, expected_gate, expected_notes = expected_media
+        if (
+            media_row["Relation"],
+            media_row["Required before gate"],
+        ) != (expected_relation, expected_gate):
+            return ["PHF020A.MEDIA.RELATION_INVALID"]
+        if media_row["Notes"] != expected_notes:
+            return ["PHF020A.MEDIA.MANDATORY"]
+
+    duplicate_rows = parsed["Duplicate Reconciliation Duties"]
+    duty_ids = [row["Duty ID"] for row in duplicate_rows]
+    if phf020a_first_duplicate(duty_ids):
+        return ["PHF020A.DUPLICATE.DUTY"]
+    if set(duty_ids) != set(PHF020A_DUPLICATE_DUTIES):
+        return ["PHF020A.DUPLICATE.DUTY_MISSING"]
+    for row in duplicate_rows:
+        expected_owner, expected_action, expected_evidence = PHF020A_DUPLICATE_DUTIES[row["Duty ID"]]
+        if (row["Owner"], row["Required action"], row["Evidence"]) != (
+            expected_owner,
+            expected_action,
+            expected_evidence,
+        ):
+            return ["PHF020A.DUPLICATE.DUTY_INVALID"]
+
+    acceptance_rows = parsed["Issue #8 Acceptance Transfer"]
+    acceptance_ids = [row["Acceptance ID"] for row in acceptance_rows]
+    if phf020a_first_duplicate(acceptance_ids):
+        return ["PHF020A.DUPLICATE.ACCEPTANCE"]
+    if set(acceptance_ids) != set(PHF020A_ACCEPTANCE_TRANSFER):
+        return ["PHF020A.ACCEPTANCE.MISSING"]
+    for row in acceptance_rows:
+        expected_source, expected_policy_row, expected_evidence = PHF020A_ACCEPTANCE_TRANSFER[
+            row["Acceptance ID"]
+        ]
+        if row["Source"] != expected_source:
+            return ["PHF020A.ACCEPTANCE.SOURCE_INVALID"]
+        if (row["Stable policy row"], row["Evidence"]) != (
+            expected_policy_row,
+            expected_evidence,
+        ):
+            return ["PHF020A.ACCEPTANCE.ROW_INVALID"]
+
+    activation_rows = parsed["PM-MODE-001 Activation Evidence"]
+    activation_ids = [row["Evidence ID"] for row in activation_rows]
+    if phf020a_first_duplicate(activation_ids):
+        return ["PHF020A.DUPLICATE.ACTIVATION"]
+    if activation_rows != [PHF020A_ACTIVATION]:
+        return ["PHF020A.REQUIRED.MISSING_ACTIVATION"]
+
+    return []
 
 
 def expanded_issue_numbers(value: str) -> set[str]:
@@ -2846,6 +3209,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_178_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-181-lighthouse-browser-selection":
         allowed_files = ISSUE_181_ALLOWED_CHANGED_FILES
+    elif branch == PHF020A_BRANCH:
+        allowed_files = ISSUE_184_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):
@@ -3189,12 +3554,34 @@ def issue39_all_matrix_rows_closed(closure_plan_text: str) -> bool:
     )
 
 
+def check_phf020a_policy_contract(failures: list[str]) -> None:
+    for finding in phf020a_policy_findings(read("docs/PHASE_PLAN.md")):
+        fail(failures, f"docs/PHASE_PLAN.md PHF-020A policy finding: {finding}")
+
+    skill_plan = read("docs/SKILL_EXECUTION_PLAN.md")
+    required_skill_plan_markers = (
+        "## Product Mode Policy Authority Handoff",
+        "Only `docs/PHASE_PLAN.md` registered tables are authoritative",
+        "`PM-GATE-00 -> PM-GATE-10 -> PM-GATE-20 -> PM-GATE-30`",
+        "`docs/STATUS.md` remains mutable current-state authority until PHF-020B",
+        "No PHF-020B, Product Mode 2, runtime, media, provider, hosted, public, or production work",
+    )
+    for marker in required_skill_plan_markers:
+        if marker not in skill_plan:
+            fail(failures, f"docs/SKILL_EXECUTION_PLAN.md missing PHF-020A handoff marker: {marker}")
+
+    agents = read("AGENTS.md")
+    if "- `docs/PHASE_PLAN.md`" not in agents:
+        fail(failures, "AGENTS.md required reading must include docs/PHASE_PLAN.md.")
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
         ".github/pull_request_template.md",
         "AGENTS.md",
         "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/PHASE_PLAN.md",
         "docs/SKILL_EXECUTION_PLAN.md",
         "docs/SKILL_SELECTION_AND_EVIDENCE.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -3622,6 +4009,7 @@ def main() -> int:
         check_issue126_restore_readiness_contract(failures)
         check_issue39_execution_strategy(failures)
         check_issue39_ch11_slo_contract(failures)
+        check_phf020a_policy_contract(failures)
         check_process_docs(failures)
 
     if failures:
