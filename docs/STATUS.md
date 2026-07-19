@@ -25,9 +25,9 @@ Use it to answer:
   non-downgradeable for production Go unless the affected provider, media,
   export, and replay paths remain disabled.
 - Current repo mode: Final Review has merged; Phase 1 Closure is active,
-  Product Mode 1 checkpoint work is in the PHF-020A structured-policy
-  replacement branch for issue `#184` and PR `#185`, and release posture is
-  No-Go.
+  PHF-020A structured-policy replacement has merged through issue `#184` and
+  PR `#185`, the next policy successor is PHF-020B/StatusStateV1, and release
+  posture is No-Go.
 - Product implementation merged to `main`: Stage 8 performance, security
   hardening, and release-readiness work merged through PR `#33` at commit
   `fb40113`.
@@ -84,8 +84,9 @@ Use it to answer:
   `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; stopped PRs `#166`, `#168`, and
   `#170` remain preserved evidence, not active implementation branches; issue
   `#155` is the serialized Product Mode 1 checkpoint controller; issue `#184`
-  and PR `#185` are the active PHF-020A structured-policy replacement; issue
-  `#8` remains open; and issues `#43`, `#44`, `#48`, and `#49` remain open.
+  is complete through merged PR `#185` at
+  `1179760d342d126c78ff7bd09002d064dc7aaa0e`; issue `#8` remains open; and
+  issues `#43`, `#44`, `#48`, and `#49` remain open.
 - Stage 8 may add performance smoke tests, API latency budgets, frontend
   Lighthouse checks, rate limiting, request size limits, upload MIME validation,
   dependency audit, Docker image scan, release checklist, runbook, demo seed
@@ -206,7 +207,7 @@ Use these files together with this tracker:
 | Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |
 | Stage 8 | Complete, merged to `main` | `#13` closed | PR `#33` merged | Executable at merge | Performance smoke tests, API latency budget checks, rate limiting, request size limits, upload MIME validation, dependency audit, Docker image scan, frontend Lighthouse checks, release checklist, runbook, demo seed data, portfolio README, and release-readiness review merged at `fb40113`. |
 | Final Review | Complete, merged to `main` | `#6` closed | PR `#45` merged | Executable artifact gate | Independent review artifacts merged at `5a294c7`; outcome is No-Go until Phase 1 Closure resolves blockers. |
-| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, `#42`, `#55`, `#58`, `#60`, `#65`, `#66`, `#67`, `#68`, `#69`, `#70`, `#71`, `#72`, `#84`, `#86`, `#89`, `#93`, `#95`, `#96`, `#97`, `#107`, `#109`, `#111`, `#115`, `#119`, and `#125` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, `#48`, `#49`, `#123`, `#126`, `#127`, and `#128` open | PRs `#46`, `#47`, `#50`, `#53`, `#54`, `#56`, `#59`, `#62`, `#63`, `#64`, `#73`, `#74`, `#75`, `#76`, `#77`, `#78`, `#79`, `#80`, `#85`, `#87`, `#90`, `#92`, `#94`, `#98`, `#102`, `#103`, `#106`, `#108`, `#110`, `#112`, `#116`, `#120`, and `#135` merged | Executable governance gate added | `#39` remains open as the remaining P1 production blocker despite context planning progress across `#65`-`#70`. Issues `#65`-`#70` are closed through PRs `#75`-`#80` respectively. `#71` and `#72` are closed process-hardening follow-ups through PRs `#73` and `#74`. Issue `#86` completed `CH-01` migration-baseline execution for `DUR-MIG-001` through merged PR `#87`. Issue `#93` completed `CH-02` ACID/CAS storage-kernel execution for `DUR-ACID-001` through merged PR `#94`. Issue `#97` completed `CH-04` idempotency semantics for `DUR-IDEMP-001` through merged PR `#102`. Issue `#95` completed `CH-05` lease fencing for `DUR-LEASE-001` through merged PR `#103`. Issue `#96` completed `CH-06` committed outbox for `DUR-OUTBOX-001` through merged PR `#106`. Issue `#107` completed `CH-03` Stage 4 durable graph for `DUR-STAGE4-001` through merged PR `#108`. Issue `#109` is closed for `CH-07` Stage 6 durable replay through PR `#110` at merge commit `acccd6939ebe172b9a2d95f51fa96212035f55b0`. Issue `#115` completed `CH-08` Stage 7 render artifact-state preflight through PR `#116` at merge commit `7a2f2a338de3b5f1bbff82f57dd1d977182d8c50`, scoped to branch reservation and evidence mapping for render-status history, artifact metadata consistency, consumed-consent binding, and terminal persist rollback. Issue `#119` completed `CH-08` Stage 7 render artifact-state implementation through merged PR `#120` at `af7215a5ceb7cefa81306773c1cfa8260435291e`, keeping issue `#39` and provenance/disclosure/provider/retention/untrusted-input closure rows open. Issue `#123` is open for `CH-09` technical rollback compatibility for `DUR-ROLLBACK-001`, the next release-safety chunk after merged `CH-01`, `CH-02`, and `CH-03` evidence. Issue `#125` is closed through merged PR `#135` at `f94776f6602d4c6feec2412b4764a7368049a080` for a local restore-integrity drill that exercises only the existing file-backed Stage 4/6/7 restore surface for `DUR-RESTORE-001` without claiming production backup/restore closure. Issue `#126` remains open for the narrow repo-checked `CH-14` restore-readiness contract above the local `#125` drill while final production restore proof remains open. Issue `#111` completed `CH-16` consent capture for `MEDIA-CONSENT-001` through merged PR `#112` at `1f3d66d9b1b545e5d5c41e88a83cc731a2a8b31a` while issue `#39` remained open. Issue `#89` completed the merge-closeout ownership codification through merged PR `#90`. `#43`, `#44`, `#48`, and `#49` remain P2/follow-up unless they block Phase 1 correctness; `#60` is complete as a process-only PHF follow-up with no product/runtime scope. |
+| Phase 1 Closure | In progress | `#35`, `#36`, `#37`, `#40`, `#41`, `#42`, `#55`, `#58`, `#60`, `#65`, `#66`, `#67`, `#68`, `#69`, `#70`, `#71`, `#72`, `#84`, `#86`, `#89`, `#93`, `#95`, `#96`, `#97`, `#107`, `#109`, `#111`, `#115`, `#119`, `#125`, and `#184` closed; `#38` resolved with live settings evidence and required-context drift checking through merged PR `#53`; `#39`, `#43`, `#44`, `#48`, `#49`, `#123`, `#126`, `#127`, and `#128` open | PRs `#46`, `#47`, `#50`, `#53`, `#54`, `#56`, `#59`, `#62`, `#63`, `#64`, `#73`, `#74`, `#75`, `#76`, `#77`, `#78`, `#79`, `#80`, `#85`, `#87`, `#90`, `#92`, `#94`, `#98`, `#102`, `#103`, `#106`, `#108`, `#110`, `#112`, `#116`, `#120`, `#135`, and `#185` merged | Executable governance gate added | `#39` remains open as the remaining P1 production blocker despite context planning progress across `#65`-`#70`. Issues `#65`-`#70` are closed through PRs `#75`-`#80` respectively. `#71` and `#72` are closed process-hardening follow-ups through PRs `#73` and `#74`. Issue `#86` completed `CH-01` migration-baseline execution for `DUR-MIG-001` through merged PR `#87`. Issue `#93` completed `CH-02` ACID/CAS storage-kernel execution for `DUR-ACID-001` through merged PR `#94`. Issue `#97` completed `CH-04` idempotency semantics for `DUR-IDEMP-001` through merged PR `#102`. Issue `#95` completed `CH-05` lease fencing for `DUR-LEASE-001` through merged PR `#103`. Issue `#96` completed `CH-06` committed outbox for `DUR-OUTBOX-001` through merged PR `#106`. Issue `#107` completed `CH-03` Stage 4 durable graph for `DUR-STAGE4-001` through merged PR `#108`. Issue `#109` is closed for `CH-07` Stage 6 durable replay through PR `#110` at merge commit `acccd6939ebe172b9a2d95f51fa96212035f55b0`. Issue `#115` completed `CH-08` Stage 7 render artifact-state preflight through PR `#116` at merge commit `7a2f2a338de3b5f1bbff82f57dd1d977182d8c50`, scoped to branch reservation and evidence mapping for render-status history, artifact metadata consistency, consumed-consent binding, and terminal persist rollback. Issue `#119` completed `CH-08` Stage 7 render artifact-state implementation through merged PR `#120` at `af7215a5ceb7cefa81306773c1cfa8260435291e`, keeping issue `#39` and provenance/disclosure/provider/retention/untrusted-input closure rows open. Issue `#123` is open for `CH-09` technical rollback compatibility for `DUR-ROLLBACK-001`, the next release-safety chunk after merged `CH-01`, `CH-02`, and `CH-03` evidence. Issue `#125` is closed through merged PR `#135` at `f94776f6602d4c6feec2412b4764a7368049a080` for a local restore-integrity drill that exercises only the existing file-backed Stage 4/6/7 state surface for `DUR-RESTORE-001` without claiming production backup/restore closure. Issue `#184` completed PHF-020A structured Product Mode policy authority through merged PR `#185` at `1179760d342d126c78ff7bd09002d064dc7aaa0e` without claiming issue `#8`, issue `#155`, Product Mode 2, runtime, media, provider, hosted/public launch, or production completion. Issue `#126` remains open for the narrow repo-checked `CH-14` restore-readiness contract above the local `#125` drill while final production restore proof remains open. Issue `#111` completed `CH-16` consent capture for `MEDIA-CONSENT-001` through merged PR `#112` at `1f3d66d9b1b545e5d5c41e88a83cc731a2a8b31a` while issue `#39` remained open. Issue `#89` completed the merge-closeout ownership codification through merged PR `#90`. `#43`, `#44`, `#48`, and `#49` remain P2/follow-up unless they block Phase 1 correctness; `#60` is complete as a process-only PHF follow-up with no product/runtime scope. |
 
 | GPF prerequisite | Capability | Issue | Pull request | Repository-tree evidence |
 |---|---|---|---|---|
@@ -296,11 +297,11 @@ Use these files together with this tracker:
 | `#19` | Open | Future slice | Mock avatar video and FFmpeg assembly. |
 | `#20` | Open | Future slice | Interactive Q&A over approved project knowledge. |
 | `#21` | Open | Future slice | Premium adapters, observability dashboard, and cost controls. |
-| `#155` | Open | Product Mode 1 checkpoint controller | Canonical serialized tracker for the controlled local, synthetic, artifact-only Product Mode 1 checkpoint. The replacement PHF-020A work now runs under issue `#184` and PR `#185`; this tracker remains open until its actual acceptance contracts are satisfied. |
+| `#155` | Open | Product Mode 1 checkpoint controller | Canonical serialized tracker for the controlled local, synthetic, artifact-only Product Mode 1 checkpoint. PHF-020A completed through issue `#184` and PR `#185`; this tracker remains open until its actual acceptance contracts are satisfied. |
 | `#167` | Open, stopped predecessor evidence | Product Mode 1 governance predecessor | Original PHF-020A attempt superseded by stopped PR `#168`; do not resume, patch, merge, rebase, or delete its evidence. |
 | `#169` | Closed, frozen feasibility evidence | GovernancePreflight feasibility predecessor | Closed/stopped feasibility evidence for PR `#170`; do not modify its frozen evidence. |
 | `#181` | Closed | Phase 1 process prerequisite | Bounded local Lighthouse browser-selection maintenance completed through PR `#182` at merge commit `3ea049cff0bf2157bea0bb5aedf73eb562753d17`; it unblocked issue `#155` validation and changed no product runtime, launch level, provider posture, or production claim. |
-| `#184` | Open | PHF-020A structured-policy replacement | Active replacement for stopped issue `#167` and draft PR `#168`; creates closed Product Mode policy authority in `docs/PHASE_PLAN.md` and `docs/SKILL_EXECUTION_PLAN.md` while keeping PHF-020B, Product Mode 2, runtime, media, providers, hosted/public launch, and production out of scope. |
+| `#184` | Closed | PHF-020A structured-policy replacement | Replacement for stopped issue `#167` and draft PR `#168` completed through merged PR `#185` at `1179760d342d126c78ff7bd09002d064dc7aaa0e`; created closed Product Mode policy authority in `docs/PHASE_PLAN.md` and `docs/SKILL_EXECUTION_PLAN.md` while keeping PHF-020B, Product Mode 2, runtime, media, providers, hosted/public launch, and production out of scope. |
 
 ## Pull Request Ledger
 
@@ -354,7 +355,7 @@ Use these files together with this tracker:
 | `#175` | Merged | 2026-07-16 | HPR reviewer-overview hardening for issue `#174`; merged at `93ec63e2574701bf62bd3fa745f18cca560d5f09`. |
 | `#177` | Merged | 2026-07-16 | GPF-B prospective repository integration for issue `#176`; merged at `cee9fa099de6c3f01cbd2e5d670fa407ffa54d54`. |
 | `#179` | Merged | 2026-07-17 | GPF-C supported pull-request CI evidence for issue `#178`; merged at `22d48b9edc0338d613d4926059fa9ef1ef329d1f` after exact-head approval and closeout. |
-| `#185` | Open | Not merged | Active PR for issue `#184`; initial preflight-only head received Gate 1 approval, while final implementation must pass local gates, exact-head CI, and fresh latest-head human approval before merge. |
+| `#185` | Merged | 2026-07-19 | PHF-020A structured-policy replacement for issue `#184`; merged at `1179760d342d126c78ff7bd09002d064dc7aaa0e` after local gates, exact-head CI, latest-head approval, post-merge main workflow verification, and branch cleanup. |
 
 ## Completed Work
 
@@ -506,20 +507,17 @@ Use these files together with this tracker:
 
 ## Next Approved Actions
 
-1. Complete issue `#184` / PR `#185` as the replacement PHF-020A
-   structured-policy branch: keep the exact eight-file scope, pass local gates
-   and exact-head CI, then stop for fresh latest-head human approval before
-   merge.
+1. Create and complete the smallest PHF-020B/StatusStateV1 successor required
+   by the live contracts now that replacement PHF-020A has merged and closed
+   out.
 2. Preserve stopped issue `#167` and PR `#168` as evidence only. Do not resume,
    patch, rebase, merge, close, or delete that implementation history in PHF-020A.
-3. After replacement PHF-020A merges and closes out, create and complete the
-   smallest PHF-020B/StatusStateV1 successor required by the live contracts.
-4. Keep issue `#8` and issue `#155` open until their actual acceptance
+3. Keep issue `#8` and issue `#155` open until their actual acceptance
    contracts are satisfied.
-5. Continue the controlled local mock-demo path only as serialized issue-linked
+4. Continue the controlled local mock-demo path only as serialized issue-linked
    PRs: CH-M1-01, CH-M1-02, Checkpoint A, CH-M1-03 through CH-M1-05, CH-M1-06,
    then Checkpoint B decision.
-6. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
+5. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
    external provider use, real audio/video export, and public synthetic-media
    distribution No-Go.
 
@@ -555,6 +553,7 @@ Required update rules:
 | 2026-07-17 | PR `#182` merged issue `#181` at `3ea049cff0bf2157bea0bb5aedf73eb562753d17`, closing the bounded local Lighthouse browser-selection prerequisite and unblocking issue `#155` validation without product runtime, launch, provider, or production-posture change. |
 | 2026-07-17 | Post-PR-C reconciliation verified GPF-A `#172`/`#173`, HPR `#174`/`#175`, GPF-B `#176`/`#177`, and GPF-C `#178`/`#179` as merged and closed out on `origin/main` at `22d48b9edc0338d613d4926059fa9ef1ef329d1f`; preserved stopped predecessor evidence in `#166`, `#168`, and `#170`; reconciled issue `#155` as the serialized Product Mode 1 checkpoint controller; repaired the Phase 1 process-branch allowlist so a branch may change only its matching GovernancePreflightV1 artifact; and kept issue `#8` open with Product Mode 2, real audio/video, providers, hosted launch, and production out of scope. |
 | 2026-07-19 | Issue `#184` and PR `#185` are active as the replacement PHF-020A structured-policy branch. The repository now tracks closed Product Mode authority in `docs/PHASE_PLAN.md` and `docs/SKILL_EXECUTION_PLAN.md`, keeps `docs/STATUS.md` as mutable current-state authority until PHF-020B, and does not claim issue `#8`, issue `#155`, Product Mode 2, runtime, media, provider, hosted/public launch, or production completion. |
+| 2026-07-19 | PR `#185` merged PHF-020A structured Product Mode policy authority at `1179760d342d126c78ff7bd09002d064dc7aaa0e`; issue `#184` is complete, issue `#8` and issue `#155` remain open for their separate acceptance contracts, stopped issue `#167` and PR `#168` remain preserved evidence, and the next approved policy action is the smallest PHF-020B/StatusStateV1 successor. |
 | 2026-06-29 | Initial canonical program status tracker added to consolidate stage, issue, PR, and governance status. |
 | 2026-06-29 | Tracker contract refined to be merge-stable and repository-scoped, with explicit limits on what local checks can enforce. |
 | 2026-06-29 | Stage 1 product/PRD hardening split clarified: `#1` covers PRD v1.0 hardening, while `#16` remains the follow-on Spec Kit gate. |
