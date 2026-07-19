@@ -34,7 +34,12 @@ def run_dispatcher(
     monkeypatch.setattr(dispatcher, "STATUS_DOC", status_file, raising=False)
     monkeypatch.setattr(dispatcher, "current_branch", lambda: branch)
     monkeypatch.setattr(dispatcher, "run_recommended_review_item_check", lambda stage: 0)
-    monkeypatch.setattr(dispatcher.subprocess, "call", lambda args, cwd=None: calls.append(list(args)) or 0)
+
+    def record_subprocess_call(args: list[str], cwd: Path | None = None) -> int:
+        calls.append(list(args))
+        return 0
+
+    monkeypatch.setattr(dispatcher.subprocess, "call", record_subprocess_call)
     if policy_only:
         monkeypatch.setenv("NARRATWIN_POLICY_ONLY", "1")
     else:
