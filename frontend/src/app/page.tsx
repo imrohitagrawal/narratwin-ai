@@ -60,8 +60,16 @@ type MultilingualWalkthrough = {
   };
 };
 
+type AvatarConsent = {
+  consentRecordId: string;
+  consentStatementVersion: string;
+  consentStatementText: string;
+  requestChecksum: string;
+};
+
 type AvatarRender = {
   avatarRenderId: string;
+  consentRecordId: string;
   sourceRunId: string;
   status: string;
   renderJobStatus: string;
@@ -126,6 +134,8 @@ const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
 const defaultKnowledge =
   "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.\n\nEvery generated walkthrough claim must cite retrieved source chunks from approved knowledge.";
 const safeApiErrorCodes = new Set([
+  "AVATAR_CONSENT_INVALID",
+  "AVATAR_CONSENT_RECORD_REQUIRED",
   "AVATAR_CONSENT_REQUIRED",
   "CLONED_IDENTITY_DISABLED",
   "FORBIDDEN",
@@ -196,11 +206,11 @@ export default function Home() {
       requestedVoiceProvider,
       ...glossaryTerms.slice().sort((left, right) => left.localeCompare(right)),
     );
-    const avatarSeed = checksumSeed(
+    const avatarConsentSeed = checksumSeed(
       requestSeed,
       requestedAvatarProvider,
       String(consentToUseSyntheticAvatar),
-      "cloned-identity-false",
+      "avatar-consent-v1",
     );
 
     setIsGenerating(true);
@@ -275,11 +285,26 @@ export default function Home() {
         `ui-multilingual-${multilingualSeed}`,
       );
 
+      const avatarConsent = await postJson<AvatarConsent>(
+        `/projects/${project.projectId}/walkthrough-runs/${generated.runId}/avatar-consents`,
+        {
+          consentToUseSyntheticAvatar,
+        },
+        `ui-avatar-consent-${avatarConsentSeed}`,
+      );
+      const avatarSeed = checksumSeed(
+        requestSeed,
+        requestedAvatarProvider,
+        String(consentToUseSyntheticAvatar),
+        avatarConsent.consentRecordId,
+        "cloned-identity-false",
+      );
       const avatar = await postJson<AvatarRender>(
         `/projects/${project.projectId}/walkthrough-runs/${generated.runId}/avatar-renders`,
         {
           requestedAvatarProvider,
           consentToUseSyntheticAvatar,
+          consentRecordId: avatarConsent.consentRecordId,
           clonedIdentityRequested: false,
         },
         `ui-avatar-${avatarSeed}`,

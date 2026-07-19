@@ -133,6 +133,17 @@ ISSUE_188_ALLOWED_CHANGED_FILES = {
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_155_CH_M1_01_ALLOWED_CHANGED_FILES = {
+    "docs/ADR/0019-ch16-consent-capture.md",
+    "docs/reviews/ISSUE_204_CH_M1_01_PREFLIGHT.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "frontend/src/app/page.tsx",
+    "frontend/tests/smoke.spec.ts",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -3312,6 +3323,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_184_ALLOWED_CHANGED_FILES
     elif branch == STATUS_STATE_V1_BRANCH:
         allowed_files = ISSUE_188_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-155-ch-m1-01-"):
+        allowed_files = ISSUE_155_CH_M1_01_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):

@@ -62,6 +62,17 @@ The API path is split into two steps:
    requires both the request boolean and an explicit durable scope containing a
    matching `consentRecordId`.
 
+Product Mode 1 `CH-M1-01` applies the same two-step durable-consent chain to
+the local/mock frontend path. The frontend must call `/avatar-consents` after a
+passed source walkthrough/multilingual flow and before `/avatar-renders`, then
+send the returned `consentRecordId` in the render request. The render
+idempotency seed includes that durable consent identity so the UI no longer
+reuses the old boolean-only render request seed.
+
+This frontend repair does not change backend consent semantics, consent
+statement text, storage, provider behavior, real audio/video posture, hosted or
+public launch posture, Product Mode 2, or production durability/release claims.
+
 Render-time validation checks:
 
 - same tenant

@@ -665,6 +665,28 @@ CH-M1 implementation, real media, providers, hosted/public launch, production,
 backend, frontend, workflow, Docker, dependency, RAG, avatar, database, or
 product implementation work.
 
+Issue `#204` is the `CH-M1-01` Product Mode 1 child under controller issue
+`#155`. Branches using `phase-1-closure-155-ch-m1-01-*` may change only:
+
+- `docs/reviews/ISSUE_204_CH_M1_01_PREFLIGHT.md`
+- `docs/ADR/0019-ch16-consent-capture.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `frontend/src/app/page.tsx`
+- `frontend/tests/smoke.spec.ts`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+They are limited to repairing the local/mock frontend durable avatar-consent
+request chain: call `/avatar-consents`, pass the returned `consentRecordId` to
+`/avatar-renders`, and prove the sequence with mocked browser evidence. They
+must not change backend consent semantics, provider behavior, Stage 4/6/7
+runtime orchestration, external accounts, hosted/public launch, Product Mode 2,
+real audio/video, imported media, cloned identity, public media distribution,
+production durability, backup/restore, monitoring, release posture, or stopped
+predecessor surfaces.
+
 Context 0 issue `#39` closure-contract branches using
 `phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
 they may touch only docs, guardrails, tests, PR templates, and CI workflow

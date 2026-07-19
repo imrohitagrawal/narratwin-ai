@@ -145,6 +145,7 @@ const multilingualResponse = {
 
 const avatarRenderResponse = {
   avatarRenderId: "avrun_ui_smoke",
+  consentRecordId: "consent_ui_smoke",
   sourceRunId: "run_ui_smoke",
   status: "COMPLETED",
   renderJobStatus: "COMPLETED",
@@ -224,6 +225,7 @@ function checksumSeed(...values: string[]) {
 test("home page generates a Stage 7 avatar demo export through the API workflow", async ({ page }) => {
   const calls: string[] = [];
   let multilingualIdempotencyKey = "";
+  let avatarConsentIdempotencyKey = "";
   let avatarIdempotencyKey = "";
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
@@ -263,9 +265,32 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
     }
     if (
       request.method() === "POST" &&
+      path === "/api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-consents"
+    ) {
+      avatarConsentIdempotencyKey = request.headers()["idempotency-key"] ?? "";
+      expect(await request.postDataJSON()).toEqual({ consentToUseSyntheticAvatar: true });
+      await route.fulfill({
+        json: {
+          consentRecordId: "consent_ui_smoke",
+          consentStatementVersion: "stage7-synthetic-avatar-consent-v1",
+          consentStatementText:
+            "I affirm that I am authorized to approve this Stage 7 synthetic local avatar demo for the selected walkthrough run.",
+          requestChecksum: "sha256:ui-consent-request",
+        },
+      });
+      return;
+    }
+    if (
+      request.method() === "POST" &&
       path === "/api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-renders"
     ) {
       avatarIdempotencyKey = request.headers()["idempotency-key"] ?? "";
+      expect(await request.postDataJSON()).toEqual({
+        requestedAvatarProvider: "mock",
+        consentToUseSyntheticAvatar: true,
+        consentRecordId: "consent_ui_smoke",
+        clonedIdentityRequested: false,
+      });
       await route.fulfill({ json: avatarRenderResponse });
       return;
     }
@@ -284,7 +309,7 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
   await expect(page.getByRole("heading", { name: "Avatar demo export" })).toBeVisible();
   await page.getByLabel("Synthetic avatar consent").check();
   await page.getByRole("button", { name: "Generate avatar demo export" }).click();
-  await expect.poll(() => calls, { timeout: 5000 }).toHaveLength(7);
+  await expect.poll(() => calls, { timeout: 5000 }).toHaveLength(8);
   const baseSeed = checksumSeed(
     "NarraTwin AI",
     "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.\n\nEvery generated walkthrough claim must cite retrieved source chunks from approved knowledge.",
@@ -293,7 +318,12 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
     "es",
   );
   expect(multilingualIdempotencyKey).not.toBe(`ui-multilingual-${baseSeed}`);
-  expect(avatarIdempotencyKey).toBe(`ui-avatar-${checksumSeed(baseSeed, "mock", "true", "cloned-identity-false")}`);
+  expect(avatarConsentIdempotencyKey).toBe(
+    `ui-avatar-consent-${checksumSeed(baseSeed, "mock", "true", "avatar-consent-v1")}`,
+  );
+  expect(avatarIdempotencyKey).toBe(
+    `ui-avatar-${checksumSeed(baseSeed, "mock", "true", "consent_ui_smoke", "cloned-identity-false")}`,
+  );
 
   await expect(page.getByLabel("Trace metadata")).toContainText("trace_ui_smoke");
   await expect(page.getByLabel("Trace metadata")).toContainText("run_ui_smoke");
@@ -344,6 +374,86 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
     "POST /api/v1/projects/proj_ui/ingestion-runs",
     "POST /api/v1/projects/proj_ui/walkthrough-runs",
     "POST /api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/multilingual-runs",
+    "POST /api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-consents",
     "POST /api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-renders",
   ]);
+});
+
+test("home page shows bounded durable avatar consent render errors", async ({ page }) => {
+  await page.route("**/api/v1/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+
+    if (request.method() === "POST" && path === "/api/v1/projects") {
+      await route.fulfill({ json: { projectId: "proj_ui" } });
+      return;
+    }
+    if (request.method() === "POST" && path === "/api/v1/projects/proj_ui/knowledge-documents") {
+      await route.fulfill({ json: { documentId: "doc_ui" } });
+      return;
+    }
+    if (
+      request.method() === "PATCH" &&
+      path === "/api/v1/projects/proj_ui/knowledge-documents/doc_ui/approval"
+    ) {
+      await route.fulfill({ json: { documentId: "doc_ui", approvalStatus: "APPROVED" } });
+      return;
+    }
+    if (request.method() === "POST" && path === "/api/v1/projects/proj_ui/ingestion-runs") {
+      await route.fulfill({ json: { ingestionRunId: "ing_ui", status: "COMPLETED" } });
+      return;
+    }
+    if (request.method() === "POST" && path === "/api/v1/projects/proj_ui/walkthrough-runs") {
+      await route.fulfill({ json: walkthroughResponse });
+      return;
+    }
+    if (
+      request.method() === "POST" &&
+      path === "/api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/multilingual-runs"
+    ) {
+      await route.fulfill({ json: multilingualResponse });
+      return;
+    }
+    if (
+      request.method() === "POST" &&
+      path === "/api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-consents"
+    ) {
+      await route.fulfill({
+        json: {
+          consentRecordId: "consent_ui_smoke",
+          consentStatementVersion: "stage7-synthetic-avatar-consent-v1",
+          consentStatementText:
+            "I affirm that I am authorized to approve this Stage 7 synthetic local avatar demo for the selected walkthrough run.",
+          requestChecksum: "sha256:ui-consent-request",
+        },
+      });
+      return;
+    }
+    if (
+      request.method() === "POST" &&
+      path === "/api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-renders"
+    ) {
+      await route.fulfill({
+        status: 422,
+        json: {
+          error: {
+            code: "AVATAR_CONSENT_INVALID",
+            message: "Synthetic avatar consent record is invalid or already consumed.",
+          },
+        },
+      });
+      return;
+    }
+    await route.fulfill({ status: 404, json: { error: "unexpected route" } });
+  });
+
+  await page.goto("/");
+
+  await page.getByLabel("Synthetic avatar consent").check();
+  await page.getByRole("button", { name: "Generate avatar demo export" }).click();
+
+  await expect(page.getByRole("alert").filter({ hasText: "AVATAR_CONSENT_INVALID" })).toHaveText(
+    "AVATAR_CONSENT_INVALID: Synthetic avatar consent record is invalid or already consumed.",
+  );
+  await expect(page.getByRole("link", { name: "Download avatar demo" })).toHaveCount(0);
 });
