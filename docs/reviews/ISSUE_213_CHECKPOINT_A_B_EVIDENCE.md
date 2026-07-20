@@ -61,11 +61,16 @@ Compose service networking and provider posture were otherwise unchanged.
 The local evidence packet is generated under ignored `reports/` paths:
 
 - Screenshot:
-  `reports/issue-213-checkpoint-b/playwright-output/<case>/issue-213-checkpoint-b-avatar-export.png`.
+  `reports/issue-213-checkpoint-b/playwright-output/real-stack-Issue-213-Check-b92ee-es-without-API-interception-chromium/issue-213-checkpoint-b-avatar-export.png`.
 - Evidence JSON:
-  `reports/issue-213-checkpoint-b/playwright-output/<case>/issue-213-checkpoint-b-evidence.json`.
+  `reports/issue-213-checkpoint-b/playwright-output/real-stack-Issue-213-Check-b92ee-es-without-API-interception-chromium/issue-213-checkpoint-b-evidence.json`.
 - Trace:
-  `reports/issue-213-checkpoint-b/playwright-output/<case>/trace.zip`.
+  `reports/issue-213-checkpoint-b/playwright-output/real-stack-Issue-213-Check-b92ee-es-without-API-interception-chromium/trace.zip`.
+- Compose ps:
+  `reports/issue-213-checkpoint-b/compose-ps.jsonl`.
+- Backend/frontend logs:
+  `reports/issue-213-checkpoint-b/backend.log`,
+  `reports/issue-213-checkpoint-b/frontend.log`.
 - Lighthouse:
   `reports/lighthouse/stage8-lighthouse.json`.
 - Performance smoke:
@@ -73,12 +78,13 @@ The local evidence packet is generated under ignored `reports/` paths:
 - Container scan:
   `reports/security/container-scan-case.json` plus raw/envelope scanner artifacts.
 
-The latest pre-PR evidence run against the implementation commit recorded:
+The latest pre-PR evidence run against implementation commit
+`a996455c358768524df93d92e89117160eda99d2` recorded:
 
 - Base URL: `http://127.0.0.1:13000`.
 - Case count: 1 no-interception real-stack Chromium case plus 3 mocked smoke
   cases kept separate under `frontend/playwright.config.ts`.
-- Real-stack case duration: 408 ms.
+- Real-stack case duration: 478 ms.
 - API call count: 8.
 - Browser interception: `noApiInterception=true`.
 - Request origin: `http://127.0.0.1:13000`.
@@ -99,9 +105,9 @@ Artifact metadata recorded by the browser:
 | Translated script | `run_000001-es-script.md` | `text/markdown` | 149 | `sha256:1cd1eb803bec9ca71131c59e3bc165a8a738310ee84bff947f9ceb74d4479170` |
 | Subtitles | `run_000001-es.srt` | `application/x-subrip` | 249 | `sha256:113fef542beec7c5beb3d2c7074c554cb5253c4cd38e14f480e926e4174b11e2` |
 | Voice manifest | `voice-manifest-es.json` | `application/json` | 404 | `sha256:e3925d1a2b8226657a0ff24b8e5cfba5e1ab211515ea3b12c780b4d78c249773` |
-| Avatar demo | `run_000001-avatar-demo.html` | `text/html` | 650 | `sha256:0e1708f22bc2181e6294cfd2f7d34836c6423fe463ffc9ad5348b1bffe0198d1` |
-| Render manifest | `run_000001-avatar-render-manifest.json` | `application/json` | 2237 | `sha256:22facda62eaa1ad15a842838f0678ef106fc277da2f94bf96e47dc411886ce43` |
-| Video placeholder | `run_000001-video-export-placeholder.json` | `application/json` | 2157 | `sha256:e8109fb2fc6f80d66e021a70cfa0f70ebd6494ec63f9fc8fb87266332b1c4a9e` |
+| Avatar demo | `run_000001-avatar-demo.html` | `text/html` | 650 | `sha256:4460bfaf22b645b56c175fe569698dcfb59417b9d595bfd941d19bf178fecdf9` |
+| Render manifest | `run_000001-avatar-render-manifest.json` | `application/json` | 2237 | `sha256:a610dce025d950b834d164190cd132ac0fd9722e40b38fb6bf004b398aeecd33` |
+| Video placeholder | `run_000001-video-export-placeholder.json` | `application/json` | 2157 | `sha256:c70794ef5f9e5b37ba1d81cbd100d7ac166dfbd07f2e95b83974e4e96c4dfdd6` |
 
 ## Validation
 
