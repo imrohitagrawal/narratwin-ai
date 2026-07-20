@@ -1265,10 +1265,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "#208/#209",
-        "active",
-        "active",
-        "Issue #208 is the active CH-M1-02 real-stack local evidence item; issue #209 is included only for the directly coupled local Phase 1 Closure quality-dispatch clarification.",
+        "#155",
+        "checkpoint-a-pending-issue",
+        "checkpoint-a-pending-issue",
+        "PR #210 completed CH-M1-02 and the issue #209 quality-dispatch clarification; the next controlled local mock-demo action must start from a new issue-linked Checkpoint A step under issue #155.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
