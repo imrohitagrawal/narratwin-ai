@@ -1296,10 +1296,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "#213",
-        "checkpoint-a-through-b-active",
-        "checkpoint-a-through-b-active",
-        "Issue #213 is the active combined Checkpoint A through Checkpoint B child under issue #155 after PR #212 closed the post-PR-210 status reconciliation.",
+        "#215",
+        "post-pr-214-status-reconciliation-active",
+        "post-pr-214-status-reconciliation-active",
+        "Issue #215 is the active post-PR-214 repository-ledger reconciliation after PR #214 merged issue #213 and closed controller issue #155.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -1311,9 +1311,9 @@ STATUS_STATE_V1_ROWS = {
     "SSV1-ISSUE155": (
         "product-mode-controller",
         "#155",
-        "open",
-        "open",
-        "Issue #155 remains the serialized Product Mode 1 checkpoint controller; PHF-020B does not satisfy or close it.",
+        "closed",
+        "closed",
+        "Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence.",
     ),
     "SSV1-PREDECESSOR": (
         "stopped-evidence",
@@ -1327,7 +1327,7 @@ STATUS_STATE_V1_ROWS = {
         "repository",
         "forbidden",
         "forbidden",
-        "Product Mode 2, hosted launch, provider enablement, public media distribution, production-readiness claims, and unapproved product/runtime implementation outside the issue `#213` local/mock checkpoint path remain forbidden.",
+        "Product Mode 2, hosted launch, provider enablement, public media distribution, production-readiness claims, and product/runtime implementation outside approved follow-up scope remain forbidden.",
     ),
 }
 

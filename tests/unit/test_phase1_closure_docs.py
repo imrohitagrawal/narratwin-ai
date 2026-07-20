@@ -571,14 +571,14 @@ def test_status_state_v1_contract_rejects_missing_table() -> None:
 def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
     expected = (
-        "| SSV1-ISSUE155 | product-mode-controller | #155 | open | open | "
-        "Issue #155 remains the serialized Product Mode 1 checkpoint controller; "
-        "PHF-020B does not satisfy or close it. |"
+        "| SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | "
+        "Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 "
+        "and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |"
     )
     assert expected in status_text
     mutated = status_text.replace(
         expected,
-        expected.replace("| open | open |", "| closed | closed |"),
+        expected.replace("| closed | closed |", "| open | open |"),
         1,
     )
 
