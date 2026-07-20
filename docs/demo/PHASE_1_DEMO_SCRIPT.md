@@ -26,7 +26,18 @@ multi-worker, real video, cloned identity, or public synthetic-media claims.
 7. Generate walkthrough script for the recruiter audience.
 8. Show citations and source references attached to the generated script.
 9. Show the eval result with unsupported claims equal to zero.
-10. Show saved output in the UI.
+10. Generate the multilingual run with the local/mock translation, subtitle, and
+    voice-manifest path.
+11. Affirm synthetic avatar consent.
+12. Generate the avatar demo export from the validated Stage 6 multilingual
+    bundle.
+13. Show the six downloadable artifacts in the UI: translated script, subtitles,
+    voice manifest, avatar demo HTML, render manifest, and video placeholder
+    JSON.
+14. Open the render manifest or video placeholder metadata and point out the
+    `sourceRunId`, `multilingualRunId`, target language, artifact checksums,
+    context refs, citation indexes, evaluation evidence, local provider posture,
+    and consent disclosure version.
 
 ## Required Talking Points
 
@@ -35,6 +46,7 @@ multi-worker, real video, cloned identity, or public synthetic-media claims.
   with optional single-node JSON restart snapshots only when configured. It is
   not multi-worker or production-durable.
 - The demo uses mock/local providers only and does not require provider keys.
-- The demo does not produce real video, cloned face, cloned voice, or public
-  synthetic-media output.
+- The demo does not produce real audio, real video, cloned face, cloned voice,
+  external-provider output, hosted/public launch output, or public
+  synthetic-media distribution.
 - Final Review remains No-Go for production until Phase 1 P0/P1 blockers close.

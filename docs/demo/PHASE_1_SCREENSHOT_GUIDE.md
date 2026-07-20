@@ -21,7 +21,15 @@ Then verify `http://localhost:8000/api/v1/healthz`,
 5. Generated walkthrough script.
 6. Citations/source references.
 7. Eval result showing unsupported claims are zero or blocked/flagged.
-8. Saved output and artifact/download area.
+8. Multilingual translated script, subtitles, and voice manifest.
+9. Synthetic avatar consent and mock/local avatar metadata.
+10. Avatar demo preview.
+11. Export artifact area showing translated script, subtitles, voice manifest,
+    avatar demo HTML, render manifest, and video placeholder JSON.
+12. Render manifest or video placeholder metadata showing validated
+    `sourceRunId`, `multilingualRunId`, target language, artifact checksums,
+    context refs, citation indexes, evaluation evidence, provider posture, and
+    consent disclosure version.
 
 ## Caption Rules
 
@@ -29,5 +37,6 @@ Then verify `http://localhost:8000/api/v1/healthz`,
 - State "single-process, local-only, optional JSON restart snapshots, no
   multi-worker or production durability" where saved output is shown.
 - Do not caption screenshots as production-ready.
-- Do not imply real video export, cloned identity, external avatar provider use,
-  or public synthetic-media distribution.
+- Do not imply provider keys, real audio, real video export, cloned identity,
+  external provider use, hosted/public launch, public distribution, or
+  production readiness.

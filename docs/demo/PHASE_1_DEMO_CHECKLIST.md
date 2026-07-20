@@ -20,10 +20,23 @@ checklist's conditional local-demo posture.
 - [ ] Generated script includes citations.
 - [ ] Eval result is visible.
 - [ ] Unsupported claims are blocked or flagged.
-- [ ] Saved output is visible in the UI.
+- [ ] User can generate a multilingual run using mock/local translation,
+      subtitles, and voice manifest providers.
+- [ ] User can affirm synthetic avatar consent.
+- [ ] User can generate the mock/local avatar demo export from the validated
+      Stage 6 multilingual bundle.
+- [ ] Translated script, subtitles, voice manifest, avatar demo HTML, render
+      manifest, and video placeholder JSON are visible and downloadable only
+      after MIME type, safe filename, size, checksum, JSON/provider marker, and
+      active HTML validation pass.
+- [ ] Render manifest and video placeholder show multilingual provenance for
+      `sourceRunId`, `multilingualRunId`, target language, artifact checksums,
+      context refs, citation indexes, evaluation evidence, provider posture, and
+      consent disclosure version.
 - [ ] Demo presenter states the single-process/local-only limit, optional JSON
       restart snapshots when configured, and no multi-worker or production
       durability.
 - [ ] Demo presenter states mock/local providers only.
-- [ ] Demo presenter makes no production, real-video, cloned-identity, or public
-  synthetic-media distribution claim.
+- [ ] Demo presenter states no provider keys, no real audio, no real video, no
+      external providers, no cloned identity, no hosted launch, no public
+      distribution, and no production readiness.

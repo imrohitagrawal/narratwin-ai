@@ -1878,6 +1878,7 @@ def test_stage7_file_state_terminal_persist_failure_preserves_concurrent_success
             source_evaluation_id: str = "local_evaluation",
             source_evaluation_checksum: str = "",
             evaluation_status: str = "UNKNOWN",
+            multilingual_bundle: stage7_module.Stage7MultilingualBundle | None = None,
         ) -> stage7_module.AvatarProviderResult:
             if source_run_id == "run_slow_failure":
                 self.slow_started.set()
@@ -1895,6 +1896,7 @@ def test_stage7_file_state_terminal_persist_failure_preserves_concurrent_success
                 source_evaluation_id=source_evaluation_id,
                 source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
+                multilingual_bundle=multilingual_bundle,
             )
 
     state_path = tmp_path / "stage7.json"
@@ -2201,7 +2203,9 @@ def test_stage7_file_state_replays_provider_failed_fallback_history(
             source_evaluation_id: str = "local_evaluation",
             source_evaluation_checksum: str = "",
             evaluation_status: str = "UNKNOWN",
+            multilingual_bundle: stage7_module.Stage7MultilingualBundle | None = None,
         ) -> stage7_module.AvatarProviderResult:
+            del multilingual_bundle
             raise RuntimeError("provider unavailable during local test")
 
     state_path = tmp_path / "stage7.json"
@@ -2273,7 +2277,9 @@ def test_stage7_file_state_replays_pure_provider_failed_fallback_history(
             source_evaluation_id: str = "local_evaluation",
             source_evaluation_checksum: str = "",
             evaluation_status: str = "UNKNOWN",
+            multilingual_bundle: stage7_module.Stage7MultilingualBundle | None = None,
         ) -> stage7_module.AvatarProviderResult:
+            del multilingual_bundle
             raise RuntimeError("provider failed during local restore replay test")
 
     state_path = tmp_path / "stage7.json"

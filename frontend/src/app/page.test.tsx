@@ -14,6 +14,7 @@ describe("Home", () => {
     expect(html).toContain("Target language");
     expect(html).toContain("Download script");
     expect(html).toContain("Download subtitles");
+    expect(html).toContain("Download voice manifest");
     expect(html).toContain("Download avatar demo");
     expect(html).toContain("Download render manifest");
     expect(html).toContain("Download video placeholder");
@@ -26,6 +27,7 @@ describe("Home", () => {
     expect(html).toContain("Walkthrough script");
     expect(html).toContain("Demo preview");
     expect(html).toContain("Export artifacts");
+    expect(html).toContain("Voice manifest");
     expect(html).toContain("Video placeholder");
     expect(html).toContain("Real video");
     expect(html).toContain("Trace");
@@ -129,7 +131,7 @@ describe("Home", () => {
     ).toBe("ready");
   });
 
-  it("blocks malformed, active, invalid JSON, and oversized artifacts", () => {
+	  it("blocks malformed, active, invalid JSON, and oversized artifacts", () => {
     const html = "<html><body><script>alert('x')</script></body></html>";
     expect(
       artifactBlockReason("avatarDemo", {
@@ -157,13 +159,265 @@ describe("Home", () => {
       }),
     ).toBe("Invalid base64 content.");
     const oversized = "x".repeat(512 * 1024 + 1);
-    expect(
-      artifactBlockReason("script", {
-        fileName: "run-es-script.md",
-        mimeType: "text/markdown",
-        contentBase64: btoa(oversized),
-        checksum: `sha256:${sha256Hex(oversized)}`,
-      }),
-    ).toBe("Artifact exceeds local preview limit.");
+	    expect(
+	      artifactBlockReason("script", {
+	        fileName: "run-es-script.md",
+	        mimeType: "text/markdown",
+	        contentBase64: btoa(oversized),
+	        checksum: `sha256:${sha256Hex(oversized)}`,
+	      }),
+	    ).toBe("Artifact exceeds local preview limit.");
+	  });
+
+  it("blocks JSON artifacts when language or provenance does not match the current run", () => {
+    const context = artifactValidationContext();
+	    const renderManifest = jsonArtifact(
+	      "run-avatar-render-manifest.json",
+	      "renderManifest",
+	      manifestJson(context, { targetLanguage: "fr" }),
+	    );
+	    const videoPlaceholder = jsonArtifact(
+	      "run-video-export-placeholder.json",
+	      "videoPlaceholder",
+	      placeholderJson(context, { sourceRunId: "run_replayed" }),
+	    );
+    const voiceManifest = jsonArtifact("voice-manifest-es.json", "voiceManifest", voiceManifestJson(context, {
+      textChecksum: "sha256:tampered",
+    }));
+
+    expect(artifactBlockReason("renderManifest", renderManifest, context)).toBe("JSON metadata shape is invalid.");
+    expect(artifactBlockReason("videoPlaceholder", videoPlaceholder, context)).toBe("JSON metadata shape is invalid.");
+    expect(artifactBlockReason("voiceManifest", voiceManifest, context)).toBe(
+      "JSON metadata shape is invalid.",
+    );
   });
-});
+
+  it("blocks voice manifests that omit required local schema fields", () => {
+    const context = artifactValidationContext();
+    const voiceManifest = jsonArtifact("voice-manifest-es.json", "voiceManifest", {
+      provider: "mock",
+      providerMode: "LOCAL",
+      language: "es",
+    });
+
+    expect(artifactBlockReason("voiceManifest", voiceManifest, context)).toBe("JSON metadata shape is invalid.");
+  });
+
+  it("enables JSON artifact downloads only when language and provenance match the current run", () => {
+	    const context = artifactValidationContext();
+	    const renderManifest = jsonArtifact("run-avatar-render-manifest.json", "renderManifest", manifestJson(context));
+	    const videoPlaceholder = jsonArtifact(
+	      "run-video-export-placeholder.json",
+	      "videoPlaceholder",
+	      placeholderJson(context),
+	    );
+    const voiceManifest = jsonArtifact("voice-manifest-es.json", "voiceManifest", voiceManifestJson(context));
+
+	    expect(artifactSafetyState("renderManifest", renderManifest, context)).toBe("ready");
+	    expect(artifactSafetyState("videoPlaceholder", videoPlaceholder, context)).toBe("ready");
+	    expect(artifactSafetyState("voiceManifest", voiceManifest, context)).toBe("ready");
+	  });
+	});
+
+function artifactValidationContext(): NonNullable<Parameters<typeof artifactSafetyState>[2]> {
+  const translatedScriptText = "Guion traducido. [1]";
+  const subtitlesText = "1\n00:00:00,000 --> 00:00:02,000\nGuion traducido. [1]\n";
+  const voiceManifestText = JSON.stringify({
+    provider: "mock",
+    providerMode: "LOCAL",
+    language: "es",
+    languageDisplayName: "Spanish",
+    textChecksum: `sha256:${sha256Hex(translatedScriptText)}`,
+    durationSecondsEstimate: 2,
+    mockAudioProfile: {
+      durationMillisecondsEstimate: 2000,
+      sampleRateHz: 16000,
+      channels: 1,
+    },
+    disclosure: "Mock local TTS placeholder. No cloned voice or paid provider was used.",
+  });
+  return {
+    multilingualRun: {
+	      multilingualRunId: "mlrun_test",
+	      status: "COMPLETED",
+	      sourceRunId: "run_test",
+	      sourceLanguage: "en",
+	      targetLanguage: "es",
+      translatedScriptText,
+      subtitlesText,
+	      preservedTerms: ["NarraTwin AI"],
+	      voice: { provider: "mock", providerMode: "LOCAL", requestedProvider: "mock" },
+	      translationProvider: { provider: "mock", providerMode: "LOCAL" },
+	      artifacts: {
+        translatedScript: artifactFromText("run_test-es-script.md", "text/markdown", translatedScriptText),
+        subtitles: artifactFromText(
+          "run_test-es.srt",
+          "application/x-subrip",
+          subtitlesText,
+        ),
+        voiceManifest: artifactFromText(
+          "voice-manifest-es.json",
+          "application/json",
+          voiceManifestText,
+        ),
+	      },
+	      trace: {
+	        sourceContextRefIds: ["ctx_001"],
+	        sourceCitationIndexes: [1],
+	        sourceEvaluationId: "eval_001",
+	        sourceEvaluationChecksum: "sha256:evaluation",
+	      },
+	    },
+	    avatarRender: {
+	      avatarRenderId: "avatar_001",
+	      consentRecordId: "consent_001",
+	      sourceRunId: "run_test",
+	      status: "COMPLETED",
+	      renderJobStatus: "COMPLETED",
+	      renderJobStatusHistory: [{ status: "COMPLETED", message: "Complete." }],
+	      sourceScriptText: "Guion traducido. [1]",
+	      avatarProvider: { provider: "mock", providerMode: "LOCAL", requestedProvider: "mock" },
+	      providerConfig: {
+	        provider: "mock",
+	        providerMode: "LOCAL",
+	        adapterKind: "MOCK_LOCAL",
+	        allowNetworkEgress: false,
+	        requiresApiKey: false,
+	        supportsRealVideo: false,
+	        supportsClonedIdentity: false,
+	      },
+	      videoRenderer: { renderer: "local-html", exportFormat: "html" },
+	      disclosure: {
+	        aiGenerated: true,
+	        clonedIdentity: false,
+	        consentStatus: "CONFIRMED",
+	        message: "Synthetic local avatar demo.",
+	      },
+	      artifacts: {
+	        demoExport: artifactFromText("run_test-avatar-demo.html", "text/html", "<!doctype html><html><body></body></html>"),
+	        renderManifest: artifactFromText("run_test-avatar-render-manifest.json", "application/json", "{}"),
+	        videoExportPlaceholder: artifactFromText("run_test-video-export-placeholder.json", "application/json", "{}"),
+	      },
+	      trace: {
+	        traceId: "trace_001",
+	        sourceCitationCount: 1,
+	        sourceContextRefIds: ["ctx_001"],
+	        sourceCitationIndexes: [1],
+	        sourceEvaluationId: "eval_001",
+	        sourceEvaluationChecksum: "sha256:evaluation",
+	        evaluationStatus: "PASSED",
+	        multilingualRunId: "mlrun_test",
+	        targetLanguage: "es",
+        translatedScriptChecksum: `sha256:${sha256Hex(translatedScriptText)}`,
+        subtitlesChecksum: `sha256:${sha256Hex(subtitlesText)}`,
+        voiceManifestChecksum: `sha256:${sha256Hex(voiceManifestText)}`,
+	      },
+	    },
+	  };
+	}
+
+	function artifactFromText(fileName: string, mimeType: string, text: string) {
+	  return {
+	    fileName,
+	    mimeType,
+	    contentBase64: btoa(text),
+	    checksum: `sha256:${sha256Hex(text)}`,
+	  };
+	}
+
+	function jsonArtifact(fileName: string, kind: "renderManifest" | "videoPlaceholder" | "voiceManifest", value: object) {
+	  return artifactFromText(fileName, "application/json", JSON.stringify(value));
+	}
+
+	function manifestJson(
+	  context: NonNullable<Parameters<typeof artifactSafetyState>[2]>,
+	  bundleOverride: Record<string, unknown> = {},
+	) {
+	  return {
+	    schema: "Stage7AvatarRenderManifest",
+	    providerConfig: providerConfigJson(),
+	    source: sourceJson(context),
+	    multilingualBundle: bundleJson(context, bundleOverride),
+	  };
+	}
+
+function placeholderJson(
+	  context: NonNullable<Parameters<typeof artifactSafetyState>[2]>,
+	  bundleOverride: Record<string, unknown> = {},
+	) {
+	  return {
+	    schema: "Stage7VideoExportPlaceholder",
+	    realVideoProduced: false,
+	    providerConfig: providerConfigJson(),
+	    source: sourceJson(context),
+	    multilingualBundle: bundleJson(context, bundleOverride),
+	  };
+}
+
+function voiceManifestJson(
+  context: NonNullable<Parameters<typeof artifactSafetyState>[2]>,
+  override: Record<string, unknown> = {},
+) {
+  return {
+    provider: "mock",
+    providerMode: "LOCAL",
+    language: context.multilingualRun?.targetLanguage,
+    languageDisplayName: "Spanish",
+    textChecksum: context.multilingualRun?.artifacts.translatedScript.checksum,
+    durationSecondsEstimate: 2,
+    mockAudioProfile: {
+      durationMillisecondsEstimate: 2000,
+      sampleRateHz: 16000,
+      channels: 1,
+    },
+    disclosure: "Mock local TTS placeholder. No cloned voice or paid provider was used.",
+    ...override,
+  };
+}
+
+	function providerConfigJson() {
+	  return {
+	    provider: "mock",
+	    providerMode: "LOCAL",
+	    allowNetworkEgress: false,
+	    requiresApiKey: false,
+	    supportsRealVideo: false,
+	    supportsClonedIdentity: false,
+	  };
+	}
+
+	function sourceJson(context: NonNullable<Parameters<typeof artifactSafetyState>[2]>) {
+	  return {
+	    runId: context.avatarRender?.sourceRunId,
+	    contextRefIds: context.avatarRender?.trace.sourceContextRefIds,
+	    citationIndexes: context.avatarRender?.trace.sourceCitationIndexes,
+	    evaluationId: context.avatarRender?.trace.sourceEvaluationId,
+	    evaluationChecksum: context.avatarRender?.trace.sourceEvaluationChecksum,
+	  };
+	}
+
+	function bundleJson(
+	  context: NonNullable<Parameters<typeof artifactSafetyState>[2]>,
+	  override: Record<string, unknown> = {},
+	) {
+	  const multilingual = context.multilingualRun;
+	  return {
+	    sourceRunId: multilingual?.sourceRunId,
+	    multilingualRunId: multilingual?.multilingualRunId,
+	    targetLanguage: multilingual?.targetLanguage,
+	    translatedScriptChecksum: multilingual?.artifacts.translatedScript.checksum,
+	    subtitlesChecksum: multilingual?.artifacts.subtitles.checksum,
+	    voiceManifestChecksum: multilingual?.artifacts.voiceManifest.checksum,
+	    contextRefIds: multilingual?.trace.sourceContextRefIds,
+	    citationIndexes: multilingual?.trace.sourceCitationIndexes,
+	    evaluationId: multilingual?.trace.sourceEvaluationId,
+	    evaluationChecksum: multilingual?.trace.sourceEvaluationChecksum,
+	    providerPosture: {
+	      translationProvider: multilingual?.translationProvider.provider,
+	      translationProviderMode: multilingual?.translationProvider.providerMode,
+	      voiceProvider: multilingual?.voice.provider,
+	      voiceProviderMode: multilingual?.voice.providerMode,
+	    },
+	    ...override,
+	  };
+	}

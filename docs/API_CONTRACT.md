@@ -1062,6 +1062,16 @@ placeholder artifacts. The manifest carries AI-generated avatar/video disclosure
 metadata, provider config metadata, source trace metadata, source citations, and
 evaluation status from the grounded script path.
 
+Phase 1 Closure issue `#213` adds the Product Mode 1 Checkpoint A through
+Checkpoint B binding between Stage 6 and Stage 7. The avatar render API must
+receive a `multilingualBundle` snapshot from the immediately preceding Stage 6
+response and validate it against stored Stage 6 state before rendering. A
+successful Mode 1 avatar render uses the translated Stage 6 script text, and
+the render manifest plus video placeholder include the validated multilingual
+bundle provenance. Source-run trace fields remain present so reviewers can
+connect the translated render back to grounded English evidence, but Stage 7 may
+not claim multilingual avatar output without the validated Stage 6 bundle.
+
 Phase 1 Closure issue `#42` hardens `sourceEvaluationChecksum` as a canonical
 Stage 7 checksum shared by the API route and Stage 7 service. The checksum input
 set is, in order: normalized `sourceEvaluationId`, `sourceRunId`, `traceId`,
@@ -1082,7 +1092,26 @@ Request:
   "requestedAvatarProvider": "mock",
   "consentToUseSyntheticAvatar": true,
   "consentRecordId": "consent_000001",
-  "clonedIdentityRequested": false
+  "clonedIdentityRequested": false,
+  "multilingualBundle": {
+    "sourceRunId": "run_123",
+    "multilingualRunId": "mlrun_123",
+    "targetLanguage": "es",
+    "translatedScriptChecksum": "sha256:translated",
+    "subtitlesChecksum": "sha256:subtitles",
+    "voiceManifestChecksum": "sha256:voice",
+    "contextRefIds": ["ctx_123_001"],
+    "citationIndexes": [1],
+    "evaluationId": "eval_123",
+    "evaluationChecksum": "sha256:evaluation",
+    "providerPosture": {
+      "translationProvider": "mock",
+      "translationProviderMode": "LOCAL",
+      "voiceProvider": "mock",
+      "voiceProviderMode": "LOCAL"
+    },
+    "consentDisclosureVersion": "stage7-synthetic-avatar-consent-v1"
+  }
 }
 ```
 
@@ -1095,6 +1124,11 @@ Request boundary limits:
 - `consentRecordId`: required string on the API path because Stage 7 durable
   render generation must bind to a previously captured consent record.
 - `clonedIdentityRequested`: optional boolean; `true` is disabled in Stage 7
+- `multilingualBundle`: required object for the Product Mode 1 checkpoint path.
+  It must contain the stored Stage 6 `sourceRunId`, `multilingualRunId`,
+  `targetLanguage`, translated script checksum, subtitles checksum, voice
+  manifest checksum, context ref IDs, citation indexes, evaluation
+  ID/checksum, local provider posture, and consent disclosure version.
 - accepted source script: at most 20,000 characters
 - export artifacts: at most 512 KiB each after base64 decoding
 
@@ -1105,6 +1139,14 @@ Post-provider validation:
 - durable API render paths require a previously captured consent record whose
   tenant, project, actor, source run, trace, source evaluation ID/checksum, and
   canonical consent statement version/text match the render request scope
+- the multilingual bundle must match an existing stored Stage 6 run for the
+  same tenant, project, actor, source run, target language, context refs,
+  citation indexes, source evaluation ID/checksum, translated script checksum,
+  subtitles checksum, voice manifest checksum, mock/local translation and voice
+  provider posture, and consent disclosure version
+- missing bundle evidence fails with `MULTILINGUAL_BUNDLE_REQUIRED`; mismatched,
+  stale, replayed, or tampered bundle evidence fails with
+  `MULTILINGUAL_BUNDLE_INVALID`
 - a consent record can be consumed by at most one successful durable render;
   after `avatarRenderId` and `artifactChecksums` are bound, later render
   attempts with the same `consentRecordId` are rejected with
@@ -1136,8 +1178,9 @@ Post-provider validation:
   disclosure metadata, source run ID, source trace ID, source context count,
   source context ref IDs, source citation count/indexes, source evaluation ID,
   source evaluation checksum, script checksum, source evaluation status, and
-  public-use license check; unexpected top-level or nested JSON fields are
-  rejected before storage or response
+  public-use license check; for Mode 1 checkpoint renders it must also include
+  the validated multilingual bundle provenance; unexpected top-level or nested
+  JSON fields are rejected before storage or response
 - source evaluation checksum validation uses the shared Stage 7 checksum helper
   so the API route, render response, render manifest, and video placeholder bind
   the same source run identity, trace identity, evaluation ID/status, context
@@ -1173,8 +1216,9 @@ Post-provider validation:
   safe filename, valid base64 UTF-8 JSON object content, matching checksum,
   expected schema/version, source run ID, trace ID, local renderer, validated
   provider config, disclosure, citation/evaluation metadata, public-use license
-  check, a non-empty reason, and `realVideoProduced = false`; unexpected
-  top-level or nested JSON fields are rejected before storage or response
+  check, validated multilingual bundle provenance for Mode 1 checkpoint renders,
+  a non-empty reason, and `realVideoProduced = false`; unexpected top-level or
+  nested JSON fields are rejected before storage or response
 
 Response `201`:
 
@@ -1190,7 +1234,7 @@ Response `201`:
     { "status": "RUNNING", "message": "Avatar provider render started." },
     { "status": "COMPLETED", "message": "Avatar render job completed." }
   ],
-  "sourceScriptText": "Generated script text with citations. [1]",
+  "sourceScriptText": "[es] Generated script text with citations. [1]",
   "avatarProvider": {
     "provider": "mock",
     "providerMode": "LOCAL",
@@ -1246,7 +1290,12 @@ Response `201`:
     "sourceCitationIndexes": [1],
     "sourceEvaluationId": "eval_123",
     "sourceEvaluationChecksum": "sha256:evaluation",
-    "evaluationStatus": "PASSED"
+    "evaluationStatus": "PASSED",
+    "multilingualRunId": "mlrun_123",
+    "targetLanguage": "es",
+    "translatedScriptChecksum": "sha256:translated",
+    "subtitlesChecksum": "sha256:subtitles",
+    "voiceManifestChecksum": "sha256:voice"
   }
 }
 ```
@@ -1295,6 +1344,8 @@ Failure modes:
 | 413 | `SOURCE_SCRIPT_TOO_LARGE` | Accepted source script exceeds the Stage 7 source limit |
 | 413 | `PROVIDER_OUTPUT_TOO_LARGE` | Avatar provider output exceeds the Stage 7 output limit |
 | 422 | `SOURCE_RUN_NOT_RENDERABLE` | Source run is not completed, passed, or accepted |
+| 422 | `MULTILINGUAL_BUNDLE_REQUIRED` | Avatar rendering was requested without Stage 6 multilingual bundle evidence |
+| 422 | `MULTILINGUAL_BUNDLE_INVALID` | Stage 6 multilingual bundle evidence is stale, replayed, tampered, or mismatched |
 | 422 | `CLONED_IDENTITY_DISABLED` | Cloned identity rendering is disabled in Stage 7 |
 | 422 | `AVATAR_CONSENT_REQUIRED` | Synthetic avatar export consent was not provided |
 | 422 | `PROVIDER_OUTPUT_INVALID` | Provider output is invalid or failed artifact/disclosure validation, including duplicate JSON keys in provider JSON artifacts |
@@ -1302,10 +1353,12 @@ Failure modes:
 | 429 | `RESOURCE_LIMIT_EXCEEDED` | Stage 7 idempotency record limit is exceeded for the request scope |
 | 502 | `PROVIDER_RENDER_FAILED` | Avatar provider and fallback render both failed before a valid export could be produced |
 
-Frontend download links remain disabled until the response artifact matches the
-expected MIME type, file extension, base64/UTF-8 decoding, decoded size limit,
-checksum, JSON schema marker for JSON artifacts, active-HTML blocklist for HTML
-artifacts, and safe filename rules.
+Frontend download links for translated script, subtitles, voice manifest, avatar
+demo HTML, render manifest, and video placeholder remain disabled until the
+response artifact matches the expected MIME type, file extension, base64/UTF-8
+decoding, decoded size limit, checksum, JSON schema marker/provider marker for
+JSON artifacts, active-HTML blocklist for HTML artifacts, and safe filename
+rules.
 
 ### List Walkthrough Runs
 
