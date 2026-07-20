@@ -49,6 +49,10 @@ Every generated walkthrough claim must cite retrieved source chunks from approve
   await expect(page.getByLabel("Avatar demo preview")).toContainText("local-html");
   await expect(page.getByRole("link", { name: "Download script" })).toHaveAttribute("download", /-es-script\.md$/);
   await expect(page.getByRole("link", { name: "Download subtitles" })).toHaveAttribute("download", /-es\.srt$/);
+  await expect(page.getByRole("link", { name: "Download voice manifest" })).toHaveAttribute(
+    "download",
+    /-voice-manifest\.json$/,
+  );
   await expect(page.getByRole("link", { name: "Download avatar demo" })).toHaveAttribute(
     "download",
     /-avatar-demo\.html$/,

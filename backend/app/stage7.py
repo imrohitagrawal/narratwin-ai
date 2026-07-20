@@ -157,6 +157,7 @@ class AvatarRenderResult:
     source_evaluation_id: str
     source_evaluation_checksum: str
     evaluation_status: EvaluationStatus
+    multilingual_bundle: Stage7MultilingualBundle | None
     request_checksum: str
     idempotency_scope: str | None
     idempotency_key: str | None
@@ -191,6 +192,22 @@ class DurableAvatarRenderScope:
     project_id: str
     actor_id: str
     consent_record_id: str
+
+
+@dataclass(frozen=True)
+class Stage7MultilingualBundle:
+    source_run_id: str
+    multilingual_run_id: str
+    target_language: str
+    translated_script_checksum: str
+    subtitles_checksum: str
+    voice_manifest_checksum: str
+    context_ref_ids: tuple[str, ...]
+    citation_indexes: tuple[int, ...]
+    evaluation_id: str
+    evaluation_checksum: str
+    provider_posture: Mapping[str, str]
+    consent_disclosure_version: str
 
 
 @dataclass
@@ -251,6 +268,7 @@ class AvatarProvider(Protocol):
         source_evaluation_id: str = "local_evaluation",
         source_evaluation_checksum: str = "",
         evaluation_status: str = "UNKNOWN",
+        multilingual_bundle: Stage7MultilingualBundle | None = None,
     ) -> AvatarProviderResult:
         ...
 
@@ -274,6 +292,7 @@ class MockAvatarProvider:
         source_evaluation_id: str = "local_evaluation",
         source_evaluation_checksum: str = "",
         evaluation_status: str = "UNKNOWN",
+        multilingual_bundle: Stage7MultilingualBundle | None = None,
     ) -> AvatarProviderResult:
         disclosure = disclosure_metadata()
         scene_count = estimate_scene_count(source_script)
@@ -356,6 +375,8 @@ class MockAvatarProvider:
             },
             "publicUseLicenseCheck": PUBLIC_USE_LICENSE_CHECK,
         }
+        if multilingual_bundle is not None:
+            manifest["multilingualBundle"] = multilingual_bundle_to_manifest(multilingual_bundle)
         video_placeholder = {
             "schema": "Stage7VideoExportPlaceholder",
             "version": "stage7-video-export-placeholder-v1",
@@ -387,6 +408,8 @@ class MockAvatarProvider:
             "traceId": trace_id,
             "reason": "Stage 7 exports a validated HTML demo and metadata, not a real video binary.",
         }
+        if multilingual_bundle is not None:
+            video_placeholder["multilingualBundle"] = multilingual_bundle_to_manifest(multilingual_bundle)
         demo_html = render_demo_html(
             source_script=source_script,
             source_run_id=source_run_id,
@@ -437,6 +460,7 @@ class ExternalAvatarProviderStub:
         source_evaluation_id: str = "local_evaluation",
         source_evaluation_checksum: str = "",
         evaluation_status: str = "UNKNOWN",
+        multilingual_bundle: Stage7MultilingualBundle | None = None,
     ) -> AvatarProviderResult:
         del (
             source_script,
@@ -451,6 +475,7 @@ class ExternalAvatarProviderStub:
             source_evaluation_id,
             source_evaluation_checksum,
             evaluation_status,
+            multilingual_bundle,
         )
         raise Stage7Error(
             502,
@@ -1006,6 +1031,7 @@ class Stage7Service:
         source_evaluation_id: str = "local_evaluation",
         source_evaluation_checksum: str | None = None,
         evaluation_status: str = "UNKNOWN",
+        multilingual_bundle: Stage7MultilingualBundle | None = None,
         cloned_identity_requested: bool = False,
         consent_to_use_synthetic_avatar: bool = False,
         durable_consent: DurableAvatarRenderScope | None = None,
@@ -1042,6 +1068,7 @@ class Stage7Service:
             source_evaluation_id=source_evaluation_id,
             source_evaluation_checksum=checksum_for_request,
             evaluation_status=evaluation_status,
+            multilingual_bundle=multilingual_bundle,
             consent_record_id=durable_consent.consent_record_id if durable_consent is not None else None,
             idempotency_scope=idempotency_scope,
             idempotency_key=idempotency_key,
@@ -1180,6 +1207,7 @@ class Stage7Service:
                 source_evaluation_id=normalized_evaluation_id,
                 source_evaluation_checksum=normalized_evaluation_checksum,
                 evaluation_status=normalized_evaluation_status,
+                multilingual_bundle=multilingual_bundle,
                 tenant_id=normalized_tenant_id,
                 project_id=normalized_project_id,
                 actor_id=normalized_actor_id,
@@ -1280,6 +1308,7 @@ class Stage7Service:
         source_evaluation_id: str,
         source_evaluation_checksum: str,
         evaluation_status: EvaluationStatus,
+        multilingual_bundle: Stage7MultilingualBundle | None,
         tenant_id: str | None,
         project_id: str | None,
         actor_id: str | None,
@@ -1308,6 +1337,7 @@ class Stage7Service:
                 source_evaluation_id=source_evaluation_id,
                 source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
+                multilingual_bundle=multilingual_bundle,
             )
         except Stage7Error as exc:
             if exc.code != "PROVIDER_RENDER_FAILED":
@@ -1325,6 +1355,7 @@ class Stage7Service:
                 source_evaluation_id=source_evaluation_id,
                 source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
+                multilingual_bundle=multilingual_bundle,
             )
         except Exception:
             provider_result = self._render_with_mock_fallback(
@@ -1340,6 +1371,7 @@ class Stage7Service:
                 source_evaluation_id=source_evaluation_id,
                 source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
+                multilingual_bundle=multilingual_bundle,
             )
         status_history.append(RenderJobStatusEvent(status="COMPLETED", message="Avatar render job completed."))
         provider_result = validate_provider_result(provider_result)
@@ -1389,6 +1421,7 @@ class Stage7Service:
             source_evaluation_id=source_evaluation_id,
             source_evaluation_checksum=source_evaluation_checksum,
             evaluation_status=evaluation_status,
+            multilingual_bundle=multilingual_bundle,
             disclosure=disclosure,
         )
         validate_video_export_placeholder(
@@ -1404,6 +1437,7 @@ class Stage7Service:
             source_evaluation_id=source_evaluation_id,
             source_evaluation_checksum=source_evaluation_checksum,
             evaluation_status=evaluation_status,
+            multilingual_bundle=multilingual_bundle,
             disclosure=disclosure,
         )
         with self._operation_lock:
@@ -1441,6 +1475,7 @@ class Stage7Service:
             source_evaluation_id=source_evaluation_id,
             source_evaluation_checksum=source_evaluation_checksum,
             evaluation_status=evaluation_status,
+            multilingual_bundle=multilingual_bundle,
             request_checksum=request_checksum,
             idempotency_scope=idempotency_scope,
             idempotency_key=idempotency_key,
@@ -1476,6 +1511,7 @@ class Stage7Service:
         source_evaluation_id: str,
         source_evaluation_checksum: str,
         evaluation_status: EvaluationStatus,
+        multilingual_bundle: Stage7MultilingualBundle | None,
     ) -> AvatarProviderResult:
         status_history.append(RenderJobStatusEvent(status="FAILED", message="Avatar provider render failed."))
         status_history.append(RenderJobStatusEvent(status="FALLBACK", message="Mock local fallback render started."))
@@ -1493,6 +1529,7 @@ class Stage7Service:
                 source_evaluation_id=source_evaluation_id,
                 source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
+                multilingual_bundle=multilingual_bundle,
             )
         except Stage7Error:
             raise
@@ -1746,6 +1783,11 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         str(row["source_evaluation_checksum"]),
         field_name="Source evaluation checksum",
     )
+    multilingual_bundle = (
+        multilingual_bundle_from_dict(cast(dict[str, Any], row["multilingual_bundle"]))
+        if row.get("multilingual_bundle") is not None
+        else None
+    )
     canonical_evaluation_checksum = build_source_evaluation_checksum(
         source_evaluation_id=source_evaluation_id,
         source_run_id=source_run_id,
@@ -1807,6 +1849,7 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         source_evaluation_id=source_evaluation_id,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
+        multilingual_bundle=multilingual_bundle,
         consent_record_id=str(row["consent_record_id"]) if row.get("consent_record_id") is not None else None,
         idempotency_scope=idempotency_scope,
         idempotency_key=idempotency_key,
@@ -1834,6 +1877,7 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         source_evaluation_id=source_evaluation_id,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
+        multilingual_bundle=multilingual_bundle,
         disclosure=restored_disclosure,
     )
     validate_video_export_placeholder(
@@ -1849,6 +1893,7 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         source_evaluation_id=source_evaluation_id,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
+        multilingual_bundle=multilingual_bundle,
         disclosure=restored_disclosure,
     )
     return AvatarRenderResult(
@@ -1883,6 +1928,7 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         source_evaluation_id=source_evaluation_id,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
+        multilingual_bundle=multilingual_bundle,
         request_checksum=request_checksum,
         idempotency_scope=idempotency_scope,
         idempotency_key=idempotency_key,
@@ -2282,6 +2328,7 @@ def build_avatar_render_request_checksum(
     source_evaluation_id: str,
     source_evaluation_checksum: str | None,
     evaluation_status: str,
+    multilingual_bundle: Stage7MultilingualBundle | None = None,
     consent_record_id: str | None = None,
     idempotency_scope: str | None = None,
     idempotency_key: str | None = None,
@@ -2330,6 +2377,9 @@ def build_avatar_render_request_checksum(
                 "evaluationStatus": normalized_evaluation_status,
                 "idempotencyKey": normalized_idempotency_key,
                 "idempotencyScope": normalized_idempotency_scope,
+                "multilingualBundle": (
+                    multilingual_bundle_to_manifest(multilingual_bundle) if multilingual_bundle is not None else None
+                ),
                 "requestedAvatarProvider": normalized_requested_avatar_provider,
                 "sourceCitationCount": source_citation_count,
                 "sourceCitationIndexes": list(normalized_citation_indexes),
@@ -2362,6 +2412,7 @@ def render_request_checksum_matches(
     source_evaluation_id: str,
     source_evaluation_checksum: str | None,
     evaluation_status: str,
+    multilingual_bundle: Stage7MultilingualBundle | None,
     consent_record_id: str | None,
     idempotency_scope: str | None,
     idempotency_key: str | None,
@@ -2381,6 +2432,7 @@ def render_request_checksum_matches(
         source_evaluation_id=source_evaluation_id,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
+        multilingual_bundle=multilingual_bundle,
         consent_record_id=consent_record_id,
         idempotency_scope=idempotency_scope,
         idempotency_key=idempotency_key,
@@ -2530,6 +2582,7 @@ def validate_render_manifest(
     source_evaluation_id: str,
     source_evaluation_checksum: str,
     evaluation_status: EvaluationStatus,
+    multilingual_bundle: Stage7MultilingualBundle | None,
     disclosure: DisclosureMetadata,
 ) -> None:
     parsed = parse_provider_json_object(artifact, artifact_name="Render manifest")
@@ -2546,6 +2599,7 @@ def validate_render_manifest(
         source_evaluation_id=source_evaluation_id,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
+        multilingual_bundle=multilingual_bundle,
         disclosure=disclosure,
         scene_count=estimate_scene_count(source_script),
     )
@@ -2567,6 +2621,7 @@ def validate_video_export_placeholder(
     source_evaluation_id: str,
     source_evaluation_checksum: str,
     evaluation_status: EvaluationStatus,
+    multilingual_bundle: Stage7MultilingualBundle | None,
     disclosure: DisclosureMetadata,
 ) -> None:
     parsed = parse_provider_json_object(artifact, artifact_name="Video export placeholder")
@@ -2582,6 +2637,7 @@ def validate_video_export_placeholder(
         source_evaluation_id=source_evaluation_id,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
+        multilingual_bundle=multilingual_bundle,
         disclosure=disclosure,
     )
     if parsed != expected:
@@ -2639,12 +2695,13 @@ def expected_render_manifest_payload(
     source_evaluation_id: str,
     source_evaluation_checksum: str,
     evaluation_status: EvaluationStatus,
+    multilingual_bundle: Stage7MultilingualBundle | None,
     disclosure: DisclosureMetadata,
     scene_count: object,
 ) -> dict[str, object]:
     if not isinstance(scene_count, int):
         raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", "Render manifest scene count is invalid.")
-    return {
+    payload: dict[str, object] = {
         "schema": "Stage7AvatarRenderManifest",
         "version": "stage7-mock-avatar-render-v1",
         "provider": {
@@ -2680,6 +2737,9 @@ def expected_render_manifest_payload(
         },
         "publicUseLicenseCheck": PUBLIC_USE_LICENSE_CHECK,
     }
+    if multilingual_bundle is not None:
+        payload["multilingualBundle"] = multilingual_bundle_to_manifest(multilingual_bundle)
+    return payload
 
 
 def expected_video_export_placeholder_payload(
@@ -2695,9 +2755,10 @@ def expected_video_export_placeholder_payload(
     source_evaluation_id: str,
     source_evaluation_checksum: str,
     evaluation_status: EvaluationStatus,
+    multilingual_bundle: Stage7MultilingualBundle | None,
     disclosure: DisclosureMetadata,
 ) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "schema": "Stage7VideoExportPlaceholder",
         "version": "stage7-video-export-placeholder-v1",
         "status": "PLACEHOLDER_ONLY",
@@ -2722,6 +2783,9 @@ def expected_video_export_placeholder_payload(
         "traceId": trace_id,
         "reason": "Stage 7 exports a validated HTML demo and metadata, not a real video binary.",
     }
+    if multilingual_bundle is not None:
+        payload["multilingualBundle"] = multilingual_bundle_to_manifest(multilingual_bundle)
+    return payload
 
 
 def is_safe_artifact_filename(file_name: str) -> bool:
@@ -2820,6 +2884,66 @@ def provider_config_to_manifest(config: ProviderConfig) -> dict[str, object]:
     }
 
 
+def multilingual_bundle_to_manifest(bundle: Stage7MultilingualBundle) -> dict[str, object]:
+    provider_posture = {
+        str(key): validate_checksum_component(str(value), field_name="Provider posture")
+        for key, value in bundle.provider_posture.items()
+    }
+    return {
+        "sourceRunId": validate_checksum_component(bundle.source_run_id, field_name="Source run identifier"),
+        "multilingualRunId": validate_checksum_component(
+            bundle.multilingual_run_id,
+            field_name="Multilingual run identifier",
+        ),
+        "targetLanguage": validate_checksum_component(bundle.target_language, field_name="Target language"),
+        "translatedScriptChecksum": validate_checksum_component(
+            bundle.translated_script_checksum,
+            field_name="Translated script checksum",
+        ),
+        "subtitlesChecksum": validate_checksum_component(bundle.subtitles_checksum, field_name="Subtitles checksum"),
+        "voiceManifestChecksum": validate_checksum_component(
+            bundle.voice_manifest_checksum,
+            field_name="Voice manifest checksum",
+        ),
+        "contextRefIds": list(
+            normalize_evidence_ids(bundle.context_ref_ids, count=len(bundle.context_ref_ids), prefix="context_ref")
+        ),
+        "citationIndexes": list(
+            normalize_citation_indexes(bundle.citation_indexes, count=len(bundle.citation_indexes))
+        ),
+        "evaluationId": normalize_evaluation_id(bundle.evaluation_id),
+        "evaluationChecksum": validate_checksum_component(
+            bundle.evaluation_checksum,
+            field_name="Bundle evaluation checksum",
+        ),
+        "providerPosture": provider_posture,
+        "consentDisclosureVersion": validate_checksum_component(
+            bundle.consent_disclosure_version,
+            field_name="Consent disclosure version",
+        ),
+    }
+
+
+def multilingual_bundle_from_dict(row: dict[str, Any]) -> Stage7MultilingualBundle:
+    provider_posture = row.get("provider_posture", row.get("providerPosture", {}))
+    if not isinstance(provider_posture, dict):
+        raise ValueError("Stage 7 multilingual bundle provider posture is invalid.")
+    return Stage7MultilingualBundle(
+        source_run_id=str(row.get("source_run_id", row.get("sourceRunId"))),
+        multilingual_run_id=str(row.get("multilingual_run_id", row.get("multilingualRunId"))),
+        target_language=str(row.get("target_language", row.get("targetLanguage"))),
+        translated_script_checksum=str(row.get("translated_script_checksum", row.get("translatedScriptChecksum"))),
+        subtitles_checksum=str(row.get("subtitles_checksum", row.get("subtitlesChecksum"))),
+        voice_manifest_checksum=str(row.get("voice_manifest_checksum", row.get("voiceManifestChecksum"))),
+        context_ref_ids=tuple(str(value) for value in row.get("context_ref_ids", row.get("contextRefIds", ()))),
+        citation_indexes=tuple(int(value) for value in row.get("citation_indexes", row.get("citationIndexes", ()))),
+        evaluation_id=str(row.get("evaluation_id", row.get("evaluationId"))),
+        evaluation_checksum=str(row.get("evaluation_checksum", row.get("evaluationChecksum"))),
+        provider_posture={str(key): str(value) for key, value in provider_posture.items()},
+        consent_disclosure_version=str(row.get("consent_disclosure_version", row.get("consentDisclosureVersion"))),
+    )
+
+
 def avatar_render_to_api(result: AvatarRenderResult) -> dict[str, object]:
     return {
         "avatarRenderId": result.avatar_render_id,
@@ -2872,6 +2996,15 @@ def avatar_render_to_api(result: AvatarRenderResult) -> dict[str, object]:
             "sourceEvaluationId": result.source_evaluation_id,
             "sourceEvaluationChecksum": result.source_evaluation_checksum,
             "evaluationStatus": result.evaluation_status,
+            "multilingualRunId": result.multilingual_bundle.multilingual_run_id if result.multilingual_bundle else None,
+            "targetLanguage": result.multilingual_bundle.target_language if result.multilingual_bundle else None,
+            "translatedScriptChecksum": (
+                result.multilingual_bundle.translated_script_checksum if result.multilingual_bundle else None
+            ),
+            "subtitlesChecksum": result.multilingual_bundle.subtitles_checksum if result.multilingual_bundle else None,
+            "voiceManifestChecksum": (
+                result.multilingual_bundle.voice_manifest_checksum if result.multilingual_bundle else None
+            ),
         },
     }
 

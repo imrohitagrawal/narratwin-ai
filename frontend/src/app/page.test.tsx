@@ -14,6 +14,7 @@ describe("Home", () => {
     expect(html).toContain("Target language");
     expect(html).toContain("Download script");
     expect(html).toContain("Download subtitles");
+    expect(html).toContain("Download voice manifest");
     expect(html).toContain("Download avatar demo");
     expect(html).toContain("Download render manifest");
     expect(html).toContain("Download video placeholder");
@@ -26,6 +27,7 @@ describe("Home", () => {
     expect(html).toContain("Walkthrough script");
     expect(html).toContain("Demo preview");
     expect(html).toContain("Export artifacts");
+    expect(html).toContain("Voice manifest");
     expect(html).toContain("Video placeholder");
     expect(html).toContain("Real video");
     expect(html).toContain("Trace");

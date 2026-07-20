@@ -45,6 +45,8 @@ from backend.app.stage6 import (
 from backend.app.stage7 import (
     MAX_PROVIDER_ID_CHARS as MAX_AVATAR_PROVIDER_ID_CHARS,
     DurableAvatarRenderScope,
+    SYNTHETIC_AVATAR_CONSENT_VERSION,
+    Stage7MultilingualBundle,
     Stage7Error,
     avatar_consent_to_api,
     avatar_render_to_api,
@@ -258,6 +260,33 @@ class GenerateAvatarRenderRequest(BaseModel):
     consent_to_use_synthetic_avatar: bool = Field(alias="consentToUseSyntheticAvatar")
     consent_record_id: str = Field(alias="consentRecordId", min_length=1, max_length=128)
     cloned_identity_requested: bool = Field(default=False, alias="clonedIdentityRequested")
+    multilingual_bundle: "Stage7MultilingualBundleRequest | None" = Field(default=None, alias="multilingualBundle")
+
+
+class Stage7ProviderPostureRequest(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    translation_provider: str = Field(alias="translationProvider", min_length=1, max_length=MAX_PROVIDER_ID_CHARS)
+    translation_provider_mode: Literal["LOCAL"] = Field(alias="translationProviderMode")
+    voice_provider: str = Field(alias="voiceProvider", min_length=1, max_length=MAX_PROVIDER_ID_CHARS)
+    voice_provider_mode: Literal["LOCAL"] = Field(alias="voiceProviderMode")
+
+
+class Stage7MultilingualBundleRequest(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    source_run_id: str = Field(alias="sourceRunId", min_length=1, max_length=128)
+    multilingual_run_id: str = Field(alias="multilingualRunId", min_length=1, max_length=128)
+    target_language: str = Field(alias="targetLanguage", min_length=2, max_length=16)
+    translated_script_checksum: str = Field(alias="translatedScriptChecksum", min_length=8, max_length=128)
+    subtitles_checksum: str = Field(alias="subtitlesChecksum", min_length=8, max_length=128)
+    voice_manifest_checksum: str = Field(alias="voiceManifestChecksum", min_length=8, max_length=128)
+    context_ref_ids: list[str] = Field(alias="contextRefIds", min_length=1)
+    citation_indexes: list[int] = Field(alias="citationIndexes", min_length=1)
+    evaluation_id: str = Field(alias="evaluationId", min_length=1, max_length=128)
+    evaluation_checksum: str = Field(alias="evaluationChecksum", min_length=8, max_length=128)
+    provider_posture: Stage7ProviderPostureRequest = Field(alias="providerPosture")
+    consent_disclosure_version: str = Field(alias="consentDisclosureVersion", min_length=1, max_length=128)
 
 
 class CaptureAvatarConsentRequest(BaseModel):
@@ -308,6 +337,76 @@ def resolve_stage7_renderable_source(
             source_citation_indexes=source_citation_indexes,
             source_citation_count=len(source_run.evaluation.claim_supports),
         ),
+    )
+
+
+def validate_stage7_multilingual_bundle(
+    request_bundle: Stage7MultilingualBundleRequest | None,
+    *,
+    project_id: str,
+    run_id: str,
+    principal: LocalPrincipal,
+    renderable: Stage7RenderableSource,
+) -> Stage7MultilingualBundle:
+    if request_bundle is None:
+        raise Stage7Error(
+            422,
+            "MULTILINGUAL_BUNDLE_REQUIRED",
+            "Stage 7 Mode 1 avatar rendering requires validated Stage 6 multilingual bundle evidence.",
+        )
+    multilingual_run = stage6_service.multilingual_runs.get(request_bundle.multilingual_run_id)
+    if multilingual_run is None:
+        raise Stage7Error(422, "MULTILINGUAL_BUNDLE_INVALID", "Stage 6 multilingual bundle was not found.")
+    expected_provider_posture = {
+        "translationProvider": multilingual_run.translation_provider.provider,
+        "translationProviderMode": multilingual_run.translation_provider.provider_mode,
+        "voiceProvider": multilingual_run.voice.provider,
+        "voiceProviderMode": multilingual_run.voice.provider_mode,
+    }
+    actual_provider_posture = {
+        "translationProvider": request_bundle.provider_posture.translation_provider,
+        "translationProviderMode": request_bundle.provider_posture.translation_provider_mode,
+        "voiceProvider": request_bundle.provider_posture.voice_provider,
+        "voiceProviderMode": request_bundle.provider_posture.voice_provider_mode,
+    }
+    bundle_matches = (
+        multilingual_run.tenant_id == principal.tenant_id
+        and multilingual_run.project_id == project_id
+        and multilingual_run.actor_id == principal.actor_id
+        and multilingual_run.source_run_id == run_id
+        and request_bundle.source_run_id == run_id
+        and request_bundle.target_language == multilingual_run.target_language
+        and request_bundle.translated_script_checksum == multilingual_run.artifacts.translated_script.checksum
+        and request_bundle.subtitles_checksum == multilingual_run.artifacts.subtitles.checksum
+        and request_bundle.voice_manifest_checksum == multilingual_run.artifacts.voice_manifest.checksum
+        and tuple(request_bundle.context_ref_ids) == renderable.source_context_ref_ids
+        and tuple(request_bundle.citation_indexes) == renderable.source_citation_indexes
+        and request_bundle.evaluation_id == multilingual_run.source_evaluation_id
+        and request_bundle.evaluation_checksum == multilingual_run.source_evaluation_checksum
+        and request_bundle.evaluation_checksum == renderable.source_evaluation_checksum
+        and multilingual_run.evaluation_status == "PASSED"
+        and actual_provider_posture == expected_provider_posture
+        and request_bundle.consent_disclosure_version == SYNTHETIC_AVATAR_CONSENT_VERSION
+    )
+    if not bundle_matches:
+        raise Stage7Error(
+            422,
+            "MULTILINGUAL_BUNDLE_INVALID",
+            "Stage 7 multilingual bundle evidence does not match the stored Stage 6 run.",
+        )
+    return Stage7MultilingualBundle(
+        source_run_id=request_bundle.source_run_id,
+        multilingual_run_id=request_bundle.multilingual_run_id,
+        target_language=request_bundle.target_language,
+        translated_script_checksum=request_bundle.translated_script_checksum,
+        subtitles_checksum=request_bundle.subtitles_checksum,
+        voice_manifest_checksum=request_bundle.voice_manifest_checksum,
+        context_ref_ids=tuple(request_bundle.context_ref_ids),
+        citation_indexes=tuple(request_bundle.citation_indexes),
+        evaluation_id=request_bundle.evaluation_id,
+        evaluation_checksum=request_bundle.evaluation_checksum,
+        provider_posture=expected_provider_posture,
+        consent_disclosure_version=request_bundle.consent_disclosure_version,
     )
 
 
@@ -659,6 +758,11 @@ class AvatarTraceResponse(BaseModel):
     source_evaluation_id: str = Field(alias="sourceEvaluationId")
     source_evaluation_checksum: str = Field(alias="sourceEvaluationChecksum")
     evaluation_status: Literal["PASSED", "FAILED", "UNKNOWN"] = Field(alias="evaluationStatus")
+    multilingual_run_id: str | None = Field(default=None, alias="multilingualRunId")
+    target_language: str | None = Field(default=None, alias="targetLanguage")
+    translated_script_checksum: str | None = Field(default=None, alias="translatedScriptChecksum")
+    subtitles_checksum: str | None = Field(default=None, alias="subtitlesChecksum")
+    voice_manifest_checksum: str | None = Field(default=None, alias="voiceManifestChecksum")
 
 
 class AvatarRenderResponse(BaseModel):
@@ -1415,12 +1519,18 @@ def generate_avatar_render(
     renderable = resolve_stage7_renderable_source(project_id, run_id, principal)
     source_run = renderable.source_run
     evaluation = source_run.evaluation
-    accepted_script_text = source_run.accepted_script_text
     assert evaluation is not None
-    assert accepted_script_text is not None
+    multilingual_bundle = validate_stage7_multilingual_bundle(
+        request.multilingual_bundle,
+        project_id=project_id,
+        run_id=run_id,
+        principal=principal,
+        renderable=renderable,
+    )
+    multilingual_run = stage6_service.multilingual_runs[multilingual_bundle.multilingual_run_id]
     citation_count = len(renderable.source_citation_indexes)
     avatar_render = stage7_service.render_avatar_demo(
-        source_script=accepted_script_text,
+        source_script=multilingual_run.translated_script_text,
         requested_avatar_provider=request.requested_avatar_provider,
         source_run_id=source_run.run_id,
         trace_id=source_run.trace_id,
@@ -1431,6 +1541,7 @@ def generate_avatar_render(
         source_evaluation_id=evaluation.evaluation_id,
         source_evaluation_checksum=renderable.source_evaluation_checksum,
         evaluation_status=source_run.evaluation_status or "UNKNOWN",
+        multilingual_bundle=multilingual_bundle,
         cloned_identity_requested=request.cloned_identity_requested,
         consent_to_use_synthetic_avatar=request.consent_to_use_synthetic_avatar,
         durable_consent=DurableAvatarRenderScope(

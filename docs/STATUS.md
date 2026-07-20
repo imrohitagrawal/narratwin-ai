@@ -373,7 +373,7 @@ Use these files together with this tracker:
 | `#208` | Closed | Product Mode 1 CH-M1-02 child | Controlled local/mock real-stack evidence completed through merged PR `#210` at `6ecb3fcae6f5a581b129aa6967ef8bbcde32076d`; post-merge main quality run `29721085707` passed. The evidence proves browser -> frontend -> backend -> Compose behavior without application API interception and does not authorize Product Mode 2, real audio/video, external providers, hosted/public launch, public distribution, or production release posture changes. |
 | `#209` | Closed | Phase 1 Closure local quality follow-up | Directly related governance/local-quality issue completed through merged PR `#210` at `6ecb3fcae6f5a581b129aa6967ef8bbcde32076d`; plain local `make quality` on `main` is unambiguous for Phase 1 Closure mode while Stage 8 and CI policy behavior remain preserved. |
 | `#211` | Closed | Post-PR-210 status reconciliation | Repository-ledger reconciliation for PR `#210` and issues `#208`/`#209` completed through merged PR `#212` at `67d2c196752f96a05dc580d00b4b4aa0b4174c0e`; no product/runtime, Product Mode 2, provider, media, hosted/public launch, or production posture change was authorized. |
-| `#213` | Open | Product Mode 1 Checkpoint A through Checkpoint B child | Active combined local/mock demo completion issue under controller `#155`, scoped to Checkpoint A, `CH-M1-03`, `CH-M1-04`, `CH-M1-05`, `CH-M1-06`, and Checkpoint B. Product Mode 2, real audio/video, external providers, hosted launch, public distribution, production readiness, and stopped evidence mutation remain out of scope. |
+| `#213` | Open | Product Mode 1 Checkpoint A through Checkpoint B child | Active combined local/mock demo completion issue under controller `#155`, scoped to Checkpoint A, `CH-M1-03`, `CH-M1-04`, `CH-M1-05`, `CH-M1-06`, and Checkpoint B. The working branch now contains Stage 6-to-Stage 7 multilingual bundle binding, backend validation tests, frontend voice-manifest/artifact exposure, and demo-doc updates; Checkpoint A/B real-stack evidence, final PR review, latest-head human approval, and any `#155` closure preparation remain pending. Product Mode 2, real audio/video, external providers, hosted launch, public distribution, production readiness, and stopped evidence mutation remain out of scope. |
 
 ## Pull Request Ledger
 
@@ -608,6 +608,10 @@ Use these files together with this tracker:
 - Issue `#211` is closed through merged PR `#212`.
 - Issue `#213` is the active combined Checkpoint A through Checkpoint B child
   under controller issue `#155`.
+- Issue `#213` has in-branch CH-M1-03, CH-M1-04, CH-M1-05, and CH-M1-06
+  implementation/docs updates for the local/mock path, but Checkpoint B
+  exact-commit real-stack evidence and latest-head human approval are still
+  pending; do not close or prepare closure wording for `#155` yet.
 
 ## Next Approved Actions
 

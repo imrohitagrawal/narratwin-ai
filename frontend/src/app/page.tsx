@@ -44,6 +44,7 @@ type DownloadableArtifact = {
 type MultilingualWalkthrough = {
   multilingualRunId: string;
   status: string;
+  sourceRunId: string;
   sourceLanguage: string;
   targetLanguage: string;
   translatedScriptText: string;
@@ -51,12 +52,24 @@ type MultilingualWalkthrough = {
   preservedTerms: string[];
   voice: {
     provider: string;
+    providerMode: string;
     requestedProvider: string;
     fallbackReason?: string;
+  };
+  translationProvider: {
+    provider: string;
+    providerMode: string;
   };
   artifacts: {
     translatedScript: DownloadableArtifact;
     subtitles: DownloadableArtifact;
+    voiceManifest: DownloadableArtifact;
+  };
+  trace: {
+    sourceContextRefIds: string[];
+    sourceCitationIndexes: number[];
+    sourceEvaluationId: string;
+    sourceEvaluationChecksum: string;
   };
 };
 
@@ -306,6 +319,7 @@ export default function Home() {
           consentToUseSyntheticAvatar,
           consentRecordId: avatarConsent.consentRecordId,
           clonedIdentityRequested: false,
+          multilingualBundle: buildStage7MultilingualBundle(multilingual, avatarConsent),
         },
         `ui-avatar-${avatarSeed}`,
       );
@@ -420,6 +434,7 @@ export default function Home() {
           <div className={styles.artifactActions} aria-label="Downloadable artifacts">
             {renderArtifactAction("Download script", "script", multilingualRun?.artifacts.translatedScript)}
             {renderArtifactAction("Download subtitles", "subtitles", multilingualRun?.artifacts.subtitles)}
+            {renderArtifactAction("Download voice manifest", "voiceManifest", multilingualRun?.artifacts.voiceManifest)}
             {renderArtifactAction("Download avatar demo", "avatarDemo", avatarRender?.artifacts.demoExport)}
             {renderArtifactAction(
               "Download render manifest",
@@ -528,11 +543,12 @@ export default function Home() {
         <section className={styles.result} aria-labelledby="artifacts-title">
           <div className={styles.resultHeader}>
             <h2 id="artifacts-title">Export artifacts</h2>
-            <span className={styles.badge}>{avatarRender ? "5 artifacts" : "READY"}</span>
+            <span className={styles.badge}>{avatarRender ? "6 artifacts" : "READY"}</span>
           </div>
           <div className={styles.artifactList} aria-label="Export artifact list">
             {renderArtifactRow("Translated script", "script", multilingualRun?.artifacts.translatedScript)}
             {renderArtifactRow("Subtitles", "subtitles", multilingualRun?.artifacts.subtitles)}
+            {renderArtifactRow("Voice manifest", "voiceManifest", multilingualRun?.artifacts.voiceManifest)}
             {renderArtifactRow("Avatar demo", "avatarDemo", avatarRender?.artifacts.demoExport)}
             {renderArtifactRow("Render manifest", "renderManifest", avatarRender?.artifacts.renderManifest)}
             {renderArtifactRow(
@@ -573,11 +589,34 @@ export default function Home() {
   );
 }
 
-type ArtifactKind = "script" | "subtitles" | "avatarDemo" | "renderManifest" | "videoPlaceholder";
+function buildStage7MultilingualBundle(multilingual: MultilingualWalkthrough, consent: AvatarConsent) {
+  return {
+    sourceRunId: multilingual.sourceRunId,
+    multilingualRunId: multilingual.multilingualRunId,
+    targetLanguage: multilingual.targetLanguage,
+    translatedScriptChecksum: multilingual.artifacts.translatedScript.checksum,
+    subtitlesChecksum: multilingual.artifacts.subtitles.checksum,
+    voiceManifestChecksum: multilingual.artifacts.voiceManifest.checksum,
+    contextRefIds: multilingual.trace.sourceContextRefIds,
+    citationIndexes: multilingual.trace.sourceCitationIndexes,
+    evaluationId: multilingual.trace.sourceEvaluationId,
+    evaluationChecksum: multilingual.trace.sourceEvaluationChecksum,
+    providerPosture: {
+      translationProvider: multilingual.translationProvider.provider,
+      translationProviderMode: multilingual.translationProvider.providerMode,
+      voiceProvider: multilingual.voice.provider,
+      voiceProviderMode: multilingual.voice.providerMode,
+    },
+    consentDisclosureVersion: consent.consentStatementVersion,
+  };
+}
+
+type ArtifactKind = "script" | "subtitles" | "voiceManifest" | "avatarDemo" | "renderManifest" | "videoPlaceholder";
 
 const allowedArtifactMimeTypes: Record<ArtifactKind, string> = {
   script: "text/markdown",
   subtitles: "application/x-subrip",
+  voiceManifest: "application/json",
   avatarDemo: "text/html",
   renderManifest: "application/json",
   videoPlaceholder: "application/json",
@@ -586,6 +625,7 @@ const allowedArtifactMimeTypes: Record<ArtifactKind, string> = {
 const allowedArtifactExtensions: Record<ArtifactKind, string> = {
   script: ".md",
   subtitles: ".srt",
+  voiceManifest: ".json",
   avatarDemo: ".html",
   renderManifest: ".json",
   videoPlaceholder: ".json",
@@ -679,7 +719,10 @@ function artifactValidation(kind: ArtifactKind, artifact?: DownloadableArtifact)
   if (kind === "avatarDemo" && activeHtmlPattern.test(decoded.text)) {
     return { state: "blocked", href: "", reason: "HTML export contains active content." };
   }
-  if ((kind === "renderManifest" || kind === "videoPlaceholder") && !validJsonArtifact(kind, decoded.text)) {
+  if (
+    (kind === "voiceManifest" || kind === "renderManifest" || kind === "videoPlaceholder") &&
+    !validJsonArtifact(kind, decoded.text)
+  ) {
     return { state: "blocked", href: "", reason: "JSON metadata shape is invalid." };
   }
   return {
@@ -715,7 +758,7 @@ function decodeBase64Artifact(contentBase64: string) {
 
 function validJsonArtifact(kind: ArtifactKind, text: string) {
   try {
-    const parsed = JSON.parse(text) as { schema?: unknown };
+    const parsed = JSON.parse(text) as Record<string, unknown>;
     if (!parsed || typeof parsed !== "object") {
       return false;
     }
@@ -724,6 +767,9 @@ function validJsonArtifact(kind: ArtifactKind, text: string) {
     }
     if (kind === "videoPlaceholder") {
       return parsed.schema === "Stage7VideoExportPlaceholder";
+    }
+    if (kind === "voiceManifest") {
+      return parsed.provider === "mock" && parsed.providerMode === "LOCAL";
     }
     return true;
   } catch {

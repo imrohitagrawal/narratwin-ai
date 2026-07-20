@@ -495,7 +495,7 @@ def test_issue213_branch_allows_only_mode1_checkpoint_a_to_b_scope(monkeypatch: 
     expected = {
         "docs/governance/preflights/issue-213.json",
         "docs/reviews/ISSUE_213_MODE1_CHECKPOINT_A_TO_B_PREFLIGHT.md",
-        "docs/ADR/0030-mode1-multilingual-bundle-binding.md",
+        "docs/ADR/0030-mode1-stage6-stage7-bundle-binding.md",
         "docs/API_CONTRACT.md",
         "docs/STATUS.md",
         "docs/STAGE_ISSUE_PLAN.md",
@@ -511,6 +511,7 @@ def test_issue213_branch_allows_only_mode1_checkpoint_a_to_b_scope(monkeypatch: 
         "backend/app/stage7.py",
         "tests/unit/test_stage6_multilingual.py",
         "tests/unit/test_stage7_avatar.py",
+        "tests/unit/test_local_durability.py",
         "tests/api/test_stage6_multilingual_api.py",
         "tests/api/test_stage7_avatar_api.py",
         "frontend/src/app/page.tsx",
