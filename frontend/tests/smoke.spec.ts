@@ -112,8 +112,8 @@ const multilingualResponse = {
     artifact: {
       fileName: "voice-manifest-es.json",
       mimeType: "application/json",
-      contentBase64: "eyJzY2hlbWEiOiAiU3RhZ2U2Vm9pY2VNYW5pZmVzdCJ9",
-      checksum: "sha256:9c98a00317ec4f7b569f2036875a2fe16fe1b2f504e571cdafd366afb8e224d4",
+      contentBase64: "eyJwcm92aWRlciI6Im1vY2siLCJwcm92aWRlck1vZGUiOiJMT0NBTCIsImxhbmd1YWdlIjoiZXMifQ==",
+      checksum: "sha256:2ea6e6a67104b76a9d208ccb48dfcc2c64ef9c04b8507982ac55f78d458726e1",
     },
   },
   artifacts: {
@@ -132,14 +132,18 @@ const multilingualResponse = {
     voiceManifest: {
       fileName: "voice-manifest-es.json",
       mimeType: "application/json",
-      contentBase64: "eyJzY2hlbWEiOiAiU3RhZ2U2Vm9pY2VNYW5pZmVzdCJ9",
-      checksum: "sha256:9c98a00317ec4f7b569f2036875a2fe16fe1b2f504e571cdafd366afb8e224d4",
+      contentBase64: "eyJwcm92aWRlciI6Im1vY2siLCJwcm92aWRlck1vZGUiOiJMT0NBTCIsImxhbmd1YWdlIjoiZXMifQ==",
+      checksum: "sha256:2ea6e6a67104b76a9d208ccb48dfcc2c64ef9c04b8507982ac55f78d458726e1",
     },
   },
   trace: {
     traceId: "trace_ui_smoke",
     sourceContextRefCount: 1,
     sourceCitationCount: 1,
+    sourceContextRefIds: ["ctx_ui_001"],
+    sourceCitationIndexes: [1],
+    sourceEvaluationId: "eval_ui",
+    sourceEvaluationChecksum: "sha256:evaluation",
   },
 };
 
@@ -154,7 +158,7 @@ const avatarRenderResponse = {
     { status: "RUNNING", message: "Avatar provider render started." },
     { status: "COMPLETED", message: "Avatar render job completed." },
   ],
-  sourceScriptText: walkthroughResponse.acceptedScriptText,
+  sourceScriptText: multilingualResponse.translatedScriptText,
   avatarProvider: {
     provider: "mock",
     providerMode: "LOCAL",
@@ -210,7 +214,16 @@ const avatarRenderResponse = {
     traceId: "trace_ui_smoke",
     sourceContextRefCount: 1,
     sourceCitationCount: 1,
+    sourceContextRefIds: ["ctx_ui_001"],
+    sourceCitationIndexes: [1],
+    sourceEvaluationId: "eval_ui",
+    sourceEvaluationChecksum: "sha256:evaluation",
     evaluationStatus: "PASSED",
+    multilingualRunId: "mlrun_ui_smoke",
+    targetLanguage: "es",
+    translatedScriptChecksum: "sha256:fdb283f54c16e5fda538e7286ee1d160f418d1a419c16d6dd74f4cf2838e1b64",
+    subtitlesChecksum: "sha256:4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    voiceManifestChecksum: "sha256:2ea6e6a67104b76a9d208ccb48dfcc2c64ef9c04b8507982ac55f78d458726e1",
   },
 };
 
@@ -290,6 +303,25 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
         consentToUseSyntheticAvatar: true,
         consentRecordId: "consent_ui_smoke",
         clonedIdentityRequested: false,
+        multilingualBundle: {
+          sourceRunId: "run_ui_smoke",
+          multilingualRunId: "mlrun_ui_smoke",
+          targetLanguage: "es",
+          translatedScriptChecksum: "sha256:fdb283f54c16e5fda538e7286ee1d160f418d1a419c16d6dd74f4cf2838e1b64",
+          subtitlesChecksum: "sha256:4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+          voiceManifestChecksum: "sha256:2ea6e6a67104b76a9d208ccb48dfcc2c64ef9c04b8507982ac55f78d458726e1",
+          contextRefIds: ["ctx_ui_001"],
+          citationIndexes: [1],
+          evaluationId: "eval_ui",
+          evaluationChecksum: "sha256:evaluation",
+          providerPosture: {
+            translationProvider: "mock",
+            translationProviderMode: "LOCAL",
+            voiceProvider: "mock",
+            voiceProviderMode: "LOCAL",
+          },
+          consentDisclosureVersion: "stage7-synthetic-avatar-consent-v1",
+        },
       });
       await route.fulfill({ json: avatarRenderResponse });
       return;
@@ -336,6 +368,10 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
   await expect(page.getByRole("link", { name: "Download subtitles" })).toHaveAttribute(
     "download",
     "run_ui_smoke-es.srt",
+  );
+  await expect(page.getByRole("link", { name: "Download voice manifest" })).toHaveAttribute(
+    "download",
+    "voice-manifest-es.json",
   );
   await expect(page.getByRole("link", { name: "Download avatar demo" })).toHaveAttribute(
     "download",
