@@ -390,7 +390,7 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
   await expect(page.getByLabel("Render job lifecycle")).toContainText("COMPLETED");
   await expect(page.getByLabel("Render job lifecycle")).toContainText("MOCK_LOCAL");
   await expect(page.getByLabel("Avatar demo preview")).toContainText("local-html");
-  await expect(page.getByLabel("Avatar demo preview")).toContainText("For recruiters, NarraTwin AI turns");
+  await expect(page.getByLabel("Avatar demo preview")).toContainText("For recruiters, NarraTwin AI convierte");
   await expect(page.getByLabel("Export artifact list")).toContainText("Video placeholder");
   await expect(page.getByLabel("Export artifact list")).toContainText("run_ui_smoke-video-export-placeholder.json");
   await expect(page.getByRole("link", { name: "Download export artifact Video placeholder" })).toHaveAttribute(
