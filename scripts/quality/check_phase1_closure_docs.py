@@ -1292,10 +1292,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "#155",
-        "checkpoint-a-pending-issue",
-        "checkpoint-a-pending-issue",
-        "PR #210 completed CH-M1-02 and the issue #209 quality-dispatch clarification; the next controlled local mock-demo action must start from a new issue-linked Checkpoint A step under issue #155.",
+        "#213",
+        "checkpoint-a-through-b-active",
+        "checkpoint-a-through-b-active",
+        "Issue #213 is the active combined Checkpoint A through Checkpoint B child under issue #155 after PR #212 closed the post-PR-210 status reconciliation.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
