@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 
 test.skip(process.env.NARRATWIN_REAL_STACK !== "1", "Requires the local Compose stack.");
@@ -63,6 +64,16 @@ Every generated walkthrough claim must cite retrieved source chunks from approve
   );
   await expect(page.getByText("AI-generated avatar demo export using a synthetic local presenter.")).toBeVisible();
   await expect(page.getByText("0 unsupported claims")).toBeVisible();
+  const artifactMetadata = await Promise.all(
+    [
+      "Download script",
+      "Download subtitles",
+      "Download voice manifest",
+      "Download avatar demo",
+      "Download render manifest",
+      "Download video placeholder",
+    ].map((label) => readArtifactMetadata(page, label)),
+  );
 
   await page.screenshot({
     path: testInfo.outputPath("ch-m1-02-avatar-export.png"),
@@ -79,6 +90,7 @@ Every generated walkthrough claim must cite retrieved source chunks from approve
         caseCount: 1,
         durationMs,
         apiCallCount: apiCalls.length,
+        artifactMetadata,
         requestOrigins: Array.from(requestOrigins).sort(),
         noApiInterception: true,
         providers: {
@@ -121,3 +133,21 @@ Every generated walkthrough claim must cite retrieved source chunks from approve
   expect(apiCalls[6]).toMatch(/^POST \/api\/v1\/projects\/proj_\d+\/walkthrough-runs\/run_\d+\/avatar-consents$/);
   expect(apiCalls[7]).toMatch(/^POST \/api\/v1\/projects\/proj_\d+\/walkthrough-runs\/run_\d+\/avatar-renders$/);
 });
+
+async function readArtifactMetadata(page: Page, label: string) {
+  const attributes = await page.getByRole("link", { name: label }).evaluate((link) => ({
+    fileName: link.getAttribute("download") ?? "",
+    href: link.getAttribute("href") ?? "",
+  }));
+  const dataUrlMatch = /^data:([^;]+);base64,(.+)$/.exec(attributes.href);
+  expect(dataUrlMatch).not.toBeNull();
+  const [, mimeType, contentBase64] = dataUrlMatch ?? ["", "", ""];
+  const decoded = Buffer.from(contentBase64, "base64");
+  return {
+    label,
+    fileName: attributes.fileName,
+    mimeType,
+    byteLength: decoded.byteLength,
+    checksum: `sha256:${createHash("sha256").update(decoded).digest("hex")}`,
+  };
+}
