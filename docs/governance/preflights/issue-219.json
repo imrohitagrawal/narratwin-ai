@@ -1,7 +1,7 @@
 {
   "schema_version": "GovernancePreflightV1",
   "issue_number": 219,
-  "branch": "phase-1-closure-security-219-frontend-npm-audit",
+  "branch": "stage8-219-frontend-npm-audit-remediation",
   "objective": "Resolve the inherited frontend npm audit blocker preventing PR #218 from becoming merge-eligible without waiting on a third-party-only path.",
   "status_decision": "update-minimally",
   "scope": {
