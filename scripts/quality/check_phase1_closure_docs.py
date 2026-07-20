@@ -159,6 +159,33 @@ ISSUE_208_209_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_quality_dispatcher.py",
 }
+ISSUE_213_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-213.json",
+    "docs/reviews/ISSUE_213_MODE1_CHECKPOINT_A_TO_B_PREFLIGHT.md",
+    "docs/ADR/0030-mode1-multilingual-bundle-binding.md",
+    "docs/API_CONTRACT.md",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "docs/demo/PHASE_1_DEMO_CHECKLIST.md",
+    "docs/demo/PHASE_1_DEMO_SCRIPT.md",
+    "docs/demo/PHASE_1_SCREENSHOT_GUIDE.md",
+    "demo/stage8_seed_project.md",
+    "README.md",
+    "portfolio/README.md",
+    "backend/app/main.py",
+    "backend/app/stage6.py",
+    "backend/app/stage7.py",
+    "tests/unit/test_stage6_multilingual.py",
+    "tests/unit/test_stage7_avatar.py",
+    "tests/api/test_stage6_multilingual_api.py",
+    "tests/api/test_stage7_avatar_api.py",
+    "frontend/src/app/page.tsx",
+    "frontend/src/app/page.test.tsx",
+    "frontend/tests/real-stack.spec.ts",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -3342,6 +3369,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_155_CH_M1_01_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-208-"):
         allowed_files = ISSUE_208_209_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-155-mode1-checkpoint-a-to-b":
+        allowed_files = ISSUE_213_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):

@@ -491,6 +491,48 @@ def test_issue208_209_branch_allows_only_real_stack_demo_and_quality_scope(monke
     ]
 
 
+def test_issue213_branch_allows_only_mode1_checkpoint_a_to_b_scope(monkeypatch: Any) -> None:
+    expected = {
+        "docs/governance/preflights/issue-213.json",
+        "docs/reviews/ISSUE_213_MODE1_CHECKPOINT_A_TO_B_PREFLIGHT.md",
+        "docs/ADR/0030-mode1-multilingual-bundle-binding.md",
+        "docs/API_CONTRACT.md",
+        "docs/STATUS.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/TRACEABILITY.md",
+        "docs/demo/PHASE_1_DEMO_CHECKLIST.md",
+        "docs/demo/PHASE_1_DEMO_SCRIPT.md",
+        "docs/demo/PHASE_1_SCREENSHOT_GUIDE.md",
+        "demo/stage8_seed_project.md",
+        "README.md",
+        "portfolio/README.md",
+        "backend/app/main.py",
+        "backend/app/stage6.py",
+        "backend/app/stage7.py",
+        "tests/unit/test_stage6_multilingual.py",
+        "tests/unit/test_stage7_avatar.py",
+        "tests/api/test_stage6_multilingual_api.py",
+        "tests/api/test_stage7_avatar_api.py",
+        "frontend/src/app/page.tsx",
+        "frontend/src/app/page.test.tsx",
+        "frontend/tests/real-stack.spec.ts",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+    assert phase1.ISSUE_213_ALLOWED_CHANGED_FILES == expected
+    branch = "phase-1-closure-155-mode1-checkpoint-a-to-b"
+    assert run_changed_files_check(monkeypatch, branch=branch, files=sorted(expected)) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["docker-compose.yml", ".github/workflows/ci.yml", "frontend/package.json"],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docker-compose.yml.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/ci.yml.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+    ]
+
+
 def test_phase1_quality_docs_make_main_dispatch_behavior_unambiguous() -> None:
     quality_gates = Path("docs/QUALITY_GATES.md").read_text(encoding="utf-8")
     status = Path("docs/STATUS.md").read_text(encoding="utf-8")
