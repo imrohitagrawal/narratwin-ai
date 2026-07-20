@@ -715,6 +715,46 @@ imported media, cloned identity, public media distribution, production
 durability, backup/restore, monitoring, release posture, or stopped predecessor
 surfaces.
 
+Issue `#213` is the combined Checkpoint A through Checkpoint B Product Mode 1
+child under controller issue `#155`. Branch
+`phase-1-closure-155-mode1-checkpoint-a-to-b` may change only:
+
+- `docs/governance/preflights/issue-213.json`
+- `docs/reviews/ISSUE_213_MODE1_CHECKPOINT_A_TO_B_PREFLIGHT.md`
+- `docs/ADR/0030-mode1-multilingual-bundle-binding.md`
+- `docs/API_CONTRACT.md`
+- `docs/STATUS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/TRACEABILITY.md`
+- `docs/demo/PHASE_1_DEMO_CHECKLIST.md`
+- `docs/demo/PHASE_1_DEMO_SCRIPT.md`
+- `docs/demo/PHASE_1_SCREENSHOT_GUIDE.md`
+- `demo/stage8_seed_project.md`
+- `README.md`
+- `portfolio/README.md`
+- `backend/app/main.py`
+- `backend/app/stage6.py`
+- `backend/app/stage7.py`
+- `tests/unit/test_stage6_multilingual.py`
+- `tests/unit/test_stage7_avatar.py`
+- `tests/api/test_stage6_multilingual_api.py`
+- `tests/api/test_stage7_avatar_api.py`
+- `frontend/src/app/page.tsx`
+- `frontend/src/app/page.test.tsx`
+- `frontend/tests/real-stack.spec.ts`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+This combined branch is limited to Checkpoint A evidence, `CH-M1-03`
+multilingual bundle contract, `CH-M1-04` backend bundle-bound render behavior,
+`CH-M1-05` frontend artifact proof, `CH-M1-06` demo docs/seed updates, and
+Checkpoint B evidence for the controlled local/mock Mode 1 demo. It must not
+implement Product Mode 2, real audio binaries, MP4/WebM generation,
+STT/imported video, external or paid providers, hosted launch, public
+distribution, multi-worker or production-readiness claims, dependency/workflow
+or Compose topology changes, provider keys, provider SDKs, or mutation of
+stopped evidence surfaces `#162`, `#163`, `#166`, `#167`, and `#168`.
+
 Context 0 issue `#39` closure-contract branches using
 `phase-1-closure-39-context0-*` are stricter than general issue `#39` branches:
 they may touch only docs, guardrails, tests, PR templates, and CI workflow

@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-19
+- Last reviewed date: 2026-07-20
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure only, with the active
   serialized path limited to the controlled local, synthetic, artifact-only
@@ -39,9 +39,11 @@ Use it to answer:
   issue `#204` and PR `#205`, post-PR-205 status reconciliation has merged
   through issue `#206` and PR `#207`, CH-M1-02 real-stack local evidence and
   the directly related quality-dispatch clarification have merged through PR
-  `#210` with issues `#208` and `#209` closed, mutable current-state authority
-  is normalized through the StatusStateV1 table below, and release posture is
-  No-Go.
+  `#210` with issues `#208` and `#209` closed, post-PR-210 status
+  reconciliation has merged through issue `#211` and PR `#212`, issue `#213`
+  is the active Checkpoint A through Checkpoint B child under controller issue
+  `#155`, mutable current-state authority is normalized through the
+  StatusStateV1 table below, and release posture is No-Go.
 - Product implementation merged to `main`: Stage 8 performance, security
   hardening, and release-readiness work merged through PR `#33` at commit
   `fb40113`.
@@ -145,7 +147,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | #155 | checkpoint-a-pending-issue | checkpoint-a-pending-issue | PR #210 completed CH-M1-02 and the issue #209 quality-dispatch clarification; the next controlled local mock-demo action must start from a new issue-linked Checkpoint A step under issue #155. |
+| SSV1-NEXT | next-action | #213 | checkpoint-a-through-b-active | checkpoint-a-through-b-active | Issue #213 is the active combined Checkpoint A through Checkpoint B child under issue #155 after PR #212 closed the post-PR-210 status reconciliation. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | open | open | Issue #155 remains the serialized Product Mode 1 checkpoint controller; PHF-020B does not satisfy or close it. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -370,7 +372,8 @@ Use these files together with this tracker:
 | `#206` | Closed | Post-PR-205 status reconciliation | Repository-ledger reconciliation completed through merged PR `#207` at `066e1c1ed5d1ac8843df3bc6f7362921f5b99eae`; issue `#206` is closed, post-merge main quality run `29704911759` passed, and the next serialized Product Mode 1 child is issue `#208` for CH-M1-02. |
 | `#208` | Closed | Product Mode 1 CH-M1-02 child | Controlled local/mock real-stack evidence completed through merged PR `#210` at `6ecb3fcae6f5a581b129aa6967ef8bbcde32076d`; post-merge main quality run `29721085707` passed. The evidence proves browser -> frontend -> backend -> Compose behavior without application API interception and does not authorize Product Mode 2, real audio/video, external providers, hosted/public launch, public distribution, or production release posture changes. |
 | `#209` | Closed | Phase 1 Closure local quality follow-up | Directly related governance/local-quality issue completed through merged PR `#210` at `6ecb3fcae6f5a581b129aa6967ef8bbcde32076d`; plain local `make quality` on `main` is unambiguous for Phase 1 Closure mode while Stage 8 and CI policy behavior remain preserved. |
-| `#211` | Open | Post-PR-210 status reconciliation | Active repository-ledger reconciliation for PR `#210` and issues `#208`/`#209`; scope is limited to checked-in status/ledger alignment and supporting tests, with no product/runtime, Product Mode 2, provider, media, hosted/public launch, or production posture change. |
+| `#211` | Closed | Post-PR-210 status reconciliation | Repository-ledger reconciliation for PR `#210` and issues `#208`/`#209` completed through merged PR `#212` at `67d2c196752f96a05dc580d00b4b4aa0b4174c0e`; no product/runtime, Product Mode 2, provider, media, hosted/public launch, or production posture change was authorized. |
+| `#213` | Open | Product Mode 1 Checkpoint A through Checkpoint B child | Active combined local/mock demo completion issue under controller `#155`, scoped to Checkpoint A, `CH-M1-03`, `CH-M1-04`, `CH-M1-05`, `CH-M1-06`, and Checkpoint B. Product Mode 2, real audio/video, external providers, hosted launch, public distribution, production readiness, and stopped evidence mutation remain out of scope. |
 
 ## Pull Request Ledger
 
@@ -602,7 +605,9 @@ Use these files together with this tracker:
 - Issues `#208` and `#209` are closed through merged PR `#210`; CH-M1-02
   controlled local/mock real-stack evidence and the directly related local
   Phase 1 Closure quality-dispatch clarification are complete.
-- Issue `#211` is the active post-PR-210 status reconciliation item.
+- Issue `#211` is closed through merged PR `#212`.
+- Issue `#213` is the active combined Checkpoint A through Checkpoint B child
+  under controller issue `#155`.
 
 ## Next Approved Actions
 
@@ -611,10 +616,10 @@ Use these files together with this tracker:
    or rewrite that implementation history.
 2. Keep issue `#8` and issue `#155` open until their actual acceptance
    contracts are satisfied.
-3. Complete issue `#211` as checked-in post-PR-210 status reconciliation, then
-   continue the controlled local mock-demo path only as serialized issue-linked
-   PRs: Checkpoint A, CH-M1-03 through CH-M1-05, CH-M1-06, then Checkpoint B
-   decision.
+3. Complete issue `#213` as one combined, issue-linked local/mock Product Mode 1
+   PR covering Checkpoint A, CH-M1-03 through CH-M1-05, CH-M1-06, and
+   Checkpoint B evidence. Do not prepare `#155` for closure until Checkpoint B
+   evidence and latest-head human approval exist.
 4. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
    external provider use, real audio/video export, and public synthetic-media
    distribution No-Go.
