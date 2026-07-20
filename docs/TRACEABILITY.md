@@ -203,6 +203,7 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 
 | Date | Issue / PR | Change | Traceability impact |
 |---|---|---|---|
+| 2026-07-21 | `#219` | Resolve frontend npm audit blocker by updating Lighthouse dev tooling to `^13.4.1` and refreshing the lockfile to audit-clean Sentry/OpenTelemetry/brace-expansion transitives | Preserves Stage 8 frontend Lighthouse quality checks without dependency-audit suppression, product runtime changes, provider enablement, media export, hosted/public launch, public distribution, or production-readiness claims |
 | 2026-06-29 | `#14` | Add repository guardrails and quality gates | Adds traceability enforcement before implementation starts |
 | 2026-06-29 | `#1` | Harden product strategy and PRD v1.0 | Adds Stage 1 product requirement map and product-mode coverage |
 | 2026-06-29 | `#2` | Draft Stage 2 architecture, security, AI safety, portability, API, and data-model artifacts | Maps PRD safety/provider/traceability requirements to pre-implementation architecture docs |
