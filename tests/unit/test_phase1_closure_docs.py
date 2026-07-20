@@ -494,6 +494,7 @@ def test_issue208_209_branch_allows_only_real_stack_demo_and_quality_scope(monke
 def test_issue213_branch_allows_only_mode1_checkpoint_a_to_b_scope(monkeypatch: Any) -> None:
     expected = {
         "docs/governance/preflights/issue-213.json",
+        "docs/reviews/ISSUE_213_CHECKPOINT_A_B_EVIDENCE.md",
         "docs/reviews/ISSUE_213_MODE1_CHECKPOINT_A_TO_B_PREFLIGHT.md",
         "docs/ADR/0030-mode1-stage6-stage7-bundle-binding.md",
         "docs/API_CONTRACT.md",
