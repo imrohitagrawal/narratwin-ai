@@ -115,6 +115,17 @@ ISSUE_181_ALLOWED_CHANGED_FILES = {
     "docs/TRACEABILITY.md",
     "docs/STATUS.md",
 }
+ISSUE_219_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-219.json",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/ADR/0031-frontend-lighthouse-audit-remediation.md",
+    "docs/TRACEABILITY.md",
+    "docs/STATUS.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_184_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-184.json",
     "AGENTS.md",
@@ -3365,6 +3376,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_178_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-181-lighthouse-browser-selection":
         allowed_files = ISSUE_181_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-security-219-frontend-npm-audit":
+        allowed_files = ISSUE_219_ALLOWED_CHANGED_FILES
     elif branch == PHF020A_BRANCH:
         allowed_files = ISSUE_184_ALLOWED_CHANGED_FILES
     elif branch == STATUS_STATE_V1_BRANCH:

@@ -4140,6 +4140,43 @@ def test_issue151_allowlist_rejects_near_match_and_unauthorized_path(monkeypatch
         ]
 
 
+def test_issue219_branch_allows_only_frontend_audit_remediation_scope(monkeypatch: Any) -> None:
+    expected = {
+        "docs/governance/preflights/issue-219.json",
+        "frontend/package.json",
+        "frontend/package-lock.json",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/ADR/0031-frontend-lighthouse-audit-remediation.md",
+        "docs/TRACEABILITY.md",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+    assert phase1.ISSUE_219_ALLOWED_CHANGED_FILES == expected
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-security-219-frontend-npm-audit",
+        files=sorted(expected),
+    ) == []
+
+
+def test_issue219_allowlist_rejects_near_match_and_runtime_files(monkeypatch: Any) -> None:
+    allowed_path = "frontend/package-lock.json"
+    for branch in (
+        "phase-1-closure-security-219-frontend-npm-audit-extra",
+        "phase-1-closure-security-912-frontend-npm-audit",
+    ):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=[allowed_path]) == [
+            f"Phase 1 Closure branch {branch} may not change {allowed_path}."
+        ]
+
+    branch = "phase-1-closure-security-219-frontend-npm-audit"
+    for path in ("frontend/src/app/page.tsx", "backend/app/main.py"):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=[path]) == [
+            f"Phase 1 Closure branch {branch} may not change {path}."
+        ]
+
+
 def test_issue178_branch_uses_only_exact_ci_evidence_scope(monkeypatch: Any) -> None:
     assert run_changed_files_check(monkeypatch, branch="phase-1-closure-process-178-gpf-v1-ci-evidence", files=sorted(phase1.ISSUE_178_ALLOWED_CHANGED_FILES)) == []
     branch = "phase-1-closure-process-178-gpf-v1-ci-evidence-extra"

@@ -1,7 +1,7 @@
 {
   "schema_version": "GovernancePreflightV1",
   "issue_number": 219,
-  "branch": "stage8-219-frontend-npm-audit-remediation",
+  "branch": "phase-1-closure-security-219-frontend-npm-audit",
   "objective": "Resolve the inherited frontend npm audit blocker preventing PR #218 from becoming merge-eligible without waiting on a third-party-only path.",
   "status_decision": "update-minimally",
   "scope": {
@@ -12,7 +12,9 @@
       "docs/THIRD_PARTY_NOTICES.md",
       "docs/ADR/0031-frontend-lighthouse-audit-remediation.md",
       "docs/TRACEABILITY.md",
-      "docs/STATUS.md"
+      "docs/STATUS.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-219.json",
@@ -22,6 +24,8 @@
       "docs/ADR/0031-frontend-lighthouse-audit-remediation.md",
       "docs/TRACEABILITY.md",
       "docs/STATUS.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py",
       "tests/unit/test_dependency_security_contract.py"
     ],
     "forbidden": [
