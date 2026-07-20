@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 217,
   "branch": "phase-1-closure-process-217-post-pr-216-status-reconciliation",
-  "objective": "Reconcile repository-tracked status after PR #216 merged and issue #215 reached its completed GitHub disposition.",
+  "objective": "Reconcile repository-tracked status after PR #216 merged, issue #215 reached its completed GitHub disposition, and PR #220 resolved the issue #219 dependency-audit blocker for PR #218.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [

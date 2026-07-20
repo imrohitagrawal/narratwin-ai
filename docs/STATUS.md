@@ -378,7 +378,8 @@ Use these files together with this tracker:
 | `#211` | Closed | Post-PR-210 status reconciliation | Repository-ledger reconciliation for PR `#210` and issues `#208`/`#209` completed through merged PR `#212` at `67d2c196752f96a05dc580d00b4b4aa0b4174c0e`; no product/runtime, Product Mode 2, provider, media, hosted/public launch, or production posture change was authorized. |
 | `#213` | Closed | Product Mode 1 Checkpoint A through Checkpoint B child | Combined local/mock demo completion issue under controller `#155`, scoped to Checkpoint A, `CH-M1-03`, `CH-M1-04`, `CH-M1-05`, `CH-M1-06`, and Checkpoint B, completed through merged PR `#214` at `cb0d94b5e5963473de41f1a1a3d4aebec714677e`. Evidence includes Stage 6-to-Stage 7 multilingual bundle binding, backend validation tests, frontend voice-manifest/artifact exposure, demo-doc updates, Checkpoint A baseline evidence, Checkpoint B local real-stack no-interception evidence, and latest-head human approval. Product Mode 2, real audio/video, external providers, hosted launch, public distribution, production readiness, and stopped evidence mutation remained out of scope. |
 | `#215` | Closed | Post-PR-214 status reconciliation | Repository-ledger reconciliation for PR `#214`, issue `#213`, and issue `#155` closure state completed through merged PR `#216` at `6e42b452d6cfac357a26b5da6c3ab77407d7d975`; post-merge main quality workflow run `29781070328` passed. No runtime, Product Mode 2, real media, providers, hosted/public launch, public distribution, or production-readiness scope was authorized. |
-| `#217` | Open | Post-PR-216 status reconciliation | Narrow repository-ledger follow-up to record PR `#216` merge state, issue `#215` closure, post-merge main quality workflow evidence, and the next serialized current-state pointer. No runtime, Product Mode 2, real media, providers, hosted/public launch, public distribution, or production-readiness scope is authorized. |
+| `#217` | Open | Post-PR-216 status reconciliation | Narrow repository-ledger follow-up to record PR `#216` merge state, issue `#215` closure, post-merge main quality workflow evidence, PR `#220` dependency-audit unblock completion, and the next serialized current-state pointer. No runtime, Product Mode 2, real media, providers, hosted/public launch, public distribution, or production-readiness scope is authorized. |
+| `#219` | Closed | Frontend dependency audit unblocker | Narrow security/dependency remediation completed through merged PR `#220` at `96bde3180f7a15953b4551382ced36fd7e1e3b6e`; issue `#219` was closed after latest-head approval and green checks. Scope was limited to audit-clean frontend dependency metadata and required docs; it did not authorize runtime product code, Product Mode 2, real media, providers, hosted/public launch, public distribution, production readiness, or stopped evidence mutation. |
 
 ## Pull Request Ledger
 
@@ -621,6 +622,9 @@ Use these files together with this tracker:
 - Issue `#215` is closed through merged PR `#216`; it completed the
   post-PR-214 repository-ledger reconciliation for issue `#213`, PR `#214`,
   and issue `#155` closure state.
+- Issue `#219` is closed through merged PR `#220`; it completed the
+  frontend dependency-audit unblocker that prevented PR `#218` from becoming
+  merge-eligible.
 - Issue `#217` is the active post-PR-216 repository-ledger reconciliation.
 
 ## Next Approved Actions
@@ -630,8 +634,8 @@ Use these files together with this tracker:
    or rewrite that implementation history.
 2. Keep issue `#8` open until its actual acceptance contract is satisfied.
 3. Complete issue `#217` as the narrow post-PR-216 repository-ledger
-   reconciliation for issue `#215`, PR `#216`, and the next serialized
-   current-state pointer.
+   reconciliation for issue `#215`, PR `#216`, PR `#220`, and the next
+   serialized current-state pointer.
 4. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
    external provider use, real audio/video export, and public synthetic-media
    distribution No-Go.
@@ -664,6 +668,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-07-21 | PR `#220` merged the issue `#219` frontend npm audit remediation at `96bde3180f7a15953b4551382ced36fd7e1e3b6e` after latest-head human approval on `32b62c2a27314b8485042029699b6544857be6b9`; live GitHub shows issue `#219` closed and post-merge main quality workflow run `29785381427` passed. The remediation stayed dependency/governance-only and did not authorize product runtime, Product Mode 2, real media, provider enablement, hosted/public launch, public distribution, production readiness, or stopped-evidence mutation. |
 | 2026-07-20 | PR `#216` merged issue `#215` post-PR-214 repository-ledger reconciliation at `6e42b452d6cfac357a26b5da6c3ab77407d7d975` after human approval on `185ee6996b231c74d3c388ab87723c6d45f978f7`; live GitHub shows issue `#215` closed and post-merge main quality workflow run `29781070328` passed, while issue `#8`, issue `#39`, issue `#126`, stopped evidence surfaces `#162`, `#163`, `#166`, `#167`, and `#168`, Product Mode 2, real media, provider enablement, hosted/public launch, public distribution, and production No-Go boundaries remain unchanged. |
 | 2026-07-20 | Issue `#217` opened as the post-PR-216 repository-ledger reconciliation because PR `#216` could not record its own future merge and issue-closure state before merge; scope is docs/status and guardrail-expectation alignment only, with no product/runtime, provider, media, hosted/public launch, public distribution, or production-readiness authorization. |
 | 2026-07-20 | PR `#214` merged issue `#213` Checkpoint A through Checkpoint B local/mock demo completion at `cb0d94b5e5963473de41f1a1a3d4aebec714677e` after latest-head human approval on `efab2c3302d5833a1607918962181ec717476fe5`; live GitHub shows issue `#213` closed, issue `#155` closed for the controlled local/mock checkpoint only, and post-merge main quality workflow run `29735533818` passed, while issue `#8`, issue `#39`, issue `#126`, stopped evidence surfaces `#162`, `#163`, `#166`, `#167`, and `#168`, Product Mode 2, real media, provider enablement, hosted/public launch, public distribution, and production No-Go boundaries remain unchanged. |
