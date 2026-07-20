@@ -1,0 +1,38 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 211,
+  "branch": "phase-1-closure-process-211-post-pr-210-status-reconcile",
+  "objective": "Reconcile docs/STATUS.md and directly coupled status checks after PR #210 merged, issues #208 and #209 closed during closeout, and post-merge main quality run 29721085707 passed at 6ecb3fcae6f5a581b129aa6967ef8bbcde32076d, without changing product, runtime, provider, media, hosted/public launch, public distribution, Product Mode 2, issue #155, issue #8, or production posture.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-211.json",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-211.json",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/src/",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      ".github/workflows/",
+      "docker/",
+      "Dockerfile",
+      "docker-compose.yml",
+      "pyproject.toml",
+      "uv.lock",
+      "Product Mode 2",
+      "real audio",
+      "real video",
+      "external providers",
+      "hosted launch",
+      "production readiness"
+    ]
+  }
+}
