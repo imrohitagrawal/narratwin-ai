@@ -377,6 +377,7 @@ Use these files together with this tracker:
 | `#211` | Closed | Post-PR-210 status reconciliation | Repository-ledger reconciliation for PR `#210` and issues `#208`/`#209` completed through merged PR `#212` at `67d2c196752f96a05dc580d00b4b4aa0b4174c0e`; no product/runtime, Product Mode 2, provider, media, hosted/public launch, or production posture change was authorized. |
 | `#213` | Closed | Product Mode 1 Checkpoint A through Checkpoint B child | Combined local/mock demo completion issue under controller `#155`, scoped to Checkpoint A, `CH-M1-03`, `CH-M1-04`, `CH-M1-05`, `CH-M1-06`, and Checkpoint B, completed through merged PR `#214` at `cb0d94b5e5963473de41f1a1a3d4aebec714677e`. Evidence includes Stage 6-to-Stage 7 multilingual bundle binding, backend validation tests, frontend voice-manifest/artifact exposure, demo-doc updates, Checkpoint A baseline evidence, Checkpoint B local real-stack no-interception evidence, and latest-head human approval. Product Mode 2, real audio/video, external providers, hosted launch, public distribution, production readiness, and stopped evidence mutation remained out of scope. |
 | `#215` | Open | Post-PR-214 status reconciliation | Narrow repository-ledger follow-up to record PR `#214` merge state, issue `#213` closure, issue `#155` closure for the controlled local/mock checkpoint, and post-merge main quality workflow evidence. No runtime, Product Mode 2, real media, providers, hosted/public launch, public distribution, or production-readiness scope is authorized. |
+| `#219` | Open | Frontend dependency audit unblocker | Narrow security/dependency remediation opened after PR `#218` exposed an inherited npm audit blocker in the frontend Lighthouse dev-tool graph. Scope is limited to audit-clean frontend dependency metadata and required docs; it does not authorize runtime product code, Product Mode 2, real media, providers, hosted/public launch, public distribution, production readiness, or stopped evidence mutation. |
 
 ## Pull Request Ledger
 
@@ -616,6 +617,8 @@ Use these files together with this tracker:
   CH-M1-04, CH-M1-05, CH-M1-06, Checkpoint A evidence, and Checkpoint B
   local/mock real-stack evidence.
 - Issue `#215` is the active post-PR-214 repository-ledger reconciliation.
+- Issue `#219` is the active security/dependency unblocker for the npm audit
+  finding that prevents PR `#218` from becoming merge-eligible.
 
 ## Next Approved Actions
 
@@ -625,7 +628,9 @@ Use these files together with this tracker:
 2. Keep issue `#8` open until its actual acceptance contract is satisfied.
 3. Complete issue `#215` as the narrow post-PR-214 repository-ledger
    reconciliation for issue `#213`, PR `#214`, and issue `#155` closure state.
-4. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
+4. Complete issue `#219` as the narrow frontend dependency-audit unblocker
+   before attempting to refresh and merge PR `#218`.
+5. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
    external provider use, real audio/video export, and public synthetic-media
    distribution No-Go.
 
@@ -657,6 +662,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-07-21 | Issue `#219` opened as a narrow frontend npm audit remediation after PR `#218` exposed an inherited blocker in Lighthouse transitives. The branch updates only audit-related frontend dependency metadata plus required ADR/traceability/status/third-party docs, with no product runtime, Product Mode 2, real media, provider, hosted/public launch, public distribution, production-readiness, or stopped-evidence scope. |
 | 2026-07-20 | PR `#214` merged issue `#213` Checkpoint A through Checkpoint B local/mock demo completion at `cb0d94b5e5963473de41f1a1a3d4aebec714677e` after latest-head human approval on `efab2c3302d5833a1607918962181ec717476fe5`; live GitHub shows issue `#213` closed, issue `#155` closed for the controlled local/mock checkpoint only, and post-merge main quality workflow run `29735533818` passed, while issue `#8`, issue `#39`, issue `#126`, stopped evidence surfaces `#162`, `#163`, `#166`, `#167`, and `#168`, Product Mode 2, real media, provider enablement, hosted/public launch, public distribution, and production No-Go boundaries remain unchanged. |
 | 2026-07-20 | Issue `#215` opened as the post-PR-214 repository-ledger reconciliation because PR `#214` could not record its own future merge and issue-closure state before merge; scope is docs/status and guardrail-expectation alignment only, with no product/runtime, provider, media, hosted/public launch, public distribution, or production-readiness authorization. |
 | 2026-07-19 | PR `#201` merged the issue `#200` post-PR-199 status reconciliation at `f01236756fa268bd4b90c7f536c57c0f96ba9cdc`; live GitHub shows issue `#200` closed and post-merge main workflow run `29691443045` passed, while issue `#8`, issue `#155`, stopped issue `#167`, PR `#168`, issue `#39`, issue `#126`, Product Mode 2, runtime, media, provider, hosted/public launch, public distribution, and production No-Go boundaries remain unchanged. |

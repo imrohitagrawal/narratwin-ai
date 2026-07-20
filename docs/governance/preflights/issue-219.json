@@ -9,13 +9,19 @@
       "docs/governance/preflights/issue-219.json",
       "frontend/package.json",
       "frontend/package-lock.json",
-      "docs/THIRD_PARTY_NOTICES.md"
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/ADR/0031-frontend-lighthouse-audit-remediation.md",
+      "docs/TRACEABILITY.md",
+      "docs/STATUS.md"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-219.json",
       "frontend/package.json",
       "frontend/package-lock.json",
       "docs/THIRD_PARTY_NOTICES.md",
+      "docs/ADR/0031-frontend-lighthouse-audit-remediation.md",
+      "docs/TRACEABILITY.md",
+      "docs/STATUS.md",
       "tests/unit/test_dependency_security_contract.py"
     ],
     "forbidden": [
