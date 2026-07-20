@@ -184,6 +184,7 @@ ISSUE_213_ALLOWED_CHANGED_FILES = {
     "tests/api/test_stage7_avatar_api.py",
     "frontend/src/app/page.tsx",
     "frontend/src/app/page.test.tsx",
+    "frontend/playwright.real-stack.config.ts",
     "frontend/tests/smoke.spec.ts",
     "frontend/tests/real-stack.spec.ts",
     "scripts/quality/check_phase1_closure_docs.py",
@@ -1326,7 +1327,7 @@ STATUS_STATE_V1_ROWS = {
         "repository",
         "forbidden",
         "forbidden",
-        "Product Mode 2, hosted launch, provider enablement, public media distribution, production-readiness claims, and product/runtime implementation remain forbidden.",
+        "Product Mode 2, hosted launch, provider enablement, public media distribution, production-readiness claims, and unapproved product/runtime implementation outside the issue `#213` local/mock checkpoint path remain forbidden.",
     ),
 }
 

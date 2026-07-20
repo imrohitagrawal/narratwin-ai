@@ -1,4 +1,14 @@
 import { expect, test } from "@playwright/test";
+import { createHash } from "node:crypto";
+
+function artifactFromText(fileName: string, mimeType: string, text: string) {
+  return {
+    fileName,
+    mimeType,
+    contentBase64: Buffer.from(text, "utf-8").toString("base64"),
+    checksum: `sha256:${createHash("sha256").update(text).digest("hex")}`,
+  };
+}
 
 const walkthroughResponse = {
   runId: "run_ui_smoke",
@@ -90,6 +100,25 @@ const walkthroughResponse = {
   },
 };
 
+const translatedScriptText =
+  "For recruiters, NarraTwin AI convierte approved project knowledge en grounded walkthrough scripts. [1]";
+const subtitlesText =
+  "1\n00:00:00,000 --> 00:00:04,000\nFor recruiters, NarraTwin AI convierte approved project knowledge en grounded walkthrough scripts. [1]\n\n";
+const voiceManifestText = JSON.stringify({
+  provider: "mock",
+  providerMode: "LOCAL",
+  language: "es",
+  languageDisplayName: "Spanish",
+  textChecksum: `sha256:${createHash("sha256").update(translatedScriptText).digest("hex")}`,
+  durationSecondsEstimate: 4,
+  mockAudioProfile: {
+    durationMillisecondsEstimate: 4000,
+    sampleRateHz: 16000,
+    channels: 1,
+  },
+  disclosure: "Mock local TTS placeholder. No cloned voice or paid provider was used.",
+});
+
 const multilingualResponse = {
   multilingualRunId: "mlrun_ui_smoke",
   sourceRunId: "run_ui_smoke",
@@ -97,10 +126,8 @@ const multilingualResponse = {
   targetLanguage: "es",
   status: "COMPLETED",
   sourceScriptText: walkthroughResponse.acceptedScriptText,
-  translatedScriptText:
-    "For recruiters, NarraTwin AI convierte approved project knowledge en grounded walkthrough scripts. [1]",
-  subtitlesText:
-    "1\n00:00:00,000 --> 00:00:04,000\nFor recruiters, NarraTwin AI convierte approved project knowledge en grounded walkthrough scripts. [1]\n\n",
+  translatedScriptText,
+  subtitlesText,
   glossaryTerms: ["NarraTwin AI", "project knowledge", "source chunks"],
   preservedTerms: ["NarraTwin AI", "project knowledge"],
   translationProvider: { provider: "mock", providerMode: "LOCAL" },
@@ -110,31 +137,17 @@ const multilingualResponse = {
     requestedProvider: "mock",
     language: "es",
     artifact: {
-      fileName: "voice-manifest-es.json",
-      mimeType: "application/json",
-      contentBase64: "eyJwcm92aWRlciI6Im1vY2siLCJwcm92aWRlck1vZGUiOiJMT0NBTCIsImxhbmd1YWdlIjoiZXMifQ==",
-      checksum: "sha256:2ea6e6a67104b76a9d208ccb48dfcc2c64ef9c04b8507982ac55f78d458726e1",
+      ...artifactFromText("voice-manifest-es.json", "application/json", voiceManifestText),
     },
   },
   artifacts: {
-    translatedScript: {
-      fileName: "run_ui_smoke-es-script.md",
-      mimeType: "text/markdown",
-      contentBase64: "U3RhZ2UgNiBzY3JpcHQ=",
-      checksum: "sha256:fdb283f54c16e5fda538e7286ee1d160f418d1a419c16d6dd74f4cf2838e1b64",
-    },
-    subtitles: {
-      fileName: "run_ui_smoke-es.srt",
-      mimeType: "application/x-subrip",
-      contentBase64: "MQo=",
-      checksum: "sha256:4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
-    },
-    voiceManifest: {
-      fileName: "voice-manifest-es.json",
-      mimeType: "application/json",
-      contentBase64: "eyJwcm92aWRlciI6Im1vY2siLCJwcm92aWRlck1vZGUiOiJMT0NBTCIsImxhbmd1YWdlIjoiZXMifQ==",
-      checksum: "sha256:2ea6e6a67104b76a9d208ccb48dfcc2c64ef9c04b8507982ac55f78d458726e1",
-    },
+    translatedScript: artifactFromText("run_ui_smoke-es-script.md", "text/markdown", translatedScriptText),
+    subtitles: artifactFromText("run_ui_smoke-es.srt", "application/x-subrip", subtitlesText),
+    voiceManifest: artifactFromText(
+      "voice-manifest-es.json",
+      "application/json",
+      voiceManifestText,
+    ),
   },
   trace: {
     traceId: "trace_ui_smoke",
@@ -145,6 +158,46 @@ const multilingualResponse = {
     sourceEvaluationId: "eval_ui",
     sourceEvaluationChecksum: "sha256:evaluation",
   },
+	};
+
+const stage7MultilingualBundle = {
+  sourceRunId: multilingualResponse.sourceRunId,
+  multilingualRunId: multilingualResponse.multilingualRunId,
+  targetLanguage: multilingualResponse.targetLanguage,
+  translatedScriptChecksum: multilingualResponse.artifacts.translatedScript.checksum,
+  subtitlesChecksum: multilingualResponse.artifacts.subtitles.checksum,
+  voiceManifestChecksum: multilingualResponse.artifacts.voiceManifest.checksum,
+  contextRefIds: multilingualResponse.trace.sourceContextRefIds,
+  citationIndexes: multilingualResponse.trace.sourceCitationIndexes,
+  evaluationId: multilingualResponse.trace.sourceEvaluationId,
+  evaluationChecksum: multilingualResponse.trace.sourceEvaluationChecksum,
+  providerPosture: {
+    translationProvider: multilingualResponse.translationProvider.provider,
+    translationProviderMode: multilingualResponse.translationProvider.providerMode,
+    voiceProvider: multilingualResponse.voice.provider,
+    voiceProviderMode: multilingualResponse.voice.providerMode,
+  },
+  consentDisclosureVersion: "stage7-synthetic-avatar-consent-v1",
+};
+
+const stage7ProviderConfig = {
+  provider: "mock",
+  providerMode: "LOCAL",
+  adapterKind: "MOCK_LOCAL",
+  allowNetworkEgress: false,
+  requiresApiKey: false,
+  supportsRealVideo: false,
+  supportsClonedIdentity: false,
+};
+
+const stage7SourceMetadata = {
+  runId: "run_ui_smoke",
+  traceId: "trace_ui_smoke",
+  contextRefIds: multilingualResponse.trace.sourceContextRefIds,
+  citationIndexes: multilingualResponse.trace.sourceCitationIndexes,
+  evaluationId: multilingualResponse.trace.sourceEvaluationId,
+  evaluationChecksum: multilingualResponse.trace.sourceEvaluationChecksum,
+  evaluationStatus: "PASSED",
 };
 
 const avatarRenderResponse = {
@@ -165,15 +218,9 @@ const avatarRenderResponse = {
     requestedProvider: "mock",
     fallbackReason: null,
   },
-  providerConfig: {
-    provider: "mock",
-    providerMode: "LOCAL",
-    adapterKind: "MOCK_LOCAL",
-    allowNetworkEgress: false,
-    requiresApiKey: false,
-    supportsRealVideo: false,
-    supportsClonedIdentity: false,
-  },
+	  providerConfig: {
+	    ...stage7ProviderConfig,
+	  },
   videoRenderer: {
     renderer: "local-html",
     rendererMode: "LOCAL",
@@ -188,28 +235,35 @@ const avatarRenderResponse = {
       "AI-generated avatar demo export using a synthetic local presenter. No cloned face, cloned voice, or paid avatar provider was used.",
   },
   artifacts: {
-    demoExport: {
-      fileName: "run_ui_smoke-avatar-demo.html",
-      mimeType: "text/html",
-      contentBase64:
-        "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9ImVuIj48Ym9keT48bWFpbj5OYXJyYVR3aW4gQUkgQXZhdGFyIERlbW8gRXhwb3J0PC9tYWluPjwvYm9keT48L2h0bWw+Cg==",
-      checksum: "sha256:f40f3ee44bc4663efa3993982b934c6c7067da441b933430a6759cb308670189",
-    },
-    renderManifest: {
-      fileName: "run_ui_smoke-avatar-render-manifest.json",
-      mimeType: "application/json",
-      contentBase64:
-        "eyJwdWJsaWNVc2VMaWNlbnNlQ2hlY2siOiAibW9jay1sb2NhbC1wcm92aWRlci1vbmx5LW5vLXRoaXJkLXBhcnR5LW1lZGlhIiwgInNjaGVtYSI6ICJTdGFnZTdBdmF0YXJSZW5kZXJNYW5pZmVzdCIsICJzb3VyY2UiOiB7ImNpdGF0aW9uSW5kZXhlcyI6IFsxXSwgImNvbnRleHRSZWZJZHMiOiBbImN0eF91aV8wMDEiXSwgImV2YWx1YXRpb25JZCI6ICJldmFsX3VpIn19",
-      checksum: "sha256:4e33184641054c5450d68301bcc31e8865d5cc286c4ac99a3f76b4875a914810",
-    },
-    videoExportPlaceholder: {
-      fileName: "run_ui_smoke-video-export-placeholder.json",
-      mimeType: "application/json",
-      contentBase64:
-        "eyJwdWJsaWNVc2VMaWNlbnNlQ2hlY2siOiAibW9jay1sb2NhbC1wcm92aWRlci1vbmx5LW5vLXRoaXJkLXBhcnR5LW1lZGlhIiwgInNjaGVtYSI6ICJTdGFnZTdWaWRlb0V4cG9ydFBsYWNlaG9sZGVyIiwgInNvdXJjZSI6IHsiY2l0YXRpb25JbmRleGVzIjogWzFdLCAiY29udGV4dFJlZklkcyI6IFsiY3R4X3VpXzAwMSJdLCAiZXZhbHVhdGlvbklkIjogImV2YWxfdWkifX0=",
-      checksum: "sha256:b2d6ba8868ce5d7035159d45c53de19bccfde0f464ffcba81cfd6ad23f0b846c",
-    },
-  },
+	    demoExport: artifactFromText(
+	      "run_ui_smoke-avatar-demo.html",
+	      "text/html",
+	      "<!doctype html>\n<html lang=\"en\"><body><main>NarraTwin AI Avatar Demo Export</main></body></html>\n",
+	    ),
+	    renderManifest: artifactFromText(
+	      "run_ui_smoke-avatar-render-manifest.json",
+	      "application/json",
+	      JSON.stringify({
+	        publicUseLicenseCheck: "mock-local-provider-only-no-third-party-media",
+	        schema: "Stage7AvatarRenderManifest",
+	        providerConfig: stage7ProviderConfig,
+	        source: stage7SourceMetadata,
+	        multilingualBundle: stage7MultilingualBundle,
+	      }),
+	    ),
+	    videoExportPlaceholder: artifactFromText(
+	      "run_ui_smoke-video-export-placeholder.json",
+	      "application/json",
+	      JSON.stringify({
+	        publicUseLicenseCheck: "mock-local-provider-only-no-third-party-media",
+	        schema: "Stage7VideoExportPlaceholder",
+	        realVideoProduced: false,
+	        providerConfig: stage7ProviderConfig,
+	        source: stage7SourceMetadata,
+	        multilingualBundle: stage7MultilingualBundle,
+	      }),
+	    ),
+	  },
   trace: {
     traceId: "trace_ui_smoke",
     sourceContextRefCount: 1,
@@ -221,9 +275,9 @@ const avatarRenderResponse = {
     evaluationStatus: "PASSED",
     multilingualRunId: "mlrun_ui_smoke",
     targetLanguage: "es",
-    translatedScriptChecksum: "sha256:fdb283f54c16e5fda538e7286ee1d160f418d1a419c16d6dd74f4cf2838e1b64",
-    subtitlesChecksum: "sha256:4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
-    voiceManifestChecksum: "sha256:2ea6e6a67104b76a9d208ccb48dfcc2c64ef9c04b8507982ac55f78d458726e1",
+    translatedScriptChecksum: multilingualResponse.artifacts.translatedScript.checksum,
+    subtitlesChecksum: multilingualResponse.artifacts.subtitles.checksum,
+    voiceManifestChecksum: multilingualResponse.artifacts.voiceManifest.checksum,
   },
 };
 
@@ -303,26 +357,8 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
         consentToUseSyntheticAvatar: true,
         consentRecordId: "consent_ui_smoke",
         clonedIdentityRequested: false,
-        multilingualBundle: {
-          sourceRunId: "run_ui_smoke",
-          multilingualRunId: "mlrun_ui_smoke",
-          targetLanguage: "es",
-          translatedScriptChecksum: "sha256:fdb283f54c16e5fda538e7286ee1d160f418d1a419c16d6dd74f4cf2838e1b64",
-          subtitlesChecksum: "sha256:4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
-          voiceManifestChecksum: "sha256:2ea6e6a67104b76a9d208ccb48dfcc2c64ef9c04b8507982ac55f78d458726e1",
-          contextRefIds: ["ctx_ui_001"],
-          citationIndexes: [1],
-          evaluationId: "eval_ui",
-          evaluationChecksum: "sha256:evaluation",
-          providerPosture: {
-            translationProvider: "mock",
-            translationProviderMode: "LOCAL",
-            voiceProvider: "mock",
-            voiceProviderMode: "LOCAL",
-          },
-          consentDisclosureVersion: "stage7-synthetic-avatar-consent-v1",
-        },
-      });
+	        multilingualBundle: stage7MultilingualBundle,
+	      });
       await route.fulfill({ json: avatarRenderResponse });
       return;
     }
@@ -413,6 +449,94 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
     "POST /api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-consents",
     "POST /api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-renders",
   ]);
+});
+
+test("home page blocks avatar artifacts with mismatched multilingual provenance", async ({ page }) => {
+  const mismatchedRenderManifest = artifactFromText(
+    "run_ui_smoke-avatar-render-manifest.json",
+    "application/json",
+    JSON.stringify({
+      publicUseLicenseCheck: "mock-local-provider-only-no-third-party-media",
+      schema: "Stage7AvatarRenderManifest",
+      providerConfig: stage7ProviderConfig,
+      source: stage7SourceMetadata,
+      multilingualBundle: { ...stage7MultilingualBundle, targetLanguage: "fr" },
+    }),
+  );
+  const mismatchedAvatarRenderResponse = {
+    ...avatarRenderResponse,
+    artifacts: {
+      ...avatarRenderResponse.artifacts,
+      renderManifest: mismatchedRenderManifest,
+    },
+  };
+
+  await page.route("**/api/v1/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+
+    if (request.method() === "POST" && path === "/api/v1/projects") {
+      await route.fulfill({ json: { projectId: "proj_ui" } });
+      return;
+    }
+    if (request.method() === "POST" && path === "/api/v1/projects/proj_ui/knowledge-documents") {
+      await route.fulfill({ json: { documentId: "doc_ui" } });
+      return;
+    }
+    if (
+      request.method() === "PATCH" &&
+      path === "/api/v1/projects/proj_ui/knowledge-documents/doc_ui/approval"
+    ) {
+      await route.fulfill({ json: { documentId: "doc_ui", approvalStatus: "APPROVED" } });
+      return;
+    }
+    if (request.method() === "POST" && path === "/api/v1/projects/proj_ui/ingestion-runs") {
+      await route.fulfill({ json: { ingestionRunId: "ing_ui", status: "COMPLETED" } });
+      return;
+    }
+    if (request.method() === "POST" && path === "/api/v1/projects/proj_ui/walkthrough-runs") {
+      await route.fulfill({ json: walkthroughResponse });
+      return;
+    }
+    if (
+      request.method() === "POST" &&
+      path === "/api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/multilingual-runs"
+    ) {
+      await route.fulfill({ json: multilingualResponse });
+      return;
+    }
+    if (
+      request.method() === "POST" &&
+      path === "/api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-consents"
+    ) {
+      await route.fulfill({
+        json: {
+          consentRecordId: "consent_ui_smoke",
+          consentStatementVersion: "stage7-synthetic-avatar-consent-v1",
+          consentStatementText:
+            "I affirm that I am authorized to approve this Stage 7 synthetic local avatar demo for the selected walkthrough run.",
+          requestChecksum: "sha256:ui-consent-request",
+        },
+      });
+      return;
+    }
+    if (
+      request.method() === "POST" &&
+      path === "/api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-renders"
+    ) {
+      await route.fulfill({ json: mismatchedAvatarRenderResponse });
+      return;
+    }
+    await route.fulfill({ status: 404, json: { error: "unexpected route" } });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Synthetic avatar consent").check();
+  await page.getByRole("button", { name: "Generate avatar demo export" }).click();
+
+  await expect(page.getByRole("button", { name: "Download render manifest blocked" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Download render manifest" })).toHaveCount(0);
+  await expect(page.getByText("Blocked: JSON metadata shape is invalid.").first()).toBeVisible();
 });
 
 test("home page shows bounded durable avatar consent render errors", async ({ page }) => {

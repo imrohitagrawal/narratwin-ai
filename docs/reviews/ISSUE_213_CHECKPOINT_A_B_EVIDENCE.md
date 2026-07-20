@@ -61,11 +61,11 @@ Compose service networking and provider posture were otherwise unchanged.
 The local evidence packet is generated under ignored `reports/` paths:
 
 - Screenshot:
-  `reports/ch-m1-02/playwright-output/real-stack-CH-M1-02-real-b-fef05-es-without-API-interception-chromium/ch-m1-02-avatar-export.png`.
+  `reports/issue-213-checkpoint-b/playwright-output/<case>/issue-213-checkpoint-b-avatar-export.png`.
 - Evidence JSON:
-  `reports/ch-m1-02/playwright-output/real-stack-CH-M1-02-real-b-fef05-es-without-API-interception-chromium/ch-m1-02-evidence.json`.
+  `reports/issue-213-checkpoint-b/playwright-output/<case>/issue-213-checkpoint-b-evidence.json`.
 - Trace:
-  `reports/ch-m1-02/playwright-output/real-stack-CH-M1-02-real-b-fef05-es-without-API-interception-chromium/trace.zip`.
+  `reports/issue-213-checkpoint-b/playwright-output/<case>/trace.zip`.
 - Lighthouse:
   `reports/lighthouse/stage8-lighthouse.json`.
 - Performance smoke:
@@ -76,8 +76,9 @@ The local evidence packet is generated under ignored `reports/` paths:
 The latest pre-PR evidence run against the implementation commit recorded:
 
 - Base URL: `http://127.0.0.1:13000`.
-- Case count: 1 real-stack Chromium case plus two existing smoke tests.
-- Real-stack case duration: 471 ms.
+- Case count: 1 no-interception real-stack Chromium case plus 3 mocked smoke
+  cases kept separate under `frontend/playwright.config.ts`.
+- Real-stack case duration: 408 ms.
 - API call count: 8.
 - Browser interception: `noApiInterception=true`.
 - Request origin: `http://127.0.0.1:13000`.
@@ -111,9 +112,9 @@ Executed validation:
 - `make phase1-closure-quality`: pass.
 - `make lint`: pass.
 - `make typecheck`: pass.
-- `make test`: pass; 1298 Python tests and 9 frontend component tests.
-- `make api-test`: pass; 84 API tests.
-- `make ui-test`: pass; 9 frontend component tests.
+- `make test`: pass; 1298 Python tests and 12 frontend component tests.
+- `make api-test`: pass; 86 API tests.
+- `make ui-test`: pass; 12 frontend component tests.
 - `make security`: pass. Semgrep repository scan found 0 findings, the canary
   found the expected single finding, Bandit found 0 issues, and gitleaks found
   no leaks. `npm audit` reported 17 moderate Lighthouse/OpenTelemetry-chain
@@ -125,35 +126,30 @@ Executed validation:
   CVE-2026-15308.
 - `make frontend-lighthouse`: pass. Lighthouse scores: performance 1.00,
   accessibility 1.00, best-practices 0.96, SEO 1.00.
-- `make performance-smoke`: pass. Locust health smoke recorded 181 requests,
-  0 failures, median 1 ms, average 1.586 ms, max 10.43 ms.
+- `make performance-smoke`: pass. Locust health smoke recorded 190 requests,
+  0 failures, median 2 ms, average 2 ms, max 16 ms.
 - `make ci`: pass.
-- `NARRATWIN_REAL_STACK=1 NARRATWIN_REAL_STACK_BASE_URL=http://127.0.0.1:13000 NARRATWIN_EVIDENCE_COMMIT=$(git rev-parse HEAD) npx --prefix frontend playwright test --config frontend/playwright.real-stack.config.ts`: pass; 3 Chromium tests.
+- `npm --prefix frontend run build && npx --prefix frontend playwright test --config frontend/playwright.config.ts frontend/tests/smoke.spec.ts --project=chromium`: pass; 3 mocked Chromium smoke tests.
+- `NARRATWIN_REAL_STACK=1 NARRATWIN_REAL_STACK_BASE_URL=http://127.0.0.1:13000 NARRATWIN_EVIDENCE_COMMIT=$(git rev-parse HEAD) npx --prefix frontend playwright test --config frontend/playwright.real-stack.config.ts`: pass; 1 no-interception Chromium test.
 
-## Reviews
+## Review Disposition
 
-Security and safety review result:
+| Review angle | Severity | Finding evidence | Fix | Rerun evidence |
+|---|---|---|---|---|
+| Backend/API | Required | `tests/api/test_stage7_avatar_api.py` lacked direct unknown and cross-project replay coverage for `multilingualRunId`. | Added unknown multilingual-run and cross-project replay rejection tests with distinct idempotency key prefixes. | `uv run pytest tests/api/test_stage7_avatar_api.py tests/unit/test_local_durability.py -q`: pass, 111 tests. |
+| Frontend/UI | Required | `frontend/src/app/page.tsx` allowed Stage 7 JSON artifacts without full language/provenance context; later review found `voiceManifest` accepted a minimal provider/language JSON object. | Added artifact validation context, render/video multilingual provenance checks, exact Stage 6 voice-manifest key validation, local provider/disclosure checks, and translated-script checksum binding. Added Vitest and Playwright negative cases. | `npm --prefix frontend test`: pass, 12 tests; `npm --prefix frontend run typecheck`: pass; `npm --prefix frontend run lint`: pass; mocked Playwright smoke: pass, 3 tests. |
+| Frontend/UI | Required | `frontend/playwright.real-stack.config.ts` could discover route-intercepted smoke tests, making the no-interception evidence command ambiguous. | Scoped the real-stack config to `real-stack.spec.ts` and moved output to `reports/issue-213-checkpoint-b/playwright-output`. | Final no-interception real-stack rerun is recorded in the PR body at the pushed head. |
+| Security/Safety | Required | Evidence and PR claims became stale after review fixes changed the working tree. | This memo and the PR body are refreshed after the final fix commit and final-head reruns; moderate Lighthouse/OpenTelemetry audit advisories remain disclosed below the configured blocking threshold. | Final guardrails, quality, security, dependency audit, and real-stack evidence are recorded in the PR body. |
+| Performance/Reliability | Required | Checkpoint B paths reused the older `reports/ch-m1-02` namespace and stale counts/durations. | Renamed the no-interception test and output namespace to issue `#213` Checkpoint B, updated counts, and reran the performance smoke. | `make performance-smoke`: pass, 190 requests, 0 failures, median 2 ms, max 16 ms. |
+| Governance/Docs | Required | `docs/STATUS.md` and PR ledger omitted current `#213`/`#214` mapping, and the StatusStateV1 forbidden row conflicted with the authorized local/mock issue `#213` path. | Updated status/PR ledgers and the executable StatusStateV1 checker while preserving forbidden Product Mode 2, real media, provider, hosted/public, production, and stopped-evidence boundaries. | `python3 scripts/guardrails_check.py`: pass; `make phase1-closure-quality`: pass; `make quality`: pass. |
+| Governance/Docs | Required | Controller issue `#155` needed a reference-only ledger comment for `#213`/`#214`. | Post a reference-only comment to `#155` after final push; `#155` remains open pending human approval and accepted Checkpoint B evidence. | Live GitHub issue comment timestamp is recorded in the PR body. |
 
-- No Critical, High, or Required finding remains.
-- Verified controls cover untrusted upload handling, provider output validation,
-  safe artifact exposure, active HTML/script rejection, consent binding, cloned
-  identity denial, provider posture, and overclaim prevention for the local/mock
-  checkpoint path.
+No Critical or High findings remain in the sub-agent review loop. Required
+findings above were routed back through implementation and verification before
+the PR was refreshed.
 
-Performance and reliability review result:
-
-- No Critical, High, or Required finding remains.
-- Local Compose flow starts from clean state on alternate localhost ports and
-  completes the real-stack browser path. The demo uses process-local API state
-  for this checkpoint; optional file-backed JSON state is not configured in
-  Compose and is not claimed as evidence.
-
-Independent review result:
-
-- No Critical, High, or Required finding remains after the implemented fix loop.
-- Residual human-only items are PR review approval, final merge wording,
-  post-merge main sync/quality verification, and any controller issue `#155`
-  closure wording.
+Residual human-only items are PR review approval, final merge wording, post-merge
+main sync/quality verification, and any controller issue `#155` closure wording.
 
 ## Human-Only Surfaces
 
@@ -163,4 +159,3 @@ Independent review result:
 | Final merge wording | Pending human merge action; use reference-only wording unless closure is explicitly approved. |
 | Issue `#155` closure | Do not close until Checkpoint B evidence is accepted and latest-head human approval exists. |
 | Production/public release | No-Go; no hosted launch or public distribution is authorized. |
-

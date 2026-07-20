@@ -517,6 +517,7 @@ def test_issue213_branch_allows_only_mode1_checkpoint_a_to_b_scope(monkeypatch: 
         "tests/api/test_stage7_avatar_api.py",
         "frontend/src/app/page.tsx",
         "frontend/src/app/page.test.tsx",
+        "frontend/playwright.real-stack.config.ts",
         "frontend/tests/smoke.spec.ts",
         "frontend/tests/real-stack.spec.ts",
         "scripts/quality/check_phase1_closure_docs.py",

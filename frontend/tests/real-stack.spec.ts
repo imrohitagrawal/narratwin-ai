@@ -4,7 +4,7 @@ import { writeFile } from "node:fs/promises";
 
 test.skip(process.env.NARRATWIN_REAL_STACK !== "1", "Requires the local Compose stack.");
 
-test("CH-M1-02 real browser path reaches frontend, backend, and Compose services without API interception", async ({
+test("Issue #213 Checkpoint B real browser path reaches frontend, backend, and Compose services without API interception", async ({
   page,
 }, testInfo) => {
   const startedAt = performance.now();
@@ -76,13 +76,13 @@ Every generated walkthrough claim must cite retrieved source chunks from approve
   );
 
   await page.screenshot({
-    path: testInfo.outputPath("ch-m1-02-avatar-export.png"),
+    path: testInfo.outputPath("issue-213-checkpoint-b-avatar-export.png"),
     fullPage: true,
   });
 
   const durationMs = Math.round(performance.now() - startedAt);
   await writeFile(
-    testInfo.outputPath("ch-m1-02-evidence.json"),
+    testInfo.outputPath("issue-213-checkpoint-b-evidence.json"),
     JSON.stringify(
       {
         commit: process.env.NARRATWIN_EVIDENCE_COMMIT ?? "not-provided",

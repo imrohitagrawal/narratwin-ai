@@ -17,7 +17,7 @@ def idempotency_headers(value: str) -> dict[str, str]:
     return {IDEMPOTENCY_HEADER: value}
 
 
-def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
+def _create_completed_walkthrough(client: TestClient, *, key_prefix: str = "stage7") -> tuple[str, str]:
     fixture = Path("tests/fixtures/stage4_project.md")
     project_response = client.post(
         "/api/v1/projects",
@@ -27,7 +27,7 @@ def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
             "defaultAudience": "RECRUITER",
             "defaultLanguage": "en",
         },
-        headers=idempotency_headers("stage7-project"),
+        headers=idempotency_headers(f"{key_prefix}-project"),
     )
     assert project_response.status_code == 201
     project_id = project_response.json()["projectId"]
@@ -35,7 +35,7 @@ def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
     upload_response = client.post(
         f"/api/v1/projects/{project_id}/knowledge-documents",
         files={"file": ("stage4_project.md", fixture.read_bytes(), "text/markdown")},
-        headers=idempotency_headers("stage7-upload"),
+        headers=idempotency_headers(f"{key_prefix}-upload"),
     )
     assert upload_response.status_code == 201
     document_id = upload_response.json()["documentId"]
@@ -43,14 +43,14 @@ def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
     approve_response = client.patch(
         f"/api/v1/projects/{project_id}/knowledge-documents/{document_id}/approval",
         json={"approvalStatus": "APPROVED"},
-        headers=idempotency_headers("stage7-approval"),
+        headers=idempotency_headers(f"{key_prefix}-approval"),
     )
     assert approve_response.status_code == 200
 
     ingestion_response = client.post(
         f"/api/v1/projects/{project_id}/ingestion-runs",
         json={"documentIds": [document_id]},
-        headers=idempotency_headers("stage7-ingest"),
+        headers=idempotency_headers(f"{key_prefix}-ingest"),
     )
     assert ingestion_response.status_code == 201
 
@@ -63,7 +63,7 @@ def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
             "style": "CONFIDENT",
             "prompt": "Create a concise grounded walkthrough for a recruiter.",
         },
-        headers=idempotency_headers("stage7-generate"),
+        headers=idempotency_headers(f"{key_prefix}-generate"),
     )
     assert generation_response.status_code == 201
     assert generation_response.json()["status"] == "COMPLETED"
@@ -122,7 +122,13 @@ def _capture_avatar_consent(
     return consent_record_id
 
 
-def _create_multilingual_bundle(client: TestClient, project_id: str, run_id: str) -> dict[str, object]:
+def _create_multilingual_bundle(
+    client: TestClient,
+    project_id: str,
+    run_id: str,
+    *,
+    key_prefix: str = "stage7",
+) -> dict[str, object]:
     response = client.post(
         f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
         json={
@@ -130,7 +136,7 @@ def _create_multilingual_bundle(client: TestClient, project_id: str, run_id: str
             "glossaryTerms": ["NarraTwin AI", "source chunks"],
             "requestedVoiceProvider": "mock",
         },
-        headers=idempotency_headers("stage7-multilingual"),
+        headers=idempotency_headers(f"{key_prefix}-multilingual"),
     )
     assert response.status_code == 201
     body = response.json()
@@ -346,6 +352,53 @@ def test_avatar_render_api_rejects_tampered_multilingual_bundle() -> None:
             "multilingualBundle": tampered_bundle,
         },
         headers=idempotency_headers("stage7-avatar-tampered-bundle"),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "MULTILINGUAL_BUNDLE_INVALID"
+
+
+def test_avatar_render_api_rejects_unknown_multilingual_run_id() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client)
+    multilingual_bundle = _create_multilingual_bundle(client, project_id, run_id)
+    consent_record_id = _capture_avatar_consent(client, project_id, run_id)
+    replayed_bundle = {**multilingual_bundle, "multilingualRunId": "mlrun_missing"}
+
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders",
+        json={
+            "requestedAvatarProvider": "mock",
+            "consentToUseSyntheticAvatar": True,
+            "consentRecordId": consent_record_id,
+            "multilingualBundle": replayed_bundle,
+        },
+        headers=idempotency_headers("stage7-avatar-unknown-multilingual-run"),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "MULTILINGUAL_BUNDLE_INVALID"
+
+
+def test_avatar_render_api_rejects_replayed_multilingual_run_from_another_project() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client, key_prefix="stage7-a")
+    other_project_id, other_run_id = _create_completed_walkthrough(client, key_prefix="stage7-b")
+    other_bundle = _create_multilingual_bundle(client, other_project_id, other_run_id, key_prefix="stage7-b")
+    consent_record_id = _capture_avatar_consent(client, project_id, run_id)
+    replayed_bundle = {**other_bundle, "sourceRunId": run_id}
+
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders",
+        json={
+            "requestedAvatarProvider": "mock",
+            "consentToUseSyntheticAvatar": True,
+            "consentRecordId": consent_record_id,
+            "multilingualBundle": replayed_bundle,
+        },
+        headers=idempotency_headers("stage7-avatar-replayed-multilingual-run"),
     )
 
     assert response.status_code == 422
