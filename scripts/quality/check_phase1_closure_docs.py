@@ -144,6 +144,21 @@ ISSUE_155_CH_M1_01_ALLOWED_CHANGED_FILES = {
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_208_209_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-208.json",
+    "docs/reviews/ISSUE_208_209_CH_M1_02_PREFLIGHT.md",
+    "docs/ADR/0029-ch-m1-02-real-stack-evidence.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "frontend/playwright.real-stack.config.ts",
+    "frontend/tests/real-stack.spec.ts",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "scripts/quality/check_quality_stage.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_quality_dispatcher.py",
+}
 ISSUE_138_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/SECURITY_AND_PRIVACY.md",
@@ -1250,10 +1265,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "StatusStateV1",
-        "normalized",
-        "normalized",
-        "StatusStateV1 is the normalized mutable current-state authority in docs/STATUS.md.",
+        "#208/#209",
+        "active",
+        "active",
+        "Issue #208 is the active CH-M1-02 real-stack local evidence item; issue #209 is included only for the directly coupled local Phase 1 Closure quality-dispatch clarification.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -1271,10 +1286,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-PREDECESSOR": (
         "stopped-evidence",
-        "#167/#168",
+        "#162/#163/#166/#167/#168",
         "preserved",
         "preserved",
-        "Stopped PHF-020A predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, or deleted.",
+        "Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten.",
     ),
     "SSV1-FORBIDDEN": (
         "prohibited-work",
@@ -3325,6 +3340,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_188_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-155-ch-m1-01-"):
         allowed_files = ISSUE_155_CH_M1_01_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-208-"):
+        allowed_files = ISSUE_208_209_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-72-"):
         allowed_files = ISSUE_72_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-"):

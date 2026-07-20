@@ -461,6 +461,50 @@ def test_issue188_branch_allows_only_status_state_v1_scope(monkeypatch: Any) -> 
     ]
 
 
+def test_issue208_209_branch_allows_only_real_stack_demo_and_quality_scope(monkeypatch: Any) -> None:
+    expected = {
+        "docs/governance/preflights/issue-208.json",
+        "docs/reviews/ISSUE_208_209_CH_M1_02_PREFLIGHT.md",
+        "docs/ADR/0029-ch-m1-02-real-stack-evidence.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "frontend/playwright.real-stack.config.ts",
+        "frontend/tests/real-stack.spec.ts",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "scripts/quality/check_quality_stage.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "tests/unit/test_quality_dispatcher.py",
+    }
+    assert phase1.ISSUE_208_209_ALLOWED_CHANGED_FILES == expected
+    branch = "phase-1-closure-208-ch-m1-02-demo-evidence"
+    assert run_changed_files_check(monkeypatch, branch=branch, files=sorted(expected)) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["backend/app/main.py", "frontend/src/app/page.tsx", "docker-compose.yml"],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change backend/app/main.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change docker-compose.yml.",
+    ]
+
+
+def test_phase1_quality_docs_make_main_dispatch_behavior_unambiguous() -> None:
+    quality_gates = Path("docs/QUALITY_GATES.md").read_text(encoding="utf-8")
+    status = Path("docs/STATUS.md").read_text(encoding="utf-8")
+
+    assert (
+        "When `docs/STATUS.md` StatusStateV1 records `SSV1-MODE` as `phase1-closure`, "
+        "plain local `make quality` on `main` dispatches the Phase 1 Closure gate."
+    ) in quality_gates
+    assert (
+        "Plain local `make quality` on `main` dispatches Phase 1 Closure while "
+        "StatusStateV1 records `SSV1-MODE` as `phase1-closure`."
+    ) in status
+
+
 def test_phf020a_valid_policy_has_no_findings() -> None:
     assert phase1.phf020a_policy_findings(PHF020A_VALID_POLICY) == []
 

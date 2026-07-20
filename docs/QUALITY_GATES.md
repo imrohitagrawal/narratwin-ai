@@ -12,9 +12,10 @@ make quality
 
 During the current stage, `make quality` runs only the active stage checks
 by delegating to `scripts/quality/check_quality_stage.py`. The repository stage
-marker remains `.stage/current = 8`, so ordinary Stage 8 branches and `main`
-dispatch to the Stage 8 gate. Final Review and Phase 1 Closure branches override
-that marker by branch prefix and dispatch to their dedicated governance gates.
+marker remains `.stage/current = 8`. Ordinary Stage 8 branches dispatch to the
+Stage 8 gate. Final Review and Phase 1 Closure branches override that marker by
+branch prefix and dispatch to their dedicated governance gates.
+When `docs/STATUS.md` StatusStateV1 records `SSV1-MODE` as `phase1-closure`, plain local `make quality` on `main` dispatches the Phase 1 Closure gate.
 Product behavior outside approved Phase 1 closure remediation remains blocked.
 
 ## Required Make Targets
@@ -23,7 +24,7 @@ The `Makefile` must expose:
 
 | Target | Current behavior |
 |---|---|
-| `make quality` | Runs checks for `.stage/current`, with Final Review and Phase 1 Closure branch-prefix overrides |
+| `make quality` | Runs checks for `.stage/current`, with Final Review and Phase 1 Closure branch-prefix overrides and Phase 1 Closure `main` dispatch when StatusStateV1 records `phase1-closure` |
 | `make stage0-quality` | Runs executable Stage 0 documentation and guardrail checks |
 | `make stage1-quality` | Runs executable Stage 1 product and PRD documentation checks |
 | `make stage2-quality` | Runs executable Stage 2 architecture, security, AI safety, and portability checks |
@@ -438,6 +439,7 @@ Gate validates:
 Phase 1 Closure quality is executable through `make phase1-closure-quality`.
 On `phase-1-closure-*` branches, the top-level `make quality` dispatcher runs
 the Phase 1 Closure gate even though `.stage/current` remains `8`.
+When `docs/STATUS.md` StatusStateV1 records `SSV1-MODE` as `phase1-closure`, plain local `make quality` on `main` dispatches the Phase 1 Closure gate.
 For stacked Phase 1 Closure chunk PRs whose reviewed base is another
 `phase-1-closure-*` branch, local evidence must run against that reviewed base:
 `GITHUB_BASE_SHA=<reviewed-prereq-head> make phase1-closure-quality` or
