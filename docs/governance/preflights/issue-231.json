@@ -1,0 +1,42 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 231,
+  "branch": "phase-1-closure-process-231-human-verification-checklist",
+  "objective": "Durably require self-serve Human verification checklist rows in non-trivial PR bodies and new-project playbooks. Rows must include focus area, exact source/data/artifact, official URL and verified/accessed date where facts can change, pass/fail criteria, and residual-risk owner. High-risk triggers include provider/tool cost and terms, latency/capacity/quota/retry, UX/demo/recruiter flow, security/privacy/consent/deletion/disclosure/provenance, and AI/RAG/eval/citation/generated-media binding. Failure IDs: HUMAN-HV-MISSING-001, HUMAN-HV-VAGUE-001, HUMAN-HV-NO-PASSFAIL-001, HUMAN-HV-OWNER-001, HUMAN-HV-HIGHRISK-001, HUMAN-HV-DELEGATION-001, HUMAN-HV-NEWPROJECT-001, HV-SCOPE-001, NONGOAL-PARSER-001. Non-goals: no runtime/product/provider/media/hosted/CI parser implementation, no provider selection or spend approval, and no PR #230 branch mutation. Evidence: docs/template, playbook, guardrail/quality docs, status ledger, local gates, forced PR-body guardrail, and fresh-context fan-out dispositions.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-231.json",
+      ".github/pull_request_template.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-231.json",
+      ".github/pull_request_template.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      "scripts/",
+      "tests/",
+      ".github/workflows/",
+      "Dockerfile",
+      "docker-compose.yml",
+      "docs/demo/",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "provider SDKs",
+      "provider keys",
+      "runtime product code",
+      "real audio/video generation",
+      "hosted deployment",
+      "database migrations"
+    ]
+  }
+}

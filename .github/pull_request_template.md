@@ -26,6 +26,27 @@ reference-only wording.
 ### 5. Validation, limitations, and residual risks
 <!-- Summarize tests and checks, known limitations, remaining risks, and human-only decisions. -->
 
+## Human verification checklist
+
+For non-trivial PRs, turn the reviewer-focus points above and every changed
+high-risk surface into a self-serve verification checklist. Do not leave
+reviewers dependent on implementer memory, private notes, or follow-up questions
+for load-bearing facts. Each row must state the exact source/data/artifact to
+inspect, including official source URL and verified/accessed date when the fact
+can change, what would make the claim pass or fail, and who owns the residual
+risk decision. Use `N/A - trivial change` only for genuinely trivial PRs.
+
+Add rows when relevant for provider/tool choice, pricing, quota, latency,
+capacity, retry/backoff/timeout behavior, user-facing/demo/recruiter flows,
+uploads, prompts, transcripts, provider outputs, model outputs, consent,
+deletion/erasure, disclosure, provenance, AI/RAG/generated-media claims,
+citations, source-run/eval/media binding, launch boundaries, production posture,
+and final merge-message wording.
+
+| Focus area | What to verify | Data/source/artifact to verify | Pass condition | Fail condition | Residual-risk owner |
+|---|---|---|---|---|---|
+|  |  |  |  |  |  |
+
 ## Stage / slice
 
 - Stage:
@@ -58,6 +79,7 @@ reference-only wording.
 - [ ] Negative tests were added or explicitly marked human-only/source/non-goal in the invariant matrix.
 - [ ] Old behavior fails, RED, mutation, break-test, or regression-reproduction evidence is listed for changed guardrails and bug fixes.
 - [ ] Human-only review surfaces are listed with owner and residual-risk decision.
+- [ ] Non-trivial reviewer-focus points and changed high-risk surfaces are captured in the Human verification checklist with exact data/source/artifact references, official URL and verified/accessed date where facts can change, pass/fail criteria, and residual-risk owner.
 - [ ] Preinstalled repo docs/approved skills were checked first; no custom skill/plugin was created or used unless the gap, rejected existing options, approval, `docs/SKILL_LOCK.md`, and `docs/THIRD_PARTY_NOTICES.md` updates are linked.
 - [ ] Repeated-review stop rule was evaluated; if a fresh review found a new defect class after a fix, implementation paused for contract rewrite before another bug-fix loop.
 - [ ] Process/durability/governance work considered whether `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` should receive reusable lessons for future projects/apps.
