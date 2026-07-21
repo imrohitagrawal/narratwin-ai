@@ -57,6 +57,7 @@ from backend.app.hosted_demo import (
     HostedDemoAccessRequest,
     HostedDemoDecision,
     HostedDemoError,
+    HostedDemoJsonError,
     hosted_demo_service,
     parse_hosted_demo_json,
 )
@@ -1605,8 +1606,8 @@ async def create_hosted_demo_access_decision(request: Request) -> HostedDemoDeci
     raw_body = await request.body()
     try:
         payload = parse_hosted_demo_json(raw_body)
-    except ValueError as exc:
-        raise HostedDemoError(400, "DUPLICATE_JSON_KEY", "Hosted-demo request JSON is invalid.") from exc
+    except HostedDemoJsonError as exc:
+        raise HostedDemoError(400, exc.code, exc.message) from exc
     try:
         access_request = HostedDemoAccessRequest.model_validate(payload)
     except ValueError as exc:

@@ -7,7 +7,9 @@ import json
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from threading import RLock
 from typing import Any, Literal
+from urllib.parse import unquote
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -16,7 +18,11 @@ HOSTED_DEMO_DISCLOSURE_VERSION = "hosted-demo-disclosure-v1"
 MAX_HOSTED_DEMO_ARTIFACT_BYTES = 10_000_000
 SAFE_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 CHECKSUM_PATTERN = re.compile(r"^sha256:[a-f0-9]{64}$")
-UNSAFE_URL_PATTERN = re.compile(r"https?://|www\.", re.IGNORECASE)
+SAFE_FILE_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
+UNSAFE_URL_PATTERN = re.compile(
+    r"https?://|www\.|^//|javascript\s*:|data\s*:|ftp\s*:|file\s*:",
+    re.IGNORECASE,
+)
 PROMPT_INJECTION_MARKERS = (
     "ignore previous instructions",
     "reveal provider keys",
@@ -53,6 +59,15 @@ class HostedDemoError(Exception):
         self.details = details or {}
 
 
+class HostedDemoJsonError(ValueError):
+    """JSON parsing error with a stable client-safe code."""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
 def hash_hosted_demo_secret(secret: str) -> str:
     return "sha256:" + hashlib.sha256(secret.encode("utf-8")).hexdigest()
 
@@ -64,22 +79,48 @@ def stable_checksum(parts: tuple[object, ...]) -> str:
 
 def build_hosted_demo_evaluation_checksum(
     *,
+    tenant_id: str,
+    project_id: str,
+    actor_id: str,
     source_run_id: str,
     trace_id: str,
+    language: str,
+    audience: str,
+    script_checksum: str,
     evaluation_id: str,
     evaluation_status: str,
     citation_refs: tuple[str, ...],
     citation_indexes: tuple[int, ...],
+    multilingual_run_id: str | None = None,
+    translated_script_checksum: str | None = None,
+    subtitles_checksum: str | None = None,
+    voice_manifest_checksum: str | None = None,
+    tts_audio_checksum: str | None = None,
+    avatar_render_id: str | None = None,
+    avatar_video_provider_metadata_checksum: str | None = None,
 ) -> str:
     return stable_checksum(
         (
             "hosted-demo-evaluation-v1",
+            tenant_id,
+            project_id,
+            actor_id,
             source_run_id,
             trace_id,
+            language,
+            audience,
+            script_checksum,
             evaluation_id,
             evaluation_status,
             citation_refs,
             citation_indexes,
+            multilingual_run_id,
+            translated_script_checksum,
+            subtitles_checksum,
+            voice_manifest_checksum,
+            tts_audio_checksum,
+            avatar_render_id,
+            avatar_video_provider_metadata_checksum,
         )
     )
 
@@ -108,13 +149,31 @@ def build_hosted_demo_artifact_checksum(
     )
 
 
+def build_hosted_demo_session_binding_hash(
+    *,
+    tenant_id: str,
+    invite_id: str,
+    session_id: str,
+    session_secret: str,
+) -> str:
+    return stable_checksum(
+        (
+            "hosted-demo-session-binding-v1",
+            tenant_id,
+            invite_id,
+            session_id,
+            session_secret,
+        )
+    )
+
+
 def parse_hosted_demo_json(raw_body: bytes) -> dict[str, Any]:
     def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
         seen: set[str] = set()
         output: dict[str, Any] = {}
         for key, value in pairs:
             if key in seen:
-                raise ValueError(f"Duplicate JSON key: {key}")
+                raise HostedDemoJsonError("DUPLICATE_JSON_KEY", "Hosted-demo request JSON contains a duplicate key.")
             seen.add(key)
             output[key] = value
         return output
@@ -122,11 +181,11 @@ def parse_hosted_demo_json(raw_body: bytes) -> dict[str, Any]:
     try:
         parsed = json.loads(raw_body.decode("utf-8"), object_pairs_hook=reject_duplicates)
     except UnicodeDecodeError as exc:
-        raise ValueError("Request body must be UTF-8 JSON.") from exc
+        raise HostedDemoJsonError("MALFORMED_JSON", "Hosted-demo request body must be UTF-8 JSON.") from exc
     except json.JSONDecodeError as exc:
-        raise ValueError("Request body must be valid JSON.") from exc
+        raise HostedDemoJsonError("MALFORMED_JSON", "Hosted-demo request body must be valid JSON.") from exc
     if not isinstance(parsed, dict):
-        raise ValueError("Request body must be a JSON object.")
+        raise HostedDemoJsonError("INVALID_JSON_OBJECT", "Hosted-demo request body must be a JSON object.")
     return parsed
 
 
@@ -144,12 +203,26 @@ def _validate_checksum(value: str | None, *, field_name: str) -> str | None:
 
 def _contains_unsafe_url(value: object) -> bool:
     if isinstance(value, str):
-        return bool(UNSAFE_URL_PATTERN.search(value))
+        normalized = value.strip()
+        for _ in range(2):
+            decoded = unquote(normalized)
+            if decoded == normalized:
+                break
+            normalized = decoded.strip()
+        return bool(UNSAFE_URL_PATTERN.search(normalized))
     if isinstance(value, dict):
         return any(_contains_unsafe_url(item) for item in value.values())
     if isinstance(value, list):
         return any(_contains_unsafe_url(item) for item in value)
     return False
+
+
+def _validate_safe_file_name(value: str) -> str:
+    if "/" in value or "\\" in value or "\x00" in value or not SAFE_FILE_NAME_PATTERN.match(value):
+        raise ValueError("artifactFileName must be a bounded basename.")
+    if _contains_unsafe_url(value):
+        raise ValueError("artifactFileName must not contain a URL or scheme.")
+    return value
 
 
 def _contains_prompt_injection_marker(value: object) -> bool:
@@ -192,6 +265,11 @@ class HostedDemoArtifactInput(BaseModel):
         checked = _validate_checksum(value, field_name="artifactChecksum")
         assert checked is not None
         return checked
+
+    @field_validator("artifact_file_name")
+    @classmethod
+    def safe_artifact_file_name(cls, value: str) -> str:
+        return _validate_safe_file_name(value)
 
 
 class HostedDemoSourceInput(BaseModel):
@@ -267,7 +345,7 @@ class HostedDemoAccessInput(BaseModel):
     session_secret: str = Field(alias="sessionSecret", min_length=1, max_length=512)
     session_state: Literal["ACTIVE", "EXPIRED", "REVOKED"] = Field(alias="sessionState")
     session_expires_at: datetime = Field(alias="sessionExpiresAt")
-    requested_operation: Literal["VIEW", "DELETE"] = Field(alias="requestedOperation")
+    requested_operation: Literal["VIEW"] = Field(alias="requestedOperation")
 
     @field_validator("invite_id", "session_id")
     @classmethod
@@ -470,13 +548,14 @@ class HostedDemoAccessConfig:
     disclosure_version: str = HOSTED_DEMO_DISCLOSURE_VERSION
     allowed_invite_hashes: frozenset[str] = frozenset()
     allowed_session_hashes: frozenset[str] = frozenset()
+    allowed_session_binding_hashes: frozenset[str] = frozenset()
 
 
 @dataclass
 class _QuotaReservation:
     request_checksum: str
-    reservation_id: str
-    state: Literal["COMMITTED", "REFUNDED", "UNKNOWN"]
+    reservation_id: str | None
+    state: Literal["COMMITTED", "REFUNDED", "UNKNOWN", "NOT_RESERVED", "EXHAUSTED"]
     units: int
     decision: HostedDemoDecision
 
@@ -488,6 +567,7 @@ class HostedDemoAccessService:
     _reservations: dict[str, _QuotaReservation] = field(default_factory=dict)
     _session_units: dict[str, int] = field(default_factory=dict)
     _global_units: int = 0
+    _lock: RLock = field(default_factory=RLock, init=False, repr=False)
 
     def configure(self, config: HostedDemoAccessConfig) -> None:
         self.config = config
@@ -508,122 +588,121 @@ class HostedDemoAccessService:
         return self._global_units
 
     def decide(self, request: HostedDemoAccessRequest) -> HostedDemoDecision:
-        self._validate_request(request)
+        try:
+            self._validate_request(request)
+        except HostedDemoError as exc:
+            self._record_validation_error(request, exc)
+            raise
         request_checksum = self._request_checksum(request)
         idempotency_scope = f"{request.source.tenant_id}:{request.access.session_id}:{request.idempotency_key}"
-        existing = self._reservations.get(idempotency_scope)
-        if existing is not None:
-            if existing.request_checksum != request_checksum:
-                raise HostedDemoError(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was replayed with different input.")
-            return existing.decision
+        with self._lock:
+            existing = self._reservations.get(idempotency_scope)
+            if existing is not None:
+                if existing.request_checksum != request_checksum:
+                    raise HostedDemoError(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was replayed with different input.")
+                return existing.decision
 
-        if not self.config.enabled:
-            return self._deny(
-                request,
-                request_checksum=request_checksum,
-                idempotency_scope=idempotency_scope,
-                reason="HOSTED_DEMO_DISABLED",
-                quota_state="NOT_RESERVED",
-                quota_outcome="disabled",
-            )
-        auth_denial = self._access_denial_reason(request)
-        if auth_denial is not None:
-            return self._deny(
-                request,
-                request_checksum=request_checksum,
-                idempotency_scope=idempotency_scope,
-                reason=auth_denial,
-                quota_state="NOT_RESERVED",
-                quota_outcome="auth_denied",
-            )
-        retention_denial = self._retention_denial_reason(request)
-        if retention_denial is not None:
-            return self._deny(
-                request,
-                request_checksum=request_checksum,
-                idempotency_scope=idempotency_scope,
-                reason=retention_denial,
-                quota_state="NOT_RESERVED",
-                quota_outcome="retention_denied",
-            )
+            if not self.config.enabled:
+                return self._deny(
+                    request,
+                    request_checksum=request_checksum,
+                    idempotency_scope=idempotency_scope,
+                    reason="HOSTED_DEMO_DISABLED",
+                    quota_state="NOT_RESERVED",
+                    quota_outcome="disabled",
+                )
+            auth_denial = self._access_denial_reason(request)
+            if auth_denial is not None:
+                return self._deny(
+                    request,
+                    request_checksum=request_checksum,
+                    idempotency_scope=idempotency_scope,
+                    reason=auth_denial,
+                    quota_state="NOT_RESERVED",
+                    quota_outcome="auth_denied",
+                )
+            retention_denial = self._retention_denial_reason(request)
+            if retention_denial is not None:
+                return self._deny(
+                    request,
+                    request_checksum=request_checksum,
+                    idempotency_scope=idempotency_scope,
+                    reason=retention_denial,
+                    quota_state="NOT_RESERVED",
+                    quota_outcome="retention_denied",
+                )
 
-        if not self._has_quota(request):
-            return self._deny(
-                request,
-                request_checksum=request_checksum,
-                idempotency_scope=idempotency_scope,
-                reason="QUOTA_EXHAUSTED",
-                quota_state="EXHAUSTED",
-                quota_outcome="exhausted",
-                retry_after_seconds=60,
-                backoff_seconds=30,
-            )
+            if not self._has_quota(request):
+                return self._deny(
+                    request,
+                    request_checksum=request_checksum,
+                    idempotency_scope=idempotency_scope,
+                    reason="QUOTA_EXHAUSTED",
+                    quota_state="EXHAUSTED",
+                    quota_outcome="exhausted",
+                    retry_after_seconds=60,
+                    backoff_seconds=30,
+                )
 
-        reservation_id = f"quota_{uuid4().hex}"
-        self._reserve(request)
-        if request.local_outcome == "FAIL_BEFORE_SIDE_EFFECT":
-            self._release(request)
-            decision = self._deny(
-                request,
-                request_checksum=request_checksum,
-                idempotency_scope=idempotency_scope,
-                reason="LOCAL_FAKE_JOB_FAILED",
-                quota_state="REFUNDED",
-                quota_outcome="refunded_before_side_effect",
-                reservation_id=reservation_id,
-            )
-            self._reservations[idempotency_scope] = _QuotaReservation(
-                request_checksum=request_checksum,
-                reservation_id=reservation_id,
-                state="REFUNDED",
-                units=0,
-                decision=decision,
-            )
-            return decision
-        if request.local_outcome == "TIMEOUT_AFTER_ACCEPTED":
+            reservation_id = f"quota_{uuid4().hex}"
+            self._reserve(request)
+            if request.local_outcome == "FAIL_BEFORE_SIDE_EFFECT":
+                self._release(request)
+                return self._deny(
+                    request,
+                    request_checksum=request_checksum,
+                    idempotency_scope=idempotency_scope,
+                    reason="LOCAL_FAKE_JOB_FAILED",
+                    quota_state="REFUNDED",
+                    quota_outcome="refunded_before_side_effect",
+                    reservation_id=reservation_id,
+                )
+            if request.local_outcome == "TIMEOUT_AFTER_ACCEPTED":
+                decision = self._decision(
+                    request,
+                    request_checksum=request_checksum,
+                    idempotency_scope=idempotency_scope,
+                    access_state="HELD",
+                    denial_reason="QUOTA_UNKNOWN_AFTER_ACCEPTED_TIMEOUT",
+                    quota_state="UNKNOWN",
+                    quota_outcome="unknown_after_accepted_timeout",
+                    artifact_visibility="DENIED",
+                    reservation_id=reservation_id,
+                    retry_after_seconds=60,
+                    backoff_seconds=30,
+                )
+                self._record_event(decision)
+                self._store_reservation(
+                    idempotency_scope=idempotency_scope,
+                    request_checksum=request_checksum,
+                    reservation_id=reservation_id,
+                    state="UNKNOWN",
+                    units=request.quota_units,
+                    decision=decision,
+                )
+                return decision
+
             decision = self._decision(
                 request,
                 request_checksum=request_checksum,
                 idempotency_scope=idempotency_scope,
-                access_state="HELD",
-                denial_reason="QUOTA_UNKNOWN_AFTER_ACCEPTED_TIMEOUT",
-                quota_state="UNKNOWN",
-                quota_outcome="unknown_after_accepted_timeout",
-                artifact_visibility="DENIED",
+                access_state="GRANTED",
+                denial_reason=None,
+                quota_state="COMMITTED",
+                quota_outcome="committed",
+                artifact_visibility="HOSTED_DEMO_REVIEWER",
                 reservation_id=reservation_id,
-                retry_after_seconds=60,
-                backoff_seconds=30,
             )
             self._record_event(decision)
-            self._reservations[idempotency_scope] = _QuotaReservation(
+            self._store_reservation(
+                idempotency_scope=idempotency_scope,
                 request_checksum=request_checksum,
                 reservation_id=reservation_id,
-                state="UNKNOWN",
+                state="COMMITTED",
                 units=request.quota_units,
                 decision=decision,
             )
             return decision
-
-        decision = self._decision(
-            request,
-            request_checksum=request_checksum,
-            idempotency_scope=idempotency_scope,
-            access_state="GRANTED",
-            denial_reason=None,
-            quota_state="COMMITTED",
-            quota_outcome="committed",
-            artifact_visibility="HOSTED_DEMO_REVIEWER",
-            reservation_id=reservation_id,
-        )
-        self._record_event(decision)
-        self._reservations[idempotency_scope] = _QuotaReservation(
-            request_checksum=request_checksum,
-            reservation_id=reservation_id,
-            state="COMMITTED",
-            units=request.quota_units,
-            decision=decision,
-        )
-        return decision
 
     def _validate_request(self, request: HostedDemoAccessRequest) -> None:
         dumped = request.model_dump(mode="json", by_alias=True)
@@ -664,28 +743,75 @@ class HostedDemoAccessService:
         if any(index < 0 for index in source.citation_indexes):
             raise HostedDemoError(422, "CITATION_MISMATCH", "Citation indexes must be non-negative.")
         expected = build_hosted_demo_evaluation_checksum(
+            tenant_id=source.tenant_id,
+            project_id=source.project_id,
+            actor_id=source.actor_id,
             source_run_id=source.source_run_id,
             trace_id=source.trace_id,
+            language=source.language,
+            audience=source.audience,
+            script_checksum=source.script_checksum,
             evaluation_id=source.evaluation_id,
             evaluation_status=source.evaluation_status,
             citation_refs=tuple(source.citation_refs),
             citation_indexes=tuple(source.citation_indexes),
+            multilingual_run_id=source.multilingual_run_id,
+            translated_script_checksum=source.translated_script_checksum,
+            subtitles_checksum=source.subtitles_checksum,
+            voice_manifest_checksum=source.voice_manifest_checksum,
+            tts_audio_checksum=source.tts_audio_checksum,
+            avatar_render_id=source.avatar_render_id,
+            avatar_video_provider_metadata_checksum=source.avatar_video_provider_metadata_checksum,
         )
         if source.evaluation_checksum != expected:
             raise HostedDemoError(422, "EVALUATION_CHECKSUM_MISMATCH", "Hosted-demo evaluation evidence is stale.")
 
     def _validate_retention(self, request: HostedDemoAccessRequest) -> None:
         retention = request.retention
-        if retention.retention_state == "DELETED":
-            terminal = (
-                retention.deletion_state == "DELETED"
-                and retention.deleted_at is not None
-                and retention.tombstone_id is not None
-                and retention.tombstone_checksum is not None
-                and retention.deletion_evidence_id is not None
-                and retention.provider_deletion_status == "FAKE_LOCAL_DELETED"
+        terminal = (
+            retention.deletion_state == "DELETED"
+            and retention.deleted_at is not None
+            and retention.tombstone_id is not None
+            and retention.tombstone_checksum is not None
+            and retention.deletion_evidence_id is not None
+            and retention.provider_deletion_status == "FAKE_LOCAL_DELETED"
+            and retention.local_only_provider_evidence
+        )
+        if retention.retention_state == "ACTIVE":
+            active = (
+                retention.deletion_state == "NOT_REQUESTED"
+                and retention.deletion_requested_at is None
+                and retention.deleted_at is None
+                and retention.tombstone_id is None
+                and retention.tombstone_checksum is None
+                and retention.deletion_evidence_id is None
+                and retention.provider_deletion_status == "NOT_REQUESTED"
                 and retention.local_only_provider_evidence
             )
+            if not active:
+                raise HostedDemoError(
+                    422,
+                    "RETENTION_STATE_MISMATCH",
+                    "Active hosted-demo records must not carry pending or deleted evidence.",
+                )
+        if retention.retention_state == "PENDING_DELETION":
+            pending = (
+                retention.deletion_state == "PENDING"
+                and retention.deletion_requested_at is not None
+                and retention.deleted_at is None
+                and retention.tombstone_id is None
+                and retention.tombstone_checksum is None
+                and retention.deletion_evidence_id is None
+                and retention.provider_deletion_status == "PENDING"
+                and retention.local_only_provider_evidence
+            )
+            if not pending:
+                raise HostedDemoError(
+                    422,
+                    "RETENTION_STATE_MISMATCH",
+                    "Pending hosted-demo deletion requires pending local evidence only.",
+                )
+        if retention.retention_state == "DELETED":
             if not terminal:
                 raise HostedDemoError(
                     422,
@@ -704,6 +830,8 @@ class HostedDemoAccessService:
             return "INVITE_DENIED"
         if hash_hosted_demo_secret(request.access.session_secret) not in self.config.allowed_session_hashes:
             return "SESSION_DENIED"
+        if self._session_binding_hash(request) not in self.config.allowed_session_binding_hashes:
+            return "SESSION_DENIED"
         return None
 
     def _retention_denial_reason(self, request: HostedDemoAccessRequest) -> str | None:
@@ -720,7 +848,7 @@ class HostedDemoAccessService:
         return None
 
     def _has_quota(self, request: HostedDemoAccessRequest) -> bool:
-        session_hash = hash_hosted_demo_secret(request.access.session_id)
+        session_hash = self._quota_subject_hash(request)
         session_used = self._session_units.get(session_hash, 0)
         return (
             session_used + request.quota_units <= self.config.per_session_quota
@@ -728,14 +856,43 @@ class HostedDemoAccessService:
         )
 
     def _reserve(self, request: HostedDemoAccessRequest) -> None:
-        session_hash = hash_hosted_demo_secret(request.access.session_id)
+        session_hash = self._quota_subject_hash(request)
         self._session_units[session_hash] = self._session_units.get(session_hash, 0) + request.quota_units
         self._global_units += request.quota_units
 
     def _release(self, request: HostedDemoAccessRequest) -> None:
-        session_hash = hash_hosted_demo_secret(request.access.session_id)
+        session_hash = self._quota_subject_hash(request)
         self._session_units[session_hash] = max(0, self._session_units.get(session_hash, 0) - request.quota_units)
         self._global_units = max(0, self._global_units - request.quota_units)
+
+    def _session_binding_hash(self, request: HostedDemoAccessRequest) -> str:
+        return build_hosted_demo_session_binding_hash(
+            tenant_id=request.source.tenant_id,
+            invite_id=request.access.invite_id,
+            session_id=request.access.session_id,
+            session_secret=request.access.session_secret,
+        )
+
+    def _quota_subject_hash(self, request: HostedDemoAccessRequest) -> str:
+        return "quota_subject_" + self._session_binding_hash(request)[7:]
+
+    def _store_reservation(
+        self,
+        *,
+        idempotency_scope: str,
+        request_checksum: str,
+        reservation_id: str | None,
+        state: Literal["COMMITTED", "REFUNDED", "UNKNOWN", "NOT_RESERVED", "EXHAUSTED"],
+        units: int,
+        decision: HostedDemoDecision,
+    ) -> None:
+        self._reservations[idempotency_scope] = _QuotaReservation(
+            request_checksum=request_checksum,
+            reservation_id=reservation_id,
+            state=state,
+            units=units,
+            decision=decision,
+        )
 
     def _deny(
         self,
@@ -764,6 +921,14 @@ class HostedDemoAccessService:
             backoff_seconds=backoff_seconds,
         )
         self._record_event(decision)
+        self._store_reservation(
+            idempotency_scope=idempotency_scope,
+            request_checksum=request_checksum,
+            reservation_id=reservation_id,
+            state=quota_state,
+            units=0,
+            decision=decision,
+        )
         return decision
 
     def _decision(
@@ -783,6 +948,9 @@ class HostedDemoAccessService:
     ) -> HostedDemoDecision:
         quota_remaining = max(0, self.config.global_quota - self._global_units)
         status_code = 200 if access_state in {"GRANTED", "HELD"} else 403
+        redacted_idempotency_scope = "idem_scope_" + stable_checksum(
+            ("hosted-demo-idempotency-scope-v1", idempotency_scope)
+        )[7:31]
         return HostedDemoDecision(
             providerPosture=HostedDemoProviderPosture(
                 hostedDemoEnabled=self.config.enabled,
@@ -822,7 +990,7 @@ class HostedDemoAccessService:
                 quotaOutcome=quota_outcome,
                 retryAfterSeconds=retry_after_seconds,
                 backoffSeconds=backoff_seconds,
-                idempotencyScope=idempotency_scope,
+                idempotencyScope=redacted_idempotency_scope,
                 requestChecksum=request_checksum,
             ),
             retention=HostedDemoRetentionRecord(
@@ -857,6 +1025,20 @@ class HostedDemoAccessService:
         self.redacted_events.append(decision.observability.model_dump(by_alias=True))
         if decision.access.denial_reason is not None:
             self.redacted_events[-1]["denialReason"] = decision.access.denial_reason
+
+    def _record_validation_error(self, request: HostedDemoAccessRequest, error: HostedDemoError) -> None:
+        self.redacted_events.append(
+            {
+                "event": "hosted_demo.validation_denied",
+                "traceId": request.source.trace_id,
+                "statusCode": error.status_code,
+                "accessOutcome": "DENIED",
+                "quotaOutcome": "validation_denied",
+                "retentionState": request.retention.retention_state,
+                "artifactValidationResult": "FAILED",
+                "denialReason": error.code,
+            }
+        )
 
     def _request_checksum(self, request: HostedDemoAccessRequest) -> str:
         redacted = request.model_dump(mode="json", by_alias=True)

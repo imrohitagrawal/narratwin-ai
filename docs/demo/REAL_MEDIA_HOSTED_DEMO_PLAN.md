@@ -434,33 +434,40 @@ source/eval/media-bound artifact metadata
 Required contract:
 
 - Hosted-demo behavior is disabled by default for local/dev/test/CI.
-- Access decisions use local/fake invite/session hashes; `X-Local-User-Id` is
-  not hosted authentication.
+- Access decisions use local/fake invite/session hashes plus a bound
+  `tenantId + inviteId + sessionId + sessionSecret` hash; `X-Local-User-Id` is
+  not hosted authentication, and forged session IDs cannot reuse a valid
+  session secret.
 - Responses are metadata-only and must not expose raw scripts, prompts, uploads,
   provider payloads, unsafe URLs, invite/session secrets, cookies, tokens,
-  provider keys, `contentBase64`, or media bytes.
-- Visible artifact metadata must bind source run ID, trace ID, language,
-  audience, script checksum, citation refs, evaluation ID/status/checksum,
-  optional Stage 6/Stage 7 media metadata checksums, artifact checksum,
-  disclosure version, access/session state, quota state, retention/deletion
-  state, and tombstone/deletion evidence where applicable.
-- Quota reservation occurs before local/fake visibility side effects; local fake
-  failures before side effects refund; timeout after accepted local fake work is
-  held as unknown rather than refunded; duplicate use/spend is idempotency
-  guarded.
+  provider keys, raw idempotency scope, `contentBase64`, or media bytes.
+- Visible artifact metadata must bind tenant/project/actor IDs, source run ID,
+  trace ID, language, audience, script checksum, citation refs, evaluation
+  ID/status/checksum, optional Stage 6/Stage 7 media metadata checksums,
+  artifact checksum, disclosure version, access/session state, quota state,
+  retention/deletion state, and tombstone/deletion evidence where applicable.
+- The PR5 API is view-only; deletion evidence is represented and validated, but
+  callers cannot request deletion through the hosted-demo access decision route.
+- Quota reservation occurs atomically before local/fake visibility side effects;
+  local fake failures before side effects refund; timeout after accepted local
+  fake work is held as unknown rather than refunded; success and terminal denial
+  decisions are idempotency guarded.
 - Pending deletion is not terminal deletion proof. Deleted artifacts require
   tombstone checksum, deletion evidence ID, terminal fake/local provider
-  deletion state, and `localOnlyProviderEvidence`.
+  deletion state, and `localOnlyProviderEvidence`; active records cannot carry
+  pending or deleted evidence.
 - Reviewer-facing polish stays evidence-oriented: disabled-provider posture,
   synthetic-media disclosure, artifact metadata, clear denial states, quota and
   retention state, and neutral pre-run evaluation state.
 - Required evidence before merge: unit/API tests for disabled default,
   invalid/expired/replayed invite/session, forged local principal non-grant,
-  source/eval/citation/artifact mismatch, unsafe URL, duplicate JSON keys,
-  unexpected fields, MIME/extension/size/checksum validation, quota exhaustion,
-  refund, unknown hold, idempotency conflict, pending/deleted/tombstone states,
-  redacted logs, metadata-only responses, and frontend neutral evaluation
-  display.
+  forged session binding rejection, source/eval/citation/artifact/media
+  mismatch, unsafe URL/scheme, unsafe filename, malformed/non-object/duplicate
+  JSON, unexpected fields, MIME/extension/size/checksum validation, quota
+  exhaustion, concurrent reservation, refund, unknown hold, idempotency conflict
+  after success and denial, pending/deleted/tombstone states, retention-state
+  mismatch, redacted logs, metadata-only responses, frontend safe error display,
+  and frontend neutral evaluation display.
 
 Explicit non-goals:
 

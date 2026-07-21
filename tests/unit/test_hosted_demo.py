@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import cast
 
@@ -15,6 +16,7 @@ from backend.app.hosted_demo import (
     HostedDemoError,
     build_hosted_demo_artifact_checksum,
     build_hosted_demo_evaluation_checksum,
+    build_hosted_demo_session_binding_hash,
     hash_hosted_demo_secret,
     parse_hosted_demo_json,
 )
@@ -26,6 +28,8 @@ RAW_LEAK_CANARIES = (
     "provider payload canary",
     "fake-invite-input",
     "fake-session-input",
+    "session_001",
+    "idem_001",
     "contentBase64",
 )
 
@@ -33,20 +37,55 @@ RAW_LEAK_CANARIES = (
 def valid_request_payload(**overrides: object) -> dict[str, object]:
     citation_refs = ["ctx_001", "ctx_002"]
     citation_indexes = [1, 2]
+    source: dict[str, object] = {
+        "tenantId": "tenant_local",
+        "projectId": "project_001",
+        "actorId": "user_local",
+        "sourceRunId": "run_001",
+        "traceId": "trace_001",
+        "language": "en",
+        "audience": "RECRUITER",
+        "scriptChecksum": "sha256:" + "a" * 64,
+        "citationRefs": citation_refs,
+        "citationIndexes": citation_indexes,
+        "evaluationId": "eval_001",
+        "evaluationStatus": "PASSED",
+        "multilingualRunId": "ml_001",
+        "translatedScriptChecksum": "sha256:" + "b" * 64,
+        "subtitlesChecksum": "sha256:" + "c" * 64,
+        "voiceManifestChecksum": "sha256:" + "d" * 64,
+        "ttsAudioChecksum": None,
+        "avatarRenderId": "avatar_001",
+        "avatarVideoProviderMetadataChecksum": "sha256:" + "e" * 64,
+    }
     evaluation_checksum = build_hosted_demo_evaluation_checksum(
-        source_run_id="run_001",
-        trace_id="trace_001",
-        evaluation_id="eval_001",
-        evaluation_status="PASSED",
+        tenant_id=cast(str, source["tenantId"]),
+        project_id=cast(str, source["projectId"]),
+        actor_id=cast(str, source["actorId"]),
+        source_run_id=cast(str, source["sourceRunId"]),
+        trace_id=cast(str, source["traceId"]),
+        language=cast(str, source["language"]),
+        audience=cast(str, source["audience"]),
+        script_checksum=cast(str, source["scriptChecksum"]),
+        evaluation_id=cast(str, source["evaluationId"]),
+        evaluation_status=cast(str, source["evaluationStatus"]),
         citation_refs=tuple(citation_refs),
         citation_indexes=tuple(citation_indexes),
+        multilingual_run_id=cast(str, source["multilingualRunId"]),
+        translated_script_checksum=cast(str, source["translatedScriptChecksum"]),
+        subtitles_checksum=cast(str, source["subtitlesChecksum"]),
+        voice_manifest_checksum=cast(str, source["voiceManifestChecksum"]),
+        tts_audio_checksum=cast(str | None, source["ttsAudioChecksum"]),
+        avatar_render_id=cast(str, source["avatarRenderId"]),
+        avatar_video_provider_metadata_checksum=cast(str, source["avatarVideoProviderMetadataChecksum"]),
     )
+    source["evaluationChecksum"] = evaluation_checksum
     artifact_checksum = build_hosted_demo_artifact_checksum(
         artifact_id="artifact_001",
         artifact_kind="AVATAR_DEMO",
         artifact_file_name="demo.html",
-        source_run_id="run_001",
-        script_checksum="sha256:" + "a" * 64,
+        source_run_id=cast(str, source["sourceRunId"]),
+        script_checksum=cast(str, source["scriptChecksum"]),
         evaluation_checksum=evaluation_checksum,
         disclosure_version=HOSTED_DEMO_DISCLOSURE_VERSION,
     )
@@ -60,28 +99,7 @@ def valid_request_payload(**overrides: object) -> dict[str, object]:
             "artifactSizeBytes": 2048,
             "artifactVisibility": "HOSTED_DEMO_REVIEWER",
         },
-        "source": {
-            "tenantId": "tenant_local",
-            "projectId": "project_001",
-            "actorId": "user_local",
-            "sourceRunId": "run_001",
-            "traceId": "trace_001",
-            "language": "en",
-            "audience": "RECRUITER",
-            "scriptChecksum": "sha256:" + "a" * 64,
-            "citationRefs": citation_refs,
-            "citationIndexes": citation_indexes,
-            "evaluationId": "eval_001",
-            "evaluationStatus": "PASSED",
-            "evaluationChecksum": evaluation_checksum,
-            "multilingualRunId": "ml_001",
-            "translatedScriptChecksum": "sha256:" + "b" * 64,
-            "subtitlesChecksum": "sha256:" + "c" * 64,
-            "voiceManifestChecksum": "sha256:" + "d" * 64,
-            "ttsAudioChecksum": None,
-            "avatarRenderId": "avatar_001",
-            "avatarVideoProviderMetadataChecksum": "sha256:" + "e" * 64,
-        },
+        "source": source,
         "disclosure": {
             "disclosureText": "AI-generated demo using local mock providers; no cloned identity or real provider call.",
             "disclosureVersion": HOSTED_DEMO_DISCLOSURE_VERSION,
@@ -122,6 +140,16 @@ def enabled_service() -> HostedDemoAccessService:
             enabled=True,
             allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
             allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+            allowed_session_binding_hashes=frozenset(
+                {
+                    build_hosted_demo_session_binding_hash(
+                        tenant_id="tenant_local",
+                        invite_id="invite_001",
+                        session_id="session_001",
+                        session_secret="fake-session-input",
+                    )
+                }
+            ),
             per_session_quota=2,
             global_quota=4,
         )
@@ -160,6 +188,7 @@ def test_enabled_access_returns_metadata_only_and_omits_raw_stage_artifacts() ->
 
     assert decision.access.access_state == "GRANTED"
     assert decision.quota.quota_state == "COMMITTED"
+    assert decision.quota.idempotency_scope.startswith("idem_scope_")
     assert decision.artifact.artifact_checksum.startswith("sha256:")
     encoded = decision.model_dump_json(by_alias=True)
     assert "contentBase64" not in encoded
@@ -168,6 +197,21 @@ def test_enabled_access_returns_metadata_only_and_omits_raw_stage_artifacts() ->
     assert "provider payload canary" not in encoded
     assert decision.retention.retention_state == "ACTIVE"
     assert decision.disclosure.disclosure_version == HOSTED_DEMO_DISCLOSURE_VERSION
+
+
+def test_valid_session_secret_is_bound_to_session_invite_and_tenant() -> None:
+    service = enabled_service()
+    control = decide(service, valid_request_payload(idempotencyKey="same_session_control"))
+    assert control.access.access_state == "GRANTED"
+
+    forged = valid_request_payload(idempotencyKey="forged_session")
+    patched_section(forged, "access", {"sessionId": "session_forged"})
+
+    decision = decide(service, forged)
+
+    assert decision.access.access_state == "DENIED"
+    assert decision.access.denial_reason == "SESSION_DENIED"
+    assert decision.quota.quota_state == "NOT_RESERVED"
 
 
 @pytest.mark.parametrize(
@@ -216,6 +260,28 @@ def test_failed_eval_stale_citation_or_artifact_binding_is_rejected_before_quota
     assert artifact_exc.value.code == "ARTIFACT_CHECKSUM_MISMATCH"
 
 
+@pytest.mark.parametrize(
+    "source_patch",
+    (
+        {"language": "fr"},
+        {"audience": "EXECUTIVE"},
+        {"tenantId": "tenant_other"},
+        {"projectId": "project_other"},
+        {"actorId": "actor_other"},
+        {"ttsAudioChecksum": "sha256:" + "9" * 64},
+        {"avatarVideoProviderMetadataChecksum": "sha256:" + "8" * 64},
+    ),
+)
+def test_source_and_media_metadata_mutations_break_evaluation_binding(source_patch: dict[str, object]) -> None:
+    payload = valid_request_payload()
+    patched_section(payload, "source", source_patch)
+
+    with pytest.raises(HostedDemoError) as exc:
+        decide(enabled_service(), payload)
+
+    assert exc.value.code == "EVALUATION_CHECKSUM_MISMATCH"
+
+
 def test_quota_exhaustion_refund_unknown_hold_and_idempotency_conflict() -> None:
     service = enabled_service()
 
@@ -246,6 +312,86 @@ def test_quota_exhaustion_refund_unknown_hold_and_idempotency_conflict() -> None
     assert exhausted.access.access_state == "DENIED"
     assert exhausted.access.denial_reason == "QUOTA_EXHAUSTED"
     assert exhausted.quota.quota_state == "EXHAUSTED"
+
+
+def test_quota_check_reserve_and_idempotency_storage_are_atomic() -> None:
+    service = HostedDemoAccessService(
+        HostedDemoAccessConfig(
+            enabled=True,
+            allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
+            allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+            allowed_session_binding_hashes=frozenset(
+                {
+                    build_hosted_demo_session_binding_hash(
+                        tenant_id="tenant_local",
+                        invite_id="invite_001",
+                        session_id="session_001",
+                        session_secret="fake-session-input",
+                    )
+                }
+            ),
+            per_session_quota=2,
+            global_quota=1,
+        )
+    )
+    payloads = [
+        valid_request_payload(idempotencyKey="race_001"),
+        valid_request_payload(idempotencyKey="race_002"),
+    ]
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(lambda payload: decide(service, payload), payloads))
+
+    quota_states = [result.quota.quota_state for result in results]
+    assert quota_states.count("COMMITTED") == 1
+    assert quota_states.count("EXHAUSTED") == 1
+    assert service.quota_reserved_count == 1
+
+
+def test_terminal_denial_records_idempotency_conflict_before_later_success() -> None:
+    service = HostedDemoAccessService(
+        HostedDemoAccessConfig(
+            enabled=True,
+            allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
+            allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+            allowed_session_binding_hashes=frozenset(
+                {
+                    build_hosted_demo_session_binding_hash(
+                        tenant_id="tenant_local",
+                        invite_id="invite_001",
+                        session_id="session_001",
+                        session_secret="fake-session-input",
+                    )
+                }
+            ),
+            per_session_quota=1,
+            global_quota=0,
+        )
+    )
+    first = decide(service, valid_request_payload(idempotencyKey="denial_replay"))
+    assert first.quota.quota_state == "EXHAUSTED"
+
+    service.config = HostedDemoAccessConfig(
+        enabled=True,
+        allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
+        allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+        allowed_session_binding_hashes=frozenset(
+            {
+                build_hosted_demo_session_binding_hash(
+                    tenant_id="tenant_local",
+                    invite_id="invite_001",
+                    session_id="session_001",
+                    session_secret="fake-session-input",
+                )
+            }
+        ),
+        per_session_quota=1,
+        global_quota=1,
+    )
+    changed = valid_request_payload(idempotencyKey="denial_replay", quotaUnits=2)
+    with pytest.raises(HostedDemoError) as exc:
+        decide(service, changed)
+    assert exc.value.code == "IDEMPOTENCY_CONFLICT"
 
 
 def test_pending_deleted_and_terminal_fake_deletion_evidence_are_distinct() -> None:
@@ -291,8 +437,41 @@ def test_pending_deleted_and_terminal_fake_deletion_evidence_are_distinct() -> N
     assert deleted.retention.provider_deletion_status == "FAKE_LOCAL_DELETED"
 
 
+def test_retention_state_mismatch_cannot_grant_active_access() -> None:
+    pending_as_active = valid_request_payload()
+    patched_section(
+        pending_as_active,
+        "retention",
+        {
+            "deletionState": "PENDING",
+            "deletionRequestedAt": datetime.now(UTC).isoformat(),
+            "providerDeletionStatus": "PENDING",
+        },
+    )
+    with pytest.raises(HostedDemoError) as pending_exc:
+        decide(enabled_service(), pending_as_active)
+    assert pending_exc.value.code == "RETENTION_STATE_MISMATCH"
+
+    deleted_as_active = valid_request_payload()
+    patched_section(
+        deleted_as_active,
+        "retention",
+        {
+            "deletionState": "DELETED",
+            "deletedAt": datetime.now(UTC).isoformat(),
+            "tombstoneId": "tombstone_001",
+            "tombstoneChecksum": "sha256:" + "1" * 64,
+            "deletionEvidenceId": "deletion_evidence_001",
+            "providerDeletionStatus": "FAKE_LOCAL_DELETED",
+        },
+    )
+    with pytest.raises(HostedDemoError) as deleted_exc:
+        decide(enabled_service(), deleted_as_active)
+    assert deleted_exc.value.code == "RETENTION_STATE_MISMATCH"
+
+
 def test_rejects_duplicate_keys_unexpected_fields_unsafe_urls_prompt_injection_and_bad_artifacts() -> None:
-    with pytest.raises(ValueError, match="Duplicate JSON key"):
+    with pytest.raises(ValueError, match="duplicate key"):
         parse_hosted_demo_json(b'{"access": {}, "access": {}}')
 
     unexpected = valid_request_payload(extraField=True)
@@ -300,10 +479,15 @@ def test_rejects_duplicate_keys_unexpected_fields_unsafe_urls_prompt_injection_a
         HostedDemoAccessRequest.model_validate(unexpected)
 
     unsafe_url = valid_request_payload()
-    patched_section(unsafe_url, "artifact", {"artifactFileName": "https://example.test/demo.html"})
+    patched_section(unsafe_url, "disclosure", {"disclosureText": "javascript:alert(1)"})
     with pytest.raises(HostedDemoError) as url_exc:
         decide(enabled_service(), unsafe_url)
     assert url_exc.value.code == "UNSAFE_URL"
+
+    unsafe_file = valid_request_payload()
+    patched_section(unsafe_file, "artifact", {"artifactFileName": "javascript:alert(1).html"})
+    with pytest.raises(ValidationError):
+        HostedDemoAccessRequest.model_validate(unsafe_file)
 
     injected = valid_request_payload()
     patched_section(
@@ -326,3 +510,18 @@ def test_rejects_duplicate_keys_unexpected_fields_unsafe_urls_prompt_injection_a
     with pytest.raises(HostedDemoError) as size_exc:
         decide(enabled_service(), oversized)
     assert size_exc.value.code == "ARTIFACT_TOO_LARGE"
+
+
+def test_validation_failures_emit_redacted_observability() -> None:
+    service = enabled_service()
+    failed_eval = valid_request_payload()
+    patched_section(failed_eval, "source", {"evaluationStatus": "FAILED"})
+
+    with pytest.raises(HostedDemoError):
+        decide(service, failed_eval)
+
+    event_text = repr(service.redacted_events)
+    assert service.redacted_events[-1]["event"] == "hosted_demo.validation_denied"
+    assert service.redacted_events[-1]["denialReason"] == "EVALUATION_NOT_PASSED"
+    for canary in RAW_LEAK_CANARIES:
+        assert canary not in event_text

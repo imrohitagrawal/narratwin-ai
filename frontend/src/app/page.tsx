@@ -175,6 +175,9 @@ const safeApiErrorCodes = new Set([
   "UNSAFE_URL",
 ]);
 
+const unsafeApiErrorMessagePattern =
+  /contentBase64|fake-invite-input|fake-session-input|idem_[A-Za-z0-9_.:-]*|session_[A-Za-z0-9_.:-]*|inviteSecret|sessionSecret|auth token|bearer token|cookie|raw prompt|raw script|provider payload/i;
+
 async function postJson<T>(path: string, body: object, idempotencyKey: string): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
     method: "POST",
@@ -187,7 +190,7 @@ async function postJson<T>(path: string, body: object, idempotencyKey: string): 
   return readJson<T>(response);
 }
 
-async function readJson<T>(response: Response): Promise<T> {
+export async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let payload: ApiErrorPayload = {};
     try {
@@ -197,7 +200,12 @@ async function readJson<T>(response: Response): Promise<T> {
     }
     const code = typeof payload.error?.code === "string" ? payload.error.code : "";
     const message = typeof payload.error?.message === "string" ? payload.error.message : "";
-    if (safeApiErrorCodes.has(code) && message.length > 0 && message.length <= 240) {
+    if (
+      safeApiErrorCodes.has(code) &&
+      message.length > 0 &&
+      message.length <= 240 &&
+      !unsafeApiErrorMessagePattern.test(message)
+    ) {
       throw new Error(`${code}: ${message}`);
     }
     throw new Error(`NarraTwin API request failed with ${response.status}`);

@@ -11,6 +11,7 @@ from backend.app.hosted_demo import (
     HostedDemoAccessConfig,
     build_hosted_demo_artifact_checksum,
     build_hosted_demo_evaluation_checksum,
+    build_hosted_demo_session_binding_hash,
     hash_hosted_demo_secret,
     hosted_demo_service,
 )
@@ -20,20 +21,55 @@ from backend.app.main import app, reset_app_state_for_tests
 def valid_request_payload(**overrides: object) -> dict[str, object]:
     citation_refs = ["ctx_001", "ctx_002"]
     citation_indexes = [1, 2]
+    source: dict[str, object] = {
+        "tenantId": "tenant_local",
+        "projectId": "project_001",
+        "actorId": "user_local",
+        "sourceRunId": "run_001",
+        "traceId": "trace_001",
+        "language": "en",
+        "audience": "RECRUITER",
+        "scriptChecksum": "sha256:" + "a" * 64,
+        "citationRefs": citation_refs,
+        "citationIndexes": citation_indexes,
+        "evaluationId": "eval_001",
+        "evaluationStatus": "PASSED",
+        "multilingualRunId": "ml_001",
+        "translatedScriptChecksum": "sha256:" + "b" * 64,
+        "subtitlesChecksum": "sha256:" + "c" * 64,
+        "voiceManifestChecksum": "sha256:" + "d" * 64,
+        "ttsAudioChecksum": None,
+        "avatarRenderId": "avatar_001",
+        "avatarVideoProviderMetadataChecksum": "sha256:" + "e" * 64,
+    }
     evaluation_checksum = build_hosted_demo_evaluation_checksum(
-        source_run_id="run_001",
-        trace_id="trace_001",
-        evaluation_id="eval_001",
-        evaluation_status="PASSED",
+        tenant_id=cast(str, source["tenantId"]),
+        project_id=cast(str, source["projectId"]),
+        actor_id=cast(str, source["actorId"]),
+        source_run_id=cast(str, source["sourceRunId"]),
+        trace_id=cast(str, source["traceId"]),
+        language=cast(str, source["language"]),
+        audience=cast(str, source["audience"]),
+        script_checksum=cast(str, source["scriptChecksum"]),
+        evaluation_id=cast(str, source["evaluationId"]),
+        evaluation_status=cast(str, source["evaluationStatus"]),
         citation_refs=tuple(citation_refs),
         citation_indexes=tuple(citation_indexes),
+        multilingual_run_id=cast(str, source["multilingualRunId"]),
+        translated_script_checksum=cast(str, source["translatedScriptChecksum"]),
+        subtitles_checksum=cast(str, source["subtitlesChecksum"]),
+        voice_manifest_checksum=cast(str, source["voiceManifestChecksum"]),
+        tts_audio_checksum=cast(str | None, source["ttsAudioChecksum"]),
+        avatar_render_id=cast(str, source["avatarRenderId"]),
+        avatar_video_provider_metadata_checksum=cast(str, source["avatarVideoProviderMetadataChecksum"]),
     )
+    source["evaluationChecksum"] = evaluation_checksum
     artifact_checksum = build_hosted_demo_artifact_checksum(
         artifact_id="artifact_001",
         artifact_kind="AVATAR_DEMO",
         artifact_file_name="demo.html",
-        source_run_id="run_001",
-        script_checksum="sha256:" + "a" * 64,
+        source_run_id=cast(str, source["sourceRunId"]),
+        script_checksum=cast(str, source["scriptChecksum"]),
         evaluation_checksum=evaluation_checksum,
         disclosure_version=HOSTED_DEMO_DISCLOSURE_VERSION,
     )
@@ -47,28 +83,7 @@ def valid_request_payload(**overrides: object) -> dict[str, object]:
             "artifactSizeBytes": 2048,
             "artifactVisibility": "HOSTED_DEMO_REVIEWER",
         },
-        "source": {
-            "tenantId": "tenant_local",
-            "projectId": "project_001",
-            "actorId": "user_local",
-            "sourceRunId": "run_001",
-            "traceId": "trace_001",
-            "language": "en",
-            "audience": "RECRUITER",
-            "scriptChecksum": "sha256:" + "a" * 64,
-            "citationRefs": citation_refs,
-            "citationIndexes": citation_indexes,
-            "evaluationId": "eval_001",
-            "evaluationStatus": "PASSED",
-            "evaluationChecksum": evaluation_checksum,
-            "multilingualRunId": "ml_001",
-            "translatedScriptChecksum": "sha256:" + "b" * 64,
-            "subtitlesChecksum": "sha256:" + "c" * 64,
-            "voiceManifestChecksum": "sha256:" + "d" * 64,
-            "ttsAudioChecksum": None,
-            "avatarRenderId": "avatar_001",
-            "avatarVideoProviderMetadataChecksum": "sha256:" + "e" * 64,
-        },
+        "source": source,
         "disclosure": {
             "disclosureText": "AI-generated demo using local mock providers; no cloned identity or real provider call.",
             "disclosureVersion": HOSTED_DEMO_DISCLOSURE_VERSION,
@@ -151,11 +166,33 @@ def test_hosted_demo_api_rejects_duplicate_json_keys_and_unexpected_fields() -> 
     assert duplicate.status_code == 400
     assert duplicate.json()["error"]["code"] == "DUPLICATE_JSON_KEY"
 
+    malformed = client.post(
+        "/api/v1/hosted-demo/access-decisions",
+        content=b"{",
+        headers={"content-type": "application/json"},
+    )
+    assert malformed.status_code == 400
+    assert malformed.json()["error"]["code"] == "MALFORMED_JSON"
+
+    non_object = client.post(
+        "/api/v1/hosted-demo/access-decisions",
+        content=b"[]",
+        headers={"content-type": "application/json"},
+    )
+    assert non_object.status_code == 400
+    assert non_object.json()["error"]["code"] == "INVALID_JSON_OBJECT"
+
     payload = valid_request_payload()
     payload["unexpected"] = True
     unexpected = client.post("/api/v1/hosted-demo/access-decisions", json=payload)
     assert unexpected.status_code == 422
     assert unexpected.json()["error"]["code"] == "VALIDATION_ERROR"
+
+    delete_operation = valid_request_payload()
+    patched_section(delete_operation, "access", {"requestedOperation": "DELETE"})
+    delete_response = client.post("/api/v1/hosted-demo/access-decisions", json=delete_operation)
+    assert delete_response.status_code == 422
+    assert delete_response.json()["error"]["code"] == "VALIDATION_ERROR"
 
 
 def test_hosted_demo_api_enabled_access_is_metadata_only_and_source_bound() -> None:
@@ -165,6 +202,16 @@ def test_hosted_demo_api_enabled_access_is_metadata_only_and_source_bound() -> N
             enabled=True,
             allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
             allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+            allowed_session_binding_hashes=frozenset(
+                {
+                    build_hosted_demo_session_binding_hash(
+                        tenant_id="tenant_local",
+                        invite_id="invite_001",
+                        session_id="session_001",
+                        session_secret="fake-session-input",
+                    )
+                }
+            ),
             per_session_quota=2,
             global_quota=2,
         )
@@ -182,12 +229,15 @@ def test_hosted_demo_api_enabled_access_is_metadata_only_and_source_bound() -> N
     assert body["source"]["evaluationStatus"] == "PASSED"
     assert body["providerPosture"]["allowNetworkEgress"] is False
     assert body["providerPosture"]["realProviderCallsEnabled"] is False
+    assert body["quota"]["idempotencyScope"].startswith("idem_scope_")
     encoded = json.dumps(body)
     assert "contentBase64" not in encoded
     assert "sourceScriptText" not in encoded
     assert "translatedScriptText" not in encoded
     assert "fake-invite-input" not in encoded
     assert "fake-session-input" not in encoded
+    assert "session_001" not in encoded
+    assert "idem_001" not in encoded
 
 
 def test_hosted_demo_api_maps_failed_eval_and_pending_deletion_to_safe_errors() -> None:
@@ -197,6 +247,16 @@ def test_hosted_demo_api_maps_failed_eval_and_pending_deletion_to_safe_errors() 
             enabled=True,
             allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
             allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+            allowed_session_binding_hashes=frozenset(
+                {
+                    build_hosted_demo_session_binding_hash(
+                        tenant_id="tenant_local",
+                        invite_id="invite_001",
+                        session_id="session_001",
+                        session_secret="fake-session-input",
+                    )
+                }
+            ),
         )
     )
     client = TestClient(app)
@@ -215,6 +275,7 @@ def test_hosted_demo_api_maps_failed_eval_and_pending_deletion_to_safe_errors() 
         {
             "retentionState": "PENDING_DELETION",
             "deletionState": "PENDING",
+            "deletionRequestedAt": datetime.now(UTC).isoformat(),
             "providerDeletionStatus": "PENDING",
         },
     )

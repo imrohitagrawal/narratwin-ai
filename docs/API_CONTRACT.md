@@ -285,19 +285,29 @@ account, provider key, paid spend, or real provider call. It is disabled by
 default in local/dev/test/CI. `X-Local-User-Id` is not hosted authentication and
 does not grant this endpoint access.
 
-The request body is parsed before schema validation so duplicate JSON keys fail
-closed with `400 DUPLICATE_JSON_KEY`. Boundary models use `extra="forbid"` and
-reject unexpected fields. All supplied scripts, transcripts, provider outputs,
-display text, access inputs, artifact metadata, quota counters, and retention
-metadata are untrusted.
+The request body is parsed before schema validation so malformed JSON fails
+closed with `400 MALFORMED_JSON`, non-object JSON fails with
+`400 INVALID_JSON_OBJECT`, and duplicate JSON keys fail with
+`400 DUPLICATE_JSON_KEY`. Boundary models use `extra="forbid"` and reject
+unexpected fields. All supplied scripts, transcripts, provider outputs, display
+text, access inputs, artifact metadata, quota counters, and retention metadata
+are untrusted.
 
-The request binds artifact metadata to source run ID, trace ID, language,
-audience, script checksum, citation refs, evaluation ID/status/checksum,
-optional Stage 6/Stage 7 metadata checksums, disclosure text/version, invite and
-session state, quota units, retention state, deletion state, and tombstone
-evidence. The response returns only metadata, hashed access identifiers, bounded
-quota state, retention/deletion state, disclosure version, disabled-provider
-posture, and redacted observability fields.
+The request is view-only: `requestedOperation` must be `VIEW`. Invite/session
+access requires local/fake secret hashes plus a bound
+`tenantId + inviteId + sessionId + sessionSecret` hash; forged session IDs cannot
+reuse a valid session secret to bypass access or per-session quota. The local
+fake `localOutcome` field exists only to simulate fake worker success, refund
+before side effect, and timeout-after-accepted behavior in tests.
+
+The request binds artifact metadata to tenant ID, project ID, actor ID, source
+run ID, trace ID, language, audience, script checksum, citation refs, evaluation
+ID/status/checksum, optional Stage 6/Stage 7 metadata checksums, disclosure
+text/version, invite and session state, quota units, retention state, deletion
+state, and tombstone evidence. The response returns only metadata, hashed access
+identifiers, redacted idempotency scope, bounded quota state,
+retention/deletion state, disclosure version, disabled-provider posture, and
+redacted observability fields.
 
 The response must not include `contentBase64`, `sourceScriptText`,
 `translatedScriptText`, raw prompts, raw uploads, raw scripts, provider
@@ -305,6 +315,8 @@ payloads, unsafe URLs, invite secrets, session secrets, cookies, tokens,
 provider keys, or media bytes. Pending deletion is not terminal deletion proof;
 `DELETED` requires a tombstone checksum, deletion evidence ID, terminal
 fake/local provider deletion status, and `localOnlyProviderEvidence`.
+`retentionState=ACTIVE` must not carry pending or deleted evidence, and
+`retentionState=PENDING_DELETION` must carry only pending deletion evidence.
 
 Core states:
 
@@ -317,11 +329,13 @@ Core states:
 | `deletionState` | `NOT_REQUESTED`, `PENDING`, `DELETED`, `FAILED` |
 | `providerDeletionStatus` | `NOT_REQUESTED`, `PENDING`, `FAKE_LOCAL_DELETED`, `FAILED` |
 
-Validation errors include `VALIDATION_ERROR`, `UNSAFE_URL`,
+Validation errors include `MALFORMED_JSON`, `INVALID_JSON_OBJECT`,
+`DUPLICATE_JSON_KEY`, `VALIDATION_ERROR`, `UNSAFE_URL`,
 `UNSAFE_DISPLAY_TEXT`, `ARTIFACT_TYPE_MISMATCH`, `ARTIFACT_TOO_LARGE`,
 `ARTIFACT_CHECKSUM_MISMATCH`, `EVALUATION_NOT_PASSED`,
 `EVALUATION_CHECKSUM_MISMATCH`, `CITATION_MISMATCH`,
-`DELETION_EVIDENCE_INCOMPLETE`, and `IDEMPOTENCY_CONFLICT`.
+`RETENTION_STATE_MISMATCH`, `DELETION_EVIDENCE_INCOMPLETE`, and
+`IDEMPOTENCY_CONFLICT`.
 
 ## Project Endpoints
 
