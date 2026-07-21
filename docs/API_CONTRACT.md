@@ -296,27 +296,47 @@ are untrusted.
 The request is view-only: `requestedOperation` must be `VIEW`. Invite/session
 access requires local/fake secret hashes plus a bound
 `tenantId + inviteId + sessionId + sessionSecret` hash; forged session IDs cannot
-reuse a valid session secret to bypass access or per-session quota. The local
-fake `localOutcome` field exists only to simulate fake worker success, refund
-before side effect, and timeout-after-accepted behavior in tests.
+reuse a valid session secret to bypass access or per-session quota. The current
+invite/session credential posture and retention terminal state are checked
+before any idempotent replay is returned. Caller-supplied `sessionExpiresAt`
+cannot extend a session beyond the configured local/fake TTL. The local fake
+`localOutcome` field exists only to simulate fake worker success, refund before
+side effect, and timeout-after-accepted behavior in tests.
 
 The request binds artifact metadata to tenant ID, project ID, actor ID, source
 run ID, trace ID, language, audience, script checksum, citation refs, evaluation
 ID/status/checksum, optional Stage 6/Stage 7 metadata checksums, disclosure
 text/version, invite and session state, quota units, retention state, deletion
 state, and tombstone evidence. The response returns only metadata, hashed access
-identifiers, redacted idempotency scope, bounded quota state,
-retention/deletion state, disclosure version, disabled-provider posture, and
-redacted observability fields.
+identifiers, public access/idempotency identifiers derived without
+invite/session secret material, a redacted request checksum that excludes
+invite/session secret-derived material, bounded quota state,
+retention/deletion state, an allowlisted disclosure version/text,
+disabled-provider posture, and redacted observability fields.
 
 The response must not include `contentBase64`, `sourceScriptText`,
 `translatedScriptText`, raw prompts, raw uploads, raw scripts, provider
 payloads, unsafe URLs, invite secrets, session secrets, cookies, tokens,
-provider keys, or media bytes. Pending deletion is not terminal deletion proof;
-`DELETED` requires a tombstone checksum, deletion evidence ID, terminal
-fake/local provider deletion status, and `localOnlyProviderEvidence`.
-`retentionState=ACTIVE` must not carry pending or deleted evidence, and
-`retentionState=PENDING_DELETION` must carry only pending deletion evidence.
+provider keys, or media bytes, including when those strings are supplied inside
+display/disclosure text. Encoded unsafe URLs and encoded prompt-injection
+markers are rejected after bounded canonicalization. Disclosure text is
+allowlisted to the local/mock no-cloned-identity/no-real-provider wording.
+Pending deletion is not terminal deletion proof; `DELETED` request metadata must
+carry deterministic local/fake tombstone checksum, tombstone ID, deletion
+evidence ID, terminal fake/local provider deletion status,
+`deletionRequestedAt`, `deletedAt`, and `localOnlyProviderEvidence` bound to
+artifact/source/retention metadata. Caller-supplied terminal tombstone metadata
+is validation-only denial metadata and must not seed terminal retention state.
+Only trusted in-process local/fake evidence can record stored pending/deleted
+local retention state, keyed to source/artifact identity without trusting
+caller-controlled `retentionRecordId`. That trusted terminal evidence blocks
+stale active idempotency replay from returning reviewer-visible artifact
+metadata and is returned in the denial response instead of stale active
+retention metadata. Trusted terminal evidence is monotonic for a source/artifact
+subject: `PENDING_DELETION` may advance to `DELETED`, but `DELETED` cannot be
+downgraded by later pending markers. `retentionState=ACTIVE` must not carry
+pending or deleted evidence, and `retentionState=PENDING_DELETION` must carry
+only pending deletion evidence.
 
 Core states:
 

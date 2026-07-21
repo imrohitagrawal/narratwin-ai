@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from threading import RLock
 from typing import Any, Literal
 from urllib.parse import unquote
@@ -15,6 +15,9 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 HOSTED_DEMO_DISCLOSURE_VERSION = "hosted-demo-disclosure-v1"
+HOSTED_DEMO_ALLOWED_DISCLOSURE_TEXT = (
+    "AI-generated demo using local mock providers; no cloned identity or real provider call."
+)
 MAX_HOSTED_DEMO_ARTIFACT_BYTES = 10_000_000
 SAFE_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 CHECKSUM_PATTERN = re.compile(r"^sha256:[a-f0-9]{64}$")
@@ -30,6 +33,27 @@ PROMPT_INJECTION_MARKERS = (
     "developer message",
     "jailbreak",
     "<script",
+)
+RAW_OUTPUT_MARKERS = (
+    "raw prompt",
+    "raw script",
+    "source script text",
+    "translated script text",
+    "sourcescripttext",
+    "translatedscripttext",
+    "contentbase64",
+    "provider payload",
+    "media bytes",
+)
+CLONED_IDENTITY_MARKERS = (
+    "using cloned identity",
+    "with cloned identity",
+    "cloned face",
+    "cloned voice",
+    "digital twin",
+    "real-person likeness",
+    "real person likeness",
+    "replica profile",
 )
 ARTIFACT_MIME_BY_SUFFIX = {
     ".html": "text/html",
@@ -167,6 +191,51 @@ def build_hosted_demo_session_binding_hash(
     )
 
 
+def _isoformat_utc(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(UTC).isoformat()
+
+
+def build_hosted_demo_tombstone_checksum(
+    *,
+    request: HostedDemoAccessRequest,
+    deleted_at: datetime,
+) -> str:
+    return stable_checksum(
+        (
+            "hosted-demo-tombstone-v1",
+            request.artifact.artifact_id,
+            request.artifact.artifact_kind,
+            request.artifact.artifact_checksum,
+            request.source.tenant_id,
+            request.source.project_id,
+            request.source.actor_id,
+            request.source.source_run_id,
+            request.source.trace_id,
+            request.source.script_checksum,
+            request.source.evaluation_checksum,
+            request.retention.retention_record_id,
+            request.retention.retention_state,
+            request.retention.deletion_state,
+            _isoformat_utc(request.retention.deletion_requested_at),
+            _isoformat_utc(deleted_at),
+            request.retention.provider_deletion_status,
+            request.retention.local_only_provider_evidence,
+        )
+    )
+
+
+def build_hosted_demo_tombstone_id(tombstone_checksum: str) -> str:
+    return "tombstone_" + tombstone_checksum[7:23]
+
+
+def build_hosted_demo_deletion_evidence_id(tombstone_checksum: str) -> str:
+    return "deletion_evidence_" + tombstone_checksum[7:23]
+
+
 def parse_hosted_demo_json(raw_body: bytes) -> dict[str, Any]:
     def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
         seen: set[str] = set()
@@ -201,14 +270,19 @@ def _validate_checksum(value: str | None, *, field_name: str) -> str | None:
     return value
 
 
+def _canonicalize_text(value: str) -> str:
+    normalized = value.strip()
+    for _ in range(8):
+        decoded = unquote(normalized)
+        if decoded == normalized:
+            break
+        normalized = decoded.strip()
+    return normalized
+
+
 def _contains_unsafe_url(value: object) -> bool:
     if isinstance(value, str):
-        normalized = value.strip()
-        for _ in range(2):
-            decoded = unquote(normalized)
-            if decoded == normalized:
-                break
-            normalized = decoded.strip()
+        normalized = _canonicalize_text(value)
         return bool(UNSAFE_URL_PATTERN.search(normalized))
     if isinstance(value, dict):
         return any(_contains_unsafe_url(item) for item in value.values())
@@ -227,12 +301,35 @@ def _validate_safe_file_name(value: str) -> str:
 
 def _contains_prompt_injection_marker(value: object) -> bool:
     if isinstance(value, str):
-        lowered = value.lower()
+        lowered = _canonicalize_text(value).lower()
         return any(marker in lowered for marker in PROMPT_INJECTION_MARKERS)
     if isinstance(value, dict):
         return any(_contains_prompt_injection_marker(item) for item in value.values())
     if isinstance(value, list):
         return any(_contains_prompt_injection_marker(item) for item in value)
+    return False
+
+
+def _contains_raw_output_marker(value: object) -> bool:
+    if isinstance(value, str):
+        lowered = _canonicalize_text(value).lower()
+        compact = re.sub(r"[^a-z0-9]+", "", lowered)
+        return any(marker in lowered or marker.replace(" ", "") in compact for marker in RAW_OUTPUT_MARKERS)
+    if isinstance(value, dict):
+        return any(_contains_raw_output_marker(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_raw_output_marker(item) for item in value)
+    return False
+
+
+def _contains_cloned_identity_marker(value: object) -> bool:
+    if isinstance(value, str):
+        lowered = _canonicalize_text(value).lower()
+        return any(marker in lowered for marker in CLONED_IDENTITY_MARKERS)
+    if isinstance(value, dict):
+        return any(_contains_cloned_identity_marker(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_cloned_identity_marker(item) for item in value)
     return False
 
 
@@ -561,11 +658,17 @@ class _QuotaReservation:
 
 
 @dataclass
+class _TerminalRetentionEvidence:
+    retention: HostedDemoRetentionRecord
+
+
+@dataclass
 class HostedDemoAccessService:
     config: HostedDemoAccessConfig = field(default_factory=HostedDemoAccessConfig)
     redacted_events: list[dict[str, ErrorDetailValue]] = field(default_factory=list)
     _reservations: dict[str, _QuotaReservation] = field(default_factory=dict)
     _session_units: dict[str, int] = field(default_factory=dict)
+    _retention_terminal_states: dict[str, _TerminalRetentionEvidence] = field(default_factory=dict)
     _global_units: int = 0
     _lock: RLock = field(default_factory=RLock, init=False, repr=False)
 
@@ -581,7 +684,19 @@ class HostedDemoAccessService:
         self.redacted_events.clear()
         self._reservations.clear()
         self._session_units.clear()
+        self._retention_terminal_states.clear()
         self._global_units = 0
+
+    def record_local_retention_terminal_state(self, request: HostedDemoAccessRequest) -> None:
+        self._validate_request(request)
+        if request.retention.retention_state not in {"PENDING_DELETION", "DELETED"}:
+            raise HostedDemoError(
+                422,
+                "RETENTION_STATE_MISMATCH",
+                "Trusted local retention markers must be pending deletion or deleted.",
+            )
+        with self._lock:
+            self._record_retention_terminal_state(request)
 
     @property
     def quota_reserved_count(self) -> int:
@@ -594,14 +709,8 @@ class HostedDemoAccessService:
             self._record_validation_error(request, exc)
             raise
         request_checksum = self._request_checksum(request)
-        idempotency_scope = f"{request.source.tenant_id}:{request.access.session_id}:{request.idempotency_key}"
+        idempotency_scope = self._idempotency_scope(request)
         with self._lock:
-            existing = self._reservations.get(idempotency_scope)
-            if existing is not None:
-                if existing.request_checksum != request_checksum:
-                    raise HostedDemoError(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was replayed with different input.")
-                return existing.decision
-
             if not self.config.enabled:
                 return self._deny(
                     request,
@@ -621,6 +730,24 @@ class HostedDemoAccessService:
                     quota_state="NOT_RESERVED",
                     quota_outcome="auth_denied",
                 )
+            stored_retention_denial = self._stored_retention_denial_reason(request)
+            if stored_retention_denial is not None:
+                return self._deny(
+                    request,
+                    request_checksum=request_checksum,
+                    idempotency_scope=idempotency_scope,
+                    reason=self._retention_denial_for_state(stored_retention_denial.retention.retention_state),
+                    quota_state="NOT_RESERVED",
+                    quota_outcome="retention_denied",
+                    retention_record=stored_retention_denial.retention,
+                )
+
+            existing = self._reservations.get(idempotency_scope)
+            if existing is not None:
+                if existing.request_checksum != request_checksum:
+                    raise HostedDemoError(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was replayed with different input.")
+                return existing.decision
+
             retention_denial = self._retention_denial_reason(request)
             if retention_denial is not None:
                 return self._deny(
@@ -710,6 +837,16 @@ class HostedDemoAccessService:
             raise HostedDemoError(422, "UNSAFE_URL", "Hosted-demo input contains an unsafe URL.")
         if _contains_prompt_injection_marker(dumped):
             raise HostedDemoError(422, "UNSAFE_DISPLAY_TEXT", "Hosted-demo display text contains unsafe instructions.")
+        if _contains_raw_output_marker(dumped):
+            raise HostedDemoError(422, "UNSAFE_DISPLAY_TEXT", "Hosted-demo display text contains raw output markers.")
+        if _contains_cloned_identity_marker(dumped):
+            raise HostedDemoError(
+                422,
+                "UNSAFE_DISPLAY_TEXT",
+                "Hosted-demo display text crosses the Checkpoint 1 identity boundary.",
+            )
+        if request.disclosure.disclosure_text != HOSTED_DEMO_ALLOWED_DISCLOSURE_TEXT:
+            raise HostedDemoError(422, "UNSAFE_DISPLAY_TEXT", "Hosted-demo disclosure text is not allowlisted.")
         self._validate_artifact(request)
         self._validate_evaluation(request)
         self._validate_retention(request)
@@ -770,6 +907,7 @@ class HostedDemoAccessService:
         retention = request.retention
         terminal = (
             retention.deletion_state == "DELETED"
+            and retention.deletion_requested_at is not None
             and retention.deleted_at is not None
             and retention.tombstone_id is not None
             and retention.tombstone_checksum is not None
@@ -818,6 +956,29 @@ class HostedDemoAccessService:
                     "DELETION_EVIDENCE_INCOMPLETE",
                     "Deleted hosted-demo records require terminal local tombstone evidence.",
                 )
+            assert retention.deleted_at is not None
+            assert retention.deletion_requested_at is not None
+            if retention.deleted_at < retention.deletion_requested_at:
+                raise HostedDemoError(
+                    422,
+                    "DELETION_EVIDENCE_INCOMPLETE",
+                    "Deleted hosted-demo records require deletion after request time.",
+                )
+            expected_tombstone_checksum = build_hosted_demo_tombstone_checksum(
+                request=request,
+                deleted_at=retention.deleted_at,
+            )
+            if (
+                retention.tombstone_checksum != expected_tombstone_checksum
+                or retention.tombstone_id != build_hosted_demo_tombstone_id(expected_tombstone_checksum)
+                or retention.deletion_evidence_id
+                != build_hosted_demo_deletion_evidence_id(expected_tombstone_checksum)
+            ):
+                raise HostedDemoError(
+                    422,
+                    "DELETION_EVIDENCE_INCOMPLETE",
+                    "Deleted hosted-demo records require deterministic local/fake tombstone metadata.",
+                )
 
     def _access_denial_reason(self, request: HostedDemoAccessRequest) -> str | None:
         now = datetime.now(UTC)
@@ -825,6 +986,8 @@ class HostedDemoAccessService:
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=UTC)
         if request.access.session_state != "ACTIVE" or expires_at <= now:
+            return "SESSION_DENIED"
+        if expires_at > now + timedelta(seconds=self.config.session_ttl_seconds):
             return "SESSION_DENIED"
         if self.config.require_invite and hash_hosted_demo_secret(request.access.invite_secret) not in self.config.allowed_invite_hashes:
             return "INVITE_DENIED"
@@ -846,6 +1009,27 @@ class HostedDemoAccessService:
         if expires_at <= now:
             return "RETENTION_EXPIRED"
         return None
+
+    def _retention_denial_for_state(self, retention_state: str) -> str:
+        if retention_state == "PENDING_DELETION":
+            return "RETENTION_PENDING_DELETION"
+        return "RETENTION_DELETED"
+
+    def _stored_retention_denial_reason(self, request: HostedDemoAccessRequest) -> _TerminalRetentionEvidence | None:
+        stored = self._retention_terminal_states.get(self._retention_subject_hash(request))
+        if stored is not None and request.retention.retention_state == "ACTIVE":
+            return stored
+        return None
+
+    def _record_retention_terminal_state(self, request: HostedDemoAccessRequest) -> None:
+        if request.retention.retention_state in {"PENDING_DELETION", "DELETED"}:
+            subject_hash = self._retention_subject_hash(request)
+            existing = self._retention_terminal_states.get(subject_hash)
+            if existing is not None and existing.retention.retention_state == "DELETED":
+                return
+            self._retention_terminal_states[subject_hash] = _TerminalRetentionEvidence(
+                retention=self._retention_record_from_request(request)
+            )
 
     def _has_quota(self, request: HostedDemoAccessRequest) -> bool:
         session_hash = self._quota_subject_hash(request)
@@ -875,6 +1059,32 @@ class HostedDemoAccessService:
 
     def _quota_subject_hash(self, request: HostedDemoAccessRequest) -> str:
         return "quota_subject_" + self._session_binding_hash(request)[7:]
+
+    def _retention_subject_hash(self, request: HostedDemoAccessRequest) -> str:
+        return stable_checksum(
+            (
+                "hosted-demo-retention-subject-v2",
+                request.source.tenant_id,
+                request.source.project_id,
+                request.source.source_run_id,
+                request.artifact.artifact_id,
+                request.artifact.artifact_checksum,
+            )
+        )
+
+    def _idempotency_scope(self, request: HostedDemoAccessRequest) -> str:
+        return stable_checksum(
+            (
+                "hosted-demo-idempotency-scope-v2",
+                request.source.tenant_id,
+                request.access.invite_id,
+                request.access.session_id,
+                request.idempotency_key,
+                hash_hosted_demo_secret(request.access.invite_secret),
+                hash_hosted_demo_secret(request.access.session_secret),
+                self._session_binding_hash(request),
+            )
+        )
 
     def _store_reservation(
         self,
@@ -906,6 +1116,7 @@ class HostedDemoAccessService:
         reservation_id: str | None = None,
         retry_after_seconds: int | None = None,
         backoff_seconds: int | None = None,
+        retention_record: HostedDemoRetentionRecord | None = None,
     ) -> HostedDemoDecision:
         decision = self._decision(
             request,
@@ -919,6 +1130,7 @@ class HostedDemoAccessService:
             reservation_id=reservation_id,
             retry_after_seconds=retry_after_seconds,
             backoff_seconds=backoff_seconds,
+            retention_record=retention_record,
         )
         self._record_event(decision)
         self._store_reservation(
@@ -945,12 +1157,16 @@ class HostedDemoAccessService:
         reservation_id: str | None = None,
         retry_after_seconds: int | None = None,
         backoff_seconds: int | None = None,
+        retention_record: HostedDemoRetentionRecord | None = None,
     ) -> HostedDemoDecision:
         quota_remaining = max(0, self.config.global_quota - self._global_units)
         status_code = 200 if access_state in {"GRANTED", "HELD"} else 403
-        redacted_idempotency_scope = "idem_scope_" + stable_checksum(
-            ("hosted-demo-idempotency-scope-v1", idempotency_scope)
-        )[7:31]
+        response_request_checksum = self._response_request_checksum(request)
+        redacted_idempotency_scope = self._public_idempotency_scope(
+            request,
+            response_request_checksum=response_request_checksum,
+        )
+        effective_retention = retention_record or self._retention_record_from_request(request)
         return HostedDemoDecision(
             providerPosture=HostedDemoProviderPosture(
                 hostedDemoEnabled=self.config.enabled,
@@ -971,7 +1187,10 @@ class HostedDemoAccessService:
             source=HostedDemoSourceRecord.model_validate(request.source.model_dump(by_alias=True)),
             disclosure=HostedDemoDisclosureRecord.model_validate(request.disclosure.model_dump(by_alias=True)),
             access=HostedDemoAccessRecord(
-                accessRecordId="access_" + stable_checksum((idempotency_scope, request_checksum))[7:23],
+                accessRecordId=self._public_access_record_id(
+                    request,
+                    response_request_checksum=response_request_checksum,
+                ),
                 accessState=access_state,
                 denialReason=denial_reason,
                 inviteIdHash=hash_hosted_demo_secret(request.access.invite_id),
@@ -991,34 +1210,37 @@ class HostedDemoAccessService:
                 retryAfterSeconds=retry_after_seconds,
                 backoffSeconds=backoff_seconds,
                 idempotencyScope=redacted_idempotency_scope,
-                requestChecksum=request_checksum,
+                requestChecksum=response_request_checksum,
             ),
-            retention=HostedDemoRetentionRecord(
-                retentionRecordId=request.retention.retention_record_id,
-                retentionState=request.retention.retention_state,
-                retentionExpiresAt=request.retention.retention_expires_at.isoformat(),
-                deletionState=request.retention.deletion_state,
-                deletionRequestedAt=(
-                    request.retention.deletion_requested_at.isoformat()
-                    if request.retention.deletion_requested_at is not None
-                    else None
-                ),
-                deletedAt=request.retention.deleted_at.isoformat() if request.retention.deleted_at is not None else None,
-                tombstoneId=request.retention.tombstone_id,
-                tombstoneChecksum=request.retention.tombstone_checksum,
-                deletionEvidenceId=request.retention.deletion_evidence_id,
-                providerDeletionStatus=request.retention.provider_deletion_status,
-                localOnlyProviderEvidence=request.retention.local_only_provider_evidence,
-            ),
+            retention=effective_retention,
             observability=HostedDemoObservabilityRecord(
                 event="hosted_demo.access_granted" if access_state == "GRANTED" else "hosted_demo.access_denied",
                 traceId=request.source.trace_id,
                 statusCode=status_code,
                 accessOutcome=access_state,
                 quotaOutcome=quota_outcome,
-                retentionState=request.retention.retention_state,
+                retentionState=effective_retention.retention_state,
                 artifactValidationResult="PASSED",
             ),
+        )
+
+    def _retention_record_from_request(self, request: HostedDemoAccessRequest) -> HostedDemoRetentionRecord:
+        return HostedDemoRetentionRecord(
+            retentionRecordId=request.retention.retention_record_id,
+            retentionState=request.retention.retention_state,
+            retentionExpiresAt=request.retention.retention_expires_at.isoformat(),
+            deletionState=request.retention.deletion_state,
+            deletionRequestedAt=(
+                request.retention.deletion_requested_at.isoformat()
+                if request.retention.deletion_requested_at is not None
+                else None
+            ),
+            deletedAt=request.retention.deleted_at.isoformat() if request.retention.deleted_at is not None else None,
+            tombstoneId=request.retention.tombstone_id,
+            tombstoneChecksum=request.retention.tombstone_checksum,
+            deletionEvidenceId=request.retention.deletion_evidence_id,
+            providerDeletionStatus=request.retention.provider_deletion_status,
+            localOnlyProviderEvidence=request.retention.local_only_provider_evidence,
         )
 
     def _record_event(self, decision: HostedDemoDecision) -> None:
@@ -1044,9 +1266,50 @@ class HostedDemoAccessService:
         redacted = request.model_dump(mode="json", by_alias=True)
         access = redacted["access"]
         assert isinstance(access, dict)
-        access["inviteSecret"] = "<redacted>"
-        access["sessionSecret"] = "<redacted>"
+        access["inviteSecret"] = hash_hosted_demo_secret(request.access.invite_secret)
+        access["sessionSecret"] = hash_hosted_demo_secret(request.access.session_secret)
         return stable_checksum(("hosted-demo-request-v1", redacted))
+
+    def _response_request_checksum(self, request: HostedDemoAccessRequest) -> str:
+        redacted = request.model_dump(mode="json", by_alias=True)
+        access = redacted["access"]
+        assert isinstance(access, dict)
+        access["inviteSecret"] = "[redacted]"
+        access["sessionSecret"] = "[redacted]"
+        return stable_checksum(("hosted-demo-response-request-v1", redacted))
+
+    def _public_idempotency_scope(
+        self,
+        request: HostedDemoAccessRequest,
+        *,
+        response_request_checksum: str,
+    ) -> str:
+        return "idem_scope_" + stable_checksum(
+            (
+                "hosted-demo-public-idempotency-scope-v1",
+                request.source.tenant_id,
+                request.access.invite_id,
+                request.access.session_id,
+                request.idempotency_key,
+                response_request_checksum,
+            )
+        )[7:31]
+
+    def _public_access_record_id(
+        self,
+        request: HostedDemoAccessRequest,
+        *,
+        response_request_checksum: str,
+    ) -> str:
+        return "access_" + stable_checksum(
+            (
+                "hosted-demo-public-access-record-v1",
+                request.source.tenant_id,
+                request.access.invite_id,
+                request.access.session_id,
+                response_request_checksum,
+            )
+        )[7:23]
 
 
 hosted_demo_service = HostedDemoAccessService()

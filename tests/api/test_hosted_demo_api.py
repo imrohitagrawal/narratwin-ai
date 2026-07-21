@@ -9,9 +9,13 @@ from fastapi.testclient import TestClient
 from backend.app.hosted_demo import (
     HOSTED_DEMO_DISCLOSURE_VERSION,
     HostedDemoAccessConfig,
+    HostedDemoAccessRequest,
+    build_hosted_demo_deletion_evidence_id,
     build_hosted_demo_artifact_checksum,
     build_hosted_demo_evaluation_checksum,
     build_hosted_demo_session_binding_hash,
+    build_hosted_demo_tombstone_checksum,
+    build_hosted_demo_tombstone_id,
     hash_hosted_demo_secret,
     hosted_demo_service,
 )
@@ -238,6 +242,360 @@ def test_hosted_demo_api_enabled_access_is_metadata_only_and_source_bound() -> N
     assert "fake-session-input" not in encoded
     assert "session_001" not in encoded
     assert "idem_001" not in encoded
+
+
+def test_hosted_demo_api_rejects_disclosure_raw_output_and_identity_boundary_canaries() -> None:
+    reset_app_state_for_tests()
+    hosted_demo_service.configure(
+        HostedDemoAccessConfig(
+            enabled=True,
+            allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
+            allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+            allowed_session_binding_hashes=frozenset(
+                {
+                    build_hosted_demo_session_binding_hash(
+                        tenant_id="tenant_local",
+                        invite_id="invite_001",
+                        session_id="session_001",
+                        session_secret="fake-session-input",
+                    )
+                }
+            ),
+        )
+    )
+    client = TestClient(app)
+
+    raw_output = valid_request_payload()
+    patched_section(
+        raw_output,
+        "disclosure",
+        {
+            "disclosureText": (
+                "sourceScriptText translatedScriptText contentBase64 provider payload canary raw script canary"
+            )
+        },
+    )
+    raw_response = client.post("/api/v1/hosted-demo/access-decisions", json=raw_output)
+    assert raw_response.status_code == 422
+    assert raw_response.json()["error"]["code"] == "UNSAFE_DISPLAY_TEXT"
+
+    clone_claim = valid_request_payload(idempotencyKey="clone_claim")
+    patched_section(
+        clone_claim,
+        "disclosure",
+        {"disclosureText": "AI-generated demo using cloned identity and a real-person likeness."},
+    )
+    clone_response = client.post("/api/v1/hosted-demo/access-decisions", json=clone_claim)
+    assert clone_response.status_code == 422
+    assert clone_response.json()["error"]["code"] == "UNSAFE_DISPLAY_TEXT"
+
+
+def test_hosted_demo_api_replay_cannot_bypass_secret_checks_or_terminal_retention() -> None:
+    reset_app_state_for_tests()
+    hosted_demo_service.configure(
+        HostedDemoAccessConfig(
+            enabled=True,
+            allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
+            allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+            allowed_session_binding_hashes=frozenset(
+                {
+                    build_hosted_demo_session_binding_hash(
+                        tenant_id="tenant_local",
+                        invite_id="invite_001",
+                        session_id="session_001",
+                        session_secret="fake-session-input",
+                    )
+                }
+            ),
+            per_session_quota=3,
+            global_quota=3,
+        )
+    )
+    client = TestClient(app)
+
+    active_payload = valid_request_payload(idempotencyKey="api_old_active")
+    active = client.post("/api/v1/hosted-demo/access-decisions", json=active_payload)
+    assert active.status_code == 200
+    assert active.json()["access"]["accessState"] == "GRANTED"
+
+    forged = valid_request_payload(idempotencyKey="api_old_active")
+    patched_section(forged, "access", {"inviteSecret": "wrong", "sessionSecret": "wrong"})
+    forged_response = client.post("/api/v1/hosted-demo/access-decisions", json=forged)
+    assert forged_response.status_code == 200
+    assert forged_response.json()["access"]["accessState"] == "DENIED"
+    assert forged_response.json()["access"]["denialReason"] == "INVITE_DENIED"
+
+    deleted_at = datetime.now(UTC)
+    deletion_requested_at = deleted_at - timedelta(minutes=1)
+    deletion_payload = valid_request_payload(idempotencyKey="api_delete_marker")
+    deletion_request_without_ids = HostedDemoAccessRequest.model_validate(
+        {
+            **deletion_payload,
+            "retention": {
+                **cast(dict[str, object], deletion_payload["retention"]),
+                "retentionState": "DELETED",
+                "deletionState": "DELETED",
+                "deletionRequestedAt": deletion_requested_at.isoformat(),
+                "deletedAt": deleted_at.isoformat(),
+                "providerDeletionStatus": "FAKE_LOCAL_DELETED",
+            },
+        }
+    )
+    tombstone_checksum = build_hosted_demo_tombstone_checksum(
+        request=deletion_request_without_ids,
+        deleted_at=deleted_at,
+    )
+    patched_section(
+        deletion_payload,
+        "retention",
+        {
+            "retentionState": "DELETED",
+            "deletionState": "DELETED",
+            "deletionRequestedAt": deletion_requested_at.isoformat(),
+            "deletedAt": deleted_at.isoformat(),
+            "tombstoneId": build_hosted_demo_tombstone_id(tombstone_checksum),
+            "tombstoneChecksum": tombstone_checksum,
+            "deletionEvidenceId": build_hosted_demo_deletion_evidence_id(tombstone_checksum),
+            "providerDeletionStatus": "FAKE_LOCAL_DELETED",
+        },
+    )
+    hosted_demo_service.record_local_retention_terminal_state(
+        HostedDemoAccessRequest.model_validate(deletion_payload)
+    )
+
+    stale_replay = client.post("/api/v1/hosted-demo/access-decisions", json=active_payload)
+    assert stale_replay.status_code == 200
+    assert stale_replay.json()["access"]["accessState"] == "DENIED"
+    assert stale_replay.json()["access"]["denialReason"] == "RETENTION_DELETED"
+    assert stale_replay.json()["artifact"]["artifactVisibility"] == "DENIED"
+    assert stale_replay.json()["retention"]["retentionState"] == "DELETED"
+    assert stale_replay.json()["retention"]["deletionState"] == "DELETED"
+    assert stale_replay.json()["retention"]["tombstoneId"] == build_hosted_demo_tombstone_id(tombstone_checksum)
+    assert stale_replay.json()["retention"]["tombstoneChecksum"] == tombstone_checksum
+
+
+def test_hosted_demo_api_caller_supplied_terminal_tombstone_does_not_poison_replay() -> None:
+    reset_app_state_for_tests()
+    hosted_demo_service.configure(
+        HostedDemoAccessConfig(
+            enabled=True,
+            allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
+            allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+            allowed_session_binding_hashes=frozenset(
+                {
+                    build_hosted_demo_session_binding_hash(
+                        tenant_id="tenant_local",
+                        invite_id="invite_001",
+                        session_id="session_001",
+                        session_secret="fake-session-input",
+                    )
+                }
+            ),
+            per_session_quota=3,
+            global_quota=3,
+        )
+    )
+    client = TestClient(app)
+
+    active_payload = valid_request_payload(idempotencyKey="api_caller_old_active")
+    active = client.post("/api/v1/hosted-demo/access-decisions", json=active_payload)
+    assert active.status_code == 200
+    assert active.json()["access"]["accessState"] == "GRANTED"
+
+    deleted_at = datetime.now(UTC)
+    deletion_requested_at = deleted_at - timedelta(minutes=1)
+    deletion_payload = valid_request_payload(idempotencyKey="api_caller_delete_marker")
+    deletion_request_without_ids = HostedDemoAccessRequest.model_validate(
+        {
+            **deletion_payload,
+            "retention": {
+                **cast(dict[str, object], deletion_payload["retention"]),
+                "retentionState": "DELETED",
+                "deletionState": "DELETED",
+                "deletionRequestedAt": deletion_requested_at.isoformat(),
+                "deletedAt": deleted_at.isoformat(),
+                "providerDeletionStatus": "FAKE_LOCAL_DELETED",
+            },
+        }
+    )
+    tombstone_checksum = build_hosted_demo_tombstone_checksum(
+        request=deletion_request_without_ids,
+        deleted_at=deleted_at,
+    )
+    patched_section(
+        deletion_payload,
+        "retention",
+        {
+            "retentionState": "DELETED",
+            "deletionState": "DELETED",
+            "deletionRequestedAt": deletion_requested_at.isoformat(),
+            "deletedAt": deleted_at.isoformat(),
+            "tombstoneId": build_hosted_demo_tombstone_id(tombstone_checksum),
+            "tombstoneChecksum": tombstone_checksum,
+            "deletionEvidenceId": build_hosted_demo_deletion_evidence_id(tombstone_checksum),
+            "providerDeletionStatus": "FAKE_LOCAL_DELETED",
+        },
+    )
+    caller_deleted = client.post("/api/v1/hosted-demo/access-decisions", json=deletion_payload)
+    assert caller_deleted.status_code == 200
+    assert caller_deleted.json()["access"]["denialReason"] == "RETENTION_DELETED"
+
+    replay = client.post("/api/v1/hosted-demo/access-decisions", json=active_payload)
+
+    assert replay.status_code == 200
+    assert replay.json()["access"]["accessState"] == "GRANTED"
+    assert replay.json()["artifact"]["artifactVisibility"] == "HOSTED_DEMO_REVIEWER"
+
+
+def test_hosted_demo_api_same_idempotency_terminal_tombstone_cannot_overwrite_active_replay() -> None:
+    reset_app_state_for_tests()
+    hosted_demo_service.configure(
+        HostedDemoAccessConfig(
+            enabled=True,
+            allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
+            allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+            allowed_session_binding_hashes=frozenset(
+                {
+                    build_hosted_demo_session_binding_hash(
+                        tenant_id="tenant_local",
+                        invite_id="invite_001",
+                        session_id="session_001",
+                        session_secret="fake-session-input",
+                    )
+                }
+            ),
+            per_session_quota=3,
+            global_quota=3,
+        )
+    )
+    client = TestClient(app)
+
+    active_payload = valid_request_payload(idempotencyKey="api_caller_same_idem")
+    active = client.post("/api/v1/hosted-demo/access-decisions", json=active_payload)
+    assert active.status_code == 200
+    assert active.json()["access"]["accessState"] == "GRANTED"
+
+    deleted_at = datetime.now(UTC)
+    deletion_requested_at = deleted_at - timedelta(minutes=1)
+    deletion_payload = valid_request_payload(idempotencyKey="api_caller_same_idem")
+    deletion_request_without_ids = HostedDemoAccessRequest.model_validate(
+        {
+            **deletion_payload,
+            "retention": {
+                **cast(dict[str, object], deletion_payload["retention"]),
+                "retentionState": "DELETED",
+                "deletionState": "DELETED",
+                "deletionRequestedAt": deletion_requested_at.isoformat(),
+                "deletedAt": deleted_at.isoformat(),
+                "providerDeletionStatus": "FAKE_LOCAL_DELETED",
+            },
+        }
+    )
+    tombstone_checksum = build_hosted_demo_tombstone_checksum(
+        request=deletion_request_without_ids,
+        deleted_at=deleted_at,
+    )
+    patched_section(
+        deletion_payload,
+        "retention",
+        {
+            "retentionState": "DELETED",
+            "deletionState": "DELETED",
+            "deletionRequestedAt": deletion_requested_at.isoformat(),
+            "deletedAt": deleted_at.isoformat(),
+            "tombstoneId": build_hosted_demo_tombstone_id(tombstone_checksum),
+            "tombstoneChecksum": tombstone_checksum,
+            "deletionEvidenceId": build_hosted_demo_deletion_evidence_id(tombstone_checksum),
+            "providerDeletionStatus": "FAKE_LOCAL_DELETED",
+        },
+    )
+    caller_deleted = client.post("/api/v1/hosted-demo/access-decisions", json=deletion_payload)
+    assert caller_deleted.status_code == 409
+    assert caller_deleted.json()["error"]["code"] == "IDEMPOTENCY_CONFLICT"
+
+    replay = client.post("/api/v1/hosted-demo/access-decisions", json=active_payload)
+    assert replay.status_code == 200
+    assert replay.json()["access"]["accessState"] == "GRANTED"
+    assert replay.json()["artifact"]["artifactVisibility"] == "HOSTED_DEMO_REVIEWER"
+    assert replay.json()["retention"]["retentionState"] == "ACTIVE"
+
+
+def test_hosted_demo_api_trusted_terminal_state_cannot_be_bypassed_by_changed_retention_record_id() -> None:
+    reset_app_state_for_tests()
+    hosted_demo_service.configure(
+        HostedDemoAccessConfig(
+            enabled=True,
+            allowed_invite_hashes=frozenset({hash_hosted_demo_secret("fake-invite-input")}),
+            allowed_session_hashes=frozenset({hash_hosted_demo_secret("fake-session-input")}),
+            allowed_session_binding_hashes=frozenset(
+                {
+                    build_hosted_demo_session_binding_hash(
+                        tenant_id="tenant_local",
+                        invite_id="invite_001",
+                        session_id="session_001",
+                        session_secret="fake-session-input",
+                    )
+                }
+            ),
+            per_session_quota=3,
+            global_quota=3,
+        )
+    )
+    client = TestClient(app)
+
+    active_payload = valid_request_payload(idempotencyKey="api_changed_retention_id_active")
+    active = client.post("/api/v1/hosted-demo/access-decisions", json=active_payload)
+    assert active.status_code == 200
+    assert active.json()["access"]["accessState"] == "GRANTED"
+
+    deleted_at = datetime.now(UTC)
+    deletion_requested_at = deleted_at - timedelta(minutes=1)
+    deletion_payload = valid_request_payload(idempotencyKey="api_changed_retention_id_delete")
+    deletion_request_without_ids = HostedDemoAccessRequest.model_validate(
+        {
+            **deletion_payload,
+            "retention": {
+                **cast(dict[str, object], deletion_payload["retention"]),
+                "retentionState": "DELETED",
+                "deletionState": "DELETED",
+                "deletionRequestedAt": deletion_requested_at.isoformat(),
+                "deletedAt": deleted_at.isoformat(),
+                "providerDeletionStatus": "FAKE_LOCAL_DELETED",
+            },
+        }
+    )
+    tombstone_checksum = build_hosted_demo_tombstone_checksum(
+        request=deletion_request_without_ids,
+        deleted_at=deleted_at,
+    )
+    patched_section(
+        deletion_payload,
+        "retention",
+        {
+            "retentionState": "DELETED",
+            "deletionState": "DELETED",
+            "deletionRequestedAt": deletion_requested_at.isoformat(),
+            "deletedAt": deleted_at.isoformat(),
+            "tombstoneId": build_hosted_demo_tombstone_id(tombstone_checksum),
+            "tombstoneChecksum": tombstone_checksum,
+            "deletionEvidenceId": build_hosted_demo_deletion_evidence_id(tombstone_checksum),
+            "providerDeletionStatus": "FAKE_LOCAL_DELETED",
+        },
+    )
+    hosted_demo_service.record_local_retention_terminal_state(
+        HostedDemoAccessRequest.model_validate(deletion_payload)
+    )
+
+    changed = valid_request_payload(idempotencyKey="api_changed_retention_id_replay")
+    patched_section(changed, "retention", {"retentionRecordId": "retention_evasive"})
+    replay = client.post("/api/v1/hosted-demo/access-decisions", json=changed)
+
+    assert replay.status_code == 200
+    assert replay.json()["access"]["accessState"] == "DENIED"
+    assert replay.json()["access"]["denialReason"] == "RETENTION_DELETED"
+    assert replay.json()["artifact"]["artifactVisibility"] == "DENIED"
+    assert replay.json()["retention"]["retentionState"] == "DELETED"
+    assert replay.json()["retention"]["retentionRecordId"] == "retention_001"
 
 
 def test_hosted_demo_api_maps_failed_eval_and_pending_deletion_to_safe_errors() -> None:
