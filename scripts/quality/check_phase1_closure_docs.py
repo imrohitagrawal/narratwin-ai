@@ -1307,10 +1307,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "#221",
-        "post-pr-218-status-reconciliation-active",
-        "post-pr-218-status-reconciliation-active",
-        "Issue #221 is the active post-PR-218 repository-ledger reconciliation after PR #218 merged issue #217 status reconciliation.",
+        "#223",
+        "post-pr-222-status-reconciliation-active",
+        "post-pr-222-status-reconciliation-active",
+        "Issue #223 is the active post-PR-222 repository-ledger reconciliation after PR #222 merged issue #221 status reconciliation.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
