@@ -1365,10 +1365,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "#235",
-        "demo-checkpoint1-contract-active",
-        "demo-checkpoint1-contract-active",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is the active Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract slice on branch phase-1-closure-process-235-demo-checkpoint1-contract; this row records the intended post-merge target state for issue #235. After the issue #235 PR merges, the next approved action is a future issue-linked provider abstraction plus real TTS PR, but provider egress, selected-provider setup, provider SDK/key use, model or voice selection, real provider calls, paid spend, avatar/video, hosted-demo access/quota, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden until future issue-linked PRs explicitly approve them with fresh source facts and executable safeguards.",
+        "#237",
+        "demo-checkpoint1-pr3-real-tts-active",
+        "demo-checkpoint1-pr3-real-tts-active",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is the active Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter slice on branch phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts; this row records the intended post-merge target state for issue #237. PR3 keeps paid providers optional and disabled by default for local/dev/test/CI, uses mock/local TTS as the default, permits no real provider calls in CI, and permits no provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, avatar/video provider work, hosted-demo access/quota/retention/demo polish, cloned identity, Product Mode 2, public distribution, or production-readiness claims. After the issue #237 PR merges, the next approved action is a future issue-linked avatar/video provider integration PR only if fresh source facts and executable safeguards are recorded first.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",

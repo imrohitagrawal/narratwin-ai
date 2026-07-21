@@ -1,7 +1,10 @@
 import base64
 import json
+import logging
 import threading
 from datetime import timedelta
+from pathlib import Path
+from typing import Any
 
 import pytest
 import srt  # type: ignore[import-untyped]
@@ -19,9 +22,97 @@ from backend.app.stage6 import (
     split_captions,
 )
 from backend.app.stage7 import build_source_evaluation_checksum
+from backend.app.tts_provider import ElevenLabsTTSProvider, InMemoryTTSQuotaLedger, TTSHTTPResponse, TTSProviderConfig
 
 # Stage 6 multilingual tests preserve source run_id trace metadata and citation
 # counts from the accepted grounded walkthrough script.
+
+
+class FakeTTSTransport:
+    def __init__(self, responses: list[TTSHTTPResponse | Exception]) -> None:
+        self.responses = responses
+        self.calls: list[dict[str, object]] = []
+
+    def post(
+        self,
+        *,
+        url: str,
+        headers: dict[str, str],
+        json_body: dict[str, object],
+        timeout_seconds: float,
+    ) -> TTSHTTPResponse:
+        self.calls.append(
+            {
+                "url": url,
+                "headers": headers,
+                "json_body": json_body,
+                "timeout_seconds": timeout_seconds,
+            }
+        )
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+
+def external_tts_config(**overrides: object) -> TTSProviderConfig:
+    values: dict[str, Any] = {
+        "provider_id": "elevenlabs",
+        "enabled": True,
+        "api_key": "sk_" + ("a" * 32),
+        "voice_id": "stock_voice_001",
+        "voice_provenance": "stock",
+        "model_id": "eleven_flash_v2_5",
+        "model_version": "2026-07-21-source-facts",
+        "supported_languages": ("en", "es", "fr", "hi"),
+        "max_input_characters": 4_000,
+        "max_audio_bytes": 256,
+        "timeout_seconds": 2.0,
+        "max_retries": 0,
+        "retry_backoff_seconds": 0.0,
+        "max_concurrent_requests": 1,
+    }
+    values.update(overrides)
+    return TTSProviderConfig(**values)
+
+
+def passed_eval_kwargs() -> dict[str, Any]:
+    return {
+        "source_run_id": "run_001",
+        "trace_id": "trace_001",
+        "source_context_ref_count": 1,
+        "source_citation_count": 1,
+        "source_context_ref_ids": ("ctx_001",),
+        "source_citation_indexes": (1,),
+        "source_claim_support_ids": ("claimsup_001",),
+        "source_evaluation_id": "eval_001",
+        "source_evaluation_checksum": build_source_evaluation_checksum(
+            source_evaluation_id="eval_001",
+            source_run_id="run_001",
+            trace_id="trace_001",
+            evaluation_status="PASSED",
+            source_context_ref_ids=("ctx_001",),
+            source_context_ref_count=1,
+            source_citation_indexes=(1,),
+            source_citation_count=1,
+        ),
+        "evaluation_status": "PASSED",
+    }
+
+
+def configure_external_tts(
+    service: Any,
+    transport: FakeTTSTransport,
+    *,
+    quota_limit: int = 1_000,
+    **config_overrides: object,
+) -> None:
+    service.external_tts_provider = ElevenLabsTTSProvider(
+        config=external_tts_config(**config_overrides),
+        transport=transport,
+        quota_ledger=InMemoryTTSQuotaLedger(character_limit=quota_limit),
+        sleep=lambda _seconds: None,
+    )
 
 
 def test_translation_preserves_project_terms_from_glossary() -> None:
@@ -113,6 +204,276 @@ def test_requested_voice_provider_falls_back_to_mock_provider() -> None:
     manifest = json.loads(base64.b64decode(result.voice.artifact.content_base64).decode("utf-8"))
     assert manifest["languageDisplayName"] == "French"
     assert manifest["mockAudioProfile"]["sampleRateHz"] == 16000
+
+
+def test_named_real_tts_provider_fails_closed_when_disabled_by_default() -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            target_language="es",
+            glossary_terms=["NarraTwin AI"],
+            requested_voice_provider="elevenlabs",
+            **passed_eval_kwargs(),
+        )
+
+    assert exc.value.status_code == 403
+    assert exc.value.code == "TTS_PROVIDER_DISABLED"
+
+
+def test_named_real_tts_provider_requires_passed_eval_and_source_evidence_before_transport() -> None:
+    service = create_stage6_service()
+    transport = FakeTTSTransport(
+        [TTSHTTPResponse(status_code=200, headers={"content-type": "audio/mpeg"}, body=b"audio")]
+    )
+    configure_external_tts(service, transport)
+
+    for evaluation_status in ("FAILED", "UNKNOWN"):
+        with pytest.raises(Stage6Error) as exc:
+            service.generate_multilingual_walkthrough(
+                source_script="NarraTwin AI creates grounded walkthrough scripts.",
+                target_language="es",
+                glossary_terms=["NarraTwin AI"],
+                requested_voice_provider="elevenlabs",
+                evaluation_status=evaluation_status,
+            )
+
+        assert exc.value.status_code == 422
+        assert exc.value.code == "TTS_SOURCE_EVALUATION_REQUIRED"
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            target_language="es",
+            glossary_terms=["NarraTwin AI"],
+            requested_voice_provider="elevenlabs",
+            **{**passed_eval_kwargs(), "source_evaluation_checksum": ""},
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "TTS_SOURCE_EVALUATION_REQUIRED"
+    assert transport.calls == []
+
+
+def test_translation_output_must_not_add_new_citation_markers_before_tts() -> None:
+    class CitationAddingTranslationProvider:
+        provider = "citation-adding-local"
+        provider_mode = "LOCAL"
+
+        def translate(
+            self,
+            *,
+            source_text: str,
+            source_language: str,
+            target_language: str,
+            glossary_terms: list[str],
+        ) -> TranslationProviderResult:
+            return TranslationProviderResult(
+                provider=self.provider,
+                provider_mode=self.provider_mode,
+                source_language=source_language,
+                target_language=target_language,
+                translated_text=source_text + " Unsupported extra claim. [999]",
+                preserved_terms=glossary_terms,
+            )
+
+    service = create_stage6_service()
+    service.translation_provider = CitationAddingTranslationProvider()
+    transport = FakeTTSTransport(
+        [TTSHTTPResponse(status_code=200, headers={"content-type": "audio/mpeg"}, body=b"audio")]
+    )
+    configure_external_tts(service, transport)
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+            target_language="es",
+            glossary_terms=["NarraTwin AI"],
+            requested_voice_provider="elevenlabs",
+            **passed_eval_kwargs(),
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "PROVIDER_OUTPUT_INVALID"
+    assert transport.calls == []
+
+
+def test_real_tts_audio_and_manifest_bind_source_eval_and_artifact_metadata() -> None:
+    service = create_stage6_service()
+    transport = FakeTTSTransport(
+        [
+            TTSHTTPResponse(
+                status_code=200,
+                headers={"content-type": "audio/mpeg", "history-item-id": "hist_001"},
+                body=b"mp3-bytes",
+            )
+        ]
+    )
+    configure_external_tts(service, transport)
+
+    result = service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        glossary_terms=["NarraTwin AI"],
+        requested_voice_provider="elevenlabs",
+        actor_id="audience_recruiter",
+        **passed_eval_kwargs(),
+    )
+
+    assert result.voice.provider == "elevenlabs"
+    assert result.voice.provider_mode == "OPTIONAL_EXTERNAL"
+    assert result.voice.audio_artifact is not None
+    assert result.artifacts.voice_audio == result.voice.audio_artifact
+    manifest = json.loads(base64.b64decode(result.voice.artifact.content_base64).decode("utf-8"))
+    assert manifest["schemaVersion"] == "stage6-tts-manifest-v2"
+    assert manifest["provider"] == "elevenlabs"
+    assert manifest["providerModelId"] == "eleven_flash_v2_5"
+    assert manifest["providerModelVersion"] == "2026-07-21-source-facts"
+    assert manifest["providerHistoryItemId"] == "hist_001"
+    assert manifest["voiceProvenance"] == "stock"
+    assert manifest["sourceRunId"] == "run_001"
+    assert manifest["traceId"] == "trace_001"
+    assert manifest["audienceId"] == "audience_recruiter"
+    assert manifest["sourceEvaluationStatus"] == "PASSED"
+    assert manifest["sourceEvaluationChecksum"] == passed_eval_kwargs()["source_evaluation_checksum"]
+    assert manifest["sourceCitationIndexes"] == [1]
+    assert manifest["artifactChecksum"] == result.voice.audio_artifact.checksum
+    assert result.voice.audio_artifact.mime_type == "audio/mpeg"
+
+
+def test_real_tts_idempotency_replay_does_not_duplicate_provider_spend() -> None:
+    service = create_stage6_service()
+    transport = FakeTTSTransport(
+        [
+            TTSHTTPResponse(
+                status_code=200,
+                headers={"content-type": "audio/mpeg", "history-item-id": "hist_001"},
+                body=b"mp3-bytes",
+            )
+        ]
+    )
+    configure_external_tts(service, transport)
+    request = {
+        "source_script": "NarraTwin AI creates grounded walkthrough scripts. [1]",
+        "target_language": "es",
+        "glossary_terms": ["NarraTwin AI"],
+        "requested_voice_provider": "elevenlabs",
+        "idempotency_scope": "tenant:user:project:run_001",
+        "idempotency_key": "tts-spend",
+        **passed_eval_kwargs(),
+    }
+
+    first = service.generate_multilingual_walkthrough(**request)
+    second = service.generate_multilingual_walkthrough(**request)
+
+    assert second.multilingual_run_id == first.multilingual_run_id
+    assert len(transport.calls) == 1
+
+
+def test_tts_artifact_deletion_tombstones_audio_and_records_provider_evidence() -> None:
+    service = create_stage6_service()
+    transport = FakeTTSTransport(
+        [
+            TTSHTTPResponse(
+                status_code=200,
+                headers={"content-type": "audio/mpeg", "history-item-id": "hist_001"},
+                body=b"mp3-bytes",
+            )
+        ]
+    )
+    configure_external_tts(service, transport)
+    result = service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        target_language="es",
+        glossary_terms=["NarraTwin AI"],
+        requested_voice_provider="elevenlabs",
+        **passed_eval_kwargs(),
+    )
+
+    deletion = service.delete_tts_artifacts(
+        multilingual_run_id=result.multilingual_run_id,
+        requested_by="auditor",
+        reason="retention-test",
+    )
+
+    assert deletion.multilingual_run_id == result.multilingual_run_id
+    assert deletion.provider == "elevenlabs"
+    assert deletion.provider_history_item_id == "hist_001"
+    assert deletion.local_tombstone is True
+    assert deletion.provider_deletion_status == "PENDING_PROVIDER_DELETE"
+    assert service.multilingual_runs[result.multilingual_run_id].voice.audio_artifact is None
+    assert service.tts_deletions[result.multilingual_run_id] == deletion
+
+
+def test_tts_artifact_deletion_updates_idempotency_replay_result() -> None:
+    service = create_stage6_service()
+    transport = FakeTTSTransport(
+        [
+            TTSHTTPResponse(
+                status_code=200,
+                headers={"content-type": "audio/mpeg", "history-item-id": "hist_001"},
+                body=b"mp3-bytes",
+            )
+        ]
+    )
+    configure_external_tts(service, transport)
+    request = {
+        "source_script": "NarraTwin AI creates grounded walkthrough scripts. [1]",
+        "target_language": "es",
+        "glossary_terms": ["NarraTwin AI"],
+        "requested_voice_provider": "elevenlabs",
+        "idempotency_scope": "tenant:user:project:run_001",
+        "idempotency_key": "tts-delete",
+        **passed_eval_kwargs(),
+    }
+    result = service.generate_multilingual_walkthrough(**request)
+
+    service.delete_tts_artifacts(
+        multilingual_run_id=result.multilingual_run_id,
+        requested_by="auditor",
+        reason="retention-test",
+    )
+    replayed = service.generate_multilingual_walkthrough(**request)
+
+    assert replayed.multilingual_run_id == result.multilingual_run_id
+    assert replayed.voice.audio_artifact is None
+    assert replayed.artifacts.voice_audio is None
+    assert len(transport.calls) == 1
+
+
+def test_restore_warning_redacts_poisoned_state_values(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    state_path = tmp_path / "stage6.json"
+    secret_like_value = "api" + "_key=" + "visible" + "-secret-token-value"
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "stage6-local-state-v2",
+                "multilingualRuns": [],
+                "requestDedupeIndex": [],
+                "idempotencyRecords": [
+                    {
+                        "idempotency_scope": "tenant:user:project:run",
+                        "endpoint": "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+                        "idempotency_key": "poisoned",
+                        "request_checksum": "sha256:test",
+                        "status": secret_like_value,
+                        "value": {"kind": "none"},
+                    }
+                ],
+                "counters": {"run": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with caplog.at_level(logging.WARNING, logger="backend.app.stage6"):
+        create_stage6_service(state_path=state_path)
+
+    assert caplog.records
+    assert secret_like_value not in caplog.text
+    assert "visible-secret-token-value" not in caplog.text
+    assert "Stage 6 idempotency record" in caplog.text
 
 
 def test_concurrent_duplicate_idempotency_key_is_rejected_in_flight() -> None:

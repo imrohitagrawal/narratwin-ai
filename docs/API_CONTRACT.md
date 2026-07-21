@@ -767,10 +767,15 @@ language, preserves glossary/project terms, generates SubRip subtitles, and
 returns downloadable script/subtitle artifacts plus a deterministic metadata
 artifact. The endpoint uses
 `TranslationProvider` and `TTSProvider` adapter interfaces with mock/local
-defaults; no paid provider is hardcoded or required for local/dev/test.
-Stage 6 does not synthesize real audio, does not play audio, does not clone a
-voice, and does not call non-local providers. The voice output is a downloadable
-JSON manifest from the mock/local `TTSProvider`.
+defaults; no paid provider is hardcoded or required for local/dev/test. Issue
+`#237` adds the TTS-only optional real-provider boundary. Mock/local TTS remains
+the default. A named real TTS provider such as `elevenlabs` fails closed unless
+an injected server-side provider config, fake/local transport in tests,
+source/eval binding, language/script-length checks, quota reservation,
+retry/timeout/backpressure controls, output validation, and redaction gates all
+pass. Stage 6 does not clone a voice and does not make real provider calls in
+CI. Real TTS output is Stage 6-only until a later avatar/video PR updates Stage
+7's local-only multilingual-bundle contract.
 
 Phase 1 Closure issue `#109` hardens Stage 6 durable replay for local durability
 evidence only. The API route now binds every multilingual run to a source run
@@ -793,9 +798,10 @@ Request:
 
 Supported Stage 6 target languages are `en`, `es`, `fr`, and `hi`. Unsupported
 language tags return `422 UNSUPPORTED_LANGUAGE` without exposing raw source text.
-When `requestedVoiceProvider` is unavailable, the response falls back to the mock
-local voice provider and records `fallbackReason =
-REQUESTED_PROVIDER_UNAVAILABLE`.
+When legacy `requestedVoiceProvider = external` is unavailable, the response
+falls back to the mock local voice provider and records `fallbackReason =
+REQUESTED_PROVIDER_UNAVAILABLE`. Named real providers fail closed instead of
+silently falling back, so disabled/missing/invalid config cannot be hidden.
 
 Request boundary limits:
 
@@ -819,21 +825,26 @@ Post-provider validation:
 - translated output must stay within the Stage 6 size limit
 - every configured glossary term present in the source script must remain present
   in translated output
-- every source citation marker such as `[1]` must remain present in translated
-  output before subtitles or downloadable artifacts are returned
+- every source citation marker such as `[1]` must remain present in the same
+  sequence in translated output before subtitles, TTS, or downloadable artifacts
+  are returned; extra citation markers fail closed
 - translated script, subtitles, metadata artifact, voice manifest, language
   tags, glossary terms, citation counts, provider mode/config, and artifact
   checksums must mutually agree before local durable replay accepts restored
   Stage 6 state
 - provider identifiers must satisfy the adapter identifier pattern
-- Voice provider artifacts must be JSON manifests with safe `.json` filenames,
-  `application/json` MIME type, decodable UTF-8 JSON object content, a checksum
-  matching the decoded manifest text, and an exact schema. The Stage 8 local
-  schema requires only `provider`, `providerMode`, `language`,
-  `languageDisplayName`, `textChecksum`, `durationSecondsEstimate`,
-  `mockAudioProfile`, and `disclosure`; `mockAudioProfile` allows only
-  `durationMillisecondsEstimate`, `sampleRateHz`, and `channels`. Unknown
-  top-level or nested fields fail with `PROVIDER_OUTPUT_INVALID`.
+- Mock voice provider artifacts remain JSON manifests with safe `.json`
+  filenames, `application/json` MIME type, decodable UTF-8 JSON object content,
+  a checksum matching the decoded manifest text, and the exact legacy mock
+  schema. Unknown top-level or nested fields fail with
+  `PROVIDER_OUTPUT_INVALID`.
+- Optional real TTS output uses a provider-neutral
+  `stage6-tts-manifest-v2` JSON manifest plus an optional normalized
+  `voiceAudio` artifact. The manifest stores source-run ID, trace ID, audience
+  ID, language, script checksum, citation refs/indexes, source evaluation
+  ID/status/checksum, provider ID/model/version/history ID, stock voice
+  provenance, audio MIME type, and audio checksum. It does not expose provider
+  keys, raw provider payloads, request bodies, or audio bytes.
 
 Response `201`:
 
@@ -885,6 +896,12 @@ Response `201`:
       "contentBase64": "base64-json",
       "checksum": "sha256:voice"
     },
+    "voiceAudio": {
+      "fileName": "run_123-es-voice.mp3",
+      "mimeType": "audio/mpeg",
+      "contentBase64": "base64-audio",
+      "checksum": "sha256:audio"
+    },
     "metadata": {
       "fileName": "run_123-es-metadata.json",
       "mimeType": "application/json",
@@ -919,13 +936,15 @@ Provider response schema:
   `voice.requestedProvider` are provider IDs, not a hardcoded provider enum.
 - `providerMode` is constrained to `LOCAL`, `DISABLED`, or
   `OPTIONAL_EXTERNAL`.
-- Current Stage 6 local/dev/test behavior uses `mock` and `LOCAL`.
+- Current Stage 6 local/dev/test behavior uses `mock` and `LOCAL`; fake
+  transports are used for optional real-provider tests.
 - `artifacts.metadata` is a JSON download that records source-run ID, trace ID,
   tenant/project/actor binding, source-text checksum, request checksum, source
   citation indexes/counts, source evaluation ID/status/checksum, claim-support
   IDs, glossary/preserved terms, provider metadata, and derived artifact
   checksums for deterministic local replay.
-- Adding another adapter requires code changes in `backend/app/stage6.py`,
+- Adding another adapter requires code changes in `backend/app/tts_provider.py`
+  and `backend/app/stage6.py`,
   API/contract updates in this file, tests in `tests/unit` and `tests/api`,
   third-party notices, and review of provider keys, egress, licensing, and
   output validation. A provider adapter must not require frontend-supplied
@@ -942,12 +961,26 @@ Failure modes:
 | 409 | `IDEMPOTENCY_IN_PROGRESS` | Duplicate request arrived while the first request is still pending |
 | 413 | `SOURCE_SCRIPT_TOO_LARGE` | Accepted source script exceeds the Stage 6 source limit |
 | 413 | `PROVIDER_OUTPUT_TOO_LARGE` | Translation provider output exceeds the Stage 6 output limit |
+| 413 | `TTS_SCRIPT_TOO_LARGE` | TTS text exceeds the configured provider character limit |
+| 413 | `TTS_PROVIDER_AUDIO_TOO_LARGE` | TTS provider audio exceeds the configured artifact limit |
+| 403 | `TTS_PROVIDER_DISABLED` | Named real TTS provider is disabled or not configured |
+| 403 | `TTS_PROVIDER_KEY_MISSING` | Named real TTS provider is missing a server-side key |
+| 403 | `TTS_PROVIDER_KEY_INVALID` | Named real TTS provider key fails local validation |
+| 403 | `TTS_VOICE_PROVENANCE_UNSUPPORTED` | TTS voice provenance is not stock/non-cloned for PR3 |
 | 422 | `SECRET_LIKE_CONTENT` | Glossary terms contain secret-like content and are rejected before provider calls |
 | 422 | `SOURCE_RUN_NOT_TRANSLATABLE` | Source run is not completed, did not pass evaluation, has no accepted script, or is missing required evaluation/context/claim-support evidence |
+| 422 | `TTS_SOURCE_EVALUATION_REQUIRED` | Named real TTS requires passed source evaluation and non-empty citation/context evidence |
+| 422 | `TTS_LANGUAGE_UNSUPPORTED` | Named real TTS provider does not support the target language |
 | 422 | `UNSUPPORTED_LANGUAGE` | Target language is not supported by Stage 6 |
 | 422 | `PROVIDER_OUTPUT_INVALID` | Provider output is empty, invalid, or failed glossary/citation preservation |
 | 422 | `VALIDATION_ERROR` | Request boundary validation failed, including glossary/provider field limits |
 | 429 | `RESOURCE_LIMIT_EXCEEDED` | Stage 6 idempotency record limit is exceeded for the request scope |
+| 429 | `TTS_QUOTA_EXHAUSTED` | TTS quota reservation failed before provider egress |
+| 429 | `TTS_PROVIDER_BACKPRESSURE` | TTS provider concurrency cap is reached before provider egress |
+| 502 | `TTS_PROVIDER_RESPONSE_INVALID` | TTS provider response shape, MIME type, or body is invalid |
+| 502 | `TTS_PROVIDER_RESPONSE_UNSAFE` | TTS provider returned URL-shaped output instead of inline audio bytes |
+| 503 | `TTS_PROVIDER_RETRYABLE_FAILURE` | TTS provider returned a retryable status after bounded retries |
+| 504 | `TTS_PROVIDER_TIMEOUT` | TTS provider timed out after bounded retries |
 
 Subtitle artifacts must be valid SubRip (`.srt`) with deterministic timing.
 Accessibility notes for Stage 6: generated subtitles are downloadable text

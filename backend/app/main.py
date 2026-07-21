@@ -637,6 +637,7 @@ class MultilingualArtifactsResponse(BaseModel):
     translated_script: DownloadableArtifactResponse = Field(alias="translatedScript")
     subtitles: DownloadableArtifactResponse
     voice_manifest: DownloadableArtifactResponse = Field(alias="voiceManifest")
+    voice_audio: DownloadableArtifactResponse | None = Field(default=None, alias="voiceAudio")
     metadata: DownloadableArtifactResponse
 
 

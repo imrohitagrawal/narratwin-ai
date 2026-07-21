@@ -9,7 +9,7 @@ import logging
 import re
 import threading
 from collections.abc import Iterable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import timedelta
 from pathlib import Path
 from typing import Any, Literal, Protocol, cast
@@ -23,6 +23,13 @@ from backend.app.rag.chunking import checksum_text
 from backend.app.storage import load_state, resolve_state_file, write_state
 from backend.app.stage4 import contains_secret_like_content
 from backend.app.stage7 import build_source_evaluation_checksum
+from backend.app.tts_provider import (
+    ElevenLabsTTSProvider,
+    ExternalTTSResult,
+    SUPPORTED_AUDIO_MIME_TYPES,
+    TTSProviderError,
+    checksum_bytes,
+)
 
 SUPPORTED_LANGUAGES = {
     "en": "English",
@@ -93,6 +100,7 @@ class VoiceProviderResult:
     fallback_reason: str | None
     language: str
     artifact: DownloadableArtifact
+    audio_artifact: DownloadableArtifact | None = None
 
 
 @dataclass(frozen=True)
@@ -101,6 +109,7 @@ class MultilingualArtifacts:
     subtitles: DownloadableArtifact
     voice_manifest: DownloadableArtifact
     metadata: DownloadableArtifact
+    voice_audio: DownloadableArtifact | None = None
 
 
 @dataclass(frozen=True)
@@ -142,6 +151,17 @@ class Stage6IdempotencyRecord:
     request_checksum: str
     status: Literal["PENDING", "RUNNING", "COMPLETED", "FAILED"]
     value: MultilingualWalkthroughResult | Stage6Error | None
+
+
+@dataclass(frozen=True)
+class TTSArtifactDeletionRecord:
+    multilingual_run_id: str
+    provider: str
+    provider_history_item_id: str | None
+    local_tombstone: bool
+    provider_deletion_status: str
+    requested_by: str
+    reason: str
 
 
 class TranslationProvider(Protocol):
@@ -288,12 +308,15 @@ class Stage6Service:
         *,
         translation_provider: TranslationProvider | None = None,
         tts_provider: TTSProvider | None = None,
+        external_tts_provider: ElevenLabsTTSProvider | None = None,
         state_path: Path | None = None,
     ) -> None:
         self.translation_provider = translation_provider or MockTranslationProvider()
         self.tts_provider = tts_provider or MockTTSProvider()
+        self.external_tts_provider = external_tts_provider
         self.state_path = state_path
         self.multilingual_runs: dict[str, MultilingualWalkthroughResult] = {}
+        self.tts_deletions: dict[str, TTSArtifactDeletionRecord] = {}
         self.request_dedupe_index: dict[tuple[str, str], str] = {}
         self.idempotency_records: dict[tuple[str, str, str], Stage6IdempotencyRecord] = {}
         self._operation_lock = threading.Lock()
@@ -304,11 +327,13 @@ class Stage6Service:
         with self._operation_lock:
             self.translation_provider = MockTranslationProvider()
             self.tts_provider = MockTTSProvider()
+            self.external_tts_provider = None
             self._clear_runtime_state()
             self._persist_locked()
 
     def _clear_runtime_state(self) -> None:
         self.multilingual_runs.clear()
+        self.tts_deletions.clear()
         self.request_dedupe_index.clear()
         self.idempotency_records.clear()
         self._run_counter = 0
@@ -332,7 +357,11 @@ class Stage6Service:
                 try:
                     result = multilingual_result_from_dict(cast(dict[str, Any], row))
                 except (KeyError, TypeError, ValueError, Stage6Error) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 6 multilingual run at %s: %s", self.state_path, exc)
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 6 multilingual run at %s: %s",
+                        self.state_path,
+                        type(exc).__name__,
+                    )
                     continue
                 restored_runs[result.multilingual_run_id] = result
             restored_dedupe_index: dict[tuple[str, str], str] = {}
@@ -344,7 +373,11 @@ class Stage6Service:
                 try:
                     record = stage6_idempotency_record_from_dict(row)
                 except (KeyError, TypeError, ValueError, Stage6Error) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 6 idempotency record at %s: %s", self.state_path, exc)
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 6 idempotency record at %s: %s",
+                        self.state_path,
+                        type(exc).__name__,
+                    )
                     continue
                 if record.status == "COMPLETED":
                     if not isinstance(record.value, MultilingualWalkthroughResult):
@@ -390,6 +423,20 @@ class Stage6Service:
                 if existing_run_id is not None and existing_run_id != multilingual_run_id:
                     continue
                 restored_dedupe_index[dedupe_key] = multilingual_run_id
+            restored_tts_deletions: dict[str, TTSArtifactDeletionRecord] = {}
+            for row in payload.get("ttsDeletions", []):
+                if not isinstance(row, dict):
+                    continue
+                try:
+                    deletion = tts_artifact_deletion_record_from_dict(cast(dict[str, Any], row))
+                except (KeyError, TypeError, ValueError, Stage6Error) as exc:
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 6 TTS deletion record at %s: %s",
+                        self.state_path,
+                        type(exc).__name__,
+                    )
+                    continue
+                restored_tts_deletions[deletion.multilingual_run_id] = deletion
             self.multilingual_runs = {
                 run_id: result
                 for run_id, result in restored_runs.items()
@@ -403,13 +450,22 @@ class Stage6Service:
             self.request_dedupe_index = {
                 key: run_id for key, run_id in restored_dedupe_index.items() if run_id in self.multilingual_runs
             }
+            self.tts_deletions = {
+                run_id: deletion
+                for run_id, deletion in restored_tts_deletions.items()
+                if run_id in self.multilingual_runs
+            }
             self._run_counter = max(
                 run_counter,
                 max_multilingual_run_suffix(self.idempotency_records),
                 max_multilingual_run_identifier(self.multilingual_runs),
             )
         except (KeyError, TypeError, ValueError, Stage6Error) as exc:
-            LOGGER.warning("Ignoring incompatible Stage 6 local state snapshot at %s: %s", self.state_path, exc)
+            LOGGER.warning(
+                "Ignoring incompatible Stage 6 local state snapshot at %s: %s",
+                self.state_path,
+                type(exc).__name__,
+            )
             self._clear_runtime_state()
 
     def _runtime_snapshot_locked(self) -> dict[str, Any]:
@@ -488,6 +544,9 @@ class Stage6Service:
                     stage6_idempotency_record_to_dict(record)
                     for record in self.idempotency_records.values()
                     if record.status not in {"PENDING", "RUNNING"}
+                ],
+                "ttsDeletions": [
+                    tts_artifact_deletion_record_to_dict(record) for record in self.tts_deletions.values()
                 ],
                 "counters": {"run": self._run_counter},
             },
@@ -632,6 +691,7 @@ class Stage6Service:
                     status="RUNNING",
                     value=None,
                 )
+                self._persist_locked()
 
         try:
             if any(contains_secret_like_content(term) for term in normalized_terms):
@@ -694,6 +754,7 @@ class Stage6Service:
                 source_evaluation_id=normalized_evaluation_id,
                 source_evaluation_checksum=normalized_evaluation_checksum,
                 evaluation_status=normalized_evaluation_status,
+                source_evaluation_checksum_supplied=bool(source_evaluation_checksum.strip()),
             )
         except Stage6Error as exc:
             if record_key is not None:
@@ -724,6 +785,10 @@ class Stage6Service:
                 except OSError:
                     self._restore_failed_operation_locked(snapshot, record_key=record_key, result=result)
                     raise
+        else:
+            with self._operation_lock:
+                self.multilingual_runs[result.multilingual_run_id] = result
+                self._persist_locked()
         return result
 
     def _store_idempotent_failure(
@@ -765,6 +830,7 @@ class Stage6Service:
         source_evaluation_id: str,
         source_evaluation_checksum: str,
         evaluation_status: EvaluationStatus,
+        source_evaluation_checksum_supplied: bool,
     ) -> MultilingualWalkthroughResult:
         translation = self.translation_provider.translate(
             source_text=source_text,
@@ -795,20 +861,41 @@ class Stage6Service:
             language=normalized_target_language,
         )
         provider_name, fallback_reason = resolve_voice_provider(requested_voice_provider)
-        voice = self.tts_provider.synthesize(
-            text=translation.translated_text,
-            language=normalized_target_language,
-            requested_provider=provider_name,
-            fallback_reason=fallback_reason,
-        )
-        voice = VoiceProviderResult(
-            provider=validate_provider_id(voice.provider, field_name="voice provider"),
-            provider_mode=validate_local_provider_mode(voice.provider_mode, field_name="voice provider mode"),
-            requested_provider=provider_name,
-            fallback_reason=voice.fallback_reason,
-            language=normalized_target_language,
-            artifact=validate_voice_manifest_artifact(voice.artifact),
-        )
+        if provider_name == "elevenlabs" and fallback_reason is None:
+            voice = self._synthesize_external_tts(
+                text=translation.translated_text,
+                language=normalized_target_language,
+                provider_name=provider_name,
+                request_checksum=request_checksum,
+                actor_id=actor_id,
+                source_run_id=source_run_id,
+                trace_id=trace_id,
+                source_context_ref_count=source_context_ref_count,
+                source_context_ref_ids=source_context_ref_ids,
+                source_citation_count=source_citation_count,
+                source_citation_indexes=source_citation_indexes,
+                source_claim_support_ids=source_claim_support_ids,
+                source_evaluation_id=source_evaluation_id,
+                source_evaluation_checksum=source_evaluation_checksum,
+                evaluation_status=evaluation_status,
+                source_evaluation_checksum_supplied=source_evaluation_checksum_supplied,
+            )
+        else:
+            voice = self.tts_provider.synthesize(
+                text=translation.translated_text,
+                language=normalized_target_language,
+                requested_provider=provider_name,
+                fallback_reason=fallback_reason,
+            )
+            voice = VoiceProviderResult(
+                provider=validate_provider_id(voice.provider, field_name="voice provider"),
+                provider_mode=validate_local_provider_mode(voice.provider_mode, field_name="voice provider mode"),
+                requested_provider=provider_name,
+                fallback_reason=voice.fallback_reason,
+                language=normalized_target_language,
+                artifact=validate_voice_manifest_artifact(voice.artifact),
+                audio_artifact=None,
+            )
         with self._operation_lock:
             self._run_counter += 1
             multilingual_run_id = f"mlrun_{self._run_counter:06d}"
@@ -890,6 +977,7 @@ class Stage6Service:
                 subtitles=subtitle_artifact,
                 voice_manifest=voice.artifact,
                 metadata=metadata_artifact,
+                voice_audio=voice.audio_artifact,
             ),
             trace_id=trace_id,
             source_context_ref_count=source_context_ref_count,
@@ -900,6 +988,93 @@ class Stage6Service:
             source_evaluation_id=source_evaluation_id,
             source_evaluation_checksum=source_evaluation_checksum,
             evaluation_status=evaluation_status,
+        )
+
+    def _synthesize_external_tts(
+        self,
+        *,
+        text: str,
+        language: str,
+        provider_name: str,
+        request_checksum: str,
+        actor_id: str,
+        source_run_id: str,
+        trace_id: str,
+        source_context_ref_count: int,
+        source_context_ref_ids: tuple[str, ...],
+        source_citation_count: int,
+        source_citation_indexes: tuple[int, ...],
+        source_claim_support_ids: tuple[str, ...],
+        source_evaluation_id: str,
+        source_evaluation_checksum: str,
+        evaluation_status: EvaluationStatus,
+        source_evaluation_checksum_supplied: bool,
+    ) -> VoiceProviderResult:
+        if self.external_tts_provider is None:
+            raise Stage6Error(403, "TTS_PROVIDER_DISABLED", "TTS provider is disabled.")
+        if (
+            evaluation_status != "PASSED"
+            or not source_evaluation_checksum_supplied
+            or source_context_ref_count <= 0
+            or source_citation_count <= 0
+            or not source_context_ref_ids
+            or not source_citation_indexes
+            or not source_claim_support_ids
+        ):
+            raise Stage6Error(
+                422,
+                "TTS_SOURCE_EVALUATION_REQUIRED",
+                "Real TTS requires passed source evaluation and citation evidence.",
+            )
+        try:
+            external_result = self.external_tts_provider.synthesize(
+                text=text,
+                language=language,
+                request_id=request_checksum,
+                trace_id=trace_id,
+            )
+        except TTSProviderError as exc:
+            raise Stage6Error(exc.status_code, exc.code, exc.message) from exc
+        audio_artifact = validate_audio_artifact(
+            artifact_from_bytes(
+                file_name=f"{source_run_id}-{language}-voice{SUPPORTED_AUDIO_MIME_TYPES[external_result.mime_type]}",
+                mime_type=external_result.mime_type,
+                content=external_result.audio_bytes,
+            )
+        )
+        manifest_text = build_tts_manifest_text(
+            provider_result=external_result,
+            requested_provider=provider_name,
+            language=language,
+            text=text,
+            actor_id=actor_id,
+            source_run_id=source_run_id,
+            trace_id=trace_id,
+            source_context_ref_count=source_context_ref_count,
+            source_context_ref_ids=source_context_ref_ids,
+            source_citation_count=source_citation_count,
+            source_citation_indexes=source_citation_indexes,
+            source_claim_support_ids=source_claim_support_ids,
+            source_evaluation_id=source_evaluation_id,
+            source_evaluation_checksum=source_evaluation_checksum,
+            evaluation_status=evaluation_status,
+            audio_artifact=audio_artifact,
+        )
+        manifest_artifact = validate_tts_manifest_artifact(
+            artifact_from_text(
+                file_name=f"{source_run_id}-{language}-tts-manifest.json",
+                mime_type="application/json",
+                text=manifest_text,
+            )
+        )
+        return VoiceProviderResult(
+            provider=validate_provider_id(external_result.provider, field_name="voice provider"),
+            provider_mode=validate_provider_mode(external_result.provider_mode),
+            requested_provider=provider_name,
+            fallback_reason=None,
+            language=language,
+            artifact=manifest_artifact,
+            audio_artifact=audio_artifact,
         )
 
     def _idempotency_count_for_scope(self, idempotency_scope: str) -> int:
@@ -915,6 +1090,87 @@ class Stage6Service:
         if multilingual_run_id is None:
             return None
         return self.multilingual_runs.get(multilingual_run_id)
+
+    def delete_tts_artifacts(
+        self,
+        *,
+        multilingual_run_id: str,
+        requested_by: str,
+        reason: str,
+    ) -> TTSArtifactDeletionRecord:
+        normalized_requested_by = validate_checksum_component(requested_by, field_name="TTS deletion requester")
+        normalized_reason = " ".join(reason.strip().split())
+        if not normalized_reason:
+            raise Stage6Error(422, "VALIDATION_ERROR", "TTS deletion reason is required.")
+        with self._operation_lock:
+            result = self.multilingual_runs.get(multilingual_run_id)
+            if result is None:
+                raise Stage6Error(404, "NOT_FOUND", "Multilingual run was not found.")
+            manifest = json.loads(artifact_text(result.voice.artifact))
+            provider_history_item_id = (
+                str(manifest["providerHistoryItemId"]) if manifest.get("providerHistoryItemId") is not None else None
+            )
+            provider_deletion_status = (
+                "PENDING_PROVIDER_DELETE"
+                if result.voice.provider_mode == "OPTIONAL_EXTERNAL" and provider_history_item_id is not None
+                else "NOT_APPLICABLE"
+            )
+            updated_voice = replace(result.voice, audio_artifact=None)
+            updated_artifacts = replace(result.artifacts, voice_audio=None)
+            updated_result = replace(
+                result,
+                voice=updated_voice,
+                artifacts=updated_artifacts,
+            )
+            self.multilingual_runs[multilingual_run_id] = updated_result
+            for record in self.idempotency_records.values():
+                if (
+                    isinstance(record.value, MultilingualWalkthroughResult)
+                    and record.value.multilingual_run_id == multilingual_run_id
+                ):
+                    record.value = updated_result
+            deletion = TTSArtifactDeletionRecord(
+                multilingual_run_id=multilingual_run_id,
+                provider=result.voice.provider,
+                provider_history_item_id=provider_history_item_id,
+                local_tombstone=True,
+                provider_deletion_status=provider_deletion_status,
+                requested_by=normalized_requested_by,
+                reason=normalized_reason,
+            )
+            self.tts_deletions[multilingual_run_id] = deletion
+            self._persist_locked()
+            return deletion
+
+
+def tts_artifact_deletion_record_to_dict(record: TTSArtifactDeletionRecord) -> dict[str, Any]:
+    return asdict(record)
+
+
+def tts_artifact_deletion_record_from_dict(row: dict[str, Any]) -> TTSArtifactDeletionRecord:
+    multilingual_run_id = validate_checksum_component(
+        str(row["multilingual_run_id"]),
+        field_name="TTS deletion multilingual run identifier",
+    )
+    provider = validate_provider_id(str(row["provider"]), field_name="TTS deletion provider")
+    provider_history_item_id = row.get("provider_history_item_id")
+    normalized_provider_history_item_id = (
+        validate_checksum_component(str(provider_history_item_id), field_name="TTS provider history item identifier")
+        if provider_history_item_id is not None
+        else None
+    )
+    provider_deletion_status = str(row["provider_deletion_status"])
+    if provider_deletion_status not in {"PENDING_PROVIDER_DELETE", "NOT_APPLICABLE"}:
+        raise ValueError("Unsupported TTS provider deletion status.")
+    return TTSArtifactDeletionRecord(
+        multilingual_run_id=multilingual_run_id,
+        provider=provider,
+        provider_history_item_id=normalized_provider_history_item_id,
+        local_tombstone=bool(row["local_tombstone"]),
+        provider_deletion_status=provider_deletion_status,
+        requested_by=validate_checksum_component(str(row["requested_by"]), field_name="TTS deletion requester"),
+        reason=" ".join(str(row["reason"]).strip().split()),
+    )
 
 
 def stage6_idempotency_record_to_dict(record: Stage6IdempotencyRecord) -> dict[str, Any]:
@@ -1032,20 +1288,24 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         field_name="translation provider mode",
     )
     voice_provider_id = validate_provider_id(str(voice["provider"]), field_name="voice provider")
-    voice_provider_mode = validate_local_provider_mode(str(voice["provider_mode"]), field_name="voice provider mode")
+    voice_provider_mode = validate_provider_mode(str(voice["provider_mode"]))
     requested_voice_provider = validate_provider_id(str(voice["requested_provider"]), field_name="requested voice provider")
     fallback_reason = validate_voice_fallback_reason(
         str(voice["fallback_reason"]) if voice.get("fallback_reason") is not None else None
     )
-    if voice_provider_id != "mock" or voice_provider_mode != "LOCAL":
-        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 provider must be mock local.")
-    voice_artifact = validate_voice_manifest_artifact(
-        downloadable_artifact_from_dict(
-            cast(dict[str, Any], voice["artifact"]),
-            expected_mime_type="application/json",
-            expected_extension=".json",
-        )
+    raw_voice_artifact = downloadable_artifact_from_dict(
+        cast(dict[str, Any], voice["artifact"]),
+        expected_mime_type="application/json",
+        expected_extension=".json",
     )
+    voice_artifact = validate_tts_manifest_artifact(raw_voice_artifact) if is_tts_manifest_artifact(
+        raw_voice_artifact
+    ) else validate_voice_manifest_artifact(raw_voice_artifact)
+    voice_audio_artifact = None
+    if voice.get("audio_artifact") is not None:
+        voice_audio_artifact = downloadable_audio_artifact_from_dict(cast(dict[str, Any], voice["audio_artifact"]))
+    elif artifacts.get("voice_audio") is not None:
+        voice_audio_artifact = downloadable_audio_artifact_from_dict(cast(dict[str, Any], artifacts["voice_audio"]))
     translated_script_artifact = downloadable_artifact_from_dict(
         cast(dict[str, Any], artifacts["translated_script"]),
         expected_mime_type="text/markdown",
@@ -1143,15 +1403,27 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
     if request_checksum != expected_request_checksum:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 request checksum is inconsistent.")
     voice_manifest = json.loads(artifact_text(voice_artifact))
-    if (
-        normalize_language_tag(str(translation_provider["source_language"])) != source_language
-        or normalize_language_tag(str(translation_provider["target_language"])) != target_language
-        or normalize_language_tag(str(voice["language"])) != target_language
-        or str(voice_manifest["textChecksum"]) != checksum_text(translated_script_text)
-        or normalize_language_tag(str(voice_manifest["language"])) != target_language
-        or str(voice_manifest["provider"]) != voice_provider_id
-        or validate_local_provider_mode(str(voice_manifest["providerMode"]), field_name="voice manifest provider mode")
-        != voice_provider_mode
+    if not restored_voice_manifest_matches(
+        voice_manifest=voice_manifest,
+        translation_provider=translation_provider,
+        source_language=source_language,
+        target_language=target_language,
+        voice=voice,
+        voice_provider_id=voice_provider_id,
+        voice_provider_mode=voice_provider_mode,
+        translated_script_text=translated_script_text,
+        source_run_id=str(row["source_run_id"]),
+        trace_id=str(row["trace_id"]),
+        actor_id=actor_id,
+        source_evaluation_id=source_evaluation_id,
+        source_evaluation_checksum=source_evaluation_checksum,
+        evaluation_status=evaluation_status,
+        source_context_ref_count=source_context_ref_count,
+        source_context_ref_ids=source_context_ref_ids,
+        source_citation_count=source_citation_count,
+        source_citation_indexes=source_citation_indexes,
+        source_claim_support_ids=source_claim_support_ids,
+        audio_artifact=voice_audio_artifact,
     ):
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 voice manifest is inconsistent.")
     expected_metadata_text = build_stage6_metadata_text(
@@ -1192,6 +1464,7 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
             fallback_reason=fallback_reason,
             language=normalize_language_tag(str(voice["language"])),
             artifact=voice_artifact,
+            audio_artifact=voice_audio_artifact,
         ),
         translated_script_artifact=translated_script_artifact,
         subtitles_artifact=subtitles_artifact,
@@ -1229,12 +1502,14 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
             fallback_reason=fallback_reason,
             language=normalize_language_tag(str(voice["language"])),
             artifact=voice_artifact,
+            audio_artifact=voice_audio_artifact,
         ),
         artifacts=MultilingualArtifacts(
             translated_script=translated_script_artifact,
             subtitles=subtitles_artifact,
             voice_manifest=voice_artifact,
             metadata=metadata_artifact,
+            voice_audio=voice_audio_artifact,
         ),
         trace_id=str(row["trace_id"]),
         source_context_ref_count=source_context_ref_count,
@@ -1289,6 +1564,16 @@ def downloadable_artifact_from_dict(
         expected_mime_type=expected_mime_type,
         expected_extension=expected_extension,
     )
+
+
+def downloadable_audio_artifact_from_dict(row: dict[str, Any]) -> DownloadableArtifact:
+    artifact = DownloadableArtifact(
+        file_name=str(row["file_name"]),
+        mime_type=str(row["mime_type"]),
+        content_base64=str(row["content_base64"]),
+        checksum=str(row["checksum"]),
+    )
+    return validate_audio_artifact(artifact)
 
 
 def create_stage6_service(*, state_path: Path | None = None) -> Stage6Service:
@@ -1400,16 +1685,20 @@ def validate_translation_output(
     if missing_terms:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Translation provider did not preserve required glossary terms.")
 
-    source_markers = citation_markers(source_text)
-    translated_markers = citation_markers(cleaned)
-    if not source_markers.issubset(translated_markers):
+    source_markers = citation_marker_sequence(source_text)
+    translated_markers = citation_marker_sequence(cleaned)
+    if source_markers != translated_markers:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Translation provider did not preserve citation markers.")
 
-    return cleaned, [term for term in glossary_terms if term in cleaned], len(source_markers)
+    return cleaned, [term for term in glossary_terms if term in cleaned], len(set(source_markers))
 
 
 def citation_markers(text: str) -> set[str]:
     return set(re.findall(r"\[(\d+)\]", text))
+
+
+def citation_marker_sequence(text: str) -> list[str]:
+    return re.findall(r"\[(\d+)\]", text)
 
 
 def validate_checksum_component(value: str, *, field_name: str) -> str:
@@ -1490,6 +1779,60 @@ def validate_source_evaluation_checksum(
     if source_evaluation_checksum != expected:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Source evaluation checksum is invalid.")
     return expected
+
+
+def restored_voice_manifest_matches(
+    *,
+    voice_manifest: dict[str, Any],
+    translation_provider: dict[str, Any],
+    source_language: str,
+    target_language: str,
+    voice: dict[str, Any],
+    voice_provider_id: str,
+    voice_provider_mode: ProviderMode,
+    translated_script_text: str,
+    source_run_id: str,
+    trace_id: str,
+    actor_id: str,
+    source_evaluation_id: str,
+    source_evaluation_checksum: str,
+    evaluation_status: EvaluationStatus,
+    source_context_ref_count: int,
+    source_context_ref_ids: tuple[str, ...],
+    source_citation_count: int,
+    source_citation_indexes: tuple[int, ...],
+    source_claim_support_ids: tuple[str, ...],
+    audio_artifact: DownloadableArtifact | None,
+) -> bool:
+    if (
+        normalize_language_tag(str(translation_provider["source_language"])) != source_language
+        or normalize_language_tag(str(translation_provider["target_language"])) != target_language
+        or normalize_language_tag(str(voice["language"])) != target_language
+        or str(voice_manifest["textChecksum"]) != checksum_text(translated_script_text)
+        or normalize_language_tag(str(voice_manifest["language"])) != target_language
+        or str(voice_manifest["provider"]) != voice_provider_id
+        or validate_provider_mode(str(voice_manifest["providerMode"])) != voice_provider_mode
+    ):
+        return False
+    if voice_manifest.get("schemaVersion") != "stage6-tts-manifest-v2":
+        return True
+    return (
+        str(voice_manifest["sourceRunId"]) == source_run_id
+        and str(voice_manifest["traceId"]) == trace_id
+        and str(voice_manifest["audienceId"]) == actor_id
+        and str(voice_manifest["sourceEvaluationId"]) == source_evaluation_id
+        and str(voice_manifest["sourceEvaluationChecksum"]) == source_evaluation_checksum
+        and str(voice_manifest["sourceEvaluationStatus"]) == evaluation_status
+        and int(voice_manifest["sourceContextRefCount"]) == source_context_ref_count
+        and tuple(str(value) for value in voice_manifest["sourceContextRefIds"]) == source_context_ref_ids
+        and int(voice_manifest["sourceCitationCount"]) == source_citation_count
+        and tuple(int(value) for value in voice_manifest["sourceCitationIndexes"]) == source_citation_indexes
+        and tuple(str(value) for value in voice_manifest["sourceClaimSupportIds"]) == source_claim_support_ids
+        and voice_manifest["citationMarkers"] == citation_marker_sequence(translated_script_text)
+        and audio_artifact is not None
+        and str(voice_manifest["artifactChecksum"]) == audio_artifact.checksum
+        and str(voice_manifest["artifactMimeType"]) == audio_artifact.mime_type
+    )
 
 
 def validate_stage6_scope(
@@ -1612,6 +1955,97 @@ def validate_voice_manifest_artifact(artifact: DownloadableArtifact) -> Download
     return artifact
 
 
+def is_tts_manifest_artifact(artifact: DownloadableArtifact) -> bool:
+    if artifact.mime_type != "application/json":
+        return False
+    try:
+        parsed = json.loads(artifact_text(artifact))
+    except (Stage6Error, json.JSONDecodeError):
+        return False
+    return isinstance(parsed, dict) and parsed.get("schemaVersion") == "stage6-tts-manifest-v2"
+
+
+def validate_tts_manifest_artifact(artifact: DownloadableArtifact) -> DownloadableArtifact:
+    if artifact.mime_type != "application/json":
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS manifest must be JSON.")
+    if not artifact.file_name.endswith(".json") or not is_safe_artifact_filename(artifact.file_name):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS manifest filename is invalid.")
+    decoded = artifact_text(artifact)
+    try:
+        parsed = json.loads(decoded)
+    except json.JSONDecodeError as exc:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS manifest must contain valid JSON.") from exc
+    if not isinstance(parsed, dict):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS manifest must be a JSON object.")
+    required_keys = {
+        "schemaVersion",
+        "provider",
+        "providerMode",
+        "requestedProvider",
+        "fallbackReason",
+        "language",
+        "languageDisplayName",
+        "textChecksum",
+        "sourceRunId",
+        "traceId",
+        "audienceId",
+        "sourceContextRefCount",
+        "sourceContextRefIds",
+        "sourceCitationCount",
+        "sourceCitationIndexes",
+        "sourceClaimSupportIds",
+        "sourceEvaluationId",
+        "sourceEvaluationStatus",
+        "sourceEvaluationChecksum",
+        "citationMarkers",
+        "providerModelId",
+        "providerModelVersion",
+        "providerHistoryItemId",
+        "voiceProvenance",
+        "artifactChecksum",
+        "artifactMimeType",
+        "estimatedBillableCharacters",
+        "attemptCount",
+        "disclosure",
+    }
+    if set(parsed) != required_keys:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS manifest schema is invalid.")
+    if parsed["schemaVersion"] != "stage6-tts-manifest-v2":
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS manifest schema version is invalid.")
+    validate_provider_id(str(parsed["provider"]), field_name="TTS manifest provider")
+    validate_provider_mode(str(parsed["providerMode"]))
+    validate_provider_id(str(parsed["requestedProvider"]), field_name="TTS requested provider")
+    normalize_language_tag(str(parsed["language"]))
+    if parsed["voiceProvenance"] != "stock":
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS manifest voice provenance is invalid.")
+    if str(parsed["artifactMimeType"]) not in SUPPORTED_AUDIO_MIME_TYPES:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS manifest artifact MIME type is invalid.")
+    if not str(parsed["artifactChecksum"]).startswith("sha256:"):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS manifest artifact checksum is invalid.")
+    if artifact.checksum != checksum_text(decoded):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS manifest checksum is invalid.")
+    return artifact
+
+
+def validate_audio_artifact(artifact: DownloadableArtifact) -> DownloadableArtifact:
+    if artifact.mime_type not in SUPPORTED_AUDIO_MIME_TYPES:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS audio MIME type is invalid.")
+    expected_extension = SUPPORTED_AUDIO_MIME_TYPES[artifact.mime_type]
+    if not artifact.file_name.endswith(expected_extension) or not is_safe_artifact_filename(artifact.file_name):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS audio filename is invalid.")
+    if len(artifact.content_base64) > MAX_STAGE6_ARTIFACT_BASE64_CHARS:
+        raise Stage6Error(413, "PROVIDER_OUTPUT_TOO_LARGE", "TTS audio artifact exceeds the Stage 6 limit.")
+    try:
+        decoded = base64.b64decode(artifact.content_base64, validate=True)
+    except (binascii.Error, TypeError) as exc:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS audio artifact content is invalid.") from exc
+    if len(decoded) > MAX_STAGE6_ARTIFACT_BYTES:
+        raise Stage6Error(413, "PROVIDER_OUTPUT_TOO_LARGE", "TTS audio artifact exceeds the Stage 6 limit.")
+    if artifact.checksum != checksum_bytes(decoded):
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "TTS audio checksum is invalid.")
+    return artifact
+
+
 def is_safe_artifact_filename(file_name: str) -> bool:
     if not file_name or "/" in file_name or "\\" in file_name:
         return False
@@ -1692,6 +2126,8 @@ def resolve_voice_provider(requested_provider: str) -> tuple[str, str | None]:
     normalized = validate_provider_id(requested_provider or "mock", field_name="requested voice provider")
     if normalized == "mock":
         return "mock", None
+    if normalized == "elevenlabs":
+        return "elevenlabs", None
     return normalized or "mock", "REQUESTED_PROVIDER_UNAVAILABLE"
 
 
@@ -1722,6 +2158,69 @@ def artifact_from_text(*, file_name: str, mime_type: str, text: str) -> Download
         content_base64=encoded,
         checksum=checksum_text(text),
     )
+
+
+def artifact_from_bytes(*, file_name: str, mime_type: str, content: bytes) -> DownloadableArtifact:
+    encoded = base64.b64encode(content).decode("ascii")
+    return DownloadableArtifact(
+        file_name=file_name,
+        mime_type=mime_type,
+        content_base64=encoded,
+        checksum=checksum_bytes(content),
+    )
+
+
+def build_tts_manifest_text(
+    *,
+    provider_result: ExternalTTSResult,
+    requested_provider: str,
+    language: str,
+    text: str,
+    actor_id: str,
+    source_run_id: str,
+    trace_id: str,
+    source_context_ref_count: int,
+    source_context_ref_ids: tuple[str, ...],
+    source_citation_count: int,
+    source_citation_indexes: tuple[int, ...],
+    source_claim_support_ids: tuple[str, ...],
+    source_evaluation_id: str,
+    source_evaluation_checksum: str,
+    evaluation_status: EvaluationStatus,
+    audio_artifact: DownloadableArtifact,
+) -> str:
+    payload = {
+        "schemaVersion": "stage6-tts-manifest-v2",
+        "provider": provider_result.provider,
+        "providerMode": provider_result.provider_mode,
+        "requestedProvider": requested_provider,
+        "fallbackReason": None,
+        "language": language,
+        "languageDisplayName": language_display_name(language),
+        "textChecksum": checksum_text(text),
+        "sourceRunId": source_run_id,
+        "traceId": trace_id,
+        "audienceId": actor_id,
+        "sourceContextRefCount": source_context_ref_count,
+        "sourceContextRefIds": list(source_context_ref_ids),
+        "sourceCitationCount": source_citation_count,
+        "sourceCitationIndexes": list(source_citation_indexes),
+        "sourceClaimSupportIds": list(source_claim_support_ids),
+        "sourceEvaluationId": source_evaluation_id,
+        "sourceEvaluationStatus": evaluation_status,
+        "sourceEvaluationChecksum": source_evaluation_checksum,
+        "citationMarkers": citation_marker_sequence(text),
+        "providerModelId": provider_result.model_id,
+        "providerModelVersion": provider_result.model_version,
+        "providerHistoryItemId": provider_result.provider_history_item_id,
+        "voiceProvenance": provider_result.voice_provenance,
+        "artifactChecksum": audio_artifact.checksum,
+        "artifactMimeType": audio_artifact.mime_type,
+        "estimatedBillableCharacters": provider_result.estimated_billable_characters,
+        "attemptCount": provider_result.attempt_count,
+        "disclosure": "AI-generated TTS audio using a non-cloned stock voice. No cloned voice was used.",
+    }
+    return json.dumps(payload, sort_keys=True)
 
 
 def build_stage6_metadata_text(
@@ -1790,17 +2289,27 @@ def build_stage6_metadata_text(
             "fallbackReason": voice.fallback_reason,
             "language": voice.language,
             "artifactChecksum": voice.artifact.checksum,
+            "audioArtifactChecksum": voice.audio_artifact.checksum if voice.audio_artifact is not None else None,
         },
         "artifacts": {
             "translatedScriptChecksum": translated_script_artifact.checksum,
             "subtitlesChecksum": subtitles_artifact.checksum,
             "voiceManifestChecksum": voice.artifact.checksum,
+            "voiceAudioChecksum": voice.audio_artifact.checksum if voice.audio_artifact is not None else None,
         },
     }
     return json.dumps(payload, sort_keys=True)
 
 
 def multilingual_to_api(result: MultilingualWalkthroughResult) -> dict[str, object]:
+    artifacts: dict[str, object] = {
+        "translatedScript": artifact_to_api(result.artifacts.translated_script),
+        "subtitles": artifact_to_api(result.artifacts.subtitles),
+        "voiceManifest": artifact_to_api(result.artifacts.voice_manifest),
+        "metadata": artifact_to_api(result.artifacts.metadata),
+    }
+    if result.artifacts.voice_audio is not None:
+        artifacts["voiceAudio"] = artifact_to_api(result.artifacts.voice_audio)
     return {
         "multilingualRunId": result.multilingual_run_id,
         "tenantId": result.tenant_id,
@@ -1828,12 +2337,7 @@ def multilingual_to_api(result: MultilingualWalkthroughResult) -> dict[str, obje
             "language": result.voice.language,
             "artifact": artifact_to_api(result.voice.artifact),
         },
-        "artifacts": {
-            "translatedScript": artifact_to_api(result.artifacts.translated_script),
-            "subtitles": artifact_to_api(result.artifacts.subtitles),
-            "voiceManifest": artifact_to_api(result.artifacts.voice_manifest),
-            "metadata": artifact_to_api(result.artifacts.metadata),
-        },
+        "artifacts": artifacts,
         "trace": {
             "traceId": result.trace_id,
             "tenantId": result.tenant_id,

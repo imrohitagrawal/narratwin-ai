@@ -6,12 +6,64 @@ from backend.app.rag.chunking import checksum_text
 from backend.app.main import app, reset_app_state_for_tests
 from backend.app.stage4 import stage4_service
 from backend.app.stage6 import TranslationProviderResult, stage6_service
+from backend.app.tts_provider import ElevenLabsTTSProvider, InMemoryTTSQuotaLedger, TTSHTTPResponse, TTSProviderConfig
 
 IDEMPOTENCY_HEADER = "Idempotency-" + "Key"
 
 
 def idempotency_headers(value: str) -> dict[str, str]:
     return {IDEMPOTENCY_HEADER: value}
+
+
+class FakeTTSTransport:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def post(
+        self,
+        *,
+        url: str,
+        headers: dict[str, str],
+        json_body: dict[str, object],
+        timeout_seconds: float,
+    ) -> TTSHTTPResponse:
+        self.calls.append(
+            {
+                "url": url,
+                "headers": headers,
+                "json_body": json_body,
+                "timeout_seconds": timeout_seconds,
+            }
+        )
+        return TTSHTTPResponse(
+            status_code=200,
+            headers={"content-type": "audio/mpeg", "history-item-id": "hist_api_001"},
+            body=b"api-mp3-bytes",
+        )
+
+
+def configure_api_external_tts(transport: FakeTTSTransport) -> None:
+    stage6_service.external_tts_provider = ElevenLabsTTSProvider(
+        config=TTSProviderConfig(
+            provider_id="elevenlabs",
+            enabled=True,
+            api_key="sk_" + ("a" * 32),
+            voice_id="stock_voice_001",
+            voice_provenance="stock",
+            model_id="eleven_flash_v2_5",
+            model_version="2026-07-21-source-facts",
+            supported_languages=("en", "es", "fr", "hi"),
+            max_input_characters=4_000,
+            max_audio_bytes=256,
+            timeout_seconds=2.0,
+            max_retries=0,
+            retry_backoff_seconds=0.0,
+            max_concurrent_requests=1,
+        ),
+        transport=transport,
+        quota_ledger=InMemoryTTSQuotaLedger(character_limit=1_000),
+        sleep=lambda _seconds: None,
+    )
 
 
 def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
@@ -132,6 +184,52 @@ def test_multilingual_walkthrough_api_falls_back_to_mock_voice_provider() -> Non
     assert voice["provider"] == "mock"
     assert voice["requestedProvider"] == "external"
     assert voice["fallbackReason"] == "REQUESTED_PROVIDER_UNAVAILABLE"
+
+
+def test_multilingual_walkthrough_api_named_real_tts_fails_closed_by_default() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client)
+
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+        json={
+            "targetLanguage": "es",
+            "glossaryTerms": ["NarraTwin AI"],
+            "requestedVoiceProvider": "elevenlabs",
+        },
+        headers=idempotency_headers("stage6-elevenlabs-disabled"),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "TTS_PROVIDER_DISABLED"
+
+
+def test_multilingual_walkthrough_api_returns_real_tts_manifest_and_audio_for_injected_fake() -> None:
+    reset_app_state_for_tests()
+    transport = FakeTTSTransport()
+    configure_api_external_tts(transport)
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client)
+
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+        json={
+            "targetLanguage": "es",
+            "glossaryTerms": ["NarraTwin AI"],
+            "requestedVoiceProvider": "elevenlabs",
+        },
+        headers=idempotency_headers("stage6-elevenlabs-fake"),
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["voice"]["provider"] == "elevenlabs"
+    assert body["voice"]["providerMode"] == "OPTIONAL_EXTERNAL"
+    assert body["artifacts"]["voiceAudio"]["mimeType"] == "audio/mpeg"
+    assert body["artifacts"]["voiceAudio"]["contentBase64"]
+    assert body["artifacts"]["voiceManifest"]["mimeType"] == "application/json"
+    assert len(transport.calls) == 1
 
 
 def test_multilingual_walkthrough_api_accepts_non_mock_local_translation_adapter() -> None:
