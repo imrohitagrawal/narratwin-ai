@@ -735,6 +735,42 @@ quota reservation/refund, timeout/retry, retry-cap, duplicate-spend prevention,
 provider response and artifact validation, retention/deletion evidence, synthetic
 disclosure, and redacted logging safeguards are executable before egress.
 
+Issue `#243` is the bounded Demo Checkpoint 1 PR 5 branch for hosted-demo
+access, quota, retention, and reviewer-facing polish only. Branch
+`phase-1-closure-process-243-demo-checkpoint1-pr5-hosted-demo` may add the PR5
+planning/evidence artifact, refresh official hosted/access/quota/retention
+source facts, add a local/fake hosted-demo decision boundary, add narrow API and
+frontend evidence polish, and align API/status/traceability/third-party docs:
+
+- `docs/governance/preflights/issue-243.json`
+- `docs/reviews/ISSUE_243_DEMO_CHECKPOINT1_PR5_HOSTED_DEMO_PREFLIGHT.md`
+- `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`
+- `docs/LAUNCH_LEVELS.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/API_CONTRACT.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `backend/app/hosted_demo.py`
+- `backend/app/main.py`
+- `tests/unit/test_hosted_demo.py`
+- `tests/api/test_hosted_demo_api.py`
+- `frontend/src/app/page.tsx`
+- `frontend/src/app/page.test.tsx`
+- `frontend/tests/smoke.spec.ts`
+
+It must not implement hosted deployment, public URLs, provider account setup,
+provider dashboard configuration, paid plan activation, wallet funding, paid
+spend, real provider calls, provider SDK installation, Docker changes, CI
+workflow changes, database changes, Stage 6 provider-internal mutation, Stage 7
+provider-internal mutation, public synthetic-media distribution, cloned voice,
+cloned face/avatar, digital twins, replica-profile creation, Product Mode 2, or
+production-readiness claims. PR5 hosted-demo behavior remains local/fake and
+disabled by default unless a later issue records owner-written approval and
+fresh safeguards for a real hosted environment.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

@@ -1,7 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import Home, { artifactBlockReason, artifactHref, artifactSafetyState, sha256Hex } from "./page";
+import Home, {
+  artifactBlockReason,
+  artifactHref,
+  artifactSafetyState,
+  evaluationBadgeLabel,
+  sha256Hex,
+} from "./page";
 
 describe("Home", () => {
   it("renders the Stage 7 avatar export workflow", () => {
@@ -34,7 +40,25 @@ describe("Home", () => {
     expect(html).toContain("Run");
     expect(html).toContain("Generate a grounded script to display cited output.");
     expect(html).toContain("Citations will appear after generation.");
-    expect(html).toContain("0 unsupported claims");
+    expect(html).toContain("Evaluation pending");
+    expect(html).not.toContain("0 unsupported claims");
+  });
+
+  it("shows unsupported claim counts only after evaluation evidence exists", () => {
+    expect(evaluationBadgeLabel(null)).toBe("Evaluation pending");
+    expect(
+      evaluationBadgeLabel({
+        runId: "run_001",
+        status: "COMPLETED",
+        acceptedScriptText: "Grounded script",
+        contextRefs: [],
+        trace: { traceId: "trace_001" },
+        evaluation: {
+          unsupportedClaimCount: 0,
+          claimSupports: [],
+        },
+      }),
+    ).toBe("0 unsupported claims");
   });
 
   it("rejects unsafe artifact filenames before enabling downloads", () => {

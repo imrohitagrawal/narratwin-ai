@@ -167,6 +167,12 @@ const safeApiErrorCodes = new Set([
   "NOT_FOUND",
   "SOURCE_RUN_NOT_RENDERABLE",
   "VALIDATION_ERROR",
+  "DUPLICATE_JSON_KEY",
+  "EVALUATION_NOT_PASSED",
+  "HOSTED_DEMO_DISABLED",
+  "IDEMPOTENCY_CONFLICT",
+  "UNSAFE_DISPLAY_TEXT",
+  "UNSAFE_URL",
 ]);
 
 async function postJson<T>(path: string, body: object, idempotencyKey: string): Promise<T> {
@@ -197,6 +203,13 @@ async function readJson<T>(response: Response): Promise<T> {
     throw new Error(`NarraTwin API request failed with ${response.status}`);
   }
   return (await response.json()) as T;
+}
+
+export function evaluationBadgeLabel(run: WalkthroughRun | null): string {
+  if (!run?.evaluation) {
+    return "Evaluation pending";
+  }
+  return `${run.evaluation.unsupportedClaimCount} unsupported claims`;
 }
 
 export default function Home() {
@@ -580,7 +593,7 @@ export default function Home() {
         <section className={styles.citations} aria-labelledby="citations-title">
           <div className={styles.resultHeader}>
             <h2 id="citations-title">Citations</h2>
-            <span className={styles.badge}>{run?.evaluation?.unsupportedClaimCount ?? 0} unsupported claims</span>
+            <span className={styles.badge}>{evaluationBadgeLabel(run)}</span>
           </div>
           {run ? (
             <ul>

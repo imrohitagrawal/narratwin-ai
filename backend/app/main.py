@@ -53,6 +53,13 @@ from backend.app.stage7 import (
     build_source_evaluation_checksum,
     stage7_service,
 )
+from backend.app.hosted_demo import (
+    HostedDemoAccessRequest,
+    HostedDemoDecision,
+    HostedDemoError,
+    hosted_demo_service,
+    parse_hosted_demo_json,
+)
 
 ErrorDetailValue = str | int | float | bool
 
@@ -1217,6 +1224,17 @@ async def stage7_error_handler(request: Request, exc: Stage7Error) -> JSONRespon
     )
 
 
+@app.exception_handler(HostedDemoError)
+async def hosted_demo_error_handler(request: Request, exc: HostedDemoError) -> JSONResponse:
+    return error_response(
+        request=request,
+        status_code=exc.status_code,
+        code=exc.code,
+        message=exc.message,
+        details=exc.details,
+    )
+
+
 @app.exception_handler(Exception)
 async def unhandled_error_handler(request: Request, _exc: Exception) -> JSONResponse:
     return error_response(
@@ -1577,6 +1595,25 @@ def generate_avatar_render(
     return AvatarRenderResponse.model_validate(avatar_render_to_api(avatar_render))
 
 
+@api_v1.post(
+    "/hosted-demo/access-decisions",
+    response_model=HostedDemoDecision,
+    response_model_exclude_none=True,
+    tags=["hosted-demo"],
+)
+async def create_hosted_demo_access_decision(request: Request) -> HostedDemoDecision:
+    raw_body = await request.body()
+    try:
+        payload = parse_hosted_demo_json(raw_body)
+    except ValueError as exc:
+        raise HostedDemoError(400, "DUPLICATE_JSON_KEY", "Hosted-demo request JSON is invalid.") from exc
+    try:
+        access_request = HostedDemoAccessRequest.model_validate(payload)
+    except ValueError as exc:
+        raise HostedDemoError(422, "VALIDATION_ERROR", "Hosted-demo request validation failed.") from exc
+    return hosted_demo_service.decide(access_request)
+
+
 async def read_upload_with_limit(file: UploadFile) -> bytes:
     data = bytearray()
     while True:
@@ -1592,6 +1629,7 @@ def reset_app_state_for_tests() -> None:
     stage4_service.reset()
     stage6_service.reset()
     stage7_service.reset()
+    hosted_demo_service.reset()
     stage8_write_rate_limiter.reset()
 
 
