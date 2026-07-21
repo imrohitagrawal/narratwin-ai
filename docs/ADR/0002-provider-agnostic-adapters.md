@@ -222,6 +222,46 @@ providers:
   The response schema reserves `OPTIONAL_EXTERNAL` for compatibility, but PR4
   restores and emits only the exact disabled metadata posture.
 
+## Demo Checkpoint 1 PR5 impact
+
+PR5 issue `#243` adds `backend/app/hosted_demo.py` as a local/fake hosted-demo
+access-evidence boundary around already-produced source/eval/media metadata. It
+does not add a provider adapter, provider SDK, real network transport, hosted
+deployment, public URL, provider account, provider dashboard configuration, paid
+spend, real provider call, cloned identity, Product Mode 2 behavior, or
+production-readiness claim.
+
+The PR5 boundary exists because hosted-demo review has a different trust shape
+from local Stage 6/Stage 7 generation APIs:
+
+- Stage 6 and Stage 7 local APIs may return artifact bytes and generated text to
+  the local app flow, but hosted-demo reviewer evidence must be metadata-only.
+- `X-Local-User-Id` remains a local/dev/test principal simulator and is not
+  hosted authentication.
+- Hosted-demo access decisions fail closed by default and require local/fake
+  invite/session hashes before a fake enabled configuration can grant access.
+- Artifact visibility is bound to source run ID, trace ID, language, audience,
+  script checksum, citation refs, evaluation ID/status/checksum, optional
+  Stage 6/Stage 7 media metadata checksums, artifact checksum, disclosure
+  version, access/session state, quota state, retention/deletion state, and
+  tombstone/deletion evidence.
+- Quota reservation is modeled before fake visibility side effects; local fake
+  failures before side effects refund quota; timeout after accepted fake work is
+  held as unknown rather than refunded.
+- Pending deletion is not terminal deletion proof; deleted evidence requires a
+  tombstone checksum, deletion evidence ID, terminal fake/local provider deletion
+  status, and `localOnlyProviderEvidence`.
+- Redacted observability records stable event names, trace ID, status/code,
+  access outcome, quota outcome, retention/deletion state, and artifact
+  validation result without raw prompts, uploads, scripts, provider payloads,
+  unsafe URLs, invite/session secrets, cookies, tokens, provider keys, or media
+  bytes.
+
+This keeps the provider-adapter boundary intact while adding a reviewable access
+and evidence surface that can later be replaced or backed by real hosted
+infrastructure only through a separate owner-approved issue with fresh source
+facts and safeguards.
+
 This preserves the provider-adapter boundary while allowing Stage 7 to deliver a
 mock/local avatar demo export with public-use license checks, disclosure, consent
 controls, source citations, and evaluation status preservation.
