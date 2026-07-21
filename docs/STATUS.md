@@ -17,13 +17,15 @@ Use it to answer:
 - Last reviewed date: 2026-07-21
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure governance only. Demo
-  Phase 0 planning for issue `#225` completed through PR `#226`; no follow-on
-  product or provider implementation is permitted until a future issue-linked
-  PR explicitly authorizes a narrow Checkpoint 1 slice. No Phase 2 feature
-  work, external provider enablement, provider SDKs, provider keys, hosted
-  deployment, production release tag, real audio/video generation, cloned
-  identity implementation, public synthetic-media distribution claim, or
-  Product Mode 2 work is permitted by the completed issue `#225`. Issue `#39`
+  Phase 0 planning for issue `#225` completed through PR `#226`; issue `#229`
+  is the Checkpoint 1 PR 1 spec/source-facts/governance slice and, when merged,
+  authorizes only the next future issue-linked provider-abstraction plus real
+  TTS contract PR. No Phase 2 feature work, external provider enablement,
+  provider SDKs, provider keys, hosted deployment, production release tag, real
+  audio/video generation, cloned identity implementation, public synthetic-media
+  distribution claim, Product Mode 2 work, avatar/video provider integration,
+  hosted-demo access/quota/retention/demo polish, or production-readiness claim
+  is permitted by issues `#225` or `#229`. Issue `#39`
   media/provider/security rows are non-downgradeable for production Go unless
   the affected provider, media, export, and replay paths remain disabled.
 - Current repo mode: Final Review has merged; Phase 1 Closure is active,
@@ -399,7 +401,8 @@ Use these files together with this tracker:
 | `#221` | Closed | Post-PR-218 status reconciliation | Narrow repository-ledger follow-up completed through merged PR `#222` at `f279097357b32c64e29b194618cfb36eee071adb`; issue `#221` was closed after latest-head approval and post-merge main quality workflow run `29808004038` passed. It records PR `#218` and issue `#217` disposition only; no runtime, Product Mode 2, real media, providers, hosted/public launch, public distribution, or production-readiness scope was authorized. |
 | `#223` | Closed | Post-PR-222 terminal loop-breaker | Completed through merged PR `#224` at `7cb19e86844e75a5766ec732ca08b18dd931680f`; records PR `#222` merge state, issue `#221` closure, post-merge main quality workflow evidence, and the terminal rule that future issue-completing PRs finalize `docs/STATUS.md` in the same PR while routine post-merge facts are recorded in PR/issue comments instead of successor status-only PRs. No runtime, Product Mode 2, real media, providers, hosted/public launch, public distribution, or production-readiness scope was authorized. |
 | `#225` | Closed | Demo Phase 0 planning | Completed through merged PR `#226` at `8d8f1d3dc1a1393356a7e5b95e7404d6b92e40dc`. It documented the controlled reviewer demo contract, source facts, cost/terms research, checkpoint sequencing, failure-matrix categories, and fan-out review expectations only; no runtime, provider SDK, provider key, hosted deployment, real audio/video generation, cloned identity implementation, Product Mode 2, public synthetic-media distribution, or production-readiness scope was authorized. |
-| `#231` | Open | Process governance follow-up | Active PR `#232` on branch `phase-1-closure-process-231-human-verification-checklist` makes human-review focus points durable in the PR template, repository guardrail docs, quality-gate docs, and new-project engineering playbook, with residual-risk owner and high-risk-surface coverage strengthened after fresh-context review. It is docs/process only and does not authorize runtime, provider, media, hosted deployment, Product Mode 2, public distribution, production-readiness, or PR `#230` branch mutation. |
+| `#231` | Closed | Process governance follow-up | Human verification checklist practice completed through merged PR `#232` at `fde56c0eb438ccc521172f0262c543fe2f81412b`; issue `#231` is closed and the durable practice now requires non-trivial PR bodies to include exact data/source/artifact references, official URLs and verified/accessed dates for changeable facts, pass/fail criteria, residual-risk owners, and high-risk-surface coverage. Scope was docs/process only and did not authorize runtime, provider, media, hosted deployment, Product Mode 2, public distribution, production-readiness, or PR `#230` branch mutation. |
+| `#229` | Open | Demo Checkpoint 1 PR 1 spec/source-facts/governance | Active issue for branch `phase-1-closure-process-229-demo-checkpoint1-spec-governance`; scope is preflight plus governance/spec docs only. When its PR merges, the next approved action becomes a future issue-linked provider-abstraction plus real TTS contract PR only. It does not authorize backend, frontend, provider abstraction implementation, provider SDKs, provider keys, hosted deployment, real audio/video generation, avatar/video provider integration, cloned identity, Product Mode 2, public distribution, or production-readiness claims. |
 
 ## Pull Request Ledger
 
@@ -476,7 +479,7 @@ Use these files together with this tracker:
 | `#222` | Merged | 2026-07-21 | Post-PR-218 repository-ledger reconciliation for issue `#221`; merged at `f279097357b32c64e29b194618cfb36eee071adb` after human approval on head `14a299fb00f53c54001d11a782c73cfe225e5972`, with issue `#221` closed during post-merge closeout and post-merge main quality workflow run `29808004038` passing. It records PR `#218` and issue `#217` disposition only; Product Mode 2, real audio/video, external providers, hosted/public launch, public distribution, production readiness, and stopped evidence mutation remain out of scope. |
 | `#224` | Merged | 2026-07-21 | Terminal post-PR-222 loop-breaker for issue `#223`; merged at `7cb19e86844e75a5766ec732ca08b18dd931680f`, records PR `#222` and issue `#221` disposition, updates the operating model and repository guardrails so future issue-completing PRs finalize `docs/STATUS.md` in the same PR, records ordinary post-merge facts in PR/issue comments rather than successor status-only PRs, and adds executable guardrails for both rules. |
 | `#226` | Merged | 2026-07-21 | Demo Phase 0 real-media hosted plan for issue `#225`; merged at `8d8f1d3dc1a1393356a7e5b95e7404d6b92e40dc` after latest-head human approval on head `dd206399e45ac7d0bcc4059d4a2ff49f943012d1`, with post-merge main quality workflow run `29823341000` passing. It documented the controlled reviewer demo contract, first-month cost-minimized target, view-first pre-generated media path, launch-level boundary, Checkpoint 1 and Checkpoint 2 sequencing, failure matrix, and fan-out review expectations only; provider implementation, hosted deployment, real audio/video generation, cloned identity implementation, Product Mode 2, public distribution, and production-readiness claims remain out of scope. |
-| `#232` | Open | Not merged | Process-governance PR for issue `#231`; requires non-trivial PRs to carry self-serve Human verification checklist entries with exact source/data/artifact references, official URL and verified/accessed date where facts can change, pass/fail criteria, residual-risk owner, and high-risk-surface coverage in the PR body, and carries the practice into the reusable new-project engineering playbook. Scope is docs/process only; it does not authorize runtime, provider, media, hosted/public launch, Product Mode 2, public distribution, production-readiness, or PR `#230` branch mutation. |
+| `#232` | Merged | 2026-07-21 | Process-governance PR for issue `#231`; merged at `fde56c0eb438ccc521172f0262c543fe2f81412b` and made the Human verification checklist practice durable for non-trivial PR bodies with exact source/data/artifact references, official URL and verified/accessed date where facts can change, pass/fail criteria, residual-risk owner, and high-risk-surface coverage. Scope was docs/process only; it did not authorize runtime, provider, media, hosted/public launch, Product Mode 2, public distribution, production-readiness, or PR `#230` branch mutation. |
 
 ## Completed Work
 
@@ -664,11 +667,17 @@ Use these files together with this tracker:
   contract, source-fact strategy, provider/local-model analysis, checkpoint
   sequencing, failure matrix, and fan-out review requirements before
   implementation.
-- Issue `#231` is open through PR `#232` as a docs/process follow-up to require
-  a self-serve Human verification checklist in non-trivial PR bodies and
-  new-project playbooks. It does not change product/runtime, provider, media,
+- Issue `#231` is closed through merged PR `#232`; it completed the
+  self-serve Human verification checklist practice for non-trivial PR bodies and
+  new-project playbooks without changing product/runtime, provider, media,
   hosted/public launch, Product Mode 2, public distribution,
   production-readiness, or the demo checkpoint implementation sequence.
+- Issue `#229` is open as Demo Checkpoint 1 PR 1 for
+  spec/source-facts/governance only. Its branch may update the issue preflight,
+  demo plan, stage issue plan, status ledger, and third-party notices only; it
+  must not implement provider abstraction, TTS, avatar/video, hosting, access,
+  quota, retention, demo polish, real media, cloned identity, Product Mode 2, or
+  production readiness.
 
 ## Next Approved Actions
 
@@ -676,13 +685,15 @@ Use these files together with this tracker:
    `#168` as evidence only. Do not resume, patch, rebase, merge, close, delete,
    or rewrite that implementation history.
 2. Keep issue `#8` open until its actual acceptance contract is satisfied.
-3. Open the future issue-linked Checkpoint 1 PR 1 for the spec/source
-   facts/governance slice before any provider abstraction, TTS, avatar/video,
-   hosted-demo, access/quota, or demo-polish implementation.
-4. Keep production, multi-worker deployment, hosted launch, Product Mode 2,
-   external provider use, real audio/video export, and public synthetic-media
-   distribution No-Go until future issue-linked implementation PRs explicitly
-   authorize narrow demo-only changes.
+3. Complete issue `#229` through its dedicated Checkpoint 1 PR 1 for
+   spec/source-facts/governance only. After that PR merges, the next approved
+   action is a new issue-linked provider-abstraction plus real TTS contract PR,
+   still with paid providers optional and disabled for local/dev/test.
+4. Keep avatar/video provider integration, hosted-demo access/quota/retention,
+   demo polish, production, multi-worker deployment, hosted launch, Product Mode
+   2, external provider use, real audio/video export, and public synthetic-media
+   distribution No-Go until later issue-linked PRs explicitly authorize narrow
+   demo-only changes.
 
 ## Maintenance Protocol
 
@@ -712,7 +723,8 @@ Required update rules:
 
 | Date | Change |
 |---|---|
-| 2026-07-21 | Issue `#231` opened and PR `#232` opened as a process-governance follow-up on branch `phase-1-closure-process-231-human-verification-checklist` to make PR-body Human verification checklists durable in the PR template and new-project engineering playbook, then strengthened after fresh-context review to require residual-risk owners and high-risk-surface coverage. Scope is docs/process only; no runtime, provider, media, hosted/public launch, Product Mode 2, public distribution, production-readiness, or PR `#230` branch mutation is authorized. |
+| 2026-07-21 | PR `#232` merged issue `#231` at `fde56c0eb438ccc521172f0262c543fe2f81412b`, making PR-body Human verification checklists durable with residual-risk owners, official URLs and verified/accessed dates for changeable facts, pass/fail criteria, and high-risk-surface coverage. Routine post-merge facts are recorded in PR/issue comments; the attempted status-only follow-up PR `#234` / issue `#233` was closed unmerged under the post-issue-`#223` no-successor rule. |
+| 2026-07-21 | Issue `#229` opened as Demo Checkpoint 1 PR 1 for spec/source-facts/governance only on branch `phase-1-closure-process-229-demo-checkpoint1-spec-governance`. The first commit contains only `docs/governance/preflights/issue-229.json`; allowed follow-up files are limited to the demo plan, stage issue plan, status ledger, and third-party notices. Provider abstraction implementation, TTS implementation, avatar/video provider integration, hosted-demo access/quota/retention/demo polish, provider SDKs, provider keys, real media, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden in this PR. |
 | 2026-07-21 | PR `#226` merged issue `#225` Demo Phase 0 real-media hosted plan at `8d8f1d3dc1a1393356a7e5b95e7404d6b92e40dc` after latest-head human approval on `dd206399e45ac7d0bcc4059d4a2ff49f943012d1`; live GitHub shows issue `#225` closed and post-merge main quality workflow run `29823341000` passed. The next approved action is a future issue-linked Checkpoint 1 PR 1 for spec/source-facts/governance only; provider SDKs, provider keys, hosted deployment, real audio/video generation, cloned identity implementation, Product Mode 2, public distribution, and production-readiness claims remain forbidden until explicitly approved by later PRs. |
 | 2026-07-21 | Issue `#225` opened as the active Demo Phase 0 planning issue for the hosted controlled real-media demo path. The plan target is: user uploads or uses project knowledge, selects language and audience, and NarraTwin generates a grounded walkthrough delivered by an avatar/voice clone with citations and evaluation evidence behind it. Scope is planning/source facts/governance only; implementation, provider SDKs, provider keys, hosted deployment, real audio/video generation, cloned identity implementation, Product Mode 2, public synthetic-media distribution, and production-readiness claims remain forbidden. |
 | 2026-07-21 | PR `#224` merged issue `#223` terminal post-PR-222 loop-breaker at `7cb19e86844e75a5766ec732ca08b18dd931680f`; live GitHub shows issue `#223` closed and PR `#224` merged. Future issue-completing PRs must finalize `docs/STATUS.md` in the same PR with post-merge target state and next-work pointer instead of spawning standalone status-only follow-ups. |
