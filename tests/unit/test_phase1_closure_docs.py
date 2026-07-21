@@ -683,6 +683,63 @@ def test_issue_235_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_237_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts"
+    allowed = [
+        "docs/governance/preflights/issue-237.json",
+        "docs/reviews/ISSUE_237_DEMO_CHECKPOINT1_PR3_TTS_PREFLIGHT.md",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/ADR/0002-provider-agnostic-adapters.md",
+        "docs/API_CONTRACT.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "backend/app/tts_provider.py",
+        "backend/app/stage6.py",
+        "backend/app/main.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "tests/unit/test_stage6_multilingual.py",
+        "tests/api/test_stage6_multilingual_api.py",
+    ]
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "backend/app/stage7.py",
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+    ]
+
+
+def test_issue_237_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts-typo"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-237.json",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "backend/app/stage6.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-237.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/STAGE_ISSUE_PLAN.md.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+    ]
+
+
 def test_phf020a_valid_policy_has_no_findings() -> None:
     assert phase1.phf020a_policy_findings(PHF020A_VALID_POLICY) == []
 

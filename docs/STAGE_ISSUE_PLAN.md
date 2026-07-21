@@ -655,6 +655,45 @@ selected-provider source facts and executable disabled-default, quota,
 retention/deletion, redaction, timeout, retry, and duplicate-spend safeguards
 before any provider egress is enabled.
 
+Issue `#237` is the bounded Demo Checkpoint 1 PR 3 branch for server-side TTS
+provider abstraction plus optional real TTS provider adapter work only. Branch
+`phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts` may add the PR3
+planning/evidence artifact, refresh official TTS provider source facts, update
+the server-side Stage 6 TTS boundary, add mock/fake-provider tests, and align
+the API/status/traceability/third-party/provider-ADR documents impacted by that
+TTS-only boundary:
+
+- `docs/governance/preflights/issue-237.json`
+- `docs/reviews/ISSUE_237_DEMO_CHECKPOINT1_PR3_TTS_PREFLIGHT.md`
+- `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/ADR/0002-provider-agnostic-adapters.md`
+- `docs/API_CONTRACT.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `backend/app/tts_provider.py`
+- `backend/app/stage6.py`
+- `backend/app/main.py`
+- `tests/unit/test_stage6_tts_provider.py`
+- `tests/unit/test_stage6_multilingual.py`
+- `tests/api/test_stage6_multilingual_api.py`
+
+It must not implement avatar/video provider work, hosted deployment, hosted
+access systems, public URLs, public synthetic-media distribution, cloned voice,
+cloned face/avatar, Product Mode 2, production-readiness claims, Docker changes,
+CI workflow changes, frontend changes, provider SDK installation, provider
+account setup, provider dashboard configuration, paid plan activation, wallet
+funding, paid spend, real provider calls in CI, or real provider test calls
+without a fresh PR3 plan and explicit written human-owner approval. Mock/local
+TTS remains the default for local/dev/test/CI, and every optional provider-egress
+path must fail closed unless disabled-default, missing/invalid key,
+language/script-length, quota reservation/refund, timeout/retry,
+duplicate-spend prevention, output validation, retention/deletion, and redacted
+logging safeguards are executable before egress.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

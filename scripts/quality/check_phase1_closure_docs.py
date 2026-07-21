@@ -87,6 +87,25 @@ ISSUE_235_ALLOWED_CHANGED_FILES = {
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_237_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-237.json",
+    "docs/reviews/ISSUE_237_DEMO_CHECKPOINT1_PR3_TTS_PREFLIGHT.md",
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/ADR/0002-provider-agnostic-adapters.md",
+    "docs/API_CONTRACT.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "backend/app/tts_provider.py",
+    "backend/app/stage6.py",
+    "backend/app/main.py",
+    "tests/unit/test_stage6_tts_provider.py",
+    "tests/unit/test_stage6_multilingual.py",
+    "tests/api/test_stage6_multilingual_api.py",
+}
 ISSUE_172_ALLOWED_CHANGED_FILES = {
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -3425,6 +3444,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_229_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-235-demo-checkpoint1-contract":
         allowed_files = ISSUE_235_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts":
+        allowed_files = ISSUE_237_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-237-"):
+        allowed_files = set()
     elif branch == PHF020A_BRANCH:
         allowed_files = ISSUE_184_ALLOWED_CHANGED_FILES
     elif branch == STATUS_STATE_V1_BRANCH:
