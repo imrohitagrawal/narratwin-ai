@@ -222,6 +222,24 @@ CANONICAL_STAGE_ISSUE_CLOSURE = (
     ("stage8-", "Stage 8", "13"),
 )
 FORCE_PULL_REQUEST_GUARDRAILS_ENV = "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS"
+STATUS_RECONCILIATION_BRANCH_PATTERN = re.compile(
+    r"^phase-1-closure-process-(?P<issue>\d+)-post-pr-(?P<pr>\d+)-status-reconciliation$"
+)
+TERMINAL_STATUS_RECONCILIATION_ISSUE = "223"
+STATUS_IMPACT_SECTION_FAILURE = (
+    "Non-trivial pull requests must include a Status impact section that states whether docs/STATUS.md "
+    "is finalized in this PR or why no repository-tracked status change is needed."
+)
+STATUS_IMPACT_CLOSEOUT_FAILURE = (
+    "Status impact sections must state that routine post-merge facts are recorded in PR/issue comments "
+    "and must not create a successor status-only PR."
+)
+STATUS_IMPACT_MISSING_STATUS_FILE_FAILURE = (
+    "Repository-tracked stage/governance changes must update docs/STATUS.md in the same PR."
+)
+STATUS_IMPACT_UNSUPPORTED_NO_CHANGE_FAILURE = (
+    "PRs that change repository-tracked stage/governance state must not claim no docs/STATUS.md impact."
+)
 ALLOWED_STACKED_PULL_REQUEST_BASES = frozenset(
     {
         "phase-1-closure-39-execution-strategy",
@@ -1114,6 +1132,72 @@ def has_validation_evidence(body: str) -> bool:
     return all(validation_command_has_result(lines, command) for command in REQUIRED_PR_VALIDATION_COMMANDS)
 
 
+def normalized_status_impact_text(body: str) -> str:
+    return re.sub(r"[^a-z0-9#]+", " ", markdown_section(body, "Status impact").lower()).strip()
+
+
+def changes_impact_status(changes: list[str]) -> bool:
+    return any(change.startswith(STATUS_IMPACT_PREFIXES) for change in changes)
+
+
+def status_impact_finalization_failures(changes: list[str], body: str) -> list[str]:
+    section_text = normalized_status_impact_text(body)
+    if not section_text or is_placeholder_value(section_text):
+        return [STATUS_IMPACT_SECTION_FAILURE]
+
+    failures: list[str] = []
+    has_post_merge_comment_policy = all(
+        phrase in section_text
+        for phrase in (
+            "post merge facts",
+            "pr issue comments",
+        )
+    ) and (
+        "no successor" in section_text
+        or "must not create a successor status only pr" in section_text
+        or "no successor status only pr" in section_text
+    )
+    if not has_post_merge_comment_policy:
+        failures.append(STATUS_IMPACT_CLOSEOUT_FAILURE)
+
+    status_updated = "docs/STATUS.md" in set(changes)
+    status_impacted = changes_impact_status(changes)
+    claims_no_status_change = (
+        "no repository tracked status change" in section_text
+        or "no repo tracked status change" in section_text
+        or "no docs/status.md impact" in section_text
+    )
+    claims_same_pr_status_finalization = (
+        "docs status md" in section_text
+        and any(phrase in section_text for phrase in ("same pr", "this pr"))
+        and any(
+            phrase in section_text
+            for phrase in (
+                "finalized",
+                "finalises",
+                "finalizes",
+                "post merge target state",
+                "target state",
+                "next issue",
+                "next work",
+                "completed by this pr",
+                "satisfied by this pr",
+            )
+        )
+    )
+
+    if claims_same_pr_status_finalization and not status_updated:
+        failures.append(STATUS_IMPACT_MISSING_STATUS_FILE_FAILURE)
+    if status_impacted and claims_no_status_change:
+        failures.append(STATUS_IMPACT_UNSUPPORTED_NO_CHANGE_FAILURE)
+    if status_impacted and not claims_same_pr_status_finalization:
+        failures.append(STATUS_IMPACT_MISSING_STATUS_FILE_FAILURE)
+    if not status_impacted and not (claims_no_status_change or claims_same_pr_status_finalization):
+        failures.append(STATUS_IMPACT_SECTION_FAILURE)
+
+    return failures
+
+
 def validation_command_has_result(lines: list[str], command: str) -> bool:
     command_text = command.lower()
     has_valid_result = False
@@ -1695,6 +1779,38 @@ def pull_request_base_is_allowed(base_ref: str | None, base_sha: str, body: str)
     return base_ref == "main" or stacked_base_sha_is_reviewed(base_ref, base_sha, body)
 
 
+def status_reconciliation_loop_failures(head_ref: str | None, body: str) -> list[str]:
+    if not head_ref:
+        return []
+    match = STATUS_RECONCILIATION_BRANCH_PATTERN.fullmatch(head_ref)
+    if not match:
+        return []
+
+    issue_number = match.group("issue")
+    if issue_number != TERMINAL_STATUS_RECONCILIATION_ISSUE:
+        return [
+            "Standalone post-merge status reconciliation PRs are disallowed after issue #223; "
+            "record routine post-merge facts in PR/issue comments or bundle STATUS.md cleanup into material work."
+        ]
+
+    normalized_body = re.sub(r"[^a-z0-9#]+", " ", body.lower())
+    required_phrases = (
+        "terminal",
+        "loop breaker",
+        "no successor",
+        "post merge facts",
+        "pr issue comments",
+        "status only",
+    )
+    missing = [phrase for phrase in required_phrases if phrase not in normalized_body]
+    if missing:
+        return [
+            "Issue #223 is allowed only as the terminal status loop-breaker; the PR body must state terminal, "
+            "loop-breaker, no-successor, post-merge facts, PR/issue comments, and status-only boundaries."
+        ]
+    return []
+
+
 def check_issue_linked_pull_request() -> None:
     for issue39_failure in issue_39_closure_matrix_validation_failures():
         failures.append(issue39_failure)
@@ -1722,6 +1838,7 @@ def check_issue_linked_pull_request() -> None:
             "Pull requests for guarded work must target main or an explicitly reviewed stacked base with exact "
             "GITHUB_BASE_SHA evidence in the PR body."
         )
+    failures.extend(status_reconciliation_loop_failures(head_ref, body))
     stage_name, canonical_issue_number = canonical_stage_issue(head_ref) or ("", None)
     is_canonical_stage_branch = canonical_issue_number is not None
     visible_issue_text = f"{title}\n{body}\n{pull_request_commit_messages()}"
@@ -1754,6 +1871,7 @@ def check_issue_linked_pull_request() -> None:
         failures.append("Pull request body must link an issue using reference-only wording such as Refs #<issue>.")
     if is_nontrivial_pull_request(changes):
         failures.extend(reviewer_overview_failures(body))
+        failures.extend(status_impact_finalization_failures(changes, body))
         if not has_completed_preflight_evidence(body):
             failures.append("Non-trivial pull requests must include completed preflight evidence rows.")
         if not has_validation_evidence(body):
@@ -1914,7 +2032,7 @@ def check_status_tracking_rules(changes: list[str]) -> None:
     status_updated = "docs/STATUS.md" in changed_set
     status_impacted = any(change.startswith(STATUS_IMPACT_PREFIXES) for change in changes)
     if status_impacted and not status_updated:
-        failures.append("Repository-tracked stage/governance changes require docs/STATUS.md to be updated.")
+        failures.append("Repository-tracked stage/governance changes require docs/STATUS.md to be updated in the same PR.")
 
 
 def check_llm_tracing_and_citations() -> None:

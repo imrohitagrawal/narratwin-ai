@@ -126,6 +126,16 @@ ISSUE_219_ALLOWED_CHANGED_FILES = {
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_223_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-223.json",
+    "docs/CODEX_OPERATING_MODEL.md",
+    "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/STATUS.md",
+    "scripts/guardrails_check.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_184_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-184.json",
     "AGENTS.md",
@@ -1307,10 +1317,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "#221",
-        "post-pr-218-status-reconciliation-active",
-        "post-pr-218-status-reconciliation-active",
-        "Issue #221 is the active post-PR-218 repository-ledger reconciliation after PR #218 merged issue #217 status reconciliation.",
+        "#223/#224",
+        "terminal-status-loop-breaker-active",
+        "terminal-status-loop-breaker-active",
+        "Issue #223 and PR #224 are the active terminal post-PR-222 loop-breaker; future issue-completing PRs must finalize docs/STATUS.md in the same PR with the post-merge target state and next-work pointer, while ordinary post-merge facts are recorded in PR/issue comments and not in successor status-only PRs.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3378,6 +3388,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_181_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-security-219-frontend-npm-audit":
         allowed_files = ISSUE_219_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-223-post-pr-222-status-reconciliation":
+        allowed_files = ISSUE_223_ALLOWED_CHANGED_FILES
     elif branch == PHF020A_BRANCH:
         allowed_files = ISSUE_184_ALLOWED_CHANGED_FILES
     elif branch == STATUS_STATE_V1_BRANCH:

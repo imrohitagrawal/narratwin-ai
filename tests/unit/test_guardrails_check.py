@@ -443,6 +443,9 @@ def completed_preflight_body(
     return (
         "Refs #44\n\n"
         f"{reviewer_overview_body()}\n"
+        "## Status impact\n\n"
+        "No repository-tracked status change is claimed by this PR. Routine post-merge facts go to "
+        "PR/issue comments, with no successor status-only PR.\n\n"
         "## Preflight evidence\n\n"
         "| Evidence | Artifact reference | Reference type | Matrix IDs | Command / CI / Source | Reviewer | Evidence type | Completion status | Residual risk decision |\n"
         "|---|---|---|---|---|---|---|---|---|\n"
@@ -725,22 +728,29 @@ def test_reviewer_overview_preserves_existing_guarded_pr_findings(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    status_finalized_body = completed_preflight_body().replace(
+        "No repository-tracked status change is claimed by this PR. Routine post-merge facts go to "
+        "PR/issue comments, with no successor status-only PR.",
+        "`docs/STATUS.md` is finalized in this PR as the post-merge target state for the issue, "
+        "including the next issue pointer. Routine post-merge facts go to PR/issue comments, "
+        "with no successor status-only PR.",
+    )
     valid = run_issue_link_check(
         tmp_path,
         monkeypatch,
         title="Harden local workflow evidence",
-        body=completed_preflight_body(),
+        body=status_finalized_body,
         head_ref="phase-1-closure-44-telemetry-hardening",
-        changed_files=["scripts/guardrails_check.py"],
+        changed_files=["scripts/guardrails_check.py", "docs/STATUS.md"],
     )
     assert valid == []
     prohibited = run_issue_link_check(
         tmp_path,
         monkeypatch,
         title="Harden local workflow evidence",
-        body=completed_preflight_body().replace("Refs #44", "Refs #44\nFixes #44", 1),
+        body=status_finalized_body.replace("Refs #44", "Refs #44\nFixes #44", 1),
         head_ref="phase-1-closure-44-telemetry-hardening",
-        changed_files=["scripts/guardrails_check.py"],
+        changed_files=["scripts/guardrails_check.py", "docs/STATUS.md"],
     )
     assert prohibited == [
         "Pull request title/body/commit messages must use reference-only issue wording."
@@ -750,9 +760,9 @@ def test_reviewer_overview_preserves_existing_guarded_pr_findings(
         tmp_path,
         monkeypatch,
         title="Harden local workflow evidence",
-        body=completed_preflight_body().replace(reviewer_overview_body() + "\n", ""),
+        body=status_finalized_body.replace(reviewer_overview_body() + "\n", ""),
         head_ref="phase-1-closure-44-telemetry-hardening",
-        changed_files=["scripts/guardrails_check.py"],
+        changed_files=["scripts/guardrails_check.py", "docs/STATUS.md"],
     )
     assert missing == [MISSING_REVIEWER_OVERVIEW]
 
@@ -760,11 +770,11 @@ def test_reviewer_overview_preserves_existing_guarded_pr_findings(
         tmp_path,
         monkeypatch,
         title="Harden local workflow evidence",
-        body=completed_preflight_body().replace("Refs #44", "Fixes #44", 1).replace(
+        body=status_finalized_body.replace("Refs #44", "Fixes #44", 1).replace(
             REVIEWER_POINT_CONTENT[0], "TODO", 1
         ),
         head_ref="phase-1-closure-44-telemetry-hardening",
-        changed_files=["scripts/guardrails_check.py"],
+        changed_files=["scripts/guardrails_check.py", "docs/STATUS.md"],
     )
     assert combined == [
         "Pull request title/body/commit messages must use reference-only issue wording.",
@@ -1665,6 +1675,61 @@ def test_general_pull_request_allows_reference_only_issue_link(
     assert failures == []
 
 
+def test_issue223_terminal_status_loop_breaker_is_allowed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Post-PR-222 status reconciliation",
+        body=(
+            "Refs #223\n\n"
+            "This is the terminal status loop-breaker. It establishes a no successor rule: "
+            "routine post-merge facts go to PR/issue comments, not another status-only PR."
+        ),
+        head_ref="phase-1-closure-process-223-post-pr-222-status-reconciliation",
+    )
+
+    assert failures == []
+
+
+def test_future_post_pr_status_reconciliation_loop_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Post-PR-224 status reconciliation",
+        body="Refs #225",
+        head_ref="phase-1-closure-process-225-post-pr-224-status-reconciliation",
+    )
+
+    assert (
+        "Standalone post-merge status reconciliation PRs are disallowed after issue #223; "
+        "record routine post-merge facts in PR/issue comments or bundle STATUS.md cleanup into material work."
+    ) in failures
+
+
+def test_issue223_status_loop_breaker_requires_terminal_body(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Post-PR-222 status reconciliation",
+        body="Refs #223\n\nRecords PR #222 status.",
+        head_ref="phase-1-closure-process-223-post-pr-222-status-reconciliation",
+    )
+
+    assert (
+        "Issue #223 is allowed only as the terminal status loop-breaker; the PR body must state terminal, "
+        "loop-breaker, no-successor, post-merge facts, PR/issue comments, and status-only boundaries."
+    ) in failures
+
+
 def test_general_pull_request_rejects_closing_keyword_as_only_issue_link(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1888,6 +1953,109 @@ def test_nontrivial_pull_request_accepts_completed_preflight_evidence(
     )
 
     assert failures == []
+
+
+def test_nontrivial_pull_request_requires_status_impact_section(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=completed_preflight_body().replace(
+            "## Status impact\n\n"
+            "No repository-tracked status change is claimed by this PR. Routine post-merge facts go to "
+            "PR/issue comments, with no successor status-only PR.\n\n",
+            "",
+        ),
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert guardrails.STATUS_IMPACT_SECTION_FAILURE in failures
+
+
+def test_status_impacted_pull_request_rejects_no_status_change_claim(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden process review evidence",
+        body=completed_preflight_body(),
+        head_ref="phase-1-closure-process-60-phf-002-medium-low-hardening",
+        changed_files=["docs/CODEX_OPERATING_MODEL.md", "docs/STATUS.md"],
+    )
+
+    assert guardrails.STATUS_IMPACT_UNSUPPORTED_NO_CHANGE_FAILURE in failures
+
+
+def test_status_impacted_pull_request_requires_same_pr_status_finalization(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "No repository-tracked status change is claimed by this PR. Routine post-merge facts go to "
+        "PR/issue comments, with no successor status-only PR.",
+        "`docs/STATUS.md` is finalized in this PR as the post-merge target state for the issue, "
+        "including the next issue pointer. Routine post-merge facts go to PR/issue comments, "
+        "with no successor status-only PR.",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden process review evidence",
+        body=body,
+        head_ref="phase-1-closure-process-60-phf-002-medium-low-hardening",
+        changed_files=["docs/CODEX_OPERATING_MODEL.md", "docs/STATUS.md"],
+    )
+
+    assert failures == []
+
+
+def test_status_impacted_pull_request_rejects_missing_status_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "No repository-tracked status change is claimed by this PR. Routine post-merge facts go to "
+        "PR/issue comments, with no successor status-only PR.",
+        "`docs/STATUS.md` is finalized in this PR as the post-merge target state for the issue, "
+        "including the next issue pointer. Routine post-merge facts go to PR/issue comments, "
+        "with no successor status-only PR.",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden process review evidence",
+        body=body,
+        head_ref="phase-1-closure-process-60-phf-002-medium-low-hardening",
+        changed_files=["docs/CODEX_OPERATING_MODEL.md"],
+    )
+
+    assert guardrails.STATUS_IMPACT_MISSING_STATUS_FILE_FAILURE in failures
+
+
+def test_status_impact_section_requires_comment_only_closeout_policy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(
+        "Routine post-merge facts go to PR/issue comments, with no successor status-only PR.",
+        "Closeout is handled later.",
+    )
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden local workflow evidence",
+        body=body,
+        head_ref="phase-1-closure-44-telemetry-hardening",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert guardrails.STATUS_IMPACT_CLOSEOUT_FAILURE in failures
 
 
 def test_nontrivial_pull_request_rejects_missing_required_preflight_categories(
@@ -3133,7 +3301,7 @@ def test_new_governance_artifacts_require_status_updates(changed_file: str) -> N
     guardrails.failures.clear()
     guardrails.check_status_tracking_rules([changed_file])
 
-    assert "Repository-tracked stage/governance changes require docs/STATUS.md to be updated." in guardrails.failures
+    assert "Repository-tracked stage/governance changes require docs/STATUS.md to be updated in the same PR." in guardrails.failures
 
 
 def test_new_governance_artifacts_pass_when_status_is_updated() -> None:
