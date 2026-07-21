@@ -1,0 +1,55 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 229,
+  "branch": "phase-1-closure-process-229-demo-checkpoint1-spec-governance",
+  "objective": "Create Demo Checkpoint 1 PR 1 as a spec/source-facts/governance-only slice for the controlled real-media hosted demo path. This PR must refresh official provider/platform source facts, define the future implementation contract for provider abstraction plus real TTS, avatar/video provider, and hosted-demo access/quota/retention/demo-polish PRs, record cost-minimized first-month demo constraints, and define security/privacy/consent/eval failure matrices without implementing backend, frontend, provider, RAG, avatar, database, Docker, hosted deployment, provider SDKs, provider keys, real media generation, cloned identity, Product Mode 2, public distribution, or production-readiness claims.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-229.json",
+      "docs/demo/DEMO_CHECKPOINT_1_SPEC_GOVERNANCE.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-229.json",
+      "docs/demo/DEMO_CHECKPOINT_1_SPEC_GOVERNANCE.md",
+      "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md"
+    ],
+    "forbidden": [
+      "runtime product code",
+      "backend/",
+      "frontend/",
+      "app/",
+      "src/",
+      "tests/",
+      "scripts/",
+      ".github/workflows/",
+      "docker-compose.yml",
+      "backend/Dockerfile",
+      "frontend/Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "provider SDKs",
+      "provider keys",
+      "external provider enablement",
+      "real audio generation",
+      "real video generation",
+      "avatar/video implementation",
+      "cloned identity implementation",
+      "hosted deployment",
+      "database migrations",
+      "RAG implementation",
+      "public synthetic-media distribution",
+      "production-readiness claims",
+      "Product Mode 2 implementation",
+      "stopped evidence surfaces #162/#163/#166/#167/#168"
+    ]
+  }
+}
