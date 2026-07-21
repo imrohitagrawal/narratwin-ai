@@ -68,6 +68,15 @@ PROCESS_ONLY_ALLOWED_CHANGED_FILES = MODULE_A_ALLOWED_CHANGED_FILES | {
     "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_229_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-229.json",
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_172_ALLOWED_CHANGED_FILES = {
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -1328,9 +1337,9 @@ STATUS_STATE_V1_ROWS = {
     "SSV1-NEXT": (
         "next-action",
         "future issue-linked Checkpoint 1 PR",
-        "demo-checkpoint1-issue-needed",
-        "demo-checkpoint1-issue-needed",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. The next approved action is to open a future issue-linked Checkpoint 1 PR for the first spec/source-facts/governance slice before any provider, TTS, avatar/video, hosted-demo, or quota/access implementation. Provider SDKs, provider keys, hosted deployment, real audio/video generation, cloned identity implementation, public synthetic-media distribution, Product Mode 2, and production-readiness claims remain forbidden until future issue-linked PRs explicitly approve them.",
+        "demo-checkpoint1-contract-needed",
+        "demo-checkpoint1-contract-needed",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 and PR #230 are the active Checkpoint 1 PR 1 spec/source-facts/governance slice; this row records the intended post-merge target state for PR #230. After PR #230 merges, the next approved action is a future issue-linked latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract PR before provider abstraction, TTS, avatar/video, hosted-demo, or quota/access implementation. Provider SDKs, provider keys, hosted deployment, real audio/video generation, cloned identity implementation, public synthetic-media distribution, Product Mode 2, and production-readiness claims remain forbidden until future issue-linked PRs explicitly approve them.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3402,6 +3411,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_223_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-225-demo-real-media-phase0-plan":
         allowed_files = ISSUE_225_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-229-demo-checkpoint1-spec-governance":
+        allowed_files = ISSUE_229_ALLOWED_CHANGED_FILES
     elif branch == PHF020A_BRANCH:
         allowed_files = ISSUE_184_ALLOWED_CHANGED_FILES
     elif branch == STATUS_STATE_V1_BRANCH:

@@ -1,0 +1,56 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 229,
+  "branch": "phase-1-closure-process-229-demo-checkpoint1-spec-governance",
+  "objective": "Create Demo Checkpoint 1 PR 1 as a spec/source-facts/governance-only slice. Positive claims: C1-SPEC-001 official source facts refreshed with URLs and verified dates; C1-SPEC-002 future PR contracts defined for latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level controls, provider abstraction plus real TTS, avatar/video provider, and hosted-demo access/quota/retention/demo-polish; C1-SPEC-003 first-month controlled demo target $30-$60, approval ceiling $75-$200, view-first pre-generated media path, hard quota/retry/cost guardrails recorded; C1-SPEC-004 security/privacy/consent/eval failure matrix IDs are explicit enough for later PRs to map to tests, gates, source facts, human-only rows, or documented non-goals. Negative invariants: NONGOAL-RUNTIME-001 no backend/frontend/provider/RAG/avatar/database/Docker/hosted deployment/provider SDK/provider key/runtime changes; NONGOAL-MEDIA-001 no real audio/video generation or cloned identity implementation; NONGOAL-LAUNCH-001 no Product Mode 2, public distribution, or production-readiness claim. Failure matrix IDs expected in docs: UPLOAD-VALIDATION-001, PROMPT-INJECTION-001, UNSUPPORTED-CLAIMS-001, CITATION-MISMATCH-001, SOURCE-EVAL-MEDIA-MISMATCH-001, MULTILINGUAL-DRIFT-001, PROVIDER-FAILURE-001, QUOTA-EXHAUSTION-001, BACKPRESSURE-RATE-LIMIT-001, CONSENT-REVOKED-001, CLONE-PROFILE-DELETION-001, RETENTION-DELETION-001, DISCLOSURE-VISIBILITY-001, EXTERNAL-INVITE-BOUNDARY-001. Expected evidence: docs gates via guardrails and make quality; tests limited to existing guardrail/phase1 docs tests; official source URLs for provider/platform facts; fan-out adversarial review findings and dispositions.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-229.json",
+      "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-229.json",
+      "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "forbidden": [
+      "runtime product code",
+      "backend/",
+      "frontend/",
+      "app/",
+      "src/",
+      ".github/workflows/",
+      "docker-compose.yml",
+      "backend/Dockerfile",
+      "frontend/Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "provider SDKs",
+      "provider keys",
+      "external provider enablement",
+      "real audio generation",
+      "real video generation",
+      "avatar/video implementation",
+      "cloned identity implementation",
+      "hosted deployment",
+      "database migrations",
+      "RAG implementation",
+      "public synthetic-media distribution",
+      "production-readiness claims",
+      "Product Mode 2 implementation",
+      "stopped evidence surfaces #162/#163/#166/#167/#168"
+    ]
+  }
+}
