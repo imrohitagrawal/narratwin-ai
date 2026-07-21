@@ -701,7 +701,14 @@ def parse_retry_after(value: object, max_seconds: float) -> float:
         try:
             parsed_seconds = float(value)
         except ValueError:
-            parsed_date = email.utils.parsedate_to_datetime(value)
+            try:
+                parsed_date = email.utils.parsedate_to_datetime(value)
+            except (TypeError, ValueError) as exc:
+                raise AvatarVideoProviderError(
+                    422,
+                    "AVATAR_VIDEO_PROVIDER_RESPONSE_INVALID",
+                    "Retry-After is invalid.",
+                ) from exc
             if parsed_date.tzinfo is None:
                 parsed_date = parsed_date.replace(tzinfo=UTC)
             parsed_seconds = (parsed_date - datetime.now(UTC)).total_seconds()

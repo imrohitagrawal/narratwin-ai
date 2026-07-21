@@ -303,6 +303,16 @@ def test_retry_cap_and_retry_after_are_bounded_without_real_sleep() -> None:
     assert sleeps == [0.0, 30.0, 30.0]
 
 
+def test_malformed_retry_after_is_rejected_as_provider_response() -> None:
+    transport = FakeAvatarVideoTransport(poll=[_json_response({"status": "running", "retry_after": "not-a-date"})])
+    provider, _transport, _ledger, _sleeps = _provider(transport=transport)
+
+    with pytest.raises(AvatarVideoProviderError) as exc_info:
+        provider.render(_request())
+
+    _assert_error(exc_info, "AVATAR_VIDEO_PROVIDER_RESPONSE_INVALID")
+
+
 @pytest.mark.parametrize(
     ("artifact_url", "resolved_ips"),
     (
