@@ -19,13 +19,14 @@ Use it to answer:
 - Current implementation permission: Phase 1 Closure governance only. Demo
   Phase 0 planning for issue `#225` completed through PR `#226`; issue `#229`
   is the Checkpoint 1 PR 1 spec/source-facts/governance slice and, when merged,
-  authorizes only the next future issue-linked provider-abstraction plus real
-  TTS contract PR. No Phase 2 feature work, external provider enablement,
-  provider SDKs, provider keys, hosted deployment, production release tag, real
-  audio/video generation, cloned identity implementation, public synthetic-media
-  distribution claim, Product Mode 2 work, avatar/video provider integration,
-  hosted-demo access/quota/retention/demo polish, or production-readiness claim
-  is permitted by issues `#225` or `#229`. Issue `#39`
+  authorizes only the next future issue-linked latency/capacity/cost/access/
+  quota/cache/pre-generation/retention/launch-level contract PR. No Phase 2
+  feature work, external provider enablement, provider abstraction
+  implementation, provider SDKs, provider keys, hosted deployment, production
+  release tag, real audio/video generation, cloned identity implementation,
+  public synthetic-media distribution claim, Product Mode 2 work, avatar/video
+  provider integration, hosted-demo access/quota/retention/demo polish, or
+  production-readiness claim is permitted by issues `#225` or `#229`. Issue `#39`
   media/provider/security rows are non-downgradeable for production Go unless
   the affected provider, media, export, and replay paths remain disabled.
 - Current repo mode: Final Review has merged; Phase 1 Closure is active,
@@ -164,7 +165,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | future issue-linked Checkpoint 1 PR | demo-checkpoint1-issue-needed | demo-checkpoint1-issue-needed | Demo Phase 0 planning completed through issue #225 and PR #226. The next approved action is to open a future issue-linked Checkpoint 1 PR for the first spec/source-facts/governance slice before any provider, TTS, avatar/video, hosted-demo, or quota/access implementation. Provider SDKs, provider keys, hosted deployment, real audio/video generation, cloned identity implementation, public synthetic-media distribution, Product Mode 2, and production-readiness claims remain forbidden until future issue-linked PRs explicitly approve them. |
+| SSV1-NEXT | next-action | future issue-linked Checkpoint 1 PR | demo-checkpoint1-contract-needed | demo-checkpoint1-contract-needed | Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 and PR #230 are the active Checkpoint 1 PR 1 spec/source-facts/governance slice; this row records the intended post-merge target state for PR #230. After PR #230 merges, the next approved action is a future issue-linked latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract PR before provider abstraction, TTS, avatar/video, hosted-demo, or quota/access implementation. Provider SDKs, provider keys, hosted deployment, real audio/video generation, cloned identity implementation, public synthetic-media distribution, Product Mode 2, and production-readiness claims remain forbidden until future issue-linked PRs explicitly approve them. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -402,7 +403,7 @@ Use these files together with this tracker:
 | `#223` | Closed | Post-PR-222 terminal loop-breaker | Completed through merged PR `#224` at `7cb19e86844e75a5766ec732ca08b18dd931680f`; records PR `#222` merge state, issue `#221` closure, post-merge main quality workflow evidence, and the terminal rule that future issue-completing PRs finalize `docs/STATUS.md` in the same PR while routine post-merge facts are recorded in PR/issue comments instead of successor status-only PRs. No runtime, Product Mode 2, real media, providers, hosted/public launch, public distribution, or production-readiness scope was authorized. |
 | `#225` | Closed | Demo Phase 0 planning | Completed through merged PR `#226` at `8d8f1d3dc1a1393356a7e5b95e7404d6b92e40dc`. It documented the controlled reviewer demo contract, source facts, cost/terms research, checkpoint sequencing, failure-matrix categories, and fan-out review expectations only; no runtime, provider SDK, provider key, hosted deployment, real audio/video generation, cloned identity implementation, Product Mode 2, public synthetic-media distribution, or production-readiness scope was authorized. |
 | `#231` | Closed | Process governance follow-up | Human verification checklist practice completed through merged PR `#232` at `fde56c0eb438ccc521172f0262c543fe2f81412b`; issue `#231` is closed and the durable practice now requires non-trivial PR bodies to include exact data/source/artifact references, official URLs and verified/accessed dates for changeable facts, pass/fail criteria, residual-risk owners, and high-risk-surface coverage. Scope was docs/process only and did not authorize runtime, provider, media, hosted deployment, Product Mode 2, public distribution, production-readiness, or PR `#230` branch mutation. |
-| `#229` | Open | Demo Checkpoint 1 PR 1 spec/source-facts/governance | Active issue for PR `#230` on branch `phase-1-closure-process-229-demo-checkpoint1-spec-governance`; scope is preflight plus governance/spec docs only. When PR `#230` merges, the next approved action becomes a future issue-linked provider-abstraction plus real TTS contract PR only. It does not authorize backend, frontend, provider abstraction implementation, provider SDKs, provider keys, hosted deployment, real audio/video generation, avatar/video provider integration, cloned identity, Product Mode 2, public distribution, or production-readiness claims. |
+| `#229` | Open | Demo Checkpoint 1 PR 1 spec/source-facts/governance | Active issue for PR `#230` on branch `phase-1-closure-process-229-demo-checkpoint1-spec-governance`; scope is preflight plus governance/spec docs only. When PR `#230` merges, the next approved action becomes a future issue-linked latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract PR only. It does not authorize backend, frontend, provider abstraction implementation, provider SDKs, provider keys, hosted deployment, real audio/video generation, avatar/video provider integration, cloned identity, Product Mode 2, public distribution, or production-readiness claims. |
 
 ## Pull Request Ledger
 
@@ -688,8 +689,10 @@ Use these files together with this tracker:
 2. Keep issue `#8` open until its actual acceptance contract is satisfied.
 3. Complete issue `#229` through dedicated PR `#230` for
    spec/source-facts/governance only. After that PR merges, the next approved
-   action is a new issue-linked provider-abstraction plus real TTS contract PR,
-   still with paid providers optional and disabled for local/dev/test.
+   action is a new issue-linked latency/capacity/cost/access/quota/cache/
+   pre-generation/retention/launch-level contract PR before any provider
+   abstraction or real TTS work, still with paid providers optional and disabled
+   for local/dev/test.
 4. Keep avatar/video provider integration, hosted-demo access/quota/retention,
    demo polish, production, multi-worker deployment, hosted launch, Product Mode
    2, external provider use, real audio/video export, and public synthetic-media

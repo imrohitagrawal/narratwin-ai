@@ -615,15 +615,19 @@ implementation contracts, record cost-minimized controlled-demo constraints,
 expand security/privacy/consent/eval failure matrices, and record fan-out review
 findings in `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`, with the matching
 `docs/governance/preflights/issue-229.json`, `docs/STAGE_ISSUE_PLAN.md`,
-`docs/STATUS.md`, and `docs/THIRD_PARTY_NOTICES.md`.
+`docs/STATUS.md`, `docs/THIRD_PARTY_NOTICES.md`, and the narrow Phase 1
+Closure status-contract test/checker files needed to keep `SSV1-NEXT` aligned:
+`scripts/quality/check_phase1_closure_docs.py` and
+`tests/unit/test_phase1_closure_docs.py`.
 
 It must not implement backend, frontend, provider, RAG, avatar, database,
 Docker, hosted deployment, provider SDKs, provider keys, real audio generation,
 real video generation, cloned identity, public synthetic-media distribution,
 Product Mode 2, or production-readiness claims. Future Checkpoint 1
-implementation must proceed through separate issue-linked PRs for provider
-abstraction plus real TTS, avatar/video provider integration, and hosted-demo
-access/quota/retention/demo polish.
+implementation must proceed through separate issue-linked PRs, beginning with a
+latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level
+contract PR before provider abstraction plus real TTS, avatar/video provider
+integration, and hosted-demo access/quota/retention/demo polish.
 
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a

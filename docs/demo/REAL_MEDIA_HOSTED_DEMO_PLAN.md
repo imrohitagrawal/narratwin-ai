@@ -102,8 +102,8 @@ Reviewed on 2026-07-21 against the official sources listed above:
 |---|---|---|
 | ElevenLabs | API pricing page lists self-serve tiers, including Starter at `$6/month`, Creator at `$22/month`, and TTS model pricing around `$0.05-$0.10` per 1,000 characters depending on model class. | Good fit for Checkpoint 1 real TTS if key storage, usage cap, consent, and disclosure controls are added first. |
 | HeyGen API | API pricing pages describe pay-as-you-go wallet start around `$5`, API usage deducted from the API wallet, and model-specific per-second video pricing; Avatar III Digital Twin/Studio Avatar is around `$0.0167/sec`, Avatar III Photo Avatar around `$0.0433/sec`, Avatar IV Photo Avatar around `$0.05/sec`, Avatar IV/V Digital Twin or Studio Avatar around `$0.0667/sec`, and Video Agent Prompt to Video around `$0.0333/sec`. | Good first avatar/video candidate only after the avatar/video PR selects the exact model and proves the 2-minute run cost, retry buffer, and global quota fit the owner-approved budget. |
-| D-ID API | API pricing page lists a free trial with up to 3 minutes and paid API plans starting around `$35/month`; minutes used via API are deducted from the same balance as the web product. | Viable alternate avatar/video adapter candidate; confirm public-use and retention rules before selection. |
-| Tavus | Pricing page lists developer API access and generated-video overage around `$1/minute` on pay-as-you-go, with lower per-minute rates on larger plans. | Viable alternate avatar/video adapter candidate; confirm stock replica/custom replica rules before selection. |
+| D-ID API | API pricing page lists a free trial with up to 3 minutes; FAQ states credits are worth up to 15 seconds of video and API usage draws from the same balance as the Studio product. | Viable alternate avatar/video adapter candidate; selected plan, credit package, public-use, watermark, and retention rules must be refreshed before selection. |
+| Tavus | Pricing page lists developer/API access, allocated conversation or video-generation minutes, pay-as-you-go behavior on paid plans, 30-second minimums for conversations, and no overage cap on paid plans. | Viable alternate avatar/video adapter candidate only with app-side hard quotas; selected plan, stock replica/custom replica rules, and generated-video cost must be refreshed before selection. |
 | OpenVoice | Official repository states OpenVoice V1 and V2 are MIT licensed and free for commercial and research use. | Promising local clone research candidate, but still needs dependency, model-weight, quality, hardware, and consent review. |
 | SadTalker | Official repository states the license has moved to Apache 2.0 and removed the prior non-commercial restriction. | Possible local avatar research candidate, but still needs model-weight, asset, quality, hardware, and consent review. |
 | Wav2Lip | Official repository says the code can only be used for personal/research/non-commercial purposes. | Rejected for the default recruiter/portfolio demo path. |
@@ -133,7 +133,7 @@ The default controlled-demo posture should be cost-minimized:
 | Cost area | Cost-minimized planning estimate | Control required |
 |---|---:|---|
 | Hosted app/database/cache | `$0-$5/month` preferred for the controlled demo; use `$20+` only if the selected host requires paid spend controls or team features | hard monthly cloud budget, teardown plan, and no production durability claim |
-| TTS or voice clone | Checkpoint 1 TTS should target low single-digit usage or the smallest required plan; cloned voice remains out of scope until Checkpoint 2 | per-run character/minute cap |
+| TTS or voice clone | Checkpoint 1 TTS should target low single-digit usage or the smallest terms-compatible paid plan when output is recruiter-facing or otherwise external; cloned voice remains out of scope until Checkpoint 2 | per-run character/minute cap |
 | Avatar/video generation | target roughly `$1/minute` for non-cloned/stock/synthetic output; avoid premium avatar engines unless explicitly justified | per-user video-minute quota |
 | Failed runs and retries | 20 percent default buffer; 50 percent only for provider-selection testing, not normal reviewer access | retry budget and idempotency |
 | Cost-minimized first-month demo target | `$30-$60` for 10 invited reviewers x one 2-minute output each | app-level provider budget stop |
@@ -231,13 +231,13 @@ provider call.
 
 | ID | Area | Official source | Fact used | Checkpoint 1 implication |
 |---|---|---|---|---|
-| `SRC-ELEVEN-TTS-001` | ElevenLabs TTS pricing | `https://elevenlabs.io/pricing/api` | API pricing lists TTS by characters, with lower-cost Flash/Turbo and higher-cost Multilingual/v3 classes. | The TTS PR must calculate estimated character cost per run, reserve quota before provider calls, and default to the lowest acceptable model for the controlled demo. |
+| `SRC-ELEVEN-TTS-001` | ElevenLabs TTS pricing | `https://elevenlabs.io/pricing/api` | API pricing lists TTS by characters, with lower-cost Flash/Turbo and higher-cost Multilingual/v3 classes. | The TTS PR must calculate estimated character cost per run, reserve quota before provider calls, and default to the lowest acceptable terms-compatible model for the controlled demo. Free-tier output is not acceptable for recruiter-facing or external output unless a fresh terms review explicitly proves the selected use is allowed. |
 | `SRC-ELEVEN-TTS-002` | ElevenLabs TTS model limits | `https://elevenlabs.io/text-to-speech-api` | Public TTS page describes model-specific language support, character limits, and approximate per-minute costs. | The TTS PR must cap script length and selected languages before audio generation. |
 | `SRC-ELEVEN-CLONE-001` | ElevenLabs voice cloning | `https://elevenlabs.io/docs/eleven-api/guides/how-to/voices/professional-voice-cloning` and `https://help.elevenlabs.io/hc/en-us/articles/36842751624209-Can-I-create-a-Professional-Voice-Clone-of-someone-else-s-voice` | Professional Voice Cloning requires verification, and ElevenLabs help states a user can create a Professional Voice Clone only of their own voice; another person must create, verify, and privately share their own clone from their own account. | Checkpoint 1 must avoid cloned identity. Checkpoint 2 consent is necessary but not sufficient for ElevenLabs PVC: third-party PVC enrollment is excluded unless the subject owns the verified clone and privately shares it under a recorded scope. |
 | `SRC-ELEVEN-POLICY-001` | ElevenLabs use policy | `https://elevenlabs.io/use-policy` | Policy prohibits unauthorized, deceptive, or harmful impersonation, including replicating another person's voice without consent or legal right. | Consent, disclosure, and no-deceptive-impersonation gates are mandatory before any voice clone path. |
 | `SRC-HEYGEN-PRICE-001` | HeyGen API pricing | `https://www.heygen.com/api-pricing` and `https://developers.heygen.com/docs/pricing` | Public API pricing says pay-as-you-go starts around `$5`, Direct API usage is deducted from a separate API dashboard balance, and developer pricing is model-specific per second or per operation. | The avatar/video PR must select one explicit model, convert seconds to expected dollars, include wallet/minimum-spend behavior, and block unbounded generation. |
 | `SRC-HEYGEN-VIDEO-001` | HeyGen create video API | `https://developers.heygen.com/reference/create-video` | Create Video supports avatar/image based video and scripts or pre-recorded audio, with selectable avatar engines. | The avatar/video PR must bind the selected source run, TTS audio, script, citations, eval, provider model, and artifact manifest. |
-| `SRC-HEYGEN-CONSENT-001` | HeyGen avatar consent | `https://developers.heygen.com/docs/avatar-consent` | Digital twin generation requires consent for the depicted person; photo avatars and prompt-to-avatar characters are documented as not requiring digital-twin consent. | Checkpoint 1 should use stock/synthetic/non-cloned identity; digital twin or cloned identity must wait for Checkpoint 2. |
+| `SRC-HEYGEN-CONSENT-001` | HeyGen avatar consent | `https://developers.heygen.com/docs/avatar-consent` | Digital twin generation requires consent for the depicted person; photo avatars and prompt-to-avatar characters are documented as not requiring digital-twin consent only when they do not depict a real identifiable person. | Checkpoint 1 must use provider-stock, synthetic, or non-identifiable identity assets by default; any real-person photo, face, likeness, or training asset requires explicit rights, consent, source-asset deletion, and audit evidence before provider egress. Digital twin or cloned identity must wait for Checkpoint 2. |
 | `SRC-DID-PRICE-001` | D-ID API pricing | `https://www.d-id.com/pricing/api/` and `https://www.d-id.com/faqs/` | D-ID API plans use credits; FAQ states each credit is worth up to 15 seconds of video and API minutes draw from the same balance as the web product. | D-ID remains viable only with strict per-run credit reservation and a hard monthly budget stop. |
 | `SRC-DID-TERMS-001` | D-ID synthetic marking | `https://www.d-id.com/eula/` | D-ID terms restrict hiding or minimizing synthetic marks or watermarks without prior written approval. | The avatar/video PR must preserve provider marks/disclosures and must not promise white-label output. |
 | `SRC-TAVUS-PRICE-001` | Tavus pricing | `https://www.tavus.io/pricing` | Tavus pricing lists monthly plans, allocated conversation/video-generation minutes, 30-second minimums, pay-as-you-go overage on paid plans, and no overage cap on paid plans. | Tavus is not cost-safe without app-level hard quota enforcement; no-overage-cap provider behavior cannot be trusted as the budget control. |
@@ -245,7 +245,7 @@ provider call.
 | `SRC-TAVUS-KEY-001` | Tavus API authentication | `https://docs.tavus.io/api-reference/authentication` | Tavus docs state API keys are secrets and must not be exposed in browser/client-side code; load securely from environment/server configuration. | Future provider PRs must keep provider calls server-side, env-only, disabled by default, and redacted from logs. |
 | `SRC-TAVUS-CONSENT-001` | Tavus face rights | `https://docs.tavus.io/sections/replica/replica-faqs` | Tavus requires appropriate rights and permissions for another person's likeness, voice, and training content. | Checkpoint 2 clone work must record rights, permissions, consent scope, revocation, and deletion paths before profile creation. |
 | `SRC-RAILWAY-001` | Railway pricing | `https://docs.railway.com/pricing/plans` and `https://docs.railway.com/pricing/cost-control` | Railway plans include usage credits/minimum commitments, and cost-control docs describe configurable usage limits for some spend areas. | Hosted-demo PR must use an owner-approved project budget, alerts, teardown plan, and no production durability claim. |
-| `SRC-VERCEL-001` | Vercel pricing and limits | `https://vercel.com/pricing`, `https://vercel.com/docs/pricing`, and `https://vercel.com/docs/plans/hobby` | Vercel has Hobby and Pro tiers, usage limits, and Pro included credit across resources. | Vercel can be considered for frontend hosting only after invite/access, backend/provider egress, and spend controls are explicit. |
+| `SRC-VERCEL-001` | Vercel pricing and limits | `https://vercel.com/pricing`, `https://vercel.com/docs/pricing`, and `https://vercel.com/docs/plans/hobby` | Vercel has Hobby and Pro tiers, usage limits, Pro included credit across resources, and Hobby is described as personal/non-commercial. | Vercel Hobby must not be selected for a recruiter-facing or external demo unless the owner records a terms-compatible non-commercial classification. Otherwise budget Vercel as Pro-like spend or choose another host with source-backed access and spend controls. |
 | `SRC-RENDER-001` | Render free service behavior | `https://render.com/docs/free` | Render free web services spin down after 15 minutes without inbound traffic and take about one minute to spin back up. | Render free hosting is risky for recruiter first impression unless view-first media, warmup, or paid non-spindown behavior is selected. |
 | `SRC-OPENVOICE-001` | OpenVoice license | `https://github.com/myshell-ai/OpenVoice` | Official repository states OpenVoice V1 and V2 are MIT licensed and free for commercial and research use. | OpenVoice remains a local research candidate only; model weights, dependencies, hardware, quality, consent, and output rights still need review. |
 | `SRC-SADTALKER-001` | SadTalker license | `https://github.com/OpenTalker/SadTalker` | Official repository says the license moved to Apache 2.0 and removed the prior non-commercial restriction. | SadTalker remains a local research candidate only; model weights, assets, runtime, hardware, consent, and output quality still need review. |
@@ -280,13 +280,15 @@ Required contract:
   selected vendor into core script generation.
 - Generate or store real audio only after quota reservation, source-run binding,
   supported-language check, script-length cap, disclosure metadata, provider
-  failure policy, and artifact validation exist.
+  failure policy, artifact validation, retention/deletion policy, and
+  provider-side deletion/tombstone evidence path exist.
 - For Checkpoint 1, use non-cloned stock/generated voices only unless a separate
   Checkpoint 2 clone-consent issue is opened and approved.
 - Required evidence before merge: unit/API tests for disabled provider defaults,
   missing/invalid key, quota reservation/refund, provider timeout, malformed
   provider output, unsafe URL rejection when applicable, source-run/eval binding,
-  and redacted logs.
+  prompt-injection refusal for every provider-fed text surface, retention/deletion
+  behavior for generated/provider artifacts, and redacted logs.
 
 Explicit non-goals:
 
@@ -308,10 +310,14 @@ approved source run + evaluated script + validated TTS/audio or script
 
 Required contract:
 
-- Use stock, synthetic, photo, prompt, or otherwise non-cloned identity for
-  Checkpoint 1.
-- Keep cloned face, cloned voice, digital twin, custom face, and replica-profile
-  creation out of scope until Checkpoint 2 consent/provenance controls exist.
+- Use provider-stock, synthetic, prompt-generated, or otherwise non-identifiable
+  identity assets for Checkpoint 1 by default.
+- Do not use a real person's photo, face, likeness, custom face, image-to-face
+  asset, replica, or training asset in Checkpoint 1 unless the avatar/video PR
+  records explicit rights, consent scope, source-asset retention/deletion,
+  provider-side deletion path, and audit evidence before provider egress.
+- Keep cloned face, cloned voice, digital twin, and replica-profile creation out
+  of scope until Checkpoint 2 consent/provenance controls exist.
 - Bind every media artifact to source run ID, trace ID, language, audience,
   script checksum, citation refs, evaluation ID/status/checksum, TTS/audio
   checksum if present, provider ID/model/version, provider job ID, artifact
@@ -319,13 +325,14 @@ Required contract:
 - Validate provider output before storage, display, or download: status,
   timeout, retry-after, max attempts, MIME, extension, size, checksum, duplicate
   JSON keys, unsafe URL, redirect, unexpected fields, stale source run, stale
-  eval, and failed eval.
+  eval, failed eval, and prompt/provider-output injection attempts.
 - Preserve provider synthetic marks/watermarks unless a written provider/legal
   approval explicitly permits an alternate disclosure path.
 - Required evidence before merge: tests for provider disabled default, missing
   key, failed eval block, source-run/eval/media mismatch, citation mismatch,
-  provider timeout/failure, unsafe URL, oversized artifact, quota exhaustion, and
-  disclosure visibility.
+  prompt injection across script/transcript/provider-output surfaces, provider
+  timeout/failure, unsafe URL, oversized artifact, quota exhaustion,
+  retention/deletion/provider deletion path, and disclosure visibility.
 
 Explicit non-goals:
 
@@ -409,6 +416,10 @@ Hosting/access cost must be separated from media generation:
   behavior, Render free cold starts/ephemeral filesystem/30-day free Postgres,
   and paid deployment-protection add-ons must be treated as first-month budget
   inputs, not ignored overhead.
+- Vercel Hobby must not be used for recruiter-facing or otherwise external
+  access unless the owner records a source-backed non-commercial classification;
+  absent that record, budget Vercel as Pro-like spend or choose a different
+  terms-compatible host.
 - Render Free is acceptable only for previewing platform behavior, not for a
   production-readiness claim, and only if cold start cannot make the first
   recruiter viewport look broken.
@@ -419,6 +430,10 @@ Hard guardrails required before any paid provider call:
 - Per-user/reviewer quota.
 - Global monthly quota.
 - Provider-specific max seconds/characters/credits.
+- Atomic durable check-and-reserve across per-run, per-user/reviewer, retry, and
+  global monthly budgets before provider egress. Concurrent requests must use a
+  lease-fenced reservation or equivalent transaction so they cannot each pass
+  the same global budget check.
 - Failed-job refund policy only for failures that did not incur provider cost.
 - Idempotency key and provider job ID binding to prevent duplicate spend.
 - Dashboard or provider-side spend limit where available, plus app-side budget
@@ -426,6 +441,10 @@ Hard guardrails required before any paid provider call:
 - Redacted cost telemetry: provider, model, seconds/characters/credits, reserved
   amount, charged estimate, quota decision, retry count, and failure code, with
   no prompt, upload text, transcript, provider secret, or raw provider payload.
+- Hosted/invite logs must minimize or redact invite tokens, signed artifact
+  URLs, reviewer emails, IP addresses, user agents, referrers, provider job IDs
+  when not needed for support, and provider dashboard identifiers before any
+  invite-controlled URL exists.
 
 ### Quota, Retry, And Cost Contract
 
@@ -445,6 +464,10 @@ Retry rules:
 - Retry only transient provider timeout, documented temporary provider
   unavailable status, or rate-limit responses where the provider documents retry
   semantics.
+- If a provider submit call times out after egress and acceptance is unknown,
+  do not automatically retry unless the provider has documented idempotency for
+  the submitted request key or a provider job lookup proves no accepted billable
+  job exists.
 - Respect provider `Retry-After` when present and below the app max wait;
   otherwise use the app backoff ceiling.
 - Never retry unsupported claims, citation mismatch, source/eval/media mismatch,
@@ -458,7 +481,10 @@ Retry rules:
 
 Real avatar/video providers can return queued jobs, hosted URLs, webhooks,
 rate-limit headers, or credit errors. Future provider PRs must define and test
-one normalized lifecycle before provider enablement:
+one normalized lifecycle before provider enablement. Selected-provider source
+facts must cover rate limits, `Retry-After`, idempotency support or absence,
+polling/webhook semantics, hosted URL TTL, and artifact download behavior before
+generic retry or polling logic is accepted:
 
 | Lifecycle field | Required contract |
 |---|---|
@@ -507,18 +533,22 @@ Minimum first-screen controlled-demo behavior:
 
 | State | Required user-visible behavior | Provider action |
 |---|---|---|
-| Valid invite, artifact ready | first viewport shows playable owner-approved media, AI-generated media disclosure, unsupported-claim count or fail state, source count, eval timestamp/run ID, and one-click citations/eval drawer | no provider call on first view |
-| Valid invite, provider down | view-first artifact remains available if provenance is valid; regeneration disabled; owner contact path visible | no new provider call |
+| Valid invite, artifact ready and eval passed | first viewport shows playable owner-approved media, AI-generated media disclosure, unsupported-claim count of 0, source count, eval timestamp/run ID, and one-click citations/eval drawer | no provider call on first view |
+| Valid invite, artifact failed eval or unsupported claims | media is blocked or disabled; first viewport shows AI-generated media disclosure context, unsupported-claim/fail state, source count, eval timestamp/run ID, citation/eval drawer, and owner contact path | no provider call on first view |
+| Valid invite, artifact missing/not ready/invalid | show a non-broken unavailable state with AI-media disclosure context, owner contact path, and no generate-first path; regeneration remains disabled until an owner-approved provenance-bound artifact exists | no provider call on first view |
+| Valid invite, provider down | view-first artifact remains available if provenance is valid and eval passed, with the same disclosure, unsupported-claim count of 0, source count, eval timestamp/run ID, and citation/eval drawer as the happy path; regeneration disabled; owner contact path visible | no new provider call |
 | Invalid or expired invite | show access-denied state with owner contact path and no product data | no provider call |
-| Per-user quota exhausted | approved artifact remains visible; regeneration disabled; copy says regeneration is paused for this invite | no provider call |
-| Global budget exhausted | approved artifact remains visible; all regeneration disabled; owner-only budget action required | no provider call |
+| Per-user quota exhausted | approved artifact remains visible only if provenance is valid and eval passed, with disclosure, unsupported-claim count of 0, source count, eval timestamp/run ID, and citation/eval drawer; regeneration disabled; copy says regeneration is paused for this invite | no provider call |
+| Global budget exhausted | approved artifact remains visible only if provenance is valid and eval passed, with disclosure, unsupported-claim count of 0, source count, eval timestamp/run ID, and citation/eval drawer; all regeneration disabled; owner-only budget action required | no provider call |
 | Eval/source/media mismatch | media is blocked or visibly disabled; evidence drawer shows mismatch state | no provider call |
 
 Target first impression for the hosted demo: valid invite to first visible
-view-first artifact should target p95 under 3 seconds after HTML starts loading
-on a normal broadband connection. Free hosting with documented one-minute cold
-starts is acceptable only if a warmup or pre-rendered static shell prevents the
-first screen from appearing broken.
+view-first artifact should target p95 under 3 seconds from the reviewer opening
+the invite URL on a normal broadband connection, including DNS, auth redirect,
+server cold start, first byte, and first render. Free hosting with documented
+one-minute cold starts is acceptable only if a warmup or pre-rendered static
+shell prevents the first screen from appearing broken and the end-to-end invite
+open still meets the target or is explicitly owner-approved as a demo limitation.
 
 ## Checkpoint 1 Failure Matrix
 
@@ -533,13 +563,15 @@ non-goal. Range shorthand is not acceptable in PR evidence.
 | `UNSUPPORTED-CLAIMS-001` | Evaluation | generated script has unsupported claim or failed eval | block media generation and display refusal/warning; no accepted media artifact | provider/TTS and avatar/video PRs |
 | `CITATION-MISMATCH-001` | Citations | media/script references source chunk not retrieved or citation text drifts | block accepted output and require eval/citation repair | provider/TTS and avatar/video PRs |
 | `SOURCE-EVAL-MEDIA-MISMATCH-001` | Provenance | source run, language bundle, eval, TTS audio, avatar job, media artifact, or manifest belongs to a different run | reject replay/display/download; record typed failure | provider/TTS and avatar/video PRs |
+| `MULTILINGUAL-DRIFT-001` | Multilingual grounding | translated script, subtitles, TTS text, or audio changes meaning, drops glossary/citation markers, adds unsupported claims, or diverges from source-language eval | block media generation/display until translated claims, citations, subtitles, audio, and eval evidence match the approved source graph | provider/TTS and avatar/video PRs |
 | `PROVIDER-FAILURE-001` | Provider reliability | missing key, invalid key, disabled provider, timeout, malformed response, `Retry-After`, unsafe URL, unexpected MIME, oversized artifact, duplicate JSON keys, max attempts exceeded | fail closed or fall back to mock/view-first artifact without hiding failure | provider/TTS and avatar/video PRs |
 | `QUOTA-EXHAUSTION-001` | Cost/quota | per-run, per-user, retry, provider, or global monthly quota exceeded | do not call provider; show quota-exceeded state; no retry loop | every paid-provider or hosted PR |
+| `BACKPRESSURE-RATE-LIMIT-001` | Reliability/capacity | queue saturated, concurrent reviewer limit reached, provider 429/rate limit, provider queue delay, local worker unavailable, or backpressure threshold exceeded | do not start duplicate provider work; preserve view-first artifact; show typed retry-later or regeneration-paused state inside quota rules | every paid-provider or hosted PR |
 | `CONSENT-REVOKED-001` | Consent | consent expires, is revoked, wrong subject, wrong scope, or consent not bound to artifact | block clone/profile/media generation and hide/delete affected artifacts per retention policy | Checkpoint 2; non-goal in Checkpoint 1 |
 | `CLONE-PROFILE-DELETION-001` | Clone lifecycle | provider clone/profile/source asset deletion requested or provider profile missing | stop use, block replay/regeneration, record provider deletion evidence | Checkpoint 2; non-goal in Checkpoint 1 |
 | `RETENTION-DELETION-001` | Retention/deletion | user/owner requests deletion of upload, generated script, audio, video, provider artifact, source asset, invite, or log | delete or tombstone per policy; provider-side deletion tracked where applicable | hosted-demo PR |
 | `DISCLOSURE-VISIBILITY-001` | Disclosure | AI-generated media disclosure hidden, removed, too small, missing from artifact, or inconsistent with provider mark | block publish/share/download until visible disclosure exists | avatar/video and hosted-demo PRs |
-| `EXTERNAL-INVITE-BOUNDARY-001` | Launch boundary | external reviewer can access hosted URL, expired invite, wrong invite, anonymous access, owner contact path missing | enforce invite-only access and soft-launch controls; no public/prod claim | hosted-demo PR |
+| `EXTERNAL-INVITE-BOUNDARY-001` | Launch boundary | external reviewer can access hosted URL before soft-launch controls are accepted, expired invite, wrong invite, anonymous access, owner contact path missing | enforce invite-only access and soft-launch controls before external access; no public/prod claim | hosted-demo PR |
 
 ## Checkpoint 1 Skill/Tool Selection
 
@@ -629,8 +661,10 @@ risk.
 
 ## Failure Matrix Categories
 
-The implementation specs must expand these categories into explicit matrix IDs
-before code:
+Historical Demo Phase 0 category inventory. Checkpoint 1 PR 1 supersedes this
+inventory with the explicit `Checkpoint 1 Failure Matrix` IDs above. Future
+implementation PRs must cite the explicit IDs, not these broad categories, and
+range shorthand remains unacceptable in PR evidence.
 
 | Category | Required cases |
 |---|---|

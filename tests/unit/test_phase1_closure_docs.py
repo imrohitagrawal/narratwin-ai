@@ -641,6 +641,25 @@ def test_process_branch_allows_real_media_plan_but_rejects_runtime_files(monkeyp
     ]
 
 
+def test_issue_229_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-229-demo-checkpoint1-spec-governance"
+    allowed = [
+        "docs/governance/preflights/issue-229.json",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    ]
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[*allowed, "docs/TRACEABILITY.md"],
+    ) == [f"Phase 1 Closure branch {branch} may not change docs/TRACEABILITY.md."]
+
+
 def test_phf020a_valid_policy_has_no_findings() -> None:
     assert phase1.phf020a_policy_findings(PHF020A_VALID_POLICY) == []
 
@@ -662,13 +681,15 @@ def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
     next_action = (
         "| SSV1-NEXT | next-action | future issue-linked Checkpoint 1 PR | "
-        "demo-checkpoint1-issue-needed | demo-checkpoint1-issue-needed | "
-        "Demo Phase 0 planning completed through issue #225 and PR #226. The next approved action is to "
-        "open a future issue-linked Checkpoint 1 PR for the first spec/source-facts/governance slice before "
-        "any provider, TTS, avatar/video, hosted-demo, or quota/access implementation. Provider SDKs, "
-        "provider keys, hosted deployment, real audio/video generation, cloned identity implementation, "
-        "public synthetic-media distribution, Product Mode 2, and production-readiness claims remain forbidden "
-        "until future issue-linked PRs explicitly approve them. |"
+        "demo-checkpoint1-contract-needed | demo-checkpoint1-contract-needed | "
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 and PR #230 are the "
+        "active Checkpoint 1 PR 1 spec/source-facts/governance slice; this row records the intended post-merge "
+        "target state for PR #230. After PR #230 merges, the next approved action is a future issue-linked "
+        "latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract PR before "
+        "provider abstraction, TTS, avatar/video, hosted-demo, or quota/access implementation. Provider SDKs, "
+        "provider keys, hosted deployment, real audio/video generation, cloned identity implementation, public "
+        "synthetic-media distribution, Product Mode 2, and production-readiness claims remain forbidden until "
+        "future issue-linked PRs explicitly approve them. |"
     )
     expected = (
         "| SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | "
