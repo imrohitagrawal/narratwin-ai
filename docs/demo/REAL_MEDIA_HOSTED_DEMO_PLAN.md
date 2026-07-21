@@ -3,8 +3,8 @@
 ## Version
 
 - Version: 0.1
-- Issue: `#225`; Checkpoint 1 PR 1 issue `#229`
-- Status: Demo Phase 0 complete; Checkpoint 1 PR 1 spec/source-facts/governance only
+- Issue: `#225`; Checkpoint 1 PR 1 issue `#229`; Checkpoint 1 PR 2 issue `#235`
+- Status: Demo Phase 0 complete; Checkpoint 1 PR 2 contract-only work active
 - Last updated: 2026-07-21
 
 ## Purpose
@@ -222,12 +222,70 @@ Negative invariants for Checkpoint 1 PR 1:
   media distribution, Product Mode 2, production durability, production
   monitoring, production readiness, or release Go.
 
+### Checkpoint 1 PR 2: Latency, Capacity, Cost, Access, Quota Contract
+
+Issue `#235` is the second Checkpoint 1 PR. It is a contract-only slice for
+latency, capacity, cost, access, quota, cache/pre-generation, retention, and
+launch-level boundaries. It may update this document, `docs/LAUNCH_LEVELS.md`,
+`docs/STAGE_ISSUE_PLAN.md`, `docs/STATUS.md`,
+`docs/THIRD_PARTY_NOTICES.md`, its matching GovernancePreflightV1 artifact, and
+the narrow Phase 1 Closure checker/test files that enforce the exact branch
+scope. It must not implement backend, frontend, provider abstraction, TTS,
+avatar/video, hosted deployment, access-system implementation, database, Docker,
+CI workflow, provider SDKs, provider keys, real audio/video generation, cloned
+identity, Product Mode 2, public distribution, or production-readiness claims.
+
+It also must not perform provider account setup, provider dashboard
+configuration, paid plan activation, provider wallet funding, model or voice
+selection, real provider test calls, paid spend, or hosted URL creation. PR2
+creates minimum future requirements only; PR3 provider abstraction plus real TTS
+still needs fresh selected-provider source facts and executable disabled-default,
+quota, retention/deletion, redaction, timeout, retry, and duplicate-spend
+safeguards before any provider egress is enabled.
+
+Positive claims for Checkpoint 1 PR 2:
+
+- `C1-CONTRACT-001`: latency and first-view performance budgets are explicit
+  enough for later implementation PRs to test.
+- `C1-CONTRACT-002`: reviewer capacity, concurrency, backpressure, provider-off,
+  provider-failure, missing-artifact, quota-exhaustion, and unavailable states
+  are explicit enough for later implementation PRs to test.
+- `C1-CONTRACT-003`: first-month spend target, approval ceiling, quota
+  reservation, refund, retry, timeout, and duplicate-spend controls are explicit
+  before any provider spend can occur.
+- `C1-CONTRACT-004`: view-first pre-generated media, cache invalidation,
+  retention, deletion, tombstones, provider-side deletion evidence, disclosure,
+  invite/access, and launch-level boundaries are explicit.
+- `C1-CONTRACT-005`: every changed PR2 claim maps to an executable test, gate,
+  official source fact, human-only checklist row, or documented non-goal for the
+  future PR that will implement it.
+
+PR2 changed-claim evidence mapping:
+
+| Contract ID | Claim boundary | Required evidence class before implementation | Future owner |
+|---|---|---|---|
+| `C1-CONTRACT-001` | valid invite first visible view-first artifact targets p95 under 3 seconds; provider generation is not on first view | executable latency budget test plus human UX review for first viewport | hosted-demo PR |
+| `C1-CONTRACT-002` | default capacity is 10 invited reviewers, one view-first artifact, and optional regeneration only inside quota; backpressure preserves view-first output | executable quota/backpressure tests plus source facts for selected provider limits | hosted-demo and provider PRs |
+| `C1-CONTRACT-003` | target first-month spend is `$30-$60`; `$75-$200` is an owner-approved ceiling, not automatic authority | official selected-provider pricing source facts, executable quota reservation/refund tests, and owner human checklist row | provider and hosted-demo PRs |
+| `C1-CONTRACT-004` | cached media displays only when provenance, eval, disclosure, retention, and deletion state match; deletion leaves minimum tombstone/evidence only | executable cache invalidation and retention/deletion tests plus provider-side deletion source facts or human row | avatar/video and hosted-demo PRs |
+| `C1-CONTRACT-005` | PR2 itself stays docs/gates only and does not pre-authorize PR3 egress, hosted access, or paid spend | Phase 1 Closure branch allowlist gate and PR body human-only scope review | PR2 |
+
+Human-only PR2 surfaces:
+
+| Surface | Automation gap | Required reviewer check | Residual-risk owner |
+|---|---|---|---|
+| Provider pricing and quota facts | Pricing, dashboard limits, overage, model catalogs, rate limits, and retention/deletion terms can change after PR2. | Confirm PR2 uses source facts only as planning inputs and requires fresh selected-provider facts before PR3 egress or spend. | repository owner |
+| Launch/access level | CI cannot decide whether a future URL is internal, external/invite-only, production-like validation, or production. | Confirm `docs/LAUNCH_LEVELS.md` remains canonical and that any external identity inherits the external/invite-only soft-launch boundary. | repository owner |
+| Paid provider setup | CI cannot see provider dashboards, wallet balances, plan activation, or test calls outside the repo. | Confirm PR2 performed none of these actions and that future PRs must record owner approval before any paid spend. | repository owner |
+| Final merge message | CI cannot inspect the final squash/merge editor text. | Use reference-only wording for issue `#235` unless a human intentionally chooses an issue-closing closeout at merge time. | repository owner |
+
 ## Checkpoint 1 Source Facts
 
 Verified on 2026-07-21 against official provider/platform documentation where
 available. Pricing, policy, and API facts are volatile; implementation PRs must
-refresh the selected provider facts again before spending money or enabling any
-provider call.
+refresh the selected provider facts again before spending money, setting up
+provider accounts, selecting models or voices, funding wallets, configuring
+dashboards, making real provider test calls, or enabling any provider call.
 
 | ID | Area | Official source | Fact used | Checkpoint 1 implication |
 |---|---|---|---|---|
@@ -590,6 +648,13 @@ ceremony:
 | `taste-check` | Invoked locally | The plan keeps one existing demo-plan source of truth and rejects new runtime/product files or duplicated governance docs. |
 | Provider SDK/tool install | Rejected | No runtime implementation, provider dependency, provider key, hosted deployment, or real media generation is allowed in this PR. |
 
+Issue `#235` PR 2 reuses the same claim-boundary discipline for the latency,
+capacity, cost, access, quota, cache/pre-generation, retention, and launch-level
+contract. It adds `docs/LAUNCH_LEVELS.md` alignment, an exact branch changed-file
+allowlist, and focused allowlist regression coverage because those are the
+minimum executable gates needed to keep the contract-only PR from drifting into
+implementation or later hosted-demo authorization.
+
 ## Checkpoint 1 Review Prompt Set
 
 Future implementation PRs must adapt these prompts before coding:
@@ -625,6 +690,18 @@ Issue `#229` PR 1 review posture:
 | Performance/reliability/quota | Review attacked async provider jobs, retries, cold starts, duplicate spend, provider outages, and budget stops. | Async lifecycle, idempotency, retry, cache, and `COST-*` controls now require bounded polling, app-side quota reservation, one transient retry max, and fallback to valid view-first artifacts. |
 | Test/quality/CI | Review attacked first-commit evidence, branch allowlist, PR-body guardrails, and docs-only false passes. | First commit contains only the issue preflight; branch allowlist is formalized; forced PR guardrails are required after PR creation; local quality commands remain mandatory evidence. |
 | Governance/taste-check | Local review attacked scope creep, duplicated source-of-truth docs, vague contracts, and ceremonial review. | The PR reuses `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`, keeps runtime/provider files untouched, expands concrete IDs instead of category labels, and records a stop rule for future implementation drift. |
+
+Issue `#235` PR 2 review posture:
+
+| Reviewer angle | Finding summary | Disposition |
+|---|---|---|
+| Cost/provider terms | Fresh review found that pricing, credits, rate limits, overage caps, retry billing, refund semantics, and dashboard controls are volatile and differ across candidate TTS, avatar/video, and hosting providers. | PR2 treats provider and hosting facts as planning inputs only. It sets a target first-month spend and owner approval ceiling, forbids account setup, dashboard configuration, plan activation, wallet funding, model/voice selection, test calls, and spend, and requires fresh selected-provider source facts plus executable quota safeguards in PR3 before egress. |
+| Security/privacy/consent | Review attacked uploads, prompts, transcripts, provider/model outputs, external URLs, generated media retention, provider-side deletion evidence, and clone-adjacent identity drift. | PR2 keeps all such inputs untrusted, keeps cloned identity and real media generation out of scope, requires disabled-by-default provider behavior, retention/deletion/tombstone/provider-side evidence paths, and keeps consent/profile work for later issue-linked PRs. |
+| Eval/grounding/citations | Review attacked unsupported claims, stale citations, failed eval display, source-run/media mismatch, and cache reuse after source or eval changes. | PR2 requires cached or pre-generated media to display only when provenance, citation, eval, disclosure, retention, and launch/access state match; future implementation must map every display claim to executable cache/eval/provenance tests. |
+| UX/demo/recruiter flow | Review attacked first-view latency, cold start, unavailable/provider-off states, quota copy, evidence inspectability, and accidental public-launch claims. | PR2 requires a view-first pre-generated path, explicit unavailable states, reviewer capacity assumptions, no provider generation on first view, and launch/access wording aligned to `docs/LAUNCH_LEVELS.md` before any hosted URL exists. |
+| Performance/reliability/quota | Review attacked provider 429s, async delay, retries, duplicate spend, queue saturation, timeout handling, provider outage, and quota exhaustion. | PR2 adds contract IDs for latency, capacity, quota reservation/refund, retry, timeout, backpressure, duplicate-spend prevention, provider-off/failure/missing-artifact/quota-exhaustion states, and later executable tests. |
+| Test/quality/CI | Review attacked the missing issue `#235` changed-file allowlist, absent unrelated-file regression, marker-only prose scans, first-commit drift, and PR-body guardrail gaps. | PR2 adds an exact branch allowlist and regression test, preserves the first branch commit as preflight-only evidence, and requires PR-body claim mapping, human checklist rows, validation evidence, and forced PR guardrails after PR creation. |
+| Governance/taste-check | Review attacked launch-level wording drift, duplicate authority, pre-authorizing hosted-demo work, standalone status-only follow-ups, and ceremonial source-fact review. | PR2 keeps `docs/LAUNCH_LEVELS.md` canonical for access/launch authority, updates `docs/STATUS.md` in the same PR with the intended post-merge next state, keeps routine closeout facts in PR/issue comments, and leaves PR3/provider egress blocked until fresh facts and executable safeguards exist. |
 
 ## Checkpoint 1 Stop Rule
 
