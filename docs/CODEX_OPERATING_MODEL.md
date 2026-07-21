@@ -54,6 +54,43 @@ Allowed in Stage 0:
 - Paid providers must never be required for local/dev/test.
 - Future provider integrations must include mock/local adapters.
 
+## Merge Closeout Evidence Policy
+
+Post-merge facts are real evidence, but they do not automatically justify a
+new repository change. The PR that completes issue A must update
+`docs/STATUS.md` in that same PR to describe the intended post-merge target
+state: issue A is satisfied by that PR once merged, the next approved work item
+is issue B, and no forbidden scope is authorized. After the approved PR merges,
+the closeout owner must record the merge SHA, post-merge workflow result,
+branch cleanup, and final GitHub issue disposition in the merged PR and linked
+issue comments. That GitHub evidence is the durable closeout record for
+routine merge facts.
+
+Do not open a successor issue or PR whose only purpose is to update
+`docs/STATUS.md` with the previous PR's final merge SHA, post-merge workflow
+URL, issue closure, or branch deletion. That pattern creates an infinite
+governance loop because the successor PR then creates its own future merge facts.
+
+Update `docs/STATUS.md` in a repository PR only when at least one of these is
+true:
+
+- the substantive PR itself changes repository-tracked stage, issue, PR,
+  governance, release, or next-action state, in which case the same PR must
+  update `docs/STATUS.md` to its intended post-merge target state;
+- the ledger would otherwise point engineers at the wrong active work item or
+  authorize the wrong scope;
+- a later substantive PR is already open and can bundle the status correction
+  without widening product/runtime scope;
+- a human explicitly approves a one-time terminal reconciliation because stale
+  repository state blocks correct work.
+
+Issue `#223` and PR `#224` are the terminal exception that records the
+post-PR-222 state and installs this policy. After PR `#224`, do not create a
+new `post-PR-224 status reconciliation` issue or PR. If post-merge facts for
+PR `#224` need a durable record, comment them on PR `#224` and issue `#223`;
+bundle any future `docs/STATUS.md` cleanup into the next material repository
+change.
+
 ## Stage 0 Exit Criteria
 
 Stage 0 passes only when:

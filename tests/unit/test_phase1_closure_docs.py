@@ -910,6 +910,26 @@ def test_process_only_phase1_branch_allows_matching_governance_preflight(monkeyp
     ) == []
 
 
+def test_issue223_loop_breaker_allows_only_terminal_policy_files(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-223-post-pr-222-status-reconciliation"
+
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=sorted(phase1.ISSUE_223_ALLOWED_CHANGED_FILES),
+    ) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["frontend/src/app/page.tsx", "backend/app/main.py"],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-process-223-post-pr-222-status-reconciliation "
+        "may not change frontend/src/app/page.tsx.",
+        "Phase 1 Closure branch phase-1-closure-process-223-post-pr-222-status-reconciliation "
+        "may not change backend/app/main.py.",
+    ]
+
+
 def test_process_only_phase1_branch_rejects_mismatched_governance_preflight(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-155-post-pr-c-reconciliation"
 

@@ -2,18 +2,27 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 223,
   "branch": "phase-1-closure-process-223-post-pr-222-status-reconciliation",
-  "objective": "Reconcile repository-tracked status after PR #222 merged and issue #221 reached its completed GitHub disposition.",
+  "objective": "Reconcile repository-tracked status after PR #222 merged and issue #221 reached its completed GitHub disposition, then terminate the standalone post-merge status-reconciliation loop by requiring future issue-completing PRs to finalize docs/STATUS.md in the same PR while moving ordinary post-merge facts to PR/issue comments instead of successor docs-only PRs.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
       "docs/governance/preflights/issue-223.json",
       "docs/STATUS.md",
-      "scripts/quality/check_phase1_closure_docs.py"
+      "docs/CODEX_OPERATING_MODEL.md",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_guardrails_check.py",
+      "tests/unit/test_phase1_closure_docs.py"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-223.json",
       "docs/STATUS.md",
+      "docs/CODEX_OPERATING_MODEL.md",
+      "docs/REPOSITORY_GUARDRAILS.md",
       "scripts/quality/check_phase1_closure_docs.py",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
       "tests/unit/test_phase1_closure_docs.py"
     ],
     "forbidden": [

@@ -128,6 +128,55 @@ Open issue
 → merge
 ```
 
+## Post-Merge Status Reconciliation Stop Rule
+
+The merge-closeout cycle is mandatory, but it must not create an endless chain
+of docs-only PRs. Routine post-merge facts belong in GitHub evidence comments:
+
+- merged PR SHA and final head SHA;
+- post-merge `main` workflow result;
+- branch deletion or retained-branch reason;
+- linked issue disposition and closure comment;
+- confirmation that no issue-closing keywords were used unless explicitly
+  approved.
+
+Those facts are not, by themselves, repository-tracked state changes requiring a
+new branch and PR. A standalone successor issue/PR may not be opened solely to
+record the previous PR's merge SHA, check URL, issue closure, or branch cleanup
+in `docs/STATUS.md`.
+
+`docs/STATUS.md` must still be finalized in the same PR that changes durable
+repository-tracked state. That PR should describe its intended post-merge
+target state before merge: the worked issue is satisfied by this PR when
+merged, the next approved work item is identified, and any remaining blockers
+or No-Go boundaries are explicit. A later update is allowed only when a
+material repository change is already underway. The allowed later-update cases
+are narrow:
+
+- stale ledger text would misdirect the next engineer or agent;
+- the repository ledger points to the wrong active issue or authorizes the
+  wrong scope;
+- branch-protection, governance policy, stage state, release posture, or
+  issue/PR mapping materially changed and no substantive PR can safely bundle
+  it;
+- a human explicitly approves a one-time terminal reconciliation with a written
+  no-successor rule.
+
+Issue `#223` / PR `#224` is that terminal reconciliation for the post-PR-222
+loop. After PR `#224`, any branch named like
+`phase-1-closure-process-<issue>-post-pr-<pr>-status-reconciliation` is treated
+as a forbidden standalone reconciliation unless it is the existing issue `#223`
+loop-breaker. Future status corrections must be bundled into the next material
+change or recorded in PR/issue comments when they are only merge-closeout facts.
+
+Every non-trivial PR body must include a `## Status impact` section. If the PR
+changes repository-tracked stage/governance state, that section must say
+`docs/STATUS.md` is finalized in this PR and must explain the next-work pointer
+or target-state change. If no repository-tracked status changed, the section
+must say that directly. In both cases, it must state that routine post-merge
+facts are recorded in PR/issue comments and must not create a successor
+status-only PR.
+
 ## Required preflight for non-trivial work
 
 Before starting implementation or locking a feature approach, create or link a
