@@ -17,6 +17,8 @@ from backend.app.stage7 import (
     ProviderConfig,
     Stage7Error,
     artifact_from_text,
+    avatar_render_result_from_dict,
+    avatar_render_result_to_dict,
     build_avatar_render_request_checksum,
     build_source_evaluation_checksum,
     create_stage7_service,
@@ -335,6 +337,15 @@ def test_mock_avatar_render_returns_valid_demo_export_with_disclosure() -> None:
     assert result.provider_config.allow_network_egress is False
     assert result.provider_config.requires_api_key is False
     assert result.provider_config.supports_real_video is False
+    assert result.avatar_video_provider.provider_mode == "DISABLED"
+    assert result.avatar_video_provider.enabled is False
+    assert result.avatar_video_provider.allow_network_egress is False
+    assert result.avatar_video_provider.asset_provenance_policy == (
+        "fully_synthetic_or_provider_stock_non_identifiable_only"
+    )
+    assert result.avatar_video_provider.disclosure_version == "stage7-avatar-video-disclosure-v1"
+    assert result.avatar_video_provider.retention_state == "NOT_CREATED"
+    assert result.avatar_video_provider.deletion_state == "NOT_REQUESTED"
     assert result.video_renderer.renderer == "local-html"
     assert result.disclosure.ai_generated is True
     assert result.disclosure.cloned_identity is False
@@ -363,6 +374,11 @@ def test_mock_avatar_render_returns_valid_demo_export_with_disclosure() -> None:
     assert manifest["source"]["evaluationStatus"] == "PASSED"
     assert manifest["provider"]["providerMode"] == "LOCAL"
     assert manifest["providerConfig"]["allowNetworkEgress"] is False
+    assert manifest["avatarVideoProvider"]["providerMode"] == "DISABLED"
+    assert manifest["avatarVideoProvider"]["enabled"] is False
+    assert manifest["avatarVideoProvider"]["allowNetworkEgress"] is False
+    assert manifest["avatarVideoProvider"]["supportsClonedIdentity"] is False
+    assert manifest["avatarVideoProvider"]["disclosureVersion"] == "stage7-avatar-video-disclosure-v1"
     assert manifest["videoExportPlaceholder"]["realVideoProduced"] is False
     assert manifest["publicUseLicenseCheck"] == "mock-local-provider-only-no-third-party-media"
 
@@ -370,10 +386,34 @@ def test_mock_avatar_render_returns_valid_demo_export_with_disclosure() -> None:
     assert placeholder["status"] == "PLACEHOLDER_ONLY"
     assert placeholder["realVideoProduced"] is False
     assert placeholder["providerConfig"]["providerMode"] == "LOCAL"
+    assert placeholder["avatarVideoProvider"] == manifest["avatarVideoProvider"]
     assert placeholder["source"]["contextRefIds"] == ["ctx_stage7"]
     assert placeholder["source"]["evaluationId"] == "local_evaluation"
     assert placeholder["disclosure"]["aiGenerated"] is True
     assert placeholder["publicUseLicenseCheck"] == "mock-local-provider-only-no-third-party-media"
+
+
+def test_restored_avatar_video_provider_metadata_must_remain_disabled() -> None:
+    service = create_stage7_service()
+    result = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+    )
+    row = avatar_render_result_to_dict(result)
+    row["avatar_video_provider"]["enabled"] = True
+    row["avatar_video_provider"]["allow_network_egress"] = True
+    row["avatar_video_provider"]["retention_state"] = "ACTIVE"
+
+    with pytest.raises(ValueError, match="disabled PR4 boundary"):
+        avatar_render_result_from_dict(row)
 
 
 def test_mock_avatar_render_allows_benign_escaped_web_terms_in_source_text() -> None:

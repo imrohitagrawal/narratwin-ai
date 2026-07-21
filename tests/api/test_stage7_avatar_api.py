@@ -265,6 +265,17 @@ def test_avatar_render_api_returns_validated_demo_export_artifacts() -> None:
     assert body["providerConfig"]["allowNetworkEgress"] is False
     assert body["providerConfig"]["requiresApiKey"] is False
     assert body["providerConfig"]["supportsRealVideo"] is False
+    assert body["avatarVideoProvider"]["providerMode"] == "DISABLED"
+    assert body["avatarVideoProvider"]["enabled"] is False
+    assert body["avatarVideoProvider"]["allowNetworkEgress"] is False
+    assert body["avatarVideoProvider"]["requiresApiKey"] is True
+    assert body["avatarVideoProvider"]["supportsClonedIdentity"] is False
+    assert body["avatarVideoProvider"]["assetProvenancePolicy"] == (
+        "fully_synthetic_or_provider_stock_non_identifiable_only"
+    )
+    assert body["avatarVideoProvider"]["disclosureVersion"] == "stage7-avatar-video-disclosure-v1"
+    assert body["avatarVideoProvider"]["retentionState"] == "NOT_CREATED"
+    assert body["avatarVideoProvider"]["deletionState"] == "NOT_REQUESTED"
     assert body["videoRenderer"]["renderer"] == "local-html"
     assert body["disclosure"]["aiGenerated"] is True
     assert body["disclosure"]["clonedIdentity"] is False
@@ -305,11 +316,13 @@ def test_avatar_render_api_returns_validated_demo_export_artifacts() -> None:
     assert manifest["source"]["citationIndexes"] == body["trace"]["sourceCitationIndexes"]
     assert manifest["source"]["evaluationId"] == body["trace"]["sourceEvaluationId"]
     assert manifest["source"]["evaluationChecksum"] == body["trace"]["sourceEvaluationChecksum"]
+    assert manifest["avatarVideoProvider"] == body["avatarVideoProvider"]
     assert manifest["publicUseLicenseCheck"] == "mock-local-provider-only-no-third-party-media"
     placeholder = json.loads(
         base64.b64decode(body["artifacts"]["videoExportPlaceholder"]["contentBase64"]).decode("utf-8")
     )
     assert placeholder["providerConfig"] == manifest["providerConfig"]
+    assert placeholder["avatarVideoProvider"] == manifest["avatarVideoProvider"]
     assert placeholder["source"] == manifest["source"]
     assert placeholder["multilingualBundle"] == manifest["multilingualBundle"]
     assert placeholder["disclosure"] == manifest["disclosure"]

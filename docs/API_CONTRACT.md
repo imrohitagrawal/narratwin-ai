@@ -1095,6 +1095,23 @@ placeholder artifacts. The manifest carries AI-generated avatar/video disclosure
 metadata, provider config metadata, source trace metadata, source citations, and
 evaluation status from the grounded script path.
 
+Demo Checkpoint 1 PR4 issue `#241` adds an optional avatar/video provider
+boundary while keeping provider egress disabled by default. The API response,
+render manifest, and video placeholder expose `avatarVideoProvider` metadata so
+reviewers can verify no external avatar/video provider was called, no cloned
+identity was used, asset provenance remains limited to fully synthetic or
+provider-stock non-identifiable assets, and no retention/deletion provider
+artifact exists for the local placeholder path. Real provider calls, provider
+SDKs, provider setup, paid spend, public URLs, hosted access, Product Mode 2,
+and cloned identity remain out of scope.
+
+The PR4 provider module models external avatar/video result metadata and uses a
+typed fake/local transport boundary for executable tests, but Stage 7 API
+responses restore and emit only the exact disabled `avatarVideoProvider`
+metadata in PR4. Provider-specific wire mapping, real-network peer-IP pinning,
+real external artifact surfacing, and provider enablement require a later
+issue, provider source-fact refresh, and fresh tests.
+
 Phase 1 Closure issue `#213` adds the Product Mode 1 Checkpoint A through
 Checkpoint B binding between Stage 6 and Stage 7. The avatar render API must
 receive a `multilingualBundle` snapshot from the immediately preceding Stage 6
@@ -1189,6 +1206,28 @@ Post-provider validation:
 - provider config must be validated before storage or response; every successful
   Stage 7 render must be `MOCK_LOCAL`, `LOCAL`, no network egress, no API-key
   requirement, no real video support, and no cloned-identity support
+- `avatarVideoProvider` must be present in the response, render manifest, and
+  video placeholder. For PR4 local/dev/test/CI it must report
+  `providerMode = DISABLED`, `enabled = false`, `allowNetworkEgress = false`,
+  `requiresApiKey = true`, `supportsClonedIdentity = false`,
+  `assetProvenancePolicy =
+  fully_synthetic_or_provider_stock_non_identifiable_only`,
+  disclosure version `stage7-avatar-video-disclosure-v1`,
+  `retentionState = NOT_CREATED`, and `deletionState = NOT_REQUESTED`.
+  Restored Stage 7 rows with any other `avatarVideoProvider` posture are
+  rejected until a later issue implements real external media artifact surfacing.
+- The optional PR4 provider boundary validates provider base URLs and artifact
+  URLs with HTTPS, no credentials, safe extensions, redirects disabled, and
+  preflight global-IP DNS screening. This is not a claim of full DNS rebinding
+  resistance; real transports must validate the connected peer IP before
+  activation.
+- Create retries may run only when provider idempotency and billable retry
+  safety are both documented in the provider config/policy. Safe retries honor
+  clamped HTTP `Retry-After`; absent headers use configured backoff. Ambiguous
+  create failures after possible remote acceptance hold quota as unknown rather
+  than refunding or retrying into duplicate spend.
+- Provider deletion evidence requires terminal deletion evidence. `202 Accepted`
+  is pending/unavailable evidence, not a deleted state.
 - `avatarProvider.providerMode` and `providerConfig.providerMode` must both be
   `LOCAL` on success, and provider metadata must match the validated provider
   config
@@ -1283,6 +1322,20 @@ Response `201`:
     "supportsRealVideo": false,
     "supportsClonedIdentity": false
   },
+  "avatarVideoProvider": {
+    "provider": "disabled-avatar-video-provider",
+    "providerMode": "DISABLED",
+    "enabled": false,
+    "allowNetworkEgress": false,
+    "requiresApiKey": true,
+    "supportsRealVideo": true,
+    "supportsClonedIdentity": false,
+    "assetProvenancePolicy": "fully_synthetic_or_provider_stock_non_identifiable_only",
+    "disclosureText": "AI-generated synthetic avatar/video. No cloned identity was used.",
+    "disclosureVersion": "stage7-avatar-video-disclosure-v1",
+    "retentionState": "NOT_CREATED",
+    "deletionState": "NOT_REQUESTED"
+  },
   "videoRenderer": {
     "renderer": "local-html",
     "rendererMode": "LOCAL",
@@ -1347,6 +1400,14 @@ Provider response schema:
   render that advertises network egress, API keys, real video, cloned identity,
   or an external stub as the producing adapter is rejected with
   `PROVIDER_OUTPUT_INVALID`.
+- `avatarVideoProvider` records the optional external avatar/video boundary
+  posture separately from the local `AvatarProvider` that produced the mock HTML
+  export. In PR4 it is a disabled boundary disclosure surface only; it must not
+  expose raw scripts, prompts, provider payloads, provider URLs, media bytes,
+  secrets, hosted access data, or public distribution links.
+  `providerMode = OPTIONAL_EXTERNAL` is reserved in the public schema for
+  forward compatibility, but PR4 successful Stage 7 API output must still emit
+  `DISABLED`.
 - `renderJobStatusHistory` records lifecycle events such as `QUEUED`, `RUNNING`,
   `FALLBACK`, `FAILED`, and `COMPLETED`; failed optional provider stubs fall
   back to the mock/local provider and keep the final job status `COMPLETED` only

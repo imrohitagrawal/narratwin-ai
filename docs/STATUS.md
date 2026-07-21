@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-21
+- Last reviewed date: 2026-07-22
 - Current stage marker: `.stage/current = 8`
 - Current implementation permission: Phase 1 Closure governance only. Demo
   Phase 0 planning for issue `#225` completed through PR `#226`; issue `#229`
@@ -23,17 +23,21 @@ Use it to answer:
   `#236` as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/
   pre-generation/retention/launch-level contract only; issue `#237` is closed
   through merged PR `#238` as Checkpoint 1 PR 3 server-side TTS provider
-  abstraction plus optional real TTS adapter boundary. No Phase 2 feature work,
+  abstraction plus optional real TTS adapter boundary; issue `#241` is intended
+  complete through PR `#242` as Checkpoint 1 PR 4 avatar/video provider
+  boundary with mock/local default and disabled-by-default external egress only.
+  No Phase 2 feature work,
   external provider
-  enablement beyond PR3's disabled-by-default TTS-only adapter boundary,
+  enablement beyond PR3's disabled-by-default TTS-only adapter boundary and
+  PR4's disabled-by-default avatar/video provider boundary,
   provider SDKs, provider keys, hosted deployment, production release tag, real
   avatar/video generation, cloned
   identity implementation, public synthetic-media distribution claim, Product
-  Mode 2 work, avatar/video provider integration, hosted-demo
+  Mode 2 work, hosted-demo
   access/quota/retention/demo polish, provider account setup, dashboard
   configuration, paid plan activation, wallet funding, model or voice selection,
   real provider test calls, paid spend, or production-readiness claim is
-  permitted by issues `#225`, `#229`, `#235`, or `#237`. Issue `#39`
+  permitted by issues `#225`, `#229`, `#235`, `#237`, or `#241`. Issue `#39`
   media/provider/security rows are non-downgradeable for production Go unless
   the affected provider, media, export, and replay paths remain disabled.
 - Current repo mode: Final Review has merged; Phase 1 Closure is active,
@@ -175,7 +179,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | future issue-linked PR | demo-checkpoint1-pr4-avatar-video-pending-issue | demo-checkpoint1-pr4-avatar-video-pending-issue | Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. The next approved action is a future issue-linked avatar/video provider integration PR only if fresh source facts, executable safeguards, human approval surfaces, and a dedicated branch/PR are recorded first. Until then, hosted deployment, hosted access/quota/retention/demo polish, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. |
+| SSV1-NEXT | next-action | PR5 new issue | demo-checkpoint1-pr5-hosted-demo-pending-new-issue | demo-checkpoint1-pr5-hosted-demo-pending-new-issue | Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is intended complete through PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only; mock/local remains default, provider egress remains disabled by default, no real provider calls are approved, and external avatar/video output remains unavailable on the Stage 7/API response surface. The next approved slice is PR5 hosted-demo access/quota/retention/demo polish, but it remains unauthorized until a new GitHub issue, dedicated branch, pull request, source facts, executable safeguards, and human-only review surfaces are recorded. Hosted deployment, hosted access/quota/retention/demo polish, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden until that later issue-linked PR explicitly authorizes narrow demo-only changes. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -707,16 +711,15 @@ Use these files together with this tracker:
    `#168` as evidence only. Do not resume, patch, rebase, merge, close, delete,
    or rewrite that implementation history.
 2. Keep issue `#8` open until its actual acceptance contract is satisfied.
-3. Start the next Demo Checkpoint 1 slice only through a new GitHub issue,
-   dedicated branch, and pull request. The expected next slice is avatar/video
-   provider integration, but it remains unauthorized until fresh source facts,
-   executable safeguards, human-only review surfaces, and scope guardrails are
-   recorded first.
-4. Keep avatar/video provider integration, hosted-demo access/quota/retention,
-   demo polish, production, multi-worker deployment, hosted launch, Product Mode
-   2, external provider use, real audio/video export, and public synthetic-media
-   distribution No-Go until later issue-linked PRs explicitly authorize narrow
-   demo-only changes.
+3. Start Demo Checkpoint 1 PR5 only through a new GitHub issue, dedicated
+   branch, and pull request. The expected PR5 slice is hosted-demo
+   access/quota/retention/demo polish, but it remains unauthorized until fresh
+   source facts, executable safeguards, human-only review surfaces, and scope
+   guardrails are recorded first.
+4. Keep hosted-demo access/quota/retention, demo polish, production,
+   multi-worker deployment, hosted launch, Product Mode 2, external provider
+   use, real audio/video export, and public synthetic-media distribution No-Go
+   until later issue-linked PRs explicitly authorize narrow demo-only changes.
 
 ## Maintenance Protocol
 
@@ -746,6 +749,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-07-21 | Issue `#241` started as Demo Checkpoint 1 PR 4 on branch `phase-1-closure-process-241-demo-checkpoint1-pr4-avatar-video`; the first branch commit contains only `docs/governance/preflights/issue-241.json`. Scope is server-side Stage 7 avatar/video provider boundary plus optional disabled-by-default real provider adapter controls only; mock/local avatar/video remains default for local/dev/test/CI, provider SDKs are not installed, tests use fake/local transports, and hosted access/quota/retention demo polish, provider setup, paid spend, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. |
 | 2026-07-21 | PR `#238` merged issue `#237` at `8a24f3ab3d25e73a47ffc3d6aced30c03748899e`, completing Demo Checkpoint 1 PR 3 as server-side Stage 6 TTS provider abstraction plus optional real TTS adapter boundary only. Live GitHub shows issue `#237` closed, the PR branch deleted, and post-merge main quality workflow run `29854403531` passed. The next approved action is a future issue-linked avatar/video provider integration PR only after fresh source facts and executable safeguards are recorded; hosted deployment, access-system implementation, provider setup, paid spend, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. |
 | 2026-07-21 | Issue `#237` started as Demo Checkpoint 1 PR 3 on branch `phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts`; the first branch commit contains only `docs/governance/preflights/issue-237.json`. Scope is server-side Stage 6 TTS provider abstraction plus optional real TTS adapter boundary only; mock/local TTS remains default for local/dev/test/CI, provider SDKs are not installed, tests use fake/local transports, and avatar/video, hosted deployment, access-system implementation, provider setup, paid spend, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. |
 | 2026-07-21 | PR `#236` merged issue `#235` at `e62885f04076a31e7d146ddf18fd770f1a8e6762`, completing Demo Checkpoint 1 PR 2 as latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Live GitHub shows issue `#235` closed, and the next repository-tracked work is issue `#237` for provider abstraction plus real TTS. |

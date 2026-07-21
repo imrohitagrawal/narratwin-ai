@@ -3,9 +3,9 @@
 ## Version
 
 - Version: 0.1
-- Issue: `#225`; Checkpoint 1 PR 1 issue `#229`; Checkpoint 1 PR 2 issue `#235`
-- Status: Demo Phase 0 complete; Checkpoint 1 PR 2 contract-only work active
-- Last updated: 2026-07-21
+- Issue: `#225`; Checkpoint 1 PR 1 issue `#229`; Checkpoint 1 PR 2 issue `#235`; Checkpoint 1 PR 3 issue `#237`; Checkpoint 1 PR 4 issue `#241`
+- Status: Demo Phase 0 complete; Checkpoint 1 PR 4 avatar/video boundary in review through PR `#242`; PR5 hosted-demo access/quota/retention/demo polish remains not started
+- Last updated: 2026-07-22
 
 ## Purpose
 
@@ -626,6 +626,14 @@ open still meets the target or is explicitly owner-approved as a demo limitation
 Every future implementation PR must map each applicable ID below to a test,
 executable gate, official source fact, explicit human-only row, or documented
 non-goal. Range shorthand is not acceptable in PR evidence.
+
+Demo Checkpoint 1 PR4 issue `#241` implements the avatar/video provider boundary
+behind disabled-by-default gates only. The boundary uses fake/local transports in
+tests, permits no real provider calls or paid spend, rejects cloned identity and
+real-person likeness asset classes before egress, validates provider JSON and
+artifact bytes before any storage/display/download surface, records disclosure
+and retention/deletion metadata, and leaves hosted access/quota/retention demo
+polish to PR5.
 
 | ID | Area | Case | Expected behavior | Evidence owner |
 |---|---|---|---|---|

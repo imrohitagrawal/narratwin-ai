@@ -186,6 +186,41 @@ providers:
 - Paid avatar providers remain future optional adapters and must add contract
   tests, environment-only keys, license review, identity consent/provenance
   review, third-party notices, and provider-output validation before activation.
+- Demo Checkpoint 1 PR4 issue `#241` adds `backend/app/avatar_video_provider.py`
+  as the optional server-side avatar/video provider boundary. It uses injected
+  transports, fake DNS resolution, fake sleeps, and fake provider responses in
+  tests; installs no provider SDK; reads no provider key by default; and makes no
+  real provider calls in local/dev/test/CI.
+- The PR4 boundary is a typed fake/local transport contract, not provider-native
+  wire compatibility. Provider-specific request/response mapping, real network
+  transport behavior, peer-IP pinning, hosted access, and external artifact
+  surfacing require a later issue and fresh provider source facts.
+- The PR4 boundary accepts only fully synthetic no-real-person or provider-stock
+  licensed non-identifiable asset provenance by default. Prompt-with-reference,
+  custom replica, Digital Twin, user-provided likeness image, cloned identity,
+  and real-person likeness assets fail before transport calls unless a later
+  consent/provenance issue approves them.
+- PR4 provider output validation rejects failed/stale evals, source/eval/media
+  binding mismatches, citation mismatches, prompt-injection markers, malformed or
+  duplicate-key JSON, unexpected fields, retry cap overrun, unsafe URLs including
+  private/reserved/link-local/cloud-metadata resolved addresses, unsafe base
+  URLs before bearer-auth transport calls, redirects, MIME/extension mismatch,
+  oversized artifacts, and providers lacking deletion evidence when deletion is
+  requested. URL checks are preflight screening only; real DNS rebinding
+  resistance needs connected peer-IP validation in a future real transport.
+- PR4 quota policy prevents duplicate spend by failing closed on reused unknown
+  or refunded reservations, holding quota for ambiguous accepted-provider
+  failures, retrying create only when provider idempotency and billable retry
+  safety are both true, honoring clamped HTTP `Retry-After`, and treating
+  `202 Accepted` deletion as pending/unavailable evidence rather than a deleted
+  tombstone.
+- Stage 7 API responses, render manifests, and video placeholders now include a
+  disabled `avatarVideoProvider` metadata surface recording provider mode,
+  disabled egress, asset provenance policy, disclosure version, and
+  retention/deletion state. This is not a hosted URL, public distribution link,
+  real video output, external provider artifact, or production-readiness claim.
+  The response schema reserves `OPTIONAL_EXTERNAL` for compatibility, but PR4
+  restores and emits only the exact disabled metadata posture.
 
 This preserves the provider-adapter boundary while allowing Stage 7 to deliver a
 mock/local avatar demo export with public-use license checks, disclosure, consent

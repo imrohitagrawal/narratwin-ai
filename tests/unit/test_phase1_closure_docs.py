@@ -35,6 +35,13 @@ def replace_text(text: str, search: str, replacement: str) -> str:
     return text.replace(search, replacement, 1)
 
 
+def remove_normalized_marker(text: str, marker: str) -> str:
+    pattern = r"\s+".join(re.escape(part) for part in marker.split())
+    mutated, replacements = re.subn(pattern, "REMOVED", text, flags=re.I)
+    assert replacements > 0
+    return mutated
+
+
 def run_changed_files_check(monkeypatch: Any, *, branch: str, files: list[str]) -> list[str]:
     monkeypatch.setattr(phase1, "current_branch", lambda: branch)
     monkeypatch.setattr(phase1, "changed_files", lambda: files)
@@ -93,6 +100,20 @@ def run_issue39_execution_strategy_check(monkeypatch: Any, *, strategy_text: str
     )
     failures: list[str] = []
     phase1.check_issue39_execution_strategy(failures)
+    return failures
+
+
+def run_issue241_preflight_check(monkeypatch: Any, *, preflight_text: str) -> list[str]:
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {"docs/reviews/ISSUE_241_DEMO_CHECKPOINT1_PR4_AVATAR_VIDEO_PREFLIGHT.md": preflight_text},
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue241_avatar_video_preflight(failures)
     return failures
 
 
@@ -723,6 +744,108 @@ def test_issue_237_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_241_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-241-demo-checkpoint1-pr4-avatar-video"
+    allowed = [
+        "docs/governance/preflights/issue-241.json",
+        "docs/reviews/ISSUE_241_DEMO_CHECKPOINT1_PR4_AVATAR_VIDEO_PREFLIGHT.md",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/ADR/0002-provider-agnostic-adapters.md",
+        "docs/API_CONTRACT.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "backend/app/avatar_video_provider.py",
+        "backend/app/stage7.py",
+        "backend/app/main.py",
+        "tests/unit/test_stage7_avatar_video_provider.py",
+        "tests/unit/test_stage7_avatar.py",
+        "tests/api/test_stage7_avatar_api.py",
+    ]
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+            "pyproject.toml",
+            "docs/LAUNCH_LEVELS.md",
+            "backend/app/stage6.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change docs/LAUNCH_LEVELS.md.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+    ]
+
+
+def test_issue_241_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-241-demo-checkpoint1-pr4-avatar-video-typo"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-241.json",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "backend/app/stage7.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-241.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/STAGE_ISSUE_PLAN.md.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+    ]
+
+
+def test_issue_241_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_241_DEMO_CHECKPOINT1_PR4_AVATAR_VIDEO_PREFLIGHT.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert run_issue241_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "https://developers.heygen.com/docs/quick-start",
+        "https://docs.tavus.io/api-reference/video-request/delete-video",
+        "https://www.d-id.com/eula/",
+        "No real provider call is approved by PR4",
+        "D-ID-approved synthetic-marking policy/version",
+        "provider asset provenance enum",
+        "prompt-with-existing-avatar references",
+        "typed input schema",
+        "provider create succeeds remotely, local call times out",
+        "pending/unknown quota hold",
+        "resolved A/AAAA records",
+        "169.254.169.254",
+        "provider-specific deletion/retention source facts",
+        "structured log event names",
+        "bounded-cardinality",
+        "test_stage7_avatar_video_provider.py",
+    ),
+)
+def test_issue_241_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_241_DEMO_CHECKPOINT1_PR4_AVATAR_VIDEO_PREFLIGHT.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert run_issue241_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
+
+
 def test_issue_237_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts-typo"
     assert run_changed_files_check(
@@ -760,18 +883,22 @@ def test_status_state_v1_contract_rejects_missing_table() -> None:
 def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
     next_action = (
-        "| SSV1-NEXT | next-action | future issue-linked PR | "
-        "demo-checkpoint1-pr4-avatar-video-pending-issue | "
-        "demo-checkpoint1-pr4-avatar-video-pending-issue | Demo Phase 0 planning completed through issue #225 and PR #226. "
+        "| SSV1-NEXT | next-action | PR5 new issue | "
+        "demo-checkpoint1-pr5-hosted-demo-pending-new-issue | "
+        "demo-checkpoint1-pr5-hosted-demo-pending-new-issue | Demo Phase 0 planning completed through issue #225 and PR #226. "
         "Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. "
         "Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/"
         "cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as "
         "Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. "
-        "The next approved action is a future issue-linked avatar/video provider integration PR only if fresh "
-        "source facts, executable safeguards, human approval surfaces, and a dedicated branch/PR are recorded first. "
-        "Until then, hosted deployment, hosted access/quota/retention/demo polish, public URLs, provider account setup, "
+        "Issue #241 is intended complete through PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only; "
+        "mock/local remains default, provider egress remains disabled by default, no real provider calls are approved, "
+        "and external avatar/video output remains unavailable on the Stage 7/API response surface. The next approved "
+        "slice is PR5 hosted-demo access/quota/retention/demo polish, but it remains unauthorized until a new GitHub "
+        "issue, dedicated branch, pull request, source facts, executable safeguards, and human-only review surfaces are "
+        "recorded. Hosted deployment, hosted access/quota/retention/demo polish, public URLs, provider account setup, "
         "dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, "
-        "Product Mode 2, public distribution, and production-readiness claims remain forbidden. |"
+        "Product Mode 2, public distribution, and production-readiness claims remain forbidden until that later "
+        "issue-linked PR explicitly authorizes narrow demo-only changes. |"
     )
     expected = (
         "| SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | "
