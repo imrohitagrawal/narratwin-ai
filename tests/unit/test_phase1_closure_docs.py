@@ -760,20 +760,18 @@ def test_status_state_v1_contract_rejects_missing_table() -> None:
 def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
     next_action = (
-        "| SSV1-NEXT | next-action | #237 | demo-checkpoint1-pr3-real-tts-active | "
-        "demo-checkpoint1-pr3-real-tts-active | Demo Phase 0 planning completed through issue #225 and PR #226. "
+        "| SSV1-NEXT | next-action | future issue-linked PR | "
+        "demo-checkpoint1-pr4-avatar-video-pending-issue | "
+        "demo-checkpoint1-pr4-avatar-video-pending-issue | Demo Phase 0 planning completed through issue #225 and PR #226. "
         "Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. "
         "Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/"
-        "cache/pre-generation/retention/launch-level contract only. Issue #237 is the active Checkpoint 1 PR 3 "
-        "server-side TTS provider abstraction plus optional real TTS adapter slice on branch "
-        "phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts; this row records the intended post-merge "
-        "target state for issue #237. PR3 keeps paid providers optional and disabled by default for local/dev/test/CI, "
-        "uses mock/local TTS as the default, permits no real provider calls in CI, and permits no provider account "
-        "setup, dashboard configuration, paid plan activation, wallet funding, paid spend, avatar/video provider "
-        "work, hosted-demo access/quota/retention/demo polish, cloned identity, Product Mode 2, public distribution, "
-        "or production-readiness claims. After the issue #237 PR merges, the next approved action is a future "
-        "issue-linked avatar/video provider integration PR only if fresh source facts and executable safeguards "
-        "are recorded first. |"
+        "cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as "
+        "Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. "
+        "The next approved action is a future issue-linked avatar/video provider integration PR only if fresh "
+        "source facts, executable safeguards, human approval surfaces, and a dedicated branch/PR are recorded first. "
+        "Until then, hosted deployment, hosted access/quota/retention/demo polish, public URLs, provider account setup, "
+        "dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, "
+        "Product Mode 2, public distribution, and production-readiness claims remain forbidden. |"
     )
     expected = (
         "| SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | "
