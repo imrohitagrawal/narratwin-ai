@@ -125,6 +125,27 @@ ISSUE_241_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_stage7_avatar.py",
     "tests/api/test_stage7_avatar_api.py",
 }
+ISSUE_243_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-243.json",
+    "docs/reviews/ISSUE_243_DEMO_CHECKPOINT1_PR5_HOSTED_DEMO_PREFLIGHT.md",
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+    "docs/LAUNCH_LEVELS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/ADR/0002-provider-agnostic-adapters.md",
+    "docs/API_CONTRACT.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "backend/app/hosted_demo.py",
+    "backend/app/main.py",
+    "tests/unit/test_hosted_demo.py",
+    "tests/api/test_hosted_demo_api.py",
+    "frontend/src/app/page.tsx",
+    "frontend/src/app/page.test.tsx",
+    "frontend/tests/smoke.spec.ts",
+}
 ISSUE_172_ALLOWED_CHANGED_FILES = {
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -1384,10 +1405,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "PR5 new issue",
-        "demo-checkpoint1-pr5-hosted-demo-pending-new-issue",
-        "demo-checkpoint1-pr5-hosted-demo-pending-new-issue",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is intended complete through PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only; mock/local remains default, provider egress remains disabled by default, no real provider calls are approved, and external avatar/video output remains unavailable on the Stage 7/API response surface. The next approved slice is PR5 hosted-demo access/quota/retention/demo polish, but it remains unauthorized until a new GitHub issue, dedicated branch, pull request, source facts, executable safeguards, and human-only review surfaces are recorded. Hosted deployment, hosted access/quota/retention/demo polish, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden until that later issue-linked PR explicitly authorizes narrow demo-only changes.",
+        "issue #243 / PR5",
+        "demo-checkpoint1-pr5-hosted-demo-active",
+        "demo-checkpoint1-pr5-hosted-demo-active",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is complete through merged PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only. Issue #243 is the PR5 hosted-demo access/quota/retention/demo-polish slice and is intended to complete Checkpoint 1 by adding a local/fake disabled-default hosted-demo decision boundary, metadata-only artifact/access records, quota reservation/refund/unknown-hold/idempotency evidence, retention/deletion/tombstone evidence, disabled-provider posture, synthetic-media disclosure, and redacted observability. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. Routine post-merge facts for the PR5 merge SHA, issue closeout, branch deletion, and workflow URLs are recorded in PR/issue comments with no successor status-only PR unless durable repository state changes.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3467,6 +3488,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_237_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-241-demo-checkpoint1-pr4-avatar-video":
         allowed_files = ISSUE_241_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-243-demo-checkpoint1-pr5-hosted-demo":
+        allowed_files = ISSUE_243_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-243-"):
+        allowed_files = set()
     elif branch.startswith("phase-1-closure-process-241-"):
         allowed_files = set()
     elif branch.startswith("phase-1-closure-process-237-"):
@@ -4066,6 +4091,106 @@ def check_issue241_avatar_video_preflight(failures: list[str]) -> None:
         fail(failures, f"{rel} missing PR4 preflight markers: " + ", ".join(missing_markers))
 
 
+def check_issue243_hosted_demo_preflight(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_243_DEMO_CHECKPOINT1_PR5_HOSTED_DEMO_PREFLIGHT.md"
+    text = read(rel)
+    normalized = re.sub(r"\s+", " ", text.lower())
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Objective",
+            "Non-Goals",
+            "Changed-File Allowlist",
+            "Official Source Facts",
+            "Hosted-Demo Interface Contract",
+            "Invariant and Test Matrix",
+            "Old-Behavior and Failure Proof",
+            "Claim Mapping",
+            "Fan-Out Review Findings and Dispositions",
+            "Skill and Evidence Ledger",
+            "Stop Rule",
+        ),
+    )
+    required_urls = (
+        "https://fastapi.tiangolo.com/tutorial/handling-errors/",
+        "https://fastapi.tiangolo.com/reference/exceptions/",
+        "https://fastapi.tiangolo.com/tutorial/middleware/",
+        "https://pydantic.dev/docs/validation/2.0/usage/model_config/",
+        "https://pydantic.dev/docs/validation/dev/api/pydantic/config/",
+        "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+        "https://genai.owasp.org/llmrisk/llm01-prompt-injection/",
+        "https://nextjs.org/docs/pages/guides/environment-variables",
+        "https://nextjs.org/docs/app/api-reference/config/next-config-js/env",
+        "https://vercel.com/docs/plans/hobby",
+        "https://vercel.com/pricing",
+        "https://vercel.com/docs/pricing",
+        "https://vercel.com/docs/limits/fair-use-guidelines",
+        "https://docs.railway.com/pricing/plans",
+        "https://docs.railway.com/pricing/faqs",
+        "https://docs.railway.com/pricing/cost-control",
+        "https://render.com/docs/free",
+    )
+    missing_urls = [url for url in required_urls if url not in text]
+    if missing_urls:
+        fail(failures, f"{rel} missing PR5 official source URLs: " + ", ".join(missing_urls))
+
+    required_markers = (
+        "Accessed date for source facts: 2026-07-22",
+        "no hosted deployment",
+        "public URL",
+        "real provider call",
+        "paid spend",
+        "cloned identity",
+        "Product Mode 2",
+        "production-readiness claim",
+        "HostedDemoAccessConfig",
+        "HostedDemoAccessRequest",
+        "HostedDemoDecision",
+        "forbid unexpected input fields",
+        "untrusted and reject prompt-injection markers",
+        "PR5-SCOPE-001",
+        "PR5-ACCESS-001",
+        "PR5-ACCESS-002",
+        "PR5-QUOTA-001",
+        "PR5-RETENTION-001",
+        "PR5-VALIDATE-001",
+        "PR5-DISCLOSURE-001",
+        "PR5-OBS-001",
+        "SRC-PR5-001",
+        "NONGOAL-PR5-001",
+        "pending deletion is never recorded as deleted proof",
+        "quota reservation happens before fake artifact visibility",
+        "duplicate-use/duplicate-spend prevention",
+        "stale source run",
+        "failed/stale eval",
+        "citation mismatch",
+        "access mismatch",
+        "quota mismatch",
+        "retention mismatch",
+        "duplicate JSON keys",
+        "unexpected fields",
+        "unsafe URLs",
+        "MIME/extension mismatch",
+        "oversized artifact",
+        "checksum mismatch",
+        "raw prompts, scripts, uploads, provider payloads, URLs, invite secrets, cookies, tokens, session secrets, provider keys, or media bytes",
+        "trace ID",
+        "bounded status/code",
+        "access outcome",
+        "quota outcome",
+        "retention/deletion state",
+        "test_hosted_demo.py",
+        "test_hosted_demo_api.py",
+        "near-match issue #243 branches",
+        "no-deploy/no-spend",
+    )
+    missing_markers = [marker for marker in required_markers if marker.lower() not in normalized]
+    if missing_markers:
+        fail(failures, f"{rel} missing PR5 preflight markers: " + ", ".join(missing_markers))
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
@@ -4084,6 +4209,7 @@ def check_process_docs(failures: list[str]) -> None:
     pr_template = read(".github/pull_request_template.md")
     changed = set(changed_files())
     check_issue241_avatar_video_preflight(failures)
+    check_issue243_hosted_demo_preflight(failures)
     check_required_headings(
         failures,
         pr_template,

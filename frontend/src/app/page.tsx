@@ -167,7 +167,16 @@ const safeApiErrorCodes = new Set([
   "NOT_FOUND",
   "SOURCE_RUN_NOT_RENDERABLE",
   "VALIDATION_ERROR",
+  "DUPLICATE_JSON_KEY",
+  "EVALUATION_NOT_PASSED",
+  "HOSTED_DEMO_DISABLED",
+  "IDEMPOTENCY_CONFLICT",
+  "UNSAFE_DISPLAY_TEXT",
+  "UNSAFE_URL",
 ]);
+
+const unsafeApiErrorMessagePattern =
+  /contentBase64|fake-invite-input|fake-session-input|idem_[A-Za-z0-9_.:-]*|session_[A-Za-z0-9_.:-]*|inviteSecret|sessionSecret|auth token|bearer token|cookie|raw prompt|raw script|provider payload/i;
 
 async function postJson<T>(path: string, body: object, idempotencyKey: string): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
@@ -181,7 +190,7 @@ async function postJson<T>(path: string, body: object, idempotencyKey: string): 
   return readJson<T>(response);
 }
 
-async function readJson<T>(response: Response): Promise<T> {
+export async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let payload: ApiErrorPayload = {};
     try {
@@ -191,12 +200,24 @@ async function readJson<T>(response: Response): Promise<T> {
     }
     const code = typeof payload.error?.code === "string" ? payload.error.code : "";
     const message = typeof payload.error?.message === "string" ? payload.error.message : "";
-    if (safeApiErrorCodes.has(code) && message.length > 0 && message.length <= 240) {
+    if (
+      safeApiErrorCodes.has(code) &&
+      message.length > 0 &&
+      message.length <= 240 &&
+      !unsafeApiErrorMessagePattern.test(message)
+    ) {
       throw new Error(`${code}: ${message}`);
     }
     throw new Error(`NarraTwin API request failed with ${response.status}`);
   }
   return (await response.json()) as T;
+}
+
+export function evaluationBadgeLabel(run: WalkthroughRun | null): string {
+  if (!run?.evaluation) {
+    return "Evaluation pending";
+  }
+  return `${run.evaluation.unsupportedClaimCount} unsupported claims`;
 }
 
 export default function Home() {
@@ -580,7 +601,7 @@ export default function Home() {
         <section className={styles.citations} aria-labelledby="citations-title">
           <div className={styles.resultHeader}>
             <h2 id="citations-title">Citations</h2>
-            <span className={styles.badge}>{run?.evaluation?.unsupportedClaimCount ?? 0} unsupported claims</span>
+            <span className={styles.badge}>{evaluationBadgeLabel(run)}</span>
           </div>
           {run ? (
             <ul>

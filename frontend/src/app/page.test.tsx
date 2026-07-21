@@ -1,7 +1,14 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import Home, { artifactBlockReason, artifactHref, artifactSafetyState, sha256Hex } from "./page";
+import Home, {
+  artifactBlockReason,
+  artifactHref,
+  artifactSafetyState,
+  evaluationBadgeLabel,
+  readJson,
+  sha256Hex,
+} from "./page";
 
 describe("Home", () => {
   it("renders the Stage 7 avatar export workflow", () => {
@@ -34,7 +41,39 @@ describe("Home", () => {
     expect(html).toContain("Run");
     expect(html).toContain("Generate a grounded script to display cited output.");
     expect(html).toContain("Citations will appear after generation.");
-    expect(html).toContain("0 unsupported claims");
+    expect(html).toContain("Evaluation pending");
+    expect(html).not.toContain("0 unsupported claims");
+  });
+
+  it("shows unsupported claim counts only after evaluation evidence exists", () => {
+    expect(evaluationBadgeLabel(null)).toBe("Evaluation pending");
+    expect(
+      evaluationBadgeLabel({
+        runId: "run_001",
+        status: "COMPLETED",
+        acceptedScriptText: "Grounded script",
+        contextRefs: [],
+        trace: { traceId: "trace_001" },
+        evaluation: {
+          unsupportedClaimCount: 0,
+          claimSupports: [],
+        },
+      }),
+    ).toBe("0 unsupported claims");
+  });
+
+  it("does not echo unsafe API error messages even for allowlisted codes", async () => {
+    const response = new Response(
+      JSON.stringify({
+        error: {
+          code: "UNSAFE_URL",
+          message: "raw script canary session_001 idem_001 contentBase64 provider payload",
+        },
+      }),
+      { status: 422 },
+    );
+
+    await expect(readJson(response)).rejects.toThrow("NarraTwin API request failed with 422");
   });
 
   it("rejects unsafe artifact filenames before enabling downloads", () => {
@@ -131,7 +170,7 @@ describe("Home", () => {
     ).toBe("ready");
   });
 
-	  it("blocks malformed, active, invalid JSON, and oversized artifacts", () => {
+  it("blocks malformed, active, invalid JSON, and oversized artifacts", () => {
     const html = "<html><body><script>alert('x')</script></body></html>";
     expect(
       artifactBlockReason("avatarDemo", {
@@ -159,31 +198,35 @@ describe("Home", () => {
       }),
     ).toBe("Invalid base64 content.");
     const oversized = "x".repeat(512 * 1024 + 1);
-	    expect(
-	      artifactBlockReason("script", {
-	        fileName: "run-es-script.md",
-	        mimeType: "text/markdown",
-	        contentBase64: btoa(oversized),
-	        checksum: `sha256:${sha256Hex(oversized)}`,
-	      }),
-	    ).toBe("Artifact exceeds local preview limit.");
-	  });
+    expect(
+      artifactBlockReason("script", {
+        fileName: "run-es-script.md",
+        mimeType: "text/markdown",
+        contentBase64: btoa(oversized),
+        checksum: `sha256:${sha256Hex(oversized)}`,
+      }),
+    ).toBe("Artifact exceeds local preview limit.");
+  });
 
   it("blocks JSON artifacts when language or provenance does not match the current run", () => {
     const context = artifactValidationContext();
-	    const renderManifest = jsonArtifact(
-	      "run-avatar-render-manifest.json",
-	      "renderManifest",
-	      manifestJson(context, { targetLanguage: "fr" }),
-	    );
-	    const videoPlaceholder = jsonArtifact(
-	      "run-video-export-placeholder.json",
-	      "videoPlaceholder",
-	      placeholderJson(context, { sourceRunId: "run_replayed" }),
-	    );
-    const voiceManifest = jsonArtifact("voice-manifest-es.json", "voiceManifest", voiceManifestJson(context, {
-      textChecksum: "sha256:tampered",
-    }));
+    const renderManifest = jsonArtifact(
+      "run-avatar-render-manifest.json",
+      "renderManifest",
+      manifestJson(context, { targetLanguage: "fr" }),
+    );
+    const videoPlaceholder = jsonArtifact(
+      "run-video-export-placeholder.json",
+      "videoPlaceholder",
+      placeholderJson(context, { sourceRunId: "run_replayed" }),
+    );
+    const voiceManifest = jsonArtifact(
+      "voice-manifest-es.json",
+      "voiceManifest",
+      voiceManifestJson(context, {
+        textChecksum: "sha256:tampered",
+      }),
+    );
 
     expect(artifactBlockReason("renderManifest", renderManifest, context)).toBe("JSON metadata shape is invalid.");
     expect(artifactBlockReason("videoPlaceholder", videoPlaceholder, context)).toBe("JSON metadata shape is invalid.");
