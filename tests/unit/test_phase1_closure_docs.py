@@ -660,11 +660,22 @@ def test_status_state_v1_contract_rejects_missing_table() -> None:
 
 def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
+    next_action = (
+        "| SSV1-NEXT | next-action | future issue-linked Checkpoint 1 PR | "
+        "demo-checkpoint1-issue-needed | demo-checkpoint1-issue-needed | "
+        "Demo Phase 0 planning completed through issue #225 and PR #226. The next approved action is to "
+        "open a future issue-linked Checkpoint 1 PR for the first spec/source-facts/governance slice before "
+        "any provider, TTS, avatar/video, hosted-demo, or quota/access implementation. Provider SDKs, "
+        "provider keys, hosted deployment, real audio/video generation, cloned identity implementation, "
+        "public synthetic-media distribution, Product Mode 2, and production-readiness claims remain forbidden "
+        "until future issue-linked PRs explicitly approve them. |"
+    )
     expected = (
         "| SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | "
         "Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 "
         "and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |"
     )
+    assert next_action in status_text
     assert expected in status_text
     mutated = status_text.replace(
         expected,
