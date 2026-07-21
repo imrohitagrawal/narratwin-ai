@@ -629,6 +629,32 @@ latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level
 contract PR before provider abstraction plus real TTS, avatar/video provider
 integration, and hosted-demo access/quota/retention/demo polish.
 
+Issue `#235` is the bounded Demo Checkpoint 1 PR 2 branch for the latency,
+capacity, cost, access, quota, cache/pre-generation, retention, and launch-level
+contract that follows merged PR `#230` / issue `#229`. Branch
+`phase-1-closure-process-235-demo-checkpoint1-contract` may define minimum
+implementation requirements and future evidence mappings in
+`docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md` and align canonical launch/access
+wording in `docs/LAUNCH_LEVELS.md`, with the matching
+`docs/governance/preflights/issue-235.json`, `docs/STAGE_ISSUE_PLAN.md`,
+`docs/STATUS.md`, `docs/THIRD_PARTY_NOTICES.md`, and the narrow Phase 1 Closure
+status-contract test/checker files needed to keep PR2 scope exact:
+`scripts/quality/check_phase1_closure_docs.py` and
+`tests/unit/test_phase1_closure_docs.py`.
+
+It must not implement backend, frontend, provider abstraction, TTS, avatar/video,
+hosted deployment, access-system implementation, database, Docker, CI workflow,
+provider SDKs, provider keys, real audio generation, real video generation,
+cloned identity, public synthetic-media distribution, Product Mode 2, or
+production-readiness claims. It must also not set up provider accounts,
+configure provider dashboards, activate paid plans, fund provider wallets,
+select production models or voices, make real provider test calls, incur paid
+spend, or pre-authorize the later hosted-demo PR. PR2 creates minimum future
+requirements only; PR3 provider abstraction plus real TTS still requires fresh
+selected-provider source facts and executable disabled-default, quota,
+retention/deletion, redaction, timeout, retry, and duplicate-spend safeguards
+before any provider egress is enabled.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

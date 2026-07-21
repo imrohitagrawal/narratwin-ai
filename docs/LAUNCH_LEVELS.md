@@ -59,6 +59,13 @@ evidence waiver.
 
 - Local development and the controlled local mock demo must not wait for AWS
   payer, account, region, budget, or cloud-owner decisions.
+- Demo Checkpoint 1 PR 2 may define access, quota, retention, cache, and
+  launch-level minimum requirements before a hosted URL exists, but it does not
+  create a launch approval, hosted environment, provider egress approval,
+  provider account, dashboard configuration, paid plan, wallet funding, model or
+  voice selection, or paid-spend authorization. Any later hosted URL must be
+  classified by the highest-risk applicable row in this table before it is made
+  reachable.
 - Issue `#144` is the first infrastructure-provisioning gate for the current
   production-like AWS path. No AWS spend or resource creation is authorized by
   issue `#141` or PR `#153`.
