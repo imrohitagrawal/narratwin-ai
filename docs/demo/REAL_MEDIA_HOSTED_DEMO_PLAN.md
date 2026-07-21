@@ -25,10 +25,15 @@ User uploads or uses project knowledge
 -> citations and evaluation evidence remain visible behind the media output
 ```
 
-This is a hosted controlled or invite-only demo goal. It is not a production
-launch, external soft launch with customer data, public synthetic-media
-distribution approval, multi-worker durability claim, or production-readiness
-claim.
+This is a controlled reviewer demo goal. It is not a production launch, public
+synthetic-media distribution approval, multi-worker durability claim, or
+production-readiness claim. If the demo URL is reachable by recruiters, hiring
+managers, or any other external identity, `docs/LAUNCH_LEVELS.md` classifies it
+as an external/invite-only soft-launch boundary regardless of the word `demo`;
+before that URL exists, the implementation plan must either stay in an
+owner-approved/internal synthetic hosted demo boundary or explicitly inherit the
+soft-launch controls for access, secrets, monitoring, retention/deletion,
+incident response, rollback, backup, and named ownership.
 
 ## Demo Boundary
 
@@ -42,6 +47,10 @@ Required boundary controls before a hosted demo URL exists:
 
 - named owner for the hosted environment
 - invite-only access or equivalent access control
+- launch-level decision that either keeps access internal/owner-approved or
+  inherits the external/invite-only soft-launch controls
+- incident response, rollback, backup, monitoring, and named-owner controls
+  before any external invite URL exists
 - synthetic or owner-approved demo data only
 - explicit provider-key secret storage outside the repo
 - per-user and global provider-cost quota
@@ -118,15 +127,32 @@ adapters only after provider-backed demo flow is stable.
 ## Cost Planning
 
 Demo Phase 0 must produce a budget table before implementation. Initial planning
-estimate for 10 invited reviewers generating one 2-minute media output each:
+estimate for 10 invited reviewers generating one 2-minute media output each.
+The default controlled-demo posture should be cost-minimized:
 
-| Cost area | Planning estimate | Control required |
+| Cost area | Cost-minimized planning estimate | Control required |
 |---|---:|---|
-| Hosted app/database/cache | `$5-$50/month` | hard monthly cloud budget and teardown plan |
-| TTS or voice clone | `$6-$30/month` plus usage, depending on provider and plan | per-run character/minute cap |
-| Avatar/video generation | roughly `$1-$4/minute` depending on provider, avatar type, and engine | per-user video-minute quota |
-| Failed runs and retries | 20-50 percent buffer | retry budget and idempotency |
-| Total first-month demo budget | `$75-$200` | app-level provider budget stop |
+| Hosted app/database/cache | `$0-$5/month` preferred for the controlled demo; use `$20+` only if the selected host requires paid spend controls or team features | hard monthly cloud budget, teardown plan, and no production durability claim |
+| TTS or voice clone | Checkpoint 1 TTS should target low single-digit usage or the smallest required plan; cloned voice remains out of scope until Checkpoint 2 | per-run character/minute cap |
+| Avatar/video generation | target roughly `$1/minute` for non-cloned/stock/synthetic output; avoid premium avatar engines unless explicitly justified | per-user video-minute quota |
+| Failed runs and retries | 20 percent default buffer; 50 percent only for provider-selection testing, not normal reviewer access | retry budget and idempotency |
+| Cost-minimized first-month demo target | `$30-$60` for 10 invited reviewers x one 2-minute output each | app-level provider budget stop |
+| First-month approval ceiling | `$75-$200` only if paid hosting controls, monthly provider plans, or higher-cost avatar engines are explicitly selected | owner approval before spend |
+
+The cheapest credible recruiter-facing demo mode is view-first:
+
+```text
+invite link
+-> owner-approved pre-generated real-media walkthrough
+-> compact trust strip with 0 unsupported claims, source count, AI-media disclosure
+-> expandable human-readable citations and eval evidence
+-> optional regeneration only inside a hard per-reviewer quota
+```
+
+View-first mode reduces provider spend, avoids slow first-impression waits,
+keeps a working artifact available when providers are down, and still preserves
+the end-to-end proof because the displayed media must be bound to its source
+run, citations, eval result, provider metadata, and artifact manifest.
 
 No implementation PR may rely on these estimates alone. The selected provider
 PR must record current official pricing, plan, limits, and expected cost per
@@ -153,9 +179,11 @@ project knowledge
 Expected PR sequence:
 
 1. spec/source facts/governance PR
-2. provider abstraction plus real TTS PR
-3. avatar/video provider PR
-4. hosted-demo access, quota, artifact retention, and demo polish PR
+2. latency, capacity, cost, access, quota, cache/pre-generation, retention, and
+   launch-level contract PR
+3. provider abstraction plus real TTS PR
+4. avatar/video provider PR
+5. hosted-demo access, quota, artifact retention, and demo polish PR
 
 Checkpoint 1 must retain mock/local providers for local/dev/test and CI.
 
@@ -183,17 +211,20 @@ before code:
 
 | Category | Required cases |
 |---|---|
-| Access | anonymous access, expired invite, wrong invite, abuse attempts |
+| Access | anonymous access, expired invite, wrong invite, abuse attempts, magic-link/no-account reviewer access, view-only default, quota-exceeded copy, owner contact path, target time-to-demo |
 | Provider config | missing key, invalid key, provider disabled, provider unavailable |
-| Provider output | timeout, malformed response, unexpected MIME, duplicate JSON keys, unsafe URL, oversized audio/video |
-| Cost | per-run budget exceeded, per-user quota exceeded, global monthly quota exceeded |
+| Provider output | timeout, malformed response, unexpected MIME, duplicate JSON keys, unsafe URL, oversized audio/video, async video polling, `Retry-After` handling, max attempts exceeded |
+| Cost | per-run budget exceeded, per-user quota exceeded, global monthly quota exceeded, quota reservation, quota refund on failed provider job |
+| Hosted capacity | concurrent reviewer limit, queue/backpressure, provider rate limit, cached media reuse, pre-generated fallback artifact, provider outage while view-first artifact remains available |
 | Grounding | no uploaded knowledge, retrieval miss, unsupported claim, missing citation, eval failure |
-| Prompt injection | uploaded docs attempt to override rules, call provider, reveal secrets, or force unsupported claims |
-| Language | unsupported language, provider cannot render selected language, translation loses required terms |
+| Evidence visibility | hidden evidence UI, stale eval record, source-run/eval/citation mismatch, media display when eval failed, citations/eval evidence not inspectable from the avatar/video output |
+| Prompt injection | uploaded docs attempt to override rules, language/audience inputs attempt to override rules, provider/media outputs include unsafe instructions, reveal secrets, call providers directly, or force unsupported claims |
+| Uploaded content safety | MIME/type/size validation failure, active-content stripping failure, output encoding failure, prompt/provider payload redaction failure, uploaded-doc retention/deletion failure |
+| Language | unsupported language, provider cannot render selected language, translation loses required terms, translated unsupported claims, citation drift after translation, subtitle/audio divergence, eval evidence tied to wrong language artifact |
 | Audio | empty audio, wrong format, too long, missing disclosure, no clone consent |
 | Video | missing audio binding, wrong source run, stale script, unsafe artifact, missing disclosure |
-| Clone consent | clone requested without consent, wrong person, consent expired, consent not bound to artifact |
-| Retention | artifact deletion, provider deletion request, stale artifact link, no raw secret/provider payload logging |
+| Clone consent | clone requested without consent, wrong person, consent expired, consent revoked or withdrawn, consent not bound to artifact, source media/voice sample not covered by consent |
+| Retention | artifact deletion, provider deletion request, provider-side clone profile deletion, clone enrollment asset deletion, stale artifact link, no raw secret/provider payload logging, consent-record retention boundary |
 | Review | no source facts, no cost proof, no fan-out review, no old-behavior proof for changed guardrails |
 
 ## Fan-Out Review Requirements

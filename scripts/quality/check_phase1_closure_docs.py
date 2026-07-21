@@ -137,6 +137,15 @@ ISSUE_223_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_225_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-225.json",
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_184_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-184.json",
     "AGENTS.md",
@@ -3391,6 +3400,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_219_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-223-post-pr-222-status-reconciliation":
         allowed_files = ISSUE_223_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-225-demo-real-media-phase0-plan":
+        allowed_files = ISSUE_225_ALLOWED_CHANGED_FILES
     elif branch == PHF020A_BRANCH:
         allowed_files = ISSUE_184_ALLOWED_CHANGED_FILES
     elif branch == STATUS_STATE_V1_BRANCH:
@@ -3675,7 +3686,9 @@ def check_real_media_demo_plan(failures: list[str]) -> None:
         "user selects language and audience",
         "avatar/voice clone",
         "citations and evaluation evidence",
-        "hosted controlled or invite-only demo",
+        "controlled reviewer demo",
+        "external/invite-only soft-launch boundary",
+        "owner-approved/internal synthetic hosted demo boundary",
         "Provider-Backed Path",
         "Source-Fact Snapshot",
         "ElevenLabs",
@@ -3693,9 +3706,92 @@ def check_real_media_demo_plan(failures: list[str]) -> None:
         "One autonomous prompt may drive Checkpoint 1",
         "no production-readiness claim",
         "No implementation PR may rely on these estimates alone",
+        "Cost-minimized first-month demo target",
+        "$30-$60",
+        "First-month approval ceiling",
+        "view-first",
+        "owner-approved pre-generated real-media walkthrough",
     ):
         if marker not in text:
             fail(failures, f"docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md missing marker: {marker}")
+    required_headings = (
+        "Purpose",
+        "Demo Boundary",
+        "Provider Strategy",
+        "Cost Planning",
+        "Checkpoints",
+        "Failure Matrix Categories",
+        "Fan-Out Review Requirements",
+        "Autonomous Execution Rule",
+        "Non-Goals For Issue `#225`",
+    )
+    for heading in required_headings:
+        if not has_heading(text, heading):
+            fail(failures, f"docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md missing heading: {heading}")
+
+    checkpoint_1 = text.find("Checkpoint 1: Real Media Without Cloned Identity")
+    checkpoint_2 = text.find("Checkpoint 2: Cloned Identity")
+    if checkpoint_1 < 0 or checkpoint_2 < 0 or checkpoint_1 > checkpoint_2:
+        fail(failures, "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md must keep Checkpoint 1 before Checkpoint 2.")
+
+    boundary = section(text, "Demo Boundary")
+    for marker in (
+        "invite-only access or equivalent access control",
+        "provider-key secret storage outside the repo",
+        "artifact retention and deletion rule",
+        "AI-generated media disclosure",
+        "clone consent and provenance",
+        "no public synthetic-media distribution claim",
+        "launch-level decision",
+        "incident response",
+        "rollback",
+        "backup",
+    ):
+        if marker not in boundary:
+            fail(failures, f"docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md Demo Boundary missing marker: {marker}")
+
+    failure_matrix = section(text, "Failure Matrix Categories")
+    for marker in (
+        "anonymous access",
+        "timeout",
+        "Retry-After",
+        "quota reservation",
+        "quota refund",
+        "Hosted capacity",
+        "pre-generated fallback artifact",
+        "unsupported claim",
+        "missing citation",
+        "eval failure",
+        "Evidence visibility",
+        "source-run/eval/citation mismatch",
+        "media display when eval failed",
+        "Prompt injection",
+        "language/audience inputs attempt to override rules",
+        "Uploaded content safety",
+        "MIME/type/size validation failure",
+        "prompt/provider payload redaction failure",
+        "translated unsupported claims",
+        "citation drift after translation",
+        "subtitle/audio divergence",
+        "consent revoked or withdrawn",
+        "provider-side clone profile deletion",
+    ):
+        if marker not in failure_matrix:
+            fail(failures, f"docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md Failure Matrix missing marker: {marker}")
+
+    non_goals = section(text, "Non-Goals For Issue `#225`")
+    for marker in (
+        "backend or frontend runtime code changes",
+        "provider SDK installation",
+        "provider key handling",
+        "hosted deployment",
+        "real audio generation",
+        "real video generation",
+        "cloned face or voice implementation",
+        "Product Mode 2 implementation",
+    ):
+        if marker not in non_goals:
+            fail(failures, f"docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md Non-Goals missing marker: {marker}")
 
 
 def check_release_docs(failures: list[str]) -> None:
