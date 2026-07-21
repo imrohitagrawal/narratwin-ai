@@ -106,6 +106,25 @@ ISSUE_237_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_stage6_multilingual.py",
     "tests/api/test_stage6_multilingual_api.py",
 }
+ISSUE_241_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-241.json",
+    "docs/reviews/ISSUE_241_DEMO_CHECKPOINT1_PR4_AVATAR_VIDEO_PREFLIGHT.md",
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/ADR/0002-provider-agnostic-adapters.md",
+    "docs/API_CONTRACT.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "backend/app/avatar_video_provider.py",
+    "backend/app/stage7.py",
+    "backend/app/main.py",
+    "tests/unit/test_stage7_avatar_video_provider.py",
+    "tests/unit/test_stage7_avatar.py",
+    "tests/api/test_stage7_avatar_api.py",
+}
 ISSUE_172_ALLOWED_CHANGED_FILES = {
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -1365,10 +1384,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "future issue-linked PR",
-        "demo-checkpoint1-pr4-avatar-video-pending-issue",
-        "demo-checkpoint1-pr4-avatar-video-pending-issue",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. The next approved action is a future issue-linked avatar/video provider integration PR only if fresh source facts, executable safeguards, human approval surfaces, and a dedicated branch/PR are recorded first. Until then, hosted deployment, hosted access/quota/retention/demo polish, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden.",
+        "#241",
+        "demo-checkpoint1-pr4-avatar-video-active-issue-241",
+        "demo-checkpoint1-pr4-avatar-video-active-issue-241",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is active on branch phase-1-closure-process-241-demo-checkpoint1-pr4-avatar-video as Checkpoint 1 PR 4 avatar/video provider integration only; mock/local remains default, provider egress remains disabled by default, and implementation must prove fresh source facts, executable safeguards, human approval surfaces, and a pull request before review. Hosted deployment, hosted access/quota/retention/demo polish, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3446,6 +3465,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_235_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts":
         allowed_files = ISSUE_237_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-241-demo-checkpoint1-pr4-avatar-video":
+        allowed_files = ISSUE_241_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-241-"):
+        allowed_files = set()
     elif branch.startswith("phase-1-closure-process-237-"):
         allowed_files = set()
     elif branch == PHF020A_BRANCH:
@@ -3942,6 +3965,107 @@ def check_status_state_v1_contract(failures: list[str]) -> None:
         fail(failures, f"docs/STATUS.md StatusStateV1 finding: {finding}")
 
 
+def check_issue241_avatar_video_preflight(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_241_DEMO_CHECKPOINT1_PR4_AVATAR_VIDEO_PREFLIGHT.md"
+    text = read(rel)
+    normalized = re.sub(r"\s+", " ", text.lower())
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Objective",
+            "Non-Goals",
+            "Changed-File Allowlist",
+            "Official Source Facts",
+            "Adapter Interface Contract",
+            "Invariant and Test Matrix",
+            "Fan-Out Review Findings and Dispositions",
+            "Skill and Evidence Ledger",
+            "Stop Rule",
+        ),
+    )
+    required_urls = (
+        "https://developers.heygen.com/docs/quick-start",
+        "https://developers.heygen.com/docs/usage-limits",
+        "https://developers.heygen.com/docs/create-avatar",
+        "https://developers.heygen.com/docs/avatar-consent",
+        "https://developers.heygen.com/docs/pricing",
+        "https://docs.tavus.io/api-reference/authentication",
+        "https://docs.tavus.io/api-reference/video-request/create-video",
+        "https://docs.tavus.io/api-reference/video-request/get-video",
+        "https://docs.tavus.io/api-reference/video-request/delete-video",
+        "https://docs.tavus.io/sections/faces/overview",
+        "https://docs.tavus.io/sections/faces/face-faqs",
+        "https://www.tavus.io/pricing",
+        "https://docs.d-id.com/reference/createtalk",
+        "https://docs.d-id.com/reference/gettalk",
+        "https://www.d-id.com/faqs/",
+        "https://www.d-id.com/eula/",
+        "https://www.d-id.com/pricing/api/",
+    )
+    missing_urls = [url for url in required_urls if url not in text]
+    if missing_urls:
+        fail(failures, f"{rel} missing PR4 official source URLs: " + ", ".join(missing_urls))
+
+    required_markers = (
+        "Accessed date for source facts: 2026-07-21",
+        "Mock/local avatar/video remains the default for local/dev/test/CI",
+        "No real provider call is approved by PR4",
+        "D-ID-approved synthetic-marking policy/version",
+        "not configurable off",
+        "provider asset provenance enum",
+        "fully synthetic no-real-person",
+        "provider-stock licensed non-identifiable",
+        "prompt-with-existing-avatar references",
+        "custom replica",
+        "user-provided likeness image",
+        "rejected before transport call",
+        "typed input schema",
+        "typed output schema",
+        "failure codes",
+        "provider job states",
+        "idempotency scope",
+        "provider capability/config model",
+        "source run ID",
+        "evaluation ID/status/checksum",
+        "citation refs",
+        "TTS/audio checksum",
+        "provider create succeeds remotely, local call times out",
+        "pending/unknown quota hold",
+        "provider-level idempotency",
+        "billable unit",
+        "duration cap",
+        "per-run dollar ceiling",
+        "balance/credit errors",
+        "retry-after",
+        "clamp",
+        "no real sleeps in tests",
+        "resolved A/AAAA records",
+        "169.254.169.254",
+        "IPv6 loopback/link-local",
+        "DNS rebinding",
+        "redirect denial",
+        "provider-specific deletion/retention source facts",
+        "reject providers lacking hard-delete or auditable deletion evidence",
+        "structured log event names",
+        "bounded-cardinality",
+        "allowlisted fields",
+        "trace_id",
+        "quota outcome",
+        "artifact validation result",
+        "hosted access",
+        "invite",
+        "public URL",
+        "Product Mode 2",
+        "test_stage7_avatar_video_provider.py",
+        "test_stage7_avatar_api.py",
+    )
+    missing_markers = [marker for marker in required_markers if marker.lower() not in normalized]
+    if missing_markers:
+        fail(failures, f"{rel} missing PR4 preflight markers: " + ", ".join(missing_markers))
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
@@ -3959,6 +4083,7 @@ def check_process_docs(failures: list[str]) -> None:
 
     pr_template = read(".github/pull_request_template.md")
     changed = set(changed_files())
+    check_issue241_avatar_video_preflight(failures)
     check_required_headings(
         failures,
         pr_template,

@@ -694,6 +694,47 @@ language/script-length, quota reservation/refund, timeout/retry,
 duplicate-spend prevention, output validation, retention/deletion, and redacted
 logging safeguards are executable before egress.
 
+Issue `#241` is the bounded Demo Checkpoint 1 PR 4 branch for server-side
+avatar/video provider integration only. Branch
+`phase-1-closure-process-241-demo-checkpoint1-pr4-avatar-video` may add the PR4
+planning/evidence artifact, refresh official avatar/video provider source
+facts, update the server-side Stage 7 avatar/video boundary, add mock/fake
+provider tests, and align API/status/traceability/third-party/provider-ADR
+documents impacted by that avatar/video-only boundary:
+
+- `docs/governance/preflights/issue-241.json`
+- `docs/reviews/ISSUE_241_DEMO_CHECKPOINT1_PR4_AVATAR_VIDEO_PREFLIGHT.md`
+- `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `docs/ADR/0002-provider-agnostic-adapters.md`
+- `docs/API_CONTRACT.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `backend/app/avatar_video_provider.py`
+- `backend/app/stage7.py`
+- `backend/app/main.py`
+- `tests/unit/test_stage7_avatar_video_provider.py`
+- `tests/unit/test_stage7_avatar.py`
+- `tests/api/test_stage7_avatar_api.py`
+
+It must not implement hosted deployment, hosted access systems, invite flows,
+public URLs, demo polish, public synthetic-media distribution, cloned voice,
+cloned face/avatar, digital twins, replica-profile creation, Product Mode 2,
+production-readiness claims, Docker changes, CI workflow changes, frontend
+changes, provider SDK installation, provider account setup, provider dashboard
+configuration, paid plan activation, wallet funding, paid spend, real provider
+calls in CI, or real provider test calls without a fresh PR4 plan and explicit
+written human-owner approval. Mock/local avatar/video remains the default for
+local/dev/test/CI, and every optional provider-egress path must fail closed
+unless disabled-default, missing/invalid key, failed-eval block,
+source/eval/media/citation binding, prompt-injection rejection,
+quota reservation/refund, timeout/retry, retry-cap, duplicate-spend prevention,
+provider response and artifact validation, retention/deletion evidence, synthetic
+disclosure, and redacted logging safeguards are executable before egress.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:
