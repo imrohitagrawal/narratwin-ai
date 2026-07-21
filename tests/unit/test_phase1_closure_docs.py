@@ -551,6 +551,43 @@ def test_phase1_quality_docs_make_main_dispatch_behavior_unambiguous() -> None:
     ) in status
 
 
+def test_real_media_hosted_demo_plan_is_required_and_guarded() -> None:
+    assert "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md" in phase1.REQUIRED_PHASE1_FILES
+    text = Path("docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "User uploads or uses project knowledge",
+        "Provider-Backed Path",
+        "Checkpoint 1: Real Media Without Cloned Identity",
+        "Checkpoint 2: Cloned Identity",
+        "Failure Matrix Categories",
+        "Fan-Out Review Requirements",
+        "no production-readiness claim",
+    ):
+        assert marker in text
+
+
+def test_process_branch_allows_real_media_plan_but_rejects_runtime_files(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-225-demo-real-media-phase0-plan"
+    allowed = [
+        "docs/governance/preflights/issue-225.json",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    ]
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=["backend/app/stage7.py", "frontend/package.json"],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+    ]
+
+
 def test_phf020a_valid_policy_has_no_findings() -> None:
     assert phase1.phf020a_policy_findings(PHF020A_VALID_POLICY) == []
 

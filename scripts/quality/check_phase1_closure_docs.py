@@ -32,6 +32,7 @@ REQUIRED_PHASE1_FILES = {
     "docs/demo/PHASE_1_DEMO_SCRIPT.md",
     "docs/demo/PHASE_1_DEMO_CHECKLIST.md",
     "docs/demo/PHASE_1_SCREENSHOT_GUIDE.md",
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
     "docs/reviews/ISSUE_39_EXECUTION_STRATEGY.md",
 }
 
@@ -1317,10 +1318,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "#223/#224",
-        "terminal-status-loop-breaker-active",
-        "terminal-status-loop-breaker-active",
-        "Issue #223 and PR #224 are the active terminal post-PR-222 loop-breaker; future issue-completing PRs must finalize docs/STATUS.md in the same PR with the post-merge target state and next-work pointer, while ordinary post-merge facts are recorded in PR/issue comments and not in successor status-only PRs.",
+        "#225",
+        "demo-phase0-planning-active",
+        "demo-phase0-planning-active",
+        "Issue #225 is the active Demo Phase 0 planning issue for hosted controlled real-media source facts, cost/terms research, checkpoint sequencing, failure-matrix categories, and fan-out review expectations; it authorizes planning only, while provider SDKs, provider keys, hosted deployment, real audio/video generation, cloned identity implementation, public synthetic-media distribution, Product Mode 2, and production-readiness claims remain forbidden until future issue-linked PRs explicitly approve them.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3667,6 +3668,36 @@ def check_demo_docs(failures: list[str]) -> None:
             fail(failures, f"Phase 1 demo docs missing marker: {marker}")
 
 
+def check_real_media_demo_plan(failures: list[str]) -> None:
+    text = read("docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md")
+    for marker in (
+        "User uploads or uses project knowledge",
+        "user selects language and audience",
+        "avatar/voice clone",
+        "citations and evaluation evidence",
+        "hosted controlled or invite-only demo",
+        "Provider-Backed Path",
+        "Source-Fact Snapshot",
+        "ElevenLabs",
+        "HeyGen",
+        "D-ID",
+        "Tavus",
+        "OpenVoice",
+        "Wav2Lip",
+        "XTTS-v2",
+        "Local-Model Path",
+        "Checkpoint 1: Real Media Without Cloned Identity",
+        "Checkpoint 2: Cloned Identity",
+        "Failure Matrix Categories",
+        "Fan-Out Review Requirements",
+        "One autonomous prompt may drive Checkpoint 1",
+        "no production-readiness claim",
+        "No implementation PR may rely on these estimates alone",
+    ):
+        if marker not in text:
+            fail(failures, f"docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md missing marker: {marker}")
+
+
 def check_release_docs(failures: list[str]) -> None:
     files = {
         "docs/RELEASE_READINESS_REVIEW.md": read("docs/RELEASE_READINESS_REVIEW.md"),
@@ -4196,6 +4227,7 @@ def main() -> int:
         check_closure_report(failures)
         check_golden_questions(failures)
         check_demo_docs(failures)
+        check_real_media_demo_plan(failures)
         check_release_docs(failures)
         check_issue39_closure_plan(failures)
         check_issue125_local_restore_contract(failures)

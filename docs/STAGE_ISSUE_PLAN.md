@@ -563,6 +563,7 @@ Allowed governance/reporting changes for Module A:
 - `docs/demo/PHASE_1_DEMO_SCRIPT.md`
 - `docs/demo/PHASE_1_DEMO_CHECKLIST.md`
 - `docs/demo/PHASE_1_SCREENSHOT_GUIDE.md`
+- `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`
 - `portfolio/README.md`
 - `scripts/quality/check_phase1_closure_docs.py`
 - `scripts/quality/check_quality_stage.py`
@@ -589,6 +590,22 @@ Process-only branches must not touch backend, frontend, provider, RAG, avatar,
 database, Docker, or product runtime files. Issue-specific branches such as
 `phase-1-closure-39-*` retain their separate implementation/evidence allowlist
 only for the linked issue scope below.
+
+Issue `#225` is the bounded Demo Phase 0 planning branch for the hosted
+controlled real-media demo path. Branch
+`phase-1-closure-process-225-demo-real-media-phase0-plan` may document source
+facts, costs, hosted-demo controls, Checkpoint 1 and Checkpoint 2 sequencing,
+failure-matrix categories, and fan-out review expectations in
+`docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`, with the matching
+`docs/governance/preflights/issue-225.json`, `docs/STAGE_ISSUE_PLAN.md`,
+`docs/STATUS.md`, static gate updates, and focused gate tests.
+
+It must not implement backend, frontend, provider, RAG, avatar, database,
+Docker, hosted deployment, provider SDKs, provider keys, real audio generation,
+real video generation, cloned identity, public synthetic-media distribution,
+Product Mode 2, or production-readiness claims. Research for Checkpoint 1 and
+Checkpoint 2 may be planned in parallel, but implementation remains sequential
+and requires future issue-linked PRs.
 
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
