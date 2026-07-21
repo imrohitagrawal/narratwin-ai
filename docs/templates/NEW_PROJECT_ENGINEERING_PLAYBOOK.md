@@ -114,15 +114,22 @@ If yes, exact closing keyword and issue:
 
 ## Human Verification Checklist
 
-For every non-trivial PR, convert reviewer-focus points into a self-serve
-verification checklist in the PR body. Reviewers should not have to ask the
-implementer where the decisive facts live.
+For every non-trivial PR, convert reviewer-focus points and changed high-risk
+surfaces into a self-serve verification checklist in the PR body. Reviewers
+should not have to ask the implementer where the decisive facts live. Checklist
+rows need exact data/source/artifact references, official URL and
+verified/accessed date when facts can change, pass/fail criteria, and
+residual-risk owner.
 
-| Focus Area | What Reviewer Must Verify | Data/Source To Inspect | Pass Condition | Fail Condition |
-|---|---|---|---|---|
-| Vendor/tool choice | selected and rejected options are source-backed | official pricing/docs/license/security URLs | reviewer can verify the decision without asking implementers | source facts are missing, stale, or only summarized from memory |
-| Scope boundary | implementation does not exceed approved issue scope | changed-file list, preflight allowlist, status ledger | diff stays inside the allowed files/modules | runtime, provider, deployment, data, or policy scope appears without approval |
-| Human-only decision | CI cannot decide a needed legal, security, cost, launch, or merge-text surface | PR human-only review table and linked docs | owner, evidence, residual risk, and revisit trigger are explicit | PR delegates the decision to informal discussion |
+| Focus Area | What Reviewer Must Verify | Data/Source/Artifact To Inspect | Pass Condition | Fail Condition | Residual-Risk Owner |
+|---|---|---|---|---|---|
+| Vendor/tool choice | selected and rejected options are source-backed, including plan/tier, usage quantity, included quota, overage/add-ons, region/tax/currency assumptions, commercial-use rights, consent or clone restrictions, and rejection criteria | official pricing/docs/license/security URLs plus verified/accessed date and any source-facts artifact | reviewer can independently verify each cost/terms assumption and rejected option | source facts are missing, stale, summarized from memory, or omit a cost/terms field needed for the decision | named reviewer or accountable owner |
+| Scope boundary | implementation does not exceed approved issue scope | changed-file list, preflight allowlist, status ledger | diff stays inside the allowed files/modules | runtime, provider, deployment, data, or policy scope appears without approval | named reviewer or accountable owner |
+| UX/demo/recruiter path | reviewer can reproduce the changed user-facing path without private setup notes | route, screen, seed data, user role, artifact, viewport/device, command, and expected first-screen state | reviewer reaches and evaluates the intended path with visible trust/evidence surfaces | path, data, role, viewport, command, or expected state is missing or developer-dependent | named reviewer or accountable owner |
+| Security/privacy/consent | uploaded docs, prompts, transcripts, provider outputs, model outputs, consent, deletion/erasure, disclosure, and provenance surfaces are treated as untrusted or explicitly non-goal | threat model, security/privacy notes, consent/deletion contract, provenance/evidence artifact | row proves the relevant trust boundary and residual decision without informal discussion | high-risk data, consent, deletion, disclosure, or provenance surface is omitted | named reviewer or accountable owner |
+| AI/eval/grounding/media | claims, citation indexes, source-run IDs, eval report IDs/checksums, unsupported-claim thresholds, and media/provenance binding are inspectable | eval report, citation/source artifact, generated-media manifest, source-run/eval/media binding evidence | reviewer can verify generated/derived artifacts are grounded and bound to current passing evidence | citation, unsupported-claim, source-run, eval, media, or provenance evidence is missing or mismatched | named reviewer or accountable owner |
+| Reliability/quota/performance | latency budget, capacity/load assumption, provider quota/rate limit, retry/backoff, timeout, and cost ceiling are explicit where relevant | benchmark/load evidence, provider limit docs, quota config/spec, retry/timeout contract, official URL plus verified/accessed date | reviewer can verify the budget/limit and fail-closed behavior | latency, capacity, retry, timeout, quota, or cost ceiling is vague, stale, or unenforced | named reviewer or accountable owner |
+| Human-only decision | CI cannot decide a needed legal, security, cost, launch, UX, or merge-text surface | PR human-only review table and linked docs | owner, evidence, residual risk, and revisit trigger are explicit | PR delegates the decision to informal discussion | named reviewer or accountable owner |
 
 ## Required Local Commands
 
@@ -353,9 +360,11 @@ Required rule:
 - negative, mutation, break-test, RED, or "old behavior fails" evidence is
   required for behavior that previously could false-pass;
 - implementation starts only after the invariant-to-test matrix is reviewable;
-- non-trivial reviewer-focus points must appear in the PR body's Human
-  verification checklist with exact data/source references plus pass/fail
-  criteria, so human review is repeatable without private implementer context.
+- non-trivial reviewer-focus points and changed high-risk surfaces must appear
+  in the PR body's Human verification checklist with exact data/source/artifact
+  references, official URL and verified/accessed date where facts can change,
+  pass/fail criteria, and residual-risk owner, so human review is repeatable
+  without private implementer context.
 
 ## Gate 3A: Contract Freeze Before Code
 
@@ -385,7 +394,7 @@ Before implementation starts, the PR-specific preflight artifact must contain:
 | False-pass matrix | ways a weak implementation could appear compliant while violating intent | yes |
 | Test/gate mapping | positive, negative, mutation, RED, break-test, source, or human-only evidence for every row | yes |
 | Review prompt set | adversarial prompts generated from the matrix, not generic role prompts | yes |
-| Human verification checklist | PR-body checklist that lists focus area, exact data/source to inspect, pass condition, and fail condition for every non-trivial reviewer-focus point | yes |
+| Human verification checklist | PR-body checklist that lists focus area, exact data/source/artifact to inspect, official URL and verified/accessed date where facts can change, pass condition, fail condition, and residual-risk owner for every non-trivial reviewer-focus point and changed high-risk surface | yes |
 | Stop rule | criteria for pausing implementation and returning to contract definition | yes |
 | Skill/tool selection | preinstalled or approved skills/docs checked first; custom skill/plugin gap, rejected options, approval, lock, and notices when applicable | yes |
 

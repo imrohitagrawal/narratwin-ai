@@ -560,14 +560,19 @@ automation behavior and review-loop prevention.
 
 The PR template also requires a `Human verification checklist` for non-trivial
 PRs. This checklist converts reviewer-focus points into rows with exact
-data/source references and pass/fail criteria. It is the durable PR-body
-surface for human-only verification work such as provider/tool comparisons,
-pricing and quota assumptions, legal/license/consent decisions, launch-boundary
-checks, production-readiness posture, and final merge-message wording. Absence
-of this checklist is a blocking human-review finding for non-trivial PRs even
-when the current script-level policy gates have passed. A future guardrail PR
-may make the checklist executable; until then reviewers enforce it through the
-PR body and template.
+data/source/artifact references, official URL and verified/accessed date when
+facts can change, pass/fail criteria, and residual-risk owner. It is the
+durable PR-body surface for human-only verification work such as provider/tool
+comparisons, pricing, quota, rate-limit, latency, capacity, retry/backoff/
+timeout assumptions, user-facing demo or recruiter-flow checks, legal/license/
+consent decisions, upload/prompt/transcript/provider-output/model-output trust
+boundaries, deletion/erasure, disclosure, provenance, AI/RAG/generated-media
+claims, citations, unsupported-claim checks, source-run/eval/media binding,
+launch-boundary checks, production-readiness posture, and final merge-message
+wording. Absence of this checklist is a blocking human-review finding for
+non-trivial PRs even when the current script-level policy gates have passed. A
+future guardrail PR may make the checklist executable; until then reviewers
+enforce it through the PR body and template.
 
 Local validation that claims to cover PR-body checks must run with a pull-request
 event payload and `NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1`; plain

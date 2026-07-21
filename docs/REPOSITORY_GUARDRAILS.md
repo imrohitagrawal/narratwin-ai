@@ -223,13 +223,22 @@ than relying on marker-only wording.
 Every non-trivial PR body must make reviewer-focus points self-serve through a
 `## Human verification checklist` section. The checklist must identify the
 focus area, what the reviewer must verify, the exact data/source/artifact to
-inspect, the pass condition, and the fail condition. It is required for claims
-that CI cannot fully prove, including provider/tool selection, pricing or quota
-assumptions, external platform semantics, legal/license/consent surfaces,
-launch boundaries, final merge-message wording, production-readiness posture,
-and security/privacy approvals. Reviewers should be able to verify the
-load-bearing facts from the PR body and linked artifacts without asking the
-implementer to restate private context.
+inspect, the pass condition, the fail condition, and the residual-risk owner.
+When a fact can change, such as pricing, quota, commercial-use terms, platform
+semantics, latency limits, or provider behavior, the row must include an
+official source URL or source-facts artifact plus verified/accessed date.
+
+Checklist rows are required for claims that CI cannot fully prove, including
+provider/tool selection, pricing, quota, rate limits, latency, capacity,
+retry/backoff/timeout behavior, external platform semantics, user-facing demo or
+recruiter-flow behavior, legal/license/consent surfaces, upload/prompt/
+transcript/provider-output/model-output trust boundaries, deletion/erasure,
+disclosure, provenance, AI/RAG/generated-media claims, citations, unsupported
+claim checks, source-run/eval/media binding, launch boundaries, final
+merge-message wording, production-readiness posture, and security/privacy
+approvals. Reviewers should be able to verify the load-bearing facts from the
+PR body and linked artifacts without asking the implementer to restate private
+context.
 
 For genuinely trivial PRs, the checklist may state `N/A - trivial change` and
 explain why no non-trivial reviewer-focus points exist. For non-trivial PRs,
