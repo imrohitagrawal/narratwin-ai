@@ -627,6 +627,14 @@ Every future implementation PR must map each applicable ID below to a test,
 executable gate, official source fact, explicit human-only row, or documented
 non-goal. Range shorthand is not acceptable in PR evidence.
 
+Demo Checkpoint 1 PR4 issue `#241` implements the avatar/video provider boundary
+behind disabled-by-default gates only. The boundary uses fake/local transports in
+tests, permits no real provider calls or paid spend, rejects cloned identity and
+real-person likeness asset classes before egress, validates provider JSON and
+artifact bytes before any storage/display/download surface, records disclosure
+and retention/deletion metadata, and leaves hosted access/quota/retention demo
+polish to PR5.
+
 | ID | Area | Case | Expected behavior | Evidence owner |
 |---|---|---|---|---|
 | `UPLOAD-VALIDATION-001` | Upload safety | wrong MIME, oversized file, unsafe filename, active content, malformed text | reject before ingestion/provider prompt; no raw upload in logs/errors | provider/TTS or hosted PR if upload path is touched |

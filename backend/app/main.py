@@ -715,6 +715,25 @@ class ProviderConfigResponse(BaseModel):
     supports_cloned_identity: bool = Field(alias="supportsClonedIdentity")
 
 
+class AvatarVideoProviderBoundaryResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    provider: str = Field(min_length=1, max_length=MAX_AVATAR_PROVIDER_ID_CHARS)
+    provider_mode: Literal["DISABLED"] = Field(alias="providerMode")
+    enabled: bool
+    allow_network_egress: bool = Field(alias="allowNetworkEgress")
+    requires_api_key: bool = Field(alias="requiresApiKey")
+    supports_real_video: bool = Field(alias="supportsRealVideo")
+    supports_cloned_identity: bool = Field(alias="supportsClonedIdentity")
+    asset_provenance_policy: Literal["fully_synthetic_or_provider_stock_non_identifiable_only"] = Field(
+        alias="assetProvenancePolicy"
+    )
+    disclosure_text: str = Field(alias="disclosureText")
+    disclosure_version: str = Field(alias="disclosureVersion")
+    retention_state: Literal["NOT_CREATED", "ACTIVE", "DELETED"] = Field(alias="retentionState")
+    deletion_state: Literal["NOT_REQUESTED", "PENDING", "DELETED", "FAILED"] = Field(alias="deletionState")
+
+
 class RenderJobStatusEventResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
@@ -778,6 +797,7 @@ class AvatarRenderResponse(BaseModel):
     source_script_text: str = Field(alias="sourceScriptText")
     avatar_provider: AvatarProviderRenderResponse = Field(alias="avatarProvider")
     provider_config: ProviderConfigResponse = Field(alias="providerConfig")
+    avatar_video_provider: AvatarVideoProviderBoundaryResponse = Field(alias="avatarVideoProvider")
     video_renderer: VideoRendererResponse = Field(alias="videoRenderer")
     disclosure: AvatarDisclosureResponse
     artifacts: AvatarArtifactsResponse

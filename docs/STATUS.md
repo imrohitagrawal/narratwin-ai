@@ -23,17 +23,20 @@ Use it to answer:
   `#236` as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/
   pre-generation/retention/launch-level contract only; issue `#237` is closed
   through merged PR `#238` as Checkpoint 1 PR 3 server-side TTS provider
-  abstraction plus optional real TTS adapter boundary. No Phase 2 feature work,
+  abstraction plus optional real TTS adapter boundary; issue `#241` is active
+  as Checkpoint 1 PR 4 avatar/video provider boundary with mock/local default
+  and disabled-by-default external egress only. No Phase 2 feature work,
   external provider
-  enablement beyond PR3's disabled-by-default TTS-only adapter boundary,
+  enablement beyond PR3's disabled-by-default TTS-only adapter boundary and
+  PR4's disabled-by-default avatar/video provider boundary,
   provider SDKs, provider keys, hosted deployment, production release tag, real
   avatar/video generation, cloned
   identity implementation, public synthetic-media distribution claim, Product
-  Mode 2 work, avatar/video provider integration, hosted-demo
+  Mode 2 work, hosted-demo
   access/quota/retention/demo polish, provider account setup, dashboard
   configuration, paid plan activation, wallet funding, model or voice selection,
   real provider test calls, paid spend, or production-readiness claim is
-  permitted by issues `#225`, `#229`, `#235`, or `#237`. Issue `#39`
+  permitted by issues `#225`, `#229`, `#235`, `#237`, or `#241`. Issue `#39`
   media/provider/security rows are non-downgradeable for production Go unless
   the affected provider, media, export, and replay paths remain disabled.
 - Current repo mode: Final Review has merged; Phase 1 Closure is active,
@@ -746,6 +749,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-07-21 | Issue `#241` started as Demo Checkpoint 1 PR 4 on branch `phase-1-closure-process-241-demo-checkpoint1-pr4-avatar-video`; the first branch commit contains only `docs/governance/preflights/issue-241.json`. Scope is server-side Stage 7 avatar/video provider boundary plus optional disabled-by-default real provider adapter controls only; mock/local avatar/video remains default for local/dev/test/CI, provider SDKs are not installed, tests use fake/local transports, and hosted access/quota/retention demo polish, provider setup, paid spend, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. |
 | 2026-07-21 | PR `#238` merged issue `#237` at `8a24f3ab3d25e73a47ffc3d6aced30c03748899e`, completing Demo Checkpoint 1 PR 3 as server-side Stage 6 TTS provider abstraction plus optional real TTS adapter boundary only. Live GitHub shows issue `#237` closed, the PR branch deleted, and post-merge main quality workflow run `29854403531` passed. The next approved action is a future issue-linked avatar/video provider integration PR only after fresh source facts and executable safeguards are recorded; hosted deployment, access-system implementation, provider setup, paid spend, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. |
 | 2026-07-21 | Issue `#237` started as Demo Checkpoint 1 PR 3 on branch `phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts`; the first branch commit contains only `docs/governance/preflights/issue-237.json`. Scope is server-side Stage 6 TTS provider abstraction plus optional real TTS adapter boundary only; mock/local TTS remains default for local/dev/test/CI, provider SDKs are not installed, tests use fake/local transports, and avatar/video, hosted deployment, access-system implementation, provider setup, paid spend, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. |
 | 2026-07-21 | PR `#236` merged issue `#235` at `e62885f04076a31e7d146ddf18fd770f1a8e6762`, completing Demo Checkpoint 1 PR 2 as latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Live GitHub shows issue `#235` closed, and the next repository-tracked work is issue `#237` for provider abstraction plus real TTS. |

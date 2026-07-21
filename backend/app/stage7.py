@@ -117,6 +117,22 @@ class VideoRendererMetadata:
 
 
 @dataclass(frozen=True)
+class AvatarVideoProviderBoundaryMetadata:
+    provider: str
+    provider_mode: Literal["DISABLED"]
+    enabled: bool
+    allow_network_egress: bool
+    requires_api_key: bool
+    supports_real_video: bool
+    supports_cloned_identity: bool
+    asset_provenance_policy: Literal["fully_synthetic_or_provider_stock_non_identifiable_only"]
+    disclosure_text: str
+    disclosure_version: str
+    retention_state: Literal["NOT_CREATED", "ACTIVE", "DELETED"]
+    deletion_state: Literal["NOT_REQUESTED", "PENDING", "DELETED", "FAILED"]
+
+
+@dataclass(frozen=True)
 class DisclosureMetadata:
     ai_generated: bool
     cloned_identity: bool
@@ -146,6 +162,7 @@ class AvatarRenderResult:
     source_script_text: str
     avatar_provider: AvatarProviderMetadata
     provider_config: ProviderConfig
+    avatar_video_provider: AvatarVideoProviderBoundaryMetadata
     video_renderer: VideoRendererMetadata
     disclosure: DisclosureMetadata
     artifacts: AvatarArtifacts
@@ -343,6 +360,7 @@ class MockAvatarProvider:
                 "fallbackReason": fallback_reason,
             },
             "providerConfig": provider_config_to_manifest(provider_config),
+            "avatarVideoProvider": avatar_video_provider_metadata_to_manifest(default_avatar_video_provider_metadata()),
             "renderer": {
                 "renderer": "local-html",
                 "rendererMode": "LOCAL",
@@ -384,6 +402,7 @@ class MockAvatarProvider:
             "realVideoProduced": False,
             "renderer": "local-html",
             "providerConfig": provider_config_to_manifest(provider_config),
+            "avatarVideoProvider": avatar_video_provider_metadata_to_manifest(default_avatar_video_provider_metadata()),
             "disclosure": {
                 "aiGenerated": disclosure.ai_generated,
                 "clonedIdentity": disclosure.cloned_identity,
@@ -1456,6 +1475,7 @@ class Stage7Service:
             source_script_text=source_text,
             avatar_provider=avatar_provider,
             provider_config=provider_config,
+            avatar_video_provider=default_avatar_video_provider_metadata(),
             video_renderer=VideoRendererMetadata(
                 renderer="local-html",
                 renderer_mode="LOCAL",
@@ -1755,6 +1775,9 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         consent_status=validate_consent_status(str(disclosure["consent_status"])),
         message=str(disclosure["message"]),
     )
+    restored_avatar_video_provider = avatar_video_provider_metadata_from_dict(
+        cast(dict[str, Any] | None, row.get("avatar_video_provider"))
+    )
     demo_export = validate_export_artifact(
         export_artifact_from_dict(cast(dict[str, Any], artifacts["demo_export"])),
         expected_mime_type="text/html",
@@ -1909,6 +1932,7 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         source_script_text=source_script,
         avatar_provider=restored_provider,
         provider_config=restored_config,
+        avatar_video_provider=restored_avatar_video_provider,
         video_renderer=VideoRendererMetadata(
             renderer=str(video_renderer["renderer"]),
             renderer_mode="LOCAL",
@@ -2711,6 +2735,7 @@ def expected_render_manifest_payload(
             "fallbackReason": avatar_provider.fallback_reason,
         },
         "providerConfig": provider_config_to_manifest(provider_config),
+        "avatarVideoProvider": avatar_video_provider_metadata_to_manifest(default_avatar_video_provider_metadata()),
         "renderer": {
             "renderer": "local-html",
             "rendererMode": "LOCAL",
@@ -2765,6 +2790,7 @@ def expected_video_export_placeholder_payload(
         "realVideoProduced": False,
         "renderer": "local-html",
         "providerConfig": provider_config_to_manifest(provider_config),
+        "avatarVideoProvider": avatar_video_provider_metadata_to_manifest(default_avatar_video_provider_metadata()),
         "disclosure": expected_disclosure_payload(disclosure),
         "source": expected_source_payload(
             source_script=source_script,
@@ -2804,6 +2830,67 @@ def disclosure_metadata() -> DisclosureMetadata:
             "AI-generated avatar demo export using a synthetic local presenter. "
             "No cloned face, cloned voice, or paid avatar provider was used."
         ),
+    )
+
+
+def default_avatar_video_provider_metadata() -> AvatarVideoProviderBoundaryMetadata:
+    return AvatarVideoProviderBoundaryMetadata(
+        provider="disabled-avatar-video-provider",
+        provider_mode="DISABLED",
+        enabled=False,
+        allow_network_egress=False,
+        requires_api_key=True,
+        supports_real_video=True,
+        supports_cloned_identity=False,
+        asset_provenance_policy="fully_synthetic_or_provider_stock_non_identifiable_only",
+        disclosure_text="AI-generated synthetic avatar/video. No cloned identity was used.",
+        disclosure_version="stage7-avatar-video-disclosure-v1",
+        retention_state="NOT_CREATED",
+        deletion_state="NOT_REQUESTED",
+    )
+
+
+def avatar_video_provider_metadata_to_manifest(
+    metadata: AvatarVideoProviderBoundaryMetadata,
+) -> dict[str, object]:
+    return {
+        "provider": metadata.provider,
+        "providerMode": metadata.provider_mode,
+        "enabled": metadata.enabled,
+        "allowNetworkEgress": metadata.allow_network_egress,
+        "requiresApiKey": metadata.requires_api_key,
+        "supportsRealVideo": metadata.supports_real_video,
+        "supportsClonedIdentity": metadata.supports_cloned_identity,
+        "assetProvenancePolicy": metadata.asset_provenance_policy,
+        "disclosureText": metadata.disclosure_text,
+        "disclosureVersion": metadata.disclosure_version,
+        "retentionState": metadata.retention_state,
+        "deletionState": metadata.deletion_state,
+    }
+
+
+def avatar_video_provider_metadata_from_dict(
+    row: dict[str, Any] | None,
+) -> AvatarVideoProviderBoundaryMetadata:
+    if row is None:
+        return default_avatar_video_provider_metadata()
+    return AvatarVideoProviderBoundaryMetadata(
+        provider=str(row["provider"]),
+        provider_mode="DISABLED",
+        enabled=validate_bool(row["enabled"], field_name="avatar/video provider enabled"),
+        allow_network_egress=validate_bool(
+            row["allow_network_egress"], field_name="avatar/video provider allow network egress"
+        ),
+        requires_api_key=validate_bool(row["requires_api_key"], field_name="avatar/video provider requires api key"),
+        supports_real_video=validate_bool(row["supports_real_video"], field_name="avatar/video supports real video"),
+        supports_cloned_identity=validate_bool(
+            row["supports_cloned_identity"], field_name="avatar/video supports cloned identity"
+        ),
+        asset_provenance_policy="fully_synthetic_or_provider_stock_non_identifiable_only",
+        disclosure_text=str(row["disclosure_text"]),
+        disclosure_version=str(row["disclosure_version"]),
+        retention_state=cast(Literal["NOT_CREATED", "ACTIVE", "DELETED"], row["retention_state"]),
+        deletion_state=cast(Literal["NOT_REQUESTED", "PENDING", "DELETED", "FAILED"], row["deletion_state"]),
     )
 
 
@@ -2970,6 +3057,7 @@ def avatar_render_to_api(result: AvatarRenderResult) -> dict[str, object]:
             "supportsRealVideo": result.provider_config.supports_real_video,
             "supportsClonedIdentity": result.provider_config.supports_cloned_identity,
         },
+        "avatarVideoProvider": avatar_video_provider_metadata_to_manifest(result.avatar_video_provider),
         "videoRenderer": {
             "renderer": result.video_renderer.renderer,
             "rendererMode": result.video_renderer.renderer_mode,
