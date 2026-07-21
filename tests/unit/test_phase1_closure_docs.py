@@ -683,6 +683,63 @@ def test_issue_235_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_237_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts"
+    allowed = [
+        "docs/governance/preflights/issue-237.json",
+        "docs/reviews/ISSUE_237_DEMO_CHECKPOINT1_PR3_TTS_PREFLIGHT.md",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/ADR/0002-provider-agnostic-adapters.md",
+        "docs/API_CONTRACT.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "backend/app/tts_provider.py",
+        "backend/app/stage6.py",
+        "backend/app/main.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "tests/unit/test_stage6_multilingual.py",
+        "tests/api/test_stage6_multilingual_api.py",
+    ]
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "backend/app/stage7.py",
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+    ]
+
+
+def test_issue_237_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts-typo"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-237.json",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "backend/app/stage6.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-237.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/STAGE_ISSUE_PLAN.md.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+    ]
+
+
 def test_phf020a_valid_policy_has_no_findings() -> None:
     assert phase1.phf020a_policy_findings(PHF020A_VALID_POLICY) == []
 
@@ -703,17 +760,20 @@ def test_status_state_v1_contract_rejects_missing_table() -> None:
 def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
     next_action = (
-        "| SSV1-NEXT | next-action | #235 | demo-checkpoint1-contract-active | "
-        "demo-checkpoint1-contract-active | Demo Phase 0 planning completed through issue #225 and PR #226. "
+        "| SSV1-NEXT | next-action | #237 | demo-checkpoint1-pr3-real-tts-active | "
+        "demo-checkpoint1-pr3-real-tts-active | Demo Phase 0 planning completed through issue #225 and PR #226. "
         "Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. "
-        "Issue #235 is the active Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/"
-        "retention/launch-level contract slice on branch phase-1-closure-process-235-demo-checkpoint1-contract; "
-        "this row records the intended post-merge target state for issue #235. After the issue #235 PR merges, "
-        "the next approved action is a future issue-linked provider abstraction plus real TTS PR, but provider "
-        "egress, selected-provider setup, provider SDK/key use, model or voice selection, real provider calls, "
-        "paid spend, avatar/video, hosted-demo access/quota, cloned identity, Product Mode 2, public distribution, "
-        "and production-readiness claims remain forbidden until future issue-linked PRs explicitly approve them "
-        "with fresh source facts and executable safeguards. |"
+        "Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/"
+        "cache/pre-generation/retention/launch-level contract only. Issue #237 is the active Checkpoint 1 PR 3 "
+        "server-side TTS provider abstraction plus optional real TTS adapter slice on branch "
+        "phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts; this row records the intended post-merge "
+        "target state for issue #237. PR3 keeps paid providers optional and disabled by default for local/dev/test/CI, "
+        "uses mock/local TTS as the default, permits no real provider calls in CI, and permits no provider account "
+        "setup, dashboard configuration, paid plan activation, wallet funding, paid spend, avatar/video provider "
+        "work, hosted-demo access/quota/retention/demo polish, cloned identity, Product Mode 2, public distribution, "
+        "or production-readiness claims. After the issue #237 PR merges, the next approved action is a future "
+        "issue-linked avatar/video provider integration PR only if fresh source facts and executable safeguards "
+        "are recorded first. |"
     )
     expected = (
         "| SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | "

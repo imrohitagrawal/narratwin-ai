@@ -317,7 +317,13 @@ preflight, source-fact refresh, matrix-to-test mapping, fan-out review, and
 local/CI evidence. The PRs below are sequential unless a human explicitly
 approves a narrower split.
 
-### Future PR: Provider Abstraction Plus Real TTS
+### Checkpoint 1 PR 3: Provider Abstraction Plus Real TTS
+
+Issue `#237` is the third Checkpoint 1 PR. It implements the server-side Stage 6
+TTS provider abstraction plus optional real TTS adapter boundary only. Mock/local
+TTS remains the default for local/dev/test/CI. The PR3 optional provider path
+uses no provider SDK, makes no real provider calls in CI, and is tested only
+with fake/local transports.
 
 Allowed objective:
 
@@ -340,6 +346,13 @@ Required contract:
   supported-language check, script-length cap, disclosure metadata, provider
   failure policy, artifact validation, retention/deletion policy, and
   provider-side deletion/tombstone evidence path exist.
+- Named real TTS providers fail closed when disabled, unconfigured, missing a
+  key, configured with an invalid key, over quota, unsupported for the target
+  language, missing passed source/eval/citation evidence, or configured with a
+  non-stock/cloned voice provenance.
+- Optional real TTS output uses a provider-neutral manifest plus normalized audio
+  artifact and remains Stage 6-only until a later avatar/video provider PR
+  explicitly updates Stage 7 bundle validation.
 - For Checkpoint 1, use non-cloned stock/generated voices only unless a separate
   Checkpoint 2 clone-consent issue is opened and approved.
 - Required evidence before merge: unit/API tests for disabled provider defaults,
