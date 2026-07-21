@@ -17,6 +17,8 @@ from backend.app.stage7 import (
     ProviderConfig,
     Stage7Error,
     artifact_from_text,
+    avatar_render_result_from_dict,
+    avatar_render_result_to_dict,
     build_avatar_render_request_checksum,
     build_source_evaluation_checksum,
     create_stage7_service,
@@ -389,6 +391,29 @@ def test_mock_avatar_render_returns_valid_demo_export_with_disclosure() -> None:
     assert placeholder["source"]["evaluationId"] == "local_evaluation"
     assert placeholder["disclosure"]["aiGenerated"] is True
     assert placeholder["publicUseLicenseCheck"] == "mock-local-provider-only-no-third-party-media"
+
+
+def test_restored_avatar_video_provider_metadata_must_remain_disabled() -> None:
+    service = create_stage7_service()
+    result = service.render_avatar_demo(
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
+        requested_avatar_provider="mock",
+        source_run_id="run_stage7",
+        trace_id="trace_stage7",
+        source_context_ref_count=1,
+        source_citation_count=1,
+        source_context_ref_ids=("ctx_stage7",),
+        source_citation_indexes=(1,),
+        evaluation_status="PASSED",
+        consent_to_use_synthetic_avatar=True,
+    )
+    row = avatar_render_result_to_dict(result)
+    row["avatar_video_provider"]["enabled"] = True
+    row["avatar_video_provider"]["allow_network_egress"] = True
+    row["avatar_video_provider"]["retention_state"] = "ACTIVE"
+
+    with pytest.raises(ValueError, match="disabled PR4 boundary"):
+        avatar_render_result_from_dict(row)
 
 
 def test_mock_avatar_render_allows_benign_escaped_web_terms_in_source_text() -> None:

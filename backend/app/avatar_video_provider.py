@@ -23,6 +23,7 @@ from backend.app.rag.chunking import checksum_text
 SUPPORTED_VIDEO_MIME_TYPES = {"video/mp4": ".mp4", "video/webm": ".webm"}
 API_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_-]{16,}$")
 SAFE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$")
+SAFE_CHECKSUM_PATTERN = re.compile(r"^sha256:[A-Za-z0-9_.:-]{3,128}$")
 INJECTION_PATTERN = re.compile(
     r"(ignore\s+(?:all\s+)?previous|system\s+prompt|developer\s+message|"
     r"<script\b|javascript:|data:text/html|prompt\s+injection)",
@@ -152,6 +153,7 @@ class AvatarVideoSourceBinding:
     evaluation_checksum: str
     expected_evaluation_checksum: str
     tts_audio_checksum: str | None = None
+    expected_tts_audio_checksum: str | None = None
 
 
 @dataclass(frozen=True)
@@ -217,6 +219,7 @@ class AvatarVideoProviderError(Exception):
         *,
         retryable: bool = False,
         billable_unknown: bool = False,
+        retry_after_seconds: float | None = None,
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
@@ -224,6 +227,7 @@ class AvatarVideoProviderError(Exception):
         self.message = message
         self.retryable = retryable
         self.billable_unknown = billable_unknown
+        self.retry_after_seconds = retry_after_seconds
 
 
 class InMemoryAvatarVideoQuotaLedger:
@@ -232,6 +236,7 @@ class InMemoryAvatarVideoQuotaLedger:
         self.reservations: dict[str, AvatarVideoQuotaReservation] = {}
         self._reserved_units = 0
         self._committed_units = 0
+        self._unknown_units = 0
         self._lock = threading.Lock()
 
     def reserve(self, *, request_id: str, units: int) -> AvatarVideoQuotaReservation:
@@ -240,8 +245,13 @@ class InMemoryAvatarVideoQuotaLedger:
         with self._lock:
             existing = self.reservations.get(request_id)
             if existing is not None:
-                return existing
-            if self._reserved_units + self._committed_units + units > self.unit_limit:
+                raise AvatarVideoProviderError(
+                    409,
+                    "AVATAR_VIDEO_DUPLICATE_SPEND_BLOCKED",
+                    "Avatar/video request already has a quota reservation.",
+                    billable_unknown=existing.state == "UNKNOWN",
+                )
+            if self._reserved_units + self._committed_units + self._unknown_units + units > self.unit_limit:
                 raise AvatarVideoProviderError(429, "AVATAR_VIDEO_QUOTA_EXHAUSTED", "Avatar/video quota exhausted.")
             reservation = AvatarVideoQuotaReservation(request_id=request_id, units=units, state="RESERVED")
             self.reservations[request_id] = reservation
@@ -271,6 +281,7 @@ class InMemoryAvatarVideoQuotaLedger:
             if reservation is None or reservation.state != "RESERVED":
                 return
             self._reserved_units -= reservation.units
+            self._unknown_units += reservation.units
             self.reservations[request_id] = AvatarVideoQuotaReservation(request_id, reservation.units, "UNKNOWN")
 
 
@@ -343,7 +354,13 @@ class ExternalAvatarVideoProvider:
             headers=self._headers(),
             timeout_seconds=self.config.timeout_seconds,
         )
-        if response.status_code not in {200, 202, 204}:
+        if response.status_code == 202:
+            raise AvatarVideoProviderError(
+                412,
+                "AVATAR_VIDEO_DELETION_EVIDENCE_UNAVAILABLE",
+                "Provider deletion is pending and is not deletion evidence.",
+            )
+        if response.status_code not in {200, 204}:
             raise AvatarVideoProviderError(502, "AVATAR_VIDEO_DELETION_FAILED", "Provider deletion failed.")
         deleted_at = self.clock().isoformat()
         tombstone_checksum = checksum_text(
@@ -391,7 +408,22 @@ class ExternalAvatarVideoProvider:
             if error is not None:
                 last_error = error
                 if error.retryable and attempt < attempts:
-                    self.sleep(self.config.retry_backoff_seconds)
+                    if not (
+                        self.config.provider_supports_idempotency
+                        and self.billing_policy.retry_can_create_billable_job
+                    ):
+                        raise AvatarVideoProviderError(
+                            error.status_code,
+                            error.code,
+                            error.message,
+                            retryable=False,
+                            billable_unknown=True,
+                        )
+                    self.sleep(
+                        error.retry_after_seconds
+                        if error.retry_after_seconds is not None
+                        else self.config.retry_backoff_seconds
+                    )
                     continue
                 raise error
             create_payload = parse_strict_json_object(create_response.body)
@@ -438,7 +470,12 @@ class ExternalAvatarVideoProvider:
             reject_unexpected_fields(payload, {"status", "artifact_url", "retry_after"})
             status = require_job_state(payload.get("status"))
             if status == "failed":
-                raise AvatarVideoProviderError(502, "AVATAR_VIDEO_PROVIDER_FAILURE", "Provider job failed.")
+                raise AvatarVideoProviderError(
+                    502,
+                    "AVATAR_VIDEO_PROVIDER_FAILURE",
+                    "Provider job failed after remote acceptance.",
+                    billable_unknown=True,
+                )
             if status == "succeeded":
                 artifact_url = require_safe_url(str(payload.get("artifact_url", "")), self.resolve_host)
                 artifact = self.transport.download_artifact(
@@ -538,6 +575,7 @@ class ExternalAvatarVideoProvider:
             raise AvatarVideoProviderError(403, "AVATAR_VIDEO_PROVIDER_KEY_INVALID", "Avatar/video key invalid.")
         if not self.config.provider_id or not SAFE_ID_PATTERN.fullmatch(self.config.provider_id):
             raise AvatarVideoProviderError(422, "AVATAR_VIDEO_PROVIDER_CONFIG_INVALID", "Provider ID invalid.")
+        require_safe_base_url(self.config.base_url, self.resolve_host)
         if not self.config.model_id or not self.config.model_version:
             raise AvatarVideoProviderError(422, "AVATAR_VIDEO_PROVIDER_CONFIG_INVALID", "Provider model invalid.")
         if not self.config.synthetic_marking_policy_version:
@@ -567,6 +605,11 @@ class ExternalAvatarVideoProvider:
             raise AvatarVideoProviderError(422, "AVATAR_VIDEO_BINDING_MISMATCH", "Script checksum mismatch.")
         if source.evaluation_checksum != source.expected_evaluation_checksum:
             raise AvatarVideoProviderError(422, "AVATAR_VIDEO_BINDING_MISMATCH", "Evaluation checksum mismatch.")
+        if source.tts_audio_checksum is not None and (
+            not SAFE_CHECKSUM_PATTERN.fullmatch(source.tts_audio_checksum)
+            or source.tts_audio_checksum != source.expected_tts_audio_checksum
+        ):
+            raise AvatarVideoProviderError(422, "AVATAR_VIDEO_BINDING_MISMATCH", "TTS audio checksum mismatch.")
         if source.citation_refs != source.expected_citation_refs:
             raise AvatarVideoProviderError(422, "AVATAR_VIDEO_CITATION_MISMATCH", "Citation refs mismatch.")
         if not source.script.strip() or len(source.script) > self.config.max_script_characters:
@@ -595,11 +638,18 @@ class ExternalAvatarVideoProvider:
         if status in {401, 403}:
             return AvatarVideoProviderError(403, "AVATAR_VIDEO_PROVIDER_KEY_INVALID", "Provider auth failed.")
         if status in {408, 429, 500, 502, 503, 504}:
+            retry_after_header = response.headers.get("Retry-After") or response.headers.get("retry-after")
+            retry_after = (
+                parse_retry_after(retry_after_header, self.config.max_retry_after_seconds)
+                if retry_after_header is not None
+                else None
+            )
             return AvatarVideoProviderError(
                 503 if status >= 500 else status,
                 "AVATAR_VIDEO_PROVIDER_RETRYABLE_FAILURE",
                 "Provider retryable failure.",
                 retryable=True,
+                retry_after_seconds=retry_after,
             )
         return AvatarVideoProviderError(502, "AVATAR_VIDEO_PROVIDER_RESPONSE_INVALID", "Provider failure.")
 
@@ -685,9 +735,45 @@ def require_safe_url(url: str, resolve_host: Callable[[str], Sequence[str]]) -> 
     if not addresses:
         raise AvatarVideoProviderError(422, "AVATAR_VIDEO_UNSAFE_URL", "Provider artifact host did not resolve.")
     for address in addresses:
-        ip = ipaddress.ip_address(address)
+        try:
+            ip = ipaddress.ip_address(address)
+        except ValueError as exc:
+            raise AvatarVideoProviderError(422, "AVATAR_VIDEO_UNSAFE_URL", "Provider artifact host is unsafe.") from exc
         if not ip.is_global:
             raise AvatarVideoProviderError(422, "AVATAR_VIDEO_UNSAFE_URL", "Provider artifact host is unsafe.")
+    return url
+
+
+def require_safe_base_url(url: str, resolve_host: Callable[[str], Sequence[str]]) -> str:
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        raise AvatarVideoProviderError(
+            422,
+            "AVATAR_VIDEO_PROVIDER_CONFIG_INVALID",
+            "Provider base URL is unsafe.",
+        )
+    addresses = resolve_host(parsed.hostname)
+    if not addresses:
+        raise AvatarVideoProviderError(
+            422,
+            "AVATAR_VIDEO_PROVIDER_CONFIG_INVALID",
+            "Provider base URL host did not resolve.",
+        )
+    for address in addresses:
+        try:
+            ip = ipaddress.ip_address(address)
+        except ValueError as exc:
+            raise AvatarVideoProviderError(
+                422,
+                "AVATAR_VIDEO_PROVIDER_CONFIG_INVALID",
+                "Provider base URL host is unsafe.",
+            ) from exc
+        if not ip.is_global:
+            raise AvatarVideoProviderError(
+                422,
+                "AVATAR_VIDEO_PROVIDER_CONFIG_INVALID",
+                "Provider base URL host is unsafe.",
+            )
     return url
 
 

@@ -3,9 +3,9 @@
 ## Version
 
 - Version: 0.1
-- Issue: `#225`; Checkpoint 1 PR 1 issue `#229`; Checkpoint 1 PR 2 issue `#235`
-- Status: Demo Phase 0 complete; Checkpoint 1 PR 2 contract-only work active
-- Last updated: 2026-07-21
+- Issue: `#225`; Checkpoint 1 PR 1 issue `#229`; Checkpoint 1 PR 2 issue `#235`; Checkpoint 1 PR 3 issue `#237`; Checkpoint 1 PR 4 issue `#241`
+- Status: Demo Phase 0 complete; Checkpoint 1 PR 4 avatar/video boundary in review through PR `#242`; PR5 hosted-demo access/quota/retention/demo polish remains not started
+- Last updated: 2026-07-22
 
 ## Purpose
 

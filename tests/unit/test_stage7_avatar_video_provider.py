@@ -99,6 +99,15 @@ def _json_response(payload: dict[str, object], *, status_code: int = 200) -> Ava
     )
 
 
+def _http_response(
+    *,
+    status_code: int,
+    headers: dict[str, str] | None = None,
+    body: bytes = b"",
+) -> AvatarVideoHTTPResponse:
+    return AvatarVideoHTTPResponse(status_code=status_code, headers=headers or {}, body=body)
+
+
 def _provider(
     *,
     enabled: bool = True,
@@ -110,6 +119,10 @@ def _provider(
     transport: FakeAvatarVideoTransport | None = None,
     supports_delete: bool = True,
     supports_idempotency: bool = False,
+    retry_can_create_billable_job: bool = True,
+    retry_backoff_seconds: float = 0.01,
+    base_url: str = "https://api.example.com",
+    base_resolved_ips: tuple[str, ...] = ("93.184.216.34",),
     resolved_ips: tuple[str, ...] = ("93.184.216.34",),
     sleeps: list[float] | None = None,
 ) -> tuple[ExternalAvatarVideoProvider, FakeAvatarVideoTransport, InMemoryAvatarVideoQuotaLedger, list[float]]:
@@ -123,11 +136,12 @@ def _provider(
             **{"api_key": provider_header_value},  # type: ignore[arg-type]
             model_id="stock-video",
             model_version="2026-07-21",
-            base_url="https://api.example.com",
+            base_url=base_url,
             supported_languages=("en", "es"),
             max_video_bytes=max_video_bytes,
             max_retries=max_retries,
             max_poll_attempts=max_poll_attempts,
+            retry_backoff_seconds=retry_backoff_seconds,
             provider_supports_hard_delete=supports_delete,
             provider_supports_idempotency=supports_idempotency,
             synthetic_marking_policy_version="fake-provider-synthetic-mark-v1",
@@ -137,10 +151,11 @@ def _provider(
             duration_cap_seconds=60,
             per_run_dollar_ceiling=1.0,
             balance_error_statuses=(402,),
+            retry_can_create_billable_job=retry_can_create_billable_job,
         ),
         transport=fake_transport,
         quota_ledger=ledger,
-        resolve_host=lambda _host: resolved_ips,
+        resolve_host=lambda host: base_resolved_ips if host == "api.example.com" else resolved_ips,
         sleep=sleep_calls.append,
         clock=lambda: datetime(2026, 7, 21, tzinfo=UTC),
     )
@@ -163,6 +178,7 @@ def _request(**overrides: Any) -> AvatarVideoRenderRequest:
         evaluation_checksum=str(overrides.pop("evaluation_checksum", "sha256:eval")),
         expected_evaluation_checksum=str(overrides.pop("expected_evaluation_checksum", "sha256:eval")),
         tts_audio_checksum=overrides.pop("tts_audio_checksum", "sha256:tts"),
+        expected_tts_audio_checksum=overrides.pop("expected_tts_audio_checksum", "sha256:tts"),
     )
     return AvatarVideoRenderRequest(
         request_id=str(overrides.pop("request_id", "request_1")),
@@ -285,6 +301,105 @@ def test_provider_timeout_after_create_acceptance_holds_quota_unknown_and_does_n
     assert ledger.reservations["request_1"].state == "UNKNOWN"
 
 
+def test_unknown_quota_hold_blocks_same_request_and_new_quota_until_resolved() -> None:
+    transport = FakeAvatarVideoTransport(create_timeout=True)
+    provider, _transport, ledger, _sleeps = _provider(transport=transport, unit_limit=1)
+
+    with pytest.raises(AvatarVideoProviderError):
+        provider.render(_request())
+    with pytest.raises(AvatarVideoProviderError) as duplicate_exc:
+        provider.render(_request())
+    with pytest.raises(AvatarVideoProviderError) as quota_exc:
+        provider.render(_request(request_id="request_2", source_run_id="run_2", trace_id="trace_2"))
+
+    _assert_error(duplicate_exc, "AVATAR_VIDEO_DUPLICATE_SPEND_BLOCKED")
+    _assert_error(quota_exc, "AVATAR_VIDEO_QUOTA_EXHAUSTED")
+    assert transport.create_calls == 1
+    assert ledger.reservations["request_1"].state == "UNKNOWN"
+
+
+def test_refunded_request_id_cannot_create_again_without_new_request() -> None:
+    transport = FakeAvatarVideoTransport(create=[_http_response(status_code=400)])
+    provider, _transport, ledger, _sleeps = _provider(transport=transport)
+
+    with pytest.raises(AvatarVideoProviderError):
+        provider.render(_request())
+    with pytest.raises(AvatarVideoProviderError) as exc_info:
+        provider.render(_request())
+
+    _assert_error(exc_info, "AVATAR_VIDEO_DUPLICATE_SPEND_BLOCKED")
+    assert transport.create_calls == 1
+    assert ledger.reservations["request_1"].state == "REFUNDED"
+
+
+def test_retryable_create_response_does_not_retry_without_idempotency_and_billing_policy() -> None:
+    transport = FakeAvatarVideoTransport(
+        create=[
+            _http_response(status_code=503, headers={"Retry-After": "7"}),
+            _json_response({"status": "queued", "provider_job_id": "job_retry"}),
+        ]
+    )
+    provider, _transport, ledger, sleeps = _provider(
+        transport=transport,
+        max_retries=3,
+        retry_can_create_billable_job=False,
+        supports_idempotency=False,
+    )
+
+    with pytest.raises(AvatarVideoProviderError) as exc_info:
+        provider.render(_request())
+
+    _assert_error(exc_info, "AVATAR_VIDEO_PROVIDER_RETRYABLE_FAILURE")
+    assert exc_info.value.billable_unknown is True
+    assert transport.create_calls == 1
+    assert sleeps == []
+    assert ledger.reservations["request_1"].state == "UNKNOWN"
+
+
+def test_retryable_create_response_honors_retry_after_only_when_retry_is_safe() -> None:
+    transport = FakeAvatarVideoTransport(
+        create=[
+            _http_response(status_code=429, headers={"Retry-After": "999"}),
+            _json_response({"status": "queued", "provider_job_id": "job_retry"}),
+        ]
+    )
+    provider, _transport, ledger, sleeps = _provider(
+        transport=transport,
+        max_retries=1,
+        supports_idempotency=True,
+        retry_can_create_billable_job=True,
+    )
+
+    result = provider.render(_request())
+
+    assert result.provider_job_id == "job_retry"
+    assert transport.create_calls == 2
+    assert sleeps == [30.0]
+    assert ledger.reservations["request_1"].state == "COMMITTED"
+
+
+def test_retryable_create_response_uses_configured_backoff_without_retry_after_header() -> None:
+    transport = FakeAvatarVideoTransport(
+        create=[
+            _http_response(status_code=503),
+            _json_response({"status": "queued", "provider_job_id": "job_retry"}),
+        ]
+    )
+    provider, _transport, ledger, sleeps = _provider(
+        transport=transport,
+        max_retries=1,
+        supports_idempotency=True,
+        retry_can_create_billable_job=True,
+    )
+
+    result = provider.render(_request())
+
+    assert result.provider_job_id == "job_retry"
+    assert transport.create_calls == 2
+    assert sleeps == [0.01]
+    assert ledger.reservations["request_1"].state == "COMMITTED"
+
+
 def test_retry_cap_and_retry_after_are_bounded_without_real_sleep() -> None:
     future = (datetime.now(UTC) + timedelta(hours=1)).strftime("%a, %d %b %Y %H:%M:%S GMT")
     transport = FakeAvatarVideoTransport(
@@ -311,6 +426,26 @@ def test_malformed_retry_after_is_rejected_as_provider_response() -> None:
         provider.render(_request())
 
     _assert_error(exc_info, "AVATAR_VIDEO_PROVIDER_RESPONSE_INVALID")
+
+
+def test_unsafe_base_url_blocks_auth_bearing_transport_calls() -> None:
+    provider, transport, _ledger, _sleeps = _provider(base_url="http://api.example.com")
+
+    with pytest.raises(AvatarVideoProviderError) as exc_info:
+        provider.render(_request())
+
+    _assert_error(exc_info, "AVATAR_VIDEO_PROVIDER_CONFIG_INVALID")
+    assert transport.create_calls == 0
+
+
+def test_malformed_resolved_address_is_rejected_as_unsafe_url() -> None:
+    transport = FakeAvatarVideoTransport()
+    provider, _transport, _ledger, _sleeps = _provider(transport=transport, resolved_ips=("not-an-ip",))
+
+    with pytest.raises(AvatarVideoProviderError) as exc_info:
+        provider.render(_request())
+
+    _assert_error(exc_info, "AVATAR_VIDEO_UNSAFE_URL")
 
 
 @pytest.mark.parametrize(
@@ -403,7 +538,7 @@ def test_quota_exhaustion_blocks_before_provider_call() -> None:
     assert transport.create_calls == 0
 
 
-def test_quota_refunds_on_failed_provider_job() -> None:
+def test_quota_marks_unknown_on_failed_provider_job_after_remote_acceptance() -> None:
     transport = FakeAvatarVideoTransport(poll=[_json_response({"status": "failed"})])
     provider, _transport, ledger, _sleeps = _provider(transport=transport)
 
@@ -411,7 +546,27 @@ def test_quota_refunds_on_failed_provider_job() -> None:
         provider.render(_request())
 
     _assert_error(exc_info, "AVATAR_VIDEO_PROVIDER_FAILURE")
-    assert ledger.reservations["request_1"].state == "REFUNDED"
+    assert exc_info.value.billable_unknown is True
+    assert ledger.reservations["request_1"].state == "UNKNOWN"
+
+
+@pytest.mark.parametrize(
+    ("tts_audio_checksum", "expected_tts_audio_checksum"),
+    (("not-a-checksum", "not-a-checksum"), ("sha256:tts-stale", "sha256:tts")),
+)
+def test_invalid_or_stale_tts_audio_checksum_blocks_before_provider_call(
+    tts_audio_checksum: str,
+    expected_tts_audio_checksum: str,
+) -> None:
+    provider, transport, _ledger, _sleeps = _provider()
+
+    with pytest.raises(AvatarVideoProviderError) as exc_info:
+        provider.render(
+            _request(tts_audio_checksum=tts_audio_checksum, expected_tts_audio_checksum=expected_tts_audio_checksum)
+        )
+
+    _assert_error(exc_info, "AVATAR_VIDEO_BINDING_MISMATCH")
+    assert transport.create_calls == 0
 
 
 def test_duplicate_spend_prevention_reuses_completed_result_without_second_create() -> None:
@@ -475,6 +630,18 @@ def test_retention_deletion_provider_side_evidence_path() -> None:
     assert evidence.tombstone_checksum.startswith("sha256:")
     assert transport.delete_calls == 1
     assert provider.events[-1]["event"] == "avatar_video.deletion_evidence_recorded"
+
+
+def test_deletion_accepted_pending_is_not_recorded_as_deleted_evidence() -> None:
+    provider, _transport, _ledger, _sleeps = _provider(
+        transport=FakeAvatarVideoTransport(delete=_http_response(status_code=202))
+    )
+    result = provider.render(_request())
+
+    with pytest.raises(AvatarVideoProviderError) as exc_info:
+        provider.delete_artifact(result)
+
+    _assert_error(exc_info, "AVATAR_VIDEO_DELETION_EVIDENCE_UNAVAILABLE")
 
 
 def test_provider_without_hard_delete_is_rejected_for_deletion_evidence() -> None:

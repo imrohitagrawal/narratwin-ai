@@ -119,7 +119,7 @@ class VideoRendererMetadata:
 @dataclass(frozen=True)
 class AvatarVideoProviderBoundaryMetadata:
     provider: str
-    provider_mode: Literal["DISABLED"]
+    provider_mode: Literal["DISABLED", "OPTIONAL_EXTERNAL"]
     enabled: bool
     allow_network_egress: bool
     requires_api_key: bool
@@ -2872,26 +2872,12 @@ def avatar_video_provider_metadata_to_manifest(
 def avatar_video_provider_metadata_from_dict(
     row: dict[str, Any] | None,
 ) -> AvatarVideoProviderBoundaryMetadata:
+    default = default_avatar_video_provider_metadata()
     if row is None:
-        return default_avatar_video_provider_metadata()
-    return AvatarVideoProviderBoundaryMetadata(
-        provider=str(row["provider"]),
-        provider_mode="DISABLED",
-        enabled=validate_bool(row["enabled"], field_name="avatar/video provider enabled"),
-        allow_network_egress=validate_bool(
-            row["allow_network_egress"], field_name="avatar/video provider allow network egress"
-        ),
-        requires_api_key=validate_bool(row["requires_api_key"], field_name="avatar/video provider requires api key"),
-        supports_real_video=validate_bool(row["supports_real_video"], field_name="avatar/video supports real video"),
-        supports_cloned_identity=validate_bool(
-            row["supports_cloned_identity"], field_name="avatar/video supports cloned identity"
-        ),
-        asset_provenance_policy="fully_synthetic_or_provider_stock_non_identifiable_only",
-        disclosure_text=str(row["disclosure_text"]),
-        disclosure_version=str(row["disclosure_version"]),
-        retention_state=cast(Literal["NOT_CREATED", "ACTIVE", "DELETED"], row["retention_state"]),
-        deletion_state=cast(Literal["NOT_REQUESTED", "PENDING", "DELETED", "FAILED"], row["deletion_state"]),
-    )
+        return default
+    if row != asdict(default):
+        raise ValueError("Stage 7 restored avatar/video provider metadata must match the disabled PR4 boundary.")
+    return default
 
 
 def utc_now_isoformat() -> str:

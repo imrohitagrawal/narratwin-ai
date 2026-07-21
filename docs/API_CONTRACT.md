@@ -1105,6 +1105,13 @@ artifact exists for the local placeholder path. Real provider calls, provider
 SDKs, provider setup, paid spend, public URLs, hosted access, Product Mode 2,
 and cloned identity remain out of scope.
 
+The PR4 provider module models external avatar/video result metadata and uses a
+typed fake/local transport boundary for executable tests, but Stage 7 API
+responses restore and emit only the exact disabled `avatarVideoProvider`
+metadata in PR4. Provider-specific wire mapping, real-network peer-IP pinning,
+real external artifact surfacing, and provider enablement require a later
+issue, provider source-fact refresh, and fresh tests.
+
 Phase 1 Closure issue `#213` adds the Product Mode 1 Checkpoint A through
 Checkpoint B binding between Stage 6 and Stage 7. The avatar render API must
 receive a `multilingualBundle` snapshot from the immediately preceding Stage 6
@@ -1207,6 +1214,20 @@ Post-provider validation:
   fully_synthetic_or_provider_stock_non_identifiable_only`,
   disclosure version `stage7-avatar-video-disclosure-v1`,
   `retentionState = NOT_CREATED`, and `deletionState = NOT_REQUESTED`.
+  Restored Stage 7 rows with any other `avatarVideoProvider` posture are
+  rejected until a later issue implements real external media artifact surfacing.
+- The optional PR4 provider boundary validates provider base URLs and artifact
+  URLs with HTTPS, no credentials, safe extensions, redirects disabled, and
+  preflight global-IP DNS screening. This is not a claim of full DNS rebinding
+  resistance; real transports must validate the connected peer IP before
+  activation.
+- Create retries may run only when provider idempotency and billable retry
+  safety are both documented in the provider config/policy. Safe retries honor
+  clamped HTTP `Retry-After`; absent headers use configured backoff. Ambiguous
+  create failures after possible remote acceptance hold quota as unknown rather
+  than refunding or retrying into duplicate spend.
+- Provider deletion evidence requires terminal deletion evidence. `202 Accepted`
+  is pending/unavailable evidence, not a deleted state.
 - `avatarProvider.providerMode` and `providerConfig.providerMode` must both be
   `LOCAL` on success, and provider metadata must match the validated provider
   config
@@ -1384,6 +1405,9 @@ Provider response schema:
   export. In PR4 it is a disabled boundary disclosure surface only; it must not
   expose raw scripts, prompts, provider payloads, provider URLs, media bytes,
   secrets, hosted access data, or public distribution links.
+  `providerMode = OPTIONAL_EXTERNAL` is reserved in the public schema for
+  forward compatibility, but PR4 successful Stage 7 API output must still emit
+  `DISABLED`.
 - `renderJobStatusHistory` records lifecycle events such as `QUEUED`, `RUNNING`,
   `FALLBACK`, `FAILED`, and `COMPLETED`; failed optional provider stubs fall
   back to the mock/local provider and keep the final job status `COMPLETED` only

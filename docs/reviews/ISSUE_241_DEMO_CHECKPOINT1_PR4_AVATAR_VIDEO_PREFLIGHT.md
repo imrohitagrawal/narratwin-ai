@@ -64,9 +64,11 @@ workflow files, Dockerfiles, dependency manifests, Stage 6 TTS files, and
 | D-ID | Talk creation accepts an HTTPS/S3 source image and required text or audio script; Talk status is polled by ID; API use requires a key and valid account credits; API credits come from the same balance as Studio; D-ID agreements require fees under order terms; synthetic marks/watermarks must not be hidden or removed without written approval. | `https://docs.d-id.com/reference/createtalk`, `https://docs.d-id.com/reference/gettalk`, `https://www.d-id.com/faqs/`, `https://www.d-id.com/eula/`, `https://www.d-id.com/pricing/api/` |
 
 Provider selection decision: PR4 does not select a paid provider/model for active
-egress. No real provider call is approved by PR4. The code path remains
-provider-neutral, transport-injected, and disabled by default; tests use
-fake/local transports only.
+egress. No real provider call is approved by PR4. The code path remains a
+typed, transport-injected fake/local boundary and disabled by default; tests use
+fake/local transports only. Provider-specific wire mapping for HeyGen, Tavus,
+or D-ID remains a later issue because these providers do not share one stable
+`/jobs` API shape.
 
 D-ID egress remains blocked unless a D-ID-approved synthetic-marking
 policy/version is recorded. Synthetic mark metadata must be present, preserved,
@@ -161,9 +163,10 @@ Before implementation, expected failing proofs are:
 
 - No branch-specific allowlist exists for issue #241.
 - No avatar/video provider boundary module exists.
-- No tests prove avatar/video provider disabled default, quota refund,
-  duplicate-spend prevention, unsafe URL rejection, duplicate JSON key rejection,
-  disclosure, retention/deletion evidence, or redacted logging.
+- No tests prove avatar/video provider disabled default, quota refund before
+  remote acceptance, accepted-job unknown quota hold, duplicate-spend
+  prevention, unsafe URL rejection, duplicate JSON key rejection, disclosure,
+  retention/deletion evidence, or redacted logging.
 
 ## Invariant and Test Matrix
 
@@ -176,10 +179,10 @@ Before implementation, expected failing proofs are:
 | Citation mismatch blocks generation | Unit/API tests mutate citation refs and expect rejection before egress. |
 | Injection surfaces are rejected | Tests cover script, transcript, and provider-output prompt-injection markers. |
 | Provider timeout/failure/retry cap is bounded | Fake transport tests cover timeout, retryable status, retry cap, retry-after metadata, and no unbounded polling. |
-| Unsafe provider URLs are rejected | Tests cover non-HTTPS, localhost/private hosts, redirects, malformed URLs, unsafe extensions, resolved A/AAAA records, `169.254.169.254`, IPv6 loopback/link-local, DNS rebinding, redirect denial, and raw URL redaction before storage/display/download. |
+| Unsafe provider URLs are rejected | Tests cover non-HTTPS, localhost/private hosts, redirects, malformed URLs, unsafe extensions, resolved A/AAAA records, `169.254.169.254`, IPv6 loopback/link-local, preflight URL screening only, redirect denial, and raw URL redaction before storage/display/download. True DNS-rebinding resistance requires a real network transport that validates the connected peer IP and is out of scope for PR4. |
 | Malformed provider responses are rejected | Tests cover malformed JSON, duplicate JSON keys, unexpected fields, missing status/job/artifact fields, and failed job states. |
 | Artifact validation is strict | Tests cover MIME/extension mismatch, oversized artifact, checksum mismatch, and unsupported content type. |
-| Quota and spend controls are pre-egress | Tests cover quota exhaustion, reservation before create, refund on failed job, commit on valid artifact, duplicate-spend prevention, provider create succeeds remotely, local call times out, pending/unknown quota hold, provider-level idempotency, billable unit, duration cap, per-run dollar ceiling, and balance/credit errors. |
+| Quota and spend controls are pre-egress | Tests cover quota exhaustion, reservation before create, refund before remote acceptance, unknown hold after accepted failure or ambiguous retryable create, commit on valid artifact, duplicate-spend prevention, provider create succeeds remotely, local call times out, pending/unknown quota hold, provider-level idempotency, billable unit, duration cap, per-run dollar ceiling, and balance/credit errors. |
 | Retry behavior is bounded | Tests cover retry cap, invalid/negative/huge/HTTP-date Retry-After parsing, clamp behavior, retry-after metadata, and no real sleeps in tests. |
 | Retention/deletion evidence exists | Tests cover tombstone state, provider-side deletion evidence, provider-specific deletion/retention source facts, and rejection of providers lacking hard-delete or auditable deletion evidence without real provider calls. |
 | Disclosure remains visible | Unit/API tests assert synthetic disclosure text/version survives metadata serialization. |
@@ -218,6 +221,30 @@ Expected executable files for these claims include
 | Governance/taste-check | The branch dispatcher is brittle. | Fix #241 near-match now; defer table-driven dispatcher cleanup to a separate process issue. |
 | API/interface design | Adapter contract lacked typed schemas, job states, error taxonomy, idempotency scope, and provider capability/config model. | Add Adapter Interface Contract before implementation. |
 | Observability/logging/redaction | Redaction-by-absence is not enough; telemetry must remain useful and bounded. | Require structured log event names, bounded-cardinality fields, trace_id propagation, quota/retry/artifact/deletion lifecycle fields, and negative leak tests. |
+
+## Post-Implementation Fan-Out Review Findings and Dispositions
+
+PR `#242` was moved back to draft after the first ready-for-review pass because
+sub-agent review found executable correctness gaps. The second review set used
+security/privacy/consent, output-correctness execution, API/interface design,
+cost/provider terms/reliability/quota, eval/grounding/citations, and
+governance/taste/test-quality/CI lenses.
+
+| Area | Finding | Disposition |
+|---|---|---|
+| Output-correctness execution | Reusing `UNKNOWN` or `REFUNDED` quota reservations could issue a second create for the same request ID. | Fixed with fail-closed reservation replay behavior, unknown quota accounting, and regression tests that prove same-request replay does not call transport again and unknown quota still consumes capacity. |
+| Cost/provider terms | Retryable create responses ignored `provider_supports_idempotency` and `retry_can_create_billable_job`; HTTP `Retry-After` headers were ignored. | Fixed by allowing create retry only when provider idempotency and billable retry policy are both true; otherwise the reservation moves to unknown hold. Safe retries honor clamped HTTP `Retry-After`. |
+| Cost/provider terms | Accepted remote provider failures were refunded without source facts proving failed accepted jobs are non-billable. | Fixed by treating accepted failed jobs as billable-unknown and holding quota; refund remains only for failures before remote acceptance. |
+| Security/privacy | Auth-bearing provider `base_url` was not safety-checked. | Fixed with HTTPS/no-credentials/global-IP validation before create/get/delete egress can use configured provider base URLs. |
+| Security/privacy | Malformed DNS resolver output could escape as raw `ValueError`. | Fixed with structured `AVATAR_VIDEO_UNSAFE_URL` / provider-config errors. |
+| Security/privacy | `202 Accepted` provider deletion was recorded as deleted evidence. | Fixed by rejecting `202` as pending, not deletion evidence. |
+| Eval/grounding/citations | `tts_audio_checksum` was copied but not validated or matched to expected TTS metadata. | Fixed with expected TTS checksum binding and pre-transport regression tests. |
+| API/interface design | Restored Stage 7 `avatar_video_provider` metadata could be poisoned to claim external egress was enabled. | Fixed by accepting only the exact PR4 disabled default metadata during restore; poisoned rows are rejected. |
+| API/interface design | Public API enum exposed only `DISABLED`, making future optional external activation a schema break. | Fixed by widening the schema enum to include `OPTIONAL_EXTERNAL` while PR4 still emits and restores only `DISABLED`. |
+| API/interface design | The fake transport boundary uses a generic `/jobs` shape that real providers do not all share. | Documented as a fake/local typed boundary only; provider-specific wire mapping remains a later issue. |
+| Security/privacy | DNS rebinding resistance was overclaimed because the fake transport cannot pin connected peer IP. | Narrowed the claim to preflight URL screening only; real network transport peer-IP validation is out of PR4 scope. |
+| Eval/API propagation | External avatar/video result metadata is represented in the provider-boundary module but not yet exposed through Stage 7/API artifact responses. | Documented limitation for PR4 disabled posture; Stage 7/API exposes disabled boundary metadata only until a later issue adds real external media artifacts. |
+| Governance/status | `docs/STATUS.md` and the demo plan header still described PR4 as active / PR2 active. | Updated repository-tracked status to intended post-merge PR4 state and PR5 pending-new-issue next action; demo plan header now references PR4 / PR `#242`. |
 
 ## Skill and Evidence Ledger
 

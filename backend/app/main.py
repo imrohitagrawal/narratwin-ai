@@ -719,7 +719,7 @@ class AvatarVideoProviderBoundaryResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     provider: str = Field(min_length=1, max_length=MAX_AVATAR_PROVIDER_ID_CHARS)
-    provider_mode: Literal["DISABLED"] = Field(alias="providerMode")
+    provider_mode: Literal["DISABLED", "OPTIONAL_EXTERNAL"] = Field(alias="providerMode")
     enabled: bool
     allow_network_egress: bool = Field(alias="allowNetworkEgress")
     requires_api_key: bool = Field(alias="requiresApiKey")

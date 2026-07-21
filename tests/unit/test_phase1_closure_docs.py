@@ -883,20 +883,22 @@ def test_status_state_v1_contract_rejects_missing_table() -> None:
 def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
     next_action = (
-        "| SSV1-NEXT | next-action | #241 | "
-        "demo-checkpoint1-pr4-avatar-video-active-issue-241 | "
-        "demo-checkpoint1-pr4-avatar-video-active-issue-241 | Demo Phase 0 planning completed through issue #225 and PR #226. "
+        "| SSV1-NEXT | next-action | PR5 new issue | "
+        "demo-checkpoint1-pr5-hosted-demo-pending-new-issue | "
+        "demo-checkpoint1-pr5-hosted-demo-pending-new-issue | Demo Phase 0 planning completed through issue #225 and PR #226. "
         "Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. "
         "Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/"
         "cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as "
         "Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. "
-        "Issue #241 is active on branch phase-1-closure-process-241-demo-checkpoint1-pr4-avatar-video as "
-        "Checkpoint 1 PR 4 avatar/video provider integration only; mock/local remains default, provider egress remains "
-        "disabled by default, and implementation must prove fresh source facts, executable safeguards, human approval "
-        "surfaces, and a pull request before review. Hosted deployment, hosted access/quota/retention/demo polish, "
-        "public URLs, provider account setup, "
+        "Issue #241 is intended complete through PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only; "
+        "mock/local remains default, provider egress remains disabled by default, no real provider calls are approved, "
+        "and external avatar/video output remains unavailable on the Stage 7/API response surface. The next approved "
+        "slice is PR5 hosted-demo access/quota/retention/demo polish, but it remains unauthorized until a new GitHub "
+        "issue, dedicated branch, pull request, source facts, executable safeguards, and human-only review surfaces are "
+        "recorded. Hosted deployment, hosted access/quota/retention/demo polish, public URLs, provider account setup, "
         "dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, "
-        "Product Mode 2, public distribution, and production-readiness claims remain forbidden. |"
+        "Product Mode 2, public distribution, and production-readiness claims remain forbidden until that later "
+        "issue-linked PR explicitly authorizes narrow demo-only changes. |"
     )
     expected = (
         "| SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | "
