@@ -1,0 +1,41 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue": 231,
+  "branch": "phase-1-closure-process-231-human-verification-checklist",
+  "objective": "Make the human-review focus practice durable for future PRs and new projects. Positive claims: HV-PR-001 non-trivial PR bodies require a self-serve human verification checklist with focus area, exact data/source to verify, pass condition, and fail condition; HV-PLAYBOOK-001 new-project playbook requires this checklist before implementation or provider/tool decisions; HV-GATE-001 repository guardrail and quality docs describe the expectation so future reviewers have documentary proof. Negative invariants: NONGOAL-RUNTIME-001 no backend, frontend, product, provider, RAG, avatar, database, Docker, workflow, deployment, or runtime implementation changes; NONGOAL-PROVIDER-001 no provider selection, SDK, key, generated media, spend approval, or hosted-demo change; NONGOAL-PR230-001 no mutation of PR #230 branch contents. Failure matrix IDs: HV-MISSING-001 checklist absent from non-trivial PR body; HV-VAGUE-001 checklist lists focus points without exact source/data; HV-NO-PASSFAIL-001 checklist omits pass/fail decision criteria; HV-DELEGATION-001 checklist sends reviewer back to implementers for load-bearing facts; HV-NEWPROJECT-001 new-project practice omits human verification checklist; HV-SCOPE-001 docs/process PR expands into runtime or provider scope. Expected evidence: docs/template changes, repository guardrail/quality docs, status ledger update, local guardrail and quality commands, forced PR-body guardrail after PR open.",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-231.json",
+      ".github/pull_request_template.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-231.json",
+      ".github/pull_request_template.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      "scripts/",
+      "tests/",
+      ".github/workflows/",
+      "Dockerfile",
+      "docker-compose.yml",
+      "docs/demo/",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "provider SDKs",
+      "provider keys",
+      "runtime product code",
+      "real audio/video generation",
+      "hosted deployment",
+      "database migrations"
+    ]
+  }
+}
