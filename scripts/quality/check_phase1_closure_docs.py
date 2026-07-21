@@ -1327,10 +1327,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "#225",
-        "demo-phase0-planning-active",
-        "demo-phase0-planning-active",
-        "Issue #225 is the active Demo Phase 0 planning issue for hosted controlled real-media source facts, cost/terms research, checkpoint sequencing, failure-matrix categories, and fan-out review expectations; it authorizes planning only, while provider SDKs, provider keys, hosted deployment, real audio/video generation, cloned identity implementation, public synthetic-media distribution, Product Mode 2, and production-readiness claims remain forbidden until future issue-linked PRs explicitly approve them.",
+        "future issue-linked Checkpoint 1 PR",
+        "demo-checkpoint1-issue-needed",
+        "demo-checkpoint1-issue-needed",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. The next approved action is to open a future issue-linked Checkpoint 1 PR for the first spec/source-facts/governance slice before any provider, TTS, avatar/video, hosted-demo, or quota/access implementation. Provider SDKs, provider keys, hosted deployment, real audio/video generation, cloned identity implementation, public synthetic-media distribution, Product Mode 2, and production-readiness claims remain forbidden until future issue-linked PRs explicitly approve them.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
