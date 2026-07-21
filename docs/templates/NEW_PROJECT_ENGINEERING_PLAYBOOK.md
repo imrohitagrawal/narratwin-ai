@@ -112,6 +112,18 @@ Linked issue wording:
 Does this PR intentionally close the issue? yes/no
 If yes, exact closing keyword and issue:
 
+## Human Verification Checklist
+
+For every non-trivial PR, convert reviewer-focus points into a self-serve
+verification checklist in the PR body. Reviewers should not have to ask the
+implementer where the decisive facts live.
+
+| Focus Area | What Reviewer Must Verify | Data/Source To Inspect | Pass Condition | Fail Condition |
+|---|---|---|---|---|
+| Vendor/tool choice | selected and rejected options are source-backed | official pricing/docs/license/security URLs | reviewer can verify the decision without asking implementers | source facts are missing, stale, or only summarized from memory |
+| Scope boundary | implementation does not exceed approved issue scope | changed-file list, preflight allowlist, status ledger | diff stays inside the allowed files/modules | runtime, provider, deployment, data, or policy scope appears without approval |
+| Human-only decision | CI cannot decide a needed legal, security, cost, launch, or merge-text surface | PR human-only review table and linked docs | owner, evidence, residual risk, and revisit trigger are explicit | PR delegates the decision to informal discussion |
+
 ## Required Local Commands
 
 Quality:
@@ -340,7 +352,10 @@ Required rule:
   official source fact, explicit human-only review row, or documented non-goal;
 - negative, mutation, break-test, RED, or "old behavior fails" evidence is
   required for behavior that previously could false-pass;
-- implementation starts only after the invariant-to-test matrix is reviewable.
+- implementation starts only after the invariant-to-test matrix is reviewable;
+- non-trivial reviewer-focus points must appear in the PR body's Human
+  verification checklist with exact data/source references plus pass/fail
+  criteria, so human review is repeatable without private implementer context.
 
 ## Gate 3A: Contract Freeze Before Code
 
@@ -370,6 +385,7 @@ Before implementation starts, the PR-specific preflight artifact must contain:
 | False-pass matrix | ways a weak implementation could appear compliant while violating intent | yes |
 | Test/gate mapping | positive, negative, mutation, RED, break-test, source, or human-only evidence for every row | yes |
 | Review prompt set | adversarial prompts generated from the matrix, not generic role prompts | yes |
+| Human verification checklist | PR-body checklist that lists focus area, exact data/source to inspect, pass condition, and fail condition for every non-trivial reviewer-focus point | yes |
 | Stop rule | criteria for pausing implementation and returning to contract definition | yes |
 | Skill/tool selection | preinstalled or approved skills/docs checked first; custom skill/plugin gap, rejected options, approval, lock, and notices when applicable | yes |
 

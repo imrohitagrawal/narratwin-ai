@@ -26,6 +26,18 @@ reference-only wording.
 ### 5. Validation, limitations, and residual risks
 <!-- Summarize tests and checks, known limitations, remaining risks, and human-only decisions. -->
 
+## Human verification checklist
+
+For non-trivial PRs, turn the reviewer-focus points above into a self-serve
+verification checklist. Do not leave reviewers dependent on implementer memory,
+private notes, or follow-up questions for load-bearing facts. Each row should
+state the exact source/data to inspect and what would make the claim pass or
+fail. Use `N/A - trivial change` only for genuinely trivial PRs.
+
+| Focus area | What to verify | Data/source to verify | Pass condition | Fail condition |
+|---|---|---|---|---|
+|  |  |  |  |  |
+
 ## Stage / slice
 
 - Stage:
@@ -58,6 +70,7 @@ reference-only wording.
 - [ ] Negative tests were added or explicitly marked human-only/source/non-goal in the invariant matrix.
 - [ ] Old behavior fails, RED, mutation, break-test, or regression-reproduction evidence is listed for changed guardrails and bug fixes.
 - [ ] Human-only review surfaces are listed with owner and residual-risk decision.
+- [ ] Non-trivial reviewer-focus points are captured in the Human verification checklist with exact data/source references and pass/fail criteria.
 - [ ] Preinstalled repo docs/approved skills were checked first; no custom skill/plugin was created or used unless the gap, rejected existing options, approval, `docs/SKILL_LOCK.md`, and `docs/THIRD_PARTY_NOTICES.md` updates are linked.
 - [ ] Repeated-review stop rule was evaluated; if a fresh review found a new defect class after a fix, implementation paused for contract rewrite before another bug-fix loop.
 - [ ] Process/durability/governance work considered whether `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` should receive reusable lessons for future projects/apps.

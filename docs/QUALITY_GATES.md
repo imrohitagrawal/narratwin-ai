@@ -557,6 +557,18 @@ evidence.
 Process-critical governance docs and process-review registers stay in the
 non-trivial category even for text-only edits because those files define future
 automation behavior and review-loop prevention.
+
+The PR template also requires a `Human verification checklist` for non-trivial
+PRs. This checklist converts reviewer-focus points into rows with exact
+data/source references and pass/fail criteria. It is the durable PR-body
+surface for human-only verification work such as provider/tool comparisons,
+pricing and quota assumptions, legal/license/consent decisions, launch-boundary
+checks, production-readiness posture, and final merge-message wording. Absence
+of this checklist is a blocking human-review finding for non-trivial PRs even
+when the current script-level policy gates have passed. A future guardrail PR
+may make the checklist executable; until then reviewers enforce it through the
+PR body and template.
+
 Local validation that claims to cover PR-body checks must run with a pull-request
 event payload and `NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1`; plain
 `python3 scripts/guardrails_check.py` covers repository files but not PR title,

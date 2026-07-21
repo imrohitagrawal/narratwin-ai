@@ -220,6 +220,22 @@ quality/guardrail scripts remain non-trivial even for text-only edits. These
 files define the review loop and therefore must carry preflight evidence rather
 than relying on marker-only wording.
 
+Every non-trivial PR body must make reviewer-focus points self-serve through a
+`## Human verification checklist` section. The checklist must identify the
+focus area, what the reviewer must verify, the exact data/source/artifact to
+inspect, the pass condition, and the fail condition. It is required for claims
+that CI cannot fully prove, including provider/tool selection, pricing or quota
+assumptions, external platform semantics, legal/license/consent surfaces,
+launch boundaries, final merge-message wording, production-readiness posture,
+and security/privacy approvals. Reviewers should be able to verify the
+load-bearing facts from the PR body and linked artifacts without asking the
+implementer to restate private context.
+
+For genuinely trivial PRs, the checklist may state `N/A - trivial change` and
+explain why no non-trivial reviewer-focus points exist. For non-trivial PRs,
+absence of the checklist is a blocking human-review finding even when
+script-level guardrails have passed.
+
 Skill/tool selection evidence must show that installed or approved repo skills,
 docs, and tools were checked before creating or installing any custom skill or
 plugin. A custom skill/plugin is allowed only when the PR links the unmet
