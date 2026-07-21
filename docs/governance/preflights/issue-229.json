@@ -7,14 +7,13 @@
   "scope": {
     "required": [
       "docs/governance/preflights/issue-229.json",
-      "docs/demo/DEMO_CHECKPOINT_1_SPEC_GOVERNANCE.md",
+      "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
       "docs/THIRD_PARTY_NOTICES.md"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-229.json",
-      "docs/demo/DEMO_CHECKPOINT_1_SPEC_GOVERNANCE.md",
       "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
