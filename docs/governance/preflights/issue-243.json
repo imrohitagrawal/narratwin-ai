@@ -32,8 +32,6 @@
       "scripts/quality/check_phase1_closure_docs.py",
       "tests/unit/test_phase1_closure_docs.py",
       "backend/app/hosted_demo.py",
-      "backend/app/stage6.py",
-      "backend/app/stage7.py",
       "backend/app/main.py",
       "tests/unit/test_hosted_demo.py",
       "tests/api/test_hosted_demo_api.py",

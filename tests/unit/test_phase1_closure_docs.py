@@ -117,6 +117,20 @@ def run_issue241_preflight_check(monkeypatch: Any, *, preflight_text: str) -> li
     return failures
 
 
+def run_issue243_preflight_check(monkeypatch: Any, *, preflight_text: str) -> list[str]:
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {"docs/reviews/ISSUE_243_DEMO_CHECKPOINT1_PR5_HOSTED_DEMO_PREFLIGHT.md": preflight_text},
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_issue243_hosted_demo_preflight(failures)
+    return failures
+
+
 def run_issue39_ch11_contract_check(
     monkeypatch: Any,
     *,
@@ -803,6 +817,123 @@ def test_issue_241_near_match_branch_fails_closed(monkeypatch: Any) -> None:
         f"Phase 1 Closure branch {branch} may not change docs/STAGE_ISSUE_PLAN.md.",
         f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
     ]
+
+
+def test_issue_243_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-243-demo-checkpoint1-pr5-hosted-demo"
+    allowed = [
+        "docs/governance/preflights/issue-243.json",
+        "docs/reviews/ISSUE_243_DEMO_CHECKPOINT1_PR5_HOSTED_DEMO_PREFLIGHT.md",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/LAUNCH_LEVELS.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/ADR/0002-provider-agnostic-adapters.md",
+        "docs/API_CONTRACT.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "backend/app/hosted_demo.py",
+        "backend/app/main.py",
+        "tests/unit/test_hosted_demo.py",
+        "tests/api/test_hosted_demo_api.py",
+        "frontend/src/app/page.tsx",
+        "frontend/src/app/page.test.tsx",
+        "frontend/tests/smoke.spec.ts",
+    ]
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+            "pyproject.toml",
+            "uv.lock",
+            "frontend/package.json",
+            "frontend/Dockerfile",
+            "docker-compose.yml",
+            "backend/app/avatar_video_provider.py",
+            "backend/app/stage6.py",
+            "backend/app/stage7.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+        f"Phase 1 Closure branch {branch} may not change frontend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change docker-compose.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/avatar_video_provider.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+    ]
+
+
+def test_issue_243_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-243-demo-checkpoint1-pr5-hosted-demo-typo"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-243.json",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "backend/app/hosted_demo.py",
+            "frontend/src/app/page.tsx",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-243.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/STAGE_ISSUE_PLAN.md.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/hosted_demo.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+    ]
+
+
+def test_issue_243_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_243_DEMO_CHECKPOINT1_PR5_HOSTED_DEMO_PREFLIGHT.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert run_issue243_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "https://fastapi.tiangolo.com/tutorial/handling-errors/",
+        "https://pydantic.dev/docs/validation/2.0/usage/model_config/",
+        "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+        "https://nextjs.org/docs/pages/guides/environment-variables",
+        "https://vercel.com/docs/plans/hobby",
+        "https://docs.railway.com/pricing/plans",
+        "https://render.com/docs/free",
+        "HostedDemoAccessConfig",
+        "HostedDemoAccessRequest",
+        "HostedDemoDecision",
+        "PR5-ACCESS-001",
+        "PR5-QUOTA-001",
+        "PR5-RETENTION-001",
+        "PR5-VALIDATE-001",
+        "PR5-OBS-001",
+        "pending deletion is never recorded as deleted proof",
+        "raw prompts, scripts, uploads, provider payloads, URLs, invite secrets, cookies, tokens, session secrets, provider keys, or media bytes",
+        "test_hosted_demo.py",
+        "test_hosted_demo_api.py",
+    ),
+)
+def test_issue_243_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_243_DEMO_CHECKPOINT1_PR5_HOSTED_DEMO_PREFLIGHT.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert run_issue243_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
 
 
 def test_issue_241_preflight_contract_is_complete(monkeypatch: Any) -> None:
