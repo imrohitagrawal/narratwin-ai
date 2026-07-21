@@ -118,6 +118,20 @@ def run_release_docs_check(monkeypatch: Any, *, read_overrides: dict[str, str]) 
     return failures
 
 
+def run_real_media_demo_plan_check(monkeypatch: Any, *, plan_text: str) -> list[str]:
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {"docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md": plan_text},
+        ),
+    )
+    failures: list[str] = []
+    phase1.check_real_media_demo_plan(failures)
+    return failures
+
+
 PHF020A_VALID_POLICY = """
 # Phase Plan
 
@@ -549,6 +563,82 @@ def test_phase1_quality_docs_make_main_dispatch_behavior_unambiguous() -> None:
         "Plain local `make quality` on `main` dispatches Phase 1 Closure while "
         "StatusStateV1 records `SSV1-MODE` as `phase1-closure`."
     ) in status
+
+
+def test_real_media_hosted_demo_plan_is_required_and_guarded(monkeypatch: Any) -> None:
+    assert "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md" in phase1.REQUIRED_PHASE1_FILES
+    text = Path("docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "User uploads or uses project knowledge",
+        "Provider-Backed Path",
+        "Checkpoint 1: Real Media Without Cloned Identity",
+        "Checkpoint 2: Cloned Identity",
+        "Failure Matrix Categories",
+        "Fan-Out Review Requirements",
+        "no production-readiness claim",
+        "Cost-minimized first-month demo target",
+        "owner-approved pre-generated real-media walkthrough",
+        "source-run/eval/citation mismatch",
+        "language/audience inputs attempt to override rules",
+        "provider-side clone profile deletion",
+    ):
+        assert marker in text
+
+    assert run_real_media_demo_plan_check(monkeypatch, plan_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "removed_marker",
+    (
+        "provider-key secret storage outside the repo",
+        "owner-approved pre-generated real-media walkthrough",
+        "source-run/eval/citation mismatch",
+        "language/audience inputs attempt to override rules",
+        "MIME/type/size validation failure",
+        "provider-side clone profile deletion",
+    ),
+)
+def test_real_media_hosted_demo_plan_rejects_missing_contract_terms(
+    monkeypatch: Any, removed_marker: str
+) -> None:
+    text = Path("docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md").read_text(encoding="utf-8")
+    failures = run_real_media_demo_plan_check(
+        monkeypatch,
+        plan_text=text.replace(removed_marker, "REMOVED", 1),
+    )
+    assert failures
+
+
+def test_process_branch_allows_real_media_plan_but_rejects_runtime_files(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-225-demo-real-media-phase0-plan"
+    allowed = [
+        "docs/governance/preflights/issue-225.json",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    ]
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "backend/app/stage7.py",
+            "frontend/package.json",
+            ".github/workflows/quality-gates.yml",
+            "docs/PRD.md",
+            "portfolio/README.md",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change docs/PRD.md.",
+        f"Phase 1 Closure branch {branch} may not change portfolio/README.md.",
+    ]
 
 
 def test_phf020a_valid_policy_has_no_findings() -> None:

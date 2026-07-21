@@ -1,0 +1,63 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 225,
+  "branch": "phase-1-closure-process-225-demo-real-media-phase0-plan",
+  "objective": "Document the Demo Phase 0 source-fact review, hosted controlled demo boundary, checkpoint plan, failure matrix categories, provider/local-model research strategy, and autonomous multi-PR execution sequence for the real-media NarraTwin demo end goal: user project knowledge plus language and audience selection produces a grounded avatar/voice clone walkthrough with citation and evaluation evidence, without implementing provider SDKs, hosted deployment, real media generation, cloned identity, Product Mode 2, or production-readiness claims in this planning PR.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-225.json",
+      "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-225.json",
+      "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/PRD.md",
+      "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md",
+      "docs/API_CONTRACT.md",
+      "docs/ARCHITECTURE.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/AI_SAFETY_AND_EVALUATION.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "docs/QUALITY_GATES.md",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/demo/PHASE_1_DEMO_CHECKLIST.md",
+      "docs/demo/PHASE_1_DEMO_SCRIPT.md",
+      "docs/demo/PHASE_1_SCREENSHOT_GUIDE.md",
+      "portfolio/README.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "forbidden": [
+      "runtime product code",
+      "backend/app/",
+      "frontend/src/",
+      "frontend/tests/",
+      "docker-compose.yml",
+      ".github/workflows/",
+      "pyproject.toml",
+      "uv.lock",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "provider SDKs",
+      "provider keys",
+      "external provider enablement",
+      "real audio generation",
+      "real video generation",
+      "cloned identity implementation",
+      "hosted deployment",
+      "public synthetic-media distribution",
+      "production-readiness claims",
+      "Product Mode 2 implementation",
+      "stopped evidence surfaces #162/#163/#166/#167/#168"
+    ]
+  }
+}
