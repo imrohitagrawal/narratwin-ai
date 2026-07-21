@@ -1,0 +1,34 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 233,
+  "branch": "phase-1-closure-process-233-post-pr-232-status-reconciliation",
+  "objective": "Reconcile docs/STATUS.md after PR #232 merged and issue #231 closed. Record PR #232 merge commit and post-merge main quality workflow evidence while preserving the durable Demo Checkpoint 1 next-action pointer. Failure IDs: STAT-PR232-MERGED-001, STAT-ISSUE231-CLOSED-001, STAT-NEXT-UNCHANGED-001, STAT-SCOPE-001. Non-goals: no runtime/product/provider/media/hosted/parser/workflow/script/test/Docker/database changes and no PR #230 mutation.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-233.json",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-233.json",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      "scripts/",
+      "tests/",
+      ".github/workflows/",
+      "Dockerfile",
+      "docker-compose.yml",
+      "docs/demo/",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "provider SDKs",
+      "provider keys",
+      "runtime product code",
+      "real audio/video generation",
+      "hosted deployment",
+      "database migrations"
+    ]
+  }
+}
