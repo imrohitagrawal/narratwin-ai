@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# ruff: noqa: E402
+
 import os
 from collections.abc import Iterator
 from copy import deepcopy
