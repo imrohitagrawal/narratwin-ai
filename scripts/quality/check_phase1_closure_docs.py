@@ -168,6 +168,12 @@ ISSUE_245_ALLOWED_CHANGED_FILES = {
     "frontend/src/app/page.test.tsx",
     "frontend/tests/smoke.spec.ts",
 }
+ISSUE_247_ALLOWED_CHANGED_FILES = {
+    "frontend/src/app/page.tsx",
+    "frontend/src/app/page.test.tsx",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_172_ALLOWED_CHANGED_FILES = {
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -3514,6 +3520,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_243_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-245-checkpoint1-acceptance-hardening":
         allowed_files = ISSUE_245_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-247-demo-422-refusal-ux":
+        allowed_files = ISSUE_247_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-245-"):
         allowed_files = set()
     elif branch.startswith("phase-1-closure-process-243-"):

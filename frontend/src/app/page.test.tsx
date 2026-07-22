@@ -8,6 +8,7 @@ import Home, {
   evaluationBadgeLabel,
   readJson,
   sha256Hex,
+  walkthroughDemoBlockReason,
 } from "./page";
 
 describe("Home", () => {
@@ -60,6 +61,22 @@ describe("Home", () => {
         },
       }),
     ).toBe("0 unsupported claims");
+  });
+
+  it("turns refused walkthrough runs into a safe visible stop reason before media generation", () => {
+    expect(
+      walkthroughDemoBlockReason({
+        runId: "run_refused",
+        status: "REFUSED",
+        contextRefs: [],
+        trace: { traceId: "trace_refused" },
+        failure: {
+          reasonCode: "LOW_RETRIEVAL_CONFIDENCE",
+          message: "The request was refused because retrieved context was insufficient.",
+          unsupportedClaimCount: 0,
+        },
+      }),
+    ).toBe("Walkthrough refused: The request was refused because retrieved context was insufficient.");
   });
 
   it("does not echo unsafe API error messages even for allowlisted codes", async () => {
