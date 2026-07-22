@@ -1243,6 +1243,20 @@ def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     assert "SSV1.STATE.INVALID" in phase1.status_state_v1_findings(mutated)
 
 
+def test_post_pr250_status_reconciliation_is_recorded() -> None:
+    status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
+    normalized_status = re.sub(r"\s+", " ", status_text)
+
+    for marker in (
+        "PR `#250`",
+        "`41b262fa2431f55cd1c813eab4071968c1c96ba0`",
+        "Issue `#249` remains open as the public Checkpoint 3 tracker",
+        "post-PR-250 status reconciliation tracked by issue `#251` and PR `#252`",
+        "no product runtime implementation beyond the failing-by-design acceptance-gate skeleton",
+    ):
+        assert marker in normalized_status
+
+
 def test_status_state_v1_contract_rejects_duplicate_authority_section() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
     duplicate = (

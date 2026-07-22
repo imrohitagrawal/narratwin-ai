@@ -20,20 +20,24 @@ Use it to answer:
   Phase 0 planning for issue `#225` completed through PR `#226`; Checkpoint 1
   is accepted as local/fake disabled-default reviewer evidence only through
   merged PRs `#230`, `#236`, `#238`, `#242`, `#244`, `#246`, and `#248`.
-  Issue `#247` is closed after the safe refusal UX repair. Issue `#249` is the
-  active public-safe C3-PR1 planning/guardrails tracker for Checkpoint 3A:
-  Non-Cloned Product-Faithful Controlled Demo first, followed by Checkpoint 3B
-  cloned identity consent/provenance planning later, Checkpoint 3C
-  clone-integrated controlled demo after those gates, and production later.
-  C3-PR1 authorizes no product runtime implementation beyond a
-  failing-by-design acceptance-gate skeleton. No Phase 2 feature work, hosted
+  Issue `#247` is closed after the safe refusal UX repair. Issue `#249` remains
+  open as the public Checkpoint 3 tracker after C3-PR1 planning/guardrails
+  completed through merged PR `#250` at
+  `41b262fa2431f55cd1c813eab4071968c1c96ba0`, with post-PR-250 status
+  reconciliation tracked by issue `#251` and PR `#252`. The approved sequence
+  remains Checkpoint 3A Non-Cloned Product-Faithful Controlled Demo first,
+  followed by Checkpoint 3B cloned identity consent/provenance planning later,
+  Checkpoint 3C clone-integrated controlled demo after those gates, and
+  production later. This state authorizes no product runtime implementation
+  beyond the failing-by-design acceptance-gate skeleton added by PR `#250`.
+  No Phase 2 feature work, hosted
   deployment, production release tag, real avatar/video generation, cloned
   voice, cloned face, digital twin, real-person likeness, public URL, provider
   setup, provider SDKs, provider keys, provider account work, dashboard
   configuration, paid plan activation, wallet funding, model or voice selection,
   real provider calls, paid spend, public distribution, or production-readiness
   claim is permitted by issues `#225`, `#229`, `#235`, `#237`, `#241`, `#243`,
-  `#245`, `#247`, or `#249`.
+  `#245`, `#247`, `#249`, or `#251`.
   Issue `#39`
   media/provider/security rows are non-downgradeable for production Go unless
   the affected provider, media, export, and replay paths remain disabled.
@@ -67,8 +71,11 @@ Use it to answer:
   through merged PR `#238`, issue `#241` completed Demo Checkpoint 1 PR 4
   through merged PR `#242`, issue `#243` completed Demo Checkpoint 1 PR 5
   through merged PR `#244`, issue `#245` completed Checkpoint 1
-  acceptance hardening through merged PR `#246`, and issue `#247` is the active
-  local demo refused-run UX repair,
+  acceptance hardening through merged PR `#246`, issue `#247` completed the
+  local demo refused-run UX repair through merged PR `#248`, issue `#249`
+  completed public-safe C3-PR1 planning/guardrails through merged PR `#250`,
+  and issue `#251` completed post-PR-250 status reconciliation through PR
+  `#252`,
   mutable current-state authority is normalized through the StatusStateV1 table
   below, and release posture is No-Go.
 - Product implementation merged to `main`: Stage 8 performance, security
@@ -180,7 +187,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | issue #249 / checkpoint3a-planning-guardrails | checkpoint3a-planning-active | checkpoint3a-planning-active | Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. Issue #249 is the public-safe tracker for C3-PR1 planning and guardrails only: Checkpoint 3A non-cloned product-faithful controlled local demo first, Checkpoint 3B cloned identity consent/provenance planning later, Checkpoint 3C clone-integrated controlled demo after those gates, and production later. This state authorizes no product runtime implementation beyond a failing-by-design acceptance-gate skeleton. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden. |
+| SSV1-NEXT | next-action | issue #249 / checkpoint3a-next-child-selection | checkpoint3a-planning-guardrails-complete | checkpoint3a-planning-guardrails-complete | Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issue #249 remains open as the public Checkpoint 3 tracker and the next approved action is a future issue-linked Checkpoint 3A child implementation slice selected from the public-safe breakdown. This state authorizes no product runtime implementation beyond the failing-by-design acceptance-gate skeleton added by PR #250 until a child issue, branch, PR, and gates explicitly authorize that slice. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -425,7 +432,8 @@ Use these files together with this tracker:
 | `#243` | Closed | Demo Checkpoint 1 PR 5 hosted-demo access/quota/retention polish | Completed through merged PR `#244` as local/fake hosted-demo access, quota, retention, disclosure, and redacted-observability evidence. It created no hosted deployment, public URL, provider setup, paid spend, real provider call, cloned identity, Product Mode 2, public distribution, or production-readiness claim. |
 | `#245` | Closed | Checkpoint 1 acceptance hardening | Completed through merged PR `#246` for post-PR244 local/fake acceptance hardening, preserving the disabled-default local reviewer boundary and authorizing no provider setup, hosted deployment, public URL, cloned identity, paid spend, real provider calls, or production-readiness claim. |
 | `#247` | Closed | Local demo safe refusal UX | Completed through merged PR `#248` at `5456760e4b1f16f708b3c0cff8abe5f31ae29abc`; low-confidence grounded-generation refusals now stop before downstream media calls and show bounded refusal UI instead of a generic `422`. Checkpoint 1 remains local/fake disabled-default reviewer evidence only. |
-| `#249` | Open | Checkpoint 3A planning/guardrails | Active public-safe C3-PR1 tracker for Checkpoint 3A non-cloned product-faithful controlled local demo planning and guardrails only. It must not expose private plan details and authorizes no cloned identity, real-person likeness, provider setup, real provider call, paid spend, public URL, product runtime implementation, public distribution, or production-readiness claim. |
+| `#249` | Open | Checkpoint 3 tracker after C3-PR1 planning/guardrails | C3-PR1 planning and guardrails completed through merged PR `#250` at `41b262fa2431f55cd1c813eab4071968c1c96ba0`. Issue `#249` remains open as the public Checkpoint 3 tracker for future issue-linked Checkpoint 3A child implementation selection. It must not expose private plan details and authorizes no cloned identity, real-person likeness, provider setup, real provider call, paid spend, public URL, product runtime implementation beyond PR `#250`'s failing-by-design acceptance-gate skeleton, public distribution, or production-readiness claim. |
+| `#251` | Closed | Post-PR-250 status reconciliation | Completed through PR `#252`, reconciling the repository ledger after PR `#250` merged while leaving issue `#249` open and preserving no-runtime, no-provider, no-paid-spend, no-public-URL, no-cloned-identity, and no-production-readiness boundaries. |
 
 ## Pull Request Ledger
 
@@ -510,6 +518,8 @@ Use these files together with this tracker:
 | `#244` | Merged | 2026-07-22 | Demo Checkpoint 1 PR 5 for issue `#243`; scope was local/fake hosted-demo access/quota/retention/demo-polish evidence only with no hosted deployment, public URL, paid spend, real provider call, cloned identity, Product Mode 2, public distribution, or production-readiness claim. |
 | `#246` | Merged | 2026-07-22 | Checkpoint 1 acceptance hardening for issue `#245`; scope was post-PR244 local/fake evidence hardening only and did not authorize provider setup, public URL, paid spend, real provider call, cloned identity, product runtime expansion, or production-readiness claim. |
 | `#248` | Merged | 2026-07-22 | Local demo safe refusal UX for issue `#247`; merged at `5456760e4b1f16f708b3c0cff8abe5f31ae29abc`, replacing generic low-confidence `422` presentation with bounded refusal UI before downstream media calls. Checkpoint 1 remains local/fake disabled-default reviewer evidence only. |
+| `#250` | Merged | 2026-07-22 | Public-safe Checkpoint 3A planning/guardrails PR for issue `#249`; merged at `41b262fa2431f55cd1c813eab4071968c1c96ba0` after latest-head human approval on head `4de895e3f3c96197ec05253b6319c50621854a16`, with post-merge main quality workflow run `29913327246` passing. It added the Checkpoint 3A acceptance matrix, failing-by-design `make checkpoint3-acceptance` skeleton, output-correctness execution probe plan, fan-out findings, and branch allowlist tests only; issue `#249` remains open as the public Checkpoint 3 tracker, and no runtime implementation, provider setup, real provider calls, paid spend, public URL, cloned identity, public distribution, or production-readiness claim was authorized. |
+| `#252` | Merged | 2026-07-22 | Post-PR-250 repository-ledger reconciliation for issue `#251`; records PR `#250` and issue `#249` disposition while preserving issue `#249` as open public tracker and preserving the no-runtime, no-provider, no-paid-spend, no-public-URL, no-cloned-identity, public-distribution, and production-readiness No-Go boundaries. |
 
 ## Completed Work
 
@@ -757,6 +767,8 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-07-22 | PR `#250` merged issue `#249` C3-PR1 Checkpoint 3A planning/guardrails at `41b262fa2431f55cd1c813eab4071968c1c96ba0` after latest-head human approval on `4de895e3f3c96197ec05253b6319c50621854a16`; live GitHub shows post-merge main quality workflow run `29913327246` passed. Issue `#249` remains open as the public Checkpoint 3 tracker, and PR `#250` authorized no product runtime implementation beyond a failing-by-design acceptance-gate skeleton, no provider setup, no real provider calls, no paid spend, no public URL, no cloned identity, no public distribution, and no production-readiness claim. |
+| 2026-07-22 | Issue `#251` and PR `#252` reconcile the repository ledger after PR `#250` so `docs/STATUS.md` records the merge and next-action posture in public-safe wording while leaving issue `#249` open as the public Checkpoint 3 tracker. |
 | 2026-07-21 | Issue `#241` started as Demo Checkpoint 1 PR 4 on branch `phase-1-closure-process-241-demo-checkpoint1-pr4-avatar-video`; the first branch commit contains only `docs/governance/preflights/issue-241.json`. Scope is server-side Stage 7 avatar/video provider boundary plus optional disabled-by-default real provider adapter controls only; mock/local avatar/video remains default for local/dev/test/CI, provider SDKs are not installed, tests use fake/local transports, and hosted access/quota/retention demo polish, provider setup, paid spend, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. |
 | 2026-07-21 | PR `#238` merged issue `#237` at `8a24f3ab3d25e73a47ffc3d6aced30c03748899e`, completing Demo Checkpoint 1 PR 3 as server-side Stage 6 TTS provider abstraction plus optional real TTS adapter boundary only. Live GitHub shows issue `#237` closed, the PR branch deleted, and post-merge main quality workflow run `29854403531` passed. The next approved action is a future issue-linked avatar/video provider integration PR only after fresh source facts and executable safeguards are recorded; hosted deployment, access-system implementation, provider setup, paid spend, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. |
 | 2026-07-21 | Issue `#237` started as Demo Checkpoint 1 PR 3 on branch `phase-1-closure-process-237-demo-checkpoint1-pr3-real-tts`; the first branch commit contains only `docs/governance/preflights/issue-237.json`. Scope is server-side Stage 6 TTS provider abstraction plus optional real TTS adapter boundary only; mock/local TTS remains default for local/dev/test/CI, provider SDKs are not installed, tests use fake/local transports, and avatar/video, hosted deployment, access-system implementation, provider setup, paid spend, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. |
