@@ -157,6 +157,32 @@ def run_issue249_preflight_check(
     return failures
 
 
+def run_issue253_preflight_check(
+    monkeypatch: Any, *, preflight_text: str | None = None, missing: bool = False
+) -> list[str]:
+    if preflight_text is not None:
+        monkeypatch.setattr(
+            phase1,
+            "read",
+            read_with_overrides(
+                phase1,
+                {"docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md": preflight_text},
+            ),
+        )
+    failures: list[str] = []
+    if missing:
+        original_is_file = cast(Callable[[Path], bool], phase1.Path.is_file)
+
+        def patched_is_file(path: Path) -> bool:
+            if str(path).endswith("docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md"):
+                return False
+            return original_is_file(path)
+
+        monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
+    phase1.check_issue253_c3a_cp1_preflight(failures)
+    return failures
+
+
 def run_issue39_ch11_contract_check(
     monkeypatch: Any,
     *,
@@ -1125,6 +1151,45 @@ def test_issue_253_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_253_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue253_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "https://fastapi.tiangolo.com/tutorial/testing/",
+        "C3A-CP1-HARNESS-001",
+        "C3A-CP1-FALSEPASS-001",
+        "C3A-CP1-FM-005",
+        "tests/acceptance/test_checkpoint3_api_e2e.py::test_checkpoint3_api_e2e_executes_local_product_path",
+        "API-visible idempotent replay",
+        "ops/status",
+        "shell=False",
+        "sub-agent",
+        "synthetic approved non-NarraTwin project knowledge",
+        "no browser/frontend scope is touched",
+        "Stop and open a new issue",
+    ),
+)
+def test_issue_253_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue253_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
+
+
+def test_issue_253_missing_preflight_reports_failure(monkeypatch: Any) -> None:
+    assert run_issue253_preflight_check(monkeypatch, missing=True) == [
+        "Missing required C3A-CP1 preflight artifact: docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md"
+    ]
+
+
 def test_issue_249_preflight_contract_is_complete(monkeypatch: Any) -> None:
     text = Path("docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md").read_text(encoding="utf-8")
 
@@ -1320,7 +1385,9 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "`41b262fa2431f55cd1c813eab4071968c1c96ba0`",
         "Issue `#249` remains open as the public Checkpoint 3 tracker",
         "post-PR-250 status reconciliation tracked by issue `#251` and PR `#252`",
-        "no product runtime implementation beyond the failing-by-design acceptance-gate skeleton",
+        "Issue `#253` is the first Checkpoint 3A child implementation checkpoint",
+        "This state does not complete Checkpoint 3A",
+        "remaining planned probes",
     ):
         assert marker in normalized_status
 

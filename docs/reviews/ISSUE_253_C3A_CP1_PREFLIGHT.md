@@ -10,6 +10,10 @@ implements the first real probe: API E2E foundation.
 The probe must execute the local product path. It must not pass by grepping
 docs, reading planning prose, or checking static snapshots only.
 
+Later probes for language quality, media artifacts, access/quota/retention,
+security/observability, performance, real-browser E2E, and output-correctness
+remain planned and non-passing in CP1.
+
 ## Scope
 
 In scope:
@@ -46,7 +50,7 @@ Accessed date: 2026-07-22.
 | ID | Claim | Evidence |
 |---|---|---|
 | `C3A-CP1-HARNESS-001` | The acceptance gate dispatches probe definitions and returns probe-specific evidence instead of a static placeholder. | `tests/unit/test_checkpoint3_acceptance_gate.py` and `make checkpoint3-acceptance` output. |
-| `C3A-CP1-API-001` | The API E2E foundation probe executes local API behavior for project creation, approved knowledge upload/load, ingestion/chunk/store, retrieval, grounded script generation, unsupported-claim evaluation, output storage, and API evidence retrieval. | `tests/acceptance/test_checkpoint3_api_e2e.py::test_checkpoint3_api_e2e_executes_local_product_path`. |
+| `C3A-CP1-API-001` | The API E2E foundation probe executes local API behavior for project creation, approved knowledge upload/load, ingestion/chunk/store, retrieval, grounded script generation, unsupported-claim evaluation, output storage, and API evidence retrieval. | `tests/acceptance/test_checkpoint3_api_e2e.py::test_checkpoint3_api_e2e_executes_local_product_path`, API-visible idempotent replay of the walkthrough response, and bounded `GET /api/v1/ops/status` record counts. |
 | `C3A-CP1-PLANNED-001` | Later Checkpoint 3A probes stay visible as planned and do not count as completed. | Harness probe statuses and docs. |
 
 ## Negative Invariants
@@ -72,17 +76,17 @@ Accessed date: 2026-07-22.
 
 ## Fan-Out Review Findings
 
-Manual adversarial fallback was used because no sub-agent tool was exposed in
-the active tool list at preflight time. Cross-model review is skipped in this
-autonomous execution context.
+Sub-agent fan-out was run after the issue and preflight-only first commit were
+created. Manual adversarial fallback supplements the sub-agent findings.
+Cross-model review is skipped in this autonomous execution context.
 
 | Area | Finding | Disposition |
 |---|---|---|
-| output-correctness | A static scanner could pass by finding planned phrases in docs. | Add `C3A-CP1-FM-005` and make probe definitions require executable acceptance test commands. |
-| API/interface | E2E proof can accidentally inspect in-memory state only. | The positive probe must drive FastAPI routes and then confirm stored API/state evidence. |
+| output-correctness | A static scanner could pass by finding planned phrases in docs. | Add `C3A-CP1-FM-005`, make probe definitions require executable acceptance test commands, run implemented probes with `shell=False`, and reject `docs/`, prose, snapshot, `rg`, `cat`, or no-op command substitutions before reporting success. |
+| API/interface | E2E proof can accidentally inspect in-memory state only, and CP1's allowed scope does not add a new GET run route. | The positive probe must drive FastAPI routes, prove API-visible idempotent replay of the stored walkthrough response, and use `GET /api/v1/ops/status` only for bounded record-count evidence. Direct service dictionaries may supplement debugging but are not the API evidence retrieval claim. |
 | security/privacy | Synthetic project knowledge is still untrusted input and must not include secrets or private data. | Use small public-safe fixtures and preserve existing upload/approval safeguards. |
 | access/quota/reliability/retention | Later access/quota/retention probes are not implemented by CP1. | Keep them planned and non-passing in the harness. |
-| observability/redaction | E2E output should prove trace/run metadata without logging raw uploads/scripts as evidence. | Assert bounded response metadata and avoid raw telemetry dumps in docs/PR text. |
+| observability/redaction | E2E output should prove trace/run metadata without logging raw uploads/scripts as evidence, and optional observability environment variables must not cause external egress in CP1 tests. Final security review also found that failed subprocess output must not be printed unbounded. | Assert bounded response metadata, clear Langfuse environment variables in the acceptance tests, require local provider mode and zero estimated cost, require redacted evidence surfaces where unsafe output is returned, summarize failed probe output with a denylist redactor and length cap, and avoid raw telemetry dumps in docs/PR text. |
 | performance | CP1 should not overclaim performance, but the harness must prepare a future performance probe. | Keep the performance probe planned and non-passing. |
 | test/quality/CI | The branch can drift into unrelated runtime or provider work. | Add exact issue `#253` allowlist and near-match regression tests before implementation. |
 | governance/taste/scope | A large harness abstraction could obscure which probes are real versus planned. | Keep a small explicit dispatcher with typed probe statuses. |

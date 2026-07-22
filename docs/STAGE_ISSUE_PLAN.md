@@ -809,6 +809,37 @@ strategy, provider strategy, private media, real personal data, secrets,
 credentials, tokens, invite codes, private certificates, or real provider
 payloads.
 
+Issue `#253` is the bounded C3A-CP1 child implementation branch for the
+Checkpoint 3 acceptance harness and API E2E foundation only. Branch
+`phase-1-closure-process-253-c3a-cp1-acceptance-api-e2e` may convert
+`make checkpoint3-acceptance` into an executable dispatcher, implement the API
+E2E acceptance probe, keep later Checkpoint 3A probes planned/non-passing, add
+old-behavior false-pass regressions, record sub-agent fan-out findings, and
+update only these public-safe files:
+
+- `docs/governance/preflights/issue-253.json`
+- `docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_checkpoint3_acceptance.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_checkpoint3_acceptance_gate.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/acceptance/test_checkpoint3_api_e2e.py`
+
+C3A-CP1 must execute the local FastAPI product path for project creation,
+approved synthetic knowledge upload, ingestion/chunk/store, retrieval, grounded
+walkthrough generation, unsupported-claim evaluation, stored API replay
+evidence, and bounded ops record-count evidence. It must not pass through
+docs/prose/static-snapshot scanning. Later language quality, media artifacts,
+access/quota/retention, security/observability, performance, real-browser E2E,
+and output-correctness probes remain future Checkpoint 3A child work. The issue
+does not authorize Checkpoint 3A completion, Checkpoint 3B, Checkpoint 3C,
+providers, paid spend, hosted deployment, public URL, cloned identity, frontend
+browser implementation, public distribution, or production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

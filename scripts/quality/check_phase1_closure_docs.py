@@ -1465,9 +1465,9 @@ STATUS_STATE_V1_ROWS = {
     "SSV1-NEXT": (
         "next-action",
         "issue #249 / checkpoint3a-next-child-selection",
-        "checkpoint3a-planning-guardrails-complete",
-        "checkpoint3a-planning-guardrails-complete",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issue #249 remains open as the public Checkpoint 3 tracker and the next approved action is a future issue-linked Checkpoint 3A child implementation slice selected from the public-safe breakdown. This state authorizes no product runtime implementation beyond the failing-by-design acceptance-gate skeleton added by PR #250 until a child issue, branch, PR, and gates explicitly authorize that slice. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden.",
+        "checkpoint3a-cp1-acceptance-api-e2e-complete",
+        "checkpoint3a-cp1-acceptance-api-e2e-complete",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issue #253 is the first Checkpoint 3A child implementation checkpoint and adds an executable Checkpoint 3 acceptance harness plus API E2E foundation only. Issue #249 remains open as the public Checkpoint 3 tracker and the next approved action is a future issue-linked Checkpoint 3A child slice for one of the remaining planned probes. This state does not complete Checkpoint 3A. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -4398,6 +4398,106 @@ def check_issue249_checkpoint3a_preflight(failures: list[str]) -> None:
         fail(failures, f"{rel} missing C3A preflight markers: " + ", ".join(missing_markers))
 
 
+def check_issue253_c3a_cp1_preflight(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md"
+    if not (ROOT / rel).is_file():
+        fail(failures, f"Missing required C3A-CP1 preflight artifact: {rel}")
+        return
+    text = read(rel)
+    normalized = re.sub(r"\s+", " ", text.lower())
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Objective",
+            "Scope",
+            "Source Facts",
+            "Positive Claims",
+            "Negative Invariants",
+            "Failure Matrix",
+            "Fan-Out Review Findings",
+            "Skill And Tool Selection Ledger",
+            "Stop Rule",
+        ),
+    )
+    required_urls = (
+        "https://fastapi.tiangolo.com/tutorial/testing/",
+        "https://fastapi.tiangolo.com/reference/testclient/",
+        "https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue",
+        "https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html",
+    )
+    missing_urls = [url for url in required_urls if url not in text]
+    if missing_urls:
+        fail(failures, f"{rel} missing C3A-CP1 official source URLs: " + ", ".join(missing_urls))
+
+    required_markers = (
+        "Accessed date: 2026-07-22",
+        "C3A-CP1",
+        "public tracker issue `#249`",
+        "make checkpoint3-acceptance",
+        "executable local acceptance harness",
+        "API E2E foundation",
+        "execute the local product path",
+        "must not pass by grepping docs",
+        "reading planning prose",
+        "checking static snapshots only",
+        "synthetic approved non-NarraTwin project knowledge",
+        "cloned voice",
+        "cloned face",
+        "digital twin",
+        "real-person likeness",
+        "hosted deployment",
+        "public URL",
+        "provider setup",
+        "provider SDKs",
+        "real provider calls",
+        "paid spend",
+        "Checkpoint 3B",
+        "Checkpoint 3C",
+        "C3A-CP1-HARNESS-001",
+        "C3A-CP1-API-001",
+        "C3A-CP1-PLANNED-001",
+        "C3A-CP1-NONGOAL-001",
+        "C3A-CP1-FALSEPASS-001",
+        "C3A-CP1-APPROVAL-001",
+        "C3A-CP1-ISOLATION-001",
+        "C3A-CP1-UNSUPPORTED-001",
+        "C3A-CP1-FM-001",
+        "C3A-CP1-FM-002",
+        "C3A-CP1-FM-003",
+        "C3A-CP1-FM-004",
+        "C3A-CP1-FM-005",
+        "C3A-CP1-FM-006",
+        "tests/acceptance/test_checkpoint3_api_e2e.py::test_checkpoint3_api_e2e_executes_local_product_path",
+        "tests/acceptance/test_checkpoint3_api_e2e.py::test_checkpoint3_api_e2e_rejects_unapproved_knowledge_before_ingestion",
+        "tests/acceptance/test_checkpoint3_api_e2e.py::test_checkpoint3_api_e2e_rejects_cross_project_replay",
+        "tests/acceptance/test_checkpoint3_api_e2e.py::test_checkpoint3_api_e2e_rejects_unsupported_claim_acceptance",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_rejects_docs_only_probe_commands",
+        "language quality",
+        "media artifacts",
+        "access/quota/retention",
+        "security/observability",
+        "performance",
+        "real-browser E2E",
+        "output-correctness",
+        "API-visible idempotent replay",
+        "ops/status",
+        "shell=False",
+        "sub-agent",
+        "manual adversarial fallback",
+        "missing approval",
+        "cross-project replay",
+        "unsupported claim",
+        "redacted",
+        "no browser/frontend scope is touched",
+        "Stop and open a new issue",
+    )
+    missing_markers = [marker for marker in required_markers if marker.lower() not in normalized]
+    if missing_markers:
+        fail(failures, f"{rel} missing C3A-CP1 preflight markers: " + ", ".join(missing_markers))
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
@@ -4418,6 +4518,7 @@ def check_process_docs(failures: list[str]) -> None:
     check_issue241_avatar_video_preflight(failures)
     check_issue243_hosted_demo_preflight(failures)
     check_issue249_checkpoint3a_preflight(failures)
+    check_issue253_c3a_cp1_preflight(failures)
     check_required_headings(
         failures,
         pr_template,
