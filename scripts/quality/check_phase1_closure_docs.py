@@ -169,6 +169,9 @@ ISSUE_245_ALLOWED_CHANGED_FILES = {
     "frontend/tests/smoke.spec.ts",
 }
 ISSUE_247_ALLOWED_CHANGED_FILES = {
+    "docs/ADR/0032-local-demo-refusal-ux-boundary.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
     "frontend/src/app/page.tsx",
     "frontend/src/app/page.test.tsx",
     "scripts/quality/check_phase1_closure_docs.py",
@@ -1433,10 +1436,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #245 / checkpoint1-acceptance-hardening",
+        "issue #247 / checkpoint1-local-demo-refusal-ux",
         "demo-checkpoint1-local-acceptance-complete",
         "demo-checkpoint1-local-acceptance-complete",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is complete through merged PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only. Issue #243 is closed through merged PR #244 as Checkpoint 1 PR 5 hosted-demo access/quota/retention/demo-polish. Issue #245 repairs post-PR244 acceptance blockers found by executable fan-out review: hosted-demo disclosure allowlisting and raw-output canary rejection, current invite/session credential validation before idempotent replay, session TTL capping, encoded unsafe-display rejection, deterministic local/fake tombstone metadata validation, trusted retention terminal replay blocking without `retentionRecordId` bypass, redacted public request checksums/access identifiers, and status/gate reconciliation. After issue #245 merges, Checkpoint 1 is accepted as local/fake disabled-default reviewer evidence only. The next approved action is a new issue for Checkpoint 2 consent/provenance planning only; cloned identity implementation remains forbidden until that issue is approved. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2 implementation, public distribution, and production-readiness claims remain forbidden.",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is complete through merged PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only. Issue #243 is closed through merged PR #244 as Checkpoint 1 PR 5 hosted-demo access/quota/retention/demo-polish. Issue #245 completed post-PR244 acceptance hardening through merged PR #246. Issue #247 repairs the local demo refused-run UX so low-confidence grounded-generation refusals stop before downstream media calls and show safe bounded refusal text instead of a generic `422`; when issue #247 merges, Checkpoint 1 remains accepted as local/fake disabled-default reviewer evidence only. The next approved action remains a new issue for Checkpoint 2 consent/provenance planning only; cloned identity implementation remains forbidden until that issue is approved. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2 implementation, public distribution, and production-readiness claims remain forbidden.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
