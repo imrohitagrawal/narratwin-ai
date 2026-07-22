@@ -771,6 +771,44 @@ production-readiness claims. PR5 hosted-demo behavior remains local/fake and
 disabled by default unless a later issue records owner-written approval and
 fresh safeguards for a real hosted environment.
 
+Issue `#249` is the bounded C3-PR1 branch for Checkpoint 3A planning and
+guardrails only. Branch
+`phase-1-closure-process-249-checkpoint3a-planning-guardrails` may define the
+public-safe roadmap update, Checkpoint 3A acceptance matrix, failing-by-design
+`make checkpoint3-acceptance` skeleton, old-behavior failure proof, child issue
+breakdown, fan-out findings, exact changed-file allowlist, and focused
+regression tests:
+
+- `docs/governance/preflights/issue-249.json`
+- `docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md`
+- `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `Makefile`
+- `scripts/quality/check_checkpoint3_acceptance.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_checkpoint3_acceptance_gate.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+Checkpoint 3A sequence is public-safe and serialized: Checkpoint 3A
+Non-Cloned Product-Faithful Controlled Demo first, Checkpoint 3B Cloned
+Identity Consent And Provenance later, Checkpoint 3C Clone-Integrated
+Controlled Demo after those gates, and production later. The Checkpoint 3A
+planned probes are API E2E, language quality, media artifacts,
+access/quota/retention, security/observability, performance, real-browser E2E
+with no success-path interception, and output-correctness that executes rather
+than reads.
+
+It must not implement backend, frontend, provider, RAG, avatar, database,
+Docker, workflow, dependency, product runtime, cloned voice, cloned face,
+digital twin, real-person likeness, public URL, provider setup, provider SDK,
+provider key, real provider call, paid spend, public distribution, or
+production-readiness claims. It must not expose private plans, internal
+strategy, provider strategy, private media, real personal data, secrets,
+credentials, tokens, invite codes, private certificates, or real provider
+payloads.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

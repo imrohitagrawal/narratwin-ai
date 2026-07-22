@@ -131,6 +131,32 @@ def run_issue243_preflight_check(monkeypatch: Any, *, preflight_text: str) -> li
     return failures
 
 
+def run_issue249_preflight_check(
+    monkeypatch: Any, *, preflight_text: str | None = None, missing: bool = False
+) -> list[str]:
+    if preflight_text is not None:
+        monkeypatch.setattr(
+            phase1,
+            "read",
+            read_with_overrides(
+                phase1,
+                {"docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md": preflight_text},
+            ),
+        )
+    failures: list[str] = []
+    if missing:
+        original_is_file = cast(Callable[[Path], bool], phase1.Path.is_file)
+
+        def patched_is_file(path: Path) -> bool:
+            if str(path).endswith("docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md"):
+                return False
+            return original_is_file(path)
+
+        monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
+    phase1.check_issue249_checkpoint3a_preflight(failures)
+    return failures
+
+
 def run_issue39_ch11_contract_check(
     monkeypatch: Any,
     *,
@@ -964,6 +990,118 @@ def test_issue_245_near_match_branch_fails_closed(monkeypatch: Any) -> None:
         f"Phase 1 Closure branch {branch} may not change backend/app/hosted_demo.py.",
         f"Phase 1 Closure branch {branch} may not change tests/unit/test_hosted_demo.py.",
     ]
+
+
+def test_issue_249_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-249-checkpoint3a-planning-guardrails"
+    allowed = [
+        "docs/governance/preflights/issue-249.json",
+        "docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "Makefile",
+        "scripts/quality/check_checkpoint3_acceptance.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_checkpoint3_acceptance_gate.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    ]
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "backend/app/main.py",
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+            "frontend/package.json",
+            "frontend/package-lock.json",
+            "pyproject.toml",
+            "uv.lock",
+            "backend/app/stage6.py",
+            "backend/app/stage7.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change backend/app/main.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package-lock.json.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+    ]
+
+
+def test_issue_249_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-249-checkpoint3a-planning-guardrails-typo"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-249.json",
+            "docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md",
+            "docs/STATUS.md",
+            "scripts/quality/check_checkpoint3_acceptance.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-249.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md.",
+        f"Phase 1 Closure branch {branch} may not change docs/STATUS.md.",
+        f"Phase 1 Closure branch {branch} may not change scripts/quality/check_checkpoint3_acceptance.py.",
+    ]
+
+
+def test_issue_249_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue249_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "C3A-LANG-HI-001",
+        "Hindi output must contain Devanagari",
+        "tests/acceptance/test_checkpoint3_output_correctness.py",
+        "real-browser E2E with no success-path interception",
+        "server-bound tombstone",
+        "raw uploads, prompts, scripts, transcripts, media bytes, URLs, invite secrets, cookies, tokens, provider keys, provider payloads, and private identifiers",
+        "no cloned voice",
+        "manual adversarial fallback",
+    ),
+)
+def test_issue_249_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue249_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
+
+
+def test_issue_249_missing_preflight_reports_failure(monkeypatch: Any) -> None:
+    assert run_issue249_preflight_check(monkeypatch, missing=True) == [
+        "Missing required C3A preflight artifact: docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md"
+    ]
+
+
+def test_real_media_demo_plan_requires_checkpoint3a_markers(monkeypatch: Any) -> None:
+    plan_text = Path("docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md").read_text(encoding="utf-8")
+
+    assert run_real_media_demo_plan_check(
+        monkeypatch,
+        plan_text=remove_normalized_marker(
+            plan_text,
+            "Checkpoint 3A: Non-Cloned Product-Faithful Controlled Demo",
+        ),
+    )
 
 
 def test_issue_243_preflight_contract_is_complete(monkeypatch: Any) -> None:
