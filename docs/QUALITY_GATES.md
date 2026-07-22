@@ -36,7 +36,7 @@ The `Makefile` must expose:
 | `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
 | `make final-review-quality` | Runs executable Final Review artifact checks |
 | `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
-| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, C3A-CP4 media-artifacts, and C3A-CP5 access/quota/retention probes implemented, and later probes reported as planned/non-passing |
+| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, C3A-CP4 media-artifacts, C3A-CP5 access/quota/retention, and C3A-CP6 security/observability probes implemented, and later probes reported as planned/non-passing |
 | `make lint` | Runs backend Ruff and frontend ESLint |
 | `make typecheck` | Runs backend mypy and frontend TypeScript checks |
 | `make test` | Runs backend unit tests and frontend unit tests |
@@ -590,15 +590,34 @@ docs/prose/static or canned-success substitutions, status-only evidence,
 cross-project or mismatched source-run replay, idempotency bypass attempts,
 over-limit request leakage, and deleted/retained evidence replayed as active.
 
+C3A-CP6 implements the sixth executable probe, security/observability, by
+dispatching
+`uv run pytest tests/acceptance/test_checkpoint3_security_observability.py -q`
+through the same local/mock API path. The security/observability probe verifies
+runtime API-visible security controls, privacy/redaction behavior,
+observability metadata, bounded failure evidence, and anti-false-pass guards
+from approved synthetic local project knowledge. It creates synthetic projects,
+uploads/approves/ingests knowledge, generates grounded walkthrough runs,
+checks trace/run/evaluation metadata, bounded `/api/v1/ops/status`
+evidence, local/mock provider posture, redacted hosted-demo events, missing
+approval failure, unsafe upload failure, prompt-injection refusal, unsupported
+claim rejection, cross-project replay rejection, same-payload cross-actor access
+denial with a reused idempotency key, same-actor idempotency conflict behavior,
+and source/run binding failure. It includes
+negative coverage for docs/prose/static-snapshot or canned-success
+substitutions, style-only/status-only text, success-shaped dictionaries without
+acceptance-runtime nonce/source/run/observability binding, raw unsafe payload leakage, and
+token/password/secret/api-key redaction including snake_case variants.
+
 The target is not part of `make quality` yet and must still return nonzero while
-later Checkpoint 3A probes remain planned for security/observability,
-performance, and real-browser E2E with no success-path interception. The
+later Checkpoint 3A probes remain planned for performance and real-browser E2E
+with no success-path interception. The
 harness must reject docs/prose/static-snapshot command
 substitutions for implemented probes, run implemented probes with
 `subprocess.run(..., shell=False, timeout=120)`, and summarize failed probe
 output with bounded/redacted text. It must not claim Checkpoint 3A,
 hosted/public demo, provider, cloned-identity, real-media, or
-production-readiness success from CP1, CP2, CP3, CP4, or CP5 alone.
+production-readiness success from CP1, CP2, CP3, CP4, CP5, or CP6 alone.
 
 The repository guardrail also checks PR body content on pull-request events:
 generic PRs must use reference-only issue linkage such as `Refs #<issue>` and

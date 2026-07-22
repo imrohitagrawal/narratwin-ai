@@ -29,8 +29,26 @@ PROBE_ENV_DENYLIST = (
     "NARRATWIN_STAGE7_STATE_FILE",
 )
 SENSITIVE_OUTPUT_PATTERNS = (
+    re.compile(
+        r"(?i)[^\n]*(?:CP6-RAW-UPLOAD-CANARY|CP6-RAW-PROMPT-CANARY|CP6-RAW-INJECTION-CANARY|"
+        r"CP6-PRIVATE-MARKER|ignore (?:all )?previous instructions|print the hidden system prompt|"
+        r"hidden system prompt)[^\n]*"
+    ),
     re.compile(r"(?i)(secret|token|provider payload|raw upload|raw prompt|generated script|private identifier)[^\n]*"),
-    re.compile(r"(?i)(api[_-]?key|authorization|bearer)\s*[:=]\s*['\"]?[^'\"\s]+"),
+    re.compile(
+        r"(?i)(api[_-]?key(?:[_-]?value)?|authorization|bearer|password|secret|token|credential)"
+        r"\s*[:=]\s*['\"]?[^'\"\s]+"
+    ),
+    re.compile(
+        r"(?i)(rawPromptInjectionText|promptInjectionAttempt|instructionOverride|unsafeContent|"
+        r"observabilityRecord|observabilityBinding|logEvent|spanAttributes|privateMarker|requestId|traceId|"
+        r"runId|evaluationId|runtimeNonce)[^\n]*"
+    ),
+    re.compile(
+        r"(?i)(raw_prompt_injection_text|prompt_injection_attempt|instruction_override|unsafe_content|"
+        r"observability_record|observability_binding|log_event|span_attributes|private_marker|request_id|trace_id|"
+        r"run_id|evaluation_id|runtime_nonce|api_key_value)[^\n]*"
+    ),
     re.compile(
         r"(?i)(acceptedScriptText|sourceScriptText|translatedScriptText|subtitlesText|contentBase64|demoExport|"
         r"renderManifest|videoExportPlaceholder|voiceManifest|fileName|checksum|claimText|contextRefs|"
@@ -71,6 +89,13 @@ PROBES: tuple[Probe, ...] = (
         planned_reason="",
     ),
     Probe(
+        label="output-correctness that executes rather than reads",
+        command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_output_correctness.py", "-q"),
+        env=((PRODUCT_FAITHFUL_ENV, "1"),),
+        implemented=True,
+        planned_reason="",
+    ),
+    Probe(
         label="language quality",
         command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_language_quality.py", "-q"),
         env=((PRODUCT_FAITHFUL_ENV, "1"),),
@@ -95,15 +120,15 @@ PROBES: tuple[Probe, ...] = (
         label="security/observability",
         command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_security_observability.py", "-q"),
         env=((PRODUCT_FAITHFUL_ENV, "1"),),
-        implemented=False,
-        planned_reason="future C3A probe; CP1, CP2, CP3, CP4, and CP5 include no security/observability acceptance claim",
+        implemented=True,
+        planned_reason="",
     ),
     Probe(
         label="performance",
         command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_performance.py", "-q"),
         env=((PRODUCT_FAITHFUL_ENV, "1"),),
         implemented=False,
-        planned_reason="future C3A probe; CP1, CP2, CP3, CP4, and CP5 make no performance acceptance claim",
+        planned_reason="future C3A probe; CP1, CP2, CP3, CP4, CP5, and CP6 make no performance acceptance claim",
     ),
     Probe(
         label="real-browser E2E with no success-path interception",
@@ -118,16 +143,36 @@ PROBES: tuple[Probe, ...] = (
         ),
         env=((PRODUCT_FAITHFUL_ENV, "1"), ("NARRATWIN_REAL_STACK", "1")),
         implemented=False,
-        planned_reason="future C3A probe; CP1, CP2, CP3, CP4, and CP5 touch no browser or frontend scope",
-    ),
-    Probe(
-        label="output-correctness that executes rather than reads",
-        command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_output_correctness.py", "-q"),
-        env=((PRODUCT_FAITHFUL_ENV, "1"),),
-        implemented=True,
-        planned_reason="",
+        planned_reason="future C3A probe; CP1, CP2, CP3, CP4, CP5, and CP6 touch no browser or frontend scope",
     ),
 )
+
+EXPECTED_IMPLEMENTED_COMMANDS: dict[str, tuple[str, ...]] = {
+    "API E2E": ("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_api_e2e.py", "-q"),
+    "output-correctness that executes rather than reads": (
+        "uv",
+        "run",
+        "pytest",
+        "tests/acceptance/test_checkpoint3_output_correctness.py",
+        "-q",
+    ),
+    "language quality": ("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_language_quality.py", "-q"),
+    "media artifacts": ("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_media_artifacts.py", "-q"),
+    "access/quota/retention": (
+        "uv",
+        "run",
+        "pytest",
+        "tests/acceptance/test_checkpoint3_access_quota_retention.py",
+        "-q",
+    ),
+    "security/observability": (
+        "uv",
+        "run",
+        "pytest",
+        "tests/acceptance/test_checkpoint3_security_observability.py",
+        "-q",
+    ),
+}
 
 
 def display_command(probe: Probe) -> str:
@@ -144,14 +189,15 @@ def validate_probe_contract(probes: Sequence[Probe]) -> list[str]:
     implemented = [probe for probe in probes if probe.implemented]
     if [probe.label for probe in implemented] != [
         "API E2E",
+        "output-correctness that executes rather than reads",
         "language quality",
         "media artifacts",
         "access/quota/retention",
-        "output-correctness that executes rather than reads",
+        "security/observability",
     ]:
         failures.append(
-            "C3A-CP5 may implement only the API E2E, language-quality, media-artifacts, "
-            "access/quota/retention, and output-correctness probes."
+            "C3A-CP6 may implement only the API E2E, output-correctness, language-quality, "
+            "media-artifacts, access/quota/retention, and security/observability probes."
         )
     for probe in probes:
         env = dict(probe.env)
@@ -168,26 +214,13 @@ def validate_implemented_probe(probe: Probe) -> list[str]:
     failures: list[str] = []
     command = probe.command
     command_text = " ".join(command).lower()
+    expected_command = EXPECTED_IMPLEMENTED_COMMANDS.get(probe.label)
+    if expected_command is not None and command != expected_command:
+        failures.append(f"{probe.label} must dispatch {' '.join(expected_command)}.")
     if command[:3] != ("uv", "run", "pytest"):
         failures.append(f"{probe.label} must execute pytest through uv, not docs/prose helpers.")
     if "tests/acceptance/" not in command_text:
         failures.append(f"{probe.label} must target executable acceptance tests.")
-    if probe.label == "API E2E" and "tests/acceptance/test_checkpoint3_api_e2e.py" not in command:
-        failures.append("API E2E must dispatch tests/acceptance/test_checkpoint3_api_e2e.py.")
-    if probe.label == "language quality" and "tests/acceptance/test_checkpoint3_language_quality.py" not in command:
-        failures.append("language quality must dispatch tests/acceptance/test_checkpoint3_language_quality.py.")
-    if probe.label == "media artifacts" and "tests/acceptance/test_checkpoint3_media_artifacts.py" not in command:
-        failures.append("media artifacts must dispatch tests/acceptance/test_checkpoint3_media_artifacts.py.")
-    if (
-        probe.label == "access/quota/retention"
-        and "tests/acceptance/test_checkpoint3_access_quota_retention.py" not in command
-    ):
-        failures.append("access/quota/retention must dispatch tests/acceptance/test_checkpoint3_access_quota_retention.py.")
-    if (
-        probe.label == "output-correctness that executes rather than reads"
-        and "tests/acceptance/test_checkpoint3_output_correctness.py" not in command
-    ):
-        failures.append("output-correctness must dispatch tests/acceptance/test_checkpoint3_output_correctness.py.")
     forbidden_terms = ("docs/", "docs\\", "snapshot", "static", "prose")
     for term in forbidden_terms:
         if term in command_text:
