@@ -41,7 +41,7 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
     assert checkpoint3.main() == 1
 
     output = capsys.readouterr().out
-    assert len(calls) == 2
+    assert len(calls) == 3
     assert calls[0]["args"][0] == (
         "uv",
         "run",
@@ -53,20 +53,27 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
         "uv",
         "run",
         "pytest",
+        "tests/acceptance/test_checkpoint3_language_quality.py",
+        "-q",
+    )
+    assert calls[2]["args"][0] == (
+        "uv",
+        "run",
+        "pytest",
         "tests/acceptance/test_checkpoint3_output_correctness.py",
         "-q",
     )
     assert all(call["kwargs"]["shell"] is False for call in calls)
     assert all(call["kwargs"]["env"]["NARRATWIN_CP3_PRODUCT_FAITHFUL"] == "1" for call in calls)
     assert "PASS API E2E" in output
+    assert "PASS language quality" in output
     assert "PASS output-correctness that executes rather than reads" in output
-    assert "PLANNED language quality" in output
     assert "PLANNED media artifacts" in output
     assert "PLANNED access/quota/retention" in output
     assert "PLANNED security/observability" in output
     assert "PLANNED performance" in output
     assert "PLANNED real-browser E2E with no success-path interception" in output
-    assert "2 passed, 6 planned, 0 failed" in output
+    assert "3 passed, 5 planned, 0 failed" in output
 
 
 def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
@@ -97,11 +104,12 @@ def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
     assert checkpoint3.validate_probe_contract(checkpoint3.PROBES) == []
     assert [probe.label for probe in checkpoint3.PROBES if probe.implemented] == [
         "API E2E",
+        "language quality",
         "output-correctness that executes rather than reads",
     ]
     planned_reasons = [probe.planned_reason for probe in checkpoint3.PROBES if not probe.implemented]
     assert planned_reasons
-    assert all("CP1 and CP2" in reason for reason in planned_reasons)
+    assert all("CP1, CP2, and CP3" in reason for reason in planned_reasons)
 
 
 def test_checkpoint3_acceptance_rejects_docs_only_probe_commands() -> None:
@@ -141,6 +149,26 @@ def test_checkpoint3_acceptance_rejects_static_output_correctness_probe_command(
     failures = checkpoint3.validate_probe_contract(probes)
 
     assert any("output-correctness must dispatch tests/acceptance/test_checkpoint3_output_correctness.py" in failure for failure in failures)
+    assert any("must not target static content" in failure for failure in failures)
+
+
+def test_checkpoint3_acceptance_rejects_static_language_quality_probe_command() -> None:
+    probes = tuple(
+        checkpoint3.Probe(
+            label=probe.label,
+            command=("uv", "run", "pytest", "tests/fixtures/static_language_quality_snapshot.py", "-q"),
+            env=probe.env,
+            implemented=probe.implemented,
+            planned_reason=probe.planned_reason,
+        )
+        if probe.label == "language quality"
+        else probe
+        for probe in checkpoint3.PROBES
+    )
+
+    failures = checkpoint3.validate_probe_contract(probes)
+
+    assert any("language quality must dispatch tests/acceptance/test_checkpoint3_language_quality.py" in failure for failure in failures)
     assert any("must not target static content" in failure for failure in failures)
 
 
@@ -255,5 +283,5 @@ def test_make_checkpoint3_acceptance_invokes_executable_harness() -> None:
     assert "python3 scripts/quality/check_checkpoint3_acceptance.py" in result.stdout
     assert "Checkpoint 3 acceptance probe results:" in result.stdout
     assert "PASS API E2E" in result.stdout
+    assert "PASS language quality" in result.stdout
     assert "PASS output-correctness that executes rather than reads" in result.stdout
-    assert "PLANNED language quality" in result.stdout
