@@ -231,6 +231,19 @@ ISSUE_259_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/acceptance/test_checkpoint3_language_quality.py",
 }
+ISSUE_261_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-261.json",
+    "docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_checkpoint3_acceptance.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_checkpoint3_acceptance_gate.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/acceptance/test_checkpoint3_media_artifacts.py",
+}
 ISSUE_255_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-255.json",
     "docs/STATUS.md",
@@ -3593,6 +3606,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_257_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-259-c3a-cp3-language-quality":
         allowed_files = ISSUE_259_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-261-c3a-cp4-media-artifacts":
+        allowed_files = ISSUE_261_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-261-"):
+        allowed_files = set()
     elif branch.startswith("phase-1-closure-process-259-"):
         allowed_files = set()
     elif branch.startswith("phase-1-closure-process-257-"):
@@ -4762,6 +4779,127 @@ def check_issue259_c3a_cp3_preflight(failures: list[str]) -> None:
         fail(failures, f"{rel} missing C3A-CP3 preflight markers: " + ", ".join(missing_markers))
 
 
+def check_issue261_c3a_cp4_preflight(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md"
+    if not (ROOT / rel).is_file():
+        fail(failures, f"Missing required C3A-CP4 preflight artifact: {rel}")
+        return
+    text = read(rel)
+    normalized = re.sub(r"\s+", " ", text.lower())
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Objective",
+            "Scope",
+            "Source Facts",
+            "Positive Claims",
+            "Negative Invariants",
+            "Failure Matrix",
+            "Fan-Out Review Findings",
+            "Skill And Tool Selection Ledger",
+            "Stop Rule",
+        ),
+    )
+    required_urls = (
+        "https://fastapi.tiangolo.com/tutorial/testing/",
+        "https://fastapi.tiangolo.com/reference/testclient/",
+        "https://docs.python.org/3/library/subprocess.html#subprocess.run",
+        "https://docs.python.org/3/library/base64.html",
+        "https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue",
+        "https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html",
+    )
+    missing_urls = [url for url in required_urls if url not in text]
+    if missing_urls:
+        fail(failures, f"{rel} missing C3A-CP4 official source URLs: " + ", ".join(missing_urls))
+
+    required_markers = (
+        "Accessed date: 2026-07-22",
+        "C3A-CP4",
+        "public tracker issue `#249`",
+        "issue `#261`",
+        "make checkpoint3-acceptance",
+        "media artifacts",
+        "execute the local product/API path",
+        "must not pass by grepping docs",
+        "reading planning prose",
+        "checking static snapshots",
+        "canned success files",
+        "artifact-shape-only",
+        "approved synthetic non-NarraTwin project knowledge",
+        "API-visible idempotent replay",
+        "/api/v1/ops/status",
+        "acceptedScriptText",
+        "claimSupports",
+        "contextRefs",
+        "citationIndex",
+        "sourceEvaluationChecksum",
+        "contentBase64",
+        "checksum",
+        "mimeType",
+        "fileName",
+        "translatedScript",
+        "subtitles",
+        "voiceManifest",
+        "demoExport",
+        "renderManifest",
+        "videoExportPlaceholder",
+        "local/mock provider posture",
+        "no real media binary overclaim",
+        "no cloned identity",
+        "shell=False",
+        "timeout=120",
+        "C3A-CP4-HARNESS-001",
+        "C3A-CP4-MEDIA-001",
+        "C3A-CP4-RUNTIME-001",
+        "C3A-CP4-NONGOAL-001",
+        "C3A-CP4-FALSEPASS-001",
+        "C3A-CP4-ARTIFACT-001",
+        "C3A-CP4-BINDING-001",
+        "C3A-CP4-POSTURE-001",
+        "C3A-CP4-REPLAY-001",
+        "C3A-CP4-REDACTION-001",
+        "C3A-CP4-FM-001",
+        "C3A-CP4-FM-002",
+        "C3A-CP4-FM-003",
+        "C3A-CP4-FM-004",
+        "C3A-CP4-FM-005",
+        "C3A-CP4-FM-006",
+        "C3A-CP4-FM-007",
+        "C3A-CP4-FM-008",
+        "tests/acceptance/test_checkpoint3_media_artifacts.py::test_checkpoint3_media_artifacts_executes_runtime_api_artifact_path",
+        "tests/acceptance/test_checkpoint3_media_artifacts.py::test_checkpoint3_media_artifacts_rejects_artifact_shape_without_source_binding",
+        "tests/acceptance/test_checkpoint3_media_artifacts.py::test_checkpoint3_media_artifacts_rejects_checksum_or_mime_mismatch",
+        "tests/acceptance/test_checkpoint3_media_artifacts.py::test_checkpoint3_media_artifacts_rejects_real_media_or_clone_overclaim",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_rejects_static_media_artifacts_probe_command",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_redacts_runtime_evidence_fields",
+        "sub-agent",
+        "Cross-model review is skipped in this autonomous execution context",
+        "no browser/frontend scope is touched",
+        "access/quota/retention",
+        "security/observability",
+        "performance",
+        "real-browser E2E",
+        "cloned voice",
+        "cloned face",
+        "digital twin",
+        "real-person likeness",
+        "hosted deployment",
+        "public URL",
+        "provider setup",
+        "provider SDKs",
+        "real provider calls",
+        "paid spend",
+        "Checkpoint 3B",
+        "Checkpoint 3C",
+        "Stop and open a new issue",
+    )
+    missing_markers = [marker for marker in required_markers if marker.lower() not in normalized]
+    if missing_markers:
+        fail(failures, f"{rel} missing C3A-CP4 preflight markers: " + ", ".join(missing_markers))
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
@@ -4785,6 +4923,7 @@ def check_process_docs(failures: list[str]) -> None:
     check_issue253_c3a_cp1_preflight(failures)
     check_issue257_c3a_cp2_preflight(failures)
     check_issue259_c3a_cp3_preflight(failures)
+    check_issue261_c3a_cp4_preflight(failures)
     check_required_headings(
         failures,
         pr_template,
