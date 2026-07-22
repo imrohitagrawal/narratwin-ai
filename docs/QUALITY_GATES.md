@@ -36,7 +36,7 @@ The `Makefile` must expose:
 | `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
 | `make final-review-quality` | Runs executable Final Review artifact checks |
 | `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
-| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, and C3A-CP3 language-quality probes implemented, and later probes reported as planned/non-passing |
+| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, and C3A-CP4 media-artifacts probes implemented, and later probes reported as planned/non-passing |
 | `make lint` | Runs backend Ruff and frontend ESLint |
 | `make typecheck` | Runs backend mypy and frontend TypeScript checks |
 | `make test` | Runs backend unit tests and frontend unit tests |
@@ -562,15 +562,28 @@ short citation-bearing output, debug/internal leakage, malformed citation
 placement, cross-project language insertion, and style text without runtime API
 evidence.
 
+C3A-CP4 implements the fourth executable probe, media artifacts, by dispatching
+`uv run pytest tests/acceptance/test_checkpoint3_media_artifacts.py -q`
+through the same local/mock API path. The media-artifacts probe verifies
+runtime Stage 6 and Stage 7 local/mock artifact evidence: translated script,
+subtitles, voice manifest, synthetic-avatar consent, demo HTML, render manifest,
+and video-export placeholder. It checks artifact MIME type, safe filename,
+Base64 content, checksum, source-run/evaluation/citation/context/claim-support
+binding, local/mock provider posture, idempotent API replay, no real media
+binary overclaim, no cloned identity, and bounded ops record-count evidence. It
+includes negative coverage for docs/prose/static or canned-success
+substitutions, artifact-shape-only evidence without source binding, checksum or
+MIME mismatch, real-media overclaim, and cloned-identity overclaim.
+
 The target is not part of `make quality` yet and must still return nonzero while
-later Checkpoint 3A probes remain planned for media artifacts,
-access/quota/retention, security/observability, performance, and real-browser
-E2E with no success-path interception. The harness must reject docs/prose/static-
-snapshot command substitutions for implemented probes, run implemented probes
-with `subprocess.run(..., shell=False, timeout=120)`, and summarize failed probe
+later Checkpoint 3A probes remain planned for access/quota/retention,
+security/observability, performance, and real-browser E2E with no success-path
+interception. The harness must reject docs/prose/static-snapshot command
+substitutions for implemented probes, run implemented probes with
+`subprocess.run(..., shell=False, timeout=120)`, and summarize failed probe
 output with bounded/redacted text. It must not claim Checkpoint 3A,
-hosted/public demo, provider, cloned-identity, or production-readiness success
-from CP1, CP2, or CP3 alone.
+hosted/public demo, provider, cloned-identity, real-media, or
+production-readiness success from CP1, CP2, CP3, or CP4 alone.
 
 The repository guardrail also checks PR body content on pull-request events:
 generic PRs must use reference-only issue linkage such as `Refs #<issue>` and

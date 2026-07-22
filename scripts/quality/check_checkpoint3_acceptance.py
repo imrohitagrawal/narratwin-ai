@@ -32,7 +32,9 @@ SENSITIVE_OUTPUT_PATTERNS = (
     re.compile(r"(?i)(secret|token|provider payload|raw upload|raw prompt|generated script|private identifier)[^\n]*"),
     re.compile(r"(?i)(api[_-]?key|authorization|bearer)\s*[:=]\s*['\"]?[^'\"\s]+"),
     re.compile(
-        r"(?i)(acceptedScriptText|claimText|contextRefs|claimSupports|evidenceSnapshot|redactedExcerpt)[^\n]*"
+        r"(?i)(acceptedScriptText|sourceScriptText|translatedScriptText|subtitlesText|contentBase64|demoExport|"
+        r"renderManifest|videoExportPlaceholder|voiceManifest|fileName|checksum|claimText|contextRefs|"
+        r"claimSupports|sourceClaimSupportIds|evidenceSnapshot|redactedExcerpt)[^\n]*"
     ),
 )
 
@@ -73,29 +75,29 @@ PROBES: tuple[Probe, ...] = (
         label="media artifacts",
         command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_media_artifacts.py", "-q"),
         env=((PRODUCT_FAITHFUL_ENV, "1"),),
-        implemented=False,
-        planned_reason="future C3A probe; CP1, CP2, and CP3 do not implement media artifacts",
+        implemented=True,
+        planned_reason="",
     ),
     Probe(
         label="access/quota/retention",
         command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_access_quota_retention.py", "-q"),
         env=((PRODUCT_FAITHFUL_ENV, "1"),),
         implemented=False,
-        planned_reason="future C3A probe; CP1, CP2, and CP3 do not implement access, quota, retention, or deletion evidence",
+        planned_reason="future C3A probe; CP1, CP2, CP3, and CP4 do not implement access, quota, retention, or deletion evidence",
     ),
     Probe(
         label="security/observability",
         command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_security_observability.py", "-q"),
         env=((PRODUCT_FAITHFUL_ENV, "1"),),
         implemented=False,
-        planned_reason="future C3A probe; CP1, CP2, and CP3 include only API E2E, output-correctness, and language-quality security/observability assertions",
+        planned_reason="future C3A probe; CP1, CP2, CP3, and CP4 include only API E2E, output-correctness, language-quality, and media-artifact assertions",
     ),
     Probe(
         label="performance",
         command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_performance.py", "-q"),
         env=((PRODUCT_FAITHFUL_ENV, "1"),),
         implemented=False,
-        planned_reason="future C3A probe; CP1, CP2, and CP3 make no performance acceptance claim",
+        planned_reason="future C3A probe; CP1, CP2, CP3, and CP4 make no performance acceptance claim",
     ),
     Probe(
         label="real-browser E2E with no success-path interception",
@@ -110,7 +112,7 @@ PROBES: tuple[Probe, ...] = (
         ),
         env=((PRODUCT_FAITHFUL_ENV, "1"), ("NARRATWIN_REAL_STACK", "1")),
         implemented=False,
-        planned_reason="future C3A probe; CP1, CP2, and CP3 touch no browser or frontend scope",
+        planned_reason="future C3A probe; CP1, CP2, CP3, and CP4 touch no browser or frontend scope",
     ),
     Probe(
         label="output-correctness that executes rather than reads",
@@ -137,9 +139,10 @@ def validate_probe_contract(probes: Sequence[Probe]) -> list[str]:
     if [probe.label for probe in implemented] != [
         "API E2E",
         "language quality",
+        "media artifacts",
         "output-correctness that executes rather than reads",
     ]:
-        failures.append("C3A-CP3 may implement only the API E2E, language-quality, and output-correctness probes.")
+        failures.append("C3A-CP4 may implement only the API E2E, language-quality, media-artifacts, and output-correctness probes.")
     for probe in probes:
         env = dict(probe.env)
         if env.get(PRODUCT_FAITHFUL_ENV) != "1":
@@ -163,6 +166,8 @@ def validate_implemented_probe(probe: Probe) -> list[str]:
         failures.append("API E2E must dispatch tests/acceptance/test_checkpoint3_api_e2e.py.")
     if probe.label == "language quality" and "tests/acceptance/test_checkpoint3_language_quality.py" not in command:
         failures.append("language quality must dispatch tests/acceptance/test_checkpoint3_language_quality.py.")
+    if probe.label == "media artifacts" and "tests/acceptance/test_checkpoint3_media_artifacts.py" not in command:
+        failures.append("media artifacts must dispatch tests/acceptance/test_checkpoint3_media_artifacts.py.")
     if (
         probe.label == "output-correctness that executes rather than reads"
         and "tests/acceptance/test_checkpoint3_output_correctness.py" not in command

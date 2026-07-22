@@ -235,6 +235,32 @@ def run_issue259_preflight_check(
     return failures
 
 
+def run_issue261_preflight_check(
+    monkeypatch: Any, *, preflight_text: str | None = None, missing: bool = False
+) -> list[str]:
+    if preflight_text is not None:
+        monkeypatch.setattr(
+            phase1,
+            "read",
+            read_with_overrides(
+                phase1,
+                {"docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md": preflight_text},
+            ),
+        )
+    failures: list[str] = []
+    if missing:
+        original_is_file = cast(Callable[[Path], bool], phase1.Path.is_file)
+
+        def patched_is_file(path: Path) -> bool:
+            if str(path).endswith("docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md"):
+                return False
+            return original_is_file(path)
+
+        monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
+    phase1.check_issue261_c3a_cp4_preflight(failures)
+    return failures
+
+
 def run_issue39_ch11_contract_check(
     monkeypatch: Any,
     *,
@@ -1343,6 +1369,76 @@ def test_issue_259_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_261_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-261-c3a-cp4-media-artifacts"
+    allowed = [
+        "docs/governance/preflights/issue-261.json",
+        "docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_checkpoint3_acceptance.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_checkpoint3_acceptance_gate.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "tests/acceptance/test_checkpoint3_media_artifacts.py",
+    ]
+    assert phase1.ISSUE_261_ALLOWED_CHANGED_FILES == set(allowed)
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "tests/acceptance/test_checkpoint3_language_quality.py",
+            "backend/app/main.py",
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+            "frontend/package.json",
+            "frontend/package-lock.json",
+            "pyproject.toml",
+            "uv.lock",
+            "backend/app/stage6.py",
+            "backend/app/stage7.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change tests/acceptance/test_checkpoint3_language_quality.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/main.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package-lock.json.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+    ]
+
+
+def test_issue_261_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-261-c3a-cp4-media-artifacts-extra"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-261.json",
+            "docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md",
+            "docs/STATUS.md",
+            "scripts/quality/check_checkpoint3_acceptance.py",
+            "tests/acceptance/test_checkpoint3_media_artifacts.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-261.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md.",
+        f"Phase 1 Closure branch {branch} may not change docs/STATUS.md.",
+        f"Phase 1 Closure branch {branch} may not change scripts/quality/check_checkpoint3_acceptance.py.",
+        f"Phase 1 Closure branch {branch} may not change tests/acceptance/test_checkpoint3_media_artifacts.py.",
+    ]
+
+
 def test_issue_255_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-255-post-pr-254-status-reconcile"
     allowed = [
@@ -1506,6 +1602,50 @@ def test_issue_259_preflight_contract_rejects_missing_markers(
 def test_issue_259_missing_preflight_reports_failure(monkeypatch: Any) -> None:
     assert run_issue259_preflight_check(monkeypatch, missing=True) == [
         "Missing required C3A-CP3 preflight artifact: docs/reviews/ISSUE_259_C3A_CP3_PREFLIGHT.md"
+    ]
+
+
+def test_issue_261_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue261_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "https://docs.python.org/3/library/base64.html",
+        "C3A-CP4-HARNESS-001",
+        "C3A-CP4-FM-002",
+        "tests/acceptance/test_checkpoint3_media_artifacts.py::test_checkpoint3_media_artifacts_executes_runtime_api_artifact_path",
+        "tests/acceptance/test_checkpoint3_media_artifacts.py::test_checkpoint3_media_artifacts_rejects_artifact_shape_without_source_binding",
+        "artifact-shape-only",
+        "sourceEvaluationChecksum",
+        "contentBase64",
+        "translatedScript",
+        "voiceManifest",
+        "renderManifest",
+        "videoExportPlaceholder",
+        "local/mock provider posture",
+        "no real media binary overclaim",
+        "Cross-model review is skipped in this autonomous execution context",
+        "no browser/frontend scope is touched",
+        "Stop and open a new issue",
+    ),
+)
+def test_issue_261_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue261_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
+
+
+def test_issue_261_missing_preflight_reports_failure(monkeypatch: Any) -> None:
+    assert run_issue261_preflight_check(monkeypatch, missing=True) == [
+        "Missing required C3A-CP4 preflight artifact: docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md"
     ]
 
 
@@ -1706,16 +1846,20 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "post-PR-250 status reconciliation tracked by issue `#251` and PR `#252`",
         "Issue `#253` is closed after PR `#254` merged the first Checkpoint 3A child implementation checkpoint",
         "Issue `#257` is closed after PR `#258` merged the second Checkpoint 3A child implementation checkpoint",
-        "Issue `#259` is satisfied by this PR when merged as the third Checkpoint 3A child implementation checkpoint",
-        "checkpoint3a-cp3-language-quality-complete",
+        "Issue `#259` is closed after PR `#260` merged the third Checkpoint 3A child implementation checkpoint",
+        "Issue `#261` is satisfied by this PR when merged as the fourth Checkpoint 3A child implementation checkpoint",
+        "checkpoint3a-cp4-media-artifacts-complete",
         "`#254` | Merged | 2026-07-22",
         "`#258` | Merged | 2026-07-22",
+        "`#260` | Merged | 2026-07-22",
         "post-merge main quality workflow run `29925008358` passing",
+        "post-merge main quality workflow run `29937721472` passing",
         "This state does not complete Checkpoint 3A",
         "remaining planned probes",
     ):
         assert marker in normalized_status
     assert "C3A-CP1 PR | Pending" not in normalized_status
+    assert "Issue `#259` is satisfied by this PR when merged" not in normalized_status
 
 
 def test_status_state_v1_contract_rejects_duplicate_authority_section() -> None:

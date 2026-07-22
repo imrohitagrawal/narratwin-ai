@@ -41,7 +41,7 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
     assert checkpoint3.main() == 1
 
     output = capsys.readouterr().out
-    assert len(calls) == 3
+    assert len(calls) == 4
     assert calls[0]["args"][0] == (
         "uv",
         "run",
@@ -60,6 +60,13 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
         "uv",
         "run",
         "pytest",
+        "tests/acceptance/test_checkpoint3_media_artifacts.py",
+        "-q",
+    )
+    assert calls[3]["args"][0] == (
+        "uv",
+        "run",
+        "pytest",
         "tests/acceptance/test_checkpoint3_output_correctness.py",
         "-q",
     )
@@ -67,13 +74,13 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
     assert all(call["kwargs"]["env"]["NARRATWIN_CP3_PRODUCT_FAITHFUL"] == "1" for call in calls)
     assert "PASS API E2E" in output
     assert "PASS language quality" in output
+    assert "PASS media artifacts" in output
     assert "PASS output-correctness that executes rather than reads" in output
-    assert "PLANNED media artifacts" in output
     assert "PLANNED access/quota/retention" in output
     assert "PLANNED security/observability" in output
     assert "PLANNED performance" in output
     assert "PLANNED real-browser E2E with no success-path interception" in output
-    assert "3 passed, 5 planned, 0 failed" in output
+    assert "4 passed, 4 planned, 0 failed" in output
 
 
 def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
@@ -105,11 +112,12 @@ def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
     assert [probe.label for probe in checkpoint3.PROBES if probe.implemented] == [
         "API E2E",
         "language quality",
+        "media artifacts",
         "output-correctness that executes rather than reads",
     ]
     planned_reasons = [probe.planned_reason for probe in checkpoint3.PROBES if not probe.implemented]
     assert planned_reasons
-    assert all("CP1, CP2, and CP3" in reason for reason in planned_reasons)
+    assert all("CP1, CP2, CP3, and CP4" in reason for reason in planned_reasons)
 
 
 def test_checkpoint3_acceptance_rejects_docs_only_probe_commands() -> None:
@@ -169,6 +177,26 @@ def test_checkpoint3_acceptance_rejects_static_language_quality_probe_command() 
     failures = checkpoint3.validate_probe_contract(probes)
 
     assert any("language quality must dispatch tests/acceptance/test_checkpoint3_language_quality.py" in failure for failure in failures)
+    assert any("must not target static content" in failure for failure in failures)
+
+
+def test_checkpoint3_acceptance_rejects_static_media_artifacts_probe_command() -> None:
+    probes = tuple(
+        checkpoint3.Probe(
+            label=probe.label,
+            command=("uv", "run", "pytest", "tests/fixtures/static_media_artifacts_snapshot.py", "-q"),
+            env=probe.env,
+            implemented=probe.implemented,
+            planned_reason=probe.planned_reason,
+        )
+        if probe.label == "media artifacts"
+        else probe
+        for probe in checkpoint3.PROBES
+    )
+
+    failures = checkpoint3.validate_probe_contract(probes)
+
+    assert any("media artifacts must dispatch tests/acceptance/test_checkpoint3_media_artifacts.py" in failure for failure in failures)
     assert any("must not target static content" in failure for failure in failures)
 
 
@@ -250,6 +278,38 @@ def test_checkpoint3_acceptance_redacts_runtime_evidence_fields() -> None:
     assert "chunkChecksum" not in output
 
 
+def test_checkpoint3_acceptance_redacts_media_artifact_fields() -> None:
+    output = checkpoint3.summarize_failure_output(
+        "\n".join(
+            (
+                "contentBase64: TWVkaWEgYnl0ZXM=",
+                "sourceScriptText: MEDIA-SENTINEL-CP4 generated body",
+                "translatedScriptText: translated generated body",
+                "subtitlesText: subtitle generated body",
+                "demoExport: <html>local demo body</html>",
+                "renderManifest: {'fileName': 'demo.html', 'checksum': 'sha256:artifact'}",
+                "videoExportPlaceholder: {'contentBase64': 'ZXhwb3J0'}",
+                "sourceClaimSupportIds: ['claim-static-fixture']",
+            )
+        )
+    )
+
+    assert "contentBase64" not in output
+    assert "TWVkaWEgYnl0ZXM=" not in output
+    assert "sourceScriptText" not in output
+    assert "MEDIA-SENTINEL-CP4 generated body" not in output
+    assert "translatedScriptText" not in output
+    assert "subtitlesText" not in output
+    assert "demoExport" not in output
+    assert "local demo body" not in output
+    assert "renderManifest" not in output
+    assert "fileName" not in output
+    assert "checksum" not in output
+    assert "videoExportPlaceholder" not in output
+    assert "sourceClaimSupportIds" not in output
+    assert "claim-static-fixture" not in output
+
+
 def test_checkpoint3_acceptance_timeout_is_bounded_and_redacted(monkeypatch: Any) -> None:
     def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
         raise subprocess.TimeoutExpired(
@@ -284,4 +344,5 @@ def test_make_checkpoint3_acceptance_invokes_executable_harness() -> None:
     assert "Checkpoint 3 acceptance probe results:" in result.stdout
     assert "PASS API E2E" in result.stdout
     assert "PASS language quality" in result.stdout
+    assert "PASS media artifacts" in result.stdout
     assert "PASS output-correctness that executes rather than reads" in result.stdout
