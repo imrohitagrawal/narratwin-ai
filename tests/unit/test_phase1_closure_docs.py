@@ -1057,6 +1057,74 @@ def test_issue_249_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_253_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-253-c3a-cp1-acceptance-api-e2e"
+    allowed = [
+        "docs/governance/preflights/issue-253.json",
+        "docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_checkpoint3_acceptance.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_checkpoint3_acceptance_gate.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "tests/acceptance/test_checkpoint3_api_e2e.py",
+    ]
+    assert phase1.ISSUE_253_ALLOWED_CHANGED_FILES == set(allowed)
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "backend/app/main.py",
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+            "frontend/package.json",
+            "frontend/package-lock.json",
+            "pyproject.toml",
+            "uv.lock",
+            "backend/app/stage6.py",
+            "backend/app/stage7.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change backend/app/main.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package-lock.json.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+    ]
+
+
+def test_issue_253_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-253-c3a-cp1-acceptance-api-e2e-extra"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-253.json",
+            "docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md",
+            "docs/STATUS.md",
+            "scripts/quality/check_checkpoint3_acceptance.py",
+            "tests/acceptance/test_checkpoint3_api_e2e.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-253.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md.",
+        f"Phase 1 Closure branch {branch} may not change docs/STATUS.md.",
+        f"Phase 1 Closure branch {branch} may not change scripts/quality/check_checkpoint3_acceptance.py.",
+        f"Phase 1 Closure branch {branch} may not change tests/acceptance/test_checkpoint3_api_e2e.py.",
+    ]
+
+
 def test_issue_249_preflight_contract_is_complete(monkeypatch: Any) -> None:
     text = Path("docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md").read_text(encoding="utf-8")
 

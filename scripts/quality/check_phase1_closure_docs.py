@@ -192,6 +192,19 @@ ISSUE_249_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_checkpoint3_acceptance_gate.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_253_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-253.json",
+    "docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_checkpoint3_acceptance.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_checkpoint3_acceptance_gate.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/acceptance/test_checkpoint3_api_e2e.py",
+}
 ISSUE_172_ALLOWED_CHANGED_FILES = {
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -3542,6 +3555,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_247_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-249-checkpoint3a-planning-guardrails":
         allowed_files = ISSUE_249_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-253-c3a-cp1-acceptance-api-e2e":
+        allowed_files = ISSUE_253_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-253-"):
+        allowed_files = set()
     elif branch.startswith("phase-1-closure-process-249-"):
         allowed_files = set()
     elif branch.startswith("phase-1-closure-process-245-"):
