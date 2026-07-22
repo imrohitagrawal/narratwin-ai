@@ -840,6 +840,41 @@ does not authorize Checkpoint 3A completion, Checkpoint 3B, Checkpoint 3C,
 providers, paid spend, hosted deployment, public URL, cloned identity, frontend
 browser implementation, public distribution, or production-readiness claims.
 
+Issue `#257` is the bounded C3A-CP2 child implementation branch for the
+Checkpoint 3A executable output-correctness probe only. Branch
+`phase-1-closure-process-257-c3a-cp2-output-correctness` may implement the
+output-correctness probe in `make checkpoint3-acceptance`, keep the API E2E
+foundation probe passing, keep later Checkpoint 3A probes planned/non-passing,
+add old-behavior false-pass regressions, record sub-agent fan-out findings, and
+update only these public-safe files:
+
+- `docs/governance/preflights/issue-257.json`
+- `docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_checkpoint3_acceptance.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_checkpoint3_acceptance_gate.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/acceptance/test_checkpoint3_output_correctness.py`
+
+C3A-CP2 must execute the local FastAPI product/API path for approved synthetic
+project knowledge, ingestion/chunk/store, grounded walkthrough generation,
+idempotent API replay, and runtime output/evidence checks. Required output
+facts must be accepted only when bound to visible citations, `contextRefs`,
+`claimSupports`, project/document/chunk identity, source checksums, and
+`evidenceSnapshot` data returned through API-visible behavior. It must reject
+docs/prose/static-snapshot or canned-success false passes, correct-looking text
+without evidence binding, unsupported generated claims, and cross-project fact
+replay. Later language quality, media artifacts, access/quota/retention,
+security/observability, performance, and real-browser E2E probes remain future
+Checkpoint 3A child work. The issue does not authorize Checkpoint 3A completion,
+Checkpoint 3B, Checkpoint 3C, providers, paid spend, hosted deployment, public
+URL, cloned identity, frontend browser implementation, public distribution, or
+production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

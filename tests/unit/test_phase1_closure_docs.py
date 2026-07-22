@@ -1565,6 +1565,8 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "Issue `#249` remains open as the public Checkpoint 3 tracker",
         "post-PR-250 status reconciliation tracked by issue `#251` and PR `#252`",
         "Issue `#253` is closed after PR `#254` merged the first Checkpoint 3A child implementation checkpoint",
+        "Issue `#257` is satisfied by this PR when merged as the second Checkpoint 3A child implementation checkpoint",
+        "checkpoint3a-cp2-output-correctness-complete",
         "`#254` | Merged | 2026-07-22",
         "post-merge main quality workflow run `29925008358` passing",
         "This state does not complete Checkpoint 3A",
