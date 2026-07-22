@@ -1451,10 +1451,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #249 / checkpoint3a-planning-guardrails",
-        "checkpoint3a-planning-active",
-        "checkpoint3a-planning-active",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. Issue #249 is the public-safe tracker for C3-PR1 planning and guardrails only: Checkpoint 3A non-cloned product-faithful controlled local demo first, Checkpoint 3B cloned identity consent/provenance planning later, Checkpoint 3C clone-integrated controlled demo after those gates, and production later. This state authorizes no product runtime implementation beyond a failing-by-design acceptance-gate skeleton. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden.",
+        "issue #249 / checkpoint3a-next-child-selection",
+        "checkpoint3a-planning-guardrails-complete",
+        "checkpoint3a-planning-guardrails-complete",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issue #249 remains open as the public Checkpoint 3 tracker and the next approved action is a future issue-linked Checkpoint 3A child implementation slice selected from the public-safe breakdown. This state authorizes no product runtime implementation beyond the failing-by-design acceptance-gate skeleton added by PR #250 until a child issue, branch, PR, and gates explicitly authorize that slice. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
