@@ -287,6 +287,32 @@ def run_issue263_preflight_check(
     return failures
 
 
+def run_issue265_preflight_check(
+    monkeypatch: Any, *, preflight_text: str | None = None, missing: bool = False
+) -> list[str]:
+    if preflight_text is not None:
+        monkeypatch.setattr(
+            phase1,
+            "read",
+            read_with_overrides(
+                phase1,
+                {"docs/reviews/ISSUE_265_C3A_CP6_PREFLIGHT.md": preflight_text},
+            ),
+        )
+    failures: list[str] = []
+    if missing:
+        original_is_file = cast(Callable[[Path], bool], phase1.Path.is_file)
+
+        def patched_is_file(path: Path) -> bool:
+            if str(path).endswith("docs/reviews/ISSUE_265_C3A_CP6_PREFLIGHT.md"):
+                return False
+            return original_is_file(path)
+
+        monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
+    phase1.check_issue265_c3a_cp6_preflight(failures)
+    return failures
+
+
 def run_issue39_ch11_contract_check(
     monkeypatch: Any,
     *,
@@ -1535,6 +1561,76 @@ def test_issue_263_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_265_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-265-c3a-cp6-security-observability"
+    allowed = [
+        "docs/governance/preflights/issue-265.json",
+        "docs/reviews/ISSUE_265_C3A_CP6_PREFLIGHT.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_checkpoint3_acceptance.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_checkpoint3_acceptance_gate.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "tests/acceptance/test_checkpoint3_security_observability.py",
+    ]
+    assert phase1.ISSUE_265_ALLOWED_CHANGED_FILES == set(allowed)
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "tests/acceptance/test_checkpoint3_access_quota_retention.py",
+            "backend/app/main.py",
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+            "frontend/package.json",
+            "frontend/package-lock.json",
+            "pyproject.toml",
+            "uv.lock",
+            "backend/app/stage6.py",
+            "backend/app/stage7.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change tests/acceptance/test_checkpoint3_access_quota_retention.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/main.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package-lock.json.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+    ]
+
+
+def test_issue_265_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-265-c3a-cp6-security-observability-extra"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-265.json",
+            "docs/reviews/ISSUE_265_C3A_CP6_PREFLIGHT.md",
+            "docs/STATUS.md",
+            "scripts/quality/check_checkpoint3_acceptance.py",
+            "tests/acceptance/test_checkpoint3_security_observability.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-265.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/reviews/ISSUE_265_C3A_CP6_PREFLIGHT.md.",
+        f"Phase 1 Closure branch {branch} may not change docs/STATUS.md.",
+        f"Phase 1 Closure branch {branch} may not change scripts/quality/check_checkpoint3_acceptance.py.",
+        f"Phase 1 Closure branch {branch} may not change tests/acceptance/test_checkpoint3_security_observability.py.",
+    ]
+
+
 def test_issue_255_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-255-post-pr-254-status-reconcile"
     allowed = [
@@ -1790,6 +1886,62 @@ def test_issue_263_missing_preflight_reports_failure(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_265_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_265_C3A_CP6_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue265_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+        "C3A-CP6-HARNESS-001",
+        "C3A-CP6-FM-002",
+        "tests/acceptance/test_checkpoint3_security_observability.py::test_checkpoint3_security_observability_executes_runtime_api_boundary_path",
+        "tests/acceptance/test_checkpoint3_security_observability.py::test_checkpoint3_security_observability_rejects_static_or_unbound_evidence",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_redacts_security_observability_evidence_fields",
+        "runtime API-visible security controls",
+        "privacy/redaction",
+        "observability metadata",
+        "bounded failure evidence",
+        "docs/prose/static-snapshot",
+        "canned success",
+        "runtime nonce",
+        "source/run binding",
+        "cross-project replay",
+        "idempotency replay",
+        "prompt-injection",
+        "SECRET_LIKE_CONTENT",
+        "PROMPT_INJECTION_DETECTED",
+        "UNSAFE_DOCUMENT_CONTENT",
+        "UNSUPPORTED_PROJECT_FACT",
+        "local/mock provider",
+        "no hosted deployment",
+        "no provider setup",
+        "no cloned identity",
+        "no production-readiness claim",
+        "Issue #249 remains open",
+        "Cross-model review is skipped in this autonomous execution context",
+        "Stop and open a new issue",
+    ),
+)
+def test_issue_265_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_265_C3A_CP6_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue265_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
+
+
+def test_issue_265_missing_preflight_reports_failure(monkeypatch: Any) -> None:
+    assert run_issue265_preflight_check(monkeypatch, missing=True) == [
+        "Missing required C3A-CP6 preflight artifact: docs/reviews/ISSUE_265_C3A_CP6_PREFLIGHT.md"
+    ]
+
+
 def test_issue_249_preflight_contract_is_complete(monkeypatch: Any) -> None:
     text = Path("docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md").read_text(encoding="utf-8")
 
@@ -1989,13 +2141,16 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "Issue `#257` is closed after PR `#258` merged the second Checkpoint 3A child implementation checkpoint",
         "Issue `#259` is closed after PR `#260` merged the third Checkpoint 3A child implementation checkpoint",
         "Issue `#261` is closed after PR `#262` merged the fourth Checkpoint 3A child implementation checkpoint",
-        "Issue `#263` is satisfied by this PR when merged as the fifth Checkpoint 3A child implementation checkpoint",
-        "checkpoint3a-cp5-access-quota-retention-complete",
+        "Issue `#263` is closed after PR `#264` merged the fifth Checkpoint 3A child implementation checkpoint",
+        "Issue `#265` is satisfied by this PR when merged as the sixth Checkpoint 3A child implementation checkpoint",
+        "checkpoint3a-cp6-security-observability-satisfied-by-this-pr",
         "`#254` | Merged | 2026-07-22",
         "`#258` | Merged | 2026-07-22",
         "`#260` | Merged | 2026-07-22",
         "`#262` | Merged | 2026-07-22",
+        "`#264` | Merged | 2026-07-23",
         "`58e6ac473bb2cbcd5e99a64007a1cc862117217c`",
+        "`de0cdb0c5337a980e478cb3e6b42d2b031909f31`",
         "post-merge main quality workflow run `29925008358` passing",
         "post-merge main quality workflow run `29937721472` passing",
         "This state does not complete Checkpoint 3A",

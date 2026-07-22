@@ -994,6 +994,49 @@ deployment, public URL, cloned identity, frontend browser implementation,
 backend/frontend/provider/dependency changes, real media binaries, public
 distribution, or production-readiness claims.
 
+Issue `#265` is the bounded C3A-CP6 child implementation branch for the
+Checkpoint 3A executable security/observability probe only. Branch
+`phase-1-closure-265-c3a-cp6-security-observability` may implement the
+security/observability probe in `make checkpoint3-acceptance`, keep the API E2E
+foundation, output-correctness, language-quality, media-artifacts, and
+access/quota/retention probes passing, keep later Checkpoint 3A probes
+planned/non-passing, add old-behavior false-pass regressions, record fan-out
+findings, bundle the PR `#264` / issue `#263` ledger cleanup because this is a
+substantive child checkpoint, and update only these public-safe files:
+
+- `docs/governance/preflights/issue-265.json`
+- `docs/reviews/ISSUE_265_C3A_CP6_PREFLIGHT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_checkpoint3_acceptance.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_checkpoint3_acceptance_gate.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/acceptance/test_checkpoint3_security_observability.py`
+
+C3A-CP6 must execute the local FastAPI product/API path for approved synthetic
+project knowledge, upload/approval/ingestion, grounded walkthrough generation,
+runtime API-visible security controls, privacy/redaction behavior,
+observability metadata, bounded failure evidence, local/mock provider posture,
+and anti-false-pass guarantees. It must reject docs/prose/static-snapshot or
+canned-success false passes, style-only/status-only text, success-shaped
+dictionaries without acceptance-runtime nonce/source/run binding, missing trace/run/
+evaluation/observability binding, unapproved or prompt-injection-bearing
+knowledge where policy forbids it, unsupported claim acceptance, cross-project
+replay with valid-looking IDs, same-payload cross-actor access attempts with a
+reused idempotency key, same-actor idempotency conflicts that attempt to bypass
+security, project, source-run, or evidence boundaries, unsafe replay, and public
+failure output that leaks raw uploaded content, prompt-injection
+text, private-looking markers, token/password/secret/api-key values, or
+snake_case variants. Later performance and real-browser E2E probes remain
+future Checkpoint 3A child work. The issue does not authorize Checkpoint 3A
+completion, Checkpoint 3B, Checkpoint 3C, providers, paid spend, hosted
+deployment, public URL, cloned identity, frontend browser implementation,
+backend implementation, provider/dependency changes, real media binaries,
+public distribution, or production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:
