@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterator
-from copy import deepcopy
 from typing import Any, cast
 
 import pytest
@@ -80,6 +79,34 @@ class CrossProjectFactProvider:
                     text=BEACON_CROSS_PROJECT_FACT,
                     citation_index=1,
                     chunk_id=context.chunk.chunk_id,
+                    script_span_start=0,
+                    script_span_end=len(sentence),
+                )
+            ],
+        )
+
+
+class CorrectTextMissingEvidenceProvider:
+    provider = "mock"
+    provider_mode = "LOCAL"
+
+    def generate_script(
+        self,
+        *,
+        audience: str,
+        prompt: str,
+        retrieved_context: list[RetrievedContext],
+    ) -> GeneratedScript:
+        del audience, prompt, retrieved_context
+        sentence = f"{REQUIRED_ATLAS_FACT} [1]"
+        return GeneratedScript(
+            text=sentence,
+            claims=[
+                ScriptClaim(
+                    claim_id="claim_correct_text_missing_evidence_001",
+                    text=REQUIRED_ATLAS_FACT,
+                    citation_index=1,
+                    chunk_id="missing-runtime-evidence-chunk",
                     script_span_start=0,
                     script_span_end=len(sentence),
                 )
@@ -279,13 +306,15 @@ def test_checkpoint3_output_correctness_executes_runtime_api_evidence_path() -> 
 
 def test_checkpoint3_output_correctness_rejects_correct_text_without_evidence_binding() -> None:
     client = TestClient(app)
-    project, document = prepare_approved_project(
+    project, _document = prepare_approved_project(
         client,
         prefix="output-binding",
         name="Atlas Output",
         filename="atlas_output.md",
         content=ATLAS_OUTPUT_KNOWLEDGE,
     )
+    stage4_service.llm = cast(Any, CorrectTextMissingEvidenceProvider())
+
     run = generate_walkthrough(
         client,
         prefix="output-binding",
@@ -293,27 +322,13 @@ def test_checkpoint3_output_correctness_rejects_correct_text_without_evidence_bi
         prompt="Create a grounded walkthrough for Atlas Output using only approved source facts.",
     )
 
-    missing_support = deepcopy(run)
-    missing_support["evaluation"]["claimSupports"] = []
-    with pytest.raises(AssertionError):
-        assert_runtime_output_fact_is_grounded(
-            missing_support,
-            project_id=project["projectId"],
-            document=document,
-            required_fact=REQUIRED_ATLAS_FACT,
-        )
-
-    mismatched_evidence = deepcopy(run)
-    mismatched_evidence["evaluation"]["claimSupports"][0]["evidenceSnapshot"]["redactedExcerpt"] = (
-        "Correct-looking script text without bound runtime evidence."
-    )
-    with pytest.raises(AssertionError):
-        assert_runtime_output_fact_is_grounded(
-            mismatched_evidence,
-            project_id=project["projectId"],
-            document=document,
-            required_fact=REQUIRED_ATLAS_FACT,
-        )
+    assert run["status"] == "FAILED"
+    assert run["evaluationStatus"] == "FAILED"
+    assert "acceptedScriptText" not in run
+    assert run["failure"]["reasonCode"] == "UNSUPPORTED_PROJECT_FACT"
+    assert "evaluation" not in run
+    assert run["failure"]["unsupportedClaimCount"] > 0
+    assert REQUIRED_ATLAS_FACT in run["redactedUnsupportedExcerpts"][0]
 
 
 def test_checkpoint3_output_correctness_rejects_unsupported_claim_acceptance() -> None:
