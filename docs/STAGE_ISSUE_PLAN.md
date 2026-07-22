@@ -954,6 +954,46 @@ hosted deployment, public URL, cloned identity, frontend browser
 implementation, backend/frontend/provider/dependency changes, real media
 binaries, public distribution, or production-readiness claims.
 
+Issue `#263` is the bounded C3A-CP5 child implementation branch for the
+Checkpoint 3A executable access/quota/retention probe only. Branch
+`phase-1-closure-263-c3a-cp5-access-quota-retention` may implement the
+access/quota/retention probe in `make checkpoint3-acceptance`, keep the API E2E
+foundation, output-correctness, language-quality, and media-artifacts probes
+passing, keep later Checkpoint 3A probes planned/non-passing, add old-behavior
+false-pass regressions, record fan-out findings, bundle the PR `#262` / issue
+`#261` ledger cleanup because this is a substantive child checkpoint, and
+update only these public-safe files:
+
+- `docs/governance/preflights/issue-263.json`
+- `docs/reviews/ISSUE_263_C3A_CP5_PREFLIGHT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_checkpoint3_acceptance.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_checkpoint3_acceptance_gate.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/acceptance/test_checkpoint3_access_quota_retention.py`
+
+C3A-CP5 must execute the local FastAPI product/API path for at least two
+approved synthetic local projects, knowledge upload/approval, ingestion/chunk/
+store, grounded walkthrough generation, API-visible access boundaries, scoped
+idempotency replay, deterministic upload/request/body/document or local quota
+limits, API-visible retention/deletion replay behavior, tombstone evidence,
+bounded ops/status evidence, and public-safe redaction. It must reject
+docs/prose/static-snapshot or canned-success false passes, cross-project replay
+with valid-looking IDs, idempotency replay that attempts to bypass actor,
+project, or source-run boundaries, over-limit requests that leak raw payload
+text, deleted or retained evidence replayed as active when policy forbids it,
+and style-only or status-only text without runtime API evidence. Later
+security/observability, performance, and real-browser E2E probes remain future
+Checkpoint 3A child work. The issue does not authorize Checkpoint 3A
+completion, Checkpoint 3B, Checkpoint 3C, providers, paid spend, hosted
+deployment, public URL, cloned identity, frontend browser implementation,
+backend/frontend/provider/dependency changes, real media binaries, public
+distribution, or production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

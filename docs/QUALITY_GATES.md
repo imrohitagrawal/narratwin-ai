@@ -36,7 +36,7 @@ The `Makefile` must expose:
 | `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
 | `make final-review-quality` | Runs executable Final Review artifact checks |
 | `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
-| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, and C3A-CP4 media-artifacts probes implemented, and later probes reported as planned/non-passing |
+| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, C3A-CP4 media-artifacts, and C3A-CP5 access/quota/retention probes implemented, and later probes reported as planned/non-passing |
 | `make lint` | Runs backend Ruff and frontend ESLint |
 | `make typecheck` | Runs backend mypy and frontend TypeScript checks |
 | `make test` | Runs backend unit tests and frontend unit tests |
@@ -575,15 +575,30 @@ includes negative coverage for docs/prose/static or canned-success
 substitutions, artifact-shape-only evidence without source binding, checksum or
 MIME mismatch, real-media overclaim, and cloned-identity overclaim.
 
+C3A-CP5 implements the fifth executable probe, access/quota/retention, by
+dispatching
+`uv run pytest tests/acceptance/test_checkpoint3_access_quota_retention.py -q`
+through the same local/mock API path. The access/quota/retention probe verifies
+runtime project creation for at least two approved synthetic local projects,
+knowledge upload/approval/ingestion, grounded walkthrough generation,
+cross-actor and cross-project access boundaries, mismatched source-run replay
+rejection, scoped idempotency replay, deterministic upload, prompt, document,
+and local hosted-demo quota behavior, API-visible terminal retention replay
+denial, tombstone evidence, bounded `/api/v1/ops/status` evidence, local/mock
+provider posture, and public-safe redaction. It includes negative coverage for
+docs/prose/static or canned-success substitutions, status-only evidence,
+cross-project or mismatched source-run replay, idempotency bypass attempts,
+over-limit request leakage, and deleted/retained evidence replayed as active.
+
 The target is not part of `make quality` yet and must still return nonzero while
-later Checkpoint 3A probes remain planned for access/quota/retention,
-security/observability, performance, and real-browser E2E with no success-path
-interception. The harness must reject docs/prose/static-snapshot command
+later Checkpoint 3A probes remain planned for security/observability,
+performance, and real-browser E2E with no success-path interception. The
+harness must reject docs/prose/static-snapshot command
 substitutions for implemented probes, run implemented probes with
 `subprocess.run(..., shell=False, timeout=120)`, and summarize failed probe
 output with bounded/redacted text. It must not claim Checkpoint 3A,
 hosted/public demo, provider, cloned-identity, real-media, or
-production-readiness success from CP1, CP2, CP3, or CP4 alone.
+production-readiness success from CP1, CP2, CP3, CP4, or CP5 alone.
 
 The repository guardrail also checks PR body content on pull-request events:
 generic PRs must use reference-only issue linkage such as `Refs #<issue>` and
