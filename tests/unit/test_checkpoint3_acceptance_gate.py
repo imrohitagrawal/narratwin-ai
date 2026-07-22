@@ -99,6 +99,9 @@ def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
         "API E2E",
         "output-correctness that executes rather than reads",
     ]
+    planned_reasons = [probe.planned_reason for probe in checkpoint3.PROBES if not probe.implemented]
+    assert planned_reasons
+    assert all("CP1 and CP2" in reason for reason in planned_reasons)
 
 
 def test_checkpoint3_acceptance_rejects_docs_only_probe_commands() -> None:

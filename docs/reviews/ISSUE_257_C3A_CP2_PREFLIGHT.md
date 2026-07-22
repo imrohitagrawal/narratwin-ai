@@ -47,7 +47,7 @@ Accessed date: 2026-07-22.
 |---|---|---|
 | `SRC-C3A-CP2-FASTAPI-001` | `https://fastapi.tiangolo.com/tutorial/testing/` | FastAPI documents `TestClient` with pytest tests, HTTP-style client calls, and normal Python assertions. CP2 can exercise local route behavior without hosted deployment or provider network calls. |
 | `SRC-C3A-CP2-FASTAPI-002` | `https://fastapi.tiangolo.com/reference/testclient/` | FastAPI exposes `fastapi.testclient.TestClient` for local application testing. CP2 uses it only for local/mock API evidence. |
-| `SRC-C3A-CP2-GH-001` | `https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue` | GitHub issue-linking keywords can close issues when a linked PR merges. CP2 public text must use reference-only wording for `#249` and intentionally close only issue `#257` if the child is fully satisfied. |
+| `SRC-C3A-CP2-GH-001` | `https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue` | GitHub issue-linking keywords can close issues when a linked PR merges. CP2 public PR text must use reference-only wording for both `#249` and `#257`; any satisfied child-issue closeout must happen after merge without PR auto-close keywords. |
 | `SRC-C3A-CP2-MAKE-001` | `https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html` | GNU Make phony targets are explicit named recipes. `make checkpoint3-acceptance` remains a local named gate and may return nonzero while later planned probes are incomplete. |
 
 ## Positive Claims
