@@ -183,6 +183,32 @@ def run_issue253_preflight_check(
     return failures
 
 
+def run_issue257_preflight_check(
+    monkeypatch: Any, *, preflight_text: str | None = None, missing: bool = False
+) -> list[str]:
+    if preflight_text is not None:
+        monkeypatch.setattr(
+            phase1,
+            "read",
+            read_with_overrides(
+                phase1,
+                {"docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md": preflight_text},
+            ),
+        )
+    failures: list[str] = []
+    if missing:
+        original_is_file = cast(Callable[[Path], bool], phase1.Path.is_file)
+
+        def patched_is_file(path: Path) -> bool:
+            if str(path).endswith("docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md"):
+                return False
+            return original_is_file(path)
+
+        monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
+    phase1.check_issue257_c3a_cp2_preflight(failures)
+    return failures
+
+
 def run_issue39_ch11_contract_check(
     monkeypatch: Any,
     *,
@@ -1151,6 +1177,76 @@ def test_issue_253_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_257_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-257-c3a-cp2-output-correctness"
+    allowed = [
+        "docs/governance/preflights/issue-257.json",
+        "docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_checkpoint3_acceptance.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_checkpoint3_acceptance_gate.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "tests/acceptance/test_checkpoint3_output_correctness.py",
+    ]
+    assert phase1.ISSUE_257_ALLOWED_CHANGED_FILES == set(allowed)
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "tests/acceptance/test_checkpoint3_api_e2e.py",
+            "backend/app/main.py",
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+            "frontend/package.json",
+            "frontend/package-lock.json",
+            "pyproject.toml",
+            "uv.lock",
+            "backend/app/stage6.py",
+            "backend/app/stage7.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change tests/acceptance/test_checkpoint3_api_e2e.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/main.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package-lock.json.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+    ]
+
+
+def test_issue_257_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-257-c3a-cp2-output-correctness-extra"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-257.json",
+            "docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md",
+            "docs/STATUS.md",
+            "scripts/quality/check_checkpoint3_acceptance.py",
+            "tests/acceptance/test_checkpoint3_output_correctness.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-257.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md.",
+        f"Phase 1 Closure branch {branch} may not change docs/STATUS.md.",
+        f"Phase 1 Closure branch {branch} may not change scripts/quality/check_checkpoint3_acceptance.py.",
+        f"Phase 1 Closure branch {branch} may not change tests/acceptance/test_checkpoint3_output_correctness.py.",
+    ]
+
+
 def test_issue_255_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-255-post-pr-254-status-reconcile"
     allowed = [
@@ -1230,6 +1326,46 @@ def test_issue_253_preflight_contract_rejects_missing_markers(
 def test_issue_253_missing_preflight_reports_failure(monkeypatch: Any) -> None:
     assert run_issue253_preflight_check(monkeypatch, missing=True) == [
         "Missing required C3A-CP1 preflight artifact: docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md"
+    ]
+
+
+def test_issue_257_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue257_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "https://fastapi.tiangolo.com/tutorial/testing/",
+        "C3A-CP2-HARNESS-001",
+        "C3A-CP2-FM-002",
+        "tests/acceptance/test_checkpoint3_output_correctness.py::test_checkpoint3_output_correctness_executes_runtime_api_evidence_path",
+        "API-visible idempotent replay",
+        "acceptedScriptText",
+        "claimSupports",
+        "contextRefs",
+        "evidenceSnapshot",
+        "timeout=120",
+        "Cross-model review is skipped in this autonomous execution context",
+        "no browser/frontend scope is touched",
+        "Stop and open a new issue",
+    ),
+)
+def test_issue_257_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue257_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
+
+
+def test_issue_257_missing_preflight_reports_failure(monkeypatch: Any) -> None:
+    assert run_issue257_preflight_check(monkeypatch, missing=True) == [
+        "Missing required C3A-CP2 preflight artifact: docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md"
     ]
 
 
