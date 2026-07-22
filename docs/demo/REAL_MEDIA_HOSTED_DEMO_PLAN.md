@@ -3,8 +3,8 @@
 ## Version
 
 - Version: 0.1
-- Issue: `#225`; Checkpoint 1 PR 1 issue `#229`; Checkpoint 1 PR 2 issue `#235`; Checkpoint 1 PR 3 issue `#237`; Checkpoint 1 PR 4 issue `#241`; Checkpoint 1 PR 5 issue `#243`; Checkpoint 1 acceptance hardening issue `#245`
-- Status: Demo Phase 0 complete; Checkpoint 1 PR 4 avatar/video boundary is complete through PR `#242`; PR5 hosted-demo access/quota/retention/demo polish is implemented through PR `#244` as a local/fake disabled-default access-evidence layer with no hosted deployment, public URL, paid spend, or real provider call; issue `#245` repairs post-PR244 acceptance blockers before Checkpoint 2 planning starts
+- Issue: `#225`; Checkpoint 1 PR 1 issue `#229`; Checkpoint 1 PR 2 issue `#235`; Checkpoint 1 PR 3 issue `#237`; Checkpoint 1 PR 4 issue `#241`; Checkpoint 1 PR 5 issue `#243`; Checkpoint 1 acceptance hardening issue `#245`; Checkpoint 3A planning/guardrails issue `#249`
+- Status: Demo Phase 0 complete; Checkpoint 1 is accepted as local/fake disabled-default reviewer evidence only through PRs `#230`, `#236`, `#238`, `#242`, `#244`, `#246`, and `#248`; issue `#249` defines public-safe Checkpoint 3A planning/guardrails before product-faithful implementation starts
 - Last updated: 2026-07-22
 
 ## Purpose
@@ -812,6 +812,64 @@ Checkpoint 2 starts only after Checkpoint 1 is stable and reviewed. It must not
 be implemented in parallel with Checkpoint 1 because cloned identity adds
 biometric, consent, impersonation, provider-policy, disclosure, and public-use
 risk.
+
+### Checkpoint 3A: Non-Cloned Product-Faithful Controlled Demo
+
+Issue `#249` starts C3-PR1 as planning and guardrails only. Checkpoint 3A is the
+next public-safe controlled-demo target and intentionally comes before cloned
+identity work:
+
+```text
+approved project knowledge
+-> grounded walkthrough script
+-> audience/depth/style materially affects generated text
+-> fluent selected-language output for every UI-claimed language
+-> citation/eval/source-run/claim-support binding across derived artifacts
+-> playable audio/video artifact or approved local product-quality equivalent
+-> local access/quota/retention/deletion/tombstone evidence
+-> redacted observability and executable security/performance/API/browser gates
+```
+
+Checkpoint 3A accepts arbitrary approved project knowledge, not a NarraTwin-only
+seed. Hindi output must contain Devanagari and must not pass as English fallback
+or romanized Hindi-only output. Translated scripts, subtitles, audio manifests,
+video manifests, downloads, and UI evidence must preserve `sourceRunId`,
+`multilingualRunId`, `targetLanguage`, `evaluationId`, citation indexes, context
+refs, checksums, and claim-support linkage.
+
+`make checkpoint3-acceptance` is the public failing-by-design skeleton for this
+future gate. It must fail until implementation creates executable probes for:
+
+- API E2E: `tests/acceptance/test_checkpoint3_api_e2e.py`
+- language quality: `tests/acceptance/test_checkpoint3_language_quality.py`
+- media artifacts: `tests/acceptance/test_checkpoint3_media_artifacts.py`
+- access/quota/retention:
+  `tests/acceptance/test_checkpoint3_access_quota_retention.py`
+- security/observability:
+  `tests/acceptance/test_checkpoint3_security_observability.py`
+- performance: `tests/acceptance/test_checkpoint3_performance.py`
+- real-browser E2E with no success-path interception:
+  `frontend/playwright.checkpoint3.config.ts`
+- output-correctness that executes rather than reads:
+  `tests/acceptance/test_checkpoint3_output_correctness.py`
+
+Checkpoint 3A non-goals are no cloned voice, no cloned face, no digital twin, no
+real-person likeness, no public URL, no paid spend, no provider setup, no real
+provider calls, and no production-readiness claim.
+
+### Checkpoint 3B: Cloned Identity Consent And Provenance
+
+Checkpoint 3B is future cloned identity planning and gate work. It must define
+consent, provenance, rights, revocation, retention, deletion, disclosure, and
+provider-policy evidence before clone-integrated behavior starts. C3-PR1 does
+not authorize Checkpoint 3B implementation.
+
+### Checkpoint 3C: Clone-Integrated Controlled Demo
+
+Checkpoint 3C may integrate cloned identity into the controlled demo only after
+Checkpoint 3A product-faithful evidence passes and Checkpoint 3B cloned identity
+consent/provenance gates pass. Production later remains separate from 3A, 3B,
+and 3C.
 
 ## Failure Matrix Categories
 

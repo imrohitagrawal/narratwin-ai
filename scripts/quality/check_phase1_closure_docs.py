@@ -179,6 +179,19 @@ ISSUE_247_ALLOWED_CHANGED_FILES = {
     "tests/api/test_stage4_slice_api.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_249_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-249.json",
+    "docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md",
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "Makefile",
+    "scripts/quality/check_checkpoint3_acceptance.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_checkpoint3_acceptance_gate.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_172_ALLOWED_CHANGED_FILES = {
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -1438,10 +1451,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #247 / checkpoint1-local-demo-refusal-ux",
-        "demo-checkpoint1-local-acceptance-complete",
-        "demo-checkpoint1-local-acceptance-complete",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is complete through merged PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only. Issue #243 is closed through merged PR #244 as Checkpoint 1 PR 5 hosted-demo access/quota/retention/demo-polish. Issue #245 completed post-PR244 acceptance hardening through merged PR #246. Issue #247 repairs the local demo refused-run UX so low-confidence grounded-generation refusals stop before downstream media calls and show safe bounded refusal text instead of a generic `422`; when issue #247 merges, Checkpoint 1 remains accepted as local/fake disabled-default reviewer evidence only. The next approved action remains a new issue for Checkpoint 2 consent/provenance planning only; cloned identity implementation remains forbidden until that issue is approved. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2 implementation, public distribution, and production-readiness claims remain forbidden.",
+        "issue #249 / checkpoint3a-planning-guardrails",
+        "checkpoint3a-planning-active",
+        "checkpoint3a-planning-active",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. Issue #249 is the public-safe tracker for C3-PR1 planning and guardrails only: Checkpoint 3A non-cloned product-faithful controlled local demo first, Checkpoint 3B cloned identity consent/provenance planning later, Checkpoint 3C clone-integrated controlled demo after those gates, and production later. This state authorizes no product runtime implementation beyond a failing-by-design acceptance-gate skeleton. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3527,6 +3540,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_245_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-247-demo-422-refusal-ux":
         allowed_files = ISSUE_247_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-249-checkpoint3a-planning-guardrails":
+        allowed_files = ISSUE_249_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-249-"):
+        allowed_files = set()
     elif branch.startswith("phase-1-closure-process-245-"):
         allowed_files = set()
     elif branch.startswith("phase-1-closure-process-243-"):
@@ -3834,6 +3851,11 @@ def check_real_media_demo_plan(failures: list[str]) -> None:
         "Local-Model Path",
         "Checkpoint 1: Real Media Without Cloned Identity",
         "Checkpoint 2: Cloned Identity",
+        "Checkpoint 3A: Non-Cloned Product-Faithful Controlled Demo",
+        "Checkpoint 3B: Cloned Identity Consent And Provenance",
+        "Checkpoint 3C: Clone-Integrated Controlled Demo",
+        "make checkpoint3-acceptance",
+        "tests/acceptance/test_checkpoint3_output_correctness.py",
         "Failure Matrix Categories",
         "Fan-Out Review Requirements",
         "One autonomous prompt may drive Checkpoint 1",
@@ -4230,6 +4252,135 @@ def check_issue243_hosted_demo_preflight(failures: list[str]) -> None:
         fail(failures, f"{rel} missing PR5 preflight markers: " + ", ".join(missing_markers))
 
 
+def check_issue249_checkpoint3a_preflight(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md"
+    if not (ROOT / rel).is_file():
+        fail(failures, f"Missing required C3A preflight artifact: {rel}")
+        return
+    text = read(rel)
+    normalized = re.sub(r"\s+", " ", text.lower())
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Objective",
+            "Non-Goals",
+            "Changed-File Allowlist",
+            "Official Source Facts",
+            "Checkpoint Sequence",
+            "Checkpoint 3A Acceptance Matrix",
+            "Checkpoint 3 Acceptance Gate",
+            "Old-Behavior and Failure Proof",
+            "Child Issue Breakdown",
+            "Fan-Out Review Findings and Dispositions",
+            "Skill and Evidence Ledger",
+            "Stop Rule",
+        ),
+    )
+    required_urls = (
+        "https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests",
+        "https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html",
+    )
+    missing_urls = [url for url in required_urls if url not in text]
+    if missing_urls:
+        fail(failures, f"{rel} missing C3A official source URLs: " + ", ".join(missing_urls))
+
+    required_markers = (
+        "Accessed date for source facts: 2026-07-22",
+        "Checkpoint 3A: Non-Cloned Product-Faithful Controlled Demo",
+        "Checkpoint 3B: Cloned Identity Consent And Provenance",
+        "Checkpoint 3C: Clone-Integrated Controlled Demo",
+        "production later",
+        "make checkpoint3-acceptance",
+        "failing-by-design",
+        "tests/acceptance/test_checkpoint3_api_e2e.py",
+        "tests/acceptance/test_checkpoint3_language_quality.py",
+        "tests/acceptance/test_checkpoint3_media_artifacts.py",
+        "tests/acceptance/test_checkpoint3_access_quota_retention.py",
+        "tests/acceptance/test_checkpoint3_security_observability.py",
+        "tests/acceptance/test_checkpoint3_performance.py",
+        "frontend/playwright.checkpoint3.config.ts",
+        "tests/acceptance/test_checkpoint3_output_correctness.py",
+        "C3A-SCOPE-001",
+        "C3A-FLOW-001",
+        "C3A-KNOWLEDGE-001",
+        "C3A-AUDIENCE-001",
+        "C3A-LANG-HI-001",
+        "C3A-LANG-UI-001",
+        "C3A-BINDING-001",
+        "C3A-MEDIA-AUDIO-001",
+        "C3A-MEDIA-VIDEO-001",
+        "C3A-ACCESS-001",
+        "C3A-RETENTION-001",
+        "C3A-OBS-001",
+        "C3A-SECURITY-001",
+        "C3A-PERF-001",
+        "C3A-BROWSER-001",
+        "C3A-OUTPUT-CORRECTNESS-001",
+        "NONGOAL-C3A-CLONE-001",
+        "NONGOAL-C3A-PROVIDER-001",
+        "NONGOAL-C3A-LAUNCH-001",
+        "NONGOAL-C3A-RUNTIME-001",
+        "arbitrary approved project knowledge",
+        "grounded walkthrough script",
+        "audience/depth/style",
+        "Hindi output must contain Devanagari",
+        "not English fallback",
+        "not romanized Hindi-only output",
+        "every language claimed in the UI",
+        "sourceRunId",
+        "multilingualRunId",
+        "targetLanguage",
+        "evaluationId",
+        "claim-support",
+        "subtitles",
+        "audio",
+        "video",
+        "downloads",
+        "UI evidence",
+        "executes rather than reads",
+        "real-browser E2E with no success-path interception",
+        "deletion/tombstone evidence",
+        "server-bound tombstone",
+        "replay/export blocking after deletion",
+        "redacted observability",
+        "trace_id",
+        "status/code",
+        "access outcome",
+        "quota outcome",
+        "artifact validation result",
+        "checksums",
+        "raw uploads, prompts, scripts, transcripts, media bytes, URLs, invite secrets, cookies, tokens, provider keys, provider payloads, and private identifiers",
+        "old behavior",
+        "mock translation",
+        "citation markers survive translation, but claim-support IDs/eval/source-run binding is lost",
+        "no cloned voice",
+        "no cloned face",
+        "no digital twin",
+        "no real-person likeness",
+        "no public URL",
+        "no paid spend",
+        "no provider setup",
+        "no real provider calls",
+        "no production-readiness claim",
+        "manual adversarial fallback",
+        "output-correctness",
+        "multilingual quality",
+        "security/privacy",
+        "API/interface",
+        "UX/demo flow",
+        "access/quota/reliability/retention",
+        "observability/redaction",
+        "performance",
+        "test/quality/CI",
+        "governance/taste/scope",
+    )
+    missing_markers = [marker for marker in required_markers if marker.lower() not in normalized]
+    if missing_markers:
+        fail(failures, f"{rel} missing C3A preflight markers: " + ", ".join(missing_markers))
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
@@ -4249,6 +4400,7 @@ def check_process_docs(failures: list[str]) -> None:
     changed = set(changed_files())
     check_issue241_avatar_video_preflight(failures)
     check_issue243_hosted_demo_preflight(failures)
+    check_issue249_checkpoint3a_preflight(failures)
     check_required_headings(
         failures,
         pr_template,

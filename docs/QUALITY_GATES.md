@@ -36,6 +36,7 @@ The `Makefile` must expose:
 | `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
 | `make final-review-quality` | Runs executable Final Review artifact checks |
 | `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
+| `make checkpoint3-acceptance` | Failing-by-design Checkpoint 3 acceptance skeleton for future product-faithful demo probes |
 | `make lint` | Runs backend Ruff and frontend ESLint |
 | `make typecheck` | Runs backend mypy and frontend TypeScript checks |
 | `make test` | Runs backend unit tests and frontend unit tests |
@@ -524,6 +525,16 @@ deletions, and required conversation resolution. When GitHub returns a
 permission boundary for that detail endpoint, missing detail-only fields such as
 `strict` remain an explicit human-only review surface while visible branch
 summary fields continue to fail closed.
+
+### Checkpoint 3 Acceptance Skeleton
+
+`make checkpoint3-acceptance` is a standalone failing-by-design target for
+Checkpoint 3A planning. It is not part of `make quality` yet and must return
+nonzero until later issue-linked implementation PRs create executable probes
+for API E2E, language quality, media artifacts, access/quota/retention,
+security/observability, performance, real-browser E2E with no success-path
+interception, and output-correctness that executes rather than reads. The target
+must not claim product-faithful demo success while the tests remain planned.
 
 The repository guardrail also checks PR body content on pull-request events:
 generic PRs must use reference-only issue linkage such as `Refs #<issue>` and
