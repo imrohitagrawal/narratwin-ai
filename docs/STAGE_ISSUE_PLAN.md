@@ -875,6 +875,44 @@ Checkpoint 3B, Checkpoint 3C, providers, paid spend, hosted deployment, public
 URL, cloned identity, frontend browser implementation, public distribution, or
 production-readiness claims.
 
+Issue `#259` is the bounded C3A-CP3 child implementation branch for the
+Checkpoint 3A executable language-quality probe only. Branch
+`phase-1-closure-process-259-c3a-cp3-language-quality` may implement the
+language-quality probe in `make checkpoint3-acceptance`, keep the API E2E
+foundation and output-correctness probes passing, keep later Checkpoint 3A
+probes planned/non-passing, add old-behavior false-pass regressions, record
+sub-agent fan-out findings, and update only these public-safe files:
+
+- `docs/governance/preflights/issue-259.json`
+- `docs/reviews/ISSUE_259_C3A_CP3_PREFLIGHT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_checkpoint3_acceptance.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_checkpoint3_acceptance_gate.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/acceptance/test_checkpoint3_language_quality.py`
+
+C3A-CP3 must execute the local FastAPI product/API path for approved synthetic
+project knowledge, ingestion/chunk/store, grounded walkthrough generation,
+idempotent API replay, and runtime language/evidence checks. Generated language
+quality must be accepted only when runtime `acceptedScriptText` has coherent
+walkthrough structure, audience-appropriate English Stage 4 tone, readable
+citation placement, non-trivial length, no placeholder text, no internal debug
+leakage, no cross-project or unsupported language, and API-visible evidence in
+`contextRefs`, `claimSupports`, citation indexes, and `evidenceSnapshot` data.
+It must reject docs/prose/static-snapshot or canned-success false passes,
+grounded-looking placeholder output, trivially short citation-bearing output,
+debug/internal leakage, malformed citation placement, cross-project language
+insertion, and style text without runtime API evidence. Later media artifacts,
+access/quota/retention, security/observability, performance, and real-browser
+E2E probes remain future Checkpoint 3A child work. The issue does not authorize
+Checkpoint 3A completion, Checkpoint 3B, Checkpoint 3C, providers, paid spend,
+hosted deployment, public URL, cloned identity, frontend browser
+implementation, public distribution, or production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

@@ -36,7 +36,7 @@ The `Makefile` must expose:
 | `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
 | `make final-review-quality` | Runs executable Final Review artifact checks |
 | `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
-| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E and C3A-CP2 output-correctness probes implemented, and later probes reported as planned/non-passing |
+| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, and C3A-CP3 language-quality probes implemented, and later probes reported as planned/non-passing |
 | `make lint` | Runs backend Ruff and frontend ESLint |
 | `make typecheck` | Runs backend mypy and frontend TypeScript checks |
 | `make test` | Runs backend unit tests and frontend unit tests |
@@ -548,15 +548,29 @@ ops record-count evidence. It includes negative coverage for correct-looking
 text without citation/evidence binding, unsupported generated claims, and
 cross-project fact replay.
 
+C3A-CP3 implements the third executable probe, language quality, by dispatching
+`uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
+through the same local/mock API path. The language-quality probe verifies
+runtime `acceptedScriptText` against deterministic checks for coherent
+walkthrough structure, audience-appropriate English Stage 4 tone, citation
+readability, placeholder absence, debug/internal leakage absence, non-trivial
+length, no unsupported cross-project language, API-visible idempotent replay,
+`evaluation.claimSupports`, `contextRefs`, evidence snapshots, and bounded ops
+record-count evidence. It includes negative coverage for docs/prose/static or
+canned-success substitutions, grounded-looking placeholder output, trivially
+short citation-bearing output, debug/internal leakage, malformed citation
+placement, cross-project language insertion, and style text without runtime API
+evidence.
+
 The target is not part of `make quality` yet and must still return nonzero while
-later Checkpoint 3A probes remain planned for language quality, media artifacts,
-access/quota/retention, security/observability, performance, real-browser E2E
-with no success-path interception. The harness must reject docs/prose/static-
+later Checkpoint 3A probes remain planned for media artifacts,
+access/quota/retention, security/observability, performance, and real-browser
+E2E with no success-path interception. The harness must reject docs/prose/static-
 snapshot command substitutions for implemented probes, run implemented probes
 with `subprocess.run(..., shell=False, timeout=120)`, and summarize failed probe
 output with bounded/redacted text. It must not claim Checkpoint 3A,
 hosted/public demo, provider, cloned-identity, or production-readiness success
-from CP1 or CP2 alone.
+from CP1, CP2, or CP3 alone.
 
 The repository guardrail also checks PR body content on pull-request events:
 generic PRs must use reference-only issue linkage such as `Refs #<issue>` and
