@@ -1151,6 +1151,49 @@ def test_issue_253_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_255_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-255-post-pr-254-status-reconcile"
+    allowed = [
+        "docs/governance/preflights/issue-255.json",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    ]
+    assert phase1.ISSUE_255_ALLOWED_CHANGED_FILES == set(allowed)
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "docs/TRACEABILITY.md",
+            "backend/app/main.py",
+            "frontend/src/app/page.tsx",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/TRACEABILITY.md.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/main.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+    ]
+
+
+def test_issue_255_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-255-post-pr-254-status-reconcile-extra"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-255.json",
+            "docs/STATUS.md",
+            "scripts/quality/check_phase1_closure_docs.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-255.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/STATUS.md.",
+        f"Phase 1 Closure branch {branch} may not change scripts/quality/check_phase1_closure_docs.py.",
+    ]
+
+
 def test_issue_253_preflight_contract_is_complete(monkeypatch: Any) -> None:
     text = Path("docs/reviews/ISSUE_253_C3A_CP1_PREFLIGHT.md").read_text(encoding="utf-8")
 
@@ -1385,11 +1428,14 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "`41b262fa2431f55cd1c813eab4071968c1c96ba0`",
         "Issue `#249` remains open as the public Checkpoint 3 tracker",
         "post-PR-250 status reconciliation tracked by issue `#251` and PR `#252`",
-        "Issue `#253` is the first Checkpoint 3A child implementation checkpoint",
+        "Issue `#253` is closed after PR `#254` merged the first Checkpoint 3A child implementation checkpoint",
+        "`#254` | Merged | 2026-07-22",
+        "post-merge main quality workflow run `29925008358` passing",
         "This state does not complete Checkpoint 3A",
         "remaining planned probes",
     ):
         assert marker in normalized_status
+    assert "C3A-CP1 PR | Pending" not in normalized_status
 
 
 def test_status_state_v1_contract_rejects_duplicate_authority_section() -> None:
