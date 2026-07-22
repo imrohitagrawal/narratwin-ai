@@ -1037,6 +1037,49 @@ deployment, public URL, cloned identity, frontend browser implementation,
 backend implementation, provider/dependency changes, real media binaries,
 public distribution, or production-readiness claims.
 
+Issue `#267` is the bounded C3A-CP7 child implementation branch for the
+Checkpoint 3A executable performance probe only. Branch
+`phase-1-closure-267-c3a-cp7-performance-probe` may implement the performance
+probe in `make checkpoint3-acceptance`, keep the API E2E foundation,
+output-correctness, language-quality, media-artifacts, access/quota/retention,
+and security/observability probes passing, keep the later real-browser E2E
+probe planned/non-passing, add old-behavior false-pass regressions, record
+fan-out findings, bundle the PR `#266` / issue `#265` ledger cleanup because
+this is a substantive child checkpoint, and update only these public-safe
+files:
+
+- `docs/governance/preflights/issue-267.json`
+- `docs/reviews/ISSUE_267_C3A_CP7_PREFLIGHT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_checkpoint3_acceptance.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_checkpoint3_acceptance_gate.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/acceptance/test_checkpoint3_performance.py`
+
+C3A-CP7 must execute the local FastAPI product/API path for approved synthetic
+project knowledge, upload/approval/ingestion, grounded walkthrough generation,
+idempotent replay, bounded ops/status evidence, named operation timings,
+explicit thresholds, request ID binding, elapsed durations, pass/fail status,
+source-run/evaluation binding, generation trace latency, local/mock provider
+posture, and public-safe failure context. It must reject docs/prose/static-
+snapshot or canned-success false passes, style-only/status-only text,
+success-shaped timing dictionaries without runtime nonce/source/run binding,
+missing run/request/performance binding, stale performance evidence from a
+different run, cross-project replay with valid-looking IDs, implicit
+thresholds, zero-duration fake timings, unsafe provider/public/production
+claims, timeout/subprocess failure leaks, and public failure output that leaks
+raw uploaded content, prompt-injection text, private-looking markers, sensitive
+tokens, or accepted script text. The later real-browser E2E probe remains
+future Checkpoint 3A child work. The issue does not authorize Checkpoint 3A
+completion, Checkpoint 3B, Checkpoint 3C, providers, paid spend, hosted
+deployment, public URL, cloned identity, frontend browser implementation,
+backend implementation, provider/dependency changes, real media binaries,
+public distribution, or production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:
