@@ -205,6 +205,12 @@ ISSUE_253_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/acceptance/test_checkpoint3_api_e2e.py",
 }
+ISSUE_255_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-255.json",
+    "docs/STATUS.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_172_ALLOWED_CHANGED_FILES = {
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -1467,7 +1473,7 @@ STATUS_STATE_V1_ROWS = {
         "issue #249 / checkpoint3a-next-child-selection",
         "checkpoint3a-cp1-acceptance-api-e2e-complete",
         "checkpoint3a-cp1-acceptance-api-e2e-complete",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issue #253 is the first Checkpoint 3A child implementation checkpoint and adds an executable Checkpoint 3 acceptance harness plus API E2E foundation only. Issue #249 remains open as the public Checkpoint 3 tracker and the next approved action is a future issue-linked Checkpoint 3A child slice for one of the remaining planned probes. This state does not complete Checkpoint 3A. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden.",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issue #253 closed after PR #254 merged the first Checkpoint 3A child implementation checkpoint: an executable Checkpoint 3 acceptance harness plus API E2E foundation only. Issue #249 remains open as the public Checkpoint 3 tracker and the next approved action is a future issue-linked Checkpoint 3A child slice for one of the remaining planned probes. This state does not complete Checkpoint 3A. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3557,6 +3563,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_249_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-253-c3a-cp1-acceptance-api-e2e":
         allowed_files = ISSUE_253_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-255-post-pr-254-status-reconcile":
+        allowed_files = ISSUE_255_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-255-"):
+        allowed_files = set()
     elif branch.startswith("phase-1-closure-process-253-"):
         allowed_files = set()
     elif branch.startswith("phase-1-closure-process-249-"):
