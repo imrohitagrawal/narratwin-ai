@@ -399,11 +399,12 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
 
   await expect(page.getByRole("heading", { name: "Avatar demo export" })).toBeVisible();
   await page.getByLabel("Synthetic avatar consent").check();
+  const defaultKnowledge = await page.getByLabel("Knowledge document").inputValue();
   await page.getByRole("button", { name: "Generate avatar demo export" }).click();
   await expect.poll(() => calls, { timeout: 5000 }).toHaveLength(8);
   const baseSeed = checksumSeed(
     "NarraTwin AI",
-    "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.\n\nEvery generated walkthrough claim must cite retrieved source chunks from approved knowledge.",
+    defaultKnowledge,
     "RECRUITER",
     "CONCISE",
     "es",
