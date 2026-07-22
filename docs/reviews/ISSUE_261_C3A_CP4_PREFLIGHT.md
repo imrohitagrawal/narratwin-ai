@@ -59,10 +59,10 @@ Repository facts:
 
 | ID | Evidence target | Status |
 | --- | --- | --- |
-| C3A-CP4-HARNESS-001 | `tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_planned` | planned before implementation |
-| C3A-CP4-MEDIA-001 | `tests/acceptance/test_checkpoint3_media_artifacts.py::test_checkpoint3_media_artifacts_executes_runtime_api_artifact_path` | planned before implementation |
-| C3A-CP4-RUNTIME-001 | API-visible idempotent replay, artifact payload decoding, source/evaluation binding, provider posture, and `/api/v1/ops/status` assertions | planned before implementation |
-| C3A-CP4-REPLAY-001 | Stage 6 and Stage 7 idempotent replay returns the same stored artifact evidence | planned before implementation |
+| C3A-CP4-HARNESS-001 | `tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_planned` | passed after implementation |
+| C3A-CP4-MEDIA-001 | `tests/acceptance/test_checkpoint3_media_artifacts.py::test_checkpoint3_media_artifacts_executes_runtime_api_artifact_path` | passed after implementation |
+| C3A-CP4-RUNTIME-001 | API-visible idempotent replay, artifact payload decoding, source/evaluation binding, provider posture, and `/api/v1/ops/status` assertions | passed after implementation |
+| C3A-CP4-REPLAY-001 | Stage 6 and Stage 7 idempotent replay returns the same stored artifact evidence | passed after implementation |
 | C3A-CP4-REDACTION-001 | `tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_redacts_runtime_evidence_fields` | preserved from implemented harness coverage |
 
 ## Negative Invariants

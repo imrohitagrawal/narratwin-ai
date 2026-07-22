@@ -913,6 +913,47 @@ Checkpoint 3A completion, Checkpoint 3B, Checkpoint 3C, providers, paid spend,
 hosted deployment, public URL, cloned identity, frontend browser
 implementation, public distribution, or production-readiness claims.
 
+Issue `#261` is the bounded C3A-CP4 child implementation branch for the
+Checkpoint 3A executable media-artifacts probe only. Branch
+`phase-1-closure-process-261-c3a-cp4-media-artifacts` may implement the
+media-artifacts probe in `make checkpoint3-acceptance`, keep the API E2E
+foundation, output-correctness, and language-quality probes passing, keep later
+Checkpoint 3A probes planned/non-passing, add old-behavior false-pass
+regressions, record sub-agent fan-out findings, bundle the PR `#260` / issue
+`#259` ledger cleanup because this is a substantive child checkpoint, and update
+only these public-safe files:
+
+- `docs/governance/preflights/issue-261.json`
+- `docs/reviews/ISSUE_261_C3A_CP4_PREFLIGHT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_checkpoint3_acceptance.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_checkpoint3_acceptance_gate.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/acceptance/test_checkpoint3_media_artifacts.py`
+
+C3A-CP4 must execute the local FastAPI product/API path for approved synthetic
+project knowledge, ingestion/chunk/store, grounded walkthrough generation,
+Stage 6 local/mock translated script, subtitles, and voice manifest, Stage 7
+synthetic-avatar consent, demo HTML, render manifest, and video-export
+placeholder artifacts, plus idempotent API replay and runtime artifact/evidence
+checks. Media artifacts must be accepted only when runtime API-visible artifact
+fields have valid MIME type, safe filename, Base64 content, checksum,
+source-run/evaluation/citation/context/claim-support binding, local/mock
+provider posture, no real media binary overclaim, and no cloned identity. It
+must reject docs/prose/static-snapshot or canned-success false passes,
+artifact-shape-only evidence without source binding, checksum or MIME mismatch,
+real-media overclaim, and cloned-identity overclaim. Later
+access/quota/retention, security/observability, performance, and real-browser
+E2E probes remain future Checkpoint 3A child work. The issue does not authorize
+Checkpoint 3A completion, Checkpoint 3B, Checkpoint 3C, providers, paid spend,
+hosted deployment, public URL, cloned identity, frontend browser
+implementation, backend/frontend/provider/dependency changes, real media
+binaries, public distribution, or production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

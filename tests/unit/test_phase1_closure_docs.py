@@ -1846,16 +1846,20 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "post-PR-250 status reconciliation tracked by issue `#251` and PR `#252`",
         "Issue `#253` is closed after PR `#254` merged the first Checkpoint 3A child implementation checkpoint",
         "Issue `#257` is closed after PR `#258` merged the second Checkpoint 3A child implementation checkpoint",
-        "Issue `#259` is satisfied by this PR when merged as the third Checkpoint 3A child implementation checkpoint",
-        "checkpoint3a-cp3-language-quality-complete",
+        "Issue `#259` is closed after PR `#260` merged the third Checkpoint 3A child implementation checkpoint",
+        "Issue `#261` is satisfied by this PR when merged as the fourth Checkpoint 3A child implementation checkpoint",
+        "checkpoint3a-cp4-media-artifacts-complete",
         "`#254` | Merged | 2026-07-22",
         "`#258` | Merged | 2026-07-22",
+        "`#260` | Merged | 2026-07-22",
         "post-merge main quality workflow run `29925008358` passing",
+        "post-merge main quality workflow run `29937721472` passing",
         "This state does not complete Checkpoint 3A",
         "remaining planned probes",
     ):
         assert marker in normalized_status
     assert "C3A-CP1 PR | Pending" not in normalized_status
+    assert "Issue `#259` is satisfied by this PR when merged" not in normalized_status
 
 
 def test_status_state_v1_contract_rejects_duplicate_authority_section() -> None:
