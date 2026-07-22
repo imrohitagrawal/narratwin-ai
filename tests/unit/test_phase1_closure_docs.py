@@ -4167,13 +4167,13 @@ def test_issue247_branch_rejects_adjacent_frontend_or_backend_files(monkeypatch:
         branch="phase-1-closure-247-demo-422-refusal-ux",
         files=[
             "backend/app/main.py",
-            "frontend/tests/smoke.spec.ts",
+            "frontend/tests/real-stack.spec.ts",
         ],
     )
 
     assert failures == [
         "Phase 1 Closure branch phase-1-closure-247-demo-422-refusal-ux may not change backend/app/main.py.",
-        "Phase 1 Closure branch phase-1-closure-247-demo-422-refusal-ux may not change frontend/tests/smoke.spec.ts.",
+        "Phase 1 Closure branch phase-1-closure-247-demo-422-refusal-ux may not change frontend/tests/real-stack.spec.ts.",
     ]
 
 

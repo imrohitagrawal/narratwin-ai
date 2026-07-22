@@ -174,6 +174,7 @@ ISSUE_247_ALLOWED_CHANGED_FILES = {
     "docs/TRACEABILITY.md",
     "frontend/src/app/page.tsx",
     "frontend/src/app/page.test.tsx",
+    "frontend/tests/smoke.spec.ts",
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
