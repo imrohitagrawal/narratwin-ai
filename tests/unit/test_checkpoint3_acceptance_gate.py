@@ -41,26 +41,32 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
     assert checkpoint3.main() == 1
 
     output = capsys.readouterr().out
-    assert len(calls) == 1
-    call = calls[0]
-    assert call["args"][0] == (
+    assert len(calls) == 2
+    assert calls[0]["args"][0] == (
         "uv",
         "run",
         "pytest",
         "tests/acceptance/test_checkpoint3_api_e2e.py",
         "-q",
     )
-    assert call["kwargs"]["shell"] is False
-    assert call["kwargs"]["env"]["NARRATWIN_CP3_PRODUCT_FAITHFUL"] == "1"
+    assert calls[1]["args"][0] == (
+        "uv",
+        "run",
+        "pytest",
+        "tests/acceptance/test_checkpoint3_output_correctness.py",
+        "-q",
+    )
+    assert all(call["kwargs"]["shell"] is False for call in calls)
+    assert all(call["kwargs"]["env"]["NARRATWIN_CP3_PRODUCT_FAITHFUL"] == "1" for call in calls)
     assert "PASS API E2E" in output
+    assert "PASS output-correctness that executes rather than reads" in output
     assert "PLANNED language quality" in output
     assert "PLANNED media artifacts" in output
     assert "PLANNED access/quota/retention" in output
     assert "PLANNED security/observability" in output
     assert "PLANNED performance" in output
     assert "PLANNED real-browser E2E with no success-path interception" in output
-    assert "PLANNED output-correctness that executes rather than reads" in output
-    assert "1 passed, 7 planned, 0 failed" in output
+    assert "2 passed, 6 planned, 0 failed" in output
 
 
 def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
@@ -89,7 +95,13 @@ def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
     assert "playwright.checkpoint3.config.ts" in combined
     assert "test_checkpoint3_output_correctness.py" in combined
     assert checkpoint3.validate_probe_contract(checkpoint3.PROBES) == []
-    assert [probe.label for probe in checkpoint3.PROBES if probe.implemented] == ["API E2E"]
+    assert [probe.label for probe in checkpoint3.PROBES if probe.implemented] == [
+        "API E2E",
+        "output-correctness that executes rather than reads",
+    ]
+    planned_reasons = [probe.planned_reason for probe in checkpoint3.PROBES if not probe.implemented]
+    assert planned_reasons
+    assert all("CP1 and CP2" in reason for reason in planned_reasons)
 
 
 def test_checkpoint3_acceptance_rejects_docs_only_probe_commands() -> None:
@@ -110,6 +122,26 @@ def test_checkpoint3_acceptance_rejects_docs_only_probe_commands() -> None:
     assert any("must target executable acceptance tests" in failure for failure in failures)
     assert any("must not target docs/" in failure for failure in failures)
     assert any("must not rely on rg scanning" in failure for failure in failures)
+
+
+def test_checkpoint3_acceptance_rejects_static_output_correctness_probe_command() -> None:
+    probes = tuple(
+        checkpoint3.Probe(
+            label=probe.label,
+            command=("uv", "run", "pytest", "tests/fixtures/static_output_correctness_snapshot.py", "-q"),
+            env=probe.env,
+            implemented=probe.implemented,
+            planned_reason=probe.planned_reason,
+        )
+        if probe.label == "output-correctness that executes rather than reads"
+        else probe
+        for probe in checkpoint3.PROBES
+    )
+
+    failures = checkpoint3.validate_probe_contract(probes)
+
+    assert any("output-correctness must dispatch tests/acceptance/test_checkpoint3_output_correctness.py" in failure for failure in failures)
+    assert any("must not target static content" in failure for failure in failures)
 
 
 @pytest.mark.parametrize(
@@ -167,6 +199,48 @@ def test_checkpoint3_acceptance_redacts_failed_probe_output(
     assert len(output) < 2000
 
 
+def test_checkpoint3_acceptance_redacts_runtime_evidence_fields() -> None:
+    output = checkpoint3.summarize_failure_output(
+        "\n".join(
+            (
+                "acceptedScriptText: Atlas Output full generated body",
+                "claimText: Unsupported runtime claim",
+                "contextRefs: [{'redactedExcerpt': 'approved source excerpt'}]",
+                "evidenceSnapshot: {'chunkChecksum': 'sha256:example'}",
+            )
+        )
+    )
+
+    assert "acceptedScriptText" not in output
+    assert "Atlas Output full generated body" not in output
+    assert "claimText" not in output
+    assert "Unsupported runtime claim" not in output
+    assert "contextRefs" not in output
+    assert "redactedExcerpt" not in output
+    assert "approved source excerpt" not in output
+    assert "evidenceSnapshot" not in output
+    assert "chunkChecksum" not in output
+
+
+def test_checkpoint3_acceptance_timeout_is_bounded_and_redacted(monkeypatch: Any) -> None:
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        raise subprocess.TimeoutExpired(
+            cmd=args[0],
+            timeout=kwargs["timeout"],
+            output="acceptedScriptText: timed out generated body",
+        )
+
+    monkeypatch.setattr(checkpoint3.subprocess, "run", fake_run)
+
+    result = checkpoint3.run_probe(checkpoint3.PROBES[0])
+    output = checkpoint3.summarize_failure_output(result.output)
+
+    assert result.status == "FAIL"
+    assert "timed out after 120s" in output
+    assert "acceptedScriptText" not in output
+    assert "timed out generated body" not in output
+
+
 def test_make_checkpoint3_acceptance_invokes_executable_harness() -> None:
     result = subprocess.run(
         ["make", "checkpoint3-acceptance"],
@@ -181,5 +255,5 @@ def test_make_checkpoint3_acceptance_invokes_executable_harness() -> None:
     assert "python3 scripts/quality/check_checkpoint3_acceptance.py" in result.stdout
     assert "Checkpoint 3 acceptance probe results:" in result.stdout
     assert "PASS API E2E" in result.stdout
+    assert "PASS output-correctness that executes rather than reads" in result.stdout
     assert "PLANNED language quality" in result.stdout
-    assert "tests/acceptance/test_checkpoint3_output_correctness.py" in result.stdout

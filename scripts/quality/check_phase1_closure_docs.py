@@ -205,6 +205,19 @@ ISSUE_253_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/acceptance/test_checkpoint3_api_e2e.py",
 }
+ISSUE_257_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-257.json",
+    "docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_checkpoint3_acceptance.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_checkpoint3_acceptance_gate.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/acceptance/test_checkpoint3_output_correctness.py",
+}
 ISSUE_255_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-255.json",
     "docs/STATUS.md",
@@ -1471,9 +1484,9 @@ STATUS_STATE_V1_ROWS = {
     "SSV1-NEXT": (
         "next-action",
         "issue #249 / checkpoint3a-next-child-selection",
-        "checkpoint3a-cp1-acceptance-api-e2e-complete",
-        "checkpoint3a-cp1-acceptance-api-e2e-complete",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issue #253 closed after PR #254 merged the first Checkpoint 3A child implementation checkpoint: an executable Checkpoint 3 acceptance harness plus API E2E foundation only. Issue #249 remains open as the public Checkpoint 3 tracker and the next approved action is a future issue-linked Checkpoint 3A child slice for one of the remaining planned probes. This state does not complete Checkpoint 3A. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden.",
+        "checkpoint3a-cp2-output-correctness-complete",
+        "checkpoint3a-cp2-output-correctness-complete",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issue #253 closed after PR #254 merged the first Checkpoint 3A child implementation checkpoint: an executable Checkpoint 3 acceptance harness plus API E2E foundation only. Issue #257 is satisfied by this PR when merged as the second Checkpoint 3A child implementation checkpoint: executable output-correctness only, using local API runtime output and evidence binding with no provider, hosted, public, cloned-identity, or production claim. Issue #249 remains open as the public Checkpoint 3 tracker and the next approved action is a future issue-linked Checkpoint 3A child slice for one of the remaining planned probes. This state does not complete Checkpoint 3A. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, public distribution, and production-readiness claims remain forbidden.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3563,6 +3576,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_249_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-253-c3a-cp1-acceptance-api-e2e":
         allowed_files = ISSUE_253_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-257-c3a-cp2-output-correctness":
+        allowed_files = ISSUE_257_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-257-"):
+        allowed_files = set()
     elif branch == "phase-1-closure-process-255-post-pr-254-status-reconcile":
         allowed_files = ISSUE_255_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-255-"):
@@ -4508,6 +4525,109 @@ def check_issue253_c3a_cp1_preflight(failures: list[str]) -> None:
         fail(failures, f"{rel} missing C3A-CP1 preflight markers: " + ", ".join(missing_markers))
 
 
+def check_issue257_c3a_cp2_preflight(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_257_C3A_CP2_PREFLIGHT.md"
+    if not (ROOT / rel).is_file():
+        fail(failures, f"Missing required C3A-CP2 preflight artifact: {rel}")
+        return
+    text = read(rel)
+    normalized = re.sub(r"\s+", " ", text.lower())
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Objective",
+            "Scope",
+            "Source Facts",
+            "Positive Claims",
+            "Negative Invariants",
+            "Failure Matrix",
+            "Fan-Out Review Findings",
+            "Skill And Tool Selection Ledger",
+            "Stop Rule",
+        ),
+    )
+    required_urls = (
+        "https://fastapi.tiangolo.com/tutorial/testing/",
+        "https://fastapi.tiangolo.com/reference/testclient/",
+        "https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue",
+        "https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html",
+    )
+    missing_urls = [url for url in required_urls if url not in text]
+    if missing_urls:
+        fail(failures, f"{rel} missing C3A-CP2 official source URLs: " + ", ".join(missing_urls))
+
+    required_markers = (
+        "Accessed date: 2026-07-22",
+        "C3A-CP2",
+        "public tracker issue `#249`",
+        "issue `#257`",
+        "make checkpoint3-acceptance",
+        "output-correctness that executes rather than reads",
+        "execute the local product/API path",
+        "must not pass by grepping docs",
+        "reading planning prose",
+        "checking static snapshots",
+        "canned success files",
+        "approved synthetic non-NarraTwin project knowledge",
+        "API-visible idempotent replay",
+        "/api/v1/ops/status",
+        "acceptedScriptText",
+        "claimSupports",
+        "contextRefs",
+        "citationIndex",
+        "evidenceSnapshot",
+        "redactedExcerpt",
+        "shell=False",
+        "timeout=120",
+        "C3A-CP2-HARNESS-001",
+        "C3A-CP2-OUTPUT-001",
+        "C3A-CP2-EVIDENCE-001",
+        "C3A-CP2-NONGOAL-001",
+        "C3A-CP2-FALSEPASS-001",
+        "C3A-CP2-BINDING-001",
+        "C3A-CP2-UNSUPPORTED-001",
+        "C3A-CP2-ISOLATION-001",
+        "C3A-CP2-REDACTION-001",
+        "C3A-CP2-TIMEOUT-001",
+        "C3A-CP2-FM-001",
+        "C3A-CP2-FM-002",
+        "C3A-CP2-FM-003",
+        "C3A-CP2-FM-004",
+        "C3A-CP2-FM-005",
+        "C3A-CP2-FM-006",
+        "C3A-CP2-FM-007",
+        "C3A-CP2-FM-008",
+        "tests/acceptance/test_checkpoint3_output_correctness.py::test_checkpoint3_output_correctness_executes_runtime_api_evidence_path",
+        "tests/acceptance/test_checkpoint3_output_correctness.py::test_checkpoint3_output_correctness_rejects_correct_text_without_evidence_binding",
+        "tests/acceptance/test_checkpoint3_output_correctness.py::test_checkpoint3_output_correctness_rejects_unsupported_claim_acceptance",
+        "tests/acceptance/test_checkpoint3_output_correctness.py::test_checkpoint3_output_correctness_rejects_cross_project_fact_replay",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_rejects_static_output_correctness_probe_command",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_redacts_runtime_evidence_fields",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_timeout_is_bounded_and_redacted",
+        "sub-agent",
+        "Cross-model review is skipped in this autonomous execution context",
+        "no browser/frontend scope is touched",
+        "cloned voice",
+        "cloned face",
+        "digital twin",
+        "real-person likeness",
+        "hosted deployment",
+        "public URL",
+        "provider setup",
+        "provider SDKs",
+        "real provider calls",
+        "paid spend",
+        "Checkpoint 3B",
+        "Checkpoint 3C",
+        "Stop and open a new issue",
+    )
+    missing_markers = [marker for marker in required_markers if marker.lower() not in normalized]
+    if missing_markers:
+        fail(failures, f"{rel} missing C3A-CP2 preflight markers: " + ", ".join(missing_markers))
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
@@ -4529,6 +4649,7 @@ def check_process_docs(failures: list[str]) -> None:
     check_issue243_hosted_demo_preflight(failures)
     check_issue249_checkpoint3a_preflight(failures)
     check_issue253_c3a_cp1_preflight(failures)
+    check_issue257_c3a_cp2_preflight(failures)
     check_required_headings(
         failures,
         pr_template,
