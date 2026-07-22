@@ -28,6 +28,11 @@ type WalkthroughRun = {
     unsupportedClaimCount: number;
     claimSupports: ClaimSupport[];
   };
+  failure?: {
+    reasonCode?: string;
+    message?: string;
+    unsupportedClaimCount?: number;
+  };
   contextRefs: ContextRef[];
   trace: {
     traceId: string;
@@ -153,8 +158,15 @@ type ApiErrorPayload = {
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
-const defaultKnowledge =
-  "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.\n\nEvery generated walkthrough claim must cite retrieved source chunks from approved knowledge.";
+export const defaultKnowledge = `# NarraTwin AI
+
+NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.
+
+It supports recruiter and engineering audiences with audience-aware explanations.
+
+The local demo uses mock local LLM, translation, voice, and avatar adapters for deterministic review.
+
+Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.`;
 const safeApiErrorCodes = new Set([
   "AVATAR_CONSENT_INVALID",
   "AVATAR_CONSENT_RECORD_REQUIRED",
@@ -166,6 +178,7 @@ const safeApiErrorCodes = new Set([
   "IDEMPOTENCY_KEY_REQUIRED",
   "NOT_FOUND",
   "SOURCE_RUN_NOT_RENDERABLE",
+  "SOURCE_RUN_NOT_TRANSLATABLE",
   "VALIDATION_ERROR",
   "DUPLICATE_JSON_KEY",
   "EVALUATION_NOT_PASSED",
@@ -218,6 +231,31 @@ export function evaluationBadgeLabel(run: WalkthroughRun | null): string {
     return "Evaluation pending";
   }
   return `${run.evaluation.unsupportedClaimCount} unsupported claims`;
+}
+
+const safeWalkthroughFailureReasons = new Set([
+  "LOW_RETRIEVAL_CONFIDENCE",
+  "PROMPT_INJECTION_DETECTED",
+  "UNSAFE_RETRIEVED_CONTEXT",
+  "UNSUPPORTED_PROJECT_FACT",
+]);
+
+export function walkthroughDemoBlockReason(run: WalkthroughRun): string {
+  if (run.status === "COMPLETED" && run.acceptedScriptText && run.evaluation) {
+    return "";
+  }
+  const reasonCode = run.failure?.reasonCode ?? "";
+  const message = run.failure?.message ?? "";
+  if (
+    run.status === "REFUSED" &&
+    safeWalkthroughFailureReasons.has(reasonCode) &&
+    message.length > 0 &&
+    message.length <= 240 &&
+    !unsafeApiErrorMessagePattern.test(message)
+  ) {
+    return `Walkthrough refused: ${message}`;
+  }
+  return "Walkthrough could not continue because the grounded script was not accepted. Add approved project details that support the requested walkthrough and try again.";
 }
 
 export default function Home() {
@@ -317,6 +355,15 @@ export default function Home() {
         },
         `ui-generate-${requestSeed}`,
       );
+      setRun(generated);
+      setMultilingualRun(null);
+      setAvatarRender(null);
+
+      const blockReason = walkthroughDemoBlockReason(generated);
+      if (blockReason) {
+        setError(blockReason);
+        return;
+      }
 
       const multilingual = await postJson<MultilingualWalkthrough>(
         `/projects/${project.projectId}/walkthrough-runs/${generated.runId}/multilingual-runs`,

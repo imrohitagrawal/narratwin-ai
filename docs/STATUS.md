@@ -80,8 +80,9 @@ Use it to answer:
   through merged PR `#236`, issue `#237` completed Demo Checkpoint 1 PR 3
   through merged PR `#238`, issue `#241` completed Demo Checkpoint 1 PR 4
   through merged PR `#242`, issue `#243` completed Demo Checkpoint 1 PR 5
-  through merged PR `#244`, and issue `#245` is the active Checkpoint 1
-  acceptance-hardening repair,
+  through merged PR `#244`, issue `#245` completed Checkpoint 1
+  acceptance hardening through merged PR `#246`, and issue `#247` is the active
+  local demo refused-run UX repair,
   mutable current-state authority is normalized through the StatusStateV1 table
   below, and release posture is No-Go.
 - Product implementation merged to `main`: Stage 8 performance, security
@@ -193,7 +194,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | issue #245 / checkpoint1-acceptance-hardening | demo-checkpoint1-local-acceptance-complete | demo-checkpoint1-local-acceptance-complete | Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is complete through merged PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only. Issue #243 is closed through merged PR #244 as Checkpoint 1 PR 5 hosted-demo access/quota/retention/demo-polish. Issue #245 repairs post-PR244 acceptance blockers found by executable fan-out review: hosted-demo disclosure allowlisting and raw-output canary rejection, current invite/session credential validation before idempotent replay, session TTL capping, encoded unsafe-display rejection, deterministic local/fake tombstone metadata validation, trusted retention terminal replay blocking without `retentionRecordId` bypass, redacted public request checksums/access identifiers, and status/gate reconciliation. After issue #245 merges, Checkpoint 1 is accepted as local/fake disabled-default reviewer evidence only. The next approved action is a new issue for Checkpoint 2 consent/provenance planning only; cloned identity implementation remains forbidden until that issue is approved. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2 implementation, public distribution, and production-readiness claims remain forbidden. |
+| SSV1-NEXT | next-action | issue #247 / checkpoint1-local-demo-refusal-ux | demo-checkpoint1-local-acceptance-complete | demo-checkpoint1-local-acceptance-complete | Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is complete through merged PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only. Issue #243 is closed through merged PR #244 as Checkpoint 1 PR 5 hosted-demo access/quota/retention/demo-polish. Issue #245 completed post-PR244 acceptance hardening through merged PR #246. Issue #247 repairs the local demo refused-run UX so low-confidence grounded-generation refusals stop before downstream media calls and show safe bounded refusal text instead of a generic `422`; when issue #247 merges, Checkpoint 1 remains accepted as local/fake disabled-default reviewer evidence only. The next approved action remains a new issue for Checkpoint 2 consent/provenance planning only; cloned identity implementation remains forbidden until that issue is approved. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2 implementation, public distribution, and production-readiness claims remain forbidden. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -725,10 +726,9 @@ Use these files together with this tracker:
    `#168` as evidence only. Do not resume, patch, rebase, merge, close, delete,
    or rewrite that implementation history.
 2. Keep issue `#8` open until its actual acceptance contract is satisfied.
-3. Complete issue `#245` acceptance hardening through its dedicated branch and
-   pull request before treating Demo Checkpoint 1 as accepted. After that merge,
-   the next approved action is a new Checkpoint 2 consent/provenance planning
-   issue only.
+3. Complete issue `#247` local demo refused-run UX repair through its dedicated
+   branch and pull request. After that merge, the next approved action remains a
+   new Checkpoint 2 consent/provenance planning issue only.
 4. Keep production,
    multi-worker deployment, hosted launch, Product Mode 2, external provider
    use, real audio/video export, and public synthetic-media distribution No-Go

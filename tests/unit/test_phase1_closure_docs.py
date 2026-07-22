@@ -4151,6 +4151,32 @@ def test_issue39_unknown_generic_chunk_branch_rejects_runtime_files(monkeypatch:
     ]
 
 
+def test_issue247_branch_allows_only_demo_refusal_ux_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-247-demo-422-refusal-ux",
+        files=sorted(phase1.ISSUE_247_ALLOWED_CHANGED_FILES),
+    )
+
+    assert failures == []
+
+
+def test_issue247_branch_rejects_adjacent_frontend_or_backend_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-247-demo-422-refusal-ux",
+        files=[
+            "backend/app/main.py",
+            "frontend/tests/real-stack.spec.ts",
+        ],
+    )
+
+    assert failures == [
+        "Phase 1 Closure branch phase-1-closure-247-demo-422-refusal-ux may not change backend/app/main.py.",
+        "Phase 1 Closure branch phase-1-closure-247-demo-422-refusal-ux may not change frontend/tests/real-stack.spec.ts.",
+    ]
+
+
 def test_issue39_ch02_branch_allows_storage_kernel_files(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,

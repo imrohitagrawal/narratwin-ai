@@ -100,6 +100,29 @@ const walkthroughResponse = {
   },
 };
 
+const refusedWalkthroughResponse = {
+  runId: "run_ui_refused",
+  tenantId: "tenant_local",
+  actorId: "user_local",
+  projectId: "proj_ui",
+  status: "REFUSED",
+  evaluationStatus: "REFUSED",
+  audience: "RECRUITER",
+  requestedLanguage: "en",
+  depth: "CONCISE",
+  style: "CONFIDENT",
+  acceptedScriptText: null,
+  contextRefs: [],
+  provider: { provider: "mock", providerMode: "LOCAL" },
+  trace: { traceId: "trace_ui_refused", latencyMs: 0, estimatedCost: 0 },
+  createdAt: "2026-06-30T00:00:00Z",
+  failure: {
+    reasonCode: "LOW_RETRIEVAL_CONFIDENCE",
+    message: "The request was refused because retrieved context was insufficient.",
+    unsupportedClaimCount: 0,
+  },
+};
+
 const translatedScriptText =
   "For recruiters, NarraTwin AI convierte approved project knowledge en grounded walkthrough scripts. [1]";
 const subtitlesText =
@@ -376,11 +399,12 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
 
   await expect(page.getByRole("heading", { name: "Avatar demo export" })).toBeVisible();
   await page.getByLabel("Synthetic avatar consent").check();
+  const defaultKnowledge = await page.getByLabel("Knowledge document").inputValue();
   await page.getByRole("button", { name: "Generate avatar demo export" }).click();
   await expect.poll(() => calls, { timeout: 5000 }).toHaveLength(8);
   const baseSeed = checksumSeed(
     "NarraTwin AI",
-    "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.\n\nEvery generated walkthrough claim must cite retrieved source chunks from approved knowledge.",
+    defaultKnowledge,
     "RECRUITER",
     "CONCISE",
     "es",
@@ -449,6 +473,61 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
     "POST /api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-consents",
     "POST /api/v1/projects/proj_ui/walkthrough-runs/run_ui_smoke/avatar-renders",
   ]);
+});
+
+test("home page stops before media generation when the walkthrough is refused", async ({ page }) => {
+  const calls: string[] = [];
+  await page.route("**/api/v1/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    calls.push(`${request.method()} ${path}`);
+
+    if (request.method() === "POST" && path === "/api/v1/projects") {
+      await route.fulfill({ json: { projectId: "proj_ui" } });
+      return;
+    }
+    if (request.method() === "POST" && path === "/api/v1/projects/proj_ui/knowledge-documents") {
+      await route.fulfill({ json: { documentId: "doc_ui" } });
+      return;
+    }
+    if (
+      request.method() === "PATCH" &&
+      path === "/api/v1/projects/proj_ui/knowledge-documents/doc_ui/approval"
+    ) {
+      await route.fulfill({ json: { documentId: "doc_ui", approvalStatus: "APPROVED" } });
+      return;
+    }
+    if (request.method() === "POST" && path === "/api/v1/projects/proj_ui/ingestion-runs") {
+      await route.fulfill({ json: { ingestionRunId: "ing_ui", status: "COMPLETED" } });
+      return;
+    }
+    if (request.method() === "POST" && path === "/api/v1/projects/proj_ui/walkthrough-runs") {
+      await route.fulfill({ json: refusedWalkthroughResponse });
+      return;
+    }
+    await route.fulfill({ status: 500, json: { error: "unexpected downstream media route" } });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Synthetic avatar consent").check();
+  await page.getByLabel("Knowledge document").fill("Too little unrelated text.");
+  await page.getByRole("button", { name: "Generate avatar demo export" }).click();
+
+  await expect(
+    page.getByText("Walkthrough refused: The request was refused because retrieved context was insufficient."),
+  ).toBeVisible();
+  await page.waitForTimeout(250);
+
+  expect(calls).toEqual([
+    "POST /api/v1/projects",
+    "POST /api/v1/projects/proj_ui/knowledge-documents",
+    "PATCH /api/v1/projects/proj_ui/knowledge-documents/doc_ui/approval",
+    "POST /api/v1/projects/proj_ui/ingestion-runs",
+    "POST /api/v1/projects/proj_ui/walkthrough-runs",
+  ]);
+  expect(calls.some((call) => call.includes("/multilingual-runs"))).toBe(false);
+  expect(calls.some((call) => call.includes("/avatar-consents"))).toBe(false);
+  expect(calls.some((call) => call.includes("/avatar-renders"))).toBe(false);
 });
 
 test("home page blocks avatar artifacts with mismatched multilingual provenance", async ({ page }) => {
