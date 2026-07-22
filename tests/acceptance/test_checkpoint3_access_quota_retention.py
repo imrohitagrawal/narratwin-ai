@@ -8,6 +8,7 @@ import os
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -380,11 +381,15 @@ def assert_no_canary_leak(response_text: str) -> None:
 
 
 def assert_runtime_access_quota_retention_evidence(evidence: dict[str, Any]) -> None:
+    runtime_nonce = evidence.get("runtimeNonce")
+    assert isinstance(runtime_nonce, str) and runtime_nonce.startswith("cp5-runtime-")
+    assert evidence["runtimeSource"] == "fastapi-testclient"
     assert evidence["runtimeProjectsCreated"] >= 2, "runtime project creation evidence is required"
     assert evidence["runtimeRunsCreated"] >= 2, "runtime run evidence is required"
     assert evidence["accessBoundary"]["crossActorStatus"] == 403
     assert evidence["accessBoundary"]["crossProjectReplayCode"] == "NOT_FOUND"
     assert evidence["accessBoundary"]["idempotencyActorScoped"] is True
+    assert evidence["accessBoundary"]["hostedDemoIdempotencyConflictCode"] == "IDEMPOTENCY_CONFLICT"
     assert evidence["quota"]["documentLimitCode"] == "PROJECT_DOCUMENT_LIMIT_EXCEEDED"
     assert evidence["quota"]["uploadLimitCode"] == "UPLOAD_TOO_LARGE"
     assert evidence["quota"]["promptLimitCode"] == "PROMPT_TOO_LARGE"
@@ -400,6 +405,7 @@ def assert_runtime_access_quota_retention_evidence(evidence: dict[str, Any]) -> 
 
 def test_checkpoint3_access_quota_retention_executes_runtime_api_boundary_path() -> None:
     client = TestClient(app)
+    runtime_nonce = f"cp5-runtime-{uuid4().hex}"
     alpha, alpha_document, _alpha_ingestion, alpha_run = prepare_runtime_project(
         client,
         prefix="cp5-alpha",
@@ -524,6 +530,17 @@ def test_checkpoint3_access_quota_retention_executes_runtime_api_boundary_path()
     assert active.json()["providerPosture"]["allowNetworkEgress"] is False
     assert_no_canary_leak(active.text)
 
+    forged_artifact_replay = hosted_demo_payload_from_run(
+        project=beta,
+        run=beta_run,
+        idempotency_key="cp5_access_active",
+        retention_record_id="retention_cp5_forged",
+    )
+    forged_response = client.post("/api/v1/hosted-demo/access-decisions", json=forged_artifact_replay)
+    assert forged_response.status_code == 409
+    assert forged_response.json()["error"]["code"] == "IDEMPOTENCY_CONFLICT"
+    assert_no_canary_leak(forged_response.text)
+
     quota_payload = copy.deepcopy(active_payload)
     quota_payload["idempotencyKey"] = "cp5_access_quota_second"
     quota_second = client.post("/api/v1/hosted-demo/access-decisions", json=quota_payload)
@@ -564,14 +581,17 @@ def test_checkpoint3_access_quota_retention_executes_runtime_api_boundary_path()
     assert_no_canary_leak(json.dumps(ops_body))
 
     runtime_evidence = {
-        "runtimeProjectsCreated": 3,
-        "runtimeRunsCreated": 2,
+        "runtimeNonce": runtime_nonce,
+        "runtimeSource": "fastapi-testclient",
+        "runtimeProjectsCreated": len({alpha["projectId"], beta["projectId"], document_limit_project["projectId"]}),
+        "runtimeRunsCreated": len({alpha_run["runId"], beta_run["runId"]}),
         "accessBoundary": {
             "crossActorStatus": cross_actor.status_code,
             "crossProjectReplayCode": cross_project_replay.json()["error"]["code"],
             "mismatchedSourceRunStatus": mismatched_source_run.status_code,
             "idempotencyActorScoped": bob_same_key["projectId"] != alpha["projectId"]
             and blocked_idempotency_replay.status_code == 403,
+            "hostedDemoIdempotencyConflictCode": forged_response.json()["error"]["code"],
         },
         "quota": {
             "documentLimitCode": document_limit.json()["error"]["code"],
@@ -598,6 +618,7 @@ def test_checkpoint3_access_quota_retention_rejects_static_or_status_only_eviden
     static_status = {
         "runtimeProjectsCreated": 0,
         "runtimeRunsCreated": 0,
+        "runtimeSource": "status-only",
         "accessBoundary": {
             "crossActorStatus": 200,
             "crossProjectReplayCode": "STATIC_PASS",

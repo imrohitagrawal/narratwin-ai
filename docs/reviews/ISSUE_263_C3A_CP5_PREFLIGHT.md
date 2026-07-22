@@ -108,6 +108,13 @@ Disposition:
 
 Cross-model review is skipped in this autonomous execution context because the available review path is local adversarial review and test-driven negative canaries.
 
+Fan-out disposition before PR:
+
+- Access/quota/retention reviewer found no blocker and requested a stronger hosted-demo idempotency canary; disposition: added a reused-idempotency forged artifact/source replay assertion expecting `IDEMPOTENCY_CONFLICT`.
+- API/security/observability reviewer found blocker-level gaps in snake_case failure-field redaction and artifact-boundary proof; disposition: expanded harness redaction for snake_case access/quota/retention fields and added the forged artifact/source replay assertion.
+- Governance/performance/test reviewer found blocker-level static-success risk in the acceptance helper and repeated the artifact-boundary gap; disposition: the runtime evidence contract now requires a positive-path `cp5-runtime-` nonce plus `fastapi-testclient` source marker, and the forged artifact/source replay assertion covers artifact-boundary proof.
+- Non-blocking retention setup note: the terminal deletion state is seeded through trusted local/fake storage because this slice has no deletion HTTP endpoint; the replay denial itself is still verified through the runtime API.
+
 ## Skill And Tool Selection Ledger
 
 | Skill/tool | Decision | Evidence or prevented action |

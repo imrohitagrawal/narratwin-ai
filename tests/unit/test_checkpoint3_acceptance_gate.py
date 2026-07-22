@@ -355,6 +355,14 @@ def test_checkpoint3_acceptance_redacts_access_quota_retention_evidence_fields()
                 "deletionEvidenceId: deletion_private",
                 "accessRecordId: access_private",
                 "artifactChecksum: sha256:artifact-private",
+                "quota_reservation_id: quota_snake_private",
+                "idempotency_scope: idem_scope_snake_private",
+                "request_checksum: sha256:snake-private",
+                "retention_record_id: retention_snake_private",
+                "tombstone_checksum: sha256:snake-tombstone",
+                "deletion_evidence_id: deletion_snake_private",
+                "access_record_id: access_snake_private",
+                "artifact_checksum: sha256:artifact-snake-private",
             )
         )
     )
@@ -378,6 +386,22 @@ def test_checkpoint3_acceptance_redacts_access_quota_retention_evidence_fields()
     assert "access_private" not in output
     assert "artifactChecksum" not in output
     assert "artifact-private" not in output
+    assert "quota_reservation_id" not in output
+    assert "quota_snake_private" not in output
+    assert "idempotency_scope" not in output
+    assert "idem_scope_snake_private" not in output
+    assert "request_checksum" not in output
+    assert "snake-private" not in output
+    assert "retention_record_id" not in output
+    assert "retention_snake_private" not in output
+    assert "tombstone_checksum" not in output
+    assert "snake-tombstone" not in output
+    assert "deletion_evidence_id" not in output
+    assert "deletion_snake_private" not in output
+    assert "access_record_id" not in output
+    assert "access_snake_private" not in output
+    assert "artifact_checksum" not in output
+    assert "artifact-snake-private" not in output
 
 
 def test_checkpoint3_acceptance_timeout_is_bounded_and_redacted(monkeypatch: Any) -> None:

@@ -37,8 +37,10 @@ SENSITIVE_OUTPUT_PATTERNS = (
         r"claimSupports|sourceClaimSupportIds|evidenceSnapshot|redactedExcerpt)[^\n]*"
     ),
     re.compile(
-        r"(?i)(inviteSecret|sessionSecret|quotaReservationId|idempotencyScope|requestChecksum|"
-        r"retentionRecordId|tombstoneChecksum|deletionEvidenceId|accessRecordId|artifactChecksum)[^\n]*"
+        r"(?i)(inviteSecret|sessionSecret|quotaReservationId|quota_reservation_id|idempotencyScope|"
+        r"idempotency_scope|requestChecksum|request_checksum|retentionRecordId|retention_record_id|"
+        r"tombstoneChecksum|tombstone_checksum|deletionEvidenceId|deletion_evidence_id|accessRecordId|"
+        r"access_record_id|artifactChecksum|artifact_checksum)[^\n]*"
     ),
 )
 
