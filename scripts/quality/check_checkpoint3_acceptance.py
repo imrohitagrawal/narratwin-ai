@@ -18,9 +18,22 @@ STATUS_PASS = "PASS"
 STATUS_FAIL = "FAIL"
 STATUS_PLANNED = "PLANNED"
 MAX_FAILURE_SUMMARY_CHARS = 320
+PROBE_TIMEOUT_SECONDS = 120
+PROBE_ENV_DENYLIST = (
+    "LANGFUSE_PUBLIC_KEY",
+    "LANGFUSE_SECRET_KEY",
+    "LANGFUSE_HOST",
+    "NARRATWIN_STATE_DIR",
+    "NARRATWIN_STAGE4_STATE_FILE",
+    "NARRATWIN_STAGE6_STATE_FILE",
+    "NARRATWIN_STAGE7_STATE_FILE",
+)
 SENSITIVE_OUTPUT_PATTERNS = (
     re.compile(r"(?i)(secret|token|provider payload|raw upload|raw prompt|generated script|private identifier)[^\n]*"),
     re.compile(r"(?i)(api[_-]?key|authorization|bearer)\s*[:=]\s*['\"]?[^'\"\s]+"),
+    re.compile(
+        r"(?i)(acceptedScriptText|claimText|contextRefs|claimSupports|evidenceSnapshot|redactedExcerpt)[^\n]*"
+    ),
 )
 
 
@@ -103,8 +116,8 @@ PROBES: tuple[Probe, ...] = (
         label="output-correctness that executes rather than reads",
         command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_output_correctness.py", "-q"),
         env=((PRODUCT_FAITHFUL_ENV, "1"),),
-        implemented=False,
-        planned_reason="future C3A probe; CP1 adds the no-docs/static false-pass rule",
+        implemented=True,
+        planned_reason="",
     ),
 )
 
@@ -121,8 +134,11 @@ PLANNED_PROBES = tuple((probe.label, display_command(probe)) for probe in PROBES
 def validate_probe_contract(probes: Sequence[Probe]) -> list[str]:
     failures: list[str] = []
     implemented = [probe for probe in probes if probe.implemented]
-    if [probe.label for probe in implemented] != ["API E2E"]:
-        failures.append("C3A-CP1 may implement only the API E2E probe.")
+    if [probe.label for probe in implemented] != [
+        "API E2E",
+        "output-correctness that executes rather than reads",
+    ]:
+        failures.append("C3A-CP2 may implement only the API E2E and output-correctness probes.")
     for probe in probes:
         env = dict(probe.env)
         if env.get(PRODUCT_FAITHFUL_ENV) != "1":
@@ -144,6 +160,11 @@ def validate_implemented_probe(probe: Probe) -> list[str]:
         failures.append(f"{probe.label} must target executable acceptance tests.")
     if probe.label == "API E2E" and "tests/acceptance/test_checkpoint3_api_e2e.py" not in command:
         failures.append("API E2E must dispatch tests/acceptance/test_checkpoint3_api_e2e.py.")
+    if (
+        probe.label == "output-correctness that executes rather than reads"
+        and "tests/acceptance/test_checkpoint3_output_correctness.py" not in command
+    ):
+        failures.append("output-correctness must dispatch tests/acceptance/test_checkpoint3_output_correctness.py.")
     forbidden_terms = ("docs/", "docs\\", "snapshot", "static", "prose")
     for term in forbidden_terms:
         if term in command_text:
@@ -165,17 +186,31 @@ def run_probe(probe: Probe) -> ProbeResult:
             planned_reason=probe.planned_reason,
         )
     env = os.environ.copy()
+    for key in PROBE_ENV_DENYLIST:
+        env.pop(key, None)
     env.update(dict(probe.env))
-    completed = subprocess.run(
-        probe.command,
-        check=False,
-        cwd=ROOT,
-        env=env,
-        shell=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
+    try:
+        completed = subprocess.run(
+            probe.command,
+            check=False,
+            cwd=ROOT,
+            env=env,
+            shell=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=PROBE_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        timeout_output = exc.output if isinstance(exc.output, str) else ""
+        return ProbeResult(
+            label=probe.label,
+            status=STATUS_FAIL,
+            command=display_command(probe),
+            returncode=None,
+            output=f"probe timed out after {PROBE_TIMEOUT_SECONDS}s\n{timeout_output}",
+            planned_reason="",
+        )
     output = completed.stdout or ""
     status = STATUS_PASS if completed.returncode == 0 else STATUS_FAIL
     return ProbeResult(
