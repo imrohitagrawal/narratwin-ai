@@ -257,6 +257,31 @@ from local Stage 6/Stage 7 generation APIs:
   unsafe URLs, invite/session secrets, cookies, tokens, provider keys, or media
   bytes.
 
+Issue `#245` hardens the PR5 boundary after executable acceptance review found
+that metadata-only evidence still needs current credential checks and precise
+local tombstone semantics. Hosted-demo idempotent replay now checks enabled
+posture, current invite/session credentials, TTL-capped session expiry, and
+trusted stored terminal local retention state before returning a stored
+decision. Disclosure text is allowlisted so raw-output/provider-payload
+canaries, encoded unsafe display text, and cloned-identity or real-person
+likeness claims cannot be echoed through reviewer metadata. Deleted local/fake
+retention evidence is bound by deterministic tombstone checksum, tombstone ID,
+deletion evidence ID, deletion request time, deleted time, provider deletion
+status, artifact/source metadata, and `localOnlyProviderEvidence`, but
+caller-supplied terminal tombstone metadata is validation-only denial metadata
+and cannot seed terminal retention state. Trusted stored terminal retention
+state is keyed without trusting caller-controlled `retentionRecordId`, blocks
+stale active idempotency replay from preserving reviewer-visible artifact
+metadata, and returns trusted terminal retention metadata in that denial. The
+terminal retention state is monotonic so `DELETED` evidence cannot be downgraded
+to pending by a later marker. The
+public response checksum, idempotency scope, and access record ID redact
+invite/session secret material; secret-bound replay comparison remains internal.
+This remains local/fake evidence only and
+does not authorize hosted deployment, provider egress, paid spend, cloned
+identity, Product Mode 2 implementation, public distribution, or production
+readiness.
+
 This keeps the provider-adapter boundary intact while adding a reviewable access
 and evidence surface that can later be replaced or backed by real hosted
 infrastructure only through a separate owner-approved issue with fresh source

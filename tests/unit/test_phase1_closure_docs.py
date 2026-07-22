@@ -852,24 +852,26 @@ def test_issue_243_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
             "backend/Dockerfile",
             "pyproject.toml",
             "uv.lock",
-            "frontend/package.json",
             "frontend/Dockerfile",
             "docker-compose.yml",
             "backend/app/avatar_video_provider.py",
             "backend/app/stage6.py",
             "backend/app/stage7.py",
+            "frontend/package.json",
+            "frontend/package-lock.json",
         ],
     ) == [
         f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
         f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
         f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
         f"Phase 1 Closure branch {branch} may not change uv.lock.",
-        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
         f"Phase 1 Closure branch {branch} may not change frontend/Dockerfile.",
         f"Phase 1 Closure branch {branch} may not change docker-compose.yml.",
         f"Phase 1 Closure branch {branch} may not change backend/app/avatar_video_provider.py.",
         f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
         f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+        f"Phase 1 Closure branch {branch} may not change frontend/package-lock.json.",
     ]
 
 
@@ -889,6 +891,78 @@ def test_issue_243_near_match_branch_fails_closed(monkeypatch: Any) -> None:
         f"Phase 1 Closure branch {branch} may not change docs/STAGE_ISSUE_PLAN.md.",
         f"Phase 1 Closure branch {branch} may not change backend/app/hosted_demo.py.",
         f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+    ]
+
+
+def test_issue_245_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-245-checkpoint1-acceptance-hardening"
+    allowed = [
+        "docs/governance/preflights/issue-245.json",
+        "docs/reviews/ISSUE_245_DEMO_CHECKPOINT1_ACCEPTANCE_HARDENING.md",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/API_CONTRACT.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/ADR/0002-provider-agnostic-adapters.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "backend/app/hosted_demo.py",
+        "backend/app/main.py",
+        "tests/unit/test_hosted_demo.py",
+        "tests/api/test_hosted_demo_api.py",
+        "frontend/package.json",
+        "frontend/package-lock.json",
+        "frontend/src/app/page.tsx",
+        "frontend/src/app/page.test.tsx",
+        "frontend/tests/smoke.spec.ts",
+    ]
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+            "pyproject.toml",
+            "uv.lock",
+            "frontend/Dockerfile",
+            "docker-compose.yml",
+            "backend/app/avatar_video_provider.py",
+            "backend/app/stage6.py",
+            "backend/app/stage7.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+        f"Phase 1 Closure branch {branch} may not change frontend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change docker-compose.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/avatar_video_provider.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+    ]
+
+
+def test_issue_245_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-245-checkpoint1-acceptance-hardening-typo"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-245.json",
+            "docs/STATUS.md",
+            "backend/app/hosted_demo.py",
+            "tests/unit/test_hosted_demo.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-245.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/STATUS.md.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/hosted_demo.py.",
+        f"Phase 1 Closure branch {branch} may not change tests/unit/test_hosted_demo.py.",
     ]
 
 
@@ -1013,25 +1087,7 @@ def test_status_state_v1_contract_rejects_missing_table() -> None:
 
 def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
-    next_action = (
-        "| SSV1-NEXT | next-action | issue #243 / PR5 | "
-        "demo-checkpoint1-pr5-hosted-demo-active | "
-        "demo-checkpoint1-pr5-hosted-demo-active | Demo Phase 0 planning completed through issue #225 and PR #226. "
-        "Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. "
-        "Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/"
-        "cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as "
-        "Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. "
-        "Issue #241 is complete through merged PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only. "
-        "Issue #243 is the PR5 hosted-demo access/quota/retention/demo-polish slice and is intended to complete "
-        "Checkpoint 1 by adding a local/fake disabled-default hosted-demo decision boundary, metadata-only "
-        "artifact/access records, quota reservation/refund/unknown-hold/idempotency evidence, "
-        "retention/deletion/tombstone evidence, disabled-provider posture, synthetic-media disclosure, and redacted "
-        "observability. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan "
-        "activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2, public "
-        "distribution, and production-readiness claims remain forbidden. Routine post-merge facts for the PR5 merge "
-        "SHA, issue closeout, branch deletion, and workflow URLs are recorded in PR/issue comments with no successor "
-        "status-only PR unless durable repository state changes. |"
-    )
+    next_action = "| SSV1-NEXT | " + " | ".join(phase1.STATUS_STATE_V1_ROWS["SSV1-NEXT"]) + " |"
     expected = (
         "| SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | "
         "Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 "

@@ -146,6 +146,28 @@ ISSUE_243_ALLOWED_CHANGED_FILES = {
     "frontend/src/app/page.test.tsx",
     "frontend/tests/smoke.spec.ts",
 }
+ISSUE_245_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-245.json",
+    "docs/reviews/ISSUE_245_DEMO_CHECKPOINT1_ACCEPTANCE_HARDENING.md",
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/API_CONTRACT.md",
+    "docs/TRACEABILITY.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/ADR/0002-provider-agnostic-adapters.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "backend/app/hosted_demo.py",
+    "backend/app/main.py",
+    "tests/unit/test_hosted_demo.py",
+    "tests/api/test_hosted_demo_api.py",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "frontend/src/app/page.tsx",
+    "frontend/src/app/page.test.tsx",
+    "frontend/tests/smoke.spec.ts",
+}
 ISSUE_172_ALLOWED_CHANGED_FILES = {
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -1405,10 +1427,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #243 / PR5",
-        "demo-checkpoint1-pr5-hosted-demo-active",
-        "demo-checkpoint1-pr5-hosted-demo-active",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is complete through merged PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only. Issue #243 is the PR5 hosted-demo access/quota/retention/demo-polish slice and is intended to complete Checkpoint 1 by adding a local/fake disabled-default hosted-demo decision boundary, metadata-only artifact/access records, quota reservation/refund/unknown-hold/idempotency evidence, retention/deletion/tombstone evidence, disabled-provider posture, synthetic-media disclosure, and redacted observability. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2, public distribution, and production-readiness claims remain forbidden. Routine post-merge facts for the PR5 merge SHA, issue closeout, branch deletion, and workflow URLs are recorded in PR/issue comments with no successor status-only PR unless durable repository state changes.",
+        "issue #245 / checkpoint1-acceptance-hardening",
+        "demo-checkpoint1-local-acceptance-complete",
+        "demo-checkpoint1-local-acceptance-complete",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Issue #229 is closed through merged PR #230 as Checkpoint 1 PR 1 spec/source-facts/governance only. Issue #235 is closed through merged PR #236 as Checkpoint 1 PR 2 latency/capacity/cost/access/quota/cache/pre-generation/retention/launch-level contract only. Issue #237 is closed through merged PR #238 as Checkpoint 1 PR 3 server-side TTS provider abstraction plus optional real TTS adapter boundary only. Issue #241 is complete through merged PR #242 as Checkpoint 1 PR 4 avatar/video provider boundary only. Issue #243 is closed through merged PR #244 as Checkpoint 1 PR 5 hosted-demo access/quota/retention/demo-polish. Issue #245 repairs post-PR244 acceptance blockers found by executable fan-out review: hosted-demo disclosure allowlisting and raw-output canary rejection, current invite/session credential validation before idempotent replay, session TTL capping, encoded unsafe-display rejection, deterministic local/fake tombstone metadata validation, trusted retention terminal replay blocking without `retentionRecordId` bypass, redacted public request checksums/access identifiers, and status/gate reconciliation. After issue #245 merges, Checkpoint 1 is accepted as local/fake disabled-default reviewer evidence only. The next approved action is a new issue for Checkpoint 2 consent/provenance planning only; cloned identity implementation remains forbidden until that issue is approved. Hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity, Product Mode 2 implementation, public distribution, and production-readiness claims remain forbidden.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3490,6 +3512,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_241_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-243-demo-checkpoint1-pr5-hosted-demo":
         allowed_files = ISSUE_243_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-245-checkpoint1-acceptance-hardening":
+        allowed_files = ISSUE_245_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-245-"):
+        allowed_files = set()
     elif branch.startswith("phase-1-closure-process-243-"):
         allowed_files = set()
     elif branch.startswith("phase-1-closure-process-241-"):
