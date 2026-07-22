@@ -158,8 +158,15 @@ type ApiErrorPayload = {
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
-const defaultKnowledge =
-  "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.\n\nEvery generated walkthrough claim must cite retrieved source chunks from approved knowledge.";
+export const defaultKnowledge = `# NarraTwin AI
+
+NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.
+
+It supports recruiter and engineering audiences with audience-aware explanations.
+
+The local demo uses mock local LLM, translation, voice, and avatar adapters for deterministic review.
+
+Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.`;
 const safeApiErrorCodes = new Set([
   "AVATAR_CONSENT_INVALID",
   "AVATAR_CONSENT_RECORD_REQUIRED",

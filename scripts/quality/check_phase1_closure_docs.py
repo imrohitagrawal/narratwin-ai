@@ -176,6 +176,7 @@ ISSUE_247_ALLOWED_CHANGED_FILES = {
     "frontend/src/app/page.test.tsx",
     "frontend/tests/smoke.spec.ts",
     "scripts/quality/check_phase1_closure_docs.py",
+    "tests/api/test_stage4_slice_api.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_172_ALLOWED_CHANGED_FILES = {

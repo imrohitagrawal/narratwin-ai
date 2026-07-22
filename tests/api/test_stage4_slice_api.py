@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,13 @@ from backend.app.main import app, reset_app_state_for_tests
 from backend.app.stage4 import MAX_PROJECTS_PER_TENANT, MAX_UPLOAD_REQUEST_BYTES, redact_public_text, stage4_service
 
 # Stage 4 generated script API tests require trace/run_id metadata and source_chunk citations.
+
+
+def frontend_default_knowledge() -> bytes:
+    page_source = Path("frontend/src/app/page.tsx").read_text()
+    match = re.search(r"export const defaultKnowledge = `(?P<knowledge>.*?)`;", page_source, flags=re.S)
+    assert match is not None
+    return match.group("knowledge").encode()
 
 
 def test_write_endpoints_require_idempotency_key() -> None:
@@ -103,6 +111,67 @@ def test_create_upload_ingest_generate_grounded_script_with_citations() -> None:
         for ref in run["contextRefs"]
     )
     assert all("evidenceSnapshot" in support for support in run["evaluation"]["claimSupports"])
+
+
+def test_frontend_default_knowledge_generates_checkpoint1_walkthrough() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+
+    project_response = client.post(
+        "/api/v1/projects",
+        json={
+            "name": "NarraTwin AI",
+            "description": "Grounded walkthrough generator",
+            "defaultAudience": "RECRUITER",
+            "defaultLanguage": "en",
+        },
+        headers={"Idempotency-Key": "test-ui-default-project"},
+    )
+    assert project_response.status_code == 201
+    project_id = project_response.json()["projectId"]
+
+    upload_response = client.post(
+        f"/api/v1/projects/{project_id}/knowledge-documents",
+        files={"file": ("stage4_project.md", frontend_default_knowledge(), "text/markdown")},
+        headers={"Idempotency-Key": "test-ui-default-upload"},
+    )
+    assert upload_response.status_code == 201
+    document = upload_response.json()
+
+    approve_response = client.patch(
+        f"/api/v1/projects/{project_id}/knowledge-documents/{document['documentId']}/approval",
+        json={"approvalStatus": "APPROVED", "reviewNote": "Approved UI default."},
+        headers={"Idempotency-Key": "test-ui-default-approval"},
+    )
+    assert approve_response.status_code == 200
+
+    ingestion_response = client.post(
+        f"/api/v1/projects/{project_id}/ingestion-runs",
+        json={"documentIds": [document["documentId"]]},
+        headers={"Idempotency-Key": "test-ui-default-ingest"},
+    )
+    assert ingestion_response.status_code == 201
+    assert ingestion_response.json()["status"] == "COMPLETED"
+
+    generation_response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs",
+        json={
+            "audience": "RECRUITER",
+            "requestedLanguage": "en",
+            "depth": "CONCISE",
+            "style": "CONFIDENT",
+            "prompt": "Create a concise grounded walkthrough for a recruiter.",
+        },
+        headers={"Idempotency-Key": "test-ui-default-generate"},
+    )
+
+    assert generation_response.status_code == 201
+    run = generation_response.json()
+    assert run["status"] == "COMPLETED"
+    assert run["evaluationStatus"] == "PASSED"
+    assert run["acceptedScriptText"]
+    assert run["contextRefs"]
+    assert run.get("failure") is None
 
 
 def test_upload_rejects_non_markdown_files_without_echoing_content() -> None:

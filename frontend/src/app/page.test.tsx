@@ -5,6 +5,7 @@ import Home, {
   artifactBlockReason,
   artifactHref,
   artifactSafetyState,
+  defaultKnowledge,
   evaluationBadgeLabel,
   readJson,
   sha256Hex,
@@ -61,6 +62,17 @@ describe("Home", () => {
         },
       }),
     ).toBe("0 unsupported claims");
+  });
+
+  it("renders default knowledge that is specific enough for the local demo happy path", () => {
+    expect(defaultKnowledge).toContain("recruiter and engineering audiences");
+    expect(defaultKnowledge).toContain("mock local LLM");
+    expect(defaultKnowledge).toContain("Every generated walkthrough claim must cite retrieved source chunks");
+
+    const html = renderToStaticMarkup(<Home />);
+
+    expect(html).toContain("recruiter and engineering audiences");
+    expect(html).toContain("mock local LLM");
   });
 
   it("turns refused walkthrough runs into a safe visible stop reason before media generation", () => {
