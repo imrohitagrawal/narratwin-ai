@@ -218,6 +218,39 @@ def decode_artifact(artifact: dict[str, Any], *, expected_mime: str, expected_su
     return decoded
 
 
+def runtime_evaluation_checksum(run: dict[str, Any]) -> str:
+    return checksum_text(
+        "\n".join(
+            [
+                run["evaluation"]["evaluationId"],
+                run["runId"],
+                run["trace"]["traceId"],
+                run["evaluationStatus"],
+                ",".join(context["contextRefId"] for context in run["contextRefs"]),
+                ",".join(str(support["citationIndex"]) for support in run["evaluation"]["claimSupports"]),
+            ]
+        )
+    )
+
+
+def runtime_claim_support_ids(run: dict[str, Any]) -> list[str]:
+    return [support["claimSupportId"] for support in run["evaluation"]["claimSupports"]]
+
+
+def assert_preserves_grounded_runtime_text(text: str, *, run: dict[str, Any]) -> None:
+    assert "MEDIA-SENTINEL-CP4" in text
+    assert "[1]" in text
+    grounded_sentence = run["acceptedScriptText"].splitlines()[-1].removesuffix(" [1]")
+    content_lines = [
+        line
+        for line in text.splitlines()
+        if not re.fullmatch(r"\d+", line.strip()) and "-->" not in line
+    ]
+    normalized_text = re.sub(r"\s+", " ", " ".join(content_lines))
+    normalized_sentence = re.sub(r"\s+", " ", grounded_sentence)
+    assert normalized_sentence in normalized_text
+
+
 def assert_stage6_media_artifacts(multilingual: dict[str, Any], *, run: dict[str, Any]) -> None:
     assert multilingual["status"] == "COMPLETED"
     assert multilingual["sourceRunId"] == run["runId"]
@@ -235,7 +268,8 @@ def assert_stage6_media_artifacts(multilingual: dict[str, Any], *, run: dict[str
     ]
     assert trace["sourceEvaluationId"] == run["evaluation"]["evaluationId"]
     assert trace["evaluationStatus"] == "PASSED"
-    assert trace["sourceEvaluationChecksum"].startswith("sha256:")
+    assert trace["sourceEvaluationChecksum"] == runtime_evaluation_checksum(run)
+    assert trace["sourceClaimSupportIds"] == runtime_claim_support_ids(run)
 
     translated = decode_artifact(
         multilingual["artifacts"]["translatedScript"],
@@ -261,12 +295,16 @@ def assert_stage6_media_artifacts(multilingual: dict[str, Any], *, run: dict[str
     assert subtitles == multilingual["subtitlesText"]
     voice_manifest = json.loads(voice_manifest_text)
     metadata = json.loads(metadata_text)
+    assert_preserves_grounded_runtime_text(multilingual["sourceScriptText"], run=run)
+    assert_preserves_grounded_runtime_text(translated, run=run)
+    assert_preserves_grounded_runtime_text(subtitles, run=run)
     assert voice_manifest["provider"] == "mock"
     assert voice_manifest["providerMode"] == "LOCAL"
     assert voice_manifest["textChecksum"] == checksum_text(multilingual["translatedScriptText"])
     assert "No cloned voice or paid provider was used" in voice_manifest["disclosure"]
     assert metadata["sourceRunId"] == run["runId"]
     assert metadata["sourceEvaluationChecksum"] == trace["sourceEvaluationChecksum"]
+    assert metadata["sourceClaimSupportIds"] == trace["sourceClaimSupportIds"]
     assert metadata["artifacts"]["translatedScriptChecksum"] == multilingual["artifacts"]["translatedScript"]["checksum"]
     assert metadata["artifacts"]["subtitlesChecksum"] == multilingual["artifacts"]["subtitles"]["checksum"]
     assert metadata["artifacts"]["voiceManifestChecksum"] == multilingual["artifacts"]["voiceManifest"]["checksum"]
@@ -292,7 +330,7 @@ def assert_stage7_media_artifacts(avatar: dict[str, Any], *, run: dict[str, Any]
         support["citationIndex"] for support in run["evaluation"]["claimSupports"]
     ]
     assert trace["sourceEvaluationId"] == run["evaluation"]["evaluationId"]
-    assert trace["sourceEvaluationChecksum"].startswith("sha256:")
+    assert trace["sourceEvaluationChecksum"] == runtime_evaluation_checksum(run)
     assert trace["evaluationStatus"] == "PASSED"
     assert trace["multilingualRunId"] == multilingual["multilingualRunId"]
     assert trace["translatedScriptChecksum"] == multilingual["artifacts"]["translatedScript"]["checksum"]
@@ -311,6 +349,7 @@ def assert_stage7_media_artifacts(avatar: dict[str, Any], *, run: dict[str, Any]
         expected_suffix=".json",
     )
     assert "<script" not in demo_html.lower()
+    assert_preserves_grounded_runtime_text(demo_html, run=run)
     manifest = json.loads(manifest_text)
     placeholder = json.loads(placeholder_text)
     assert manifest["source"]["runId"] == run["runId"]
@@ -384,6 +423,51 @@ def test_checkpoint3_media_artifacts_rejects_artifact_shape_without_source_bindi
 
     with pytest.raises(AssertionError):
         assert_media_artifact_contract(run=run, multilingual=multilingual, avatar=mutated)
+
+
+def test_checkpoint3_media_artifacts_rejects_consistently_forged_source_evidence() -> None:
+    client = TestClient(app)
+    run, multilingual, avatar = runtime_media_artifact_path(client)
+    forged_checksum = "sha256:" + ("f" * 64)
+    forged_claim_support_ids = ["claim-static-fixture"]
+    mutated_multilingual = copy.deepcopy(multilingual)
+    mutated_avatar = copy.deepcopy(avatar)
+
+    mutated_multilingual["trace"]["sourceEvaluationChecksum"] = forged_checksum
+    mutated_multilingual["trace"]["sourceClaimSupportIds"] = forged_claim_support_ids
+    metadata_text = decode_artifact(
+        mutated_multilingual["artifacts"]["metadata"],
+        expected_mime="application/json",
+        expected_suffix=".json",
+    )
+    metadata = json.loads(metadata_text)
+    metadata["sourceEvaluationChecksum"] = forged_checksum
+    metadata["sourceClaimSupportIds"] = forged_claim_support_ids
+    metadata_encoded = json.dumps(metadata, sort_keys=True)
+    mutated_multilingual["artifacts"]["metadata"]["contentBase64"] = base64.b64encode(
+        metadata_encoded.encode("utf-8")
+    ).decode("ascii")
+    mutated_multilingual["artifacts"]["metadata"]["checksum"] = checksum_text(metadata_encoded)
+
+    mutated_avatar["trace"]["sourceEvaluationChecksum"] = forged_checksum
+    mutated_avatar["trace"]["sourceClaimSupportIds"] = forged_claim_support_ids
+    for artifact_name in ("renderManifest", "videoExportPlaceholder"):
+        artifact_text = decode_artifact(
+            mutated_avatar["artifacts"][artifact_name],
+            expected_mime="application/json",
+            expected_suffix=".json",
+        )
+        artifact_body = json.loads(artifact_text)
+        artifact_body["source"]["evaluationChecksum"] = forged_checksum
+        artifact_body["source"]["claimSupportIds"] = forged_claim_support_ids
+        encoded = json.dumps(artifact_body, sort_keys=True)
+        mutated_avatar["artifacts"][artifact_name]["contentBase64"] = base64.b64encode(
+            encoded.encode("utf-8")
+        ).decode("ascii")
+        mutated_avatar["artifacts"][artifact_name]["checksum"] = checksum_text(encoded)
+
+    with pytest.raises(AssertionError):
+        assert_media_artifact_contract(run=run, multilingual=mutated_multilingual, avatar=mutated_avatar)
 
 
 def test_checkpoint3_media_artifacts_rejects_checksum_or_mime_mismatch() -> None:

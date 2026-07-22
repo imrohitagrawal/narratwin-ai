@@ -278,6 +278,38 @@ def test_checkpoint3_acceptance_redacts_runtime_evidence_fields() -> None:
     assert "chunkChecksum" not in output
 
 
+def test_checkpoint3_acceptance_redacts_media_artifact_fields() -> None:
+    output = checkpoint3.summarize_failure_output(
+        "\n".join(
+            (
+                "contentBase64: TWVkaWEgYnl0ZXM=",
+                "sourceScriptText: MEDIA-SENTINEL-CP4 generated body",
+                "translatedScriptText: translated generated body",
+                "subtitlesText: subtitle generated body",
+                "demoExport: <html>local demo body</html>",
+                "renderManifest: {'fileName': 'demo.html', 'checksum': 'sha256:artifact'}",
+                "videoExportPlaceholder: {'contentBase64': 'ZXhwb3J0'}",
+                "sourceClaimSupportIds: ['claim-static-fixture']",
+            )
+        )
+    )
+
+    assert "contentBase64" not in output
+    assert "TWVkaWEgYnl0ZXM=" not in output
+    assert "sourceScriptText" not in output
+    assert "MEDIA-SENTINEL-CP4 generated body" not in output
+    assert "translatedScriptText" not in output
+    assert "subtitlesText" not in output
+    assert "demoExport" not in output
+    assert "local demo body" not in output
+    assert "renderManifest" not in output
+    assert "fileName" not in output
+    assert "checksum" not in output
+    assert "videoExportPlaceholder" not in output
+    assert "sourceClaimSupportIds" not in output
+    assert "claim-static-fixture" not in output
+
+
 def test_checkpoint3_acceptance_timeout_is_bounded_and_redacted(monkeypatch: Any) -> None:
     def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
         raise subprocess.TimeoutExpired(

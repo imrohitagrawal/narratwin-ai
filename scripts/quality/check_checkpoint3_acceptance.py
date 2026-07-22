@@ -32,7 +32,9 @@ SENSITIVE_OUTPUT_PATTERNS = (
     re.compile(r"(?i)(secret|token|provider payload|raw upload|raw prompt|generated script|private identifier)[^\n]*"),
     re.compile(r"(?i)(api[_-]?key|authorization|bearer)\s*[:=]\s*['\"]?[^'\"\s]+"),
     re.compile(
-        r"(?i)(acceptedScriptText|claimText|contextRefs|claimSupports|evidenceSnapshot|redactedExcerpt)[^\n]*"
+        r"(?i)(acceptedScriptText|sourceScriptText|translatedScriptText|subtitlesText|contentBase64|demoExport|"
+        r"renderManifest|videoExportPlaceholder|voiceManifest|fileName|checksum|claimText|contextRefs|"
+        r"claimSupports|sourceClaimSupportIds|evidenceSnapshot|redactedExcerpt)[^\n]*"
     ),
 )
 
