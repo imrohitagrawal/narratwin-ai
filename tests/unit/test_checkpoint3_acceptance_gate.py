@@ -41,7 +41,7 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
     assert checkpoint3.main() == 1
 
     output = capsys.readouterr().out
-    assert len(calls) == 4
+    assert len(calls) == 5
     assert calls[0]["args"][0] == (
         "uv",
         "run",
@@ -67,6 +67,13 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
         "uv",
         "run",
         "pytest",
+        "tests/acceptance/test_checkpoint3_access_quota_retention.py",
+        "-q",
+    )
+    assert calls[4]["args"][0] == (
+        "uv",
+        "run",
+        "pytest",
         "tests/acceptance/test_checkpoint3_output_correctness.py",
         "-q",
     )
@@ -75,12 +82,12 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
     assert "PASS API E2E" in output
     assert "PASS language quality" in output
     assert "PASS media artifacts" in output
+    assert "PASS access/quota/retention" in output
     assert "PASS output-correctness that executes rather than reads" in output
-    assert "PLANNED access/quota/retention" in output
     assert "PLANNED security/observability" in output
     assert "PLANNED performance" in output
     assert "PLANNED real-browser E2E with no success-path interception" in output
-    assert "4 passed, 4 planned, 0 failed" in output
+    assert "5 passed, 3 planned, 0 failed" in output
 
 
 def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
@@ -113,11 +120,12 @@ def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
         "API E2E",
         "language quality",
         "media artifacts",
+        "access/quota/retention",
         "output-correctness that executes rather than reads",
     ]
     planned_reasons = [probe.planned_reason for probe in checkpoint3.PROBES if not probe.implemented]
     assert planned_reasons
-    assert all("CP1, CP2, CP3, and CP4" in reason for reason in planned_reasons)
+    assert all("CP1, CP2, CP3, CP4, and CP5" in reason for reason in planned_reasons)
 
 
 def test_checkpoint3_acceptance_rejects_docs_only_probe_commands() -> None:
@@ -197,6 +205,29 @@ def test_checkpoint3_acceptance_rejects_static_media_artifacts_probe_command() -
     failures = checkpoint3.validate_probe_contract(probes)
 
     assert any("media artifacts must dispatch tests/acceptance/test_checkpoint3_media_artifacts.py" in failure for failure in failures)
+    assert any("must not target static content" in failure for failure in failures)
+
+
+def test_checkpoint3_acceptance_rejects_static_access_quota_retention_probe_command() -> None:
+    probes = tuple(
+        checkpoint3.Probe(
+            label=probe.label,
+            command=("uv", "run", "pytest", "tests/fixtures/static_access_quota_retention_snapshot.py", "-q"),
+            env=probe.env,
+            implemented=probe.implemented,
+            planned_reason=probe.planned_reason,
+        )
+        if probe.label == "access/quota/retention"
+        else probe
+        for probe in checkpoint3.PROBES
+    )
+
+    failures = checkpoint3.validate_probe_contract(probes)
+
+    assert any(
+        "access/quota/retention must dispatch tests/acceptance/test_checkpoint3_access_quota_retention.py" in failure
+        for failure in failures
+    )
     assert any("must not target static content" in failure for failure in failures)
 
 
@@ -310,6 +341,69 @@ def test_checkpoint3_acceptance_redacts_media_artifact_fields() -> None:
     assert "claim-static-fixture" not in output
 
 
+def test_checkpoint3_acceptance_redacts_access_quota_retention_evidence_fields() -> None:
+    output = checkpoint3.summarize_failure_output(
+        "\n".join(
+            (
+                "inviteSecret: fake-invite-input",
+                "sessionSecret: fake-session-input",
+                "quotaReservationId: quota_private",
+                "idempotencyScope: idem_scope_private",
+                "requestChecksum: sha256:private",
+                "retentionRecordId: retention_private",
+                "tombstoneChecksum: sha256:private-tombstone",
+                "deletionEvidenceId: deletion_private",
+                "accessRecordId: access_private",
+                "artifactChecksum: sha256:artifact-private",
+                "quota_reservation_id: quota_snake_private",
+                "idempotency_scope: idem_scope_snake_private",
+                "request_checksum: sha256:snake-private",
+                "retention_record_id: retention_snake_private",
+                "tombstone_checksum: sha256:snake-tombstone",
+                "deletion_evidence_id: deletion_snake_private",
+                "access_record_id: access_snake_private",
+                "artifact_checksum: sha256:artifact-snake-private",
+            )
+        )
+    )
+
+    assert "inviteSecret" not in output
+    assert "fake-invite-input" not in output
+    assert "sessionSecret" not in output
+    assert "fake-session-input" not in output
+    assert "quotaReservationId" not in output
+    assert "quota_private" not in output
+    assert "idempotencyScope" not in output
+    assert "idem_scope_private" not in output
+    assert "requestChecksum" not in output
+    assert "retentionRecordId" not in output
+    assert "retention_private" not in output
+    assert "tombstoneChecksum" not in output
+    assert "private-tombstone" not in output
+    assert "deletionEvidenceId" not in output
+    assert "deletion_private" not in output
+    assert "accessRecordId" not in output
+    assert "access_private" not in output
+    assert "artifactChecksum" not in output
+    assert "artifact-private" not in output
+    assert "quota_reservation_id" not in output
+    assert "quota_snake_private" not in output
+    assert "idempotency_scope" not in output
+    assert "idem_scope_snake_private" not in output
+    assert "request_checksum" not in output
+    assert "snake-private" not in output
+    assert "retention_record_id" not in output
+    assert "retention_snake_private" not in output
+    assert "tombstone_checksum" not in output
+    assert "snake-tombstone" not in output
+    assert "deletion_evidence_id" not in output
+    assert "deletion_snake_private" not in output
+    assert "access_record_id" not in output
+    assert "access_snake_private" not in output
+    assert "artifact_checksum" not in output
+    assert "artifact-snake-private" not in output
+
+
 def test_checkpoint3_acceptance_timeout_is_bounded_and_redacted(monkeypatch: Any) -> None:
     def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
         raise subprocess.TimeoutExpired(
@@ -345,4 +439,5 @@ def test_make_checkpoint3_acceptance_invokes_executable_harness() -> None:
     assert "PASS API E2E" in result.stdout
     assert "PASS language quality" in result.stdout
     assert "PASS media artifacts" in result.stdout
+    assert "PASS access/quota/retention" in result.stdout
     assert "PASS output-correctness that executes rather than reads" in result.stdout
