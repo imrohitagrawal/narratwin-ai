@@ -360,7 +360,7 @@ def test_checkpoint3_output_correctness_rejects_cross_project_fact_replay() -> N
         filename="beacon_output.md",
         content=BEACON_OUTPUT_KNOWLEDGE,
     )
-    stage4_service.llm = CrossProjectFactProvider()
+    stage4_service.llm = cast(Any, CrossProjectFactProvider())
 
     run = generate_walkthrough(
         client,
