@@ -1526,7 +1526,11 @@ class Stage6Service:
             artifact_from_text(
                 file_name=f"{source_run_id}-{normalized_target_language}-script.md",
                 mime_type="text/markdown",
-                text=translation.translated_text,
+                text=render_translated_script_artifact_text(
+                    target_language=normalized_target_language,
+                    transcript_segments=transcript_segments,
+                    transcript_correctness=transcript_correctness,
+                ),
             ),
             expected_mime_type="text/markdown",
             expected_extension=".md",
@@ -1957,8 +1961,6 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
     provider_translated_text = str(translation_provider["translated_text"])
     if translated_script_text != provider_translated_text:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 translated text is inconsistent.")
-    if artifact_text(translated_script_artifact) != translated_script_text:
-        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 script artifact is inconsistent.")
     if artifact_text(subtitles_artifact) != subtitles_text:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 subtitle artifact is inconsistent.")
     if subtitles_text != generate_subtitles(script_text=translated_script_text, language=target_language):
@@ -2027,6 +2029,13 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         translated_script_text=translated_script_text,
         transcript_segments=transcript_segments,
     )
+    expected_translated_script_artifact_text = render_translated_script_artifact_text(
+        target_language=target_language,
+        transcript_segments=transcript_segments,
+        transcript_correctness=transcript_correctness,
+    )
+    if artifact_text(translated_script_artifact) != expected_translated_script_artifact_text:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 script artifact is inconsistent.")
     expected_request_checksum = build_multilingual_request_checksum(
         source_script=source_script_text,
         source_language=source_language,
@@ -2516,6 +2525,43 @@ def translated_script_text_from_transcript_segments(
     segments: Iterable[MultilingualTranscriptSegment],
 ) -> str:
     return " ".join(segment.target_text for segment in segments)
+
+
+def render_translated_script_artifact_text(
+    *,
+    target_language: str,
+    transcript_segments: tuple[MultilingualTranscriptSegment, ...],
+    transcript_correctness: TranscriptCorrectness,
+) -> str:
+    lines = [
+        "# Multilingual transcript",
+        "",
+        f"Target language: {target_language}",
+        f"Script: {transcript_correctness.script}",
+        f"Direction: {transcript_correctness.direction}",
+        "",
+    ]
+    for segment in transcript_segments:
+        lines.extend(
+            [
+                f"## {segment.segment_id}",
+                "",
+                f"Source English: {segment.source_text}",
+                "",
+                f"Target ({segment.target_language}): {segment.target_text}",
+                "",
+                f"English reference: {segment.english_reference_text}",
+                "",
+                f"Citations: {', '.join(segment.citation_markers)}",
+                "",
+                f"Context refs: {', '.join(segment.context_ref_ids)}",
+                f"Claim support ids: {', '.join(segment.claim_support_ids)}",
+                f"Source run id: {segment.source_run_id}",
+                f"Evaluation id: {segment.evaluation_id}",
+                "",
+            ]
+        )
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def validate_translated_script_matches_transcript(

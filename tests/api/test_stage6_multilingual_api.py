@@ -1,6 +1,7 @@
 from pathlib import Path
 import base64
 import json
+from typing import Any, cast
 
 from fastapi.testclient import TestClient
 
@@ -16,6 +17,32 @@ IDEMPOTENCY_HEADER = "Idempotency-" + "Key"
 
 def idempotency_headers(value: str) -> dict[str, str]:
     return {IDEMPOTENCY_HEADER: value}
+
+
+def assert_translated_script_artifact_contains_transcript(body: dict[str, object]) -> None:
+    artifacts = body["artifacts"]
+    assert isinstance(artifacts, dict)
+    translated_script_artifact = artifacts["translatedScript"]
+    assert isinstance(translated_script_artifact, dict)
+    artifact_text = base64.b64decode(translated_script_artifact["contentBase64"]).decode("utf-8")
+    assert translated_script_artifact["checksum"] == checksum_text(artifact_text)
+    transcript_correctness = cast(dict[str, object], body["transcriptCorrectness"])
+    transcript_segments = cast(list[dict[str, Any]], body["transcriptSegments"])
+    assert "# Multilingual transcript" in artifact_text
+    assert f"Target language: {body['targetLanguage']}" in artifact_text
+    assert f"Script: {transcript_correctness['script']}" in artifact_text
+    assert f"Direction: {transcript_correctness['direction']}" in artifact_text
+    assert artifact_text != body["translatedScriptText"]
+    for segment in transcript_segments:
+        assert f"## {segment['segmentId']}" in artifact_text
+        assert f"Source English: {segment['sourceText']}" in artifact_text
+        assert f"Target ({segment['targetLanguage']}): {segment['targetText']}" in artifact_text
+        assert f"English reference: {segment['englishReferenceText']}" in artifact_text
+        assert f"Citations: {', '.join(segment['citationMarkers'])}" in artifact_text
+        assert f"Context refs: {', '.join(segment['contextRefIds'])}" in artifact_text
+        assert f"Claim support ids: {', '.join(segment['claimSupportIds'])}" in artifact_text
+        assert f"Source run id: {segment['sourceRunId']}" in artifact_text
+        assert f"Evaluation id: {segment['evaluationId']}" in artifact_text
 
 
 class FakeTTSTransport:
@@ -156,6 +183,7 @@ def test_multilingual_walkthrough_api_returns_downloadable_script_and_subtitle_a
     assert body["artifacts"]["translatedScript"]["mimeType"] == "text/markdown"
     assert body["artifacts"]["subtitles"]["fileName"].endswith(".srt")
     assert body["artifacts"]["subtitles"]["contentBase64"]
+    assert_translated_script_artifact_contains_transcript(body)
     assert body["trace"]["tenantId"] == "tenant_local"
     assert body["trace"]["projectId"] == project_id
     assert body["trace"]["actorId"] == "user_local"
@@ -250,6 +278,7 @@ def test_multilingual_walkthrough_api_returns_structured_transcript_and_matching
     metadata = json.loads(base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8"))
     assert metadata["transcriptSegments"] == body["transcriptSegments"]
     assert metadata["transcriptCorrectness"] == body["transcriptCorrectness"]
+    assert_translated_script_artifact_contains_transcript(body)
 
 
 def test_multilingual_walkthrough_api_translates_original_manual_review_document() -> None:
@@ -294,6 +323,7 @@ Every generated walkthrough claim must cite retrieved source chunks from approve
     assert body["translatedScriptText"] != body["sourceScriptText"]
     metadata = json.loads(base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8"))
     assert metadata["transcriptSegments"] == body["transcriptSegments"]
+    assert_translated_script_artifact_contains_transcript(body)
 
 
 def test_priority2_language_refuses_honestly_instead_of_generating_fake_success() -> None:

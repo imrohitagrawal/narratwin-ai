@@ -564,7 +564,7 @@ function voiceManifestJson(
     providerMode: "LOCAL",
     language: context.multilingualRun?.targetLanguage,
     languageDisplayName: "Spanish",
-    textChecksum: context.multilingualRun?.artifacts.translatedScript.checksum,
+    textChecksum: `sha256:${sha256Hex(context.multilingualRun?.translatedScriptText ?? "")}`,
     durationSecondsEstimate: 2,
     mockAudioProfile: {
       durationMillisecondsEstimate: 2000,

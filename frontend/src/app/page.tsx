@@ -1237,7 +1237,7 @@ function voiceManifestMatches(
     manifest.language === multilingual.targetLanguage &&
     typeof manifest.languageDisplayName === "string" &&
     manifest.languageDisplayName.trim().length > 0 &&
-    manifest.textChecksum === multilingual.artifacts.translatedScript.checksum &&
+    manifest.textChecksum === `sha256:${sha256Hex(multilingual.translatedScriptText)}` &&
     typeof manifest.durationSecondsEstimate === "number" &&
     manifest.durationSecondsEstimate > 0 &&
     !!audioProfile &&

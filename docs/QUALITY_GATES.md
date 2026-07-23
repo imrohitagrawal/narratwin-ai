@@ -561,7 +561,10 @@ requires selected-audience semantic preservation, rejects heading-only generated
 claims, requires full generated-script segment coverage, expands small approved
 local/demo documents within retrieval top-k to all approved claim chunks, compares supported
 controlled translations against independent golden strings rather than the
-implementation fixture alone, requires Stage 6 metadata artifact parity, and writes
+implementation fixture alone, requires Stage 6 metadata artifact parity,
+requires the downloadable translated-script artifact to contain the same
+trilingual transcript data as the UI and metadata artifact rather than only the
+flat target-language text, and writes
 `reports/checkpoint3-multilingual/priority1-coverage-matrix.json` plus
 `reports/checkpoint3-multilingual/checkpoint3a-multilingual-summary.json`.
 The coverage matrix must include one positive row per Priority 1 language plus

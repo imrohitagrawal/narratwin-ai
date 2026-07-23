@@ -297,7 +297,21 @@ def assert_stage6_media_artifacts(multilingual: dict[str, Any], *, run: dict[str
         expected_mime="application/json",
         expected_suffix=".json",
     )
-    assert translated == multilingual["translatedScriptText"]
+    assert "# Multilingual transcript" in translated
+    assert f"Target language: {multilingual['targetLanguage']}" in translated
+    assert f"Script: {multilingual['transcriptCorrectness']['script']}" in translated
+    assert f"Direction: {multilingual['transcriptCorrectness']['direction']}" in translated
+    assert translated != multilingual["translatedScriptText"]
+    for segment in multilingual["transcriptSegments"]:
+        assert f"## {segment['segmentId']}" in translated
+        assert f"Source English: {segment['sourceText']}" in translated
+        assert f"Target ({segment['targetLanguage']}): {segment['targetText']}" in translated
+        assert f"English reference: {segment['englishReferenceText']}" in translated
+        assert f"Citations: {', '.join(segment['citationMarkers'])}" in translated
+        assert f"Context refs: {', '.join(segment['contextRefIds'])}" in translated
+        assert f"Claim support ids: {', '.join(segment['claimSupportIds'])}" in translated
+        assert f"Source run id: {segment['sourceRunId']}" in translated
+        assert f"Evaluation id: {segment['evaluationId']}" in translated
     assert subtitles == multilingual["subtitlesText"]
     voice_manifest = json.loads(voice_manifest_text)
     metadata = json.loads(metadata_text)

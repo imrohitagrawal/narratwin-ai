@@ -590,7 +590,21 @@ async function transcriptArtifactsMatchVisibleOutput(
       await visibleTranscript.getByText(row.sourceText).first().isVisible() &&
       await visibleTranscript.getByText(row.targetText).first().isVisible() &&
       await visibleTranscript.getByText(row.englishReferenceText).first().isVisible();
-    translatedScriptMatches = translatedScriptMatches && translatedScriptText.includes(row.targetText);
+    const citationMarkers = Array.isArray(row.citationMarkers) ? row.citationMarkers : [];
+    const contextRefIds = Array.isArray(row.contextRefIds) ? row.contextRefIds : [];
+    const claimSupportIds = Array.isArray(row.claimSupportIds) ? row.claimSupportIds : [];
+    translatedScriptMatches =
+      translatedScriptMatches &&
+      translatedScriptText.includes(`Source English: ${row.sourceText}`) &&
+      translatedScriptText.includes(`Target (${row.targetLanguage}): ${row.targetText}`) &&
+      translatedScriptText.includes(`English reference: ${row.englishReferenceText}`) &&
+      translatedScriptText.includes(`Citations: ${citationMarkers.join(", ")}`) &&
+      translatedScriptText.includes(`Context refs: ${contextRefIds.join(", ")}`) &&
+      translatedScriptText.includes(`Claim support ids: ${claimSupportIds.join(", ")}`) &&
+      typeof row.sourceRunId === "string" &&
+      translatedScriptText.includes(`Source run id: ${row.sourceRunId}`) &&
+      typeof row.evaluationId === "string" &&
+      translatedScriptText.includes(`Evaluation id: ${row.evaluationId}`);
   }
   await page.getByRole("link", { name: "Download transcript metadata" }).isVisible();
   return { metadataMatches, translatedScriptMatches };

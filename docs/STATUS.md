@@ -53,9 +53,10 @@ Use it to answer:
   output correctness. This branch updates the local/mock Stage 6 and browser UI
   path so Checkpoint 3A output-correctness proves source English, native-script
   target transcript, English reference/back-translation, citations,
-  source/evaluation/context/claim-support binding, artifact parity, Priority 1
-  language coverage, and honest Priority 2 planned/unsupported behavior before
-  `COMPLETED` is accepted. The local/demo boundary is product-faithful for the
+  source/evaluation/context/claim-support binding, translated-script artifact
+  parity with the full trilingual transcript, Priority 1 language coverage, and
+  honest Priority 2 planned/unsupported behavior before `COMPLETED` is
+  accepted. The local/demo boundary is product-faithful for the
   generated walkthrough product path: supported controlled scripts must preserve
   selected audience meaning, full generated-script segment coverage, small
   approved local/demo source documents are expanded to all approved claim chunks

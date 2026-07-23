@@ -706,11 +706,22 @@ def assert_successful_multilingual_contract(body: dict[str, Any], *, run: dict[s
         validate=True,
     ).decode("utf-8")
     assert translated_script_artifact["checksum"] == checksum_text(translated_script_text)
-    assert translated_script_text == body["translatedScriptText"]
+    assert "# Multilingual transcript" in translated_script_text
+    assert f"Target language: {body['targetLanguage']}" in translated_script_text
+    assert f"Script: {correctness.script}" in translated_script_text
+    assert f"Direction: {correctness.direction}" in translated_script_text
     if body["targetLanguage"] != "en":
-        assert translated_script_text == " ".join(
-            segment["targetText"] for segment in body["transcriptSegments"]
-        )
+        assert translated_script_text != body["translatedScriptText"]
+    for segment in body["transcriptSegments"]:
+        assert f"## {segment['segmentId']}" in translated_script_text
+        assert f"Source English: {segment['sourceText']}" in translated_script_text
+        assert f"Target ({segment['targetLanguage']}): {segment['targetText']}" in translated_script_text
+        assert f"English reference: {segment['englishReferenceText']}" in translated_script_text
+        assert f"Citations: {', '.join(segment['citationMarkers'])}" in translated_script_text
+        assert f"Context refs: {', '.join(segment['contextRefIds'])}" in translated_script_text
+        assert f"Claim support ids: {', '.join(segment['claimSupportIds'])}" in translated_script_text
+        assert f"Source run id: {segment['sourceRunId']}" in translated_script_text
+        assert f"Evaluation id: {segment['evaluationId']}" in translated_script_text
     validate_multilingual_transcript_correctness(
         language_tag=metadata["targetLanguage"],
         source_text=metadata["sourceScriptText"],

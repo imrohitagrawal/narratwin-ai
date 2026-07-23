@@ -35,8 +35,9 @@ Superseding human-review blockers found after the prior final pass:
 | Transliteration or untranslated source terms passing because script presence was treated as enough. | Forbidden source-phrase checks and exact target golden strings for every Priority 1 language. |
 | One generated source line translated while the approved source supported multiple cited segments. | Stage 4 generated-script coverage tests, heading-only chunk rejection, and Stage 6 multi-segment transcript/artifact assertions. |
 | Fixture self-consistency mistaken for independent output correctness. | Test-owned golden strings that fail when implementation fixtures regress to previous bad output. |
+| Downloadable `translatedScript` artifact contained only target text while metadata/UI contained the full transcript. | Runtime script artifact rendering and tests must require source English, target text, English reference, citations, context refs, claim-support ids, source run id, and evaluation id for every segment. |
 
-Fresh final review status: `BLOCKERS FIXED LOCALLY / PR-HEAD FAN-OUT PENDING`.
+Fresh final review status: `TRANSLATED-SCRIPT-ARTIFACT FIX LOCAL / LOCAL GATES PASS / FULL PR-HEAD FAN-OUT PENDING`.
 
 The final review restarted after pushed head `100c6059795e3d50e2c95f15ef6d203413de5bd6`
 was blocked for CP8 default-path nondeterminism. Commit
@@ -44,8 +45,18 @@ was blocked for CP8 default-path nondeterminism. Commit
 dead Next dev locks before the CP8 browser probe starts. A later final
 Doubt-Driven sub-agent review on `d87a66e3e43a61ae3f404d3733f9de64c26cb7bc`
 found that Russian and Ukrainian successful outputs could still contain the raw
-English source-domain term `walkthrough`. That blocker is fixed locally and
-must be rerun against the next pushed PR head.
+English source-domain term `walkthrough`. Commit
+`e8811841d2aa8786d78f4222bbd22b63aeb3d89b` fixes that blocker. In a later
+main-session rerun, the sub-agent tool was not exposed, so the same
+Doubt-Driven prompt was executed as an independent fallback review against
+`e8811841`; it passed with the executable evidence recorded below. Full
+current-head sub-agent fan-out then found that the downloadable
+`translatedScript` markdown artifact was target-only instead of the same
+trilingual transcript data exposed in the UI and metadata. That blocker is
+being fixed locally and must be rerun through gates and final fan-out after the
+next pushed PR head. Local gates for this fix now pass: `make quality`,
+`make checkpoint3-acceptance`, `make ci`, focused Stage 6/API/output-correctness
+tests, and the targeted CP8 browser smoke test.
 
 | Final reviewer | Latest result | Evidence summary |
 |---|---|---|
@@ -60,14 +71,18 @@ must be rerun against the next pushed PR head.
 | TDD independent fallback, rerun on `6099612` | `PASS` | Verified the CP8 failure has regression tests for stale dead-PID Next locks and live-lock preservation, and the existing behavior tests remain green for API/output correctness, artifact parity, browser contract, and provider posture spoofing. |
 | False-Positive independent fallback, rerun on `6099612` | `PASS` | Reran output-correctness and acceptance-gate tests after the CP8 harness change. No metadata-only, artifact-only, fallback, partial, wrong-script, missing-source/reference/target/binding, citation-drift, glossary leakage, or provider-posture false-pass path was found. |
 | Doubt-Driven Reviewer, rerun on `d87a66e` | `BLOCK` before latest local fix | Found Russian and Ukrainian deterministic fixture outputs leaked standalone English `walkthrough` inside otherwise Cyrillic successful target text. Fixed locally by replacing those target strings, removing the same source term from German, Dutch, and Filipino fixture strings, adding standalone `walkthrough` to forbidden source-term checks, extending the original manual-review document test, and adding runtime validation that rejects untranslated source-domain terms. |
+| Doubt-Driven independent fallback, rerun on `e8811841` | `PASS` | Sub-agent tool was not exposed in the main session, so the final Doubt-Driven prompt was executed as fallback. Reran `make checkpoint3-acceptance`, focused Stage 6/API/output-correctness/language-quality/acceptance-gate tests, `git diff --check origin/main...HEAD`, matrix/summary inspection, CP8 port cleanup check, and a direct FastAPI runtime probe for the original NarraTwin manual-review document across Hindi, Arabic, Hebrew, Japanese, Korean, Russian, Ukrainian, French, and Thai. The probe verified four cited segments, source English, target text, English reference, native script, no standalone `walkthrough` leakage, citations `[1]` through `[4]`, source/eval/context/claim-support binding, artifact parity, mock providers, and Bengali unsupported refusal. No remaining doubt-driven finding was found in this fallback pass. |
+| Output-Correctness Reviewer, rerun on `e8811841` | `BLOCK` before latest local fix | Executed FastAPI runtime multilingual generation and decoded artifacts. The API and metadata had four Hindi transcript segments, but `artifacts.translatedScript.contentBase64` decoded to only flat target-language text. It omitted per-segment source English, English reference/back-translation, citation/context/claim-support bindings, source run id, and evaluation id. Fixed locally by rendering the translated-script artifact as a trilingual transcript and hardening API, acceptance, media-artifact, and browser tests to reject target-only script artifacts. |
 
-No final sign-off is claimed after the latest source-domain-term fix until the
-fix is committed, pushed, and the mandatory Output-Correctness, TDD,
-Doubt-Driven, and False-Positive reviews pass against that pushed PR head.
+No full mandatory fan-out sign-off is claimed after the latest translated-script
+artifact fix until gates pass and the mandatory Output-Correctness, TDD,
+Doubt-Driven, and False-Positive reviews pass against the same pushed PR head
+through actual reviewer notifications or explicitly recorded independent
+fallback.
 
 ## Corrective Evidence Snapshot
 
-Status: `LOCAL-GATES-PASS / PR-HEAD-FANOUT-PENDING`
+Status: `TRANSLATED-SCRIPT-ARTIFACT FIX LOCAL / LOCAL GATES PASS / FULL PR-HEAD-FANOUT-PENDING`
 
 Current corrective tests added after human review:
 

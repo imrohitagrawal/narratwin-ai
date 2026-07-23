@@ -78,10 +78,18 @@ fan-out and independent fallback review found additional blockers around explici
 rows, original manual-review document support, browser voice-provider posture,
 uncommitted evidence state, and fixed CP8 browser ports that made the default
 acceptance gate nondeterministic when stale local review servers were present.
-The latest final Doubt-Driven review on `d87a66e` then found standalone English
-`walkthrough` leaking in successful Russian/Ukrainian target text. That blocker
-is fixed locally and requires fresh gates plus a final fan-out against the next
-pushed PR head. Human local-demo review remains the final manual approval input.
+The latest final Doubt-Driven sub-agent review on `d87a66e` then found
+standalone English `walkthrough` leaking in successful Russian/Ukrainian target
+text. Commit `e8811841` fixed that blocker. A main-session independent fallback
+Doubt-Driven rerun against `e8811841` passed because the sub-agent tool was not
+exposed in that turn. A subsequent Output-Correctness fan-out pass found the
+downloadable `translatedScript` artifact still contained only flat target text
+instead of the same source English, target text, English reference,
+citations, and trace bindings exposed in the UI and metadata. That blocker is
+fixed locally and requires gates plus full current-head fan-out after the next
+pushed commit; local `make quality`, `make checkpoint3-acceptance`, `make ci`,
+focused API/output-correctness tests, and targeted CP8 browser smoke now pass.
+Human local-demo review remains the final manual approval input.
 Final evidence is recorded in
 `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md`.
 
@@ -158,9 +166,9 @@ there is no successor status-only follow-up needed.
 | Tests / current behavior | `tests/acceptance/test_checkpoint3_output_correctness.py` | repo-file | C3A-R1-FM | `uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q` | implementer | test | pass | API/output correctness is exhaustive for Priority 1. |
 | Browser behavior | `frontend/tests/checkpoint3-real-browser.spec.ts` | repo-file | C3A-R1-FM | `NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts` | implementer | test | pass | Browser coverage is representative by script family. |
 | Docs/gates | `scripts/quality/check_checkpoint3_acceptance.py` | repo-file | C3A-R1-FM | invariant test gate `make checkpoint3-acceptance` plus back-to-back default rerun after CP8 port isolation | implementer | gate | pass | Gate rejects missing representative browser evidence and no longer depends on fixed default CP8 ports. |
-| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | earlier final PASS superseded by human-found semantic blockers; latest fan-out blocker found untranslated standalone `walkthrough` in successful Cyrillic target output and is fixed locally; fresh output-correctness, TDD, doubt-driven, and false-positive rerun required against pushed PR head | implementer | source / human-only | pending | Human reviewer should inspect final rerun status before approval. |
+| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | earlier final PASS superseded by human-found semantic blockers; latest Output-Correctness fan-out blocker found `translatedScript` was target-only instead of the full trilingual transcript; local fix hardens runtime rendering and API/acceptance/browser assertions; local gates pass | implementer | source / human-only | partial | Full same-head Output-Correctness, TDD, Doubt-Driven, and False-Positive fan-out still requires reviewer notifications or explicitly recorded fallback before approval. |
 | Review prompt set | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | review prompt matrix for false pass and adversarial output correctness review | implementer | source / human-only | pass | Human reviewer may repeat prompts if usage limits reset. |
-| Stop rule / repeated blocker reset | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | stop rule checked; human-found and fan-out blocker classes updated the contract before another fix loop; latest Cyrillic source-domain leakage blocker requires fresh final review | implementer | gate | pending | Manual local-demo review remains before approval. |
+| Stop rule / repeated blocker reset | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | stop rule checked; human-found and fan-out blocker classes updated the contract before another fix loop; latest translated-script artifact blocker is fixed locally with local gates passing and needs same-head fan-out | implementer | gate | partial | Manual local-demo review and full same-head final fan-out remain before approval. |
 | Skill/tool selection | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | repo-file | C3A-R1-SKILL | preinstalled approved skills and repo docs checked first; no custom skill creation | implementer | gate | pass | No custom skills/plugins or dependencies added. |
 
 ## Human-only review surfaces
