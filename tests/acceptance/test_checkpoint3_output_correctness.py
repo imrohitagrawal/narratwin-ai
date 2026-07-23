@@ -552,6 +552,9 @@ def test_checkpoint3_output_correctness_exhaustively_proves_priority1_multilingu
 
         if language_tag != "en":
             assert body["translatedScriptText"] != body["sourceScriptText"]
+        if language_tag == "hi":
+            assert "अभियंताओं के लिए" in body["translatedScriptText"]
+            assert "इंजीनियरों" not in body["translatedScriptText"]
         assert body["trace"]["sourceRunId"] == run["runId"]
         assert body["trace"]["sourceEvaluationId"] == run["evaluation"]["evaluationId"]
         assert body["trace"]["sourceContextRefIds"]

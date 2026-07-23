@@ -630,7 +630,7 @@ DEMO_AUDIENCE_PREFIX_TEXT = {
     },
 }
 ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT = {
-    "hi": "इंजीनियरों के लिए, Atlas Output OUTPUT-SENTINEL-CP2 लॉन्च रिहर्सल के लिए एक काल्पनिक स्थानीय चेकलिस्ट बिल्डर है।",
+    "hi": "अभियंताओं के लिए, Atlas Output OUTPUT-SENTINEL-CP2 जारी करने के पूर्वाभ्यास के लिए एक काल्पनिक स्थानीय जाँच-सूची निर्माता है।",
     "es": "Para ingenieros, Atlas Output OUTPUT-SENTINEL-CP2 es un creador local ficticio de listas de verificación para ensayos de lanzamiento.",
     "de": "Für Ingenieure ist Atlas Output OUTPUT-SENTINEL-CP2 ein fiktiver lokaler Checklisten-Builder für Launch-Proben.",
     "fr": "Pour les ingénieurs, Atlas Output OUTPUT-SENTINEL-CP2 est un générateur local fictif de listes de contrôle pour les répétitions de lancement.",
