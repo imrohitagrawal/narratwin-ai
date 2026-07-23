@@ -286,6 +286,7 @@ ISSUE_267_ALLOWED_CHANGED_FILES = {
 ISSUE_269_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-269.json",
     "docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md",
+    "docs/ADR/0033-checkpoint3-real-browser-acceptance-evidence.md",
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",

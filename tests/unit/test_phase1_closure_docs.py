@@ -1760,6 +1760,7 @@ def test_issue_269_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     allowed = [
         "docs/governance/preflights/issue-269.json",
         "docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md",
+        "docs/ADR/0033-checkpoint3-real-browser-acceptance-evidence.md",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
