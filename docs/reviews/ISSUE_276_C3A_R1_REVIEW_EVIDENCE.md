@@ -36,15 +36,16 @@ Superseding human-review blockers found after the prior final pass:
 | One generated source line translated while the approved source supported multiple cited segments. | Stage 4 generated-script coverage tests, heading-only chunk rejection, and Stage 6 multi-segment transcript/artifact assertions. |
 | Fixture self-consistency mistaken for independent output correctness. | Test-owned golden strings that fail when implementation fixtures regress to previous bad output. |
 
-Fresh final review status: `FINAL INDEPENDENT FALLBACK PASS / HUMAN LOCAL-DEMO REVIEW PENDING`.
+Fresh final review status: `BLOCKERS FIXED LOCALLY / PR-HEAD FAN-OUT PENDING`.
 
 The final review restarted after pushed head `100c6059795e3d50e2c95f15ef6d203413de5bd6`
 was blocked for CP8 default-path nondeterminism. Commit
-`609961232e93c0a4efec32704b967dcc2112cb80` fixes that blocker by removing only
-dead Next dev locks before the CP8 browser probe starts. The sub-agent spawn tool
-was not available in the final turn, so the required fallback path was used:
-independent named review passes with executable commands instead of a fabricated
-sub-agent sign-off.
+`609961232e93c0a4efec32704b967dcc2112cb80` fixed that blocker by removing only
+dead Next dev locks before the CP8 browser probe starts. A later final
+Doubt-Driven sub-agent review on `d87a66e3e43a61ae3f404d3733f9de64c26cb7bc`
+found that Russian and Ukrainian successful outputs could still contain the raw
+English source-domain term `walkthrough`. That blocker is fixed locally and
+must be rerun against the next pushed PR head.
 
 | Final reviewer | Latest result | Evidence summary |
 |---|---|---|
@@ -58,14 +59,15 @@ sub-agent sign-off.
 | Output-Correctness independent fallback, rerun on `6099612` | `PASS` | Reran exhaustive Priority 1 output-correctness acceptance, Stage 6 unit/API multilingual tests, browser probe, and matrix inspection. Verified 25 Priority 1 positive rows and 25 rows for every false-positive mutation including `missing-target`. |
 | TDD independent fallback, rerun on `6099612` | `PASS` | Verified the CP8 failure has regression tests for stale dead-PID Next locks and live-lock preservation, and the existing behavior tests remain green for API/output correctness, artifact parity, browser contract, and provider posture spoofing. |
 | False-Positive independent fallback, rerun on `6099612` | `PASS` | Reran output-correctness and acceptance-gate tests after the CP8 harness change. No metadata-only, artifact-only, fallback, partial, wrong-script, missing-source/reference/target/binding, citation-drift, glossary leakage, or provider-posture false-pass path was found. |
+| Doubt-Driven Reviewer, rerun on `d87a66e` | `BLOCK` before latest local fix | Found Russian and Ukrainian deterministic fixture outputs leaked standalone English `walkthrough` inside otherwise Cyrillic successful target text. Fixed locally by replacing those target strings, removing the same source term from German, Dutch, and Filipino fixture strings, adding standalone `walkthrough` to forbidden source-term checks, extending the original manual-review document test, and adding runtime validation that rejects untranslated source-domain terms. |
 
-No final sub-agent sign-off is claimed for `6099612`; the available evidence is
-the permitted independent fallback review path plus the earlier sub-agent
-findings and fixes.
+No final sign-off is claimed after the latest source-domain-term fix until the
+fix is committed, pushed, and the mandatory Output-Correctness, TDD,
+Doubt-Driven, and False-Positive reviews pass against that pushed PR head.
 
 ## Corrective Evidence Snapshot
 
-Status: `PR-HEAD-GATES-PASS / INDEPENDENT-FALLBACK-REVIEW-PASS`
+Status: `LOCAL-GATES-PASS / PR-HEAD-FANOUT-PENDING`
 
 Current corrective tests added after human review:
 
@@ -73,6 +75,7 @@ Current corrective tests added after human review:
 |---|---|
 | Recruiter translated as engineer or wrong selected audience preserved. | `tests/unit/test_stage6_multilingual.py::test_hindi_local_demo_translation_preserves_selected_product_audience` and exact Priority 1 recruiter golden strings. |
 | Transliterated or untranslated source phrases pass as target text. | `tests/unit/test_stage6_multilingual.py::test_priority1_local_demo_golden_translations_preserve_recruiter_meaning` forbidden-source-phrase assertions. |
+| Standalone source-domain term `walkthrough` leaks in successful Cyrillic output. | `tests/unit/test_stage6_multilingual.py::test_cyrillic_transcript_validation_rejects_untranslated_walkthrough_term`, the original manual-review document test's forbidden-term assertions, and runtime `validate_target_script` source-domain term rejection. |
 | One generated source line translated from a multi-paragraph approved source. | `tests/api/test_stage4_slice_api.py::test_grounded_script_generation_preserves_product_audience_surface` and Stage 6 API multi-segment transcript assertions. |
 | Heading text becomes a generated claim and citation. | `tests/unit/test_retrieval_and_grounding.py::test_chunking_preserves_headings_as_metadata_without_heading_only_claim_chunks`. |
 | Original NarraTwin manual-review document refused or only translated a subset of generated segments. | `tests/unit/test_stage6_multilingual.py::test_priority1_local_demo_supports_original_narratwin_manual_review_document`, `tests/api/test_stage6_multilingual_api.py::test_multilingual_walkthrough_api_translates_original_manual_review_document`, and Stage 4 small-document expansion within retrieval top-k. |
@@ -84,6 +87,7 @@ Commands rerun after the corrective fixes:
 
 ```text
 uv run pytest tests/unit/test_retrieval_and_grounding.py tests/unit/test_stage6_multilingual.py -q
+uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py -q
 uv run pytest tests/api/test_stage4_slice_api.py tests/api/test_stage6_multilingual_api.py -q
 uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q
 uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py -q
@@ -106,6 +110,7 @@ Results:
 
 ```text
 retrieval + Stage 6 unit tests: 69 passed
+Stage 6 unit + API + output-correctness after source-domain-term fix: passed
 Stage 4 + Stage 6 API tests: 52 passed
 output-correctness acceptance: 7 passed
 targeted Ruff: passed
@@ -120,7 +125,7 @@ make quality: passed
 make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
 make checkpoint3-acceptance back-to-back rerun after CP8 port isolation: 8 passed, 0 planned, 0 failed
 occupied default CP8 ports 8120/3120 + make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
-make ci: passed
+make ci: passed before the latest source-domain-term fix; rerun required after commit/push
 ```
 
 Pending before merge approval:

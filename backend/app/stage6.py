@@ -388,14 +388,14 @@ DEMO_STAGE4_SLICE_TEXT = {
 DEMO_CITATION_REQUIREMENT_TEXT = {
     "hi": "हर जनरेट किए गए वॉकथ्रू दावे में स्वीकृत जानकारी से मिले स्रोत अंशों का उद्धरण होना चाहिए।",
     "es": "Cada afirmación generada del recorrido debe citar fragmentos de fuente recuperados de conocimiento aprobado.",
-    "de": "Jede generierte Walkthrough-Aussage muss abgerufene Quellenausschnitte aus genehmigtem Wissen zitieren.",
+    "de": "Jede generierte Aussage in der Präsentation muss abgerufene Quellenausschnitte aus genehmigtem Wissen zitieren.",
     "fr": "Chaque affirmation de démonstration générée doit citer les extraits source récupérés depuis les connaissances approuvées.",
     "pt-BR": "Toda afirmação gerada no roteiro deve citar trechos de fonte recuperados do conhecimento aprovado.",
     "it": "Ogni affermazione generata nel percorso deve citare frammenti di fonte recuperati dalla conoscenza approvata.",
-    "nl": "Elke gegenereerde walkthrough-claim moet opgehaalde bronfragmenten uit goedgekeurde kennis citeren.",
+    "nl": "Elke gegenereerde presentatieclaim moet opgehaalde bronfragmenten uit goedgekeurde kennis citeren.",
     "pl": "Każde wygenerowane twierdzenie w prezentacji musi cytować pobrane fragmenty źródłowe z zatwierdzonej wiedzy.",
-    "uk": "Кожне згенероване твердження у walkthrough має цитувати отримані фрагменти джерел із затверджених знань.",
-    "ru": "Каждое сгенерированное утверждение в walkthrough должно цитировать извлеченные фрагменты источников из утвержденных знаний.",
+    "uk": "Кожне згенероване твердження у поясненні має цитувати отримані фрагменти джерел із затверджених знань.",
+    "ru": "Каждое сгенерированное утверждение в пояснении должно цитировать извлеченные фрагменты источников из утвержденных знаний.",
     "zh-Hans": "每个生成的简明讲解声明都必须引用从已批准知识中检索到的来源片段。",
     "zh-Hant": "每個產生的專門導覽聲明都必須引用從已核准知識中擷取到的來源片段。",
     "ja": "生成された各ウォークスルーの主張は、承認済み知識から取得した出典チャンクを引用しなければなりません。",
@@ -407,7 +407,7 @@ DEMO_CITATION_REQUIREMENT_TEXT = {
     "tr": "Üretilen her anlatım iddiası, onaylanmış bilgiden alınan kaynak parçalarına atıf yapmalıdır.",
     "vi": "Mỗi tuyên bố hướng dẫn được tạo phải trích dẫn các đoạn nguồn được truy xuất từ kiến thức đã phê duyệt.",
     "id": "Setiap klaim panduan yang dihasilkan harus mengutip potongan sumber yang diambil dari pengetahuan yang disetujui.",
-    "fil": "Dapat sipiin ng bawat nabuong pahayag sa walkthrough ang mga bahagi ng pinagmulan na nakuha mula sa aprubadong kaalaman.",
+    "fil": "Dapat sipiin ng bawat nabuong pahayag sa pagpapaliwanag ang mga bahagi ng pinagmulan na nakuha mula sa aprubadong kaalaman.",
     "th": "ทุกข้อกล่าวอ้างในคำแนะนำที่สร้างขึ้นต้องอ้างอิงส่วนแหล่งข้อมูลที่ดึงมาจากความรู้ที่อนุมัติแล้ว",
     "ms": "Setiap dakwaan panduan yang dijana mesti memetik cebisan sumber yang diperoleh daripada pengetahuan yang diluluskan.",
 }
@@ -2584,6 +2584,9 @@ SCRIPT_PATTERNS = {
     "Hangul": re.compile(r"[\uAC00-\uD7AF]"),
     "Thai": re.compile(r"[\u0E00-\u0E7F]"),
 }
+UNTRANSLATED_DOMAIN_TERM_PATTERNS = (
+    re.compile(r"\bwalkthrough\b", re.IGNORECASE),
+)
 
 
 def validate_target_script(*, record: LanguageCatalogRecord, target_text: str, source_text: str) -> None:
@@ -2598,6 +2601,12 @@ def validate_target_script(*, record: LanguageCatalogRecord, target_text: str, s
     pattern = SCRIPT_PATTERNS.get(record.script)
     if pattern is not None and not pattern.search(target_text):
         raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", f"{record.script} transcript script is invalid.")
+    if any(pattern.search(target_text) for pattern in UNTRANSLATED_DOMAIN_TERM_PATTERNS):
+        raise Stage6Error(
+            422,
+            "TRANSCRIPT_CORRECTNESS_FAILED",
+            "Target transcript contains untranslated source-domain terms.",
+        )
 
 
 def validate_multilingual_transcript_correctness(

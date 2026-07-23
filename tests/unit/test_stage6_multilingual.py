@@ -23,6 +23,7 @@ from backend.app.stage6 import (
     generate_subtitles,
     translate_demo_source_text,
     validate_multilingual_transcript_correctness,
+    validate_target_script,
     normalize_language_tag,
     split_captions,
 )
@@ -66,6 +67,7 @@ FORBIDDEN_RAW_SOURCE_PHRASES_BY_LANGUAGE = {
         "project knowledge",
         "grounded walkthrough scripts",
         "walkthrough scripts",
+        "walkthrough",
     )
     for language_tag in PRIORITY1_LANGUAGE_TAGS
     if language_tag != "en"
@@ -242,6 +244,8 @@ def test_priority1_local_demo_supports_original_narratwin_manual_review_document
         assert "recruiter and engineering audiences" not in result.translated_script_text
         assert "The local demo uses" not in result.translated_script_text
         assert "Every generated walkthrough claim" not in result.translated_script_text
+        for forbidden_phrase in FORBIDDEN_RAW_SOURCE_PHRASES_BY_LANGUAGE.get(language_tag, ()):
+            assert forbidden_phrase not in result.translated_script_text
     if language_tag == "hi":
         assert "भर्ती विशेषज्ञों और अभियांत्रिकी दर्शकों" in result.translated_script_text
         assert "अभियंताओं के लिए" not in result.translated_script_text
@@ -419,6 +423,20 @@ def test_hindi_transcript_validation_rejects_romanized_fallback() -> None:
         )
 
     assert exc.value.code == "TRANSCRIPT_CORRECTNESS_FAILED"
+
+
+def test_cyrillic_transcript_validation_rejects_untranslated_walkthrough_term() -> None:
+    russian = next(record for record in get_language_catalog() if record.language_tag == "ru")
+
+    with pytest.raises(Stage6Error) as exc:
+        validate_target_script(
+            record=russian,
+            target_text="Каждое сгенерированное утверждение в walkthrough должно цитировать источники. [1]",
+            source_text="Every generated walkthrough claim must cite retrieved source chunks. [1]",
+        )
+
+    assert exc.value.code == "TRANSCRIPT_CORRECTNESS_FAILED"
+    assert "untranslated source-domain terms" in exc.value.message
 
 
 def test_transcript_validation_rejects_metadata_only_completed_success() -> None:

@@ -568,7 +568,8 @@ The coverage matrix must include one positive row per Priority 1 language plus
 mutation rows that fail for partial text, one-segment partial text, English
 fallback, romanized or wrong-script fallback, missing source English, missing
 English reference, citation drift, missing bindings, metadata-only success,
-artifact-only success, and glossary-forced English leakage. `COMPLETED` is
+artifact-only success, glossary-forced English leakage, and untranslated
+source-domain term leakage such as standalone `walkthrough`. `COMPLETED` is
 invalid unless transcript correctness validation passes. The current local/demo
 translation boundary is generated walkthrough scripts from approved local/demo
 knowledge, not a separate raw uploaded knowledge-document translation API; a
