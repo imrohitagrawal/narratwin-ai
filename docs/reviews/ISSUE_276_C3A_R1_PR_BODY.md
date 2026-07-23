@@ -99,6 +99,13 @@ equivalent local independent review passes are recorded in
   fallback, citation drift, missing bindings, metadata-only success, or
   artifact-only success.
 
+## Status impact
+
+`docs/STATUS.md` is updated in this PR and records the target state for issue
+`#276` as satisfied by this PR. Routine post merge facts must be recorded in
+PR issue comments, and this work must not create a successor status only PR when
+there is no successor status-only follow-up needed.
+
 ## Guardrail checklist
 
 - [x] This PR was created from a tracked GitHub issue.
@@ -132,55 +139,54 @@ equivalent local independent review passes are recorded in
 
 | Evidence | Artifact reference | Reference type | Matrix IDs | Command / CI / Source | Reviewer | Evidence type | Completion status | Residual risk decision |
 |---|---|---|---|---|---|---|---|---|
-| Intent/spec | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | repo-file | C3A-R1 | pre-code preflight commit `e48b7af` | implementer | source | passed | Issue #276 owns this repair only. |
-| Failure matrix / invariant matrix | `docs/governance/preflights/issue-276.json` | repo-file | C3A-R1-FM | pre-code preflight commit `e48b7af` | implementer | matrix | passed | Local/mock fixture scope only. |
-| Tests / old-behavior proof | commit `4868784` | repo-file | C3A-R1-FM | RED tests failed before implementation | implementer | test | passed | Old behavior captured before code edits. |
-| Tests / current behavior | `tests/acceptance/test_checkpoint3_output_correctness.py` | repo-file | C3A-R1-FM | `uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q` | implementer | test | passed | API/output correctness is exhaustive for Priority 1. |
-| Browser behavior | `frontend/tests/checkpoint3-real-browser.spec.ts` | repo-file | C3A-R1-UI | `NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts` | implementer | test | passed | Browser coverage is representative by script family. |
-| Docs/gates | `scripts/quality/check_checkpoint3_acceptance.py` | repo-file | C3A-R1-GATE | `make checkpoint3-acceptance` | implementer | gate | passed | Gate rejects missing representative browser evidence. |
-| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | fallback independent review passes | implementer | source / human-only | passed | Sub-agent fan-out blocked by usage limit. |
-| Review prompt set | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | requested reviewer roles recorded | implementer | source / human-only | passed | Human reviewer may repeat prompts if usage limits reset. |
-| Skill/tool selection | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | repo-file | C3A-R1-SKILL | repo-approved skills only | implementer | gate | passed | No custom skills/plugins or dependencies added. |
+| Intent/spec | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | repo-file | C3A-R1-FM | pre-code preflight commit `e48b7af` | implementer | source | pass | Issue #276 owns this repair only. |
+| Source facts | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | repo-file | C3A-R1-FM | source facts for local/mock boundary and Priority 1/2 catalog contract | implementer | source | pass | Local/mock fixture scope only. |
+| Failure matrix / invariant matrix | `docs/governance/preflights/issue-276.json` | repo-file | C3A-R1-FM | invariant-to-test matrix from pre-code preflight commit `e48b7af` | implementer | matrix | pass | Local/mock fixture scope only. |
+| Tests / old-behavior proof | `tests/acceptance/test_checkpoint3_output_correctness.py` | repo-file | C3A-R1-FM | old behavior fails under RED failing test evidence in commit `4868784` | implementer | test | pass | Old behavior captured before code edits. |
+| Tests / current behavior | `tests/acceptance/test_checkpoint3_output_correctness.py` | repo-file | C3A-R1-FM | `uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q` | implementer | test | pass | API/output correctness is exhaustive for Priority 1. |
+| Browser behavior | `frontend/tests/checkpoint3-real-browser.spec.ts` | repo-file | C3A-R1-FM | `NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts` | implementer | test | pass | Browser coverage is representative by script family. |
+| Docs/gates | `scripts/quality/check_checkpoint3_acceptance.py` | repo-file | C3A-R1-FM | invariant test gate `make checkpoint3-acceptance` | implementer | gate | pass | Gate rejects missing representative browser evidence. |
+| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | adversarial fallback review after subagent false pass prompts hit usage limit | implementer | source / human-only | pass | Sub-agent fan-out blocked by usage limit. |
+| Review prompt set | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | review prompt matrix for false pass and adversarial output correctness review | implementer | source / human-only | pass | Human reviewer may repeat prompts if usage limits reset. |
+| Stop rule / repeated blocker reset | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | stop rule checked; new blocker classes require contract rewrite or update before another fix loop | implementer | gate | pass | No repeated blocker remained after fallback review. |
+| Skill/tool selection | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | repo-file | C3A-R1-SKILL | preinstalled approved skills and repo docs checked first; no custom skill creation | implementer | gate | pass | No custom skills/plugins or dependencies added. |
 
 ## Human-only review surfaces
 
 | Surface | Automation gap | Owner | Evidence | Residual risk decision | Expiry / revisit trigger |
 |---|---|---|---|---|---|
-| Final squash/merge message | CI cannot inspect the final merge dialog text before merge | repo owner | PR body / reviewer confirmation | Reference-only final message with no issue-closing keyword accepted for PR only | before merge |
+| Final squash/merge message | CI cannot inspect the final merge dialog text before merge | repo owner | `docs/reviews/ISSUE_276_C3A_R1_PR_BODY.md` | Reference-only final message with no issue-closing keyword accepted for PR only | before merge |
 | Manual local-demo rehearsal | CI can drive the browser, but a human reviewer should still inspect the local demo for readability | reviewer | `docs/demo/CHECKPOINT3A_MULTILINGUAL_REHEARSAL_CHECKLIST.md` | Automated evidence is primary; human checklist is secondary | before merge approval |
 
 ## Pre-implementation evidence
 
 | Requirement | Pre-code artifact | Timestamp / commit / PR comment | Reviewer | Decision |
 |---|---|---|---|---|
-| Invariant/failure matrix | `docs/governance/preflights/issue-276.json` | `e48b7af` | implementer | Complete before product/code edits. |
-| Source facts | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | `e48b7af` | implementer | Complete before product/code edits. |
-| Old-behavior proof | RED test commit | `4868784` | implementer | Tests failed before implementation. |
-| Human-only surfaces | PR-body draft and review evidence | this branch | reviewer | Manual rehearsal remains secondary reviewer-owned evidence. |
+| Invariant/failure matrix | `docs/governance/preflights/issue-276.json` | commit order: e48b7af before 4868784 | implementer | pass |
+| Source facts | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | commit order: e48b7af before 4868784 | implementer | pass |
+| Human-only surfaces, if any | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | commit order: e48b7af before 8683b4b | reviewer | pass |
 
 ## Validation evidence
 
 ```text
-make quality
-# passed
-
-make checkpoint3-acceptance
-# Checkpoint 3 acceptance complete: 8 passed, 0 planned, 0 failed.
-
-make ci
-# passed; unit tests 1770 passed, API tests 101 passed, frontend tests 18 passed, frontend smoke 4 passed / 2 intentionally skipped, Docker image consensus scan status pass
-
-uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q
-# 5 passed
-
-uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/unit/test_checkpoint3_acceptance_gate.py -q
-# 80 passed
-
-npm --prefix frontend run test -- page.test.tsx
-# 16 passed
-
-NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts
-# 1 passed
+uv run pytest tests/unit/test_guardrails_check.py -> passed
+uv run pytest tests/unit/test_phase1_closure_docs.py -> passed
+python3 scripts/guardrails_check.py -> passed
+make quality -> passed
+uv run ruff check scripts tests -> passed
+uv run mypy scripts tests -> passed
+make ci -> passed
+make security -> passed
+make dependency-audit -> passed
+make container-scan -> passed
+make secrets-scan -> passed
+make eval -> passed
+GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed
+make checkpoint3-acceptance -> passed
+uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q -> 5 passed
+uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/unit/test_checkpoint3_acceptance_gate.py -q -> 80 passed
+npm --prefix frontend run test -- page.test.tsx -> 16 passed
+NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts -> 1 passed
 ```
 
 ## Notes for reviewer
