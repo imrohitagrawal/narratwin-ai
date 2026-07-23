@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 from pathlib import Path
 from types import ModuleType
@@ -677,6 +678,38 @@ def test_checkpoint3_acceptance_allocates_isolated_cp8_ports(monkeypatch: Any, t
     assert result.status == "PASS"
     assert captured_env["NARRATWIN_CP8_BACKEND_PORT"] == "48120"
     assert captured_env["NARRATWIN_CP8_FRONTEND_PORT"] == "43120"
+
+
+def test_checkpoint3_acceptance_removes_stale_next_dev_lock(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    lock_path = tmp_path / "frontend" / ".next" / "dev" / "lock"
+    lock_path.parent.mkdir(parents=True)
+    lock_path.write_text(
+        json.dumps({"pid": 999_999_999, "port": 3120, "hostname": "localhost"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(checkpoint3, "CP8_NEXT_DEV_LOCK", lock_path)
+
+    checkpoint3.cleanup_stale_cp8_next_dev_lock()
+
+    assert not lock_path.exists()
+
+
+def test_checkpoint3_acceptance_keeps_live_next_dev_lock(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    lock_path = tmp_path / "frontend" / ".next" / "dev" / "lock"
+    lock_path.parent.mkdir(parents=True)
+    lock_path.write_text(
+        json.dumps({"pid": os.getpid(), "port": 3120, "hostname": "localhost"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(checkpoint3, "CP8_NEXT_DEV_LOCK", lock_path)
+
+    checkpoint3.cleanup_stale_cp8_next_dev_lock()
+
+    assert lock_path.exists()
 
 
 def test_checkpoint3_acceptance_rejects_skipped_cp8_browser_probe(monkeypatch: Any, tmp_path: Path) -> None:

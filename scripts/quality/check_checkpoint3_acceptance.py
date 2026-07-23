@@ -30,6 +30,7 @@ CP8_EVIDENCE_ROOT = ROOT / "reports" / "checkpoint3-real-browser" / "playwright-
 CP8_EVIDENCE_FILE_NAME = "issue-269-c3a-cp8-browser-evidence.json"
 CP8_BACKEND_PORT_ENV = "NARRATWIN_CP8_BACKEND_PORT"
 CP8_FRONTEND_PORT_ENV = "NARRATWIN_CP8_FRONTEND_PORT"
+CP8_NEXT_DEV_LOCK = ROOT / "frontend" / ".next" / "dev" / "lock"
 CP8_REQUIRED_IDEMPOTENCY_PREFIXES = frozenset(
     {
         "ui-project",
@@ -364,6 +365,7 @@ def run_probe(probe: Probe) -> ProbeResult:
     env.update(dict(probe.env))
     if probe.label == CP8_LABEL:
         shutil.rmtree(CP8_EVIDENCE_ROOT, ignore_errors=True)
+        cleanup_stale_cp8_next_dev_lock()
         configure_cp8_isolated_ports(env)
     try:
         completed = subprocess.run(
@@ -420,6 +422,32 @@ def configure_cp8_isolated_ports(env: dict[str, str]) -> None:
     if frontend_port:
         return
     env[CP8_FRONTEND_PORT_ENV] = allocate_loopback_port(used_ports)
+
+
+def cleanup_stale_cp8_next_dev_lock() -> None:
+    """Remove a dead Next dev lock that would prevent Playwright from starting."""
+
+    try:
+        lock = json.loads(CP8_NEXT_DEV_LOCK.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return
+    pid = lock.get("pid") if isinstance(lock, dict) else None
+    if not isinstance(pid, int) or pid <= 0 or process_exists(pid):
+        return
+    try:
+        CP8_NEXT_DEV_LOCK.unlink()
+    except FileNotFoundError:
+        return
+
+
+def process_exists(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
 
 
 def allocate_loopback_port(excluded: set[str]) -> str:
