@@ -70,7 +70,8 @@ Residual risk: local/demo translations are deterministic fixtures for controlled
 accepted scripts only. Arbitrary input remains unsupported locally unless a later
 reviewed provider stage implements real translation. The requested sub-agent
 fan-out initially hit usage limits, then was restarted. The restarted reviewers
-found blockers; fixes and final rerun status are recorded in
+found blockers; fixes were committed, the fan-out was rerun, and all required
+reviewers returned PASS. Final evidence is recorded in
 `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md`.
 
 ## Human verification checklist

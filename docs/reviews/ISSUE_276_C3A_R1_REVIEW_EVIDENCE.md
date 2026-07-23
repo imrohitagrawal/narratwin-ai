@@ -21,12 +21,19 @@ review at that point.
 | Doubt-Driven Reviewer | `BLOCK` on provider script/transcript divergence, arbitrary NarraTwin pseudo-translation, weak browser artifact comparison, and UI hardcoded catalog fallback. | Added provider/transcript parity validation, arbitrary-fixture refusal, stronger browser artifact parity, and removed frontend catalog fallback. |
 | False-Positive Reviewer | `BLOCK` on missing metadata-only/artifact-only response mutations; rerun returned `PASS`. | Added response-level false-pass mutations and required coverage rows. |
 
-Final review status must be considered clean only after the blocker reviewers
-rerun against the final committed state and return `PASS`.
+Final review status after rerun on pushed commit `c066d26`: `PASS` across all
+required reviewer angles.
+
+| Final reviewer | Final result | Evidence summary |
+|---|---|---|
+| Output-Correctness Reviewer | `PASS` | Ran API, artifact, UI/browser, unsupported-language, provider-divergence, and catalog probes; no output-correctness findings remained. |
+| TDD Reviewer | `PASS` | Replayed the committed follow-up test diffs against prior implementation commit `8a4b3d4`; they failed at behavior assertions, not import/collection. |
+| Doubt-Driven Reviewer | `PASS` | Attempted to disprove arbitrary-fixture refusal, provider parity, UI catalog, browser artifact parity, Hindi, and Priority 2 refusal; no blockers found. |
+| False-Positive Reviewer | `PASS` | Verified false-positive mutations, coverage matrix rows, metadata-only/artifact-only rejection, and checkpoint gate. |
 
 ## Output-Correctness Review
 
-Status: `PASS after fixes; pending final reviewer rerun`
+Status: `PASS`
 
 Commands:
 
@@ -48,7 +55,7 @@ Evidence inspected:
 |---|---|
 | `reports/checkpoint3-multilingual/priority1-coverage-matrix.json` | 225 matrix rows covering Priority 1 positive and negative cases. |
 | `reports/checkpoint3-multilingual/checkpoint3a-multilingual-summary.json` | 25 Priority 1 language rows, including `hi`. |
-| `reports/checkpoint3-real-browser/playwright-output/.../issue-269-c3a-cp8-browser-evidence.json` | Browser-visible source English, target transcript, English reference, citations, and matching metadata artifact are true for French/Latin, Hindi/Devanagari, Arabic/RTL Arabic script, Hebrew/RTL, Japanese/CJK, Korean/Hangul, Russian/Cyrillic, and Thai/Southeast Asia. |
+| `reports/checkpoint3-real-browser/playwright-output/.../issue-269-c3a-cp8-browser-evidence.json` | Browser-visible source English, target transcript, English reference, citations, decoded metadata artifact parity, and decoded translated-script artifact parity are true for French/Latin, Hindi/Devanagari, Arabic/RTL Arabic script, Hebrew/RTL, Japanese/CJK, Korean/Hangul, Russian/Cyrillic, and Thai/Southeast Asia. |
 
 Conclusion: Checkpoint 3A now executes real local/mock API and browser behavior
 for multilingual output correctness. It no longer accepts metadata-only success
@@ -56,7 +63,7 @@ or a flat translated string as sufficient evidence.
 
 ## TDD Review
 
-Status: `BLOCK pending final committed-state rerun`
+Status: `PASS`
 
 Commands:
 
@@ -79,13 +86,13 @@ Old-behavior proof:
 | `4868784 test: prove c3a multilingual output false passes` | Added behavior tests before implementation. The RED run failed on missing Priority 1 catalog/transcript validation and hardcoded UI catalog exports. |
 | `e48b7af docs: add c3a multilingual repair preflight` | Recorded issue-scoped invariant and failure matrix before product/code edits. |
 
-Conclusion: The follow-up behavior tests prove the old bad behavior, but this
-review remains blocked until those tests are committed and the TDD reviewer rerun
-confirms the final committed state.
+Conclusion: The follow-up behavior tests prove the old bad behavior. The TDD
+reviewer reran against pushed commit `c066d26` and confirmed the final committed
+state passes behavior-focused coverage.
 
 ## Doubt-Driven Review
 
-Status: `PASS after fixes; pending final reviewer rerun`
+Status: `PASS`
 
 Disproof attempts checked:
 
