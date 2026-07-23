@@ -36,8 +36,9 @@ Superseding human-review blockers found after the prior final pass:
 | One generated source line translated while the approved source supported multiple cited segments. | Stage 4 generated-script coverage tests, heading-only chunk rejection, and Stage 6 multi-segment transcript/artifact assertions. |
 | Fixture self-consistency mistaken for independent output correctness. | Test-owned golden strings that fail when implementation fixtures regress to previous bad output. |
 | Downloadable `translatedScript` artifact contained only target text while metadata/UI contained the full transcript. | Runtime script artifact rendering and tests must require source English, target text, English reference, citations, context refs, claim-support ids, source run id, and evaluation id for every segment. |
+| Hindi accepted transliterated English terms such as `जनरेट` and `वॉकथ्रू` in a completed transcript. | Hindi golden output and transcript validation must reject transliterated source-domain terms and require fully translated Hindi wording. |
 
-Fresh final review status: `TRANSLATED-SCRIPT-ARTIFACT FIX LOCAL / LOCAL GATES PASS / FULL PR-HEAD FAN-OUT PENDING`.
+Fresh final review status: `HINDI-TRANSLITERATION FIX LOCAL / GATES AND FULL PR-HEAD FAN-OUT PENDING`.
 
 The final review restarted after pushed head `100c6059795e3d50e2c95f15ef6d203413de5bd6`
 was blocked for CP8 default-path nondeterminism. Commit
@@ -56,7 +57,13 @@ trilingual transcript data exposed in the UI and metadata. That blocker is
 being fixed locally and must be rerun through gates and final fan-out after the
 next pushed PR head. Local gates for this fix now pass: `make quality`,
 `make checkpoint3-acceptance`, `make ci`, focused Stage 6/API/output-correctness
-tests, and the targeted CP8 browser smoke test.
+tests, and the targeted CP8 browser smoke test. A later Output-Correctness
+review on `aa9ba02` confirmed the artifact blocker was fixed but found Hindi
+still accepted transliterated source-domain terms `जनरेट` and `वॉकथ्रू` in the
+fourth transcript segment. That blocker is fixed locally by replacing the Hindi
+fixture with fully translated wording and adding Hindi transliteration rejection
+to transcript correctness validation; gates and final fan-out must rerun after
+the next pushed PR head.
 
 | Final reviewer | Latest result | Evidence summary |
 |---|---|---|
@@ -73,16 +80,18 @@ tests, and the targeted CP8 browser smoke test.
 | Doubt-Driven Reviewer, rerun on `d87a66e` | `BLOCK` before latest local fix | Found Russian and Ukrainian deterministic fixture outputs leaked standalone English `walkthrough` inside otherwise Cyrillic successful target text. Fixed locally by replacing those target strings, removing the same source term from German, Dutch, and Filipino fixture strings, adding standalone `walkthrough` to forbidden source-term checks, extending the original manual-review document test, and adding runtime validation that rejects untranslated source-domain terms. |
 | Doubt-Driven independent fallback, rerun on `e8811841` | `PASS` | Sub-agent tool was not exposed in the main session, so the final Doubt-Driven prompt was executed as fallback. Reran `make checkpoint3-acceptance`, focused Stage 6/API/output-correctness/language-quality/acceptance-gate tests, `git diff --check origin/main...HEAD`, matrix/summary inspection, CP8 port cleanup check, and a direct FastAPI runtime probe for the original NarraTwin manual-review document across Hindi, Arabic, Hebrew, Japanese, Korean, Russian, Ukrainian, French, and Thai. The probe verified four cited segments, source English, target text, English reference, native script, no standalone `walkthrough` leakage, citations `[1]` through `[4]`, source/eval/context/claim-support binding, artifact parity, mock providers, and Bengali unsupported refusal. No remaining doubt-driven finding was found in this fallback pass. |
 | Output-Correctness Reviewer, rerun on `e8811841` | `BLOCK` before latest local fix | Executed FastAPI runtime multilingual generation and decoded artifacts. The API and metadata had four Hindi transcript segments, but `artifacts.translatedScript.contentBase64` decoded to only flat target-language text. It omitted per-segment source English, English reference/back-translation, citation/context/claim-support bindings, source run id, and evaluation id. Fixed locally by rendering the translated-script artifact as a trilingual transcript and hardening API, acceptance, media-artifact, and browser tests to reject target-only script artifacts. |
+| False-Positive Reviewer, rerun on `aa9ba02` | `PASS` | Confirmed 400-row coverage matrix, target-only translated-script artifact rejection, and no false-positive path for metadata-only, artifact-only, partial, fallback, wrong-script, missing source/reference/target, citation drift, missing binding, and glossary leakage. |
+| Output-Correctness Reviewer, rerun on `aa9ba02` | `BLOCK` before latest local fix | Confirmed full trilingual artifact parity was fixed across all Priority 1 languages, but found Hindi still accepted transliterated English source-domain terms `जनरेट` and `वॉकथ्रू` in the completed output for “Every generated walkthrough claim...”. Fixed locally by updating the Hindi golden fixture to “प्रत्येक उत्पन्न चरण-दर-चरण प्रस्तुति संबंधी दावे...” and adding runtime Hindi transliteration rejection. |
 
-No full mandatory fan-out sign-off is claimed after the latest translated-script
-artifact fix until gates pass and the mandatory Output-Correctness, TDD,
+No full mandatory fan-out sign-off is claimed after the latest Hindi
+transliteration fix until gates pass and the mandatory Output-Correctness, TDD,
 Doubt-Driven, and False-Positive reviews pass against the same pushed PR head
 through actual reviewer notifications or explicitly recorded independent
 fallback.
 
 ## Corrective Evidence Snapshot
 
-Status: `TRANSLATED-SCRIPT-ARTIFACT FIX LOCAL / LOCAL GATES PASS / FULL PR-HEAD-FANOUT-PENDING`
+Status: `HINDI-TRANSLITERATION FIX LOCAL / GATES AND FULL PR-HEAD-FANOUT-PENDING`
 
 Current corrective tests added after human review:
 

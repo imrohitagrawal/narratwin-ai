@@ -386,7 +386,7 @@ DEMO_STAGE4_SLICE_TEXT = {
     "ms": "Hirisan Stage 4 menggunakan LLM tempatan olok-olok dan embedding tempatan olok-olok untuk ujian deterministik.",
 }
 DEMO_CITATION_REQUIREMENT_TEXT = {
-    "hi": "हर जनरेट किए गए वॉकथ्रू दावे में स्वीकृत जानकारी से मिले स्रोत अंशों का उद्धरण होना चाहिए।",
+    "hi": "प्रत्येक उत्पन्न चरण-दर-चरण प्रस्तुति संबंधी दावे में स्वीकृत जानकारी से प्राप्त स्रोत अंशों का उद्धरण होना चाहिए।",
     "es": "Cada afirmación generada del recorrido debe citar fragmentos de fuente recuperados de conocimiento aprobado.",
     "de": "Jede generierte Aussage in der Präsentation muss abgerufene Quellenausschnitte aus genehmigtem Wissen zitieren.",
     "fr": "Chaque affirmation de démonstration générée doit citer les extraits source récupérés depuis les connaissances approuvées.",
@@ -2633,6 +2633,12 @@ SCRIPT_PATTERNS = {
 UNTRANSLATED_DOMAIN_TERM_PATTERNS = (
     re.compile(r"\bwalkthrough\b", re.IGNORECASE),
 )
+TRANSLITERATED_SOURCE_DOMAIN_TERM_PATTERNS_BY_LANGUAGE = {
+    "hi": (
+        re.compile(r"जनरेट"),
+        re.compile(r"वॉकथ्रू"),
+    ),
+}
 
 
 def validate_target_script(*, record: LanguageCatalogRecord, target_text: str, source_text: str) -> None:
@@ -2652,6 +2658,15 @@ def validate_target_script(*, record: LanguageCatalogRecord, target_text: str, s
             422,
             "TRANSCRIPT_CORRECTNESS_FAILED",
             "Target transcript contains untranslated source-domain terms.",
+        )
+    if any(
+        pattern.search(target_text)
+        for pattern in TRANSLITERATED_SOURCE_DOMAIN_TERM_PATTERNS_BY_LANGUAGE.get(record.language_tag, ())
+    ):
+        raise Stage6Error(
+            422,
+            "TRANSCRIPT_CORRECTNESS_FAILED",
+            "Target transcript contains transliterated source-domain terms.",
         )
 
 

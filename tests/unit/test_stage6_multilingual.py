@@ -249,6 +249,9 @@ def test_priority1_local_demo_supports_original_narratwin_manual_review_document
     if language_tag == "hi":
         assert "भर्ती विशेषज्ञों और अभियांत्रिकी दर्शकों" in result.translated_script_text
         assert "अभियंताओं के लिए" not in result.translated_script_text
+        assert "जनरेट" not in result.translated_script_text
+        assert "वॉकथ्रू" not in result.translated_script_text
+        assert "प्रत्येक उत्पन्न चरण-दर-चरण प्रस्तुति संबंधी दावे" in result.translated_script_text
 
 
 @pytest.mark.parametrize(
@@ -437,6 +440,20 @@ def test_cyrillic_transcript_validation_rejects_untranslated_walkthrough_term() 
 
     assert exc.value.code == "TRANSCRIPT_CORRECTNESS_FAILED"
     assert "untranslated source-domain terms" in exc.value.message
+
+
+def test_hindi_transcript_validation_rejects_transliterated_source_domain_terms() -> None:
+    hindi = next(record for record in get_language_catalog() if record.language_tag == "hi")
+
+    with pytest.raises(Stage6Error) as exc:
+        validate_target_script(
+            record=hindi,
+            target_text="हर जनरेट किए गए वॉकथ्रू दावे में स्रोत अंशों का उद्धरण होना चाहिए। [1]",
+            source_text="Every generated walkthrough claim must cite retrieved source chunks. [1]",
+        )
+
+    assert exc.value.code == "TRANSCRIPT_CORRECTNESS_FAILED"
+    assert "transliterated source-domain terms" in exc.value.message
 
 
 def test_transcript_validation_rejects_metadata_only_completed_success() -> None:

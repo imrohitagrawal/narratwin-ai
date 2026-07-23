@@ -317,9 +317,12 @@ Every generated walkthrough claim must cite retrieved source chunks from approve
     assert "भर्ती विशेषज्ञों के लिए" in body["translatedScriptText"]
     assert "भर्ती विशेषज्ञों और अभियांत्रिकी दर्शकों" in body["translatedScriptText"]
     assert "मॉक स्थानीय LLM, अनुवाद, आवाज़ और अवतार" in body["translatedScriptText"]
+    assert "प्रत्येक उत्पन्न चरण-दर-चरण प्रस्तुति संबंधी दावे" in body["translatedScriptText"]
     assert "For recruiters" not in body["translatedScriptText"]
     assert "recruiter and engineering audiences" not in body["translatedScriptText"]
     assert "इंजीनियरों" not in body["translatedScriptText"]
+    assert "जनरेट" not in body["translatedScriptText"]
+    assert "वॉकथ्रू" not in body["translatedScriptText"]
     assert body["translatedScriptText"] != body["sourceScriptText"]
     metadata = json.loads(base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8"))
     assert metadata["transcriptSegments"] == body["transcriptSegments"]
