@@ -36,7 +36,7 @@ The `Makefile` must expose:
 | `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
 | `make final-review-quality` | Runs executable Final Review artifact checks |
 | `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
-| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, C3A-CP4 media-artifacts, C3A-CP5 access/quota/retention, C3A-CP6 security/observability, and C3A-CP7 performance probes implemented, and the later real-browser E2E probe reported as planned/non-passing |
+| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, C3A-CP4 media-artifacts, C3A-CP5 access/quota/retention, C3A-CP6 security/observability, C3A-CP7 performance, and C3A-CP8 real-browser E2E probes implemented for local/mock controlled-demo evidence only |
 | `make lint` | Runs backend Ruff and frontend ESLint |
 | `make typecheck` | Runs backend mypy and frontend TypeScript checks |
 | `make test` | Runs backend unit tests and frontend unit tests |
@@ -626,15 +626,25 @@ public/provider/production claims, raw uploaded content leakage,
 prompt-injection text leakage, sensitive token leakage, bounded subprocess
 timeout handling, and redacted failure summaries.
 
-The target is not part of `make quality` yet and must still return nonzero while
-the later Checkpoint 3A real-browser E2E probe remains planned with no
-success-path interception. The
-harness must reject docs/prose/static-snapshot command
-substitutions for implemented probes, run implemented probes with
-`subprocess.run(..., shell=False, timeout=120)`, and summarize failed probe
-output with bounded/redacted text. It must not claim Checkpoint 3A,
-hosted/public demo, provider, cloned-identity, real-media, or
-production-readiness success from CP1, CP2, CP3, CP4, CP5, CP6, or CP7 alone.
+C3A-CP8 implements the eighth executable probe, real-browser E2E with no
+success-path interception, by dispatching
+`npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts`.
+The Playwright probe launches the local backend and frontend, drives the
+user-visible controlled-demo workflow with approved synthetic knowledge,
+observes browser API requests and responses without fabricating success,
+captures runtime nonce, request sequence, project/document/ingestion/run/
+evaluation/source binding, artifact metadata, bounded `/api/v1/ops/status`
+evidence, and local/mock provider posture, and rejects missing binding,
+stale/cross-project replay, static snapshots, API-only substitutes, and
+success-shaped canned evidence.
+
+The target is not part of `make quality` yet. The harness must reject
+docs/prose/static-snapshot command substitutions for implemented probes, run
+implemented probes with `subprocess.run(..., shell=False, timeout=120)`, and
+summarize failed probe output with bounded/redacted text. It must not claim
+Checkpoint 3B, Checkpoint 3C, hosted/public demo, provider setup,
+cloned-identity readiness, real-media readiness, or production-readiness
+success from Checkpoint 3A local/mock evidence.
 
 The repository guardrail also checks PR body content on pull-request events:
 generic PRs must use reference-only issue linkage such as `Refs #<issue>` and

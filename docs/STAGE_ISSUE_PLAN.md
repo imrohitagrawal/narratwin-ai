@@ -1080,6 +1080,56 @@ deployment, public URL, cloned identity, frontend browser implementation,
 backend implementation, provider/dependency changes, real media binaries,
 public distribution, or production-readiness claims.
 
+Issue `#269` is the bounded C3A-CP8 child implementation branch for the
+Checkpoint 3A executable real-browser E2E probe only. Branch
+`phase-1-closure-269-c3a-cp8-real-browser-e2e` may implement the
+real-browser E2E probe in `make checkpoint3-acceptance`, keep the API E2E
+foundation, output-correctness, language-quality, media-artifacts,
+access/quota/retention, security/observability, and performance probes
+passing, add old-behavior false-pass regressions, record fan-out findings,
+bundle the PR `#268` / issue `#267` ledger cleanup because this is a
+substantive child checkpoint, apply the existing Next.js dependency audit patch
+required by `make dependency-audit`, and update only these public-safe files:
+
+- `docs/governance/preflights/issue-269.json`
+- `docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `scripts/quality/check_checkpoint3_acceptance.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_checkpoint3_acceptance_gate.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `frontend/package.json`
+- `frontend/package-lock.json`
+- `frontend/playwright.checkpoint3.config.ts`
+- `frontend/tests/checkpoint3-real-browser.spec.ts`
+
+C3A-CP8 must execute the local browser-controlled demo path for approved
+synthetic project knowledge through user-visible project creation,
+upload/approval/ingestion, grounded walkthrough generation, multilingual
+artifact generation, synthetic-avatar consent, local avatar-demo artifact
+rendering, citations, browser-observed API request/response binding, bounded
+ops/status evidence, runtime nonce binding, local/mock provider posture, and
+public-safe failure context. It must reject docs/prose/static-snapshot or
+canned-success false passes, API-only substitutes, route/network interception
+that fabricates success, success-shaped browser state without runtime nonce,
+missing run/request/source/eval binding, stale browser evidence from a
+different run, cross-project replay with valid-looking IDs, unsafe
+provider/public/production claims, timeout/subprocess failure leaks, and public
+failure output that leaks raw uploaded content, prompt-injection text,
+private-looking markers, sensitive tokens, provider payloads, or generated full
+script text. The issue does not authorize Checkpoint 3B, Checkpoint 3C,
+providers, paid spend, hosted deployment, public URL, provider setup,
+cloned identity, frontend product behavior changes, backend implementation,
+new provider/dependency families, real media binaries, public distribution, or
+production-readiness claims. The only dependency-scope exception is the
+existing Next.js patch recorded in `docs/THIRD_PARTY_NOTICES.md`; there is no
+hosted deployment, no provider setup, no cloned identity, and no
+production-readiness claim.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:
