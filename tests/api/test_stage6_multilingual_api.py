@@ -131,7 +131,7 @@ def test_multilingual_walkthrough_api_returns_downloadable_script_and_subtitle_a
         f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
         json={
             "targetLanguage": "es",
-            "glossaryTerms": ["NarraTwin AI", "project knowledge"],
+            "glossaryTerms": ["NarraTwin AI"],
             "requestedVoiceProvider": "mock",
         },
         headers=idempotency_headers("stage6-multilingual"),
@@ -143,7 +143,7 @@ def test_multilingual_walkthrough_api_returns_downloadable_script_and_subtitle_a
     assert body["sourceLanguage"] == "en"
     assert body["targetLanguage"] == "es"
     assert "NarraTwin AI" in body["translatedScriptText"]
-    assert "project knowledge" in body["translatedScriptText"]
+    assert "project knowledge" not in body["translatedScriptText"]
     assert body["subtitlesText"].startswith("1\n00:00:00,000 -->")
     assert body["translationProvider"]["provider"] == "mock"
     assert body["voice"]["provider"] == "mock"

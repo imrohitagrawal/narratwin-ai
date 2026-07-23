@@ -164,6 +164,7 @@ def write_cp8_evidence(
                     "englishReferenceVisible": True,
                     "citationsVisible": True,
                     "metadataArtifactMatchesTranscript": True,
+                    "translatedScriptArtifactMatchesTranscript": True,
                 },
                 "representativeBrowserCoverage": [
                     {
@@ -175,6 +176,7 @@ def write_cp8_evidence(
                         "englishReferenceVisible": True,
                         "citationsVisible": True,
                         "metadataArtifactMatchesTranscript": True,
+                        "translatedScriptArtifactMatchesTranscript": True,
                     }
                     for group, language_tag in (
                         ("Hindi / Devanagari", "hi"),

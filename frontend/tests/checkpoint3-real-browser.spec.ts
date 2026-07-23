@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Response } from "@playwright/test";
+import { expect, test, type Locator, type Page, type Response } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 
@@ -74,6 +74,7 @@ type BrowserEvidence = {
     englishReferenceVisible: boolean;
     citationsVisible: boolean;
     metadataArtifactMatchesTranscript: boolean;
+    translatedScriptArtifactMatchesTranscript: boolean;
   };
   representativeBrowserCoverage: RepresentativeBrowserCoverage[];
   artifactMetadata: Awaited<ReturnType<typeof readArtifactMetadata>>[];
@@ -106,6 +107,7 @@ type RepresentativeBrowserCoverage = {
   englishReferenceVisible: boolean;
   citationsVisible: boolean;
   metadataArtifactMatchesTranscript: boolean;
+  translatedScriptArtifactMatchesTranscript: boolean;
 };
 
 const REPRESENTATIVE_BROWSER_LANGUAGES = [
@@ -280,9 +282,17 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
     ].map((label) => readArtifactMetadata(page, label)),
   );
   const transcriptMetadata = await readJsonArtifact(page, "Download transcript metadata");
+  const translatedScriptText = await readTextArtifact(page, "Download script");
   const metadataSegments = Array.isArray(transcriptMetadata.transcriptSegments)
     ? transcriptMetadata.transcriptSegments
     : [];
+  const transcriptArtifactParity = await transcriptArtifactsMatchVisibleOutput(
+    page,
+    visibleTranscript,
+    metadataSegments,
+    targetLanguage,
+    translatedScriptText,
+  );
   const representativeBrowserCoverage: RepresentativeBrowserCoverage[] = [
     await inspectCurrentVisibleTranscript(page, "French / Latin", targetLanguage, "Pour les ingénieurs"),
   ];
@@ -393,17 +403,8 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
       targetTranscriptVisible: await visibleTranscript.getByText("Target transcript").isVisible(),
       englishReferenceVisible: await visibleTranscript.getByText("English reference").isVisible(),
       citationsVisible: await visibleTranscript.getByText("[1]").first().isVisible(),
-      metadataArtifactMatchesTranscript:
-        metadataSegments.length > 0 &&
-        metadataSegments.every((segment) => {
-          const row = segment as Record<string, unknown>;
-          return (
-            typeof row.sourceText === "string" &&
-            typeof row.targetText === "string" &&
-            typeof row.englishReferenceText === "string" &&
-            row.targetLanguage === targetLanguage
-          );
-        }),
+      metadataArtifactMatchesTranscript: transcriptArtifactParity.metadataMatches,
+      translatedScriptArtifactMatchesTranscript: transcriptArtifactParity.translatedScriptMatches,
     },
     representativeBrowserCoverage,
     artifactMetadata,
@@ -523,6 +524,50 @@ async function readJsonArtifact(page: Page, label: string) {
   const dataUrlMatch = /^data:application\/json;base64,(.+)$/.exec(attributes.href);
   expect(dataUrlMatch).not.toBeNull();
   return JSON.parse(Buffer.from(dataUrlMatch?.[1] ?? "", "base64").toString("utf8")) as Record<string, unknown>;
+}
+
+async function readTextArtifact(page: Page, label: string) {
+  const attributes = await page.getByRole("link", { name: label }).evaluate((link) => ({
+    href: link.getAttribute("href") ?? "",
+  }));
+  const dataUrlMatch = /^data:[^;]+;base64,(.+)$/.exec(attributes.href);
+  expect(dataUrlMatch).not.toBeNull();
+  return Buffer.from(dataUrlMatch?.[1] ?? "", "base64").toString("utf8");
+}
+
+async function transcriptArtifactsMatchVisibleOutput(
+  page: Page,
+  visibleTranscript: Locator,
+  metadataSegments: unknown[],
+  languageTag: string,
+  translatedScriptText: string,
+) {
+  if (metadataSegments.length === 0) {
+    return { metadataMatches: false, translatedScriptMatches: false };
+  }
+  let metadataMatches = true;
+  let translatedScriptMatches = true;
+  for (const segment of metadataSegments) {
+    const row = segment as Record<string, unknown>;
+    if (
+      typeof row.sourceText !== "string" ||
+      typeof row.targetText !== "string" ||
+      typeof row.englishReferenceText !== "string" ||
+      row.targetLanguage !== languageTag
+    ) {
+      metadataMatches = false;
+      translatedScriptMatches = false;
+      continue;
+    }
+    metadataMatches =
+      metadataMatches &&
+      await visibleTranscript.getByText(row.sourceText).first().isVisible() &&
+      await visibleTranscript.getByText(row.targetText).first().isVisible() &&
+      await visibleTranscript.getByText(row.englishReferenceText).first().isVisible();
+    translatedScriptMatches = translatedScriptMatches && translatedScriptText.includes(row.targetText);
+  }
+  await page.getByRole("link", { name: "Download transcript metadata" }).isVisible();
+  return { metadataMatches, translatedScriptMatches };
 }
 
 function assertBrowserEvidenceContract(evidence: BrowserEvidence, appOrigin: string) {
@@ -680,9 +725,17 @@ async function inspectCurrentVisibleTranscript(
   await expect(visibleTranscript).toContainText(expectedSnippet);
   await expect(visibleTranscript).toContainText("[1]");
   const transcriptMetadata = await readJsonArtifact(page, "Download transcript metadata");
+  const translatedScriptText = await readTextArtifact(page, "Download script");
   const metadataSegments = Array.isArray(transcriptMetadata.transcriptSegments)
     ? transcriptMetadata.transcriptSegments
     : [];
+  const transcriptArtifactParity = await transcriptArtifactsMatchVisibleOutput(
+    page,
+    visibleTranscript,
+    metadataSegments,
+    languageTag,
+    translatedScriptText,
+  );
   return {
     group,
     languageTag,
@@ -691,17 +744,8 @@ async function inspectCurrentVisibleTranscript(
     targetTranscriptVisible: await visibleTranscript.getByText("Target transcript").isVisible(),
     englishReferenceVisible: await visibleTranscript.getByText("English reference").isVisible(),
     citationsVisible: await visibleTranscript.getByText("[1]").first().isVisible(),
-    metadataArtifactMatchesTranscript:
-      metadataSegments.length > 0 &&
-      metadataSegments.every((segment) => {
-        const row = segment as Record<string, unknown>;
-        return (
-          typeof row.sourceText === "string" &&
-          typeof row.targetText === "string" &&
-          typeof row.englishReferenceText === "string" &&
-          row.targetLanguage === languageTag
-        );
-      }),
+    metadataArtifactMatchesTranscript: transcriptArtifactParity.metadataMatches,
+    translatedScriptArtifactMatchesTranscript: transcriptArtifactParity.translatedScriptMatches,
   };
 }
 

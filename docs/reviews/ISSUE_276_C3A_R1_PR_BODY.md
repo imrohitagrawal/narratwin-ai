@@ -29,14 +29,14 @@ and source/eval/context/claim-support binding for every segment.
 
 ### 3. Key files and components
 
-Backend contract: `backend/app/stage6.py`, `backend/app/main.py`  
+Backend contract: `backend/app/stage6.py`, `backend/app/main.py`
 Frontend UI/rendering: `frontend/src/app/page.tsx`,
 `frontend/src/app/page.module.css`, `frontend/src/app/page.test.tsx`,
-`frontend/tests/checkpoint3-real-browser.spec.ts`  
+`frontend/tests/checkpoint3-real-browser.spec.ts`
 Acceptance/gates: `tests/acceptance/test_checkpoint3_output_correctness.py`,
 `tests/acceptance/test_checkpoint3_media_artifacts.py`,
 `scripts/quality/check_checkpoint3_acceptance.py`,
-`tests/unit/test_checkpoint3_acceptance_gate.py`  
+`tests/unit/test_checkpoint3_acceptance_gate.py`
 Docs/evidence: `docs/STATUS.md`, `docs/QUALITY_GATES.md`,
 `docs/TRACEABILITY.md`, `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`,
 `docs/ADR/0033-checkpoint3-real-browser-acceptance-evidence.md`,
@@ -69,8 +69,8 @@ NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend ru
 Residual risk: local/demo translations are deterministic fixtures for controlled
 accepted scripts only. Arbitrary input remains unsupported locally unless a later
 reviewed provider stage implements real translation. The requested sub-agent
-fan-out was attempted, but all sub-agents errored on account usage limits; the
-equivalent local independent review passes are recorded in
+fan-out initially hit usage limits, then was restarted. The restarted reviewers
+found blockers; fixes and final rerun status are recorded in
 `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md`.
 
 ## Human verification checklist
@@ -146,7 +146,7 @@ there is no successor status-only follow-up needed.
 | Tests / current behavior | `tests/acceptance/test_checkpoint3_output_correctness.py` | repo-file | C3A-R1-FM | `uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q` | implementer | test | pass | API/output correctness is exhaustive for Priority 1. |
 | Browser behavior | `frontend/tests/checkpoint3-real-browser.spec.ts` | repo-file | C3A-R1-FM | `NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts` | implementer | test | pass | Browser coverage is representative by script family. |
 | Docs/gates | `scripts/quality/check_checkpoint3_acceptance.py` | repo-file | C3A-R1-FM | invariant test gate `make checkpoint3-acceptance` | implementer | gate | pass | Gate rejects missing representative browser evidence. |
-| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | adversarial fallback review after subagent false pass prompts hit usage limit | implementer | source / human-only | pass | Sub-agent fan-out blocked by usage limit. |
+| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | restarted sub-agent review found output-correctness, TDD, doubt-driven, and false-positive blockers; fixes recorded in evidence | implementer | source / human-only | pass | Human reviewer should inspect final rerun status before approval. |
 | Review prompt set | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | review prompt matrix for false pass and adversarial output correctness review | implementer | source / human-only | pass | Human reviewer may repeat prompts if usage limits reset. |
 | Stop rule / repeated blocker reset | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | stop rule checked; new blocker classes require contract rewrite or update before another fix loop | implementer | gate | pass | No repeated blocker remained after fallback review. |
 | Skill/tool selection | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | repo-file | C3A-R1-SKILL | preinstalled approved skills and repo docs checked first; no custom skill creation | implementer | gate | pass | No custom skills/plugins or dependencies added. |
@@ -183,8 +183,8 @@ make secrets-scan -> passed
 make eval -> passed
 GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed
 make checkpoint3-acceptance -> passed
-uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q -> 5 passed
-uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/unit/test_checkpoint3_acceptance_gate.py -q -> 80 passed
+uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q -> 7 passed
+uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/unit/test_checkpoint3_acceptance_gate.py -q -> 81 passed
 npm --prefix frontend run test -- page.test.tsx -> 16 passed
 NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts -> 1 passed
 ```

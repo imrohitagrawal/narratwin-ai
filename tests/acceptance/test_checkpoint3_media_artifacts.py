@@ -254,7 +254,7 @@ def assert_preserves_grounded_runtime_text(text: str, *, run: dict[str, Any]) ->
 def assert_translated_runtime_artifact_text(text: str) -> None:
     assert "MEDIA-SENTINEL-CP4" in text
     assert "[1]" in text
-    assert "Para ingenieros" in text
+    assert "Para reclutadores, Helio Media" in text
 
 
 def assert_stage6_media_artifacts(multilingual: dict[str, Any], *, run: dict[str, Any]) -> None:

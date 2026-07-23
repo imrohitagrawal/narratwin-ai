@@ -1,25 +1,32 @@
 # Issue 276 C3A-R1 Review Evidence
 
-Issue: `#276`  
-Branch: `phase-1-closure-c3a-r1-major-market-multilingual-output-correctness`  
+Issue: `#276`
+Branch: `phase-1-closure-c3a-r1-major-market-multilingual-output-correctness`
 Scope: local/mock Checkpoint 3A multilingual output correctness repair.
 
 ## Fan-Out Review Status
 
-The requested sub-agent fan-out was attempted after implementation. All four
-spawned reviewers failed before returning review output because the account
-usage limit was reached:
+The requested sub-agent fan-out was attempted after implementation. The first
+spawned reviewer set failed before returning review output because the account
+usage limit was reached. Those obsolete sessions were closed and the required
+fan-out was restarted.
+
+The restarted fan-out found blockers; the PR was not treated as ready for human
+review at that point.
 
 | Requested reviewer | Result | Fallback |
 |---|---|---|
-| Output-Correctness Reviewer | Tooling errored before review output. | Local independent output-correctness pass below. |
-| TDD Reviewer | Tooling errored before review output. | Local independent TDD/order pass below. |
-| Doubt-Driven Reviewer | Tooling errored before review output. | Local independent adversarial pass below. |
-| False-Positive Reviewer | Tooling errored before review output. | Local independent mutation/false-positive pass below. |
+| Output-Correctness Reviewer | `BLOCK` on Atlas source receiving NarraTwin target text; later `BLOCK` on Spanish NarraTwin fixture containing untranslated `project knowledge`. | Fixed source-specific Atlas fixtures, complete Spanish fixture text, and added regression assertions. |
+| TDD Reviewer | `BLOCK` because original RED evidence failed at import/collection and follow-up behavior tests were uncommitted. | Added behavior-level tests that fail on the prior implementation and recorded this explicitly; final commit carries the follow-up tests. |
+| Doubt-Driven Reviewer | `BLOCK` on provider script/transcript divergence, arbitrary NarraTwin pseudo-translation, weak browser artifact comparison, and UI hardcoded catalog fallback. | Added provider/transcript parity validation, arbitrary-fixture refusal, stronger browser artifact parity, and removed frontend catalog fallback. |
+| False-Positive Reviewer | `BLOCK` on missing metadata-only/artifact-only response mutations; rerun returned `PASS`. | Added response-level false-pass mutations and required coverage rows. |
+
+Final review status must be considered clean only after the blocker reviewers
+rerun against the final committed state and return `PASS`.
 
 ## Output-Correctness Review
 
-Status: `PASS`
+Status: `PASS after fixes; pending final reviewer rerun`
 
 Commands:
 
@@ -31,7 +38,7 @@ NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend ru
 Results:
 
 ```text
-tests/acceptance/test_checkpoint3_output_correctness.py: 5 passed
+tests/acceptance/test_checkpoint3_output_correctness.py: 7 passed
 frontend Checkpoint 3 real browser: 1 passed
 ```
 
@@ -39,7 +46,7 @@ Evidence inspected:
 
 | Artifact | Finding |
 |---|---|
-| `reports/checkpoint3-multilingual/priority1-coverage-matrix.json` | 175 matrix rows covering Priority 1 positive and negative cases. |
+| `reports/checkpoint3-multilingual/priority1-coverage-matrix.json` | 225 matrix rows covering Priority 1 positive and negative cases. |
 | `reports/checkpoint3-multilingual/checkpoint3a-multilingual-summary.json` | 25 Priority 1 language rows, including `hi`. |
 | `reports/checkpoint3-real-browser/playwright-output/.../issue-269-c3a-cp8-browser-evidence.json` | Browser-visible source English, target transcript, English reference, citations, and matching metadata artifact are true for French/Latin, Hindi/Devanagari, Arabic/RTL Arabic script, Hebrew/RTL, Japanese/CJK, Korean/Hangul, Russian/Cyrillic, and Thai/Southeast Asia. |
 
@@ -49,7 +56,7 @@ or a flat translated string as sufficient evidence.
 
 ## TDD Review
 
-Status: `PASS`
+Status: `BLOCK pending final committed-state rerun`
 
 Commands:
 
@@ -61,7 +68,7 @@ npm --prefix frontend run test -- page.test.tsx
 Results:
 
 ```text
-Stage 6 unit/API/harness set: 80 passed
+Stage 6 unit/API/harness set: 81 passed
 frontend page.test.tsx: 16 passed
 ```
 
@@ -72,12 +79,13 @@ Old-behavior proof:
 | `4868784 test: prove c3a multilingual output false passes` | Added behavior tests before implementation. The RED run failed on missing Priority 1 catalog/transcript validation and hardcoded UI catalog exports. |
 | `e48b7af docs: add c3a multilingual repair preflight` | Recorded issue-scoped invariant and failure matrix before product/code edits. |
 
-Conclusion: The tests prove behavior at API, artifact, validation, acceptance,
-and UI rendering boundaries rather than private helper implementation details.
+Conclusion: The follow-up behavior tests prove the old bad behavior, but this
+review remains blocked until those tests are committed and the TDD reviewer rerun
+confirms the final committed state.
 
 ## Doubt-Driven Review
 
-Status: `PASS with residual local-demo limitation`
+Status: `PASS after fixes; pending final reviewer rerun`
 
 Disproof attempts checked:
 
@@ -87,6 +95,9 @@ Disproof attempts checked:
 | `COMPLETED` metadata overrules bad text. | Transcript correctness validation is required before completed multilingual result persistence. |
 | Browser evidence remains Latin-only. | CP8 now requires representative script-family browser coverage for Devanagari, RTL Arabic/Hebrew, CJK, Hangul, Cyrillic, Latin, and Southeast Asia. |
 | Artifact existence overrules artifact content. | Stage 6 metadata artifacts are compared against structured transcript segments and correctness metadata. |
+| Arbitrary local-demo input is translated with a generic fixture. | Arbitrary NarraTwin/Jupiter fixture now returns `LOCAL_DEMO_TRANSLATION_UNSUPPORTED`. |
+| UI catalog is hardcoded. | UI selector starts empty and requires `/api/v1/languages`; no local full-catalog fallback remains. |
+| Browser artifact proof only checks metadata shape. | CP8 evidence now checks decoded metadata and translated-script artifact text against the visible transcript. |
 
 Command:
 
@@ -132,7 +143,7 @@ uv run pytest tests/unit/test_stage6_multilingual.py -q
 Results:
 
 ```text
-output-correctness acceptance: 5 passed
+output-correctness acceptance: 7 passed
 Stage 6 multilingual unit tests: passed in the combined Stage 6 unit/API/harness run
 ```
 
@@ -159,8 +170,8 @@ Results:
 make quality: passed
 make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
 make ci: passed
-output-correctness acceptance: 5 passed
-Stage 6 unit/API/harness set: 80 passed
+output-correctness acceptance: 7 passed
+Stage 6 unit/API/harness set: 81 passed
 frontend page.test.tsx: 16 passed
 Checkpoint 3 real browser CP8: 1 passed
 ```

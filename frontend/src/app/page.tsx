@@ -198,66 +198,6 @@ type ApiErrorPayload = {
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
-const defaultLanguageCatalog: LanguageCatalogRecord[] = [
-  ["en", "English", "English", "Latin", "ltr", 1, "Global", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["hi", "Hindi", "हिन्दी", "Devanagari", "ltr", 1, "South Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["es", "Spanish", "Español", "Latin", "ltr", 1, "Europe/Latin America", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["de", "German", "Deutsch", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["fr", "French", "Français", "Latin", "ltr", 1, "Europe/Africa/Canada", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["pt-BR", "Brazilian Portuguese", "Português do Brasil", "Latin", "ltr", 1, "Latin America", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["it", "Italian", "Italiano", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["nl", "Dutch", "Nederlands", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["pl", "Polish", "Polski", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["uk", "Ukrainian", "Українська", "Cyrillic", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["ru", "Russian", "Русский", "Cyrillic", "ltr", 1, "Europe/Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["zh-Hans", "Chinese Simplified", "简体中文", "Han Simplified", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["zh-Hant", "Chinese Traditional", "繁體中文", "Han Traditional", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["ja", "Japanese", "日本語", "Japanese", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["ko", "Korean", "한국어", "Hangul", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["ar", "Arabic", "العربية", "Arabic", "rtl", 1, "MENA", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["arz", "Egyptian Arabic", "مصري", "Arabic", "rtl", 1, "MENA", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["he", "Hebrew", "עברית", "Hebrew", "rtl", 1, "MENA", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["fa", "Persian/Farsi", "فارسی", "Arabic", "rtl", 1, "MENA/Central Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["tr", "Turkish", "Türkçe", "Latin", "ltr", 1, "Europe/West Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["vi", "Vietnamese", "Tiếng Việt", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["id", "Indonesian", "Bahasa Indonesia", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["fil", "Filipino/Tagalog", "Filipino", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["th", "Thai", "ไทย", "Thai", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["ms", "Malay", "Bahasa Melayu", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"],
-  ["bn", "Bengali", "বাংলা", "Bengali", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"],
-  ["ta", "Tamil", "தமிழ்", "Tamil", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"],
-  ["te", "Telugu", "తెలుగు", "Telugu", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"],
-  ["kn", "Kannada", "ಕನ್ನಡ", "Kannada", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"],
-  ["mr", "Marathi", "मराठी", "Devanagari", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"],
-  ["gu", "Gujarati", "ગુજરાતી", "Gujarati", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"],
-  ["ml", "Malayalam", "മലയാളം", "Malayalam", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"],
-  ["ur", "Urdu", "اردو", "Arabic", "rtl", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"],
-  ["pa", "Punjabi", "ਪੰਜਾਬੀ", "Gurmukhi", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"],
-].map(
-  ([
-    languageTag,
-    englishName,
-    nativeName,
-    script,
-    direction,
-    marketPriority,
-    regionGroup,
-    localDemoSupportStatus,
-    providerSupportStatus,
-    testCoverageLevel,
-  ]) => ({
-    languageTag,
-    englishName,
-    nativeName,
-    script,
-    direction,
-    marketPriority,
-    regionGroup,
-    localDemoSupportStatus,
-    providerSupportStatus,
-    testCoverageLevel,
-  } as LanguageCatalogRecord),
-);
 export const defaultKnowledge = `# NarraTwin AI
 
 NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.
@@ -368,7 +308,7 @@ export default function Home() {
   const [syntheticAvatarConsent, setSyntheticAvatarConsent] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
-  const [languageCatalog, setLanguageCatalog] = useState<LanguageCatalogRecord[]>(defaultLanguageCatalog);
+  const [languageCatalog, setLanguageCatalog] = useState<LanguageCatalogRecord[]>([]);
   const [targetLanguage, setTargetLanguage] = useState("es");
 
   useEffect(() => {
@@ -382,7 +322,7 @@ export default function Home() {
       })
       .catch(() => {
         if (isActive) {
-          setLanguageCatalog(defaultLanguageCatalog);
+          setError("Language catalog could not be loaded from the local API.");
         }
       });
     return () => {
@@ -596,6 +536,7 @@ export default function Home() {
               <select
                 name="targetLanguage"
                 value={targetLanguage}
+                disabled={languageCatalog.length === 0}
                 onChange={(event) => setTargetLanguage(event.currentTarget.value)}
               >
                 {languageCatalog.map((language) => (
@@ -621,7 +562,7 @@ export default function Home() {
               <span>Glossary terms</span>
               <textarea
                 name="glossaryTerms"
-                defaultValue={"NarraTwin AI\nproject knowledge\nsource chunks"}
+                defaultValue={"NarraTwin AI"}
                 rows={4}
               />
             </label>
@@ -637,7 +578,11 @@ export default function Home() {
             <span>Synthetic avatar consent: local AI presenter, no cloned face or voice</span>
           </label>
 
-          <button className={styles.primaryAction} type="submit" disabled={isGenerating || !syntheticAvatarConsent}>
+          <button
+            className={styles.primaryAction}
+            type="submit"
+            disabled={isGenerating || !syntheticAvatarConsent || languageCatalog.length === 0}
+          >
             {isGenerating ? "Generating" : "Generate avatar demo export"}
           </button>
         </form>

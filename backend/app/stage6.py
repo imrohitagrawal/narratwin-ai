@@ -281,6 +281,35 @@ DEMO_TRANSLATED_SEGMENT_TEXT = {
     "th": "สำหรับวิศวกร NarraTwin AI แปลงความรู้โครงการที่อนุมัติแล้วเป็นสคริปต์แนะนำที่มีหลักฐานพร้อมการอ้างอิงแหล่งที่มา",
     "ms": "Untuk jurutera, NarraTwin AI menukar pengetahuan projek yang diluluskan kepada skrip panduan berasas dengan petikan sumber.",
 }
+ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT = {
+    "hi": "इंजीनियरों के लिए, Atlas Output OUTPUT-SENTINEL-CP2 लॉन्च रिहर्सल के लिए एक काल्पनिक स्थानीय चेकलिस्ट बिल्डर है।",
+    "es": "Para ingenieros, Atlas Output OUTPUT-SENTINEL-CP2 es un creador local ficticio de listas de verificación para ensayos de lanzamiento.",
+    "de": "Für Ingenieure ist Atlas Output OUTPUT-SENTINEL-CP2 ein fiktiver lokaler Checklisten-Builder für Launch-Proben.",
+    "fr": "Pour les ingénieurs, Atlas Output OUTPUT-SENTINEL-CP2 est un générateur local fictif de listes de contrôle pour les répétitions de lancement.",
+    "pt-BR": "Para engenheiros, o Atlas Output OUTPUT-SENTINEL-CP2 é um criador local fictício de listas de verificação para ensaios de lançamento.",
+    "it": "Per gli ingegneri, Atlas Output OUTPUT-SENTINEL-CP2 è un generatore locale fittizio di checklist per le prove di lancio.",
+    "nl": "Voor engineers is Atlas Output OUTPUT-SENTINEL-CP2 een fictieve lokale checklistbouwer voor lanceringsoefeningen.",
+    "pl": "Dla inżynierów Atlas Output OUTPUT-SENTINEL-CP2 jest fikcyjnym lokalnym narzędziem do tworzenia list kontrolnych na próby uruchomienia.",
+    "uk": "Для інженерів Atlas Output OUTPUT-SENTINEL-CP2 є вигаданим локальним конструктором чеклістів для репетицій запуску.",
+    "ru": "Для инженеров Atlas Output OUTPUT-SENTINEL-CP2 — это вымышленный локальный конструктор контрольных списков для репетиций запуска.",
+    "zh-Hans": "面向工程师，Atlas Output OUTPUT-SENTINEL-CP2 是用于发布演练的虚构本地检查清单生成器。",
+    "zh-Hant": "面向工程師，Atlas Output OUTPUT-SENTINEL-CP2 是用於發布演練的虛構本地檢查清單產生器。",
+    "ja": "エンジニア向けに、Atlas Output OUTPUT-SENTINEL-CP2 はローンチリハーサル用の架空のローカルチェックリスト作成ツールです。",
+    "ko": "엔지니어를 위해 Atlas Output OUTPUT-SENTINEL-CP2는 출시 리허설용 가상 로컬 체크리스트 빌더입니다.",
+    "ar": "للمهندسين، Atlas Output OUTPUT-SENTINEL-CP2 هو منشئ قوائم تحقق محلي خيالي لتدريبات الإطلاق.",
+    "arz": "للمهندسين، Atlas Output OUTPUT-SENTINEL-CP2 هو منشئ قايمات تحقق محلي خيالي لبروفات الإطلاق.",
+    "he": "עבור מהנדסים, Atlas Output OUTPUT-SENTINEL-CP2 הוא בונה רשימות בדיקה מקומי בדיוני לחזרות השקה.",
+    "fa": "برای مهندسان، Atlas Output OUTPUT-SENTINEL-CP2 یک سازنده محلی خیالی فهرست‌های بررسی برای تمرین‌های راه‌اندازی است.",
+    "tr": "Mühendisler için Atlas Output OUTPUT-SENTINEL-CP2, lansman provaları için kurgusal bir yerel kontrol listesi oluşturucusudur.",
+    "vi": "Dành cho kỹ sư, Atlas Output OUTPUT-SENTINEL-CP2 là trình tạo danh sách kiểm tra cục bộ giả định cho các buổi diễn tập ra mắt.",
+    "id": "Untuk insinyur, Atlas Output OUTPUT-SENTINEL-CP2 adalah pembuat daftar periksa lokal fiktif untuk latihan peluncuran.",
+    "fil": "Para sa mga engineer, ang Atlas Output OUTPUT-SENTINEL-CP2 ay kathang-isip na lokal na tagabuo ng checklist para sa mga rehearsal ng paglulunsad.",
+    "th": "สำหรับวิศวกร Atlas Output OUTPUT-SENTINEL-CP2 เป็นเครื่องมือสร้างเช็กลิสต์ภายในเครื่องแบบสมมติสำหรับการซ้อมเปิดตัว",
+    "ms": "Untuk jurutera, Atlas Output OUTPUT-SENTINEL-CP2 ialah pembina senarai semak tempatan rekaan untuk latihan pelancaran.",
+}
+HELIO_MEDIA_TRANSLATED_SEGMENT_TEXT = {
+    "es": "Para reclutadores, Helio Media MEDIA-SENTINEL-CP4 es un estudio local ficticio de incorporación para equipos de operaciones de campo.",
+}
 
 
 @dataclass(frozen=True)
@@ -1084,6 +1113,12 @@ class Stage6Service:
             citation_indexes=source_citation_indexes,
             claim_support_ids=source_claim_support_ids,
         )
+        validate_translated_script_matches_transcript(
+            target_language=normalized_target_language,
+            source_text=source_text,
+            translated_script_text=translation.translated_text,
+            transcript_segments=transcript_segments,
+        )
         if normalized_target_language != "en" and translation.translated_text == source_text:
             raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Provider returned an English fallback.")
         subtitles_text = generate_subtitles(
@@ -1628,6 +1663,12 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         citation_indexes=source_citation_indexes,
         claim_support_ids=source_claim_support_ids,
     )
+    validate_translated_script_matches_transcript(
+        target_language=target_language,
+        source_text=source_script_text,
+        translated_script_text=translated_script_text,
+        transcript_segments=transcript_segments,
+    )
     expected_request_checksum = build_multilingual_request_checksum(
         source_script=source_script_text,
         source_language=source_language,
@@ -1972,6 +2013,14 @@ def source_transcript_segments(source_text: str) -> tuple[tuple[str, tuple[str, 
     for match in matches:
         text = " ".join(match.group("text").strip().split())
         index = int(match.group("index"))
+        if re.fullmatch(r"(?:\[\d+\]\s*)+", text) and segments:
+            previous_text, previous_markers, previous_indexes = segments[-1]
+            segments[-1] = (
+                f"{previous_text} {text}",
+                previous_markers + (f"[{index}]",),
+                previous_indexes + (index,),
+            )
+            continue
         segments.append((text, (f"[{index}]",), (index,)))
     return tuple(segments)
 
@@ -1998,9 +2047,16 @@ def translate_demo_segment_text(
     if target_language == "en":
         target = source_segment
     else:
-        base_text = DEMO_TRANSLATED_SEGMENT_TEXT.get(target_language)
+        base_text = local_demo_translated_segment_fixture(
+            source_segment=source_segment,
+            target_language=target_language,
+        )
         if base_text is None:
-            raise Stage6Error(422, "UNSUPPORTED_LANGUAGE", "Unsupported target language.")
+            raise Stage6Error(
+                422,
+                "LOCAL_DEMO_TRANSLATION_UNSUPPORTED",
+                "Local demo translation is only available for controlled acceptance fixture scripts.",
+            )
         target = base_text
     suffix = " ".join(citation_markers)
     if suffix and not target.endswith(suffix):
@@ -2008,6 +2064,48 @@ def translate_demo_segment_text(
     if len(source_transcript_segments(source_segment)) == 1 and citation_markers:
         return target
     return target
+
+
+def local_demo_translated_segment_fixture(*, source_segment: str, target_language: str) -> str | None:
+    if "Atlas Output" in source_segment and "OUTPUT-SENTINEL-CP2" in source_segment:
+        return ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT.get(target_language)
+    if "Helio Media" in source_segment and "MEDIA-SENTINEL-CP4" in source_segment:
+        return HELIO_MEDIA_TRANSLATED_SEGMENT_TEXT.get(target_language)
+    if (
+        "NarraTwin AI" in source_segment
+        and (
+            "turns approved project knowledge into grounded walkthrough scripts" in source_segment
+            or "creates grounded walkthrough scripts" in source_segment
+        )
+    ):
+        return DEMO_TRANSLATED_SEGMENT_TEXT.get(target_language)
+    return None
+
+
+def translated_script_text_from_transcript_segments(
+    segments: Iterable[MultilingualTranscriptSegment],
+) -> str:
+    return " ".join(segment.target_text for segment in segments)
+
+
+def validate_translated_script_matches_transcript(
+    *,
+    target_language: str,
+    source_text: str,
+    translated_script_text: str,
+    transcript_segments: tuple[MultilingualTranscriptSegment, ...],
+) -> None:
+    if target_language == "en":
+        return
+    if not citation_marker_sequence(source_text):
+        return
+    expected_text = translated_script_text_from_transcript_segments(transcript_segments)
+    if translated_script_text != expected_text:
+        raise Stage6Error(
+            422,
+            "PROVIDER_OUTPUT_INVALID",
+            "Translated script does not match validated transcript segments.",
+        )
 
 
 def build_multilingual_transcript_segments(
@@ -2789,7 +2887,9 @@ def build_stage6_metadata_text(
         "traceId": trace_id,
         "sourceLanguage": source_language,
         "targetLanguage": target_language,
+        "sourceScriptText": source_script_text,
         "sourceTextChecksum": source_text_checksum,
+        "translatedScriptText": translated_script_text,
         "sourceContextRefCount": source_context_ref_count,
         "sourceContextRefIds": list(source_context_ref_ids),
         "sourceCitationCount": source_citation_count,

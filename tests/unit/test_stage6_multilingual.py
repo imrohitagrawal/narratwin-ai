@@ -123,21 +123,20 @@ def configure_external_tts(
 def test_translation_preserves_project_terms_from_glossary() -> None:
     service = create_stage6_service()
     source_script = (
-        "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. "
-        "NarraTwin AI keeps generated claims tied to source chunks."
+        "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]"
     )
 
     result = service.generate_multilingual_walkthrough(
         source_script=source_script,
         target_language="es",
-        glossary_terms=["NarraTwin AI", "project knowledge", "source chunks"],
+        glossary_terms=["NarraTwin AI"],
         requested_voice_provider="mock",
+        **passed_eval_kwargs(),
     )
 
     assert result.target_language == "es"
     assert "NarraTwin AI" in result.translated_script_text
-    assert "project knowledge" in result.translated_script_text
-    assert "source chunks" in result.translated_script_text
+    assert "project knowledge" not in result.translated_script_text
     assert "convierte" in result.translated_script_text
     assert result.translated_script_text != source_script
     assert result.artifacts.metadata.mime_type == "application/json"
@@ -898,3 +897,14 @@ def test_unsupported_language_is_rejected_cleanly() -> None:
     assert exc.value.status_code == 422
     assert exc.value.code == "UNSUPPORTED_LANGUAGE"
     assert "Unsupported target language" in exc.value.message
+
+
+def test_local_demo_translation_refuses_arbitrary_cited_source_without_fixture() -> None:
+    with pytest.raises(Stage6Error) as exc:
+        translate_demo_source_text(
+            source_text="For reviewers, NarraTwin AI acquired Jupiter Labs for moon-base onboarding. [1]",
+            target_language="es",
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"

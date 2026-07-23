@@ -23,10 +23,7 @@ describe("Home", () => {
     expect(html).toContain("Avatar demo export");
     expect(html).toContain("Generate avatar demo export");
     expect(html).toContain("Target language");
-    expect(html).toContain("Korean / 한국어");
-    expect(html).toContain("Hindi / हिन्दी");
-    expect(html).toContain("Bengali / বাংলা");
-    expect(html).toContain("Planned");
+    expect(html).toContain("Language catalog unavailable");
     expect(html).toContain("Download script");
     expect(html).toContain("Download subtitles");
     expect(html).toContain("Download voice manifest");

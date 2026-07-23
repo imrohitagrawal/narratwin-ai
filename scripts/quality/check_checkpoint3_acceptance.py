@@ -535,6 +535,7 @@ def validate_completed_probe_output(probe: Probe, output: str) -> str:
             "englishReferenceVisible",
             "citationsVisible",
             "metadataArtifactMatchesTranscript",
+            "translatedScriptArtifactMatchesTranscript",
         )
     ):
         return "CP8 browser evidence missing visible transcript proof."
@@ -558,6 +559,7 @@ def validate_completed_probe_output(probe: Probe, output: str) -> str:
                 "englishReferenceVisible",
                 "citationsVisible",
                 "metadataArtifactMatchesTranscript",
+                "translatedScriptArtifactMatchesTranscript",
             )
         ):
             observed_representative_groups.add(group)

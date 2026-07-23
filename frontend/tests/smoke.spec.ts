@@ -141,9 +141,9 @@ const refusedWalkthroughResponse = {
 };
 
 const translatedScriptText =
-  "For recruiters, NarraTwin AI convierte approved project knowledge en grounded walkthrough scripts. [1]";
+  "Para ingenieros, NarraTwin AI convierte el conocimiento aprobado del proyecto en guiones de recorrido fundamentados con citas de origen. [1]";
 const subtitlesText =
-  "1\n00:00:00,000 --> 00:00:04,000\nFor recruiters, NarraTwin AI convierte approved project knowledge en grounded walkthrough scripts. [1]\n\n";
+  "1\n00:00:00,000 --> 00:00:04,000\nPara ingenieros, NarraTwin AI convierte el conocimiento aprobado del proyecto en guiones de recorrido fundamentados con citas de origen. [1]\n\n";
 const voiceManifestText = JSON.stringify({
   provider: "mock",
   providerMode: "LOCAL",
@@ -209,8 +209,8 @@ const multilingualResponse = {
   subtitlesText,
   transcriptSegments,
   transcriptCorrectness,
-  glossaryTerms: ["NarraTwin AI", "project knowledge", "source chunks"],
-  preservedTerms: ["NarraTwin AI", "project knowledge"],
+  glossaryTerms: ["NarraTwin AI"],
+  preservedTerms: ["NarraTwin AI"],
   translationProvider: { provider: "mock", providerMode: "LOCAL" },
   voice: {
     provider: "mock",
@@ -511,7 +511,7 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
   await expect(page.getByLabel("Render job lifecycle")).toContainText("COMPLETED");
   await expect(page.getByLabel("Render job lifecycle")).toContainText("MOCK_LOCAL");
   await expect(page.getByLabel("Avatar demo preview")).toContainText("local-html");
-  await expect(page.getByLabel("Avatar demo preview")).toContainText("For recruiters, NarraTwin AI convierte");
+  await expect(page.getByLabel("Avatar demo preview")).toContainText("Para ingenieros, NarraTwin AI convierte");
   await expect(page.getByLabel("Export artifact list")).toContainText("Video placeholder");
   await expect(page.getByLabel("Export artifact list")).toContainText("run_ui_smoke-video-export-placeholder.json");
   await expect(page.getByRole("link", { name: "Download export artifact Video placeholder" })).toHaveAttribute(
@@ -621,6 +621,10 @@ test("home page blocks avatar artifacts with mismatched multilingual provenance"
     const request = route.request();
     const path = new URL(request.url()).pathname;
 
+    if (request.method() === "GET" && path === "/api/v1/languages") {
+      await route.fulfill({ json: languageCatalogResponse });
+      return;
+    }
     if (request.method() === "POST" && path === "/api/v1/projects") {
       await route.fulfill({ json: { projectId: "proj_ui" } });
       return;
@@ -690,6 +694,10 @@ test("home page shows bounded durable avatar consent render errors", async ({ pa
     const request = route.request();
     const path = new URL(request.url()).pathname;
 
+    if (request.method() === "GET" && path === "/api/v1/languages") {
+      await route.fulfill({ json: languageCatalogResponse });
+      return;
+    }
     if (request.method() === "POST" && path === "/api/v1/projects") {
       await route.fulfill({ json: { projectId: "proj_ui" } });
       return;
