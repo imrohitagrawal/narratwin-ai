@@ -301,6 +301,10 @@ ISSUE_269_ALLOWED_CHANGED_FILES = {
     "frontend/playwright.checkpoint3.config.ts",
     "frontend/tests/checkpoint3-real-browser.spec.ts",
 }
+ISSUE_269_ALLOWED_BRANCHES = {
+    "phase-1-closure-269-c3a-cp8-real-browser-e2e",
+    "phase-1-closure-269-c3a-cp8-real-browser-e2e-refresh",
+}
 ISSUE_255_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-255.json",
     "docs/STATUS.md",
@@ -3671,7 +3675,7 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_265_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-267-c3a-cp7-performance-probe":
         allowed_files = ISSUE_267_ALLOWED_CHANGED_FILES
-    elif branch == "phase-1-closure-269-c3a-cp8-real-browser-e2e":
+    elif branch in ISSUE_269_ALLOWED_BRANCHES:
         allowed_files = ISSUE_269_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-269-"):
         allowed_files = set()

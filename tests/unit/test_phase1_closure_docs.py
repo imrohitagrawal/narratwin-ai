@@ -1757,6 +1757,7 @@ def test_issue_267_near_match_branch_fails_closed(monkeypatch: Any) -> None:
 
 def test_issue_269_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     branch = "phase-1-closure-269-c3a-cp8-real-browser-e2e"
+    refresh_branch = "phase-1-closure-269-c3a-cp8-real-browser-e2e-refresh"
     allowed = [
         "docs/governance/preflights/issue-269.json",
         "docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md",
@@ -1776,7 +1777,9 @@ def test_issue_269_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
         "frontend/tests/checkpoint3-real-browser.spec.ts",
     ]
     assert phase1.ISSUE_269_ALLOWED_CHANGED_FILES == set(allowed)
+    assert phase1.ISSUE_269_ALLOWED_BRANCHES == {branch, refresh_branch}
     assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(monkeypatch, branch=refresh_branch, files=allowed) == []
     assert run_changed_files_check(
         monkeypatch,
         branch=branch,
