@@ -200,6 +200,10 @@ Final fan-out disposition before PR:
   rejected by independent recomputation and that no success-path interception,
   provider setup, hosted/public demo, cloned identity, real media, or
   production-readiness claim is introduced.
+- Review refresh note: after human approval, GitHub branch protection reported
+  that the last pusher could not be determined. This evidence-only note creates
+  a public-safe non-runtime branch-head refresh for re-review without changing
+  CP8 behavior, scope, providers, data, or readiness claims.
 
 ## Skill And Tool Selection Ledger
 
