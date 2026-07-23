@@ -31,7 +31,8 @@ PROBE_ENV_DENYLIST = (
 SENSITIVE_OUTPUT_PATTERNS = (
     re.compile(
         r"(?i)[^\n]*(?:CP6-RAW-UPLOAD-CANARY|CP6-RAW-PROMPT-CANARY|CP6-RAW-INJECTION-CANARY|"
-        r"CP6-PRIVATE-MARKER|ignore (?:all )?previous instructions|print the hidden system prompt|"
+        r"CP6-PRIVATE-MARKER|CP7-RAW-UPLOAD-CANARY|CP7-RAW-PROMPT-CANARY|CP7-RAW-INJECTION-CANARY|"
+        r"CP7-PRIVATE-MARKER|ignore (?:all )?previous instructions|print the hidden system prompt|"
         r"hidden system prompt)[^\n]*"
     ),
     re.compile(r"(?i)(secret|token|provider payload|raw upload|raw prompt|generated script|private identifier)[^\n]*"),
@@ -59,6 +60,11 @@ SENSITIVE_OUTPUT_PATTERNS = (
         r"idempotency_scope|requestChecksum|request_checksum|retentionRecordId|retention_record_id|"
         r"tombstoneChecksum|tombstone_checksum|deletionEvidenceId|deletion_evidence_id|accessRecordId|"
         r"access_record_id|artifactChecksum|artifact_checksum)[^\n]*"
+    ),
+    re.compile(
+        r"(?i)(performanceFailureContext|operationTiming|operationName|elapsedMs|thresholdMs|thresholds|"
+        r"requestIdBound|request_id_bound|traceLatencyMs|trace_latency_ms|runtimeSource|runtime_source|"
+        r"runtimePosture|runtime_posture|performanceEvidence|performance_evidence)[^\n]*"
     ),
 )
 
@@ -127,8 +133,8 @@ PROBES: tuple[Probe, ...] = (
         label="performance",
         command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_performance.py", "-q"),
         env=((PRODUCT_FAITHFUL_ENV, "1"),),
-        implemented=False,
-        planned_reason="future C3A probe; CP1, CP2, CP3, CP4, CP5, and CP6 make no performance acceptance claim",
+        implemented=True,
+        planned_reason="",
     ),
     Probe(
         label="real-browser E2E with no success-path interception",
@@ -143,7 +149,7 @@ PROBES: tuple[Probe, ...] = (
         ),
         env=((PRODUCT_FAITHFUL_ENV, "1"), ("NARRATWIN_REAL_STACK", "1")),
         implemented=False,
-        planned_reason="future C3A probe; CP1, CP2, CP3, CP4, CP5, and CP6 touch no browser or frontend scope",
+        planned_reason="future C3A probe; CP1, CP2, CP3, CP4, CP5, CP6, and CP7 touch no browser or frontend scope",
     ),
 )
 
@@ -172,6 +178,13 @@ EXPECTED_IMPLEMENTED_COMMANDS: dict[str, tuple[str, ...]] = {
         "tests/acceptance/test_checkpoint3_security_observability.py",
         "-q",
     ),
+    "performance": (
+        "uv",
+        "run",
+        "pytest",
+        "tests/acceptance/test_checkpoint3_performance.py",
+        "-q",
+    ),
 }
 
 
@@ -194,10 +207,11 @@ def validate_probe_contract(probes: Sequence[Probe]) -> list[str]:
         "media artifacts",
         "access/quota/retention",
         "security/observability",
+        "performance",
     ]:
         failures.append(
-            "C3A-CP6 may implement only the API E2E, output-correctness, language-quality, "
-            "media-artifacts, access/quota/retention, and security/observability probes."
+            "C3A-CP7 may implement only the API E2E, output-correctness, language-quality, "
+            "media-artifacts, access/quota/retention, security/observability, and performance probes."
         )
     for probe in probes:
         env = dict(probe.env)

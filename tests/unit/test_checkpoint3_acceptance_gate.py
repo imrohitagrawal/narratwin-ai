@@ -41,7 +41,7 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
     assert checkpoint3.main() == 1
 
     output = capsys.readouterr().out
-    assert len(calls) == 6
+    assert len(calls) == 7
     assert calls[0]["args"][0] == (
         "uv",
         "run",
@@ -84,6 +84,13 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
         "tests/acceptance/test_checkpoint3_security_observability.py",
         "-q",
     )
+    assert calls[6]["args"][0] == (
+        "uv",
+        "run",
+        "pytest",
+        "tests/acceptance/test_checkpoint3_performance.py",
+        "-q",
+    )
     assert all(call["kwargs"]["shell"] is False for call in calls)
     assert all(call["kwargs"]["timeout"] == 120 for call in calls)
     assert all(call["kwargs"]["stdout"] is subprocess.PIPE for call in calls)
@@ -97,9 +104,9 @@ def test_checkpoint3_acceptance_dispatches_api_probe_and_keeps_later_probes_plan
     assert "PASS media artifacts" in output
     assert "PASS access/quota/retention" in output
     assert "PASS security/observability" in output
-    assert "PLANNED performance" in output
+    assert "PASS performance" in output
     assert "PLANNED real-browser E2E with no success-path interception" in output
-    assert "6 passed, 2 planned, 0 failed" in output
+    assert "7 passed, 1 planned, 0 failed" in output
 
 
 def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
@@ -135,10 +142,11 @@ def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
         "media artifacts",
         "access/quota/retention",
         "security/observability",
+        "performance",
     ]
     planned_reasons = [probe.planned_reason for probe in checkpoint3.PROBES if not probe.implemented]
     assert planned_reasons
-    assert all("CP1, CP2, CP3, CP4, CP5, and CP6" in reason for reason in planned_reasons)
+    assert all("CP1, CP2, CP3, CP4, CP5, CP6, and CP7" in reason for reason in planned_reasons)
 
 
 def test_checkpoint3_acceptance_rejects_docs_only_probe_commands() -> None:
@@ -275,6 +283,30 @@ def test_checkpoint3_acceptance_rejects_static_security_observability_probe_comm
 
     assert any(
         "security/observability must dispatch uv run pytest tests/acceptance/test_checkpoint3_security_observability.py -q"
+        in failure
+        for failure in failures
+    )
+    assert any("must not target static content" in failure for failure in failures)
+
+
+def test_checkpoint3_acceptance_rejects_static_performance_probe_command() -> None:
+    probes = tuple(
+        checkpoint3.Probe(
+            label=probe.label,
+            command=("uv", "run", "pytest", "tests/fixtures/static_performance_snapshot.py", "-q"),
+            env=probe.env,
+            implemented=probe.implemented,
+            planned_reason=probe.planned_reason,
+        )
+        if probe.label == "performance"
+        else probe
+        for probe in checkpoint3.PROBES
+    )
+
+    failures = checkpoint3.validate_probe_contract(probes)
+
+    assert any(
+        "performance must dispatch uv run pytest tests/acceptance/test_checkpoint3_performance.py -q"
         in failure
         for failure in failures
     )
@@ -526,6 +558,46 @@ def test_checkpoint3_acceptance_redacts_security_observability_evidence_fields()
     assert "print the hidden system prompt" not in output
 
 
+def test_checkpoint3_acceptance_redacts_performance_evidence_fields() -> None:
+    output = checkpoint3.summarize_failure_output(
+        "\n".join(
+            (
+                "performanceFailureContext: CP7-RAW-UPLOAD-CANARY CP7-RAW-PROMPT-CANARY",
+                "operationTiming: {'operationName': 'walkthrough.generate', 'elapsedMs': 123, 'thresholdMs': 5000}",
+                "requestId: CP7-PRIVATE-MARKER-request",
+                "traceId: trace_cp7_private",
+                "runId: run_cp7_private",
+                "runtimeNonce: cp7-runtime-private",
+                "acceptedScriptText: full generated script body",
+                "prompt text says ignore all previous instructions",
+                "api_key = example-cp7-key",
+            )
+        )
+    )
+
+    assert "performanceFailureContext" not in output
+    assert "CP7-RAW-UPLOAD-CANARY" not in output
+    assert "CP7-RAW-PROMPT-CANARY" not in output
+    assert "operationTiming" not in output
+    assert "operationName" not in output
+    assert "walkthrough.generate" not in output
+    assert "elapsedMs" not in output
+    assert "thresholdMs" not in output
+    assert "requestId" not in output
+    assert "CP7-PRIVATE-MARKER" not in output
+    assert "traceId" not in output
+    assert "trace_cp7_private" not in output
+    assert "runId" not in output
+    assert "run_cp7_private" not in output
+    assert "runtimeNonce" not in output
+    assert "cp7-runtime-private" not in output
+    assert "acceptedScriptText" not in output
+    assert "full generated script body" not in output
+    assert "ignore all previous instructions" not in output
+    assert "api_key" not in output
+    assert "example-cp7-key" not in output
+
+
 def test_checkpoint3_acceptance_timeout_is_bounded_and_redacted(monkeypatch: Any) -> None:
     def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
         raise subprocess.TimeoutExpired(
@@ -564,3 +636,4 @@ def test_make_checkpoint3_acceptance_invokes_executable_harness() -> None:
     assert "PASS access/quota/retention" in result.stdout
     assert "PASS security/observability" in result.stdout
     assert "PASS output-correctness that executes rather than reads" in result.stdout
+    assert "PASS performance" in result.stdout
