@@ -842,6 +842,14 @@ output. Translated scripts, subtitles, transcript metadata, audio manifests,
 video manifests, downloads, and UI evidence must preserve `sourceRunId`,
 `multilingualRunId`, `targetLanguage`, `evaluationId`, citation indexes, context
 refs, checksums, and claim-support linkage.
+The local/mock demo remains product-faithful for the generated walkthrough path:
+audience, depth, style, grounded claims, citations, evaluation evidence, and
+supported deterministic translations must behave as the product is intended to
+behave, only without hosted/provider/paid/real-media/cloned-identity runtime.
+Stage 6 translates generated walkthrough scripts. It does not claim raw uploaded
+knowledge-document translation unless a future issue adds that product surface
+with the same source/target/reference, semantic-golden, artifact-parity, and
+negative-test bar.
 
 `make checkpoint3-acceptance` is the public local/mock executable harness for:
 

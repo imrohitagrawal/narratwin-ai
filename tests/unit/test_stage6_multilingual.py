@@ -32,6 +32,45 @@ from backend.app.tts_provider import ElevenLabsTTSProvider, InMemoryTTSQuotaLedg
 # Stage 6 multilingual tests preserve source run_id trace metadata and citation
 # counts from the accepted grounded walkthrough script.
 
+GOLDEN_RECRUITER_NARRATWIN_TRANSLATIONS = {
+    "en": "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+    "hi": "भर्ती विशेषज्ञों के लिए, NarraTwin AI स्वीकृत परियोजना-जानकारी को तथ्य-आधारित, चरण-दर-चरण प्रस्तुति की पटकथाओं में बदलता है। [1]",
+    "es": "Para reclutadores, NarraTwin AI convierte el conocimiento aprobado del proyecto en guiones de recorrido fundamentados con citas de origen. [1]",
+    "de": "Für Recruiter, NarraTwin AI wandelt genehmigtes Projektwissen in fundierte Präsentationsskripte mit Quellenzitaten um. [1]",
+    "fr": "Pour les recruteurs, NarraTwin AI transforme les connaissances approuvées du projet en scripts de présentation fondés avec des citations de source. [1]",
+    "pt-BR": "Para recrutadores, O NarraTwin AI transforma conhecimento aprovado do projeto em roteiros de apresentação fundamentados com citações de fonte. [1]",
+    "it": "Per i recruiter, NarraTwin AI trasforma la conoscenza approvata del progetto in copioni di presentazione fondati con citazioni delle fonti. [1]",
+    "nl": "Voor recruiters, NarraTwin AI zet goedgekeurde projectkennis om in onderbouwde presentatiescripts met broncitaten. [1]",
+    "pl": "Dla rekruterów, NarraTwin AI przekształca zatwierdzoną wiedzę projektową w ugruntowane skrypty prezentacyjne z cytatami źródłowymi. [1]",
+    "uk": "Для рекрутерів, NarraTwin AI перетворює затверджені знання про проект на обґрунтовані сценарії презентації з посиланнями на джерела. [1]",
+    "ru": "Для рекрутеров, NarraTwin AI превращает утвержденные знания проекта в обоснованные сценарии презентации с ссылками на источники. [1]",
+    "zh-Hans": "面向招聘人员, NarraTwin AI 将已批准的项目知识转换为带有来源引用的有依据讲解脚本。 [1]",
+    "zh-Hant": "面向招募人員, NarraTwin AI 將已核准的專案知識轉換為帶有來源引用的有根據導覽腳本。 [1]",
+    "ja": "採用担当者向けに, NarraTwin AI は承認済みのプロジェクト知識を出典引用付きの根拠ある説明台本に変換します。 [1]",
+    "ko": "채용 담당자를 위해, NarraTwin AI는 승인된 프로젝트 지식을 출처 인용이 있는 근거 기반 설명 대본으로 변환합니다. [1]",
+    "ar": "لمسؤولي التوظيف, يحوّل NarraTwin AI المعرفة المعتمدة للمشروع إلى نصوص شرح موثقة باقتباسات من المصدر. [1]",
+    "arz": "لمسؤولي التوظيف, NarraTwin AI بيحوّل معرفة المشروع المعتمدة لنصوص شرح موثقة ومعاها اقتباسات من المصدر. [1]",
+    "he": "עבור מגייסים, NarraTwin AI הופך ידע פרויקט מאושר לתסריטי הסבר מבוססים עם ציטוטי מקור. [1]",
+    "fa": "برای جذب‌کنندگان نیرو, NarraTwin AI دانش تأییدشده پروژه را به متن‌های توضیحی مستند با ارجاع به منبع تبدیل می‌کند. [1]",
+    "tr": "İşe alım uzmanları için, NarraTwin AI, onaylanmış proje bilgisini kaynak alıntılı temellendirilmiş anlatım metinlerine dönüştürür. [1]",
+    "vi": "Dành cho nhà tuyển dụng, NarraTwin AI chuyển kiến thức dự án đã phê duyệt thành kịch bản hướng dẫn có căn cứ kèm trích dẫn nguồn. [1]",
+    "id": "Untuk perekrut, NarraTwin AI mengubah pengetahuan proyek yang disetujui menjadi naskah panduan berlandaskan bukti dengan kutipan sumber. [1]",
+    "fil": "Para sa mga recruiter, Ginagawang may-batayang script ng pagpapaliwanag ng NarraTwin AI ang aprubadong kaalaman sa proyekto na may sipi ng pinagmulan. [1]",
+    "th": "สำหรับผู้สรรหาบุคลากร, NarraTwin AI แปลงความรู้โครงการที่อนุมัติแล้วเป็นสคริปต์อธิบายที่มีหลักฐานพร้อมการอ้างอิงแหล่งที่มา [1]",
+    "ms": "Untuk perekrut, NarraTwin AI menukar pengetahuan projek yang diluluskan kepada skrip penerangan berasas dengan petikan sumber. [1]",
+}
+
+FORBIDDEN_RAW_SOURCE_PHRASES_BY_LANGUAGE = {
+    language_tag: (
+        "For recruiters",
+        "project knowledge",
+        "grounded walkthrough scripts",
+        "walkthrough scripts",
+    )
+    for language_tag in PRIORITY1_LANGUAGE_TAGS
+    if language_tag != "en"
+}
+
 
 class FakeTTSTransport:
     def __init__(self, responses: list[TTSHTTPResponse | Exception]) -> None:
@@ -81,25 +120,27 @@ def external_tts_config(**overrides: object) -> TTSProviderConfig:
     return TTSProviderConfig(**values)
 
 
-def passed_eval_kwargs() -> dict[str, Any]:
+def passed_eval_kwargs(*, citation_indexes: tuple[int, ...] = (1,)) -> dict[str, Any]:
+    source_context_ref_ids = tuple(f"ctx_{index:03d}" for index in citation_indexes)
+    source_claim_support_ids = tuple(f"claimsup_{index:03d}" for index in citation_indexes)
     return {
         "source_run_id": "run_001",
         "trace_id": "trace_001",
-        "source_context_ref_count": 1,
-        "source_citation_count": 1,
-        "source_context_ref_ids": ("ctx_001",),
-        "source_citation_indexes": (1,),
-        "source_claim_support_ids": ("claimsup_001",),
+        "source_context_ref_count": len(source_context_ref_ids),
+        "source_citation_count": len(citation_indexes),
+        "source_context_ref_ids": source_context_ref_ids,
+        "source_citation_indexes": citation_indexes,
+        "source_claim_support_ids": source_claim_support_ids,
         "source_evaluation_id": "eval_001",
         "source_evaluation_checksum": build_source_evaluation_checksum(
             source_evaluation_id="eval_001",
             source_run_id="run_001",
             trace_id="trace_001",
             evaluation_status="PASSED",
-            source_context_ref_ids=("ctx_001",),
-            source_context_ref_count=1,
-            source_citation_indexes=(1,),
-            source_citation_count=1,
+            source_context_ref_ids=source_context_ref_ids,
+            source_context_ref_count=len(source_context_ref_ids),
+            source_citation_indexes=citation_indexes,
+            source_citation_count=len(citation_indexes),
         ),
         "evaluation_status": "PASSED",
     }
@@ -140,6 +181,188 @@ def test_translation_preserves_project_terms_from_glossary() -> None:
     assert "convierte" in result.translated_script_text
     assert result.translated_script_text != source_script
     assert result.artifacts.metadata.mime_type == "application/json"
+
+
+@pytest.mark.parametrize("language_tag", PRIORITY1_LANGUAGE_TAGS)
+def test_priority1_local_demo_golden_translations_preserve_recruiter_meaning(
+    language_tag: str,
+) -> None:
+    service = create_stage6_service()
+    source_script = (
+        "For recruiters, NarraTwin AI turns approved project knowledge "
+        "into grounded walkthrough scripts. [1]"
+    )
+
+    result = service.generate_multilingual_walkthrough(
+        source_script=source_script,
+        target_language=language_tag,
+        glossary_terms=["NarraTwin AI"],
+        requested_voice_provider="mock",
+        **passed_eval_kwargs(),
+    )
+
+    assert result.status == "COMPLETED"
+    assert result.transcript_correctness.validation_status == "PASSED"
+    assert result.translated_script_text == GOLDEN_RECRUITER_NARRATWIN_TRANSLATIONS[language_tag]
+    assert result.transcript_segments[0].target_text == result.translated_script_text
+    assert result.transcript_segments[0].source_text == source_script
+    assert result.transcript_segments[0].english_reference_text == source_script
+    assert result.transcript_segments[0].citation_markers == ("[1]",)
+    assert result.transcript_segments[0].citation_indexes == (1,)
+    for forbidden_phrase in FORBIDDEN_RAW_SOURCE_PHRASES_BY_LANGUAGE.get(language_tag, ()):
+        assert forbidden_phrase not in result.translated_script_text
+
+
+@pytest.mark.parametrize("language_tag", PRIORITY1_LANGUAGE_TAGS)
+def test_priority1_local_demo_supports_original_narratwin_manual_review_document(
+    language_tag: str,
+) -> None:
+    service = create_stage6_service()
+    source_script = (
+        "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1] "
+        "For recruiters, It supports recruiter and engineering audiences with audience-aware explanations. [2] "
+        "For recruiters, The local demo uses mock local LLM, translation, voice, and avatar adapters for deterministic review. [3] "
+        "For recruiters, Every generated walkthrough claim must cite retrieved source chunks from approved knowledge. [4]"
+    )
+
+    result = service.generate_multilingual_walkthrough(
+        source_script=source_script,
+        target_language=language_tag,
+        glossary_terms=["NarraTwin AI"],
+        requested_voice_provider="mock",
+        **passed_eval_kwargs(citation_indexes=(1, 2, 3, 4)),
+    )
+
+    assert result.status == "COMPLETED"
+    assert result.transcript_correctness.validation_status == "PASSED"
+    assert len(result.transcript_segments) == 4
+    assert result.transcript_segments[1].source_text.endswith("[2]")
+    if language_tag != "en":
+        assert result.translated_script_text != source_script
+        assert "recruiter and engineering audiences" not in result.translated_script_text
+        assert "The local demo uses" not in result.translated_script_text
+        assert "Every generated walkthrough claim" not in result.translated_script_text
+    if language_tag == "hi":
+        assert "भर्ती विशेषज्ञों और अभियांत्रिकी दर्शकों" in result.translated_script_text
+        assert "अभियंताओं के लिए" not in result.translated_script_text
+
+
+@pytest.mark.parametrize(
+    ("source_audience", "expected_hindi_prefix", "forbidden_hindi_prefix"),
+    [
+        ("recruiters", "भर्ती विशेषज्ञों के लिए", "अभियंताओं के लिए"),
+        ("hiring managers", "नियुक्ति प्रबंधकों के लिए", "अभियंताओं के लिए"),
+        ("engineers", "अभियंताओं के लिए", "भर्ती विशेषज्ञों के लिए"),
+        ("product leaders", "उत्पाद नेतृत्वकर्ताओं के लिए", "अभियंताओं के लिए"),
+        ("customers", "ग्राहकों के लिए", "अभियंताओं के लिए"),
+        ("beginners", "नए उपयोगकर्ताओं के लिए", "अभियंताओं के लिए"),
+        ("global viewers", "वैश्विक दर्शकों के लिए", "अभियंताओं के लिए"),
+    ],
+)
+def test_hindi_local_demo_translation_preserves_selected_product_audience(
+    source_audience: str,
+    expected_hindi_prefix: str,
+    forbidden_hindi_prefix: str,
+) -> None:
+    service = create_stage6_service()
+    source_script = (
+        f"For {source_audience}, NarraTwin AI turns approved project knowledge "
+        "into grounded walkthrough scripts. [1]"
+    )
+
+    result = service.generate_multilingual_walkthrough(
+        source_script=source_script,
+        target_language="hi",
+        glossary_terms=["NarraTwin AI"],
+        requested_voice_provider="mock",
+        **passed_eval_kwargs(),
+    )
+
+    assert result.status == "COMPLETED"
+    assert result.transcript_correctness.validation_status == "PASSED"
+    assert result.translated_script_text.startswith(expected_hindi_prefix)
+    assert forbidden_hindi_prefix not in result.translated_script_text
+    assert "ग्राउंडेड वॉकथ्रू स्क्रिप्ट" not in result.translated_script_text
+
+
+def test_hindi_local_demo_translation_supports_cp8_stage4_sentence_with_audience_prefix() -> None:
+    service = create_stage6_service()
+    source_script = (
+        "For recruiters, The Stage 4 slice uses a mock local LLM "
+        "and mock local embeddings for deterministic tests. [2]"
+    )
+
+    result = service.generate_multilingual_walkthrough(
+        source_script=source_script,
+        target_language="hi",
+        glossary_terms=["Stage 4"],
+        requested_voice_provider="mock",
+        **passed_eval_kwargs(citation_indexes=(2,)),
+    )
+
+    assert result.status == "COMPLETED"
+    assert result.transcript_correctness.validation_status == "PASSED"
+    assert (
+        result.translated_script_text
+        == "भर्ती विशेषज्ञों के लिए, Stage 4 स्लाइस निर्धारक परीक्षणों के लिए मॉक स्थानीय LLM और मॉक स्थानीय एम्बेडिंग का उपयोग करता है। [2]"
+    )
+    assert "अभियंताओं के लिए" not in result.translated_script_text
+
+
+def test_stage6_rejects_uncited_trailing_source_text_before_completion() -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script=(
+                "NarraTwin AI creates grounded walkthrough scripts. [1] "
+                "TRAILING UNCITED ENGLISH SHOULD NOT DISAPPEAR."
+            ),
+            target_language="es",
+            glossary_terms=["NarraTwin AI"],
+            requested_voice_provider="mock",
+            **passed_eval_kwargs(),
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "TRANSCRIPT_CORRECTNESS_FAILED"
+
+
+def test_stage6_service_rejects_success_without_passed_source_evidence() -> None:
+    class WrongSemanticProvider:
+        provider = "wrong-local"
+        provider_mode = "LOCAL"
+
+        def translate(
+            self,
+            *,
+            source_text: str,
+            source_language: str,
+            target_language: str,
+            glossary_terms: list[str],
+        ) -> TranslationProviderResult:
+            return TranslationProviderResult(
+                provider=self.provider,
+                provider_mode=self.provider_mode,
+                source_language=source_language,
+                target_language=target_language,
+                translated_text="NarraTwin AI WRONG SEMANTIC LOCAL OUTPUT",
+                preserved_terms=glossary_terms,
+            )
+
+    service = create_stage6_service()
+    service.translation_provider = WrongSemanticProvider()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            target_language="es",
+            glossary_terms=["NarraTwin AI"],
+            requested_voice_provider="mock",
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "PROVIDER_OUTPUT_INVALID"
 
 
 def test_language_catalog_marks_priority1_supported_and_priority2_planned() -> None:
@@ -280,10 +503,11 @@ def test_requested_voice_provider_falls_back_to_mock_provider() -> None:
     service = create_stage6_service()
 
     result = service.generate_multilingual_walkthrough(
-        source_script="NarraTwin AI creates grounded walkthrough scripts.",
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         target_language="fr",
         glossary_terms=["NarraTwin AI"],
         requested_voice_provider="external",
+        **passed_eval_kwargs(),
     )
 
     assert result.voice.provider == "mock"
@@ -330,7 +554,7 @@ def test_named_real_tts_provider_requires_passed_eval_and_source_evidence_before
             )
 
         assert exc.value.status_code == 422
-        assert exc.value.code == "TTS_SOURCE_EVALUATION_REQUIRED"
+        assert exc.value.code == "PROVIDER_OUTPUT_INVALID"
 
     with pytest.raises(Stage6Error) as exc:
         service.generate_multilingual_walkthrough(
@@ -339,10 +563,10 @@ def test_named_real_tts_provider_requires_passed_eval_and_source_evidence_before
             glossary_terms=["NarraTwin AI"],
             requested_voice_provider="elevenlabs",
             **{**passed_eval_kwargs(), "source_evaluation_checksum": ""},
-        )
+    )
 
     assert exc.value.status_code == 422
-    assert exc.value.code == "TTS_SOURCE_EVALUATION_REQUIRED"
+    assert exc.value.code == "PROVIDER_OUTPUT_INVALID"
     assert transport.calls == []
 
 
@@ -610,11 +834,12 @@ def test_concurrent_duplicate_idempotency_key_is_rejected_in_flight() -> None:
     def generate() -> None:
         try:
             result = service.generate_multilingual_walkthrough(
-                source_script="NarraTwin AI creates grounded walkthrough scripts.",
+                source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
                 target_language="es",
                 glossary_terms=["NarraTwin AI"],
                 idempotency_scope="tenant:user:project:run",
                 idempotency_key="same-key",
+                **passed_eval_kwargs(),
             )
             value = result.multilingual_run_id
         except Stage6Error as exc:
@@ -638,20 +863,22 @@ def test_concurrent_duplicate_idempotency_key_is_rejected_in_flight() -> None:
 def test_reused_idempotency_key_with_changed_payload_conflicts() -> None:
     service = create_stage6_service()
     first = service.generate_multilingual_walkthrough(
-        source_script="NarraTwin AI creates grounded walkthrough scripts.",
+        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         target_language="es",
         glossary_terms=["NarraTwin AI"],
         idempotency_scope="tenant:user:project:run",
         idempotency_key="same-key",
+        **passed_eval_kwargs(),
     )
 
     with pytest.raises(Stage6Error) as exc:
         service.generate_multilingual_walkthrough(
-            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
             target_language="fr",
             glossary_terms=["NarraTwin AI"],
             idempotency_scope="tenant:user:project:run",
             idempotency_key="same-key",
+            **passed_eval_kwargs(),
         )
 
     assert first.multilingual_run_id == "mlrun_000001"
@@ -686,9 +913,10 @@ def test_provider_output_must_preserve_glossary_terms_present_in_source() -> Non
 
     with pytest.raises(Stage6Error) as exc:
         service.generate_multilingual_walkthrough(
-            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
             target_language="es",
             glossary_terms=["NarraTwin AI"],
+            **passed_eval_kwargs(),
         )
 
     assert exc.value.status_code == 422
@@ -775,9 +1003,10 @@ def test_provider_output_must_not_exceed_stage6_size_limit() -> None:
 
     with pytest.raises(Stage6Error) as exc:
         service.generate_multilingual_walkthrough(
-            source_script="NarraTwin AI creates grounded walkthrough scripts.",
+            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
             target_language="es",
             glossary_terms=["NarraTwin AI"],
+            **passed_eval_kwargs(),
         )
 
     assert exc.value.status_code == 413

@@ -49,7 +49,7 @@ CP8_REQUIRED_IDEMPOTENCY_STEPS = {
     "avatarConsent": "ui-avatar-consent",
     "avatar": "ui-avatar",
 }
-CP8_AUDIENCE = "ENGINEER"
+CP8_AUDIENCE = "RECRUITER"
 CP8_DEPTH = "STANDARD"
 CP8_TARGET_LANGUAGE = "fr"
 CP8_REQUESTED_VOICE_PROVIDER = "mock"
@@ -71,13 +71,13 @@ CP8_KNOWLEDGE_TEMPLATE = """# NarraTwin AI
 
 NarraTwin AI turns approved project knowledge into grounded walkthrough scripts with source chunk citations.
 
-It supports recruiter and engineering audiences with audience-aware explanations.
+It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations.
 
 The Stage 4 slice uses a mock local LLM and mock local embeddings for deterministic tests.
 
 Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.
 
-Checkpoint 3A browser evidence nonce: {runtime_nonce}."""
+## Checkpoint 3A browser evidence nonce: {runtime_nonce}"""
 PROBE_ENV_DENYLIST = (
     "ANTHROPIC_API_KEY",
     "AVATAR_PROVIDER",
@@ -593,6 +593,7 @@ def validate_completed_probe_output(probe: Probe, output: str) -> str:
     if (
         providers.get("llm") != "mock"
         or providers.get("translation") != "mock"
+        or providers.get("voice") != "mock"
         or providers.get("avatar") != "mock"
         or providers.get("videoRenderer") != "local-html"
         or providers.get("networkEgress") is not False

@@ -307,7 +307,12 @@ ISSUE_269_ALLOWED_BRANCHES = {
 }
 ISSUE_276_ALLOWED_CHANGED_FILES = {
     "backend/app/main.py",
+    "backend/app/rag/chunking.py",
+    "backend/app/rag/models.py",
+    "backend/app/rag/providers.py",
+    "backend/app/stage4.py",
     "backend/app/stage6.py",
+    "docs/EVAL_REPORT.md",
     "docs/demo/CHECKPOINT3A_MULTILINGUAL_REHEARSAL_CHECKLIST.md",
     "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
     "docs/governance/preflights/issue-276.json",
@@ -322,14 +327,20 @@ ISSUE_276_ALLOWED_CHANGED_FILES = {
     "frontend/src/app/page.test.tsx",
     "frontend/src/app/page.tsx",
     "frontend/tests/checkpoint3-real-browser.spec.ts",
+    "frontend/tests/real-stack.spec.ts",
     "frontend/tests/smoke.spec.ts",
     "scripts/quality/check_checkpoint3_acceptance.py",
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/acceptance/test_checkpoint3_output_correctness.py",
     "tests/acceptance/test_checkpoint3_media_artifacts.py",
+    "tests/api/test_stage4_slice_api.py",
     "tests/api/test_stage6_multilingual_api.py",
+    "tests/api/test_stage7_avatar_api.py",
+    "tests/fixtures/stage4_project.md",
     "tests/unit/test_checkpoint3_acceptance_gate.py",
+    "tests/unit/test_chunking.py",
     "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_retrieval_and_grounding.py",
     "tests/unit/test_stage6_multilingual.py",
 }
 ISSUE_274_ALLOWED_CHANGED_FILES = {
@@ -1610,7 +1621,7 @@ STATUS_STATE_V1_ROWS = {
         "issue #276 / c3a-r1-major-market-multilingual-output-correctness",
         "c3a-r1-satisfied-by-this-pr",
         "c3a-r1-satisfied-by-this-pr",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is satisfied by this PR when merged as a Checkpoint 3A repair child for major-market multilingual output correctness: backend-driven language catalog, Hindi in Priority 1, Priority 1 exhaustive local/mock fixture translations, native-script validation, structured source/target/reference transcript segments, citation/source/eval/context/claim-support binding, artifact parity, false-positive mutation coverage, coverage matrix/summary artifacts, UI catalog rendering, and visible transcript artifact validation. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is satisfied by this PR when merged as a Checkpoint 3A repair child for major-market multilingual output correctness: backend-driven language catalog, Hindi in Priority 1, Priority 1 exhaustive local/mock fixture translations, independent semantic golden translations for supported controlled scripts and the original NarraTwin manual-review document, selected-audience preservation, full generated-script segment coverage through small approved-document expansion within retrieval top-k, native-script validation, structured source/target/reference transcript segments, citation/source/eval/context/claim-support binding, artifact parity, positive and false-positive mutation coverage, coverage matrix/summary artifacts, UI catalog rendering, and visible transcript artifact validation. Local/demo is not a reduced product surface for supported controlled generated walkthrough scripts, but raw uploaded knowledge-document translation as a separate API surface remains outside the current Stage 6 product boundary unless a future issue implements it. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",

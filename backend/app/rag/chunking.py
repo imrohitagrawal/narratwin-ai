@@ -133,41 +133,32 @@ def chunk_document(
                 )
             level = len(heading_match.group(1))
             heading_path = _current_heading_path(heading_path, level, heading_match.group(2))
-            if line_token_count > max_tokens:
-                words = TOKEN_PATTERN.findall(line)
-                step = max_tokens - overlap
-                for start_index in range(0, len(words), step):
-                    window = words[start_index : start_index + max_tokens]
-                    if not window:
-                        continue
-                    _flush_chunk(
-                        chunks=chunks,
-                        tenant_id=tenant_id,
-                        project_id=project_id,
-                        document_id=document_id,
-                        source_filename=source_filename,
-                        source_document_checksum=source_document_checksum,
-                        approved_at=approved_at,
-                        lines=[" ".join(window)],
-                        heading_path=heading_path,
-                        line_start=line_number,
-                        line_end=line_number,
-                        max_chunks=max_chunks,
-                    )
-                    if start_index + max_tokens >= len(words):
-                        break
-                active_lines = []
-                active_heading_path = []
-                active_token_count = 0
-                continue
-            active_lines = [line]
-            active_heading_path = heading_path.copy()
             active_line_start = line_number
             active_line_end = line_number
-            active_token_count = line_token_count
+            active_lines = []
+            active_heading_path = []
+            active_token_count = 0
             continue
 
         if not line.strip():
+            if active_lines:
+                _flush_chunk(
+                    chunks=chunks,
+                    tenant_id=tenant_id,
+                    project_id=project_id,
+                    document_id=document_id,
+                    source_filename=source_filename,
+                    source_document_checksum=source_document_checksum,
+                    approved_at=approved_at,
+                    lines=active_lines,
+                    heading_path=active_heading_path,
+                    line_start=active_line_start,
+                    line_end=active_line_end,
+                    max_chunks=max_chunks,
+                )
+                active_lines = []
+                active_heading_path = []
+                active_token_count = 0
             active_line_end = line_number
             continue
 

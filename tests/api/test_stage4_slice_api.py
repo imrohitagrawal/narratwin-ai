@@ -98,7 +98,10 @@ def test_create_upload_ingest_generate_grounded_script_with_citations() -> None:
     assert run["acceptedScriptText"]
     assert run["evaluation"]["unsupportedClaimCount"] == 0
     assert run["contextRefs"]
+    assert len(run["contextRefs"]) >= 2
+    assert len(run["evaluation"]["claimSupports"]) >= 2
     assert "[1]" in run["acceptedScriptText"]
+    assert "[2]" in run["acceptedScriptText"]
     assert all(ref["chunkId"].startswith("chunk_") for ref in run["contextRefs"])
     assert run["evaluation"]["contextRefCoverage"] == 1.0
     assert all(
@@ -111,6 +114,81 @@ def test_create_upload_ingest_generate_grounded_script_with_citations() -> None:
         for ref in run["contextRefs"]
     )
     assert all("evidenceSnapshot" in support for support in run["evaluation"]["claimSupports"])
+
+
+@pytest.mark.parametrize(
+    ("audience", "expected_prefix"),
+    [
+        ("RECRUITER", "For recruiters,"),
+        ("HIRING_MANAGER", "For hiring managers,"),
+        ("ENGINEER", "For engineers,"),
+        ("PRODUCT_LEADER", "For product leaders,"),
+        ("CUSTOMER", "For customers,"),
+        ("BEGINNER", "For beginners,"),
+        ("GLOBAL_VIEWER", "For global viewers,"),
+    ],
+)
+def test_grounded_script_generation_preserves_product_audience_surface(
+    audience: str,
+    expected_prefix: str,
+) -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    fixture = Path("tests/fixtures/stage4_project.md")
+    suffix = audience.lower()
+
+    project_response = client.post(
+        "/api/v1/projects",
+        json={
+            "name": "NarraTwin AI",
+            "description": "Grounded walkthrough generator",
+            "defaultAudience": audience,
+            "defaultLanguage": "en",
+        },
+        headers={"Idempotency-Key": f"test-product-audience-project-{suffix}"},
+    )
+    assert project_response.status_code == 201
+    project_id = project_response.json()["projectId"]
+
+    upload_response = client.post(
+        f"/api/v1/projects/{project_id}/knowledge-documents",
+        files={"file": ("stage4_project.md", fixture.read_bytes(), "text/markdown")},
+        headers={"Idempotency-Key": f"test-product-audience-upload-{suffix}"},
+    )
+    assert upload_response.status_code == 201
+    document_id = upload_response.json()["documentId"]
+
+    approval_response = client.patch(
+        f"/api/v1/projects/{project_id}/knowledge-documents/{document_id}/approval",
+        json={"approvalStatus": "APPROVED", "reviewNote": "Approved product-audience fixture."},
+        headers={"Idempotency-Key": f"test-product-audience-approval-{suffix}"},
+    )
+    assert approval_response.status_code == 200
+
+    ingestion_response = client.post(
+        f"/api/v1/projects/{project_id}/ingestion-runs",
+        json={"documentIds": [document_id]},
+        headers={"Idempotency-Key": f"test-product-audience-ingest-{suffix}"},
+    )
+    assert ingestion_response.status_code == 201
+
+    generation_response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs",
+        json={
+            "audience": audience,
+            "requestedLanguage": "en",
+            "depth": "CONCISE",
+            "style": "CONFIDENT",
+            "prompt": "Create a concise grounded walkthrough.",
+        },
+        headers={"Idempotency-Key": f"test-product-audience-generate-{suffix}"},
+    )
+
+    assert generation_response.status_code == 201
+    run = generation_response.json()
+    assert run["status"] == "COMPLETED"
+    assert run["acceptedScriptText"].startswith(expected_prefix)
+    assert "NarraTwin AI NarraTwin AI" not in run["acceptedScriptText"]
 
 
 def test_frontend_default_knowledge_generates_checkpoint1_walkthrough() -> None:

@@ -19,6 +19,7 @@ type ApiResponseEvidence = {
   avatarRenderId?: string;
   provider?: string;
   providerMode?: string;
+  voiceProvider?: string;
   operationalPosture?: string;
 };
 
@@ -111,14 +112,14 @@ type RepresentativeBrowserCoverage = {
 };
 
 const REPRESENTATIVE_BROWSER_LANGUAGES = [
-  { group: "Hindi / Devanagari", languageTag: "hi", expectedSnippet: "इंजीनियरों" },
-  { group: "Arabic / RTL Arabic script", languageTag: "ar", expectedSnippet: "للمهندسين" },
-  { group: "Hebrew / RTL", languageTag: "he", expectedSnippet: "עבור מהנדסים" },
-  { group: "Japanese / CJK", languageTag: "ja", expectedSnippet: "エンジニア向け" },
-  { group: "Korean / Hangul", languageTag: "ko", expectedSnippet: "엔지니어를" },
-  { group: "Russian / Cyrillic", languageTag: "ru", expectedSnippet: "Для инженеров" },
-  { group: "French / Latin", languageTag: "fr", expectedSnippet: "Pour les ingénieurs" },
-  { group: "Thai / Southeast Asia", languageTag: "th", expectedSnippet: "สำหรับวิศวกร" },
+  { group: "Hindi / Devanagari", languageTag: "hi", expectedSnippet: "भर्ती विशेषज्ञों" },
+  { group: "Arabic / RTL Arabic script", languageTag: "ar", expectedSnippet: "لمسؤولي التوظيف" },
+  { group: "Hebrew / RTL", languageTag: "he", expectedSnippet: "עבור מגייסים" },
+  { group: "Japanese / CJK", languageTag: "ja", expectedSnippet: "採用担当者" },
+  { group: "Korean / Hangul", languageTag: "ko", expectedSnippet: "채용 담당자" },
+  { group: "Russian / Cyrillic", languageTag: "ru", expectedSnippet: "Для рекрутеров" },
+  { group: "French / Latin", languageTag: "fr", expectedSnippet: "Pour les recruteurs" },
+  { group: "Thai / Southeast Asia", languageTag: "th", expectedSnippet: "สำหรับผู้สรรหาบุคลากร" },
 ] as const;
 
 test.skip(process.env.NARRATWIN_REAL_STACK !== "1", "Requires the dedicated local/mock CP8 browser config.");
@@ -192,14 +193,14 @@ test("Issue #269 C3A-CP8 real browser path exercises local controlled demo witho
 
 NarraTwin AI turns approved project knowledge into grounded walkthrough scripts with source chunk citations.
 
-It supports recruiter and engineering audiences with audience-aware explanations.
+It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations.
 
 The Stage 4 slice uses a mock local LLM and mock local embeddings for deterministic tests.
 
 Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.
 
-Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
-  const audience = "ENGINEER";
+## Checkpoint 3A browser evidence nonce: ${runtimeNonce}`;
+  const audience = "RECRUITER";
   const depth = "STANDARD";
   const targetLanguage = "fr";
   const requestedVoiceProvider = "mock";
@@ -228,7 +229,7 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
   await expect(visibleTranscript).toContainText("Source English");
   await expect(visibleTranscript).toContainText("Target transcript");
   await expect(visibleTranscript).toContainText("English reference");
-  await expect(visibleTranscript).toContainText("Pour les ingénieurs");
+  await expect(visibleTranscript).toContainText("Pour les recruteurs");
   await expect(visibleTranscript).toContainText("[1]");
   await expect(page.getByLabel("Avatar metadata")).toContainText("CONFIRMED");
   await expect(page.getByLabel("Avatar metadata")).toContainText("disabled");
@@ -236,7 +237,7 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
   await expect(page.getByLabel("Avatar demo preview")).toContainText("local-html");
   await expect(page.getByText("AI-generated avatar demo export using a synthetic local presenter.")).toBeVisible();
   await expect(page.getByText("0 unsupported claims")).toBeVisible();
-  await expect(page.locator('[aria-labelledby="citations-title"] li')).toHaveCount(1);
+  await expect.poll(() => page.locator('[aria-labelledby="citations-title"] li').count()).toBeGreaterThanOrEqual(2);
 
   const opsStatus = await page.evaluate(async () => {
     const response = await fetch("/api/v1/ops/status");
@@ -294,7 +295,7 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
     translatedScriptText,
   );
   const representativeBrowserCoverage: RepresentativeBrowserCoverage[] = [
-    await inspectCurrentVisibleTranscript(page, "French / Latin", targetLanguage, "Pour les ingénieurs"),
+    await inspectCurrentVisibleTranscript(page, "French / Latin", targetLanguage, "Pour les recruteurs"),
   ];
   for (const representative of REPRESENTATIVE_BROWSER_LANGUAGES.filter((entry) => entry.languageTag !== targetLanguage)) {
     representativeBrowserCoverage.push(
@@ -399,9 +400,9 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
       avatarSourceEvaluationId: requireString(avatarRender.evaluationId, "avatar sourceEvaluationId"),
     },
     visibleTranscript: {
-      sourceEnglishVisible: await visibleTranscript.getByText("Source English").isVisible(),
-      targetTranscriptVisible: await visibleTranscript.getByText("Target transcript").isVisible(),
-      englishReferenceVisible: await visibleTranscript.getByText("English reference").isVisible(),
+      sourceEnglishVisible: await visibleTranscript.getByText("Source English").first().isVisible(),
+      targetTranscriptVisible: await visibleTranscript.getByText("Target transcript").first().isVisible(),
+      englishReferenceVisible: await visibleTranscript.getByText("English reference").first().isVisible(),
       citationsVisible: await visibleTranscript.getByText("[1]").first().isVisible(),
       metadataArtifactMatchesTranscript: transcriptArtifactParity.metadataMatches,
       translatedScriptArtifactMatchesTranscript: transcriptArtifactParity.translatedScriptMatches,
@@ -419,7 +420,7 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
     providers: {
       llm: requireString(walkthrough.provider, "walkthrough provider"),
       translation: requireString(multilingual.provider, "translation provider"),
-      voice: requireString(multilingual.providerMode, "voice provider mode"),
+      voice: requireString(multilingual.voiceProvider, "voice provider"),
       avatar: requireString(avatarRender.provider, "avatar provider"),
       videoRenderer: "local-html",
       networkEgress: false,
@@ -442,6 +443,30 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
       appOrigin,
     ),
   ).toThrow(/source run binding/);
+  expect(() =>
+    assertBrowserEvidenceContract(
+      {
+        ...evidence,
+        visibleTranscript: {
+          ...evidence.visibleTranscript,
+          translatedScriptArtifactMatchesTranscript: false,
+        },
+      },
+      appOrigin,
+    ),
+  ).toThrow(/visible multilingual transcript evidence/);
+  expect(() =>
+    assertBrowserEvidenceContract(
+      {
+        ...evidence,
+        providers: {
+          ...evidence.providers,
+          voice: "elevenlabs",
+        },
+      },
+      appOrigin,
+    ),
+  ).toThrow(/local\/mock provider posture/);
   expect(() => assertBrowserEvidenceContract({ ...evidence, projectId: "proj_cross_project" }, appOrigin)).toThrow(
     /cross-project replay/,
   );
@@ -495,6 +520,7 @@ async function recordApiResponse(response: Response, apiResponses: ApiResponseEv
     avatarRenderId: stringFrom(body.avatarRenderId),
     provider: stringFrom(nested(body, "provider", "provider") ?? nested(body, "translationProvider", "provider") ?? nested(body, "avatarProvider", "provider")),
     providerMode: stringFrom(nested(body, "provider", "providerMode") ?? nested(body, "voice", "providerMode")),
+    voiceProvider: stringFrom(nested(body, "voice", "provider")),
     operationalPosture: stringFrom(body.operationalPosture),
   });
 }
@@ -647,7 +673,8 @@ function assertBrowserEvidenceContract(evidence: BrowserEvidence, appOrigin: str
     !evidence.visibleTranscript.targetTranscriptVisible ||
     !evidence.visibleTranscript.englishReferenceVisible ||
     !evidence.visibleTranscript.citationsVisible ||
-    !evidence.visibleTranscript.metadataArtifactMatchesTranscript
+    !evidence.visibleTranscript.metadataArtifactMatchesTranscript ||
+    !evidence.visibleTranscript.translatedScriptArtifactMatchesTranscript
   ) {
     throw new Error("visible multilingual transcript evidence is incomplete");
   }
@@ -660,6 +687,7 @@ function assertBrowserEvidenceContract(evidence: BrowserEvidence, appOrigin: str
         entry.englishReferenceVisible &&
         entry.citationsVisible &&
         entry.metadataArtifactMatchesTranscript &&
+        entry.translatedScriptArtifactMatchesTranscript &&
         entry.targetSnippetVisible,
     )
     .map((entry) => entry.group);
@@ -677,6 +705,7 @@ function assertBrowserEvidenceContract(evidence: BrowserEvidence, appOrigin: str
   if (
     evidence.providers.llm !== "mock" ||
     evidence.providers.translation !== "mock" ||
+    evidence.providers.voice !== "mock" ||
     evidence.providers.avatar !== "mock" ||
     evidence.providers.networkEgress ||
     evidence.providers.realVideo ||
@@ -708,8 +737,18 @@ async function exerciseRepresentativeLanguage(
   await page.getByLabel("Synthetic avatar consent").check();
   await page.getByRole("button", { name: "Generate avatar demo export" }).click();
 
-  await expect(page.getByLabel("Trace metadata")).toContainText(options.languageTag, { timeout: 30_000 });
+  await expect(traceMetadataValue(page, "Language")).toHaveText(options.languageTag, {
+    timeout: 30_000,
+  });
   return inspectCurrentVisibleTranscript(page, options.group, options.languageTag, options.expectedSnippet);
+}
+
+function traceMetadataValue(page: Page, label: string): Locator {
+  return page
+    .getByLabel("Trace metadata")
+    .locator("div")
+    .filter({ has: page.locator("dt", { hasText: new RegExp(`^${escapeRegExp(label)}$`) }) })
+    .locator("dd");
 }
 
 async function inspectCurrentVisibleTranscript(
@@ -740,9 +779,9 @@ async function inspectCurrentVisibleTranscript(
     group,
     languageTag,
     targetSnippetVisible: await visibleTranscript.getByText(expectedSnippet).first().isVisible(),
-    sourceEnglishVisible: await visibleTranscript.getByText("Source English").isVisible(),
-    targetTranscriptVisible: await visibleTranscript.getByText("Target transcript").isVisible(),
-    englishReferenceVisible: await visibleTranscript.getByText("English reference").isVisible(),
+    sourceEnglishVisible: await visibleTranscript.getByText("Source English").first().isVisible(),
+    targetTranscriptVisible: await visibleTranscript.getByText("Target transcript").first().isVisible(),
+    englishReferenceVisible: await visibleTranscript.getByText("English reference").first().isVisible(),
     citationsVisible: await visibleTranscript.getByText("[1]").first().isVisible(),
     metadataArtifactMatchesTranscript: transcriptArtifactParity.metadataMatches,
     translatedScriptArtifactMatchesTranscript: transcriptArtifactParity.translatedScriptMatches,

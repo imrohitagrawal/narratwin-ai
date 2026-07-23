@@ -133,7 +133,7 @@ def _create_multilingual_bundle(
         f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
         json={
             "targetLanguage": "es",
-            "glossaryTerms": ["NarraTwin AI", "source chunks"],
+            "glossaryTerms": ["NarraTwin AI"],
             "requestedVoiceProvider": "mock",
         },
         headers=idempotency_headers(f"{key_prefix}-multilingual"),

@@ -17,15 +17,19 @@ primary.
 For each reviewed language:
 
 1. Which language was selected?
-2. Is the source English text visible?
-3. Is the target-language transcript visible?
-4. Is the English reference/back-translation visible for every segment?
-5. Does the target text use the expected script?
-6. Does the full source script appear covered segment-by-segment?
-7. Are citations visible next to translated segments?
-8. Do downloaded artifacts contain the same transcript data?
-9. Does unsupported local/demo language behavior refuse honestly?
-10. Are provider, hosted, paid, cloned, real-media, and production claims absent?
+2. Which audience was selected, and is the same audience meaning preserved in
+   the target language?
+3. Is the source English generated walkthrough text visible for every segment?
+4. Is the target-language transcript visible for every segment?
+5. Is the English reference/back-translation visible for every segment?
+6. Does the target text use the expected script without romanized fallback?
+7. Does the full generated walkthrough script appear covered segment-by-segment?
+8. Are citations visible next to translated segments?
+9. Do downloaded artifacts contain the same transcript data?
+10. Does unsupported local/demo language behavior refuse honestly?
+11. Is the UI clear that Stage 6 translates generated walkthrough scripts, not
+    raw uploaded knowledge documents?
+12. Are provider, hosted, paid, cloned, real-media, and production claims absent?
 
 ## Minimum Manual Sample
 

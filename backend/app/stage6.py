@@ -256,30 +256,378 @@ SUPPORTED_LANGUAGES.update(
     }
 )
 DEMO_TRANSLATED_SEGMENT_TEXT = {
-    "hi": "इंजीनियरों के लिए, NarraTwin AI स्वीकृत परियोजना ज्ञान को स्रोत उद्धरणों वाले ग्राउंडेड वॉकथ्रू स्क्रिप्ट में बदलता है।",
-    "es": "Para ingenieros, NarraTwin AI convierte el conocimiento aprobado del proyecto en guiones de recorrido fundamentados con citas de origen.",
-    "de": "Für Ingenieure wandelt NarraTwin AI genehmigtes Projektwissen in fundierte Walkthrough-Skripte mit Quellenzitaten um.",
-    "fr": "Pour les ingénieurs, NarraTwin AI transforme les connaissances approuvées du projet en scripts de démonstration ancrés avec des citations de source.",
-    "pt-BR": "Para engenheiros, o NarraTwin AI transforma conhecimento aprovado do projeto em roteiros de apresentação fundamentados com citações de fonte.",
-    "it": "Per gli ingegneri, NarraTwin AI trasforma la conoscenza approvata del progetto in copioni dimostrativi fondati con citazioni delle fonti.",
-    "nl": "Voor engineers zet NarraTwin AI goedgekeurde projectkennis om in onderbouwde walkthrough-scripts met broncitaten.",
-    "pl": "Dla inżynierów NarraTwin AI przekształca zatwierdzoną wiedzę projektową w ugruntowane skrypty prezentacyjne z cytatami źródłowymi.",
-    "uk": "Для інженерів NarraTwin AI перетворює затверджені знання про проект на обґрунтовані сценарії огляду з посиланнями на джерела.",
-    "ru": "Для инженеров NarraTwin AI превращает утвержденные знания проекта в обоснованные сценарии обзора с ссылками на источники.",
-    "zh-Hans": "面向工程师，NarraTwin AI 将已批准的项目知识转换为带有来源引用的有依据讲解脚本。",
-    "zh-Hant": "面向工程師，NarraTwin AI 將已核准的專案知識轉換為帶有來源引用的有根據導覽腳本。",
-    "ja": "エンジニア向けに、NarraTwin AI は承認済みのプロジェクト知識を出典引用付きの根拠あるウォークスルースクリプトに変換します。",
-    "ko": "엔지니어를 위해 NarraTwin AI는 승인된 프로젝트 지식을 출처 인용이 있는 근거 기반 안내 스크립트로 변환합니다.",
-    "ar": "للمهندسين، يحول NarraTwin AI المعرفة المعتمدة للمشروع إلى نصوص عرض إرشادي موثقة مع اقتباسات من المصدر.",
-    "arz": "للمهندسين، NarraTwin AI بيحوّل معرفة المشروع المعتمدة لنصوص شرح موثقة ومعاها اقتباسات من المصدر.",
-    "he": "עבור מהנדסים, NarraTwin AI הופך ידע פרויקט מאושר לתסריטי הדרכה מבוססים עם ציטוטי מקור.",
-    "fa": "برای مهندسان، NarraTwin AI دانش تأییدشده پروژه را به متن‌های راهنمای مستند با ارجاع به منبع تبدیل می‌کند.",
-    "tr": "Mühendisler için NarraTwin AI, onaylanmış proje bilgisini kaynak alıntılı temellendirilmiş tanıtım metinlerine dönüştürür.",
-    "vi": "Dành cho kỹ sư, NarraTwin AI chuyển kiến thức dự án đã phê duyệt thành kịch bản hướng dẫn có căn cứ kèm trích dẫn nguồn.",
-    "id": "Untuk insinyur, NarraTwin AI mengubah pengetahuan proyek yang disetujui menjadi naskah panduan berlandaskan bukti dengan kutipan sumber.",
-    "fil": "Para sa mga engineer, ginagawang grounded walkthrough script ng NarraTwin AI ang aprubadong kaalaman sa proyekto na may sipi ng pinagmulan.",
-    "th": "สำหรับวิศวกร NarraTwin AI แปลงความรู้โครงการที่อนุมัติแล้วเป็นสคริปต์แนะนำที่มีหลักฐานพร้อมการอ้างอิงแหล่งที่มา",
-    "ms": "Untuk jurutera, NarraTwin AI menukar pengetahuan projek yang diluluskan kepada skrip panduan berasas dengan petikan sumber.",
+    "hi": "NarraTwin AI स्वीकृत परियोजना-जानकारी को तथ्य-आधारित, चरण-दर-चरण प्रस्तुति की पटकथाओं में बदलता है।",
+    "es": "NarraTwin AI convierte el conocimiento aprobado del proyecto en guiones de recorrido fundamentados con citas de origen.",
+    "de": "NarraTwin AI wandelt genehmigtes Projektwissen in fundierte Präsentationsskripte mit Quellenzitaten um.",
+    "fr": "NarraTwin AI transforme les connaissances approuvées du projet en scripts de présentation fondés avec des citations de source.",
+    "pt-BR": "O NarraTwin AI transforma conhecimento aprovado do projeto em roteiros de apresentação fundamentados com citações de fonte.",
+    "it": "NarraTwin AI trasforma la conoscenza approvata del progetto in copioni di presentazione fondati con citazioni delle fonti.",
+    "nl": "NarraTwin AI zet goedgekeurde projectkennis om in onderbouwde presentatiescripts met broncitaten.",
+    "pl": "NarraTwin AI przekształca zatwierdzoną wiedzę projektową w ugruntowane skrypty prezentacyjne z cytatami źródłowymi.",
+    "uk": "NarraTwin AI перетворює затверджені знання про проект на обґрунтовані сценарії презентації з посиланнями на джерела.",
+    "ru": "NarraTwin AI превращает утвержденные знания проекта в обоснованные сценарии презентации с ссылками на источники.",
+    "zh-Hans": "NarraTwin AI 将已批准的项目知识转换为带有来源引用的有依据讲解脚本。",
+    "zh-Hant": "NarraTwin AI 將已核准的專案知識轉換為帶有來源引用的有根據導覽腳本。",
+    "ja": "NarraTwin AI は承認済みのプロジェクト知識を出典引用付きの根拠ある説明台本に変換します。",
+    "ko": "NarraTwin AI는 승인된 프로젝트 지식을 출처 인용이 있는 근거 기반 설명 대본으로 변환합니다.",
+    "ar": "يحوّل NarraTwin AI المعرفة المعتمدة للمشروع إلى نصوص شرح موثقة باقتباسات من المصدر.",
+    "arz": "NarraTwin AI بيحوّل معرفة المشروع المعتمدة لنصوص شرح موثقة ومعاها اقتباسات من المصدر.",
+    "he": "NarraTwin AI הופך ידע פרויקט מאושר לתסריטי הסבר מבוססים עם ציטוטי מקור.",
+    "fa": "NarraTwin AI دانش تأییدشده پروژه را به متن‌های توضیحی مستند با ارجاع به منبع تبدیل می‌کند.",
+    "tr": "NarraTwin AI, onaylanmış proje bilgisini kaynak alıntılı temellendirilmiş anlatım metinlerine dönüştürür.",
+    "vi": "NarraTwin AI chuyển kiến thức dự án đã phê duyệt thành kịch bản hướng dẫn có căn cứ kèm trích dẫn nguồn.",
+    "id": "NarraTwin AI mengubah pengetahuan proyek yang disetujui menjadi naskah panduan berlandaskan bukti dengan kutipan sumber.",
+    "fil": "Ginagawang may-batayang script ng pagpapaliwanag ng NarraTwin AI ang aprubadong kaalaman sa proyekto na may sipi ng pinagmulan.",
+    "th": "NarraTwin AI แปลงความรู้โครงการที่อนุมัติแล้วเป็นสคริปต์อธิบายที่มีหลักฐานพร้อมการอ้างอิงแหล่งที่มา",
+    "ms": "NarraTwin AI menukar pengetahuan projek yang diluluskan kepada skrip penerangan berasas dengan petikan sumber.",
+}
+DEMO_AUDIENCE_SUPPORT_TEXT = {
+    "hi": "यह भर्ती विशेषज्ञों, नियुक्ति प्रबंधकों, अभियंताओं, उत्पाद नेतृत्वकर्ताओं, ग्राहकों, नए उपयोगकर्ताओं और वैश्विक दर्शकों के लिए दर्शक-अनुरूप व्याख्याओं का समर्थन करता है।",
+    "es": "Admite explicaciones adaptadas para reclutadores, responsables de contratación, ingenieros, líderes de producto, clientes, principiantes y audiencias globales.",
+    "de": "Es unterstützt zielgruppengerechte Erklärungen für Recruiter, Hiring Manager, Ingenieure, Produktverantwortliche, Kunden, Einsteiger und globale Zielgruppen.",
+    "fr": "Il prend en charge des explications adaptées aux recruteurs, responsables du recrutement, ingénieurs, responsables produit, clients, débutants et publics internationaux.",
+    "pt-BR": "Ele oferece explicações adaptadas para recrutadores, gestores de contratação, engenheiros, líderes de produto, clientes, iniciantes e públicos globais.",
+    "it": "Supporta spiegazioni adattate per recruiter, responsabili delle assunzioni, ingegneri, responsabili di prodotto, clienti, principianti e pubblico globale.",
+    "nl": "Het ondersteunt doelgroepgerichte uitleg voor recruiters, hiring managers, engineers, productleiders, klanten, beginners en wereldwijde doelgroepen.",
+    "pl": "Obsługuje wyjaśnienia dostosowane do rekruterów, menedżerów zatrudniających, inżynierów, liderów produktu, klientów, początkujących i odbiorców globalnych.",
+    "uk": "Він підтримує пояснення, адаптовані для рекрутерів, менеджерів з найму, інженерів, продуктових лідерів, клієнтів, початківців і глобальних аудиторій.",
+    "ru": "Он поддерживает объяснения, адаптированные для рекрутеров, менеджеров по найму, инженеров, продуктовых лидеров, клиентов, начинающих и глобальной аудитории.",
+    "zh-Hans": "它支持面向招聘人员、招聘经理、工程师、产品负责人、客户、初学者和全球受众的受众化说明。",
+    "zh-Hant": "它支援面向招募人員、招募經理、工程師、產品負責人、客戶、初學者和全球受眾的受眾化說明。",
+    "ja": "採用担当者、採用責任者、エンジニア、プロダクトリーダー、顧客、初心者、世界中の視聴者に合わせた説明をサポートします。",
+    "ko": "채용 담당자, 채용 관리자, 엔지니어, 제품 리더, 고객, 초보자, 전 세계 시청자를 위한 대상별 설명을 지원합니다.",
+    "ar": "يدعم شروحات مخصصة لمسؤولي التوظيف ومديري التوظيف والمهندسين وقادة المنتج والعملاء والمبتدئين والجماهير العالمية.",
+    "arz": "بيدعم شروحات مناسبة لمسؤولي التوظيف ومديري التوظيف والمهندسين وقادة المنتج والعملاء والمبتدئين والجمهور العالمي.",
+    "he": "הוא תומך בהסברים מותאמי קהל עבור מגייסים, מנהלי גיוס, מהנדסים, מובילי מוצר, לקוחות, מתחילים וצופים גלובליים.",
+    "fa": "از توضیح‌های متناسب با جذب‌کنندگان نیرو، مدیران استخدام، مهندسان، رهبران محصول، مشتریان، کاربران تازه‌کار و مخاطبان جهانی پشتیبانی می‌کند.",
+    "tr": "İşe alım uzmanları, işe alım yöneticileri, mühendisler, ürün liderleri, müşteriler, yeni başlayanlar ve küresel kitleler için hedef kitleye uyarlanmış açıklamaları destekler.",
+    "vi": "Nó hỗ trợ phần giải thích phù hợp cho nhà tuyển dụng, quản lý tuyển dụng, kỹ sư, lãnh đạo sản phẩm, khách hàng, người mới và khán giả toàn cầu.",
+    "id": "Ini mendukung penjelasan yang disesuaikan untuk perekrut, manajer perekrutan, insinyur, pemimpin produk, pelanggan, pemula, dan audiens global.",
+    "fil": "Sinusuportahan nito ang mga paliwanag na angkop sa mga recruiter, hiring manager, engineer, lider ng produkto, customer, baguhan, at pandaigdigang manonood.",
+    "th": "รองรับคำอธิบายที่ปรับให้เหมาะกับผู้สรรหาบุคลากร ผู้จัดการฝ่ายสรรหา วิศวกร ผู้นำผลิตภัณฑ์ ลูกค้า ผู้เริ่มต้น และผู้ชมทั่วโลก",
+    "ms": "Ia menyokong penerangan yang disesuaikan untuk perekrut, pengurus pengambilan pekerja, jurutera, pemimpin produk, pelanggan, pemula dan penonton global.",
+}
+DEMO_RECRUITER_ENGINEERING_SUPPORT_TEXT = {
+    "hi": "यह भर्ती विशेषज्ञों और अभियांत्रिकी दर्शकों के लिए दर्शक-अनुरूप व्याख्याओं का समर्थन करता है।",
+    "es": "Admite explicaciones adaptadas para audiencias de reclutadores e ingeniería.",
+    "de": "Es unterstützt zielgruppengerechte Erklärungen für Recruiter- und Engineering-Zielgruppen.",
+    "fr": "Il prend en charge des explications adaptées aux publics du recrutement et de l'ingénierie.",
+    "pt-BR": "Ele oferece explicações adaptadas para públicos de recrutamento e engenharia.",
+    "it": "Supporta spiegazioni adattate per il pubblico dei recruiter e dell'ingegneria.",
+    "nl": "Het ondersteunt doelgroepgerichte uitleg voor recruiters en engineeringdoelgroepen.",
+    "pl": "Obsługuje wyjaśnienia dostosowane do odbiorców rekrutacyjnych i inżynieryjnych.",
+    "uk": "Він підтримує пояснення, адаптовані для рекрутерської та інженерної аудиторій.",
+    "ru": "Он поддерживает объяснения, адаптированные для рекрутерской и инженерной аудиторий.",
+    "zh-Hans": "它支持面向招聘和工程受众的简明受众化说明。",
+    "zh-Hant": "它支援專門面向招募和工程受眾的受眾化說明。",
+    "ja": "採用担当者とエンジニアリングの視聴者に合わせた説明をサポートします。",
+    "ko": "채용 담당자와 엔지니어링 대상자를 위한 대상별 설명을 지원합니다.",
+    "ar": "يدعم شروحات مخصصة لجمهور التوظيف والهندسة.",
+    "arz": "بيدعم شروحات مناسبة لجمهور التوظيف والهندسة.",
+    "he": "הוא תומך בהסברים מותאמי קהל עבור קהלי גיוס והנדסה.",
+    "fa": "از توضیح‌های متناسب با مخاطبان جذب نیرو و مهندسی پشتیبانی می‌کند.",
+    "tr": "İşe alım ve mühendislik kitleleri için hedef kitleye uyarlanmış açıklamaları destekler.",
+    "vi": "Nó hỗ trợ phần giải thích phù hợp cho nhóm tuyển dụng và kỹ thuật.",
+    "id": "Ini mendukung penjelasan yang disesuaikan untuk audiens perekrutan dan teknik.",
+    "fil": "Sinusuportahan nito ang mga paliwanag na angkop sa mga audience ng recruitment at engineering.",
+    "th": "รองรับคำอธิบายที่ปรับให้เหมาะกับกลุ่มผู้สรรหาบุคลากรและวิศวกรรม",
+    "ms": "Ia menyokong penerangan yang disesuaikan untuk khalayak perekrutan dan kejuruteraan.",
+}
+DEMO_LOCAL_PROVIDER_TEXT = {
+    "hi": "स्थानीय डेमो निर्धारक समीक्षा के लिए मॉक स्थानीय LLM, अनुवाद, आवाज़ और अवतार अडैप्टरों का उपयोग करता है।",
+    "es": "La demo local usa adaptadores locales simulados de LLM, traducción, voz y avatar para una revisión determinista.",
+    "de": "Die lokale Demo nutzt simulierte lokale LLM-, Übersetzungs-, Sprach- und Avatar-Adapter für deterministische Reviews.",
+    "fr": "La démo locale utilise des adaptateurs locaux simulés de LLM, de traduction, de voix et d'avatar pour une revue déterministe.",
+    "pt-BR": "A demonstração local usa adaptadores locais simulados de LLM, tradução, voz e avatar para revisão determinística.",
+    "it": "La demo locale usa adattatori locali simulati per LLM, traduzione, voce e avatar per una revisione deterministica.",
+    "nl": "De lokale demo gebruikt gesimuleerde lokale LLM-, vertaal-, stem- en avataradapters voor deterministische beoordeling.",
+    "pl": "Lokalna demonstracja używa symulowanych lokalnych adapterów LLM, tłumaczenia, głosu i awatara do deterministycznego przeglądu.",
+    "uk": "Локальна демонстрація використовує макетні локальні адаптери LLM, перекладу, голосу й аватара для детермінованої перевірки.",
+    "ru": "Локальная демонстрация использует имитированные локальные адаптеры LLM, перевода, голоса и аватара для детерминированной проверки.",
+    "zh-Hans": "本地演示使用模拟的本地 LLM、翻译、语音和头像适配器，以便进行简明确定性审查。",
+    "zh-Hant": "本機示範使用模擬的本機 LLM、翻譯、語音和頭像配接器，以便進行專門的確定性審查。",
+    "ja": "ローカルデモは、決定論的なレビューのために模擬ローカル LLM、翻訳、音声、アバターアダプターを使用します。",
+    "ko": "로컬 데모는 결정론적 검토를 위해 모의 로컬 LLM, 번역, 음성, 아바타 어댑터를 사용합니다.",
+    "ar": "يستخدم العرض المحلي محولات محلية وهمية للنموذج اللغوي والترجمة والصوت والأفاتار من أجل مراجعة حتمية.",
+    "arz": "العرض المحلي بيستخدم محولات محلية وهمية للنموذج اللغوي والترجمة والصوت والأفاتار علشان مراجعة حتمية.",
+    "he": "הדמו המקומי משתמש במתאמי LLM, תרגום, קול ואווטאר מקומיים מדומים לצורך סקירה דטרמיניסטית.",
+    "fa": "نمایش محلی برای بازبینی قطعی از آداپتورهای محلی شبیه‌سازی‌شده LLM، ترجمه، صدا و آواتار استفاده می‌کند.",
+    "tr": "Yerel demo, deterministik inceleme için sahte yerel LLM, çeviri, ses ve avatar bağdaştırıcıları kullanır.",
+    "vi": "Bản demo cục bộ dùng các bộ điều hợp LLM, dịch thuật, giọng nói và avatar cục bộ giả lập để đánh giá xác định.",
+    "id": "Demo lokal menggunakan adaptor LLM, terjemahan, suara, dan avatar lokal tiruan untuk tinjauan deterministik.",
+    "fil": "Gumagamit ang lokal na demo ng mga kunwaring lokal na adapter para sa LLM, pagsasalin, boses, at avatar para sa deterministikong pagsusuri.",
+    "th": "เดโมภายในเครื่องใช้ตัวแปลง LLM การแปล เสียง และอวาตาร์แบบจำลองภายในเครื่องเพื่อการตรวจสอบที่กำหนดผลได้",
+    "ms": "Demo tempatan menggunakan penyesuai LLM, terjemahan, suara dan avatar tempatan olok-olok untuk semakan deterministik.",
+}
+DEMO_STAGE4_SLICE_TEXT = {
+    "hi": "Stage 4 स्लाइस निर्धारक परीक्षणों के लिए मॉक स्थानीय LLM और मॉक स्थानीय एम्बेडिंग का उपयोग करता है।",
+    "es": "El segmento de Stage 4 usa un LLM local simulado y embeddings locales simulados para pruebas deterministas.",
+    "de": "Der Stage-4-Slice nutzt ein simuliertes lokales LLM und simulierte lokale Einbettungen für deterministische Tests.",
+    "fr": "Le segment Stage 4 utilise un LLM local simulé et des embeddings locaux simulés pour des tests déterministes.",
+    "pt-BR": "A fatia Stage 4 usa um LLM local simulado e embeddings locais simulados para testes determinísticos.",
+    "it": "La sezione Stage 4 usa un LLM locale simulato e embedding locali simulati per test deterministici.",
+    "nl": "De Stage 4-slice gebruikt een gesimuleerde lokale LLM en gesimuleerde lokale embeddings voor deterministische tests.",
+    "pl": "Wycinek Stage 4 używa symulowanego lokalnego LLM oraz symulowanych lokalnych embeddingów do testów deterministycznych.",
+    "uk": "Зріз Stage 4 використовує макетний локальний LLM і макетні локальні embeddings для детермінованих тестів.",
+    "ru": "Срез Stage 4 использует имитированный локальный LLM и имитированные локальные embeddings для детерминированных тестов.",
+    "zh-Hans": "Stage 4 切片使用模拟的本地 LLM 和模拟的本地嵌入来进行确定性测试。",
+    "zh-Hant": "Stage 4 切片使用模擬的本機 LLM 和模擬的本機嵌入來進行確定性測試。",
+    "ja": "Stage 4 のスライスは、決定論的なテストのために模擬ローカル LLM と模擬ローカル埋め込みを使用します。",
+    "ko": "Stage 4 슬라이스는 결정론적 테스트를 위해 모의 로컬 LLM과 모의 로컬 임베딩을 사용합니다.",
+    "ar": "تستخدم شريحة Stage 4 نموذجًا لغويًا محليًا وهميًا وتضمينات محلية وهمية للاختبارات الحتمية.",
+    "arz": "شريحة Stage 4 بتستخدم نموذج لغوي محلي وهمي وتضمينات محلية وهمية للاختبارات الحتمية.",
+    "he": "פרוסת Stage 4 משתמשת ב-LLM מקומי מדומה ובהטמעות מקומיות מדומות לבדיקות דטרמיניסטיות.",
+    "fa": "بخش Stage 4 برای آزمون‌های قطعی از LLM محلی شبیه‌سازی‌شده و embeddingهای محلی شبیه‌سازی‌شده استفاده می‌کند.",
+    "tr": "Stage 4 dilimi, deterministik testler için sahte yerel LLM ve sahte yerel gömmeler kullanır.",
+    "vi": "Lát cắt Stage 4 dùng LLM cục bộ giả lập và embedding cục bộ giả lập cho các kiểm thử xác định.",
+    "id": "Irisan Stage 4 menggunakan LLM lokal tiruan dan embedding lokal tiruan untuk pengujian deterministik.",
+    "fil": "Gumagamit ang Stage 4 slice ng kunwaring lokal na LLM at kunwaring lokal na embedding para sa deterministikong pagsusuri.",
+    "th": "ส่วน Stage 4 ใช้ LLM ภายในเครื่องแบบจำลองและ embedding ภายในเครื่องแบบจำลองสำหรับการทดสอบที่กำหนดผลได้",
+    "ms": "Hirisan Stage 4 menggunakan LLM tempatan olok-olok dan embedding tempatan olok-olok untuk ujian deterministik.",
+}
+DEMO_CITATION_REQUIREMENT_TEXT = {
+    "hi": "हर जनरेट किए गए वॉकथ्रू दावे में स्वीकृत जानकारी से मिले स्रोत अंशों का उद्धरण होना चाहिए।",
+    "es": "Cada afirmación generada del recorrido debe citar fragmentos de fuente recuperados de conocimiento aprobado.",
+    "de": "Jede generierte Walkthrough-Aussage muss abgerufene Quellenausschnitte aus genehmigtem Wissen zitieren.",
+    "fr": "Chaque affirmation de démonstration générée doit citer les extraits source récupérés depuis les connaissances approuvées.",
+    "pt-BR": "Toda afirmação gerada no roteiro deve citar trechos de fonte recuperados do conhecimento aprovado.",
+    "it": "Ogni affermazione generata nel percorso deve citare frammenti di fonte recuperati dalla conoscenza approvata.",
+    "nl": "Elke gegenereerde walkthrough-claim moet opgehaalde bronfragmenten uit goedgekeurde kennis citeren.",
+    "pl": "Każde wygenerowane twierdzenie w prezentacji musi cytować pobrane fragmenty źródłowe z zatwierdzonej wiedzy.",
+    "uk": "Кожне згенероване твердження у walkthrough має цитувати отримані фрагменти джерел із затверджених знань.",
+    "ru": "Каждое сгенерированное утверждение в walkthrough должно цитировать извлеченные фрагменты источников из утвержденных знаний.",
+    "zh-Hans": "每个生成的简明讲解声明都必须引用从已批准知识中检索到的来源片段。",
+    "zh-Hant": "每個產生的專門導覽聲明都必須引用從已核准知識中擷取到的來源片段。",
+    "ja": "生成された各ウォークスルーの主張は、承認済み知識から取得した出典チャンクを引用しなければなりません。",
+    "ko": "생성된 모든 안내 주장에는 승인된 지식에서 검색된 출처 조각을 인용해야 합니다.",
+    "ar": "يجب أن يستشهد كل ادعاء إرشادي يتم إنشاؤه بمقاطع مصدر مسترجعة من المعرفة المعتمدة.",
+    "arz": "كل ادعاء شرح متولد لازم يستشهد بمقاطع مصدر مسترجعة من المعرفة المعتمدة.",
+    "he": "כל טענת הדרכה שנוצרת חייבת לצטט מקטעי מקור שאוחזרו מידע מאושר.",
+    "fa": "هر ادعای راهنمای تولیدشده باید بخش‌های منبع بازیابی‌شده از دانش تأییدشده را ارجاع دهد.",
+    "tr": "Üretilen her anlatım iddiası, onaylanmış bilgiden alınan kaynak parçalarına atıf yapmalıdır.",
+    "vi": "Mỗi tuyên bố hướng dẫn được tạo phải trích dẫn các đoạn nguồn được truy xuất từ kiến thức đã phê duyệt.",
+    "id": "Setiap klaim panduan yang dihasilkan harus mengutip potongan sumber yang diambil dari pengetahuan yang disetujui.",
+    "fil": "Dapat sipiin ng bawat nabuong pahayag sa walkthrough ang mga bahagi ng pinagmulan na nakuha mula sa aprubadong kaalaman.",
+    "th": "ทุกข้อกล่าวอ้างในคำแนะนำที่สร้างขึ้นต้องอ้างอิงส่วนแหล่งข้อมูลที่ดึงมาจากความรู้ที่อนุมัติแล้ว",
+    "ms": "Setiap dakwaan panduan yang dijana mesti memetik cebisan sumber yang diperoleh daripada pengetahuan yang diluluskan.",
+}
+DEMO_AUDIENCE_PREFIX_TEXT = {
+    "hi": {
+        "recruiters": "भर्ती विशेषज्ञों के लिए",
+        "hiring managers": "नियुक्ति प्रबंधकों के लिए",
+        "engineers": "अभियंताओं के लिए",
+        "product leaders": "उत्पाद नेतृत्वकर्ताओं के लिए",
+        "beginners": "नए उपयोगकर्ताओं के लिए",
+        "global viewers": "वैश्विक दर्शकों के लिए",
+        "customers": "ग्राहकों के लिए",
+    },
+    "es": {
+        "recruiters": "Para reclutadores",
+        "hiring managers": "Para responsables de contratación",
+        "engineers": "Para ingenieros",
+        "product leaders": "Para líderes de producto",
+        "beginners": "Para principiantes",
+        "global viewers": "Para audiencias globales",
+        "customers": "Para clientes",
+    },
+    "de": {
+        "recruiters": "Für Recruiter",
+        "hiring managers": "Für Hiring Manager",
+        "engineers": "Für Ingenieure",
+        "product leaders": "Für Produktverantwortliche",
+        "beginners": "Für Einsteiger",
+        "global viewers": "Für globale Zuschauer",
+        "customers": "Für Kunden",
+    },
+    "fr": {
+        "recruiters": "Pour les recruteurs",
+        "hiring managers": "Pour les responsables du recrutement",
+        "engineers": "Pour les ingénieurs",
+        "product leaders": "Pour les responsables produit",
+        "beginners": "Pour les débutants",
+        "global viewers": "Pour les publics internationaux",
+        "customers": "Pour les clients",
+    },
+    "pt-BR": {
+        "recruiters": "Para recrutadores",
+        "hiring managers": "Para gestores de contratação",
+        "engineers": "Para engenheiros",
+        "product leaders": "Para líderes de produto",
+        "beginners": "Para iniciantes",
+        "global viewers": "Para públicos globais",
+        "customers": "Para clientes",
+    },
+    "it": {
+        "recruiters": "Per i recruiter",
+        "hiring managers": "Per i responsabili delle assunzioni",
+        "engineers": "Per gli ingegneri",
+        "product leaders": "Per i responsabili di prodotto",
+        "beginners": "Per i principianti",
+        "global viewers": "Per il pubblico globale",
+        "customers": "Per i clienti",
+    },
+    "nl": {
+        "recruiters": "Voor recruiters",
+        "hiring managers": "Voor hiring managers",
+        "engineers": "Voor engineers",
+        "product leaders": "Voor productleiders",
+        "beginners": "Voor beginners",
+        "global viewers": "Voor wereldwijde kijkers",
+        "customers": "Voor klanten",
+    },
+    "pl": {
+        "recruiters": "Dla rekruterów",
+        "hiring managers": "Dla menedżerów zatrudniających",
+        "engineers": "Dla inżynierów",
+        "product leaders": "Dla liderów produktu",
+        "beginners": "Dla początkujących",
+        "global viewers": "Dla odbiorców globalnych",
+        "customers": "Dla klientów",
+    },
+    "uk": {
+        "recruiters": "Для рекрутерів",
+        "hiring managers": "Для менеджерів з найму",
+        "engineers": "Для інженерів",
+        "product leaders": "Для продуктових лідерів",
+        "beginners": "Для початківців",
+        "global viewers": "Для глобальних глядачів",
+        "customers": "Для клієнтів",
+    },
+    "ru": {
+        "recruiters": "Для рекрутеров",
+        "hiring managers": "Для менеджеров по найму",
+        "engineers": "Для инженеров",
+        "product leaders": "Для продуктовых лидеров",
+        "beginners": "Для начинающих",
+        "global viewers": "Для глобальных зрителей",
+        "customers": "Для клиентов",
+    },
+    "zh-Hans": {
+        "recruiters": "面向招聘人员",
+        "hiring managers": "面向招聘经理",
+        "engineers": "面向工程师",
+        "product leaders": "面向产品负责人",
+        "beginners": "面向初学者",
+        "global viewers": "面向全球观众",
+        "customers": "面向客户",
+    },
+    "zh-Hant": {
+        "recruiters": "面向招募人員",
+        "hiring managers": "面向招募經理",
+        "engineers": "面向工程師",
+        "product leaders": "面向產品負責人",
+        "beginners": "面向初學者",
+        "global viewers": "面向全球觀眾",
+        "customers": "面向客戶",
+    },
+    "ja": {
+        "recruiters": "採用担当者向けに",
+        "hiring managers": "採用責任者向けに",
+        "engineers": "エンジニア向けに",
+        "product leaders": "プロダクトリーダー向けに",
+        "beginners": "初心者向けに",
+        "global viewers": "世界中の視聴者向けに",
+        "customers": "顧客向けに",
+    },
+    "ko": {
+        "recruiters": "채용 담당자를 위해",
+        "hiring managers": "채용 관리자를 위해",
+        "engineers": "엔지니어를 위해",
+        "product leaders": "제품 리더를 위해",
+        "beginners": "초보자를 위해",
+        "global viewers": "전 세계 시청자를 위해",
+        "customers": "고객을 위해",
+    },
+    "ar": {
+        "recruiters": "لمسؤولي التوظيف",
+        "hiring managers": "لمديري التوظيف",
+        "engineers": "للمهندسين",
+        "product leaders": "لقادة المنتج",
+        "beginners": "للمبتدئين",
+        "global viewers": "للمشاهدين العالميين",
+        "customers": "للعملاء",
+    },
+    "arz": {
+        "recruiters": "لمسؤولي التوظيف",
+        "hiring managers": "لمديري التوظيف",
+        "engineers": "للمهندسين",
+        "product leaders": "لقادة المنتج",
+        "beginners": "للمبتدئين",
+        "global viewers": "للمشاهدين العالميين",
+        "customers": "للعملاء",
+    },
+    "he": {
+        "recruiters": "עבור מגייסים",
+        "hiring managers": "עבור מנהלי גיוס",
+        "engineers": "עבור מהנדסים",
+        "product leaders": "עבור מובילי מוצר",
+        "beginners": "עבור מתחילים",
+        "global viewers": "עבור צופים גלובליים",
+        "customers": "עבור לקוחות",
+    },
+    "fa": {
+        "recruiters": "برای جذب‌کنندگان نیرو",
+        "hiring managers": "برای مدیران استخدام",
+        "engineers": "برای مهندسان",
+        "product leaders": "برای رهبران محصول",
+        "beginners": "برای کاربران تازه‌کار",
+        "global viewers": "برای مخاطبان جهانی",
+        "customers": "برای مشتریان",
+    },
+    "tr": {
+        "recruiters": "İşe alım uzmanları için",
+        "hiring managers": "İşe alım yöneticileri için",
+        "engineers": "Mühendisler için",
+        "product leaders": "Ürün liderleri için",
+        "beginners": "Yeni başlayanlar için",
+        "global viewers": "Küresel izleyiciler için",
+        "customers": "Müşteriler için",
+    },
+    "vi": {
+        "recruiters": "Dành cho nhà tuyển dụng",
+        "hiring managers": "Dành cho quản lý tuyển dụng",
+        "engineers": "Dành cho kỹ sư",
+        "product leaders": "Dành cho lãnh đạo sản phẩm",
+        "beginners": "Dành cho người mới",
+        "global viewers": "Dành cho khán giả toàn cầu",
+        "customers": "Dành cho khách hàng",
+    },
+    "id": {
+        "recruiters": "Untuk perekrut",
+        "hiring managers": "Untuk manajer perekrutan",
+        "engineers": "Untuk insinyur",
+        "product leaders": "Untuk pemimpin produk",
+        "beginners": "Untuk pemula",
+        "global viewers": "Untuk pemirsa global",
+        "customers": "Untuk pelanggan",
+    },
+    "fil": {
+        "recruiters": "Para sa mga recruiter",
+        "hiring managers": "Para sa mga hiring manager",
+        "engineers": "Para sa mga engineer",
+        "product leaders": "Para sa mga lider ng produkto",
+        "beginners": "Para sa mga baguhan",
+        "global viewers": "Para sa pandaigdigang manonood",
+        "customers": "Para sa mga customer",
+    },
+    "th": {
+        "recruiters": "สำหรับผู้สรรหาบุคลากร",
+        "hiring managers": "สำหรับผู้จัดการฝ่ายสรรหา",
+        "engineers": "สำหรับวิศวกร",
+        "product leaders": "สำหรับผู้นำผลิตภัณฑ์",
+        "beginners": "สำหรับผู้เริ่มต้น",
+        "global viewers": "สำหรับผู้ชมทั่วโลก",
+        "customers": "สำหรับลูกค้า",
+    },
+    "ms": {
+        "recruiters": "Untuk perekrut",
+        "hiring managers": "Untuk pengurus pengambilan pekerja",
+        "engineers": "Untuk jurutera",
+        "product leaders": "Untuk pemimpin produk",
+        "beginners": "Untuk pemula",
+        "global viewers": "Untuk penonton global",
+        "customers": "Untuk pelanggan",
+    },
 }
 ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT = {
     "hi": "इंजीनियरों के लिए, Atlas Output OUTPUT-SENTINEL-CP2 लॉन्च रिहर्सल के लिए एक काल्पनिक स्थानीय चेकलिस्ट बिल्डर है।",
@@ -965,6 +1313,16 @@ class Stage6Service:
                 source_context_ref_count=source_context_ref_count,
                 source_citation_indexes=normalized_citation_indexes,
                 source_citation_count=source_citation_count,
+            )
+            validate_multilingual_source_evidence(
+                source_text=source_text,
+                evaluation_status=normalized_evaluation_status,
+                source_evaluation_checksum_supplied=bool(source_evaluation_checksum.strip()),
+                source_context_ref_count=source_context_ref_count,
+                source_citation_count=source_citation_count,
+                source_context_ref_ids=normalized_context_ref_ids,
+                source_citation_indexes=normalized_citation_indexes,
+                source_claim_support_ids=normalized_claim_support_ids,
             )
         except Stage6Error as exc:
             if record_key is not None:
@@ -2010,7 +2368,15 @@ def source_transcript_segments(source_text: str) -> tuple[tuple[str, tuple[str, 
     if not matches:
         return ((source_text.strip(), (), ()),)
     segments: list[tuple[str, tuple[str, ...], tuple[int, ...]]] = []
+    previous_end = 0
     for match in matches:
+        uncovered = source_text[previous_end : match.start()].strip()
+        if uncovered:
+            raise Stage6Error(
+                422,
+                "TRANSCRIPT_CORRECTNESS_FAILED",
+                "Source English text contains uncited content outside transcript segments.",
+            )
         text = " ".join(match.group("text").strip().split())
         index = int(match.group("index"))
         if re.fullmatch(r"(?:\[\d+\]\s*)+", text) and segments:
@@ -2020,8 +2386,17 @@ def source_transcript_segments(source_text: str) -> tuple[tuple[str, tuple[str, 
                 previous_markers + (f"[{index}]",),
                 previous_indexes + (index,),
             )
+            previous_end = match.end()
             continue
         segments.append((text, (f"[{index}]",), (index,)))
+        previous_end = match.end()
+    trailing = source_text[previous_end:].strip()
+    if trailing:
+        raise Stage6Error(
+            422,
+            "TRANSCRIPT_CORRECTNESS_FAILED",
+            "Source English text contains uncited content outside transcript segments.",
+        )
     return tuple(segments)
 
 
@@ -2078,8 +2453,63 @@ def local_demo_translated_segment_fixture(*, source_segment: str, target_languag
             or "creates grounded walkthrough scripts" in source_segment
         )
     ):
-        return DEMO_TRANSLATED_SEGMENT_TEXT.get(target_language)
+        base_text = DEMO_TRANSLATED_SEGMENT_TEXT.get(target_language)
+        if base_text is None:
+            return None
+        audience_prefix = local_demo_translated_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+        )
+        return f"{audience_prefix}, {base_text}" if audience_prefix else base_text
+    if "supports recruiters, hiring managers, engineers, product leaders, customers" in source_segment:
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=DEMO_AUDIENCE_SUPPORT_TEXT.get(target_language),
+        )
+    if "supports recruiter and engineering audiences with audience-aware explanations" in source_segment:
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=DEMO_RECRUITER_ENGINEERING_SUPPORT_TEXT.get(target_language),
+        )
+    if "local demo uses mock local llm, translation, voice, and avatar adapters" in source_segment.lower():
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=DEMO_LOCAL_PROVIDER_TEXT.get(target_language),
+        )
+    if "Stage 4 slice uses a mock local LLM and mock local embeddings" in source_segment:
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=DEMO_STAGE4_SLICE_TEXT.get(target_language),
+        )
+    if "Every generated walkthrough claim must cite retrieved source chunks" in source_segment:
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=DEMO_CITATION_REQUIREMENT_TEXT.get(target_language),
+        )
     return None
+
+
+def local_demo_with_audience_prefix(*, source_segment: str, target_language: str, base_text: str | None) -> str | None:
+    if base_text is None:
+        return None
+    audience_prefix = local_demo_translated_audience_prefix(
+        source_segment=source_segment,
+        target_language=target_language,
+    )
+    return f"{audience_prefix}, {base_text}" if audience_prefix else base_text
+
+
+def local_demo_translated_audience_prefix(*, source_segment: str, target_language: str) -> str | None:
+    match = re.match(r"\s*For (?P<audience>[^,]+),\s+", source_segment)
+    if not match:
+        return None
+    audience = " ".join(match.group("audience").lower().split())
+    return DEMO_AUDIENCE_PREFIX_TEXT.get(target_language, {}).get(audience)
 
 
 def translated_script_text_from_transcript_segments(
@@ -2096,8 +2526,6 @@ def validate_translated_script_matches_transcript(
     transcript_segments: tuple[MultilingualTranscriptSegment, ...],
 ) -> None:
     if target_language == "en":
-        return
-    if not citation_marker_sequence(source_text):
         return
     expected_text = translated_script_text_from_transcript_segments(transcript_segments)
     if translated_script_text != expected_text:
@@ -2397,6 +2825,54 @@ def validate_source_evaluation_checksum(
     if source_evaluation_checksum != expected:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Source evaluation checksum is invalid.")
     return expected
+
+
+def validate_multilingual_source_evidence(
+    *,
+    source_text: str,
+    evaluation_status: EvaluationStatus,
+    source_evaluation_checksum_supplied: bool,
+    source_context_ref_count: int,
+    source_citation_count: int,
+    source_context_ref_ids: tuple[str, ...],
+    source_citation_indexes: tuple[int, ...],
+    source_claim_support_ids: tuple[str, ...],
+) -> None:
+    if evaluation_status != "PASSED":
+        raise Stage6Error(
+            422,
+            "PROVIDER_OUTPUT_INVALID",
+            "Stage 6 requires passed source evaluation evidence.",
+        )
+    if not source_evaluation_checksum_supplied:
+        raise Stage6Error(
+            422,
+            "PROVIDER_OUTPUT_INVALID",
+            "Stage 6 requires an explicit source evaluation checksum.",
+        )
+    markers = citation_marker_sequence(source_text)
+    if not markers:
+        raise Stage6Error(
+            422,
+            "TRANSCRIPT_CORRECTNESS_FAILED",
+            "Source English text must include citation markers before multilingual generation.",
+        )
+    source_transcript_segments(source_text)
+    if (
+        source_context_ref_count <= 0
+        or source_citation_count <= 0
+        or not source_context_ref_ids
+        or not source_citation_indexes
+        or not source_claim_support_ids
+        or source_citation_count != len(markers)
+        or len(source_citation_indexes) != len(markers)
+        or len(source_claim_support_ids) != len(markers)
+    ):
+        raise Stage6Error(
+            422,
+            "PROVIDER_OUTPUT_INVALID",
+            "Stage 6 requires source citation, context, and claim-support evidence.",
+        )
 
 
 def restored_voice_manifest_matches(

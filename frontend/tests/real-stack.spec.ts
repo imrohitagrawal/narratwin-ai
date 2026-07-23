@@ -35,7 +35,7 @@ test("Issue #213 Checkpoint B real browser path reaches frontend, backend, and C
 
 NarraTwin AI turns approved project knowledge into grounded walkthrough scripts with source chunk citations.
 
-It supports recruiter and engineering audiences with audience-aware explanations.
+It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations.
 
 The Stage 4 slice uses a mock local LLM and mock local embeddings for deterministic tests.
 

@@ -557,13 +557,23 @@ languages as planned/unsupported local demo, executes every Priority 1 runtime
 API path, requires source English plus target-language transcript plus English
 reference/back-translation per segment, validates native scripts and RTL
 direction, preserves citation/source/evaluation/context/claim-support bindings,
-requires Stage 6 metadata artifact parity, and writes
+requires selected-audience semantic preservation, rejects heading-only generated
+claims, requires full generated-script segment coverage, expands small approved
+local/demo documents within retrieval top-k to all approved claim chunks, compares supported
+controlled translations against independent golden strings rather than the
+implementation fixture alone, requires Stage 6 metadata artifact parity, and writes
 `reports/checkpoint3-multilingual/priority1-coverage-matrix.json` plus
 `reports/checkpoint3-multilingual/checkpoint3a-multilingual-summary.json`.
-Mutation fixtures must fail for partial text, English fallback, romanized or
-wrong-script fallback, missing source English, missing English reference,
-citation drift, missing bindings, metadata-only success, and artifact-only
-success. `COMPLETED` is invalid unless transcript correctness validation passes.
+The coverage matrix must include one positive row per Priority 1 language plus
+mutation rows that fail for partial text, one-segment partial text, English
+fallback, romanized or wrong-script fallback, missing source English, missing
+English reference, citation drift, missing bindings, metadata-only success,
+artifact-only success, and glossary-forced English leakage. `COMPLETED` is
+invalid unless transcript correctness validation passes. The current local/demo
+translation boundary is generated walkthrough scripts from approved local/demo
+knowledge, not a separate raw uploaded knowledge-document translation API; a
+raw-document translation surface requires a future issue and equal executable
+coverage before it may be claimed.
 
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`

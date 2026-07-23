@@ -218,7 +218,7 @@ def write_cp8_evidence(
                 "providers": {
                     "llm": "mock",
                     "translation": "mock",
-                    "voice": "LOCAL",
+                    "voice": "mock",
                     "avatar": "mock",
                     "videoRenderer": "local-html",
                     "networkEgress": False,
@@ -830,6 +830,43 @@ def test_checkpoint3_acceptance_rejects_cp8_missing_representative_browser_cover
 
     assert result.status == "FAIL"
     assert "missing representative script coverage" in result.output
+
+
+@pytest.mark.parametrize(
+    ("provider_key", "spoofed_value"),
+    (
+        ("llm", "openai"),
+        ("translation", "google"),
+        ("voice", "elevenlabs"),
+        ("avatar", "heygen"),
+        ("videoRenderer", "remote-renderer"),
+        ("networkEgress", True),
+        ("realVideo", True),
+        ("clonedIdentity", True),
+    ),
+)
+def test_checkpoint3_acceptance_rejects_cp8_provider_posture_spoofing(
+    monkeypatch: Any,
+    tmp_path: Path,
+    provider_key: str,
+    spoofed_value: Any,
+) -> None:
+    monkeypatch.setattr(checkpoint3, "CP8_EVIDENCE_ROOT", tmp_path)
+
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        write_cp8_evidence(tmp_path)
+        evidence_path = tmp_path / "unit-cp8" / checkpoint3.CP8_EVIDENCE_FILE_NAME
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        evidence["providers"][provider_key] = spoofed_value
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+        return subprocess.CompletedProcess(args=args[0], returncode=0, stdout=cp8_success_stdout())
+
+    monkeypatch.setattr(checkpoint3.subprocess, "run", fake_run)
+
+    result = checkpoint3.run_probe(checkpoint3.PROBES[-1])
+
+    assert result.status == "FAIL"
+    assert "missing local/mock provider posture" in result.output
 
 
 @pytest.mark.parametrize(

@@ -69,8 +69,14 @@ def configure_api_external_tts(transport: FakeTTSTransport) -> None:
     )
 
 
-def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
+def _create_completed_walkthrough(
+    client: TestClient,
+    *,
+    prefix: str = "stage6",
+    content: bytes | None = None,
+) -> tuple[str, str]:
     fixture = Path("tests/fixtures/stage4_project.md")
+    document_content = content if content is not None else fixture.read_bytes()
     project_response = client.post(
         "/api/v1/projects",
         json={
@@ -79,15 +85,15 @@ def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
             "defaultAudience": "RECRUITER",
             "defaultLanguage": "en",
         },
-        headers=idempotency_headers("stage6-project"),
+        headers=idempotency_headers(f"{prefix}-project"),
     )
     assert project_response.status_code == 201
     project_id = project_response.json()["projectId"]
 
     upload_response = client.post(
         f"/api/v1/projects/{project_id}/knowledge-documents",
-        files={"file": ("stage4_project.md", fixture.read_bytes(), "text/markdown")},
-        headers=idempotency_headers("stage6-upload"),
+        files={"file": ("stage4_project.md", document_content, "text/markdown")},
+        headers=idempotency_headers(f"{prefix}-upload"),
     )
     assert upload_response.status_code == 201
     document_id = upload_response.json()["documentId"]
@@ -95,14 +101,14 @@ def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
     approve_response = client.patch(
         f"/api/v1/projects/{project_id}/knowledge-documents/{document_id}/approval",
         json={"approvalStatus": "APPROVED"},
-        headers=idempotency_headers("stage6-approval"),
+        headers=idempotency_headers(f"{prefix}-approval"),
     )
     assert approve_response.status_code == 200
 
     ingestion_response = client.post(
         f"/api/v1/projects/{project_id}/ingestion-runs",
         json={"documentIds": [document_id]},
-        headers=idempotency_headers("stage6-ingest"),
+        headers=idempotency_headers(f"{prefix}-ingest"),
     )
     assert ingestion_response.status_code == 201
 
@@ -115,7 +121,7 @@ def _create_completed_walkthrough(client: TestClient) -> tuple[str, str]:
             "style": "CONFIDENT",
             "prompt": "Create a concise grounded walkthrough for a recruiter.",
         },
-        headers=idempotency_headers("stage6-generate"),
+        headers=idempotency_headers(f"{prefix}-generate"),
     )
     assert generation_response.status_code == 201
     assert generation_response.json()["status"] == "COMPLETED"
@@ -213,6 +219,16 @@ def test_multilingual_walkthrough_api_returns_structured_transcript_and_matching
     assert source_text
     assert target_text
     assert target_text != source_text
+    assert "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]" in source_text
+    assert "NarraTwin AI NarraTwin AI" not in source_text
+    assert len(body["transcriptSegments"]) >= 2
+    assert len(body["transcriptSegments"]) == body["transcriptCorrectness"]["segmentCount"]
+    assert (
+        "भर्ती विशेषज्ञों के लिए, NarraTwin AI स्वीकृत परियोजना-जानकारी को "
+        "तथ्य-आधारित, चरण-दर-चरण प्रस्तुति की पटकथाओं में बदलता है। [1]"
+    ) in target_text
+    assert not body["transcriptSegments"][0]["targetText"].startswith("इंजीनियरों के लिए")
+    assert "ग्राउंडेड वॉकथ्रू स्क्रिप्ट" not in target_text
     assert any("\u0900" <= char <= "\u097f" for char in target_text)
     assert "badalta hai" not in target_text
 
@@ -224,14 +240,60 @@ def test_multilingual_walkthrough_api_returns_structured_transcript_and_matching
         assert segment["englishReferenceText"]
         assert segment["citationMarkers"]
         assert segment["citationIndexes"]
-        assert segment["contextRefIds"] == body["trace"]["sourceContextRefIds"]
-        assert segment["claimSupportIds"] == body["trace"]["sourceClaimSupportIds"]
+        assert segment["contextRefIds"]
+        assert segment["claimSupportIds"]
+        assert set(segment["contextRefIds"]).issubset(set(body["trace"]["sourceContextRefIds"]))
+        assert set(segment["claimSupportIds"]).issubset(set(body["trace"]["sourceClaimSupportIds"]))
         assert segment["sourceRunId"] == run_id
         assert segment["evaluationId"] == body["trace"]["sourceEvaluationId"]
 
     metadata = json.loads(base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8"))
     assert metadata["transcriptSegments"] == body["transcriptSegments"]
     assert metadata["transcriptCorrectness"] == body["transcriptCorrectness"]
+
+
+def test_multilingual_walkthrough_api_translates_original_manual_review_document() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(
+        client,
+        prefix="stage6-original-manual-doc",
+        content=b"""# NarraTwin AI
+
+NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.
+
+It supports recruiter and engineering audiences with audience-aware explanations.
+
+The local demo uses mock local LLM, translation, voice, and avatar adapters for deterministic review.
+
+Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.
+""",
+    )
+
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+        json={
+            "targetLanguage": "hi",
+            "glossaryTerms": ["NarraTwin AI"],
+            "requestedVoiceProvider": "mock",
+        },
+        headers=idempotency_headers("stage6-original-manual-doc-hi"),
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["status"] == "COMPLETED"
+    assert body["transcriptCorrectness"]["validationStatus"] == "PASSED"
+    assert len(body["transcriptSegments"]) >= 3
+    assert "भर्ती विशेषज्ञों के लिए" in body["translatedScriptText"]
+    assert "भर्ती विशेषज्ञों और अभियांत्रिकी दर्शकों" in body["translatedScriptText"]
+    assert "मॉक स्थानीय LLM, अनुवाद, आवाज़ और अवतार" in body["translatedScriptText"]
+    assert "For recruiters" not in body["translatedScriptText"]
+    assert "recruiter and engineering audiences" not in body["translatedScriptText"]
+    assert "इंजीनियरों" not in body["translatedScriptText"]
+    assert body["translatedScriptText"] != body["sourceScriptText"]
+    metadata = json.loads(base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8"))
+    assert metadata["transcriptSegments"] == body["transcriptSegments"]
 
 
 def test_priority2_language_refuses_honestly_instead_of_generating_fake_success() -> None:

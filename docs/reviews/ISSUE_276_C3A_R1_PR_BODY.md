@@ -67,18 +67,25 @@ NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend ru
 ```
 
 Residual risk: local/demo translations are deterministic fixtures for controlled
-accepted scripts only. Arbitrary input remains unsupported locally unless a later
-reviewed provider stage implements real translation. The requested sub-agent
-fan-out initially hit usage limits, then was restarted. The restarted reviewers
-found blockers; fixes were committed, the fan-out was rerun, and all required
-reviewers returned PASS. Final evidence is recorded in
+accepted generated walkthrough scripts only. Arbitrary input remains unsupported
+locally unless a later reviewed provider stage implements real translation. For
+small approved local/demo source documents within retrieval top-k, the generated
+walkthrough path now expands to all approved claim chunks before multilingual
+generation; a separate raw uploaded-document translation API is not claimed by
+this Stage 6 surface. The earlier final fan-out PASS is superseded because human
+manual review found semantic output failures after that review. The latest
+pre-commit fan-out found additional blockers around explicit positive matrix
+rows, original manual-review document support, browser voice-provider posture,
+and uncommitted evidence state; those blockers are fixed locally and must be
+rerun against the pushed PR head before final approval.
+Final evidence is recorded in
 `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md`.
 
 ## Human verification checklist
 
 | Focus area | What to verify | Data/source/artifact to verify | Pass condition | Fail condition | Residual-risk owner |
 |---|---|---|---|---|---|
-| Priority 1 output correctness | Every Priority 1 language has source English, target text, English reference, citations, binding, artifact parity, and negative coverage. | `reports/checkpoint3-multilingual/priority1-coverage-matrix.json`; `reports/checkpoint3-multilingual/checkpoint3a-multilingual-summary.json` | Matrix has 25 Priority 1 languages and rejects fallback, partial, wrong script, missing reference, and citation drift. | Any Priority 1 language lacks positive or negative coverage. | reviewer |
+| Priority 1 output correctness | Every Priority 1 language has source English, target text, English reference, citations, binding, artifact parity, positive coverage, and negative coverage. | `reports/checkpoint3-multilingual/priority1-coverage-matrix.json`; `reports/checkpoint3-multilingual/checkpoint3a-multilingual-summary.json` | Matrix has 25 Priority 1 languages, 25 positive rows, and rejects fallback, partial, one-segment partial, wrong script, missing reference, citation drift, missing binding, glossary-forced English leakage, metadata-only success, and artifact-only success. | Any Priority 1 language lacks positive or negative coverage. | reviewer |
 | Browser visible behavior | Representative script families are exercised through the real UI without route fulfillment. | `reports/checkpoint3-real-browser/playwright-output/.../issue-269-c3a-cp8-browser-evidence.json` | French, Hindi, Arabic, Hebrew, Japanese, Korean, Russian, and Thai groups all have visible source/target/reference/citation/artifact parity booleans true. | Any required group is absent or has a false visible-output boolean. | reviewer |
 | Unsupported local/demo languages | Priority 2 languages are cataloged but not falsely supported. | `/api/v1/languages`; UI selector; `tests/api/test_stage6_multilingual_api.py` | Priority 2 tags show planned/unsupported and refuse generation honestly. | Unsupported language generates fake success. | reviewer |
 | Local/mock boundaries | No hosted/provider/paid/cloned/real-media/prod claims were introduced. | PR diff; `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`; CP8 evidence providers block | Providers remain mock/local, network egress false, realVideo false, clonedIdentity false. | Any real provider setup, public URL, paid spend, or production-readiness claim appears. | reviewer |
@@ -147,9 +154,9 @@ there is no successor status-only follow-up needed.
 | Tests / current behavior | `tests/acceptance/test_checkpoint3_output_correctness.py` | repo-file | C3A-R1-FM | `uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q` | implementer | test | pass | API/output correctness is exhaustive for Priority 1. |
 | Browser behavior | `frontend/tests/checkpoint3-real-browser.spec.ts` | repo-file | C3A-R1-FM | `NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts` | implementer | test | pass | Browser coverage is representative by script family. |
 | Docs/gates | `scripts/quality/check_checkpoint3_acceptance.py` | repo-file | C3A-R1-FM | invariant test gate `make checkpoint3-acceptance` | implementer | gate | pass | Gate rejects missing representative browser evidence. |
-| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | restarted sub-agent review found output-correctness, TDD, doubt-driven, and false-positive blockers; fixes recorded in evidence | implementer | source / human-only | pass | Human reviewer should inspect final rerun status before approval. |
+| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | earlier final PASS superseded by human-found semantic blockers; latest pre-commit fan-out blockers fixed locally; fresh output-correctness, TDD, doubt-driven, and false-positive rerun required against pushed PR head | implementer | source / human-only | pending | Human reviewer should inspect final rerun status before approval. |
 | Review prompt set | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | review prompt matrix for false pass and adversarial output correctness review | implementer | source / human-only | pass | Human reviewer may repeat prompts if usage limits reset. |
-| Stop rule / repeated blocker reset | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | stop rule checked; new blocker classes require contract rewrite or update before another fix loop | implementer | gate | pass | No repeated blocker remained after fallback review. |
+| Stop rule / repeated blocker reset | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | stop rule checked; human-found and fan-out blocker classes updated the contract before another fix loop | implementer | gate | pending | Fresh final review must confirm no repeated blocker remains. |
 | Skill/tool selection | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | repo-file | C3A-R1-SKILL | preinstalled approved skills and repo docs checked first; no custom skill creation | implementer | gate | pass | No custom skills/plugins or dependencies added. |
 
 ## Human-only review surfaces
@@ -185,7 +192,9 @@ make eval -> passed
 GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/tmp/pr-event.json NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS=1 python3 scripts/guardrails_check.py -> passed
 make checkpoint3-acceptance -> passed
 uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q -> 7 passed
-uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/unit/test_checkpoint3_acceptance_gate.py -q -> 81 passed
+uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py -q -> passed
+uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_checkpoint3_acceptance_gate.py -q -> 53 passed
+coverage matrix check -> 375 rows, including 25 positive rows
 npm --prefix frontend run test -- page.test.tsx -> 16 passed
 NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts -> 1 passed
 ```

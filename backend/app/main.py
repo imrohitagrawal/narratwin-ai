@@ -216,7 +216,15 @@ class StartIngestionRequest(BaseModel):
 class GenerateWalkthroughRequest(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
-    audience: Literal["RECRUITER", "HIRING_MANAGER", "ENGINEER", "PRODUCT_LEADER", "BEGINNER", "GLOBAL_VIEWER"] = "RECRUITER"
+    audience: Literal[
+        "RECRUITER",
+        "HIRING_MANAGER",
+        "ENGINEER",
+        "PRODUCT_LEADER",
+        "CUSTOMER",
+        "BEGINNER",
+        "GLOBAL_VIEWER",
+    ] = "RECRUITER"
     requested_language: Literal["en"] = Field(default="en", alias="requestedLanguage")
     depth: Literal["CONCISE", "STANDARD", "DEEP"] = "CONCISE"
     style: Literal["PLAIN", "CONFIDENT", "TECHNICAL", "EXECUTIVE"] = "CONFIDENT"

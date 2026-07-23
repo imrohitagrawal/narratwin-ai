@@ -34,7 +34,7 @@ from backend.app.rag.models import (
     ScriptClaim,
     UnsupportedClaim,
 )
-from backend.app.rag.providers import MockEmbeddingProvider, MockLLMProvider
+from backend.app.rag.providers import MockEmbeddingProvider, MockLLMProvider, audience_label_for_script
 from backend.app.rag.retrieval import retrieve_context
 from backend.app.rag.store import InMemoryRagStore
 from backend.app.storage import load_state, resolve_state_file, write_state
@@ -98,6 +98,10 @@ LOGGER = logging.getLogger(__name__)
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _context_ref_id(*, tenant_id: str, project_id: str, chunk_id: str, query: str) -> str:
+    return "ctx_" + hashlib.sha256(f"{tenant_id}:{project_id}:{chunk_id}:{query}".encode("utf-8")).hexdigest()[:16]
 
 
 class Stage4Error(Exception):
@@ -867,7 +871,7 @@ class Stage4Service:
         style: str,
         prompt: str,
     ) -> WalkthroughRunRecord:
-        self._require_project(principal=principal, project_id=project_id)
+        project = self._require_project(principal=principal, project_id=project_id)
         if len(prompt) > MAX_PROMPT_CHARS:
             raise Stage4Error(413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit.")
         if contains_secret_like_content(prompt):
@@ -945,19 +949,40 @@ class Stage4Service:
                         lf_metadata=lf_metadata,
                     )
                 else:
+                    retrieval_query = (
+                        f"{project.name} {project.description} {audience} "
+                        f"{audience_label_for_script(audience)} {prompt}"
+                    )
                     retrieved = retrieve_context(
                         store=self.rag_store,
                         embedder=self.embedder,
                         tenant_id=principal.tenant_id,
                         project_id=project_id,
-                        query=f"{audience} {prompt}",
+                        query=retrieval_query,
                         top_k=RETRIEVAL_TOP_K,
                         min_score=RETRIEVAL_MIN_SCORE,
                     )
+                    retrieved = sorted(retrieved, key=lambda context: context.chunk.chunk_index)
                     all_chunks = self.rag_store.chunks_for_project(
                         tenant_id=principal.tenant_id,
                         project_id=project_id,
                     )
+                    if retrieved and len(all_chunks) <= RETRIEVAL_TOP_K:
+                        retrieved_by_chunk_id = {context.chunk.chunk_id: context for context in retrieved}
+                        retrieved = [
+                            retrieved_by_chunk_id.get(chunk.chunk_id)
+                            or RetrievedContext(
+                                context_ref_id=_context_ref_id(
+                                    tenant_id=principal.tenant_id,
+                                    project_id=project_id,
+                                    chunk_id=chunk.chunk_id,
+                                    query=retrieval_query,
+                                ),
+                                chunk=chunk,
+                                score=RETRIEVAL_MIN_SCORE,
+                            )
+                            for chunk in sorted(all_chunks, key=lambda item: item.chunk_index)
+                        ]
                     if not retrieved:
                         run = self._build_walkthrough_run(
                             run_id=run_id,

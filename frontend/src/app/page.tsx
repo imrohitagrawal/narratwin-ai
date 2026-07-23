@@ -198,11 +198,20 @@ type ApiErrorPayload = {
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
+const audienceOptions = [
+  { value: "RECRUITER", label: "Recruiter", promptLabel: "recruiter" },
+  { value: "HIRING_MANAGER", label: "Hiring manager", promptLabel: "hiring manager" },
+  { value: "ENGINEER", label: "Engineer", promptLabel: "engineer" },
+  { value: "PRODUCT_LEADER", label: "Product leader", promptLabel: "product leader" },
+  { value: "CUSTOMER", label: "Customer", promptLabel: "customer" },
+  { value: "BEGINNER", label: "Beginner", promptLabel: "beginner" },
+  { value: "GLOBAL_VIEWER", label: "Global viewer", promptLabel: "global viewer" },
+];
 export const defaultKnowledge = `# NarraTwin AI
 
 NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.
 
-It supports recruiter and engineering audiences with audience-aware explanations.
+It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations.
 
 The local demo uses mock local LLM, translation, voice, and avatar adapters for deterministic review.
 
@@ -420,7 +429,7 @@ export default function Home() {
           requestedLanguage: "en",
           depth,
           style: "CONFIDENT",
-          prompt: "Create a concise grounded walkthrough for a recruiter.",
+          prompt: `Create a concise grounded walkthrough for a ${audiencePromptLabel(audience)}.`,
         },
         `ui-generate-${requestSeed}`,
       );
@@ -516,8 +525,11 @@ export default function Home() {
             <label className={styles.field}>
               <span>Audience</span>
               <select name="audience" defaultValue="RECRUITER">
-                <option value="RECRUITER">Recruiter</option>
-                <option value="ENGINEER">Engineer</option>
+                {audienceOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -777,6 +789,10 @@ export default function Home() {
 export function languageOptionLabel(language: LanguageCatalogRecord) {
   const baseLabel = `${language.englishName} / ${language.nativeName}`;
   return language.localDemoSupportStatus === "SUPPORTED" ? baseLabel : `${baseLabel} - Planned`;
+}
+
+function audiencePromptLabel(audience: string) {
+  return audienceOptions.find((option) => option.value === audience)?.promptLabel ?? "viewer";
 }
 
 export function renderTranscriptSegmentsForTest(segments: TranscriptSegment[]) {

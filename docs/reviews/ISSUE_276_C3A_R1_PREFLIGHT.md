@@ -67,6 +67,10 @@ Accessed date: 2026-07-23.
 | C3A-R1-FM-013 | UI hardcoded language options drift from backend support contract. | Component test mocks backend catalog and asserts rendered options/status use that response. |
 | C3A-R1-FM-014 | Unsupported Priority 2 language generates fake success. | API/UI tests assert clear local/demo unsupported refusal and disabled/explained UI state. |
 | C3A-R1-FM-015 | Browser E2E proves API metadata but not visible transcript correctness. | Representative browser tests inspect actual visible source, target, reference, citations, layout direction, and downloaded artifact content. |
+| C3A-R1-FM-016 | Selected audience meaning drifts in translation, such as recruiter becoming engineer. | Golden semantic tests assert exact audience-preserving target strings and wrong-audience target prefixes fail. |
+| C3A-R1-FM-017 | Native script presence masks transliterated or untranslated source terminology. | Per-language golden strings and forbidden-source-phrase checks reject pseudo-translation and non-glossary English leakage. |
+| C3A-R1-FM-018 | Tests compare the implementation fixture to itself instead of an independent oracle. | Priority 1 semantic golden sets live in tests and must fail if local/demo fixture text changes to the prior bad output. |
+| C3A-R1-FM-019 | Generated script covers only one retrieved source segment even when the approved source supports multiple cited segments. | Stage 4/API and Stage 6/API tests require multi-segment generated-script coverage and reject heading-only chunks as claims. |
 
 ## Matrix-To-Test Mapping
 
@@ -77,6 +81,7 @@ Accessed date: 2026-07-23.
 | C3A-R1-SCRIPT-001, C3A-R1-FM-004, C3A-R1-FM-008 | `tests/unit/test_stage6_multilingual.py` script validation unit tests | RED: romanized native-script fixtures and wrong-script fixtures currently pass or lack a validator. |
 | C3A-R1-ARTIFACT-001, C3A-R1-FM-012 | `tests/api/test_stage6_multilingual_api.py` and Checkpoint 3A output-correctness artifact assertions | RED: artifact existence alone is insufficient and current artifacts lack full structured transcript parity. |
 | C3A-R1-BROWSER-001, C3A-R1-FM-015 | `frontend/tests/checkpoint3-real-browser.spec.ts` representative visible-output tests | RED: current CP8 browser flow does not inspect complete multilingual visible transcript correctness by script family. |
+| C3A-R1-FM-016 through C3A-R1-FM-019 | `tests/unit/test_stage6_multilingual.py`, `tests/unit/test_retrieval_and_grounding.py`, `tests/api/test_stage4_slice_api.py`, and `tests/api/test_stage6_multilingual_api.py` semantic and coverage regressions | RED: human review found wrong audience, transliterated/untranslated target terms, one-line generated coverage, and heading-derived source text could pass previous review. |
 | C3A-R1-MATRIX-001 | `scripts/quality/check_checkpoint3_acceptance.py` and `tests/unit/test_checkpoint3_acceptance_gate.py` | RED: current harness does not require the multilingual coverage matrix or checkpoint summary artifacts. |
 
 ## Priority Languages
@@ -129,3 +134,8 @@ or production-readiness claims.
 
 If review finds a new false-pass class after implementation, update this matrix
 and add a failing test before patching code.
+
+Human review after the first fan-out found new false-pass classes in
+C3A-R1-FM-016 through C3A-R1-FM-019. The earlier clean fan-out evidence is
+therefore superseded until the corrected tests, product behavior, gates, and a
+fresh fan-out complete.

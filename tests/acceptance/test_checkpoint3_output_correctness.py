@@ -37,7 +37,9 @@ from backend.app.stage4 import stage4_service
 ATLAS_OUTPUT_KNOWLEDGE = b"""# Atlas Output
 
 Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder for launch rehearsals.
-Atlas Output requires each generated checklist item to cite approved launch-note evidence.
+
+Atlas Output OUTPUT-SENTINEL-CP2 requires each generated checklist item to cite approved launch-note evidence.
+
 Atlas Output uses the marker OUTPUT-SENTINEL-CP2 for output-correctness isolation checks.
 """
 
@@ -545,7 +547,7 @@ def test_checkpoint3_output_correctness_exhaustively_proves_priority1_multilingu
         assert body["transcriptCorrectness"]["validationStatus"] == "PASSED"
         assert body["sourceScriptText"]
         assert body["translatedScriptText"]
-        assert body["transcriptSegments"]
+        assert len(body["transcriptSegments"]) >= 2
         assert body["artifacts"]["metadata"]["contentBase64"]
 
         if language_tag != "en":
@@ -559,6 +561,13 @@ def test_checkpoint3_output_correctness_exhaustively_proves_priority1_multilingu
         assert metadata["transcriptSegments"] == body["transcriptSegments"]
         assert metadata["transcriptCorrectness"] == body["transcriptCorrectness"]
         assert_successful_multilingual_contract(body, run=run)
+        coverage_rows.append(
+            {
+                "languageTag": language_tag,
+                "mutation": "positive",
+                "result": "passed",
+            }
+        )
 
         for segment in body["transcriptSegments"]:
             assert segment["segmentId"]
@@ -570,10 +579,12 @@ def test_checkpoint3_output_correctness_exhaustively_proves_priority1_multilingu
                 assert "OUTPUT-SENTINEL-CP2" in segment["targetText"]
                 assert "NarraTwin AI" not in segment["targetText"]
             assert segment["englishReferenceText"]
-            assert segment["citationMarkers"] == ["[1]"]
-            assert segment["citationIndexes"] == [1]
-            assert segment["contextRefIds"] == body["trace"]["sourceContextRefIds"]
-            assert segment["claimSupportIds"] == body["trace"]["sourceClaimSupportIds"]
+            assert segment["citationMarkers"]
+            assert segment["citationIndexes"]
+            assert segment["contextRefIds"]
+            assert segment["claimSupportIds"]
+            assert set(segment["contextRefIds"]).issubset(set(body["trace"]["sourceContextRefIds"]))
+            assert set(segment["claimSupportIds"]).issubset(set(body["trace"]["sourceClaimSupportIds"]))
             assert segment["sourceRunId"] == run["runId"]
             assert segment["evaluationId"] == run["evaluation"]["evaluationId"]
 
@@ -626,13 +637,19 @@ def test_checkpoint3_output_correctness_exhaustively_proves_priority1_multilingu
         }
 
     required_mutations = {
+        "positive",
         "english-fallback",
         "partial",
+        "single-segment-partial",
         "wrong-script",
         "missing-reference",
         "missing-source",
         "missing-binding",
+        "missing-source-run-binding",
+        "missing-evaluation-binding",
+        "missing-claim-support-binding",
         "citation-drift",
+        "glossary-forced-english-leakage",
         "metadata-only-success",
         "artifact-only-success",
     }
@@ -707,19 +724,29 @@ def multilingual_false_pass_mutations(body: dict[str, Any]) -> list[tuple[str, l
     first = dict(original_segments[0])
     english_fallback = [dict(segment, targetText=segment["sourceText"]) for segment in original_segments]
     partial: list[dict[str, Any]] = []
+    single_segment_partial = [first]
     wrong_script = [dict(segment, targetText="romanized fallback [1]") for segment in original_segments]
     missing_reference = [dict(segment, englishReferenceText="") for segment in original_segments]
     citation_drift = [dict(first, citationMarkers=["[2]"], citationIndexes=[2])]
     missing_source = [dict(first, sourceText="")]
     missing_binding = [dict(first, contextRefIds=[])]
+    missing_source_run_binding = [dict(first, sourceRunId="")]
+    missing_evaluation_binding = [dict(first, evaluationId="")]
+    missing_claim_support_binding = [dict(first, claimSupportIds=[])]
+    glossary_forced_english_leakage = [dict(first, targetText=f"{first['targetText']} source chunks")]
     return [
         ("english-fallback", english_fallback),
         ("partial", partial),
+        ("single-segment-partial", single_segment_partial),
         ("wrong-script", wrong_script),
         ("missing-reference", missing_reference),
         ("citation-drift", citation_drift),
         ("missing-source", missing_source),
         ("missing-binding", missing_binding),
+        ("missing-source-run-binding", missing_source_run_binding),
+        ("missing-evaluation-binding", missing_evaluation_binding),
+        ("missing-claim-support-binding", missing_claim_support_binding),
+        ("glossary-forced-english-leakage", glossary_forced_english_leakage),
     ]
 
 

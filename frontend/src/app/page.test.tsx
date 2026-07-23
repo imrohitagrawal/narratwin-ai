@@ -87,11 +87,11 @@ describe("Home", () => {
       renderTranscriptSegmentsForTest([
         {
           segmentId: "seg_001",
-          sourceText: "For engineers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+          sourceText: "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
           targetLanguage: "ar",
-          targetText: "للمهندسين، يحول NarraTwin AI المعرفة المعتمدة للمشروع إلى نصوص عرض إرشادي موثقة. [1]",
+          targetText: "لمسؤولي التوظيف، يحوّل NarraTwin AI المعرفة المعتمدة للمشروع إلى نصوص شرح موثقة. [1]",
           englishReferenceText:
-            "For engineers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+            "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
           citationMarkers: ["[1]"],
           citationIndexes: [1],
           contextRefIds: ["ctx_001"],
@@ -106,7 +106,7 @@ describe("Home", () => {
     expect(html).toContain("Source English");
     expect(html).toContain("Target transcript");
     expect(html).toContain("English reference");
-    expect(html).toContain("للمهندسين");
+    expect(html).toContain("لمسؤولي التوظيف");
     expect(html).toContain("[1]");
     expect(html).toContain("ctx_001");
   });
@@ -129,14 +129,30 @@ describe("Home", () => {
   });
 
   it("renders default knowledge that is specific enough for the local demo happy path", () => {
-    expect(defaultKnowledge).toContain("recruiter and engineering audiences");
+    expect(defaultKnowledge).toContain("recruiters, hiring managers, engineers, product leaders, customers");
     expect(defaultKnowledge).toContain("mock local LLM");
     expect(defaultKnowledge).toContain("Every generated walkthrough claim must cite retrieved source chunks");
 
     const html = renderToStaticMarkup(<Home />);
 
-    expect(html).toContain("recruiter and engineering audiences");
+    expect(html).toContain("recruiters, hiring managers, engineers, product leaders, customers");
     expect(html).toContain("mock local LLM");
+  });
+
+  it("exposes the product audience surface in the local demo selector", () => {
+    const html = renderToStaticMarkup(<Home />);
+
+    for (const label of [
+      "Recruiter",
+      "Hiring manager",
+      "Engineer",
+      "Product leader",
+      "Customer",
+      "Beginner",
+      "Global viewer",
+    ]) {
+      expect(html).toContain(label);
+    }
   });
 
   it("turns refused walkthrough runs into a safe visible stop reason before media generation", () => {
