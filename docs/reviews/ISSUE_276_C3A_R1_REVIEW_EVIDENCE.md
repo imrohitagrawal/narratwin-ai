@@ -44,6 +44,8 @@ Fresh final review status: `BLOCKERS FIXED LOCALLY / PR-HEAD FAN-OUT PENDING`.
 | TDD Reviewer | `BLOCK` before latest commit | Runtime tests were green, but reviewer correctly blocked PR-level signoff because the branch had uncommitted changes and evidence docs still said final review was pending. Final TDD signoff must be rerun after commit/push. |
 | Doubt-Driven Reviewer | `BLOCK` before latest fixes | Found Playwright CP8 recorded `providers.voice` but did not assert it. Fixed by requiring `voice === "mock"` inside `assertBrowserEvidenceContract()` and adding a Playwright self-mutation that non-mock voice evidence throws. |
 | False-Positive Reviewer | `PASS` with additive coverage | Added explicit per-field CP8 provider-posture spoofing tests for LLM, translation, voice, avatar, renderer, network egress, real video, and cloned identity; reran output-correctness, Stage 6 unit, checkpoint acceptance, and targeted Ruff successfully. |
+| False-Positive Reviewer, rerun on `c276546` | `PASS` | Confirmed 400-row matrix with 25 `missing-target` rows and no remaining false-positive path in that scope. |
+| Doubt-Driven Reviewer, rerun on `c276546` | `BLOCK` before latest local fix | Found `make checkpoint3-acceptance` could fail on the default CP8 browser path when stale local review servers occupied fixed ports `8120`/`3120`, even though the representative browser test passed on alternate ports. Fixed locally by assigning isolated loopback CP8 ports in the acceptance runner and adding a regression test. |
 
 Final mandatory Output-Correctness, TDD, Doubt-Driven, and False-Positive review
 must be rerun after these fixes are committed and pushed so the review signs off
@@ -64,6 +66,7 @@ Current corrective tests added after human review:
 | Original NarraTwin manual-review document refused or only translated a subset of generated segments. | `tests/unit/test_stage6_multilingual.py::test_priority1_local_demo_supports_original_narratwin_manual_review_document`, `tests/api/test_stage6_multilingual_api.py::test_multilingual_walkthrough_api_translates_original_manual_review_document`, and Stage 4 small-document expansion within retrieval top-k. |
 | Coverage matrix omitted positive rows while summary said API output passed. | `tests/acceptance/test_checkpoint3_output_correctness.py` now writes and asserts `positive` rows for every Priority 1 language; latest matrix has 400 rows including 25 positive rows and 25 `missing-target` false-positive rows. |
 | Browser evidence accepted non-mock voice provider posture. | `frontend/tests/checkpoint3-real-browser.spec.ts` asserts `providers.voice === "mock"` and self-mutates `voice: "elevenlabs"` to prove the browser contract rejects it. |
+| Default CP8 acceptance gate could fail from stale fixed local ports. | `scripts/quality/check_checkpoint3_acceptance.py` allocates isolated loopback CP8 ports per run, `tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_allocates_isolated_cp8_ports` proves the subprocess receives them, `make checkpoint3-acceptance` passed twice back-to-back on the default path, and an occupied-port reproduction with listeners on `8120`/`3120` still passed 8/8. |
 
 Commands rerun after the corrective fixes:
 
@@ -74,11 +77,15 @@ uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q
 uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py -q
 uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_checkpoint3_acceptance_gate.py -q
 uv run ruff check backend/app/main.py backend/app/rag/chunking.py backend/app/rag/providers.py backend/app/stage4.py backend/app/stage6.py tests/unit/test_retrieval_and_grounding.py tests/unit/test_stage6_multilingual.py tests/api/test_stage4_slice_api.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py
+uv run pytest tests/unit/test_checkpoint3_acceptance_gate.py -q
+uv run ruff check scripts/quality/check_checkpoint3_acceptance.py tests/unit/test_checkpoint3_acceptance_gate.py
 npm --prefix frontend run test -- page.test.tsx
 npm --prefix frontend run lint
 NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts
 make quality
 make checkpoint3-acceptance
+make checkpoint3-acceptance
+occupied default CP8 ports 8120/3120 + make checkpoint3-acceptance
 ```
 
 Results:
@@ -96,12 +103,14 @@ Priority 1 coverage matrix: 400 rows, 25 positive rows, 25 rows for each require
 Checkpoint 3A real-browser smoke: 1 passed
 make quality: passed
 make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
+make checkpoint3-acceptance back-to-back rerun after CP8 port isolation: 8 passed, 0 planned, 0 failed
+occupied default CP8 ports 8120/3120 + make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
 ```
 
 Pending before final review:
 
 ```text
-make ci
+make ci after CP8 port isolation fix
 commit and push latest local fixes
 fresh Output-Correctness, TDD, Doubt-Driven, and False-Positive review fan-out against pushed PR head
 manual local-demo smoke review

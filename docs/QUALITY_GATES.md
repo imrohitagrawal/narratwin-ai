@@ -656,11 +656,14 @@ timeout handling, and redacted failure summaries.
 C3A-CP8 implements the eighth executable probe, real-browser E2E with no
 success-path interception, by dispatching
 `npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts`.
-The Playwright probe launches the local backend and frontend, drives the
-user-visible controlled-demo workflow with approved synthetic knowledge,
-observes browser API requests and responses without fabricating success,
-captures runtime nonce, request sequence, project/document/ingestion/run/
-evaluation/source binding, artifact metadata, bounded `/api/v1/ops/status`
+The acceptance harness assigns isolated loopback backend/frontend ports for the
+CP8 subprocess unless the caller explicitly provides CP8 port environment
+overrides, so stale local browser-review servers cannot make the default gate
+nondeterministic. The Playwright probe launches the local backend and frontend,
+drives the user-visible controlled-demo workflow with approved synthetic
+knowledge, observes browser API requests and responses without fabricating
+success, captures runtime nonce, request sequence, project/document/ingestion/
+run/evaluation/source binding, artifact metadata, bounded `/api/v1/ops/status`
 evidence, and local/mock provider posture, and rejects missing binding,
 stale/cross-project replay, static snapshots, API-only substitutes, and
 success-shaped canned evidence.

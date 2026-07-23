@@ -76,8 +76,10 @@ this Stage 6 surface. The earlier final fan-out PASS is superseded because human
 manual review found semantic output failures after that review. The latest
 pre-commit fan-out found additional blockers around explicit positive matrix
 rows, original manual-review document support, browser voice-provider posture,
-and uncommitted evidence state; those blockers are fixed locally and must be
-rerun against the pushed PR head before final approval.
+uncommitted evidence state, and fixed CP8 browser ports that made the default
+acceptance gate nondeterministic when stale local review servers were present;
+those blockers are fixed locally and must be rerun against the pushed PR head
+before final approval.
 Final evidence is recorded in
 `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md`.
 
@@ -153,8 +155,8 @@ there is no successor status-only follow-up needed.
 | Tests / old-behavior proof | `tests/acceptance/test_checkpoint3_output_correctness.py` | repo-file | C3A-R1-FM | old behavior fails under RED failing test evidence in commit `4868784` | implementer | test | pass | Old behavior captured before code edits. |
 | Tests / current behavior | `tests/acceptance/test_checkpoint3_output_correctness.py` | repo-file | C3A-R1-FM | `uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q` | implementer | test | pass | API/output correctness is exhaustive for Priority 1. |
 | Browser behavior | `frontend/tests/checkpoint3-real-browser.spec.ts` | repo-file | C3A-R1-FM | `NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts` | implementer | test | pass | Browser coverage is representative by script family. |
-| Docs/gates | `scripts/quality/check_checkpoint3_acceptance.py` | repo-file | C3A-R1-FM | invariant test gate `make checkpoint3-acceptance` | implementer | gate | pass | Gate rejects missing representative browser evidence. |
-| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | earlier final PASS superseded by human-found semantic blockers; latest pre-commit fan-out blockers fixed locally; fresh output-correctness, TDD, doubt-driven, and false-positive rerun required against pushed PR head | implementer | source / human-only | pending | Human reviewer should inspect final rerun status before approval. |
+| Docs/gates | `scripts/quality/check_checkpoint3_acceptance.py` | repo-file | C3A-R1-FM | invariant test gate `make checkpoint3-acceptance` plus back-to-back default rerun after CP8 port isolation | implementer | gate | pass | Gate rejects missing representative browser evidence and no longer depends on fixed default CP8 ports. |
+| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | earlier final PASS superseded by human-found semantic blockers; latest fan-out blockers fixed locally including CP8 port isolation; fresh output-correctness, TDD, doubt-driven, and false-positive rerun required against pushed PR head | implementer | source / human-only | pending | Human reviewer should inspect final rerun status before approval. |
 | Review prompt set | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | review prompt matrix for false pass and adversarial output correctness review | implementer | source / human-only | pass | Human reviewer may repeat prompts if usage limits reset. |
 | Stop rule / repeated blocker reset | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | stop rule checked; human-found and fan-out blocker classes updated the contract before another fix loop | implementer | gate | pending | Fresh final review must confirm no repeated blocker remains. |
 | Skill/tool selection | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | repo-file | C3A-R1-SKILL | preinstalled approved skills and repo docs checked first; no custom skill creation | implementer | gate | pass | No custom skills/plugins or dependencies added. |
@@ -194,9 +196,13 @@ make checkpoint3-acceptance -> passed
 uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q -> 7 passed
 uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py -q -> passed
 uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_checkpoint3_acceptance_gate.py -q -> 53 passed
+uv run pytest tests/unit/test_checkpoint3_acceptance_gate.py -q -> 47 passed
+uv run ruff check scripts/quality/check_checkpoint3_acceptance.py tests/unit/test_checkpoint3_acceptance_gate.py -> passed
 coverage matrix check -> 400 rows, including 25 positive rows and 25 missing-target false-positive rows
 npm --prefix frontend run test -- page.test.tsx -> 16 passed
 NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts -> 1 passed
+make checkpoint3-acceptance back-to-back after CP8 port isolation -> passed twice
+occupied default CP8 ports 8120/3120 + make checkpoint3-acceptance -> passed
 ```
 
 ## Notes for reviewer

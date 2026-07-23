@@ -657,6 +657,28 @@ def test_checkpoint3_acceptance_clears_provider_environment(monkeypatch: Any, tm
     assert captured_env["NARRATWIN_CP3_PRODUCT_FAITHFUL"] == "1"
 
 
+def test_checkpoint3_acceptance_allocates_isolated_cp8_ports(monkeypatch: Any, tmp_path: Path) -> None:
+    captured_env: dict[str, str] = {}
+    allocated_ports = iter(("48120", "43120"))
+    monkeypatch.delenv("NARRATWIN_CP8_BACKEND_PORT", raising=False)
+    monkeypatch.delenv("NARRATWIN_CP8_FRONTEND_PORT", raising=False)
+    monkeypatch.setattr(checkpoint3, "CP8_EVIDENCE_ROOT", tmp_path)
+    monkeypatch.setattr(checkpoint3, "free_loopback_port", lambda: next(allocated_ports))
+
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        captured_env.update(kwargs["env"])
+        write_cp8_evidence(tmp_path)
+        return subprocess.CompletedProcess(args=args[0], returncode=0, stdout=cp8_success_stdout())
+
+    monkeypatch.setattr(checkpoint3.subprocess, "run", fake_run)
+
+    result = checkpoint3.run_probe(checkpoint3.PROBES[-1])
+
+    assert result.status == "PASS"
+    assert captured_env["NARRATWIN_CP8_BACKEND_PORT"] == "48120"
+    assert captured_env["NARRATWIN_CP8_FRONTEND_PORT"] == "43120"
+
+
 def test_checkpoint3_acceptance_rejects_skipped_cp8_browser_probe(monkeypatch: Any, tmp_path: Path) -> None:
     monkeypatch.setattr(checkpoint3, "CP8_EVIDENCE_ROOT", tmp_path)
 
