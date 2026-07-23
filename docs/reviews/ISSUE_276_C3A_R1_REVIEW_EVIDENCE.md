@@ -62,7 +62,7 @@ Current corrective tests added after human review:
 | One generated source line translated from a multi-paragraph approved source. | `tests/api/test_stage4_slice_api.py::test_grounded_script_generation_preserves_product_audience_surface` and Stage 6 API multi-segment transcript assertions. |
 | Heading text becomes a generated claim and citation. | `tests/unit/test_retrieval_and_grounding.py::test_chunking_preserves_headings_as_metadata_without_heading_only_claim_chunks`. |
 | Original NarraTwin manual-review document refused or only translated a subset of generated segments. | `tests/unit/test_stage6_multilingual.py::test_priority1_local_demo_supports_original_narratwin_manual_review_document`, `tests/api/test_stage6_multilingual_api.py::test_multilingual_walkthrough_api_translates_original_manual_review_document`, and Stage 4 small-document expansion within retrieval top-k. |
-| Coverage matrix omitted positive rows while summary said API output passed. | `tests/acceptance/test_checkpoint3_output_correctness.py` now writes and asserts `positive` rows for every Priority 1 language; latest matrix has 375 rows including 25 positive rows. |
+| Coverage matrix omitted positive rows while summary said API output passed. | `tests/acceptance/test_checkpoint3_output_correctness.py` now writes and asserts `positive` rows for every Priority 1 language; latest matrix has 400 rows including 25 positive rows and 25 `missing-target` false-positive rows. |
 | Browser evidence accepted non-mock voice provider posture. | `frontend/tests/checkpoint3-real-browser.spec.ts` asserts `providers.voice === "mock"` and self-mutates `voice: "elevenlabs"` to prove the browser contract rejects it. |
 
 Commands rerun after the corrective fixes:
@@ -92,7 +92,7 @@ frontend page.test.tsx: 17 passed
 frontend lint: passed
 Stage 6 unit + API + output-correctness focused suite: passed
 output-correctness + CP8 acceptance-gate focused suite: 53 passed
-Priority 1 coverage matrix: 375 rows, 25 positive rows, 25 rows for each required mutation
+Priority 1 coverage matrix: 400 rows, 25 positive rows, 25 rows for each required mutation
 Checkpoint 3A real-browser smoke: 1 passed
 make quality: passed
 make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed

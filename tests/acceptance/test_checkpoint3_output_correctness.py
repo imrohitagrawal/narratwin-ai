@@ -644,6 +644,7 @@ def test_checkpoint3_output_correctness_exhaustively_proves_priority1_multilingu
         "wrong-script",
         "missing-reference",
         "missing-source",
+        "missing-target",
         "missing-binding",
         "missing-source-run-binding",
         "missing-evaluation-binding",
@@ -727,6 +728,7 @@ def multilingual_false_pass_mutations(body: dict[str, Any]) -> list[tuple[str, l
     single_segment_partial = [first]
     wrong_script = [dict(segment, targetText="romanized fallback [1]") for segment in original_segments]
     missing_reference = [dict(segment, englishReferenceText="") for segment in original_segments]
+    missing_target = [dict(segment, targetText="") for segment in original_segments]
     citation_drift = [dict(first, citationMarkers=["[2]"], citationIndexes=[2])]
     missing_source = [dict(first, sourceText="")]
     missing_binding = [dict(first, contextRefIds=[])]
@@ -740,6 +742,7 @@ def multilingual_false_pass_mutations(body: dict[str, Any]) -> list[tuple[str, l
         ("single-segment-partial", single_segment_partial),
         ("wrong-script", wrong_script),
         ("missing-reference", missing_reference),
+        ("missing-target", missing_target),
         ("citation-drift", citation_drift),
         ("missing-source", missing_source),
         ("missing-binding", missing_binding),

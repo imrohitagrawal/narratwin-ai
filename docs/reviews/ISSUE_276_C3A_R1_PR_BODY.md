@@ -194,7 +194,7 @@ make checkpoint3-acceptance -> passed
 uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q -> 7 passed
 uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py -q -> passed
 uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_checkpoint3_acceptance_gate.py -q -> 53 passed
-coverage matrix check -> 375 rows, including 25 positive rows
+coverage matrix check -> 400 rows, including 25 positive rows and 25 missing-target false-positive rows
 npm --prefix frontend run test -- page.test.tsx -> 16 passed
 NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts -> 1 passed
 ```
