@@ -36,7 +36,15 @@ Superseding human-review blockers found after the prior final pass:
 | One generated source line translated while the approved source supported multiple cited segments. | Stage 4 generated-script coverage tests, heading-only chunk rejection, and Stage 6 multi-segment transcript/artifact assertions. |
 | Fixture self-consistency mistaken for independent output correctness. | Test-owned golden strings that fail when implementation fixtures regress to previous bad output. |
 
-Fresh final review status: `BLOCKERS FIXED LOCALLY / PR-HEAD FAN-OUT PENDING`.
+Fresh final review status: `FINAL INDEPENDENT FALLBACK PASS / HUMAN LOCAL-DEMO REVIEW PENDING`.
+
+The final review restarted after pushed head `100c6059795e3d50e2c95f15ef6d203413de5bd6`
+was blocked for CP8 default-path nondeterminism. Commit
+`609961232e93c0a4efec32704b967dcc2112cb80` fixes that blocker by removing only
+dead Next dev locks before the CP8 browser probe starts. The sub-agent spawn tool
+was not available in the final turn, so the required fallback path was used:
+independent named review passes with executable commands instead of a fabricated
+sub-agent sign-off.
 
 | Final reviewer | Latest result | Evidence summary |
 |---|---|---|
@@ -46,14 +54,18 @@ Fresh final review status: `BLOCKERS FIXED LOCALLY / PR-HEAD FAN-OUT PENDING`.
 | False-Positive Reviewer | `PASS` with additive coverage | Added explicit per-field CP8 provider-posture spoofing tests for LLM, translation, voice, avatar, renderer, network egress, real video, and cloned identity; reran output-correctness, Stage 6 unit, checkpoint acceptance, and targeted Ruff successfully. |
 | False-Positive Reviewer, rerun on `c276546` | `PASS` | Confirmed 400-row matrix with 25 `missing-target` rows and no remaining false-positive path in that scope. |
 | Doubt-Driven Reviewer, rerun on `c276546` | `BLOCK` before latest local fix | Found `make checkpoint3-acceptance` could fail on the default CP8 browser path when stale local review servers occupied fixed ports `8120`/`3120`, even though the representative browser test passed on alternate ports. Fixed locally by assigning isolated loopback CP8 ports in the acceptance runner and adding a regression test. |
+| Doubt-Driven independent fallback, rerun on `100c605` then `6099612` | `PASS` after fix | Reproduced the `100c605` default CP8 blocker, added stale Next dev lock cleanup with live-lock preservation tests, pushed `6099612`, and reran `make checkpoint3-acceptance` successfully at the pushed head. |
+| Output-Correctness independent fallback, rerun on `6099612` | `PASS` | Reran exhaustive Priority 1 output-correctness acceptance, Stage 6 unit/API multilingual tests, browser probe, and matrix inspection. Verified 25 Priority 1 positive rows and 25 rows for every false-positive mutation including `missing-target`. |
+| TDD independent fallback, rerun on `6099612` | `PASS` | Verified the CP8 failure has regression tests for stale dead-PID Next locks and live-lock preservation, and the existing behavior tests remain green for API/output correctness, artifact parity, browser contract, and provider posture spoofing. |
+| False-Positive independent fallback, rerun on `6099612` | `PASS` | Reran output-correctness and acceptance-gate tests after the CP8 harness change. No metadata-only, artifact-only, fallback, partial, wrong-script, missing-source/reference/target/binding, citation-drift, glossary leakage, or provider-posture false-pass path was found. |
 
-Final mandatory Output-Correctness, TDD, Doubt-Driven, and False-Positive review
-must be rerun after these fixes are committed and pushed so the review signs off
-against the PR head rather than a local working tree.
+No final sub-agent sign-off is claimed for `6099612`; the available evidence is
+the permitted independent fallback review path plus the earlier sub-agent
+findings and fixes.
 
 ## Corrective Evidence Snapshot
 
-Status: `LOCAL-GATES-PASS / PR-HEAD-FANOUT-PENDING`
+Status: `PR-HEAD-GATES-PASS / INDEPENDENT-FALLBACK-REVIEW-PASS`
 
 Current corrective tests added after human review:
 
@@ -66,7 +78,7 @@ Current corrective tests added after human review:
 | Original NarraTwin manual-review document refused or only translated a subset of generated segments. | `tests/unit/test_stage6_multilingual.py::test_priority1_local_demo_supports_original_narratwin_manual_review_document`, `tests/api/test_stage6_multilingual_api.py::test_multilingual_walkthrough_api_translates_original_manual_review_document`, and Stage 4 small-document expansion within retrieval top-k. |
 | Coverage matrix omitted positive rows while summary said API output passed. | `tests/acceptance/test_checkpoint3_output_correctness.py` now writes and asserts `positive` rows for every Priority 1 language; latest matrix has 400 rows including 25 positive rows and 25 `missing-target` false-positive rows. |
 | Browser evidence accepted non-mock voice provider posture. | `frontend/tests/checkpoint3-real-browser.spec.ts` asserts `providers.voice === "mock"` and self-mutates `voice: "elevenlabs"` to prove the browser contract rejects it. |
-| Default CP8 acceptance gate could fail from stale fixed local ports. | `scripts/quality/check_checkpoint3_acceptance.py` allocates isolated loopback CP8 ports per run, `tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_allocates_isolated_cp8_ports` proves the subprocess receives them, `make checkpoint3-acceptance` passed twice back-to-back on the default path, and an occupied-port reproduction with listeners on `8120`/`3120` still passed 8/8. |
+| Default CP8 acceptance gate could fail from stale fixed local ports or dead Next dev locks. | `scripts/quality/check_checkpoint3_acceptance.py` allocates isolated loopback CP8 ports per run and removes only dead Next dev locks, while preserving live locks; `tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_allocates_isolated_cp8_ports`, `test_checkpoint3_acceptance_removes_stale_next_dev_lock`, and `test_checkpoint3_acceptance_keeps_live_next_dev_lock` prove the harness behavior; `make checkpoint3-acceptance` passes on the default path at pushed head `6099612`. |
 
 Commands rerun after the corrective fixes:
 
@@ -78,6 +90,7 @@ uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multi
 uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_checkpoint3_acceptance_gate.py -q
 uv run ruff check backend/app/main.py backend/app/rag/chunking.py backend/app/rag/providers.py backend/app/stage4.py backend/app/stage6.py tests/unit/test_retrieval_and_grounding.py tests/unit/test_stage6_multilingual.py tests/api/test_stage4_slice_api.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py
 uv run pytest tests/unit/test_checkpoint3_acceptance_gate.py -q
+uv run pytest tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_removes_stale_next_dev_lock tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_keeps_live_next_dev_lock tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_allocates_isolated_cp8_ports -q
 uv run ruff check scripts/quality/check_checkpoint3_acceptance.py tests/unit/test_checkpoint3_acceptance_gate.py
 npm --prefix frontend run test -- page.test.tsx
 npm --prefix frontend run lint
@@ -86,6 +99,7 @@ make quality
 make checkpoint3-acceptance
 make checkpoint3-acceptance
 occupied default CP8 ports 8120/3120 + make checkpoint3-acceptance
+make ci
 ```
 
 Results:
@@ -99,21 +113,20 @@ frontend page.test.tsx: 17 passed
 frontend lint: passed
 Stage 6 unit + API + output-correctness focused suite: passed
 output-correctness + CP8 acceptance-gate focused suite: 53 passed
+CP8 stale-lock focused unit tests: 3 passed
 Priority 1 coverage matrix: 400 rows, 25 positive rows, 25 rows for each required mutation
 Checkpoint 3A real-browser smoke: 1 passed
 make quality: passed
 make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
 make checkpoint3-acceptance back-to-back rerun after CP8 port isolation: 8 passed, 0 planned, 0 failed
 occupied default CP8 ports 8120/3120 + make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
+make ci: passed
 ```
 
-Pending before final review:
+Pending before merge approval:
 
 ```text
-make ci after CP8 port isolation fix
-commit and push latest local fixes
-fresh Output-Correctness, TDD, Doubt-Driven, and False-Positive review fan-out against pushed PR head
-manual local-demo smoke review
+manual local-demo smoke review by a human reviewer
 ```
 
 ## Manual Rehearsal
