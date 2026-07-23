@@ -38,6 +38,7 @@ In scope:
 - `tests/unit/test_phase1_closure_docs.py`
 - `frontend/package.json`
 - `frontend/package-lock.json`
+- `docs/ADR/0033-checkpoint3-real-browser-acceptance-evidence.md`
 - `docs/QUALITY_GATES.md`
 - `docs/STAGE_ISSUE_PLAN.md`
 - `docs/STATUS.md`
