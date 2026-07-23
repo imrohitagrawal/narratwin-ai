@@ -365,6 +365,32 @@ def run_issue269_preflight_check(
     return failures
 
 
+def run_issue274_preflight_check(
+    monkeypatch: Any, *, preflight_text: str | None = None, missing: bool = False
+) -> list[str]:
+    if preflight_text is not None:
+        monkeypatch.setattr(
+            phase1,
+            "read",
+            read_with_overrides(
+                phase1,
+                {"docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md": preflight_text},
+            ),
+        )
+    failures: list[str] = []
+    if missing:
+        original_is_file = cast(Callable[[Path], bool], phase1.Path.is_file)
+
+        def patched_is_file(path: Path) -> bool:
+            if str(path).endswith("docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md"):
+                return False
+            return original_is_file(path)
+
+        monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
+    phase1.check_issue274_c3b_pr1_preflight(failures)
+    return failures
+
+
 def run_issue39_ch11_contract_check(
     monkeypatch: Any,
     *,
@@ -1833,6 +1859,63 @@ def test_issue_269_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_274_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-c3b-pr1-consent-provenance-planning-274"
+    allowed = [
+        "docs/governance/preflights/issue-274.json",
+        "docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    ]
+    assert phase1.ISSUE_274_ALLOWED_CHANGED_FILES == set(allowed)
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "backend/app/main.py",
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "pyproject.toml",
+            "uv.lock",
+            "docs/THIRD_PARTY_NOTICES.md",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change backend/app/main.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+        f"Phase 1 Closure branch {branch} may not change docs/THIRD_PARTY_NOTICES.md.",
+    ]
+
+
+def test_issue_274_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    files = [
+        "docs/governance/preflights/issue-274.json",
+        "docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+    ]
+    for branch in (
+        "phase-1-closure-c3b-pr1-consent-provenance-planning-274-extra",
+        "phase-1-closure-process-274-c3b-pr1-consent-provenance-planning",
+        "phase-1-closure-c3b-pr1-consent-provenance-planning-0274",
+        "phase-1-closure-274-c3b-pr1-consent-provenance-planning",
+    ):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=files) == [
+            f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-274.json.",
+            f"Phase 1 Closure branch {branch} may not change docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md.",
+            f"Phase 1 Closure branch {branch} may not change docs/STATUS.md.",
+            f"Phase 1 Closure branch {branch} may not change scripts/quality/check_phase1_closure_docs.py.",
+        ]
+
+
 def test_issue_255_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-255-post-pr-254-status-reconcile"
     allowed = [
@@ -2277,6 +2360,61 @@ def test_issue_269_missing_preflight_reports_failure(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_274_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue274_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue",
+        "https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests",
+        "C3B-PR1-LEDGER-001",
+        "C3B-PR1-C3A-001",
+        "C3B-PR1-BOUNDARY-001",
+        "C3B-PR1-GUARDRAIL-001",
+        "C3B-PR1-NONGOAL-001",
+        "C3B-PR1-PUBLICSAFE-001",
+        "C3B-PR1-TRACKER-001",
+        "C3B-PR1-FM-001",
+        "C3B-PR1-FM-008",
+        "tests/unit/test_phase1_closure_docs.py::test_issue_274_branch_has_exact_scope_allowlist",
+        "tests/unit/test_phase1_closure_docs.py::test_issue_274_near_match_branch_fails_closed",
+        "RED confirmed before checker update",
+        "Four sub-agent reviews covered public-safe scope",
+        "Final pre-human-review fan-out is clean",
+        "public/private boundary",
+        "C3A completion wording without overclaim",
+        "C3B consent/provenance planning scope",
+        "cloned-identity implementation exclusion",
+        "provider/hosted/public/production exclusion",
+        "issue `#249` tracker status",
+        "issue `#269`/PR `#273` ledger reconciliation",
+        "guardrail allowlist behavior",
+        "status/traceability consistency",
+        "test/quality/CI",
+        "governance/taste/scope",
+        "Stop and open a new issue",
+    ),
+)
+def test_issue_274_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue274_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
+
+
+def test_issue_274_missing_preflight_reports_failure(monkeypatch: Any) -> None:
+    assert run_issue274_preflight_check(monkeypatch, missing=True) == [
+        "Missing required C3B-PR1 preflight artifact: docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md"
+    ]
+
+
 def test_issue_249_preflight_contract_is_complete(monkeypatch: Any) -> None:
     text = Path("docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md").read_text(encoding="utf-8")
 
@@ -2479,8 +2617,9 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "Issue `#263` is closed after PR `#264` merged the fifth Checkpoint 3A child implementation checkpoint",
         "Issue `#265` is closed after PR `#266` merged the sixth Checkpoint 3A child implementation checkpoint",
         "Issue `#267` is closed after PR `#268` merged the seventh Checkpoint 3A child implementation checkpoint",
-        "Issue `#269` is satisfied by this PR when merged as the eighth Checkpoint 3A child implementation checkpoint",
-        "checkpoint3a-cp8-real-browser-e2e-satisfied-by-this-pr",
+        "Issue `#269` is closed after PR `#273` merged the eighth Checkpoint 3A child implementation checkpoint",
+        "Issue `#274` is satisfied by this PR when merged as the public-safe Checkpoint 3B consent/provenance planning gate only",
+        "checkpoint3b-pr1-satisfied-by-this-pr",
         "`#254` | Merged | 2026-07-22",
         "`#258` | Merged | 2026-07-22",
         "`#260` | Merged | 2026-07-22",
@@ -2488,19 +2627,27 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "`#264` | Merged | 2026-07-23",
         "`#266` | Merged | 2026-07-23",
         "`#268` | Merged | 2026-07-23",
+        "`#273` | Merged | 2026-07-23",
         "`58e6ac473bb2cbcd5e99a64007a1cc862117217c`",
         "`de0cdb0c5337a980e478cb3e6b42d2b031909f31`",
         "`f79debb641e7198e2d1d41e210ddd537037c7699`",
         "`caa8183be7ebf3fa5a3cf34d653727cc5522bf7f`",
+        "`0f737c564f9245b66640988573ac04f4432e06d5`",
         "post-merge main quality workflow run `29925008358` passing",
         "post-merge main quality workflow run `29937721472` passing",
+        "post-merge main quality workflow run `29994103118` passing",
         "currently listed Checkpoint 3A executable acceptance probe set",
+        "consent/provenance planning",
+        "acceptance contracts",
+        "risk boundaries",
+        "future issue sequencing",
         "real-browser E2E probe",
     ):
         assert marker in normalized_status
     assert "C3A-CP1 PR | Pending" not in normalized_status
     assert "Issue `#259` is satisfied by this PR when merged" not in normalized_status
     assert "Issue `#267` is satisfied by this PR when merged" not in normalized_status
+    assert "Issue `#269` is satisfied by this PR when merged" not in normalized_status
 
 
 def test_status_state_v1_contract_rejects_duplicate_authority_section() -> None:

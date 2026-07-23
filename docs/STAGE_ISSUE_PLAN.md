@@ -1131,6 +1131,42 @@ existing Next.js patch recorded in `docs/THIRD_PARTY_NOTICES.md`; there is no
 hosted deployment, no provider setup, no cloned identity, and no
 production-readiness claim.
 
+Issue `#274` is the bounded C3B-PR1 child governance branch for the public-safe
+Checkpoint 3B consent/provenance planning gate only. Branch
+`phase-1-closure-c3b-pr1-consent-provenance-planning-274` may reconcile the
+PR `#273` / issue `#269` merged/closed ledger state, record that the currently
+listed Checkpoint 3A executable acceptance probe set is complete through
+CP1-CP8, define Checkpoint 3B as consent/provenance planning, acceptance
+contracts, risk boundaries, and future issue sequencing, add old-behavior
+allowlist proof for issue `#274`, record fan-out findings, and update only
+these public-safe files:
+
+- `docs/governance/preflights/issue-274.json`
+- `docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+C3B-PR1 must remain planning/governance only. It may define future consent and
+provenance acceptance contract categories, including affirmative authorization,
+identity/source provenance, disclosure, revocation/deletion boundaries,
+artifact/run binding, public-safe evidence, and future child issue sequencing,
+but it must not implement any cloned identity runtime. It must keep issue
+`#249` open as the public Checkpoint 3 tracker unless a later reviewed PR
+explicitly and correctly states that the entire public tracker is complete.
+
+It must not implement backend, frontend, provider, RAG, avatar, database,
+Docker, workflow, dependency, hosted deployment, public URL, provider setup,
+provider SDK, provider key, real provider call, paid spend, cloned identity
+runtime, cloned voice, cloned face, digital twin, real-person likeness, clone
+enrollment, real media, public distribution, Checkpoint 3C, Product Mode 2, or
+production-readiness claims. It must not expose private strategy, provider
+choices, reviewer strategy, invite codes, private media, real personal data,
+real provider payloads, provider outputs, secrets, tokens, or credentials.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:
