@@ -38,7 +38,7 @@ Superseding human-review blockers found after the prior final pass:
 | Downloadable `translatedScript` artifact contained only target text while metadata/UI contained the full transcript. | Runtime script artifact rendering and tests must require source English, target text, English reference, citations, context refs, claim-support ids, source run id, and evaluation id for every segment. |
 | Hindi accepted transliterated English terms such as `जनरेट` and `वॉकथ्रू` in a completed transcript. | Hindi golden output and transcript validation must reject transliterated source-domain terms and require fully translated Hindi wording. |
 
-Fresh final review status: `HINDI-TRANSLITERATION FIX LOCAL / GATES AND FULL PR-HEAD FAN-OUT PENDING`.
+Fresh final review status: `FINAL FAN-OUT PASS ON c20c6c6 / HUMAN REVIEW REQUESTED`.
 
 The final review restarted after pushed head `100c6059795e3d50e2c95f15ef6d203413de5bd6`
 was blocked for CP8 default-path nondeterminism. Commit
@@ -62,8 +62,10 @@ review on `aa9ba02` confirmed the artifact blocker was fixed but found Hindi
 still accepted transliterated source-domain terms `जनरेट` and `वॉकथ्रू` in the
 fourth transcript segment. That blocker is fixed locally by replacing the Hindi
 fixture with fully translated wording and adding Hindi transliteration rejection
-to transcript correctness validation; gates and final fan-out must rerun after
-the next pushed PR head.
+to transcript correctness validation. Commit
+`c20c6c64ff73abd4c198445d8fa4988d2f004acd` passed local gates, GitHub checks,
+and final mandatory fan-out with no findings; human local-demo review remains
+the final manual approval input.
 
 | Final reviewer | Latest result | Evidence summary |
 |---|---|---|
@@ -82,16 +84,19 @@ the next pushed PR head.
 | Output-Correctness Reviewer, rerun on `e8811841` | `BLOCK` before latest local fix | Executed FastAPI runtime multilingual generation and decoded artifacts. The API and metadata had four Hindi transcript segments, but `artifacts.translatedScript.contentBase64` decoded to only flat target-language text. It omitted per-segment source English, English reference/back-translation, citation/context/claim-support bindings, source run id, and evaluation id. Fixed locally by rendering the translated-script artifact as a trilingual transcript and hardening API, acceptance, media-artifact, and browser tests to reject target-only script artifacts. |
 | False-Positive Reviewer, rerun on `aa9ba02` | `PASS` | Confirmed 400-row coverage matrix, target-only translated-script artifact rejection, and no false-positive path for metadata-only, artifact-only, partial, fallback, wrong-script, missing source/reference/target, citation drift, missing binding, and glossary leakage. |
 | Output-Correctness Reviewer, rerun on `aa9ba02` | `BLOCK` before latest local fix | Confirmed full trilingual artifact parity was fixed across all Priority 1 languages, but found Hindi still accepted transliterated English source-domain terms `जनरेट` and `वॉकथ्रू` in the completed output for “Every generated walkthrough claim...”. Fixed locally by updating the Hindi golden fixture to “प्रत्येक उत्पन्न चरण-दर-चरण प्रस्तुति संबंधी दावे...” and adding runtime Hindi transliteration rejection. |
+| TDD Reviewer, rerun on `c20c6c6` | `PASS` | Confirmed branch and origin both pointed to `c20c6c64ff73abd4c198445d8fa4988d2f004acd`; focused multilingual/API/output-correctness/media suites passed with 117 tests, `make checkpoint3-acceptance` passed 8 probes, direct probe confirmed old Hindi `जनरेट`/`वॉकथ्रू` output is rejected with `TRANSCRIPT_CORRECTNESS_FAILED`, and coverage matrix retained 25 Priority 1 languages and 400 rows. |
+| False-Positive Reviewer, rerun on `c20c6c6` | `PASS` | Confirmed branch and origin both pointed to `c20c6c64ff73abd4c198445d8fa4988d2f004acd`; focused suites passed, Ruff/ESLint passed, `make checkpoint3-acceptance` passed, direct runtime Hindi API mutation probe rejected metadata-only success, artifact-only success, partial text, fallback, wrong script, missing source/reference/target, citation drift, missing binding, target-only `translatedScript`, and Hindi transliterated `जनरेट`/`वॉकथ्रू`; coverage matrix retained all required rows. |
+| Doubt-Driven Reviewer, rerun on `c20c6c6` | `PASS` | Focused multilingual/API/media suites passed with 118 tests, `make checkpoint3-acceptance` passed 8 probes, targeted Playwright UI test passed, runtime API probe across all 25 Priority 1 languages verified 4-segment trilingual transcript, artifact parity, preserved bindings, Bengali unsupported refusal, Hindi with no `जनरेट`, `वॉकथ्रू`, `इंजीनियरों`, or English fallback, and browser evidence for Hindi, Arabic, Hebrew, Japanese, Korean, Russian, French, and Thai showed visible transcript/artifact parity. |
+| Output-Correctness Reviewer, verdict retry on `c20c6c6` | `PASS` | Reviewed exact pushed head `c20c6c64ff73abd4c198445d8fa4988d2f004acd`; focused suites passed with 118 tests, direct runtime API probe for the exact user knowledge document produced 4 cited segments for all 25 Priority 1 languages, Hindi contained no `जनरेट`, `वॉकथ्रू`, or `इंजीनियरों`, translatedScript decoded as full trilingual transcript rather than target-only, per-segment source/target/reference/citation/context/claim/eval/source-run bindings were present, Bengali refused with `LOCAL_DEMO_LANGUAGE_UNSUPPORTED`, `make checkpoint3-acceptance` passed, targeted Playwright passed, and browser evidence confirmed representative visible transcript/artifact parity. |
 
-No full mandatory fan-out sign-off is claimed after the latest Hindi
-transliteration fix until gates pass and the mandatory Output-Correctness, TDD,
-Doubt-Driven, and False-Positive reviews pass against the same pushed PR head
-through actual reviewer notifications or explicitly recorded independent
-fallback.
+The mandatory Output-Correctness, TDD, Doubt-Driven, and False-Positive reviews
+passed against pushed head `c20c6c64ff73abd4c198445d8fa4988d2f004acd` with no
+findings. Human local-demo review is requested as the final manual approval
+input.
 
 ## Corrective Evidence Snapshot
 
-Status: `HINDI-TRANSLITERATION FIX LOCAL / GATES AND FULL PR-HEAD-FANOUT-PENDING`
+Status: `FINAL FAN-OUT PASS ON c20c6c6 / HUMAN REVIEW REQUESTED`
 
 Current corrective tests added after human review:
 
