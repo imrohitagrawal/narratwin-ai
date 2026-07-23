@@ -339,6 +339,32 @@ def run_issue267_preflight_check(
     return failures
 
 
+def run_issue269_preflight_check(
+    monkeypatch: Any, *, preflight_text: str | None = None, missing: bool = False
+) -> list[str]:
+    if preflight_text is not None:
+        monkeypatch.setattr(
+            phase1,
+            "read",
+            read_with_overrides(
+                phase1,
+                {"docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md": preflight_text},
+            ),
+        )
+    failures: list[str] = []
+    if missing:
+        original_is_file = cast(Callable[[Path], bool], phase1.Path.is_file)
+
+        def patched_is_file(path: Path) -> bool:
+            if str(path).endswith("docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md"):
+                return False
+            return original_is_file(path)
+
+        monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
+    phase1.check_issue269_c3a_cp8_preflight(failures)
+    return failures
+
+
 def run_issue39_ch11_contract_check(
     monkeypatch: Any,
     *,
@@ -1729,6 +1755,84 @@ def test_issue_267_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_269_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-269-c3a-cp8-real-browser-e2e"
+    refresh_branch = "phase-1-closure-269-c3a-cp8-real-browser-e2e-refresh"
+    allowed = [
+        "docs/governance/preflights/issue-269.json",
+        "docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md",
+        "docs/ADR/0033-checkpoint3-real-browser-acceptance-evidence.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_checkpoint3_acceptance.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_checkpoint3_acceptance_gate.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "frontend/package.json",
+        "frontend/package-lock.json",
+        "frontend/playwright.checkpoint3.config.ts",
+        "frontend/tests/checkpoint3-real-browser.spec.ts",
+    ]
+    assert phase1.ISSUE_269_ALLOWED_CHANGED_FILES == set(allowed)
+    assert phase1.ISSUE_269_ALLOWED_BRANCHES == {branch, refresh_branch}
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(monkeypatch, branch=refresh_branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "tests/acceptance/test_checkpoint3_performance.py",
+            "backend/app/main.py",
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "backend/Dockerfile",
+            "pyproject.toml",
+            "uv.lock",
+            "backend/app/stage4.py",
+            "backend/app/stage6.py",
+            "backend/app/stage7.py",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change tests/acceptance/test_checkpoint3_performance.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/main.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change backend/Dockerfile.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage4.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+        f"Phase 1 Closure branch {branch} may not change backend/app/stage7.py.",
+    ]
+
+
+def test_issue_269_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-269-c3a-cp8-real-browser-e2e-extra"
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            "docs/governance/preflights/issue-269.json",
+            "docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md",
+            "docs/STATUS.md",
+            "scripts/quality/check_checkpoint3_acceptance.py",
+            "frontend/playwright.checkpoint3.config.ts",
+            "frontend/tests/checkpoint3-real-browser.spec.ts",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-269.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md.",
+        f"Phase 1 Closure branch {branch} may not change docs/STATUS.md.",
+        f"Phase 1 Closure branch {branch} may not change scripts/quality/check_checkpoint3_acceptance.py.",
+        f"Phase 1 Closure branch {branch} may not change frontend/playwright.checkpoint3.config.ts.",
+        f"Phase 1 Closure branch {branch} may not change frontend/tests/checkpoint3-real-browser.spec.ts.",
+    ]
+
+
 def test_issue_255_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-255-post-pr-254-status-reconcile"
     allowed = [
@@ -2096,6 +2200,83 @@ def test_issue_267_missing_preflight_reports_failure(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_269_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue269_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "https://playwright.dev/docs/test-webserver",
+        "https://playwright.dev/docs/network",
+        "https://playwright.dev/docs/api/class-page#page-route",
+        "C3A-CP8-HARNESS-001",
+        "C3A-CP8-BROWSER-001",
+        "C3A-CP8-NO-INTERCEPTION-001",
+        "C3A-CP8-FM-002",
+        "C3A-CP8-FM-003",
+        "frontend/tests/checkpoint3-real-browser.spec.ts",
+        "frontend/playwright.checkpoint3.config.ts",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_dispatches_all_checkpoint3a_probes",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_rejects_browser_probe_api_only_or_static_commands",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_redacts_real_browser_e2e_fields",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_rejects_skipped_cp8_browser_probe",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_rejects_cp8_zero_exit_without_browser_evidence",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_rejects_cp8_minimal_success_shaped_evidence",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_rejects_cp8_evidence_without_nonce_request_binding",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_rejects_cp8_evidence_without_idempotency_binding",
+        "tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_browser_config_forces_local_mock_environment",
+        "real Playwright browser test",
+        "no `page.route`",
+        "no `context.route`",
+        "no `route.fulfill`",
+        "no HAR replay",
+        "no MSW success mock",
+        "runtime nonce",
+        "upload request payload nonce",
+        "independently recomputed idempotency evidence",
+        "API request sequence",
+        "source/eval binding",
+        "artifact metadata",
+        "bounded ops/status",
+        "docs/prose/static-snapshot",
+        "API-only tests",
+        "route/network interception",
+        "canned success",
+        "stale evidence",
+        "cross-project replay",
+        "raw uploaded content",
+        "prompt-injection text",
+        "sensitive tokens",
+        "generated full script text",
+        "browser/server failures",
+        "no hosted deployment",
+        "no provider setup",
+        "no cloned identity",
+        "no production-readiness claim",
+        "Issue #249 remains open",
+        "Final sub-agent fan-out findings were accepted and fixed",
+        "Stop and open a new issue",
+    ),
+)
+def test_issue_269_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue269_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
+
+
+def test_issue_269_missing_preflight_reports_failure(monkeypatch: Any) -> None:
+    assert run_issue269_preflight_check(monkeypatch, missing=True) == [
+        "Missing required C3A-CP8 preflight artifact: docs/reviews/ISSUE_269_C3A_CP8_PREFLIGHT.md"
+    ]
+
+
 def test_issue_249_preflight_contract_is_complete(monkeypatch: Any) -> None:
     text = Path("docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md").read_text(encoding="utf-8")
 
@@ -2297,25 +2478,29 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "Issue `#261` is closed after PR `#262` merged the fourth Checkpoint 3A child implementation checkpoint",
         "Issue `#263` is closed after PR `#264` merged the fifth Checkpoint 3A child implementation checkpoint",
         "Issue `#265` is closed after PR `#266` merged the sixth Checkpoint 3A child implementation checkpoint",
-        "Issue `#267` is satisfied by this PR when merged as the seventh Checkpoint 3A child implementation checkpoint",
-        "checkpoint3a-cp7-performance-satisfied-by-this-pr",
+        "Issue `#267` is closed after PR `#268` merged the seventh Checkpoint 3A child implementation checkpoint",
+        "Issue `#269` is satisfied by this PR when merged as the eighth Checkpoint 3A child implementation checkpoint",
+        "checkpoint3a-cp8-real-browser-e2e-satisfied-by-this-pr",
         "`#254` | Merged | 2026-07-22",
         "`#258` | Merged | 2026-07-22",
         "`#260` | Merged | 2026-07-22",
         "`#262` | Merged | 2026-07-22",
         "`#264` | Merged | 2026-07-23",
         "`#266` | Merged | 2026-07-23",
+        "`#268` | Merged | 2026-07-23",
         "`58e6ac473bb2cbcd5e99a64007a1cc862117217c`",
         "`de0cdb0c5337a980e478cb3e6b42d2b031909f31`",
         "`f79debb641e7198e2d1d41e210ddd537037c7699`",
+        "`caa8183be7ebf3fa5a3cf34d653727cc5522bf7f`",
         "post-merge main quality workflow run `29925008358` passing",
         "post-merge main quality workflow run `29937721472` passing",
-        "This state does not complete Checkpoint 3A",
+        "currently listed Checkpoint 3A executable acceptance probe set",
         "real-browser E2E probe",
     ):
         assert marker in normalized_status
     assert "C3A-CP1 PR | Pending" not in normalized_status
     assert "Issue `#259` is satisfied by this PR when merged" not in normalized_status
+    assert "Issue `#267` is satisfied by this PR when merged" not in normalized_status
 
 
 def test_status_state_v1_contract_rejects_duplicate_authority_section() -> None:
