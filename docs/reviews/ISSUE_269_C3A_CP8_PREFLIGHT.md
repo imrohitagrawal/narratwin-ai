@@ -58,10 +58,10 @@ The PR may bundle repository-ledger cleanup for PR `#268` and issue `#267`
 because this is a substantive child checkpoint, not a standalone status-only
 follow-up. Issue #249 remains open.
 
-Replacement PR note: PR `#272` supersedes closed PR `#271` after GitHub branch
-protection could not determine the last pusher on that prior PR. The CP8 scope,
-evidence boundary, local/mock posture, and issue `#249`/`#269` status remain
-unchanged.
+Replacement PR note: the refreshed PR supersedes closed PR `#271` and closed PR
+`#272` after GitHub review/check metadata did not settle on a reviewable latest
+head for those prior PRs. The CP8 scope, evidence boundary, local/mock posture,
+and issue `#249`/`#269` status remain unchanged.
 
 ## Source Facts
 
