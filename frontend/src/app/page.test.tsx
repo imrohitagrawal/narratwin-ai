@@ -7,7 +7,9 @@ import Home, {
   artifactSafetyState,
   defaultKnowledge,
   evaluationBadgeLabel,
+  languageOptionLabel,
   readJson,
+  renderTranscriptSegmentsForTest,
   sha256Hex,
   walkthroughDemoBlockReason,
 } from "./page";
@@ -21,6 +23,10 @@ describe("Home", () => {
     expect(html).toContain("Avatar demo export");
     expect(html).toContain("Generate avatar demo export");
     expect(html).toContain("Target language");
+    expect(html).toContain("Korean / 한국어");
+    expect(html).toContain("Hindi / हिन्दी");
+    expect(html).toContain("Bengali / বাংলা");
+    expect(html).toContain("Planned");
     expect(html).toContain("Download script");
     expect(html).toContain("Download subtitles");
     expect(html).toContain("Download voice manifest");
@@ -45,6 +51,66 @@ describe("Home", () => {
     expect(html).toContain("Citations will appear after generation.");
     expect(html).toContain("Evaluation pending");
     expect(html).not.toContain("0 unsupported claims");
+  });
+
+  it("formats backend language catalog labels with explicit support status", () => {
+    expect(
+      languageOptionLabel({
+        languageTag: "ko",
+        englishName: "Korean",
+        nativeName: "한국어",
+        script: "Hangul",
+        direction: "ltr",
+        marketPriority: 1,
+        regionGroup: "East Asia",
+        localDemoSupportStatus: "SUPPORTED",
+        providerSupportStatus: "LOCAL_DEMO_FIXTURE",
+        testCoverageLevel: "CHECKPOINT3A_EXHAUSTIVE",
+      }),
+    ).toBe("Korean / 한국어");
+    expect(
+      languageOptionLabel({
+        languageTag: "bn",
+        englishName: "Bengali",
+        nativeName: "বাংলা",
+        script: "Bengali",
+        direction: "ltr",
+        marketPriority: 2,
+        regionGroup: "South Asia",
+        localDemoSupportStatus: "PLANNED_UNSUPPORTED_LOCAL_DEMO",
+        providerSupportStatus: "UNSUPPORTED_LOCAL_DEMO",
+        testCoverageLevel: "CATALOG_ONLY",
+      }),
+    ).toBe("Bengali / বাংলা - Planned");
+  });
+
+  it("renders source, target, English reference, and adjacent citations for transcript segments", () => {
+    const html = renderToStaticMarkup(
+      renderTranscriptSegmentsForTest([
+        {
+          segmentId: "seg_001",
+          sourceText: "For engineers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+          targetLanguage: "ar",
+          targetText: "للمهندسين، يحول NarraTwin AI المعرفة المعتمدة للمشروع إلى نصوص عرض إرشادي موثقة. [1]",
+          englishReferenceText:
+            "For engineers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+          citationMarkers: ["[1]"],
+          citationIndexes: [1],
+          contextRefIds: ["ctx_001"],
+          claimSupportIds: ["claimsup_001"],
+          sourceRunId: "run_001",
+          evaluationId: "eval_001",
+        },
+      ]),
+    );
+
+    expect(html).toContain("dir=\"rtl\"");
+    expect(html).toContain("Source English");
+    expect(html).toContain("Target transcript");
+    expect(html).toContain("English reference");
+    expect(html).toContain("للمهندسين");
+    expect(html).toContain("[1]");
+    expect(html).toContain("ctx_001");
   });
 
   it("shows unsupported claim counts only after evaluation evidence exists", () => {

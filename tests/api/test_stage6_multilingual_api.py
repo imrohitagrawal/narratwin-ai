@@ -1,9 +1,12 @@
 from pathlib import Path
+import base64
+import json
 
 from fastapi.testclient import TestClient
 
 from backend.app.rag.chunking import checksum_text
 from backend.app.main import app, reset_app_state_for_tests
+from backend.app.stage6 import PRIORITY1_LANGUAGE_TAGS, PRIORITY2_LANGUAGE_TAGS
 from backend.app.stage4 import stage4_service
 from backend.app.stage6 import TranslationProviderResult, stage6_service
 from backend.app.tts_provider import ElevenLabsTTSProvider, InMemoryTTSQuotaLedger, TTSHTTPResponse, TTSProviderConfig
@@ -162,6 +165,94 @@ def test_multilingual_walkthrough_api_returns_downloadable_script_and_subtitle_a
     assert body["trace"]["evaluationStatus"] == "PASSED"
     assert body["artifacts"]["metadata"]["fileName"].endswith("-metadata.json")
     assert body["artifacts"]["metadata"]["mimeType"] == "application/json"
+
+
+def test_language_catalog_api_exposes_support_status_without_fake_priority2_success() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+
+    response = client.get("/api/v1/languages")
+
+    assert response.status_code == 200
+    body = response.json()
+    catalog = {record["languageTag"]: record for record in body["languages"]}
+    assert set(PRIORITY1_LANGUAGE_TAGS).issubset(catalog)
+    assert set(PRIORITY2_LANGUAGE_TAGS).issubset(catalog)
+    assert catalog["ko"]["label"] == "Korean / 한국어"
+    assert catalog["hi"]["script"] == "Devanagari"
+    assert catalog["ar"]["direction"] == "rtl"
+    assert catalog["bn"]["localDemoSupportStatus"] == "PLANNED_UNSUPPORTED_LOCAL_DEMO"
+    assert catalog["bn"]["providerSupportStatus"] == "UNSUPPORTED_LOCAL_DEMO"
+
+
+def test_multilingual_walkthrough_api_returns_structured_transcript_and_matching_metadata_artifact() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client)
+
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+        json={
+            "targetLanguage": "hi",
+            "glossaryTerms": ["NarraTwin AI"],
+            "requestedVoiceProvider": "mock",
+        },
+        headers=idempotency_headers("stage6-hindi-structured"),
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["status"] == "COMPLETED"
+    assert body["transcriptCorrectness"]["validationStatus"] == "PASSED"
+    assert body["transcriptCorrectness"]["script"] == "Devanagari"
+    assert body["transcriptCorrectness"]["direction"] == "ltr"
+    assert body["transcriptSegments"]
+
+    source_text = body["sourceScriptText"]
+    target_text = body["translatedScriptText"]
+    assert source_text
+    assert target_text
+    assert target_text != source_text
+    assert any("\u0900" <= char <= "\u097f" for char in target_text)
+    assert "badalta hai" not in target_text
+
+    for segment in body["transcriptSegments"]:
+        assert segment["sourceText"]
+        assert segment["targetLanguage"] == "hi"
+        assert segment["targetText"]
+        assert segment["targetText"] != segment["sourceText"]
+        assert segment["englishReferenceText"]
+        assert segment["citationMarkers"]
+        assert segment["citationIndexes"]
+        assert segment["contextRefIds"] == body["trace"]["sourceContextRefIds"]
+        assert segment["claimSupportIds"] == body["trace"]["sourceClaimSupportIds"]
+        assert segment["sourceRunId"] == run_id
+        assert segment["evaluationId"] == body["trace"]["sourceEvaluationId"]
+
+    metadata = json.loads(base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8"))
+    assert metadata["transcriptSegments"] == body["transcriptSegments"]
+    assert metadata["transcriptCorrectness"] == body["transcriptCorrectness"]
+
+
+def test_priority2_language_refuses_honestly_instead_of_generating_fake_success() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client)
+
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+        json={
+            "targetLanguage": "bn",
+            "glossaryTerms": ["NarraTwin AI"],
+            "requestedVoiceProvider": "mock",
+        },
+        headers=idempotency_headers("stage6-bn-unsupported"),
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"]["code"] == "LOCAL_DEMO_LANGUAGE_UNSUPPORTED"
+    assert "Bengali" in body["error"]["message"]
 
 
 def test_multilingual_walkthrough_api_falls_back_to_mock_voice_provider() -> None:

@@ -13,11 +13,15 @@ from backend.app.rag.chunking import checksum_text
 from backend.app.stage6 import (
     DownloadableArtifact,
     MAX_CAPTION_CHARS,
+    PRIORITY1_LANGUAGE_TAGS,
+    PRIORITY2_LANGUAGE_TAGS,
     Stage6Error,
     TranslationProviderResult,
     VoiceProviderResult,
     create_stage6_service,
+    get_language_catalog,
     generate_subtitles,
+    validate_multilingual_transcript_correctness,
     normalize_language_tag,
     split_captions,
 )
@@ -136,6 +140,92 @@ def test_translation_preserves_project_terms_from_glossary() -> None:
     assert "convierte" in result.translated_script_text
     assert result.translated_script_text != source_script
     assert result.artifacts.metadata.mime_type == "application/json"
+
+
+def test_language_catalog_marks_priority1_supported_and_priority2_planned() -> None:
+    catalog = {record.language_tag: record for record in get_language_catalog()}
+
+    assert set(PRIORITY1_LANGUAGE_TAGS).issubset(catalog)
+    assert set(PRIORITY2_LANGUAGE_TAGS).issubset(catalog)
+    assert catalog["hi"].english_name == "Hindi"
+    assert catalog["hi"].native_name == "हिन्दी"
+    assert catalog["hi"].script == "Devanagari"
+    assert catalog["hi"].local_demo_support_status == "SUPPORTED"
+    assert catalog["ar"].direction == "rtl"
+    assert catalog["he"].direction == "rtl"
+    assert catalog["ko"].native_name == "한국어"
+
+    for language_tag in PRIORITY1_LANGUAGE_TAGS:
+        record = catalog[language_tag]
+        assert record.market_priority == 1
+        assert record.local_demo_support_status == "SUPPORTED"
+        assert record.test_coverage_level == "CHECKPOINT3A_EXHAUSTIVE"
+
+    for language_tag in PRIORITY2_LANGUAGE_TAGS:
+        record = catalog[language_tag]
+        assert record.market_priority == 2
+        assert record.local_demo_support_status == "PLANNED_UNSUPPORTED_LOCAL_DEMO"
+        assert record.test_coverage_level == "CATALOG_ONLY"
+
+
+def test_hindi_transcript_validation_rejects_romanized_fallback() -> None:
+    segment = {
+        "segmentId": "seg_001",
+        "sourceText": "For engineers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+        "targetLanguage": "hi",
+        "targetText": "Engineers ke liye, NarraTwin AI sweekrit project knowledge ko grounded walkthrough scripts mein badalta hai. [1]",
+        "englishReferenceText": "For engineers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+        "citationMarkers": ["[1]"],
+        "citationIndexes": [1],
+        "contextRefIds": ["ctx_001"],
+        "claimSupportIds": ["claimsup_001"],
+        "sourceRunId": "run_001",
+        "evaluationId": "eval_001",
+    }
+
+    with pytest.raises(Stage6Error) as exc:
+        validate_multilingual_transcript_correctness(
+            language_tag="hi",
+            source_text=segment["sourceText"],
+            segments=[segment],
+            source_run_id="run_001",
+            evaluation_id="eval_001",
+            context_ref_ids=("ctx_001",),
+            citation_indexes=(1,),
+            claim_support_ids=("claimsup_001",),
+        )
+
+    assert exc.value.code == "TRANSCRIPT_CORRECTNESS_FAILED"
+
+
+def test_transcript_validation_rejects_metadata_only_completed_success() -> None:
+    segment = {
+        "segmentId": "seg_001",
+        "sourceText": "For engineers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+        "targetLanguage": "ja",
+        "targetText": "For engineers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+        "englishReferenceText": "",
+        "citationMarkers": ["[1]"],
+        "citationIndexes": [1],
+        "contextRefIds": [],
+        "claimSupportIds": ["claimsup_001"],
+        "sourceRunId": "run_001",
+        "evaluationId": "eval_001",
+    }
+
+    with pytest.raises(Stage6Error) as exc:
+        validate_multilingual_transcript_correctness(
+            language_tag="ja",
+            source_text=segment["sourceText"],
+            segments=[segment],
+            source_run_id="run_001",
+            evaluation_id="eval_001",
+            context_ref_ids=("ctx_001",),
+            citation_indexes=(1,),
+            claim_support_ids=("claimsup_001",),
+        )
+
+    assert exc.value.code == "TRANSCRIPT_CORRECTNESS_FAILED"
 
 
 def test_domain_service_rejects_blank_glossary_terms_directly() -> None:
