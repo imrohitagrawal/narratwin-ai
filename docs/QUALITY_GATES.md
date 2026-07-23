@@ -646,6 +646,17 @@ Checkpoint 3B, Checkpoint 3C, hosted/public demo, provider setup,
 cloned-identity readiness, real-media readiness, or production-readiness
 success from Checkpoint 3A local/mock evidence.
 
+C3B-PR1 is a Phase 1 Closure planning/governance gate, not a runtime acceptance
+target. The issue `#274` scope is checked through the Phase 1 closure docs gate:
+the exact branch/file allowlist must pass, near-match branches must fail closed,
+the preflight artifact must define Checkpoint 3B consent/provenance planning,
+acceptance contracts, risk boundaries, and future issue sequencing, and the
+status ledger must keep issue `#249` open while reconciling PR `#273` and issue
+`#269` as merged/closed. C3B-PR1 must not authorize Checkpoint 3B
+implementation, Checkpoint 3C, hosted/public demo, provider setup, paid spend,
+public URLs, cloned identity runtime, real media, public distribution, or
+production readiness.
+
 The repository guardrail also checks PR body content on pull-request events:
 generic PRs must use reference-only issue linkage such as `Refs #<issue>` and
 must not include issue-closing keywords in the title/body/branch commit

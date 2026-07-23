@@ -305,6 +305,16 @@ ISSUE_269_ALLOWED_BRANCHES = {
     "phase-1-closure-269-c3a-cp8-real-browser-e2e",
     "phase-1-closure-269-c3a-cp8-real-browser-e2e-refresh",
 }
+ISSUE_274_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-274.json",
+    "docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_255_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-255.json",
     "docs/STATUS.md",
@@ -1570,10 +1580,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #249 / checkpoint3a-next-child-selection",
-        "checkpoint3a-cp8-real-browser-e2e-satisfied-by-this-pr",
-        "checkpoint3a-cp8-real-browser-e2e-satisfied-by-this-pr",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issue #253 closed after PR #254 merged the first Checkpoint 3A child implementation checkpoint: an executable Checkpoint 3 acceptance harness plus API E2E foundation only. Issue #257 is closed after PR #258 merged the second Checkpoint 3A child implementation checkpoint: executable output-correctness only. Issue #259 is closed after PR #260 merged the third Checkpoint 3A child implementation checkpoint: executable language-quality only. Issue #261 is closed after PR #262 merged the fourth Checkpoint 3A child implementation checkpoint: executable media-artifacts only, using local API runtime artifact output and evidence binding with no provider, hosted, public, cloned-identity, real-media, or production claim. Issue #263 is closed after PR #264 merged the fifth Checkpoint 3A child implementation checkpoint: executable access/quota/retention only, using local API runtime access-boundary, deterministic quota-limit, terminal-retention replay, tombstone, and redacted ops/status evidence with no provider, hosted, public, cloned-identity, real-media, or production claim. Issue #265 is closed after PR #266 merged the sixth Checkpoint 3A child implementation checkpoint: executable security/observability only, using local API runtime security controls, prompt-injection and unsafe-content rejection, unsupported-claim evaluation, cross-project replay, same-payload cross-actor access denial with a reused idempotency key, same-actor idempotency conflict behavior, trace/run/evaluation observability metadata, local/mock provider posture, and deterministic redaction evidence with no provider, hosted, public, cloned-identity, real-media, or production claim. Issue #267 is closed after PR #268 merged the seventh Checkpoint 3A child implementation checkpoint: executable performance only, using local API runtime timing evidence, explicit thresholds, request/run/source binding, stale and cross-project false-pass rejection, local/mock provider posture, and redacted failure evidence with no provider, hosted, public, cloned-identity, real-media, or production claim. Issue #269 is satisfied by this PR when merged as the eighth Checkpoint 3A child implementation checkpoint: executable real-browser E2E only, using the local browser-controlled demo path, browser-observed API request/response binding, runtime nonce, source/eval/artifact/ops binding, no success-path interception, local/mock provider posture, and redacted failure evidence with no provider, hosted, public, cloned-identity, real-media, or production claim. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state completes the currently listed Checkpoint 3A executable acceptance probe set but does not authorize Checkpoint 3B, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
+        "issue #249 / checkpoint3b-pr1-consent-provenance-planning",
+        "checkpoint3b-pr1-satisfied-by-this-pr",
+        "checkpoint3b-pr1-satisfied-by-this-pr",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the currently listed Checkpoint 3A executable acceptance probe set through CP1-CP8. PR #273 merged the eighth Checkpoint 3A child implementation checkpoint at 0f737c564f9245b66640988573ac04f4432e06d5, and issue #269 is closed. Issue #274 is satisfied by this PR when merged as the public-safe Checkpoint 3B consent/provenance planning gate only: consent/provenance planning, acceptance contracts, risk boundaries, and future issue sequencing. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3677,6 +3687,14 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_267_ALLOWED_CHANGED_FILES
     elif branch in ISSUE_269_ALLOWED_BRANCHES:
         allowed_files = ISSUE_269_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-c3b-pr1-consent-provenance-planning-274":
+        allowed_files = ISSUE_274_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-274-"):
+        allowed_files = set()
+    elif branch.startswith("phase-1-closure-c3b-pr1-consent-provenance-planning-"):
+        allowed_files = set()
+    elif branch.startswith("phase-1-closure-274-"):
+        allowed_files = set()
     elif branch.startswith("phase-1-closure-269-"):
         allowed_files = set()
     elif branch.startswith("phase-1-closure-267-"):
@@ -5315,6 +5333,121 @@ def check_issue269_c3a_cp8_preflight(failures: list[str]) -> None:
         fail(failures, f"{rel} missing C3A-CP8 preflight markers: " + ", ".join(missing_markers))
 
 
+def check_issue274_c3b_pr1_preflight(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md"
+    if not (ROOT / rel).is_file():
+        fail(failures, f"Missing required C3B-PR1 preflight artifact: {rel}")
+        return
+    text = read(rel)
+    normalized = re.sub(r"\s+", " ", text.lower())
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Objective",
+            "Scope",
+            "Source Facts",
+            "Positive Claims",
+            "Negative Invariants",
+            "Failure Matrix",
+            "Fan-Out Review Findings",
+            "Skill And Tool Selection Ledger",
+            "Stop Rule",
+        ),
+    )
+    required_urls = (
+        "https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue",
+        "https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests",
+    )
+    missing_urls = [url for url in required_urls if url not in text]
+    if missing_urls:
+        fail(failures, f"{rel} missing C3B-PR1 official source URLs: " + ", ".join(missing_urls))
+
+    required_markers = (
+        "Accessed date: 2026-07-23",
+        "C3B-PR1",
+        "public tracker issue `#249`",
+        "child issue `#274`",
+        "PR `#273` merged at `0f737c564f9245b66640988573ac04f4432e06d5`",
+        "issue `#269` closed",
+        "issue `#249` still open",
+        "currently listed Checkpoint 3A executable acceptance probe set is complete through CP1-CP8",
+        "consent/provenance planning",
+        "acceptance contracts",
+        "risk boundaries",
+        "future issue sequencing",
+        "no backend",
+        "no frontend",
+        "no provider",
+        "no hosted deployment",
+        "public URL",
+        "no provider setup",
+        "provider SDK",
+        "real provider call",
+        "paid spend",
+        "cloned identity runtime",
+        "cloned voice",
+        "cloned face",
+        "digital twin",
+        "real-person likeness",
+        "real media",
+        "public distribution",
+        "Checkpoint 3C",
+        "Product Mode 2",
+        "production readiness",
+        "private strategy",
+        "provider choices",
+        "reviewer strategy",
+        "invite codes",
+        "private media",
+        "real personal data",
+        "provider payloads",
+        "provider outputs",
+        "secrets",
+        "tokens",
+        "credentials",
+        "C3B-PR1-LEDGER-001",
+        "C3B-PR1-C3A-001",
+        "C3B-PR1-BOUNDARY-001",
+        "C3B-PR1-GUARDRAIL-001",
+        "C3B-PR1-NONGOAL-001",
+        "C3B-PR1-PUBLICSAFE-001",
+        "C3B-PR1-TRACKER-001",
+        "C3B-PR1-FM-001",
+        "C3B-PR1-FM-002",
+        "C3B-PR1-FM-003",
+        "C3B-PR1-FM-004",
+        "C3B-PR1-FM-005",
+        "C3B-PR1-FM-006",
+        "C3B-PR1-FM-007",
+        "C3B-PR1-FM-008",
+        "tests/unit/test_phase1_closure_docs.py::test_issue_274_branch_has_exact_scope_allowlist",
+        "tests/unit/test_phase1_closure_docs.py::test_issue_274_near_match_branch_fails_closed",
+        "RED confirmed before checker update",
+        "near-match branches",
+        "unauthorized files",
+        "Four sub-agent reviews covered public-safe scope",
+        "Final pre-human-review fan-out is clean",
+        "public/private boundary",
+        "C3A completion wording without overclaim",
+        "C3B consent/provenance planning scope",
+        "cloned-identity implementation exclusion",
+        "provider/hosted/public/production exclusion",
+        "issue `#249` tracker status",
+        "issue `#269`/PR `#273` ledger reconciliation",
+        "guardrail allowlist behavior",
+        "status/traceability consistency",
+        "test/quality/CI",
+        "governance/taste/scope",
+        "Final fan-out disposition before human review",
+        "Stop and open a new issue",
+    )
+    missing_markers = [marker for marker in required_markers if marker.lower() not in normalized]
+    if missing_markers:
+        fail(failures, f"{rel} missing C3B-PR1 preflight markers: " + ", ".join(missing_markers))
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
@@ -5343,6 +5476,7 @@ def check_process_docs(failures: list[str]) -> None:
     check_issue265_c3a_cp6_preflight(failures)
     check_issue267_c3a_cp7_preflight(failures)
     check_issue269_c3a_cp8_preflight(failures)
+    check_issue274_c3b_pr1_preflight(failures)
     check_required_headings(
         failures,
         pr_template,
