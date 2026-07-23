@@ -30,6 +30,7 @@ describe("Home", () => {
     expect(html).toContain("Download script");
     expect(html).toContain("Download subtitles");
     expect(html).toContain("Download voice manifest");
+    expect(html).toContain("Download transcript metadata");
     expect(html).toContain("Download avatar demo");
     expect(html).toContain("Download render manifest");
     expect(html).toContain("Download video placeholder");
@@ -383,6 +384,28 @@ function artifactValidationContext(): NonNullable<Parameters<typeof artifactSafe
 	      targetLanguage: "es",
       translatedScriptText,
       subtitlesText,
+      transcriptSegments: [
+        {
+          segmentId: "seg_001",
+          sourceText: "Translated script source. [1]",
+          targetLanguage: "es",
+          targetText: translatedScriptText,
+          englishReferenceText: "Translated script source. [1]",
+          citationMarkers: ["[1]"],
+          citationIndexes: [1],
+          contextRefIds: ["ctx_001"],
+          claimSupportIds: ["claimsup_001"],
+          sourceRunId: "run_test",
+          evaluationId: "eval_001",
+        },
+      ],
+      transcriptCorrectness: {
+        validationStatus: "PASSED",
+        script: "Latin",
+        direction: "ltr",
+        segmentCount: 1,
+        citationIndexes: [1],
+      },
 	      preservedTerms: ["NarraTwin AI"],
 	      voice: { provider: "mock", providerMode: "LOCAL", requestedProvider: "mock" },
 	      translationProvider: { provider: "mock", providerMode: "LOCAL" },
@@ -397,6 +420,33 @@ function artifactValidationContext(): NonNullable<Parameters<typeof artifactSafe
           "voice-manifest-es.json",
           "application/json",
           voiceManifestText,
+        ),
+        metadata: artifactFromText(
+          "run_test-es-metadata.json",
+          "application/json",
+          JSON.stringify({
+            multilingualRunId: "mlrun_test",
+            sourceRunId: "run_test",
+            targetLanguage: "es",
+            sourceContextRefIds: ["ctx_001"],
+            sourceCitationIndexes: [1],
+            transcriptCorrectness: {
+              validationStatus: "PASSED",
+              segmentCount: 1,
+            },
+            transcriptSegments: [
+              {
+                segmentId: "seg_001",
+                sourceText: "Translated script source. [1]",
+                targetText: translatedScriptText,
+                englishReferenceText: "Translated script source. [1]",
+                citationMarkers: ["[1]"],
+                citationIndexes: [1],
+                contextRefIds: ["ctx_001"],
+                claimSupportIds: ["claimsup_001"],
+              },
+            ],
+          }),
         ),
 	      },
 	      trace: {

@@ -8,7 +8,7 @@ from backend.app.rag.chunking import checksum_text
 from backend.app.main import app, reset_app_state_for_tests
 from backend.app.stage6 import PRIORITY1_LANGUAGE_TAGS, PRIORITY2_LANGUAGE_TAGS
 from backend.app.stage4 import stage4_service
-from backend.app.stage6 import TranslationProviderResult, stage6_service
+from backend.app.stage6 import TranslationProviderResult, stage6_service, translate_demo_source_text
 from backend.app.tts_provider import ElevenLabsTTSProvider, InMemoryTTSQuotaLedger, TTSHTTPResponse, TTSProviderConfig
 
 IDEMPOTENCY_HEADER = "Idempotency-" + "Key"
@@ -336,14 +336,17 @@ def test_multilingual_walkthrough_api_accepts_non_mock_local_translation_adapter
             target_language: str,
             glossary_terms: list[str],
         ) -> TranslationProviderResult:
-            return TranslationProviderResult(
-                provider=self.provider,
-                provider_mode=self.provider_mode,
-                source_language=source_language,
-                target_language=target_language,
-                translated_text=source_text,
-                preserved_terms=[term for term in glossary_terms if term in source_text],
-            )
+                return TranslationProviderResult(
+                    provider=self.provider,
+                    provider_mode=self.provider_mode,
+                    source_language=source_language,
+                    target_language=target_language,
+                    translated_text=translate_demo_source_text(
+                        source_text=source_text,
+                        target_language=target_language,
+                    ),
+                    preserved_terms=[term for term in glossary_terms if term in source_text],
+                )
 
     reset_app_state_for_tests()
     stage6_service.translation_provider = LocalTranslationProvider()

@@ -28,7 +28,8 @@ The browser test may observe requests and responses, but it must not fabricate
 success with `page.route`, `context.route`, `route.fulfill`, HAR replay, or MSW.
 The test records bounded public-safe evidence: runtime nonce binding,
 browser-observed request sequence, local origin, source/evaluation/run IDs,
-artifact metadata, ops/status counts, local/mock provider posture, and
+artifact metadata, visible multilingual transcript proof, representative
+script-family coverage, ops/status counts, local/mock provider posture, and
 idempotency evidence. The Python acceptance harness independently recomputes
 expected idempotency keys from bounded runtime fields and rejects boolean-only
 or self-attested fabricated idempotency evidence.
@@ -47,8 +48,13 @@ or self-attested fabricated idempotency evidence.
 - `make checkpoint3-acceptance` reports CP1 through CP8 as executable probes.
 - `tests/unit/test_checkpoint3_acceptance_gate.py` rejects docs/prose/static,
   API-only, skipped browser, missing artifact, minimal success-shaped,
-  boolean-only idempotency, and self-attested idempotency false passes.
+  boolean-only idempotency, self-attested idempotency, and missing
+  representative script-family coverage false passes.
 - `frontend/tests/checkpoint3-real-browser.spec.ts` drives the local browser UI
-  and records bounded runtime evidence without success-path interception.
+  and records bounded runtime evidence without success-path interception. For
+  C3A-R1 it proves source English, target transcript, English reference,
+  citations, and transcript metadata parity for Hindi/Devanagari, Arabic/RTL
+  Arabic script, Hebrew/RTL, Japanese/CJK, Korean/Hangul, Russian/Cyrillic,
+  French/Latin, and Thai/Southeast Asia representative browser groups.
 - `frontend/playwright.checkpoint3.config.ts` launches local services and forces
   local/mock provider posture.

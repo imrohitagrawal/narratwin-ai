@@ -548,6 +548,23 @@ ops record-count evidence. It includes negative coverage for correct-looking
 text without citation/evidence binding, unsupported generated claims, and
 cross-project fact replay.
 
+Issue `#276` repairs C3A-CP2 so it also proves real user-visible multilingual
+output correctness for the Priority 1 catalog: `en`, `hi`, `es`, `de`, `fr`,
+`pt-BR`, `it`, `nl`, `pl`, `uk`, `ru`, `zh-Hans`, `zh-Hant`, `ja`, `ko`, `ar`,
+`arz`, `he`, `fa`, `tr`, `vi`, `id`, `fil`, `th`, and `ms`. The probe requires
+the backend-driven language catalog, catalogs Priority 2 Indian regional
+languages as planned/unsupported local demo, executes every Priority 1 runtime
+API path, requires source English plus target-language transcript plus English
+reference/back-translation per segment, validates native scripts and RTL
+direction, preserves citation/source/evaluation/context/claim-support bindings,
+requires Stage 6 metadata artifact parity, and writes
+`reports/checkpoint3-multilingual/priority1-coverage-matrix.json` plus
+`reports/checkpoint3-multilingual/checkpoint3a-multilingual-summary.json`.
+Mutation fixtures must fail for partial text, English fallback, romanized or
+wrong-script fallback, missing source English, missing English reference,
+citation drift, missing bindings, metadata-only success, and artifact-only
+success. `COMPLETED` is invalid unless transcript correctness validation passes.
+
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
 through the same local/mock API path. The language-quality probe verifies

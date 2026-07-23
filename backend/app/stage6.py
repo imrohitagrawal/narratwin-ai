@@ -31,12 +31,35 @@ from backend.app.tts_provider import (
     checksum_bytes,
 )
 
-SUPPORTED_LANGUAGES = {
-    "en": "English",
-    "es": "Spanish",
-    "fr": "French",
-    "hi": "Hindi",
-}
+PRIORITY1_LANGUAGE_TAGS = (
+    "en",
+    "hi",
+    "es",
+    "de",
+    "fr",
+    "pt-BR",
+    "it",
+    "nl",
+    "pl",
+    "uk",
+    "ru",
+    "zh-Hans",
+    "zh-Hant",
+    "ja",
+    "ko",
+    "ar",
+    "arz",
+    "he",
+    "fa",
+    "tr",
+    "vi",
+    "id",
+    "fil",
+    "th",
+    "ms",
+)
+PRIORITY2_LANGUAGE_TAGS = ("bn", "ta", "te", "kn", "mr", "gu", "ml", "ur", "pa")
+SUPPORTED_LANGUAGES: dict[str, str] = {}
 MAX_GLOSSARY_TERMS = 25
 MAX_GLOSSARY_TERM_CHARS = 80
 MAX_SOURCE_SCRIPT_CHARS = 20_000
@@ -80,6 +103,184 @@ class DownloadableArtifact:
     mime_type: str
     content_base64: str
     checksum: str
+
+
+@dataclass(frozen=True)
+class LanguageCatalogRecord:
+    language_tag: str
+    english_name: str
+    native_name: str
+    script: str
+    direction: Literal["ltr", "rtl"]
+    market_priority: int
+    region_group: str
+    local_demo_support_status: Literal["SUPPORTED", "PLANNED_UNSUPPORTED_LOCAL_DEMO"]
+    provider_support_status: Literal["LOCAL_DEMO_FIXTURE", "UNSUPPORTED_LOCAL_DEMO"]
+    test_coverage_level: Literal["CHECKPOINT3A_EXHAUSTIVE", "CATALOG_ONLY"]
+
+
+@dataclass(frozen=True)
+class MultilingualTranscriptSegment:
+    segment_id: str
+    source_text: str
+    target_language: str
+    target_text: str
+    english_reference_text: str
+    citation_markers: tuple[str, ...]
+    citation_indexes: tuple[int, ...]
+    context_ref_ids: tuple[str, ...]
+    claim_support_ids: tuple[str, ...]
+    source_run_id: str
+    evaluation_id: str
+
+
+@dataclass(frozen=True)
+class TranscriptCorrectness:
+    validation_status: Literal["PASSED"]
+    script: str
+    direction: Literal["ltr", "rtl"]
+    segment_count: int
+    citation_indexes: tuple[int, ...]
+
+
+LANGUAGE_CATALOG: tuple[LanguageCatalogRecord, ...] = (
+    LanguageCatalogRecord(
+        "en", "English", "English", "Latin", "ltr", 1, "Global", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "hi", "Hindi", "हिन्दी", "Devanagari", "ltr", 1, "South Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "es", "Spanish", "Español", "Latin", "ltr", 1, "Europe/Latin America", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "de", "German", "Deutsch", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "fr", "French", "Français", "Latin", "ltr", 1, "Europe/Africa/Canada", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "pt-BR", "Brazilian Portuguese", "Português do Brasil", "Latin", "ltr", 1, "Latin America", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "it", "Italian", "Italiano", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "nl", "Dutch", "Nederlands", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "pl", "Polish", "Polski", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "uk", "Ukrainian", "Українська", "Cyrillic", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "ru", "Russian", "Русский", "Cyrillic", "ltr", 1, "Europe/Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "zh-Hans", "Chinese Simplified", "简体中文", "Han Simplified", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "zh-Hant", "Chinese Traditional", "繁體中文", "Han Traditional", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "ja", "Japanese", "日本語", "Japanese", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "ko", "Korean", "한국어", "Hangul", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "ar", "Arabic", "العربية", "Arabic", "rtl", 1, "MENA", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "arz", "Egyptian Arabic", "مصري", "Arabic", "rtl", 1, "MENA", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "he", "Hebrew", "עברית", "Hebrew", "rtl", 1, "MENA", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "fa", "Persian/Farsi", "فارسی", "Arabic", "rtl", 1, "MENA/Central Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "tr", "Turkish", "Türkçe", "Latin", "ltr", 1, "Europe/West Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "vi", "Vietnamese", "Tiếng Việt", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "id", "Indonesian", "Bahasa Indonesia", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "fil", "Filipino/Tagalog", "Filipino", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "th", "Thai", "ไทย", "Thai", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "ms", "Malay", "Bahasa Melayu", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "bn", "Bengali", "বাংলা", "Bengali", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "ta", "Tamil", "தமிழ்", "Tamil", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "te", "Telugu", "తెలుగు", "Telugu", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "kn", "Kannada", "ಕನ್ನಡ", "Kannada", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "mr", "Marathi", "मराठी", "Devanagari", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "gu", "Gujarati", "ગુજરાતી", "Gujarati", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "ml", "Malayalam", "മലയാളം", "Malayalam", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "ur", "Urdu", "اردو", "Arabic", "rtl", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "pa", "Punjabi", "ਪੰਜਾਬੀ", "Gurmukhi", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+)
+LANGUAGE_CATALOG_BY_TAG = {record.language_tag: record for record in LANGUAGE_CATALOG}
+SUPPORTED_LANGUAGES.update(
+    {
+        record.language_tag: record.english_name
+        for record in LANGUAGE_CATALOG
+        if record.local_demo_support_status == "SUPPORTED"
+    }
+)
+DEMO_TRANSLATED_SEGMENT_TEXT = {
+    "hi": "इंजीनियरों के लिए, NarraTwin AI स्वीकृत परियोजना ज्ञान को स्रोत उद्धरणों वाले ग्राउंडेड वॉकथ्रू स्क्रिप्ट में बदलता है।",
+    "es": "Para ingenieros, NarraTwin AI convierte el conocimiento aprobado del proyecto en guiones de recorrido fundamentados con citas de origen.",
+    "de": "Für Ingenieure wandelt NarraTwin AI genehmigtes Projektwissen in fundierte Walkthrough-Skripte mit Quellenzitaten um.",
+    "fr": "Pour les ingénieurs, NarraTwin AI transforme les connaissances approuvées du projet en scripts de démonstration ancrés avec des citations de source.",
+    "pt-BR": "Para engenheiros, o NarraTwin AI transforma conhecimento aprovado do projeto em roteiros de apresentação fundamentados com citações de fonte.",
+    "it": "Per gli ingegneri, NarraTwin AI trasforma la conoscenza approvata del progetto in copioni dimostrativi fondati con citazioni delle fonti.",
+    "nl": "Voor engineers zet NarraTwin AI goedgekeurde projectkennis om in onderbouwde walkthrough-scripts met broncitaten.",
+    "pl": "Dla inżynierów NarraTwin AI przekształca zatwierdzoną wiedzę projektową w ugruntowane skrypty prezentacyjne z cytatami źródłowymi.",
+    "uk": "Для інженерів NarraTwin AI перетворює затверджені знання про проект на обґрунтовані сценарії огляду з посиланнями на джерела.",
+    "ru": "Для инженеров NarraTwin AI превращает утвержденные знания проекта в обоснованные сценарии обзора с ссылками на источники.",
+    "zh-Hans": "面向工程师，NarraTwin AI 将已批准的项目知识转换为带有来源引用的有依据讲解脚本。",
+    "zh-Hant": "面向工程師，NarraTwin AI 將已核准的專案知識轉換為帶有來源引用的有根據導覽腳本。",
+    "ja": "エンジニア向けに、NarraTwin AI は承認済みのプロジェクト知識を出典引用付きの根拠あるウォークスルースクリプトに変換します。",
+    "ko": "엔지니어를 위해 NarraTwin AI는 승인된 프로젝트 지식을 출처 인용이 있는 근거 기반 안내 스크립트로 변환합니다.",
+    "ar": "للمهندسين، يحول NarraTwin AI المعرفة المعتمدة للمشروع إلى نصوص عرض إرشادي موثقة مع اقتباسات من المصدر.",
+    "arz": "للمهندسين، NarraTwin AI بيحوّل معرفة المشروع المعتمدة لنصوص شرح موثقة ومعاها اقتباسات من المصدر.",
+    "he": "עבור מהנדסים, NarraTwin AI הופך ידע פרויקט מאושר לתסריטי הדרכה מבוססים עם ציטוטי מקור.",
+    "fa": "برای مهندسان، NarraTwin AI دانش تأییدشده پروژه را به متن‌های راهنمای مستند با ارجاع به منبع تبدیل می‌کند.",
+    "tr": "Mühendisler için NarraTwin AI, onaylanmış proje bilgisini kaynak alıntılı temellendirilmiş tanıtım metinlerine dönüştürür.",
+    "vi": "Dành cho kỹ sư, NarraTwin AI chuyển kiến thức dự án đã phê duyệt thành kịch bản hướng dẫn có căn cứ kèm trích dẫn nguồn.",
+    "id": "Untuk insinyur, NarraTwin AI mengubah pengetahuan proyek yang disetujui menjadi naskah panduan berlandaskan bukti dengan kutipan sumber.",
+    "fil": "Para sa mga engineer, ginagawang grounded walkthrough script ng NarraTwin AI ang aprubadong kaalaman sa proyekto na may sipi ng pinagmulan.",
+    "th": "สำหรับวิศวกร NarraTwin AI แปลงความรู้โครงการที่อนุมัติแล้วเป็นสคริปต์แนะนำที่มีหลักฐานพร้อมการอ้างอิงแหล่งที่มา",
+    "ms": "Untuk jurutera, NarraTwin AI menukar pengetahuan projek yang diluluskan kepada skrip panduan berasas dengan petikan sumber.",
+}
 
 
 @dataclass(frozen=True)
@@ -127,6 +328,8 @@ class MultilingualWalkthroughResult:
     source_text_checksum: str
     translated_script_text: str
     subtitles_text: str
+    transcript_segments: tuple[MultilingualTranscriptSegment, ...]
+    transcript_correctness: TranscriptCorrectness
     glossary_terms: list[str]
     preserved_terms: list[str]
     translation_provider: TranslationProviderResult
@@ -226,17 +429,17 @@ class MockTranslationProvider:
             ("must cite", "doit citer"),
         ),
         "hi": (
-            ("turns", "badalta hai"),
-            ("approved", "sweekrit"),
-            ("into", "mein"),
-            ("grounded", "aadharrit"),
+            ("turns", "बदलता है"),
+            ("approved", "स्वीकृत"),
+            ("into", "में"),
+            ("grounded", "स्रोत-आधारित"),
             ("walkthrough scripts", "walkthrough scripts"),
-            ("keeps", "rakhta hai"),
+            ("keeps", "रखता है"),
             ("generated claims", "generated claims"),
-            ("tied to", "se juda"),
-            ("creates", "banata hai"),
-            ("every", "har"),
-            ("must cite", "cite karna chahiye"),
+            ("tied to", "से जुड़ा"),
+            ("creates", "बनाता है"),
+            ("every", "हर"),
+            ("must cite", "उद्धृत करना चाहिए"),
         ),
     }
 
@@ -250,11 +453,18 @@ class MockTranslationProvider:
     ) -> TranslationProviderResult:
         if target_language == source_language:
             translated = source_text
+        elif target_language in DEMO_TRANSLATED_SEGMENT_TEXT and citation_marker_sequence(source_text):
+            translated = translate_demo_source_text(source_text=source_text, target_language=target_language)
+            preserved_suffix = " ".join(term for term in glossary_terms if term in source_text and term not in translated)
+            if preserved_suffix:
+                translated = f"{translated} {preserved_suffix}"
         else:
             protected, placeholders = protect_terms(source_text, glossary_terms)
             translated = protected
             for source, target in self._REPLACEMENTS.get(target_language, ()):
                 translated = re.sub(rf"\b{re.escape(source)}\b", target, translated, flags=re.IGNORECASE)
+            if translated == protected and target_language in DEMO_TRANSLATED_SEGMENT_TEXT:
+                translated = translate_demo_source_text(source_text=restore_terms(protected, placeholders), target_language=target_language)
             translated = restore_terms(translated, placeholders)
         return TranslationProviderResult(
             provider=self.provider,
@@ -856,6 +1066,26 @@ class Stage6Service:
             translated_text=validated_text,
             preserved_terms=preserved_terms,
         )
+        transcript_segments = build_multilingual_transcript_segments(
+            source_text=source_text,
+            target_language=normalized_target_language,
+            source_run_id=source_run_id,
+            source_evaluation_id=source_evaluation_id,
+            source_context_ref_ids=source_context_ref_ids,
+            source_claim_support_ids=source_claim_support_ids,
+        )
+        transcript_correctness = validate_multilingual_transcript_correctness(
+            target_language=normalized_target_language,
+            source_text=source_text,
+            segments=transcript_segments,
+            source_run_id=source_run_id,
+            evaluation_id=source_evaluation_id,
+            context_ref_ids=source_context_ref_ids,
+            citation_indexes=source_citation_indexes,
+            claim_support_ids=source_claim_support_ids,
+        )
+        if normalized_target_language != "en" and translation.translated_text == source_text:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Provider returned an English fallback.")
         subtitles_text = generate_subtitles(
             script_text=translation.translated_text,
             language=normalized_target_language,
@@ -940,6 +1170,8 @@ class Stage6Service:
             preserved_terms=translation.preserved_terms,
             source_script_text=source_text,
             translated_script_text=translation.translated_text,
+            transcript_segments=transcript_segments,
+            transcript_correctness=transcript_correctness,
             translation_provider=translation,
             voice=voice,
             translated_script_artifact=script_artifact,
@@ -968,6 +1200,8 @@ class Stage6Service:
             source_text_checksum=source_text_checksum,
             translated_script_text=translation.translated_text,
             subtitles_text=subtitles_text,
+            transcript_segments=transcript_segments,
+            transcript_correctness=transcript_correctness,
             glossary_terms=normalized_terms,
             preserved_terms=translation.preserved_terms,
             translation_provider=translation,
@@ -1380,6 +1614,20 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         source_citation_indexes=source_citation_indexes,
         source_citation_count=source_citation_count,
     )
+    transcript_segments = tuple(
+        transcript_segment_from_any(cast(dict[str, Any], segment))
+        for segment in row.get("transcript_segments", row.get("transcriptSegments", ()))
+    )
+    transcript_correctness = validate_multilingual_transcript_correctness(
+        target_language=target_language,
+        source_text=source_script_text,
+        segments=transcript_segments,
+        source_run_id=str(row["source_run_id"]),
+        evaluation_id=source_evaluation_id,
+        context_ref_ids=source_context_ref_ids,
+        citation_indexes=source_citation_indexes,
+        claim_support_ids=source_claim_support_ids,
+    )
     expected_request_checksum = build_multilingual_request_checksum(
         source_script=source_script_text,
         source_language=source_language,
@@ -1449,6 +1697,8 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         preserved_terms=expected_preserved_terms,
         source_script_text=source_script_text,
         translated_script_text=translated_script_text,
+        transcript_segments=transcript_segments,
+        transcript_correctness=transcript_correctness,
         translation_provider=TranslationProviderResult(
             provider=translation_provider_id,
             provider_mode=translation_provider_mode,
@@ -1485,6 +1735,8 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         source_text_checksum=source_text_checksum,
         translated_script_text=translated_script_text,
         subtitles_text=subtitles_text,
+        transcript_segments=transcript_segments,
+        transcript_correctness=transcript_correctness,
         glossary_terms=[str(term) for term in row.get("glossary_terms", [])],
         preserved_terms=expected_preserved_terms,
         translation_provider=TranslationProviderResult(
@@ -1580,6 +1832,52 @@ def create_stage6_service(*, state_path: Path | None = None) -> Stage6Service:
     return Stage6Service(state_path=state_path)
 
 
+def get_language_catalog() -> tuple[LanguageCatalogRecord, ...]:
+    return LANGUAGE_CATALOG
+
+
+def language_catalog_record_to_api(record: LanguageCatalogRecord) -> dict[str, object]:
+    return {
+        "languageTag": record.language_tag,
+        "englishName": record.english_name,
+        "nativeName": record.native_name,
+        "label": f"{record.english_name} / {record.native_name}",
+        "script": record.script,
+        "direction": record.direction,
+        "marketPriority": record.market_priority,
+        "regionGroup": record.region_group,
+        "localDemoSupportStatus": record.local_demo_support_status,
+        "providerSupportStatus": record.provider_support_status,
+        "testCoverageLevel": record.test_coverage_level,
+    }
+
+
+def transcript_segment_to_api(segment: MultilingualTranscriptSegment) -> dict[str, object]:
+    return {
+        "segmentId": segment.segment_id,
+        "sourceText": segment.source_text,
+        "targetLanguage": segment.target_language,
+        "targetText": segment.target_text,
+        "englishReferenceText": segment.english_reference_text,
+        "citationMarkers": list(segment.citation_markers),
+        "citationIndexes": list(segment.citation_indexes),
+        "contextRefIds": list(segment.context_ref_ids),
+        "claimSupportIds": list(segment.claim_support_ids),
+        "sourceRunId": segment.source_run_id,
+        "evaluationId": segment.evaluation_id,
+    }
+
+
+def transcript_correctness_to_api(correctness: TranscriptCorrectness) -> dict[str, object]:
+    return {
+        "validationStatus": correctness.validation_status,
+        "script": correctness.script,
+        "direction": correctness.direction,
+        "segmentCount": correctness.segment_count,
+        "citationIndexes": list(correctness.citation_indexes),
+    }
+
+
 def build_multilingual_request_checksum(
     *,
     source_script: str,
@@ -1644,6 +1942,18 @@ def normalize_language_tag(language: str) -> str:
     raw_language = language.strip()
     if not raw_language:
         raise Stage6Error(422, "UNSUPPORTED_LANGUAGE", "Unsupported target language.")
+    canonical_by_lower = {tag.lower(): tag for tag in LANGUAGE_CATALOG_BY_TAG}
+    lowered = raw_language.lower()
+    if lowered in canonical_by_lower:
+        canonical = canonical_by_lower[lowered]
+        record = LANGUAGE_CATALOG_BY_TAG[canonical]
+        if record.local_demo_support_status != "SUPPORTED":
+            raise Stage6Error(
+                422,
+                "LOCAL_DEMO_LANGUAGE_UNSUPPORTED",
+                f"{record.english_name} is cataloged as planned and unsupported in the local demo.",
+            )
+        return canonical
     try:
         normalized = langcodes.standardize_tag(raw_language)
         base_language = langcodes.Language.get(normalized).language
@@ -1652,6 +1962,216 @@ def normalize_language_tag(language: str) -> str:
     if base_language not in SUPPORTED_LANGUAGES:
         raise Stage6Error(422, "UNSUPPORTED_LANGUAGE", "Unsupported target language.")
     return base_language
+
+
+def source_transcript_segments(source_text: str) -> tuple[tuple[str, tuple[str, ...], tuple[int, ...]], ...]:
+    matches = list(re.finditer(r"(?P<text>.*?\[(?P<index>\d+)\])(?:\s+|$)", source_text, flags=re.DOTALL))
+    if not matches:
+        return ((source_text.strip(), (), ()),)
+    segments: list[tuple[str, tuple[str, ...], tuple[int, ...]]] = []
+    for match in matches:
+        text = " ".join(match.group("text").strip().split())
+        index = int(match.group("index"))
+        segments.append((text, (f"[{index}]",), (index,)))
+    return tuple(segments)
+
+
+def translate_demo_source_text(*, source_text: str, target_language: str) -> str:
+    return " ".join(
+        translate_demo_segment_text(
+            segment_number=index,
+            source_segment=segment_text,
+            target_language=target_language,
+            citation_markers=markers,
+        )
+        for index, (segment_text, markers, _citation_indexes) in enumerate(source_transcript_segments(source_text), start=1)
+    )
+
+
+def translate_demo_segment_text(
+    *,
+    segment_number: int,
+    source_segment: str,
+    target_language: str,
+    citation_markers: tuple[str, ...],
+) -> str:
+    if target_language == "en":
+        target = source_segment
+    else:
+        base_text = DEMO_TRANSLATED_SEGMENT_TEXT.get(target_language)
+        if base_text is None:
+            raise Stage6Error(422, "UNSUPPORTED_LANGUAGE", "Unsupported target language.")
+        target = base_text
+    suffix = " ".join(citation_markers)
+    if suffix and not target.endswith(suffix):
+        target = f"{target} {suffix}"
+    if len(source_transcript_segments(source_segment)) == 1 and citation_markers:
+        return target
+    return target
+
+
+def build_multilingual_transcript_segments(
+    *,
+    source_text: str,
+    target_language: str,
+    source_run_id: str,
+    source_evaluation_id: str,
+    source_context_ref_ids: tuple[str, ...],
+    source_claim_support_ids: tuple[str, ...],
+) -> tuple[MultilingualTranscriptSegment, ...]:
+    source_segments = source_transcript_segments(source_text)
+    context_by_citation = dict(zip(citation_marker_sequence(source_text), source_context_ref_ids, strict=False))
+    claim_by_citation = dict(zip(citation_marker_sequence(source_text), source_claim_support_ids, strict=False))
+    segments: list[MultilingualTranscriptSegment] = []
+    for index, (source_segment, markers, citation_indexes) in enumerate(source_segments, start=1):
+        context_ref_ids = tuple(context_by_citation.get(marker.strip("[]"), "") for marker in markers)
+        claim_support_ids = tuple(claim_by_citation.get(marker.strip("[]"), "") for marker in markers)
+        segments.append(
+            MultilingualTranscriptSegment(
+                segment_id=f"seg_{index:03d}",
+                source_text=source_segment,
+                target_language=target_language,
+                target_text=translate_demo_segment_text(
+                    segment_number=index,
+                    source_segment=source_segment,
+                    target_language=target_language,
+                    citation_markers=markers,
+                ),
+                english_reference_text=source_segment,
+                citation_markers=markers,
+                citation_indexes=citation_indexes,
+                context_ref_ids=tuple(value for value in context_ref_ids if value),
+                claim_support_ids=tuple(value for value in claim_support_ids if value),
+                source_run_id=source_run_id,
+                evaluation_id=source_evaluation_id,
+            )
+        )
+    return tuple(segments)
+
+
+SCRIPT_PATTERNS = {
+    "Devanagari": re.compile(r"[\u0900-\u097F]"),
+    "Arabic": re.compile(r"[\u0600-\u06FF]"),
+    "Hebrew": re.compile(r"[\u0590-\u05FF]"),
+    "Cyrillic": re.compile(r"[\u0400-\u04FF]"),
+    "Japanese": re.compile(r"[\u3040-\u30FF\u4E00-\u9FFF]"),
+    "Hangul": re.compile(r"[\uAC00-\uD7AF]"),
+    "Thai": re.compile(r"[\u0E00-\u0E7F]"),
+}
+
+
+def validate_target_script(*, record: LanguageCatalogRecord, target_text: str, source_text: str) -> None:
+    if record.language_tag == "en":
+        return
+    if target_text.strip() == source_text.strip():
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Target transcript is an English fallback.")
+    if record.language_tag == "zh-Hans" and not any(character in target_text for character in ("简", "项", "师", "转")):
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Simplified Chinese transcript script is invalid.")
+    if record.language_tag == "zh-Hant" and not any(character in target_text for character in ("繁", "專", "師", "轉")):
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Traditional Chinese transcript script is invalid.")
+    pattern = SCRIPT_PATTERNS.get(record.script)
+    if pattern is not None and not pattern.search(target_text):
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", f"{record.script} transcript script is invalid.")
+
+
+def validate_multilingual_transcript_correctness(
+    *,
+    target_language: str | None = None,
+    language_tag: str | None = None,
+    source_text: str,
+    segments: Iterable[MultilingualTranscriptSegment | dict[str, Any]],
+    source_run_id: str,
+    evaluation_id: str,
+    context_ref_ids: tuple[str, ...],
+    citation_indexes: tuple[int, ...],
+    claim_support_ids: tuple[str, ...],
+) -> TranscriptCorrectness:
+    target_language = target_language or language_tag
+    if target_language is None:
+        raise Stage6Error(422, "UNSUPPORTED_LANGUAGE", "Unsupported target language.")
+    record = LANGUAGE_CATALOG_BY_TAG[target_language]
+    normalized_segments = tuple(transcript_segment_from_any(segment) for segment in segments)
+    if not normalized_segments:
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript segments are required.")
+    source_segments = source_transcript_segments(source_text)
+    if len(normalized_segments) != len(source_segments):
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript does not cover every cited source segment.")
+    expected_indexes: list[int] = []
+    for index, (segment, expected_source) in enumerate(zip(normalized_segments, source_segments, strict=True), start=1):
+        source_segment, markers, indexes = expected_source
+        expected_context_refs = tuple(
+            context_ref_ids[citation_indexes.index(citation_index)]
+            for citation_index in indexes
+            if citation_index in citation_indexes
+        )
+        expected_claim_supports = tuple(
+            claim_support_ids[citation_indexes.index(citation_index)]
+            for citation_index in indexes
+            if citation_index in citation_indexes
+        )
+        if segment.segment_id != f"seg_{index:03d}":
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript segment order is invalid.")
+        if segment.source_text != source_segment:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Source English text is missing or drifted.")
+        if segment.target_language != target_language:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript target language binding is invalid.")
+        if not segment.target_text.strip():
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Target transcript text is missing.")
+        if not segment.english_reference_text.strip():
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "English reference text is missing.")
+        if segment.english_reference_text != source_segment:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "English reference text does not match source.")
+        if segment.citation_markers != markers or segment.citation_indexes != indexes:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Citation sequence drifted.")
+        if any(marker not in segment.target_text for marker in markers):
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Target transcript lost citation markers.")
+        expected_target_text = translate_demo_segment_text(
+            segment_number=index,
+            source_segment=source_segment,
+            target_language=target_language,
+            citation_markers=markers,
+        )
+        if segment.target_text != expected_target_text:
+            raise Stage6Error(
+                422,
+                "TRANSCRIPT_CORRECTNESS_FAILED",
+                "Target transcript does not match the deterministic local-demo fixture.",
+            )
+        if segment.source_run_id != source_run_id or segment.evaluation_id != evaluation_id:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Source or evaluation binding is missing.")
+        if segment.context_ref_ids != expected_context_refs or segment.claim_support_ids != expected_claim_supports:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Context or claim-support binding is missing.")
+        validate_target_script(record=record, target_text=segment.target_text, source_text=source_segment)
+        expected_indexes.extend(indexes)
+    if tuple(expected_indexes) != citation_indexes:
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript citation coverage is incomplete.")
+    return TranscriptCorrectness(
+        validation_status="PASSED",
+        script=record.script,
+        direction=record.direction,
+        segment_count=len(normalized_segments),
+        citation_indexes=tuple(expected_indexes),
+    )
+
+
+def transcript_segment_from_any(value: MultilingualTranscriptSegment | dict[str, Any]) -> MultilingualTranscriptSegment:
+    if isinstance(value, MultilingualTranscriptSegment):
+        return value
+    return MultilingualTranscriptSegment(
+        segment_id=str(value["segmentId"] if "segmentId" in value else value["segment_id"]),
+        source_text=str(value["sourceText"] if "sourceText" in value else value["source_text"]),
+        target_language=str(value["targetLanguage"] if "targetLanguage" in value else value["target_language"]),
+        target_text=str(value["targetText"] if "targetText" in value else value["target_text"]),
+        english_reference_text=str(
+            value["englishReferenceText"] if "englishReferenceText" in value else value["english_reference_text"]
+        ),
+        citation_markers=tuple(str(entry) for entry in value.get("citationMarkers", value.get("citation_markers", ()))),
+        citation_indexes=tuple(int(entry) for entry in value.get("citationIndexes", value.get("citation_indexes", ()))),
+        context_ref_ids=tuple(str(entry) for entry in value.get("contextRefIds", value.get("context_ref_ids", ()))),
+        claim_support_ids=tuple(str(entry) for entry in value.get("claimSupportIds", value.get("claim_support_ids", ()))),
+        source_run_id=str(value["sourceRunId"] if "sourceRunId" in value else value["source_run_id"]),
+        evaluation_id=str(value["evaluationId"] if "evaluationId" in value else value["evaluation_id"]),
+    )
 
 
 def normalize_glossary_terms(terms: Iterable[str]) -> list[str]:
@@ -2137,7 +2657,11 @@ def estimate_duration_seconds(text: str) -> int:
 
 
 def language_display_name(language: str) -> str:
-    return cast(str, Locale.parse(normalize_language_tag(language)).get_display_name("en"))
+    normalized_language = normalize_language_tag(language)
+    record = LANGUAGE_CATALOG_BY_TAG.get(normalized_language)
+    if record is not None:
+        return record.english_name
+    return cast(str, Locale.parse(normalized_language).get_display_name("en"))
 
 
 def mock_audio_profile(duration_seconds: int) -> dict[str, int]:
@@ -2247,6 +2771,8 @@ def build_stage6_metadata_text(
     preserved_terms: list[str],
     source_script_text: str,
     translated_script_text: str,
+    transcript_segments: tuple[MultilingualTranscriptSegment, ...],
+    transcript_correctness: TranscriptCorrectness,
     translation_provider: TranslationProviderResult,
     voice: VoiceProviderResult,
     translated_script_artifact: DownloadableArtifact,
@@ -2275,6 +2801,8 @@ def build_stage6_metadata_text(
         "glossaryTerms": glossary_terms,
         "preservedTerms": preserved_terms,
         "citationMarkers": sorted(citation_markers(source_script_text)),
+        "transcriptCorrectness": transcript_correctness_to_api(transcript_correctness),
+        "transcriptSegments": [transcript_segment_to_api(segment) for segment in transcript_segments],
         "translationProvider": {
             "provider": translation_provider.provider,
             "providerMode": translation_provider.provider_mode,
@@ -2323,6 +2851,8 @@ def multilingual_to_api(result: MultilingualWalkthroughResult) -> dict[str, obje
         "sourceTextChecksum": result.source_text_checksum,
         "translatedScriptText": result.translated_script_text,
         "subtitlesText": result.subtitles_text,
+        "transcriptSegments": [transcript_segment_to_api(segment) for segment in result.transcript_segments],
+        "transcriptCorrectness": transcript_correctness_to_api(result.transcript_correctness),
         "glossaryTerms": result.glossary_terms,
         "preservedTerms": result.preserved_terms,
         "translationProvider": {

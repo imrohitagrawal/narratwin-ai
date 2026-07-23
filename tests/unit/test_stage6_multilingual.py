@@ -21,6 +21,7 @@ from backend.app.stage6 import (
     create_stage6_service,
     get_language_catalog,
     generate_subtitles,
+    translate_demo_source_text,
     validate_multilingual_transcript_correctness,
     normalize_language_tag,
     split_captions,
@@ -169,7 +170,7 @@ def test_language_catalog_marks_priority1_supported_and_priority2_planned() -> N
 
 
 def test_hindi_transcript_validation_rejects_romanized_fallback() -> None:
-    segment = {
+    segment: dict[str, Any] = {
         "segmentId": "seg_001",
         "sourceText": "For engineers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
         "targetLanguage": "hi",
@@ -199,7 +200,7 @@ def test_hindi_transcript_validation_rejects_romanized_fallback() -> None:
 
 
 def test_transcript_validation_rejects_metadata_only_completed_success() -> None:
-    segment = {
+    segment: dict[str, Any] = {
         "segmentId": "seg_001",
         "sourceText": "For engineers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
         "targetLanguage": "ja",
@@ -594,7 +595,10 @@ def test_concurrent_duplicate_idempotency_key_is_rejected_in_flight() -> None:
                 provider_mode=self.provider_mode,
                 source_language=source_language,
                 target_language=target_language,
-                translated_text=source_text,
+                translated_text=translate_demo_source_text(
+                    source_text=source_text,
+                    target_language=target_language,
+                ),
                 preserved_terms=glossary_terms,
             )
 

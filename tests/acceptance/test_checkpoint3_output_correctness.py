@@ -472,6 +472,15 @@ def test_checkpoint3_output_correctness_exhaustively_proves_priority1_multilingu
             assert segment["evaluationId"] == run["evaluation"]["evaluationId"]
 
         for mutation_name, mutated_segments in multilingual_false_pass_mutations(body):
+            if language_tag == "en" and mutation_name in {"english-fallback", "wrong-script"}:
+                coverage_rows.append(
+                    {
+                        "languageTag": language_tag,
+                        "mutation": mutation_name,
+                        "result": "not-applicable-for-source-language",
+                    }
+                )
+                continue
             with pytest.raises(Exception):
                 validate_multilingual_transcript_correctness(
                     language_tag=language_tag,

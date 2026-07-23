@@ -196,6 +196,74 @@
   word-break: break-word;
 }
 
+.supportStatus {
+  color: #5b6472;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.transcript {
+  display: grid;
+  gap: 12px;
+}
+
+.transcriptSegment {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e2e7ef;
+  border-radius: 6px;
+  background: #fafbfc;
+}
+
+.segmentTextGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.segmentTextGrid div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.segmentTextGrid strong,
+.segmentBindings dt {
+  color: #5b6472;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.segmentTextGrid p {
+  max-width: none;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.segmentBindings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+}
+
+.segmentBindings div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.segmentBindings dd {
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

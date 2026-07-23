@@ -68,6 +68,14 @@ type BrowserEvidence = {
     avatarSourceRunId: string;
     avatarSourceEvaluationId: string;
   };
+  visibleTranscript: {
+    sourceEnglishVisible: boolean;
+    targetTranscriptVisible: boolean;
+    englishReferenceVisible: boolean;
+    citationsVisible: boolean;
+    metadataArtifactMatchesTranscript: boolean;
+  };
+  representativeBrowserCoverage: RepresentativeBrowserCoverage[];
   artifactMetadata: Awaited<ReturnType<typeof readArtifactMetadata>>[];
   opsStatus: {
     operationalPosture: string;
@@ -88,6 +96,28 @@ type BrowserEvidence = {
     clonedIdentity: boolean;
   };
 };
+
+type RepresentativeBrowserCoverage = {
+  group: string;
+  languageTag: string;
+  targetSnippetVisible: boolean;
+  sourceEnglishVisible: boolean;
+  targetTranscriptVisible: boolean;
+  englishReferenceVisible: boolean;
+  citationsVisible: boolean;
+  metadataArtifactMatchesTranscript: boolean;
+};
+
+const REPRESENTATIVE_BROWSER_LANGUAGES = [
+  { group: "Hindi / Devanagari", languageTag: "hi", expectedSnippet: "इंजीनियरों" },
+  { group: "Arabic / RTL Arabic script", languageTag: "ar", expectedSnippet: "للمهندسين" },
+  { group: "Hebrew / RTL", languageTag: "he", expectedSnippet: "עבור מהנדסים" },
+  { group: "Japanese / CJK", languageTag: "ja", expectedSnippet: "エンジニア向け" },
+  { group: "Korean / Hangul", languageTag: "ko", expectedSnippet: "엔지니어를" },
+  { group: "Russian / Cyrillic", languageTag: "ru", expectedSnippet: "Для инженеров" },
+  { group: "French / Latin", languageTag: "fr", expectedSnippet: "Pour les ingénieurs" },
+  { group: "Thai / Southeast Asia", languageTag: "th", expectedSnippet: "สำหรับวิศวกร" },
+] as const;
 
 test.skip(process.env.NARRATWIN_REAL_STACK !== "1", "Requires the dedicated local/mock CP8 browser config.");
 
@@ -192,6 +222,12 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
 
   await expect(page.getByLabel("Trace metadata")).toContainText("mock", { timeout: 30_000 });
   await expect(page.getByLabel("Trace metadata")).toContainText("fr");
+  const visibleTranscript = page.getByLabel("Validated multilingual transcript");
+  await expect(visibleTranscript).toContainText("Source English");
+  await expect(visibleTranscript).toContainText("Target transcript");
+  await expect(visibleTranscript).toContainText("English reference");
+  await expect(visibleTranscript).toContainText("Pour les ingénieurs");
+  await expect(visibleTranscript).toContainText("[1]");
   await expect(page.getByLabel("Avatar metadata")).toContainText("CONFIRMED");
   await expect(page.getByLabel("Avatar metadata")).toContainText("disabled");
   await expect(page.getByLabel("Render job lifecycle")).toContainText("MOCK_LOCAL");
@@ -237,11 +273,31 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
       "Download script",
       "Download subtitles",
       "Download voice manifest",
+      "Download transcript metadata",
       "Download avatar demo",
       "Download render manifest",
       "Download video placeholder",
     ].map((label) => readArtifactMetadata(page, label)),
   );
+  const transcriptMetadata = await readJsonArtifact(page, "Download transcript metadata");
+  const metadataSegments = Array.isArray(transcriptMetadata.transcriptSegments)
+    ? transcriptMetadata.transcriptSegments
+    : [];
+  const representativeBrowserCoverage: RepresentativeBrowserCoverage[] = [
+    await inspectCurrentVisibleTranscript(page, "French / Latin", targetLanguage, "Pour les ingénieurs"),
+  ];
+  for (const representative of REPRESENTATIVE_BROWSER_LANGUAGES.filter((entry) => entry.languageTag !== targetLanguage)) {
+    representativeBrowserCoverage.push(
+      await exerciseRepresentativeLanguage(page, {
+        ...representative,
+        audience,
+        depth,
+        glossaryTerms,
+        knowledgeDocument,
+        projectName: `${projectName} ${representative.languageTag}`,
+      }),
+    );
+  }
 
   const evidence: BrowserEvidence = {
     runtimeNonce,
@@ -332,6 +388,24 @@ Checkpoint 3A browser evidence nonce: ${runtimeNonce}.`;
       avatarSourceRunId: requireString(avatarRender.runId, "avatar sourceRunId"),
       avatarSourceEvaluationId: requireString(avatarRender.evaluationId, "avatar sourceEvaluationId"),
     },
+    visibleTranscript: {
+      sourceEnglishVisible: await visibleTranscript.getByText("Source English").isVisible(),
+      targetTranscriptVisible: await visibleTranscript.getByText("Target transcript").isVisible(),
+      englishReferenceVisible: await visibleTranscript.getByText("English reference").isVisible(),
+      citationsVisible: await visibleTranscript.getByText("[1]").first().isVisible(),
+      metadataArtifactMatchesTranscript:
+        metadataSegments.length > 0 &&
+        metadataSegments.every((segment) => {
+          const row = segment as Record<string, unknown>;
+          return (
+            typeof row.sourceText === "string" &&
+            typeof row.targetText === "string" &&
+            typeof row.englishReferenceText === "string" &&
+            row.targetLanguage === targetLanguage
+          );
+        }),
+    },
+    representativeBrowserCoverage,
     artifactMetadata,
     opsStatus: {
       operationalPosture: requireString(opsStatus.operationalPosture, "operationalPosture"),
@@ -442,6 +516,15 @@ async function readArtifactMetadata(page: Page, label: string) {
   };
 }
 
+async function readJsonArtifact(page: Page, label: string) {
+  const attributes = await page.getByRole("link", { name: label }).evaluate((link) => ({
+    href: link.getAttribute("href") ?? "",
+  }));
+  const dataUrlMatch = /^data:application\/json;base64,(.+)$/.exec(attributes.href);
+  expect(dataUrlMatch).not.toBeNull();
+  return JSON.parse(Buffer.from(dataUrlMatch?.[1] ?? "", "base64").toString("utf8")) as Record<string, unknown>;
+}
+
 function assertBrowserEvidenceContract(evidence: BrowserEvidence, appOrigin: string) {
   if (!evidence.runtimeNonce.startsWith("cp8-")) {
     throw new Error("runtime nonce is missing");
@@ -514,7 +597,33 @@ function assertBrowserEvidenceContract(evidence: BrowserEvidence, appOrigin: str
   if (evidence.sourceBinding.unsupportedClaimCount !== 0) {
     throw new Error("unsupported claim evidence is not passing");
   }
-  if (evidence.artifactMetadata.length !== 6 || evidence.artifactMetadata.some((artifact) => artifact.byteLength <= 0)) {
+  if (
+    !evidence.visibleTranscript.sourceEnglishVisible ||
+    !evidence.visibleTranscript.targetTranscriptVisible ||
+    !evidence.visibleTranscript.englishReferenceVisible ||
+    !evidence.visibleTranscript.citationsVisible ||
+    !evidence.visibleTranscript.metadataArtifactMatchesTranscript
+  ) {
+    throw new Error("visible multilingual transcript evidence is incomplete");
+  }
+  const requiredRepresentativeGroups = REPRESENTATIVE_BROWSER_LANGUAGES.map((entry) => entry.group);
+  const observedRepresentativeGroups = evidence.representativeBrowserCoverage
+    .filter(
+      (entry) =>
+        entry.sourceEnglishVisible &&
+        entry.targetTranscriptVisible &&
+        entry.englishReferenceVisible &&
+        entry.citationsVisible &&
+        entry.metadataArtifactMatchesTranscript &&
+        entry.targetSnippetVisible,
+    )
+    .map((entry) => entry.group);
+  for (const group of requiredRepresentativeGroups) {
+    if (!observedRepresentativeGroups.includes(group)) {
+      throw new Error(`representative browser coverage is missing ${group}`);
+    }
+  }
+  if (evidence.artifactMetadata.length !== 7 || evidence.artifactMetadata.some((artifact) => artifact.byteLength <= 0)) {
     throw new Error("artifact binding is incomplete");
   }
   if (evidence.opsStatus.operationalPosture !== "LOCAL_ONLY" || evidence.opsStatus.stage4Projects < 1) {
@@ -530,6 +639,70 @@ function assertBrowserEvidenceContract(evidence: BrowserEvidence, appOrigin: str
   ) {
     throw new Error("local/mock provider posture is missing");
   }
+}
+
+async function exerciseRepresentativeLanguage(
+  page: Page,
+  options: {
+    group: string;
+    languageTag: string;
+    expectedSnippet: string;
+    projectName: string;
+    knowledgeDocument: string;
+    audience: string;
+    depth: string;
+    glossaryTerms: string[];
+  },
+): Promise<RepresentativeBrowserCoverage> {
+  await page.getByLabel("Project name").fill(options.projectName);
+  await page.getByLabel("Knowledge document").fill(options.knowledgeDocument);
+  await page.locator('select[name="audience"]').selectOption(options.audience);
+  await page.locator('select[name="depth"]').selectOption(options.depth);
+  await page.locator('select[name="targetLanguage"]').selectOption(options.languageTag);
+  await page.getByLabel("Glossary terms").fill(options.glossaryTerms.join("\n"));
+  await page.getByLabel("Synthetic avatar consent").check();
+  await page.getByRole("button", { name: "Generate avatar demo export" }).click();
+
+  await expect(page.getByLabel("Trace metadata")).toContainText(options.languageTag, { timeout: 30_000 });
+  return inspectCurrentVisibleTranscript(page, options.group, options.languageTag, options.expectedSnippet);
+}
+
+async function inspectCurrentVisibleTranscript(
+  page: Page,
+  group: string,
+  languageTag: string,
+  expectedSnippet: string,
+): Promise<RepresentativeBrowserCoverage> {
+  const visibleTranscript = page.getByLabel("Validated multilingual transcript");
+  await expect(visibleTranscript).toContainText("Source English");
+  await expect(visibleTranscript).toContainText("Target transcript");
+  await expect(visibleTranscript).toContainText("English reference");
+  await expect(visibleTranscript).toContainText(expectedSnippet);
+  await expect(visibleTranscript).toContainText("[1]");
+  const transcriptMetadata = await readJsonArtifact(page, "Download transcript metadata");
+  const metadataSegments = Array.isArray(transcriptMetadata.transcriptSegments)
+    ? transcriptMetadata.transcriptSegments
+    : [];
+  return {
+    group,
+    languageTag,
+    targetSnippetVisible: await visibleTranscript.getByText(expectedSnippet).first().isVisible(),
+    sourceEnglishVisible: await visibleTranscript.getByText("Source English").isVisible(),
+    targetTranscriptVisible: await visibleTranscript.getByText("Target transcript").isVisible(),
+    englishReferenceVisible: await visibleTranscript.getByText("English reference").isVisible(),
+    citationsVisible: await visibleTranscript.getByText("[1]").first().isVisible(),
+    metadataArtifactMatchesTranscript:
+      metadataSegments.length > 0 &&
+      metadataSegments.every((segment) => {
+        const row = segment as Record<string, unknown>;
+        return (
+          typeof row.sourceText === "string" &&
+          typeof row.targetText === "string" &&
+          typeof row.englishReferenceText === "string" &&
+          row.targetLanguage === languageTag
+        );
+      }),
+  };
 }
 
 function requireResponse(responses: ApiResponseEvidence[], method: string, path: string) {

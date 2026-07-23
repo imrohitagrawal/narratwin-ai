@@ -55,6 +55,18 @@ CP8_TARGET_LANGUAGE = "fr"
 CP8_REQUESTED_VOICE_PROVIDER = "mock"
 CP8_REQUESTED_AVATAR_PROVIDER = "mock"
 CP8_GLOSSARY_STATIC_TERMS = ("NarraTwin AI", "Checkpoint 3A")
+CP8_REQUIRED_REPRESENTATIVE_BROWSER_GROUPS = frozenset(
+    {
+        "Hindi / Devanagari",
+        "Arabic / RTL Arabic script",
+        "Hebrew / RTL",
+        "Japanese / CJK",
+        "Korean / Hangul",
+        "Russian / Cyrillic",
+        "French / Latin",
+        "Thai / Southeast Asia",
+    }
+)
 CP8_KNOWLEDGE_TEMPLATE = """# NarraTwin AI
 
 NarraTwin AI turns approved project knowledge into grounded walkthrough scripts with source chunk citations.
@@ -514,7 +526,44 @@ def validate_completed_probe_output(probe: Probe, output: str) -> str:
         return "CP8 browser evidence missing source/eval binding."
 
     artifacts = evidence.get("artifactMetadata")
-    if not isinstance(artifacts, list) or len(artifacts) != 6:
+    visible_transcript = evidence.get("visibleTranscript")
+    if not isinstance(visible_transcript, dict) or not all(
+        visible_transcript.get(key) is True
+        for key in (
+            "sourceEnglishVisible",
+            "targetTranscriptVisible",
+            "englishReferenceVisible",
+            "citationsVisible",
+            "metadataArtifactMatchesTranscript",
+        )
+    ):
+        return "CP8 browser evidence missing visible transcript proof."
+    representative_browser_coverage = evidence.get("representativeBrowserCoverage")
+    if not isinstance(representative_browser_coverage, list):
+        return "CP8 browser evidence missing representative script coverage."
+    observed_representative_groups: set[str] = set()
+    for entry in representative_browser_coverage:
+        if not isinstance(entry, dict):
+            return "CP8 browser evidence missing representative script coverage."
+        group = entry.get("group")
+        language_tag = entry.get("languageTag")
+        if not isinstance(group, str) or not isinstance(language_tag, str):
+            return "CP8 browser evidence missing representative script coverage."
+        if all(
+            entry.get(key) is True
+            for key in (
+                "targetSnippetVisible",
+                "sourceEnglishVisible",
+                "targetTranscriptVisible",
+                "englishReferenceVisible",
+                "citationsVisible",
+                "metadataArtifactMatchesTranscript",
+            )
+        ):
+            observed_representative_groups.add(group)
+    if not CP8_REQUIRED_REPRESENTATIVE_BROWSER_GROUPS.issubset(observed_representative_groups):
+        return "CP8 browser evidence missing representative script coverage."
+    if not isinstance(artifacts, list) or len(artifacts) != 7:
         return "CP8 browser evidence missing artifact metadata."
     for artifact in artifacts:
         if not isinstance(artifact, dict):

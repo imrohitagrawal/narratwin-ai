@@ -305,6 +305,33 @@ ISSUE_269_ALLOWED_BRANCHES = {
     "phase-1-closure-269-c3a-cp8-real-browser-e2e",
     "phase-1-closure-269-c3a-cp8-real-browser-e2e-refresh",
 }
+ISSUE_276_ALLOWED_CHANGED_FILES = {
+    "backend/app/main.py",
+    "backend/app/stage6.py",
+    "docs/demo/CHECKPOINT3A_MULTILINGUAL_REHEARSAL_CHECKLIST.md",
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+    "docs/governance/preflights/issue-276.json",
+    "docs/ADR/0033-checkpoint3-real-browser-acceptance-evidence.md",
+    "docs/QUALITY_GATES.md",
+    "docs/reviews/ISSUE_276_C3A_R1_PR_BODY.md",
+    "docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md",
+    "docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "frontend/src/app/page.module.css",
+    "frontend/src/app/page.test.tsx",
+    "frontend/src/app/page.tsx",
+    "frontend/tests/checkpoint3-real-browser.spec.ts",
+    "frontend/tests/smoke.spec.ts",
+    "scripts/quality/check_checkpoint3_acceptance.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/acceptance/test_checkpoint3_output_correctness.py",
+    "tests/acceptance/test_checkpoint3_media_artifacts.py",
+    "tests/api/test_stage6_multilingual_api.py",
+    "tests/unit/test_checkpoint3_acceptance_gate.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_stage6_multilingual.py",
+}
 ISSUE_274_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-274.json",
     "docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md",
@@ -1580,10 +1607,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #249 / checkpoint3b-pr1-consent-provenance-planning",
-        "checkpoint3b-pr1-satisfied-by-this-pr",
-        "checkpoint3b-pr1-satisfied-by-this-pr",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the currently listed Checkpoint 3A executable acceptance probe set through CP1-CP8. PR #273 merged the eighth Checkpoint 3A child implementation checkpoint at 0f737c564f9245b66640988573ac04f4432e06d5, and issue #269 is closed. Issue #274 is satisfied by this PR when merged as the public-safe Checkpoint 3B consent/provenance planning gate only: consent/provenance planning, acceptance contracts, risk boundaries, and future issue sequencing. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
+        "issue #276 / c3a-r1-major-market-multilingual-output-correctness",
+        "c3a-r1-satisfied-by-this-pr",
+        "c3a-r1-satisfied-by-this-pr",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is satisfied by this PR when merged as a Checkpoint 3A repair child for major-market multilingual output correctness: backend-driven language catalog, Hindi in Priority 1, Priority 1 exhaustive local/mock fixture translations, native-script validation, structured source/target/reference transcript segments, citation/source/eval/context/claim-support binding, artifact parity, false-positive mutation coverage, coverage matrix/summary artifacts, UI catalog rendering, and visible transcript artifact validation. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3687,6 +3714,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_267_ALLOWED_CHANGED_FILES
     elif branch in ISSUE_269_ALLOWED_BRANCHES:
         allowed_files = ISSUE_269_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-c3a-r1-major-market-multilingual-output-correctness":
+        allowed_files = ISSUE_276_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-c3b-pr1-consent-provenance-planning-274":
         allowed_files = ISSUE_274_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-274-"):

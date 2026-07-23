@@ -158,6 +158,35 @@ def write_cp8_evidence(
                     "avatarSourceRunId": "run_000001",
                     "avatarSourceEvaluationId": "eval_000001",
                 },
+                "visibleTranscript": {
+                    "sourceEnglishVisible": True,
+                    "targetTranscriptVisible": True,
+                    "englishReferenceVisible": True,
+                    "citationsVisible": True,
+                    "metadataArtifactMatchesTranscript": True,
+                },
+                "representativeBrowserCoverage": [
+                    {
+                        "group": group,
+                        "languageTag": language_tag,
+                        "targetSnippetVisible": True,
+                        "sourceEnglishVisible": True,
+                        "targetTranscriptVisible": True,
+                        "englishReferenceVisible": True,
+                        "citationsVisible": True,
+                        "metadataArtifactMatchesTranscript": True,
+                    }
+                    for group, language_tag in (
+                        ("Hindi / Devanagari", "hi"),
+                        ("Arabic / RTL Arabic script", "ar"),
+                        ("Hebrew / RTL", "he"),
+                        ("Japanese / CJK", "ja"),
+                        ("Korean / Hangul", "ko"),
+                        ("Russian / Cyrillic", "ru"),
+                        ("French / Latin", "fr"),
+                        ("Thai / Southeast Asia", "th"),
+                    )
+                ],
                 "artifactMetadata": [
                     {
                         "label": label,
@@ -170,6 +199,7 @@ def write_cp8_evidence(
                         ("Download script", "-script.md", "text/markdown"),
                         ("Download subtitles", "-fr.srt", "application/x-subrip"),
                         ("Download voice manifest", "-fr.json", "application/json"),
+                        ("Download transcript metadata", "-metadata.json", "application/json"),
                         ("Download avatar demo", "-demo.html", "text/html"),
                         ("Download render manifest", "-manifest.json", "application/json"),
                         ("Download video placeholder", "-placeholder.json", "application/json"),
@@ -773,6 +803,31 @@ def test_checkpoint3_acceptance_rejects_cp8_self_attested_idempotency_evidence(
 
     assert result.status == "FAIL"
     assert "missing idempotency binding" in result.output
+
+
+def test_checkpoint3_acceptance_rejects_cp8_missing_representative_browser_coverage(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(checkpoint3, "CP8_EVIDENCE_ROOT", tmp_path)
+
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        write_cp8_evidence(tmp_path)
+        evidence_path = tmp_path / "unit-cp8" / checkpoint3.CP8_EVIDENCE_FILE_NAME
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        evidence["representativeBrowserCoverage"] = [
+            entry
+            for entry in evidence["representativeBrowserCoverage"]
+            if entry["group"] != "Hindi / Devanagari"
+        ]
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+        return subprocess.CompletedProcess(args=args[0], returncode=0, stdout=cp8_success_stdout())
+
+    monkeypatch.setattr(checkpoint3.subprocess, "run", fake_run)
+
+    result = checkpoint3.run_probe(checkpoint3.PROBES[-1])
+
+    assert result.status == "FAIL"
+    assert "missing representative script coverage" in result.output
 
 
 @pytest.mark.parametrize(

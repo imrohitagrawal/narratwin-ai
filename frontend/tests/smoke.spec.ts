@@ -10,6 +10,23 @@ function artifactFromText(fileName: string, mimeType: string, text: string) {
   };
 }
 
+const languageCatalogResponse = {
+  languages: [
+    {
+      languageTag: "es",
+      englishName: "Spanish",
+      nativeName: "Español",
+      script: "Latin",
+      direction: "ltr",
+      marketPriority: 1,
+      regionGroup: "Europe/Latin America",
+      localDemoSupportStatus: "SUPPORTED",
+      providerSupportStatus: "LOCAL_DEMO_FIXTURE",
+      testCoverageLevel: "CHECKPOINT3A_EXHAUSTIVE",
+    },
+  ],
+};
+
 const walkthroughResponse = {
   runId: "run_ui_smoke",
   tenantId: "tenant_local",
@@ -141,6 +158,45 @@ const voiceManifestText = JSON.stringify({
   },
   disclosure: "Mock local TTS placeholder. No cloned voice or paid provider was used.",
 });
+const transcriptSegments = [
+  {
+    segmentId: "seg_001",
+    sourceText: walkthroughResponse.acceptedScriptText,
+    targetLanguage: "es",
+    targetText: translatedScriptText,
+    englishReferenceText: walkthroughResponse.acceptedScriptText,
+    citationMarkers: ["[1]"],
+    citationIndexes: [1],
+    contextRefIds: ["ctx_ui_001"],
+    claimSupportIds: ["claimsup_ui_001"],
+    sourceRunId: "run_ui_smoke",
+    evaluationId: "eval_ui",
+  },
+];
+const transcriptCorrectness = {
+  validationStatus: "PASSED",
+  script: "Latin",
+  direction: "ltr",
+  segmentCount: 1,
+  citationIndexes: [1],
+};
+const translatedScriptArtifact = artifactFromText("run_ui_smoke-es-script.md", "text/markdown", translatedScriptText);
+const subtitlesArtifact = artifactFromText("run_ui_smoke-es.srt", "application/x-subrip", subtitlesText);
+const voiceManifestArtifact = artifactFromText("voice-manifest-es.json", "application/json", voiceManifestText);
+const transcriptMetadataText = JSON.stringify({
+  multilingualRunId: "mlrun_ui_smoke",
+  sourceRunId: "run_ui_smoke",
+  targetLanguage: "es",
+  sourceContextRefIds: ["ctx_ui_001"],
+  sourceCitationIndexes: [1],
+  transcriptCorrectness,
+  transcriptSegments,
+});
+const transcriptMetadataArtifact = artifactFromText(
+  "run_ui_smoke-es-metadata.json",
+  "application/json",
+  transcriptMetadataText,
+);
 
 const multilingualResponse = {
   multilingualRunId: "mlrun_ui_smoke",
@@ -151,6 +207,8 @@ const multilingualResponse = {
   sourceScriptText: walkthroughResponse.acceptedScriptText,
   translatedScriptText,
   subtitlesText,
+  transcriptSegments,
+  transcriptCorrectness,
   glossaryTerms: ["NarraTwin AI", "project knowledge", "source chunks"],
   preservedTerms: ["NarraTwin AI", "project knowledge"],
   translationProvider: { provider: "mock", providerMode: "LOCAL" },
@@ -159,18 +217,13 @@ const multilingualResponse = {
     providerMode: "LOCAL",
     requestedProvider: "mock",
     language: "es",
-    artifact: {
-      ...artifactFromText("voice-manifest-es.json", "application/json", voiceManifestText),
-    },
+    artifact: voiceManifestArtifact,
   },
   artifacts: {
-    translatedScript: artifactFromText("run_ui_smoke-es-script.md", "text/markdown", translatedScriptText),
-    subtitles: artifactFromText("run_ui_smoke-es.srt", "application/x-subrip", subtitlesText),
-    voiceManifest: artifactFromText(
-      "voice-manifest-es.json",
-      "application/json",
-      voiceManifestText,
-    ),
+    translatedScript: translatedScriptArtifact,
+    subtitles: subtitlesArtifact,
+    voiceManifest: voiceManifestArtifact,
+    metadata: transcriptMetadataArtifact,
   },
   trace: {
     traceId: "trace_ui_smoke",
@@ -322,6 +375,10 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
     const path = new URL(request.url()).pathname;
     calls.push(`${request.method()} ${path}`);
 
+    if (request.method() === "GET" && path === "/api/v1/languages") {
+      await route.fulfill({ json: languageCatalogResponse });
+      return;
+    }
     if (request.method() === "POST" && path === "/api/v1/projects") {
       await route.fulfill({ json: { projectId: "proj_ui" } });
       return;
@@ -401,7 +458,7 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
   await page.getByLabel("Synthetic avatar consent").check();
   const defaultKnowledge = await page.getByLabel("Knowledge document").inputValue();
   await page.getByRole("button", { name: "Generate avatar demo export" }).click();
-  await expect.poll(() => calls, { timeout: 5000 }).toHaveLength(8);
+  await expect.poll(() => calls, { timeout: 5000 }).toHaveLength(9);
   const baseSeed = checksumSeed(
     "NarraTwin AI",
     defaultKnowledge,
@@ -445,6 +502,10 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
     "download",
     "run_ui_smoke-video-export-placeholder.json",
   );
+  await expect(page.getByRole("link", { name: "Download transcript metadata" })).toHaveAttribute(
+    "download",
+    "run_ui_smoke-es-metadata.json",
+  );
   await expect(page.getByLabel("Avatar metadata")).toContainText("local-html");
   await expect(page.getByLabel("Avatar metadata")).toContainText("CONFIRMED");
   await expect(page.getByLabel("Render job lifecycle")).toContainText("COMPLETED");
@@ -464,6 +525,7 @@ test("home page generates a Stage 7 avatar demo export through the API workflow"
   await expect(firstCitation.getByText("stage4_project.md")).toBeVisible();
   await expect(firstCitation.getByText("chunk_ui_001")).toBeVisible();
   expect(calls).toEqual([
+    "GET /api/v1/languages",
     "POST /api/v1/projects",
     "POST /api/v1/projects/proj_ui/knowledge-documents",
     "PATCH /api/v1/projects/proj_ui/knowledge-documents/doc_ui/approval",
@@ -482,6 +544,10 @@ test("home page stops before media generation when the walkthrough is refused", 
     const path = new URL(request.url()).pathname;
     calls.push(`${request.method()} ${path}`);
 
+    if (request.method() === "GET" && path === "/api/v1/languages") {
+      await route.fulfill({ json: languageCatalogResponse });
+      return;
+    }
     if (request.method() === "POST" && path === "/api/v1/projects") {
       await route.fulfill({ json: { projectId: "proj_ui" } });
       return;
@@ -519,6 +585,7 @@ test("home page stops before media generation when the walkthrough is refused", 
   await page.waitForTimeout(250);
 
   expect(calls).toEqual([
+    "GET /api/v1/languages",
     "POST /api/v1/projects",
     "POST /api/v1/projects/proj_ui/knowledge-documents",
     "PATCH /api/v1/projects/proj_ui/knowledge-documents/doc_ui/approval",
