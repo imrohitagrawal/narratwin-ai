@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from pathlib import PurePath
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -13,7 +14,9 @@ from backend.app.rag.chunking import checksum_text
 from backend.app.stage4 import contains_prompt_injection, contains_secret_like_content, normalize_content_type
 
 ISSUE280_INPUT_CONTRACT_PATH = "/api/v1/checkpoint3/issue280/input-contract"
+ISSUE280_LOCAL_E2E_DEMO_PATH = "/api/v1/checkpoint3/issue280/local-e2e-demo"
 ISSUE280_CONTRACT_VERSION = "issue280-input-api-error-v1"
+ISSUE280_LOCAL_E2E_CONTRACT_VERSION = "issue280-local-e2e-demo-v1"
 ISSUE280_MAX_BYTES = 20_000
 ISSUE280_MAX_DOCUMENTS = 3
 ISSUE280_MAX_SECTIONS_PER_DOCUMENT = 12
@@ -36,6 +39,8 @@ _GLOSSARY_INSTRUCTION_PATTERN = re.compile(
     r"instruction|instructions|audience|depth|language|prompt|developer|system)\b",
     re.IGNORECASE,
 )
+_SUPPORTED_LOCAL_E2E_LANGUAGES = {"en": "ltr", "hi": "ltr", "es": "ltr"}
+_SENTENCE_PATTERN = re.compile(r"^(?P<claim>.+?)\s*\[(?P<citation>\d+)\]\.?$")
 
 
 @dataclass(frozen=True)
@@ -179,7 +184,7 @@ class Issue280TraceResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     request_id: str = Field(alias="requestId")
-    evidence_level: Literal["input-api-error-contract"] = Field(alias="evidenceLevel")
+    evidence_level: Literal["input-api-error-contract", "local-e2e-demo"] = Field(alias="evidenceLevel")
     runtime_provider_mode: Literal["LOCAL_MOCK_DISABLED_EXTERNAL"] = Field(alias="runtimeProviderMode")
 
 
@@ -197,6 +202,130 @@ class Issue280InputContractResponse(BaseModel):
     trace: Issue280TraceResponse
 
 
+class Issue280LocalDemoSessionResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    session_id: str = Field(alias="sessionId")
+    project_id: str = Field(alias="projectId")
+    document_ids: list[str] = Field(alias="documentIds")
+    output_id: str = Field(alias="outputId")
+    replayed: bool
+
+
+class Issue280LocalDemoContextRefResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    context_ref_id: str = Field(alias="contextRefId")
+    document_id: str = Field(alias="documentId")
+    chunk_id: str = Field(alias="chunkId")
+    source_checksum: str = Field(alias="sourceChecksum")
+    fact_checksum: str = Field(alias="factChecksum")
+    section_heading: str = Field(alias="sectionHeading")
+    relevance_score: float = Field(alias="relevanceScore")
+
+
+class Issue280LocalDemoRetrievalResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    strategy: Literal["DETERMINISTIC_LOCAL_CHUNKS"]
+    context_refs: list[Issue280LocalDemoContextRefResponse] = Field(alias="contextRefs")
+
+
+class Issue280LocalDemoGeneratedResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    accepted_script_text: str = Field(alias="acceptedScriptText")
+    source_language: Literal["en"] = Field(alias="sourceLanguage")
+    generation_mode: Literal["LOCAL_MOCK_DETERMINISTIC"] = Field(alias="generationMode")
+
+
+class Issue280LocalDemoTranscriptSegmentResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    segment_id: str = Field(alias="segmentId")
+    source_text: str = Field(alias="sourceText")
+    target_text: str = Field(alias="targetText")
+    english_reference_text: str = Field(alias="englishReferenceText")
+    context_ref_ids: list[str] = Field(alias="contextRefIds")
+    citation_indexes: list[int] = Field(alias="citationIndexes")
+    claim_support_ids: list[str] = Field(alias="claimSupportIds")
+
+
+class Issue280LocalDemoMultilingualResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    source_language: Literal["en"] = Field(alias="sourceLanguage")
+    target_language: Literal["en", "hi", "es"] = Field(alias="targetLanguage")
+    direction: Literal["ltr"]
+    translation_mode: Literal["LOCAL_MOCK_DETERMINISTIC"] = Field(alias="translationMode")
+    segments: list[Issue280LocalDemoTranscriptSegmentResponse]
+
+
+class Issue280LocalDemoClaimSupportResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    claim_support_id: str = Field(alias="claimSupportId")
+    claim_text: str = Field(alias="claimText")
+    support_status: Literal["SUPPORTED"] = Field(alias="supportStatus")
+    context_ref_id: str = Field(alias="contextRefId")
+    citation_index: int = Field(alias="citationIndex")
+
+
+class Issue280LocalDemoEvaluationResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    evaluation_id: str = Field(alias="evaluationId")
+    status: Literal["PASSED"]
+    unsupported_claim_count: int = Field(alias="unsupportedClaimCount")
+    claim_supports: list[Issue280LocalDemoClaimSupportResponse] = Field(alias="claimSupports")
+
+
+class Issue280LocalDemoStorageResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    stored: bool
+    output_id: str = Field(alias="outputId")
+    output_checksum: str = Field(alias="outputChecksum")
+    metadata_checksum: str = Field(alias="metadataChecksum")
+
+
+class Issue280LocalE2EDemoResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    schema_: Literal["Issue280LocalE2EDemoV1"] = Field(alias="schema")
+    status: Literal["COMPLETED"]
+    accepted: bool
+    contract_version: str = Field(alias="contractVersion")
+    request: Issue280RequestSummaryResponse
+    session: Issue280LocalDemoSessionResponse
+    retrieval: Issue280LocalDemoRetrievalResponse
+    generated: Issue280LocalDemoGeneratedResponse
+    multilingual: Issue280LocalDemoMultilingualResponse
+    evaluation: Issue280LocalDemoEvaluationResponse
+    storage: Issue280LocalDemoStorageResponse
+    provider_posture: Issue280ProviderPostureResponse = Field(alias="providerPosture")
+    trace: Issue280TraceResponse
+
+
+@dataclass(frozen=True)
+class Issue280GroundedFact:
+    fact_id: str
+    document_id: str
+    chunk_id: str
+    context_ref_id: str
+    source_checksum: str
+    fact_checksum: str
+    section_heading: str
+    fact_text: str
+    citation_index: int
+
+
+@dataclass(frozen=True)
+class Issue280StoredLocalDemo:
+    request_checksum: str
+    response: Issue280LocalE2EDemoResponse
+
+
 def issue280_error_details(code: str, field: str) -> dict[str, str]:
     spec = ISSUE280_ERROR_TAXONOMY[code]
     return {
@@ -210,6 +339,14 @@ def issue280_trace_response(request_id: str) -> Issue280TraceResponse:
     return Issue280TraceResponse(
         requestId=request_id,
         evidenceLevel="input-api-error-contract",
+        runtimeProviderMode="LOCAL_MOCK_DISABLED_EXTERNAL",
+    )
+
+
+def issue280_local_e2e_trace_response(request_id: str) -> Issue280TraceResponse:
+    return Issue280TraceResponse(
+        requestId=request_id,
+        evidenceLevel="local-e2e-demo",
         runtimeProviderMode="LOCAL_MOCK_DISABLED_EXTERNAL",
     )
 
@@ -255,6 +392,271 @@ def validate_issue280_input_contract(request: Issue280InputContractRequest) -> I
         ),
         trace=issue280_trace_response(""),
     )
+
+
+class Issue280LocalDemoService:
+    def __init__(self) -> None:
+        self._stored_outputs: dict[str, Issue280StoredLocalDemo] = {}
+        self._idempotency: dict[str, Issue280StoredLocalDemo] = {}
+
+    def reset(self) -> None:
+        self._stored_outputs.clear()
+        self._idempotency.clear()
+
+    def run_demo(
+        self,
+        *,
+        request: Issue280InputContractRequest,
+        request_id: str,
+        idempotency_key: str | None,
+    ) -> Issue280LocalE2EDemoResponse:
+        input_summary = validate_issue280_input_contract(request)
+        target_language = request.target_language
+        if target_language not in _SUPPORTED_LOCAL_E2E_LANGUAGES:
+            raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetLanguage")
+        request_checksum = checksum_text(request.model_dump_json(by_alias=True))
+        replay_key = (idempotency_key or "").strip()
+        if not replay_key:
+            raise Issue280ContractError("ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "idempotencyKey")
+        stored = self._idempotency.get(replay_key)
+        if stored is not None:
+            if stored.request_checksum != request_checksum:
+                raise Issue280ContractError("ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "idempotencyKey")
+            return _copy_response_for_request(stored.response, request_id=request_id, replayed=True)
+
+        facts = _extract_grounded_facts(request)
+        accepted_script_text = _render_grounded_script(facts=facts, audience=request.audience, depth=request.depth)
+        claim_supports = _evaluate_supported_claims(accepted_script_text, facts)
+        if len(claim_supports) == 0:
+            raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "generatedClaims")
+        multilingual = _build_multilingual_response(
+            facts=facts,
+            claim_supports=claim_supports,
+            target_language=target_language,
+        )
+        output_checksum = checksum_text(
+            json.dumps(
+                {
+                    "script": accepted_script_text,
+                    "targetLanguage": target_language,
+                    "segments": [segment.model_dump(by_alias=True) for segment in multilingual.segments],
+                    "claimSupports": [support.model_dump(by_alias=True) for support in claim_supports],
+                },
+                sort_keys=True,
+            )
+        )
+        session_id = "issue280_session_" + request_checksum[:16]
+        output_id = "issue280_output_" + output_checksum[:16]
+        document_ids = sorted({fact.document_id for fact in facts})
+        response = Issue280LocalE2EDemoResponse(
+            schema="Issue280LocalE2EDemoV1",
+            status="COMPLETED",
+            accepted=True,
+            contractVersion=ISSUE280_LOCAL_E2E_CONTRACT_VERSION,
+            request=input_summary.request,
+            session=Issue280LocalDemoSessionResponse(
+                sessionId=session_id,
+                projectId="issue280_project_" + request_checksum[:12],
+                documentIds=document_ids,
+                outputId=output_id,
+                replayed=False,
+            ),
+            retrieval=Issue280LocalDemoRetrievalResponse(
+                strategy="DETERMINISTIC_LOCAL_CHUNKS",
+                contextRefs=[
+                    Issue280LocalDemoContextRefResponse(
+                        contextRefId=fact.context_ref_id,
+                        documentId=fact.document_id,
+                        chunkId=fact.chunk_id,
+                        sourceChecksum=fact.source_checksum,
+                        factChecksum=fact.fact_checksum,
+                        sectionHeading=fact.section_heading,
+                        relevanceScore=1.0,
+                    )
+                    for fact in facts
+                ],
+            ),
+            generated=Issue280LocalDemoGeneratedResponse(
+                acceptedScriptText=accepted_script_text,
+                sourceLanguage="en",
+                generationMode="LOCAL_MOCK_DETERMINISTIC",
+            ),
+            multilingual=multilingual,
+            evaluation=Issue280LocalDemoEvaluationResponse(
+                evaluationId="issue280_eval_" + output_checksum[:16],
+                status="PASSED",
+                unsupportedClaimCount=0,
+                claimSupports=claim_supports,
+            ),
+            storage=Issue280LocalDemoStorageResponse(
+                stored=True,
+                outputId=output_id,
+                outputChecksum=output_checksum,
+                metadataChecksum=checksum_text(f"{session_id}:{output_id}:{request_checksum}"),
+            ),
+            providerPosture=input_summary.provider_posture,
+            trace=issue280_local_e2e_trace_response(request_id),
+        )
+        stored_response = Issue280StoredLocalDemo(request_checksum=request_checksum, response=response)
+        self._stored_outputs[output_id] = stored_response
+        self._idempotency[replay_key] = stored_response
+        return response
+
+
+def _copy_response_for_request(
+    response: Issue280LocalE2EDemoResponse,
+    *,
+    request_id: str,
+    replayed: bool,
+) -> Issue280LocalE2EDemoResponse:
+    return response.model_copy(
+        update={
+            "session": response.session.model_copy(update={"replayed": replayed}),
+            "trace": issue280_local_e2e_trace_response(request_id),
+        }
+    )
+
+
+def _extract_grounded_facts(request: Issue280InputContractRequest) -> tuple[Issue280GroundedFact, ...]:
+    facts: list[Issue280GroundedFact] = []
+    for document_index, document in enumerate(request.documents, start=1):
+        normalized_markdown = document.markdown.replace("\r\n", "\n").replace("\r", "\n")
+        document_id = f"issue280_doc_{document_index:03d}"
+        source_checksum = checksum_text(normalized_markdown)
+        for fact_index, (heading, fact_text) in enumerate(_iter_markdown_facts(normalized_markdown), start=1):
+            chunk_id = f"issue280_chunk_{document_index:03d}_{fact_index:03d}"
+            fact_checksum = checksum_text(fact_text)
+            citation_index = len(facts) + 1
+            facts.append(
+                Issue280GroundedFact(
+                    fact_id=f"issue280_fact_{citation_index:03d}",
+                    document_id=document_id,
+                    chunk_id=chunk_id,
+                    context_ref_id="issue280_ctx_" + checksum_text(f"{chunk_id}:{fact_checksum}")[:16],
+                    source_checksum=source_checksum,
+                    fact_checksum=fact_checksum,
+                    section_heading=heading,
+                    fact_text=fact_text,
+                    citation_index=citation_index,
+                )
+            )
+    if not facts:
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "documents")
+    return tuple(facts)
+
+
+def _iter_markdown_facts(markdown: str) -> tuple[tuple[str, str], ...]:
+    facts: list[tuple[str, str]] = []
+    current_heading = "Overview"
+    current_body: list[str] = []
+    headings: list[str] = []
+    for raw_line in markdown.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("#"):
+            if current_body:
+                facts.extend(_body_lines_to_facts(current_heading, current_body))
+                current_body = []
+            current_heading = re.sub(r"^#{1,6}\s*", "", line).strip() or "Overview"
+            headings.append(current_heading)
+            continue
+        current_body.append(re.sub(r"^[-*]\s+", "", line))
+    if current_body:
+        facts.extend(_body_lines_to_facts(current_heading, current_body))
+    if facts:
+        return tuple(facts)
+    return tuple((heading, f"Section {heading} is present in the approved synthetic knowledge") for heading in headings)
+
+
+def _body_lines_to_facts(heading: str, body: list[str]) -> list[tuple[str, str]]:
+    combined = " ".join(" ".join(line.split()) for line in body)
+    if not combined:
+        return []
+    sentences = [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", combined) if sentence.strip()]
+    return [(heading, sentence.rstrip(".")) for sentence in sentences[:3]]
+
+
+def _render_grounded_script(*, facts: tuple[Issue280GroundedFact, ...], audience: str, depth: str) -> str:
+    audience_label = audience.replace("_", " ").lower()
+    claims = [
+        f"For {audience_label}, {fact.fact_text} [{fact.citation_index}]."
+        for fact in facts
+    ]
+    if depth == "CONCISE":
+        return " ".join(claims[: max(1, min(3, len(claims)))])
+    return " ".join(claims)
+
+
+def _evaluate_supported_claims(
+    accepted_script_text: str,
+    facts: tuple[Issue280GroundedFact, ...],
+) -> list[Issue280LocalDemoClaimSupportResponse]:
+    facts_by_citation = {fact.citation_index: fact for fact in facts}
+    supports: list[Issue280LocalDemoClaimSupportResponse] = []
+    sentences = [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", accepted_script_text) if sentence.strip()]
+    for sentence in sentences:
+        match = _SENTENCE_PATTERN.fullmatch(sentence)
+        if match is None:
+            raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "generatedClaims")
+        citation_index = int(match.group("citation"))
+        claim_text = " ".join(match.group("claim").split())
+        fact = facts_by_citation.get(citation_index)
+        if fact is None or fact.fact_text not in claim_text:
+            raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "generatedClaims")
+        supports.append(
+            Issue280LocalDemoClaimSupportResponse(
+                claimSupportId=f"issue280_claimsup_{citation_index:03d}",
+                claimText=claim_text,
+                supportStatus="SUPPORTED",
+                contextRefId=fact.context_ref_id,
+                citationIndex=citation_index,
+            )
+        )
+    return supports
+
+
+def _build_multilingual_response(
+    *,
+    facts: tuple[Issue280GroundedFact, ...],
+    claim_supports: list[Issue280LocalDemoClaimSupportResponse],
+    target_language: str,
+) -> Issue280LocalDemoMultilingualResponse:
+    supports_by_citation = {support.citation_index: support for support in claim_supports}
+    segments: list[Issue280LocalDemoTranscriptSegmentResponse] = []
+    for fact in facts:
+        support = supports_by_citation.get(fact.citation_index)
+        if support is None:
+            continue
+        segments.append(
+            Issue280LocalDemoTranscriptSegmentResponse(
+                segmentId=f"issue280_segment_{fact.citation_index:03d}",
+                sourceText=fact.fact_text,
+                targetText=_translate_fact(fact.fact_text, target_language),
+                englishReferenceText=fact.fact_text,
+                contextRefIds=[fact.context_ref_id],
+                citationIndexes=[fact.citation_index],
+                claimSupportIds=[support.claim_support_id],
+            )
+        )
+    return Issue280LocalDemoMultilingualResponse(
+        sourceLanguage="en",
+        targetLanguage=cast(Literal["en", "hi", "es"], target_language),
+        direction="ltr",
+        translationMode="LOCAL_MOCK_DETERMINISTIC",
+        segments=segments,
+    )
+
+
+def _translate_fact(fact_text: str, target_language: str) -> str:
+    if target_language == "en":
+        return fact_text
+    if target_language == "hi":
+        return f"स्थानीय मॉक अनुवाद: {fact_text}"
+    return f"Traduccion local simulada: {fact_text}"
+
+
+issue280_local_demo_service = Issue280LocalDemoService()
 
 
 def _validate_documents(documents: list[Issue280DocumentInput]) -> list[Issue280DocumentSummaryResponse]:

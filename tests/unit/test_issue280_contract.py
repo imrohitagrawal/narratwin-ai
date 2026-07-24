@@ -8,6 +8,9 @@ from backend.app.issue280 import (
     Issue280ContractError,
     Issue280DocumentInput,
     Issue280InputContractRequest,
+    _evaluate_supported_claims,
+    _extract_grounded_facts,
+    _render_grounded_script,
     validate_issue280_input_contract,
 )
 
@@ -75,3 +78,40 @@ def test_issue280_validator_rejects_glossary_instruction() -> None:
 
     assert exc_info.value.code == "ISSUE280_GLOSSARY_INVALID"
     assert exc_info.value.field == "glossaryTerms"
+
+
+def test_issue280_local_demo_extracts_empty_but_valid_headings_as_grounded_facts() -> None:
+    request = request_with_markdown("# Overview\n\n## Repeated\n\n## Repeated\n\n")
+
+    facts = _extract_grounded_facts(request)
+
+    assert [fact.citation_index for fact in facts] == [1, 2, 3]
+    assert all(fact.context_ref_id.startswith("issue280_ctx_") for fact in facts)
+    assert all("approved synthetic knowledge" in fact.fact_text for fact in facts)
+
+
+def test_issue280_local_demo_evaluator_rejects_unsupported_generated_claim() -> None:
+    request = request_with_markdown("# Atlas\n\nAtlas stores approved synthetic notes.")
+    facts = _extract_grounded_facts(request)
+    supported_script = _render_grounded_script(facts=facts, audience="ENGINEER", depth="STANDARD")
+
+    supports = _evaluate_supported_claims(supported_script, facts)
+
+    assert supports[0].support_status == "SUPPORTED"
+    with pytest.raises(Issue280ContractError) as exc_info:
+        _evaluate_supported_claims("Atlas is certified for unrelated regulated production use [99].", facts)
+    assert exc_info.value.code == "ISSUE280_TRANSLATION_REFUSED"
+
+
+def test_issue280_local_demo_evaluator_rejects_uncited_generated_claim() -> None:
+    request = request_with_markdown("# Atlas\n\nAtlas stores approved synthetic notes.")
+    facts = _extract_grounded_facts(request)
+
+    with pytest.raises(Issue280ContractError) as exc_info:
+        _evaluate_supported_claims(
+            f"For engineers, {facts[0].fact_text} [1]. Atlas is production-ready.",
+            facts,
+        )
+
+    assert exc_info.value.code == "ISSUE280_TRANSLATION_REFUSED"
+    assert exc_info.value.field == "generatedClaims"

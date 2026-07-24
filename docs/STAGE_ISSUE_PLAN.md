@@ -1292,6 +1292,42 @@ SDKs, provider keys, paid spend, real provider calls, cloned identity runtime,
 real media, public distribution, arbitrary real-world translation quality,
 provider quality, or production-readiness claims.
 
+Issue `#280` PR C branch
+`phase-1-closure-280-c3a-r3-pr-c-local-e2e-demo-slice` is limited to the next
+executable local/mock API demo slice from PR A and PR B: validate bounded
+synthetic markdown through the PR B contract, create a local synthetic demo
+session, derive deterministic local chunks/facts, retrieve grounded context,
+generate citation-bound walkthrough text, create narrow local/mock multilingual
+segments for `en`, `hi`, and `es`, evaluate unsupported generated claims, store
+the generated output and evaluation metadata in the test-safe issue-specific
+service, and expose the result through an API response. It may change only:
+
+- `docs/reviews/ISSUE_280_C3A_R3_PR_C_PREFLIGHT.md`
+- `docs/ADR/0036-issue280-local-e2e-demo-slice.md`
+- `reports/checkpoint3-issue280/requirement-matrix.json`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `backend/app/issue280.py`
+- `backend/app/main.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/acceptance/test_issue280_local_e2e_demo.py`
+- `tests/acceptance/test_issue280_input_contract.py`
+- `tests/acceptance/test_issue280_api_contract.py`
+- `tests/acceptance/test_issue280_error_taxonomy.py`
+- `tests/unit/test_issue280_contract.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+PR C does not touch the UI, does not implement the final
+`make issue280-output-correctness` gate, and does not satisfy all of issue
+`#280`. It must keep issues `#249` and `#280` open, must use reference-only PR
+wording, and must not authorize hosted/public demo behavior, provider setup,
+provider SDKs, provider keys, paid spend, real provider calls, cloned identity
+runtime, cloned voice, cloned face, digital twin, real-person likeness, real
+media, public distribution, arbitrary real-world translation quality, provider
+quality, or production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

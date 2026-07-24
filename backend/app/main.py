@@ -66,10 +66,13 @@ from backend.app.hosted_demo import (
 from backend.app.issue280 import (
     ISSUE280_ERROR_TAXONOMY,
     ISSUE280_INPUT_CONTRACT_PATH,
+    ISSUE280_LOCAL_E2E_DEMO_PATH,
     Issue280ContractError,
     Issue280InputContractRequest,
     Issue280InputContractResponse,
+    Issue280LocalE2EDemoResponse,
     issue280_error_details,
+    issue280_local_demo_service,
     issue280_trace_response,
     validate_issue280_input_contract,
 )
@@ -1260,7 +1263,7 @@ async def starlette_http_error_handler(
 
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    if request.url.path == ISSUE280_INPUT_CONTRACT_PATH:
+    if request.url.path in {ISSUE280_INPUT_CONTRACT_PATH, ISSUE280_LOCAL_E2E_DEMO_PATH}:
         spec = ISSUE280_ERROR_TAXONOMY["ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED"]
         return error_response(
             request=request,
@@ -1436,6 +1439,43 @@ def issue280_input_api_contract(
             details=cast(dict[str, ErrorDetailValue], issue280_error_details(code, "request")),
         )
     return response.model_copy(update={"trace": issue280_trace_response(request_id_for(http_request))})
+
+
+@api_v1.post(
+    "/checkpoint3/issue280/local-e2e-demo",
+    status_code=201,
+    response_model=Issue280LocalE2EDemoResponse,
+    tags=["checkpoint3"],
+)
+def issue280_local_e2e_demo(
+    contract_request: Issue280InputContractRequest,
+    http_request: Request,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> Issue280LocalE2EDemoResponse | JSONResponse:
+    try:
+        return issue280_local_demo_service.run_demo(
+            request=contract_request,
+            request_id=request_id_for(http_request),
+            idempotency_key=idempotency_key,
+        )
+    except Issue280ContractError as exc:
+        return error_response(
+            request=http_request,
+            status_code=exc.status_code,
+            code=exc.code,
+            message=exc.message,
+            details=cast(dict[str, ErrorDetailValue], issue280_error_details(exc.code, exc.field)),
+        )
+    except Exception:
+        code = "ISSUE280_INTERNAL_ERROR_SAFE"
+        spec = ISSUE280_ERROR_TAXONOMY[code]
+        return error_response(
+            request=http_request,
+            status_code=spec.status_code,
+            code=code,
+            message=spec.message,
+            details=cast(dict[str, ErrorDetailValue], issue280_error_details(code, "request")),
+        )
 
 
 @api_v1.get("/languages", response_model=LanguageCatalogResponse, tags=["walkthrough"])
@@ -1753,6 +1793,7 @@ def reset_app_state_for_tests() -> None:
     stage6_service.reset()
     stage7_service.reset()
     hosted_demo_service.reset()
+    issue280_local_demo_service.reset()
     stage8_write_rate_limiter.reset()
 
 
