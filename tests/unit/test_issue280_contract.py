@@ -101,3 +101,17 @@ def test_issue280_local_demo_evaluator_rejects_unsupported_generated_claim() -> 
     with pytest.raises(Issue280ContractError) as exc_info:
         _evaluate_supported_claims("Atlas is certified for unrelated regulated production use [99].", facts)
     assert exc_info.value.code == "ISSUE280_TRANSLATION_REFUSED"
+
+
+def test_issue280_local_demo_evaluator_rejects_uncited_generated_claim() -> None:
+    request = request_with_markdown("# Atlas\n\nAtlas stores approved synthetic notes.")
+    facts = _extract_grounded_facts(request)
+
+    with pytest.raises(Issue280ContractError) as exc_info:
+        _evaluate_supported_claims(
+            f"For engineers, {facts[0].fact_text} [1]. Atlas is production-ready.",
+            facts,
+        )
+
+    assert exc_info.value.code == "ISSUE280_TRANSLATION_REFUSED"
+    assert exc_info.value.field == "generatedClaims"

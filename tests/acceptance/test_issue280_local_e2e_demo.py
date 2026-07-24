@@ -140,6 +140,41 @@ def test_issue280_local_e2e_demo_replays_same_payload_deterministically() -> Non
     assert second_body["trace"]["requestId"] == "req-issue280-e2e-replay"
 
 
+def test_issue280_local_e2e_demo_rejects_same_idempotency_key_with_different_payload() -> None:
+    client = TestClient(app)
+
+    first = client.post(ISSUE280_E2E_PATH, json=payload(), headers=headers("conflict"))
+    second = client.post(
+        ISSUE280_E2E_PATH,
+        json=payload(targetLanguage="es"),
+        headers=headers("conflict"),
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 422
+    body = cast(dict[str, Any], second.json())
+    assert body["error"]["code"] == "ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED"
+    assert body["error"]["details"]["field"] == "idempotencyKey"
+    assert_public_safe_error(body)
+
+
+def test_issue280_local_e2e_demo_maps_missing_idempotency_key_to_issue280_taxonomy() -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        ISSUE280_E2E_PATH,
+        json=payload(),
+        headers={"X-Request-Id": "req-issue280-e2e-missing-idempotency"},
+    )
+
+    assert response.status_code == 422
+    body = cast(dict[str, Any], response.json())
+    assert body["error"]["code"] == "ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED"
+    assert body["error"]["details"]["field"] == "idempotencyKey"
+    assert body["error"]["requestId"] == "req-issue280-e2e-missing-idempotency"
+    assert_public_safe_error(body)
+
+
 def test_issue280_local_e2e_demo_accepts_boundary_documents_empty_sections_and_language_edges() -> None:
     client = TestClient(app)
     documents = [
@@ -251,7 +286,7 @@ def test_issue280_local_e2e_demo_rejects_invalid_requests_with_public_safe_error
     assert_public_safe_error(body, *raw_values)
 
 
-def test_issue280_local_e2e_demo_rejects_generator_unsupported_claim_attempt(
+def test_issue280_local_e2e_demo_rejects_generator_unsupported_citation_attempt(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from backend.app import issue280
@@ -270,3 +305,24 @@ def test_issue280_local_e2e_demo_rejects_generator_unsupported_claim_attempt(
     assert body["error"]["code"] == "ISSUE280_TRANSLATION_REFUSED"
     assert body["error"]["details"]["field"] == "generatedClaims"
     assert_public_safe_error(body, "SOC 2 certified", synthetic_markdown())
+
+
+def test_issue280_local_e2e_demo_rejects_generator_uncited_unsupported_claim_attempt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from backend.app import issue280
+
+    def unsupported_script(*, facts: tuple[issue280.Issue280GroundedFact, ...], audience: str, depth: str) -> str:
+        del audience, depth
+        return f"For engineers, {facts[0].fact_text} [1]. NarraTwin is production-ready."
+
+    monkeypatch.setattr(issue280, "_render_grounded_script", unsupported_script)
+    client = TestClient(app)
+
+    response = client.post(ISSUE280_E2E_PATH, json=payload(), headers=headers("uncited-unsupported"))
+
+    assert response.status_code == 422
+    body = cast(dict[str, Any], response.json())
+    assert body["error"]["code"] == "ISSUE280_TRANSLATION_REFUSED"
+    assert body["error"]["details"]["field"] == "generatedClaims"
+    assert_public_safe_error(body, "production-ready", synthetic_markdown())

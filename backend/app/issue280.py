@@ -40,7 +40,7 @@ _GLOSSARY_INSTRUCTION_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _SUPPORTED_LOCAL_E2E_LANGUAGES = {"en": "ltr", "hi": "ltr", "es": "ltr"}
-_SENTENCE_PATTERN = re.compile(r"(?P<claim>.+?)\s*\[(?P<citation>\d+)\](?:\.|$)")
+_SENTENCE_PATTERN = re.compile(r"^(?P<claim>.+?)\s*\[(?P<citation>\d+)\]\.?$")
 
 
 @dataclass(frozen=True)
@@ -397,7 +397,7 @@ def validate_issue280_input_contract(request: Issue280InputContractRequest) -> I
 class Issue280LocalDemoService:
     def __init__(self) -> None:
         self._stored_outputs: dict[str, Issue280StoredLocalDemo] = {}
-        self._idempotency: dict[str, str] = {}
+        self._idempotency: dict[str, Issue280StoredLocalDemo] = {}
 
     def reset(self) -> None:
         self._stored_outputs.clear()
@@ -415,10 +415,13 @@ class Issue280LocalDemoService:
         if target_language not in _SUPPORTED_LOCAL_E2E_LANGUAGES:
             raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetLanguage")
         request_checksum = checksum_text(request.model_dump_json(by_alias=True))
-        replay_key = f"{idempotency_key or ''}:{request_checksum}"
-        stored_key = self._idempotency.get(replay_key)
-        if stored_key is not None:
-            stored = self._stored_outputs[stored_key]
+        replay_key = (idempotency_key or "").strip()
+        if not replay_key:
+            raise Issue280ContractError("ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "idempotencyKey")
+        stored = self._idempotency.get(replay_key)
+        if stored is not None:
+            if stored.request_checksum != request_checksum:
+                raise Issue280ContractError("ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "idempotencyKey")
             return _copy_response_for_request(stored.response, request_id=request_id, replayed=True)
 
         facts = _extract_grounded_facts(request)
@@ -494,8 +497,9 @@ class Issue280LocalDemoService:
             providerPosture=input_summary.provider_posture,
             trace=issue280_local_e2e_trace_response(request_id),
         )
-        self._stored_outputs[output_id] = Issue280StoredLocalDemo(request_checksum=request_checksum, response=response)
-        self._idempotency[replay_key] = output_id
+        stored_response = Issue280StoredLocalDemo(request_checksum=request_checksum, response=response)
+        self._stored_outputs[output_id] = stored_response
+        self._idempotency[replay_key] = stored_response
         return response
 
 
@@ -562,7 +566,7 @@ def _iter_markdown_facts(markdown: str) -> tuple[tuple[str, str], ...]:
         facts.extend(_body_lines_to_facts(current_heading, current_body))
     if facts:
         return tuple(facts)
-    return tuple((heading, f"Section {heading} is present in the approved synthetic knowledge.") for heading in headings)
+    return tuple((heading, f"Section {heading} is present in the approved synthetic knowledge") for heading in headings)
 
 
 def _body_lines_to_facts(heading: str, body: list[str]) -> list[tuple[str, str]]:
@@ -575,15 +579,12 @@ def _body_lines_to_facts(heading: str, body: list[str]) -> list[tuple[str, str]]
 
 def _render_grounded_script(*, facts: tuple[Issue280GroundedFact, ...], audience: str, depth: str) -> str:
     audience_label = audience.replace("_", " ").lower()
-    depth_label = depth.lower()
     claims = [
         f"For {audience_label}, {fact.fact_text} [{fact.citation_index}]."
         for fact in facts
     ]
     if depth == "CONCISE":
         return " ".join(claims[: max(1, min(3, len(claims)))])
-    if depth == "DEEP":
-        return f"This {depth_label} local walkthrough stays citation-bound. " + " ".join(claims)
     return " ".join(claims)
 
 
@@ -593,7 +594,11 @@ def _evaluate_supported_claims(
 ) -> list[Issue280LocalDemoClaimSupportResponse]:
     facts_by_citation = {fact.citation_index: fact for fact in facts}
     supports: list[Issue280LocalDemoClaimSupportResponse] = []
-    for match in _SENTENCE_PATTERN.finditer(accepted_script_text):
+    sentences = [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", accepted_script_text) if sentence.strip()]
+    for sentence in sentences:
+        match = _SENTENCE_PATTERN.fullmatch(sentence)
+        if match is None:
+            raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "generatedClaims")
         citation_index = int(match.group("citation"))
         claim_text = " ".join(match.group("claim").split())
         fact = facts_by_citation.get(citation_index)

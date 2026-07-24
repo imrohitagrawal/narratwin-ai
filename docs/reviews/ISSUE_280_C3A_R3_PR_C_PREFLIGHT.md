@@ -118,9 +118,9 @@ FAILED tests/acceptance/test_issue280_local_e2e_demo.py::test_issue280_local_e2e
 
 | Required family | PR C evidence |
 |---|---|
-| Positive cases | `tests/acceptance/test_issue280_local_e2e_demo.py` proves valid bounded synthetic markdown creates a stored grounded walkthrough result with multilingual segments. |
-| Negative cases | The same acceptance file rejects unsafe/private/secret-like input, prompt injection, unsupported file type, malformed request, unsupported language, and unsupported generated claim attempts with public-safe errors. |
-| Corner cases | Boundary document count, repeated headings, empty-but-valid sections, max glossary terms, audience/depth/language edges, and deterministic replay are covered. |
+| Positive cases | `tests/acceptance/test_issue280_local_e2e_demo.py` proves valid bounded synthetic markdown creates a stored grounded walkthrough result with narrow local/mock multilingual response structure and bindings. |
+| Negative cases | The same acceptance file rejects unsafe/private/secret-like input, prompt injection, unsupported file type, malformed request, missing idempotency key, idempotency-key conflict, unsupported language, invalid generated citation, and uncited unsupported generated claim attempts with public-safe errors. |
+| Corner cases | Boundary document count, repeated headings, empty-but-valid sections, max glossary terms, audience/depth/language edges, and deterministic replay/conflict behavior are covered. |
 | API tests | The acceptance file checks status codes, response schema, request ID, provider-disabled posture, idempotency replay metadata, and no raw markdown leakage. |
 | Contract tests | PR B tests continue to pass unchanged, and PR C uses `Issue280InputContractRequest` plus the existing Issue 280 error taxonomy. |
 | Unit tests | `tests/unit/test_issue280_contract.py` covers fact extraction and unsupported-claim evaluation helpers. |
@@ -143,9 +143,12 @@ FAILED tests/acceptance/test_issue280_local_e2e_demo.py::test_issue280_local_e2e
 ## Remaining Rows
 
 PR C claims executable evidence for the PR C-owned local end-to-end API slice
-rows represented by `R280-S4-001`, `R280-S6-001`, and the narrow
-`R280-GOV-003` branch/status update. The remaining R280 rows still require
-later executable evidence or reviewed re-scope before issue `#280` can close.
+rows represented by `R280-S4-001`, narrow `R280-S6-002`, and the narrow
+`R280-GOV-003` branch/status update. `R280-S6-001` body-level translation,
+no-English-fallback, native-script, and artifact-only-success quality checks
+remain planned for a later executable slice. The remaining R280 rows still
+require later executable evidence or reviewed re-scope before issue `#280` can
+close.
 
 ## Stop Rule
 

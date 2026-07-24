@@ -194,6 +194,14 @@
         {
           "id": "R280-S6-001",
           "requirement": "Bounded unseen synthetic facts are not refused only because they are not golden fixture sentences; deterministic local/mock conversion or honest refusal; validate script/direction, body-level translation, no English fallback except protected terms, no romanized fallback where native script required, and no partial/metadata/artifact-only success.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_multilingual_demo_contract.py -q",
+          "ownerPrSlice": "Future PR"
+        },
+        {
+          "id": "R280-S6-002",
+          "requirement": "PR C narrow local/mock multilingual response exposes supported target-language metadata, deterministic local/mock translation mode, source text, target text, English reference text, context refs, citation indexes, and claim-support bindings for en, hi, and es without claiming body-level translation quality, no-English-fallback correctness, provider quality, or production readiness.",
           "status": "EXECUTABLE_CONTRACT_PASS",
           "evidenceType": "acceptance-test",
           "plannedCommand": "uv run pytest tests/acceptance/test_issue280_local_e2e_demo.py -q",

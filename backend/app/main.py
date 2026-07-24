@@ -1450,7 +1450,7 @@ def issue280_input_api_contract(
 def issue280_local_e2e_demo(
     contract_request: Issue280InputContractRequest,
     http_request: Request,
-    idempotency_key: str | None = Depends(idempotency_key_header),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> Issue280LocalE2EDemoResponse | JSONResponse:
     try:
         return issue280_local_demo_service.run_demo(
