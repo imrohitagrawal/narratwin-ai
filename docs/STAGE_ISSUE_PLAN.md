@@ -1185,6 +1185,7 @@ only. It may change only these public-safe files:
 - `docs/STAGE_ISSUE_PLAN.md`
 - `docs/STATUS.md`
 - `docs/TRACEABILITY.md`
+- `docs/ADR/0034-c3a-r2-full-project-multilingual-gate.md`
 - `backend/app/stage6.py`
 - `scripts/quality/check_checkpoint3_acceptance.py`
 - `scripts/quality/check_phase1_closure_docs.py`
