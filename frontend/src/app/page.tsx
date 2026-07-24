@@ -339,6 +339,7 @@ const safeApiErrorCodes = new Set([
   "EVALUATION_NOT_PASSED",
   "HOSTED_DEMO_DISABLED",
   "IDEMPOTENCY_CONFLICT",
+  "LOCAL_DEMO_TRANSLATION_UNSUPPORTED",
   "LOCAL_DEMO_LANGUAGE_UNSUPPORTED",
   "TRANSCRIPT_CORRECTNESS_FAILED",
   "UNSUPPORTED_LANGUAGE",
@@ -413,6 +414,20 @@ function issue280SafeError(caught: unknown) {
   return `Issue 280 refusal: ${message}. Try again with bounded public-safe synthetic markdown.`;
 }
 
+export function productSafeError(caught: unknown) {
+  const message = caught instanceof Error ? caught.message : "Stage 7 API request failed.";
+  if (unsafeApiErrorMessagePattern.test(message)) {
+    return "NarraTwin API request failed safely. Try again with bounded public-safe project knowledge.";
+  }
+  if (message.startsWith("LOCAL_DEMO_TRANSLATION_UNSUPPORTED:")) {
+    return (
+      "Local demo translation is limited to controlled acceptance fixture scripts. " +
+      "The grounded English script may still be available; arbitrary project-knowledge multilingual conversion is not proven in this PR."
+    );
+  }
+  return message;
+}
+
 function visibleLoadingStateDelay() {
   return new Promise((resolve) => {
     window.setTimeout(resolve, 120);
@@ -445,6 +460,7 @@ const safeWalkthroughFailureReasons = new Set([
   "UNSAFE_RETRIEVED_CONTEXT",
   "UNSUPPORTED_PROJECT_FACT",
 ]);
+const AVATAR_PREVIEW_COLLAPSED_CHARACTER_LIMIT = 280;
 
 export function walkthroughDemoBlockReason(run: WalkthroughRun): string {
   if (run.status === "COMPLETED" && run.acceptedScriptText && run.evaluation) {
@@ -469,6 +485,7 @@ export default function Home() {
   const [multilingualRun, setMultilingualRun] = useState<MultilingualWalkthrough | null>(null);
   const [avatarRender, setAvatarRender] = useState<AvatarRender | null>(null);
   const [syntheticAvatarConsent, setSyntheticAvatarConsent] = useState(false);
+  const [avatarPreviewExpanded, setAvatarPreviewExpanded] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [languageCatalog, setLanguageCatalog] = useState<LanguageCatalogRecord[]>([]);
@@ -533,6 +550,7 @@ export default function Home() {
 
     setIsGenerating(true);
     setError("");
+    setAvatarPreviewExpanded(false);
 
     try {
       const project = await postJson<ProjectResponse>(
@@ -645,7 +663,7 @@ export default function Home() {
       setRun(null);
       setMultilingualRun(null);
       setAvatarRender(null);
-      setError(caught instanceof Error ? caught.message : "Stage 7 API request failed.");
+      setError(productSafeError(caught));
     } finally {
       setIsGenerating(false);
     }
@@ -726,6 +744,7 @@ export default function Home() {
 	  const avatarPreviewScript =
 	    avatarRender?.sourceScriptText ?? run?.acceptedScriptText ?? "Generate a grounded script to display cited output.";
 	  const artifactContext = { multilingualRun, avatarRender };
+  const avatarPreviewCanExpand = avatarPreviewScript.length > AVATAR_PREVIEW_COLLAPSED_CHARACTER_LIMIT;
 
   return (
     <main className={styles.page} aria-busy={isGenerating || issue280IsRunning}>
@@ -805,6 +824,12 @@ export default function Home() {
               />
             </label>
           </div>
+
+          <p className={styles.localLimitNotice}>
+            Local/demo multilingual output uses controlled acceptance fixtures. A bounded project can generate an
+            English grounded script while arbitrary project-knowledge translation may safely refuse until a later
+            implementation slice proves that behavior.
+          </p>
 
           <label className={styles.checkboxField}>
             <input
@@ -927,7 +952,23 @@ export default function Home() {
 
         <section className={styles.result} aria-labelledby="preview-title">
           <div className={styles.resultHeader}>
-            <h2 id="preview-title">Demo preview</h2>
+            <div className={styles.previewTitleGroup}>
+              <h2 id="preview-title">Demo preview</h2>
+              <div className={styles.previewHeaderActions} aria-label="Demo preview downloads">
+                {renderArtifactAction(
+                  "Save preview transcript",
+                  "script",
+                  multilingualRun?.artifacts.translatedScript,
+                  artifactContext,
+                )}
+                {renderArtifactAction(
+                  "Save preview avatar export",
+                  "avatarDemo",
+                  avatarRender?.artifacts.demoExport,
+                  artifactContext,
+                )}
+              </div>
+            </div>
             <span className={styles.badge}>{avatarRender?.renderJobStatus ?? "READY"}</span>
           </div>
           <div className={styles.previewFrame} aria-label="Avatar demo preview">
@@ -937,7 +978,23 @@ export default function Home() {
               </div>
               <div className={styles.previewCopy}>
                 <strong>{avatarRender?.videoRenderer.renderer ?? "local-html"}</strong>
-                <p>{avatarPreviewScript}</p>
+                <p
+                  id="avatar-preview-script"
+                  className={avatarPreviewExpanded ? styles.previewCopyExpanded : styles.previewCopyCollapsed}
+                >
+                  {avatarPreviewScript}
+                </p>
+                {avatarPreviewCanExpand ? (
+                  <button
+                    className={styles.previewToggle}
+                    type="button"
+                    aria-controls="avatar-preview-script"
+                    aria-expanded={avatarPreviewExpanded}
+                    onClick={() => setAvatarPreviewExpanded(!avatarPreviewExpanded)}
+                  >
+                    {avatarPreviewExpanded ? "Collapse demo preview transcript" : "Expand full demo preview transcript"}
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -1012,20 +1069,20 @@ export default function Home() {
           <div className={styles.resultHeader}>
             <div>
               <p className={styles.kicker}>Issue 280 PR D</p>
-              <h2 id="issue280-title">Issue 280 PR C mock contract verifier</h2>
+              <h2 id="issue280-title">Issue 280 PR D local/mock verifier</h2>
             </div>
             <span className={styles.badge}>local/mock only</span>
           </div>
           <p className={styles.scopeNotice}>
-            Developer verifier only: this panel validates the PR C local/mock request-response contract,
-            citations, context refs, claim supports, replay, and safe refusals. It does not perform full
-            multilingual project-knowledge conversion. Use the main avatar demo export form above for the
-            product multilingual flow.
+            Developer verifier only: this quarantined panel validates the PR C local/mock request-response
+            contract, citations, context refs, claim supports, replay, and safe refusals through the PR D
+            browser path. It does not perform full multilingual project-knowledge conversion. Use the main
+            avatar demo export form above for the product multilingual flow.
           </p>
           <form className={styles.issue280Form} aria-label="Issue 280 local demo form" onSubmit={runIssue280LocalDemo}>
             <div className={styles.field}>
               <span className={styles.labelWithInfo}>
-                Project name
+                Verifier project name
                 {infoControl("Issue 280 project field info", "Names only the public-safe synthetic project name used for this verifier.")}
               </span>
               <input
@@ -1037,7 +1094,7 @@ export default function Home() {
 
             <div className={styles.field}>
               <span className={styles.labelWithInfo}>
-                Knowledge document
+                Verifier synthetic knowledge
                 {infoControl(
                   "Issue 280 knowledge field info",
                   "Submit bounded synthetic markdown only; this verifier extracts grounded facts and does not translate the full document.",
@@ -1102,7 +1159,7 @@ export default function Home() {
 
             <div className={styles.field}>
               <span className={styles.labelWithInfo}>
-                Glossary terms
+                Verifier glossary terms
                 {infoControl("Issue 280 glossary help", "Preserved project terms are separated from instructions and bounded by the PR B contract.")}
               </span>
               <textarea

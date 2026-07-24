@@ -47,9 +47,10 @@
   display: grid;
   gap: 16px;
   padding: 20px;
-  border: 1px solid #c8d0dc;
+  border: 1px solid #b8c3d3;
+  border-left: 6px solid #5b6472;
   border-radius: 8px;
-  background: #ffffff;
+  background: #f4f7fb;
 }
 
 .issue280Shell h2 {
@@ -78,6 +79,18 @@
   background: #fff9e8;
   color: #4b3a12;
   font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.localLimitNotice {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #d3dae6;
+  border-radius: 6px;
+  background: #f4f7fb;
+  color: #374151;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.5;
 }
@@ -457,6 +470,39 @@
   gap: 8px;
 }
 
+.previewTitleGroup {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.previewHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.previewHeaderActions a,
+.previewHeaderActions button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #c8d0dc;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f5f46;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.previewHeaderActions button:disabled {
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
 .previewCopy strong {
   color: #ffffff;
   font-size: 14px;
@@ -464,14 +510,40 @@
 }
 
 .previewCopy p {
-  display: -webkit-box;
   max-width: 720px;
-  overflow: hidden;
   color: #f8fafc;
   font-size: 17px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.previewCopyCollapsed {
+  display: -webkit-box;
+  overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
+}
+
+.previewCopyExpanded {
+  overflow: visible;
+}
+
+.previewToggle {
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.previewToggle:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 .artifactList {
@@ -614,6 +686,12 @@
   .previewScreen,
   .artifactRow {
     grid-template-columns: 1fr;
+  }
+
+  .previewHeaderActions a,
+  .previewHeaderActions button {
+    justify-content: center;
+    width: 100%;
   }
 
   .issue280Form {

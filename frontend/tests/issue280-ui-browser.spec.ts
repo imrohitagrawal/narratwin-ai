@@ -61,8 +61,9 @@ test.describe("Issue 280 PR D UI/browser output correctness verifier", () => {
 
     await expect(page.getByRole("heading", { name: "Avatar demo export" })).toBeVisible();
     await expect(page.getByRole("form", { name: "Project knowledge form" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Issue 280 PR C mock contract verifier" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Issue 280 PR D local/mock verifier" })).toBeVisible();
     await expect(page.getByText("Developer verifier only")).toBeVisible();
+    await expect(page.getByText("quarantined panel validates")).toBeVisible();
     await expect(page.getByText("does not perform full multilingual project-knowledge conversion")).toBeVisible();
     await expect(page.getByText("Use the main avatar demo export form above for the product multilingual flow.")).toBeVisible();
     await expect(page.getByText("No Issue 280 result yet.")).toBeVisible();
@@ -173,6 +174,65 @@ test.describe("Issue 280 PR D UI/browser output correctness verifier", () => {
     await page.keyboard.press("Tab");
     await expect(page.locator(":focus")).toBeVisible();
     await assertNoLeakage(page);
+  });
+
+  test("shows bounded product copy for arbitrary synthetic Hindi translation refusal", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "issue280-desktop", "desktop-only product refusal verifier");
+    const observedRequests: string[] = [];
+    page.on("request", (request) => {
+      const url = new URL(request.url());
+      if (url.pathname.startsWith("/api/v1/")) {
+        observedRequests.push(`${request.method()} ${url.pathname}`);
+      }
+    });
+
+    await page.getByLabel("Project name").fill("Jupiter Labs");
+    await page.getByLabel("Knowledge document").fill(`# NarraTwin AI
+
+NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.
+
+It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations.
+
+The Stage 4 slice uses a mock local LLM and mock local embeddings for deterministic tests.
+
+Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.
+
+## Jupiter Labs
+
+Jupiter Labs coordinates moon-base onboarding scripts for Mars pilots.
+
+Engineers use Jupiter Labs to confirm oxygen drills, rover handoff rituals, and launch crew readiness.`);
+    await page.locator('select[name="audience"]').selectOption("ENGINEER");
+    await page.locator('select[name="depth"]').selectOption("DEEP");
+    await page.locator('select[name="targetLanguage"]').selectOption("hi");
+    await page.getByLabel("Glossary terms").fill("Jupiter Labs");
+    await page.getByLabel("Synthetic avatar consent").check();
+    await page.getByRole("button", { name: "Generate avatar demo export" }).click();
+
+    const alert = page.locator("p[role='alert']");
+    await expect(alert).toContainText("Local demo translation is limited to controlled acceptance fixture scripts.");
+    await expect(alert).toContainText("arbitrary project-knowledge multilingual conversion is not proven in this PR.");
+    await expect(alert).not.toContainText("NarraTwin API request failed with 422");
+    await expect(alert).not.toContainText("LOCAL_DEMO_TRANSLATION_UNSUPPORTED");
+    await expect(alert).not.toContainText("moon-base onboarding scripts");
+    await expect(page.getByRole("link", { name: "Download script" })).toHaveCount(0);
+    expect(observedRequests.some((entry) => entry.includes("/multilingual-runs"))).toBe(true);
+    expect(observedRequests.some((entry) => entry.includes("/avatar-renders"))).toBe(false);
+
+    await mkdir(evidenceDir, { recursive: true });
+    await page.screenshot({
+      path: path.join(evidenceDir, "arbitrary-hindi-translation-limit-ux.png"),
+      fullPage: true,
+    });
+    await writeSafeEvidence("arbitrary-hindi-translation-limit-ux.json", {
+      targetLanguage: "hi",
+      observedBoundedCopy: true,
+      generic422Visible: false,
+      errorCodeVisible: false,
+      arbitraryKnowledgeEchoed: false,
+      avatarRenderAttempted: false,
+      screenshot: "reports/checkpoint3-issue280/arbitrary-hindi-translation-limit-ux.png",
+    });
   });
 });
 
