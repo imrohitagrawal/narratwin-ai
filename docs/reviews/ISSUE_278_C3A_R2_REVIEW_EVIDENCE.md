@@ -88,14 +88,32 @@ Cases that would have caught the earlier failure mode sooner:
 
 ## Validation Evidence
 
-Pending final full-run validation:
-
-- `uv run pytest tests/acceptance/test_checkpoint3_full_project_multilingual.py -q` -> `7 passed`
+- `uv run pytest tests/unit/test_guardrails_check.py -q` -> passed.
+- `uv run pytest tests/unit/test_phase1_closure_docs.py -q` -> passed.
+- `uv run pytest tests/unit/test_checkpoint3_acceptance_gate.py -q` -> `49 passed`.
+- `uv run pytest tests/unit/test_stage6_multilingual.py -q` -> passed.
+- `uv run pytest tests/api/test_stage6_multilingual_api.py -q` -> `18 passed`.
+- `uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q` -> `7 passed`.
+- `uv run pytest tests/acceptance/test_checkpoint3_full_project_multilingual.py -q` -> `7 passed`.
+- `python3 scripts/guardrails_check.py` -> `All NarraTwin AI repository guardrails passed.`
+- `python3 scripts/quality/check_phase1_closure_docs.py` -> `Phase 1 Closure governance quality checks passed.`
+- `python3 scripts/quality/check_checkpoint3_acceptance.py` -> `Checkpoint 3 acceptance complete: 9 passed, 0 planned, 0 failed.`
+- `make quality` -> `Phase 1 Closure governance quality checks passed.`
+- `uv run ruff check scripts tests` -> `All checks passed!`
+- `uv run mypy scripts tests` -> `Success: no issues found in 67 source files`
+- `make dependency-audit` -> no known vulnerabilities; frontend audit found 0 vulnerabilities.
+- `make security` -> Bandit no issues, Semgrep repository scan 0 findings, canary contract passed, Gitleaks no leaks found.
+- `make secrets-scan` -> guardrails passed; dependency security, Semgrep, and Gitleaks completed with no blocking findings.
+- `make eval` -> eval smoke report written to `reports/eval-smoke/stage5-eval-smoke-report.json` and `docs/EVAL_REPORT.md`.
+- `make ci` -> exited 0 after stage quality, ruff, frontend lint, mypy, frontend typecheck, `2108` backend unit tests, `109` API tests, frontend tests/build/smoke, eval smoke, dependency security, Docker build/scan consensus pass, and frontend Lighthouse wrapper.
 
 ## Final Clean Fan-Out
 
-Pending final validation and CI. Final clean fan-out will be recorded before
-requesting human review.
+Final clean fan-out: all three adversarial sub-agent reviews completed, all
+high-severity findings were either fixed in executable evidence or narrowed in
+public-safe wording, and no remaining finding blocks human review. The remaining
+residual risks below are explicit non-goals rather than hidden acceptance
+claims.
 
 ## Residual Risks
 
