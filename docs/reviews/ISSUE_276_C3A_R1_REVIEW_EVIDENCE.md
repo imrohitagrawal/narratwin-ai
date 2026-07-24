@@ -193,8 +193,8 @@ latest targeted Ruff: passed
 latest make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
 latest make quality: passed
 latest make ci: passed
-GitHub checks on pushed head 041960a: all passed
-final mandatory fan-out on pushed head 041960a: Output-Correctness PASS, TDD PASS, Doubt-Driven PASS, False-Positive PASS
+GitHub checks on behavior-reviewed head 041960a: all passed
+final mandatory fan-out on behavior-reviewed head 041960a: Output-Correctness PASS, TDD PASS, Doubt-Driven PASS, False-Positive PASS
 ```
 
 Pending before merge approval:
