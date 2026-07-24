@@ -456,7 +456,18 @@ FORBIDDEN_TRANSLITERATED_SOURCE_TERMS_BY_LANGUAGE = {
     "ar": ("الأفاتار",),
     "arz": ("الأفاتار",),
     "he": ("הדמו", "אווטאר"),
-    "hi": ("जनरेट", "वॉकथ्रू", "मॉक", "डेमो", "अडैप्टर", "एम्बेडिंग", "स्लाइस"),
+    "hi": (
+        "जनरेट",
+        "वॉकथ्रू",
+        "मॉक",
+        "डेमो",
+        "अडैप्टर",
+        "एम्बेडिंग",
+        "स्लाइस",
+        "लॉन्च",
+        "नोट",
+        "आउटपुट",
+    ),
     "de": ("Recruiter", "Hiring Manager", "Demo", "Adapter", "Reviews", "Stage-4-Slice", "Embeddings"),
     "it": ("recruiter", "demo", "embedding"),
     "nl": ("hiring managers", "engineers", "beginners", "adapter", "embeddings", "Stage 4-slice"),
@@ -480,6 +491,21 @@ FORBIDDEN_TRANSLITERATED_SOURCE_TERMS_BY_LANGUAGE = {
     "th": ("เดโม", "embedding"),
     "ms": ("demo", "deterministik", "embedding"),
 }
+LATIN_SCRIPT_PRIORITY1_LANGUAGE_TAGS = (
+    "es",
+    "de",
+    "fr",
+    "pt-BR",
+    "it",
+    "nl",
+    "pl",
+    "tr",
+    "vi",
+    "id",
+    "fil",
+    "ms",
+)
+NON_LATIN_SCRIPT_PATTERN = re.compile(r"[\u0590-\u05ff\u0600-\u06ff\u0900-\u097f\u0e00-\u0e7f\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]")
 
 
 class FakeTTSTransport:
@@ -1703,6 +1729,183 @@ def test_local_demo_translation_refuses_fixture_substring_with_extra_source_clai
 
     assert exc.value.status_code == 422
     assert exc.value.code == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"
+
+
+@pytest.mark.parametrize("language_tag", [tag for tag in PRIORITY1_LANGUAGE_TAGS if tag != "en"])
+def test_atlas_output_fixture_refuses_substring_with_extra_source_claim(
+    language_tag: str,
+) -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script=(
+                "Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder for launch rehearsals "
+                "and also schedules a new arbitrary moon pilot review sentence. [1]"
+            ),
+            target_language=language_tag,
+            glossary_terms=["Atlas Output", "OUTPUT-SENTINEL-CP2"],
+            requested_voice_provider="mock",
+            **passed_eval_kwargs(),
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"
+
+
+@pytest.mark.parametrize("language_tag", [tag for tag in PRIORITY1_LANGUAGE_TAGS if tag != "en"])
+def test_atlas_output_fixture_refuses_audience_prefixed_substring_with_extra_source_claim(
+    language_tag: str,
+) -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script=(
+                "For engineers, Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder "
+                "for launch rehearsals and also schedules a new arbitrary moon pilot review sentence. [1]"
+            ),
+            target_language=language_tag,
+            glossary_terms=["Atlas Output", "OUTPUT-SENTINEL-CP2"],
+            requested_voice_provider="mock",
+            **passed_eval_kwargs(),
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"
+
+
+@pytest.mark.parametrize("language_tag", [tag for tag in PRIORITY1_LANGUAGE_TAGS if tag != "en"])
+def test_atlas_output_fixture_does_not_invent_engineer_audience(
+    language_tag: str,
+) -> None:
+    result = create_stage6_service().generate_multilingual_walkthrough(
+        source_script=(
+            "Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder "
+            "for launch rehearsals. [1]"
+        ),
+        target_language=language_tag,
+        glossary_terms=["Atlas Output", "OUTPUT-SENTINEL-CP2"],
+        requested_voice_provider="mock",
+        **passed_eval_kwargs(),
+    )
+
+    assert result.status == "COMPLETED"
+    assert result.transcript_correctness.validation_status == "PASSED"
+    assert "OUTPUT-SENTINEL-CP2" in result.translated_script_text
+    for forbidden_audience_prefix in EXPECTED_AUDIENCE_PREFIXES_BY_LANGUAGE[language_tag].values():
+        assert not result.translated_script_text.startswith(forbidden_audience_prefix)
+    for forbidden_term in FORBIDDEN_TRANSLITERATED_SOURCE_TERMS_BY_LANGUAGE.get(language_tag, ()):
+        if forbidden_term.isascii():
+            assert not re.search(
+                rf"(?<![A-Za-z]){re.escape(forbidden_term)}(?![A-Za-z])",
+                result.translated_script_text,
+                flags=re.IGNORECASE,
+            )
+        else:
+            assert forbidden_term.casefold() not in result.translated_script_text.casefold()
+
+
+@pytest.mark.parametrize("language_tag", [tag for tag in PRIORITY1_LANGUAGE_TAGS if tag != "en"])
+def test_atlas_output_fixture_preserves_explicit_engineer_audience(
+    language_tag: str,
+) -> None:
+    result = create_stage6_service().generate_multilingual_walkthrough(
+        source_script=(
+            "For engineers, Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder "
+            "for launch rehearsals. [1]"
+        ),
+        target_language=language_tag,
+        glossary_terms=["Atlas Output", "OUTPUT-SENTINEL-CP2"],
+        requested_voice_provider="mock",
+        **passed_eval_kwargs(),
+    )
+
+    assert result.status == "COMPLETED"
+    assert result.transcript_correctness.validation_status == "PASSED"
+    assert result.translated_script_text.startswith(EXPECTED_AUDIENCE_PREFIXES_BY_LANGUAGE[language_tag]["engineers"])
+    assert "OUTPUT-SENTINEL-CP2" in result.translated_script_text
+
+
+@pytest.mark.parametrize("language_tag", LATIN_SCRIPT_PRIORITY1_LANGUAGE_TAGS)
+def test_atlas_output_fixture_latin_languages_have_no_foreign_script_contamination(
+    language_tag: str,
+) -> None:
+    result = create_stage6_service().generate_multilingual_walkthrough(
+        source_script=(
+            "For engineers, Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder "
+            "for launch rehearsals. [1] "
+            "For engineers, Atlas Output OUTPUT-SENTINEL-CP2 requires each generated checklist item "
+            "to cite approved launch-note evidence. [2] "
+            "For engineers, Atlas Output uses the marker OUTPUT-SENTINEL-CP2 "
+            "for output-correctness isolation checks. [3]"
+        ),
+        target_language=language_tag,
+        glossary_terms=["Atlas Output", "OUTPUT-SENTINEL-CP2"],
+        requested_voice_provider="mock",
+        **passed_eval_kwargs(citation_indexes=(1, 2, 3)),
+    )
+
+    assert result.status == "COMPLETED"
+    assert result.transcript_correctness.validation_status == "PASSED"
+    assert len(result.transcript_segments) == 3
+    assert not NON_LATIN_SCRIPT_PATTERN.search(result.translated_script_text)
+
+
+def test_helio_media_fixture_refuses_substring_with_extra_source_claim() -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script=(
+                "Helio Media MEDIA-SENTINEL-CP4 is a fictional local onboarding studio "
+                "for field operations teams and also books a new arbitrary satellite review. [1]"
+            ),
+            target_language="es",
+            glossary_terms=["Helio Media", "MEDIA-SENTINEL-CP4"],
+            requested_voice_provider="mock",
+            **passed_eval_kwargs(),
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"
+
+
+def test_helio_media_fixture_refuses_audience_prefixed_substring_with_extra_source_claim() -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script=(
+                "For recruiters, Helio Media MEDIA-SENTINEL-CP4 is a fictional local onboarding studio "
+                "for field operations teams and also books a new arbitrary satellite review. [1]"
+            ),
+            target_language="es",
+            glossary_terms=["Helio Media", "MEDIA-SENTINEL-CP4"],
+            requested_voice_provider="mock",
+            **passed_eval_kwargs(),
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"
+
+
+def test_helio_media_fixture_preserves_explicit_recruiter_audience() -> None:
+    result = create_stage6_service().generate_multilingual_walkthrough(
+        source_script=(
+            "For recruiters, Helio Media MEDIA-SENTINEL-CP4 is a fictional local onboarding studio "
+            "for field operations teams. [1]"
+        ),
+        target_language="es",
+        glossary_terms=["Helio Media", "MEDIA-SENTINEL-CP4"],
+        requested_voice_provider="mock",
+        **passed_eval_kwargs(),
+    )
+
+    assert result.status == "COMPLETED"
+    assert result.transcript_correctness.validation_status == "PASSED"
+    assert result.translated_script_text.startswith("Para reclutadores")
+    assert "MEDIA-SENTINEL-CP4" in result.translated_script_text
 
 
 def test_local_demo_translation_accepts_exact_browser_source_chunk_citation_fixture() -> None:

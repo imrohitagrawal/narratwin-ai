@@ -630,30 +630,93 @@ DEMO_AUDIENCE_PREFIX_TEXT = {
     },
 }
 ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT = {
-    "hi": "अभियंताओं के लिए, Atlas Output OUTPUT-SENTINEL-CP2 जारी करने के पूर्वाभ्यास के लिए एक काल्पनिक स्थानीय जाँच-सूची निर्माता है।",
-    "es": "Para ingenieros, Atlas Output OUTPUT-SENTINEL-CP2 es un creador local ficticio de listas de verificación para ensayos de lanzamiento.",
-    "de": "Für Ingenieure ist Atlas Output OUTPUT-SENTINEL-CP2 ein fiktiver lokaler Checklisten-Builder für Launch-Proben.",
-    "fr": "Pour les ingénieurs, Atlas Output OUTPUT-SENTINEL-CP2 est un générateur local fictif de listes de contrôle pour les répétitions de lancement.",
-    "pt-BR": "Para engenheiros, o Atlas Output OUTPUT-SENTINEL-CP2 é um criador local fictício de listas de verificação para ensaios de lançamento.",
-    "it": "Per gli ingegneri, Atlas Output OUTPUT-SENTINEL-CP2 è un generatore locale fittizio di checklist per le prove di lancio.",
-    "nl": "Voor engineers is Atlas Output OUTPUT-SENTINEL-CP2 een fictieve lokale checklistbouwer voor lanceringsoefeningen.",
-    "pl": "Dla inżynierów Atlas Output OUTPUT-SENTINEL-CP2 jest fikcyjnym lokalnym narzędziem do tworzenia list kontrolnych na próby uruchomienia.",
-    "uk": "Для інженерів Atlas Output OUTPUT-SENTINEL-CP2 є вигаданим локальним конструктором чеклістів для репетицій запуску.",
-    "ru": "Для инженеров Atlas Output OUTPUT-SENTINEL-CP2 — это вымышленный локальный конструктор контрольных списков для репетиций запуска.",
-    "zh-Hans": "面向工程师，Atlas Output OUTPUT-SENTINEL-CP2 是用于发布演练的虚构本地检查清单生成器。",
-    "zh-Hant": "面向工程師，Atlas Output OUTPUT-SENTINEL-CP2 是用於發布演練的虛構本地檢查清單產生器。",
-    "ja": "エンジニア向けに、Atlas Output OUTPUT-SENTINEL-CP2 はローンチリハーサル用の架空のローカルチェックリスト作成ツールです。",
-    "ko": "엔지니어를 위해 Atlas Output OUTPUT-SENTINEL-CP2는 출시 리허설용 가상 로컬 체크리스트 빌더입니다.",
-    "ar": "للمهندسين، Atlas Output OUTPUT-SENTINEL-CP2 هو منشئ قوائم تحقق محلي خيالي لتدريبات الإطلاق.",
-    "arz": "للمهندسين، Atlas Output OUTPUT-SENTINEL-CP2 هو منشئ قايمات تحقق محلي خيالي لبروفات الإطلاق.",
-    "he": "עבור מהנדסים, Atlas Output OUTPUT-SENTINEL-CP2 הוא בונה רשימות בדיקה מקומי בדיוני לחזרות השקה.",
-    "fa": "برای مهندسان، Atlas Output OUTPUT-SENTINEL-CP2 یک سازنده محلی خیالی فهرست‌های بررسی برای تمرین‌های راه‌اندازی است.",
-    "tr": "Mühendisler için Atlas Output OUTPUT-SENTINEL-CP2, lansman provaları için kurgusal bir yerel kontrol listesi oluşturucusudur.",
-    "vi": "Dành cho kỹ sư, Atlas Output OUTPUT-SENTINEL-CP2 là trình tạo danh sách kiểm tra cục bộ giả định cho các buổi diễn tập ra mắt.",
-    "id": "Untuk insinyur, Atlas Output OUTPUT-SENTINEL-CP2 adalah pembuat daftar periksa lokal fiktif untuk latihan peluncuran.",
-    "fil": "Para sa mga engineer, ang Atlas Output OUTPUT-SENTINEL-CP2 ay kathang-isip na lokal na tagabuo ng checklist para sa mga rehearsal ng paglulunsad.",
-    "th": "สำหรับวิศวกร Atlas Output OUTPUT-SENTINEL-CP2 เป็นเครื่องมือสร้างเช็กลิสต์ภายในเครื่องแบบสมมติสำหรับการซ้อมเปิดตัว",
-    "ms": "Untuk jurutera, Atlas Output OUTPUT-SENTINEL-CP2 ialah pembina senarai semak tempatan rekaan untuk latihan pelancaran.",
+    "hi": "Atlas Output OUTPUT-SENTINEL-CP2 जारी करने के पूर्वाभ्यासों के लिए एक काल्पनिक स्थानीय जाँच-सूची निर्माता है।",
+    "es": "Atlas Output OUTPUT-SENTINEL-CP2 es un creador local ficticio de listas de verificación para ensayos de lanzamiento.",
+    "de": "Atlas Output OUTPUT-SENTINEL-CP2 ist ein fiktiver lokaler Ersteller von Prüflisten für Einführungsproben.",
+    "fr": "Atlas Output OUTPUT-SENTINEL-CP2 est un générateur local fictif de listes de contrôle pour les répétitions de lancement.",
+    "pt-BR": "O Atlas Output OUTPUT-SENTINEL-CP2 é um criador local fictício de listas de verificação para ensaios de lançamento.",
+    "it": "Atlas Output OUTPUT-SENTINEL-CP2 è un generatore locale fittizio di liste di controllo per le prove di lancio.",
+    "nl": "Atlas Output OUTPUT-SENTINEL-CP2 is een fictieve lokale maker van controlelijsten voor lanceringsrepetities.",
+    "pl": "Atlas Output OUTPUT-SENTINEL-CP2 jest fikcyjnym lokalnym narzędziem do tworzenia list kontrolnych na próby uruchomienia.",
+    "uk": "Atlas Output OUTPUT-SENTINEL-CP2 є вигаданим локальним конструктором контрольних списків для репетицій запуску.",
+    "ru": "Atlas Output OUTPUT-SENTINEL-CP2 — это вымышленный локальный конструктор контрольных списков для репетиций запуска.",
+    "zh-Hans": "Atlas Output OUTPUT-SENTINEL-CP2 是用于发布演练的虚构本地检查清单生成器。",
+    "zh-Hant": "Atlas Output OUTPUT-SENTINEL-CP2 是用於發布演練的虛構本機檢查清單產生器。",
+    "ja": "Atlas Output OUTPUT-SENTINEL-CP2 は公開リハーサル用の架空のローカル確認リスト作成ツールです。",
+    "ko": "Atlas Output OUTPUT-SENTINEL-CP2는 출시 예행연습용 가상 로컬 확인 목록 생성 도구입니다.",
+    "ar": "Atlas Output OUTPUT-SENTINEL-CP2 هو منشئ محلي خيالي لقوائم التحقق الخاصة بتدريبات الإطلاق.",
+    "arz": "Atlas Output OUTPUT-SENTINEL-CP2 هو منشئ محلي خيالي لقوايم التحقق الخاصة ببروفات الإطلاق.",
+    "he": "Atlas Output OUTPUT-SENTINEL-CP2 הוא יוצר רשימות בדיקה מקומי בדיוני לחזרות השקה.",
+    "fa": "Atlas Output OUTPUT-SENTINEL-CP2 یک سازنده محلی خیالی فهرست‌های بررسی برای تمرین‌های راه‌اندازی است.",
+    "tr": "Atlas Output OUTPUT-SENTINEL-CP2, yayıma hazırlık provaları için kurgusal bir yerel denetim listesi oluşturucusudur.",
+    "vi": "Atlas Output OUTPUT-SENTINEL-CP2 là trình tạo danh sách kiểm tra cục bộ giả định cho các buổi diễn tập ra mắt.",
+    "id": "Atlas Output OUTPUT-SENTINEL-CP2 adalah pembuat daftar periksa lokal fiktif untuk latihan peluncuran.",
+    "fil": "Ang Atlas Output OUTPUT-SENTINEL-CP2 ay kathang-isip na lokal na tagabuo ng talaang-suri para sa mga pagsasanay sa paglulunsad.",
+    "th": "Atlas Output OUTPUT-SENTINEL-CP2 เป็นเครื่องมือสร้างรายการตรวจสอบภายในเครื่องแบบสมมติสำหรับการซ้อมเปิดตัว",
+    "ms": "Atlas Output OUTPUT-SENTINEL-CP2 ialah pembina senarai semak tempatan rekaan untuk latihan pelancaran.",
+}
+ATLAS_OUTPUT_CITATION_TRANSLATED_SEGMENT_TEXT = {
+    "hi": "Atlas Output OUTPUT-SENTINEL-CP2 के लिए प्रत्येक उत्पन्न जाँच-सूची मद में स्वीकृत जारीकरण-टिप्पणी प्रमाण का उद्धरण होना आवश्यक है।",
+    "es": "Atlas Output OUTPUT-SENTINEL-CP2 exige que cada elemento generado de la lista de verificación cite evidencia aprobada de notas de lanzamiento.",
+    "de": "Atlas Output OUTPUT-SENTINEL-CP2 verlangt, dass jeder erzeugte Prüflisteneintrag genehmigte Nachweise aus Einführungsnotizen zitiert.",
+    "fr": "Atlas Output OUTPUT-SENTINEL-CP2 exige que chaque élément généré de la liste de contrôle cite des preuves approuvées issues des notes de lancement.",
+    "pt-BR": "O Atlas Output OUTPUT-SENTINEL-CP2 exige que cada item gerado da lista de verificação cite evidências aprovadas das notas de lançamento.",
+    "it": "Atlas Output OUTPUT-SENTINEL-CP2 richiede che ogni voce generata della lista di controllo citi prove approvate dalle note di lancio.",
+    "nl": "Atlas Output OUTPUT-SENTINEL-CP2 vereist dat elk gegenereerd controlelijstitem goedgekeurd bewijs uit lanceringsnotities citeert.",
+    "pl": "Atlas Output OUTPUT-SENTINEL-CP2 wymaga, aby każdy wygenerowany element listy kontrolnej cytował zatwierdzone dowody z notatek uruchomieniowych.",
+    "uk": "Atlas Output OUTPUT-SENTINEL-CP2 вимагає, щоб кожен згенерований пункт контрольного списку цитував затверджені докази з нотаток запуску.",
+    "ru": "Atlas Output OUTPUT-SENTINEL-CP2 требует, чтобы каждый сгенерированный пункт контрольного списка цитировал утвержденные доказательства из заметок запуска.",
+    "zh-Hans": "Atlas Output OUTPUT-SENTINEL-CP2 要求每个生成的检查清单项目引用已批准的发布说明证据。",
+    "zh-Hant": "Atlas Output OUTPUT-SENTINEL-CP2 要求每個產生的檢查清單項目引用已核准的發布說明證據。",
+    "ja": "Atlas Output OUTPUT-SENTINEL-CP2 では、生成された各確認リスト項目が承認済みの公開メモの根拠を引用する必要があります。",
+    "ko": "Atlas Output OUTPUT-SENTINEL-CP2는 생성된 각 확인 목록 항목이 승인된 출시 노트 증거를 인용하도록 요구합니다.",
+    "ar": "يتطلب Atlas Output OUTPUT-SENTINEL-CP2 أن يستشهد كل عنصر منشأ في قائمة التحقق بأدلة معتمدة من ملاحظات الإطلاق.",
+    "arz": "يتطلب Atlas Output OUTPUT-SENTINEL-CP2 إن كل عنصر متولد في قايمة التحقق يستشهد بأدلة معتمدة من ملاحظات الإطلاق.",
+    "he": "Atlas Output OUTPUT-SENTINEL-CP2 דורש שכל פריט רשימת בדיקה שנוצר יצטט ראיות מאושרות מהערות השקה.",
+    "fa": "Atlas Output OUTPUT-SENTINEL-CP2 الزام می‌کند که هر مورد فهرست بررسی تولیدشده شواهد تأییدشده از یادداشت‌های راه‌اندازی را ارجاع دهد.",
+    "tr": "Atlas Output OUTPUT-SENTINEL-CP2, oluşturulan her denetim listesi maddesinin onaylanmış yayıma hazırlık notu kanıtlarına atıf yapmasını gerektirir.",
+    "vi": "Atlas Output OUTPUT-SENTINEL-CP2 yêu cầu mỗi mục danh sách kiểm tra được tạo phải trích dẫn bằng chứng đã phê duyệt từ ghi chú ra mắt.",
+    "id": "Atlas Output OUTPUT-SENTINEL-CP2 mewajibkan setiap item daftar periksa yang dihasilkan mengutip bukti catatan peluncuran yang disetujui.",
+    "fil": "Inaatas ng Atlas Output OUTPUT-SENTINEL-CP2 na sipiin ng bawat nabuong talaang-suri ang aprubadong ebidensiya mula sa mga tala sa paglulunsad.",
+    "th": "Atlas Output OUTPUT-SENTINEL-CP2 กำหนดให้แต่ละรายการตรวจสอบที่สร้างขึ้นต้องอ้างอิงหลักฐานจากบันทึกการเปิดตัวที่ได้รับอนุมัติ",
+    "ms": "Atlas Output OUTPUT-SENTINEL-CP2 mewajibkan setiap item senarai semak yang dijana memetik bukti nota pelancaran yang diluluskan.",
+}
+ATLAS_OUTPUT_MARKER_TRANSLATED_SEGMENT_TEXT = {
+    "hi": "Atlas Output निर्गम-शुद्धता पृथक्करण जाँचों के लिए OUTPUT-SENTINEL-CP2 चिह्न का उपयोग करता है।",
+    "es": "Atlas Output usa el marcador OUTPUT-SENTINEL-CP2 para comprobaciones aisladas de corrección de salida.",
+    "de": "Atlas Output verwendet die Markierung OUTPUT-SENTINEL-CP2 für isolierte Prüfungen der Ausgabekorrektheit.",
+    "fr": "Atlas Output utilise le marqueur OUTPUT-SENTINEL-CP2 pour des vérifications isolées de la correction des sorties.",
+    "pt-BR": "O Atlas Output usa o marcador OUTPUT-SENTINEL-CP2 para verificações isoladas de correção de saída.",
+    "it": "Atlas Output usa il marcatore OUTPUT-SENTINEL-CP2 per verifiche isolate della correttezza dell'output.",
+    "nl": "Atlas Output gebruikt de markering OUTPUT-SENTINEL-CP2 voor geïsoleerde controles van uitvoercorrectheid.",
+    "pl": "Atlas Output używa znacznika OUTPUT-SENTINEL-CP2 do izolowanych kontroli poprawności wyników.",
+    "uk": "Atlas Output використовує маркер OUTPUT-SENTINEL-CP2 для ізольованих перевірок правильності вихідних даних.",
+    "ru": "Atlas Output использует маркер OUTPUT-SENTINEL-CP2 для изолированных проверок корректности вывода.",
+    "zh-Hans": "Atlas Output 使用 OUTPUT-SENTINEL-CP2 标记进行输出正确性隔离检查。",
+    "zh-Hant": "Atlas Output 使用 OUTPUT-SENTINEL-CP2 標記進行輸出正確性隔離檢查。",
+    "ja": "Atlas Output は出力の正確性を切り分けて確認するために OUTPUT-SENTINEL-CP2 マーカーを使用します。",
+    "ko": "Atlas Output은 출력 정확성을 분리해 확인하기 위해 OUTPUT-SENTINEL-CP2 표시자를 사용합니다.",
+    "ar": "يستخدم Atlas Output العلامة OUTPUT-SENTINEL-CP2 لإجراء فحوصات معزولة لصحة المخرجات.",
+    "arz": "يستخدم Atlas Output العلامة OUTPUT-SENTINEL-CP2 لإجراء فحوصات معزولة لصحة المخرجات.",
+    "he": "Atlas Output משתמש בסמן OUTPUT-SENTINEL-CP2 לבדיקות מבודדות של תקינות הפלט.",
+    "fa": "Atlas Output از نشانگر OUTPUT-SENTINEL-CP2 برای بررسی‌های جداگانه درستی خروجی استفاده می‌کند.",
+    "tr": "Atlas Output, çıktı doğruluğunu yalıtılmış biçimde denetlemek için OUTPUT-SENTINEL-CP2 işaretleyicisini kullanır.",
+    "vi": "Atlas Output dùng dấu hiệu OUTPUT-SENTINEL-CP2 cho các kiểm tra tách biệt về độ đúng của đầu ra.",
+    "id": "Atlas Output menggunakan penanda OUTPUT-SENTINEL-CP2 untuk pemeriksaan terpisah atas kebenaran keluaran.",
+    "fil": "Ginagamit ng Atlas Output ang panandang OUTPUT-SENTINEL-CP2 para sa nakahiwalay na mga pagsusuri ng kawastuhan ng output.",
+    "th": "Atlas Output ใช้ตัวทำเครื่องหมาย OUTPUT-SENTINEL-CP2 สำหรับการตรวจสอบความถูกต้องของผลลัพธ์แบบแยกส่วน",
+    "ms": "Atlas Output menggunakan penanda OUTPUT-SENTINEL-CP2 untuk semakan berasingan terhadap ketepatan output.",
+}
+ATLAS_OUTPUT_FIXTURE_TRANSLATIONS = {
+    "Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder for launch rehearsals.": (
+        ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT
+    ),
+    "Atlas Output OUTPUT-SENTINEL-CP2 requires each generated checklist item to cite approved launch-note evidence.": (
+        ATLAS_OUTPUT_CITATION_TRANSLATED_SEGMENT_TEXT
+    ),
+    "Atlas Output uses the marker OUTPUT-SENTINEL-CP2 for output-correctness isolation checks.": (
+        ATLAS_OUTPUT_MARKER_TRANSLATED_SEGMENT_TEXT
+    ),
 }
 HELIO_MEDIA_TRANSLATED_SEGMENT_TEXT = {
     "es": "Para reclutadores, Helio Media MEDIA-SENTINEL-CP4 es un estudio local ficticio de incorporación para equipos de operaciones de campo.",
@@ -2453,10 +2516,22 @@ def translate_demo_segment_text(
 def local_demo_translated_segment_fixture(*, source_segment: str, target_language: str) -> str | None:
     normalized_source = normalize_local_demo_fixture_source_segment(source_segment)
     source_body = local_demo_fixture_source_body(normalized_source)
-    if "Atlas Output" in normalized_source and "OUTPUT-SENTINEL-CP2" in normalized_source:
-        return ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT.get(target_language)
-    if "Helio Media" in normalized_source and "MEDIA-SENTINEL-CP4" in normalized_source:
-        return HELIO_MEDIA_TRANSLATED_SEGMENT_TEXT.get(target_language)
+    atlas_fixture_translation = ATLAS_OUTPUT_FIXTURE_TRANSLATIONS.get(source_body)
+    if atlas_fixture_translation is not None:
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=atlas_fixture_translation.get(target_language),
+        )
+    if (
+        source_body
+        == "Helio Media MEDIA-SENTINEL-CP4 is a fictional local onboarding studio for field operations teams."
+    ):
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=HELIO_MEDIA_TRANSLATED_SEGMENT_TEXT.get(target_language),
+        )
     if source_body in {
         "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.",
         "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts with source chunk citations.",
@@ -2697,9 +2772,9 @@ def validate_target_script(*, record: LanguageCatalogRecord, target_text: str, s
         return
     if target_text.strip() == source_text.strip():
         raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Target transcript is an English fallback.")
-    if record.language_tag == "zh-Hans" and not any(character in target_text for character in ("简", "项", "师", "转")):
+    if record.language_tag == "zh-Hans" and not any(character in target_text for character in ("简", "项", "师", "转", "发", "检")):
         raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Simplified Chinese transcript script is invalid.")
-    if record.language_tag == "zh-Hant" and not any(character in target_text for character in ("繁", "專", "師", "轉")):
+    if record.language_tag == "zh-Hant" and not any(character in target_text for character in ("繁", "專", "師", "轉", "發", "檢")):
         raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Traditional Chinese transcript script is invalid.")
     pattern = SCRIPT_PATTERNS.get(record.script)
     if pattern is not None and not pattern.search(target_text):
