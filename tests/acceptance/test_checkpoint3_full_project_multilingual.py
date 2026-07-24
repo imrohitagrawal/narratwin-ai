@@ -3,24 +3,26 @@ from __future__ import annotations
 import base64
 import copy
 import json
-from dataclasses import asdict
+import re
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
 from backend.app.rag.chunking import checksum_text
 from backend.app.stage6 import (
+    FULL_PROJECT_REPORT_SCHEMA_VERSION,
     LANGUAGE_CATALOG_BY_TAG,
     LANGUAGE_CATALOG_VERSION,
     PRIORITY2_LANGUAGE_TAGS,
     STAGE6_TRANSLATED_ARTIFACT_SCHEMA_VERSION,
     SUPPORTED_LANGUAGES,
     TRANSCRIPT_VALIDATOR_VERSION,
-    FULL_PROJECT_REPORT_SCHEMA_VERSION,
     Stage6Error,
     create_stage6_service,
     get_language_catalog,
+    multilingual_to_api,
+    translate_demo_segment_text,
     validate_multilingual_transcript_correctness,
 )
 from backend.app.stage7 import build_source_evaluation_checksum
@@ -38,8 +40,7 @@ def test_checkpoint3_full_project_multilingual_corpus_proves_all_supported_langu
     assert_fixture_thresholds(fixture)
 
     source_script = full_project_source_script(fixture)
-    citation_indexes = full_project_citation_indexes(fixture)
-    evidence_kwargs = source_evidence_kwargs(citation_indexes)
+    evidence_kwargs = source_evidence_kwargs(fixture)
     supported_tags = supported_catalog_tags()
     assert set(supported_tags) == set(SUPPORTED_LANGUAGES)
 
@@ -100,7 +101,14 @@ def test_checkpoint3_full_project_multilingual_corpus_proves_all_supported_langu
                 "artifactExportCount": parity["artifactExportCount"],
             }
         )
-        coverage_rows.append(coverage_row(language_tag, "positive", "passed", fixture["sourceTranscriptSegments"][0]))
+        coverage_rows.append(
+            coverage_row(
+                language_tag,
+                "positive",
+                "passed",
+                fixture["sourceTranscriptSegments"][0],
+            )
+        )
         coverage_rows.extend(false_pass_coverage_rows(result=result, fixture=fixture, language_tag=language_tag))
 
     for priority2_tag in PRIORITY2_LANGUAGE_TAGS:
@@ -164,7 +172,7 @@ def test_checkpoint3_full_project_multilingual_rejects_stale_evidence_lock(field
 
 
 def load_fixture() -> dict[str, Any]:
-    return json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(FIXTURE_PATH.read_text(encoding="utf-8")))
 
 
 def assert_fixture_thresholds(fixture: dict[str, Any]) -> None:
@@ -199,24 +207,36 @@ def assert_evidence_lock_current(fixture: dict[str, Any]) -> None:
 
 def fixture_hash(fixture: dict[str, Any]) -> str:
     stable = copy.deepcopy(fixture)
-    stable["evidenceLock"] = {
-        key: value
-        for key, value in stable["evidenceLock"].items()
-        if key not in {"fixtureHash", "expectedOutputHash"}
-    }
+    stable.pop("evidenceLock")
     return checksum_text(json.dumps(stable, sort_keys=True, ensure_ascii=False))
 
 
 def expected_output_hash(fixture: dict[str, Any]) -> str:
-    expected = [
-        {
-            "segmentId": segment["segmentId"],
-            "sourceText": segment["sourceText"],
-            "citationIndexes": segment["citationIndexes"],
-            "sourceRefs": segment["sourceRefs"],
-        }
-        for segment in fixture["sourceTranscriptSegments"]
-    ]
+    expected = []
+    for language_tag in supported_catalog_tags():
+        translated_segments = []
+        for index, segment in enumerate(fixture["sourceTranscriptSegments"], start=1):
+            markers = tuple(f"[{citation_index}]" for citation_index in segment["citationIndexes"])
+            translated_segments.append(
+                {
+                    "segmentId": segment["segmentId"],
+                    "sourceText": segment["sourceText"],
+                    "targetLanguage": language_tag,
+                    "targetText": translate_demo_segment_text(
+                        segment_number=index,
+                        source_segment=segment["sourceText"],
+                        target_language=language_tag,
+                        citation_markers=markers,
+                    ),
+                    "englishReferenceText": segment["sourceText"],
+                    "citationIndexes": segment["citationIndexes"],
+                    "citationMarkers": list(markers),
+                    "sourceRefs": segment["sourceRefs"],
+                    "contextRefIds": list(expected_context_ref_ids(segment)),
+                    "claimSupportIds": list(expected_claim_support_ids(segment)),
+                }
+            )
+        expected.append({"languageTag": language_tag, "segments": translated_segments})
     return checksum_text(json.dumps(expected, sort_keys=True, ensure_ascii=False))
 
 
@@ -224,17 +244,13 @@ def full_project_source_script(fixture: dict[str, Any]) -> str:
     return " ".join(segment["sourceText"] for segment in fixture["sourceTranscriptSegments"])
 
 
-def full_project_citation_indexes(fixture: dict[str, Any]) -> tuple[int, ...]:
-    return tuple(
-        citation_index
-        for segment in fixture["sourceTranscriptSegments"]
-        for citation_index in segment["citationIndexes"]
+def source_evidence_kwargs(fixture: dict[str, Any]) -> dict[str, Any]:
+    citation_pairs = citation_source_ref_pairs(fixture)
+    citation_indexes = tuple(index for index, _source_ref in citation_pairs)
+    context_ref_ids = tuple(context_ref_id(citation_index, source_ref) for citation_index, source_ref in citation_pairs)
+    claim_support_ids = tuple(
+        claim_support_id(citation_index, source_ref) for citation_index, source_ref in citation_pairs
     )
-
-
-def source_evidence_kwargs(citation_indexes: tuple[int, ...]) -> dict[str, Any]:
-    context_ref_ids = tuple(f"ctx_{index:03d}" for index in citation_indexes)
-    claim_support_ids = tuple(f"claimsup_{index:03d}" for index in citation_indexes)
     return {
         "source_run_id": "run_c3a_r2_full_project",
         "trace_id": "trace_c3a_r2_full_project",
@@ -256,6 +272,46 @@ def source_evidence_kwargs(citation_indexes: tuple[int, ...]) -> dict[str, Any]:
         ),
         "evaluation_status": "PASSED",
     }
+
+
+def citation_source_ref_pairs(fixture: dict[str, Any]) -> tuple[tuple[int, str], ...]:
+    pairs: list[tuple[int, str]] = []
+    for segment in fixture["sourceTranscriptSegments"]:
+        pairs.extend(
+            (int(citation_index), str(source_ref))
+            for citation_index, source_ref in zip(segment["citationIndexes"], segment["sourceRefs"], strict=True)
+        )
+    return tuple(pairs)
+
+
+def context_ref_id(citation_index: int, source_ref: str) -> str:
+    return f"ctx_{citation_index:03d}:{source_ref}"
+
+
+def claim_support_id(citation_index: int, source_ref: str) -> str:
+    return f"claimsup_{citation_index:03d}:{source_ref}"
+
+
+def expected_context_ref_ids(fixture_segment: dict[str, Any]) -> tuple[str, ...]:
+    return tuple(
+        context_ref_id(int(citation_index), str(source_ref))
+        for citation_index, source_ref in zip(
+            fixture_segment["citationIndexes"],
+            fixture_segment["sourceRefs"],
+            strict=True,
+        )
+    )
+
+
+def expected_claim_support_ids(fixture_segment: dict[str, Any]) -> tuple[str, ...]:
+    return tuple(
+        claim_support_id(int(citation_index), str(source_ref))
+        for citation_index, source_ref in zip(
+            fixture_segment["citationIndexes"],
+            fixture_segment["sourceRefs"],
+            strict=True,
+        )
+    )
 
 
 def supported_catalog_tags() -> tuple[str, ...]:
@@ -280,23 +336,28 @@ def assert_supported_language_output(*, result: Any, fixture: dict[str, Any], la
         assert observed.english_reference_text == expected["sourceText"]
         assert observed.citation_indexes == tuple(expected["citationIndexes"])
         assert observed.citation_markers == tuple(f"[{index}]" for index in expected["citationIndexes"])
-        assert observed.context_ref_ids
-        assert observed.claim_support_ids
+        assert observed.context_ref_ids == expected_context_ref_ids(expected)
+        assert observed.claim_support_ids == expected_claim_support_ids(expected)
         assert observed.source_run_id == result.source_run_id
         assert observed.evaluation_id == result.source_evaluation_id
         assert observed.target_text
         if language_tag != "en":
             assert observed.target_text != observed.source_text
     if language_tag == "hi":
-        assert any("\u0900" <= char <= "\u097f" for char in result.translated_script_text)
+        assert all(any("\u0900" <= char <= "\u097f" for char in segment.target_text) for segment in result.transcript_segments)
         assert "global viewers ke liye" not in result.translated_script_text.lower()
         assert "वॉकथ्रू" not in result.translated_script_text
     if language_tag in {"ar", "arz", "he", "fa"}:
         assert result.transcript_correctness.direction == "rtl"
         assert "[2] [5]" in result.transcript_segments[1].target_text
+        assert "Direction: rtl" in decoded_artifact_text(result.artifacts.translated_script)
     if language_tag in {"ja", "zh-Hans", "zh-Hant", "ko"}:
         assert "  " not in result.translated_script_text
         assert "[7]" in result.transcript_segments[-1].target_text
+        if language_tag == "ko":
+            assert all(any("\uac00" <= char <= "\ud7af" for char in segment.target_text) for segment in result.transcript_segments)
+        else:
+            assert not re.search(r"[\u3040-\u30ff\u3400-\u9fff] [\u3040-\u30ff\u3400-\u9fff]", result.translated_script_text)
     if language_tag in {"es", "de", "fr", "pt-BR", "it", "nl", "pl", "tr", "vi", "id", "fil", "ms"}:
         assert "For global viewers" not in result.translated_script_text
         assert result.transcript_segments[1].citation_markers == ("[2]", "[5]")
@@ -305,36 +366,30 @@ def assert_supported_language_output(*, result: Any, fixture: dict[str, Any], la
 
 
 def surface_parity_record(*, result: Any, fixture: dict[str, Any], language_tag: str) -> dict[str, Any]:
-    metadata_text = base64.b64decode(result.artifacts.metadata.content_base64, validate=True).decode("utf-8")
+    api_payload = multilingual_to_api(result)
+    assert_api_payload_has_body_parity(api_payload=api_payload, result=result)
+    metadata_text = decoded_artifact_text(result.artifacts.metadata)
     metadata = json.loads(metadata_text)
-    translated_artifact_text = base64.b64decode(
-        result.artifacts.translated_script.content_base64,
-        validate=True,
-    ).decode("utf-8")
-    ui_transcript = [asdict(segment) for segment in result.transcript_segments]
+    translated_artifact_text = decoded_artifact_text(result.artifacts.translated_script)
+    subtitles_text = decoded_artifact_text(result.artifacts.subtitles)
+    voice_manifest = json.loads(decoded_artifact_text(result.artifacts.voice_manifest))
+    api_transcript = api_payload["transcriptSegments"]
     stored_output = {
         "sourceScriptText": result.source_script_text,
         "translatedScriptText": result.translated_script_text,
-        "transcriptSegments": ui_transcript,
+        "transcriptSegments": api_transcript,
     }
     assert metadata["sourceScriptText"] == stored_output["sourceScriptText"]
     assert metadata["translatedScriptText"] == stored_output["translatedScriptText"]
-    assert metadata["transcriptSegments"] == [
-        {
-            "segmentId": segment["segment_id"],
-            "sourceText": segment["source_text"],
-            "targetLanguage": segment["target_language"],
-            "targetText": segment["target_text"],
-            "englishReferenceText": segment["english_reference_text"],
-            "citationMarkers": list(segment["citation_markers"]),
-            "citationIndexes": list(segment["citation_indexes"]),
-            "contextRefIds": list(segment["context_ref_ids"]),
-            "claimSupportIds": list(segment["claim_support_ids"]),
-            "sourceRunId": segment["source_run_id"],
-            "evaluationId": segment["evaluation_id"],
-        }
-        for segment in ui_transcript
-    ]
+    assert metadata["transcriptSegments"] == api_transcript
+    assert metadata["sourceContextRefIds"] == list(result.source_context_ref_ids)
+    assert metadata["sourceClaimSupportIds"] == list(result.source_claim_support_ids)
+    assert metadata["sourceCitationIndexes"] == list(result.source_citation_indexes)
+    assert subtitles_text == result.subtitles_text
+    assert voice_manifest["language"] == language_tag
+    assert voice_manifest["provider"] == "mock"
+    assert voice_manifest["providerMode"] == "LOCAL"
+    assert voice_manifest["textChecksum"] == checksum_text(result.translated_script_text)
     for segment in result.transcript_segments:
         assert f"Source English: {segment.source_text}" in translated_artifact_text
         assert f"Target ({language_tag}): {segment.target_text}" in translated_artifact_text
@@ -344,42 +399,102 @@ def surface_parity_record(*, result: Any, fixture: dict[str, Any], language_tag:
         assert f"Claim support ids: {', '.join(segment.claim_support_ids)}" in translated_artifact_text
     return {
         "languageTag": language_tag,
-        "uiTranscriptMatchesStoredOutput": True,
+        "apiTranscriptSurfaceMatchesStoredOutput": True,
         "metadataMatchesStoredOutput": True,
         "translatedScriptArtifactMatchesTranscript": True,
-        "artifactExportCount": fixture["thresholds"]["artifactExportCount"],
+        "subtitlesArtifactMatchesTranscript": True,
+        "voiceManifestMatchesTranscript": True,
+        "artifactExportCount": len(cast(dict[str, Any], api_payload["artifacts"])),
     }
+
+
+def decoded_artifact_text(artifact: Any) -> str:
+    return base64.b64decode(artifact.content_base64, validate=True).decode("utf-8")
+
+
+def assert_api_payload_has_body_parity(*, api_payload: dict[str, object], result: Any) -> None:
+    transcript_segments = cast(list[dict[str, Any]], api_payload["transcriptSegments"])
+    artifacts = cast(dict[str, dict[str, str]], api_payload["artifacts"])
+    assert transcript_segments
+    assert api_payload["sourceScriptText"] == result.source_script_text
+    assert api_payload["translatedScriptText"] == result.translated_script_text
+    assert api_payload["subtitlesText"] == result.subtitles_text
+    assert transcript_segments == [segment_to_api(segment) for segment in result.transcript_segments]
+    assert set(artifacts) == {"translatedScript", "subtitles", "voiceManifest", "metadata"}
+    artifact_texts = {
+        name: base64.b64decode(artifact["contentBase64"], validate=True).decode("utf-8")
+        for name, artifact in artifacts.items()
+    }
+    assert artifact_texts["subtitles"] == result.subtitles_text
+    assert json.loads(artifact_texts["metadata"])["transcriptSegments"] == transcript_segments
+    assert json.loads(artifact_texts["voiceManifest"])["textChecksum"] == checksum_text(result.translated_script_text)
+    for segment in result.transcript_segments:
+        assert segment.source_text in artifact_texts["translatedScript"]
+        assert segment.target_text in artifact_texts["translatedScript"]
+        assert segment.english_reference_text in artifact_texts["translatedScript"]
 
 
 def false_pass_coverage_rows(*, result: Any, fixture: dict[str, Any], language_tag: str) -> list[dict[str, Any]]:
     body_segments = [segment_to_api(segment) for segment in result.transcript_segments]
-    mutations = {
-        "partial-project-translation": body_segments[:-1],
-        "missing-document-translation": [
-            segment for segment in body_segments if not segment["segmentId"].startswith(("seg_005", "seg_006"))
-        ],
-        "missing-section-translation": [segment for segment in body_segments if segment["segmentId"] != "seg_004"],
-        "single-segment-partial-success": body_segments[:1],
-        "heading-only-success": [dict(body_segments[0], targetText="Product Overview [1]")],
-        "untranslated-english-fallback": [dict(segment, targetText=segment["sourceText"]) for segment in body_segments],
-        "wrong-script": [dict(body_segments[0], targetText="romanized fallback [1]")],
-        "romanized-fallback": [dict(body_segments[0], targetText="global viewers ke liye NarraTwin AI badalta hai [1]")],
-        "illegitimate-source-term-leakage": [dict(body_segments[0], targetText=f"{body_segments[0]['targetText']} walkthrough")],
-        "altered-claim-loses-source-support": [dict(body_segments[0], targetText=body_segments[-1]["targetText"])],
-        "citation-drift": [dict(body_segments[1], citationMarkers=["[5]", "[2]"], citationIndexes=[5, 2])],
-        "citation-id-without-source-span": [dict(body_segments[1], sourceText=body_segments[0]["sourceText"])],
-        "missing-source": [dict(body_segments[0], sourceText="")],
-        "missing-target": [dict(body_segments[0], targetText="")],
-        "missing-english-reference": [dict(body_segments[0], englishReferenceText="")],
-        "missing-context-ref": [dict(body_segments[0], contextRefIds=[])],
-        "missing-claim-support-binding": [dict(body_segments[0], claimSupportIds=[])],
-        "metadata-only-success": [],
-        "artifact-only-success": [],
-        "stale-coverage-row": body_segments[:-1],
+    heading_exposure_segment = next(
+        segment for segment in body_segments if segment["segmentId"] == "seg_004"
+    )
+    heading_exposure_fixture = next(
+        segment for segment in fixture["sourceTranscriptSegments"] if segment["segmentId"] == "seg_004"
+    )
+    first_fixture_segment = fixture["sourceTranscriptSegments"][0]
+    mutations: dict[str, tuple[list[dict[str, Any]], dict[str, Any]]] = {
+        "partial-project-translation": (body_segments[:-1], fixture["sourceTranscriptSegments"][-1]),
+        "missing-document-translation": (
+            [segment for segment in body_segments if not segment["segmentId"].startswith(("seg_005", "seg_006"))],
+            fixture["sourceTranscriptSegments"][4],
+        ),
+        "missing-section-translation": ([segment for segment in body_segments if segment["segmentId"] != "seg_004"], heading_exposure_fixture),
+        "single-segment-partial-success": (body_segments[:1], fixture["sourceTranscriptSegments"][1]),
+        "heading-only-success": (
+            [dict(heading_exposure_segment, targetText="Narration Safety [4]")],
+            heading_exposure_fixture,
+        ),
+        "partial-section-body-success": (
+            [dict(heading_exposure_segment, targetText="The narration safety document [4]")],
+            heading_exposure_fixture,
+        ),
+        "missing-body-success": ([dict(heading_exposure_segment, targetText="[4]")], heading_exposure_fixture),
+        "wrong-script": ([dict(body_segments[0], targetText="romanized fallback [1]")], first_fixture_segment),
+        "romanized-fallback": (
+            [dict(body_segments[0], targetText="global viewers ke liye NarraTwin AI badalta hai [1]")],
+            first_fixture_segment,
+        ),
+        "illegitimate-source-term-leakage": (
+            [dict(body_segments[0], targetText=f"{body_segments[0]['targetText']} walkthrough")],
+            first_fixture_segment,
+        ),
+        "altered-claim-loses-source-support": (
+            [dict(body_segments[0], targetText=body_segments[-1]["targetText"])],
+            first_fixture_segment,
+        ),
+        "citation-drift": (
+            [dict(body_segments[1], citationMarkers=["[5]", "[2]"], citationIndexes=[5, 2])],
+            fixture["sourceTranscriptSegments"][1],
+        ),
+        "citation-id-without-source-span": (
+            [dict(body_segments[1], sourceText=body_segments[0]["sourceText"])],
+            fixture["sourceTranscriptSegments"][1],
+        ),
+        "missing-source": ([dict(body_segments[0], sourceText="")], first_fixture_segment),
+        "missing-target": ([dict(body_segments[0], targetText="")], first_fixture_segment),
+        "missing-english-reference": ([dict(body_segments[0], englishReferenceText="")], first_fixture_segment),
+        "missing-context-ref": ([dict(body_segments[0], contextRefIds=[])], first_fixture_segment),
+        "missing-claim-support-binding": ([dict(body_segments[0], claimSupportIds=[])], first_fixture_segment),
+        "stale-coverage-row": (body_segments[:-1], fixture["sourceTranscriptSegments"][-1]),
     }
+    if language_tag != "en":
+        mutations["untranslated-english-fallback"] = [
+            dict(segment, targetText=segment["sourceText"]) for segment in body_segments
+        ], first_fixture_segment
     rows: list[dict[str, Any]] = []
-    for mutation_name, mutated_segments in mutations.items():
-        with pytest.raises(Exception):
+    for mutation_name, (mutated_segments, fixture_segment) in mutations.items():
+        try:
             validate_multilingual_transcript_correctness(
                 language_tag=language_tag,
                 source_text=result.source_script_text,
@@ -390,7 +505,18 @@ def false_pass_coverage_rows(*, result: Any, fixture: dict[str, Any], language_t
                 citation_indexes=result.source_citation_indexes,
                 claim_support_ids=result.source_claim_support_ids,
             )
-        rows.append(coverage_row(language_tag, mutation_name, "failed-as-expected", fixture["sourceTranscriptSegments"][0]))
+        except Stage6Error as exc:
+            rows.append(coverage_row(language_tag, mutation_name, exc.code, fixture_segment))
+            continue
+        pytest.fail(f"{language_tag} false-pass mutation was accepted: {mutation_name}")
+    api_payload = multilingual_to_api(result)
+    for mutation_name, mutated_payload in {
+        "metadata-only-success": dict(api_payload, transcriptSegments=[], translatedScriptText=""),
+        "artifact-only-success": dict(api_payload, transcriptSegments=[], sourceScriptText="", translatedScriptText=""),
+    }.items():
+        with pytest.raises(AssertionError):
+            assert_api_payload_has_body_parity(api_payload=mutated_payload, result=result)
+        rows.append(coverage_row(language_tag, mutation_name, "surface-parity-failed", first_fixture_segment))
     return rows
 
 
@@ -420,7 +546,7 @@ def coverage_row(
         "languageTag": language_tag,
         "fixtureRow": fixture_segment["fixtureRow"],
         "segmentId": fixture_segment["segmentId"],
-        "sourceRef": fixture_segment["sourceRefs"][0],
+        "sourceRef": ";".join(fixture_segment["sourceRefs"]),
         "expectedCondition": condition,
         "observedViolation": result,
         "remediationCategory": remediation_category(condition),

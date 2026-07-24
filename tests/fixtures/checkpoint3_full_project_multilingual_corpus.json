@@ -136,8 +136,8 @@
     "Does not claim arbitrary-project translation quality or raw uploaded knowledge-document translation API coverage."
   ],
   "evidenceLock": {
-    "fixtureHash": "sha256:RED_UNFILLED_FIXTURE_HASH",
-    "expectedOutputHash": "sha256:RED_UNFILLED_EXPECTED_OUTPUT_HASH",
+    "fixtureHash": "sha256:b1d7b95504703b9a4042988db20e1d87d3184f5f016981b29de5085f16faa3f4",
+    "expectedOutputHash": "sha256:c5aefa275d715b881e78a586d038c2c39df795ab99a2af56e3c06ae3d028ba7f",
     "languageCatalogVersion": "2026-07-24-c3a-r2",
     "validatorVersion": "c3a-r2-full-project-validator-v1",
     "artifactSchemaVersion": "stage6-multilingual-artifact-v2",

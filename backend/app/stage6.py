@@ -59,6 +59,10 @@ PRIORITY1_LANGUAGE_TAGS = (
     "ms",
 )
 PRIORITY2_LANGUAGE_TAGS = ("bn", "ta", "te", "kn", "mr", "gu", "ml", "ur", "pa")
+LANGUAGE_CATALOG_VERSION = "2026-07-24-c3a-r2"
+TRANSCRIPT_VALIDATOR_VERSION = "c3a-r2-full-project-validator-v1"
+STAGE6_TRANSLATED_ARTIFACT_SCHEMA_VERSION = "stage6-multilingual-artifact-v2"
+FULL_PROJECT_REPORT_SCHEMA_VERSION = "c3a-r2-full-project-report-v1"
 SUPPORTED_LANGUAGES: dict[str, str] = {}
 MAX_GLOSSARY_TERMS = 25
 MAX_GLOSSARY_TERM_CHARS = 80
@@ -2536,6 +2540,23 @@ def local_demo_translated_segment_fixture(*, source_segment: str, target_languag
             source_segment=source_segment,
             target_language=target_language,
             base_text=HELIO_MEDIA_TRANSLATED_SEGMENT_TEXT.get(target_language),
+        )
+    if (
+        source_body
+        == (
+            "It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, "
+            "and global audiences with audience-aware explanations. Atlas Output OUTPUT-SENTINEL-CP2 "
+            "is a fictional local checklist builder for launch rehearsals."
+        )
+    ):
+        audience_text = DEMO_AUDIENCE_SUPPORT_TEXT.get(target_language)
+        atlas_text = ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT.get(target_language)
+        if audience_text is None or atlas_text is None:
+            return None
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=f"{audience_text} {atlas_text}",
         )
     if source_body in {
         "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.",

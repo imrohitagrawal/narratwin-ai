@@ -1,0 +1,5249 @@
+[
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "en",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "en",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "hi",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "es",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "de",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "fr",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "pt-BR",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "it",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "nl",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "pl",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "uk",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ru",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hans",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "zh-Hant",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ja",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ko",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ar",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "arz",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "he",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "fa",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "tr",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "vi",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "id",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "fil",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "th",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "positive",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "passed",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "partial-project-translation",
+    "fixtureRow": "row_006",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "missing-document-translation",
+    "fixtureRow": "row_005",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_005",
+    "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+  },
+  {
+    "expectedCondition": "missing-section-translation",
+    "fixtureRow": "row_004",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "single-segment-partial-success",
+    "fixtureRow": "row_002",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "heading-only-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "partial-section-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "missing-body-success",
+    "fixtureRow": "row_004",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_004",
+    "sourceRef": "doc_narratwin_local#sec_citations:body"
+  },
+  {
+    "expectedCondition": "wrong-script",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "romanized-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "illegitimate-source-term-leakage",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "altered-claim-loses-source-support",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "citation-drift",
+    "fixtureRow": "row_002",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "citation-id-without-source-span",
+    "fixtureRow": "row_002",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_002",
+    "sourceRef": "doc_narratwin_product#sec_audience:body;doc_atlas_output#sec_atlas_role:body"
+  },
+  {
+    "expectedCondition": "missing-source",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-target",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-english-reference",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-context-ref",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "missing-claim-support-binding",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-source-binding",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "stale-coverage-row",
+    "fixtureRow": "row_006",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "refresh-evidence",
+    "segmentId": "seg_006",
+    "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+  },
+  {
+    "expectedCondition": "untranslated-english-fallback",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "TRANSCRIPT_CORRECTNESS_FAILED",
+    "remediationCategory": "repair-transcript-body",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "metadata-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "artifact-only-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ms",
+    "observedViolation": "surface-parity-failed",
+    "remediationCategory": "repair-surface-parity",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "unsupported-planned-language-fake-success",
+    "fixtureRow": "row_001",
+    "languageTag": "bn",
+    "observedViolation": "failed-as-expected",
+    "remediationCategory": "demote-or-refuse-language",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "unsupported-planned-language-fake-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ta",
+    "observedViolation": "failed-as-expected",
+    "remediationCategory": "demote-or-refuse-language",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "unsupported-planned-language-fake-success",
+    "fixtureRow": "row_001",
+    "languageTag": "te",
+    "observedViolation": "failed-as-expected",
+    "remediationCategory": "demote-or-refuse-language",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "unsupported-planned-language-fake-success",
+    "fixtureRow": "row_001",
+    "languageTag": "kn",
+    "observedViolation": "failed-as-expected",
+    "remediationCategory": "demote-or-refuse-language",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "unsupported-planned-language-fake-success",
+    "fixtureRow": "row_001",
+    "languageTag": "mr",
+    "observedViolation": "failed-as-expected",
+    "remediationCategory": "demote-or-refuse-language",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "unsupported-planned-language-fake-success",
+    "fixtureRow": "row_001",
+    "languageTag": "gu",
+    "observedViolation": "failed-as-expected",
+    "remediationCategory": "demote-or-refuse-language",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "unsupported-planned-language-fake-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ml",
+    "observedViolation": "failed-as-expected",
+    "remediationCategory": "demote-or-refuse-language",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "unsupported-planned-language-fake-success",
+    "fixtureRow": "row_001",
+    "languageTag": "ur",
+    "observedViolation": "failed-as-expected",
+    "remediationCategory": "demote-or-refuse-language",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  },
+  {
+    "expectedCondition": "unsupported-planned-language-fake-success",
+    "fixtureRow": "row_001",
+    "languageTag": "pa",
+    "observedViolation": "failed-as-expected",
+    "remediationCategory": "demote-or-refuse-language",
+    "segmentId": "seg_001",
+    "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+  }
+]

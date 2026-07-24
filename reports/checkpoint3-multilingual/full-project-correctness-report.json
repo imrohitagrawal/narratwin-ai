@@ -1,0 +1,577 @@
+{
+  "artifactSchemaVersion": "stage6-multilingual-artifact-v2",
+  "expectedOutputHash": "sha256:c5aefa275d715b881e78a586d038c2c39df795ab99a2af56e3c06ae3d028ba7f",
+  "fixtureHash": "sha256:b1d7b95504703b9a4042988db20e1d87d3184f5f016981b29de5085f16faa3f4",
+  "fixtureId": "checkpoint3a-r2-public-safe-full-project-corpus",
+  "languageCatalogVersion": "2026-07-24-c3a-r2",
+  "languageClassCoverage": {
+    "CJK": [
+      "ja",
+      "ko",
+      "zh-Hans",
+      "zh-Hant"
+    ],
+    "Cyrillic": [
+      "ru",
+      "uk"
+    ],
+    "Hindi/Devanagari": [
+      "hi"
+    ],
+    "Latin-script": [
+      "de",
+      "en",
+      "es",
+      "fil",
+      "fr",
+      "id",
+      "it",
+      "ms",
+      "nl",
+      "pl",
+      "pt-BR",
+      "tr",
+      "vi"
+    ],
+    "RTL": [
+      "ar",
+      "arz",
+      "fa",
+      "he"
+    ],
+    "Thai": [
+      "th"
+    ]
+  },
+  "nonGoals": [
+    "does not prove arbitrary-project translation quality",
+    "does not prove provider quality",
+    "does not authorize hosted/public demo",
+    "does not prove raw uploaded knowledge-document translation API behavior"
+  ],
+  "priority2Refusals": [
+    {
+      "languageTag": "bn",
+      "result": "refused"
+    },
+    {
+      "languageTag": "ta",
+      "result": "refused"
+    },
+    {
+      "languageTag": "te",
+      "result": "refused"
+    },
+    {
+      "languageTag": "kn",
+      "result": "refused"
+    },
+    {
+      "languageTag": "mr",
+      "result": "refused"
+    },
+    {
+      "languageTag": "gu",
+      "result": "refused"
+    },
+    {
+      "languageTag": "ml",
+      "result": "refused"
+    },
+    {
+      "languageTag": "ur",
+      "result": "refused"
+    },
+    {
+      "languageTag": "pa",
+      "result": "refused"
+    }
+  ],
+  "provenanceNotes": [
+    "Synthetic public-safe corpus created for issue #278 only.",
+    "Contains no private strategy, private roadmap, invite code, real personal data, private media, provider payload, provider output, real media, or cloned identity material.",
+    "Uses fictional Atlas Output marker content and existing NarraTwin local/mock acceptance sentences.",
+    "Does not claim arbitrary-project translation quality or raw uploaded knowledge-document translation API coverage."
+  ],
+  "schemaVersion": "c3a-r2-full-project-report-v1",
+  "supportedLanguages": [
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "en",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "hi",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Devanagari",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "es",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "de",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "fr",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "pt-BR",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "it",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "nl",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "pl",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "uk",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Cyrillic",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "ru",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Cyrillic",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "zh-Hans",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Han Simplified",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "zh-Hant",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Han Traditional",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "ja",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Japanese",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "ko",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Hangul",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "rtl",
+      "languageTag": "ar",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Arabic",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "rtl",
+      "languageTag": "arz",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Arabic",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "rtl",
+      "languageTag": "he",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Hebrew",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "rtl",
+      "languageTag": "fa",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Arabic",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "tr",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "vi",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "id",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "fil",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "th",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Thai",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    },
+    {
+      "artifactExportCount": 4,
+      "direction": "ltr",
+      "languageTag": "ms",
+      "localDemoSupportStatus": "SUPPORTED",
+      "providerSupportStatus": "LOCAL_DEMO_FIXTURE",
+      "script": "Latin",
+      "segmentCount": 6,
+      "testCoverageLevel": "CHECKPOINT3A_EXHAUSTIVE"
+    }
+  ],
+  "surfaceParity": [
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "en",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "hi",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "es",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "de",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "fr",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "pt-BR",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "it",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "nl",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "pl",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "uk",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "ru",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "zh-Hans",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "zh-Hant",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "ja",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "ko",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "ar",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "arz",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "he",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "fa",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "tr",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "vi",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "id",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "fil",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "th",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    },
+    {
+      "apiTranscriptSurfaceMatchesStoredOutput": true,
+      "artifactExportCount": 4,
+      "languageTag": "ms",
+      "metadataMatchesStoredOutput": true,
+      "subtitlesArtifactMatchesTranscript": true,
+      "translatedScriptArtifactMatchesTranscript": true,
+      "voiceManifestMatchesTranscript": true
+    }
+  ],
+  "validatorVersion": "c3a-r2-full-project-validator-v1"
+}
