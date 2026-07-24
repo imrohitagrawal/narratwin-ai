@@ -54,42 +54,42 @@ describe("Home", () => {
     expect(html).not.toContain("0 unsupported claims");
   });
 
-  it("keeps the product demo before the Issue 280 verifier and states the verifier boundary", () => {
+  it("keeps the product demo before the Issue 280 local demo and states the local/mock boundary", () => {
     const html = renderToStaticMarkup(<Home />);
 
-    expect(html.indexOf("Project knowledge form")).toBeLessThan(html.indexOf("Issue 280 PR D local/mock verifier"));
-    expect(html).toContain("Developer verifier only");
-    expect(html).toContain("quarantined panel validates");
-    expect(html).toContain("does not perform full multilingual project-knowledge conversion");
-    expect(html).toContain("Use the main avatar demo export form above for the product multilingual flow.");
+    expect(html.indexOf("Project knowledge form")).toBeLessThan(html.indexOf("Issue 280 local multilingual demo"));
+    expect(html).toContain("arbitrary bounded public-safe synthetic markdown");
+    expect(html).toContain("deterministically converts it into the selected supported language");
+    expect(html).toContain("keeps all providers disabled or mocked");
     expect(html).toContain("Local/demo multilingual output uses controlled acceptance fixtures.");
     expect(html).toContain("Grounded English script");
-    expect(html).toContain("Mock target transcript evidence");
-    expect(html).toContain("Target transcript is mock evidence, not full product translation.");
+    expect(html).toContain("Target transcript evidence");
+    expect(html).toContain("Target transcript is deterministic local/mock conversion evidence.");
   });
 
-  it("renders the Issue 280 local verifier controls without provider or hosted-demo overclaims", () => {
+  it("renders the Issue 280 local demo controls without provider or hosted-demo overclaims", () => {
     const html = renderToStaticMarkup(<Home />);
 
-    expect(html).toContain("Issue 280 PR D local/mock verifier");
+    expect(html).toContain("Issue 280 local multilingual demo");
     expect(html).toContain("Run Issue 280 local demo");
-    expect(html).toContain("Verifier project name");
-    expect(html).toContain("Verifier synthetic knowledge");
-    expect(html).toContain("Verifier glossary terms");
+    expect(html).toContain("Project name");
+    expect(html).toContain("Synthetic project knowledge");
+    expect(html).toContain("Preserved glossary terms");
     expect(html).toContain("Issue 280 synthetic project");
     expect(html).toContain("Issue 280 synthetic markdown");
     expect(html).toContain("Issue 280 content type");
     expect(html).toContain("Issue 280 audience");
     expect(html).toContain("Issue 280 depth");
     expect(html).toContain("Deep");
-    expect(html).toContain("Issue 280 verifier target language");
-    expect(html).toContain("German refusal test");
+    expect(html).toContain("Issue 280 target language");
+    expect(html).toContain("Japanese / 日本語");
+    expect(html).toContain("Bengali / বাংলা - planned refusal");
     expect(html).toContain("Issue 280 preserved terms");
     expect(html).toContain("No Issue 280 result yet.");
     expect(html).toContain("Script pending");
     expect(html).toContain("Transcript pending");
     expect(html).toContain("Provider posture pending");
-    expect(html).toContain("Export artifacts are not generated in PR D.");
+    expect(html).toContain("Export artifacts pending");
     expect(html).toContain("local/mock only");
     expect(html).not.toContain("production ready");
     expect(html).not.toContain("public demo URL");
