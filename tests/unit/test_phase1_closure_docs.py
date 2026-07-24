@@ -6582,6 +6582,42 @@ def test_issue151_allowlist_rejects_near_match_and_unauthorized_path(monkeypatch
         ]
 
 
+def test_issue287_branch_allows_only_stage8_governance_drift_scope(monkeypatch: Any) -> None:
+    expected = {
+        "docs/governance/preflights/issue-287.json",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "tests/unit/test_stage8_quality_gate.py",
+    }
+    assert phase1.ISSUE_287_ALLOWED_CHANGED_FILES == expected
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-process-287-stage8-quality-gate-drift",
+        files=sorted(expected),
+    ) == []
+
+
+def test_issue287_allowlist_rejects_near_match_and_dependency_files(monkeypatch: Any) -> None:
+    allowed_path = "scripts/quality/check_stage8_docs.py"
+    for branch in (
+        "phase-1-closure-process-287-stage8-quality-gate-drift-extra",
+        "phase-1-closure-process-278-stage8-quality-gate-drift",
+    ):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=[allowed_path]) == [
+            f"Phase 1 Closure branch {branch} may not change {allowed_path}."
+        ]
+
+    branch = "phase-1-closure-process-287-stage8-quality-gate-drift"
+    for path in ("frontend/package.json", "frontend/package-lock.json", "backend/app/main.py"):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=[path]) == [
+            f"Phase 1 Closure branch {branch} may not change {path}."
+        ]
+
+
 def test_issue219_branch_allows_only_frontend_audit_remediation_scope(monkeypatch: Any) -> None:
     expected = {
         "docs/governance/preflights/issue-219.json",

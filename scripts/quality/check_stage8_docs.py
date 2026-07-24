@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
+ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
 
 REQUIRED_FILES = [
     ".stage/current",
@@ -75,6 +76,16 @@ PROCESS_BRANCH_ALLOWED_FILES = {
         "scripts/guardrails_check.py",
         "scripts/quality/check_stage8_docs.py",
         "tests/unit/test_guardrails_check.py",
+        "tests/unit/test_stage8_quality_gate.py",
+    },
+    ISSUE287_STAGE8_DRIFT_BRANCH: {
+        "docs/governance/preflights/issue-287.json",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
         "tests/unit/test_stage8_quality_gate.py",
     }
 }
@@ -242,12 +253,10 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
         "--headless",
         "NARRATWIN_LOCUST_HEALTH_P95_MS",
         "lighthouse",
-        "docker scout cves",
         "trivy image",
         "aquasec/trivy@sha256",
         "largest-contentful-paint",
         "cumulative-layout-shift",
-        "--only-severity critical,high",
         "performance",
         "accessibility",
     ):

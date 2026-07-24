@@ -1756,6 +1756,26 @@ production durability/restore implementation, provider/media paths, or issue
 human-reviewed, expiring exception and must not become a general dependency
 override or advisory suppression.
 
+`phase-1-closure-process-287-stage8-quality-gate-drift` is reserved for issue
+`#287`, the narrow governance repair for inherited Stage 8 quality-marker
+drift. It keeps dependency-security PR `#286` dependency-only by repairing the
+checker/documentation mismatch in a separate PR. It may touch only:
+
+- `docs/governance/preflights/issue-287.json`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `scripts/quality/check_stage8_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_stage8_quality_gate.py`
+
+`phase-1-closure-process-287-stage8-quality-gate-drift` must not touch PR
+`#284`, PR `#286` dependency files, frontend dependency manifests, backend or
+frontend product behavior, provider/media paths, hosted/public launch, paid
+spend, production-readiness claims, or issue-closing wording for `#249` and
+`#280`.
+
 `phase-1-closure-141-*` is reserved for issue `#141`, the architecture and
 ownership prerequisite for the production-like durability readiness sequence.
 It chooses a platform and handoff contract for issues `#142` through `#149`, but

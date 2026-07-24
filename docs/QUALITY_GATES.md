@@ -292,6 +292,7 @@ Gate validates:
 - voice provider artifacts are validated as JSON manifests with safe `.json`
   filenames, `application/json` MIME type, parseable JSON object content, and
   matching checksums before they are returned
+- Voice provider artifacts must be JSON manifests.
 - subtitle export emits valid deterministic SubRip timing
 - API responses include downloadable translated-script and subtitle artifacts
 - frontend exposes target language selection and script/subtitle download links,
@@ -403,6 +404,9 @@ Gate validates:
 - Docker image scan blocks critical/high container vulnerabilities through
   Trivy, Grype, pinned Dockerized Trivy, or Docker Scout, including the PR
   security workflow scan
+- Docker Scout remains an optional documented scanner path; the executable Stage
+  8 gate requires the mandatory Trivy, Grype, and pinned Dockerized scanner
+  markers rather than treating Docker Scout command syntax as mandatory.
 - frontend production image strips npm/npx from the runner layer before
   scanning so package-manager-only vulnerabilities are not shipped
 - release checklist, runbook, demo seed data, portfolio README, and
