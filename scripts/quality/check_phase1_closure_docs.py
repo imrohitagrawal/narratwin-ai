@@ -28,6 +28,7 @@ ISSUE_278_REPORT_PATHS = (
 )
 ISSUE_280_BRANCH = "phase-1-closure-280-c3a-r3-planning-preflight-persona-depth"
 ISSUE_280_PR_B_BRANCH = "phase-1-closure-280-c3a-r3-pr-b-input-api-error-contract"
+ISSUE_280_PR_C_BRANCH = "phase-1-closure-280-c3a-r3-pr-c-local-e2e-demo-slice"
 ISSUE_280_MATRIX_PATH = "reports/checkpoint3-issue280/requirement-matrix.json"
 ISSUE_280_RED_EVIDENCE_PATH = "reports/checkpoint3-issue280/red-evidence-plan.json"
 ISSUE_280_REQUIRED_SECTIONS = {
@@ -522,6 +523,24 @@ ISSUE_280_PR_B_ALLOWED_CHANGED_FILES = {
     "backend/app/issue280.py",
     "backend/app/main.py",
     "scripts/quality/check_phase1_closure_docs.py",
+    "tests/acceptance/test_issue280_input_contract.py",
+    "tests/acceptance/test_issue280_api_contract.py",
+    "tests/acceptance/test_issue280_error_taxonomy.py",
+    "tests/unit/test_issue280_contract.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_280_PR_C_ALLOWED_CHANGED_FILES = {
+    "docs/ADR/0036-issue280-local-e2e-demo-slice.md",
+    "docs/reviews/ISSUE_280_C3A_R3_PR_C_PREFLIGHT.md",
+    ISSUE_280_MATRIX_PATH,
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "backend/app/issue280.py",
+    "backend/app/main.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/acceptance/test_issue280_local_e2e_demo.py",
     "tests/acceptance/test_issue280_input_contract.py",
     "tests/acceptance/test_issue280_api_contract.py",
     "tests/acceptance/test_issue280_error_taxonomy.py",
@@ -1803,10 +1822,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #280 / c3a-r3-pr-b-input-api-error-contract",
-        "c3a-r3-pr-b-active",
-        "c3a-r3-pr-b-active",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is closed after PR #277 merged the C3A repair for major-market multilingual output correctness at 6390ac7c7bcd8fed353587df90e8fa98c2ffef05 with post-merge main quality workflow run 30071081191 passing. Issue #278 is closed after PR #279 merged C3A-R2 at da3efe71b39c1c03a0fd28748a1270ee175cc2dd with post-merge main quality workflow run 30079561208 passing. Issue #280 is active for C3A-R3. PR A completed planning/preflight, public-source persona/audience/depth research, the requirement matrix, reviewer checklist, and merge-safe red-evidence framework through merged PR #281 at 3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c with post-merge main quality workflow run 30085558061 passing. PR B implements only the first executable input/API/error contract slice for bounded arbitrary synthetic markdown, safe request/response/error taxonomy, prompt-injection rejection, unsafe/private/secret-like input rejection, and local/mock provider-disabled posture. PR B does not implement the full local end-to-end multilingual demo and does not prove arbitrary real-world translation quality, provider quality, hosted/public demo readiness, raw uploaded knowledge-document translation API behavior, cloned identity runtime, real media, public distribution, or production readiness. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open after PR B, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
+        "issue #280 / c3a-r3-pr-c-local-e2e-demo-slice",
+        "c3a-r3-pr-c-active",
+        "c3a-r3-pr-c-active",
+        "Issue #280 is active for C3A-R3. PR A completed planning/preflight, public-source persona/audience/depth research, the requirement matrix, reviewer checklist, and merge-safe red-evidence framework through merged PR #281 at 3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c with post-merge main quality workflow run 30085558061 passing. PR B completed only the first executable input/API/error contract slice through merged PR #282 at b889604a490c9f014130e420c1c949af7879dd84 with post-merge main quality workflow run 30092008592 passing. PR C is the current narrow local/mock end-to-end API slice for bounded synthetic markdown ingestion, deterministic retrieval, grounded script generation, narrow multilingual output, unsupported-claim evaluation, and issue-scoped stored metadata. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open after PR C, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize UI changes, Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3918,6 +3937,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_280_ALLOWED_CHANGED_FILES
     elif branch == ISSUE_280_PR_B_BRANCH:
         allowed_files = ISSUE_280_PR_B_ALLOWED_CHANGED_FILES
+    elif branch == ISSUE_280_PR_C_BRANCH:
+        allowed_files = ISSUE_280_PR_C_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-c3b-pr1-consent-provenance-planning-274":
         allowed_files = ISSUE_274_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-280-"):
@@ -5885,8 +5906,8 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
         return
     if artifact.get("issue") != 280:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must target issue 280.")
-    if artifact.get("prSlice") not in {"PR A", "PR A+PR B"}:
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must be scoped to PR A or PR A+PR B.")
+    if artifact.get("prSlice") not in {"PR A", "PR A+PR B", "PR A+PR B+PR C"}:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must be scoped to PR A, PR A+PR B, or PR A+PR B+PR C.")
     if artifact.get("runtimeBehaviorImplemented") is not False:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} cannot claim full runtime implementation complete before all R280 rows pass.")
     if artifact.get("checkpoint3TrackerRemainsOpen") is not True:
@@ -5895,6 +5916,8 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #280 open after PR A.")
     if artifact.get("prSlice") == "PR A+PR B" and artifact.get("issue280RemainsOpenAfterPrB") is not True:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #280 open after PR B.")
+    if artifact.get("prSlice") == "PR A+PR B+PR C" and artifact.get("issue280RemainsOpenAfterPrC") is not True:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #280 open after PR C.")
     if artifact.get("plannedGate") != "make issue280-output-correctness":
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the planned gate.")
     matrix_text = json.dumps(artifact, sort_keys=True).lower()

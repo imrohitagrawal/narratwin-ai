@@ -1,13 +1,15 @@
 {
   "issue": 280,
-  "prSlice": "PR A+PR B",
+  "prSlice": "PR A+PR B+PR C",
   "schemaVersion": "Issue280RequirementMatrixV1",
   "runtimeBehaviorImplemented": false,
   "prBExecutableContractSliceImplemented": true,
+  "prCExecutableLocalE2ESliceImplemented": true,
   "checkpoint3TrackerIssue": 249,
   "checkpoint3TrackerRemainsOpen": true,
   "issue280RemainsOpenAfterPrA": true,
   "issue280RemainsOpenAfterPrB": true,
+  "issue280RemainsOpenAfterPrC": true,
   "plannedGate": "make issue280-output-correctness",
   "futureImplementationTestingContract": {
     "appliesTo": "Every #280 implementation PR after PR A.",
@@ -178,10 +180,10 @@
         {
           "id": "R280-S4-001",
           "requirement": "Bounded synthetic markdown upload, approval, ingestion, chunk/store, grounded English generation, audience/depth through stored evidence, and citations/contextRefs/claimSupports preserved.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-test",
-          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_stage4_contract.py -q",
-          "ownerPrSlice": "PR B"
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "acceptance-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_local_e2e_demo.py -q",
+          "ownerPrSlice": "PR C"
         }
       ]
     },
@@ -192,10 +194,10 @@
         {
           "id": "R280-S6-001",
           "requirement": "Bounded unseen synthetic facts are not refused only because they are not golden fixture sentences; deterministic local/mock conversion or honest refusal; validate script/direction, body-level translation, no English fallback except protected terms, no romanized fallback where native script required, and no partial/metadata/artifact-only success.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-test",
-          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_stage6_contract.py -q",
-          "ownerPrSlice": "PR B"
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "acceptance-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_local_e2e_demo.py -q",
+          "ownerPrSlice": "PR C"
         }
       ]
     },
@@ -464,6 +466,14 @@
           "evidenceType": "static-validator",
           "plannedCommand": "uv run pytest tests/unit/test_phase1_closure_docs.py -q",
           "ownerPrSlice": "PR B"
+        },
+        {
+          "id": "R280-GOV-003",
+          "requirement": "PR C has a dedicated fail-closed branch allowlist for the local/mock end-to-end API demo slice and keeps #249 and #280 open because UI, export parity, final output-correctness gate, hosted/public demo behavior, provider setup, real media, cloned identity runtime, public distribution, arbitrary real-world quality, provider quality, and production readiness remain out of scope.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "static-validator",
+          "plannedCommand": "uv run pytest tests/unit/test_phase1_closure_docs.py -q",
+          "ownerPrSlice": "PR C"
         }
       ]
     }

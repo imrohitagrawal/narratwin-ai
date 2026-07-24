@@ -640,6 +640,22 @@ narrow API surface. PR B does not implement the final
 behavior, provider setup, paid spend, cloned identity runtime, real media,
 public distribution, or production-readiness claims.
 
+PR C implements the next executable local/mock API slice behind
+`/api/v1/checkpoint3/issue280/local-e2e-demo`. The endpoint reuses the PR B
+input and error taxonomy, creates an issue-specific local synthetic demo
+session, derives deterministic local chunks/facts from bounded markdown,
+retrieves grounded context, generates citation-bound walkthrough text, creates
+narrow local/mock multilingual segments for `en`, `hi`, and `es`, evaluates
+unsupported generated claims, stores generated output/evaluation metadata in
+the issue-specific test-safe service, and returns provider-disabled posture and
+request trace metadata. PR C does not touch the UI, does not implement the final
+`make issue280-output-correctness` flow, exact UI evidence, hosted/public demo
+behavior, provider setup, paid spend, cloned identity runtime, real media,
+public distribution, arbitrary real-world translation quality, provider quality,
+or production-readiness claims. Issues `#249` and `#280` remain open after PR C
+unless all remaining R280 rows are later satisfied with executable evidence or
+reviewed/re-scoped.
+
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
 through the same local/mock API path. The language-quality probe verifies
