@@ -51,6 +51,42 @@ describe("Home", () => {
     expect(html).not.toContain("0 unsupported claims");
   });
 
+  it("keeps the product demo before the Issue 280 verifier and states the verifier boundary", () => {
+    const html = renderToStaticMarkup(<Home />);
+
+    expect(html.indexOf("Project knowledge form")).toBeLessThan(html.indexOf("Issue 280 PR C mock contract verifier"));
+    expect(html).toContain("Developer verifier only");
+    expect(html).toContain("does not perform full multilingual project-knowledge conversion");
+    expect(html).toContain("Use the main avatar demo export form above for the product multilingual flow.");
+    expect(html).toContain("Grounded English script");
+    expect(html).toContain("Mock target transcript evidence");
+    expect(html).toContain("Target transcript is mock evidence, not full product translation.");
+  });
+
+  it("renders the Issue 280 local verifier controls without provider or hosted-demo overclaims", () => {
+    const html = renderToStaticMarkup(<Home />);
+
+    expect(html).toContain("Issue 280 PR C mock contract verifier");
+    expect(html).toContain("Run Issue 280 local demo");
+    expect(html).toContain("Issue 280 synthetic project");
+    expect(html).toContain("Issue 280 synthetic markdown");
+    expect(html).toContain("Issue 280 content type");
+    expect(html).toContain("Issue 280 audience");
+    expect(html).toContain("Issue 280 depth");
+    expect(html).toContain("Deep");
+    expect(html).toContain("Issue 280 verifier target language");
+    expect(html).toContain("German refusal test");
+    expect(html).toContain("Issue 280 preserved terms");
+    expect(html).toContain("No Issue 280 result yet.");
+    expect(html).toContain("Script pending");
+    expect(html).toContain("Transcript pending");
+    expect(html).toContain("Provider posture pending");
+    expect(html).toContain("Export artifacts are not generated in PR D.");
+    expect(html).toContain("local/mock only");
+    expect(html).not.toContain("production ready");
+    expect(html).not.toContain("public demo URL");
+  });
+
   it("formats backend language catalog labels with explicit support status", () => {
     expect(
       languageOptionLabel({
@@ -183,6 +219,22 @@ describe("Home", () => {
     );
 
     await expect(readJson(response)).rejects.toThrow("NarraTwin API request failed with 422");
+  });
+
+  it("surfaces Issue 280 safe taxonomy errors through the frontend error reader", async () => {
+    const response = new Response(
+      JSON.stringify({
+        error: {
+          code: "ISSUE280_TRANSLATION_REFUSED",
+          message: "The local demo could not produce a faithful translated transcript for the selected settings.",
+        },
+      }),
+      { status: 422 },
+    );
+
+    await expect(readJson(response)).rejects.toThrow(
+      "ISSUE280_TRANSLATION_REFUSED: The local demo could not produce a faithful translated transcript for the selected settings.",
+    );
   });
 
   it("rejects unsafe artifact filenames before enabling downloads", () => {

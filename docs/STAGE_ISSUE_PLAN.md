@@ -1328,6 +1328,40 @@ runtime, cloned voice, cloned face, digital twin, real-person likeness, real
 media, public distribution, arbitrary real-world translation quality, provider
 quality, or production-readiness claims.
 
+Issue `#280` PR D branch
+`phase-1-closure-280-c3a-r3-pr-d-ui-browser-demo-slice` is limited to exact
+local UI/browser evidence for the merged PR C endpoint
+`/api/v1/checkpoint3/issue280/local-e2e-demo`: submit bounded synthetic
+markdown through the UI, show the stored grounded result, citations, context
+refs, claim supports, evaluation metadata, trace/storage metadata, retry/replay
+state, safe refusal states, required info tooltips, keyboard behavior,
+mobile/touch behavior, and local/mock provider-disabled posture. It may change
+only:
+
+- `docs/reviews/ISSUE_280_C3A_R3_PR_D_PREFLIGHT.md`
+- `docs/ADR/0037-issue280-ui-browser-demo-slice.md`
+- `reports/checkpoint3-issue280/requirement-matrix.json`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `frontend/playwright.issue280.config.ts`
+- `frontend/src/app/page.module.css`
+- `frontend/src/app/page.test.tsx`
+- `frontend/src/app/page.tsx`
+- `frontend/tests/issue280-ui-browser.spec.ts`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+PR D does not change the PR C backend endpoint contract, does not implement the
+final `make issue280-output-correctness` gate, and does not satisfy all of
+issue `#280`. It must keep issues `#249` and `#280` open, must use
+reference-only PR wording, and must not authorize hosted/public demo behavior,
+provider setup, provider SDKs, provider keys, paid spend, real provider calls,
+cloned identity runtime, cloned voice, cloned face, digital twin,
+real-person likeness, real media, public distribution, arbitrary real-world
+translation quality, provider quality, or production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

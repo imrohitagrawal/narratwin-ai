@@ -43,6 +43,50 @@
   background: #ffffff;
 }
 
+.issue280Shell {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #c8d0dc;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.issue280Shell h2 {
+  color: #111827;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.issue280Form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #e2e7ef;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.scopeNotice {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #d7c79a;
+  border-radius: 6px;
+  background: #fff9e8;
+  color: #4b3a12;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.issue280Evidence {
+  display: grid;
+  gap: 16px;
+}
+
 .controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -83,6 +127,58 @@
   line-height: 1.55;
 }
 
+.labelWithInfo {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.infoWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.infoButton {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #9aa5b4;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #374151;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: help;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 6px);
+  left: 0;
+  display: none;
+  width: min(300px, 78vw);
+  padding: 8px 10px;
+  border: 1px solid #c8d0dc;
+  border-radius: 6px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.infoWrap:hover .tooltip,
+.infoWrap:focus-within .tooltip {
+  display: block;
+}
+
 .checkboxField {
   display: flex;
   align-items: center;
@@ -118,11 +214,27 @@
 }
 
 .primaryAction:focus-visible,
+.secondaryAction:focus-visible,
+.infoButton:focus-visible,
 .field input:focus-visible,
 .field select:focus-visible,
 .field textarea:focus-visible {
   outline: 3px solid #8ab9ff;
   outline-offset: 2px;
+}
+
+.secondaryAction {
+  justify-self: start;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #c8d0dc;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f5f46;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .result,
@@ -154,6 +266,8 @@
 }
 
 .result h2,
+.result h3,
+.citations h3,
 .citations h2 {
   color: #111827;
   font-size: 18px;
@@ -472,6 +586,10 @@
   font-size: 14px;
 }
 
+.visuallyInline {
+  display: inline-flex;
+}
+
 @media (max-width: 720px) {
   .workspace {
     padding: 28px 16px;
@@ -496,6 +614,15 @@
   .previewScreen,
   .artifactRow {
     grid-template-columns: 1fr;
+  }
+
+  .issue280Form {
+    padding: 14px;
+  }
+
+  .tooltip {
+    left: auto;
+    right: 0;
   }
 
   .previewPresenter {

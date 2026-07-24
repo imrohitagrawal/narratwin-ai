@@ -197,6 +197,112 @@ type ApiErrorPayload = {
   };
 };
 
+type Issue280Depth = "CONCISE" | "STANDARD" | "DEEP";
+
+type Issue280TranscriptSegment = {
+  segmentId: string;
+  sourceText: string;
+  targetText: string;
+  englishReferenceText: string;
+  contextRefIds: string[];
+  citationIndexes: number[];
+  claimSupportIds: string[];
+};
+
+type Issue280ContextRef = {
+  contextRefId: string;
+  documentId: string;
+  chunkId: string;
+  sourceChecksum: string;
+  factChecksum: string;
+  sectionHeading: string;
+  relevanceScore: number;
+};
+
+type Issue280ClaimSupport = {
+  claimSupportId: string;
+  claimText: string;
+  supportStatus: "SUPPORTED";
+  contextRefId: string;
+  citationIndex: number;
+};
+
+type Issue280LocalDemoResponse = {
+  status: "COMPLETED";
+  accepted: boolean;
+  request: {
+    documentCount: number;
+    audience: string;
+    depth: Issue280Depth;
+    targetLanguage: string;
+    glossaryTermCount: number;
+  };
+  session: {
+    sessionId: string;
+    projectId: string;
+    documentIds: string[];
+    outputId: string;
+    replayed: boolean;
+  };
+  retrieval: {
+    strategy: string;
+    contextRefs: Issue280ContextRef[];
+  };
+  generated: {
+    acceptedScriptText: string;
+    sourceLanguage: "en";
+    generationMode: string;
+  };
+  multilingual: {
+    sourceLanguage: "en";
+    targetLanguage: "en" | "hi" | "es";
+    direction: "ltr";
+    translationMode: string;
+    segments: Issue280TranscriptSegment[];
+  };
+  evaluation: {
+    evaluationId: string;
+    status: "PASSED";
+    unsupportedClaimCount: number;
+    claimSupports: Issue280ClaimSupport[];
+  };
+  storage: {
+    stored: boolean;
+    outputId: string;
+    outputChecksum: string;
+    metadataChecksum: string;
+  };
+  providerPosture: {
+    llm: "mock";
+    translation: "mock";
+    voice: "mock";
+    avatar: "mock";
+    videoRenderer: "local-html";
+    networkEgress: boolean;
+    paidProvidersEnabled: boolean;
+    realProviderCalls: boolean;
+    clonedIdentity: boolean;
+    realMedia: boolean;
+  };
+  trace: {
+    requestId: string;
+    evidenceLevel: string;
+    runtimeProviderMode: "LOCAL_MOCK_DISABLED_EXTERNAL";
+  };
+};
+
+type Issue280ResultView = {
+  projectName: string;
+  document: {
+    filename: string;
+    contentType: string;
+    sizeBytes: number;
+    checksum: string;
+  };
+  glossaryTerms: string[];
+  response: Issue280LocalDemoResponse;
+};
+
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
 const audienceOptions = [
   { value: "RECRUITER", label: "Recruiter", promptLabel: "recruiter" },
@@ -238,10 +344,31 @@ const safeApiErrorCodes = new Set([
   "UNSUPPORTED_LANGUAGE",
   "UNSAFE_DISPLAY_TEXT",
   "UNSAFE_URL",
+  "ISSUE280_INPUT_TOO_LARGE",
+  "ISSUE280_UNSUPPORTED_FILE_TYPE",
+  "ISSUE280_TOO_MANY_DOCUMENTS",
+  "ISSUE280_PROMPT_INJECTION_REJECTED",
+  "ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED",
+  "ISSUE280_GLOSSARY_INVALID",
+  "ISSUE280_TRANSLATION_REFUSED",
+  "ISSUE280_INTERNAL_ERROR_SAFE",
 ]);
 
 const unsafeApiErrorMessagePattern =
   /contentBase64|fake-invite-input|fake-session-input|idem_[A-Za-z0-9_.:-]*|session_[A-Za-z0-9_.:-]*|inviteSecret|sessionSecret|auth token|bearer token|cookie|raw prompt|raw script|provider payload/i;
+
+const safeIssue280Defaults = {
+  projectName: "Issue 280 PR D Synthetic Demo",
+  markdown: `# Issue 280 Synthetic Knowledge
+
+NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.
+
+The local demo uses mock local LLM, translation, voice, and avatar adapters.
+
+Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.
+
+Recruiters, engineers, and product leaders need audience-aware explanations.`,
+};
 
 async function postJson<T>(path: string, body: object, idempotencyKey: string): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
@@ -278,11 +405,38 @@ export async function readJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+function issue280SafeError(caught: unknown) {
+  const message = caught instanceof Error ? caught.message : "Issue 280 local demo request failed.";
+  if (unsafeApiErrorMessagePattern.test(message)) {
+    return "Issue 280 refusal: NarraTwin API request failed safely. Try again with bounded public-safe synthetic markdown.";
+  }
+  return `Issue 280 refusal: ${message}. Try again with bounded public-safe synthetic markdown.`;
+}
+
+function visibleLoadingStateDelay() {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, 120);
+  });
+}
+
 export function evaluationBadgeLabel(run: WalkthroughRun | null): string {
   if (!run?.evaluation) {
     return "Evaluation pending";
   }
   return `${run.evaluation.unsupportedClaimCount} unsupported claims`;
+}
+
+function infoControl(label: string, text: string) {
+  return (
+    <span className={styles.infoWrap}>
+      <button className={styles.infoButton} type="button" aria-label={label}>
+        ?
+      </button>
+      <span className={styles.tooltip} role="tooltip">
+        {text}
+      </span>
+    </span>
+  );
 }
 
 const safeWalkthroughFailureReasons = new Set([
@@ -319,6 +473,11 @@ export default function Home() {
   const [error, setError] = useState("");
   const [languageCatalog, setLanguageCatalog] = useState<LanguageCatalogRecord[]>([]);
   const [targetLanguage, setTargetLanguage] = useState("es");
+  const [issue280Result, setIssue280Result] = useState<Issue280ResultView | null>(null);
+  const [issue280Error, setIssue280Error] = useState("");
+  const [issue280IsRunning, setIssue280IsRunning] = useState(false);
+  const [issue280TranscriptExpanded, setIssue280TranscriptExpanded] = useState(false);
+  const [issue280AvatarBoundary, setIssue280AvatarBoundary] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -492,6 +651,72 @@ export default function Home() {
     }
   }
 
+  async function runIssue280LocalDemo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const projectName = String(form.get("issue280ProjectName") ?? safeIssue280Defaults.projectName).trim();
+    const markdown = String(form.get("issue280KnowledgeDocument") ?? "").trim();
+    const contentType = String(form.get("issue280ContentType") ?? "text/markdown");
+    const audience = String(form.get("issue280Audience") ?? "ENGINEER");
+    const depth = String(form.get("issue280Depth") ?? "STANDARD") as Issue280Depth;
+    const selectedTargetLanguage = String(form.get("issue280TargetLanguage") ?? "en");
+    const glossaryTerms = String(form.get("issue280GlossaryTerms") ?? "")
+      .split("\n")
+      .map((term) => term.trim())
+      .filter(Boolean);
+    const request = {
+      documents: [
+        {
+          filename: "issue280_synthetic_project.md",
+          contentType,
+          markdown,
+        },
+      ],
+      audience,
+      depth,
+      targetLanguage: selectedTargetLanguage,
+      glossaryTerms,
+    };
+    const requestSeed = checksumSeed(
+      "issue280-pr-d",
+      projectName,
+      markdown,
+      contentType,
+      audience,
+      depth,
+      selectedTargetLanguage,
+      ...glossaryTerms.slice().sort((left, right) => left.localeCompare(right)),
+    );
+
+    setIssue280IsRunning(true);
+    setIssue280Error("");
+    setIssue280TranscriptExpanded(false);
+
+    try {
+      await visibleLoadingStateDelay();
+      const response = await postJson<Issue280LocalDemoResponse>(
+        "/checkpoint3/issue280/local-e2e-demo",
+        request,
+        `ui-issue280-${requestSeed}`,
+      );
+      setIssue280Result({
+        projectName,
+        document: {
+          filename: "issue280_synthetic_project.md",
+          contentType,
+          sizeBytes: new TextEncoder().encode(markdown).length,
+          checksum: `sha256:${sha256Hex(markdown)}`,
+        },
+        glossaryTerms,
+        response,
+      });
+    } catch (caught) {
+      setIssue280Error(issue280SafeError(caught));
+    } finally {
+      setIssue280IsRunning(false);
+    }
+  }
+
   const supports = run?.evaluation?.claimSupports ?? [];
   const selectedLanguage = languageCatalog.find((language) => language.languageTag === targetLanguage);
   const previewScript =
@@ -503,7 +728,7 @@ export default function Home() {
 	  const artifactContext = { multilingualRun, avatarRender };
 
   return (
-    <main className={styles.page} aria-busy={isGenerating}>
+    <main className={styles.page} aria-busy={isGenerating || issue280IsRunning}>
       <section className={styles.workspace} aria-labelledby="workspace-title">
         <div className={styles.header}>
           <p className={styles.kicker}>NarraTwin AI</p>
@@ -538,6 +763,7 @@ export default function Home() {
               <select name="depth" defaultValue="CONCISE">
                 <option value="CONCISE">Concise</option>
                 <option value="STANDARD">Standard</option>
+                <option value="DEEP">Deep</option>
               </select>
             </label>
           </div>
@@ -781,8 +1007,395 @@ export default function Home() {
             <p className={styles.emptyState}>Citations will appear after generation.</p>
           )}
         </section>
+
+        <section className={styles.issue280Shell} aria-labelledby="issue280-title">
+          <div className={styles.resultHeader}>
+            <div>
+              <p className={styles.kicker}>Issue 280 PR D</p>
+              <h2 id="issue280-title">Issue 280 PR C mock contract verifier</h2>
+            </div>
+            <span className={styles.badge}>local/mock only</span>
+          </div>
+          <p className={styles.scopeNotice}>
+            Developer verifier only: this panel validates the PR C local/mock request-response contract,
+            citations, context refs, claim supports, replay, and safe refusals. It does not perform full
+            multilingual project-knowledge conversion. Use the main avatar demo export form above for the
+            product multilingual flow.
+          </p>
+          <form className={styles.issue280Form} aria-label="Issue 280 local demo form" onSubmit={runIssue280LocalDemo}>
+            <div className={styles.field}>
+              <span className={styles.labelWithInfo}>
+                Project name
+                {infoControl("Issue 280 project field info", "Names only the public-safe synthetic project name used for this verifier.")}
+              </span>
+              <input
+                aria-label="Issue 280 synthetic project"
+                name="issue280ProjectName"
+                defaultValue={safeIssue280Defaults.projectName}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <span className={styles.labelWithInfo}>
+                Knowledge document
+                {infoControl(
+                  "Issue 280 knowledge field info",
+                  "Submit bounded synthetic markdown only; this verifier extracts grounded facts and does not translate the full document.",
+                )}
+              </span>
+              <textarea
+                aria-label="Issue 280 synthetic markdown"
+                name="issue280KnowledgeDocument"
+                defaultValue={safeIssue280Defaults.markdown}
+                rows={7}
+              />
+            </div>
+
+            <div className={styles.controls}>
+              <label className={styles.field}>
+                <span>Issue 280 content type</span>
+                <select aria-label="Issue 280 content type" name="issue280ContentType" defaultValue="text/markdown">
+                  <option value="text/markdown">Markdown</option>
+                  <option value="text/plain">Unsupported text/plain</option>
+                </select>
+              </label>
+              <label className={styles.field}>
+                <span className={styles.labelWithInfo}>
+                  Audience
+                  {infoControl("Audience info", "Controls the reader perspective used by the deterministic local verifier script.")}
+                </span>
+                <select aria-label="Issue 280 audience" name="issue280Audience" defaultValue="ENGINEER">
+                  {audienceOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className={styles.controls}>
+              <label className={styles.field}>
+                <span className={styles.labelWithInfo}>
+                  Depth
+                  {infoControl("Depth info", "Select CONCISE, STANDARD, or DEEP local verifier script coverage for the same grounded facts.")}
+                </span>
+                <select aria-label="Issue 280 depth" name="issue280Depth" defaultValue="STANDARD">
+                  <option value="CONCISE">Concise</option>
+                  <option value="STANDARD">Standard</option>
+                  <option value="DEEP">Deep</option>
+                </select>
+              </label>
+              <label className={styles.field}>
+                <span className={styles.labelWithInfo}>
+                  Verifier target language
+                  {infoControl("Target language info", "Verifier-only mock languages are en, hi, and es; this is not the product language catalog.")}
+                </span>
+                <select aria-label="Issue 280 verifier target language" name="issue280TargetLanguage" defaultValue="hi">
+                  <option value="en">English verifier mock</option>
+                  <option value="hi">Hindi verifier mock (prefix only)</option>
+                  <option value="es">Spanish verifier mock (prefix only)</option>
+                  <option value="de">German refusal test</option>
+                </select>
+              </label>
+            </div>
+
+            <div className={styles.field}>
+              <span className={styles.labelWithInfo}>
+                Glossary terms
+                {infoControl("Issue 280 glossary help", "Preserved project terms are separated from instructions and bounded by the PR B contract.")}
+              </span>
+              <textarea
+                aria-label="Issue 280 preserved terms"
+                name="issue280GlossaryTerms"
+                defaultValue={"NarraTwin AI\nlocal demo"}
+                rows={3}
+              />
+            </div>
+
+            <div className={styles.checkboxField}>
+              <input
+                aria-label="Confirm Issue 280 local mock boundary"
+                name="issue280SyntheticAvatarBoundary"
+                type="checkbox"
+                checked={issue280AvatarBoundary}
+                onChange={(event) => setIssue280AvatarBoundary(event.currentTarget.checked)}
+              />
+              <span className={styles.labelWithInfo}>
+                Synthetic avatar consent: local/mock preview only, no cloned face or voice
+                {infoControl("Issue 280 avatar boundary info", "No cloned face or voice is enabled; PR D shows local/mock browser evidence only.")}
+              </span>
+            </div>
+
+            <button className={styles.primaryAction} type="submit" disabled={issue280IsRunning || !issue280AvatarBoundary}>
+              {issue280IsRunning ? "Running Issue 280 local demo" : "Run Issue 280 local demo"}
+            </button>
+          </form>
+
+          {issue280IsRunning ? (
+            <p className={styles.supportStatus} aria-live="polite">
+              Running local/mock Issue 280 verifier.
+            </p>
+          ) : null}
+          {issue280Error ? (
+            <p className={styles.errorStatus} role="alert" aria-live="assertive">
+              {issue280Error}
+            </p>
+          ) : null}
+
+          {renderIssue280Evidence(issue280Result, issue280TranscriptExpanded, setIssue280TranscriptExpanded)}
+        </section>
       </section>
     </main>
+  );
+}
+
+function renderIssue280Evidence(
+  result: Issue280ResultView | null,
+  transcriptExpanded: boolean,
+  setTranscriptExpanded: (expanded: boolean) => void,
+) {
+  if (!result) {
+    return (
+      <div className={styles.issue280Evidence} aria-label="Issue 280 output evidence">
+        <section className={styles.result} aria-labelledby="issue280-empty-script">
+          <div className={styles.resultHeader}>
+            <h3 id="issue280-empty-script">
+              Grounded English script {infoControl("Walkthrough script info", "The PR C accepted script is English citation-bound verifier output, not full target-language conversion.")}
+            </h3>
+            <span className={styles.badge}>READY</span>
+          </div>
+          <p className={styles.emptyState}>No Issue 280 result yet.</p>
+          <p className={styles.emptyState}>Script pending</p>
+        </section>
+        <section className={styles.result} aria-labelledby="issue280-empty-transcript">
+          <div className={styles.resultHeader}>
+            <h3 id="issue280-empty-transcript">Mock target transcript evidence {infoControl("Demo preview info", "A local/mock target transcript evidence panel appears after the stored result exists.")}</h3>
+            <span className={styles.badge}>READY</span>
+          </div>
+          <p className={styles.emptyState}>Transcript pending</p>
+          <p className={styles.emptyState}>Target transcript is mock evidence, not full product translation.</p>
+        </section>
+        <section className={styles.result} aria-labelledby="issue280-empty-citations">
+          <div className={styles.resultHeader}>
+            <h3 id="issue280-empty-citations">Citations {infoControl("Citations info", "Citations bind visible claims to retrieved context refs and claim supports.")}</h3>
+            <span className={styles.badge}>READY</span>
+          </div>
+          <p className={styles.emptyState}>Citations pending</p>
+          <p className={styles.emptyState}>Evaluation pending</p>
+        </section>
+        <section className={styles.result} aria-labelledby="issue280-empty-posture">
+          <div className={styles.resultHeader}>
+            <h3 id="issue280-empty-posture">
+              Local mock provider posture
+              {infoControl(
+                "Local mock provider posture info",
+                "PR D keeps paid providers disabled, network egress off, and real media/cloned identity unavailable.",
+              )}
+            </h3>
+            <span className={styles.badge}>READY</span>
+          </div>
+          <p className={styles.emptyState}>Storage pending</p>
+          <p className={styles.emptyState}>Provider posture pending</p>
+          <p className={styles.emptyState}>Export artifacts are not generated in PR D.</p>
+          <span className={styles.visuallyInline}>
+            {infoControl("Export artifacts info", "Export artifact parity remains out of scope for PR D.")}
+          </span>
+        </section>
+      </div>
+    );
+  }
+
+  const { response } = result;
+  const segments = response.multilingual.segments;
+  const visibleSegments = transcriptExpanded ? segments : segments.slice(0, 2);
+  const posture = response.providerPosture;
+  const postureText = [
+    `llm=${posture.llm}`,
+    `translation=${posture.translation}`,
+    `voice=${posture.voice}`,
+    `avatar=${posture.avatar}`,
+    `videoRenderer=${posture.videoRenderer}`,
+    `networkEgress=${String(posture.networkEgress)}`,
+    `paidProvidersEnabled=${String(posture.paidProvidersEnabled)}`,
+    `realProviderCalls=${String(posture.realProviderCalls)}`,
+    `clonedIdentity=${String(posture.clonedIdentity)}`,
+    `realMedia=${String(posture.realMedia)}`,
+    `runtimeProviderMode=${response.trace.runtimeProviderMode}`,
+  ].join(" ");
+
+  return (
+    <div className={styles.issue280Evidence} aria-label="Issue 280 output evidence">
+      <section className={styles.result} aria-labelledby="issue280-script-title">
+        <div className={styles.resultHeader}>
+          <h3 id="issue280-script-title">
+            Grounded English script {infoControl("Walkthrough script info", "The PR C accepted script is English citation-bound verifier output, not full target-language conversion.")}
+          </h3>
+          <span className={styles.badge}>{response.status}</span>
+        </div>
+        <dl className={styles.metadata} aria-label="Issue 280 request metadata">
+          <div>
+            <dt>Project</dt>
+            <dd>{result.projectName}</dd>
+          </div>
+          <div>
+            <dt>Knowledge document</dt>
+            <dd>{`${result.document.filename} ${result.document.contentType} ${result.document.sizeBytes} bytes`}</dd>
+          </div>
+          <div>
+            <dt>Document checksum</dt>
+            <dd>{result.document.checksum}</dd>
+          </div>
+          <div>
+            <dt>Audience</dt>
+            <dd>{response.request.audience}</dd>
+          </div>
+          <div>
+            <dt>Depth</dt>
+            <dd>{`depth=${response.request.depth}`}</dd>
+          </div>
+          <div>
+            <dt>Target language</dt>
+            <dd>{`targetLanguage=${response.request.targetLanguage}`}</dd>
+          </div>
+          <div>
+            <dt>Glossary terms</dt>
+            <dd>{result.glossaryTerms.length ? result.glossaryTerms.join(", ") : "none"}</dd>
+          </div>
+          <div>
+            <dt>Accepted</dt>
+            <dd>{`accepted=${String(response.accepted)}`}</dd>
+          </div>
+        </dl>
+        <p>{response.generated.acceptedScriptText}</p>
+      </section>
+
+      <section className={styles.result} aria-labelledby="issue280-preview-title">
+        <div className={styles.resultHeader}>
+          <h3 id="issue280-preview-title">Mock target transcript evidence {infoControl("Demo preview info", "Preview shows shortened local/mock transcript evidence, not the full translated document.")}</h3>
+          <span className={styles.badge}>{response.multilingual.translationMode}</span>
+        </div>
+        <p className={styles.supportStatus}>
+          {`Showing ${visibleSegments.length} of ${segments.length} transcript segments. Target transcript is mock evidence, not full product translation.`}
+        </p>
+        <div className={styles.transcript} aria-label="Issue 280 validated transcript">
+          {visibleSegments.map((segment) => (
+            <article className={styles.transcriptSegment} key={segment.segmentId}>
+              <div className={styles.segmentTextGrid}>
+                <div>
+                  <strong>Source English</strong>
+                  <p>{segment.sourceText}</p>
+                </div>
+                <div>
+                  <strong>Target transcript</strong>
+                  <p>{segment.targetText}</p>
+                </div>
+                <div>
+                  <strong>English reference</strong>
+                  <p>{segment.englishReferenceText}</p>
+                </div>
+              </div>
+              <dl className={styles.segmentBindings}>
+                <div>
+                  <dt>Citations</dt>
+                  <dd>{segment.citationIndexes.map((index) => `[${index}]`).join(" ")}</dd>
+                </div>
+                <div>
+                  <dt>Context</dt>
+                  <dd>{segment.contextRefIds.join(", ")}</dd>
+                </div>
+                <div>
+                  <dt>Claims</dt>
+                  <dd>{segment.claimSupportIds.join(", ")}</dd>
+                </div>
+                <div>
+                  <dt>Eval</dt>
+                  <dd>{response.evaluation.evaluationId}</dd>
+                </div>
+              </dl>
+            </article>
+          ))}
+        </div>
+        {segments.length > 2 ? (
+          <button className={styles.secondaryAction} type="button" onClick={() => setTranscriptExpanded(!transcriptExpanded)}>
+            {transcriptExpanded ? "Collapse Issue 280 transcript" : "Expand full Issue 280 transcript"}
+          </button>
+        ) : null}
+      </section>
+
+      <section className={styles.citations} aria-labelledby="issue280-citations-title">
+        <div className={styles.resultHeader}>
+          <h3 id="issue280-citations-title">
+            Citations {infoControl("Citations info", "Visible citations show context refs, chunks, claim supports, and evaluation metadata.")}
+          </h3>
+          <span className={styles.badge}>{`unsupportedClaimCount=${response.evaluation.unsupportedClaimCount}`}</span>
+        </div>
+        <ul>
+          {response.retrieval.contextRefs.map((contextRef) => {
+            const support = response.evaluation.claimSupports.find(
+              (candidate) => candidate.contextRefId === contextRef.contextRefId,
+            );
+            return (
+              <li key={contextRef.contextRefId}>
+                <strong>[{support?.citationIndex}]</strong>
+                <span>{contextRef.sectionHeading}</span>
+                <code>{contextRef.contextRefId}</code>
+                <p>{`${contextRef.chunkId} supportStatus=${support?.supportStatus ?? "pending"} claimSupportId=${support?.claimSupportId ?? "pending"} evaluationId=${response.evaluation.evaluationId}`}</p>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section className={styles.result} aria-labelledby="issue280-posture-title">
+        <div className={styles.resultHeader}>
+          <h3 id="issue280-posture-title">
+            Local mock provider posture
+            {infoControl(
+              "Local mock provider posture info",
+              "This controlled demo keeps paid providers disabled and uses local/mock providers only.",
+            )}
+          </h3>
+          <span className={styles.badge}>local/mock only</span>
+        </div>
+        <p>{postureText}</p>
+        <dl className={styles.metadata} aria-label="Issue 280 storage and trace metadata">
+          <div>
+            <dt>Session</dt>
+            <dd>{`sessionId=${response.session.sessionId}`}</dd>
+          </div>
+          <div>
+            <dt>Output</dt>
+            <dd>{`outputId=${response.storage.outputId}`}</dd>
+          </div>
+          <div>
+            <dt>Stored</dt>
+            <dd>{`stored=${String(response.storage.stored)}`}</dd>
+          </div>
+          <div>
+            <dt>Replay</dt>
+            <dd>{`replayed=${String(response.session.replayed)}`}</dd>
+          </div>
+          <div>
+            <dt>Request</dt>
+            <dd>{response.trace.requestId}</dd>
+          </div>
+          <div>
+            <dt>Output checksum</dt>
+            <dd>{response.storage.outputChecksum}</dd>
+          </div>
+          <div>
+            <dt>Metadata checksum</dt>
+            <dd>{response.storage.metadataChecksum}</dd>
+          </div>
+        </dl>
+        {response.session.replayed ? <p className={styles.supportStatus}>Idempotent replay observed</p> : null}
+        <p className={styles.emptyState}>
+          Export artifacts are not generated in PR D.
+          {infoControl("Export artifacts info", "Export artifact and stored report parity remain out of scope for PR D.")}
+        </p>
+      </section>
+    </div>
   );
 }
 

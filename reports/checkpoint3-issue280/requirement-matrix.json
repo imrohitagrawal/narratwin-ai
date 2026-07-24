@@ -1,15 +1,17 @@
 {
   "issue": 280,
-  "prSlice": "PR A+PR B+PR C",
+  "prSlice": "PR A+PR B+PR C+PR D",
   "schemaVersion": "Issue280RequirementMatrixV1",
   "runtimeBehaviorImplemented": false,
   "prBExecutableContractSliceImplemented": true,
   "prCExecutableLocalE2ESliceImplemented": true,
+  "prDExecutableUiBrowserDemoSliceImplemented": true,
   "checkpoint3TrackerIssue": 249,
   "checkpoint3TrackerRemainsOpen": true,
   "issue280RemainsOpenAfterPrA": true,
   "issue280RemainsOpenAfterPrB": true,
   "issue280RemainsOpenAfterPrC": true,
+  "issue280RemainsOpenAfterPrD": true,
   "plannedGate": "make issue280-output-correctness",
   "futureImplementationTestingContract": {
     "appliesTo": "Every #280 implementation PR after PR A.",
@@ -310,16 +312,16 @@
         {
           "id": "R280-UI-001",
           "requirement": "UI covers DEEP, full transcript expansion, truncation indicator, accessible info icons/tooltips, specific safe errors, glossary explanation, visible audience/depth/language state, citations, exports, keyboard/mobile/touch accessibility, Stage 4 accepted script visible after Stage 6 refusal, and non-intercepted browser evidence.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-browser-test",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "browser-test",
           "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
           "ownerPrSlice": "PR D"
         },
         {
           "id": "R280-UI-002",
           "requirement": "Required info icons/tooltips: Project name, Knowledge document, Audience, Depth, Target language, Glossary terms, Synthetic avatar consent, Walkthrough script, Demo preview, Citations, Export artifacts, and provider/local/mock posture where visible.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-browser-test",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "browser-test",
           "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
           "ownerPrSlice": "PR D"
         }
@@ -332,8 +334,8 @@
         {
           "id": "R280-CONVERSATION-UX-001",
           "requirement": "UI explains expected terms/values/fields; errors explain what users can fix; glossary help separates protected terms from translation instructions; local/mock avatar consent does not imply cloned identity or real provider video; preview is clearly not full transcript.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-browser-test",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "browser-test",
           "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
           "ownerPrSlice": "PR D"
         }
@@ -426,8 +428,8 @@
         {
           "id": "R280-TEST-STRATEGY-004",
           "requirement": "Exact UI validation tests must use real browser evidence for what the user sees and acts upon: form values, info icons/tooltips, selected audience/depth/language, transcript expansion, truncation indicator, safe errors/remediation, citations, exports/downloads, keyboard use, and mobile/touch behavior.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-browser-test",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "browser-test",
           "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
           "ownerPrSlice": "PR D"
         },
@@ -482,6 +484,14 @@
           "evidenceType": "static-validator",
           "plannedCommand": "uv run pytest tests/unit/test_phase1_closure_docs.py -q",
           "ownerPrSlice": "PR C"
+        },
+        {
+          "id": "R280-GOV-004",
+          "requirement": "PR D has a dedicated fail-closed branch allowlist for the exact local/mock UI/browser demo slice and keeps #249 and #280 open because conversion parity, critical connections, final quality gate, final output-correctness gate, hosted/public demo behavior, provider setup, real media, cloned identity runtime, public distribution, arbitrary real-world quality, provider quality, and production readiness remain out of scope.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "static-validator",
+          "plannedCommand": "uv run pytest tests/unit/test_phase1_closure_docs.py -q",
+          "ownerPrSlice": "PR D"
         }
       ]
     }
