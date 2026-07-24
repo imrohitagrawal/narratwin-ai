@@ -46,6 +46,7 @@ ISSUE_280_REQUIRED_SECTIONS = {
     "R280-CRITICAL-CONNECTIONS",
     "R280-QUALITY",
     "R280-EVIL-SET",
+    "R280-TEST-STRATEGY",
     "R280-OUTPUT-CORRECTNESS",
     "R280-GOV",
 }
@@ -119,6 +120,22 @@ ISSUE_280_REQUIRED_ERROR_CODES = (
     "ISSUE280_GLOSSARY_INVALID",
     "ISSUE280_TRANSLATION_REFUSED",
     "ISSUE280_INTERNAL_ERROR_SAFE",
+)
+ISSUE_280_REQUIRED_TEST_STRATEGY_MARKERS = (
+    "futureimplementationtestingcontract",
+    "positivecases",
+    "negativecases",
+    "cornercases",
+    "apitests",
+    "contracttests",
+    "exactuivalidationtests",
+    "endtoendflowtests",
+    "regressiontests",
+    "apiassumption",
+    "tests/acceptance/test_issue280_api_contract.py",
+    "tests/contract/test_issue280_ui_api_artifact_parity.py",
+    "playwright.issue280.config.ts",
+    "make issue280-output-correctness",
 )
 POLICY_ONLY_ENV = "NARRATWIN_POLICY_ONLY"
 
@@ -5864,6 +5881,9 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
     for code in ISSUE_280_REQUIRED_ERROR_CODES:
         if code.lower() not in matrix_text:
             fail(failures, f"{ISSUE_280_MATRIX_PATH} missing planned error taxonomy code: {code}")
+    for marker in ISSUE_280_REQUIRED_TEST_STRATEGY_MARKERS:
+        if marker.lower() not in matrix_text:
+            fail(failures, f"{ISSUE_280_MATRIX_PATH} missing future implementation test strategy marker: {marker}")
     sections = artifact.get("sections")
     if not isinstance(sections, list):
         fail(failures, f"{ISSUE_280_MATRIX_PATH} sections must be a list.")

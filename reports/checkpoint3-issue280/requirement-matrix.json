@@ -7,6 +7,23 @@
   "checkpoint3TrackerRemainsOpen": true,
   "issue280RemainsOpenAfterPrA": true,
   "plannedGate": "make issue280-output-correctness",
+  "futureImplementationTestingContract": {
+    "appliesTo": "Every #280 implementation PR after PR A.",
+    "apiAssumption": "Future slices treat local/mock APIs as first-class contracts even when providers remain disabled and runtime stays deterministic/local.",
+    "requiredCaseFamilies": [
+      "positiveCases",
+      "negativeCases",
+      "cornerCases",
+      "regressionTests"
+    ],
+    "requiredTestLevels": [
+      "apiTests",
+      "contractTests",
+      "exactUiValidationTests",
+      "endToEndFlowTests"
+    ],
+    "minimumExpectation": "Each implementation PR must show which positive, negative, corner, API, contract, exact UI, E2E flow, and regression tests were added or intentionally reviewed/re-scoped before it can claim its owned R280 rows are satisfied."
+  },
   "statusValues": [
     "STATIC_CONTRACT_PASS",
     "RED_EVIDENCE_CAPTURED",
@@ -362,6 +379,52 @@
           "evidenceType": "red-evidence-plan",
           "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
           "ownerPrSlice": "PR A"
+        }
+      ]
+    },
+    {
+      "id": "R280-TEST-STRATEGY",
+      "title": "Future implementation testing strategy",
+      "rows": [
+        {
+          "id": "R280-TEST-STRATEGY-001",
+          "requirement": "Every future #280 development PR must carry a row-level test strategy covering positiveCases, negativeCases, cornerCases, and regressionTests before claiming owned behavior rows are satisfied.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "static-validator",
+          "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
+          "ownerPrSlice": "PR A"
+        },
+        {
+          "id": "R280-TEST-STRATEGY-002",
+          "requirement": "API tests must validate request bounds, response shape, status codes, safe error taxonomy, provider-disabled/local posture, unsafe input rejection, and no leakage of raw markdown, provider-like payloads, stack traces, filesystem paths, secrets, credentials, or tokens.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-api-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_api_contract.py -q",
+          "ownerPrSlice": "PR B"
+        },
+        {
+          "id": "R280-TEST-STRATEGY-003",
+          "requirement": "Contract tests must prove API, stored output, UI-visible metadata, exports, reports, citations, contextRefs, claimSupports, run IDs, language, audience, depth, glossary, and checksum bindings remain in parity across the conversion flow.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-contract-test",
+          "plannedCommand": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+          "ownerPrSlice": "PR E"
+        },
+        {
+          "id": "R280-TEST-STRATEGY-004",
+          "requirement": "Exact UI validation tests must use real browser evidence for what the user sees and acts upon: form values, info icons/tooltips, selected audience/depth/language, transcript expansion, truncation indicator, safe errors/remediation, citations, exports/downloads, keyboard use, and mobile/touch behavior.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-browser-test",
+          "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+          "ownerPrSlice": "PR D"
+        },
+        {
+          "id": "R280-TEST-STRATEGY-005",
+          "requirement": "The final output-correctness gate must execute the full local/mock flow and preserve regression coverage so later enhancements cannot break the developing feature: create project -> upload markdown -> approve -> ingest -> generate -> translate -> render UI -> download/decode artifacts -> compare reports.",
+          "status": "PLANNED_EXECUTABLE_GATE",
+          "evidenceType": "planned-gate",
+          "plannedCommand": "make issue280-output-correctness",
+          "ownerPrSlice": "PR E"
         }
       ]
     },

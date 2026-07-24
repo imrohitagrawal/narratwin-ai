@@ -57,6 +57,7 @@ no secrets, no credentials, and no tokens.
 | R280A-FM-005 | Matrix row lacks planned executable evidence or reviewed re-scope. | Phase quality fails. | `tests/unit/test_phase1_closure_docs.py::test_issue280_matrix_requires_planned_executable_evidence`. |
 | R280A-FM-006 | Public-safe non-goals are removed. | Phase quality fails. | `tests/unit/test_phase1_closure_docs.py::test_issue280_preflight_requires_public_safe_boundaries`. |
 | R280A-FM-007 | Red evidence framework commits permanent failing tests. | Phase quality fails. | `tests/unit/test_phase1_closure_docs.py::test_issue280_red_evidence_rejects_permanent_failing_tests`. |
+| R280A-FM-008 | Future implementation testing strategy omits positive/negative/corner, API, contract, exact UI, E2E flow, or regression coverage expectations. | Phase quality fails. | `tests/unit/test_phase1_closure_docs.py::test_issue280_matrix_requires_future_implementation_test_strategy`. |
 
 ## Matrix-To-Test Mapping
 
@@ -68,6 +69,32 @@ no secrets, no credentials, and no tokens.
 | R280-S4, R280-S6, R280-GLOSSARY, R280-CONVERSION, R280-CRITICAL-CONNECTIONS | Static row contracts | PR B and PR C |
 | R280-UI, R280-CONVERSATION-UX | Checklist and matrix rows | PR D |
 | R280-QUALITY, R280-EVIL-SET, R280-OUTPUT-CORRECTNESS | Matrix and red-evidence plan | PR B through PR E |
+| R280-TEST-STRATEGY | Static future-development contract covering positive/negative/corner, API, contract, exact UI, E2E flow, and regression test coverage | PR A defines; PR B through PR E execute |
+
+## Future Implementation Test Strategy Contract
+
+PR A does not implement runtime product behavior, but it now makes the later
+development bar explicit. Every future `#280` implementation PR must show the
+test strategy for the rows it owns before it can claim those rows are satisfied.
+The required coverage families are:
+
+- positive cases, negative cases, corner cases, and regression tests;
+- API tests for request bounds, response shapes, status codes, safe errors,
+  provider-disabled/local posture, unsafe input rejection, and anti-leak
+  guarantees;
+- contract tests for API, stored output, UI-visible metadata, exports, reports,
+  citations, context refs, claim supports, run IDs, language, audience, depth,
+  glossary, and checksums;
+- exact UI validation tests using real browser evidence for what users see and
+  act upon, including form values, tooltips, transcript expansion, truncation,
+  safe errors/remediation, citations, exports/downloads, keyboard behavior, and
+  mobile/touch behavior;
+- the final local/mock E2E output-correctness gate:
+  `create project -> upload markdown -> approve -> ingest -> generate ->
+  translate -> render UI -> download/decode artifacts -> compare reports`.
+
+The planning assumption is that local/mock APIs are first-class contracts even
+while providers remain disabled and runtime remains deterministic/local.
 
 ## Skill And Tool Selection Ledger
 

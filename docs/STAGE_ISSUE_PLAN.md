@@ -1254,7 +1254,11 @@ cloned face, digital twin, real-person likeness, real media, private media,
 private strategy, invite codes, provider payloads, provider outputs, secrets,
 tokens, credentials, public distribution, Checkpoint 3B implementation,
 Checkpoint 3C, Product Mode 2, arbitrary real-world translation quality,
-provider quality, or production-readiness claims.
+provider quality, or production-readiness claims. PR A also locks the future
+implementation test strategy: every later `#280` development slice must account
+for positive, negative, corner, API, contract, exact browser UI, full local/mock
+flow, and regression tests before claiming its owned R280 rows are satisfied or
+reviewed/re-scoped.
 
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a

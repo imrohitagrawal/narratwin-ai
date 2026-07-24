@@ -16,6 +16,7 @@ production-readiness artifact.
 | UI coverage | Required UI controls and tooltips are represented. | Matrix covers DEEP, full transcript, truncation, info icons, errors, glossary, visible state, citations, exports, keyboard, mobile, and refusal preservation. | UI row omits any required user-facing affordance. |
 | Info icons | Required guidance surfaces are listed. | Project name, Knowledge document, Audience, Depth, Target language, Glossary terms, Synthetic avatar consent, Walkthrough script, Demo preview, Citations, Export artifacts, and provider/local/mock posture are covered. | Any required tooltip/info surface is absent. |
 | Conversion parity | Source, English, target transcript, stored output, UI, export, and Stage 7 placeholder parity are represented. | Matrix includes run IDs, language, direction, audience, depth, glossary, citations, contextRefs, claimSupports, eval ID, checksums, subtitles, voice manifest, avatar demo, render manifest, and video placeholder. | Metadata-only or artifact-only success can pass. |
+| Development test strategy | Future #280 implementation PRs treat tests as part of the feature contract. | Owned rows declare positive, negative, corner, API, contract, exact browser UI, E2E flow, and regression coverage or a reviewed re-scope. | A future PR claims behavior is satisfied with unit-only, metadata-only, UI-without-browser, or issue-comment-only evidence. |
 | Red evidence | Failing behavior is merge-safe. | No permanently failing tests are committed; rows use planned/red statuses. | CI must fail for PR A to preserve red evidence. |
 
 ## Later Demo Path To Prove
@@ -24,4 +25,3 @@ production-readiness artifact.
 
 The planned gate name is `make issue280-output-correctness`. PR A defines this
 contract only; later PRs must implement the executable path.
-

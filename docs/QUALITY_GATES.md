@@ -625,6 +625,11 @@ parity. PR A records only the public-safe static matrix, reviewer checklist,
 and merge-safe red-evidence framework; it does not prove arbitrary real-world
 translation quality, provider quality, hosted/public demo readiness, cloned
 identity runtime, real media, public distribution, or production readiness.
+PR A also defines the future implementation testing contract for issue `#280`:
+each later development PR must account for positive cases, negative cases,
+corner cases, API tests, contract tests, exact real-browser UI validation from
+what the user sees and acts upon, end-to-end flow evidence, and regression tests
+before it claims owned R280 behavior rows are satisfied or reviewed/re-scoped.
 
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`

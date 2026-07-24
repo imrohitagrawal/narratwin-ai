@@ -7963,6 +7963,21 @@ def test_issue280_matrix_requires_planned_error_taxonomy_codes(monkeypatch: Any)
     assert any("missing planned error taxonomy code: ISSUE280_INTERNAL_ERROR_SAFE" in failure for failure in failures)
 
 
+def test_issue280_matrix_requires_future_implementation_test_strategy(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["futureImplementationTestingContract"]["requiredTestLevels"].remove("apiTests")
+    matrix["sections"] = [
+        section for section in matrix["sections"] if section["id"] != "R280-TEST-STRATEGY"
+    ]
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert any("missing future implementation test strategy marker: apitests" in failure for failure in failures)
+    assert any("missing R280 sections: R280-TEST-STRATEGY" in failure for failure in failures)
+
+
 def test_issue280_red_evidence_rejects_permanent_failing_tests(monkeypatch: Any) -> None:
     plan = json.loads(phase1.read(phase1.ISSUE_280_RED_EVIDENCE_PATH))
     plan["permanentFailingTestsCommitted"] = True

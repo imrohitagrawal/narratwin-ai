@@ -58,7 +58,8 @@ Use it to answer:
   workflow run `30079561208` passing. Issue `#280` is the current
   C3A-R3 child, starting with PR A only: planning/preflight, public-source
   persona/audience/depth research, a machine-checkable requirement matrix,
-  reviewer checklist, and merge-safe red-evidence framework. PR A does not
+  reviewer checklist, future implementation test-strategy contract, and
+  merge-safe red-evidence framework. PR A does not
   implement runtime product behavior and does not prove arbitrary real-world
   translation quality, provider quality, hosted/public demo behavior, cloned
   identity runtime, real media, public distribution, or production readiness.
@@ -796,9 +797,10 @@ Use these files together with this tracker:
 2. Keep issue `#8` open until its actual acceptance contract is satisfied.
 3. Complete issue `#280` C3A-R3 through reviewed PR slices, starting with PR A
    planning/preflight, public-source persona/audience/depth research, matrix,
-   checklist, and merge-safe red-evidence framework only. Issues `#249` and
-   `#280` remain open after PR A, and C3B remains blocked until issue `#280` is
-   satisfied or reviewed/re-scoped.
+   checklist, future implementation test-strategy contract, and merge-safe
+   red-evidence framework only. Issues `#249` and `#280` remain open after PR A,
+   and C3B remains blocked until issue `#280` is satisfied or
+   reviewed/re-scoped.
 4. Keep production,
    multi-worker deployment, hosted launch, Product Mode 2, external provider
    use, real audio/video export, and public synthetic-media distribution No-Go
@@ -832,7 +834,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
-| 2026-07-24 | Issue `#280` started as C3A-R3 PR A on branch `phase-1-closure-280-c3a-r3-planning-preflight-persona-depth`; the first branch commit contains only `docs/governance/preflights/issue-280.json`. Scope is planning/preflight, public-source persona/audience/depth research, matrix/checklist coverage, and merge-safe red-evidence framework only. Issue `#278` is closed after PR `#279` merged ADR `0034` and the C3A-R2 gate at `da3efe71b39c1c03a0fd28748a1270ee175cc2dd` with post-merge main quality workflow run `30079561208` passing. Issues `#249` and `#280` remain open after PR A, C3B remains blocked until `#280` is satisfied or reviewed/re-scoped, and PR A authorizes no runtime product behavior, provider setup, paid spend, hosted/public demo, cloned identity runtime, real media, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claim. |
+| 2026-07-24 | Issue `#280` started as C3A-R3 PR A on branch `phase-1-closure-280-c3a-r3-planning-preflight-persona-depth`; the first branch commit contains only `docs/governance/preflights/issue-280.json`. Scope is planning/preflight, public-source persona/audience/depth research, matrix/checklist coverage, future implementation test-strategy contract, and merge-safe red-evidence framework only. Issue `#278` is closed after PR `#279` merged ADR `0034` and the C3A-R2 gate at `da3efe71b39c1c03a0fd28748a1270ee175cc2dd` with post-merge main quality workflow run `30079561208` passing. Issues `#249` and `#280` remain open after PR A, C3B remains blocked until `#280` is satisfied or reviewed/re-scoped, and PR A authorizes no runtime product behavior, provider setup, paid spend, hosted/public demo, cloned identity runtime, real media, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claim. |
 | 2026-07-23 | Issue `#269` started as C3A-CP8 real-browser E2E on branch `phase-1-closure-269-c3a-cp8-real-browser-e2e`; the first branch commit contains only `docs/governance/preflights/issue-269.json`. Scope is executable local/mock browser evidence only, with API E2E, output-correctness, language-quality, media-artifacts, access/quota/retention, security/observability, and performance preserved, issue `#249` remaining open, and no provider setup, real provider calls, paid spend, hosted deployment, public URL, cloned identity, real media binaries, public distribution, Checkpoint 3B, Checkpoint 3C, or production-readiness claim. |
 | 2026-07-23 | PR `#268` merged issue `#267` C3A-CP7 performance at `caa8183be7ebf3fa5a3cf34d653727cc5522bf7f`; issue `#267` is closed, issue `#249` remains open, and the next approved action is issue `#269` C3A-CP8 executable real-browser E2E on branch `phase-1-closure-269-c3a-cp8-real-browser-e2e`. Scope remains local/mock evidence only, with no provider setup, real provider calls, paid spend, hosted deployment, public URL, cloned identity, real media binaries, public distribution, Checkpoint 3B, Checkpoint 3C, or production-readiness claim. |
 | 2026-07-23 | PR `#266` merged issue `#265` C3A-CP6 security/observability at `f79debb641e7198e2d1d41e210ddd537037c7699`; issue `#265` is closed, issue `#249` remains open, and the next approved action is issue `#267` C3A-CP7 executable performance on branch `phase-1-closure-267-c3a-cp7-performance-probe`. Scope remains local/mock API evidence only, with real-browser E2E still planned/non-passing and no provider setup, real provider calls, paid spend, hosted deployment, public URL, cloned identity, real media binaries, public distribution, or production-readiness claim. |
