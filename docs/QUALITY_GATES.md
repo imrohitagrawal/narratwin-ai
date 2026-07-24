@@ -36,7 +36,7 @@ The `Makefile` must expose:
 | `make stage8-quality` | Runs executable Stage 8 hardening and release-readiness checks |
 | `make final-review-quality` | Runs executable Final Review artifact checks |
 | `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
-| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, C3A-CP4 media-artifacts, C3A-CP5 access/quota/retention, C3A-CP6 security/observability, C3A-CP7 performance, and C3A-CP8 real-browser E2E probes implemented for local/mock controlled-demo evidence only |
+| `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, C3A-CP4 media-artifacts, C3A-CP5 access/quota/retention, C3A-CP6 security/observability, C3A-CP7 performance, C3A-CP8 real-browser E2E, and C3A-R2 full-project multilingual corpus probes implemented for local/mock controlled-demo evidence only |
 | `make lint` | Runs backend Ruff and frontend ESLint |
 | `make typecheck` | Runs backend mypy and frontend TypeScript checks |
 | `make test` | Runs backend unit tests and frontend unit tests |
@@ -579,6 +579,37 @@ knowledge, not a separate raw uploaded knowledge-document translation API; a
 raw-document translation surface requires a future issue and equal executable
 coverage before it may be claimed.
 
+C3A-R2 implements the full-project multilingual correctness repair gate for
+issue `#278` by dispatching
+`uv run pytest tests/acceptance/test_checkpoint3_full_project_multilingual.py -q`
+through the same Checkpoint 3 acceptance harness. The probe is anchored to
+`backend/app/stage6.py` catalog fields: `LANGUAGE_CATALOG`,
+`LANGUAGE_CATALOG_BY_TAG`, `SUPPORTED_LANGUAGES`,
+`local_demo_support_status`, `provider_support_status`, and
+`test_coverage_level`. Every language marked `SUPPORTED`,
+`LOCAL_DEMO_FIXTURE`, and `CHECKPOINT3A_EXHAUSTIVE` must have current evidence
+in the full-project matrix; Priority 2 languages remain planned/unsupported
+locally unless a future issue introduces equivalent evidence.
+
+The C3A-R2 fixture is public-safe and synthetic. It covers a multi-document
+project, multiple sections, full body transcript segments, multiple cited
+claims, claim-support bindings, exported artifacts, class-specific checks for
+Hindi/Devanagari, RTL, CJK, and Latin-script languages, at least one
+multi-document supported claim, and at least one row that exposes heading-only,
+partial-section, or missing-body translation. Stale evidence is defined by
+fixture hash changed, expected-output hash changed, language catalog version
+changed, validator version changed, artifact schema version changed, or report
+schema changed. The probe writes
+`reports/checkpoint3-multilingual/full-project-coverage-matrix.json` and
+`reports/checkpoint3-multilingual/full-project-correctness-report.json`, and it
+rejects metadata-only success, artifact-only success, citation id preservation
+without source-span preservation, citation drift, unsupported/planned-language
+fake success, stale coverage rows, and supported-language coverage removal
+without demotion/refusal. This proves a governed full-project corpus gate only;
+it does not prove arbitrary-project translation quality, provider quality,
+hosted/public demo readiness, raw uploaded knowledge-document translation API
+behavior, public distribution, or production readiness.
+
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
 through the same local/mock API path. The language-quality probe verifies
@@ -672,13 +703,19 @@ evidence, and local/mock provider posture, and rejects missing binding,
 stale/cross-project replay, static snapshots, API-only substitutes, and
 success-shaped canned evidence.
 
-The target is not part of `make quality` yet. The harness must reject
+`make checkpoint3-acceptance` remains the standalone Checkpoint 3A quality
+target. On branch
+`phase-1-closure-278-c3a-r2-full-project-multilingual-corpus`, the Phase 1
+Closure `make quality` path also executes
+`uv run pytest tests/acceptance/test_checkpoint3_full_project_multilingual.py -q`
+through `scripts/quality/check_phase1_closure_docs.py`, so PR CI runs the same
+C3A-R2 full-project corpus check for issue `#278`. The harness must reject
 docs/prose/static-snapshot command substitutions for implemented probes, run
 implemented probes with `subprocess.run(..., shell=False, timeout=120)`, and
 summarize failed probe output with bounded/redacted text. It must not claim
 Checkpoint 3B, Checkpoint 3C, hosted/public demo, provider setup,
-cloned-identity readiness, real-media readiness, or production-readiness
-success from Checkpoint 3A local/mock evidence.
+cloned-identity readiness, real-media readiness, public distribution, or
+production-readiness success from Checkpoint 3A local/mock evidence.
 
 C3B-PR1 is a Phase 1 Closure planning/governance gate, not a runtime acceptance
 target. The issue `#274` scope is checked through the Phase 1 closure docs gate:

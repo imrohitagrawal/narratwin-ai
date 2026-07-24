@@ -20,9 +20,10 @@ PRODUCT_FAITHFUL_ENV = "NARRATWIN_CP3_PRODUCT_FAITHFUL"
 STATUS_PASS = "PASS"
 STATUS_FAIL = "FAIL"
 STATUS_PLANNED = "PLANNED"
-MAX_FAILURE_SUMMARY_CHARS = 320
+MAX_FAILURE_SUMMARY_CHARS = 280
 PROBE_TIMEOUT_SECONDS = 120
 CP8_LABEL = "real-browser E2E with no success-path interception"
+FULL_PROJECT_MULTILINGUAL_LABEL = "full-project multilingual corpus"
 CP8_BROWSER_TEST_TITLE = (
     "Issue #269 C3A-CP8 real browser path exercises local controlled demo without fabricated success"
 )
@@ -224,6 +225,13 @@ PROBES: tuple[Probe, ...] = (
         planned_reason="",
     ),
     Probe(
+        label=FULL_PROJECT_MULTILINGUAL_LABEL,
+        command=("uv", "run", "pytest", "tests/acceptance/test_checkpoint3_full_project_multilingual.py", "-q"),
+        env=((PRODUCT_FAITHFUL_ENV, "1"),),
+        implemented=True,
+        planned_reason="",
+    ),
+    Probe(
         label=CP8_LABEL,
         command=(
             "npm",
@@ -272,6 +280,13 @@ EXPECTED_IMPLEMENTED_COMMANDS: dict[str, tuple[str, ...]] = {
         "tests/acceptance/test_checkpoint3_performance.py",
         "-q",
     ),
+    FULL_PROJECT_MULTILINGUAL_LABEL: (
+        "uv",
+        "run",
+        "pytest",
+        "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+        "-q",
+    ),
     CP8_LABEL: (
         "npm",
         "--prefix",
@@ -304,12 +319,13 @@ def validate_probe_contract(probes: Sequence[Probe]) -> list[str]:
         "access/quota/retention",
         "security/observability",
         "performance",
+        "full-project multilingual corpus",
         "real-browser E2E with no success-path interception",
     ]:
         failures.append(
             "Checkpoint 3A must implement only the API E2E, output-correctness, language-quality, "
             "media-artifacts, access/quota/retention, security/observability, performance, "
-            "and real-browser E2E probes."
+            "full-project multilingual corpus, and real-browser E2E probes."
         )
     for probe in probes:
         env = dict(probe.env)
@@ -745,7 +761,7 @@ def main(probes: Sequence[Probe] = PROBES) -> int:
         suffix = f" ({result.planned_reason})" if result.status == STATUS_PLANNED else ""
         print(f"- {result.status} {result.label}: {result.command}{suffix}")
         if result.status == STATUS_FAIL and result.output:
-            print(f"  returncode={result.returncode}; output_summary={summarize_failure_output(result.output)}")
+            print(f" returncode={result.returncode}; output_summary={summarize_failure_output(result.output)}")
 
     failed = sum(result.status == STATUS_FAIL for result in results)
     planned = sum(result.status == STATUS_PLANNED for result in results)

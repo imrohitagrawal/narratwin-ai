@@ -2,7 +2,8 @@
 
 This checklist is secondary manual evidence for issue `#276`. Automated evidence
 from `make checkpoint3-acceptance`, targeted API tests, and Playwright remains
-primary.
+primary. Issue `#278` adds a separate full-project corpus checklist at
+`docs/demo/CHECKPOINT3A_FULL_PROJECT_MULTILINGUAL_REHEARSAL_CHECKLIST.md`.
 
 ## Scope
 
@@ -51,3 +52,7 @@ For each reviewed language:
   `reports/checkpoint3-multilingual/priority1-coverage-matrix.json`
 - Checkpoint summary:
   `reports/checkpoint3-multilingual/checkpoint3a-multilingual-summary.json`
+- Full-project corpus coverage matrix:
+  `reports/checkpoint3-multilingual/full-project-coverage-matrix.json`
+- Full-project corpus correctness report:
+  `reports/checkpoint3-multilingual/full-project-correctness-report.json`

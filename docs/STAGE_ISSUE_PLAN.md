@@ -1167,6 +1167,62 @@ production-readiness claims. It must not expose private strategy, provider
 choices, reviewer strategy, invite codes, private media, real personal data,
 real provider payloads, provider outputs, secrets, tokens, or credentials.
 
+Issue `#278` is the bounded C3A-R2 repair child for proving a governed
+full-project multilingual correctness acceptance gate. Branch
+`phase-1-closure-278-c3a-r2-full-project-multilingual-corpus` may add the
+first-commit preflight, exact changed-file allowlist, public-safe synthetic
+multi-document corpus, Stage 6 catalog/evidence locks, all-supported-language
+full-project corpus validator, checked coverage/report artifacts,
+reviewer-facing checklist, and status/traceability/quality-gate reconciliation
+only. It may change only these public-safe files:
+
+- `docs/governance/preflights/issue-278.json`
+- `docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md`
+- `docs/reviews/ISSUE_278_C3A_R2_REVIEW_EVIDENCE.md`
+- `docs/demo/CHECKPOINT3A_FULL_PROJECT_MULTILINGUAL_REHEARSAL_CHECKLIST.md`
+- `docs/demo/CHECKPOINT3A_MULTILINGUAL_REHEARSAL_CHECKLIST.md`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `docs/ADR/0034-c3a-r2-full-project-multilingual-gate.md`
+- `backend/app/stage6.py`
+- `scripts/quality/check_checkpoint3_acceptance.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/fixtures/checkpoint3_full_project_multilingual_corpus.json`
+- `tests/unit/test_checkpoint3_acceptance_gate.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_stage6_multilingual.py`
+- `tests/api/test_stage6_multilingual_api.py`
+- `tests/acceptance/test_checkpoint3_output_correctness.py`
+- `tests/acceptance/test_checkpoint3_full_project_multilingual.py`
+- `reports/checkpoint3-multilingual/full-project-coverage-matrix.json`
+- `reports/checkpoint3-multilingual/full-project-correctness-report.json`
+
+C3A-R2 must cover every currently supported `backend/app/stage6.py` catalog
+language or honestly demote/refuse any unsupported evidence. Representative
+language-class coverage is required but insufficient by itself. Priority 2
+languages must remain planned/unsupported locally unless a future issue
+introduces equivalent executable evidence. It must define stale evidence for
+fixture hash, expected-output hash, language catalog version, validator version,
+artifact schema version, and report schema changes.
+
+C3A-R2 proves only the governed public-safe full-project corpus gate for the
+local/mock generated walkthrough product path. It does not prove
+arbitrary-project translation quality, provider quality, hosted/public demo
+readiness, raw uploaded knowledge-document translation API behavior,
+public distribution, or production readiness. It must keep issue `#249` open as
+the public Checkpoint 3 tracker unless a later reviewed PR explicitly and
+correctly states that the entire public tracker is complete.
+
+It must not implement provider setup, provider SDKs, provider keys, real
+provider calls, paid spend, hosted deployment, public URL, cloned identity
+runtime, cloned voice, cloned face, digital twin, real-person likeness, real
+media, private media, private strategy, invite codes, provider payloads,
+provider outputs, secrets, tokens, credentials, public distribution,
+Checkpoint 3B implementation, Checkpoint 3C, Product Mode 2, or
+production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

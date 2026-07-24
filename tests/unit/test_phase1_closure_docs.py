@@ -1,5 +1,6 @@
 import importlib.util
 import re
+import subprocess
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, cast
@@ -154,6 +155,32 @@ def run_issue249_preflight_check(
 
         monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
     phase1.check_issue249_checkpoint3a_preflight(failures)
+    return failures
+
+
+def run_issue278_preflight_check(
+    monkeypatch: Any, *, preflight_text: str | None = None, missing: bool = False
+) -> list[str]:
+    if preflight_text is not None:
+        monkeypatch.setattr(
+            phase1,
+            "read",
+            read_with_overrides(
+                phase1,
+                {"docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md": preflight_text},
+            ),
+        )
+    failures: list[str] = []
+    if missing:
+        original_is_file = cast(Callable[[Path], bool], phase1.Path.is_file)
+
+        def patched_is_file(path: Path) -> bool:
+            if str(path).endswith("docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md"):
+                return False
+            return original_is_file(path)
+
+        monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
+    phase1.check_issue278_c3a_r2_preflight(failures)
     return failures
 
 
@@ -1973,6 +2000,78 @@ def test_issue_274_near_match_branch_fails_closed(monkeypatch: Any) -> None:
         ]
 
 
+def test_issue_278_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-278-c3a-r2-full-project-multilingual-corpus"
+    allowed = [
+        "docs/governance/preflights/issue-278.json",
+        "docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md",
+        "docs/reviews/ISSUE_278_C3A_R2_REVIEW_EVIDENCE.md",
+        "docs/demo/CHECKPOINT3A_FULL_PROJECT_MULTILINGUAL_REHEARSAL_CHECKLIST.md",
+        "docs/demo/CHECKPOINT3A_MULTILINGUAL_REHEARSAL_CHECKLIST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/ADR/0034-c3a-r2-full-project-multilingual-gate.md",
+        "backend/app/stage6.py",
+        "scripts/quality/check_checkpoint3_acceptance.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/fixtures/checkpoint3_full_project_multilingual_corpus.json",
+        "tests/unit/test_checkpoint3_acceptance_gate.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "tests/unit/test_stage6_multilingual.py",
+        "tests/api/test_stage6_multilingual_api.py",
+        "tests/acceptance/test_checkpoint3_output_correctness.py",
+        "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+        "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
+        "reports/checkpoint3-multilingual/full-project-correctness-report.json",
+    ]
+
+    assert phase1.ISSUE_278_ALLOWED_CHANGED_FILES == set(allowed)
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "docs/THIRD_PARTY_NOTICES.md",
+            "pyproject.toml",
+            "uv.lock",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change docs/THIRD_PARTY_NOTICES.md.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+    ]
+
+
+def test_issue_278_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    files = [
+        "docs/governance/preflights/issue-278.json",
+        "docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md",
+        "backend/app/stage6.py",
+        "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+    ]
+    for branch in (
+        "phase-1-closure-278-c3a-r2-full-project-multilingual-corpus-extra",
+        "phase-1-closure-process-278-c3a-r2-full-project-multilingual-corpus",
+        "phase-1-closure-0278-c3a-r2-full-project-multilingual-corpus",
+    ):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=files) == [
+            f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-278.json.",
+            f"Phase 1 Closure branch {branch} may not change docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md.",
+            f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+            (
+                f"Phase 1 Closure branch {branch} may not change "
+                "tests/acceptance/test_checkpoint3_full_project_multilingual.py."
+            ),
+        ]
+
+
 def test_issue_255_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-255-post-pr-254-status-reconcile"
     allowed = [
@@ -2472,6 +2571,150 @@ def test_issue_274_missing_preflight_reports_failure(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_278_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue278_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "C3A-R2-CATALOG-001",
+        "C3A-R2-FULLPROJECT-001",
+        "C3A-R2-ALL-SUPPORTED-001",
+        "C3A-R2-STALENESS-001",
+        "C3A-R2-PARITY-001",
+        "C3A-R2-FM-001",
+        "C3A-R2-FM-018",
+        "tests/fixtures/checkpoint3_full_project_multilingual_corpus.json",
+        "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+        "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
+        "reports/checkpoint3-multilingual/full-project-correctness-report.json",
+        "LANGUAGE_CATALOG",
+        "LANGUAGE_CATALOG_BY_TAG",
+        "SUPPORTED_LANGUAGES",
+        "local_demo_support_status",
+        "provider_support_status",
+        "test_coverage_level",
+        "Hindi/Devanagari",
+        "RTL",
+        "CJK",
+        "Latin-script",
+        "Priority 2 refusal",
+        "fixture hash changed",
+        "expected-output hash changed",
+        "language catalog version changed",
+        "validator version changed",
+        "artifact schema version changed",
+        "report schema changed",
+        "metadata-only success",
+        "artifact-only success",
+        "citation id preservation without source-span preservation",
+        "UI transcript, stored output, metadata, durable report, and exported/downloaded artifacts agree",
+        "does not prove arbitrary-project translation quality",
+        "does not prove provider quality",
+        "does not authorize hosted/public demo",
+        "raw uploaded knowledge-document translation API",
+        "Final clean fan-out",
+        "Stop and open a new issue",
+    ),
+)
+def test_issue_278_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue278_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
+
+
+def test_issue_278_missing_preflight_reports_failure(monkeypatch: Any) -> None:
+    assert run_issue278_preflight_check(monkeypatch, missing=True) == [
+        "Missing required C3A-R2 preflight artifact: docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md"
+    ]
+
+
+def test_issue_278_phase_quality_runs_full_project_probe(monkeypatch: Any) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls.append({"args": args, "kwargs": kwargs})
+        return subprocess.CompletedProcess(args=args[0], returncode=0, stdout="7 passed")
+
+    monkeypatch.setattr(phase1, "current_branch", lambda: phase1.ISSUE_278_BRANCH)
+    monkeypatch.setattr(phase1.subprocess, "run", fake_run)
+    failures: list[str] = []
+
+    phase1.check_issue278_full_project_probe(failures)
+
+    assert failures == []
+    assert calls[0]["args"][0] == phase1.ISSUE_278_FULL_PROJECT_COMMAND
+    assert calls[0]["kwargs"]["shell"] is False
+    assert calls[0]["kwargs"]["timeout"] == 120
+    assert calls[0]["kwargs"]["stdout"] is subprocess.PIPE
+    assert calls[0]["kwargs"]["stderr"] is subprocess.STDOUT
+    assert calls[0]["kwargs"]["text"] is True
+    assert calls[0]["kwargs"]["cwd"] == phase1.ROOT
+
+
+def test_issue_278_policy_only_quality_skips_uv_subprocess(monkeypatch: Any) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls.append({"args": args, "kwargs": kwargs})
+        return subprocess.CompletedProcess(args=args[0], returncode=0, stdout="7 passed")
+
+    monkeypatch.setattr(phase1, "current_branch", lambda: phase1.ISSUE_278_BRANCH)
+    monkeypatch.setattr(phase1.subprocess, "run", fake_run)
+    monkeypatch.setenv(phase1.POLICY_ONLY_ENV, "1")
+    failures: list[str] = []
+
+    phase1.check_issue278_full_project_probe(failures)
+
+    assert failures == []
+    assert calls == []
+
+
+def test_issue_278_phase_quality_reports_full_project_probe_failure(monkeypatch: Any) -> None:
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(args=args[0], returncode=1, stdout="FAILED stale evidence")
+
+    monkeypatch.setattr(phase1, "current_branch", lambda: phase1.ISSUE_278_BRANCH)
+    monkeypatch.setattr(phase1.subprocess, "run", fake_run)
+    failures: list[str] = []
+
+    phase1.check_issue278_full_project_probe(failures)
+
+    assert failures == ["C3A-R2 full-project multilingual corpus probe failed: FAILED stale evidence"]
+
+
+def test_issue_278_report_artifacts_must_be_tracked(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "current_branch", lambda: phase1.ISSUE_278_BRANCH)
+    monkeypatch.setattr(phase1, "run_git", lambda args: "" if args[0] == "ls-files" else "")
+    failures: list[str] = []
+
+    phase1.check_issue278_report_artifacts_tracked(failures)
+
+    assert failures == [
+        "C3A-R2 report artifact must be tracked by git: "
+        "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
+        "C3A-R2 report artifact must be tracked by git: "
+        "reports/checkpoint3-multilingual/full-project-correctness-report.json",
+    ]
+
+
+def test_issue_278_report_artifacts_tracked_pass(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "current_branch", lambda: phase1.ISSUE_278_BRANCH)
+    monkeypatch.setattr(phase1, "run_git", lambda args: args[-1] if args[0] == "ls-files" else "")
+    failures: list[str] = []
+
+    phase1.check_issue278_report_artifacts_tracked(failures)
+
+    assert failures == []
+
+
 def test_issue_249_preflight_contract_is_complete(monkeypatch: Any) -> None:
     text = Path("docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md").read_text(encoding="utf-8")
 
@@ -2675,9 +2918,16 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "Issue `#265` is closed after PR `#266` merged the sixth Checkpoint 3A child implementation checkpoint",
         "Issue `#267` is closed after PR `#268` merged the seventh Checkpoint 3A child implementation checkpoint",
         "Issue `#269` is closed after PR `#273` merged the eighth Checkpoint 3A child implementation checkpoint",
-        "Issue `#274` is satisfied by this PR when merged as the public-safe Checkpoint 3B consent/provenance planning gate only",
-        "c3a-r1-satisfied-by-this-pr",
+        "Issue `#274` is satisfied by its prior reviewed PR as the public-safe Checkpoint 3B consent/provenance planning gate only",
+        "Issue `#276` is closed after PR `#277` merged the Checkpoint 3A repair child for major-market multilingual output correctness",
+        "Issue `#278` is the current bounded C3A-R2 repair child for a governed full-project multilingual correctness acceptance gate",
+        "c3a-r2-active",
+        "Issue #278 will be satisfied by this PR when merged as C3A-R2",
+        "full-project multilingual correctness acceptance gate",
+        "ADR 0034",
         "major-market multilingual output correctness",
+        "`6390ac7c7bcd8fed353587df90e8fa98c2ffef05`",
+        "post-merge main quality workflow run `30071081191` passing",
         "`#254` | Merged | 2026-07-22",
         "`#258` | Merged | 2026-07-22",
         "`#260` | Merged | 2026-07-22",

@@ -13,6 +13,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PHASE1_BRANCH = re.compile(r"^phase-1-closure-.+")
 PROCESS_BRANCH = re.compile(r"^phase-1-closure-process-(\d+)-.+$")
+ISSUE_278_BRANCH = "phase-1-closure-278-c3a-r2-full-project-multilingual-corpus"
+ISSUE_278_FULL_PROJECT_COMMAND = (
+    "uv",
+    "run",
+    "pytest",
+    "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+    "-q",
+)
+ISSUE_278_REPORT_PATHS = (
+    "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
+    "reports/checkpoint3-multilingual/full-project-correctness-report.json",
+)
+POLICY_ONLY_ENV = "NARRATWIN_POLICY_ONLY"
 
 REQUIRED_INPUT_FILES = {
     "docs/reviews/FINAL_REVIEW.md",
@@ -342,6 +355,30 @@ ISSUE_276_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_retrieval_and_grounding.py",
     "tests/unit/test_stage6_multilingual.py",
+}
+ISSUE_278_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-278.json",
+    "docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md",
+    "docs/reviews/ISSUE_278_C3A_R2_REVIEW_EVIDENCE.md",
+    "docs/demo/CHECKPOINT3A_FULL_PROJECT_MULTILINGUAL_REHEARSAL_CHECKLIST.md",
+    "docs/demo/CHECKPOINT3A_MULTILINGUAL_REHEARSAL_CHECKLIST.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/ADR/0034-c3a-r2-full-project-multilingual-gate.md",
+    "backend/app/stage6.py",
+    "scripts/quality/check_checkpoint3_acceptance.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/fixtures/checkpoint3_full_project_multilingual_corpus.json",
+    "tests/unit/test_checkpoint3_acceptance_gate.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_stage6_multilingual.py",
+    "tests/api/test_stage6_multilingual_api.py",
+    "tests/acceptance/test_checkpoint3_output_correctness.py",
+    "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+    "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
+    "reports/checkpoint3-multilingual/full-project-correctness-report.json",
 }
 ISSUE_274_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-274.json",
@@ -1618,10 +1655,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #276 / c3a-r1-major-market-multilingual-output-correctness",
-        "c3a-r1-satisfied-by-this-pr",
-        "c3a-r1-satisfied-by-this-pr",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is satisfied by this PR when merged as a Checkpoint 3A repair child for major-market multilingual output correctness: backend-driven language catalog, Hindi in Priority 1, Priority 1 exhaustive local/mock fixture translations, independent semantic golden translations for supported controlled scripts and the original NarraTwin manual-review document, selected-audience preservation, full generated-script segment coverage through small approved-document expansion within retrieval top-k, native-script validation, structured source/target/reference transcript segments, citation/source/eval/context/claim-support binding, artifact parity, positive and false-positive mutation coverage, coverage matrix/summary artifacts, UI catalog rendering, and visible transcript artifact validation. Local/demo is not a reduced product surface for supported controlled generated walkthrough scripts, but raw uploaded knowledge-document translation as a separate API surface remains outside the current Stage 6 product boundary unless a future issue implements it. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
+        "issue #278 / c3a-r2-full-project-multilingual-corpus",
+        "c3a-r2-active",
+        "c3a-r2-active",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is closed after PR #277 merged the C3A repair for major-market multilingual output correctness at 6390ac7c7bcd8fed353587df90e8fa98c2ffef05 with post-merge main quality workflow run 30071081191 passing. Issue #278 will be satisfied by this PR when merged as C3A-R2: a governed full-project multilingual correctness acceptance gate for the local/mock generated walkthrough product path. It adds ADR 0034, the public-safe synthetic multi-document corpus, evidence locks for fixture/output/catalog/validator/artifact/report versions, all-supported-language coverage anchored to backend.app.stage6 catalog statuses, Priority 2 local-demo refusal, stale-evidence rejection, negative false-pass mutations, checked coverage/report artifacts, and reviewer checklist evidence. The gate proves this governed full-project corpus only; it does not prove arbitrary-project translation quality, provider quality, hosted/public demo readiness, raw uploaded knowledge-document translation API behavior, cloned identity runtime, real media, public distribution, or production readiness. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3727,9 +3764,15 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_269_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-c3a-r1-major-market-multilingual-output-correctness":
         allowed_files = ISSUE_276_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-278-c3a-r2-full-project-multilingual-corpus":
+        allowed_files = ISSUE_278_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-c3b-pr1-consent-provenance-planning-274":
         allowed_files = ISSUE_274_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-274-"):
+        allowed_files = set()
+    elif branch.startswith("phase-1-closure-278-"):
+        allowed_files = set()
+    elif branch.startswith("phase-1-closure-process-278-"):
         allowed_files = set()
     elif branch.startswith("phase-1-closure-c3b-pr1-consent-provenance-planning-"):
         allowed_files = set()
@@ -5488,6 +5531,110 @@ def check_issue274_c3b_pr1_preflight(failures: list[str]) -> None:
         fail(failures, f"{rel} missing C3B-PR1 preflight markers: " + ", ".join(missing_markers))
 
 
+def check_issue278_c3a_r2_preflight(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md"
+    if not (ROOT / rel).is_file():
+        fail(failures, f"Missing required C3A-R2 preflight artifact: {rel}")
+        return
+    text = read(rel)
+    normalized = re.sub(r"\s+", " ", text.lower())
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Objective",
+            "Scope",
+            "Positive Claims",
+            "Failure Matrix",
+            "Stale Evidence Definition",
+            "Matrix-To-Test Mapping",
+            "Full-Project Corpus",
+            "Fan-Out Review Plan",
+            "Skill And Tool Selection Ledger",
+            "Stop Rule",
+        ),
+    )
+    required_markers = (
+        "C3A-R2-CATALOG-001",
+        "C3A-R2-FULLPROJECT-001",
+        "C3A-R2-ALL-SUPPORTED-001",
+        "C3A-R2-STALENESS-001",
+        "C3A-R2-PARITY-001",
+        "C3A-R2-FM-001",
+        "C3A-R2-FM-018",
+        "tests/fixtures/checkpoint3_full_project_multilingual_corpus.json",
+        "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+        "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
+        "reports/checkpoint3-multilingual/full-project-correctness-report.json",
+        "LANGUAGE_CATALOG",
+        "LANGUAGE_CATALOG_BY_TAG",
+        "SUPPORTED_LANGUAGES",
+        "local_demo_support_status",
+        "provider_support_status",
+        "test_coverage_level",
+        "Hindi/Devanagari",
+        "RTL",
+        "CJK",
+        "Latin-script",
+        "Priority 2 refusal",
+        "fixture hash changed",
+        "expected-output hash changed",
+        "language catalog version changed",
+        "validator version changed",
+        "artifact schema version changed",
+        "report schema changed",
+        "metadata-only success",
+        "artifact-only success",
+        "citation id preservation without source-span preservation",
+        "UI transcript, stored output, metadata, durable report, and exported/downloaded artifacts agree",
+        "does not prove arbitrary-project translation quality",
+        "does not prove provider quality",
+        "does not authorize hosted/public demo",
+        "raw uploaded knowledge-document translation API",
+        "Final clean fan-out",
+        "Stop and open a new issue",
+    )
+    missing_markers = [marker for marker in required_markers if marker.lower() not in normalized]
+    if missing_markers:
+        fail(failures, f"{rel} missing C3A-R2 preflight markers: " + ", ".join(missing_markers))
+
+
+def check_issue278_full_project_probe(failures: list[str]) -> None:
+    if current_branch() != ISSUE_278_BRANCH:
+        return
+    if os.environ.get(POLICY_ONLY_ENV, "").strip().lower() in {"1", "true", "yes"}:
+        return
+    result = subprocess.run(
+        ISSUE_278_FULL_PROJECT_COMMAND,
+        cwd=ROOT,
+        shell=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    if result.returncode != 0:
+        summary = " | ".join(line.strip() for line in result.stdout.splitlines() if line.strip())
+        fail(
+            failures,
+            "C3A-R2 full-project multilingual corpus probe failed: "
+            + (summary[:500] if summary else f"returncode={result.returncode}"),
+        )
+
+
+def check_issue278_report_artifacts_tracked(failures: list[str]) -> None:
+    if current_branch() != ISSUE_278_BRANCH:
+        return
+    for rel in ISSUE_278_REPORT_PATHS:
+        if not (ROOT / rel).is_file():
+            fail(failures, f"C3A-R2 report artifact is missing: {rel}")
+            continue
+        if not run_git(["ls-files", "--error-unmatch", rel]):
+            fail(failures, f"C3A-R2 report artifact must be tracked by git: {rel}")
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
@@ -5517,6 +5664,9 @@ def check_process_docs(failures: list[str]) -> None:
     check_issue267_c3a_cp7_preflight(failures)
     check_issue269_c3a_cp8_preflight(failures)
     check_issue274_c3b_pr1_preflight(failures)
+    check_issue278_c3a_r2_preflight(failures)
+    check_issue278_full_project_probe(failures)
+    check_issue278_report_artifacts_tracked(failures)
     check_required_headings(
         failures,
         pr_template,

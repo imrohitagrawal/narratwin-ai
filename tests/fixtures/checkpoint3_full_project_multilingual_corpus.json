@@ -1,0 +1,146 @@
+{
+  "schemaVersion": "C3A-R2_FULL_PROJECT_CORPUS_V1",
+  "fixtureId": "checkpoint3a-r2-public-safe-full-project-corpus",
+  "project": {
+    "projectId": "c3a_r2_project",
+    "name": "C3A-R2 Synthetic Walkthrough Project",
+    "documents": [
+      {
+        "documentId": "doc_narratwin_product",
+        "fileName": "narratwin-product.md",
+        "sections": [
+          {
+            "sectionId": "sec_product_overview",
+            "heading": "Product Overview",
+            "body": "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.",
+            "sourceRef": "doc_narratwin_product#sec_product_overview:body"
+          },
+          {
+            "sectionId": "sec_audience",
+            "heading": "Audience Coverage",
+            "body": "It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations.",
+            "sourceRef": "doc_narratwin_product#sec_audience:body"
+          }
+        ]
+      },
+      {
+        "documentId": "doc_narratwin_local",
+        "fileName": "narratwin-local-demo.md",
+        "sections": [
+          {
+            "sectionId": "sec_local_providers",
+            "heading": "Local Provider Boundary",
+            "body": "The local demo uses mock local LLM, translation, voice, and avatar adapters for deterministic review.",
+            "sourceRef": "doc_narratwin_local#sec_local_providers:body"
+          },
+          {
+            "sectionId": "sec_citations",
+            "heading": "Citation Requirement",
+            "body": "Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.",
+            "sourceRef": "doc_narratwin_local#sec_citations:body"
+          }
+        ]
+      },
+      {
+        "documentId": "doc_atlas_output",
+        "fileName": "atlas-output.md",
+        "sections": [
+          {
+            "sectionId": "sec_atlas_role",
+            "heading": "Atlas Role",
+            "body": "Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder for launch rehearsals.",
+            "sourceRef": "doc_atlas_output#sec_atlas_role:body"
+          },
+          {
+            "sectionId": "sec_atlas_evidence",
+            "heading": "Atlas Evidence",
+            "body": "Atlas Output OUTPUT-SENTINEL-CP2 requires each generated checklist item to cite approved launch-note evidence.",
+            "sourceRef": "doc_atlas_output#sec_atlas_evidence:body"
+          },
+          {
+            "sectionId": "sec_atlas_marker",
+            "heading": "Atlas Marker",
+            "body": "Atlas Output uses the marker OUTPUT-SENTINEL-CP2 for output-correctness isolation checks.",
+            "sourceRef": "doc_atlas_output#sec_atlas_marker:body"
+          }
+        ]
+      }
+    ]
+  },
+  "sourceTranscriptSegments": [
+    {
+      "fixtureRow": "row_001",
+      "segmentId": "seg_001",
+      "sourceText": "For global viewers, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+      "citationIndexes": [1],
+      "sourceRefs": ["doc_narratwin_product#sec_product_overview:body"],
+      "exposes": ["full-body-translation"]
+    },
+    {
+      "fixtureRow": "row_002",
+      "segmentId": "seg_002",
+      "sourceText": "For global viewers, It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations. Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder for launch rehearsals. [2] [5]",
+      "citationIndexes": [2, 5],
+      "sourceRefs": [
+        "doc_narratwin_product#sec_audience:body",
+        "doc_atlas_output#sec_atlas_role:body"
+      ],
+      "exposes": ["multi-document-claim-support", "citation-order"]
+    },
+    {
+      "fixtureRow": "row_003",
+      "segmentId": "seg_003",
+      "sourceText": "For global viewers, The local demo uses mock local LLM, translation, voice, and avatar adapters for deterministic review. [3]",
+      "citationIndexes": [3],
+      "sourceRefs": ["doc_narratwin_local#sec_local_providers:body"],
+      "exposes": ["domain-term-handling"]
+    },
+    {
+      "fixtureRow": "row_004",
+      "segmentId": "seg_004",
+      "sourceText": "For global viewers, Every generated walkthrough claim must cite retrieved source chunks from approved knowledge. [4]",
+      "citationIndexes": [4],
+      "sourceRefs": ["doc_narratwin_local#sec_citations:body"],
+      "exposes": ["heading-only-or-missing-body"]
+    },
+    {
+      "fixtureRow": "row_005",
+      "segmentId": "seg_005",
+      "sourceText": "For engineers, Atlas Output OUTPUT-SENTINEL-CP2 requires each generated checklist item to cite approved launch-note evidence. [6]",
+      "citationIndexes": [6],
+      "sourceRefs": ["doc_atlas_output#sec_atlas_evidence:body"],
+      "exposes": ["latin-diacritic-and-false-friend-risk"]
+    },
+    {
+      "fixtureRow": "row_006",
+      "segmentId": "seg_006",
+      "sourceText": "For engineers, Atlas Output uses the marker OUTPUT-SENTINEL-CP2 for output-correctness isolation checks. [7]",
+      "citationIndexes": [7],
+      "sourceRefs": ["doc_atlas_output#sec_atlas_marker:body"],
+      "exposes": ["cjk-line-wrapping-and-citation-attachment"]
+    }
+  ],
+  "thresholds": {
+    "documentCount": 3,
+    "sectionCount": 7,
+    "transcriptSegmentCount": 6,
+    "citedClaimCount": 7,
+    "claimSupportCount": 7,
+    "artifactExportCount": 4,
+    "coverageRowCountMinimum": 450
+  },
+  "provenanceNotes": [
+    "Synthetic public-safe corpus created for issue #278 only.",
+    "Contains no private strategy, private roadmap, invite code, real personal data, private media, provider payload, provider output, real media, or cloned identity material.",
+    "Uses fictional Atlas Output marker content and existing NarraTwin local/mock acceptance sentences.",
+    "Does not claim arbitrary-project translation quality or raw uploaded knowledge-document translation API coverage."
+  ],
+  "evidenceLock": {
+    "fixtureHash": "sha256:b1d7b95504703b9a4042988db20e1d87d3184f5f016981b29de5085f16faa3f4",
+    "expectedOutputHash": "sha256:c5aefa275d715b881e78a586d038c2c39df795ab99a2af56e3c06ae3d028ba7f",
+    "languageCatalogVersion": "2026-07-24-c3a-r2",
+    "validatorVersion": "c3a-r2-full-project-validator-v1",
+    "artifactSchemaVersion": "stage6-multilingual-artifact-v2",
+    "reportSchemaVersion": "c3a-r2-full-project-report-v1"
+  }
+}
