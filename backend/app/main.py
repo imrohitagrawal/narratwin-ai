@@ -63,6 +63,16 @@ from backend.app.hosted_demo import (
     hosted_demo_service,
     parse_hosted_demo_json,
 )
+from backend.app.issue280 import (
+    ISSUE280_ERROR_TAXONOMY,
+    ISSUE280_INPUT_CONTRACT_PATH,
+    Issue280ContractError,
+    Issue280InputContractRequest,
+    Issue280InputContractResponse,
+    issue280_error_details,
+    issue280_trace_response,
+    validate_issue280_input_contract,
+)
 
 ErrorDetailValue = str | int | float | bool
 
@@ -1250,6 +1260,15 @@ async def starlette_http_error_handler(
 
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    if request.url.path == ISSUE280_INPUT_CONTRACT_PATH:
+        spec = ISSUE280_ERROR_TAXONOMY["ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED"]
+        return error_response(
+            request=request,
+            status_code=spec.status_code,
+            code="ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED",
+            message=spec.message,
+            details={"field": "request"},
+        )
     return error_response(
         request=request,
         status_code=422,
@@ -1385,6 +1404,38 @@ def api_ops_status() -> OpsStatusResponse:
             langfuseConfigured=is_langfuse_enabled(),
         ),
     )
+
+
+@api_v1.post(
+    "/checkpoint3/issue280/input-contract",
+    response_model=Issue280InputContractResponse,
+    tags=["checkpoint3"],
+)
+def issue280_input_api_contract(
+    contract_request: Issue280InputContractRequest,
+    http_request: Request,
+) -> Issue280InputContractResponse | JSONResponse:
+    try:
+        response = validate_issue280_input_contract(contract_request)
+    except Issue280ContractError as exc:
+        return error_response(
+            request=http_request,
+            status_code=exc.status_code,
+            code=exc.code,
+            message=exc.message,
+            details=cast(dict[str, ErrorDetailValue], issue280_error_details(exc.code, exc.field)),
+        )
+    except Exception:
+        code = "ISSUE280_INTERNAL_ERROR_SAFE"
+        spec = ISSUE280_ERROR_TAXONOMY[code]
+        return error_response(
+            request=http_request,
+            status_code=spec.status_code,
+            code=code,
+            message=spec.message,
+            details=cast(dict[str, ErrorDetailValue], issue280_error_details(code, "request")),
+        )
+    return response.model_copy(update={"trace": issue280_trace_response(request_id_for(http_request))})
 
 
 @api_v1.get("/languages", response_model=LanguageCatalogResponse, tags=["walkthrough"])

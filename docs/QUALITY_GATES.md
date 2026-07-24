@@ -630,6 +630,15 @@ each later development PR must account for positive cases, negative cases,
 corner cases, API tests, contract tests, exact real-browser UI validation from
 what the user sees and acts upon, end-to-end flow evidence, and regression tests
 before it claims owned R280 behavior rows are satisfied or reviewed/re-scoped.
+PR B implements only the first executable contract slice behind
+`/api/v1/checkpoint3/issue280/input-contract`: bounded arbitrary synthetic
+markdown input, local/mock provider-disabled response posture, public-safe error
+taxonomy mapping, prompt-injection refusal, unsafe/private/secret-like input
+refusal, and positive/negative/corner/API/contract/regression tests for that
+narrow API surface. PR B does not implement the final
+`make issue280-output-correctness` flow, exact UI evidence, hosted/public demo
+behavior, provider setup, paid spend, cloned identity runtime, real media,
+public distribution, or production-readiness claims.
 
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
