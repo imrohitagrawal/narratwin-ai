@@ -1,0 +1,44 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 291,
+  "branch": "phase-1-closure-process-291-post-pr-284-status-reconciliation",
+  "objective": "Reconcile repository status after PR #284 merged. Positive claims: PR284-MERGE-001 records PR #284 merged at 3f3bbddaf2c1f5440f4987fa9d011a6c34d59bb4 after approved review and green required PR checks on head 414a6524d046958acf752ebc1893674eaf6fe41e; PR284-POSTMERGE-001 records post-merge main quality workflow run 30123244961 passing; STATUS-SSV1-001 replaces stale PR D draft/active wording and aligns the executable StatusStateV1 checker; STATUS-ISSUES-001 keeps issues #249 and #280 open and reference-only. Negative invariants: no PR E, no product/runtime implementation, no hosted/public demo, no provider setup, no paid spend, no cloned identity runtime, no real media, no public distribution, no production-readiness claim, no issue-closing keywords for #249 or #280, and no mutation of PR #284 after merge.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-291.json",
+      "docs/STATUS.md",
+      "scripts/quality/check_phase1_closure_docs.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-291.json",
+      "docs/STATUS.md",
+      "scripts/quality/check_phase1_closure_docs.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      "app/",
+      "src/",
+      "tests/acceptance/",
+      "tests/api/",
+      ".github/workflows/",
+      "docker-compose.yml",
+      "provider SDKs",
+      "provider keys",
+      "runtime product code",
+      "real provider calls",
+      "paid spend",
+      "hosted deployment",
+      "public URL",
+      "public demo",
+      "cloned identity",
+      "real media generation",
+      "public distribution",
+      "production-readiness claims",
+      "PR #284 mutation",
+      "PR E work",
+      "issue-closing keywords for #249 or #280"
+    ]
+  }
+}
