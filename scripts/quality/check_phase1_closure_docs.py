@@ -25,6 +25,7 @@ ISSUE_278_REPORT_PATHS = (
     "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
     "reports/checkpoint3-multilingual/full-project-correctness-report.json",
 )
+POLICY_ONLY_ENV = "NARRATWIN_POLICY_ONLY"
 
 REQUIRED_INPUT_FILES = {
     "docs/reviews/FINAL_REVIEW.md",
@@ -5601,6 +5602,8 @@ def check_issue278_c3a_r2_preflight(failures: list[str]) -> None:
 
 def check_issue278_full_project_probe(failures: list[str]) -> None:
     if current_branch() != ISSUE_278_BRANCH:
+        return
+    if os.environ.get(POLICY_ONLY_ENV, "").strip().lower() in {"1", "true", "yes"}:
         return
     result = subprocess.run(
         ISSUE_278_FULL_PROJECT_COMMAND,

@@ -2659,6 +2659,24 @@ def test_issue_278_phase_quality_runs_full_project_probe(monkeypatch: Any) -> No
     assert calls[0]["kwargs"]["cwd"] == phase1.ROOT
 
 
+def test_issue_278_policy_only_quality_skips_uv_subprocess(monkeypatch: Any) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls.append({"args": args, "kwargs": kwargs})
+        return subprocess.CompletedProcess(args=args[0], returncode=0, stdout="7 passed")
+
+    monkeypatch.setattr(phase1, "current_branch", lambda: phase1.ISSUE_278_BRANCH)
+    monkeypatch.setattr(phase1.subprocess, "run", fake_run)
+    monkeypatch.setenv(phase1.POLICY_ONLY_ENV, "1")
+    failures: list[str] = []
+
+    phase1.check_issue278_full_project_probe(failures)
+
+    assert failures == []
+    assert calls == []
+
+
 def test_issue_278_phase_quality_reports_full_project_probe_failure(monkeypatch: Any) -> None:
     def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(args=args[0], returncode=1, stdout="FAILED stale evidence")
