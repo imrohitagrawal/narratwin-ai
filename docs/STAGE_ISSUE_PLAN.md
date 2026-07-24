@@ -1223,6 +1223,43 @@ provider outputs, secrets, tokens, credentials, public distribution,
 Checkpoint 3B implementation, Checkpoint 3C, Product Mode 2, or
 production-readiness claims.
 
+Issue `#280` PR A branch
+`phase-1-closure-280-c3a-r3-planning-preflight-persona-depth` is limited to
+planning/preflight, public-source persona/audience/depth research, matrix and
+reviewer-checklist coverage, merge-safe red-evidence framework, and guardrail
+tests only. The first branch commit must contain only
+`docs/governance/preflights/issue-280.json`. Later commits may change only:
+
+- `docs/governance/preflights/issue-280.json`
+- `docs/reviews/ISSUE_280_C3A_R3_PREFLIGHT.md`
+- `docs/reviews/ISSUE_280_C3A_R3_PERSONA_AUDIENCE_RESEARCH.md`
+- `docs/reviews/ISSUE_280_C3A_R3_RED_EVIDENCE_REVIEW.md`
+- `docs/demo/CHECKPOINT3A_R3_REHEARSAL_CHECKLIST.md`
+- `reports/checkpoint3-issue280/requirement-matrix.json`
+- `reports/checkpoint3-issue280/red-evidence-plan.json`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `scripts/guardrails_check.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_guardrails_check.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+PR A does not implement runtime product behavior. It must keep issues `#249`
+and `#280` open, must use reference-only PR wording, and must not authorize
+provider setup, provider SDKs, provider keys, real provider calls, paid spend,
+hosted deployment, public URL/demo, cloned identity runtime, cloned voice,
+cloned face, digital twin, real-person likeness, real media, private media,
+private strategy, invite codes, provider payloads, provider outputs, secrets,
+tokens, credentials, public distribution, Checkpoint 3B implementation,
+Checkpoint 3C, Product Mode 2, arbitrary real-world translation quality,
+provider quality, or production-readiness claims. PR A also locks the future
+implementation test strategy: every later `#280` development slice must account
+for positive, negative, corner, API, contract, exact browser UI, full local/mock
+flow, and regression tests before claiming its owned R280 rows are satisfied or
+reviewed/re-scoped.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

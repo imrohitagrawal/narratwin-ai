@@ -610,6 +610,27 @@ it does not prove arbitrary-project translation quality, provider quality,
 hosted/public demo readiness, raw uploaded knowledge-document translation API
 behavior, public distribution, or production readiness.
 
+C3A-R3 issue `#280` PR A defines the planned
+`make issue280-output-correctness` gate contract without implementing that
+runtime gate in PR A. The eventual gate must execute create project -> upload
+bounded synthetic markdown -> approve -> ingest -> generate grounded English
+Stage 4 output -> translate Stage 6 output -> generate Stage 7
+placeholder/export evidence -> render UI -> download/decode artifacts ->
+compare report, with run IDs, multilingual run IDs, target language, direction,
+audience, depth, glossary terms, preserved terms, source text, target text,
+English reference, citations, context refs, claim supports, evaluation ID,
+checksums, transcript metadata, subtitles, voice manifest, avatar demo, render
+manifest, video placeholder, coverage matrix, and correctness report kept in
+parity. PR A records only the public-safe static matrix, reviewer checklist,
+and merge-safe red-evidence framework; it does not prove arbitrary real-world
+translation quality, provider quality, hosted/public demo readiness, cloned
+identity runtime, real media, public distribution, or production readiness.
+PR A also defines the future implementation testing contract for issue `#280`:
+each later development PR must account for positive cases, negative cases,
+corner cases, API tests, contract tests, exact real-browser UI validation from
+what the user sees and acts upon, end-to-end flow evidence, and regression tests
+before it claims owned R280 behavior rows are satisfied or reviewed/re-scoped.
+
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
 through the same local/mock API path. The language-quality probe verifies

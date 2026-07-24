@@ -1,0 +1,46 @@
+{
+  "issue": 280,
+  "prSlice": "PR A",
+  "schemaVersion": "Issue280RedEvidencePlanV1",
+  "mergeSafe": true,
+  "permanentFailingTestsCommitted": false,
+  "runtimeBehaviorImplemented": false,
+  "issueCommentsOnlyAcceptedAsFinalEvidence": false,
+  "allowedStatuses": [
+    "RED_EVIDENCE_CAPTURED",
+    "PLANNED_IMPLEMENTATION",
+    "PLANNED_EXECUTABLE_GATE",
+    "STATIC_CONTRACT_PASS",
+    "REVIEWED_RE_SCOPE"
+  ],
+  "strategies": [
+    {
+      "id": "R280-RED-001",
+      "strategy": "Store public-safe red evidence as reviewed markdown/json artifacts.",
+      "ownerPrSlice": "PR A",
+      "removalCriteria": "Later implementation PR replaces planned row with executable pass evidence."
+    },
+    {
+      "id": "R280-RED-002",
+      "strategy": "Allow strict xfail only with issue-linked removal criteria.",
+      "ownerPrSlice": "PR B-PR E",
+      "removalCriteria": "Owned row passes in executable gate or is reviewed/re-scoped."
+    },
+    {
+      "id": "R280-RED-003",
+      "strategy": "Allow skipped tests only with explicit reason and later PR owner.",
+      "ownerPrSlice": "PR B-PR E",
+      "removalCriteria": "Skip removed when owner PR implements row."
+    },
+    {
+      "id": "R280-RED-004",
+      "strategy": "Matrix rows cannot use issue comments alone as evidence.",
+      "ownerPrSlice": "PR A",
+      "removalCriteria": "Never removed; issue comments remain planning inputs only."
+    }
+  ],
+  "testedBy": [
+    "tests/unit/test_phase1_closure_docs.py::test_issue280_red_evidence_rejects_permanent_failing_tests",
+    "tests/unit/test_phase1_closure_docs.py::test_issue280_matrix_rejects_issue_comment_only_evidence"
+  ]
+}

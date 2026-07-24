@@ -1,0 +1,460 @@
+{
+  "issue": 280,
+  "prSlice": "PR A",
+  "schemaVersion": "Issue280RequirementMatrixV1",
+  "runtimeBehaviorImplemented": false,
+  "checkpoint3TrackerIssue": 249,
+  "checkpoint3TrackerRemainsOpen": true,
+  "issue280RemainsOpenAfterPrA": true,
+  "plannedGate": "make issue280-output-correctness",
+  "futureImplementationTestingContract": {
+    "appliesTo": "Every #280 implementation PR after PR A.",
+    "apiAssumption": "Future slices treat local/mock APIs as first-class contracts even when providers remain disabled and runtime stays deterministic/local.",
+    "requiredCaseFamilies": [
+      "positiveCases",
+      "negativeCases",
+      "cornerCases",
+      "regressionTests"
+    ],
+    "requiredTestLevels": [
+      "apiTests",
+      "contractTests",
+      "exactUiValidationTests",
+      "endToEndFlowTests"
+    ],
+    "minimumExpectation": "Each implementation PR must show which positive, negative, corner, API, contract, exact UI, E2E flow, and regression tests were added or intentionally reviewed/re-scoped before it can claim its owned R280 rows are satisfied."
+  },
+  "statusValues": [
+    "STATIC_CONTRACT_PASS",
+    "RED_EVIDENCE_CAPTURED",
+    "PLANNED_IMPLEMENTATION",
+    "PLANNED_EXECUTABLE_GATE",
+    "REVIEWED_RE_SCOPE"
+  ],
+  "sections": [
+    {
+      "id": "R280-SCOPE",
+      "title": "Public-safe boundaries and tracker posture",
+      "rows": [
+        {
+          "id": "R280-SCOPE-001",
+          "requirement": "Public-safe boundaries: no provider setup, paid spend, hosted/public demo, production-readiness claim, cloned identity runtime, real media, private strategy, private data, provider payloads/outputs, secrets, credentials, or tokens.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "static-contract",
+          "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
+          "ownerPrSlice": "PR A"
+        },
+        {
+          "id": "R280-SCOPE-002",
+          "requirement": "#249 remains open, #280 remains open after PR A, and C3B remains blocked until #280 is satisfied or reviewed/re-scoped.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "guardrail",
+          "plannedCommand": "python3 scripts/guardrails_check.py",
+          "ownerPrSlice": "PR A"
+        }
+      ]
+    },
+    {
+      "id": "R280-INPUT",
+      "title": "Bounded arbitrary synthetic markdown input",
+      "rows": [
+        {
+          "id": "R280-INPUT-001",
+          "requirement": "Bounded arbitrary synthetic markdown is text/markdown only, with maxBytes 20000 per document, maxDocuments 3, maxSectionsPerDocument 12, maxBodyCharsPerSection 2000, maxTranscriptSegments 40, maxGlossaryTerms 20, maxGlossaryTermChars 64, maxCaptionChars 240, and maxExportBundleBytes 1000000.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_input_contract.py -q",
+          "ownerPrSlice": "PR B",
+          "plannedInputBounds": {
+            "fileType": "text/markdown",
+            "maxBytes": 20000,
+            "maxDocuments": 3,
+            "maxSectionsPerDocument": 12,
+            "maxBodyCharsPerSection": 2000,
+            "maxTranscriptSegments": 40,
+            "maxGlossaryTerms": 20,
+            "maxGlossaryTermChars": 64,
+            "maxCaptionChars": 240,
+            "maxExportBundleBytes": 1000000
+          }
+        },
+        {
+          "id": "R280-INPUT-002",
+          "requirement": "Reject prompt injection and unsafe/private/secret-like input without leaking raw markdown or internal/provider details.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_input_contract.py -q",
+          "ownerPrSlice": "PR B"
+        }
+      ]
+    },
+    {
+      "id": "R280-AUDIENCE",
+      "title": "Audience invariant and audience modes",
+      "rows": [
+        {
+          "id": "R280-AUDIENCE-001",
+          "requirement": "Audience changes framing, emphasis, vocabulary, explanation order, and source-supported examples; audience does not change facts, add uncited claims, remove required evidence, or alter citation/context/claim-support bindings.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "static-contract",
+          "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
+          "ownerPrSlice": "PR A"
+        },
+        {
+          "id": "R280-AUDIENCE-002",
+          "requirement": "Audience modes covered: Recruiter, Hiring manager, Engineer, Product leader, Customer, Beginner, Global viewer.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "static-contract",
+          "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
+          "ownerPrSlice": "PR A"
+        }
+      ]
+    },
+    {
+      "id": "R280-PERSONA",
+      "title": "Evidence-backed persona/audience analysis",
+      "rows": [
+        {
+          "id": "R280-PERSONA-001",
+          "requirement": "Persona model is public-source research-backed, not limited to NarraTwin seed content or user wording, not based on implementer assumptions, and excludes private personality inference, stereotypes, and unsupported audience claims.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "source",
+          "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
+          "ownerPrSlice": "PR A"
+        },
+        {
+          "id": "R280-PERSONA-002",
+          "requirement": "Each audience row includes audienceMode, researchBasis, jobToBeDone, decisionContext, knowledgeLevel, preferredEvidence, toneBoundary, depthBehavior, translationRisk, accessibilityRisk, goldenRules, evilSet, sourceBindingRule, and testRows.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "source",
+          "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
+          "ownerPrSlice": "PR A"
+        }
+      ]
+    },
+    {
+      "id": "R280-DEPTH",
+      "title": "Depth behavior",
+      "rows": [
+        {
+          "id": "R280-DEPTH-001",
+          "requirement": "CONCISE is short/direct with minimal transitions and no unsupported examples/tradeoffs; STANDARD adds context/transitions/audience framing; DEEP adds source-supported examples, tradeoffs, caveats, pros/cons, and implications.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "static-contract",
+          "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
+          "ownerPrSlice": "PR A"
+        },
+        {
+          "id": "R280-DEPTH-002",
+          "requirement": "Depth changes amount and structure without altering evidence boundaries; deep cannot add uncited details, concise cannot hide required caveats, and standard cannot be identical to concise.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_depth_contract.py -q",
+          "ownerPrSlice": "PR B"
+        }
+      ]
+    },
+    {
+      "id": "R280-AUDIENCE-DEPTH",
+      "title": "Audience-depth interaction",
+      "rows": [
+        {
+          "id": "R280-AUDIENCE-DEPTH-001",
+          "requirement": "Same source across all audiences and depths; deep source-supported example accepted; deep unsupported example refused; cross-language audience framing preserved; UI/export shows generating audience/depth.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_audience_depth_contract.py -q",
+          "ownerPrSlice": "PR B"
+        }
+      ]
+    },
+    {
+      "id": "R280-S4",
+      "title": "Stage 4 planned contract",
+      "rows": [
+        {
+          "id": "R280-S4-001",
+          "requirement": "Bounded synthetic markdown upload, approval, ingestion, chunk/store, grounded English generation, audience/depth through stored evidence, and citations/contextRefs/claimSupports preserved.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_stage4_contract.py -q",
+          "ownerPrSlice": "PR B"
+        }
+      ]
+    },
+    {
+      "id": "R280-S6",
+      "title": "Stage 6 planned contract",
+      "rows": [
+        {
+          "id": "R280-S6-001",
+          "requirement": "Bounded unseen synthetic facts are not refused only because they are not golden fixture sentences; deterministic local/mock conversion or honest refusal; validate script/direction, body-level translation, no English fallback except protected terms, no romanized fallback where native script required, and no partial/metadata/artifact-only success.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_stage6_contract.py -q",
+          "ownerPrSlice": "PR B"
+        }
+      ]
+    },
+    {
+      "id": "R280-GLOSSARY",
+      "title": "Glossary contract",
+      "rows": [
+        {
+          "id": "R280-GLOSSARY-001",
+          "requirement": "Glossary terms are protected project terms/acronyms, not instructions; cover required/absent terms, duplicates, case/diacritics, multi-word terms, acronyms, RTL/CJK/no-space behavior, source-present preservation, missing-preservation failure, and visible preserved-term metadata.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_glossary_contract.py -q",
+          "ownerPrSlice": "PR B"
+        }
+      ]
+    },
+    {
+      "id": "R280-ERROR",
+      "title": "Formal API/UI error taxonomy",
+      "rows": [
+        {
+          "id": "R280-ERROR-001",
+          "requirement": "Error taxonomy includes ISSUE280_INPUT_TOO_LARGE/413, ISSUE280_UNSUPPORTED_FILE_TYPE/415, ISSUE280_TOO_MANY_DOCUMENTS/422, ISSUE280_PROMPT_INJECTION_REJECTED/422, ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED/422, ISSUE280_GLOSSARY_INVALID/422, ISSUE280_TRANSLATION_REFUSED/422, and ISSUE280_INTERNAL_ERROR_SAFE/500, each with safe message, safe details, UI copy, remediation guidance, and anti-leak tests for no raw markdown, fake secrets, provider-like payloads, stack traces, filesystem paths, or internal provider/model details.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_error_taxonomy.py -q",
+          "ownerPrSlice": "PR B",
+          "plannedErrorTaxonomy": [
+            {
+              "code": "ISSUE280_INPUT_TOO_LARGE",
+              "httpStatus": 413,
+              "safeMessage": "The markdown file is above the supported demo size.",
+              "safeDetails": "Reduce the file to 20000 bytes or less.",
+              "uiCopy": "Reduce the markdown file size and try again.",
+              "remediation": "Split large synthetic knowledge into smaller markdown documents."
+            },
+            {
+              "code": "ISSUE280_UNSUPPORTED_FILE_TYPE",
+              "httpStatus": 415,
+              "safeMessage": "Only markdown text files are supported for this local demo.",
+              "safeDetails": "Use text/markdown content.",
+              "uiCopy": "Upload a markdown document.",
+              "remediation": "Convert the synthetic project knowledge to markdown."
+            },
+            {
+              "code": "ISSUE280_TOO_MANY_DOCUMENTS",
+              "httpStatus": 422,
+              "safeMessage": "The demo supports up to 3 markdown documents.",
+              "safeDetails": "Remove extra documents before approval.",
+              "uiCopy": "Keep this demo to 3 documents or fewer.",
+              "remediation": "Combine or remove synthetic documents."
+            },
+            {
+              "code": "ISSUE280_PROMPT_INJECTION_REJECTED",
+              "httpStatus": 422,
+              "safeMessage": "The markdown appears to contain instructions that conflict with the selected demo settings.",
+              "safeDetails": "Project knowledge must describe facts, not override audience, depth, language, citations, or safety behavior.",
+              "uiCopy": "Remove instruction-like text from the knowledge document.",
+              "remediation": "Rewrite the content as factual synthetic project knowledge."
+            },
+            {
+              "code": "ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED",
+              "httpStatus": 422,
+              "safeMessage": "The markdown appears to include unsafe, private, or secret-like content.",
+              "safeDetails": "Use only public-safe synthetic project knowledge.",
+              "uiCopy": "Remove private or secret-like content and try again.",
+              "remediation": "Replace sensitive-looking values with public-safe synthetic placeholders."
+            },
+            {
+              "code": "ISSUE280_GLOSSARY_INVALID",
+              "httpStatus": 422,
+              "safeMessage": "Glossary terms must be protected project terms, not translation instructions.",
+              "safeDetails": "Use up to 20 terms, each 64 characters or fewer.",
+              "uiCopy": "Keep glossary terms short and factual.",
+              "remediation": "Remove duplicates, instructions, or oversized terms."
+            },
+            {
+              "code": "ISSUE280_TRANSLATION_REFUSED",
+              "httpStatus": 422,
+              "safeMessage": "The local demo could not produce a faithful translated transcript for the selected settings.",
+              "safeDetails": "The accepted English script remains available.",
+              "uiCopy": "Review the English script or choose a supported local-demo language.",
+              "remediation": "Use supported languages and public-safe bounded markdown."
+            },
+            {
+              "code": "ISSUE280_INTERNAL_ERROR_SAFE",
+              "httpStatus": 500,
+              "safeMessage": "The local demo could not complete this request.",
+              "safeDetails": "No provider details, filesystem paths, stack traces, raw markdown, or secret-like values are shown.",
+              "uiCopy": "Try again with the same public-safe inputs.",
+              "remediation": "If the problem repeats, capture the run ID and local logs without sharing private inputs."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R280-UI",
+      "title": "UI behavior coverage",
+      "rows": [
+        {
+          "id": "R280-UI-001",
+          "requirement": "UI covers DEEP, full transcript expansion, truncation indicator, accessible info icons/tooltips, specific safe errors, glossary explanation, visible audience/depth/language state, citations, exports, keyboard/mobile/touch accessibility, Stage 4 accepted script visible after Stage 6 refusal, and non-intercepted browser evidence.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-browser-test",
+          "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+          "ownerPrSlice": "PR D"
+        },
+        {
+          "id": "R280-UI-002",
+          "requirement": "Required info icons/tooltips: Project name, Knowledge document, Audience, Depth, Target language, Glossary terms, Synthetic avatar consent, Walkthrough script, Demo preview, Citations, Export artifacts, and provider/local/mock posture where visible.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-browser-test",
+          "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+          "ownerPrSlice": "PR D"
+        }
+      ]
+    },
+    {
+      "id": "R280-CONVERSATION-UX",
+      "title": "Conversation and user guidance",
+      "rows": [
+        {
+          "id": "R280-CONVERSATION-UX-001",
+          "requirement": "UI explains expected terms/values/fields; errors explain what users can fix; glossary help separates protected terms from translation instructions; local/mock avatar consent does not imply cloned identity or real provider video; preview is clearly not full transcript.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-browser-test",
+          "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+          "ownerPrSlice": "PR D"
+        }
+      ]
+    },
+    {
+      "id": "R280-CONVERSION",
+      "title": "Conversion chain",
+      "rows": [
+        {
+          "id": "R280-CONVERSION-001",
+          "requirement": "Source facts -> grounded English -> target transcript -> stored output -> UI -> downloadable artifacts -> Stage 7 placeholder/export, with citations/contextRefs/claimSupports bound throughout.",
+          "status": "PLANNED_EXECUTABLE_GATE",
+          "evidenceType": "planned-gate",
+          "plannedCommand": "make issue280-output-correctness",
+          "ownerPrSlice": "PR E"
+        }
+      ]
+    },
+    {
+      "id": "R280-CRITICAL-CONNECTIONS",
+      "title": "UI/API/stored/export/report parity",
+      "rows": [
+        {
+          "id": "R280-CRITICAL-CONNECTIONS-001",
+          "requirement": "Parity fields include run IDs, multilingual run IDs, target language, direction, audience, depth, glossary terms, preserved terms, source text, target text, English reference, citations, context refs, claim supports, evaluation ID, checksums, transcript metadata, subtitles, voice manifest, avatar demo, render manifest, video placeholder, coverage matrix, and correctness report.",
+          "status": "PLANNED_EXECUTABLE_GATE",
+          "evidenceType": "planned-gate",
+          "plannedCommand": "make issue280-output-correctness",
+          "ownerPrSlice": "PR E"
+        }
+      ]
+    },
+    {
+      "id": "R280-QUALITY",
+      "title": "Quality false-pass rejection",
+      "rows": [
+        {
+          "id": "R280-QUALITY-001",
+          "requirement": "Reject unsupported facts, untranslated English fallback, romanized native-script fallback, heading-only success, partial document/section/segment success, metadata-only success, artifact-only success, stale evidence, planned-language fake success, citation drift, contextRef drift, claimSupport drift, and UI/export mismatch.",
+          "status": "PLANNED_EXECUTABLE_GATE",
+          "evidenceType": "planned-gate",
+          "plannedCommand": "make issue280-output-correctness",
+          "ownerPrSlice": "PR E"
+        }
+      ]
+    },
+    {
+      "id": "R280-EVIL-SET",
+      "title": "Evil-set rejection",
+      "rows": [
+        {
+          "id": "R280-EVIL-SET-001",
+          "requirement": "Reject prefix-only and synonym-only audience adaptation, generic persona slogans, unsupported audience claims, citation/source drift, padding-only deep output, caveat-hiding concise output, standard identical to concise, dropped audience framing in translation, UI metadata mismatch, artifact/export mismatch, glossary-as-instruction, runtime private personality inference, prompt override, unsafe input echo, and planned-language fake success.",
+          "status": "RED_EVIDENCE_CAPTURED",
+          "evidenceType": "red-evidence-plan",
+          "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
+          "ownerPrSlice": "PR A"
+        }
+      ]
+    },
+    {
+      "id": "R280-TEST-STRATEGY",
+      "title": "Future implementation testing strategy",
+      "rows": [
+        {
+          "id": "R280-TEST-STRATEGY-001",
+          "requirement": "Every future #280 development PR must carry a row-level test strategy covering positiveCases, negativeCases, cornerCases, and regressionTests before claiming owned behavior rows are satisfied.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "static-validator",
+          "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
+          "ownerPrSlice": "PR A"
+        },
+        {
+          "id": "R280-TEST-STRATEGY-002",
+          "requirement": "API tests must validate request bounds, response shape, status codes, safe error taxonomy, provider-disabled/local posture, unsafe input rejection, and no leakage of raw markdown, provider-like payloads, stack traces, filesystem paths, secrets, credentials, or tokens.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-api-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_api_contract.py -q",
+          "ownerPrSlice": "PR B"
+        },
+        {
+          "id": "R280-TEST-STRATEGY-003",
+          "requirement": "Contract tests must prove API, stored output, UI-visible metadata, exports, reports, citations, contextRefs, claimSupports, run IDs, language, audience, depth, glossary, and checksum bindings remain in parity across the conversion flow.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-contract-test",
+          "plannedCommand": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+          "ownerPrSlice": "PR E"
+        },
+        {
+          "id": "R280-TEST-STRATEGY-004",
+          "requirement": "Exact UI validation tests must use real browser evidence for what the user sees and acts upon: form values, info icons/tooltips, selected audience/depth/language, transcript expansion, truncation indicator, safe errors/remediation, citations, exports/downloads, keyboard use, and mobile/touch behavior.",
+          "status": "PLANNED_IMPLEMENTATION",
+          "evidenceType": "planned-browser-test",
+          "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+          "ownerPrSlice": "PR D"
+        },
+        {
+          "id": "R280-TEST-STRATEGY-005",
+          "requirement": "The final output-correctness gate must execute the full local/mock flow and preserve regression coverage so later enhancements cannot break the developing feature: create project -> upload markdown -> approve -> ingest -> generate -> translate -> render UI -> download/decode artifacts -> compare reports.",
+          "status": "PLANNED_EXECUTABLE_GATE",
+          "evidenceType": "planned-gate",
+          "plannedCommand": "make issue280-output-correctness",
+          "ownerPrSlice": "PR E"
+        }
+      ]
+    },
+    {
+      "id": "R280-OUTPUT-CORRECTNESS",
+      "title": "Planned output-correctness gate",
+      "rows": [
+        {
+          "id": "R280-OUTPUT-CORRECTNESS-001",
+          "requirement": "Planned gate `make issue280-output-correctness` must eventually execute create project -> upload markdown -> approve -> ingest -> generate English Stage 4 -> translate Stage 6 -> avatar placeholder/export Stage 7 -> UI render -> download/decode artifacts -> compare report.",
+          "status": "PLANNED_EXECUTABLE_GATE",
+          "evidenceType": "planned-gate",
+          "plannedCommand": "make issue280-output-correctness",
+          "ownerPrSlice": "PR E"
+        }
+      ]
+    },
+    {
+      "id": "R280-GOV",
+      "title": "Governance matrix",
+      "rows": [
+        {
+          "id": "R280-GOV-001",
+          "requirement": "Parent matrix exists; every row has status, evidence type, planned test command, owner PR slice; every PR states remaining rows; #280 cannot close until all rows pass with executable evidence or reviewed re-scope.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "static-validator",
+          "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
+          "ownerPrSlice": "PR A"
+        }
+      ]
+    }
+  ]
+}

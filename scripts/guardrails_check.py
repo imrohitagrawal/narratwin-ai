@@ -240,6 +240,19 @@ STATUS_IMPACT_MISSING_STATUS_FILE_FAILURE = (
 STATUS_IMPACT_UNSUPPORTED_NO_CHANGE_FAILURE = (
     "PRs that change repository-tracked stage/governance state must not claim no docs/STATUS.md impact."
 )
+ISSUE_280_PR_A_BRANCH = "phase-1-closure-280-c3a-r3-planning-preflight-persona-depth"
+ISSUE_280_REFERENCE_ONLY_FAILURE = (
+    "Issue #280 PR A must use reference-only wording and must not auto-close #280."
+)
+ISSUE_249_REFERENCE_ONLY_FAILURE = (
+    "Issue #280 PR A must keep #249 reference-only and must not auto-close #249."
+)
+ISSUE_280_RUNTIME_COMPLETION_FAILURE = (
+    "Issue #280 PR A must not claim runtime implementation complete."
+)
+ISSUE_280_PUBLIC_SAFE_BOUNDARY_FAILURE = (
+    "Issue #280 PR A must state public-safe non-goals and provider/hosted/paid/production exclusions."
+)
 ALLOWED_STACKED_PULL_REQUEST_BASES = frozenset(
     {
         "phase-1-closure-39-execution-strategy",
@@ -1811,6 +1824,39 @@ def status_reconciliation_loop_failures(head_ref: str | None, body: str) -> list
     return []
 
 
+def issue_280_pr_a_failures(head_ref: str | None, visible_issue_text: str, body: str) -> list[str]:
+    if head_ref != ISSUE_280_PR_A_BRANCH:
+        return []
+    normalized_body = re.sub(r"[^a-z0-9#]+", " ", body.lower())
+    normalized_visible_issue_text = re.sub(r"[^a-z0-9#]+", " ", visible_issue_text.lower())
+    found: list[str] = []
+    if re.search(closing_issue_pattern("280"), visible_issue_text):
+        found.append(ISSUE_280_REFERENCE_ONLY_FAILURE)
+    if re.search(closing_issue_pattern("249"), visible_issue_text):
+        found.append(ISSUE_249_REFERENCE_ONLY_FAILURE)
+    runtime_completion_terms = (
+        "runtime implementation complete",
+        "implements runtime product behavior",
+        "issue #280 complete",
+        "close #280",
+    )
+    if any(term in normalized_visible_issue_text for term in runtime_completion_terms):
+        found.append(ISSUE_280_RUNTIME_COMPLETION_FAILURE)
+    required_boundary_terms = (
+        "pr a does not implement runtime product behavior",
+        "no provider setup",
+        "no paid spend",
+        "no hosted",
+        "no public demo",
+        "no production readiness",
+        "no cloned identity",
+        "no real media",
+    )
+    if any(term not in normalized_body for term in required_boundary_terms):
+        found.append(ISSUE_280_PUBLIC_SAFE_BOUNDARY_FAILURE)
+    return found
+
+
 def check_issue_linked_pull_request() -> None:
     for issue39_failure in issue_39_closure_matrix_validation_failures():
         failures.append(issue39_failure)
@@ -1842,6 +1888,7 @@ def check_issue_linked_pull_request() -> None:
     stage_name, canonical_issue_number = canonical_stage_issue(head_ref) or ("", None)
     is_canonical_stage_branch = canonical_issue_number is not None
     visible_issue_text = f"{title}\n{body}\n{pull_request_commit_messages()}"
+    failures.extend(issue_280_pr_a_failures(head_ref, visible_issue_text, body))
     issue_39_closing_pattern = closing_issue_pattern("39")
     issue_39_closing_attempt = re.search(issue_39_closing_pattern, visible_issue_text) is not None
     issue_39_closure_allowed = bool(
