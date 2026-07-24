@@ -157,6 +157,32 @@ def run_issue249_preflight_check(
     return failures
 
 
+def run_issue278_preflight_check(
+    monkeypatch: Any, *, preflight_text: str | None = None, missing: bool = False
+) -> list[str]:
+    if preflight_text is not None:
+        monkeypatch.setattr(
+            phase1,
+            "read",
+            read_with_overrides(
+                phase1,
+                {"docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md": preflight_text},
+            ),
+        )
+    failures: list[str] = []
+    if missing:
+        original_is_file = cast(Callable[[Path], bool], phase1.Path.is_file)
+
+        def patched_is_file(path: Path) -> bool:
+            if str(path).endswith("docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md"):
+                return False
+            return original_is_file(path)
+
+        monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
+    phase1.check_issue278_c3a_r2_preflight(failures)
+    return failures
+
+
 def run_issue253_preflight_check(
     monkeypatch: Any, *, preflight_text: str | None = None, missing: bool = False
 ) -> list[str]:
@@ -1973,6 +1999,77 @@ def test_issue_274_near_match_branch_fails_closed(monkeypatch: Any) -> None:
         ]
 
 
+def test_issue_278_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-278-c3a-r2-full-project-multilingual-corpus"
+    allowed = [
+        "docs/governance/preflights/issue-278.json",
+        "docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md",
+        "docs/reviews/ISSUE_278_C3A_R2_REVIEW_EVIDENCE.md",
+        "docs/demo/CHECKPOINT3A_FULL_PROJECT_MULTILINGUAL_REHEARSAL_CHECKLIST.md",
+        "docs/demo/CHECKPOINT3A_MULTILINGUAL_REHEARSAL_CHECKLIST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "backend/app/stage6.py",
+        "scripts/quality/check_checkpoint3_acceptance.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/fixtures/checkpoint3_full_project_multilingual_corpus.json",
+        "tests/unit/test_checkpoint3_acceptance_gate.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "tests/unit/test_stage6_multilingual.py",
+        "tests/api/test_stage6_multilingual_api.py",
+        "tests/acceptance/test_checkpoint3_output_correctness.py",
+        "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+        "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
+        "reports/checkpoint3-multilingual/full-project-correctness-report.json",
+    ]
+
+    assert phase1.ISSUE_278_ALLOWED_CHANGED_FILES == set(allowed)
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "frontend/src/app/page.tsx",
+            ".github/workflows/quality-gates.yml",
+            "docs/THIRD_PARTY_NOTICES.md",
+            "pyproject.toml",
+            "uv.lock",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change frontend/src/app/page.tsx.",
+        f"Phase 1 Closure branch {branch} may not change .github/workflows/quality-gates.yml.",
+        f"Phase 1 Closure branch {branch} may not change docs/THIRD_PARTY_NOTICES.md.",
+        f"Phase 1 Closure branch {branch} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {branch} may not change uv.lock.",
+    ]
+
+
+def test_issue_278_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    files = [
+        "docs/governance/preflights/issue-278.json",
+        "docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md",
+        "backend/app/stage6.py",
+        "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+    ]
+    for branch in (
+        "phase-1-closure-278-c3a-r2-full-project-multilingual-corpus-extra",
+        "phase-1-closure-process-278-c3a-r2-full-project-multilingual-corpus",
+        "phase-1-closure-0278-c3a-r2-full-project-multilingual-corpus",
+    ):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=files) == [
+            f"Phase 1 Closure branch {branch} may not change docs/governance/preflights/issue-278.json.",
+            f"Phase 1 Closure branch {branch} may not change docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md.",
+            f"Phase 1 Closure branch {branch} may not change backend/app/stage6.py.",
+            (
+                f"Phase 1 Closure branch {branch} may not change "
+                "tests/acceptance/test_checkpoint3_full_project_multilingual.py."
+            ),
+        ]
+
+
 def test_issue_255_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-255-post-pr-254-status-reconcile"
     allowed = [
@@ -2469,6 +2566,71 @@ def test_issue_274_preflight_contract_rejects_missing_markers(
 def test_issue_274_missing_preflight_reports_failure(monkeypatch: Any) -> None:
     assert run_issue274_preflight_check(monkeypatch, missing=True) == [
         "Missing required C3B-PR1 preflight artifact: docs/reviews/ISSUE_274_C3B_PR1_PREFLIGHT.md"
+    ]
+
+
+def test_issue_278_preflight_contract_is_complete(monkeypatch: Any) -> None:
+    text = Path("docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue278_preflight_check(monkeypatch, preflight_text=text) == []
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "C3A-R2-CATALOG-001",
+        "C3A-R2-FULLPROJECT-001",
+        "C3A-R2-ALL-SUPPORTED-001",
+        "C3A-R2-STALENESS-001",
+        "C3A-R2-PARITY-001",
+        "C3A-R2-FM-001",
+        "C3A-R2-FM-018",
+        "tests/fixtures/checkpoint3_full_project_multilingual_corpus.json",
+        "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+        "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
+        "reports/checkpoint3-multilingual/full-project-correctness-report.json",
+        "LANGUAGE_CATALOG",
+        "LANGUAGE_CATALOG_BY_TAG",
+        "SUPPORTED_LANGUAGES",
+        "local_demo_support_status",
+        "provider_support_status",
+        "test_coverage_level",
+        "Hindi/Devanagari",
+        "RTL",
+        "CJK",
+        "Latin-script",
+        "Priority 2 refusal",
+        "fixture hash changed",
+        "expected-output hash changed",
+        "language catalog version changed",
+        "validator version changed",
+        "artifact schema version changed",
+        "report schema changed",
+        "metadata-only success",
+        "artifact-only success",
+        "citation id preservation without source-span preservation",
+        "UI transcript, stored output, metadata, durable report, and exported/downloaded artifacts agree",
+        "does not prove arbitrary-project translation quality",
+        "does not prove provider quality",
+        "does not authorize hosted/public demo",
+        "raw uploaded knowledge-document translation API",
+        "Final clean fan-out",
+        "Stop and open a new issue",
+    ),
+)
+def test_issue_278_preflight_contract_rejects_missing_markers(
+    monkeypatch: Any, marker: str
+) -> None:
+    text = Path("docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md").read_text(encoding="utf-8")
+
+    assert run_issue278_preflight_check(
+        monkeypatch, preflight_text=remove_normalized_marker(text, marker)
+    )
+
+
+def test_issue_278_missing_preflight_reports_failure(monkeypatch: Any) -> None:
+    assert run_issue278_preflight_check(monkeypatch, missing=True) == [
+        "Missing required C3A-R2 preflight artifact: docs/reviews/ISSUE_278_C3A_R2_PREFLIGHT.md"
     ]
 
 

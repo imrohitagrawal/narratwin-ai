@@ -252,7 +252,7 @@ def test_checkpoint3_acceptance_dispatches_all_checkpoint3a_probes(
     assert checkpoint3.main() == 0
 
     output = capsys.readouterr().out
-    assert len(calls) == 8
+    assert len(calls) == 9
     assert calls[0]["args"][0] == (
         "uv",
         "run",
@@ -303,6 +303,13 @@ def test_checkpoint3_acceptance_dispatches_all_checkpoint3a_probes(
         "-q",
     )
     assert calls[7]["args"][0] == (
+        "uv",
+        "run",
+        "pytest",
+        "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+        "-q",
+    )
+    assert calls[8]["args"][0] == (
         "npm",
         "--prefix",
         "frontend",
@@ -325,8 +332,9 @@ def test_checkpoint3_acceptance_dispatches_all_checkpoint3a_probes(
     assert "PASS access/quota/retention" in output
     assert "PASS security/observability" in output
     assert "PASS performance" in output
+    assert "PASS full-project multilingual corpus" in output
     assert "PASS real-browser E2E with no success-path interception" in output
-    assert "Checkpoint 3 acceptance complete: 8 passed, 0 planned, 0 failed" in output
+    assert "Checkpoint 3 acceptance complete: 9 passed, 0 planned, 0 failed" in output
 
 
 def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
@@ -342,6 +350,7 @@ def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
         "access/quota/retention",
         "security/observability",
         "performance",
+        "full-project multilingual corpus",
         "real-browser E2E with no success-path interception",
     ]
     assert all("NARRATWIN_CP3_PRODUCT_FAITHFUL=1" in command for command in commands)
@@ -352,6 +361,7 @@ def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
     assert "test_checkpoint3_access_quota_retention.py" in combined
     assert "test_checkpoint3_security_observability.py" in combined
     assert "test_checkpoint3_performance.py" in combined
+    assert "test_checkpoint3_full_project_multilingual.py" in combined
     assert "playwright.checkpoint3.config.ts" in combined
     assert "test_checkpoint3_output_correctness.py" in combined
     assert checkpoint3.validate_probe_contract(checkpoint3.PROBES) == []
@@ -363,6 +373,7 @@ def test_checkpoint3_acceptance_probe_contract_is_complete() -> None:
         "access/quota/retention",
         "security/observability",
         "performance",
+        "full-project multilingual corpus",
         "real-browser E2E with no success-path interception",
     ]
     assert [probe.planned_reason for probe in checkpoint3.PROBES if not probe.implemented] == []
