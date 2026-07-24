@@ -85,10 +85,40 @@ ISSUE_280_REQUIRED_PUBLIC_SOURCES = (
     "https://www.nngroup.com/articles/personas-jobs-be-done/",
     "https://www.gov.uk/service-manual/user-research/start-by-learning-user-needs",
     "https://service-manual.ons.gov.uk/content/writing-for-users/user-personas",
-    "https://wid.org/wp-content/uploads/2022/03/FederalPLGuidelines.pdf",
+    "https://digital.gov/topics/plain-language",
     "https://pair.withgoogle.com/chapter/mental-models/",
     "https://www.microsoft.com/en-us/haxtoolkit/ai-guidelines/",
     "https://www.w3.org/WAI/WCAG22/Understanding/language-of-parts",
+)
+ISSUE_280_REQUIRED_INPUT_LIMIT_MARKERS = (
+    "maxbytes",
+    "20000",
+    "maxdocuments",
+    "3",
+    "maxsectionsperdocument",
+    "12",
+    "maxbodycharspersection",
+    "2000",
+    "maxtranscriptsegments",
+    "40",
+    "maxglossaryterms",
+    "20",
+    "maxglossarytermchars",
+    "64",
+    "maxcaptionchars",
+    "240",
+    "maxexportbundlebytes",
+    "1000000",
+)
+ISSUE_280_REQUIRED_ERROR_CODES = (
+    "ISSUE280_INPUT_TOO_LARGE",
+    "ISSUE280_UNSUPPORTED_FILE_TYPE",
+    "ISSUE280_TOO_MANY_DOCUMENTS",
+    "ISSUE280_PROMPT_INJECTION_REJECTED",
+    "ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED",
+    "ISSUE280_GLOSSARY_INVALID",
+    "ISSUE280_TRANSLATION_REFUSED",
+    "ISSUE280_INTERNAL_ERROR_SAFE",
 )
 POLICY_ONLY_ENV = "NARRATWIN_POLICY_ONLY"
 
@@ -5827,6 +5857,13 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #280 open after PR A.")
     if artifact.get("plannedGate") != "make issue280-output-correctness":
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the planned gate.")
+    matrix_text = json.dumps(artifact, sort_keys=True).lower()
+    for marker in ISSUE_280_REQUIRED_INPUT_LIMIT_MARKERS:
+        if marker.lower() not in matrix_text:
+            fail(failures, f"{ISSUE_280_MATRIX_PATH} missing concrete input limit marker: {marker}")
+    for code in ISSUE_280_REQUIRED_ERROR_CODES:
+        if code.lower() not in matrix_text:
+            fail(failures, f"{ISSUE_280_MATRIX_PATH} missing planned error taxonomy code: {code}")
     sections = artifact.get("sections")
     if not isinstance(sections, list):
         fail(failures, f"{ISSUE_280_MATRIX_PATH} sections must be a list.")

@@ -43,11 +43,23 @@
       "rows": [
         {
           "id": "R280-INPUT-001",
-          "requirement": "Define bounded arbitrary synthetic markdown: text/markdown only, explicit max bytes, document count, section count, body length, segment count, glossary count/length, artifact/caption/export limits.",
+          "requirement": "Bounded arbitrary synthetic markdown is text/markdown only, with maxBytes 20000 per document, maxDocuments 3, maxSectionsPerDocument 12, maxBodyCharsPerSection 2000, maxTranscriptSegments 40, maxGlossaryTerms 20, maxGlossaryTermChars 64, maxCaptionChars 240, and maxExportBundleBytes 1000000.",
           "status": "PLANNED_IMPLEMENTATION",
           "evidenceType": "planned-test",
           "plannedCommand": "uv run pytest tests/acceptance/test_issue280_input_contract.py -q",
-          "ownerPrSlice": "PR B"
+          "ownerPrSlice": "PR B",
+          "plannedInputBounds": {
+            "fileType": "text/markdown",
+            "maxBytes": 20000,
+            "maxDocuments": 3,
+            "maxSectionsPerDocument": 12,
+            "maxBodyCharsPerSection": 2000,
+            "maxTranscriptSegments": 40,
+            "maxGlossaryTerms": 20,
+            "maxGlossaryTermChars": 64,
+            "maxCaptionChars": 240,
+            "maxExportBundleBytes": 1000000
+          }
         },
         {
           "id": "R280-INPUT-002",
@@ -187,11 +199,77 @@
       "rows": [
         {
           "id": "R280-ERROR-001",
-          "requirement": "Error taxonomy includes code, HTTP status, safe message, safe details, UI copy, remediation guidance, and anti-leak tests for no raw markdown, fake secrets, provider-like payloads, stack traces, filesystem paths, or internal provider/model details.",
+          "requirement": "Error taxonomy includes ISSUE280_INPUT_TOO_LARGE/413, ISSUE280_UNSUPPORTED_FILE_TYPE/415, ISSUE280_TOO_MANY_DOCUMENTS/422, ISSUE280_PROMPT_INJECTION_REJECTED/422, ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED/422, ISSUE280_GLOSSARY_INVALID/422, ISSUE280_TRANSLATION_REFUSED/422, and ISSUE280_INTERNAL_ERROR_SAFE/500, each with safe message, safe details, UI copy, remediation guidance, and anti-leak tests for no raw markdown, fake secrets, provider-like payloads, stack traces, filesystem paths, or internal provider/model details.",
           "status": "PLANNED_IMPLEMENTATION",
           "evidenceType": "planned-test",
           "plannedCommand": "uv run pytest tests/acceptance/test_issue280_error_taxonomy.py -q",
-          "ownerPrSlice": "PR B"
+          "ownerPrSlice": "PR B",
+          "plannedErrorTaxonomy": [
+            {
+              "code": "ISSUE280_INPUT_TOO_LARGE",
+              "httpStatus": 413,
+              "safeMessage": "The markdown file is above the supported demo size.",
+              "safeDetails": "Reduce the file to 20000 bytes or less.",
+              "uiCopy": "Reduce the markdown file size and try again.",
+              "remediation": "Split large synthetic knowledge into smaller markdown documents."
+            },
+            {
+              "code": "ISSUE280_UNSUPPORTED_FILE_TYPE",
+              "httpStatus": 415,
+              "safeMessage": "Only markdown text files are supported for this local demo.",
+              "safeDetails": "Use text/markdown content.",
+              "uiCopy": "Upload a markdown document.",
+              "remediation": "Convert the synthetic project knowledge to markdown."
+            },
+            {
+              "code": "ISSUE280_TOO_MANY_DOCUMENTS",
+              "httpStatus": 422,
+              "safeMessage": "The demo supports up to 3 markdown documents.",
+              "safeDetails": "Remove extra documents before approval.",
+              "uiCopy": "Keep this demo to 3 documents or fewer.",
+              "remediation": "Combine or remove synthetic documents."
+            },
+            {
+              "code": "ISSUE280_PROMPT_INJECTION_REJECTED",
+              "httpStatus": 422,
+              "safeMessage": "The markdown appears to contain instructions that conflict with the selected demo settings.",
+              "safeDetails": "Project knowledge must describe facts, not override audience, depth, language, citations, or safety behavior.",
+              "uiCopy": "Remove instruction-like text from the knowledge document.",
+              "remediation": "Rewrite the content as factual synthetic project knowledge."
+            },
+            {
+              "code": "ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED",
+              "httpStatus": 422,
+              "safeMessage": "The markdown appears to include unsafe, private, or secret-like content.",
+              "safeDetails": "Use only public-safe synthetic project knowledge.",
+              "uiCopy": "Remove private or secret-like content and try again.",
+              "remediation": "Replace sensitive-looking values with public-safe synthetic placeholders."
+            },
+            {
+              "code": "ISSUE280_GLOSSARY_INVALID",
+              "httpStatus": 422,
+              "safeMessage": "Glossary terms must be protected project terms, not translation instructions.",
+              "safeDetails": "Use up to 20 terms, each 64 characters or fewer.",
+              "uiCopy": "Keep glossary terms short and factual.",
+              "remediation": "Remove duplicates, instructions, or oversized terms."
+            },
+            {
+              "code": "ISSUE280_TRANSLATION_REFUSED",
+              "httpStatus": 422,
+              "safeMessage": "The local demo could not produce a faithful translated transcript for the selected settings.",
+              "safeDetails": "The accepted English script remains available.",
+              "uiCopy": "Review the English script or choose a supported local-demo language.",
+              "remediation": "Use supported languages and public-safe bounded markdown."
+            },
+            {
+              "code": "ISSUE280_INTERNAL_ERROR_SAFE",
+              "httpStatus": 500,
+              "safeMessage": "The local demo could not complete this request.",
+              "safeDetails": "No provider details, filesystem paths, stack traces, raw markdown, or secret-like values are shown.",
+              "uiCopy": "Try again with the same public-safe inputs.",
+              "remediation": "If the problem repeats, capture the run ID and local logs without sharing private inputs."
+            }
+          ]
         }
       ]
     },

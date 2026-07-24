@@ -34,15 +34,17 @@ failing tests or claiming runtime completion.
 - Unsafe input echo.
 - Planned-language fake success.
 
-## Adversarial Review Fallback
+## Adversarial Review
 
-Fresh-context sub-agent tooling was not invoked before this artifact was written
-because PR A needed the first-commit preflight invariant first. Manual
-adversarial fallback reviewed public/private boundary, arbitrary-project
-overclaim risk, provider/public-demo/production exclusion, PR A scope, UI and
-conversion completeness, critical connections, depth, audience invariant,
-translation-depth risks, red-evidence merge safety, guardrail allowlist behavior,
-status/traceability consistency, and governance/taste/scope.
+Sub-agent tooling was checked and used after the first-commit preflight
+invariant was preserved. Agent `Noether`
+(`019f9377-c867-7ce3-be0d-ae00f84a5e0e`) performed a read-only adversarial
+review of public/private boundary, arbitrary-project overclaim risk,
+provider/public-demo/production exclusion, PR A scope, UI and conversion
+completeness, critical connections, depth, audience invariant, translation-depth
+risks, red-evidence merge safety, guardrail allowlist behavior,
+status/traceability consistency, test/quality/CI evidence, and
+governance/taste/scope.
 
 Disposition:
 
@@ -50,6 +52,11 @@ Disposition:
   evidence type, planned command, and owner PR slice.
 - Actionable: require #249 and #280 reference-only PR wording.
 - Actionable: require public-safe non-goals in preflight and PR body.
+- Actionable from sub-agent review: concrete input bounds and planned error
+  taxonomy were added to the matrix and checked by the static validator.
+- Actionable from sub-agent review: runtime-completion claims are checked across
+  title, body, and commit-message visible PR text.
+- Actionable from sub-agent review: stale #274 status/next-action wording was
+  reconciled to the active #280 PR A state.
 - Accepted limitation: PR A does not prove runtime behavior; later PRs must
   convert planned rows into executable evidence.
-

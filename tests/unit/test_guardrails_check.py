@@ -3629,6 +3629,17 @@ def test_issue280_pr_a_rejects_runtime_completion_claim() -> None:
     assert guardrails.ISSUE_280_RUNTIME_COMPLETION_FAILURE in failures
 
 
+def test_issue280_pr_a_rejects_runtime_completion_claim_in_visible_surface() -> None:
+    body = issue280_public_safe_pr_a_body()
+    failures = guardrails.issue_280_pr_a_failures(
+        guardrails.ISSUE_280_PR_A_BRANCH,
+        "Title says runtime implementation complete\n" + body,
+        body,
+    )
+
+    assert guardrails.ISSUE_280_RUNTIME_COMPLETION_FAILURE in failures
+
+
 def test_issue280_pr_a_requires_public_safe_non_goals() -> None:
     body = issue280_public_safe_pr_a_body().replace("No paid spend.\n", "")
     failures = guardrails.issue_280_pr_a_failures(

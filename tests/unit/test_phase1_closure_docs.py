@@ -7929,6 +7929,40 @@ def test_issue280_matrix_requires_planned_executable_evidence(monkeypatch: Any) 
     assert any("must include planned executable evidence" in failure for failure in failures)
 
 
+def test_issue280_matrix_requires_concrete_input_limits(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["sections"][1]["rows"][0]["plannedInputBounds"].pop("maxBytes")
+    matrix["sections"][1]["rows"][0]["requirement"] = matrix["sections"][1]["rows"][0]["requirement"].replace(
+        "maxBytes 20000 per document, ",
+        "",
+    )
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert any("missing concrete input limit marker: maxbytes" in failure for failure in failures)
+
+
+def test_issue280_matrix_requires_planned_error_taxonomy_codes(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["sections"][9]["rows"][0]["plannedErrorTaxonomy"] = [
+        item
+        for item in matrix["sections"][9]["rows"][0]["plannedErrorTaxonomy"]
+        if item["code"] != "ISSUE280_INTERNAL_ERROR_SAFE"
+    ]
+    matrix["sections"][9]["rows"][0]["requirement"] = matrix["sections"][9]["rows"][0]["requirement"].replace(
+        ", and ISSUE280_INTERNAL_ERROR_SAFE/500",
+        "",
+    )
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert any("missing planned error taxonomy code: ISSUE280_INTERNAL_ERROR_SAFE" in failure for failure in failures)
+
+
 def test_issue280_red_evidence_rejects_permanent_failing_tests(monkeypatch: Any) -> None:
     plan = json.loads(phase1.read(phase1.ISSUE_280_RED_EVIDENCE_PATH))
     plan["permanentFailingTestsCommitted"] = True

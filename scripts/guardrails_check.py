@@ -1828,6 +1828,7 @@ def issue_280_pr_a_failures(head_ref: str | None, visible_issue_text: str, body:
     if head_ref != ISSUE_280_PR_A_BRANCH:
         return []
     normalized_body = re.sub(r"[^a-z0-9#]+", " ", body.lower())
+    normalized_visible_issue_text = re.sub(r"[^a-z0-9#]+", " ", visible_issue_text.lower())
     found: list[str] = []
     if re.search(closing_issue_pattern("280"), visible_issue_text):
         found.append(ISSUE_280_REFERENCE_ONLY_FAILURE)
@@ -1839,7 +1840,7 @@ def issue_280_pr_a_failures(head_ref: str | None, visible_issue_text: str, body:
         "issue #280 complete",
         "close #280",
     )
-    if any(term in normalized_body for term in runtime_completion_terms):
+    if any(term in normalized_visible_issue_text for term in runtime_completion_terms):
         found.append(ISSUE_280_RUNTIME_COMPLETION_FAILURE)
     required_boundary_terms = (
         "pr a does not implement runtime product behavior",
