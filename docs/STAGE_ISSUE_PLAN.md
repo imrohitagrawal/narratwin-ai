@@ -1756,6 +1756,32 @@ production durability/restore implementation, provider/media paths, or issue
 human-reviewed, expiring exception and must not become a general dependency
 override or advisory suppression.
 
+`phase-1-closure-process-289-security-postcss-stage8-gate-unblock` is reserved
+for issue `#289`, the combined security unblock for the PostCSS audit advisory
+and inherited Stage 8 quality-marker drift. It intentionally combines the
+dependency metadata and checker/documentation repair because draft PRs `#286`
+and `#288` are circularly blocked by required CI when kept separate. It may
+touch only:
+
+- `docs/governance/preflights/issue-289.json`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/ADR/0037-postcss-audit-remediation.md`
+- `docs/TRACEABILITY.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `frontend/package.json`
+- `frontend/package-lock.json`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `scripts/quality/check_stage8_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+- `tests/unit/test_stage8_quality_gate.py`
+
+`phase-1-closure-process-289-security-postcss-stage8-gate-unblock` must not
+touch PR `#284`, backend or frontend product behavior, provider/media paths,
+hosted/public launch, paid spend, production-readiness claims, or
+issue-closing wording for `#249` and `#280`.
+
 `phase-1-closure-141-*` is reserved for issue `#141`, the architecture and
 ownership prerequisite for the production-like durability readiness sequence.
 It chooses a platform and handoff contract for issues `#142` through `#149`, but
