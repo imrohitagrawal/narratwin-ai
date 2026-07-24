@@ -719,7 +719,7 @@ ATLAS_OUTPUT_FIXTURE_TRANSLATIONS = {
     ),
 }
 HELIO_MEDIA_TRANSLATED_SEGMENT_TEXT = {
-    "es": "Para reclutadores, Helio Media MEDIA-SENTINEL-CP4 es un estudio local ficticio de incorporación para equipos de operaciones de campo.",
+    "es": "Helio Media MEDIA-SENTINEL-CP4 es un estudio local ficticio de incorporación para equipos de operaciones de campo.",
 }
 
 

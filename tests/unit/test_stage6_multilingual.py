@@ -1947,7 +1947,12 @@ def test_helio_media_fixture_preserves_explicit_recruiter_audience() -> None:
 
     assert result.status == "COMPLETED"
     assert result.transcript_correctness.validation_status == "PASSED"
-    assert result.translated_script_text.startswith("Para reclutadores")
+    assert (
+        result.translated_script_text
+        == "Para reclutadores, Helio Media MEDIA-SENTINEL-CP4 es un estudio local ficticio "
+        "de incorporación para equipos de operaciones de campo. [1]"
+    )
+    assert result.translated_script_text.count("Para reclutadores") == 1
     assert "MEDIA-SENTINEL-CP4" in result.translated_script_text
 
 
