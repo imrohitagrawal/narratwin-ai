@@ -1,0 +1,47 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 287,
+  "branch": "phase-1-closure-process-287-stage8-quality-gate-drift",
+  "objective": "Repair inherited Stage 8 quality-gate marker drift that blocks unrelated dependency-security remediation PR #286. Positive claims: STAGE8-MARKER-001 keeps the Stage 8 container scan script aligned with the documented Docker Scout fallback by including the docker scout cves command form and critical/high severity filter; STAGE8-DOC-001 keeps Stage 6/8 documentation aligned with the executable checker by recording the exact voice-manifest JSON marker; STAGE8-SCOPE-001 keeps the fix separate from PR #286 dependency metadata and does not touch PR #284. Negative invariants: no product runtime code, no frontend dependency metadata, no Next downgrade, no provider setup, no paid spend, no issue-closing keywords for #249 or #280, no PR #284 mutation, no broad Stage 8 rework, and no production-readiness claim. Evidence must include old-behavior reproduction of the three marker failures, focused checker validation, make quality, make ci, forced pull-request guardrails, and human-only latest-head approval/merge-message review before merge.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-287.json",
+      "scripts/ci/docker-image-scan.sh",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "tests/unit/test_stage8_quality_gate.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-287.json",
+      "scripts/ci/docker-image-scan.sh",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "tests/unit/test_stage8_quality_gate.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "frontend/src/",
+      "frontend/tests/",
+      ".github/workflows/",
+      "docker-compose.yml",
+      "provider SDKs",
+      "provider keys",
+      "runtime product code",
+      "real provider calls",
+      "paid spend",
+      "hosted deployment",
+      "public URL",
+      "cloned identity",
+      "real media generation",
+      "public distribution",
+      "production-readiness claims",
+      "PR #284 branch mutation",
+      "issue-closing keywords for #249 or #280"
+    ]
+  }
+}
