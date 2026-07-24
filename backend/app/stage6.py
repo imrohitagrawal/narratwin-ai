@@ -432,7 +432,7 @@ DEMO_AUDIENCE_PREFIX_TEXT = {
     },
     "de": {
         "recruiters": "Für Personalvermittler",
-        "hiring managers": "Für Hiring Manager",
+        "hiring managers": "Für Einstellungsmanager",
         "engineers": "Für Ingenieure",
         "product leaders": "Für Produktverantwortliche",
         "beginners": "Für Einsteiger",
@@ -468,10 +468,10 @@ DEMO_AUDIENCE_PREFIX_TEXT = {
     },
     "nl": {
         "recruiters": "Voor wervers",
-        "hiring managers": "Voor hiring managers",
-        "engineers": "Voor engineers",
+        "hiring managers": "Voor wervingsmanagers",
+        "engineers": "Voor ingenieurs",
         "product leaders": "Voor productleiders",
-        "beginners": "Voor beginners",
+        "beginners": "Voor beginnende gebruikers",
         "global viewers": "Voor wereldwijde kijkers",
         "customers": "Voor klanten",
     },
@@ -603,12 +603,12 @@ DEMO_AUDIENCE_PREFIX_TEXT = {
     },
     "fil": {
         "recruiters": "Para sa mga tagapagrekrut",
-        "hiring managers": "Para sa mga hiring manager",
-        "engineers": "Para sa mga engineer",
+        "hiring managers": "Para sa mga tagapamahala sa pagkuha",
+        "engineers": "Para sa mga inhinyero",
         "product leaders": "Para sa mga lider ng produkto",
         "beginners": "Para sa mga baguhan",
         "global viewers": "Para sa pandaigdigang manonood",
-        "customers": "Para sa mga customer",
+        "customers": "Para sa mga kliyente",
     },
     "th": {
         "recruiters": "สำหรับผู้สรรหาบุคลากร",
@@ -2451,17 +2451,17 @@ def translate_demo_segment_text(
 
 
 def local_demo_translated_segment_fixture(*, source_segment: str, target_language: str) -> str | None:
-    if "Atlas Output" in source_segment and "OUTPUT-SENTINEL-CP2" in source_segment:
+    normalized_source = normalize_local_demo_fixture_source_segment(source_segment)
+    source_body = local_demo_fixture_source_body(normalized_source)
+    if "Atlas Output" in normalized_source and "OUTPUT-SENTINEL-CP2" in normalized_source:
         return ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT.get(target_language)
-    if "Helio Media" in source_segment and "MEDIA-SENTINEL-CP4" in source_segment:
+    if "Helio Media" in normalized_source and "MEDIA-SENTINEL-CP4" in normalized_source:
         return HELIO_MEDIA_TRANSLATED_SEGMENT_TEXT.get(target_language)
-    if (
-        "NarraTwin AI" in source_segment
-        and (
-            "turns approved project knowledge into grounded walkthrough scripts" in source_segment
-            or "creates grounded walkthrough scripts" in source_segment
-        )
-    ):
+    if source_body in {
+        "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.",
+        "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts with source chunk citations.",
+        "NarraTwin AI creates grounded walkthrough scripts.",
+    }:
         base_text = DEMO_TRANSLATED_SEGMENT_TEXT.get(target_language)
         if base_text is None:
             return None
@@ -2470,37 +2470,62 @@ def local_demo_translated_segment_fixture(*, source_segment: str, target_languag
             target_language=target_language,
         )
         return f"{audience_prefix}, {base_text}" if audience_prefix else base_text
-    if "supports recruiters, hiring managers, engineers, product leaders, customers" in source_segment:
+    if (
+        target_language == "es"
+        and source_body
+        in {
+            "NarraTwin AI creates grounded walkthrough scripts. FAST_SUCCESS",
+            "NarraTwin AI creates grounded walkthrough scripts. SLOW_FAILURE",
+        }
+    ):
+        marker = source_body.rsplit(" ", maxsplit=1)[-1]
+        base_text = DEMO_TRANSLATED_SEGMENT_TEXT.get(target_language)
+        if base_text is None:
+            return None
+        return f"{base_text} {marker}"
+    if (
+        source_body
+        == "It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations."
+    ):
         return local_demo_with_audience_prefix(
             source_segment=source_segment,
             target_language=target_language,
             base_text=DEMO_AUDIENCE_SUPPORT_TEXT.get(target_language),
         )
-    if "supports recruiter and engineering audiences with audience-aware explanations" in source_segment:
+    if source_body == "It supports recruiter and engineering audiences with audience-aware explanations.":
         return local_demo_with_audience_prefix(
             source_segment=source_segment,
             target_language=target_language,
             base_text=DEMO_RECRUITER_ENGINEERING_SUPPORT_TEXT.get(target_language),
         )
-    if "local demo uses mock local llm, translation, voice, and avatar adapters" in source_segment.lower():
+    if source_body == "The local demo uses mock local LLM, translation, voice, and avatar adapters for deterministic review.":
         return local_demo_with_audience_prefix(
             source_segment=source_segment,
             target_language=target_language,
             base_text=DEMO_LOCAL_PROVIDER_TEXT.get(target_language),
         )
-    if "Stage 4 slice uses a mock local LLM and mock local embeddings" in source_segment:
+    if source_body == "The Stage 4 slice uses a mock local LLM and mock local embeddings for deterministic tests.":
         return local_demo_with_audience_prefix(
             source_segment=source_segment,
             target_language=target_language,
             base_text=DEMO_STAGE4_SLICE_TEXT.get(target_language),
         )
-    if "Every generated walkthrough claim must cite retrieved source chunks" in source_segment:
+    if source_body == "Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.":
         return local_demo_with_audience_prefix(
             source_segment=source_segment,
             target_language=target_language,
             base_text=DEMO_CITATION_REQUIREMENT_TEXT.get(target_language),
         )
     return None
+
+
+def normalize_local_demo_fixture_source_segment(source_segment: str) -> str:
+    normalized = " ".join(source_segment.strip().split())
+    return re.sub(r"(?:\s*\[\d+\])+$", "", normalized).strip()
+
+
+def local_demo_fixture_source_body(source_segment: str) -> str:
+    return re.sub(r"^For [^,]+,\s+", "", source_segment).strip()
 
 
 def local_demo_with_audience_prefix(*, source_segment: str, target_language: str, base_text: str | None) -> str | None:

@@ -219,6 +219,224 @@ GLOBAL_VIEWERS_MANUAL_REVIEW_EXPECTED_TARGET_SEGMENTS = {
         "Untuk penonton global, Setiap dakwaan panduan yang dijana mesti memetik cebisan sumber yang diperoleh daripada pengetahuan yang diluluskan. [4]",
     ),
 }
+EXPECTED_AUDIENCE_PREFIXES_BY_LANGUAGE = {
+    "hi": {
+        "recruiters": "भर्ती विशेषज्ञों के लिए",
+        "hiring managers": "नियुक्ति प्रबंधकों के लिए",
+        "engineers": "अभियंताओं के लिए",
+        "product leaders": "उत्पाद नेतृत्वकर्ताओं के लिए",
+        "beginners": "नए उपयोगकर्ताओं के लिए",
+        "global viewers": "वैश्विक दर्शकों के लिए",
+        "customers": "ग्राहकों के लिए",
+    },
+    "es": {
+        "recruiters": "Para reclutadores",
+        "hiring managers": "Para responsables de contratación",
+        "engineers": "Para ingenieros",
+        "product leaders": "Para líderes de producto",
+        "beginners": "Para principiantes",
+        "global viewers": "Para audiencias globales",
+        "customers": "Para clientes",
+    },
+    "de": {
+        "recruiters": "Für Personalvermittler",
+        "hiring managers": "Für Einstellungsmanager",
+        "engineers": "Für Ingenieure",
+        "product leaders": "Für Produktverantwortliche",
+        "beginners": "Für Einsteiger",
+        "global viewers": "Für globale Zuschauer",
+        "customers": "Für Kunden",
+    },
+    "fr": {
+        "recruiters": "Pour les recruteurs",
+        "hiring managers": "Pour les responsables du recrutement",
+        "engineers": "Pour les ingénieurs",
+        "product leaders": "Pour les responsables produit",
+        "beginners": "Pour les débutants",
+        "global viewers": "Pour les publics internationaux",
+        "customers": "Pour les clients",
+    },
+    "pt-BR": {
+        "recruiters": "Para recrutadores",
+        "hiring managers": "Para gestores de contratação",
+        "engineers": "Para engenheiros",
+        "product leaders": "Para líderes de produto",
+        "beginners": "Para iniciantes",
+        "global viewers": "Para públicos globais",
+        "customers": "Para clientes",
+    },
+    "it": {
+        "recruiters": "Per i selezionatori",
+        "hiring managers": "Per i responsabili delle assunzioni",
+        "engineers": "Per gli ingegneri",
+        "product leaders": "Per i responsabili di prodotto",
+        "beginners": "Per i principianti",
+        "global viewers": "Per il pubblico globale",
+        "customers": "Per i clienti",
+    },
+    "nl": {
+        "recruiters": "Voor wervers",
+        "hiring managers": "Voor wervingsmanagers",
+        "engineers": "Voor ingenieurs",
+        "product leaders": "Voor productleiders",
+        "beginners": "Voor beginnende gebruikers",
+        "global viewers": "Voor wereldwijde kijkers",
+        "customers": "Voor klanten",
+    },
+    "pl": {
+        "recruiters": "Dla rekruterów",
+        "hiring managers": "Dla menedżerów zatrudniających",
+        "engineers": "Dla inżynierów",
+        "product leaders": "Dla liderów produktu",
+        "beginners": "Dla początkujących",
+        "global viewers": "Dla odbiorców globalnych",
+        "customers": "Dla klientów",
+    },
+    "uk": {
+        "recruiters": "Для рекрутерів",
+        "hiring managers": "Для менеджерів з найму",
+        "engineers": "Для інженерів",
+        "product leaders": "Для продуктових лідерів",
+        "beginners": "Для початківців",
+        "global viewers": "Для глобальних глядачів",
+        "customers": "Для клієнтів",
+    },
+    "ru": {
+        "recruiters": "Для рекрутеров",
+        "hiring managers": "Для менеджеров по найму",
+        "engineers": "Для инженеров",
+        "product leaders": "Для продуктовых лидеров",
+        "beginners": "Для начинающих",
+        "global viewers": "Для глобальных зрителей",
+        "customers": "Для клиентов",
+    },
+    "zh-Hans": {
+        "recruiters": "面向招聘人员",
+        "hiring managers": "面向招聘经理",
+        "engineers": "面向工程师",
+        "product leaders": "面向产品负责人",
+        "beginners": "面向初学者",
+        "global viewers": "面向全球观众",
+        "customers": "面向客户",
+    },
+    "zh-Hant": {
+        "recruiters": "面向招募人員",
+        "hiring managers": "面向招募經理",
+        "engineers": "面向工程師",
+        "product leaders": "面向產品負責人",
+        "beginners": "面向初學者",
+        "global viewers": "面向全球觀眾",
+        "customers": "面向客戶",
+    },
+    "ja": {
+        "recruiters": "採用担当者向けに",
+        "hiring managers": "採用責任者向けに",
+        "engineers": "エンジニア向けに",
+        "product leaders": "プロダクトリーダー向けに",
+        "beginners": "初心者向けに",
+        "global viewers": "世界中の視聴者向けに",
+        "customers": "顧客向けに",
+    },
+    "ko": {
+        "recruiters": "채용 담당자를 위해",
+        "hiring managers": "채용 관리자를 위해",
+        "engineers": "엔지니어를 위해",
+        "product leaders": "제품 리더를 위해",
+        "beginners": "초보자를 위해",
+        "global viewers": "전 세계 시청자를 위해",
+        "customers": "고객을 위해",
+    },
+    "ar": {
+        "recruiters": "لمسؤولي التوظيف",
+        "hiring managers": "لمديري التوظيف",
+        "engineers": "للمهندسين",
+        "product leaders": "لقادة المنتج",
+        "beginners": "للمبتدئين",
+        "global viewers": "للمشاهدين العالميين",
+        "customers": "للعملاء",
+    },
+    "arz": {
+        "recruiters": "لمسؤولي التوظيف",
+        "hiring managers": "لمديري التوظيف",
+        "engineers": "للمهندسين",
+        "product leaders": "لقادة المنتج",
+        "beginners": "للمبتدئين",
+        "global viewers": "للمشاهدين العالميين",
+        "customers": "للعملاء",
+    },
+    "he": {
+        "recruiters": "עבור מגייסים",
+        "hiring managers": "עבור מנהלי גיוס",
+        "engineers": "עבור מהנדסים",
+        "product leaders": "עבור מובילי מוצר",
+        "beginners": "עבור מתחילים",
+        "global viewers": "עבור צופים גלובליים",
+        "customers": "עבור לקוחות",
+    },
+    "fa": {
+        "recruiters": "برای جذب‌کنندگان نیرو",
+        "hiring managers": "برای مدیران استخدام",
+        "engineers": "برای مهندسان",
+        "product leaders": "برای رهبران محصول",
+        "beginners": "برای کاربران تازه‌کار",
+        "global viewers": "برای مخاطبان جهانی",
+        "customers": "برای مشتریان",
+    },
+    "tr": {
+        "recruiters": "İşe alım uzmanları için",
+        "hiring managers": "İşe alım yöneticileri için",
+        "engineers": "Mühendisler için",
+        "product leaders": "Ürün liderleri için",
+        "beginners": "Yeni başlayanlar için",
+        "global viewers": "Küresel izleyiciler için",
+        "customers": "Müşteriler için",
+    },
+    "vi": {
+        "recruiters": "Dành cho nhà tuyển dụng",
+        "hiring managers": "Dành cho quản lý tuyển dụng",
+        "engineers": "Dành cho kỹ sư",
+        "product leaders": "Dành cho lãnh đạo sản phẩm",
+        "beginners": "Dành cho người mới",
+        "global viewers": "Dành cho khán giả toàn cầu",
+        "customers": "Dành cho khách hàng",
+    },
+    "id": {
+        "recruiters": "Untuk perekrut",
+        "hiring managers": "Untuk manajer perekrutan",
+        "engineers": "Untuk insinyur",
+        "product leaders": "Untuk pemimpin produk",
+        "beginners": "Untuk pemula",
+        "global viewers": "Untuk pemirsa global",
+        "customers": "Untuk pelanggan",
+    },
+    "fil": {
+        "recruiters": "Para sa mga tagapagrekrut",
+        "hiring managers": "Para sa mga tagapamahala sa pagkuha",
+        "engineers": "Para sa mga inhinyero",
+        "product leaders": "Para sa mga lider ng produkto",
+        "beginners": "Para sa mga baguhan",
+        "global viewers": "Para sa pandaigdigang manonood",
+        "customers": "Para sa mga kliyente",
+    },
+    "th": {
+        "recruiters": "สำหรับผู้สรรหาบุคลากร",
+        "hiring managers": "สำหรับผู้จัดการฝ่ายสรรหา",
+        "engineers": "สำหรับวิศวกร",
+        "product leaders": "สำหรับผู้นำผลิตภัณฑ์",
+        "beginners": "สำหรับผู้เริ่มต้น",
+        "global viewers": "สำหรับผู้ชมทั่วโลก",
+        "customers": "สำหรับลูกค้า",
+    },
+    "ms": {
+        "recruiters": "Untuk perekrut",
+        "hiring managers": "Untuk pengurus pengambilan pekerja",
+        "engineers": "Untuk jurutera",
+        "product leaders": "Untuk pemimpin produk",
+        "beginners": "Untuk pemula",
+        "global viewers": "Untuk penonton global",
+        "customers": "Untuk pelanggan",
+    },
+}
 
 FORBIDDEN_RAW_SOURCE_PHRASES_BY_LANGUAGE = {
     language_tag: (
@@ -507,6 +725,33 @@ def test_hindi_local_demo_translation_preserves_selected_product_audience(
     assert result.translated_script_text.startswith(expected_hindi_prefix)
     assert forbidden_hindi_prefix not in result.translated_script_text
     assert "ग्राउंडेड वॉकथ्रू स्क्रिप्ट" not in result.translated_script_text
+
+
+@pytest.mark.parametrize("language_tag", sorted(EXPECTED_AUDIENCE_PREFIXES_BY_LANGUAGE))
+def test_local_demo_translation_preserves_selected_audience_prefixes_without_english_leakage(
+    language_tag: str,
+) -> None:
+    service = create_stage6_service()
+
+    for source_audience, expected_prefix in EXPECTED_AUDIENCE_PREFIXES_BY_LANGUAGE[language_tag].items():
+        source_script = (
+            f"For {source_audience}, NarraTwin AI turns approved project knowledge "
+            "into grounded walkthrough scripts. [1]"
+        )
+
+        result = service.generate_multilingual_walkthrough(
+            source_script=source_script,
+            target_language=language_tag,
+            glossary_terms=["NarraTwin AI"],
+            requested_voice_provider="mock",
+            **passed_eval_kwargs(),
+        )
+
+        assert result.status == "COMPLETED"
+        assert result.transcript_correctness.validation_status == "PASSED"
+        assert result.translated_script_text.startswith(expected_prefix)
+        if language_tag != "en":
+            assert f"For {source_audience}" not in result.translated_script_text
 
 
 def test_hindi_local_demo_translation_supports_cp8_stage4_sentence_with_audience_prefix() -> None:
@@ -1436,3 +1681,42 @@ def test_local_demo_translation_refuses_arbitrary_cited_source_without_fixture()
 
     assert exc.value.status_code == 422
     assert exc.value.code == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"
+
+
+@pytest.mark.parametrize("language_tag", [tag for tag in PRIORITY1_LANGUAGE_TAGS if tag != "en"])
+def test_local_demo_translation_refuses_fixture_substring_with_extra_source_claim(
+    language_tag: str,
+) -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script=(
+                "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts "
+                "for a totally new arbitrary review sentence. [1]"
+            ),
+            target_language=language_tag,
+            glossary_terms=["NarraTwin AI"],
+            requested_voice_provider="mock",
+            **passed_eval_kwargs(),
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"
+
+
+def test_local_demo_translation_accepts_exact_browser_source_chunk_citation_fixture() -> None:
+    result = create_stage6_service().generate_multilingual_walkthrough(
+        source_script=(
+            "For recruiters, NarraTwin AI turns approved project knowledge into "
+            "grounded walkthrough scripts with source chunk citations. [1]"
+        ),
+        target_language="fr",
+        glossary_terms=["NarraTwin AI"],
+        requested_voice_provider="mock",
+        **passed_eval_kwargs(),
+    )
+
+    assert result.status == "COMPLETED"
+    assert result.transcript_correctness.validation_status == "PASSED"
+    assert result.translated_script_text == GOLDEN_RECRUITER_NARRATWIN_TRANSLATIONS["fr"]
