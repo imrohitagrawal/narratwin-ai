@@ -49,8 +49,23 @@ Use it to answer:
   PR `#273` merged the eighth Checkpoint 3A child implementation checkpoint
   for executable real-browser E2E only at
   `0f737c564f9245b66640988573ac04f4432e06d5`.
-  These child checkpoints complete the currently listed Checkpoint 3A
-  executable acceptance probe set. Issue `#274` is satisfied by this PR when
+  Issue `#276` is the Checkpoint 3A repair child for major-market multilingual
+  output correctness. This branch updates the local/mock Stage 6 and browser UI
+  path so Checkpoint 3A output-correctness proves source English, native-script
+  target transcript, English reference/back-translation, citations,
+  source/evaluation/context/claim-support binding, translated-script artifact
+  parity with the full trilingual transcript, Priority 1 language coverage, and
+  honest Priority 2 planned/unsupported behavior before `COMPLETED` is
+  accepted. The local/demo boundary is product-faithful for the
+  generated walkthrough product path: supported controlled scripts must preserve
+  selected audience meaning, full generated-script segment coverage, small
+  approved local/demo source documents are expanded to all approved claim chunks
+  within retrieval top-k, and reviewed semantic golden translations include the
+  original NarraTwin manual-review document; native script alone is not
+  sufficient evidence. Raw uploaded knowledge-document translation as a separate
+  API surface remains outside the current Stage 6 product boundary unless a
+  future issue explicitly implements and tests that behavior. Issue `#274` is
+  satisfied by this PR when
   merged as the public-safe Checkpoint 3B consent/provenance planning gate only:
   consent/provenance planning, acceptance contracts, risk boundaries, and future
   issue sequencing. Issue `#249` remains open as the public Checkpoint 3
@@ -215,7 +230,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | issue #249 / checkpoint3b-pr1-consent-provenance-planning | checkpoint3b-pr1-satisfied-by-this-pr | checkpoint3b-pr1-satisfied-by-this-pr | Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the currently listed Checkpoint 3A executable acceptance probe set through CP1-CP8. PR #273 merged the eighth Checkpoint 3A child implementation checkpoint at 0f737c564f9245b66640988573ac04f4432e06d5, and issue #269 is closed. Issue #274 is satisfied by this PR when merged as the public-safe Checkpoint 3B consent/provenance planning gate only: consent/provenance planning, acceptance contracts, risk boundaries, and future issue sequencing. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims. |
+| SSV1-NEXT | next-action | issue #276 / c3a-r1-major-market-multilingual-output-correctness | c3a-r1-satisfied-by-this-pr | c3a-r1-satisfied-by-this-pr | Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is satisfied by this PR when merged as a Checkpoint 3A repair child for major-market multilingual output correctness: backend-driven language catalog, Hindi in Priority 1, Priority 1 exhaustive local/mock fixture translations, independent semantic golden translations for supported controlled scripts and the original NarraTwin manual-review document, selected-audience preservation, full generated-script segment coverage through small approved-document expansion within retrieval top-k, native-script validation, structured source/target/reference transcript segments, citation/source/eval/context/claim-support binding, artifact parity, positive and false-positive mutation coverage, coverage matrix/summary artifacts, UI catalog rendering, and visible transcript artifact validation. Local/demo is not a reduced product surface for supported controlled generated walkthrough scripts, but raw uploaded knowledge-document translation as a separate API surface remains outside the current Stage 6 product boundary unless a future issue implements it. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |

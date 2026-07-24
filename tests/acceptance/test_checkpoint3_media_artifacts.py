@@ -251,6 +251,12 @@ def assert_preserves_grounded_runtime_text(text: str, *, run: dict[str, Any]) ->
     assert normalized_sentence in normalized_text
 
 
+def assert_translated_runtime_artifact_text(text: str) -> None:
+    assert "MEDIA-SENTINEL-CP4" in text
+    assert "[1]" in text
+    assert "Para reclutadores, Helio Media" in text
+
+
 def assert_stage6_media_artifacts(multilingual: dict[str, Any], *, run: dict[str, Any]) -> None:
     assert multilingual["status"] == "COMPLETED"
     assert multilingual["sourceRunId"] == run["runId"]
@@ -291,13 +297,27 @@ def assert_stage6_media_artifacts(multilingual: dict[str, Any], *, run: dict[str
         expected_mime="application/json",
         expected_suffix=".json",
     )
-    assert translated == multilingual["translatedScriptText"]
+    assert "# Multilingual transcript" in translated
+    assert f"Target language: {multilingual['targetLanguage']}" in translated
+    assert f"Script: {multilingual['transcriptCorrectness']['script']}" in translated
+    assert f"Direction: {multilingual['transcriptCorrectness']['direction']}" in translated
+    assert translated != multilingual["translatedScriptText"]
+    for segment in multilingual["transcriptSegments"]:
+        assert f"## {segment['segmentId']}" in translated
+        assert f"Source English: {segment['sourceText']}" in translated
+        assert f"Target ({segment['targetLanguage']}): {segment['targetText']}" in translated
+        assert f"English reference: {segment['englishReferenceText']}" in translated
+        assert f"Citations: {', '.join(segment['citationMarkers'])}" in translated
+        assert f"Context refs: {', '.join(segment['contextRefIds'])}" in translated
+        assert f"Claim support ids: {', '.join(segment['claimSupportIds'])}" in translated
+        assert f"Source run id: {segment['sourceRunId']}" in translated
+        assert f"Evaluation id: {segment['evaluationId']}" in translated
     assert subtitles == multilingual["subtitlesText"]
     voice_manifest = json.loads(voice_manifest_text)
     metadata = json.loads(metadata_text)
     assert_preserves_grounded_runtime_text(multilingual["sourceScriptText"], run=run)
-    assert_preserves_grounded_runtime_text(translated, run=run)
-    assert_preserves_grounded_runtime_text(subtitles, run=run)
+    assert_translated_runtime_artifact_text(translated)
+    assert_translated_runtime_artifact_text(subtitles)
     assert voice_manifest["provider"] == "mock"
     assert voice_manifest["providerMode"] == "LOCAL"
     assert voice_manifest["textChecksum"] == checksum_text(multilingual["translatedScriptText"])
@@ -305,6 +325,19 @@ def assert_stage6_media_artifacts(multilingual: dict[str, Any], *, run: dict[str
     assert metadata["sourceRunId"] == run["runId"]
     assert metadata["sourceEvaluationChecksum"] == trace["sourceEvaluationChecksum"]
     assert metadata["sourceClaimSupportIds"] == trace["sourceClaimSupportIds"]
+    assert metadata["transcriptSegments"] == multilingual["transcriptSegments"]
+    assert metadata["transcriptCorrectness"] == multilingual["transcriptCorrectness"]
+    assert re.sub(r"\s+", " ", metadata["transcriptSegments"][0]["sourceText"]) == re.sub(
+        r"\s+",
+        " ",
+        run["acceptedScriptText"],
+    )
+    assert metadata["transcriptSegments"][0]["targetText"] in translated
+    assert re.sub(r"\s+", " ", metadata["transcriptSegments"][0]["englishReferenceText"]) == re.sub(
+        r"\s+",
+        " ",
+        run["acceptedScriptText"],
+    )
     assert metadata["artifacts"]["translatedScriptChecksum"] == multilingual["artifacts"]["translatedScript"]["checksum"]
     assert metadata["artifacts"]["subtitlesChecksum"] == multilingual["artifacts"]["subtitles"]["checksum"]
     assert metadata["artifacts"]["voiceManifestChecksum"] == multilingual["artifacts"]["voiceManifest"]["checksum"]
@@ -349,7 +382,7 @@ def assert_stage7_media_artifacts(avatar: dict[str, Any], *, run: dict[str, Any]
         expected_suffix=".json",
     )
     assert "<script" not in demo_html.lower()
-    assert_preserves_grounded_runtime_text(demo_html, run=run)
+    assert_translated_runtime_artifact_text(demo_html)
     manifest = json.loads(manifest_text)
     placeholder = json.loads(placeholder_text)
     assert manifest["source"]["runId"] == run["runId"]

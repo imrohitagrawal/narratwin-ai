@@ -17,7 +17,7 @@ def test_chunk_document_preserves_heading_and_line_metadata() -> None:
 
     assert [chunk.chunk_index for chunk in chunks] == [0, 1]
     assert chunks[0].heading_path == ["Overview"]
-    assert chunks[0].line_start == 3
+    assert chunks[0].line_start == 5
     assert chunks[0].line_end >= chunks[0].line_start
     assert "grounded scripts" in chunks[0].text
     assert chunks[1].heading_path == ["Overview", "Safety"]
@@ -57,7 +57,7 @@ def test_chunk_document_splits_single_long_line_with_overlap() -> None:
     assert "word8" in chunks[1].text
 
 
-def test_chunk_document_splits_single_long_heading() -> None:
+def test_chunk_document_keeps_heading_only_documents_out_of_claim_chunks() -> None:
     heading = "# " + " ".join(f"heading{i}" for i in range(25))
 
     chunks = chunk_document(
@@ -70,9 +70,7 @@ def test_chunk_document_splits_single_long_heading() -> None:
         overlap_tokens=2,
     )
 
-    assert len(chunks) == 3
-    assert all(chunk.token_count <= 10 for chunk in chunks)
-    assert all(chunk.heading_path for chunk in chunks)
+    assert chunks == []
 
 
 def test_chunk_document_enforces_max_chunks_during_construction() -> None:

@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import styles from "./page.module.css";
 
@@ -54,6 +54,14 @@ type MultilingualWalkthrough = {
   targetLanguage: string;
   translatedScriptText: string;
   subtitlesText: string;
+  transcriptSegments: TranscriptSegment[];
+  transcriptCorrectness: {
+    validationStatus: "PASSED";
+    script: string;
+    direction: "ltr" | "rtl";
+    segmentCount: number;
+    citationIndexes: number[];
+  };
   preservedTerms: string[];
   voice: {
     provider: string;
@@ -69,6 +77,7 @@ type MultilingualWalkthrough = {
     translatedScript: DownloadableArtifact;
     subtitles: DownloadableArtifact;
     voiceManifest: DownloadableArtifact;
+    metadata: DownloadableArtifact;
   };
   trace: {
     sourceContextRefIds: string[];
@@ -76,6 +85,37 @@ type MultilingualWalkthrough = {
     sourceEvaluationId: string;
     sourceEvaluationChecksum: string;
   };
+};
+
+type TranscriptSegment = {
+  segmentId: string;
+  sourceText: string;
+  targetLanguage: string;
+  targetText: string;
+  englishReferenceText: string;
+  citationMarkers: string[];
+  citationIndexes: number[];
+  contextRefIds: string[];
+  claimSupportIds: string[];
+  sourceRunId: string;
+  evaluationId: string;
+};
+
+type LanguageCatalogRecord = {
+  languageTag: string;
+  englishName: string;
+  nativeName: string;
+  script: string;
+  direction: "ltr" | "rtl";
+  marketPriority: 1 | 2;
+  regionGroup: string;
+  localDemoSupportStatus: "SUPPORTED" | "PLANNED_UNSUPPORTED_LOCAL_DEMO";
+  providerSupportStatus: "LOCAL_DEMO_FIXTURE" | "UNSUPPORTED_LOCAL_DEMO";
+  testCoverageLevel: "CHECKPOINT3A_EXHAUSTIVE" | "CATALOG_ONLY";
+};
+
+type LanguageCatalogResponse = {
+  languages: LanguageCatalogRecord[];
 };
 
 type AvatarConsent = {
@@ -158,11 +198,20 @@ type ApiErrorPayload = {
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
+const audienceOptions = [
+  { value: "RECRUITER", label: "Recruiter", promptLabel: "recruiter" },
+  { value: "HIRING_MANAGER", label: "Hiring manager", promptLabel: "hiring manager" },
+  { value: "ENGINEER", label: "Engineer", promptLabel: "engineer" },
+  { value: "PRODUCT_LEADER", label: "Product leader", promptLabel: "product leader" },
+  { value: "CUSTOMER", label: "Customer", promptLabel: "customer" },
+  { value: "BEGINNER", label: "Beginner", promptLabel: "beginner" },
+  { value: "GLOBAL_VIEWER", label: "Global viewer", promptLabel: "global viewer" },
+];
 export const defaultKnowledge = `# NarraTwin AI
 
 NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.
 
-It supports recruiter and engineering audiences with audience-aware explanations.
+It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations.
 
 The local demo uses mock local LLM, translation, voice, and avatar adapters for deterministic review.
 
@@ -184,6 +233,9 @@ const safeApiErrorCodes = new Set([
   "EVALUATION_NOT_PASSED",
   "HOSTED_DEMO_DISABLED",
   "IDEMPOTENCY_CONFLICT",
+  "LOCAL_DEMO_LANGUAGE_UNSUPPORTED",
+  "TRANSCRIPT_CORRECTNESS_FAILED",
+  "UNSUPPORTED_LANGUAGE",
   "UNSAFE_DISPLAY_TEXT",
   "UNSAFE_URL",
 ]);
@@ -265,6 +317,27 @@ export default function Home() {
   const [syntheticAvatarConsent, setSyntheticAvatarConsent] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [languageCatalog, setLanguageCatalog] = useState<LanguageCatalogRecord[]>([]);
+  const [targetLanguage, setTargetLanguage] = useState("es");
+
+  useEffect(() => {
+    let isActive = true;
+    fetch(`${apiBase}/languages`)
+      .then((response) => readJson<LanguageCatalogResponse>(response))
+      .then((catalog) => {
+        if (isActive && Array.isArray(catalog.languages) && catalog.languages.length > 0) {
+          setLanguageCatalog(catalog.languages);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setError("Language catalog could not be loaded from the local API.");
+        }
+      });
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   async function generateWalkthrough(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -273,13 +346,18 @@ export default function Home() {
     const knowledgeDocument = String(form.get("knowledgeDocument") ?? "").trim();
     const audience = String(form.get("audience") ?? "RECRUITER");
     const depth = String(form.get("depth") ?? "CONCISE");
-    const targetLanguage = String(form.get("targetLanguage") ?? "es");
+    const selectedTargetLanguage = String(form.get("targetLanguage") ?? targetLanguage);
+    const selectedLanguage = languageCatalog.find((language) => language.languageTag === selectedTargetLanguage);
+    if (!selectedLanguage || selectedLanguage.localDemoSupportStatus !== "SUPPORTED") {
+      setError("Selected language is cataloged as planned and unsupported in the local demo.");
+      return;
+    }
     const consentToUseSyntheticAvatar = syntheticAvatarConsent;
     const glossaryTerms = String(form.get("glossaryTerms") ?? "")
       .split("\n")
       .map((term) => term.trim())
       .filter(Boolean);
-    const requestSeed = checksumSeed(projectName, knowledgeDocument, audience, depth, targetLanguage);
+    const requestSeed = checksumSeed(projectName, knowledgeDocument, audience, depth, selectedTargetLanguage);
     const requestedVoiceProvider = "mock";
     const requestedAvatarProvider = "mock";
     const multilingualSeed = checksumSeed(
@@ -351,7 +429,7 @@ export default function Home() {
           requestedLanguage: "en",
           depth,
           style: "CONFIDENT",
-          prompt: "Create a concise grounded walkthrough for a recruiter.",
+          prompt: `Create a concise grounded walkthrough for a ${audiencePromptLabel(audience)}.`,
         },
         `ui-generate-${requestSeed}`,
       );
@@ -368,7 +446,7 @@ export default function Home() {
       const multilingual = await postJson<MultilingualWalkthrough>(
         `/projects/${project.projectId}/walkthrough-runs/${generated.runId}/multilingual-runs`,
         {
-          targetLanguage,
+          targetLanguage: selectedTargetLanguage,
           glossaryTerms,
           requestedVoiceProvider,
         },
@@ -415,6 +493,7 @@ export default function Home() {
   }
 
   const supports = run?.evaluation?.claimSupports ?? [];
+  const selectedLanguage = languageCatalog.find((language) => language.languageTag === targetLanguage);
   const previewScript =
     multilingualRun?.translatedScriptText ??
     run?.acceptedScriptText ??
@@ -446,8 +525,11 @@ export default function Home() {
             <label className={styles.field}>
               <span>Audience</span>
               <select name="audience" defaultValue="RECRUITER">
-                <option value="RECRUITER">Recruiter</option>
-                <option value="ENGINEER">Engineer</option>
+                {audienceOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -463,18 +545,36 @@ export default function Home() {
           <div className={styles.controls}>
             <label className={styles.field}>
               <span>Target language</span>
-              <select name="targetLanguage" defaultValue="es">
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="hi">Hindi</option>
+              <select
+                name="targetLanguage"
+                value={targetLanguage}
+                disabled={languageCatalog.length === 0}
+                onChange={(event) => setTargetLanguage(event.currentTarget.value)}
+              >
+                {languageCatalog.map((language) => (
+                  <option
+                    key={language.languageTag}
+                    value={language.languageTag}
+                    disabled={language.localDemoSupportStatus !== "SUPPORTED"}
+                  >
+                    {languageOptionLabel(language)}
+                  </option>
+                ))}
               </select>
+              <small className={styles.supportStatus}>
+                {selectedLanguage
+                  ? `${selectedLanguage.script}, ${selectedLanguage.direction.toUpperCase()}, ${
+                      selectedLanguage.localDemoSupportStatus === "SUPPORTED" ? "Local demo supported" : "Planned"
+                    }`
+                  : "Language catalog unavailable"}
+              </small>
             </label>
 
             <label className={styles.field}>
               <span>Glossary terms</span>
               <textarea
                 name="glossaryTerms"
-                defaultValue={"NarraTwin AI\nproject knowledge\nsource chunks"}
+                defaultValue={"NarraTwin AI"}
                 rows={4}
               />
             </label>
@@ -490,7 +590,11 @@ export default function Home() {
             <span>Synthetic avatar consent: local AI presenter, no cloned face or voice</span>
           </label>
 
-          <button className={styles.primaryAction} type="submit" disabled={isGenerating || !syntheticAvatarConsent}>
+          <button
+            className={styles.primaryAction}
+            type="submit"
+            disabled={isGenerating || !syntheticAvatarConsent || languageCatalog.length === 0}
+          >
             {isGenerating ? "Generating" : "Generate avatar demo export"}
           </button>
         </form>
@@ -506,9 +610,9 @@ export default function Home() {
             <h2 id="result-title">Walkthrough script</h2>
             <span className={styles.badge}>{multilingualRun?.status ?? run?.status ?? "READY"}</span>
           </div>
-          <p>
-            {previewScript}
-          </p>
+          {multilingualRun?.transcriptSegments?.length
+            ? renderTranscriptSegments(multilingualRun.transcriptSegments, multilingualRun.transcriptCorrectness.direction)
+            : <p>{previewScript}</p>}
           <div className={styles.artifactActions} aria-label="Downloadable artifacts">
 	            {renderArtifactAction("Download script", "script", multilingualRun?.artifacts.translatedScript, artifactContext)}
 	            {renderArtifactAction("Download subtitles", "subtitles", multilingualRun?.artifacts.subtitles, artifactContext)}
@@ -516,6 +620,12 @@ export default function Home() {
 	              "Download voice manifest",
 	              "voiceManifest",
 	              multilingualRun?.artifacts.voiceManifest,
+	              artifactContext,
+	            )}
+	            {renderArtifactAction(
+	              "Download transcript metadata",
+	              "metadata",
+	              multilingualRun?.artifacts.metadata,
 	              artifactContext,
 	            )}
 	            {renderArtifactAction("Download avatar demo", "avatarDemo", avatarRender?.artifacts.demoExport, artifactContext)}
@@ -628,12 +738,13 @@ export default function Home() {
         <section className={styles.result} aria-labelledby="artifacts-title">
           <div className={styles.resultHeader}>
             <h2 id="artifacts-title">Export artifacts</h2>
-            <span className={styles.badge}>{avatarRender ? "6 artifacts" : "READY"}</span>
+            <span className={styles.badge}>{avatarRender ? "7 artifacts" : "READY"}</span>
           </div>
           <div className={styles.artifactList} aria-label="Export artifact list">
 	            {renderArtifactRow("Translated script", "script", multilingualRun?.artifacts.translatedScript, artifactContext)}
 	            {renderArtifactRow("Subtitles", "subtitles", multilingualRun?.artifacts.subtitles, artifactContext)}
 	            {renderArtifactRow("Voice manifest", "voiceManifest", multilingualRun?.artifacts.voiceManifest, artifactContext)}
+	            {renderArtifactRow("Transcript metadata", "metadata", multilingualRun?.artifacts.metadata, artifactContext)}
 	            {renderArtifactRow("Avatar demo", "avatarDemo", avatarRender?.artifacts.demoExport, artifactContext)}
 	            {renderArtifactRow("Render manifest", "renderManifest", avatarRender?.artifacts.renderManifest, artifactContext)}
 	            {renderArtifactRow(
@@ -675,6 +786,66 @@ export default function Home() {
   );
 }
 
+export function languageOptionLabel(language: LanguageCatalogRecord) {
+  const baseLabel = `${language.englishName} / ${language.nativeName}`;
+  return language.localDemoSupportStatus === "SUPPORTED" ? baseLabel : `${baseLabel} - Planned`;
+}
+
+function audiencePromptLabel(audience: string) {
+  return audienceOptions.find((option) => option.value === audience)?.promptLabel ?? "viewer";
+}
+
+export function renderTranscriptSegmentsForTest(segments: TranscriptSegment[]) {
+  return renderTranscriptSegments(segments, transcriptDirection(segments[0]?.targetLanguage ?? "en"));
+}
+
+function renderTranscriptSegments(segments: TranscriptSegment[], direction: "ltr" | "rtl") {
+  return (
+    <div className={styles.transcript} aria-label="Validated multilingual transcript">
+      {segments.map((segment) => (
+        <article className={styles.transcriptSegment} key={segment.segmentId} dir={direction}>
+          <div className={styles.segmentTextGrid}>
+            <div dir="ltr">
+              <strong>Source English</strong>
+              <p>{segment.sourceText}</p>
+            </div>
+            <div dir={direction}>
+              <strong>Target transcript</strong>
+              <p>{segment.targetText}</p>
+            </div>
+            <div dir="ltr">
+              <strong>English reference</strong>
+              <p>{segment.englishReferenceText}</p>
+            </div>
+          </div>
+          <dl className={styles.segmentBindings} dir="ltr">
+            <div>
+              <dt>Citations</dt>
+              <dd>{segment.citationMarkers.join(" ")}</dd>
+            </div>
+            <div>
+              <dt>Context</dt>
+              <dd>{segment.contextRefIds.join(", ")}</dd>
+            </div>
+            <div>
+              <dt>Claims</dt>
+              <dd>{segment.claimSupportIds.join(", ")}</dd>
+            </div>
+            <div>
+              <dt>Eval</dt>
+              <dd>{segment.evaluationId}</dd>
+            </div>
+          </dl>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function transcriptDirection(languageTag: string): "ltr" | "rtl" {
+  return ["ar", "arz", "he", "fa", "ur"].includes(languageTag) ? "rtl" : "ltr";
+}
+
 function buildStage7MultilingualBundle(multilingual: MultilingualWalkthrough, consent: AvatarConsent) {
   return {
     sourceRunId: multilingual.sourceRunId,
@@ -697,12 +868,13 @@ function buildStage7MultilingualBundle(multilingual: MultilingualWalkthrough, co
   };
 }
 
-type ArtifactKind = "script" | "subtitles" | "voiceManifest" | "avatarDemo" | "renderManifest" | "videoPlaceholder";
+type ArtifactKind = "script" | "subtitles" | "voiceManifest" | "metadata" | "avatarDemo" | "renderManifest" | "videoPlaceholder";
 
 const allowedArtifactMimeTypes: Record<ArtifactKind, string> = {
   script: "text/markdown",
   subtitles: "application/x-subrip",
   voiceManifest: "application/json",
+  metadata: "application/json",
   avatarDemo: "text/html",
   renderManifest: "application/json",
   videoPlaceholder: "application/json",
@@ -712,6 +884,7 @@ const allowedArtifactExtensions: Record<ArtifactKind, string> = {
   script: ".md",
   subtitles: ".srt",
   voiceManifest: ".json",
+  metadata: ".json",
   avatarDemo: ".html",
   renderManifest: ".json",
   videoPlaceholder: ".json",
@@ -836,7 +1009,7 @@ function artifactValidation(
     return { state: "blocked", href: "", reason: "HTML export contains active content." };
   }
 	  if (
-	    (kind === "voiceManifest" || kind === "renderManifest" || kind === "videoPlaceholder") &&
+	    (kind === "voiceManifest" || kind === "metadata" || kind === "renderManifest" || kind === "videoPlaceholder") &&
 	    !validJsonArtifact(kind, decoded.text, artifact, context)
 	  ) {
 	    return { state: "blocked", href: "", reason: "JSON metadata shape is invalid." };
@@ -886,6 +1059,9 @@ function languageMatchesArtifactName(kind: ArtifactKind, fileName: string, conte
 	  if (kind === "voiceManifest") {
 	    return fileName === `voice-manifest-${language}.json`;
 	  }
+	  if (kind === "metadata") {
+	    return fileName.endsWith(`-${language}-metadata.json`);
+	  }
 	  return true;
 	}
 
@@ -920,11 +1096,53 @@ function validJsonArtifact(
     if (kind === "voiceManifest") {
       return voiceManifestMatches(parsed, artifact, context);
 	    }
+    if (kind === "metadata") {
+      return transcriptMetadataMatches(parsed, context);
+	    }
 	    return true;
 	  } catch {
 	    return false;
 	  }
 	}
+
+function transcriptMetadataMatches(metadata: Record<string, unknown>, context?: ArtifactValidationContext) {
+  const multilingual = context?.multilingualRun;
+  if (!multilingual) {
+    return false;
+  }
+  const correctness = asRecord(metadata.transcriptCorrectness);
+  return (
+    metadata.multilingualRunId === multilingual.multilingualRunId &&
+    metadata.sourceRunId === multilingual.sourceRunId &&
+    metadata.targetLanguage === multilingual.targetLanguage &&
+    correctness?.validationStatus === multilingual.transcriptCorrectness.validationStatus &&
+    correctness.segmentCount === multilingual.transcriptCorrectness.segmentCount &&
+    transcriptSegmentsMatch(metadata.transcriptSegments, multilingual.transcriptSegments) &&
+    stringArrayEquals(metadata.sourceContextRefIds, multilingual.trace.sourceContextRefIds) &&
+    numberArrayEquals(metadata.sourceCitationIndexes, multilingual.trace.sourceCitationIndexes)
+  );
+}
+
+function transcriptSegmentsMatch(value: unknown, expected: TranscriptSegment[]) {
+  return (
+    Array.isArray(value) &&
+    value.length === expected.length &&
+    value.every((entry, index) => {
+      const segment = asRecord(entry);
+      const expectedSegment = expected[index];
+      return (
+        segment?.segmentId === expectedSegment.segmentId &&
+        segment.sourceText === expectedSegment.sourceText &&
+        segment.targetText === expectedSegment.targetText &&
+        segment.englishReferenceText === expectedSegment.englishReferenceText &&
+        stringArrayEquals(segment.citationMarkers, expectedSegment.citationMarkers) &&
+        numberArrayEquals(segment.citationIndexes, expectedSegment.citationIndexes) &&
+        stringArrayEquals(segment.contextRefIds, expectedSegment.contextRefIds) &&
+        stringArrayEquals(segment.claimSupportIds, expectedSegment.claimSupportIds)
+      );
+    })
+  );
+}
 
 function sourceMetadataMatches(value: unknown, context?: ArtifactValidationContext) {
 	  const source = asRecord(value);
@@ -1019,7 +1237,7 @@ function voiceManifestMatches(
     manifest.language === multilingual.targetLanguage &&
     typeof manifest.languageDisplayName === "string" &&
     manifest.languageDisplayName.trim().length > 0 &&
-    manifest.textChecksum === multilingual.artifacts.translatedScript.checksum &&
+    manifest.textChecksum === `sha256:${sha256Hex(multilingual.translatedScriptText)}` &&
     typeof manifest.durationSecondsEstimate === "number" &&
     manifest.durationSecondsEstimate > 0 &&
     !!audioProfile &&

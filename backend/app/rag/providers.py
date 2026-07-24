@@ -68,11 +68,12 @@ class MockLLMProvider:
         retrieved_context: list[RetrievedContext],
     ) -> GeneratedScript:
         del prompt
+        audience_label = audience_label_for_script(audience)
         script_parts: list[str] = []
         claims: list[ScriptClaim] = []
         for index, context in enumerate(retrieved_context, start=1):
             claim_text = _first_claim_sentence(context.chunk.text)
-            sentence = f"For {audience.lower()}s, {claim_text} [{index}]"
+            sentence = f"For {audience_label}, {claim_text} [{index}]"
             start = sum(len(part) + 1 for part in script_parts)
             end = start + len(sentence)
             script_parts.append(sentence)
@@ -102,9 +103,27 @@ class MockLLMProvider:
         return GeneratedScript(text=" ".join(script_parts), claims=claims)
 
 
+def audience_label_for_script(audience: str) -> str:
+    return {
+        "RECRUITER": "recruiters",
+        "HIRING_MANAGER": "hiring managers",
+        "ENGINEER": "engineers",
+        "PRODUCT_LEADER": "product leaders",
+        "BEGINNER": "beginners",
+        "GLOBAL_VIEWER": "global viewers",
+        "CUSTOMER": "customers",
+    }.get(audience, audience.lower().replace("_", " "))
+
+
 def _first_claim_sentence(text: str) -> str:
-    for raw_sentence in re.split(r"(?<=[.!?])\s+", text.strip()):
-        sentence = raw_sentence.strip().lstrip("#").strip()
+    content_lines = [
+        line.strip()
+        for line in text.strip().splitlines()
+        if line.strip() and not re.fullmatch(r"#{1,6}\s+.+", line.strip())
+    ]
+    content = " ".join(content_lines)
+    for raw_sentence in re.split(r"(?<=[.!?])\s+", content):
+        sentence = raw_sentence.strip()
         if sentence:
             return sentence.rstrip(".") + "."
     return text.strip()

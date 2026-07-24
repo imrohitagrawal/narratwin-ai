@@ -3,7 +3,11 @@ from __future__ import annotations
 # ruff: noqa: E402
 
 import os
+import base64
+import copy
+import json
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -18,15 +22,24 @@ for _state_env_name in (
     os.environ.pop(_state_env_name, None)
 
 from backend.app.main import app, reset_app_state_for_tests
+from backend.app.rag.chunking import checksum_text
 from backend.app.rag.models import GeneratedScript, RetrievedContext, ScriptClaim
 from backend.app.rag.providers import MockLLMProvider
+from backend.app.stage6 import (
+    PRIORITY1_LANGUAGE_TAGS,
+    TranslationProviderResult,
+    stage6_service,
+    validate_multilingual_transcript_correctness,
+)
 from backend.app.stage4 import stage4_service
 
 
 ATLAS_OUTPUT_KNOWLEDGE = b"""# Atlas Output
 
 Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder for launch rehearsals.
-Atlas Output requires each generated checklist item to cite approved launch-note evidence.
+
+Atlas Output OUTPUT-SENTINEL-CP2 requires each generated checklist item to cite approved launch-note evidence.
+
 Atlas Output uses the marker OUTPUT-SENTINEL-CP2 for output-correctness isolation checks.
 """
 
@@ -37,12 +50,18 @@ Beacon Output sends timezone-aware reminder packets for neighborhood coordinator
 Beacon Output uses the marker BEACON-OUTPUT-CP2 for cross-project replay checks.
 """
 
+ARBITRARY_NARRATWIN_KNOWLEDGE = b"""# NarraTwin AI
+
+NarraTwin AI acquired Jupiter Labs to build moon-base onboarding scripts for Mars pilots.
+"""
+
 REQUIRED_ATLAS_FACT = (
     "Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder for launch rehearsals."
 )
 BEACON_CROSS_PROJECT_FACT = (
     "Beacon Output sends timezone-aware reminder packets for neighborhood coordinators."
 )
+CHECKPOINT3_MULTILINGUAL_REPORT_DIR = Path("reports/checkpoint3-multilingual")
 
 
 @pytest.fixture(autouse=True)
@@ -111,6 +130,29 @@ class CorrectTextMissingEvidenceProvider:
                     script_span_end=len(sentence),
                 )
             ],
+        )
+
+
+class DivergentTranslationProvider:
+    provider = "mock"
+    provider_mode = "LOCAL"
+
+    def translate(
+        self,
+        *,
+        source_text: str,
+        source_language: str,
+        target_language: str,
+        glossary_terms: list[str],
+    ) -> TranslationProviderResult:
+        del source_text, glossary_terms
+        return TranslationProviderResult(
+            provider=self.provider,
+            provider_mode=self.provider_mode,
+            source_language=source_language,
+            target_language=target_language,
+            translated_text="Atlas Output OUTPUT-SENTINEL-CP2 WRONG SEMANTIC PROVIDER OUTPUT [1]",
+            preserved_terms=["Atlas Output", "OUTPUT-SENTINEL-CP2"],
         )
 
 
@@ -393,3 +435,377 @@ def test_checkpoint3_output_correctness_rejects_cross_project_fact_replay() -> N
     for context in run["contextRefs"]:
         assert context["projectId"] == atlas["projectId"]
         assert "BEACON-OUTPUT-CP2" not in context["evidenceSnapshot"]["redactedExcerpt"]
+
+
+def test_checkpoint3_output_correctness_rejects_provider_script_that_diverges_from_transcript() -> None:
+    client = TestClient(app)
+    project, document = prepare_approved_project(
+        client,
+        prefix="output-divergent-provider",
+        name="Atlas Output",
+        filename="atlas_output.md",
+        content=ATLAS_OUTPUT_KNOWLEDGE,
+    )
+    run = generate_walkthrough(
+        client,
+        prefix="output-divergent-provider",
+        project_id=project["projectId"],
+        prompt="Create a grounded walkthrough for Atlas Output using only approved source facts.",
+    )
+    assert_runtime_output_fact_is_grounded(
+        run,
+        project_id=project["projectId"],
+        document=document,
+        required_fact=REQUIRED_ATLAS_FACT,
+    )
+
+    stage6_service.translation_provider = cast(Any, DivergentTranslationProvider())
+    response = client.post(
+        f"/api/v1/projects/{project['projectId']}/walkthrough-runs/{run['runId']}/multilingual-runs",
+        json={
+            "targetLanguage": "fr",
+            "glossaryTerms": ["Atlas Output", "OUTPUT-SENTINEL-CP2"],
+            "requestedVoiceProvider": "mock",
+        },
+        headers={"Idempotency-Key": "output-divergent-provider-fr"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "PROVIDER_OUTPUT_INVALID"
+
+
+def test_checkpoint3_output_correctness_refuses_arbitrary_narratwin_fixture_translation() -> None:
+    client = TestClient(app)
+    project, _document = prepare_approved_project(
+        client,
+        prefix="output-arbitrary-narratwin",
+        name="NarraTwin AI",
+        filename="arbitrary_narratwin.md",
+        content=ARBITRARY_NARRATWIN_KNOWLEDGE,
+    )
+    run = generate_walkthrough(
+        client,
+        prefix="output-arbitrary-narratwin",
+        project_id=project["projectId"],
+        prompt="Jupiter Labs moon-base onboarding scripts Mars pilots",
+    )
+    assert run["status"] == "COMPLETED"
+    assert "Jupiter Labs" in run["acceptedScriptText"]
+
+    response = client.post(
+        f"/api/v1/projects/{project['projectId']}/walkthrough-runs/{run['runId']}/multilingual-runs",
+        json={
+            "targetLanguage": "fr",
+            "glossaryTerms": ["NarraTwin AI"],
+            "requestedVoiceProvider": "mock",
+        },
+        headers={"Idempotency-Key": "output-arbitrary-narratwin-fr"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"
+
+
+def test_checkpoint3_output_correctness_exhaustively_proves_priority1_multilingual_outputs() -> None:
+    client = TestClient(app)
+    project, document = prepare_approved_project(
+        client,
+        prefix="output-multilingual-p1",
+        name="Atlas Output",
+        filename="atlas_output.md",
+        content=ATLAS_OUTPUT_KNOWLEDGE,
+    )
+    run = generate_walkthrough(
+        client,
+        prefix="output-multilingual-p1",
+        project_id=project["projectId"],
+        prompt="Create a grounded walkthrough for Atlas Output using only approved source facts.",
+    )
+    assert_runtime_output_fact_is_grounded(
+        run,
+        project_id=project["projectId"],
+        document=document,
+        required_fact=REQUIRED_ATLAS_FACT,
+    )
+
+    coverage_rows: list[dict[str, Any]] = []
+    summary: dict[str, dict[str, Any]] = {}
+    for language_tag in PRIORITY1_LANGUAGE_TAGS:
+        response = client.post(
+            f"/api/v1/projects/{project['projectId']}/walkthrough-runs/{run['runId']}/multilingual-runs",
+            json={
+                "targetLanguage": language_tag,
+                "glossaryTerms": ["Atlas Output"],
+                "requestedVoiceProvider": "mock",
+            },
+            headers={"Idempotency-Key": f"output-multilingual-p1-{language_tag}"},
+        )
+
+        assert response.status_code == 201, language_tag
+        body = response.json()
+        assert body["status"] == "COMPLETED"
+        assert body["transcriptCorrectness"]["validationStatus"] == "PASSED"
+        assert body["sourceScriptText"]
+        assert body["translatedScriptText"]
+        assert len(body["transcriptSegments"]) >= 2
+        assert body["artifacts"]["metadata"]["contentBase64"]
+
+        if language_tag != "en":
+            assert body["translatedScriptText"] != body["sourceScriptText"]
+        if language_tag == "hi":
+            assert "अभियंताओं के लिए" in body["translatedScriptText"]
+            assert "इंजीनियरों" not in body["translatedScriptText"]
+        assert body["trace"]["sourceRunId"] == run["runId"]
+        assert body["trace"]["sourceEvaluationId"] == run["evaluation"]["evaluationId"]
+        assert body["trace"]["sourceContextRefIds"]
+        assert body["trace"]["sourceClaimSupportIds"]
+
+        metadata = json.loads(base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8"))
+        assert metadata["transcriptSegments"] == body["transcriptSegments"]
+        assert metadata["transcriptCorrectness"] == body["transcriptCorrectness"]
+        assert_successful_multilingual_contract(body, run=run)
+        coverage_rows.append(
+            {
+                "languageTag": language_tag,
+                "mutation": "positive",
+                "result": "passed",
+            }
+        )
+
+        for segment in body["transcriptSegments"]:
+            assert segment["segmentId"]
+            assert segment["sourceText"]
+            assert segment["targetLanguage"] == language_tag
+            assert segment["targetText"]
+            if language_tag != "en":
+                assert "Atlas Output" in segment["targetText"]
+                assert "OUTPUT-SENTINEL-CP2" in segment["targetText"]
+                assert "NarraTwin AI" not in segment["targetText"]
+            assert segment["englishReferenceText"]
+            assert segment["citationMarkers"]
+            assert segment["citationIndexes"]
+            assert segment["contextRefIds"]
+            assert segment["claimSupportIds"]
+            assert set(segment["contextRefIds"]).issubset(set(body["trace"]["sourceContextRefIds"]))
+            assert set(segment["claimSupportIds"]).issubset(set(body["trace"]["sourceClaimSupportIds"]))
+            assert segment["sourceRunId"] == run["runId"]
+            assert segment["evaluationId"] == run["evaluation"]["evaluationId"]
+
+        for mutation_name, mutated_segments in multilingual_false_pass_mutations(body):
+            if language_tag == "en" and mutation_name in {"english-fallback", "wrong-script"}:
+                coverage_rows.append(
+                    {
+                        "languageTag": language_tag,
+                        "mutation": mutation_name,
+                        "result": "not-applicable-for-source-language",
+                    }
+                )
+                continue
+            with pytest.raises(Exception):
+                validate_multilingual_transcript_correctness(
+                    language_tag=language_tag,
+                    source_text=body["sourceScriptText"],
+                    segments=mutated_segments,
+                    source_run_id=run["runId"],
+                    evaluation_id=run["evaluation"]["evaluationId"],
+                    context_ref_ids=tuple(body["trace"]["sourceContextRefIds"]),
+                    citation_indexes=tuple(body["trace"]["sourceCitationIndexes"]),
+                    claim_support_ids=tuple(body["trace"]["sourceClaimSupportIds"]),
+                )
+            coverage_rows.append(
+                {
+                    "languageTag": language_tag,
+                    "mutation": mutation_name,
+                    "result": "failed-as-expected",
+                }
+            )
+        for mutation_name, mutated_body in multilingual_response_false_pass_mutations(body):
+            with pytest.raises(Exception):
+                assert_successful_multilingual_contract(mutated_body, run=run)
+            coverage_rows.append(
+                {
+                    "languageTag": language_tag,
+                    "mutation": mutation_name,
+                    "result": "failed-as-expected",
+                }
+            )
+
+        summary[language_tag] = {
+            "script": body["transcriptCorrectness"]["script"],
+            "direction": body["transcriptCorrectness"]["direction"],
+            "localDemoSupportStatus": "SUPPORTED",
+            "apiOutputTestResult": "passed",
+            "artifactTestResult": "passed",
+            "representativeBrowserCoverageGroup": representative_browser_group(language_tag),
+        }
+
+    required_mutations = {
+        "positive",
+        "english-fallback",
+        "partial",
+        "single-segment-partial",
+        "wrong-script",
+        "missing-reference",
+        "missing-source",
+        "missing-target",
+        "missing-binding",
+        "missing-source-run-binding",
+        "missing-evaluation-binding",
+        "missing-claim-support-binding",
+        "citation-drift",
+        "glossary-forced-english-leakage",
+        "metadata-only-success",
+        "artifact-only-success",
+    }
+    for language_tag in PRIORITY1_LANGUAGE_TAGS:
+        covered = {row["mutation"] for row in coverage_rows if row["languageTag"] == language_tag}
+        assert required_mutations.issubset(covered)
+
+    CHECKPOINT3_MULTILINGUAL_REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    (CHECKPOINT3_MULTILINGUAL_REPORT_DIR / "priority1-coverage-matrix.json").write_text(
+        json.dumps(coverage_rows, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    (CHECKPOINT3_MULTILINGUAL_REPORT_DIR / "checkpoint3a-multilingual-summary.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
+def assert_successful_multilingual_contract(body: dict[str, Any], *, run: dict[str, Any]) -> None:
+    assert body["status"] == "COMPLETED"
+    assert body["transcriptCorrectness"]["validationStatus"] == "PASSED"
+    correctness = validate_multilingual_transcript_correctness(
+        language_tag=body["targetLanguage"],
+        source_text=body["sourceScriptText"],
+        segments=body["transcriptSegments"],
+        source_run_id=run["runId"],
+        evaluation_id=run["evaluation"]["evaluationId"],
+        context_ref_ids=tuple(body["trace"]["sourceContextRefIds"]),
+        citation_indexes=tuple(body["trace"]["sourceCitationIndexes"]),
+        claim_support_ids=tuple(body["trace"]["sourceClaimSupportIds"]),
+    )
+    assert body["transcriptCorrectness"] == {
+        "validationStatus": correctness.validation_status,
+        "script": correctness.script,
+        "direction": correctness.direction,
+        "segmentCount": correctness.segment_count,
+        "citationIndexes": list(correctness.citation_indexes),
+    }
+    metadata_artifact = body["artifacts"]["metadata"]
+    metadata_text = base64.b64decode(metadata_artifact["contentBase64"], validate=True).decode("utf-8")
+    assert metadata_artifact["checksum"] == checksum_text(metadata_text)
+    metadata = json.loads(metadata_text)
+    assert metadata["transcriptSegments"] == body["transcriptSegments"]
+    assert metadata["transcriptCorrectness"] == body["transcriptCorrectness"]
+    assert metadata["sourceScriptText"] == body["sourceScriptText"]
+    assert metadata["translatedScriptText"] == body["translatedScriptText"]
+    translated_script_artifact = body["artifacts"]["translatedScript"]
+    translated_script_text = base64.b64decode(
+        translated_script_artifact["contentBase64"],
+        validate=True,
+    ).decode("utf-8")
+    assert translated_script_artifact["checksum"] == checksum_text(translated_script_text)
+    assert "# Multilingual transcript" in translated_script_text
+    assert f"Target language: {body['targetLanguage']}" in translated_script_text
+    assert f"Script: {correctness.script}" in translated_script_text
+    assert f"Direction: {correctness.direction}" in translated_script_text
+    if body["targetLanguage"] != "en":
+        assert translated_script_text != body["translatedScriptText"]
+    for segment in body["transcriptSegments"]:
+        assert f"## {segment['segmentId']}" in translated_script_text
+        assert f"Source English: {segment['sourceText']}" in translated_script_text
+        assert f"Target ({segment['targetLanguage']}): {segment['targetText']}" in translated_script_text
+        assert f"English reference: {segment['englishReferenceText']}" in translated_script_text
+        assert f"Citations: {', '.join(segment['citationMarkers'])}" in translated_script_text
+        assert f"Context refs: {', '.join(segment['contextRefIds'])}" in translated_script_text
+        assert f"Claim support ids: {', '.join(segment['claimSupportIds'])}" in translated_script_text
+        assert f"Source run id: {segment['sourceRunId']}" in translated_script_text
+        assert f"Evaluation id: {segment['evaluationId']}" in translated_script_text
+    validate_multilingual_transcript_correctness(
+        language_tag=metadata["targetLanguage"],
+        source_text=metadata["sourceScriptText"],
+        segments=metadata["transcriptSegments"],
+        source_run_id=metadata["sourceRunId"],
+        evaluation_id=metadata["sourceEvaluationId"],
+        context_ref_ids=tuple(metadata["sourceContextRefIds"]),
+        citation_indexes=tuple(metadata["sourceCitationIndexes"]),
+        claim_support_ids=tuple(metadata["sourceClaimSupportIds"]),
+    )
+
+
+def multilingual_false_pass_mutations(body: dict[str, Any]) -> list[tuple[str, list[dict[str, Any]]]]:
+    original_segments = [dict(segment) for segment in body["transcriptSegments"]]
+    first = dict(original_segments[0])
+    english_fallback = [dict(segment, targetText=segment["sourceText"]) for segment in original_segments]
+    partial: list[dict[str, Any]] = []
+    single_segment_partial = [first]
+    wrong_script = [dict(segment, targetText="romanized fallback [1]") for segment in original_segments]
+    missing_reference = [dict(segment, englishReferenceText="") for segment in original_segments]
+    missing_target = [dict(segment, targetText="") for segment in original_segments]
+    citation_drift = [dict(first, citationMarkers=["[2]"], citationIndexes=[2])]
+    missing_source = [dict(first, sourceText="")]
+    missing_binding = [dict(first, contextRefIds=[])]
+    missing_source_run_binding = [dict(first, sourceRunId="")]
+    missing_evaluation_binding = [dict(first, evaluationId="")]
+    missing_claim_support_binding = [dict(first, claimSupportIds=[])]
+    glossary_forced_english_leakage = [dict(first, targetText=f"{first['targetText']} source chunks")]
+    return [
+        ("english-fallback", english_fallback),
+        ("partial", partial),
+        ("single-segment-partial", single_segment_partial),
+        ("wrong-script", wrong_script),
+        ("missing-reference", missing_reference),
+        ("missing-target", missing_target),
+        ("citation-drift", citation_drift),
+        ("missing-source", missing_source),
+        ("missing-binding", missing_binding),
+        ("missing-source-run-binding", missing_source_run_binding),
+        ("missing-evaluation-binding", missing_evaluation_binding),
+        ("missing-claim-support-binding", missing_claim_support_binding),
+        ("glossary-forced-english-leakage", glossary_forced_english_leakage),
+    ]
+
+
+def multilingual_response_false_pass_mutations(body: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    metadata_only_success = copy.deepcopy(body)
+    metadata_only_success["transcriptSegments"] = []
+    metadata_only_success["transcriptCorrectness"] = {
+        **metadata_only_success["transcriptCorrectness"],
+        "validationStatus": "PASSED",
+    }
+
+    artifact_only_success = copy.deepcopy(body)
+    artifact_metadata = json.loads(
+        base64.b64decode(artifact_only_success["artifacts"]["metadata"]["contentBase64"]).decode("utf-8")
+    )
+    artifact_metadata["transcriptSegments"] = []
+    artifact_metadata["transcriptCorrectness"] = {
+        **artifact_metadata["transcriptCorrectness"],
+        "validationStatus": "PASSED",
+    }
+    artifact_only_success["artifacts"]["metadata"]["contentBase64"] = base64.b64encode(
+        json.dumps(artifact_metadata, sort_keys=True).encode("utf-8")
+    ).decode("ascii")
+    return [
+        ("metadata-only-success", metadata_only_success),
+        ("artifact-only-success", artifact_only_success),
+    ]
+
+
+def representative_browser_group(language_tag: str) -> str:
+    if language_tag == "hi":
+        return "Devanagari"
+    if language_tag in {"ar", "arz"}:
+        return "RTL Arabic"
+    if language_tag in {"he", "fa"}:
+        return "RTL Hebrew/Persian"
+    if language_tag in {"ja", "zh-Hans", "zh-Hant"}:
+        return "CJK"
+    if language_tag == "ko":
+        return "Hangul"
+    if language_tag in {"ru", "uk"}:
+        return "Cyrillic"
+    if language_tag == "th":
+        return "Southeast Asia"
+    return "Latin"

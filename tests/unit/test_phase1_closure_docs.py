@@ -1859,6 +1859,63 @@ def test_issue_269_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue_276_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-c3a-r1-major-market-multilingual-output-correctness"
+    allowed = [
+        "backend/app/main.py",
+        "backend/app/rag/chunking.py",
+        "backend/app/rag/models.py",
+        "backend/app/rag/providers.py",
+        "backend/app/stage4.py",
+        "backend/app/stage6.py",
+        "docs/EVAL_REPORT.md",
+        "docs/demo/CHECKPOINT3A_MULTILINGUAL_REHEARSAL_CHECKLIST.md",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/governance/preflights/issue-276.json",
+        "docs/ADR/0033-checkpoint3-real-browser-acceptance-evidence.md",
+        "docs/QUALITY_GATES.md",
+        "docs/reviews/ISSUE_276_C3A_R1_PR_BODY.md",
+        "docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md",
+        "docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "frontend/src/app/page.module.css",
+        "frontend/src/app/page.test.tsx",
+        "frontend/src/app/page.tsx",
+        "frontend/tests/checkpoint3-real-browser.spec.ts",
+        "frontend/tests/real-stack.spec.ts",
+        "frontend/tests/smoke.spec.ts",
+        "scripts/quality/check_checkpoint3_acceptance.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/acceptance/test_checkpoint3_output_correctness.py",
+        "tests/acceptance/test_checkpoint3_media_artifacts.py",
+        "tests/api/test_stage4_slice_api.py",
+        "tests/api/test_stage6_multilingual_api.py",
+        "tests/api/test_stage7_avatar_api.py",
+        "tests/fixtures/stage4_project.md",
+        "tests/unit/test_checkpoint3_acceptance_gate.py",
+        "tests/unit/test_chunking.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "tests/unit/test_retrieval_and_grounding.py",
+        "tests/unit/test_stage6_multilingual.py",
+    ]
+
+    assert phase1.ISSUE_276_ALLOWED_CHANGED_FILES == set(allowed)
+    assert run_changed_files_check(monkeypatch, branch=branch, files=allowed) == []
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=branch,
+        files=[
+            *allowed,
+            "frontend/package.json",
+            "docs/THIRD_PARTY_NOTICES.md",
+        ],
+    ) == [
+        f"Phase 1 Closure branch {branch} may not change frontend/package.json.",
+        f"Phase 1 Closure branch {branch} may not change docs/THIRD_PARTY_NOTICES.md.",
+    ]
+
+
 def test_issue_274_branch_has_exact_scope_allowlist(monkeypatch: Any) -> None:
     branch = "phase-1-closure-c3b-pr1-consent-provenance-planning-274"
     allowed = [
@@ -2619,7 +2676,8 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "Issue `#267` is closed after PR `#268` merged the seventh Checkpoint 3A child implementation checkpoint",
         "Issue `#269` is closed after PR `#273` merged the eighth Checkpoint 3A child implementation checkpoint",
         "Issue `#274` is satisfied by this PR when merged as the public-safe Checkpoint 3B consent/provenance planning gate only",
-        "checkpoint3b-pr1-satisfied-by-this-pr",
+        "c3a-r1-satisfied-by-this-pr",
+        "major-market multilingual output correctness",
         "`#254` | Merged | 2026-07-22",
         "`#258` | Merged | 2026-07-22",
         "`#260` | Merged | 2026-07-22",

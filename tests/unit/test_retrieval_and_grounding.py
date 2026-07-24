@@ -54,6 +54,26 @@ def test_retrieval_returns_project_scoped_relevant_chunks() -> None:
     assert "grounded walkthrough" in results[0].chunk.text
 
 
+def test_chunking_preserves_headings_as_metadata_without_heading_only_claim_chunks() -> None:
+    chunks = chunk_document(
+        document_id="doc_headings",
+        project_id="proj_headings",
+        tenant_id="tenant_local",
+        source_filename="project.md",
+        text=(
+            "# NarraTwin AI\n\n"
+            "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.\n\n"
+            "Every generated walkthrough claim must cite retrieved source chunks from approved knowledge."
+        ),
+        max_tokens=30,
+    )
+
+    assert len(chunks) == 2
+    assert all(not chunk.text.startswith("#") for chunk in chunks)
+    assert chunks[0].text == "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts."
+    assert chunks[0].heading_path == ["NarraTwin AI"]
+
+
 def test_rag_store_keeps_same_document_chunks_isolated_by_tenant() -> None:
     store = InMemoryRagStore()
     embedder = MockEmbeddingProvider()

@@ -39,6 +39,8 @@ from backend.app.stage6 import (
     MAX_GLOSSARY_TERMS,
     MAX_PROVIDER_ID_CHARS,
     Stage6Error,
+    get_language_catalog,
+    language_catalog_record_to_api,
     multilingual_to_api,
     stage6_service,
 )
@@ -214,7 +216,15 @@ class StartIngestionRequest(BaseModel):
 class GenerateWalkthroughRequest(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
-    audience: Literal["RECRUITER", "HIRING_MANAGER", "ENGINEER", "PRODUCT_LEADER", "BEGINNER", "GLOBAL_VIEWER"] = "RECRUITER"
+    audience: Literal[
+        "RECRUITER",
+        "HIRING_MANAGER",
+        "ENGINEER",
+        "PRODUCT_LEADER",
+        "CUSTOMER",
+        "BEGINNER",
+        "GLOBAL_VIEWER",
+    ] = "RECRUITER"
     requested_language: Literal["en"] = Field(default="en", alias="requestedLanguage")
     depth: Literal["CONCISE", "STANDARD", "DEEP"] = "CONCISE"
     style: Literal["PLAIN", "CONFIDENT", "TECHNICAL", "EXECUTIVE"] = "CONFIDENT"
@@ -670,6 +680,58 @@ class MultilingualTraceResponse(BaseModel):
     evaluation_status: Literal["PASSED", "FAILED", "UNKNOWN"] = Field(alias="evaluationStatus")
 
 
+class LanguageCatalogRecordResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    language_tag: str = Field(alias="languageTag")
+    english_name: str = Field(alias="englishName")
+    native_name: str = Field(alias="nativeName")
+    label: str
+    script: str
+    direction: Literal["ltr", "rtl"]
+    market_priority: int = Field(alias="marketPriority")
+    region_group: str = Field(alias="regionGroup")
+    local_demo_support_status: Literal["SUPPORTED", "PLANNED_UNSUPPORTED_LOCAL_DEMO"] = Field(
+        alias="localDemoSupportStatus"
+    )
+    provider_support_status: Literal["LOCAL_DEMO_FIXTURE", "UNSUPPORTED_LOCAL_DEMO"] = Field(
+        alias="providerSupportStatus"
+    )
+    test_coverage_level: Literal["CHECKPOINT3A_EXHAUSTIVE", "CATALOG_ONLY"] = Field(alias="testCoverageLevel")
+
+
+class LanguageCatalogResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    languages: list[LanguageCatalogRecordResponse]
+
+
+class TranscriptSegmentResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    segment_id: str = Field(alias="segmentId")
+    source_text: str = Field(alias="sourceText")
+    target_language: str = Field(alias="targetLanguage")
+    target_text: str = Field(alias="targetText")
+    english_reference_text: str = Field(alias="englishReferenceText")
+    citation_markers: list[str] = Field(alias="citationMarkers")
+    citation_indexes: list[int] = Field(alias="citationIndexes")
+    context_ref_ids: list[str] = Field(alias="contextRefIds")
+    claim_support_ids: list[str] = Field(alias="claimSupportIds")
+    source_run_id: str = Field(alias="sourceRunId")
+    evaluation_id: str = Field(alias="evaluationId")
+
+
+class TranscriptCorrectnessResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    validation_status: Literal["PASSED"] = Field(alias="validationStatus")
+    script: str
+    direction: Literal["ltr", "rtl"]
+    segment_count: int = Field(alias="segmentCount")
+    citation_indexes: list[int] = Field(alias="citationIndexes")
+
+
 class MultilingualWalkthroughResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
@@ -681,6 +743,8 @@ class MultilingualWalkthroughResponse(BaseModel):
     source_script_text: str = Field(alias="sourceScriptText")
     translated_script_text: str = Field(alias="translatedScriptText")
     subtitles_text: str = Field(alias="subtitlesText")
+    transcript_segments: list[TranscriptSegmentResponse] = Field(alias="transcriptSegments")
+    transcript_correctness: TranscriptCorrectnessResponse = Field(alias="transcriptCorrectness")
     glossary_terms: list[str] = Field(alias="glossaryTerms")
     preserved_terms: list[str] = Field(alias="preservedTerms")
     translation_provider: TranslationProviderResponse = Field(alias="translationProvider")
@@ -1320,6 +1384,13 @@ def api_ops_status() -> OpsStatusResponse:
             productionAlertsConfigured=False,
             langfuseConfigured=is_langfuse_enabled(),
         ),
+    )
+
+
+@api_v1.get("/languages", response_model=LanguageCatalogResponse, tags=["walkthrough"])
+def api_language_catalog() -> LanguageCatalogResponse:
+    return LanguageCatalogResponse(
+        languages=[LanguageCatalogRecordResponse.model_validate(language_catalog_record_to_api(record)) for record in get_language_catalog()]
     )
 
 

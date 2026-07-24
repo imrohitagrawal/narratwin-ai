@@ -548,6 +548,37 @@ ops record-count evidence. It includes negative coverage for correct-looking
 text without citation/evidence binding, unsupported generated claims, and
 cross-project fact replay.
 
+Issue `#276` repairs C3A-CP2 so it also proves real user-visible multilingual
+output correctness for the Priority 1 catalog: `en`, `hi`, `es`, `de`, `fr`,
+`pt-BR`, `it`, `nl`, `pl`, `uk`, `ru`, `zh-Hans`, `zh-Hant`, `ja`, `ko`, `ar`,
+`arz`, `he`, `fa`, `tr`, `vi`, `id`, `fil`, `th`, and `ms`. The probe requires
+the backend-driven language catalog, catalogs Priority 2 Indian regional
+languages as planned/unsupported local demo, executes every Priority 1 runtime
+API path, requires source English plus target-language transcript plus English
+reference/back-translation per segment, validates native scripts and RTL
+direction, preserves citation/source/evaluation/context/claim-support bindings,
+requires selected-audience semantic preservation, rejects heading-only generated
+claims, requires full generated-script segment coverage, expands small approved
+local/demo documents within retrieval top-k to all approved claim chunks, compares supported
+controlled translations against independent golden strings rather than the
+implementation fixture alone, requires Stage 6 metadata artifact parity,
+requires the downloadable translated-script artifact to contain the same
+trilingual transcript data as the UI and metadata artifact rather than only the
+flat target-language text, and writes
+`reports/checkpoint3-multilingual/priority1-coverage-matrix.json` plus
+`reports/checkpoint3-multilingual/checkpoint3a-multilingual-summary.json`.
+The coverage matrix must include one positive row per Priority 1 language plus
+mutation rows that fail for partial text, one-segment partial text, English
+fallback, romanized or wrong-script fallback, missing source English, missing
+English reference, citation drift, missing bindings, metadata-only success,
+artifact-only success, glossary-forced English leakage, and untranslated
+source-domain term leakage such as standalone `walkthrough`. `COMPLETED` is
+invalid unless transcript correctness validation passes. The current local/demo
+translation boundary is generated walkthrough scripts from approved local/demo
+knowledge, not a separate raw uploaded knowledge-document translation API; a
+raw-document translation surface requires a future issue and equal executable
+coverage before it may be claimed.
+
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
 through the same local/mock API path. The language-quality probe verifies
@@ -629,11 +660,14 @@ timeout handling, and redacted failure summaries.
 C3A-CP8 implements the eighth executable probe, real-browser E2E with no
 success-path interception, by dispatching
 `npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts`.
-The Playwright probe launches the local backend and frontend, drives the
-user-visible controlled-demo workflow with approved synthetic knowledge,
-observes browser API requests and responses without fabricating success,
-captures runtime nonce, request sequence, project/document/ingestion/run/
-evaluation/source binding, artifact metadata, bounded `/api/v1/ops/status`
+The acceptance harness assigns isolated loopback backend/frontend ports for the
+CP8 subprocess unless the caller explicitly provides CP8 port environment
+overrides, so stale local browser-review servers cannot make the default gate
+nondeterministic. The Playwright probe launches the local backend and frontend,
+drives the user-visible controlled-demo workflow with approved synthetic
+knowledge, observes browser API requests and responses without fabricating
+success, captures runtime nonce, request sequence, project/document/ingestion/
+run/evaluation/source binding, artifact metadata, bounded `/api/v1/ops/status`
 evidence, and local/mock provider posture, and rejects missing binding,
 stale/cross-project replay, static snapshots, API-only substitutes, and
 success-shaped canned evidence.

@@ -8,6 +8,7 @@ import json
 import re
 import shlex
 import shutil
+import socket
 import subprocess
 from pathlib import Path
 from typing import NamedTuple, Sequence
@@ -27,6 +28,9 @@ CP8_BROWSER_TEST_TITLE = (
 )
 CP8_EVIDENCE_ROOT = ROOT / "reports" / "checkpoint3-real-browser" / "playwright-output"
 CP8_EVIDENCE_FILE_NAME = "issue-269-c3a-cp8-browser-evidence.json"
+CP8_BACKEND_PORT_ENV = "NARRATWIN_CP8_BACKEND_PORT"
+CP8_FRONTEND_PORT_ENV = "NARRATWIN_CP8_FRONTEND_PORT"
+CP8_NEXT_DEV_LOCK = ROOT / "frontend" / ".next" / "dev" / "lock"
 CP8_REQUIRED_IDEMPOTENCY_PREFIXES = frozenset(
     {
         "ui-project",
@@ -49,23 +53,35 @@ CP8_REQUIRED_IDEMPOTENCY_STEPS = {
     "avatarConsent": "ui-avatar-consent",
     "avatar": "ui-avatar",
 }
-CP8_AUDIENCE = "ENGINEER"
+CP8_AUDIENCE = "RECRUITER"
 CP8_DEPTH = "STANDARD"
 CP8_TARGET_LANGUAGE = "fr"
 CP8_REQUESTED_VOICE_PROVIDER = "mock"
 CP8_REQUESTED_AVATAR_PROVIDER = "mock"
 CP8_GLOSSARY_STATIC_TERMS = ("NarraTwin AI", "Checkpoint 3A")
+CP8_REQUIRED_REPRESENTATIVE_BROWSER_GROUPS = frozenset(
+    {
+        "Hindi / Devanagari",
+        "Arabic / RTL Arabic script",
+        "Hebrew / RTL",
+        "Japanese / CJK",
+        "Korean / Hangul",
+        "Russian / Cyrillic",
+        "French / Latin",
+        "Thai / Southeast Asia",
+    }
+)
 CP8_KNOWLEDGE_TEMPLATE = """# NarraTwin AI
 
 NarraTwin AI turns approved project knowledge into grounded walkthrough scripts with source chunk citations.
 
-It supports recruiter and engineering audiences with audience-aware explanations.
+It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations.
 
 The Stage 4 slice uses a mock local LLM and mock local embeddings for deterministic tests.
 
 Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.
 
-Checkpoint 3A browser evidence nonce: {runtime_nonce}."""
+## Checkpoint 3A browser evidence nonce: {runtime_nonce}"""
 PROBE_ENV_DENYLIST = (
     "ANTHROPIC_API_KEY",
     "AVATAR_PROVIDER",
@@ -349,6 +365,8 @@ def run_probe(probe: Probe) -> ProbeResult:
     env.update(dict(probe.env))
     if probe.label == CP8_LABEL:
         shutil.rmtree(CP8_EVIDENCE_ROOT, ignore_errors=True)
+        cleanup_stale_cp8_next_dev_lock()
+        configure_cp8_isolated_ports(env)
     try:
         completed = subprocess.run(
             probe.command,
@@ -386,6 +404,64 @@ def run_probe(probe: Probe) -> ProbeResult:
         output=output,
         planned_reason="",
     )
+
+
+def configure_cp8_isolated_ports(env: dict[str, str]) -> None:
+    """Avoid stale default Playwright ports while keeping the browser flow local."""
+
+    used_ports: set[str] = set()
+    backend_port = env.get(CP8_BACKEND_PORT_ENV, "")
+    if backend_port:
+        used_ports.add(backend_port)
+    else:
+        backend_port = allocate_loopback_port(used_ports)
+        env[CP8_BACKEND_PORT_ENV] = backend_port
+        used_ports.add(backend_port)
+
+    frontend_port = env.get(CP8_FRONTEND_PORT_ENV, "")
+    if frontend_port:
+        return
+    env[CP8_FRONTEND_PORT_ENV] = allocate_loopback_port(used_ports)
+
+
+def cleanup_stale_cp8_next_dev_lock() -> None:
+    """Remove a dead Next dev lock that would prevent Playwright from starting."""
+
+    try:
+        lock = json.loads(CP8_NEXT_DEV_LOCK.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return
+    pid = lock.get("pid") if isinstance(lock, dict) else None
+    if not isinstance(pid, int) or pid <= 0 or process_exists(pid):
+        return
+    try:
+        CP8_NEXT_DEV_LOCK.unlink()
+    except FileNotFoundError:
+        return
+
+
+def process_exists(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def allocate_loopback_port(excluded: set[str]) -> str:
+    for _ in range(20):
+        port = free_loopback_port()
+        if port not in excluded:
+            return port
+    raise RuntimeError("Unable to allocate isolated CP8 loopback ports.")
+
+
+def free_loopback_port() -> str:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return str(sock.getsockname()[1])
 
 
 def validate_completed_probe_output(probe: Probe, output: str) -> str:
@@ -514,7 +590,46 @@ def validate_completed_probe_output(probe: Probe, output: str) -> str:
         return "CP8 browser evidence missing source/eval binding."
 
     artifacts = evidence.get("artifactMetadata")
-    if not isinstance(artifacts, list) or len(artifacts) != 6:
+    visible_transcript = evidence.get("visibleTranscript")
+    if not isinstance(visible_transcript, dict) or not all(
+        visible_transcript.get(key) is True
+        for key in (
+            "sourceEnglishVisible",
+            "targetTranscriptVisible",
+            "englishReferenceVisible",
+            "citationsVisible",
+            "metadataArtifactMatchesTranscript",
+            "translatedScriptArtifactMatchesTranscript",
+        )
+    ):
+        return "CP8 browser evidence missing visible transcript proof."
+    representative_browser_coverage = evidence.get("representativeBrowserCoverage")
+    if not isinstance(representative_browser_coverage, list):
+        return "CP8 browser evidence missing representative script coverage."
+    observed_representative_groups: set[str] = set()
+    for entry in representative_browser_coverage:
+        if not isinstance(entry, dict):
+            return "CP8 browser evidence missing representative script coverage."
+        group = entry.get("group")
+        language_tag = entry.get("languageTag")
+        if not isinstance(group, str) or not isinstance(language_tag, str):
+            return "CP8 browser evidence missing representative script coverage."
+        if all(
+            entry.get(key) is True
+            for key in (
+                "targetSnippetVisible",
+                "sourceEnglishVisible",
+                "targetTranscriptVisible",
+                "englishReferenceVisible",
+                "citationsVisible",
+                "metadataArtifactMatchesTranscript",
+                "translatedScriptArtifactMatchesTranscript",
+            )
+        ):
+            observed_representative_groups.add(group)
+    if not CP8_REQUIRED_REPRESENTATIVE_BROWSER_GROUPS.issubset(observed_representative_groups):
+        return "CP8 browser evidence missing representative script coverage."
+    if not isinstance(artifacts, list) or len(artifacts) != 7:
         return "CP8 browser evidence missing artifact metadata."
     for artifact in artifacts:
         if not isinstance(artifact, dict):
@@ -542,6 +657,7 @@ def validate_completed_probe_output(probe: Probe, output: str) -> str:
     if (
         providers.get("llm") != "mock"
         or providers.get("translation") != "mock"
+        or providers.get("voice") != "mock"
         or providers.get("avatar") != "mock"
         or providers.get("videoRenderer") != "local-html"
         or providers.get("networkEgress") is not False

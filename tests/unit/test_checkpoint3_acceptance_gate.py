@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 from pathlib import Path
 from types import ModuleType
@@ -158,6 +159,37 @@ def write_cp8_evidence(
                     "avatarSourceRunId": "run_000001",
                     "avatarSourceEvaluationId": "eval_000001",
                 },
+                "visibleTranscript": {
+                    "sourceEnglishVisible": True,
+                    "targetTranscriptVisible": True,
+                    "englishReferenceVisible": True,
+                    "citationsVisible": True,
+                    "metadataArtifactMatchesTranscript": True,
+                    "translatedScriptArtifactMatchesTranscript": True,
+                },
+                "representativeBrowserCoverage": [
+                    {
+                        "group": group,
+                        "languageTag": language_tag,
+                        "targetSnippetVisible": True,
+                        "sourceEnglishVisible": True,
+                        "targetTranscriptVisible": True,
+                        "englishReferenceVisible": True,
+                        "citationsVisible": True,
+                        "metadataArtifactMatchesTranscript": True,
+                        "translatedScriptArtifactMatchesTranscript": True,
+                    }
+                    for group, language_tag in (
+                        ("Hindi / Devanagari", "hi"),
+                        ("Arabic / RTL Arabic script", "ar"),
+                        ("Hebrew / RTL", "he"),
+                        ("Japanese / CJK", "ja"),
+                        ("Korean / Hangul", "ko"),
+                        ("Russian / Cyrillic", "ru"),
+                        ("French / Latin", "fr"),
+                        ("Thai / Southeast Asia", "th"),
+                    )
+                ],
                 "artifactMetadata": [
                     {
                         "label": label,
@@ -170,6 +202,7 @@ def write_cp8_evidence(
                         ("Download script", "-script.md", "text/markdown"),
                         ("Download subtitles", "-fr.srt", "application/x-subrip"),
                         ("Download voice manifest", "-fr.json", "application/json"),
+                        ("Download transcript metadata", "-metadata.json", "application/json"),
                         ("Download avatar demo", "-demo.html", "text/html"),
                         ("Download render manifest", "-manifest.json", "application/json"),
                         ("Download video placeholder", "-placeholder.json", "application/json"),
@@ -186,7 +219,7 @@ def write_cp8_evidence(
                 "providers": {
                     "llm": "mock",
                     "translation": "mock",
-                    "voice": "LOCAL",
+                    "voice": "mock",
                     "avatar": "mock",
                     "videoRenderer": "local-html",
                     "networkEgress": False,
@@ -625,6 +658,60 @@ def test_checkpoint3_acceptance_clears_provider_environment(monkeypatch: Any, tm
     assert captured_env["NARRATWIN_CP3_PRODUCT_FAITHFUL"] == "1"
 
 
+def test_checkpoint3_acceptance_allocates_isolated_cp8_ports(monkeypatch: Any, tmp_path: Path) -> None:
+    captured_env: dict[str, str] = {}
+    allocated_ports = iter(("48120", "43120"))
+    monkeypatch.delenv("NARRATWIN_CP8_BACKEND_PORT", raising=False)
+    monkeypatch.delenv("NARRATWIN_CP8_FRONTEND_PORT", raising=False)
+    monkeypatch.setattr(checkpoint3, "CP8_EVIDENCE_ROOT", tmp_path)
+    monkeypatch.setattr(checkpoint3, "free_loopback_port", lambda: next(allocated_ports))
+
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        captured_env.update(kwargs["env"])
+        write_cp8_evidence(tmp_path)
+        return subprocess.CompletedProcess(args=args[0], returncode=0, stdout=cp8_success_stdout())
+
+    monkeypatch.setattr(checkpoint3.subprocess, "run", fake_run)
+
+    result = checkpoint3.run_probe(checkpoint3.PROBES[-1])
+
+    assert result.status == "PASS"
+    assert captured_env["NARRATWIN_CP8_BACKEND_PORT"] == "48120"
+    assert captured_env["NARRATWIN_CP8_FRONTEND_PORT"] == "43120"
+
+
+def test_checkpoint3_acceptance_removes_stale_next_dev_lock(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    lock_path = tmp_path / "frontend" / ".next" / "dev" / "lock"
+    lock_path.parent.mkdir(parents=True)
+    lock_path.write_text(
+        json.dumps({"pid": 999_999_999, "port": 3120, "hostname": "localhost"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(checkpoint3, "CP8_NEXT_DEV_LOCK", lock_path)
+
+    checkpoint3.cleanup_stale_cp8_next_dev_lock()
+
+    assert not lock_path.exists()
+
+
+def test_checkpoint3_acceptance_keeps_live_next_dev_lock(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    lock_path = tmp_path / "frontend" / ".next" / "dev" / "lock"
+    lock_path.parent.mkdir(parents=True)
+    lock_path.write_text(
+        json.dumps({"pid": os.getpid(), "port": 3120, "hostname": "localhost"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(checkpoint3, "CP8_NEXT_DEV_LOCK", lock_path)
+
+    checkpoint3.cleanup_stale_cp8_next_dev_lock()
+
+    assert lock_path.exists()
+
+
 def test_checkpoint3_acceptance_rejects_skipped_cp8_browser_probe(monkeypatch: Any, tmp_path: Path) -> None:
     monkeypatch.setattr(checkpoint3, "CP8_EVIDENCE_ROOT", tmp_path)
 
@@ -773,6 +860,68 @@ def test_checkpoint3_acceptance_rejects_cp8_self_attested_idempotency_evidence(
 
     assert result.status == "FAIL"
     assert "missing idempotency binding" in result.output
+
+
+def test_checkpoint3_acceptance_rejects_cp8_missing_representative_browser_coverage(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(checkpoint3, "CP8_EVIDENCE_ROOT", tmp_path)
+
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        write_cp8_evidence(tmp_path)
+        evidence_path = tmp_path / "unit-cp8" / checkpoint3.CP8_EVIDENCE_FILE_NAME
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        evidence["representativeBrowserCoverage"] = [
+            entry
+            for entry in evidence["representativeBrowserCoverage"]
+            if entry["group"] != "Hindi / Devanagari"
+        ]
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+        return subprocess.CompletedProcess(args=args[0], returncode=0, stdout=cp8_success_stdout())
+
+    monkeypatch.setattr(checkpoint3.subprocess, "run", fake_run)
+
+    result = checkpoint3.run_probe(checkpoint3.PROBES[-1])
+
+    assert result.status == "FAIL"
+    assert "missing representative script coverage" in result.output
+
+
+@pytest.mark.parametrize(
+    ("provider_key", "spoofed_value"),
+    (
+        ("llm", "openai"),
+        ("translation", "google"),
+        ("voice", "elevenlabs"),
+        ("avatar", "heygen"),
+        ("videoRenderer", "remote-renderer"),
+        ("networkEgress", True),
+        ("realVideo", True),
+        ("clonedIdentity", True),
+    ),
+)
+def test_checkpoint3_acceptance_rejects_cp8_provider_posture_spoofing(
+    monkeypatch: Any,
+    tmp_path: Path,
+    provider_key: str,
+    spoofed_value: Any,
+) -> None:
+    monkeypatch.setattr(checkpoint3, "CP8_EVIDENCE_ROOT", tmp_path)
+
+    def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        write_cp8_evidence(tmp_path)
+        evidence_path = tmp_path / "unit-cp8" / checkpoint3.CP8_EVIDENCE_FILE_NAME
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        evidence["providers"][provider_key] = spoofed_value
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+        return subprocess.CompletedProcess(args=args[0], returncode=0, stdout=cp8_success_stdout())
+
+    monkeypatch.setattr(checkpoint3.subprocess, "run", fake_run)
+
+    result = checkpoint3.run_probe(checkpoint3.PROBES[-1])
+
+    assert result.status == "FAIL"
+    assert "missing local/mock provider posture" in result.output
 
 
 @pytest.mark.parametrize(

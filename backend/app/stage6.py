@@ -31,12 +31,35 @@ from backend.app.tts_provider import (
     checksum_bytes,
 )
 
-SUPPORTED_LANGUAGES = {
-    "en": "English",
-    "es": "Spanish",
-    "fr": "French",
-    "hi": "Hindi",
-}
+PRIORITY1_LANGUAGE_TAGS = (
+    "en",
+    "hi",
+    "es",
+    "de",
+    "fr",
+    "pt-BR",
+    "it",
+    "nl",
+    "pl",
+    "uk",
+    "ru",
+    "zh-Hans",
+    "zh-Hant",
+    "ja",
+    "ko",
+    "ar",
+    "arz",
+    "he",
+    "fa",
+    "tr",
+    "vi",
+    "id",
+    "fil",
+    "th",
+    "ms",
+)
+PRIORITY2_LANGUAGE_TAGS = ("bn", "ta", "te", "kn", "mr", "gu", "ml", "ur", "pa")
+SUPPORTED_LANGUAGES: dict[str, str] = {}
 MAX_GLOSSARY_TERMS = 25
 MAX_GLOSSARY_TERM_CHARS = 80
 MAX_SOURCE_SCRIPT_CHARS = 20_000
@@ -80,6 +103,624 @@ class DownloadableArtifact:
     mime_type: str
     content_base64: str
     checksum: str
+
+
+@dataclass(frozen=True)
+class LanguageCatalogRecord:
+    language_tag: str
+    english_name: str
+    native_name: str
+    script: str
+    direction: Literal["ltr", "rtl"]
+    market_priority: int
+    region_group: str
+    local_demo_support_status: Literal["SUPPORTED", "PLANNED_UNSUPPORTED_LOCAL_DEMO"]
+    provider_support_status: Literal["LOCAL_DEMO_FIXTURE", "UNSUPPORTED_LOCAL_DEMO"]
+    test_coverage_level: Literal["CHECKPOINT3A_EXHAUSTIVE", "CATALOG_ONLY"]
+
+
+@dataclass(frozen=True)
+class MultilingualTranscriptSegment:
+    segment_id: str
+    source_text: str
+    target_language: str
+    target_text: str
+    english_reference_text: str
+    citation_markers: tuple[str, ...]
+    citation_indexes: tuple[int, ...]
+    context_ref_ids: tuple[str, ...]
+    claim_support_ids: tuple[str, ...]
+    source_run_id: str
+    evaluation_id: str
+
+
+@dataclass(frozen=True)
+class TranscriptCorrectness:
+    validation_status: Literal["PASSED"]
+    script: str
+    direction: Literal["ltr", "rtl"]
+    segment_count: int
+    citation_indexes: tuple[int, ...]
+
+
+LANGUAGE_CATALOG: tuple[LanguageCatalogRecord, ...] = (
+    LanguageCatalogRecord(
+        "en", "English", "English", "Latin", "ltr", 1, "Global", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "hi", "Hindi", "हिन्दी", "Devanagari", "ltr", 1, "South Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "es", "Spanish", "Español", "Latin", "ltr", 1, "Europe/Latin America", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "de", "German", "Deutsch", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "fr", "French", "Français", "Latin", "ltr", 1, "Europe/Africa/Canada", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "pt-BR", "Brazilian Portuguese", "Português do Brasil", "Latin", "ltr", 1, "Latin America", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "it", "Italian", "Italiano", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "nl", "Dutch", "Nederlands", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "pl", "Polish", "Polski", "Latin", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "uk", "Ukrainian", "Українська", "Cyrillic", "ltr", 1, "Europe", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "ru", "Russian", "Русский", "Cyrillic", "ltr", 1, "Europe/Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "zh-Hans", "Chinese Simplified", "简体中文", "Han Simplified", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "zh-Hant", "Chinese Traditional", "繁體中文", "Han Traditional", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "ja", "Japanese", "日本語", "Japanese", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "ko", "Korean", "한국어", "Hangul", "ltr", 1, "East Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "ar", "Arabic", "العربية", "Arabic", "rtl", 1, "MENA", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "arz", "Egyptian Arabic", "مصري", "Arabic", "rtl", 1, "MENA", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "he", "Hebrew", "עברית", "Hebrew", "rtl", 1, "MENA", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "fa", "Persian/Farsi", "فارسی", "Arabic", "rtl", 1, "MENA/Central Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "tr", "Turkish", "Türkçe", "Latin", "ltr", 1, "Europe/West Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "vi", "Vietnamese", "Tiếng Việt", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "id", "Indonesian", "Bahasa Indonesia", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "fil", "Filipino/Tagalog", "Filipino", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "th", "Thai", "ไทย", "Thai", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "ms", "Malay", "Bahasa Melayu", "Latin", "ltr", 1, "Southeast Asia", "SUPPORTED", "LOCAL_DEMO_FIXTURE", "CHECKPOINT3A_EXHAUSTIVE"
+    ),
+    LanguageCatalogRecord(
+        "bn", "Bengali", "বাংলা", "Bengali", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "ta", "Tamil", "தமிழ்", "Tamil", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "te", "Telugu", "తెలుగు", "Telugu", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "kn", "Kannada", "ಕನ್ನಡ", "Kannada", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "mr", "Marathi", "मराठी", "Devanagari", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "gu", "Gujarati", "ગુજરાતી", "Gujarati", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "ml", "Malayalam", "മലയാളം", "Malayalam", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "ur", "Urdu", "اردو", "Arabic", "rtl", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+    LanguageCatalogRecord(
+        "pa", "Punjabi", "ਪੰਜਾਬੀ", "Gurmukhi", "ltr", 2, "South Asia", "PLANNED_UNSUPPORTED_LOCAL_DEMO", "UNSUPPORTED_LOCAL_DEMO", "CATALOG_ONLY"
+    ),
+)
+LANGUAGE_CATALOG_BY_TAG = {record.language_tag: record for record in LANGUAGE_CATALOG}
+SUPPORTED_LANGUAGES.update(
+    {
+        record.language_tag: record.english_name
+        for record in LANGUAGE_CATALOG
+        if record.local_demo_support_status == "SUPPORTED"
+    }
+)
+DEMO_TRANSLATED_SEGMENT_TEXT = {
+    "hi": "NarraTwin AI स्वीकृत परियोजना-जानकारी को तथ्य-आधारित, चरण-दर-चरण प्रस्तुति की पटकथाओं में बदलता है।",
+    "es": "NarraTwin AI convierte el conocimiento aprobado del proyecto en guiones de recorrido fundamentados con citas de origen.",
+    "de": "NarraTwin AI wandelt genehmigtes Projektwissen in fundierte Präsentationsskripte mit Quellenzitaten um.",
+    "fr": "NarraTwin AI transforme les connaissances approuvées du projet en scripts de présentation fondés avec des citations de source.",
+    "pt-BR": "O NarraTwin AI transforma conhecimento aprovado do projeto em roteiros de apresentação fundamentados com citações de fonte.",
+    "it": "NarraTwin AI trasforma la conoscenza approvata del progetto in copioni di presentazione fondati con citazioni delle fonti.",
+    "nl": "NarraTwin AI zet goedgekeurde projectkennis om in onderbouwde presentatiescripts met broncitaten.",
+    "pl": "NarraTwin AI przekształca zatwierdzoną wiedzę projektową w ugruntowane skrypty prezentacyjne z cytatami źródłowymi.",
+    "uk": "NarraTwin AI перетворює затверджені знання про проект на обґрунтовані сценарії презентації з посиланнями на джерела.",
+    "ru": "NarraTwin AI превращает утвержденные знания проекта в обоснованные сценарии презентации с ссылками на источники.",
+    "zh-Hans": "NarraTwin AI 将已批准的项目知识转换为带有来源引用的有依据讲解脚本。",
+    "zh-Hant": "NarraTwin AI 將已核准的專案知識轉換為帶有來源引用的有根據導覽腳本。",
+    "ja": "NarraTwin AI は承認済みのプロジェクト知識を出典引用付きの根拠ある説明台本に変換します。",
+    "ko": "NarraTwin AI는 승인된 프로젝트 지식을 출처 인용이 있는 근거 기반 설명 대본으로 변환합니다.",
+    "ar": "يحوّل NarraTwin AI المعرفة المعتمدة للمشروع إلى نصوص شرح موثقة باقتباسات من المصدر.",
+    "arz": "NarraTwin AI بيحوّل معرفة المشروع المعتمدة لنصوص شرح موثقة ومعاها اقتباسات من المصدر.",
+    "he": "NarraTwin AI הופך ידע פרויקט מאושר לתסריטי הסבר מבוססים עם ציטוטי מקור.",
+    "fa": "NarraTwin AI دانش تأییدشده پروژه را به متن‌های توضیحی مستند با ارجاع به منبع تبدیل می‌کند.",
+    "tr": "NarraTwin AI, onaylanmış proje bilgisini kaynak alıntılı temellendirilmiş anlatım metinlerine dönüştürür.",
+    "vi": "NarraTwin AI chuyển kiến thức dự án đã phê duyệt thành kịch bản hướng dẫn có căn cứ kèm trích dẫn nguồn.",
+    "id": "NarraTwin AI mengubah pengetahuan proyek yang disetujui menjadi naskah panduan berlandaskan bukti dengan kutipan sumber.",
+    "fil": "Ginagawang may-batayang script ng pagpapaliwanag ng NarraTwin AI ang aprubadong kaalaman sa proyekto na may sipi ng pinagmulan.",
+    "th": "NarraTwin AI แปลงความรู้โครงการที่อนุมัติแล้วเป็นสคริปต์อธิบายที่มีหลักฐานพร้อมการอ้างอิงแหล่งที่มา",
+    "ms": "NarraTwin AI menukar pengetahuan projek yang diluluskan kepada skrip penerangan berasas dengan petikan sumber.",
+}
+DEMO_AUDIENCE_SUPPORT_TEXT = {
+    "hi": "यह भर्ती विशेषज्ञों, नियुक्ति प्रबंधकों, अभियंताओं, उत्पाद नेतृत्वकर्ताओं, ग्राहकों, नए उपयोगकर्ताओं और वैश्विक दर्शकों के लिए दर्शक-अनुरूप व्याख्याओं का समर्थन करता है।",
+    "es": "Admite explicaciones adaptadas para reclutadores, responsables de contratación, ingenieros, líderes de producto, clientes, principiantes y audiencias globales.",
+    "de": "Es unterstützt zielgruppengerechte Erklärungen für Personalvermittler, Einstellungsmanager, Ingenieure, Produktverantwortliche, Kunden, Einsteiger und globale Zielgruppen.",
+    "fr": "Il prend en charge des explications adaptées aux recruteurs, responsables du recrutement, ingénieurs, responsables produit, clients, débutants et publics internationaux.",
+    "pt-BR": "Ele oferece explicações adaptadas para recrutadores, gestores de contratação, engenheiros, líderes de produto, clientes, iniciantes e públicos globais.",
+    "it": "Supporta spiegazioni adattate per selezionatori, responsabili delle assunzioni, ingegneri, responsabili di prodotto, clienti, principianti e pubblico globale.",
+    "nl": "Het ondersteunt doelgroepgerichte uitleg voor wervers, wervingsmanagers, ingenieurs, productleiders, klanten, beginnende gebruikers en wereldwijde doelgroepen.",
+    "pl": "Obsługuje wyjaśnienia dostosowane do rekruterów, menedżerów zatrudniających, inżynierów, liderów produktu, klientów, początkujących i odbiorców globalnych.",
+    "uk": "Він підтримує пояснення, адаптовані для рекрутерів, менеджерів з найму, інженерів, продуктових лідерів, клієнтів, початківців і глобальних аудиторій.",
+    "ru": "Он поддерживает объяснения, адаптированные для рекрутеров, менеджеров по найму, инженеров, продуктовых лидеров, клиентов, начинающих и глобальной аудитории.",
+    "zh-Hans": "它支持面向招聘人员、招聘经理、工程师、产品负责人、客户、初学者和全球受众的受众化说明。",
+    "zh-Hant": "它支援面向招募人員、招募經理、工程師、產品負責人、客戶、初學者和全球受眾的受眾化說明。",
+    "ja": "採用担当者、採用責任者、エンジニア、プロダクトリーダー、顧客、初心者、世界中の視聴者に合わせた説明をサポートします。",
+    "ko": "채용 담당자, 채용 관리자, 엔지니어, 제품 리더, 고객, 초보자, 전 세계 시청자를 위한 대상별 설명을 지원합니다.",
+    "ar": "يدعم شروحات مخصصة لمسؤولي التوظيف ومديري التوظيف والمهندسين وقادة المنتج والعملاء والمبتدئين والجماهير العالمية.",
+    "arz": "بيدعم شروحات مناسبة لمسؤولي التوظيف ومديري التوظيف والمهندسين وقادة المنتج والعملاء والمبتدئين والجمهور العالمي.",
+    "he": "הוא תומך בהסברים מותאמי קהל עבור מגייסים, מנהלי גיוס, מהנדסים, מובילי מוצר, לקוחות, מתחילים וצופים גלובליים.",
+    "fa": "از توضیح‌های متناسب با جذب‌کنندگان نیرو، مدیران استخدام، مهندسان، رهبران محصول، مشتریان، کاربران تازه‌کار و مخاطبان جهانی پشتیبانی می‌کند.",
+    "tr": "İşe alım uzmanları, işe alım yöneticileri, mühendisler, ürün liderleri, müşteriler, yeni başlayanlar ve küresel kitleler için hedef kitleye uyarlanmış açıklamaları destekler.",
+    "vi": "Nó hỗ trợ phần giải thích phù hợp cho nhà tuyển dụng, quản lý tuyển dụng, kỹ sư, lãnh đạo sản phẩm, khách hàng, người mới và khán giả toàn cầu.",
+    "id": "Ini mendukung penjelasan yang disesuaikan untuk perekrut, manajer perekrutan, insinyur, pemimpin produk, pelanggan, pemula, dan audiens global.",
+    "fil": "Sinusuportahan nito ang mga paliwanag na angkop sa mga tagapagrekrut, tagapamahala sa pagkuha, inhinyero, lider ng produkto, kliyente, baguhan, at pandaigdigang manonood.",
+    "th": "รองรับคำอธิบายที่ปรับให้เหมาะกับผู้สรรหาบุคลากร ผู้จัดการฝ่ายสรรหา วิศวกร ผู้นำผลิตภัณฑ์ ลูกค้า ผู้เริ่มต้น และผู้ชมทั่วโลก",
+    "ms": "Ia menyokong penerangan yang disesuaikan untuk perekrut, pengurus pengambilan pekerja, jurutera, pemimpin produk, pelanggan, pemula dan penonton global.",
+}
+DEMO_RECRUITER_ENGINEERING_SUPPORT_TEXT = {
+    "hi": "यह भर्ती विशेषज्ञों और अभियांत्रिकी दर्शकों के लिए दर्शक-अनुरूप व्याख्याओं का समर्थन करता है।",
+    "es": "Admite explicaciones adaptadas para audiencias de reclutadores e ingeniería.",
+    "de": "Es unterstützt zielgruppengerechte Erklärungen für Personalvermittlungs- und Ingenieurzielgruppen.",
+    "fr": "Il prend en charge des explications adaptées aux publics du recrutement et de l'ingénierie.",
+    "pt-BR": "Ele oferece explicações adaptadas para públicos de recrutamento e engenharia.",
+    "it": "Supporta spiegazioni adattate per il pubblico della selezione e dell'ingegneria.",
+    "nl": "Het ondersteunt doelgroepgerichte uitleg voor werving en ingenieursdoelgroepen.",
+    "pl": "Obsługuje wyjaśnienia dostosowane do odbiorców rekrutacyjnych i inżynieryjnych.",
+    "uk": "Він підтримує пояснення, адаптовані для рекрутерської та інженерної аудиторій.",
+    "ru": "Он поддерживает объяснения, адаптированные для рекрутерской и инженерной аудиторий.",
+    "zh-Hans": "它支持面向招聘和工程受众的简明受众化说明。",
+    "zh-Hant": "它支援專門面向招募和工程受眾的受眾化說明。",
+    "ja": "採用担当者とエンジニアリングの視聴者に合わせた説明をサポートします。",
+    "ko": "채용 담당자와 엔지니어링 대상자를 위한 대상별 설명을 지원합니다.",
+    "ar": "يدعم شروحات مخصصة لجمهور التوظيف والهندسة.",
+    "arz": "بيدعم شروحات مناسبة لجمهور التوظيف والهندسة.",
+    "he": "הוא תומך בהסברים מותאמי קהל עבור קהלי גיוס והנדסה.",
+    "fa": "از توضیح‌های متناسب با مخاطبان جذب نیرو و مهندسی پشتیبانی می‌کند.",
+    "tr": "İşe alım ve mühendislik kitleleri için hedef kitleye uyarlanmış açıklamaları destekler.",
+    "vi": "Nó hỗ trợ phần giải thích phù hợp cho nhóm tuyển dụng và kỹ thuật.",
+    "id": "Ini mendukung penjelasan yang disesuaikan untuk audiens perekrutan dan teknik.",
+    "fil": "Sinusuportahan nito ang mga paliwanag na angkop sa mga tagapakinig sa pangangalap ng tauhan at inhinyeriya.",
+    "th": "รองรับคำอธิบายที่ปรับให้เหมาะกับกลุ่มผู้สรรหาบุคลากรและวิศวกรรม",
+    "ms": "Ia menyokong penerangan yang disesuaikan untuk khalayak perekrutan dan kejuruteraan.",
+}
+DEMO_LOCAL_PROVIDER_TEXT = {
+    "hi": "स्थानीय प्रदर्शन निर्धारक समीक्षा के लिए अनुकरणीय स्थानीय LLM, अनुवाद, आवाज़ और अवतार अनुकूलकों का उपयोग करता है।",
+    "es": "La demostración local usa adaptadores locales simulados de LLM, traducción, voz y avatar para una revisión determinista.",
+    "de": "Die lokale Demonstration nutzt simulierte lokale LLM-, Übersetzungs-, Sprach- und Avatar-Schnittstellen für deterministische Prüfungen.",
+    "fr": "La démonstration locale utilise des adaptateurs locaux simulés de LLM, de traduction, de voix et d'avatar pour une revue déterministe.",
+    "pt-BR": "A demonstração local usa adaptadores locais simulados de LLM, tradução, voz e avatar para revisão determinística.",
+    "it": "La dimostrazione locale usa connettori locali simulati per LLM, traduzione, voce e avatar per una revisione deterministica.",
+    "nl": "De lokale demonstratie gebruikt gesimuleerde lokale LLM-, vertaal-, stem- en avatar-koppelingen voor deterministische beoordeling.",
+    "pl": "Lokalna demonstracja używa symulowanych lokalnych interfejsów LLM, tłumaczenia, głosu i awatara do deterministycznego przeglądu.",
+    "uk": "Локальна демонстрація використовує макетні локальні адаптери LLM, перекладу, голосу й аватара для детермінованої перевірки.",
+    "ru": "Локальная демонстрация использует имитированные локальные адаптеры LLM, перевода, голоса и аватара для детерминированной проверки.",
+    "zh-Hans": "本地演示使用模拟的本地 LLM、翻译、语音和头像适配器，以便进行简明确定性审查。",
+    "zh-Hant": "本機示範使用模擬的本機 LLM、翻譯、語音和頭像配接器，以便進行專門的確定性審查。",
+    "ja": "ローカル実演は、決定論的な検証のために模擬ローカル LLM、翻訳、音声、仮想人物連携機能を使用します。",
+    "ko": "로컬 시연은 결정론적 검토를 위해 모의 로컬 LLM, 번역, 음성, 가상 발표자 연결 구성 요소를 사용합니다.",
+    "ar": "يستخدم العرض المحلي محولات محلية وهمية للنموذج اللغوي والترجمة والصوت والشخصية الافتراضية من أجل مراجعة حتمية.",
+    "arz": "العرض المحلي بيستخدم محولات محلية وهمية للنموذج اللغوي والترجمة والصوت والشخصية الافتراضية علشان مراجعة حتمية.",
+    "he": "ההדגמה המקומית משתמשת ברכיבי חיבור מקומיים מדומים עבור LLM, תרגום, קול ודמות וירטואלית לצורך סקירה קבועה מראש.",
+    "fa": "نمایش محلی برای بازبینی قطعی از رابط‌های محلی شبیه‌سازی‌شده LLM، ترجمه، صدا و نمایه مجازی استفاده می‌کند.",
+    "tr": "Yerel tanıtım, belirlenimci inceleme için sahte yerel LLM, çeviri, ses ve sanal karakter bağdaştırıcıları kullanır.",
+    "vi": "Bản trình diễn cục bộ dùng các bộ điều hợp LLM, dịch thuật, giọng nói và hình đại diện cục bộ giả lập để đánh giá xác định.",
+    "id": "Demonstrasi lokal menggunakan penghubung LLM, terjemahan, suara, dan figur virtual lokal tiruan untuk tinjauan yang hasilnya tetap.",
+    "fil": "Gumagamit ang lokal na pagpapakita ng mga kunwaring lokal na tagapag-ugnay para sa LLM, pagsasalin, boses, at biswal na kinatawan para sa pagsusuring tiyak ang resulta.",
+    "th": "การสาธิตภายในเครื่องใช้ตัวแปลง LLM การแปล เสียง และตัวแทนเสมือนแบบจำลองภายในเครื่องเพื่อการตรวจสอบที่กำหนดผลได้",
+    "ms": "Demonstrasi tempatan menggunakan penyesuai LLM, terjemahan, suara dan watak maya tempatan olok-olok untuk semakan yang hasilnya tetap.",
+}
+DEMO_STAGE4_SLICE_TEXT = {
+    "hi": "Stage 4 का भाग निर्धारक परीक्षणों के लिए अनुकरणीय स्थानीय LLM और अनुकरणीय स्थानीय अंतर्निवेशन का उपयोग करता है।",
+    "es": "El segmento de Stage 4 usa un LLM local simulado y embeddings locales simulados para pruebas deterministas.",
+    "de": "Der Stage-4-Teil nutzt ein simuliertes lokales LLM und simulierte lokale Vektordarstellungen für deterministische Tests.",
+    "fr": "Le segment Stage 4 utilise un LLM local simulé et des représentations vectorielles locales simulées pour des tests déterministes.",
+    "pt-BR": "A fatia Stage 4 usa um LLM local simulado e embeddings locais simulados para testes determinísticos.",
+    "it": "La sezione Stage 4 usa un LLM locale simulato e rappresentazioni vettoriali locali simulate per test deterministici.",
+    "nl": "Het Stage 4-onderdeel gebruikt een gesimuleerde lokale LLM en gesimuleerde lokale vectorrepresentaties voor deterministische tests.",
+    "pl": "Wycinek Stage 4 używa symulowanego lokalnego LLM oraz symulowanych lokalnych reprezentacji wektorowych do testów deterministycznych.",
+    "uk": "Зріз Stage 4 використовує макетний локальний LLM і макетні локальні векторні представлення для детермінованих тестів.",
+    "ru": "Срез Stage 4 использует имитированный локальный LLM и имитированные локальные векторные представления для детерминированных тестов.",
+    "zh-Hans": "Stage 4 切片使用模拟的本地 LLM 和模拟的本地嵌入来进行确定性测试。",
+    "zh-Hant": "Stage 4 切片使用模擬的本機 LLM 和模擬的本機嵌入來進行確定性測試。",
+    "ja": "Stage 4 の部分は、決定論的なテストのために模擬ローカル LLM と模擬ローカル埋め込みを使用します。",
+    "ko": "Stage 4 부분은 결정론적 테스트를 위해 모의 로컬 LLM과 모의 로컬 벡터 표현을 사용합니다.",
+    "ar": "تستخدم شريحة Stage 4 نموذجًا لغويًا محليًا وهميًا وتضمينات محلية وهمية للاختبارات الحتمية.",
+    "arz": "شريحة Stage 4 بتستخدم نموذج لغوي محلي وهمي وتضمينات محلية وهمية للاختبارات الحتمية.",
+    "he": "פרוסת Stage 4 משתמשת ב-LLM מקומי מדומה ובהטמעות מקומיות מדומות לבדיקות דטרמיניסטיות.",
+    "fa": "بخش Stage 4 برای آزمون‌های قطعی از LLM محلی شبیه‌سازی‌شده و بازنمایی‌های برداری محلی شبیه‌سازی‌شده استفاده می‌کند.",
+    "tr": "Stage 4 dilimi, deterministik testler için sahte yerel LLM ve sahte yerel gömmeler kullanır.",
+    "vi": "Lát cắt Stage 4 dùng LLM cục bộ giả lập và embedding cục bộ giả lập cho các kiểm thử xác định.",
+    "id": "Irisan Stage 4 menggunakan LLM lokal tiruan dan representasi vektor lokal tiruan untuk pengujian yang hasilnya tetap.",
+    "fil": "Gumagamit ang bahagi ng Stage 4 ng kunwaring lokal na LLM at kunwaring lokal na representasyong vector para sa pagsusuring tiyak ang resulta.",
+    "th": "ส่วน Stage 4 ใช้ LLM ภายในเครื่องแบบจำลองและการฝังข้อมูลภายในเครื่องแบบจำลองสำหรับการทดสอบที่กำหนดผลได้",
+    "ms": "Bahagian Stage 4 menggunakan LLM tempatan olok-olok dan perwakilan vektor tempatan olok-olok untuk ujian yang hasilnya tetap.",
+}
+DEMO_CITATION_REQUIREMENT_TEXT = {
+    "hi": "प्रत्येक उत्पन्न चरण-दर-चरण प्रस्तुति संबंधी दावे में स्वीकृत जानकारी से प्राप्त स्रोत अंशों का उद्धरण होना चाहिए।",
+    "es": "Cada afirmación generada del recorrido debe citar fragmentos de fuente recuperados de conocimiento aprobado.",
+    "de": "Jede generierte Aussage in der Präsentation muss abgerufene Quellenausschnitte aus genehmigtem Wissen zitieren.",
+    "fr": "Chaque affirmation de démonstration générée doit citer les extraits source récupérés depuis les connaissances approuvées.",
+    "pt-BR": "Toda afirmação gerada no roteiro deve citar trechos de fonte recuperados do conhecimento aprovado.",
+    "it": "Ogni affermazione generata nel percorso deve citare frammenti di fonte recuperati dalla conoscenza approvata.",
+    "nl": "Elke gegenereerde presentatieclaim moet opgehaalde bronfragmenten uit goedgekeurde kennis citeren.",
+    "pl": "Każde wygenerowane twierdzenie w prezentacji musi cytować pobrane fragmenty źródłowe z zatwierdzonej wiedzy.",
+    "uk": "Кожне згенероване твердження у поясненні має цитувати отримані фрагменти джерел із затверджених знань.",
+    "ru": "Каждое сгенерированное утверждение в пояснении должно цитировать извлеченные фрагменты источников из утвержденных знаний.",
+    "zh-Hans": "每个生成的简明讲解声明都必须引用从已批准知识中检索到的来源片段。",
+    "zh-Hant": "每個產生的專門導覽聲明都必須引用從已核准知識中擷取到的來源片段。",
+    "ja": "生成された各説明の主張は、承認済み知識から取得した出典部分を引用しなければなりません。",
+    "ko": "생성된 모든 안내 주장에는 승인된 지식에서 검색된 출처 조각을 인용해야 합니다.",
+    "ar": "يجب أن يستشهد كل ادعاء إرشادي يتم إنشاؤه بمقاطع مصدر مسترجعة من المعرفة المعتمدة.",
+    "arz": "كل ادعاء شرح متولد لازم يستشهد بمقاطع مصدر مسترجعة من المعرفة المعتمدة.",
+    "he": "כל טענת הדרכה שנוצרת חייבת לצטט מקטעי מקור שאוחזרו מידע מאושר.",
+    "fa": "هر ادعای راهنمای تولیدشده باید بخش‌های منبع بازیابی‌شده از دانش تأییدشده را ارجاع دهد.",
+    "tr": "Üretilen her anlatım iddiası, onaylanmış bilgiden alınan kaynak parçalarına atıf yapmalıdır.",
+    "vi": "Mỗi tuyên bố hướng dẫn được tạo phải trích dẫn các đoạn nguồn được truy xuất từ kiến thức đã phê duyệt.",
+    "id": "Setiap klaim panduan yang dihasilkan harus mengutip potongan sumber yang diambil dari pengetahuan yang disetujui.",
+    "fil": "Dapat sipiin ng bawat nabuong pahayag sa pagpapaliwanag ang mga bahagi ng pinagmulan na nakuha mula sa aprubadong kaalaman.",
+    "th": "ทุกข้อกล่าวอ้างในคำแนะนำที่สร้างขึ้นต้องอ้างอิงส่วนแหล่งข้อมูลที่ดึงมาจากความรู้ที่อนุมัติแล้ว",
+    "ms": "Setiap dakwaan panduan yang dijana mesti memetik cebisan sumber yang diperoleh daripada pengetahuan yang diluluskan.",
+}
+DEMO_AUDIENCE_PREFIX_TEXT = {
+    "hi": {
+        "recruiters": "भर्ती विशेषज्ञों के लिए",
+        "hiring managers": "नियुक्ति प्रबंधकों के लिए",
+        "engineers": "अभियंताओं के लिए",
+        "product leaders": "उत्पाद नेतृत्वकर्ताओं के लिए",
+        "beginners": "नए उपयोगकर्ताओं के लिए",
+        "global viewers": "वैश्विक दर्शकों के लिए",
+        "customers": "ग्राहकों के लिए",
+    },
+    "es": {
+        "recruiters": "Para reclutadores",
+        "hiring managers": "Para responsables de contratación",
+        "engineers": "Para ingenieros",
+        "product leaders": "Para líderes de producto",
+        "beginners": "Para principiantes",
+        "global viewers": "Para audiencias globales",
+        "customers": "Para clientes",
+    },
+    "de": {
+        "recruiters": "Für Personalvermittler",
+        "hiring managers": "Für Einstellungsmanager",
+        "engineers": "Für Ingenieure",
+        "product leaders": "Für Produktverantwortliche",
+        "beginners": "Für Einsteiger",
+        "global viewers": "Für globale Zuschauer",
+        "customers": "Für Kunden",
+    },
+    "fr": {
+        "recruiters": "Pour les recruteurs",
+        "hiring managers": "Pour les responsables du recrutement",
+        "engineers": "Pour les ingénieurs",
+        "product leaders": "Pour les responsables produit",
+        "beginners": "Pour les débutants",
+        "global viewers": "Pour les publics internationaux",
+        "customers": "Pour les clients",
+    },
+    "pt-BR": {
+        "recruiters": "Para recrutadores",
+        "hiring managers": "Para gestores de contratação",
+        "engineers": "Para engenheiros",
+        "product leaders": "Para líderes de produto",
+        "beginners": "Para iniciantes",
+        "global viewers": "Para públicos globais",
+        "customers": "Para clientes",
+    },
+    "it": {
+        "recruiters": "Per i selezionatori",
+        "hiring managers": "Per i responsabili delle assunzioni",
+        "engineers": "Per gli ingegneri",
+        "product leaders": "Per i responsabili di prodotto",
+        "beginners": "Per i principianti",
+        "global viewers": "Per il pubblico globale",
+        "customers": "Per i clienti",
+    },
+    "nl": {
+        "recruiters": "Voor wervers",
+        "hiring managers": "Voor wervingsmanagers",
+        "engineers": "Voor ingenieurs",
+        "product leaders": "Voor productleiders",
+        "beginners": "Voor beginnende gebruikers",
+        "global viewers": "Voor wereldwijde kijkers",
+        "customers": "Voor klanten",
+    },
+    "pl": {
+        "recruiters": "Dla rekruterów",
+        "hiring managers": "Dla menedżerów zatrudniających",
+        "engineers": "Dla inżynierów",
+        "product leaders": "Dla liderów produktu",
+        "beginners": "Dla początkujących",
+        "global viewers": "Dla odbiorców globalnych",
+        "customers": "Dla klientów",
+    },
+    "uk": {
+        "recruiters": "Для рекрутерів",
+        "hiring managers": "Для менеджерів з найму",
+        "engineers": "Для інженерів",
+        "product leaders": "Для продуктових лідерів",
+        "beginners": "Для початківців",
+        "global viewers": "Для глобальних глядачів",
+        "customers": "Для клієнтів",
+    },
+    "ru": {
+        "recruiters": "Для рекрутеров",
+        "hiring managers": "Для менеджеров по найму",
+        "engineers": "Для инженеров",
+        "product leaders": "Для продуктовых лидеров",
+        "beginners": "Для начинающих",
+        "global viewers": "Для глобальных зрителей",
+        "customers": "Для клиентов",
+    },
+    "zh-Hans": {
+        "recruiters": "面向招聘人员",
+        "hiring managers": "面向招聘经理",
+        "engineers": "面向工程师",
+        "product leaders": "面向产品负责人",
+        "beginners": "面向初学者",
+        "global viewers": "面向全球观众",
+        "customers": "面向客户",
+    },
+    "zh-Hant": {
+        "recruiters": "面向招募人員",
+        "hiring managers": "面向招募經理",
+        "engineers": "面向工程師",
+        "product leaders": "面向產品負責人",
+        "beginners": "面向初學者",
+        "global viewers": "面向全球觀眾",
+        "customers": "面向客戶",
+    },
+    "ja": {
+        "recruiters": "採用担当者向けに",
+        "hiring managers": "採用責任者向けに",
+        "engineers": "エンジニア向けに",
+        "product leaders": "プロダクトリーダー向けに",
+        "beginners": "初心者向けに",
+        "global viewers": "世界中の視聴者向けに",
+        "customers": "顧客向けに",
+    },
+    "ko": {
+        "recruiters": "채용 담당자를 위해",
+        "hiring managers": "채용 관리자를 위해",
+        "engineers": "엔지니어를 위해",
+        "product leaders": "제품 리더를 위해",
+        "beginners": "초보자를 위해",
+        "global viewers": "전 세계 시청자를 위해",
+        "customers": "고객을 위해",
+    },
+    "ar": {
+        "recruiters": "لمسؤولي التوظيف",
+        "hiring managers": "لمديري التوظيف",
+        "engineers": "للمهندسين",
+        "product leaders": "لقادة المنتج",
+        "beginners": "للمبتدئين",
+        "global viewers": "للمشاهدين العالميين",
+        "customers": "للعملاء",
+    },
+    "arz": {
+        "recruiters": "لمسؤولي التوظيف",
+        "hiring managers": "لمديري التوظيف",
+        "engineers": "للمهندسين",
+        "product leaders": "لقادة المنتج",
+        "beginners": "للمبتدئين",
+        "global viewers": "للمشاهدين العالميين",
+        "customers": "للعملاء",
+    },
+    "he": {
+        "recruiters": "עבור מגייסים",
+        "hiring managers": "עבור מנהלי גיוס",
+        "engineers": "עבור מהנדסים",
+        "product leaders": "עבור מובילי מוצר",
+        "beginners": "עבור מתחילים",
+        "global viewers": "עבור צופים גלובליים",
+        "customers": "עבור לקוחות",
+    },
+    "fa": {
+        "recruiters": "برای جذب‌کنندگان نیرو",
+        "hiring managers": "برای مدیران استخدام",
+        "engineers": "برای مهندسان",
+        "product leaders": "برای رهبران محصول",
+        "beginners": "برای کاربران تازه‌کار",
+        "global viewers": "برای مخاطبان جهانی",
+        "customers": "برای مشتریان",
+    },
+    "tr": {
+        "recruiters": "İşe alım uzmanları için",
+        "hiring managers": "İşe alım yöneticileri için",
+        "engineers": "Mühendisler için",
+        "product leaders": "Ürün liderleri için",
+        "beginners": "Yeni başlayanlar için",
+        "global viewers": "Küresel izleyiciler için",
+        "customers": "Müşteriler için",
+    },
+    "vi": {
+        "recruiters": "Dành cho nhà tuyển dụng",
+        "hiring managers": "Dành cho quản lý tuyển dụng",
+        "engineers": "Dành cho kỹ sư",
+        "product leaders": "Dành cho lãnh đạo sản phẩm",
+        "beginners": "Dành cho người mới",
+        "global viewers": "Dành cho khán giả toàn cầu",
+        "customers": "Dành cho khách hàng",
+    },
+    "id": {
+        "recruiters": "Untuk perekrut",
+        "hiring managers": "Untuk manajer perekrutan",
+        "engineers": "Untuk insinyur",
+        "product leaders": "Untuk pemimpin produk",
+        "beginners": "Untuk pemula",
+        "global viewers": "Untuk pemirsa global",
+        "customers": "Untuk pelanggan",
+    },
+    "fil": {
+        "recruiters": "Para sa mga tagapagrekrut",
+        "hiring managers": "Para sa mga tagapamahala sa pagkuha",
+        "engineers": "Para sa mga inhinyero",
+        "product leaders": "Para sa mga lider ng produkto",
+        "beginners": "Para sa mga baguhan",
+        "global viewers": "Para sa pandaigdigang manonood",
+        "customers": "Para sa mga kliyente",
+    },
+    "th": {
+        "recruiters": "สำหรับผู้สรรหาบุคลากร",
+        "hiring managers": "สำหรับผู้จัดการฝ่ายสรรหา",
+        "engineers": "สำหรับวิศวกร",
+        "product leaders": "สำหรับผู้นำผลิตภัณฑ์",
+        "beginners": "สำหรับผู้เริ่มต้น",
+        "global viewers": "สำหรับผู้ชมทั่วโลก",
+        "customers": "สำหรับลูกค้า",
+    },
+    "ms": {
+        "recruiters": "Untuk perekrut",
+        "hiring managers": "Untuk pengurus pengambilan pekerja",
+        "engineers": "Untuk jurutera",
+        "product leaders": "Untuk pemimpin produk",
+        "beginners": "Untuk pemula",
+        "global viewers": "Untuk penonton global",
+        "customers": "Untuk pelanggan",
+    },
+}
+ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT = {
+    "hi": "Atlas Output OUTPUT-SENTINEL-CP2 जारी करने के पूर्वाभ्यासों के लिए एक काल्पनिक स्थानीय जाँच-सूची निर्माता है।",
+    "es": "Atlas Output OUTPUT-SENTINEL-CP2 es un creador local ficticio de listas de verificación para ensayos de lanzamiento.",
+    "de": "Atlas Output OUTPUT-SENTINEL-CP2 ist ein fiktiver lokaler Ersteller von Prüflisten für Einführungsproben.",
+    "fr": "Atlas Output OUTPUT-SENTINEL-CP2 est un générateur local fictif de listes de contrôle pour les répétitions de lancement.",
+    "pt-BR": "O Atlas Output OUTPUT-SENTINEL-CP2 é um criador local fictício de listas de verificação para ensaios de lançamento.",
+    "it": "Atlas Output OUTPUT-SENTINEL-CP2 è un generatore locale fittizio di liste di controllo per le prove di lancio.",
+    "nl": "Atlas Output OUTPUT-SENTINEL-CP2 is een fictieve lokale maker van controlelijsten voor lanceringsrepetities.",
+    "pl": "Atlas Output OUTPUT-SENTINEL-CP2 jest fikcyjnym lokalnym narzędziem do tworzenia list kontrolnych na próby uruchomienia.",
+    "uk": "Atlas Output OUTPUT-SENTINEL-CP2 є вигаданим локальним конструктором контрольних списків для репетицій запуску.",
+    "ru": "Atlas Output OUTPUT-SENTINEL-CP2 — это вымышленный локальный конструктор контрольных списков для репетиций запуска.",
+    "zh-Hans": "Atlas Output OUTPUT-SENTINEL-CP2 是用于发布演练的虚构本地检查清单生成器。",
+    "zh-Hant": "Atlas Output OUTPUT-SENTINEL-CP2 是用於發布演練的虛構本機檢查清單產生器。",
+    "ja": "Atlas Output OUTPUT-SENTINEL-CP2 は公開リハーサル用の架空のローカル確認リスト作成ツールです。",
+    "ko": "Atlas Output OUTPUT-SENTINEL-CP2는 출시 예행연습용 가상 로컬 확인 목록 생성 도구입니다.",
+    "ar": "Atlas Output OUTPUT-SENTINEL-CP2 هو منشئ محلي خيالي لقوائم التحقق الخاصة بتدريبات الإطلاق.",
+    "arz": "Atlas Output OUTPUT-SENTINEL-CP2 هو منشئ محلي خيالي لقوايم التحقق الخاصة ببروفات الإطلاق.",
+    "he": "Atlas Output OUTPUT-SENTINEL-CP2 הוא יוצר רשימות בדיקה מקומי בדיוני לחזרות השקה.",
+    "fa": "Atlas Output OUTPUT-SENTINEL-CP2 یک سازنده محلی خیالی فهرست‌های بررسی برای تمرین‌های راه‌اندازی است.",
+    "tr": "Atlas Output OUTPUT-SENTINEL-CP2, yayıma hazırlık provaları için kurgusal bir yerel denetim listesi oluşturucusudur.",
+    "vi": "Atlas Output OUTPUT-SENTINEL-CP2 là trình tạo danh sách kiểm tra cục bộ giả định cho các buổi diễn tập ra mắt.",
+    "id": "Atlas Output OUTPUT-SENTINEL-CP2 adalah pembuat daftar periksa lokal fiktif untuk latihan peluncuran.",
+    "fil": "Ang Atlas Output OUTPUT-SENTINEL-CP2 ay kathang-isip na lokal na tagabuo ng talaang-suri para sa mga pagsasanay sa paglulunsad.",
+    "th": "Atlas Output OUTPUT-SENTINEL-CP2 เป็นเครื่องมือสร้างรายการตรวจสอบภายในเครื่องแบบสมมติสำหรับการซ้อมเปิดตัว",
+    "ms": "Atlas Output OUTPUT-SENTINEL-CP2 ialah pembina senarai semak tempatan rekaan untuk latihan pelancaran.",
+}
+ATLAS_OUTPUT_CITATION_TRANSLATED_SEGMENT_TEXT = {
+    "hi": "Atlas Output OUTPUT-SENTINEL-CP2 के लिए प्रत्येक उत्पन्न जाँच-सूची मद में स्वीकृत जारीकरण-टिप्पणी प्रमाण का उद्धरण होना आवश्यक है।",
+    "es": "Atlas Output OUTPUT-SENTINEL-CP2 exige que cada elemento generado de la lista de verificación cite evidencia aprobada de notas de lanzamiento.",
+    "de": "Atlas Output OUTPUT-SENTINEL-CP2 verlangt, dass jeder erzeugte Prüflisteneintrag genehmigte Nachweise aus Einführungsnotizen zitiert.",
+    "fr": "Atlas Output OUTPUT-SENTINEL-CP2 exige que chaque élément généré de la liste de contrôle cite des preuves approuvées issues des notes de lancement.",
+    "pt-BR": "O Atlas Output OUTPUT-SENTINEL-CP2 exige que cada item gerado da lista de verificação cite evidências aprovadas das notas de lançamento.",
+    "it": "Atlas Output OUTPUT-SENTINEL-CP2 richiede che ogni voce generata della lista di controllo citi prove approvate dalle note di lancio.",
+    "nl": "Atlas Output OUTPUT-SENTINEL-CP2 vereist dat elk gegenereerd controlelijstitem goedgekeurd bewijs uit lanceringsnotities citeert.",
+    "pl": "Atlas Output OUTPUT-SENTINEL-CP2 wymaga, aby każdy wygenerowany element listy kontrolnej cytował zatwierdzone dowody z notatek uruchomieniowych.",
+    "uk": "Atlas Output OUTPUT-SENTINEL-CP2 вимагає, щоб кожен згенерований пункт контрольного списку цитував затверджені докази з нотаток запуску.",
+    "ru": "Atlas Output OUTPUT-SENTINEL-CP2 требует, чтобы каждый сгенерированный пункт контрольного списка цитировал утвержденные доказательства из заметок запуска.",
+    "zh-Hans": "Atlas Output OUTPUT-SENTINEL-CP2 要求每个生成的检查清单项目引用已批准的发布说明证据。",
+    "zh-Hant": "Atlas Output OUTPUT-SENTINEL-CP2 要求每個產生的檢查清單項目引用已核准的發布說明證據。",
+    "ja": "Atlas Output OUTPUT-SENTINEL-CP2 では、生成された各確認リスト項目が承認済みの公開メモの根拠を引用する必要があります。",
+    "ko": "Atlas Output OUTPUT-SENTINEL-CP2는 생성된 각 확인 목록 항목이 승인된 출시 노트 증거를 인용하도록 요구합니다.",
+    "ar": "يتطلب Atlas Output OUTPUT-SENTINEL-CP2 أن يستشهد كل عنصر منشأ في قائمة التحقق بأدلة معتمدة من ملاحظات الإطلاق.",
+    "arz": "يتطلب Atlas Output OUTPUT-SENTINEL-CP2 إن كل عنصر متولد في قايمة التحقق يستشهد بأدلة معتمدة من ملاحظات الإطلاق.",
+    "he": "Atlas Output OUTPUT-SENTINEL-CP2 דורש שכל פריט רשימת בדיקה שנוצר יצטט ראיות מאושרות מהערות השקה.",
+    "fa": "Atlas Output OUTPUT-SENTINEL-CP2 الزام می‌کند که هر مورد فهرست بررسی تولیدشده شواهد تأییدشده از یادداشت‌های راه‌اندازی را ارجاع دهد.",
+    "tr": "Atlas Output OUTPUT-SENTINEL-CP2, oluşturulan her denetim listesi maddesinin onaylanmış yayıma hazırlık notu kanıtlarına atıf yapmasını gerektirir.",
+    "vi": "Atlas Output OUTPUT-SENTINEL-CP2 yêu cầu mỗi mục danh sách kiểm tra được tạo phải trích dẫn bằng chứng đã phê duyệt từ ghi chú ra mắt.",
+    "id": "Atlas Output OUTPUT-SENTINEL-CP2 mewajibkan setiap item daftar periksa yang dihasilkan mengutip bukti catatan peluncuran yang disetujui.",
+    "fil": "Inaatas ng Atlas Output OUTPUT-SENTINEL-CP2 na sipiin ng bawat nabuong talaang-suri ang aprubadong ebidensiya mula sa mga tala sa paglulunsad.",
+    "th": "Atlas Output OUTPUT-SENTINEL-CP2 กำหนดให้แต่ละรายการตรวจสอบที่สร้างขึ้นต้องอ้างอิงหลักฐานจากบันทึกการเปิดตัวที่ได้รับอนุมัติ",
+    "ms": "Atlas Output OUTPUT-SENTINEL-CP2 mewajibkan setiap item senarai semak yang dijana memetik bukti nota pelancaran yang diluluskan.",
+}
+ATLAS_OUTPUT_MARKER_TRANSLATED_SEGMENT_TEXT = {
+    "hi": "Atlas Output निर्गम-शुद्धता पृथक्करण जाँचों के लिए OUTPUT-SENTINEL-CP2 चिह्न का उपयोग करता है।",
+    "es": "Atlas Output usa el marcador OUTPUT-SENTINEL-CP2 para comprobaciones aisladas de corrección de salida.",
+    "de": "Atlas Output verwendet die Markierung OUTPUT-SENTINEL-CP2 für isolierte Prüfungen der Ausgabekorrektheit.",
+    "fr": "Atlas Output utilise le marqueur OUTPUT-SENTINEL-CP2 pour des vérifications isolées de la correction des sorties.",
+    "pt-BR": "O Atlas Output usa o marcador OUTPUT-SENTINEL-CP2 para verificações isoladas de correção de saída.",
+    "it": "Atlas Output usa il marcatore OUTPUT-SENTINEL-CP2 per verifiche isolate della correttezza dell'output.",
+    "nl": "Atlas Output gebruikt de markering OUTPUT-SENTINEL-CP2 voor geïsoleerde controles van uitvoercorrectheid.",
+    "pl": "Atlas Output używa znacznika OUTPUT-SENTINEL-CP2 do izolowanych kontroli poprawności wyników.",
+    "uk": "Atlas Output використовує маркер OUTPUT-SENTINEL-CP2 для ізольованих перевірок правильності вихідних даних.",
+    "ru": "Atlas Output использует маркер OUTPUT-SENTINEL-CP2 для изолированных проверок корректности вывода.",
+    "zh-Hans": "Atlas Output 使用 OUTPUT-SENTINEL-CP2 标记进行输出正确性隔离检查。",
+    "zh-Hant": "Atlas Output 使用 OUTPUT-SENTINEL-CP2 標記進行輸出正確性隔離檢查。",
+    "ja": "Atlas Output は出力の正確性を切り分けて確認するために OUTPUT-SENTINEL-CP2 マーカーを使用します。",
+    "ko": "Atlas Output은 출력 정확성을 분리해 확인하기 위해 OUTPUT-SENTINEL-CP2 표시자를 사용합니다.",
+    "ar": "يستخدم Atlas Output العلامة OUTPUT-SENTINEL-CP2 لإجراء فحوصات معزولة لصحة المخرجات.",
+    "arz": "يستخدم Atlas Output العلامة OUTPUT-SENTINEL-CP2 لإجراء فحوصات معزولة لصحة المخرجات.",
+    "he": "Atlas Output משתמש בסמן OUTPUT-SENTINEL-CP2 לבדיקות מבודדות של תקינות הפלט.",
+    "fa": "Atlas Output از نشانگر OUTPUT-SENTINEL-CP2 برای بررسی‌های جداگانه درستی خروجی استفاده می‌کند.",
+    "tr": "Atlas Output, çıktı doğruluğunu yalıtılmış biçimde denetlemek için OUTPUT-SENTINEL-CP2 işaretleyicisini kullanır.",
+    "vi": "Atlas Output dùng dấu hiệu OUTPUT-SENTINEL-CP2 cho các kiểm tra tách biệt về độ đúng của đầu ra.",
+    "id": "Atlas Output menggunakan penanda OUTPUT-SENTINEL-CP2 untuk pemeriksaan terpisah atas kebenaran keluaran.",
+    "fil": "Ginagamit ng Atlas Output ang panandang OUTPUT-SENTINEL-CP2 para sa nakahiwalay na mga pagsusuri ng kawastuhan ng output.",
+    "th": "Atlas Output ใช้ตัวทำเครื่องหมาย OUTPUT-SENTINEL-CP2 สำหรับการตรวจสอบความถูกต้องของผลลัพธ์แบบแยกส่วน",
+    "ms": "Atlas Output menggunakan penanda OUTPUT-SENTINEL-CP2 untuk semakan berasingan terhadap ketepatan output.",
+}
+ATLAS_OUTPUT_FIXTURE_TRANSLATIONS = {
+    "Atlas Output OUTPUT-SENTINEL-CP2 is a fictional local checklist builder for launch rehearsals.": (
+        ATLAS_OUTPUT_TRANSLATED_SEGMENT_TEXT
+    ),
+    "Atlas Output OUTPUT-SENTINEL-CP2 requires each generated checklist item to cite approved launch-note evidence.": (
+        ATLAS_OUTPUT_CITATION_TRANSLATED_SEGMENT_TEXT
+    ),
+    "Atlas Output uses the marker OUTPUT-SENTINEL-CP2 for output-correctness isolation checks.": (
+        ATLAS_OUTPUT_MARKER_TRANSLATED_SEGMENT_TEXT
+    ),
+}
+HELIO_MEDIA_TRANSLATED_SEGMENT_TEXT = {
+    "es": "Helio Media MEDIA-SENTINEL-CP4 es un estudio local ficticio de incorporación para equipos de operaciones de campo.",
+}
 
 
 @dataclass(frozen=True)
@@ -127,6 +768,8 @@ class MultilingualWalkthroughResult:
     source_text_checksum: str
     translated_script_text: str
     subtitles_text: str
+    transcript_segments: tuple[MultilingualTranscriptSegment, ...]
+    transcript_correctness: TranscriptCorrectness
     glossary_terms: list[str]
     preserved_terms: list[str]
     translation_provider: TranslationProviderResult
@@ -226,17 +869,17 @@ class MockTranslationProvider:
             ("must cite", "doit citer"),
         ),
         "hi": (
-            ("turns", "badalta hai"),
-            ("approved", "sweekrit"),
-            ("into", "mein"),
-            ("grounded", "aadharrit"),
+            ("turns", "बदलता है"),
+            ("approved", "स्वीकृत"),
+            ("into", "में"),
+            ("grounded", "स्रोत-आधारित"),
             ("walkthrough scripts", "walkthrough scripts"),
-            ("keeps", "rakhta hai"),
+            ("keeps", "रखता है"),
             ("generated claims", "generated claims"),
-            ("tied to", "se juda"),
-            ("creates", "banata hai"),
-            ("every", "har"),
-            ("must cite", "cite karna chahiye"),
+            ("tied to", "से जुड़ा"),
+            ("creates", "बनाता है"),
+            ("every", "हर"),
+            ("must cite", "उद्धृत करना चाहिए"),
         ),
     }
 
@@ -250,11 +893,18 @@ class MockTranslationProvider:
     ) -> TranslationProviderResult:
         if target_language == source_language:
             translated = source_text
+        elif target_language in DEMO_TRANSLATED_SEGMENT_TEXT and citation_marker_sequence(source_text):
+            translated = translate_demo_source_text(source_text=source_text, target_language=target_language)
+            preserved_suffix = " ".join(term for term in glossary_terms if term in source_text and term not in translated)
+            if preserved_suffix:
+                translated = f"{translated} {preserved_suffix}"
         else:
             protected, placeholders = protect_terms(source_text, glossary_terms)
             translated = protected
             for source, target in self._REPLACEMENTS.get(target_language, ()):
                 translated = re.sub(rf"\b{re.escape(source)}\b", target, translated, flags=re.IGNORECASE)
+            if translated == protected and target_language in DEMO_TRANSLATED_SEGMENT_TEXT:
+                translated = translate_demo_source_text(source_text=restore_terms(protected, placeholders), target_language=target_language)
             translated = restore_terms(translated, placeholders)
         return TranslationProviderResult(
             provider=self.provider,
@@ -727,6 +1377,16 @@ class Stage6Service:
                 source_citation_indexes=normalized_citation_indexes,
                 source_citation_count=source_citation_count,
             )
+            validate_multilingual_source_evidence(
+                source_text=source_text,
+                evaluation_status=normalized_evaluation_status,
+                source_evaluation_checksum_supplied=bool(source_evaluation_checksum.strip()),
+                source_context_ref_count=source_context_ref_count,
+                source_citation_count=source_citation_count,
+                source_context_ref_ids=normalized_context_ref_ids,
+                source_citation_indexes=normalized_citation_indexes,
+                source_claim_support_ids=normalized_claim_support_ids,
+            )
         except Stage6Error as exc:
             if record_key is not None:
                 self._store_idempotent_failure(record_key, exc, snapshot)
@@ -856,6 +1516,32 @@ class Stage6Service:
             translated_text=validated_text,
             preserved_terms=preserved_terms,
         )
+        transcript_segments = build_multilingual_transcript_segments(
+            source_text=source_text,
+            target_language=normalized_target_language,
+            source_run_id=source_run_id,
+            source_evaluation_id=source_evaluation_id,
+            source_context_ref_ids=source_context_ref_ids,
+            source_claim_support_ids=source_claim_support_ids,
+        )
+        transcript_correctness = validate_multilingual_transcript_correctness(
+            target_language=normalized_target_language,
+            source_text=source_text,
+            segments=transcript_segments,
+            source_run_id=source_run_id,
+            evaluation_id=source_evaluation_id,
+            context_ref_ids=source_context_ref_ids,
+            citation_indexes=source_citation_indexes,
+            claim_support_ids=source_claim_support_ids,
+        )
+        validate_translated_script_matches_transcript(
+            target_language=normalized_target_language,
+            source_text=source_text,
+            translated_script_text=translation.translated_text,
+            transcript_segments=transcript_segments,
+        )
+        if normalized_target_language != "en" and translation.translated_text == source_text:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Provider returned an English fallback.")
         subtitles_text = generate_subtitles(
             script_text=translation.translated_text,
             language=normalized_target_language,
@@ -903,7 +1589,11 @@ class Stage6Service:
             artifact_from_text(
                 file_name=f"{source_run_id}-{normalized_target_language}-script.md",
                 mime_type="text/markdown",
-                text=translation.translated_text,
+                text=render_translated_script_artifact_text(
+                    target_language=normalized_target_language,
+                    transcript_segments=transcript_segments,
+                    transcript_correctness=transcript_correctness,
+                ),
             ),
             expected_mime_type="text/markdown",
             expected_extension=".md",
@@ -940,6 +1630,8 @@ class Stage6Service:
             preserved_terms=translation.preserved_terms,
             source_script_text=source_text,
             translated_script_text=translation.translated_text,
+            transcript_segments=transcript_segments,
+            transcript_correctness=transcript_correctness,
             translation_provider=translation,
             voice=voice,
             translated_script_artifact=script_artifact,
@@ -968,6 +1660,8 @@ class Stage6Service:
             source_text_checksum=source_text_checksum,
             translated_script_text=translation.translated_text,
             subtitles_text=subtitles_text,
+            transcript_segments=transcript_segments,
+            transcript_correctness=transcript_correctness,
             glossary_terms=normalized_terms,
             preserved_terms=translation.preserved_terms,
             translation_provider=translation,
@@ -1330,8 +2024,6 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
     provider_translated_text = str(translation_provider["translated_text"])
     if translated_script_text != provider_translated_text:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 translated text is inconsistent.")
-    if artifact_text(translated_script_artifact) != translated_script_text:
-        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 script artifact is inconsistent.")
     if artifact_text(subtitles_artifact) != subtitles_text:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 subtitle artifact is inconsistent.")
     if subtitles_text != generate_subtitles(script_text=translated_script_text, language=target_language):
@@ -1380,6 +2072,33 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         source_citation_indexes=source_citation_indexes,
         source_citation_count=source_citation_count,
     )
+    transcript_segments = tuple(
+        transcript_segment_from_any(cast(dict[str, Any], segment))
+        for segment in row.get("transcript_segments", row.get("transcriptSegments", ()))
+    )
+    transcript_correctness = validate_multilingual_transcript_correctness(
+        target_language=target_language,
+        source_text=source_script_text,
+        segments=transcript_segments,
+        source_run_id=str(row["source_run_id"]),
+        evaluation_id=source_evaluation_id,
+        context_ref_ids=source_context_ref_ids,
+        citation_indexes=source_citation_indexes,
+        claim_support_ids=source_claim_support_ids,
+    )
+    validate_translated_script_matches_transcript(
+        target_language=target_language,
+        source_text=source_script_text,
+        translated_script_text=translated_script_text,
+        transcript_segments=transcript_segments,
+    )
+    expected_translated_script_artifact_text = render_translated_script_artifact_text(
+        target_language=target_language,
+        transcript_segments=transcript_segments,
+        transcript_correctness=transcript_correctness,
+    )
+    if artifact_text(translated_script_artifact) != expected_translated_script_artifact_text:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 script artifact is inconsistent.")
     expected_request_checksum = build_multilingual_request_checksum(
         source_script=source_script_text,
         source_language=source_language,
@@ -1449,6 +2168,8 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         preserved_terms=expected_preserved_terms,
         source_script_text=source_script_text,
         translated_script_text=translated_script_text,
+        transcript_segments=transcript_segments,
+        transcript_correctness=transcript_correctness,
         translation_provider=TranslationProviderResult(
             provider=translation_provider_id,
             provider_mode=translation_provider_mode,
@@ -1485,6 +2206,8 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         source_text_checksum=source_text_checksum,
         translated_script_text=translated_script_text,
         subtitles_text=subtitles_text,
+        transcript_segments=transcript_segments,
+        transcript_correctness=transcript_correctness,
         glossary_terms=[str(term) for term in row.get("glossary_terms", [])],
         preserved_terms=expected_preserved_terms,
         translation_provider=TranslationProviderResult(
@@ -1580,6 +2303,52 @@ def create_stage6_service(*, state_path: Path | None = None) -> Stage6Service:
     return Stage6Service(state_path=state_path)
 
 
+def get_language_catalog() -> tuple[LanguageCatalogRecord, ...]:
+    return LANGUAGE_CATALOG
+
+
+def language_catalog_record_to_api(record: LanguageCatalogRecord) -> dict[str, object]:
+    return {
+        "languageTag": record.language_tag,
+        "englishName": record.english_name,
+        "nativeName": record.native_name,
+        "label": f"{record.english_name} / {record.native_name}",
+        "script": record.script,
+        "direction": record.direction,
+        "marketPriority": record.market_priority,
+        "regionGroup": record.region_group,
+        "localDemoSupportStatus": record.local_demo_support_status,
+        "providerSupportStatus": record.provider_support_status,
+        "testCoverageLevel": record.test_coverage_level,
+    }
+
+
+def transcript_segment_to_api(segment: MultilingualTranscriptSegment) -> dict[str, object]:
+    return {
+        "segmentId": segment.segment_id,
+        "sourceText": segment.source_text,
+        "targetLanguage": segment.target_language,
+        "targetText": segment.target_text,
+        "englishReferenceText": segment.english_reference_text,
+        "citationMarkers": list(segment.citation_markers),
+        "citationIndexes": list(segment.citation_indexes),
+        "contextRefIds": list(segment.context_ref_ids),
+        "claimSupportIds": list(segment.claim_support_ids),
+        "sourceRunId": segment.source_run_id,
+        "evaluationId": segment.evaluation_id,
+    }
+
+
+def transcript_correctness_to_api(correctness: TranscriptCorrectness) -> dict[str, object]:
+    return {
+        "validationStatus": correctness.validation_status,
+        "script": correctness.script,
+        "direction": correctness.direction,
+        "segmentCount": correctness.segment_count,
+        "citationIndexes": list(correctness.citation_indexes),
+    }
+
+
 def build_multilingual_request_checksum(
     *,
     source_script: str,
@@ -1644,6 +2413,18 @@ def normalize_language_tag(language: str) -> str:
     raw_language = language.strip()
     if not raw_language:
         raise Stage6Error(422, "UNSUPPORTED_LANGUAGE", "Unsupported target language.")
+    canonical_by_lower = {tag.lower(): tag for tag in LANGUAGE_CATALOG_BY_TAG}
+    lowered = raw_language.lower()
+    if lowered in canonical_by_lower:
+        canonical = canonical_by_lower[lowered]
+        record = LANGUAGE_CATALOG_BY_TAG[canonical]
+        if record.local_demo_support_status != "SUPPORTED":
+            raise Stage6Error(
+                422,
+                "LOCAL_DEMO_LANGUAGE_UNSUPPORTED",
+                f"{record.english_name} is cataloged as planned and unsupported in the local demo.",
+            )
+        return canonical
     try:
         normalized = langcodes.standardize_tag(raw_language)
         base_language = langcodes.Language.get(normalized).language
@@ -1652,6 +2433,480 @@ def normalize_language_tag(language: str) -> str:
     if base_language not in SUPPORTED_LANGUAGES:
         raise Stage6Error(422, "UNSUPPORTED_LANGUAGE", "Unsupported target language.")
     return base_language
+
+
+def source_transcript_segments(source_text: str) -> tuple[tuple[str, tuple[str, ...], tuple[int, ...]], ...]:
+    matches = list(re.finditer(r"(?P<text>.*?\[(?P<index>\d+)\])(?:\s+|$)", source_text, flags=re.DOTALL))
+    if not matches:
+        return ((source_text.strip(), (), ()),)
+    segments: list[tuple[str, tuple[str, ...], tuple[int, ...]]] = []
+    previous_end = 0
+    for match in matches:
+        uncovered = source_text[previous_end : match.start()].strip()
+        if uncovered:
+            raise Stage6Error(
+                422,
+                "TRANSCRIPT_CORRECTNESS_FAILED",
+                "Source English text contains uncited content outside transcript segments.",
+            )
+        text = " ".join(match.group("text").strip().split())
+        index = int(match.group("index"))
+        if re.fullmatch(r"(?:\[\d+\]\s*)+", text) and segments:
+            previous_text, previous_markers, previous_indexes = segments[-1]
+            segments[-1] = (
+                f"{previous_text} {text}",
+                previous_markers + (f"[{index}]",),
+                previous_indexes + (index,),
+            )
+            previous_end = match.end()
+            continue
+        segments.append((text, (f"[{index}]",), (index,)))
+        previous_end = match.end()
+    trailing = source_text[previous_end:].strip()
+    if trailing:
+        raise Stage6Error(
+            422,
+            "TRANSCRIPT_CORRECTNESS_FAILED",
+            "Source English text contains uncited content outside transcript segments.",
+        )
+    return tuple(segments)
+
+
+def translate_demo_source_text(*, source_text: str, target_language: str) -> str:
+    return " ".join(
+        translate_demo_segment_text(
+            segment_number=index,
+            source_segment=segment_text,
+            target_language=target_language,
+            citation_markers=markers,
+        )
+        for index, (segment_text, markers, _citation_indexes) in enumerate(source_transcript_segments(source_text), start=1)
+    )
+
+
+def translate_demo_segment_text(
+    *,
+    segment_number: int,
+    source_segment: str,
+    target_language: str,
+    citation_markers: tuple[str, ...],
+) -> str:
+    if target_language == "en":
+        target = source_segment
+    else:
+        base_text = local_demo_translated_segment_fixture(
+            source_segment=source_segment,
+            target_language=target_language,
+        )
+        if base_text is None:
+            raise Stage6Error(
+                422,
+                "LOCAL_DEMO_TRANSLATION_UNSUPPORTED",
+                "Local demo translation is only available for controlled acceptance fixture scripts.",
+            )
+        target = base_text
+    suffix = " ".join(citation_markers)
+    if suffix and not target.endswith(suffix):
+        target = f"{target} {suffix}"
+    if len(source_transcript_segments(source_segment)) == 1 and citation_markers:
+        return target
+    return target
+
+
+def local_demo_translated_segment_fixture(*, source_segment: str, target_language: str) -> str | None:
+    normalized_source = normalize_local_demo_fixture_source_segment(source_segment)
+    source_body = local_demo_fixture_source_body(normalized_source)
+    if local_demo_source_has_unknown_audience_prefix(
+        source_segment=normalized_source,
+        target_language=target_language,
+    ):
+        return None
+    atlas_fixture_translation = ATLAS_OUTPUT_FIXTURE_TRANSLATIONS.get(source_body)
+    if atlas_fixture_translation is not None:
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=atlas_fixture_translation.get(target_language),
+        )
+    if (
+        source_body
+        == "Helio Media MEDIA-SENTINEL-CP4 is a fictional local onboarding studio for field operations teams."
+    ):
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=HELIO_MEDIA_TRANSLATED_SEGMENT_TEXT.get(target_language),
+        )
+    if source_body in {
+        "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.",
+        "NarraTwin AI turns approved project knowledge into grounded walkthrough scripts with source chunk citations.",
+        "NarraTwin AI creates grounded walkthrough scripts.",
+    }:
+        base_text = DEMO_TRANSLATED_SEGMENT_TEXT.get(target_language)
+        if base_text is None:
+            return None
+        audience_prefix = local_demo_translated_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+        )
+        return f"{audience_prefix}, {base_text}" if audience_prefix else base_text
+    if (
+        target_language == "es"
+        and source_body
+        in {
+            "NarraTwin AI creates grounded walkthrough scripts. FAST_SUCCESS",
+            "NarraTwin AI creates grounded walkthrough scripts. SLOW_FAILURE",
+        }
+    ):
+        marker = source_body.rsplit(" ", maxsplit=1)[-1]
+        base_text = DEMO_TRANSLATED_SEGMENT_TEXT.get(target_language)
+        if base_text is None:
+            return None
+        return f"{base_text} {marker}"
+    if (
+        source_body
+        == "It supports recruiters, hiring managers, engineers, product leaders, customers, beginners, and global audiences with audience-aware explanations."
+    ):
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=DEMO_AUDIENCE_SUPPORT_TEXT.get(target_language),
+        )
+    if source_body == "It supports recruiter and engineering audiences with audience-aware explanations.":
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=DEMO_RECRUITER_ENGINEERING_SUPPORT_TEXT.get(target_language),
+        )
+    if source_body == "The local demo uses mock local LLM, translation, voice, and avatar adapters for deterministic review.":
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=DEMO_LOCAL_PROVIDER_TEXT.get(target_language),
+        )
+    if source_body == "The Stage 4 slice uses a mock local LLM and mock local embeddings for deterministic tests.":
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=DEMO_STAGE4_SLICE_TEXT.get(target_language),
+        )
+    if source_body == "Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.":
+        return local_demo_with_audience_prefix(
+            source_segment=source_segment,
+            target_language=target_language,
+            base_text=DEMO_CITATION_REQUIREMENT_TEXT.get(target_language),
+        )
+    return None
+
+
+def normalize_local_demo_fixture_source_segment(source_segment: str) -> str:
+    normalized = " ".join(source_segment.strip().split())
+    return re.sub(r"(?:\s*\[\d+\])+$", "", normalized).strip()
+
+
+def local_demo_fixture_source_body(source_segment: str) -> str:
+    return re.sub(r"^For [^,]+,\s+", "", source_segment).strip()
+
+
+def local_demo_source_has_unknown_audience_prefix(*, source_segment: str, target_language: str) -> bool:
+    match = re.match(r"\s*For (?P<audience>[^,]+),\s+", source_segment)
+    if not match:
+        return False
+    audience = " ".join(match.group("audience").lower().split())
+    return audience not in DEMO_AUDIENCE_PREFIX_TEXT.get(target_language, {})
+
+
+def local_demo_with_audience_prefix(*, source_segment: str, target_language: str, base_text: str | None) -> str | None:
+    if base_text is None:
+        return None
+    audience_prefix = local_demo_translated_audience_prefix(
+        source_segment=source_segment,
+        target_language=target_language,
+    )
+    return f"{audience_prefix}, {base_text}" if audience_prefix else base_text
+
+
+def local_demo_translated_audience_prefix(*, source_segment: str, target_language: str) -> str | None:
+    match = re.match(r"\s*For (?P<audience>[^,]+),\s+", source_segment)
+    if not match:
+        return None
+    audience = " ".join(match.group("audience").lower().split())
+    return DEMO_AUDIENCE_PREFIX_TEXT.get(target_language, {}).get(audience)
+
+
+def translated_script_text_from_transcript_segments(
+    segments: Iterable[MultilingualTranscriptSegment],
+) -> str:
+    return " ".join(segment.target_text for segment in segments)
+
+
+def render_translated_script_artifact_text(
+    *,
+    target_language: str,
+    transcript_segments: tuple[MultilingualTranscriptSegment, ...],
+    transcript_correctness: TranscriptCorrectness,
+) -> str:
+    lines = [
+        "# Multilingual transcript",
+        "",
+        f"Target language: {target_language}",
+        f"Script: {transcript_correctness.script}",
+        f"Direction: {transcript_correctness.direction}",
+        "",
+    ]
+    for segment in transcript_segments:
+        lines.extend(
+            [
+                f"## {segment.segment_id}",
+                "",
+                f"Source English: {segment.source_text}",
+                "",
+                f"Target ({segment.target_language}): {segment.target_text}",
+                "",
+                f"English reference: {segment.english_reference_text}",
+                "",
+                f"Citations: {', '.join(segment.citation_markers)}",
+                "",
+                f"Context refs: {', '.join(segment.context_ref_ids)}",
+                f"Claim support ids: {', '.join(segment.claim_support_ids)}",
+                f"Source run id: {segment.source_run_id}",
+                f"Evaluation id: {segment.evaluation_id}",
+                "",
+            ]
+        )
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def validate_translated_script_matches_transcript(
+    *,
+    target_language: str,
+    source_text: str,
+    translated_script_text: str,
+    transcript_segments: tuple[MultilingualTranscriptSegment, ...],
+) -> None:
+    if target_language == "en":
+        return
+    expected_text = translated_script_text_from_transcript_segments(transcript_segments)
+    if translated_script_text != expected_text:
+        raise Stage6Error(
+            422,
+            "PROVIDER_OUTPUT_INVALID",
+            "Translated script does not match validated transcript segments.",
+        )
+
+
+def build_multilingual_transcript_segments(
+    *,
+    source_text: str,
+    target_language: str,
+    source_run_id: str,
+    source_evaluation_id: str,
+    source_context_ref_ids: tuple[str, ...],
+    source_claim_support_ids: tuple[str, ...],
+) -> tuple[MultilingualTranscriptSegment, ...]:
+    source_segments = source_transcript_segments(source_text)
+    context_by_citation = dict(zip(citation_marker_sequence(source_text), source_context_ref_ids, strict=False))
+    claim_by_citation = dict(zip(citation_marker_sequence(source_text), source_claim_support_ids, strict=False))
+    segments: list[MultilingualTranscriptSegment] = []
+    for index, (source_segment, markers, citation_indexes) in enumerate(source_segments, start=1):
+        context_ref_ids = tuple(context_by_citation.get(marker.strip("[]"), "") for marker in markers)
+        claim_support_ids = tuple(claim_by_citation.get(marker.strip("[]"), "") for marker in markers)
+        segments.append(
+            MultilingualTranscriptSegment(
+                segment_id=f"seg_{index:03d}",
+                source_text=source_segment,
+                target_language=target_language,
+                target_text=translate_demo_segment_text(
+                    segment_number=index,
+                    source_segment=source_segment,
+                    target_language=target_language,
+                    citation_markers=markers,
+                ),
+                english_reference_text=source_segment,
+                citation_markers=markers,
+                citation_indexes=citation_indexes,
+                context_ref_ids=tuple(value for value in context_ref_ids if value),
+                claim_support_ids=tuple(value for value in claim_support_ids if value),
+                source_run_id=source_run_id,
+                evaluation_id=source_evaluation_id,
+            )
+        )
+    return tuple(segments)
+
+
+SCRIPT_PATTERNS = {
+    "Devanagari": re.compile(r"[\u0900-\u097F]"),
+    "Arabic": re.compile(r"[\u0600-\u06FF]"),
+    "Hebrew": re.compile(r"[\u0590-\u05FF]"),
+    "Cyrillic": re.compile(r"[\u0400-\u04FF]"),
+    "Japanese": re.compile(r"[\u3040-\u30FF\u4E00-\u9FFF]"),
+    "Hangul": re.compile(r"[\uAC00-\uD7AF]"),
+    "Thai": re.compile(r"[\u0E00-\u0E7F]"),
+}
+UNTRANSLATED_DOMAIN_TERM_PATTERNS = (
+    re.compile(r"\bwalkthrough\b", re.IGNORECASE),
+)
+TRANSLITERATED_SOURCE_DOMAIN_TERM_PATTERNS_BY_LANGUAGE = {
+    "hi": (
+        re.compile(r"जनरेट"),
+        re.compile(r"वॉकथ्रू"),
+        re.compile(r"मॉक"),
+        re.compile(r"डेमो"),
+        re.compile(r"अडैप्टर"),
+        re.compile(r"एम्बेडिंग"),
+        re.compile(r"स्लाइस"),
+    ),
+    "ja": (
+        re.compile(r"ウォークスルー"),
+        re.compile(r"チャンク"),
+        re.compile(r"ローカルデモ"),
+        re.compile(r"アダプター"),
+        re.compile(r"アバター"),
+        re.compile(r"スライス"),
+    ),
+    "ko": (
+        re.compile(r"데모"),
+        re.compile(r"어댑터"),
+        re.compile(r"아바타"),
+        re.compile(r"임베딩"),
+        re.compile(r"슬라이스"),
+    ),
+    "ar": (re.compile(r"الأفاتار"),),
+    "arz": (re.compile(r"الأفاتار"),),
+    "he": (
+        re.compile(r"הדמו"),
+        re.compile(r"אווטאר"),
+    ),
+}
+
+
+def validate_target_script(*, record: LanguageCatalogRecord, target_text: str, source_text: str) -> None:
+    if record.language_tag == "en":
+        return
+    if target_text.strip() == source_text.strip():
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Target transcript is an English fallback.")
+    if record.language_tag == "zh-Hans" and not any(character in target_text for character in ("简", "项", "师", "转", "发", "检")):
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Simplified Chinese transcript script is invalid.")
+    if record.language_tag == "zh-Hant" and not any(character in target_text for character in ("繁", "專", "師", "轉", "發", "檢")):
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Traditional Chinese transcript script is invalid.")
+    pattern = SCRIPT_PATTERNS.get(record.script)
+    if pattern is not None and not pattern.search(target_text):
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", f"{record.script} transcript script is invalid.")
+    if any(pattern.search(target_text) for pattern in UNTRANSLATED_DOMAIN_TERM_PATTERNS):
+        raise Stage6Error(
+            422,
+            "TRANSCRIPT_CORRECTNESS_FAILED",
+            "Target transcript contains untranslated source-domain terms.",
+        )
+    if any(
+        pattern.search(target_text)
+        for pattern in TRANSLITERATED_SOURCE_DOMAIN_TERM_PATTERNS_BY_LANGUAGE.get(record.language_tag, ())
+    ):
+        raise Stage6Error(
+            422,
+            "TRANSCRIPT_CORRECTNESS_FAILED",
+            "Target transcript contains transliterated source-domain terms.",
+        )
+
+
+def validate_multilingual_transcript_correctness(
+    *,
+    target_language: str | None = None,
+    language_tag: str | None = None,
+    source_text: str,
+    segments: Iterable[MultilingualTranscriptSegment | dict[str, Any]],
+    source_run_id: str,
+    evaluation_id: str,
+    context_ref_ids: tuple[str, ...],
+    citation_indexes: tuple[int, ...],
+    claim_support_ids: tuple[str, ...],
+) -> TranscriptCorrectness:
+    target_language = target_language or language_tag
+    if target_language is None:
+        raise Stage6Error(422, "UNSUPPORTED_LANGUAGE", "Unsupported target language.")
+    record = LANGUAGE_CATALOG_BY_TAG[target_language]
+    normalized_segments = tuple(transcript_segment_from_any(segment) for segment in segments)
+    if not normalized_segments:
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript segments are required.")
+    source_segments = source_transcript_segments(source_text)
+    if len(normalized_segments) != len(source_segments):
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript does not cover every cited source segment.")
+    expected_indexes: list[int] = []
+    for index, (segment, expected_source) in enumerate(zip(normalized_segments, source_segments, strict=True), start=1):
+        source_segment, markers, indexes = expected_source
+        expected_context_refs = tuple(
+            context_ref_ids[citation_indexes.index(citation_index)]
+            for citation_index in indexes
+            if citation_index in citation_indexes
+        )
+        expected_claim_supports = tuple(
+            claim_support_ids[citation_indexes.index(citation_index)]
+            for citation_index in indexes
+            if citation_index in citation_indexes
+        )
+        if segment.segment_id != f"seg_{index:03d}":
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript segment order is invalid.")
+        if segment.source_text != source_segment:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Source English text is missing or drifted.")
+        if segment.target_language != target_language:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript target language binding is invalid.")
+        if not segment.target_text.strip():
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Target transcript text is missing.")
+        if not segment.english_reference_text.strip():
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "English reference text is missing.")
+        if segment.english_reference_text != source_segment:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "English reference text does not match source.")
+        if segment.citation_markers != markers or segment.citation_indexes != indexes:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Citation sequence drifted.")
+        if any(marker not in segment.target_text for marker in markers):
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Target transcript lost citation markers.")
+        expected_target_text = translate_demo_segment_text(
+            segment_number=index,
+            source_segment=source_segment,
+            target_language=target_language,
+            citation_markers=markers,
+        )
+        if segment.target_text != expected_target_text:
+            raise Stage6Error(
+                422,
+                "TRANSCRIPT_CORRECTNESS_FAILED",
+                "Target transcript does not match the deterministic local-demo fixture.",
+            )
+        if segment.source_run_id != source_run_id or segment.evaluation_id != evaluation_id:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Source or evaluation binding is missing.")
+        if segment.context_ref_ids != expected_context_refs or segment.claim_support_ids != expected_claim_supports:
+            raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Context or claim-support binding is missing.")
+        validate_target_script(record=record, target_text=segment.target_text, source_text=source_segment)
+        expected_indexes.extend(indexes)
+    if tuple(expected_indexes) != citation_indexes:
+        raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript citation coverage is incomplete.")
+    return TranscriptCorrectness(
+        validation_status="PASSED",
+        script=record.script,
+        direction=record.direction,
+        segment_count=len(normalized_segments),
+        citation_indexes=tuple(expected_indexes),
+    )
+
+
+def transcript_segment_from_any(value: MultilingualTranscriptSegment | dict[str, Any]) -> MultilingualTranscriptSegment:
+    if isinstance(value, MultilingualTranscriptSegment):
+        return value
+    return MultilingualTranscriptSegment(
+        segment_id=str(value["segmentId"] if "segmentId" in value else value["segment_id"]),
+        source_text=str(value["sourceText"] if "sourceText" in value else value["source_text"]),
+        target_language=str(value["targetLanguage"] if "targetLanguage" in value else value["target_language"]),
+        target_text=str(value["targetText"] if "targetText" in value else value["target_text"]),
+        english_reference_text=str(
+            value["englishReferenceText"] if "englishReferenceText" in value else value["english_reference_text"]
+        ),
+        citation_markers=tuple(str(entry) for entry in value.get("citationMarkers", value.get("citation_markers", ()))),
+        citation_indexes=tuple(int(entry) for entry in value.get("citationIndexes", value.get("citation_indexes", ()))),
+        context_ref_ids=tuple(str(entry) for entry in value.get("contextRefIds", value.get("context_ref_ids", ()))),
+        claim_support_ids=tuple(str(entry) for entry in value.get("claimSupportIds", value.get("claim_support_ids", ()))),
+        source_run_id=str(value["sourceRunId"] if "sourceRunId" in value else value["source_run_id"]),
+        evaluation_id=str(value["evaluationId"] if "evaluationId" in value else value["evaluation_id"]),
+    )
 
 
 def normalize_glossary_terms(terms: Iterable[str]) -> list[str]:
@@ -1779,6 +3034,54 @@ def validate_source_evaluation_checksum(
     if source_evaluation_checksum != expected:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Source evaluation checksum is invalid.")
     return expected
+
+
+def validate_multilingual_source_evidence(
+    *,
+    source_text: str,
+    evaluation_status: EvaluationStatus,
+    source_evaluation_checksum_supplied: bool,
+    source_context_ref_count: int,
+    source_citation_count: int,
+    source_context_ref_ids: tuple[str, ...],
+    source_citation_indexes: tuple[int, ...],
+    source_claim_support_ids: tuple[str, ...],
+) -> None:
+    if evaluation_status != "PASSED":
+        raise Stage6Error(
+            422,
+            "PROVIDER_OUTPUT_INVALID",
+            "Stage 6 requires passed source evaluation evidence.",
+        )
+    if not source_evaluation_checksum_supplied:
+        raise Stage6Error(
+            422,
+            "PROVIDER_OUTPUT_INVALID",
+            "Stage 6 requires an explicit source evaluation checksum.",
+        )
+    markers = citation_marker_sequence(source_text)
+    if not markers:
+        raise Stage6Error(
+            422,
+            "TRANSCRIPT_CORRECTNESS_FAILED",
+            "Source English text must include citation markers before multilingual generation.",
+        )
+    source_transcript_segments(source_text)
+    if (
+        source_context_ref_count <= 0
+        or source_citation_count <= 0
+        or not source_context_ref_ids
+        or not source_citation_indexes
+        or not source_claim_support_ids
+        or source_citation_count != len(markers)
+        or len(source_citation_indexes) != len(markers)
+        or len(source_claim_support_ids) != len(markers)
+    ):
+        raise Stage6Error(
+            422,
+            "PROVIDER_OUTPUT_INVALID",
+            "Stage 6 requires source citation, context, and claim-support evidence.",
+        )
 
 
 def restored_voice_manifest_matches(
@@ -2137,7 +3440,11 @@ def estimate_duration_seconds(text: str) -> int:
 
 
 def language_display_name(language: str) -> str:
-    return cast(str, Locale.parse(normalize_language_tag(language)).get_display_name("en"))
+    normalized_language = normalize_language_tag(language)
+    record = LANGUAGE_CATALOG_BY_TAG.get(normalized_language)
+    if record is not None:
+        return record.english_name
+    return cast(str, Locale.parse(normalized_language).get_display_name("en"))
 
 
 def mock_audio_profile(duration_seconds: int) -> dict[str, int]:
@@ -2247,6 +3554,8 @@ def build_stage6_metadata_text(
     preserved_terms: list[str],
     source_script_text: str,
     translated_script_text: str,
+    transcript_segments: tuple[MultilingualTranscriptSegment, ...],
+    transcript_correctness: TranscriptCorrectness,
     translation_provider: TranslationProviderResult,
     voice: VoiceProviderResult,
     translated_script_artifact: DownloadableArtifact,
@@ -2263,7 +3572,9 @@ def build_stage6_metadata_text(
         "traceId": trace_id,
         "sourceLanguage": source_language,
         "targetLanguage": target_language,
+        "sourceScriptText": source_script_text,
         "sourceTextChecksum": source_text_checksum,
+        "translatedScriptText": translated_script_text,
         "sourceContextRefCount": source_context_ref_count,
         "sourceContextRefIds": list(source_context_ref_ids),
         "sourceCitationCount": source_citation_count,
@@ -2275,6 +3586,8 @@ def build_stage6_metadata_text(
         "glossaryTerms": glossary_terms,
         "preservedTerms": preserved_terms,
         "citationMarkers": sorted(citation_markers(source_script_text)),
+        "transcriptCorrectness": transcript_correctness_to_api(transcript_correctness),
+        "transcriptSegments": [transcript_segment_to_api(segment) for segment in transcript_segments],
         "translationProvider": {
             "provider": translation_provider.provider,
             "providerMode": translation_provider.provider_mode,
@@ -2323,6 +3636,8 @@ def multilingual_to_api(result: MultilingualWalkthroughResult) -> dict[str, obje
         "sourceTextChecksum": result.source_text_checksum,
         "translatedScriptText": result.translated_script_text,
         "subtitlesText": result.subtitles_text,
+        "transcriptSegments": [transcript_segment_to_api(segment) for segment in result.transcript_segments],
+        "transcriptCorrectness": transcript_correctness_to_api(result.transcript_correctness),
         "glossaryTerms": result.glossary_terms,
         "preservedTerms": result.preserved_terms,
         "translationProvider": {

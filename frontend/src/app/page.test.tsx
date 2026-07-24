@@ -7,7 +7,9 @@ import Home, {
   artifactSafetyState,
   defaultKnowledge,
   evaluationBadgeLabel,
+  languageOptionLabel,
   readJson,
+  renderTranscriptSegmentsForTest,
   sha256Hex,
   walkthroughDemoBlockReason,
 } from "./page";
@@ -21,9 +23,11 @@ describe("Home", () => {
     expect(html).toContain("Avatar demo export");
     expect(html).toContain("Generate avatar demo export");
     expect(html).toContain("Target language");
+    expect(html).toContain("Language catalog unavailable");
     expect(html).toContain("Download script");
     expect(html).toContain("Download subtitles");
     expect(html).toContain("Download voice manifest");
+    expect(html).toContain("Download transcript metadata");
     expect(html).toContain("Download avatar demo");
     expect(html).toContain("Download render manifest");
     expect(html).toContain("Download video placeholder");
@@ -47,6 +51,66 @@ describe("Home", () => {
     expect(html).not.toContain("0 unsupported claims");
   });
 
+  it("formats backend language catalog labels with explicit support status", () => {
+    expect(
+      languageOptionLabel({
+        languageTag: "ko",
+        englishName: "Korean",
+        nativeName: "한국어",
+        script: "Hangul",
+        direction: "ltr",
+        marketPriority: 1,
+        regionGroup: "East Asia",
+        localDemoSupportStatus: "SUPPORTED",
+        providerSupportStatus: "LOCAL_DEMO_FIXTURE",
+        testCoverageLevel: "CHECKPOINT3A_EXHAUSTIVE",
+      }),
+    ).toBe("Korean / 한국어");
+    expect(
+      languageOptionLabel({
+        languageTag: "bn",
+        englishName: "Bengali",
+        nativeName: "বাংলা",
+        script: "Bengali",
+        direction: "ltr",
+        marketPriority: 2,
+        regionGroup: "South Asia",
+        localDemoSupportStatus: "PLANNED_UNSUPPORTED_LOCAL_DEMO",
+        providerSupportStatus: "UNSUPPORTED_LOCAL_DEMO",
+        testCoverageLevel: "CATALOG_ONLY",
+      }),
+    ).toBe("Bengali / বাংলা - Planned");
+  });
+
+  it("renders source, target, English reference, and adjacent citations for transcript segments", () => {
+    const html = renderToStaticMarkup(
+      renderTranscriptSegmentsForTest([
+        {
+          segmentId: "seg_001",
+          sourceText: "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+          targetLanguage: "ar",
+          targetText: "لمسؤولي التوظيف، يحوّل NarraTwin AI المعرفة المعتمدة للمشروع إلى نصوص شرح موثقة. [1]",
+          englishReferenceText:
+            "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
+          citationMarkers: ["[1]"],
+          citationIndexes: [1],
+          contextRefIds: ["ctx_001"],
+          claimSupportIds: ["claimsup_001"],
+          sourceRunId: "run_001",
+          evaluationId: "eval_001",
+        },
+      ]),
+    );
+
+    expect(html).toContain("dir=\"rtl\"");
+    expect(html).toContain("Source English");
+    expect(html).toContain("Target transcript");
+    expect(html).toContain("English reference");
+    expect(html).toContain("لمسؤولي التوظيف");
+    expect(html).toContain("[1]");
+    expect(html).toContain("ctx_001");
+  });
+
   it("shows unsupported claim counts only after evaluation evidence exists", () => {
     expect(evaluationBadgeLabel(null)).toBe("Evaluation pending");
     expect(
@@ -65,14 +129,30 @@ describe("Home", () => {
   });
 
   it("renders default knowledge that is specific enough for the local demo happy path", () => {
-    expect(defaultKnowledge).toContain("recruiter and engineering audiences");
+    expect(defaultKnowledge).toContain("recruiters, hiring managers, engineers, product leaders, customers");
     expect(defaultKnowledge).toContain("mock local LLM");
     expect(defaultKnowledge).toContain("Every generated walkthrough claim must cite retrieved source chunks");
 
     const html = renderToStaticMarkup(<Home />);
 
-    expect(html).toContain("recruiter and engineering audiences");
+    expect(html).toContain("recruiters, hiring managers, engineers, product leaders, customers");
     expect(html).toContain("mock local LLM");
+  });
+
+  it("exposes the product audience surface in the local demo selector", () => {
+    const html = renderToStaticMarkup(<Home />);
+
+    for (const label of [
+      "Recruiter",
+      "Hiring manager",
+      "Engineer",
+      "Product leader",
+      "Customer",
+      "Beginner",
+      "Global viewer",
+    ]) {
+      expect(html).toContain(label);
+    }
   });
 
   it("turns refused walkthrough runs into a safe visible stop reason before media generation", () => {
@@ -317,6 +397,28 @@ function artifactValidationContext(): NonNullable<Parameters<typeof artifactSafe
 	      targetLanguage: "es",
       translatedScriptText,
       subtitlesText,
+      transcriptSegments: [
+        {
+          segmentId: "seg_001",
+          sourceText: "Translated script source. [1]",
+          targetLanguage: "es",
+          targetText: translatedScriptText,
+          englishReferenceText: "Translated script source. [1]",
+          citationMarkers: ["[1]"],
+          citationIndexes: [1],
+          contextRefIds: ["ctx_001"],
+          claimSupportIds: ["claimsup_001"],
+          sourceRunId: "run_test",
+          evaluationId: "eval_001",
+        },
+      ],
+      transcriptCorrectness: {
+        validationStatus: "PASSED",
+        script: "Latin",
+        direction: "ltr",
+        segmentCount: 1,
+        citationIndexes: [1],
+      },
 	      preservedTerms: ["NarraTwin AI"],
 	      voice: { provider: "mock", providerMode: "LOCAL", requestedProvider: "mock" },
 	      translationProvider: { provider: "mock", providerMode: "LOCAL" },
@@ -331,6 +433,33 @@ function artifactValidationContext(): NonNullable<Parameters<typeof artifactSafe
           "voice-manifest-es.json",
           "application/json",
           voiceManifestText,
+        ),
+        metadata: artifactFromText(
+          "run_test-es-metadata.json",
+          "application/json",
+          JSON.stringify({
+            multilingualRunId: "mlrun_test",
+            sourceRunId: "run_test",
+            targetLanguage: "es",
+            sourceContextRefIds: ["ctx_001"],
+            sourceCitationIndexes: [1],
+            transcriptCorrectness: {
+              validationStatus: "PASSED",
+              segmentCount: 1,
+            },
+            transcriptSegments: [
+              {
+                segmentId: "seg_001",
+                sourceText: "Translated script source. [1]",
+                targetText: translatedScriptText,
+                englishReferenceText: "Translated script source. [1]",
+                citationMarkers: ["[1]"],
+                citationIndexes: [1],
+                contextRefIds: ["ctx_001"],
+                claimSupportIds: ["claimsup_001"],
+              },
+            ],
+          }),
         ),
 	      },
 	      trace: {
@@ -435,7 +564,7 @@ function voiceManifestJson(
     providerMode: "LOCAL",
     language: context.multilingualRun?.targetLanguage,
     languageDisplayName: "Spanish",
-    textChecksum: context.multilingualRun?.artifacts.translatedScript.checksum,
+    textChecksum: `sha256:${sha256Hex(context.multilingualRun?.translatedScriptText ?? "")}`,
     durationSecondsEstimate: 2,
     mockAudioProfile: {
       durationMillisecondsEstimate: 2000,

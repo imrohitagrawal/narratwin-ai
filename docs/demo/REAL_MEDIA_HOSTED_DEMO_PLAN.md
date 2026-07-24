@@ -831,14 +831,27 @@ approved project knowledge
 ```
 
 Checkpoint 3A accepts arbitrary approved project knowledge, not a NarraTwin-only
-seed. Hindi output must contain Devanagari and must not pass as English fallback
-or romanized Hindi-only output. Translated scripts, subtitles, audio manifests,
+seed. Issue `#276` repairs the local/mock multilingual output-correctness
+contract: the backend catalog is authoritative, Hindi is Priority 1, Priority 2
+Indian regional languages are visible as planned/unsupported local-demo entries,
+successful non-English runs expose source English, native-script target
+transcript, and English reference/back-translation per segment, and `COMPLETED`
+is invalid until transcript correctness validation passes. Hindi output must
+contain Devanagari and must not pass as English fallback or romanized Hindi-only
+output. Translated scripts, subtitles, transcript metadata, audio manifests,
 video manifests, downloads, and UI evidence must preserve `sourceRunId`,
 `multilingualRunId`, `targetLanguage`, `evaluationId`, citation indexes, context
 refs, checksums, and claim-support linkage.
+The local/mock demo remains product-faithful for the generated walkthrough path:
+audience, depth, style, grounded claims, citations, evaluation evidence, and
+supported deterministic translations must behave as the product is intended to
+behave, only without hosted/provider/paid/real-media/cloned-identity runtime.
+Stage 6 translates generated walkthrough scripts. It does not claim raw uploaded
+knowledge-document translation unless a future issue adds that product surface
+with the same source/target/reference, semantic-golden, artifact-parity, and
+negative-test bar.
 
-`make checkpoint3-acceptance` is the public failing-by-design skeleton for this
-future gate. It must fail until implementation creates executable probes for:
+`make checkpoint3-acceptance` is the public local/mock executable harness for:
 
 - API E2E: `tests/acceptance/test_checkpoint3_api_e2e.py`
 - language quality: `tests/acceptance/test_checkpoint3_language_quality.py`
@@ -852,6 +865,13 @@ future gate. It must fail until implementation creates executable probes for:
   `frontend/playwright.checkpoint3.config.ts`
 - output-correctness that executes rather than reads:
   `tests/acceptance/test_checkpoint3_output_correctness.py`
+
+The #276 repair adds exhaustive Priority 1 API/output-correctness coverage and
+writes the checked local evidence artifacts
+`reports/checkpoint3-multilingual/priority1-coverage-matrix.json` and
+`reports/checkpoint3-multilingual/checkpoint3a-multilingual-summary.json`.
+Browser E2E remains local/mock and must inspect actual visible transcript
+sections and artifact parity without success-path interception.
 
 Checkpoint 3A non-goals are no cloned voice, no cloned face, no digital twin, no
 real-person likeness, no public URL, no paid spend, no provider setup, no real
