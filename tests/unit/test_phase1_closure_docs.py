@@ -2936,14 +2936,17 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "PR `#281`",
         "`3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c`",
         "post-merge main quality workflow run `30085558061` passing",
-        "c3a-r3-pr-c-active",
+        "c3a-r3-pr-d-active",
         "PR `#282`",
         "`b889604a490c9f014130e420c1c949af7879dd84`",
         "post-merge main quality workflow run `30092008592` passing",
+        "PR `#283`",
+        "`09584b264c0f30da3eecd6693829e5bcb071e568`",
+        "post-merge main quality workflow run `30095714825` passing",
         "Issue `#278` is closed after PR `#279` merged the bounded C3A-R2 full-project multilingual corpus gate",
         "Issue #280 is active for C3A-R3",
-        "PR C is the current narrow local/mock end-to-end API slice",
-        "issue #280 remains open after PR C",
+        "PR D is the current exact UI/browser demo slice",
+        "issue #280 remains open after PR D",
         "C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped",
         "full-project multilingual corpus gate",
         "ADR `0034`",
@@ -7982,6 +7985,46 @@ def test_issue280_pr_c_rejects_ui_without_exact_ui_scope(monkeypatch: Any) -> No
     assert any("frontend/src/app/page.tsx" in failure for failure in failures)
 
 
+def test_issue280_pr_d_allowed_files_pass(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_280_PR_D_BRANCH,
+        files=sorted(phase1.ISSUE_280_PR_D_ALLOWED_CHANGED_FILES),
+    )
+
+    assert failures == []
+
+
+def test_issue280_pr_d_rejects_backend_contract_changes(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_280_PR_D_BRANCH,
+        files=["backend/app/issue280.py"],
+    )
+
+    assert any("backend/app/issue280.py" in failure for failure in failures)
+
+
+def test_issue280_pr_d_security_unblock_allowlist_stays_narrow(monkeypatch: Any) -> None:
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_280_PR_D_BRANCH,
+        files=["backend/Dockerfile", "docs/THIRD_PARTY_NOTICES.md"],
+    ) == []
+
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_280_PR_D_BRANCH,
+        files=["frontend/Dockerfile", "pyproject.toml", "uv.lock"],
+    )
+
+    assert failures == [
+        f"Phase 1 Closure branch {phase1.ISSUE_280_PR_D_BRANCH} may not change frontend/Dockerfile.",
+        f"Phase 1 Closure branch {phase1.ISSUE_280_PR_D_BRANCH} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {phase1.ISSUE_280_PR_D_BRANCH} may not change uv.lock.",
+    ]
+
+
 def test_issue280_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
@@ -8028,6 +8071,18 @@ def test_issue280_matrix_requires_pr_c_to_keep_issue280_open(monkeypatch: Any) -
     )
 
     assert f"{phase1.ISSUE_280_MATRIX_PATH} must keep #280 open after PR C." in failures
+
+
+def test_issue280_matrix_requires_pr_d_to_keep_issue280_open(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["prSlice"] = "PR A+PR B+PR C+PR D"
+    matrix["issue280RemainsOpenAfterPrD"] = False
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert f"{phase1.ISSUE_280_MATRIX_PATH} must keep #280 open after PR D." in failures
 
 
 def test_issue280_matrix_requires_checkpoint3_tracker_to_remain_open(monkeypatch: Any) -> None:

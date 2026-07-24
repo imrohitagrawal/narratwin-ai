@@ -43,6 +43,63 @@
   background: #ffffff;
 }
 
+.issue280Shell {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #b8c3d3;
+  border-left: 6px solid #5b6472;
+  border-radius: 8px;
+  background: #f4f7fb;
+}
+
+.issue280Shell h2 {
+  color: #111827;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.issue280Form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #e2e7ef;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.scopeNotice {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #d7c79a;
+  border-radius: 6px;
+  background: #fff9e8;
+  color: #4b3a12;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.localLimitNotice {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #d3dae6;
+  border-radius: 6px;
+  background: #f4f7fb;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.issue280Evidence {
+  display: grid;
+  gap: 16px;
+}
+
 .controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -83,6 +140,58 @@
   line-height: 1.55;
 }
 
+.labelWithInfo {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.infoWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.infoButton {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #9aa5b4;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #374151;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: help;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 6px);
+  left: 0;
+  display: none;
+  width: min(300px, 78vw);
+  padding: 8px 10px;
+  border: 1px solid #c8d0dc;
+  border-radius: 6px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.infoWrap:hover .tooltip,
+.infoWrap:focus-within .tooltip {
+  display: block;
+}
+
 .checkboxField {
   display: flex;
   align-items: center;
@@ -118,11 +227,27 @@
 }
 
 .primaryAction:focus-visible,
+.secondaryAction:focus-visible,
+.infoButton:focus-visible,
 .field input:focus-visible,
 .field select:focus-visible,
 .field textarea:focus-visible {
   outline: 3px solid #8ab9ff;
   outline-offset: 2px;
+}
+
+.secondaryAction {
+  justify-self: start;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #c8d0dc;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f5f46;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .result,
@@ -154,6 +279,8 @@
 }
 
 .result h2,
+.result h3,
+.citations h3,
 .citations h2 {
   color: #111827;
   font-size: 18px;
@@ -343,6 +470,39 @@
   gap: 8px;
 }
 
+.previewTitleGroup {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.previewHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.previewHeaderActions a,
+.previewHeaderActions button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #c8d0dc;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f5f46;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.previewHeaderActions button:disabled {
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
 .previewCopy strong {
   color: #ffffff;
   font-size: 14px;
@@ -350,14 +510,40 @@
 }
 
 .previewCopy p {
-  display: -webkit-box;
   max-width: 720px;
-  overflow: hidden;
   color: #f8fafc;
   font-size: 17px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.previewCopyCollapsed {
+  display: -webkit-box;
+  overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
+}
+
+.previewCopyExpanded {
+  overflow: visible;
+}
+
+.previewToggle {
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.previewToggle:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 .artifactList {
@@ -472,6 +658,10 @@
   font-size: 14px;
 }
 
+.visuallyInline {
+  display: inline-flex;
+}
+
 @media (max-width: 720px) {
   .workspace {
     padding: 28px 16px;
@@ -496,6 +686,21 @@
   .previewScreen,
   .artifactRow {
     grid-template-columns: 1fr;
+  }
+
+  .previewHeaderActions a,
+  .previewHeaderActions button {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .issue280Form {
+    padding: 14px;
+  }
+
+  .tooltip {
+    left: auto;
+    right: 0;
   }
 
   .previewPresenter {

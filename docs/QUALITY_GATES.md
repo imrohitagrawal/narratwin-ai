@@ -660,6 +660,32 @@ or production-readiness claims. Issues `#249` and `#280` remain open after PR C
 unless all remaining R280 rows are later satisfied with executable evidence or
 reviewed/re-scoped.
 
+PR D implements the exact local UI/browser evidence slice for the PR C endpoint
+using:
+
+```bash
+npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts
+```
+
+The dedicated verifier launches local backend and frontend services, opens the
+UI in desktop and mobile browser projects, submits bounded arbitrary synthetic
+markdown through the UI, observes the
+`/api/v1/checkpoint3/issue280/local-e2e-demo` request/response without
+success-path interception, and verifies visible stored output, accepted script,
+transcript preview/expansion, citations, context refs, claim support IDs,
+evaluation metadata, storage metadata, retry/replay state, safe refusal states,
+keyboard-reachable info tooltips, mobile/touch behavior, and local/mock
+provider-disabled posture. PR D keeps Playwright tracing disabled for committed
+Issue 280 evidence and writes only public-safe verifier metadata; screenshots
+and tool traces are local run artifacts, not closure evidence. PR D does not
+implement the final `make issue280-output-correctness` flow, export/API/stored
+report parity, hosted/public demo behavior, provider setup, paid spend, real
+provider calls, cloned identity runtime, real media, public distribution,
+arbitrary real-world translation quality, provider quality, or
+production-readiness claims. Issues `#249` and `#280` remain open after PR D
+unless all remaining R280 rows are later satisfied with executable evidence or
+reviewed/re-scoped.
+
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
 through the same local/mock API path. The language-quality probe verifies

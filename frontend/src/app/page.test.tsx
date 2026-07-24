@@ -8,6 +8,7 @@ import Home, {
   defaultKnowledge,
   evaluationBadgeLabel,
   languageOptionLabel,
+  productSafeError,
   readJson,
   renderTranscriptSegmentsForTest,
   sha256Hex,
@@ -25,10 +26,12 @@ describe("Home", () => {
     expect(html).toContain("Target language");
     expect(html).toContain("Language catalog unavailable");
     expect(html).toContain("Download script");
+    expect(html).toContain("Save preview transcript");
     expect(html).toContain("Download subtitles");
     expect(html).toContain("Download voice manifest");
     expect(html).toContain("Download transcript metadata");
     expect(html).toContain("Download avatar demo");
+    expect(html).toContain("Save preview avatar export");
     expect(html).toContain("Download render manifest");
     expect(html).toContain("Download video placeholder");
     expect(html).toContain("Synthetic avatar consent: local AI presenter, no cloned face or voice");
@@ -49,6 +52,47 @@ describe("Home", () => {
     expect(html).toContain("Citations will appear after generation.");
     expect(html).toContain("Evaluation pending");
     expect(html).not.toContain("0 unsupported claims");
+  });
+
+  it("keeps the product demo before the Issue 280 verifier and states the verifier boundary", () => {
+    const html = renderToStaticMarkup(<Home />);
+
+    expect(html.indexOf("Project knowledge form")).toBeLessThan(html.indexOf("Issue 280 PR D local/mock verifier"));
+    expect(html).toContain("Developer verifier only");
+    expect(html).toContain("quarantined panel validates");
+    expect(html).toContain("does not perform full multilingual project-knowledge conversion");
+    expect(html).toContain("Use the main avatar demo export form above for the product multilingual flow.");
+    expect(html).toContain("Local/demo multilingual output uses controlled acceptance fixtures.");
+    expect(html).toContain("Grounded English script");
+    expect(html).toContain("Mock target transcript evidence");
+    expect(html).toContain("Target transcript is mock evidence, not full product translation.");
+  });
+
+  it("renders the Issue 280 local verifier controls without provider or hosted-demo overclaims", () => {
+    const html = renderToStaticMarkup(<Home />);
+
+    expect(html).toContain("Issue 280 PR D local/mock verifier");
+    expect(html).toContain("Run Issue 280 local demo");
+    expect(html).toContain("Verifier project name");
+    expect(html).toContain("Verifier synthetic knowledge");
+    expect(html).toContain("Verifier glossary terms");
+    expect(html).toContain("Issue 280 synthetic project");
+    expect(html).toContain("Issue 280 synthetic markdown");
+    expect(html).toContain("Issue 280 content type");
+    expect(html).toContain("Issue 280 audience");
+    expect(html).toContain("Issue 280 depth");
+    expect(html).toContain("Deep");
+    expect(html).toContain("Issue 280 verifier target language");
+    expect(html).toContain("German refusal test");
+    expect(html).toContain("Issue 280 preserved terms");
+    expect(html).toContain("No Issue 280 result yet.");
+    expect(html).toContain("Script pending");
+    expect(html).toContain("Transcript pending");
+    expect(html).toContain("Provider posture pending");
+    expect(html).toContain("Export artifacts are not generated in PR D.");
+    expect(html).toContain("local/mock only");
+    expect(html).not.toContain("production ready");
+    expect(html).not.toContain("public demo URL");
   });
 
   it("formats backend language catalog labels with explicit support status", () => {
@@ -183,6 +227,47 @@ describe("Home", () => {
     );
 
     await expect(readJson(response)).rejects.toThrow("NarraTwin API request failed with 422");
+  });
+
+  it("surfaces Issue 280 safe taxonomy errors through the frontend error reader", async () => {
+    const response = new Response(
+      JSON.stringify({
+        error: {
+          code: "ISSUE280_TRANSLATION_REFUSED",
+          message: "The local demo could not produce a faithful translated transcript for the selected settings.",
+        },
+      }),
+      { status: 422 },
+    );
+
+    await expect(readJson(response)).rejects.toThrow(
+      "ISSUE280_TRANSLATION_REFUSED: The local demo could not produce a faithful translated transcript for the selected settings.",
+    );
+  });
+
+  it("turns the local demo translation limit into bounded product UI copy", async () => {
+    const response = new Response(
+      JSON.stringify({
+        error: {
+          code: "LOCAL_DEMO_TRANSLATION_UNSUPPORTED",
+          message: "Local demo translation is only available for controlled acceptance fixture scripts.",
+        },
+      }),
+      { status: 422 },
+    );
+
+    await expect(readJson(response)).rejects.toThrow(
+      "LOCAL_DEMO_TRANSLATION_UNSUPPORTED: Local demo translation is only available for controlled acceptance fixture scripts.",
+    );
+    expect(
+      productSafeError(
+        new Error(
+          "LOCAL_DEMO_TRANSLATION_UNSUPPORTED: Local demo translation is only available for controlled acceptance fixture scripts.",
+        ),
+      ),
+    ).toBe(
+      "Local demo translation is limited to controlled acceptance fixture scripts. The grounded English script may still be available; arbitrary project-knowledge multilingual conversion is not proven in this PR.",
+    );
   });
 
   it("rejects unsafe artifact filenames before enabling downloads", () => {

@@ -18,7 +18,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN python -m pip install --no-cache-dir uv==0.11.18
+RUN python -m pip install --no-cache-dir uv==0.11.32
 
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev

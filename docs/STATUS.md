@@ -67,14 +67,17 @@ Use it to answer:
   unsafe/private/secret-like input rejection, local/mock provider-disabled
   posture, and slice-scoped tests only. PR `#282` merged PR B at
   `b889604a490c9f014130e420c1c949af7879dd84`, with post-merge main quality
-  workflow run `30092008592` passing. PR C is the current executable
-  local/mock end-to-end API slice for bounded synthetic markdown ingestion,
-  deterministic retrieval, grounded script generation, narrow multilingual
-  output, unsupported-claim evaluation, and issue-scoped stored metadata. PR C
-  does not touch UI, does not implement the final issue `#280` closure gate,
-  and does not prove arbitrary real-world translation quality, provider
-  quality, hosted/public demo behavior, cloned identity runtime, real media,
-  public distribution, or production readiness.
+  workflow run `30092008592` passing. PR C completed the executable local/mock
+  end-to-end API slice for bounded synthetic markdown ingestion, deterministic
+  retrieval, grounded script generation, narrow multilingual output,
+  unsupported-claim evaluation, and issue-scoped stored metadata. PR `#283`
+  merged PR C at `09584b264c0f30da3eecd6693829e5bcb071e568`, with
+  post-merge main quality workflow run `30095714825` passing. PR D is the
+  current exact UI/browser demo slice for the PR C local/mock endpoint:
+  `/api/v1/checkpoint3/issue280/local-e2e-demo`. PR D does not implement the
+  final issue `#280` closure gate and does not prove arbitrary real-world
+  translation quality, provider quality, hosted/public demo behavior, cloned
+  identity runtime, real media, public distribution, or production readiness.
   Raw uploaded knowledge-document translation as a separate API surface remains
   outside the current Stage 6 product boundary unless a future issue explicitly
   implements and tests that behavior. Issue `#274` is satisfied by its prior
@@ -82,7 +85,9 @@ Use it to answer:
   public-safe Checkpoint 3B consent/provenance planning gate only:
   consent/provenance planning, acceptance contracts, risk boundaries, and future
   issue sequencing. Issue `#249` remains open as the public Checkpoint 3 tracker
-  after this child, and issue `#280` remains open after PR C. C3B remains
+  after this child, and issue `#280` remains open after PR D unless all
+  remaining R280 rows are later satisfied with executable evidence or
+  reviewed/re-scoped. C3B remains
   blocked until issue `#280` is satisfied or reviewed/re-scoped. This state
   does not authorize Checkpoint 3B implementation, Checkpoint 3C,
   hosted/public demo, provider setup, cloned identity runtime, real media,
@@ -246,7 +251,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | issue #280 / c3a-r3-pr-c-local-e2e-demo-slice | c3a-r3-pr-c-active | c3a-r3-pr-c-active | Issue #280 is active for C3A-R3. PR A completed planning/preflight, public-source persona/audience/depth research, the requirement matrix, reviewer checklist, and merge-safe red-evidence framework through merged PR #281 at 3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c with post-merge main quality workflow run 30085558061 passing. PR B completed only the first executable input/API/error contract slice through merged PR #282 at b889604a490c9f014130e420c1c949af7879dd84 with post-merge main quality workflow run 30092008592 passing. PR C is the current narrow local/mock end-to-end API slice for bounded synthetic markdown ingestion, deterministic retrieval, grounded script generation, narrow multilingual output, unsupported-claim evaluation, and issue-scoped stored metadata. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open after PR C, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize UI changes, Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claims. |
+| SSV1-NEXT | next-action | issue #280 / c3a-r3-pr-d-ui-browser-demo-slice | c3a-r3-pr-d-active | c3a-r3-pr-d-active | Issue #280 is active for C3A-R3. PR A completed planning/preflight, public-source persona/audience/depth research, the requirement matrix, reviewer checklist, and merge-safe red-evidence framework through merged PR #281 at 3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c with post-merge main quality workflow run 30085558061 passing. PR B completed only the first executable input/API/error contract slice through merged PR #282 at b889604a490c9f014130e420c1c949af7879dd84 with post-merge main quality workflow run 30092008592 passing. PR C completed the narrow local/mock end-to-end API slice through merged PR #283 at 09584b264c0f30da3eecd6693829e5bcb071e568 with post-merge main quality workflow run 30095714825 passing. PR D is the current exact UI/browser demo slice for the PR C endpoint and can satisfy only PR D-owned UI, conversation UX, exact UI validation, and narrow governance rows. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open after PR D unless all remaining R280 rows are later satisfied with executable evidence or reviewed/re-scoped, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claims. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -818,10 +823,12 @@ Use these files together with this tracker:
    planning/preflight, public-source persona/audience/depth research, matrix,
    checklist, future implementation test-strategy contract, and merge-safe
    red-evidence framework only. PR B is limited to the first executable
-   input/API/error contract slice and is merged through PR `#282`. PR C is the
-   current narrow local/mock end-to-end API slice. Issues `#249` and `#280`
-   remain open after PR C, and C3B remains blocked until issue `#280` is
-   satisfied or reviewed/re-scoped.
+   input/API/error contract slice and is merged through PR `#282`. PR C
+   completed the narrow local/mock end-to-end API slice through PR `#283`. PR D
+   is the current exact UI/browser demo slice for the PR C endpoint. Issues
+   `#249` and `#280` remain open after PR D unless all remaining R280 rows are
+   later satisfied with executable evidence or reviewed/re-scoped, and C3B
+   remains blocked until issue `#280` is satisfied or reviewed/re-scoped.
 4. Keep production,
    multi-worker deployment, hosted launch, Product Mode 2, external provider
    use, real audio/video export, and public synthetic-media distribution No-Go
@@ -855,7 +862,9 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-07-25 | PR `#284` received an explicit user-approved security-only fix on branch `phase-1-closure-280-c3a-r3-pr-d-ui-browser-demo-slice` after refreshed CI showed two failing `security / docker build` gates for the same backend image scan finding. Scope is limited to bumping backend runtime `uv` from `0.11.18` to `0.11.32` and recording third-party/traceability evidence so `GHSA-4w2j-m93h-cj5j` in embedded `quinn-proto` no longer blocks Docker image scan consensus. PR `#284` remains draft until refreshed CI passes; issues `#249` and `#280` remain open; no PR E work, hosted/public demo, provider setup, paid spend, cloned identity runtime, real media, public distribution, production-readiness claim, or issue-closing wording is authorized. |
 | 2026-07-25 | Issue `#289` started on branch `phase-1-closure-process-289-security-postcss-stage8-gate-unblock` to resolve the circular CI blocker between dependency-security PR `#286` and governance PR `#288`. Scope is limited to PostCSS dependency metadata plus checker/docs/tests/status alignment: `postcss` resolves to a patched version without a Next downgrade, mandatory container scanning remains bound to Trivy, Grype, or the pinned Dockerized scanner path while Docker Scout remains optional, and the Stage 6 voice-provider JSON-manifest marker is documented. PR `#284` remains draft and untouched; issues `#249` and `#280` remain open; and no product/runtime code, provider setup, paid spend, hosted/public demo, public distribution, production-readiness claim, or issue-closing wording for `#249` or `#280` is authorized. |
+| 2026-07-24 | Issue `#280` continued as C3A-R3 PR D on branch `phase-1-closure-280-c3a-r3-pr-d-ui-browser-demo-slice` after PR `#283` merged PR C at `09584b264c0f30da3eecd6693829e5bcb071e568` with post-merge main quality workflow run `30095714825` passing. Scope is exact local UI/browser evidence for `/api/v1/checkpoint3/issue280/local-e2e-demo`: bounded synthetic markdown submission, visible stored grounded result, transcript preview/expansion, citations, context refs, claim supports, evaluation metadata, retry/refusal states, info tooltips, keyboard/mobile behavior, and provider-disabled local/mock posture. Issues `#249` and `#280` remain open after PR D unless all remaining R280 rows are later satisfied or reviewed/re-scoped, C3B remains blocked, and PR D authorizes no final issue-closure gate, hosted/public demo, provider setup, paid spend, real provider calls, cloned identity runtime, real media, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claim. |
 | 2026-07-24 | Issue `#280` continued as C3A-R3 PR C on branch `phase-1-closure-280-c3a-r3-pr-c-local-e2e-demo-slice` after PR `#282` merged PR B at `b889604a490c9f014130e420c1c949af7879dd84` with post-merge main quality workflow run `30092008592` passing. Scope is the narrow executable local/mock API slice only: bounded synthetic markdown ingestion, deterministic retrieval, grounded walkthrough generation, narrow multilingual output, unsupported-claim evaluation, and issue-scoped stored metadata. UI is not touched. Issues `#249` and `#280` remain open after PR C, C3B remains blocked until `#280` is satisfied or reviewed/re-scoped, and PR C authorizes no final issue-closure gate, hosted/public demo, provider setup, paid spend, real provider calls, cloned identity runtime, real media, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claim. |
 | 2026-07-24 | Issue `#280` continued as C3A-R3 PR B on branch `phase-1-closure-280-c3a-r3-pr-b-input-api-error-contract` after PR `#281` merged PR A at `3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c` with post-merge main quality workflow run `30085558061` passing. Scope is the first executable input/API/error contract slice only: bounded arbitrary synthetic markdown, safe request/response/error taxonomy, prompt-injection rejection, unsafe/private/secret-like input rejection, local/mock provider-disabled posture, and slice-scoped positive/negative/corner/API/contract/regression tests. Issues `#249` and `#280` remain open after PR B, C3B remains blocked until `#280` is satisfied or reviewed/re-scoped, and PR B authorizes no full end-to-end multilingual demo, provider setup, paid spend, hosted/public demo, cloned identity runtime, real media, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claim. |
 | 2026-07-24 | Issue `#280` started as C3A-R3 PR A on branch `phase-1-closure-280-c3a-r3-planning-preflight-persona-depth`; the first branch commit contains only `docs/governance/preflights/issue-280.json`. Scope is planning/preflight, public-source persona/audience/depth research, matrix/checklist coverage, future implementation test-strategy contract, and merge-safe red-evidence framework only. Issue `#278` is closed after PR `#279` merged ADR `0034` and the C3A-R2 gate at `da3efe71b39c1c03a0fd28748a1270ee175cc2dd` with post-merge main quality workflow run `30079561208` passing. Issues `#249` and `#280` remain open after PR A, C3B remains blocked until `#280` is satisfied or reviewed/re-scoped, and PR A authorizes no runtime product behavior, provider setup, paid spend, hosted/public demo, cloned identity runtime, real media, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claim. |
