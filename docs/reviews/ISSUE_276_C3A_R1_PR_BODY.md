@@ -86,14 +86,20 @@ exposed in that turn. A subsequent Output-Correctness fan-out pass found the
 downloadable `translatedScript` artifact still contained only flat target text
 instead of the same source English, target text, English reference,
 citations, and trace bindings exposed in the UI and metadata. That blocker is
-fixed locally and requires gates plus full current-head fan-out after the next
-pushed commit; local `make quality`, `make checkpoint3-acceptance`, `make ci`,
-focused API/output-correctness tests, and targeted CP8 browser smoke now pass.
+fixed in later pushed commits; local gates, GitHub checks, and current-head
+fan-out have now been rerun after the subsequent blockers below were fixed.
 The next Output-Correctness fan-out on `aa9ba02` confirmed that artifact fix but
 blocked because Hindi still accepted transliterated source-domain terms
-`जनरेट` and `वॉकथ्रू` in the citation-requirement segment. That Hindi blocker is
-fixed in `c20c6c6`; `make quality`, `make checkpoint3-acceptance`, `make ci`,
-GitHub checks, and the mandatory Output-Correctness, TDD, Doubt-Driven, and
+`जनरेट` and `वॉकथ्रू` in the citation-requirement segment. That Hindi blocker
+was fixed in `c20c6c6`, but human local-demo review and subsequent fan-out
+reviews found additional visible-output gaps: the original NarraTwin four-line
+document needed exact all-language golden coverage, NarraTwin/Atlas/Helio
+fixtures could still pass partial substrings, some audience prefixes leaked or
+were silently dropped, Atlas could invent an engineer audience, Vietnamese Atlas
+had mixed-script contamination, and Spanish Helio duplicated `Para reclutadores`.
+The current pushed head `041960ae2bc69e6a2b6d42eaad4db3fc150e534b` fixes those
+blockers. `make quality`, `make checkpoint3-acceptance`, `make ci`, GitHub
+checks, and the mandatory Output-Correctness, TDD, Doubt-Driven, and
 False-Positive final fan-out passed on that pushed head with no findings.
 Human local-demo review remains the final manual approval input.
 Final evidence is recorded in
@@ -172,9 +178,9 @@ there is no successor status-only follow-up needed.
 | Tests / current behavior | `tests/acceptance/test_checkpoint3_output_correctness.py` | repo-file | C3A-R1-FM | `uv run pytest tests/acceptance/test_checkpoint3_output_correctness.py -q` | implementer | test | pass | API/output correctness is exhaustive for Priority 1. |
 | Browser behavior | `frontend/tests/checkpoint3-real-browser.spec.ts` | repo-file | C3A-R1-FM | `NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts` | implementer | test | pass | Browser coverage is representative by script family. |
 | Docs/gates | `scripts/quality/check_checkpoint3_acceptance.py` | repo-file | C3A-R1-FM | invariant test gate `make checkpoint3-acceptance` plus back-to-back default rerun after CP8 port isolation | implementer | gate | pass | Gate rejects missing representative browser evidence and no longer depends on fixed default CP8 ports. |
-| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | earlier final PASS superseded by human-found semantic blockers; latest Output-Correctness fan-out on `aa9ba02` confirmed artifact parity but blocked on Hindi transliterated source-domain terms; `c20c6c6` fixed it and final Output-Correctness, TDD, Doubt-Driven, and False-Positive reviewers passed with no findings | implementer | source / human-only | pass | Human local-demo review remains the final manual approval input. |
+| Adversarial review | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | earlier final PASS evidence was superseded by human-found semantic blockers and later fan-out blockers; current pushed head `041960a` fixes Hindi/manual-review exactness, partial substring false positives, audience leakage/dropped unknown audiences, Atlas invented audience, mixed-script contamination, and Helio duplicate prefix; final Output-Correctness, TDD, Doubt-Driven, and False-Positive reviewers passed with no findings | implementer | source / human-only | pass | Human local-demo review remains the final manual approval input. |
 | Review prompt set | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | review prompt matrix for false pass and adversarial output correctness review | implementer | source / human-only | pass | Human reviewer may repeat prompts if usage limits reset. |
-| Stop rule / repeated blocker reset | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | stop rule checked; human-found and fan-out blocker classes updated the contract before another fix loop; latest Hindi transliteration blocker is fixed and same-head gates/fan-out passed on `c20c6c6` | implementer | gate | pass | Manual local-demo review remains before approval. |
+| Stop rule / repeated blocker reset | `docs/reviews/ISSUE_276_C3A_R1_REVIEW_EVIDENCE.md` | repo-file | C3A-R1-REVIEW | stop rule checked; each human-found or fan-out blocker class updated the executable contract before another fix loop; same-head gates/fan-out passed on `041960a` | implementer | gate | pass | Manual local-demo review remains before approval. |
 | Skill/tool selection | `docs/reviews/ISSUE_276_C3A_R1_PREFLIGHT.md` | repo-file | C3A-R1-SKILL | preinstalled approved skills and repo docs checked first; no custom skill creation | implementer | gate | pass | No custom skills/plugins or dependencies added. |
 
 ## Human-only review surfaces
@@ -223,6 +229,14 @@ npm --prefix frontend run test -- page.test.tsx -> 16 passed
 NARRATWIN_CP3_PRODUCT_FAITHFUL=1 NARRATWIN_REAL_STACK=1 npm --prefix frontend run test:smoke -- --config=playwright.checkpoint3.config.ts -> 1 passed
 make checkpoint3-acceptance back-to-back after CP8 port isolation -> passed twice
 occupied default CP8 ports 8120/3120 + make checkpoint3-acceptance -> passed
+uv run pytest tests/unit/test_stage6_multilingual.py::test_local_demo_translation_refuses_unknown_audience_prefix_instead_of_dropping_it tests/unit/test_stage6_multilingual.py::test_helio_media_fixture_preserves_explicit_recruiter_audience -q -> passed
+uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py tests/acceptance/test_checkpoint3_language_quality.py tests/acceptance/test_checkpoint3_media_artifacts.py -q -> passed
+uv run ruff check backend/app/stage6.py tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py -> passed
+make checkpoint3-acceptance on current pushed head 041960a -> 8 passed, 0 planned, 0 failed
+make quality on current pushed head 041960a -> passed
+make ci on current pushed head 041960a -> passed
+GitHub checks on current pushed head 041960a -> all passed
+final mandatory fan-out on current pushed head 041960a -> Output-Correctness PASS, TDD PASS, Doubt-Driven PASS, False-Positive PASS
 ```
 
 ## Notes for reviewer

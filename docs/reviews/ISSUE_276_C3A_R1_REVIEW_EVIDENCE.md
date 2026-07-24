@@ -13,9 +13,10 @@ engineer output, transliterated or untranslated source terms could survive in th
 target text, only one generated line could be translated from a multi-paragraph
 approved source, and tests were too willing to trust fixture self-consistency.
 
-The PR is not ready for human approval until the corrected product behavior,
-fresh executable gates, manual smoke evidence, and a fresh fan-out review are
-recorded below.
+The PR is ready for human local-demo review after the corrected product
+behavior, fresh executable gates, remote checks, and the final fan-out review
+recorded below. Automated executable evidence remains primary; human review is
+the requested final manual approval input.
 
 The requested sub-agent fan-out had also previously hit usage limits. Obsolete
 or completed sessions must be stopped before restarting the required reviewers.
@@ -38,7 +39,7 @@ Superseding human-review blockers found after the prior final pass:
 | Downloadable `translatedScript` artifact contained only target text while metadata/UI contained the full transcript. | Runtime script artifact rendering and tests must require source English, target text, English reference, citations, context refs, claim-support ids, source run id, and evaluation id for every segment. |
 | Hindi accepted transliterated English terms such as `जनरेट` and `वॉकथ्रू` in a completed transcript. | Hindi golden output and transcript validation must reject transliterated source-domain terms and require fully translated Hindi wording. |
 
-Fresh final review status: `FINAL FAN-OUT PASS ON c20c6c6 / HUMAN REVIEW REQUESTED`.
+Fresh final review status: `FINAL FAN-OUT PASS ON 041960a / HUMAN REVIEW REQUESTED`.
 
 The final review restarted after pushed head `100c6059795e3d50e2c95f15ef6d203413de5bd6`
 was blocked for CP8 default-path nondeterminism. Commit
@@ -63,9 +64,22 @@ still accepted transliterated source-domain terms `जनरेट` and `वॉ�
 fourth transcript segment. That blocker is fixed locally by replacing the Hindi
 fixture with fully translated wording and adding Hindi transliteration rejection
 to transcript correctness validation. Commit
-`c20c6c64ff73abd4c198445d8fa4988d2f004acd` passed local gates, GitHub checks,
-and final mandatory fan-out with no findings; human local-demo review remains
-the final manual approval input.
+`c20c6c64ff73abd4c198445d8fa4988d2f004acd` passed local gates and its
+mandatory fan-out, but that evidence was superseded by human local-demo review
+finding that the exact NarraTwin four-line document needed broader all-language
+golden coverage. Commit `a529ca8` fixed the Hindi/manual-review golden set but
+was blocked by TDD and Doubt-Driven review for NarraTwin partial-substring
+acceptance and audience-prefix leakage. Commit `a0e508e` fixed those issues but
+was blocked by Doubt-Driven review for Atlas/Helio substring acceptance and an
+invented Atlas engineer audience. Commit `29b830a` fixed Atlas all-three-segment
+coverage, exact fixture matching, no invented Atlas audience, and mixed-script
+contamination, but was blocked for unknown `For investors` audience prefixes
+being silently dropped. Commit `09af5af` fixed unknown-audience refusal, but was
+blocked by TDD review for duplicated Spanish Helio `Para reclutadores` visible
+output. Commit `041960ae2bc69e6a2b6d42eaad4db3fc150e534b` fixed the Helio
+duplicate-prefix gap and passed local gates, GitHub checks, and the final
+mandatory Output-Correctness, TDD, Doubt-Driven, and False-Positive fan-out with
+no findings. Human local-demo review remains the final manual approval input.
 
 | Final reviewer | Latest result | Evidence summary |
 |---|---|---|
@@ -88,15 +102,23 @@ the final manual approval input.
 | False-Positive Reviewer, rerun on `c20c6c6` | `PASS` | Confirmed branch and origin both pointed to `c20c6c64ff73abd4c198445d8fa4988d2f004acd`; focused suites passed, Ruff/ESLint passed, `make checkpoint3-acceptance` passed, direct runtime Hindi API mutation probe rejected metadata-only success, artifact-only success, partial text, fallback, wrong script, missing source/reference/target, citation drift, missing binding, target-only `translatedScript`, and Hindi transliterated `जनरेट`/`वॉकथ्रू`; coverage matrix retained all required rows. |
 | Doubt-Driven Reviewer, rerun on `c20c6c6` | `PASS` | Focused multilingual/API/media suites passed with 118 tests, `make checkpoint3-acceptance` passed 8 probes, targeted Playwright UI test passed, runtime API probe across all 25 Priority 1 languages verified 4-segment trilingual transcript, artifact parity, preserved bindings, Bengali unsupported refusal, Hindi with no `जनरेट`, `वॉकथ्रू`, `इंजीनियरों`, or English fallback, and browser evidence for Hindi, Arabic, Hebrew, Japanese, Korean, Russian, French, and Thai showed visible transcript/artifact parity. |
 | Output-Correctness Reviewer, verdict retry on `c20c6c6` | `PASS` | Reviewed exact pushed head `c20c6c64ff73abd4c198445d8fa4988d2f004acd`; focused suites passed with 118 tests, direct runtime API probe for the exact user knowledge document produced 4 cited segments for all 25 Priority 1 languages, Hindi contained no `जनरेट`, `वॉकथ्रू`, or `इंजीनियरों`, translatedScript decoded as full trilingual transcript rather than target-only, per-segment source/target/reference/citation/context/claim/eval/source-run bindings were present, Bengali refused with `LOCAL_DEMO_LANGUAGE_UNSUPPORTED`, `make checkpoint3-acceptance` passed, targeted Playwright passed, and browser evidence confirmed representative visible transcript/artifact parity. |
+| Doubt-Driven Reviewer, rerun on `a529ca8` | `BLOCK` before latest fixes | Found NarraTwin partial-substring acceptance could still return `COMPLETED` while dropping a new arbitrary source clause, and found non-Hindi audience-prefix leakage such as German/Dutch/Filipino English audience terms. Fixed by exact source-body fixture matching and all-Priority-1 audience-prefix tests. |
+| Doubt-Driven Reviewer, rerun on `a0e508e` | `BLOCK` before latest fixes | Found Atlas/Helio fixtures still matched by substring and Atlas outputs invented an engineer audience when the source did not say `For engineers`. Fixed by exact Atlas/Helio source-body matching, all-three-segment Atlas golden translations, no-invented-audience tests, and mixed-script contamination checks. |
+| Doubt-Driven Reviewer, rerun on `29b830a` | `BLOCK` before latest fixes | Found unknown source prefixes such as `For investors, ...` could be stripped and the base translation would still return `COMPLETED`, dropping visible source meaning. Fixed by refusing unknown audience prefixes for all non-English Priority 1 languages. |
+| TDD Reviewer, rerun on `09af5af` | `BLOCK` before latest fix | Found Spanish Helio positive output duplicated `Para reclutadores` and the test only checked prefix presence. Fixed by making the Spanish Helio fixture body prefix-free and asserting the exact visible output with `Para reclutadores` appearing once. |
+| Output-Correctness Reviewer, rerun on `041960a` | `PASS` | Reviewed exact pushed head `041960ae2bc69e6a2b6d42eaad4db3fc150e534b`; focused regression tests, 19 acceptance tests, custom runtime probes, `make checkpoint3-acceptance`, and browser evidence all passed. Verified 25 Priority 1 manual-review exact translations, 168 known audience prefixes, 24 unknown-audience refusals, NarraTwin/Atlas partial refusals, Atlas API all 25 languages with 3 segments and artifact parity, no invented Atlas engineer audience, Helio Spanish exactly one `Para reclutadores`, 23 Helio non-Spanish refusals, and 9 Priority 2 refusals. |
+| TDD Reviewer, rerun on `041960a` | `PASS` | Verified behavior-focused tests and RED proof against prior bad heads: manual-review all-language exactness failed on `c20c6c6`, NarraTwin partial substring failed on `a529ca8`, Atlas partial and audience-prefixed partial failed on `a0e508e`, unknown audience refusal failed on `29b830a`, and Helio duplicate-prefix exact-output failed on `09af5af`. Current head passed Ruff, 305 Stage 6 unit tests, 37 API/acceptance tests, 19 frontend tests, targeted real-browser smoke, `make checkpoint3-acceptance`, and `make quality`. |
+| Doubt-Driven Reviewer, rerun on `041960a` | `PASS` | Could not find a remaining false pass. Runtime adversarial probes showed `0` successes for `For investors`, NarraTwin extra-claim substrings, Atlas extra-claim substrings, Atlas audience-prefixed extra-claim substrings, and Helio extra-claim substrings; exact Atlas succeeded for non-English Priority 1 languages; full-document exact golden probe produced 4 transcript segments for all 25 Priority 1 languages with artifact parity and bindings; Priority 2 languages refused; `make checkpoint3-acceptance` passed including real-browser E2E. |
+| False-Positive Reviewer, rerun on `041960a` | `PASS` | Confirmed 19 acceptance tests, 97 focused adversarial unit tests, exhaustive Priority 1 output-correctness acceptance, direct mutation probes, and `make checkpoint3-acceptance` passed. Mutations for metadata-only success, artifact-only success, partial text, fallback, wrong script, missing source/reference/target, citation drift, missing bindings, unknown audience, duplicated Helio prefix, and mixed-script contamination were rejected with no unexpected passes. |
 
 The mandatory Output-Correctness, TDD, Doubt-Driven, and False-Positive reviews
-passed against pushed head `c20c6c64ff73abd4c198445d8fa4988d2f004acd` with no
+passed against pushed head `041960ae2bc69e6a2b6d42eaad4db3fc150e534b` with no
 findings. Human local-demo review is requested as the final manual approval
 input.
 
 ## Corrective Evidence Snapshot
 
-Status: `FINAL FAN-OUT PASS ON c20c6c6 / HUMAN REVIEW REQUESTED`
+Status: `FINAL FAN-OUT PASS ON 041960a / HUMAN REVIEW REQUESTED`
 
 Current corrective tests added after human review:
 
@@ -108,6 +130,11 @@ Current corrective tests added after human review:
 | One generated source line translated from a multi-paragraph approved source. | `tests/api/test_stage4_slice_api.py::test_grounded_script_generation_preserves_product_audience_surface` and Stage 6 API multi-segment transcript assertions. |
 | Heading text becomes a generated claim and citation. | `tests/unit/test_retrieval_and_grounding.py::test_chunking_preserves_headings_as_metadata_without_heading_only_claim_chunks`. |
 | Original NarraTwin manual-review document refused or only translated a subset of generated segments. | `tests/unit/test_stage6_multilingual.py::test_priority1_local_demo_supports_original_narratwin_manual_review_document`, `tests/api/test_stage6_multilingual_api.py::test_multilingual_walkthrough_api_translates_original_manual_review_document`, and Stage 4 small-document expansion within retrieval top-k. |
+| Known audience prefixes leaked English or mapped to the wrong audience. | `tests/unit/test_stage6_multilingual.py::test_local_demo_translation_preserves_selected_audience_prefixes_without_english_leakage` checks all supported local/demo audiences across all Priority 1 languages. |
+| Unknown audience prefixes were silently dropped while returning `COMPLETED`. | `tests/unit/test_stage6_multilingual.py::test_local_demo_translation_refuses_unknown_audience_prefix_instead_of_dropping_it`; the final fan-out verified `For investors, ...` refused for all 24 non-English Priority 1 languages. |
+| Atlas acceptance translated one line or invented an engineer audience. | `tests/unit/test_stage6_multilingual.py::test_atlas_output_fixture_refuses_substring_with_extra_source_claim`, `test_atlas_output_fixture_refuses_audience_prefixed_substring_with_extra_source_claim`, `test_atlas_output_fixture_does_not_invent_engineer_audience`, `test_atlas_output_fixture_preserves_explicit_engineer_audience`, and exhaustive Priority 1 API output-correctness acceptance. |
+| Latin-script output could contain unexpected foreign-script contamination. | `tests/unit/test_stage6_multilingual.py::test_atlas_output_fixture_latin_languages_have_no_foreign_script_contamination`. |
+| Spanish Helio output duplicated the audience prefix. | `tests/unit/test_stage6_multilingual.py::test_helio_media_fixture_preserves_explicit_recruiter_audience` asserts the exact visible Spanish sentence and that `Para reclutadores` appears once. |
 | Coverage matrix omitted positive rows while summary said API output passed. | `tests/acceptance/test_checkpoint3_output_correctness.py` now writes and asserts `positive` rows for every Priority 1 language; latest matrix has 400 rows including 25 positive rows and 25 `missing-target` false-positive rows. |
 | Browser evidence accepted non-mock voice provider posture. | `frontend/tests/checkpoint3-real-browser.spec.ts` asserts `providers.voice === "mock"` and self-mutates `voice: "elevenlabs"` to prove the browser contract rejects it. |
 | Default CP8 acceptance gate could fail from stale fixed local ports or dead Next dev locks. | `scripts/quality/check_checkpoint3_acceptance.py` allocates isolated loopback CP8 ports per run and removes only dead Next dev locks, while preserving live locks; `tests/unit/test_checkpoint3_acceptance_gate.py::test_checkpoint3_acceptance_allocates_isolated_cp8_ports`, `test_checkpoint3_acceptance_removes_stale_next_dev_lock`, and `test_checkpoint3_acceptance_keeps_live_next_dev_lock` prove the harness behavior; `make checkpoint3-acceptance` passes on the default path at pushed head `6099612`. |
@@ -133,6 +160,12 @@ make checkpoint3-acceptance
 make checkpoint3-acceptance
 occupied default CP8 ports 8120/3120 + make checkpoint3-acceptance
 make ci
+uv run pytest tests/unit/test_stage6_multilingual.py::test_local_demo_translation_refuses_unknown_audience_prefix_instead_of_dropping_it tests/unit/test_stage6_multilingual.py::test_helio_media_fixture_preserves_explicit_recruiter_audience -q
+uv run pytest tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py tests/acceptance/test_checkpoint3_language_quality.py tests/acceptance/test_checkpoint3_media_artifacts.py -q
+uv run ruff check backend/app/stage6.py tests/unit/test_stage6_multilingual.py tests/api/test_stage6_multilingual_api.py tests/acceptance/test_checkpoint3_output_correctness.py
+make checkpoint3-acceptance
+make quality
+make ci
 ```
 
 Results:
@@ -154,7 +187,14 @@ make quality: passed
 make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
 make checkpoint3-acceptance back-to-back rerun after CP8 port isolation: 8 passed, 0 planned, 0 failed
 occupied default CP8 ports 8120/3120 + make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
-make ci: passed before the latest source-domain-term fix; rerun required after commit/push
+latest focused unknown-audience + Helio exact-output tests: passed
+latest Stage 6 unit/API/output-correctness/language-quality/media-artifact suite: passed
+latest targeted Ruff: passed
+latest make checkpoint3-acceptance: 8 passed, 0 planned, 0 failed
+latest make quality: passed
+latest make ci: passed
+GitHub checks on pushed head 041960a: all passed
+final mandatory fan-out on pushed head 041960a: Output-Correctness PASS, TDD PASS, Doubt-Driven PASS, False-Positive PASS
 ```
 
 Pending before merge approval:
