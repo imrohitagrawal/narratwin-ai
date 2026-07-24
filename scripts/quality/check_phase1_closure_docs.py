@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 from pathlib import Path
+from typing import cast
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -24,6 +25,70 @@ ISSUE_278_FULL_PROJECT_COMMAND = (
 ISSUE_278_REPORT_PATHS = (
     "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
     "reports/checkpoint3-multilingual/full-project-correctness-report.json",
+)
+ISSUE_280_BRANCH = "phase-1-closure-280-c3a-r3-planning-preflight-persona-depth"
+ISSUE_280_MATRIX_PATH = "reports/checkpoint3-issue280/requirement-matrix.json"
+ISSUE_280_RED_EVIDENCE_PATH = "reports/checkpoint3-issue280/red-evidence-plan.json"
+ISSUE_280_REQUIRED_SECTIONS = {
+    "R280-SCOPE",
+    "R280-INPUT",
+    "R280-AUDIENCE",
+    "R280-PERSONA",
+    "R280-DEPTH",
+    "R280-AUDIENCE-DEPTH",
+    "R280-S4",
+    "R280-S6",
+    "R280-GLOSSARY",
+    "R280-ERROR",
+    "R280-UI",
+    "R280-CONVERSATION-UX",
+    "R280-CONVERSION",
+    "R280-CRITICAL-CONNECTIONS",
+    "R280-QUALITY",
+    "R280-EVIL-SET",
+    "R280-OUTPUT-CORRECTNESS",
+    "R280-GOV",
+}
+ISSUE_280_ALLOWED_ROW_STATUSES = {
+    "STATIC_CONTRACT_PASS",
+    "RED_EVIDENCE_CAPTURED",
+    "PLANNED_IMPLEMENTATION",
+    "PLANNED_EXECUTABLE_GATE",
+    "REVIEWED_RE_SCOPE",
+}
+ISSUE_280_REQUIRED_AUDIENCES = {
+    "Recruiter",
+    "Hiring manager",
+    "Engineer",
+    "Product leader",
+    "Customer",
+    "Beginner",
+    "Global viewer",
+}
+ISSUE_280_REQUIRED_PERSONA_FIELDS = {
+    "audienceMode",
+    "researchBasis",
+    "jobToBeDone",
+    "decisionContext",
+    "knowledgeLevel",
+    "preferredEvidence",
+    "toneBoundary",
+    "depthBehavior",
+    "translationRisk",
+    "accessibilityRisk",
+    "goldenRules",
+    "evilSet",
+    "sourceBindingRule",
+    "testRows",
+}
+ISSUE_280_REQUIRED_PUBLIC_SOURCES = (
+    "https://www.nngroup.com/articles/personas-jobs-be-done/",
+    "https://www.gov.uk/service-manual/user-research/start-by-learning-user-needs",
+    "https://service-manual.ons.gov.uk/content/writing-for-users/user-personas",
+    "https://wid.org/wp-content/uploads/2022/03/FederalPLGuidelines.pdf",
+    "https://pair.withgoogle.com/chapter/mental-models/",
+    "https://www.microsoft.com/en-us/haxtoolkit/ai-guidelines/",
+    "https://www.w3.org/WAI/WCAG22/Understanding/language-of-parts",
 )
 POLICY_ONLY_ENV = "NARRATWIN_POLICY_ONLY"
 
@@ -379,6 +444,23 @@ ISSUE_278_ALLOWED_CHANGED_FILES = {
     "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
     "reports/checkpoint3-multilingual/full-project-coverage-matrix.json",
     "reports/checkpoint3-multilingual/full-project-correctness-report.json",
+}
+ISSUE_280_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-280.json",
+    "docs/reviews/ISSUE_280_C3A_R3_PREFLIGHT.md",
+    "docs/reviews/ISSUE_280_C3A_R3_PERSONA_AUDIENCE_RESEARCH.md",
+    "docs/reviews/ISSUE_280_C3A_R3_RED_EVIDENCE_REVIEW.md",
+    "docs/demo/CHECKPOINT3A_R3_REHEARSAL_CHECKLIST.md",
+    ISSUE_280_MATRIX_PATH,
+    ISSUE_280_RED_EVIDENCE_PATH,
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "scripts/guardrails_check.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_274_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-274.json",
@@ -1655,10 +1737,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #278 / c3a-r2-full-project-multilingual-corpus",
-        "c3a-r2-active",
-        "c3a-r2-active",
-        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is closed after PR #277 merged the C3A repair for major-market multilingual output correctness at 6390ac7c7bcd8fed353587df90e8fa98c2ffef05 with post-merge main quality workflow run 30071081191 passing. Issue #278 will be satisfied by this PR when merged as C3A-R2: a governed full-project multilingual correctness acceptance gate for the local/mock generated walkthrough product path. It adds ADR 0034, the public-safe synthetic multi-document corpus, evidence locks for fixture/output/catalog/validator/artifact/report versions, all-supported-language coverage anchored to backend.app.stage6 catalog statuses, Priority 2 local-demo refusal, stale-evidence rejection, negative false-pass mutations, checked coverage/report artifacts, and reviewer checklist evidence. The gate proves this governed full-project corpus only; it does not prove arbitrary-project translation quality, provider quality, hosted/public demo readiness, raw uploaded knowledge-document translation API behavior, cloned identity runtime, real media, public distribution, or production readiness. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
+        "issue #280 / c3a-r3-pr-a-planning-preflight-persona-depth",
+        "c3a-r3-pr-a-active",
+        "c3a-r3-pr-a-active",
+        "Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is closed after PR #277 merged the C3A repair for major-market multilingual output correctness at 6390ac7c7bcd8fed353587df90e8fa98c2ffef05 with post-merge main quality workflow run 30071081191 passing. Issue #278 is closed after PR #279 merged C3A-R2 at da3efe71b39c1c03a0fd28748a1270ee175cc2dd with post-merge main quality workflow run 30079561208 passing. Issue #280 is active for C3A-R3. PR A locks only planning/preflight, public-source persona/audience/depth research, the requirement matrix, reviewer checklist, and merge-safe red-evidence framework. PR A does not implement runtime product behavior and does not prove arbitrary real-world translation quality, provider quality, hosted/public demo readiness, raw uploaded knowledge-document translation API behavior, cloned identity runtime, real media, public distribution, or production readiness. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open after PR A, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3766,8 +3848,12 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_276_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-278-c3a-r2-full-project-multilingual-corpus":
         allowed_files = ISSUE_278_ALLOWED_CHANGED_FILES
+    elif branch == ISSUE_280_BRANCH:
+        allowed_files = ISSUE_280_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-c3b-pr1-consent-provenance-planning-274":
         allowed_files = ISSUE_274_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-280-"):
+        allowed_files = set()
     elif branch.startswith("phase-1-closure-process-274-"):
         allowed_files = set()
     elif branch.startswith("phase-1-closure-278-"):
@@ -5635,6 +5721,192 @@ def check_issue278_report_artifacts_tracked(failures: list[str]) -> None:
             fail(failures, f"C3A-R2 report artifact must be tracked by git: {rel}")
 
 
+def load_json_artifact(failures: list[str], rel: str) -> object | None:
+    path = ROOT / rel
+    if not path.is_file():
+        fail(failures, f"Missing required JSON artifact: {rel}")
+        return None
+    try:
+        return cast(object, json.loads(read(rel)))
+    except json.JSONDecodeError as exc:
+        fail(failures, f"{rel} is not valid JSON: {exc}")
+        return None
+
+
+def check_issue280_preflight(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_280_C3A_R3_PREFLIGHT.md"
+    if not (ROOT / rel).is_file():
+        fail(failures, f"Missing required C3A-R3 PR A preflight artifact: {rel}")
+        return
+    text = read(rel)
+    normalized = re.sub(r"\s+", " ", text.lower())
+    check_required_headings(
+        failures,
+        text,
+        rel,
+        (
+            "Objective",
+            "Scope",
+            "Positive Claims",
+            "Failure Matrix",
+            "Matrix-To-Test Mapping",
+            "Skill And Tool Selection Ledger",
+            "Red-Evidence Strategy",
+            "Completion Criteria",
+            "Stop Rule",
+        ),
+    )
+    required_markers = (
+        "PR A does not implement runtime product behavior",
+        "no provider setup",
+        "paid spend",
+        "hosted/public demo",
+        "production-readiness",
+        "cloned identity runtime",
+        "real media",
+        "private strategy",
+        "provider payloads",
+        "provider outputs",
+        "secrets",
+        "credentials",
+        "tokens",
+        "#249 and #280 remain open",
+        "issue-comment-only evidence",
+        "permanent failing tests",
+        "RED_EVIDENCE_CAPTURED",
+        "PLANNED_IMPLEMENTATION",
+        "R280A-FM-001",
+        "R280A-FM-007",
+        "Stop and open a new issue",
+    )
+    missing = [marker for marker in required_markers if marker.lower() not in normalized]
+    if missing:
+        fail(failures, f"{rel} missing issue #280 PR A markers: " + ", ".join(missing))
+
+
+def check_issue280_persona_research(failures: list[str]) -> None:
+    rel = "docs/reviews/ISSUE_280_C3A_R3_PERSONA_AUDIENCE_RESEARCH.md"
+    if not (ROOT / rel).is_file():
+        fail(failures, f"Missing required C3A-R3 persona research artifact: {rel}")
+        return
+    text = read(rel)
+    normalized = re.sub(r"\s+", " ", text.lower())
+    for source in ISSUE_280_REQUIRED_PUBLIC_SOURCES:
+        if source.lower() not in normalized:
+            fail(failures, f"{rel} missing public research source: {source}")
+    for audience in sorted(ISSUE_280_REQUIRED_AUDIENCES):
+        if audience.lower() not in normalized:
+            fail(failures, f"{rel} missing audience mode: {audience}")
+    for field in sorted(ISSUE_280_REQUIRED_PERSONA_FIELDS):
+        if field.lower() not in normalized:
+            fail(failures, f"{rel} missing persona field: {field}")
+    forbidden = (
+        "private personality inference",
+        "demographic stereotypes",
+        "runtime personality inference",
+        "unsupported audience claims",
+    )
+    for marker in forbidden:
+        if marker not in normalized:
+            fail(failures, f"{rel} missing rejected persona input marker: {marker}")
+
+
+def check_issue280_requirement_matrix(failures: list[str]) -> None:
+    artifact = load_json_artifact(failures, ISSUE_280_MATRIX_PATH)
+    if not isinstance(artifact, dict):
+        return
+    if artifact.get("issue") != 280:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must target issue 280.")
+    if artifact.get("prSlice") != "PR A":
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must be scoped to PR A.")
+    if artifact.get("runtimeBehaviorImplemented") is not False:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} cannot claim runtime implementation complete in PR A.")
+    if artifact.get("checkpoint3TrackerRemainsOpen") is not True:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #249 open.")
+    if artifact.get("issue280RemainsOpenAfterPrA") is not True:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #280 open after PR A.")
+    if artifact.get("plannedGate") != "make issue280-output-correctness":
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the planned gate.")
+    sections = artifact.get("sections")
+    if not isinstance(sections, list):
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} sections must be a list.")
+        return
+    seen_sections: set[str] = set()
+    seen_rows: set[str] = set()
+    for section_item in sections:
+        if not isinstance(section_item, dict):
+            fail(failures, f"{ISSUE_280_MATRIX_PATH} section entries must be objects.")
+            continue
+        section_id = str(section_item.get("id", ""))
+        seen_sections.add(section_id)
+        rows = section_item.get("rows")
+        if not isinstance(rows, list) or not rows:
+            fail(failures, f"{ISSUE_280_MATRIX_PATH} section {section_id} must contain row objects.")
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                fail(failures, f"{ISSUE_280_MATRIX_PATH} section {section_id} contains a non-object row.")
+                continue
+            row_id = str(row.get("id", ""))
+            if not row_id or row_id in seen_rows:
+                fail(failures, f"{ISSUE_280_MATRIX_PATH} has missing or duplicate row id: {row_id}")
+            seen_rows.add(row_id)
+            status = str(row.get("status", ""))
+            evidence_type = str(row.get("evidenceType", ""))
+            planned_command = str(row.get("plannedCommand", ""))
+            owner = str(row.get("ownerPrSlice", ""))
+            if status not in ISSUE_280_ALLOWED_ROW_STATUSES:
+                fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} has invalid status: {status}")
+            if not evidence_type:
+                fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} must include evidenceType.")
+            if not planned_command and status != "REVIEWED_RE_SCOPE":
+                fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} must include planned executable evidence.")
+            if not owner:
+                fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} must include ownerPrSlice.")
+            if "issue comment" in evidence_type.lower() or "issue comment" in planned_command.lower():
+                fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} cannot use issue comments alone as evidence.")
+    missing_sections = sorted(ISSUE_280_REQUIRED_SECTIONS - seen_sections)
+    if missing_sections:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} missing R280 sections: " + ", ".join(missing_sections))
+
+
+def check_issue280_red_evidence_plan(failures: list[str]) -> None:
+    artifact = load_json_artifact(failures, ISSUE_280_RED_EVIDENCE_PATH)
+    if not isinstance(artifact, dict):
+        return
+    if artifact.get("mergeSafe") is not True:
+        fail(failures, f"{ISSUE_280_RED_EVIDENCE_PATH} must be merge-safe.")
+    if artifact.get("permanentFailingTestsCommitted") is not False:
+        fail(failures, f"{ISSUE_280_RED_EVIDENCE_PATH} must reject permanently failing tests.")
+    if artifact.get("runtimeBehaviorImplemented") is not False:
+        fail(failures, f"{ISSUE_280_RED_EVIDENCE_PATH} cannot claim runtime behavior implementation.")
+    if artifact.get("issueCommentsOnlyAcceptedAsFinalEvidence") is not False:
+        fail(failures, f"{ISSUE_280_RED_EVIDENCE_PATH} cannot accept issue comments alone as final evidence.")
+    strategies = artifact.get("strategies")
+    if not isinstance(strategies, list) or not strategies:
+        fail(failures, f"{ISSUE_280_RED_EVIDENCE_PATH} must include red-evidence strategies.")
+        return
+    for strategy in strategies:
+        if not isinstance(strategy, dict):
+            fail(failures, f"{ISSUE_280_RED_EVIDENCE_PATH} strategy entries must be objects.")
+            continue
+        if not strategy.get("ownerPrSlice") or not strategy.get("removalCriteria"):
+            fail(failures, f"{ISSUE_280_RED_EVIDENCE_PATH} strategy {strategy.get('id', '')} needs owner and removal criteria.")
+
+
+def check_issue280_review_artifacts(failures: list[str]) -> None:
+    check_issue280_preflight(failures)
+    check_issue280_persona_research(failures)
+    check_issue280_requirement_matrix(failures)
+    check_issue280_red_evidence_plan(failures)
+    for rel in (
+        "docs/reviews/ISSUE_280_C3A_R3_RED_EVIDENCE_REVIEW.md",
+        "docs/demo/CHECKPOINT3A_R3_REHEARSAL_CHECKLIST.md",
+    ):
+        if not (ROOT / rel).is_file():
+            fail(failures, f"Missing required issue #280 artifact: {rel}")
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
@@ -5667,6 +5939,7 @@ def check_process_docs(failures: list[str]) -> None:
     check_issue278_c3a_r2_preflight(failures)
     check_issue278_full_project_probe(failures)
     check_issue278_report_artifacts_tracked(failures)
+    check_issue280_review_artifacts(failures)
     check_required_headings(
         failures,
         pr_template,

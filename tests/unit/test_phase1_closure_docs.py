@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -181,6 +182,16 @@ def run_issue278_preflight_check(
 
         monkeypatch.setattr(phase1.Path, "is_file", patched_is_file)
     phase1.check_issue278_c3a_r2_preflight(failures)
+    return failures
+
+
+def run_issue280_review_artifacts_check(
+    monkeypatch: Any, *, read_overrides: dict[str, str] | None = None
+) -> list[str]:
+    if read_overrides:
+        monkeypatch.setattr(phase1, "read", read_with_overrides(phase1, read_overrides))
+    failures: list[str] = []
+    phase1.check_issue280_review_artifacts(failures)
     return failures
 
 
@@ -2920,14 +2931,21 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "Issue `#269` is closed after PR `#273` merged the eighth Checkpoint 3A child implementation checkpoint",
         "Issue `#274` is satisfied by its prior reviewed PR as the public-safe Checkpoint 3B consent/provenance planning gate only",
         "Issue `#276` is closed after PR `#277` merged the Checkpoint 3A repair child for major-market multilingual output correctness",
-        "Issue `#278` is the current bounded C3A-R2 repair child for a governed full-project multilingual correctness acceptance gate",
-        "c3a-r2-active",
-        "Issue #278 will be satisfied by this PR when merged as C3A-R2",
-        "full-project multilingual correctness acceptance gate",
-        "ADR 0034",
+        "Issue `#278` is closed after PR `#279` merged the bounded C3A-R2 full-project multilingual corpus gate",
+        "Issue `#280` is the current C3A-R3 child, starting with PR A only",
+        "c3a-r3-pr-a-active",
+        "Issue #278 is closed after PR #279 merged C3A-R2 at da3efe71b39c1c03a0fd28748a1270ee175cc2dd",
+        "Issue #280 is active for C3A-R3",
+        "PR A does not implement runtime product behavior",
+        "issue #280 remains open after PR A",
+        "C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped",
+        "full-project multilingual corpus gate",
+        "ADR `0034`",
         "major-market multilingual output correctness",
         "`6390ac7c7bcd8fed353587df90e8fa98c2ffef05`",
         "post-merge main quality workflow run `30071081191` passing",
+        "`da3efe71b39c1c03a0fd28748a1270ee175cc2dd`",
+        "post-merge main quality workflow run `30079561208` passing",
         "`#254` | Merged | 2026-07-22",
         "`#258` | Merged | 2026-07-22",
         "`#260` | Merged | 2026-07-22",
@@ -7819,3 +7837,104 @@ def test_phf_automated_evidence_accepts_dot_prefixed_pytest_target() -> None:
     )
 
     assert failures == []
+
+
+def test_issue280_pr_a_allowed_files_pass(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_280_BRANCH,
+        files=sorted(phase1.ISSUE_280_ALLOWED_CHANGED_FILES),
+    )
+
+    assert failures == []
+
+
+def test_issue280_pr_a_rejects_runtime_product_files(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_280_BRANCH,
+        files=["backend/app/main.py"],
+    )
+
+    assert any("backend/app/main.py" in failure for failure in failures)
+
+
+def test_issue280_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-280-c3a-r3-runtime-implementation",
+        files=["docs/governance/preflights/issue-280.json"],
+    )
+
+    assert any("docs/governance/preflights/issue-280.json" in failure for failure in failures)
+
+
+def test_issue280_matrix_rejects_runtime_completion_claim(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["runtimeBehaviorImplemented"] = True
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert f"{phase1.ISSUE_280_MATRIX_PATH} cannot claim runtime implementation complete in PR A." in failures
+
+
+def test_issue280_matrix_requires_checkpoint3_tracker_to_remain_open(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["checkpoint3TrackerRemainsOpen"] = False
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert f"{phase1.ISSUE_280_MATRIX_PATH} must keep #249 open." in failures
+
+
+def test_issue280_preflight_requires_public_safe_boundaries(monkeypatch: Any) -> None:
+    preflight = phase1.read("docs/reviews/ISSUE_280_C3A_R3_PREFLIGHT.md")
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={
+            "docs/reviews/ISSUE_280_C3A_R3_PREFLIGHT.md": replace_text(
+                preflight,
+                "no provider setup",
+                "provider setup marker removed",
+            )
+        },
+    )
+
+    assert any("no provider setup" in failure for failure in failures)
+
+
+def test_issue280_matrix_rejects_issue_comment_only_evidence(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["sections"][0]["rows"][0]["evidenceType"] = "issue comment only"
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert any("cannot use issue comments alone as evidence" in failure for failure in failures)
+
+
+def test_issue280_matrix_requires_planned_executable_evidence(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["sections"][0]["rows"][0]["plannedCommand"] = ""
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert any("must include planned executable evidence" in failure for failure in failures)
+
+
+def test_issue280_red_evidence_rejects_permanent_failing_tests(monkeypatch: Any) -> None:
+    plan = json.loads(phase1.read(phase1.ISSUE_280_RED_EVIDENCE_PATH))
+    plan["permanentFailingTestsCommitted"] = True
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_RED_EVIDENCE_PATH: json.dumps(plan)},
+    )
+
+    assert f"{phase1.ISSUE_280_RED_EVIDENCE_PATH} must reject permanently failing tests." in failures

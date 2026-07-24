@@ -3570,3 +3570,71 @@ def test_main_push_without_github_token_treated_as_direct_push(
     guardrails.check_no_direct_main_push()
 
     assert "Direct push to main detected. All work must go through issue + branch + PR." in guardrails.failures
+
+
+def issue280_public_safe_pr_a_body(extra: str = "") -> str:
+    return (
+        "Refs #280\n"
+        "Refs #249\n\n"
+        "PR A does not implement runtime product behavior.\n"
+        "No provider setup.\n"
+        "No paid spend.\n"
+        "No hosted deployment.\n"
+        "No public demo.\n"
+        "No production readiness.\n"
+        "No cloned identity runtime.\n"
+        "No real media.\n"
+        f"{extra}"
+    )
+
+
+def test_issue280_pr_a_accepts_reference_only_public_safe_body() -> None:
+    failures = guardrails.issue_280_pr_a_failures(
+        guardrails.ISSUE_280_PR_A_BRANCH,
+        issue280_public_safe_pr_a_body(),
+        issue280_public_safe_pr_a_body(),
+    )
+
+    assert failures == []
+
+
+def test_issue280_pr_a_rejects_closing_issue_280() -> None:
+    failures = guardrails.issue_280_pr_a_failures(
+        guardrails.ISSUE_280_PR_A_BRANCH,
+        "Closes #280\n" + issue280_public_safe_pr_a_body(),
+        issue280_public_safe_pr_a_body(),
+    )
+
+    assert guardrails.ISSUE_280_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_issue280_pr_a_rejects_closing_issue_249() -> None:
+    failures = guardrails.issue_280_pr_a_failures(
+        guardrails.ISSUE_280_PR_A_BRANCH,
+        "Fixes #249\n" + issue280_public_safe_pr_a_body(),
+        issue280_public_safe_pr_a_body(),
+    )
+
+    assert guardrails.ISSUE_249_REFERENCE_ONLY_FAILURE in failures
+
+
+def test_issue280_pr_a_rejects_runtime_completion_claim() -> None:
+    body = issue280_public_safe_pr_a_body("Runtime implementation complete.\n")
+    failures = guardrails.issue_280_pr_a_failures(
+        guardrails.ISSUE_280_PR_A_BRANCH,
+        body,
+        body,
+    )
+
+    assert guardrails.ISSUE_280_RUNTIME_COMPLETION_FAILURE in failures
+
+
+def test_issue280_pr_a_requires_public_safe_non_goals() -> None:
+    body = issue280_public_safe_pr_a_body().replace("No paid spend.\n", "")
+    failures = guardrails.issue_280_pr_a_failures(
+        guardrails.ISSUE_280_PR_A_BRANCH,
+        body,
+        body,
+    )
+
+    assert guardrails.ISSUE_280_PUBLIC_SAFE_BOUNDARY_FAILURE in failures

@@ -52,22 +52,29 @@ Use it to answer:
   `#277` merged the Checkpoint 3A repair child for major-market multilingual
   output correctness at `6390ac7c7bcd8fed353587df90e8fa98c2ffef05`, with
   post-merge main quality workflow run `30071081191` passing. Issue `#278` is
-  the current bounded C3A-R2 repair child for a governed full-project
-  multilingual correctness acceptance gate. This branch adds a public-safe
-  synthetic multi-document corpus, ADR `0034`, catalog/evidence locks, all-supported-language
-  executable coverage, stale-evidence rejection, full transcript/body/artifact
-  parity checks, and reviewer-facing reports/checklists for the local/mock
-  generated walkthrough product path only. Raw uploaded knowledge-document
-  translation as a separate API surface remains outside the current Stage 6
-  product boundary unless a future issue explicitly implements and tests that
-  behavior. Issue `#274` is satisfied by its prior reviewed PR as the
+  closed after PR `#279` merged the bounded C3A-R2 full-project multilingual
+  corpus gate and ADR `0034` at
+  `da3efe71b39c1c03a0fd28748a1270ee175cc2dd`, with post-merge main quality
+  workflow run `30079561208` passing. Issue `#280` is the current
+  C3A-R3 child, starting with PR A only: planning/preflight, public-source
+  persona/audience/depth research, a machine-checkable requirement matrix,
+  reviewer checklist, and merge-safe red-evidence framework. PR A does not
+  implement runtime product behavior and does not prove arbitrary real-world
+  translation quality, provider quality, hosted/public demo behavior, cloned
+  identity runtime, real media, public distribution, or production readiness.
+  Raw uploaded knowledge-document translation as a separate API surface remains
+  outside the current Stage 6 product boundary unless a future issue explicitly
+  implements and tests that behavior. Issue `#274` is satisfied by its prior
+  reviewed PR as the
   public-safe Checkpoint 3B consent/provenance planning gate only:
   consent/provenance planning, acceptance contracts, risk boundaries, and future
   issue sequencing. Issue `#249` remains open as the public Checkpoint 3 tracker
-  after this child. This state does not authorize Checkpoint 3B implementation,
-  Checkpoint 3C, hosted/public demo, provider setup, cloned identity runtime,
-  real media, public distribution, arbitrary-project translation quality,
-  provider quality, or production readiness.
+  after this child, and issue `#280` remains open after PR A. C3B remains
+  blocked until issue `#280` is satisfied or reviewed/re-scoped. This state
+  does not authorize Checkpoint 3B implementation, Checkpoint 3C,
+  hosted/public demo, provider setup, cloned identity runtime, real media,
+  public distribution, arbitrary-project translation quality, provider quality,
+  or production readiness.
   No Phase 2 feature work, hosted
   deployment, production release tag, real avatar/video generation, cloned
   voice, cloned face, digital twin, real-person likeness, public URL, provider
@@ -76,7 +83,7 @@ Use it to answer:
   real provider calls, paid spend, public distribution, or production-readiness
   claim is permitted by issues `#225`, `#229`, `#235`, `#237`, `#241`, `#243`,
   `#245`, `#247`, `#249`, `#251`, `#253`, `#255`, `#257`, `#259`, `#261`,
-  `#263`, `#265`, `#267`, `#269`, `#274`, `#276`, or `#278`.
+  `#263`, `#265`, `#267`, `#269`, `#274`, `#276`, `#278`, or `#280`.
   Issue `#39`
   media/provider/security rows are non-downgradeable for production Go unless
   the affected provider, media, export, and replay paths remain disabled.
@@ -226,7 +233,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | issue #278 / c3a-r2-full-project-multilingual-corpus | c3a-r2-active | c3a-r2-active | Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is closed after PR #277 merged the C3A repair for major-market multilingual output correctness at 6390ac7c7bcd8fed353587df90e8fa98c2ffef05 with post-merge main quality workflow run 30071081191 passing. Issue #278 will be satisfied by this PR when merged as C3A-R2: a governed full-project multilingual correctness acceptance gate for the local/mock generated walkthrough product path. It adds ADR 0034, the public-safe synthetic multi-document corpus, evidence locks for fixture/output/catalog/validator/artifact/report versions, all-supported-language coverage anchored to backend.app.stage6 catalog statuses, Priority 2 local-demo refusal, stale-evidence rejection, negative false-pass mutations, checked coverage/report artifacts, and reviewer checklist evidence. The gate proves this governed full-project corpus only; it does not prove arbitrary-project translation quality, provider quality, hosted/public demo readiness, raw uploaded knowledge-document translation API behavior, cloned identity runtime, real media, public distribution, or production readiness. Issue #249 remains open as the public Checkpoint 3 tracker after this child. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims. |
+| SSV1-NEXT | next-action | issue #280 / c3a-r3-pr-a-planning-preflight-persona-depth | c3a-r3-pr-a-active | c3a-r3-pr-a-active | Demo Phase 0 planning completed through issue #225 and PR #226. Checkpoint 1 local/fake disabled-default reviewer evidence is complete through merged PRs #230, #236, #238, #242, #244, #246, and #248, with issue #247 closed after the safe refusal UX repair. C3-PR1 planning and guardrails completed through issue #249 and merged PR #250 at 41b262fa2431f55cd1c813eab4071968c1c96ba0, with post-merge status reconciliation through issue #251 and PR #252. Issues #253, #257, #259, #261, #263, #265, #267, and #269 are closed after merged PRs #254, #258, #260, #262, #264, #266, #268, and #273 completed the previously listed Checkpoint 3A executable acceptance probe set through CP1-CP8. Issue #276 is closed after PR #277 merged the C3A repair for major-market multilingual output correctness at 6390ac7c7bcd8fed353587df90e8fa98c2ffef05 with post-merge main quality workflow run 30071081191 passing. Issue #278 is closed after PR #279 merged C3A-R2 at da3efe71b39c1c03a0fd28748a1270ee175cc2dd with post-merge main quality workflow run 30079561208 passing. Issue #280 is active for C3A-R3. PR A locks only planning/preflight, public-source persona/audience/depth research, the requirement matrix, reviewer checklist, and merge-safe red-evidence framework. PR A does not implement runtime product behavior and does not prove arbitrary real-world translation quality, provider quality, hosted/public demo readiness, raw uploaded knowledge-document translation API behavior, cloned identity runtime, real media, public distribution, or production readiness. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open after PR A, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, or production-readiness claims. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -823,6 +830,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-07-24 | Issue `#280` started as C3A-R3 PR A on branch `phase-1-closure-280-c3a-r3-planning-preflight-persona-depth`; the first branch commit contains only `docs/governance/preflights/issue-280.json`. Scope is planning/preflight, public-source persona/audience/depth research, matrix/checklist coverage, and merge-safe red-evidence framework only. Issue `#278` is closed after PR `#279` merged ADR `0034` and the C3A-R2 gate at `da3efe71b39c1c03a0fd28748a1270ee175cc2dd` with post-merge main quality workflow run `30079561208` passing. Issues `#249` and `#280` remain open after PR A, C3B remains blocked until `#280` is satisfied or reviewed/re-scoped, and PR A authorizes no runtime product behavior, provider setup, paid spend, hosted/public demo, cloned identity runtime, real media, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claim. |
 | 2026-07-23 | Issue `#269` started as C3A-CP8 real-browser E2E on branch `phase-1-closure-269-c3a-cp8-real-browser-e2e`; the first branch commit contains only `docs/governance/preflights/issue-269.json`. Scope is executable local/mock browser evidence only, with API E2E, output-correctness, language-quality, media-artifacts, access/quota/retention, security/observability, and performance preserved, issue `#249` remaining open, and no provider setup, real provider calls, paid spend, hosted deployment, public URL, cloned identity, real media binaries, public distribution, Checkpoint 3B, Checkpoint 3C, or production-readiness claim. |
 | 2026-07-23 | PR `#268` merged issue `#267` C3A-CP7 performance at `caa8183be7ebf3fa5a3cf34d653727cc5522bf7f`; issue `#267` is closed, issue `#249` remains open, and the next approved action is issue `#269` C3A-CP8 executable real-browser E2E on branch `phase-1-closure-269-c3a-cp8-real-browser-e2e`. Scope remains local/mock evidence only, with no provider setup, real provider calls, paid spend, hosted deployment, public URL, cloned identity, real media binaries, public distribution, Checkpoint 3B, Checkpoint 3C, or production-readiness claim. |
 | 2026-07-23 | PR `#266` merged issue `#265` C3A-CP6 security/observability at `f79debb641e7198e2d1d41e210ddd537037c7699`; issue `#265` is closed, issue `#249` remains open, and the next approved action is issue `#267` C3A-CP7 executable performance on branch `phase-1-closure-267-c3a-cp7-performance-probe`. Scope remains local/mock API evidence only, with real-browser E2E still planned/non-passing and no provider setup, real provider calls, paid spend, hosted deployment, public URL, cloned identity, real media binaries, public distribution, or production-readiness claim. |
