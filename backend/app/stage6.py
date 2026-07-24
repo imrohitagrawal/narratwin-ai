@@ -2516,6 +2516,11 @@ def translate_demo_segment_text(
 def local_demo_translated_segment_fixture(*, source_segment: str, target_language: str) -> str | None:
     normalized_source = normalize_local_demo_fixture_source_segment(source_segment)
     source_body = local_demo_fixture_source_body(normalized_source)
+    if local_demo_source_has_unknown_audience_prefix(
+        source_segment=normalized_source,
+        target_language=target_language,
+    ):
+        return None
     atlas_fixture_translation = ATLAS_OUTPUT_FIXTURE_TRANSLATIONS.get(source_body)
     if atlas_fixture_translation is not None:
         return local_demo_with_audience_prefix(
@@ -2601,6 +2606,14 @@ def normalize_local_demo_fixture_source_segment(source_segment: str) -> str:
 
 def local_demo_fixture_source_body(source_segment: str) -> str:
     return re.sub(r"^For [^,]+,\s+", "", source_segment).strip()
+
+
+def local_demo_source_has_unknown_audience_prefix(*, source_segment: str, target_language: str) -> bool:
+    match = re.match(r"\s*For (?P<audience>[^,]+),\s+", source_segment)
+    if not match:
+        return False
+    audience = " ".join(match.group("audience").lower().split())
+    return audience not in DEMO_AUDIENCE_PREFIX_TEXT.get(target_language, {})
 
 
 def local_demo_with_audience_prefix(*, source_segment: str, target_language: str, base_text: str | None) -> str | None:

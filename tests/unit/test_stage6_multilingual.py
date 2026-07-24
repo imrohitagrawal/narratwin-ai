@@ -1732,6 +1732,27 @@ def test_local_demo_translation_refuses_fixture_substring_with_extra_source_clai
 
 
 @pytest.mark.parametrize("language_tag", [tag for tag in PRIORITY1_LANGUAGE_TAGS if tag != "en"])
+def test_local_demo_translation_refuses_unknown_audience_prefix_instead_of_dropping_it(
+    language_tag: str,
+) -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script=(
+                "For investors, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]"
+            ),
+            target_language=language_tag,
+            glossary_terms=["NarraTwin AI"],
+            requested_voice_provider="mock",
+            **passed_eval_kwargs(),
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"
+
+
+@pytest.mark.parametrize("language_tag", [tag for tag in PRIORITY1_LANGUAGE_TAGS if tag != "en"])
 def test_atlas_output_fixture_refuses_substring_with_extra_source_claim(
     language_tag: str,
 ) -> None:
@@ -1881,6 +1902,28 @@ def test_helio_media_fixture_refuses_audience_prefixed_substring_with_extra_sour
                 "for field operations teams and also books a new arbitrary satellite review. [1]"
             ),
             target_language="es",
+            glossary_terms=["Helio Media", "MEDIA-SENTINEL-CP4"],
+            requested_voice_provider="mock",
+            **passed_eval_kwargs(),
+        )
+
+    assert exc.value.status_code == 422
+    assert exc.value.code == "LOCAL_DEMO_TRANSLATION_UNSUPPORTED"
+
+
+@pytest.mark.parametrize("language_tag", [tag for tag in PRIORITY1_LANGUAGE_TAGS if tag not in {"en", "es"}])
+def test_helio_media_fixture_refuses_priority1_languages_without_fixture_translation(
+    language_tag: str,
+) -> None:
+    service = create_stage6_service()
+
+    with pytest.raises(Stage6Error) as exc:
+        service.generate_multilingual_walkthrough(
+            source_script=(
+                "For recruiters, Helio Media MEDIA-SENTINEL-CP4 is a fictional local onboarding studio "
+                "for field operations teams. [1]"
+            ),
+            target_language=language_tag,
             glossary_terms=["Helio Media", "MEDIA-SENTINEL-CP4"],
             requested_voice_provider="mock",
             **passed_eval_kwargs(),
