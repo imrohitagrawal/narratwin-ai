@@ -1,11 +1,13 @@
 {
   "issue": 280,
-  "prSlice": "PR A",
+  "prSlice": "PR A+PR B",
   "schemaVersion": "Issue280RequirementMatrixV1",
   "runtimeBehaviorImplemented": false,
+  "prBExecutableContractSliceImplemented": true,
   "checkpoint3TrackerIssue": 249,
   "checkpoint3TrackerRemainsOpen": true,
   "issue280RemainsOpenAfterPrA": true,
+  "issue280RemainsOpenAfterPrB": true,
   "plannedGate": "make issue280-output-correctness",
   "futureImplementationTestingContract": {
     "appliesTo": "Every #280 implementation PR after PR A.",
@@ -26,6 +28,7 @@
   },
   "statusValues": [
     "STATIC_CONTRACT_PASS",
+    "EXECUTABLE_CONTRACT_PASS",
     "RED_EVIDENCE_CAPTURED",
     "PLANNED_IMPLEMENTATION",
     "PLANNED_EXECUTABLE_GATE",
@@ -61,8 +64,8 @@
         {
           "id": "R280-INPUT-001",
           "requirement": "Bounded arbitrary synthetic markdown is text/markdown only, with maxBytes 20000 per document, maxDocuments 3, maxSectionsPerDocument 12, maxBodyCharsPerSection 2000, maxTranscriptSegments 40, maxGlossaryTerms 20, maxGlossaryTermChars 64, maxCaptionChars 240, and maxExportBundleBytes 1000000.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-test",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "acceptance-test",
           "plannedCommand": "uv run pytest tests/acceptance/test_issue280_input_contract.py -q",
           "ownerPrSlice": "PR B",
           "plannedInputBounds": {
@@ -81,8 +84,8 @@
         {
           "id": "R280-INPUT-002",
           "requirement": "Reject prompt injection and unsafe/private/secret-like input without leaking raw markdown or internal/provider details.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-test",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "acceptance-test",
           "plannedCommand": "uv run pytest tests/acceptance/test_issue280_input_contract.py -q",
           "ownerPrSlice": "PR B"
         }
@@ -217,8 +220,8 @@
         {
           "id": "R280-ERROR-001",
           "requirement": "Error taxonomy includes ISSUE280_INPUT_TOO_LARGE/413, ISSUE280_UNSUPPORTED_FILE_TYPE/415, ISSUE280_TOO_MANY_DOCUMENTS/422, ISSUE280_PROMPT_INJECTION_REJECTED/422, ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED/422, ISSUE280_GLOSSARY_INVALID/422, ISSUE280_TRANSLATION_REFUSED/422, and ISSUE280_INTERNAL_ERROR_SAFE/500, each with safe message, safe details, UI copy, remediation guidance, and anti-leak tests for no raw markdown, fake secrets, provider-like payloads, stack traces, filesystem paths, or internal provider/model details.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-test",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "acceptance-test",
           "plannedCommand": "uv run pytest tests/acceptance/test_issue280_error_taxonomy.py -q",
           "ownerPrSlice": "PR B",
           "plannedErrorTaxonomy": [
@@ -397,8 +400,8 @@
         {
           "id": "R280-TEST-STRATEGY-002",
           "requirement": "API tests must validate request bounds, response shape, status codes, safe error taxonomy, provider-disabled/local posture, unsafe input rejection, and no leakage of raw markdown, provider-like payloads, stack traces, filesystem paths, secrets, credentials, or tokens.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-api-test",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "acceptance-test",
           "plannedCommand": "uv run pytest tests/acceptance/test_issue280_api_contract.py -q",
           "ownerPrSlice": "PR B"
         },
@@ -453,6 +456,14 @@
           "evidenceType": "static-validator",
           "plannedCommand": "python3 scripts/quality/check_phase1_closure_docs.py",
           "ownerPrSlice": "PR A"
+        },
+        {
+          "id": "R280-GOV-002",
+          "requirement": "PR B has a dedicated fail-closed branch allowlist for the input/API/error contract slice and keeps #249 and #280 open because remaining R280 rows are still planned or require future executable gates.",
+          "status": "STATIC_CONTRACT_PASS",
+          "evidenceType": "static-validator",
+          "plannedCommand": "uv run pytest tests/unit/test_phase1_closure_docs.py -q",
+          "ownerPrSlice": "PR B"
         }
       ]
     }

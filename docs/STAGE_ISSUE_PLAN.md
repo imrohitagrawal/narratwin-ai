@@ -1260,6 +1260,38 @@ for positive, negative, corner, API, contract, exact browser UI, full local/mock
 flow, and regression tests before claiming its owned R280 rows are satisfied or
 reviewed/re-scoped.
 
+Issue `#280` PR B branch
+`phase-1-closure-280-c3a-r3-pr-b-input-api-error-contract` is limited to the
+first executable contract slice from PR A: bounded arbitrary synthetic markdown
+input, the public-safe request/response/error taxonomy, prompt-injection
+rejection, unsafe/private/secret-like input rejection, local/mock
+provider-disabled posture, and the positive, negative, corner, API, contract,
+and regression tests for that narrow slice only. It may change only:
+
+- `docs/reviews/ISSUE_280_C3A_R3_PR_B_PREFLIGHT.md`
+- `docs/ADR/0035-issue280-input-api-error-contract.md`
+- `reports/checkpoint3-issue280/requirement-matrix.json`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `backend/app/issue280.py`
+- `backend/app/main.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/acceptance/test_issue280_input_contract.py`
+- `tests/acceptance/test_issue280_api_contract.py`
+- `tests/acceptance/test_issue280_error_taxonomy.py`
+- `tests/unit/test_issue280_contract.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+PR B does not implement the full local end-to-end multilingual demo. It must
+keep issues `#249` and `#280` open, must use reference-only PR wording, must
+not touch the UI unless a reviewed re-scope explicitly adds exact UI evidence,
+and must not authorize hosted/public demo behavior, provider setup, provider
+SDKs, provider keys, paid spend, real provider calls, cloned identity runtime,
+real media, public distribution, arbitrary real-world translation quality,
+provider quality, or production-readiness claims.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:
