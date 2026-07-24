@@ -30,6 +30,7 @@ ISSUE_280_BRANCH = "phase-1-closure-280-c3a-r3-planning-preflight-persona-depth"
 ISSUE_280_PR_B_BRANCH = "phase-1-closure-280-c3a-r3-pr-b-input-api-error-contract"
 ISSUE_280_PR_C_BRANCH = "phase-1-closure-280-c3a-r3-pr-c-local-e2e-demo-slice"
 ISSUE_280_PR_D_BRANCH = "phase-1-closure-280-c3a-r3-pr-d-ui-browser-demo-slice"
+ISSUE_280_PR_E_BRANCH = "phase-1-closure-280-c3a-r3-pr-e-arbitrary-demo-closure"
 ISSUE_280_MATRIX_PATH = "reports/checkpoint3-issue280/requirement-matrix.json"
 ISSUE_280_RED_EVIDENCE_PATH = "reports/checkpoint3-issue280/red-evidence-plan.json"
 ISSUE_280_REQUIRED_SECTIONS = {
@@ -313,6 +314,7 @@ ISSUE_249_ALLOWED_CHANGED_FILES = {
     "docs/reviews/ISSUE_249_CHECKPOINT3A_PREFLIGHT.md",
     "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
     "docs/QUALITY_GATES.md",
+    "docs/ADR/0038-issue280-pr-e-local-demo-closure-contract.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "Makefile",
@@ -564,6 +566,26 @@ ISSUE_280_PR_D_ALLOWED_CHANGED_FILES = {
     "frontend/src/app/page.tsx",
     "frontend/tests/issue280-ui-browser.spec.ts",
     "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_280_PR_E_ALLOWED_CHANGED_FILES = {
+    "Makefile",
+    "backend/app/issue280.py",
+    "docs/ADR/0038-issue280-pr-e-local-demo-closure-contract.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/reviews/ISSUE_280_C3A_R3_PR_E_PREFLIGHT.md",
+    "frontend/src/app/page.module.css",
+    "frontend/src/app/page.test.tsx",
+    "frontend/src/app/page.tsx",
+    "frontend/tests/issue280-ui-browser.spec.ts",
+    ISSUE_280_MATRIX_PATH,
+    "scripts/quality/check_phase1_closure_docs.py",
+    "scripts/quality/verify_issue280_output_correctness.py",
+    "tests/acceptance/test_issue280_pr_e_closure.py",
+    "tests/contract/test_issue280_ui_api_artifact_parity.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_274_ALLOWED_CHANGED_FILES = {
@@ -1866,10 +1888,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #280 / c3a-r3-pr-d-ui-browser-demo-slice",
-        "c3a-r3-pr-d-active",
-        "c3a-r3-pr-d-active",
-        "Issue #280 is active for C3A-R3. PR A completed planning/preflight, public-source persona/audience/depth research, the requirement matrix, reviewer checklist, and merge-safe red-evidence framework through merged PR #281 at 3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c with post-merge main quality workflow run 30085558061 passing. PR B completed only the first executable input/API/error contract slice through merged PR #282 at b889604a490c9f014130e420c1c949af7879dd84 with post-merge main quality workflow run 30092008592 passing. PR C completed the narrow local/mock end-to-end API slice through merged PR #283 at 09584b264c0f30da3eecd6693829e5bcb071e568 with post-merge main quality workflow run 30095714825 passing. PR D is the current exact UI/browser demo slice for the PR C endpoint and can satisfy only PR D-owned UI, conversation UX, exact UI validation, and narrow governance rows. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open after PR D unless all remaining R280 rows are later satisfied with executable evidence or reviewed/re-scoped, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary real-world translation quality, provider quality, or production-readiness claims.",
+        "issue #280 / c3a-r3-pr-e-arbitrary-demo-closure",
+        "c3a-r3-pr-e-active",
+        "c3a-r3-pr-e-active",
+        "Issue #280 is active for C3A-R3 PR E after PR D merged through PR #284 at 3f3bbdd05f844384311f193c16075b45e9d076f2. PR E is the final local/demo closure slice: arbitrary bounded public-safe synthetic markdown, grounded English generation, deterministic local/mock conversion across the 25 supported Priority 1 languages, depth and audience adaptation, citation/context/claim-support/evaluation metadata preservation, artifact/report parity, and browser-visible output-correctness evidence through `make issue280-output-correctness`. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open until PR E receives human review and merge-eligible CI on the exact latest head, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3989,6 +4011,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_280_PR_C_ALLOWED_CHANGED_FILES
     elif branch == ISSUE_280_PR_D_BRANCH:
         allowed_files = ISSUE_280_PR_D_ALLOWED_CHANGED_FILES
+    elif branch == ISSUE_280_PR_E_BRANCH:
+        allowed_files = ISSUE_280_PR_E_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-c3b-pr1-consent-provenance-planning-274":
         allowed_files = ISSUE_274_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-280-"):
@@ -5956,12 +5980,21 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
         return
     if artifact.get("issue") != 280:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must target issue 280.")
-    if artifact.get("prSlice") not in {"PR A", "PR A+PR B", "PR A+PR B+PR C", "PR A+PR B+PR C+PR D"}:
+    allowed_pr_slices = {"PR A", "PR A+PR B", "PR A+PR B+PR C", "PR A+PR B+PR C+PR D", "PR A+PR B+PR C+PR D+PR E"}
+    pr_slice = artifact.get("prSlice")
+    if pr_slice not in allowed_pr_slices:
         fail(
             failures,
-            f"{ISSUE_280_MATRIX_PATH} must be scoped to PR A, PR A+PR B, PR A+PR B+PR C, or PR A+PR B+PR C+PR D.",
+            f"{ISSUE_280_MATRIX_PATH} must be scoped to PR A through the current approved PR E slice.",
         )
-    if artifact.get("runtimeBehaviorImplemented") is not False:
+    if pr_slice == "PR A+PR B+PR C+PR D+PR E":
+        if artifact.get("runtimeBehaviorImplemented") is not True:
+            fail(failures, f"{ISSUE_280_MATRIX_PATH} must mark runtimeBehaviorImplemented true for PR E closure.")
+        if artifact.get("issue280SatisfiedByPrE") is not True:
+            fail(failures, f"{ISSUE_280_MATRIX_PATH} must mark issue280SatisfiedByPrE true for PR E closure.")
+        if artifact.get("prEOutputCorrectnessVerifier") != "make issue280-output-correctness":
+            fail(failures, f"{ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the PR E verifier.")
+    elif artifact.get("runtimeBehaviorImplemented") is not False:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} cannot claim full runtime implementation complete before all R280 rows pass.")
     if artifact.get("checkpoint3TrackerRemainsOpen") is not True:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #249 open.")
