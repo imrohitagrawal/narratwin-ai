@@ -8005,6 +8005,26 @@ def test_issue280_pr_d_rejects_backend_contract_changes(monkeypatch: Any) -> Non
     assert any("backend/app/issue280.py" in failure for failure in failures)
 
 
+def test_issue280_pr_d_security_unblock_allowlist_stays_narrow(monkeypatch: Any) -> None:
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_280_PR_D_BRANCH,
+        files=["backend/Dockerfile", "docs/THIRD_PARTY_NOTICES.md"],
+    ) == []
+
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_280_PR_D_BRANCH,
+        files=["frontend/Dockerfile", "pyproject.toml", "uv.lock"],
+    )
+
+    assert failures == [
+        f"Phase 1 Closure branch {phase1.ISSUE_280_PR_D_BRANCH} may not change frontend/Dockerfile.",
+        f"Phase 1 Closure branch {phase1.ISSUE_280_PR_D_BRANCH} may not change pyproject.toml.",
+        f"Phase 1 Closure branch {phase1.ISSUE_280_PR_D_BRANCH} may not change uv.lock.",
+    ]
+
+
 def test_issue280_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,

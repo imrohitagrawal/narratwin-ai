@@ -549,12 +549,14 @@ ISSUE_280_PR_C_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_280_PR_D_ALLOWED_CHANGED_FILES = {
+    "backend/Dockerfile",
     "docs/ADR/0037-issue280-ui-browser-demo-slice.md",
     "docs/reviews/ISSUE_280_C3A_R3_PR_D_PREFLIGHT.md",
     ISSUE_280_MATRIX_PATH,
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
     "frontend/playwright.issue280.config.ts",
     "frontend/src/app/page.module.css",
