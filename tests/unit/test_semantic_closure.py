@@ -205,12 +205,17 @@ def test_issue280_verifier_locks_the_required_semantic_row_set() -> None:
 def test_issue280_verifier_exits_nonzero_for_forensic_failed_rows(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    matrix = valid_matrix()
+    atomic_rows = matrix["atomicRows"]
+    assert isinstance(atomic_rows, list)
+    second_row = atomic_rows[1]
+    assert isinstance(second_row, dict)
     path = tmp_path / "matrix.json"
     path.write_text(
-        json.dumps({"semanticClosure": valid_matrix() | {
+        json.dumps({"semanticClosure": matrix | {
             "atomicRows": [
-                valid_matrix()["atomicRows"][0],  # type: ignore[index]
-                valid_matrix()["atomicRows"][1] | {"classification": "NOT_PROVEN"},  # type: ignore[index,operator]
+                atomic_rows[0],
+                second_row | {"classification": "NOT_PROVEN"},
             ]
         }}),
         encoding="utf-8",

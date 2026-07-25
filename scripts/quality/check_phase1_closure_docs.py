@@ -7,15 +7,17 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import cast
 
-try:
-    from scripts.quality.semantic_closure import evaluate_closure
-except ModuleNotFoundError:
-    from semantic_closure import evaluate_closure
-
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.quality.semantic_closure import evaluate_closure  # noqa: E402
+
+
 PHASE1_BRANCH = re.compile(r"^phase-1-closure-.+")
 PROCESS_BRANCH = re.compile(r"^phase-1-closure-process-(\d+)-.+$")
 ISSUE_278_BRANCH = "phase-1-closure-278-c3a-r2-full-project-multilingual-corpus"

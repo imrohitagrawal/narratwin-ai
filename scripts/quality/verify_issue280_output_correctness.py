@@ -5,16 +5,17 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import Sequence
 
-try:
-    from scripts.quality.semantic_closure import evaluate_closure
-except ModuleNotFoundError:  # Direct script execution sets scripts/quality on sys.path.
-    from semantic_closure import evaluate_closure
-
-
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.quality.semantic_closure import evaluate_closure  # noqa: E402
+
+
 MATRIX_PATH = ROOT / "reports" / "checkpoint3-issue280" / "requirement-matrix.json"
 SEMANTIC_CLOSURE_ROW_IDS = (
     "R280-AUDIENCE-001",
