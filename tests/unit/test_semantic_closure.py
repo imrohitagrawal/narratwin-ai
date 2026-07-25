@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import json
+from pathlib import Path
 
 import pytest
 
 from scripts.quality.semantic_closure import Classification, evaluate_closure
+from scripts.quality import verify_issue280_output_correctness as issue280_verifier
 
 
 HEAD = "f93653e8a11e697c88766b207fb01c18662339d6"
@@ -185,3 +188,33 @@ def test_mutations_cannot_turn_known_issue280_failures_into_closure() -> None:
 
     for matrix in mutations:
         assert evaluate_closure(matrix, expected_head=HEAD).closed is False
+
+
+def test_issue280_verifier_locks_the_required_semantic_row_set() -> None:
+    assert issue280_verifier.SEMANTIC_CLOSURE_ROW_IDS == (
+        "R280-AUDIENCE-001",
+        "R280-DEPTH-002",
+        "R280-AUDIENCE-DEPTH-001",
+        "R280-S6-001",
+        "R280-CONVERSION-001",
+        "R280-QUALITY-001",
+        "R280-OUTPUT-CORRECTNESS-001",
+    )
+
+
+def test_issue280_verifier_exits_nonzero_for_forensic_failed_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "matrix.json"
+    path.write_text(
+        json.dumps({"semanticClosure": valid_matrix() | {
+            "atomicRows": [
+                valid_matrix()["atomicRows"][0],  # type: ignore[index]
+                valid_matrix()["atomicRows"][1] | {"classification": "NOT_PROVEN"},  # type: ignore[index,operator]
+            ]
+        }}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(issue280_verifier, "MATRIX_PATH", path)
+
+    assert issue280_verifier.main(["--expected-head", HEAD]) == 1

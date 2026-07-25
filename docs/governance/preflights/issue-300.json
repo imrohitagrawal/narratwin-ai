@@ -23,7 +23,7 @@
       "docs/templates/SEMANTIC_CLOSURE_GATE.md",
       ".github/pull_request_template.md",
       ".gitignore",
-      ".codex/skills/output-correctness/SKILL.md",
+      ".codex/skills/output-correctness/",
       "Makefile",
       "reports/checkpoint3-issue280/requirement-matrix.json",
       "scripts/guardrails_check.py",

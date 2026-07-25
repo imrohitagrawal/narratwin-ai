@@ -16,6 +16,13 @@ Use it to answer:
 
 - Last reviewed date: 2026-07-25
 - Current stage marker: `.stage/current = 8`
+- Forensic override: Issue `#280` is semantically `FAILED` at exact head
+  `f93653e8a11e697c88766b207fb01c18662339d6`. Issue `#300` is the active
+  governance/verifier-only reset. The historical GitHub closure of issue
+  `#280`, issue `#298`, and PR `#299` remain preserved forensic evidence; PR
+  `#299` must not be merged or sent for human review. No product/runtime repair
+  or C3B work may start until the architecture feasibility checkpoint and
+  semantic oracle are reviewed.
 - Current implementation permission: Phase 1 Closure governance only. Demo
   Phase 0 planning for issue `#225` completed through PR `#226`; Checkpoint 1
   is accepted as local/fake disabled-default reviewer evidence only through
@@ -253,7 +260,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | issue #280 / c3a-r3-pr-e-arbitrary-demo-closure | c3a-r3-pr-e-active | c3a-r3-pr-e-active | Issue #280 is active for C3A-R3 PR E after PR D merged through PR #284 at 3f3bbdd05f844384311f193c16075b45e9d076f2. PR E is the final local/demo closure slice: arbitrary bounded public-safe synthetic markdown, grounded English generation, deterministic local/mock conversion across the 25 supported Priority 1 languages, depth and audience adaptation, citation/context/claim-support/evaluation metadata preservation, artifact/report parity, and browser-visible output-correctness evidence through `make issue280-output-correctness`. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open until PR E receives human review and merge-eligible CI on the exact latest head, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claims. |
+| SSV1-NEXT | next-action | issue #300 / issue #280 semantic governance reset | issue280-governance-reset-active | issue280-governance-reset-active | Issue #300 is the active governance/verifier-only reset. Issue #280 is semantically FAILED at f93653e8a11e697c88766b207fb01c18662339d6: 217 of 525 combinations succeeded, 308 returned ISSUE280_TRANSLATION_REFUSED, STANDARD and DEEP each succeeded only 21 of 175 times, and all 31 successful language/depth groups emitted identical target text for seven audiences. Issue #280's historical GitHub closure, issue #298, and PR #299 remain preserved forensic evidence; PR #299 must not be merged or sent for human review. Product/runtime repair and C3B remain blocked until the architecture feasibility checkpoint and semantic oracle are reviewed. This state does not authorize backend, frontend, provider, RAG, avatar, database, Docker, hosted/public demo, provider setup, paid spend, real provider calls, cloned identity runtime, real media, public distribution, arbitrary human-grade translation, provider quality, or production-readiness claims. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |

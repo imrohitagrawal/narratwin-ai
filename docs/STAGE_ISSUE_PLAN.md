@@ -2072,6 +2072,24 @@ reviewed closure PR with explicit downgrade evidence.
 Changes to the three Phase 1 quality scripts above require explicit reviewer
 scrutiny because the PR branch executes its own in-repo gate code.
 
+## Issue 300 Governance Reset
+
+Issue `#300` uses branch
+`phase-1-closure-process-300-issue280-semantic-closure-reset`. Its first
+commit contains only `docs/governance/preflights/issue-300.json`.
+
+Allowed scope is governance, verifier, matrix, skill-lock, and focused unit-test
+work enumerated by `ISSUE_300_ALLOWED_CHANGED_FILES` in
+`scripts/quality/check_phase1_closure_docs.py`. The repository-owned
+`output-correctness` skill is the only `.codex` content admitted.
+
+Backend, frontend, provider, RAG, avatar, database, Docker, workflow, and
+product/runtime implementation are forbidden. Issue `#280` is semantically
+`FAILED` at `f93653e8a11e697c88766b207fb01c18662339d6`; Issue `#280`, Issue
+`#298`, and PR `#299` remain forensic history, and PR `#299` must not be merged
+or sent for human review. A later product issue is blocked until the
+architecture feasibility checkpoint and semantic oracle are reviewed.
+
 Blocked changes:
 
 - Phase 2 feature work

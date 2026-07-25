@@ -863,6 +863,21 @@ Process-critical governance docs and process-review registers stay in the
 non-trivial category even for text-only edits because those files define future
 automation behavior and review-loop prevention.
 
+Issue `#300` replaces editable Issue `#280` satisfaction fields with atomic
+closure. `scripts/quality/semantic_closure.py` accepts only
+`STRUCTURAL_PASS`, `SEMANTIC_PASS`, `NOT_PROVEN`, and `FAILED`; a required
+semantic row closes only with `SEMANTIC_PASS`, and any `NOT_PROVEN` or `FAILED`
+row returns nonzero. `make issue280-output-correctness` evaluates the locked
+semantic row set and therefore intentionally fails for the forensic
+`f93653e8a11e697c88766b207fb01c18662339d6` evidence. Governance quality may
+pass while accurately recording that product closure failed.
+
+Future semantic closure requires two independent exact-head evidence fans:
+`pm-ai-shipping:intended-vs-implemented` and the repository-owned
+`output-correctness` skill in non-read-only execution mode. Product/runtime
+repair remains blocked until the architecture feasibility checkpoint and
+semantic oracle are reviewed.
+
 The PR template also requires a `Human verification checklist` for non-trivial
 PRs. This checklist converts reviewer-focus points into rows with exact
 data/source/artifact references, official URL and verified/accessed date when

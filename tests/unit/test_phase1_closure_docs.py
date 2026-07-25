@@ -2936,7 +2936,7 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "PR `#281`",
         "`3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c`",
         "post-merge main quality workflow run `30085558061` passing",
-        "c3a-r3-pr-e-active",
+            "issue280-governance-reset-active",
         "PR `#282`",
         "`b889604a490c9f014130e420c1c949af7879dd84`",
         "post-merge main quality workflow run `30092008592` passing",
@@ -2944,10 +2944,10 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "`09584b264c0f30da3eecd6693829e5bcb071e568`",
         "post-merge main quality workflow run `30095714825` passing",
         "Issue `#278` is closed after PR `#279` merged the bounded C3A-R2 full-project multilingual corpus gate",
-        "Issue #280 is active for C3A-R3 PR E",
-        "PR E is the final local/demo closure slice",
-        "issue #280 remains open until PR E receives human review",
-        "C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped",
+            "Issue #300 is the active governance/verifier-only reset",
+            "Issue #280 is semantically FAILED at f93653e8a11e697c88766b207fb01c18662339d6",
+            "PR #299 must not be merged or sent for human review",
+            "Product/runtime repair and C3B remain blocked until the architecture feasibility checkpoint",
         "full-project multilingual corpus gate",
         "ADR `0034`",
         "major-market multilingual output correctness",
@@ -6697,6 +6697,69 @@ def test_issue296_allowlist_allows_only_frontend_brace_expansion_audit_scope(mon
         ]
 
 
+def test_issue300_allowlist_is_governance_verifier_and_skill_only(monkeypatch: Any) -> None:
+    expected = {
+        ".codex/skills/output-correctness/SKILL.md",
+        ".codex/skills/output-correctness/agents/openai.yaml",
+        ".github/pull_request_template.md",
+        ".gitignore",
+        "Makefile",
+        "docs/QUALITY_GATES.md",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/SKILL_LOCK.md",
+        "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+        "docs/governance/preflights/issue-300.json",
+        "docs/reviews/ISSUE_300_GOVERNANCE_RESET_PREFLIGHT.md",
+        "docs/templates/SEMANTIC_CLOSURE_GATE.md",
+        "reports/checkpoint3-issue280/requirement-matrix.json",
+        "scripts/guardrails_check.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "scripts/quality/semantic_closure.py",
+        "scripts/quality/verify_issue280_output_correctness.py",
+        "tests/unit/test_guardrails_check.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "tests/unit/test_semantic_closure.py",
+    }
+    assert phase1.ISSUE_300_ALLOWED_CHANGED_FILES == expected
+    branch = "phase-1-closure-process-300-issue280-semantic-closure-reset"
+    assert run_changed_files_check(monkeypatch, branch=branch, files=sorted(expected)) == []
+
+    for path in ("backend/app/issue280.py", "frontend/src/app/page.tsx", ".github/workflows/quality.yml"):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=[path]) == [
+            f"Phase 1 Closure branch {branch} may not change {path}."
+        ]
+
+
+def test_issue300_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-process-300-issue280-semantic-closure-reset-extra"
+    path = ".codex/skills/output-correctness/SKILL.md"
+    assert run_changed_files_check(monkeypatch, branch=branch, files=[path]) == [
+        f"Phase 1 Closure branch {branch} may not change {path}."
+    ]
+
+
+def test_issue300_contract_rejects_read_only_output_skill(monkeypatch: Any) -> None:
+    skill_path = ".codex/skills/output-correctness/SKILL.md"
+    original = phase1.read(skill_path)
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {skill_path: original.replace("non-read-only execution fan", "read-only inspection fan", 1)},
+        ),
+    )
+    failures: list[str] = []
+
+    phase1.check_issue300_semantic_governance(failures)
+
+    assert f"{skill_path} missing load-bearing marker: non-read-only execution fan" in failures
+
+
 def test_issue219_branch_allows_only_frontend_audit_remediation_scope(monkeypatch: Any) -> None:
     expected = {
         "docs/governance/preflights/issue-219.json",
@@ -8104,12 +8167,12 @@ def test_issue280_matrix_rejects_runtime_completion_claim(monkeypatch: Any) -> N
     )
 
     assert (
-        f"{phase1.ISSUE_280_MATRIX_PATH} cannot claim full runtime implementation complete before all R280 rows pass."
-        in failures
-    )
+        f"{phase1.ISSUE_280_MATRIX_PATH} contains editable aggregate closure claims: "
+        "runtimeBehaviorImplemented"
+    ) in failures
 
 
-def test_issue280_matrix_allows_pr_e_runtime_closure_with_verifier(monkeypatch: Any) -> None:
+def test_issue280_matrix_rejects_editable_pr_e_satisfaction_claims(monkeypatch: Any) -> None:
     matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
     matrix["prSlice"] = "PR A+PR B+PR C+PR D+PR E"
     matrix["runtimeBehaviorImplemented"] = True
@@ -8120,8 +8183,12 @@ def test_issue280_matrix_allows_pr_e_runtime_closure_with_verifier(monkeypatch: 
         read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
     )
 
-    assert f"{phase1.ISSUE_280_MATRIX_PATH} cannot claim full runtime implementation complete before all R280 rows pass." not in failures
-    assert f"{phase1.ISSUE_280_MATRIX_PATH} must mark issue280SatisfiedByPrE true for PR E closure." not in failures
+    assert any(
+        failure.startswith(
+            f"{phase1.ISSUE_280_MATRIX_PATH} contains editable aggregate closure claims:"
+        )
+        for failure in failures
+    )
 
 
 def test_issue280_matrix_pr_e_requires_output_correctness_verifier(monkeypatch: Any) -> None:
@@ -8135,7 +8202,7 @@ def test_issue280_matrix_pr_e_requires_output_correctness_verifier(monkeypatch: 
         read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
     )
 
-    assert f"{phase1.ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the PR E verifier." in failures
+    assert f"{phase1.ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the verifier." in failures
 
 
 def test_issue280_matrix_requires_pr_b_to_keep_issue280_open(monkeypatch: Any) -> None:

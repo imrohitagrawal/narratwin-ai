@@ -22,7 +22,13 @@ reports/
 *.pfx
 
 # Local Codex skill/vendor workspace
-.codex/
+.codex/*
+!.codex/skills/
+.codex/skills/*
+!.codex/skills/output-correctness/
+!.codex/skills/output-correctness/SKILL.md
+!.codex/skills/output-correctness/agents/
+!.codex/skills/output-correctness/agents/openai.yaml
 .wednesday/
 
 # Local agent/tool-generated files that are not approved stage artifacts

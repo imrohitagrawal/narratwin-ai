@@ -10,6 +10,10 @@ import subprocess
 from pathlib import Path
 from typing import cast
 
+try:
+    from scripts.quality.semantic_closure import evaluate_closure
+except ModuleNotFoundError:
+    from semantic_closure import evaluate_closure
 
 ROOT = Path(__file__).resolve().parents[2]
 PHASE1_BRANCH = re.compile(r"^phase-1-closure-.+")
@@ -33,6 +37,16 @@ ISSUE_280_PR_D_BRANCH = "phase-1-closure-280-c3a-r3-pr-d-ui-browser-demo-slice"
 ISSUE_280_PR_E_BRANCH = "phase-1-closure-280-c3a-r3-pr-e-arbitrary-demo-closure"
 ISSUE_280_MATRIX_PATH = "reports/checkpoint3-issue280/requirement-matrix.json"
 ISSUE_280_RED_EVIDENCE_PATH = "reports/checkpoint3-issue280/red-evidence-plan.json"
+ISSUE_280_FORENSIC_FAILED_HEAD = "f93653e8a11e697c88766b207fb01c18662339d6"
+ISSUE_280_SEMANTIC_CLOSURE_ROW_IDS = (
+    "R280-AUDIENCE-001",
+    "R280-DEPTH-002",
+    "R280-AUDIENCE-DEPTH-001",
+    "R280-S6-001",
+    "R280-CONVERSION-001",
+    "R280-QUALITY-001",
+    "R280-OUTPUT-CORRECTNESS-001",
+)
 ISSUE_280_REQUIRED_SECTIONS = {
     "R280-SCOPE",
     "R280-INPUT",
@@ -669,6 +683,32 @@ ISSUE_296_ALLOWED_CHANGED_FILES = {
     "frontend/package-lock.json",
     "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_300_ALLOWED_CHANGED_FILES = {
+    ".codex/skills/output-correctness/SKILL.md",
+    ".codex/skills/output-correctness/agents/openai.yaml",
+    ".github/pull_request_template.md",
+    ".gitignore",
+    "Makefile",
+    "docs/QUALITY_GATES.md",
+    "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/SKILL_LOCK.md",
+    "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+    "docs/governance/preflights/issue-300.json",
+    "docs/reviews/ISSUE_300_GOVERNANCE_RESET_PREFLIGHT.md",
+    "docs/templates/SEMANTIC_CLOSURE_GATE.md",
+    "reports/checkpoint3-issue280/requirement-matrix.json",
+    "scripts/guardrails_check.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "scripts/quality/semantic_closure.py",
+    "scripts/quality/verify_issue280_output_correctness.py",
+    "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "tests/unit/test_semantic_closure.py",
 }
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
@@ -1900,10 +1940,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #280 / c3a-r3-pr-e-arbitrary-demo-closure",
-        "c3a-r3-pr-e-active",
-        "c3a-r3-pr-e-active",
-        "Issue #280 is active for C3A-R3 PR E after PR D merged through PR #284 at 3f3bbdd05f844384311f193c16075b45e9d076f2. PR E is the final local/demo closure slice: arbitrary bounded public-safe synthetic markdown, grounded English generation, deterministic local/mock conversion across the 25 supported Priority 1 languages, depth and audience adaptation, citation/context/claim-support/evaluation metadata preservation, artifact/report parity, and browser-visible output-correctness evidence through `make issue280-output-correctness`. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open until PR E receives human review and merge-eligible CI on the exact latest head, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claims.",
+        "issue #300 / issue #280 semantic governance reset",
+        "issue280-governance-reset-active",
+        "issue280-governance-reset-active",
+        "Issue #300 is the active governance/verifier-only reset. Issue #280 is semantically FAILED at f93653e8a11e697c88766b207fb01c18662339d6: 217 of 525 combinations succeeded, 308 returned ISSUE280_TRANSLATION_REFUSED, STANDARD and DEEP each succeeded only 21 of 175 times, and all 31 successful language/depth groups emitted identical target text for seven audiences. Issue #280's historical GitHub closure, issue #298, and PR #299 remain preserved forensic evidence; PR #299 must not be merged or sent for human review. Product/runtime repair and C3B remain blocked until the architecture feasibility checkpoint and semantic oracle are reviewed. This state does not authorize backend, frontend, provider, RAG, avatar, database, Docker, hosted/public demo, provider setup, paid spend, real provider calls, cloned identity runtime, real media, public distribution, arbitrary human-grade translation, provider quality, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3967,6 +4007,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_289_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-296-frontend-brace-expansion-audit":
         allowed_files = ISSUE_296_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-300-issue280-semantic-closure-reset":
+        allowed_files = ISSUE_300_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
@@ -6001,15 +6043,24 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
             failures,
             f"{ISSUE_280_MATRIX_PATH} must be scoped to PR A through the current approved PR E slice.",
         )
-    if pr_slice == "PR A+PR B+PR C+PR D+PR E":
-        if artifact.get("runtimeBehaviorImplemented") is not True:
-            fail(failures, f"{ISSUE_280_MATRIX_PATH} must mark runtimeBehaviorImplemented true for PR E closure.")
-        if artifact.get("issue280SatisfiedByPrE") is not True:
-            fail(failures, f"{ISSUE_280_MATRIX_PATH} must mark issue280SatisfiedByPrE true for PR E closure.")
-        if artifact.get("prEOutputCorrectnessVerifier") != "make issue280-output-correctness":
-            fail(failures, f"{ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the PR E verifier.")
-    elif artifact.get("runtimeBehaviorImplemented") is not False:
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} cannot claim full runtime implementation complete before all R280 rows pass.")
+    forbidden_aggregate_keys = {
+        "runtimeBehaviorImplemented",
+        "prBExecutableContractSliceImplemented",
+        "prCExecutableLocalE2ESliceImplemented",
+        "prDExecutableUiBrowserDemoSliceImplemented",
+        "prEExecutableArbitraryDemoClosureImplemented",
+        "issue280SatisfiedByPrE",
+        "issue280RemainsOpenAfterPrEUntilMergeCloseout",
+    }
+    present_aggregate_keys = sorted(forbidden_aggregate_keys & artifact.keys())
+    if present_aggregate_keys:
+        fail(
+            failures,
+            f"{ISSUE_280_MATRIX_PATH} contains editable aggregate closure claims: "
+            + ", ".join(present_aggregate_keys),
+        )
+    if artifact.get("prEOutputCorrectnessVerifier") != "make issue280-output-correctness":
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the verifier.")
     if artifact.get("checkpoint3TrackerRemainsOpen") is not True:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #249 open.")
     if artifact.get("issue280RemainsOpenAfterPrA") is not True:
@@ -6056,12 +6107,15 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
             if not row_id or row_id in seen_rows:
                 fail(failures, f"{ISSUE_280_MATRIX_PATH} has missing or duplicate row id: {row_id}")
             seen_rows.add(row_id)
-            status = str(row.get("status", ""))
+            status = str(row.get("legacyEvidenceMaturity", ""))
             evidence_type = str(row.get("evidenceType", ""))
             planned_command = str(row.get("plannedCommand", ""))
             owner = str(row.get("ownerPrSlice", ""))
             if status not in ISSUE_280_ALLOWED_ROW_STATUSES:
-                fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} has invalid status: {status}")
+                fail(
+                    failures,
+                    f"{ISSUE_280_MATRIX_PATH} row {row_id} has invalid legacy evidence maturity: {status}",
+                )
             if not evidence_type:
                 fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} must include evidenceType.")
             if not planned_command and status != "REVIEWED_RE_SCOPE":
@@ -6073,6 +6127,26 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
     missing_sections = sorted(ISSUE_280_REQUIRED_SECTIONS - seen_sections)
     if missing_sections:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} missing R280 sections: " + ", ".join(missing_sections))
+    semantic_closure = artifact.get("semanticClosure")
+    if not isinstance(semantic_closure, dict):
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must include semanticClosure atomic rows.")
+        return
+    result = evaluate_closure(
+        semantic_closure,
+        expected_head=ISSUE_280_FORENSIC_FAILED_HEAD,
+        expected_row_ids=ISSUE_280_SEMANTIC_CLOSURE_ROW_IDS,
+    )
+    if result.closed:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must preserve Issue #280 semantic FAILED state.")
+    atomic_rows = semantic_closure.get("atomicRows")
+    if not isinstance(atomic_rows, list) or any(
+        not isinstance(row, dict) or row.get("classification") != "FAILED"
+        for row in atomic_rows
+    ):
+        fail(
+            failures,
+            f"{ISSUE_280_MATRIX_PATH} forensic semantic rows must all be classified FAILED.",
+        )
 
 
 def check_issue280_red_evidence_plan(failures: list[str]) -> None:
@@ -6110,6 +6184,51 @@ def check_issue280_review_artifacts(failures: list[str]) -> None:
     ):
         if not (ROOT / rel).is_file():
             fail(failures, f"Missing required issue #280 artifact: {rel}")
+
+
+def check_issue300_semantic_governance(failures: list[str]) -> None:
+    required_markers = {
+        ".codex/skills/output-correctness/SKILL.md": (
+            "non-read-only execution fan",
+            "STRUCTURAL_PASS",
+            "SEMANTIC_PASS",
+            "NOT_PROVEN",
+            "FAILED",
+            "exact reviewed head",
+            "Do not change product/runtime code",
+        ),
+        "docs/reviews/ISSUE_300_GOVERNANCE_RESET_PREFLIGHT.md": (
+            "GOV300-FM-001",
+            "GOV300-FM-010",
+            "Architecture Feasibility Checkpoint",
+            "Semantic Oracle Contract",
+            "pm-ai-shipping:intended-vs-implemented",
+            "output-correctness",
+        ),
+        "docs/SKILL_LOCK.md": (
+            "| Output Correctness |",
+            ".codex/skills/output-correctness/SKILL.md",
+            "no network, telemetry, hooks, credentials",
+        ),
+        ".github/pull_request_template.md": (
+            "## Atomic semantic closure",
+            "Do not enter an editable aggregate satisfaction result.",
+        ),
+    }
+    for rel, markers in required_markers.items():
+        if not (ROOT / rel).is_file():
+            fail(failures, f"Missing Issue 300 governance artifact: {rel}")
+            continue
+        text = read(rel)
+        for marker in markers:
+            if marker not in text:
+                fail(failures, f"{rel} missing load-bearing marker: {marker}")
+    for rel in (
+        ".codex/skills/output-correctness/SKILL.md",
+        ".codex/skills/output-correctness/agents/openai.yaml",
+    ):
+        if (ROOT / rel).is_file() and not git_ok(["ls-files", "--error-unmatch", rel]):
+            fail(failures, f"Issue 300 repository-owned skill artifact must be tracked: {rel}")
 
 
 def check_process_docs(failures: list[str]) -> None:
@@ -6566,6 +6685,7 @@ def main() -> int:
         check_phf020a_policy_contract(failures)
         check_status_state_v1_contract(failures)
         check_process_docs(failures)
+        check_issue300_semantic_governance(failures)
 
     if failures:
         print("Phase 1 Closure quality failures:")
