@@ -403,6 +403,7 @@ def run_issue_link_check(
     *,
     title: str,
     body: str,
+    number: int = 60,
     head_ref: str = "phase-1-closure-39-durability-monitoring",
     base_ref: str = "main",
     base_sha: str = "0123456789abcdef0123456789abcdef01234567",
@@ -416,6 +417,7 @@ def run_issue_link_check(
         json.dumps(
             {
                 "pull_request": {
+                    "number": number,
                     "title": title,
                     "body": body,
                     "head": {"ref": head_ref},
@@ -1979,6 +1981,38 @@ def test_nontrivial_pull_request_accepts_completed_preflight_evidence(
         changed_files=["backend/app/main.py"],
     )
 
+    assert failures == []
+
+
+def test_pull_request_check_refreshes_stale_ci_event_body_from_github(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+
+    def fake_urlopen(request: object, timeout: int) -> FakeGitHubResponse:
+        assert timeout == 5
+        assert getattr(request, "full_url", "").endswith("/pulls/60")
+        return FakeGitHubResponse(
+            200,
+            {
+                "title": "Harden output-correctness guardrails",
+                "body": completed_preflight_body(),
+            },
+        )
+
+    monkeypatch.setattr(guardrails, "urlopen", fake_urlopen)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Harden output-correctness guardrails",
+        body="Refs #44",
+        head_ref="phase-1-closure-44-output-correctness",
+        changed_files=["backend/app/main.py"],
+    )
+
+    assert PREFLIGHT_FAILURE not in failures
     assert failures == []
 
 

@@ -941,6 +941,42 @@ def github_pull_request_is_merged_to_main(number: str) -> bool:
         return False
 
 
+def github_pull_request_metadata(number: object) -> dict[str, str]:
+    if os.environ.get("GITHUB_ACTIONS", "").strip().lower() != "true":
+        return {}
+    github_auth_value = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not github_auth_value:
+        return {}
+    pr_number = str(number or "").strip()
+    if not pr_number.isdigit():
+        return {}
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Authorization": f"Bearer {github_auth_value}",
+    }
+    request = Request(
+        f"https://api.github.com/repos/{CANONICAL_GITHUB_REPO}/pulls/{pr_number}",
+        headers=headers,
+    )
+    try:
+        with urlopen(request, timeout=5) as response:  # nosec B310 - canonical GitHub API URL only.
+            status = int(getattr(response, "status", 0))
+            if not 200 <= status < 300:
+                return {}
+            payload = json.loads(response.read().decode("utf-8"))
+            if not isinstance(payload, dict):
+                return {}
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
+        return {}
+    result: dict[str, str] = {}
+    for key in ("title", "body"):
+        value = payload.get(key)
+        if isinstance(value, str):
+            result[key] = value
+    return result
+
+
 def github_pull_request_numbers_for_commit(sha: str) -> list[str]:
     github_auth_value = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if not github_auth_value:
@@ -2127,6 +2163,9 @@ def check_issue_linked_pull_request() -> None:
     pr = event.get("pull_request", {})
     title = pr.get("title") or ""
     body = pr.get("body") or ""
+    latest_pr_metadata = github_pull_request_metadata(pr.get("number"))
+    title = latest_pr_metadata.get("title") or title
+    body = latest_pr_metadata.get("body") or body
     head_ref = (pr.get("head") or {}).get("ref")
     base_ref = (pr.get("base") or {}).get("ref")
     base_sha = ((pr.get("base") or {}).get("sha") or "").strip()
