@@ -658,6 +658,18 @@ ISSUE_289_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_stage8_quality_gate.py",
 }
+ISSUE_296_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-296.json",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/ADR/0039-frontend-brace-expansion-audit-remediation.md",
+    "docs/TRACEABILITY.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
     "tests/unit/test_governance_preflight_github.py", ".github/workflows/quality-gates.yml",
@@ -3953,6 +3965,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_287_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-289-security-postcss-stage8-gate-unblock":
         allowed_files = ISSUE_289_ALLOWED_CHANGED_FILES
+    elif branch == "phase-1-closure-process-296-frontend-brace-expansion-audit":
+        allowed_files = ISSUE_296_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
