@@ -915,10 +915,10 @@ def _body_lines_to_facts(heading: str, body: list[str]) -> list[tuple[str, str]]
 
 def _render_grounded_script(*, facts: tuple[Issue280GroundedFact, ...], audience: str, depth: str) -> str:
     audience_label, audience_marker = _AUDIENCE_PROFILES[audience]
-    selected_facts: list[tuple[Issue280GroundedFact, str]] = []
+    selected_facts: list[tuple[Issue280GroundedFact, str | None]] = []
     for fact in facts:
-        semantic_key = _semantic_clause_key(fact.fact_text)
-        minimum_depth = _SEMANTIC_CLAUSE_MIN_DEPTH[semantic_key]
+        semantic_key = _semantic_clause_key_for_rendering(fact.fact_text)
+        minimum_depth = _SEMANTIC_CLAUSE_MIN_DEPTH[semantic_key] if semantic_key is not None else "STANDARD"
         if _DEPTH_RANK[minimum_depth] <= _DEPTH_RANK[depth]:
             selected_facts.append((fact, semantic_key))
     if not selected_facts:
@@ -926,7 +926,7 @@ def _render_grounded_script(*, facts: tuple[Issue280GroundedFact, ...], audience
 
     claims = []
     for fact, semantic_key in selected_facts:
-        minimum_depth = _SEMANTIC_CLAUSE_MIN_DEPTH[semantic_key]
+        minimum_depth = _SEMANTIC_CLAUSE_MIN_DEPTH[semantic_key] if semantic_key is not None else "STANDARD"
         if semantic_key == "source_backed_example":
             framing = "a source-backed example is"
         elif minimum_depth == "STANDARD":
@@ -939,6 +939,15 @@ def _render_grounded_script(*, facts: tuple[Issue280GroundedFact, ...], audience
             framing = f"the {audience_marker} is"
         claims.append(f"For {audience_label}, {framing} {fact.fact_text} [{fact.citation_index}].")
     return " ".join(claims)
+
+
+def _semantic_clause_key_for_rendering(fact_text: str) -> str | None:
+    try:
+        return _semantic_clause_key(fact_text)
+    except Issue280ContractError as exc:
+        if exc.code != "ISSUE280_TRANSLATION_REFUSED":
+            raise
+        return None
 
 
 def _evaluate_supported_claims(
