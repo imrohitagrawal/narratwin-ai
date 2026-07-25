@@ -1,0 +1,50 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 296,
+  "branch": "phase-1-closure-process-296-frontend-brace-expansion-audit",
+  "objective": "Resolve the frontend npm audit blocker introduced by the current GHSA-mh99-v99m-4gvg advisory for transitive brace-expansion in the ESLint toolchain, using the narrowest frontend dependency and governance-scope change that lets the required security and CI gates pass. Positive claims: BRACE-296-001 makes npm --prefix frontend audit --audit-level=high pass by forcing all transitive brace-expansion instances to a non-vulnerable release; BRACE-296-002 preserves existing Next, ESLint, Playwright, Vitest, and TypeScript behavior through lint/typecheck/test/build checks; BRACE-296-003 updates Phase 1 Closure branch allowlist, status, and traceability for the security unblock; BRACE-296-004 unblocks issue #294 / PR #295 without mutating that PR branch. Negative invariants: no product runtime code, no backend changes, no provider setup, no provider SDKs or keys, no paid spend, no hosted deployment, no real media, no public distribution, no production-readiness claim, no closure of #249, no mutation of PR #295, and no broad frontend dependency upgrade unless the audit cannot otherwise pass.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-296.json",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-296.json",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/src/",
+      "frontend/tests/",
+      ".github/workflows/",
+      "docker-compose.yml",
+      "provider SDKs",
+      "provider keys",
+      "runtime product code",
+      "real provider calls",
+      "paid spend",
+      "hosted deployment",
+      "public URL",
+      "cloned identity",
+      "real media generation",
+      "public distribution",
+      "production-readiness claims",
+      "closing #249",
+      "PR #295 mutation",
+      "broad frontend dependency upgrade"
+    ]
+  }
+}
