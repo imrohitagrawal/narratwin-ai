@@ -66,6 +66,9 @@ _LOCAL_TRANSLATION_TEMPLATES = {
     "preserves_artifact_evidence": "Local demo artifacts for {term} preserve citations, context references, claim supports, and checksums in alignment{citation}",
     "links_adoption_evidence": "The workspace for {term} links adoption metrics and release blockers to cited markdown sections{citation}",
     "explains_adoption_safety_handoffs": "{term} explains adoption metrics, safety gates, and reviewer handoffs{citation}",
+    "source_backed_example": "Source-backed example: {term} links weekly adoption metrics to cited release review sections{citation}",
+    "review_tradeoff": "Source-backed benefit and tradeoff: cited release reviews improve traceability but add reviewer effort for {term}{citation}",
+    "weekly_review_way_forward": "Way forward: review release blockers weekly before sharing the {term} walkthrough{citation}",
 }
 _LOCAL_SEMANTIC_TRANSLATIONS = {
     "hi": {
@@ -75,6 +78,9 @@ _LOCAL_SEMANTIC_TRANSLATIONS = {
         "preserves_artifact_evidence": "{term} के स्थानीय डेमो आर्टिफैक्ट उद्धरण, संदर्भ रेफ, दावा समर्थन और चेकसम मिलाकर रखते हैं{citation}",
         "links_adoption_evidence": "{term} का कार्यक्षेत्र अपनाने के मेट्रिक और रिलीज़ अवरोधों को उद्धृत मार्कडाउन खंडों से जोड़ता है{citation}",
         "explains_adoption_safety_handoffs": "{term} अपनाने के मेट्रिक, सुरक्षा गेट और समीक्षक हैंडऑफ़ समझाता है{citation}",
+        "source_backed_example": "स्रोत-समर्थित उदाहरण: {term} साप्ताहिक अपनाने के मेट्रिक को उद्धृत रिलीज़ समीक्षा खंडों से जोड़ता है{citation}",
+        "review_tradeoff": "स्रोत-समर्थित लाभ और समझौता: उद्धृत रिलीज़ समीक्षाएँ पता लगाने योग्य प्रमाण बेहतर बनाती हैं, लेकिन {term} के लिए समीक्षक प्रयास बढ़ाती हैं{citation}",
+        "weekly_review_way_forward": "आगे का रास्ता: {term} वॉकथ्रू साझा करने से पहले रिलीज़ अवरोधों की साप्ताहिक समीक्षा करें{citation}",
     },
     "es": {
         "accepts_public_safe_markdown": "{term} acepta markdown publico seguro y acotado de los equipos de lanzamiento{citation}",
@@ -83,6 +89,9 @@ _LOCAL_SEMANTIC_TRANSLATIONS = {
         "preserves_artifact_evidence": "Los artefactos de demo local de {term} conservan citas, referencias de contexto, soportes de afirmaciones y sumas de verificacion alineadas{citation}",
         "links_adoption_evidence": "El espacio de trabajo de {term} vincula metricas de adopcion y bloqueos de lanzamiento con secciones markdown citadas{citation}",
         "explains_adoption_safety_handoffs": "{term} explica metricas de adopcion, controles de seguridad y traspasos de revisores{citation}",
+        "source_backed_example": "Ejemplo respaldado por la fuente: {term} vincula metricas semanales de adopcion con secciones citadas de revision de lanzamientos{citation}",
+        "review_tradeoff": "Beneficio y contrapartida respaldados por la fuente: las revisiones de lanzamiento citadas mejoran la trazabilidad, pero agregan esfuerzo de revision para {term}{citation}",
+        "weekly_review_way_forward": "Siguiente paso: revisar semanalmente los bloqueos de lanzamiento antes de compartir el recorrido de {term}{citation}",
     },
     "de": {
         "accepts_public_safe_markdown": "{term} akzeptiert begrenzte offentlich sichere Markdown-Inhalte von Launch-Teams{citation}",
@@ -278,107 +287,21 @@ _METADATA_ONLY_TARGET_MARKERS = (
     "המרת מוק מקומית",
     "מקטע מקור",
 )
-_LOCAL_DEPTH_CONTEXT = {
-    "en": {
-        "STANDARD": " with balanced context",
-        "DEEP": " with source-grounded detail and tradeoff context",
-    },
-    "hi": {
-        "STANDARD": " संतुलित संदर्भ के साथ",
-        "DEEP": " स्रोत-आधारित विवरण और ट्रेडऑफ़ संदर्भ के साथ",
-    },
-    "es": {
-        "STANDARD": " con contexto equilibrado",
-        "DEEP": " con detalle basado en la fuente y contexto de compensaciones",
-    },
-    "de": {
-        "STANDARD": " mit ausgewogenem Kontext",
-        "DEEP": " mit quellengestuetztem Detail und Abwaegungskontext",
-    },
-    "fr": {
-        "STANDARD": " avec un contexte equilibre",
-        "DEEP": " avec des details appuyes par la source et un contexte de compromis",
-    },
-    "pt-BR": {
-        "STANDARD": " com contexto equilibrado",
-        "DEEP": " com detalhe baseado em fonte e contexto de tradeoff",
-    },
-    "it": {
-        "STANDARD": " con contesto bilanciato",
-        "DEEP": " con dettaglio fondato sulla fonte e contesto di compromesso",
-    },
-    "nl": {
-        "STANDARD": " met gebalanceerde context",
-        "DEEP": " met brononderbouwd detail en afwegingscontext",
-    },
-    "pl": {
-        "STANDARD": " ze zrownowazonym kontekstem",
-        "DEEP": " ze szczegolem opartym na zrodle i kontekstem kompromisu",
-    },
-    "uk": {
-        "STANDARD": " зі збалансованим контекстом",
-        "DEEP": " з деталями на основі джерела та контекстом компромісів",
-    },
-    "ru": {
-        "STANDARD": " со сбалансированным контекстом",
-        "DEEP": " с деталями на основе источника и контекстом компромиссов",
-    },
-    "zh-Hans": {
-        "STANDARD": "，并提供均衡上下文",
-        "DEEP": "，并提供来源支撑细节和权衡上下文",
-    },
-    "zh-Hant": {
-        "STANDARD": "，並提供均衡情境",
-        "DEEP": "，並提供來源支撐細節和取捨情境",
-    },
-    "ja": {
-        "STANDARD": "、バランスの取れた文脈付きで",
-        "DEEP": "、ソース根拠の詳細とトレードオフ文脈付きで",
-    },
-    "ko": {
-        "STANDARD": " 균형 잡힌 맥락과 함께",
-        "DEEP": " 출처 기반 세부사항과 절충 맥락과 함께",
-    },
-    "ar": {
-        "STANDARD": " مع سياق متوازن",
-        "DEEP": " مع تفاصيل مدعومة بالمصدر وسياق للمفاضلات",
-    },
-    "arz": {
-        "STANDARD": " مع سياق متوازن",
-        "DEEP": " مع تفاصيل مسنودة بمصدر وسياق للمفاضلات",
-    },
-    "he": {
-        "STANDARD": " עם הקשר מאוזן",
-        "DEEP": " עם פירוט מגובה מקור והקשר של פשרות",
-    },
-    "fa": {
-        "STANDARD": " با زمینه متوازن",
-        "DEEP": " با جزئیات پشتیبانی‌شده با منبع و زمینه مصالحه‌ها",
-    },
-    "tr": {
-        "STANDARD": " dengeli baglamla",
-        "DEEP": " kaynak destekli ayrinti ve takas baglamiyla",
-    },
-    "vi": {
-        "STANDARD": " voi ngu canh can bang",
-        "DEEP": " voi chi tiet dua tren nguon va ngu canh danh doi",
-    },
-    "id": {
-        "STANDARD": " dengan konteks seimbang",
-        "DEEP": " dengan detail berbasis sumber dan konteks tradeoff",
-    },
-    "fil": {
-        "STANDARD": " na may balanseng konteksto",
-        "DEEP": " na may detalyeng suportado ng source at konteksto ng tradeoff",
-    },
-    "th": {
-        "STANDARD": " พร้อมบริบทที่สมดุล",
-        "DEEP": " พร้อมรายละเอียดจากแหล่งอ้างอิงและบริบทของการแลกเปลี่ยน",
-    },
-    "ms": {
-        "STANDARD": " dengan konteks seimbang",
-        "DEEP": " dengan perincian bersumber dan konteks pertukaran",
-    },
+_DEPTH_RANK = {
+    "CONCISE": 0,
+    "STANDARD": 1,
+    "DEEP": 2,
+}
+_SEMANTIC_CLAUSE_MIN_DEPTH = {
+    "accepts_public_safe_markdown": "CONCISE",
+    "extracts_source_backed_claims": "CONCISE",
+    "refuses_unsupported_claims": "CONCISE",
+    "preserves_artifact_evidence": "STANDARD",
+    "links_adoption_evidence": "STANDARD",
+    "explains_adoption_safety_handoffs": "STANDARD",
+    "source_backed_example": "STANDARD",
+    "review_tradeoff": "DEEP",
+    "weekly_review_way_forward": "DEEP",
 }
 
 
@@ -992,26 +915,29 @@ def _body_lines_to_facts(heading: str, body: list[str]) -> list[tuple[str, str]]
 
 def _render_grounded_script(*, facts: tuple[Issue280GroundedFact, ...], audience: str, depth: str) -> str:
     audience_label, audience_marker = _AUDIENCE_PROFILES[audience]
-    if depth == "CONCISE":
-        selected_facts = facts[: max(1, min(3, len(facts)))]
-        claims = [
-            f"For {audience_label}, the {audience_marker} is {fact.fact_text} [{fact.citation_index}]."
-            for fact in selected_facts
-        ]
-        return " ".join(claims)
-    if depth == "DEEP":
-        claims = [
-            (
-                f"For {audience_label}, the {audience_marker} adds source-grounded detail and tradeoff from "
-                f"{fact.section_heading}: {fact.fact_text} [{fact.citation_index}]."
-            )
-            for fact in facts
-        ]
-        return " ".join(claims)
-    claims = [
-        f"For {audience_label}, the {audience_marker} is source-bound: {fact.fact_text} [{fact.citation_index}]."
-        for fact in facts
-    ]
+    selected_facts: list[tuple[Issue280GroundedFact, str]] = []
+    for fact in facts:
+        semantic_key = _semantic_clause_key(fact.fact_text)
+        minimum_depth = _SEMANTIC_CLAUSE_MIN_DEPTH[semantic_key]
+        if _DEPTH_RANK[minimum_depth] <= _DEPTH_RANK[depth]:
+            selected_facts.append((fact, semantic_key))
+    if not selected_facts:
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "depth")
+
+    claims = []
+    for fact, semantic_key in selected_facts:
+        minimum_depth = _SEMANTIC_CLAUSE_MIN_DEPTH[semantic_key]
+        if semantic_key == "source_backed_example":
+            framing = "a source-backed example is"
+        elif minimum_depth == "STANDARD":
+            framing = "additional source-bound context is"
+        elif semantic_key == "review_tradeoff":
+            framing = "the source-backed benefit and tradeoff are"
+        elif semantic_key == "weekly_review_way_forward":
+            framing = "the source-backed way forward is"
+        else:
+            framing = f"the {audience_marker} is"
+        claims.append(f"For {audience_label}, {framing} {fact.fact_text} [{fact.citation_index}].")
     return " ".join(claims)
 
 
@@ -1064,7 +990,6 @@ def _build_multilingual_response(
                     fact=fact,
                     target_record=target_record,
                     glossary_terms=glossary_terms,
-                    depth=depth,
                 ),
                 englishReferenceText=fact.fact_text,
                 contextRefIds=[fact.context_ref_id],
@@ -1098,7 +1023,6 @@ def _translate_fact(
     fact: Issue280GroundedFact,
     target_record: LanguageCatalogRecord,
     glossary_terms: list[str],
-    depth: str,
 ) -> str:
     citation = f"[{fact.citation_index}]"
     preserved_terms = _preserved_glossary_terms(glossary_terms)
@@ -1108,15 +1032,9 @@ def _translate_fact(
         target_text = _LOCAL_TRANSLATION_TEMPLATES[semantic_key].format(term=term, citation=citation)
     else:
         language_templates = _LOCAL_SEMANTIC_TRANSLATIONS.get(target_record.language_tag)
-        if language_templates is None:
+        if language_templates is None or semantic_key not in language_templates:
             raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetLanguage")
         target_text = language_templates[semantic_key].format(term=term, citation=citation)
-    target_text = _apply_depth_context(
-        target_text=target_text,
-        target_language=target_record.language_tag,
-        depth=depth,
-        citation=citation,
-    )
     _assert_semantic_target_text(
         source_text=fact.fact_text,
         target_text=target_text,
@@ -1124,17 +1042,6 @@ def _translate_fact(
         citation=citation,
     )
     return target_text
-
-
-def _apply_depth_context(*, target_text: str, target_language: str, depth: str, citation: str) -> str:
-    if depth == "CONCISE":
-        return target_text
-    depth_context = _LOCAL_DEPTH_CONTEXT.get(target_language, {}).get(depth)
-    if depth_context is None:
-        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "depth")
-    if citation not in target_text:
-        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetText")
-    return target_text.replace(citation, f"{depth_context}{citation}", 1)
 
 
 def _semantic_clause_key(fact_text: str) -> str:
@@ -1151,6 +1058,12 @@ def _semantic_clause_key(fact_text: str) -> str:
         return "links_adoption_evidence"
     if "explains adoption metrics" in normalized and "safety gates" in normalized and "reviewer handoffs" in normalized:
         return "explains_adoption_safety_handoffs"
+    if "for example" in normalized and "weekly adoption metrics" in normalized and "release review sections" in normalized:
+        return "source_backed_example"
+    if "benefit of cited release reviews" in normalized and "tradeoff is added reviewer effort" in normalized:
+        return "review_tradeoff"
+    if "practical way forward" in normalized and "review release blockers weekly" in normalized:
+        return "weekly_review_way_forward"
     raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "documents")
 
 

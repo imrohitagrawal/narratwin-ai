@@ -180,10 +180,23 @@
         {
           "id": "R280-AUDIENCE-DEPTH-001",
           "requirement": "Same source across all audiences and depths; deep source-supported example accepted; deep unsupported example refused; cross-language audience framing preserved; UI/export shows generating audience/depth.",
-          "status": "EXECUTABLE_CONTRACT_PASS",
-          "evidenceType": "acceptance-test",
+          "status": "NOT_PROVEN",
+          "evidenceType": "scoped-semantic-browser-evidence",
           "plannedCommand": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
           "ownerPrSlice": "PR E",
+          "partialSemanticEvidence": {
+            "classification": "SEMANTIC_PASS",
+            "languages": [
+              "es",
+              "hi"
+            ],
+            "observedBehavior": "The real UI shows essential facts only for CONCISE, adds an explicit source-backed example for STANDARD, and adds the example, benefit/tradeoff, and way-forward text for DEEP while preserving visible citations, context refs, claim supports, and evaluation metadata."
+          },
+          "remainingNotProven": [
+            "depth semantics outside Spanish and Hindi",
+            "the full audience-by-depth cross-language matrix",
+            "arbitrary or human-grade translation quality"
+          ],
           "prEClosureEvidence": {
             "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
             "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
@@ -616,8 +629,9 @@
       ]
     }
   ],
-  "prEExecutableArbitraryDemoClosureImplemented": true,
-  "issue280SatisfiedByPrE": true,
+  "prEExecutableArbitraryDemoClosureImplemented": false,
+  "prEExecutableBoundedClauseDemoImplemented": true,
+  "issue280SatisfiedByPrE": false,
   "issue280RemainsOpenAfterPrEUntilMergeCloseout": true,
   "prEOutputCorrectnessVerifier": "make issue280-output-correctness",
   "prEVerifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json",

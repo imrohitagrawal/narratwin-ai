@@ -101,6 +101,35 @@ The workspace links adoption metrics and release blockers to cited markdown sect
 """
 
 
+def depth_semantic_markdown() -> str:
+    return """# Meridian Planner
+
+## Upload workflow
+
+Meridian Planner accepts bounded public-safe markdown from product teams.
+
+## Retrieval workflow
+
+The local demo extracts source-backed claims about release rituals, adoption signals, and evidence handoffs.
+
+## Evaluation workflow
+
+Unsupported claims are refused before the stored walkthrough is shown in the browser.
+
+## Source-backed example
+
+For example, Meridian Planner links weekly adoption metrics to cited release review sections.
+
+## Benefit and tradeoff
+
+The benefit of cited release reviews is traceable adoption evidence, while the tradeoff is added reviewer effort.
+
+## Way forward
+
+A practical way forward is to review release blockers weekly before sharing the walkthrough.
+"""
+
+
 def payload(**overrides: Any) -> dict[str, Any]:
     value: dict[str, Any] = {
         "documents": [
@@ -115,6 +144,20 @@ def payload(**overrides: Any) -> dict[str, Any]:
         "targetLanguage": "fr",
         "glossaryTerms": ["Meridian Planner"],
     }
+    value.update(overrides)
+    return value
+
+
+def depth_semantic_payload(**overrides: Any) -> dict[str, Any]:
+    value = payload(
+        documents=[
+            {
+                "filename": "meridian-planner-depth.md",
+                "contentType": "text/markdown",
+                "markdown": depth_semantic_markdown(),
+            }
+        ],
+    )
     value.update(overrides)
     return value
 
@@ -186,32 +229,64 @@ def test_issue280_pr_e_all_25_languages_convert_arbitrary_source_clauses_not_met
             assert PUBLIC_SAFE_MARKDOWN_MARKERS_BY_LANGUAGE[language] in visible_target_text
 
 
-def test_issue280_pr_e_depth_changes_output_materially_without_losing_evidence() -> None:
-    concise = post_demo(payload(depth="CONCISE", targetLanguage="es"), "depth-concise")
-    standard = post_demo(payload(depth="STANDARD", targetLanguage="es"), "depth-standard")
-    deep = post_demo(payload(depth="DEEP", targetLanguage="es"), "depth-deep")
+@pytest.mark.parametrize(
+    ("target_language", "example_marker", "tradeoff_marker", "way_forward_marker"),
+    [
+        ("es", "Ejemplo respaldado por la fuente", "contrapartida", "Siguiente paso"),
+        ("hi", "स्रोत-समर्थित उदाहरण", "समझौता", "आगे का रास्ता"),
+    ],
+)
+def test_issue280_pr_e_depth_semantics_are_visible_and_source_bound(
+    target_language: str,
+    example_marker: str,
+    tradeoff_marker: str,
+    way_forward_marker: str,
+) -> None:
+    concise = post_demo(
+        depth_semantic_payload(depth="CONCISE", targetLanguage=target_language),
+        f"depth-{target_language}-concise",
+    )
+    standard = post_demo(
+        depth_semantic_payload(depth="STANDARD", targetLanguage=target_language),
+        f"depth-{target_language}-standard",
+    )
+    deep = post_demo(
+        depth_semantic_payload(depth="DEEP", targetLanguage=target_language),
+        f"depth-{target_language}-deep",
+    )
 
-    concise_text = concise["generated"]["acceptedScriptText"]
-    standard_text = standard["generated"]["acceptedScriptText"]
-    deep_text = deep["generated"]["acceptedScriptText"]
+    target_by_depth = {
+        "CONCISE": "\n".join(segment["targetText"] for segment in concise["multilingual"]["segments"]),
+        "STANDARD": "\n".join(segment["targetText"] for segment in standard["multilingual"]["segments"]),
+        "DEEP": "\n".join(segment["targetText"] for segment in deep["multilingual"]["segments"]),
+    }
 
-    assert concise_text != standard_text
-    assert standard_text != deep_text
-    assert len(concise_text.split()) < len(standard_text.split()) < len(deep_text.split())
-    assert "source-grounded detail" in deep_text
-    assert "tradeoff" in deep_text
-    concise_target_text = "\n".join(segment["targetText"] for segment in concise["multilingual"]["segments"])
-    standard_target_text = "\n".join(segment["targetText"] for segment in standard["multilingual"]["segments"])
-    deep_target_text = "\n".join(segment["targetText"] for segment in deep["multilingual"]["segments"])
-    assert concise_target_text != standard_target_text
-    assert standard_target_text != deep_target_text
-    assert len(concise_target_text) < len(standard_target_text) < len(deep_target_text)
-    assert "contexto equilibrado" in standard_target_text
-    assert "detalle basado en la fuente" in deep_target_text
-    assert "detalle basado en la fuente" not in concise_target_text
+    assert len(concise["multilingual"]["segments"]) == 3
+    assert len(standard["multilingual"]["segments"]) == 4
+    assert len(deep["multilingual"]["segments"]) == 6
+    assert example_marker not in target_by_depth["CONCISE"]
+    assert tradeoff_marker not in target_by_depth["CONCISE"]
+    assert way_forward_marker not in target_by_depth["CONCISE"]
+    assert example_marker in target_by_depth["STANDARD"]
+    assert tradeoff_marker not in target_by_depth["STANDARD"]
+    assert way_forward_marker not in target_by_depth["STANDARD"]
+    assert example_marker in target_by_depth["DEEP"]
+    assert tradeoff_marker in target_by_depth["DEEP"]
+    assert way_forward_marker in target_by_depth["DEEP"]
+
     for body in (concise, standard, deep):
+        segments = body["multilingual"]["segments"]
+        supports = body["evaluation"]["claimSupports"]
         assert body["evaluation"]["unsupportedClaimCount"] == 0
-        assert len(body["evaluation"]["claimSupports"]) == len(body["multilingual"]["segments"])
+        assert body["evaluation"]["evaluationId"]
+        assert body["evaluation"]["evaluationChecksum"]
+        assert len(supports) == len(segments)
+        for segment, support in zip(segments, supports, strict=True):
+            assert segment["citationIndexes"] == [support["citationIndex"]]
+            assert segment["contextRefIds"] == [support["contextRefId"]]
+            assert segment["claimSupportIds"] == [support["claimSupportId"]]
+            assert f"[{support['citationIndex']}]" in segment["targetText"]
+        assert set(body["correctnessReport"]["checks"].values()) == {"PASSED"}
 
 
 @pytest.mark.parametrize(

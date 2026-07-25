@@ -6039,7 +6039,17 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
     if pr_slice == "PR A+PR B+PR C+PR D+PR E":
         if artifact.get("runtimeBehaviorImplemented") is not True:
             fail(failures, f"{ISSUE_280_MATRIX_PATH} must mark runtimeBehaviorImplemented true for PR E closure.")
-        if artifact.get("issue280SatisfiedByPrE") is not True:
+        semantic_correction = artifact.get("issue298SemanticCorrection")
+        semantic_correction_active = (
+            isinstance(semantic_correction, dict)
+            and semantic_correction.get("status") == "in-progress corrective PR"
+        )
+        if semantic_correction_active and artifact.get("issue280SatisfiedByPrE") is not False:
+            fail(
+                failures,
+                f"{ISSUE_280_MATRIX_PATH} must keep issue280SatisfiedByPrE false while semantic correction is active.",
+            )
+        elif not semantic_correction_active and artifact.get("issue280SatisfiedByPrE") is not True:
             fail(failures, f"{ISSUE_280_MATRIX_PATH} must mark issue280SatisfiedByPrE true for PR E closure.")
         if artifact.get("prEOutputCorrectnessVerifier") != "make issue280-output-correctness":
             fail(failures, f"{ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the PR E verifier.")

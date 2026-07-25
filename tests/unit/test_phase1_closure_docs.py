@@ -8133,11 +8133,11 @@ def test_issue280_matrix_rejects_runtime_completion_claim(monkeypatch: Any) -> N
     )
 
 
-def test_issue280_matrix_allows_pr_e_runtime_closure_with_verifier(monkeypatch: Any) -> None:
+def test_issue280_matrix_keeps_issue_open_during_semantic_correction(monkeypatch: Any) -> None:
     matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
     matrix["prSlice"] = "PR A+PR B+PR C+PR D+PR E"
     matrix["runtimeBehaviorImplemented"] = True
-    matrix["issue280SatisfiedByPrE"] = True
+    matrix["issue280SatisfiedByPrE"] = False
     matrix["prEOutputCorrectnessVerifier"] = "make issue280-output-correctness"
     failures = run_issue280_review_artifacts_check(
         monkeypatch,
@@ -8145,14 +8145,32 @@ def test_issue280_matrix_allows_pr_e_runtime_closure_with_verifier(monkeypatch: 
     )
 
     assert f"{phase1.ISSUE_280_MATRIX_PATH} cannot claim full runtime implementation complete before all R280 rows pass." not in failures
-    assert f"{phase1.ISSUE_280_MATRIX_PATH} must mark issue280SatisfiedByPrE true for PR E closure." not in failures
+    assert (
+        f"{phase1.ISSUE_280_MATRIX_PATH} must keep issue280SatisfiedByPrE false while semantic correction is active."
+        not in failures
+    )
+    assert failures == []
+
+
+def test_issue280_matrix_rejects_satisfaction_claim_during_semantic_correction(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["issue280SatisfiedByPrE"] = True
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert (
+        f"{phase1.ISSUE_280_MATRIX_PATH} must keep issue280SatisfiedByPrE false while semantic correction is active."
+        in failures
+    )
 
 
 def test_issue280_matrix_pr_e_requires_output_correctness_verifier(monkeypatch: Any) -> None:
     matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
     matrix["prSlice"] = "PR A+PR B+PR C+PR D+PR E"
     matrix["runtimeBehaviorImplemented"] = True
-    matrix["issue280SatisfiedByPrE"] = True
+    matrix["issue280SatisfiedByPrE"] = False
     matrix["prEOutputCorrectnessVerifier"] = "issue comment"
     failures = run_issue280_review_artifacts_check(
         monkeypatch,
