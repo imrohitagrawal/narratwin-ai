@@ -31,6 +31,10 @@
     "minimumExpectation": "Each implementation PR must show which positive, negative, corner, API, contract, exact UI, E2E flow, and regression tests were added or intentionally reviewed/re-scoped before it can claim its owned R280 rows are satisfied."
   },
   "statusValues": [
+    "STRUCTURAL_PASS",
+    "SEMANTIC_PASS",
+    "NOT_PROVEN",
+    "FAILED",
     "STATIC_CONTRACT_PASS",
     "EXECUTABLE_CONTRACT_PASS",
     "SEMANTIC_EXECUTABLE_PASS",

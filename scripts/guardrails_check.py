@@ -240,6 +240,23 @@ STATUS_IMPACT_MISSING_STATUS_FILE_FAILURE = (
 STATUS_IMPACT_UNSUPPORTED_NO_CHANGE_FAILURE = (
     "PRs that change repository-tracked stage/governance state must not claim no docs/STATUS.md impact."
 )
+POST_IMPLEMENTATION_VERIFIER_FAILURE = (
+    "Implementation pull requests must include post-implementation execution-verifier evidence."
+)
+SEMANTIC_VERIFIER_FAILURE = (
+    "User-visible semantic/output claims require browser-visible semantic verifier evidence."
+)
+METADATA_ONLY_VERIFIER_FAILURE = (
+    "Output-correctness evidence must not treat metadata-only, screenshot-only, docs-only, "
+    "matrix-only, artifact-only, or mocked-status-only proof as sufficient."
+)
+MULTILINGUAL_TEMPLATE_FAILURE = (
+    "Multilingual output evidence must reject template text, English fallback, source-heading "
+    "summaries, and metadata-only target sentences."
+)
+REQUIREMENT_MATRIX_SEMANTIC_STATUS_FAILURE = (
+    "Semantic requirement rows cannot be marked satisfied without SEMANTIC_PASS evidence."
+)
 ISSUE_280_PR_A_BRANCH = "phase-1-closure-280-c3a-r3-planning-preflight-persona-depth"
 ISSUE_280_REFERENCE_ONLY_FAILURE = (
     "Issue #280 PR A must use reference-only wording and must not auto-close #280."
@@ -1211,6 +1228,242 @@ def status_impact_finalization_failures(changes: list[str], body: str) -> list[s
     return failures
 
 
+def implementation_surface_changed(changes: list[str]) -> bool:
+    implementation_prefixes = ("app/", "backend/", "frontend/", "src/")
+    implementation_suffixes = (".py", ".ts", ".tsx", ".js", ".jsx", ".mjs")
+    ignored_test_prefixes = ("tests/", "frontend/tests/")
+    for change in changes:
+        if change.startswith(ignored_test_prefixes):
+            continue
+        if change.startswith(implementation_prefixes) and Path(change).suffix in implementation_suffixes:
+            return True
+    return False
+
+
+def has_user_visible_semantic_claim(text: str) -> bool:
+    normalized = normalize_contract_text(text)
+    semantic_claim_terms = (
+        "output correctness",
+        "user visible",
+        "browser visible",
+        "semantic",
+        "meaningful",
+        "target transcript",
+        "visible translated output",
+        "translation quality",
+        "full sentence translation",
+    )
+    return any(term in normalized for term in semantic_claim_terms)
+
+
+def has_multilingual_claim(text: str) -> bool:
+    normalized = normalize_contract_text(text)
+    multilingual_claim_terms = (
+        "multilingual",
+        "translation",
+        "translated",
+        "target transcript",
+        "language",
+        "localization",
+        "localisation",
+    )
+    return any(term in normalized for term in multilingual_claim_terms)
+
+
+def section_claims_bad_evidence_is_sufficient(section_text: str) -> bool:
+    normalized = normalize_contract_text(section_text)
+    bad_evidence_terms = (
+        "metadata only",
+        "screenshot only",
+        "docs only",
+        "matrix only",
+        "artifact only",
+        "mocked status only",
+    )
+    if not any(term in normalized for term in bad_evidence_terms):
+        return False
+    success_context_terms = (
+        "are treated as sufficient",
+        "is treated as sufficient",
+        "sufficient output correctness evidence",
+        "accepted as sufficient",
+        "accepted output correctness evidence",
+        "passes with",
+        "passed with",
+        "proves output correctness",
+    )
+    return any(term in normalized for term in success_context_terms)
+
+
+def section_claims_multilingual_template_success(section_text: str) -> bool:
+    normalized = normalize_contract_text(section_text)
+    template_terms = (
+        "local mock conversion",
+        "source segment",
+        "english fallback",
+        "source heading summary",
+        "metadata only target sentence",
+    )
+    if not any(term in normalized for term in template_terms):
+        return False
+    success_context_terms = (
+        "target transcript passed",
+        "target transcript passes",
+        "passed with",
+        "passes with",
+        "accepted as",
+        "success",
+        "sufficient",
+    )
+    if any(term in normalized for term in ("fails on", "fail on", "rejects", "must reject")):
+        return False
+    return any(term in normalized for term in success_context_terms)
+
+
+def post_implementation_execution_verifier_failures(
+    changes: list[str],
+    visible_issue_text: str,
+    body: str,
+) -> list[str]:
+    if not implementation_surface_changed(changes):
+        return []
+
+    section = markdown_section(body, "Post-implementation execution verifier")
+    if not section.strip():
+        return [POST_IMPLEMENTATION_VERIFIER_FAILURE]
+
+    section_with_heading = "Post-implementation execution verifier\n" + section
+    normalized = normalize_contract_text(section_with_heading)
+    failures_found: list[str] = []
+    has_execution_verifier_identity = (
+        "post implementation" in normalized
+        and "execution verifier" in normalized
+        and ("not read only" in normalized or "non read only" in normalized)
+        and ("end to end" in normalized or "e2e" in normalized or "relevant slice" in normalized)
+        and "observed" in normalized
+    )
+    has_classification = any(
+        status in normalized
+        for status in ("structural pass", "semantic pass", "not proven", "failed")
+    )
+    if not (has_execution_verifier_identity and has_classification):
+        failures_found.append(POST_IMPLEMENTATION_VERIFIER_FAILURE)
+
+    if section_claims_bad_evidence_is_sufficient(section):
+        failures_found.append(METADATA_ONLY_VERIFIER_FAILURE)
+
+    if has_user_visible_semantic_claim(visible_issue_text):
+        semantic_pass_claimed = "semantic pass" in normalized
+        browser_visible_claimed = "browser visible" in normalized or "browser-visible" in section_with_heading.lower()
+        rendered_output_claimed = any(
+            term in normalized
+            for term in ("user text", "rendered output", "visible user text", "browser visible user text")
+        )
+        if not (semantic_pass_claimed and browser_visible_claimed and rendered_output_claimed):
+            failures_found.append(SEMANTIC_VERIFIER_FAILURE)
+
+    if has_multilingual_claim(visible_issue_text) and section_claims_multilingual_template_success(section):
+        failures_found.append(MULTILINGUAL_TEMPLATE_FAILURE)
+
+    return failures_found
+
+
+def requirement_matrix_semantic_status_failures(changes: list[str]) -> list[str]:
+    matrix_paths = sorted(
+        {
+            change
+            for change in changes
+            if change.endswith(".json")
+            and (
+                change.endswith("requirement-matrix.json")
+                or change.endswith("coverage-matrix.json")
+                or "/requirement-" in change
+                or "/coverage-" in change
+            )
+        }
+    )
+    failures_found: list[str] = []
+    for rel_path in matrix_paths:
+        path = ROOT / rel_path
+        if not path.is_file():
+            continue
+        try:
+            data = json.loads(read_text(path))
+        except json.JSONDecodeError:
+            continue
+        for row in iter_requirement_matrix_rows(data):
+            if semantic_requirement_row_overclaims(row):
+                failures_found.append(REQUIREMENT_MATRIX_SEMANTIC_STATUS_FAILURE)
+                return failures_found
+    return failures_found
+
+
+def iter_requirement_matrix_rows(value: Any) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    if isinstance(value, dict):
+        if "status" in value and any(key in value for key in ("requirement", "id", "evidenceType")):
+            rows.append(value)
+        for child in value.values():
+            rows.extend(iter_requirement_matrix_rows(child))
+    elif isinstance(value, list):
+        for child in value:
+            rows.extend(iter_requirement_matrix_rows(child))
+    return rows
+
+
+def semantic_requirement_row_overclaims(row: dict[str, Any]) -> bool:
+    evidence_type = normalize_contract_text(str(row.get("evidenceType", "")))
+    if evidence_type in {"governance test", "static contract"}:
+        return False
+    row_text = normalize_contract_text(
+        " ".join(
+            str(row.get(key, ""))
+            for key in (
+                "id",
+                "requirement",
+                "evidenceType",
+                "evidence",
+                "plannedCommand",
+                "status",
+            )
+        )
+    )
+    semantic_terms = (
+        "semantic",
+        "user visible",
+        "browser visible",
+        "target transcript",
+        "body level translation",
+        "english fallback",
+        "metadata only success",
+        "artifact only success",
+        "output correctness",
+        "full sentence translation",
+    )
+    if not any(term in row_text for term in semantic_terms):
+        return False
+    if any(
+        non_claim in row_text
+        for non_claim in (
+            "without claiming",
+            "does not claim",
+            "remain out of scope",
+            "remains out of scope",
+            "remaining out of scope",
+            "must eventually",
+        )
+    ):
+        return False
+    if "test strategy" in row_text and "semantic output correctness verifier" not in row_text:
+        return False
+    status = normalize_contract_text(str(row.get("status", "")))
+    status_tokens = set(status.split())
+    semantic_pass = "semantic" in status_tokens and "pass" in status_tokens
+    pass_like_status = bool(status_tokens & {"pass", "passed", "satisfied", "completed", "closed"})
+    explicitly_satisfied = row.get("satisfied") is True or row.get("requirementSatisfied") is True
+    return (pass_like_status or explicitly_satisfied) and not semantic_pass
+
+
 def validation_command_has_result(lines: list[str], command: str) -> bool:
     command_text = command.lower()
     has_valid_result = False
@@ -1919,6 +2172,7 @@ def check_issue_linked_pull_request() -> None:
     if is_nontrivial_pull_request(changes):
         failures.extend(reviewer_overview_failures(body))
         failures.extend(status_impact_finalization_failures(changes, body))
+        failures.extend(post_implementation_execution_verifier_failures(changes, visible_issue_text, body))
         if not has_completed_preflight_evidence(body):
             failures.append("Non-trivial pull requests must include completed preflight evidence rows.")
         if not has_validation_evidence(body):
@@ -2160,6 +2414,7 @@ def main() -> int:
     check_mock_local_defaults()
     check_traceability_rules(changes)
     check_status_tracking_rules(changes)
+    failures.extend(requirement_matrix_semantic_status_failures(changes))
     check_llm_tracing_and_citations()
     check_eval_results_blocking()
     check_security_results_blocking()

@@ -867,6 +867,28 @@ Process-critical governance docs and process-review registers stay in the
 non-trivial category even for text-only edits because those files define future
 automation behavior and review-loop prevention.
 
+Implementation PRs must also include a `Post-implementation execution verifier`
+section. The section is enforced by `scripts/guardrails_check.py` for backend,
+frontend, app, or source implementation changes. It must describe a
+post-implementation verifier that executed the relevant slice end to end, was
+not read-only, records observed pass/fail behavior, and classifies requirement
+outcomes as `STRUCTURAL_PASS`, `SEMANTIC_PASS`, `NOT_PROVEN`, or `FAILED`.
+When the PR claims user-visible semantic or output correctness, the verifier
+must prove browser-visible user text or rendered output. Metadata-only,
+screenshot-only, docs-only, matrix-only, artifact-only, and mocked-status-only
+evidence is not sufficient. For multilingual work, template text, English
+fallback, source-heading summaries, and metadata-only target sentences are
+failures unless the requirement is explicitly classified as `FAILED` or
+`NOT_PROVEN`.
+
+Requirement matrices checked into `reports/**` use the same rule. A row whose
+strongest claim is semantic, browser-visible, output-correctness,
+target-transcript, no-English-fallback, full-sentence translation, or
+metadata/artifact false-pass rejection cannot be marked satisfied with
+`STRUCTURAL_PASS`, `EXECUTABLE_CONTRACT_PASS`, or similar structural evidence.
+It requires `SEMANTIC_PASS` or an equivalent semantic pass status such as the
+Issue 280 transitional `SEMANTIC_EXECUTABLE_PASS`.
+
 The PR template also requires a `Human verification checklist` for non-trivial
 PRs. This checklist converts reviewer-focus points into rows with exact
 data/source/artifact references, official URL and verified/accessed date when

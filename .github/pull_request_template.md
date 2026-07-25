@@ -84,7 +84,23 @@ and final merge-message wording.
 - [ ] Repeated-review stop rule was evaluated; if a fresh review found a new defect class after a fix, implementation paused for contract rewrite before another bug-fix loop.
 - [ ] Process/durability/governance work considered whether `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` should receive reusable lessons for future projects/apps.
 - [ ] Implementation or release-readiness changes completed invariant, exploit-matrix, and contract/gate review per `docs/REVIEW_RIGOR_RETROSPECTIVE.md`.
+- [ ] Implementation changes include a `Post-implementation execution verifier` section that ran the relevant slice end to end and was not read-only.
+- [ ] User-visible semantic/output claims are classified as `STRUCTURAL_PASS`, `SEMANTIC_PASS`, `NOT_PROVEN`, or `FAILED`; semantic rows are not marked satisfied unless `SEMANTIC_PASS` is achieved.
+- [ ] Multilingual/output-correctness claims reject metadata-only, screenshot-only, docs-only, matrix-only, artifact-only, mocked-status-only, template, English fallback, source-heading summary, and metadata-only target-sentence proof.
 - [ ] PR title, body, branch commit messages, and final merge/squash message plan were checked for automation-sensitive wording such as issue-closing keywords.
+
+## Post-implementation execution verifier
+
+Required for implementation PRs. It must describe the executable verifier that
+ran after implementation, the relevant end-to-end slice it exercised, the
+observed browser/API/product behavior, and the negative false-pass evidence it
+rejected. It cannot be read-only and cannot accept docs, comments, matrix
+status, screenshots, artifacts, metadata, or mocked status as sufficient proof
+for user-visible behavioral claims.
+
+| Requirement | Classification | Executed path | Observed evidence | Negative proof |
+|---|---|---|---|---|
+|  | STRUCTURAL_PASS / SEMANTIC_PASS / NOT_PROVEN / FAILED |  |  |  |
 
 ## Preflight evidence
 

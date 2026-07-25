@@ -56,6 +56,10 @@ ISSUE_280_REQUIRED_SECTIONS = {
     "R280-GOV",
 }
 ISSUE_280_ALLOWED_ROW_STATUSES = {
+    "STRUCTURAL_PASS",
+    "SEMANTIC_PASS",
+    "NOT_PROVEN",
+    "FAILED",
     "STATIC_CONTRACT_PASS",
     "EXECUTABLE_CONTRACT_PASS",
     "SEMANTIC_EXECUTABLE_PASS",
@@ -591,19 +595,24 @@ ISSUE_280_PR_E_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_298_ALLOWED_CHANGED_FILES = {
+    ".github/pull_request_template.md",
     "backend/app/issue280.py",
     "docs/QUALITY_GATES.md",
+    "docs/REPOSITORY_GUARDRAILS.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
     "docs/ADR/0040-issue280-semantic-local-demo-correction.md",
+    "docs/reviews/ISSUE_298_REPO_SEMANTIC_GATE_PREFLIGHT.md",
     "docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md",
     "frontend/tests/issue280-ui-browser.spec.ts",
     ISSUE_280_MATRIX_PATH,
+    "scripts/guardrails_check.py",
     "scripts/quality/check_phase1_closure_docs.py",
     "scripts/quality/verify_issue280_output_correctness.py",
     "tests/acceptance/test_issue280_pr_e_closure.py",
     "tests/contract/test_issue280_ui_api_artifact_parity.py",
+    "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_274_ALLOWED_CHANGED_FILES = {
@@ -1921,7 +1930,7 @@ STATUS_STATE_V1_ROWS = {
         "issue #298 / issue #280 semantic correction",
         "issue280-semantic-correction-active",
         "issue280-semantic-correction-active",
-        "Issue #298 is the active corrective slice after real-browser evidence showed that the prior #280 closure evidence accepted metadata-only/mock target transcripts as multilingual output correctness. The branch `phase-1-closure-298-issue280-semantic-multilingual-correction` preserves the memory artifact `docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md`, strengthens `make issue280-output-correctness` to reject metadata-only target text and English fallback, and repairs the deterministic 25-language local/demo path for bounded public-safe synthetic project clauses while preserving citations/context refs/claim supports/evaluation metadata/artifact parity. Issue #249 remains open as the public Checkpoint 3 tracker. C3B remains blocked until issue #280's semantic closure evidence is reviewed/merged or explicitly re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claims.",
+        "Issue #298 is the active corrective slice after real-browser evidence showed that the prior #280 closure evidence accepted metadata-only/mock target transcripts as multilingual output correctness. The branch `phase-1-closure-298-issue280-semantic-multilingual-correction` preserves the memory artifact `docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md`, strengthens `make issue280-output-correctness` to reject metadata-only target text and English fallback, repairs the deterministic 25-language local/demo path for bounded public-safe synthetic project clauses while preserving citations/context refs/claim supports/evaluation metadata/artifact parity, and installs a repo-level guardrail requiring future implementation PRs to include non-read-only post-implementation execution-verifier evidence before semantic/output rows may be treated as satisfied. Issue #249 remains open as the public Checkpoint 3 tracker. C3B remains blocked until issue #280's semantic closure evidence is reviewed/merged or explicitly re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",

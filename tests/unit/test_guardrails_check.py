@@ -46,6 +46,23 @@ REVIEWER_MEANING_FAILURES = (
     "Reviewer overview point 4 must contain meaningful PR-specific content.",
     "Reviewer overview point 5 must contain meaningful PR-specific content.",
 )
+POST_IMPLEMENTATION_VERIFIER_FAILURE = (
+    "Implementation pull requests must include post-implementation execution-verifier evidence."
+)
+SEMANTIC_VERIFIER_FAILURE = (
+    "User-visible semantic/output claims require browser-visible semantic verifier evidence."
+)
+METADATA_ONLY_VERIFIER_FAILURE = (
+    "Output-correctness evidence must not treat metadata-only, screenshot-only, docs-only, "
+    "matrix-only, artifact-only, or mocked-status-only proof as sufficient."
+)
+MULTILINGUAL_TEMPLATE_FAILURE = (
+    "Multilingual output evidence must reject template text, English fallback, source-heading "
+    "summaries, and metadata-only target sentences."
+)
+REQUIREMENT_MATRIX_SEMANTIC_STATUS_FAILURE = (
+    "Semantic requirement rows cannot be marked satisfied without SEMANTIC_PASS evidence."
+)
 
 
 def reviewer_overview_body(
@@ -58,6 +75,15 @@ def reviewer_overview_body(
         if index != omit:
             rows.extend(("", f"### {heading}", "", content))
     return "\n".join(rows) + "\n"
+
+
+def semantic_verifier_section() -> str:
+    return (
+        "## Post-implementation execution verifier\n\n"
+        "| Requirement | Classification | Executed path | Observed evidence | Negative proof |\n"
+        "|---|---|---|---|---|\n"
+        "| INV-1 | SEMANTIC_PASS | Not read-only verifier ran the relevant slice end to end through browser and API. | Browser-visible user text was inspected with rendered output and network evidence. | Fails on metadata-only success, screenshot-only proof, docs-only proof, matrix-only proof, artifact-only proof, mocked-status-only proof, template text, English fallback, source-heading summary, and metadata-only target sentence. |\n"
+    )
 ISSUE39_SENSITIVE_ROW_CELLS = {
     "DUR-ACID-001": [
         "ACID/CAS durable metadata",
@@ -446,6 +472,7 @@ def completed_preflight_body(
         "## Status impact\n\n"
         "No repository-tracked status change is claimed by this PR. Routine post-merge facts go to "
         "PR/issue comments, with no successor status-only PR.\n\n"
+        f"{semantic_verifier_section()}\n"
         "## Preflight evidence\n\n"
         "| Evidence | Artifact reference | Reference type | Matrix IDs | Command / CI / Source | Reviewer | Evidence type | Completion status | Residual risk decision |\n"
         "|---|---|---|---|---|---|---|---|---|\n"
@@ -1950,6 +1977,167 @@ def test_nontrivial_pull_request_accepts_completed_preflight_evidence(
         body=completed_preflight_body(),
         head_ref="phase-1-closure-44-telemetry-hardening",
         changed_files=["backend/app/main.py"],
+    )
+
+    assert failures == []
+
+
+def test_behavioral_pr_requires_post_implementation_execution_verifier(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = completed_preflight_body().replace(semantic_verifier_section() + "\n", "")
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Improve browser output correctness",
+        body=body,
+        head_ref="phase-1-closure-44-output-correctness",
+        changed_files=["backend/app/main.py", "frontend/src/app/page.tsx"],
+    )
+
+    assert POST_IMPLEMENTATION_VERIFIER_FAILURE in failures
+
+
+def test_behavioral_pr_rejects_metadata_or_artifact_only_output_correctness_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    bad_section = (
+        "## Post-implementation execution verifier\n\n"
+        "| Requirement | Classification | Executed path | Observed evidence | Negative proof |\n"
+        "|---|---|---|---|---|\n"
+        "| INV-1 | STRUCTURAL_PASS | The implementation was checked from docs and matrix rows. | "
+        "Metadata-only proof, screenshot-only proof, artifact-only proof, and mocked-status-only proof "
+        "are treated as sufficient output-correctness evidence. | none |\n"
+    )
+    body = completed_preflight_body().replace(semantic_verifier_section(), bad_section)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Improve user-visible output correctness",
+        body=body,
+        head_ref="phase-1-closure-44-output-correctness",
+        changed_files=["backend/app/main.py", "frontend/src/app/page.tsx"],
+    )
+
+    assert METADATA_ONLY_VERIFIER_FAILURE in failures
+    assert SEMANTIC_VERIFIER_FAILURE in failures
+
+
+def test_multilingual_pr_rejects_template_or_english_fallback_semantic_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    bad_section = (
+        "## Post-implementation execution verifier\n\n"
+        "| Requirement | Classification | Executed path | Observed evidence | Negative proof |\n"
+        "|---|---|---|---|---|\n"
+        "| INV-1 | SEMANTIC_PASS | Not read-only verifier ran the multilingual slice end to end "
+        "through browser and API. | Browser-visible target transcript passed with Local mock conversion, "
+        "source segment, protected term, and English fallback text. | none |\n"
+    )
+    body = completed_preflight_body().replace(semantic_verifier_section(), bad_section)
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Improve multilingual target transcript semantics",
+        body=body,
+        head_ref="phase-1-closure-44-multilingual-output",
+        changed_files=["backend/app/stage6.py", "frontend/src/app/page.tsx"],
+    )
+
+    assert MULTILINGUAL_TEMPLATE_FAILURE in failures
+
+
+def test_behavioral_pr_accepts_semantic_execution_verifier_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Improve user-visible output correctness",
+        body=completed_preflight_body(),
+        head_ref="phase-1-closure-44-output-correctness",
+        changed_files=["backend/app/main.py", "frontend/src/app/page.tsx"],
+    )
+
+    assert failures == []
+
+
+def test_requirement_matrix_rejects_semantic_rows_without_semantic_pass(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    matrix_path = tmp_path / "reports/checkpoint3-issue280/requirement-matrix.json"
+    matrix_path.parent.mkdir(parents=True)
+    matrix_path.write_text(
+        json.dumps(
+            {
+                "sections": [
+                    {
+                        "id": "R-SEMANTIC",
+                        "rows": [
+                            {
+                                "id": "R-SEMANTIC-001",
+                                "requirement": (
+                                    "Target transcript must provide browser-visible semantic "
+                                    "translation with no English fallback or metadata-only success."
+                                ),
+                                "status": "STRUCTURAL_PASS",
+                                "evidenceType": "artifact-parity",
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+
+    failures = guardrails.requirement_matrix_semantic_status_failures(
+        ["reports/checkpoint3-issue280/requirement-matrix.json"]
+    )
+
+    assert REQUIREMENT_MATRIX_SEMANTIC_STATUS_FAILURE in failures
+
+
+def test_requirement_matrix_accepts_semantic_pass_for_semantic_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    matrix_path = tmp_path / "reports/checkpoint3-issue280/requirement-matrix.json"
+    matrix_path.parent.mkdir(parents=True)
+    matrix_path.write_text(
+        json.dumps(
+            {
+                "statusValues": ["STRUCTURAL_PASS", "SEMANTIC_PASS", "NOT_PROVEN", "FAILED"],
+                "sections": [
+                    {
+                        "id": "R-SEMANTIC",
+                        "rows": [
+                            {
+                                "id": "R-SEMANTIC-001",
+                                "requirement": (
+                                    "Target transcript must provide browser-visible semantic "
+                                    "translation with no English fallback or metadata-only success."
+                                ),
+                                "status": "SEMANTIC_PASS",
+                                "evidenceType": "semantic-output-correctness-verifier",
+                            }
+                        ],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+
+    failures = guardrails.requirement_matrix_semantic_status_failures(
+        ["reports/checkpoint3-issue280/requirement-matrix.json"]
     )
 
     assert failures == []
