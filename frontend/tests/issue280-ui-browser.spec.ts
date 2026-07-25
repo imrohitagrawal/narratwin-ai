@@ -24,11 +24,48 @@ Unsupported claims are refused before the stored walkthrough is shown in the bro
 Local mock artifacts keep citations, context references, claim supports, and checksums aligned.`;
 
 const languageExpectations = [
-  { tag: "hi", marker: "स्थानीय मॉक रूपांतरण" },
-  { tag: "es", marker: "Conversion local simulada" },
-  { tag: "fr", marker: "Conversion locale simulee" },
-  { tag: "ar", marker: "تحويل محلي" },
-  { tag: "ja", marker: "ローカルモック変換" },
+  { tag: "en", marker: "public-safe markdown" },
+  { tag: "hi", marker: "सार्वजनिक-सुरक्षित मार्कडाउन" },
+  { tag: "es", marker: "markdown publico seguro" },
+  { tag: "de", marker: "offentlich sichere Markdown" },
+  { tag: "fr", marker: "markdown public sur" },
+  { tag: "pt-BR", marker: "markdown publico seguro" },
+  { tag: "it", marker: "markdown pubblico sicuro" },
+  { tag: "nl", marker: "publiek veilige markdown" },
+  { tag: "pl", marker: "publicznie bezpieczny markdown" },
+  { tag: "uk", marker: "публічно безпечний markdown" },
+  { tag: "ru", marker: "публично безопасный markdown" },
+  { tag: "zh-Hans", marker: "公共安全 Markdown" },
+  { tag: "zh-Hant", marker: "公共安全 Markdown" },
+  { tag: "ja", marker: "公開安全なMarkdown" },
+  { tag: "ko", marker: "공개 안전 Markdown" },
+  { tag: "ar", marker: "ماركداون عام آمن" },
+  { tag: "arz", marker: "ماركداون عام آمن" },
+  { tag: "he", marker: "מרקדאון ציבורי בטוח" },
+  { tag: "fa", marker: "مارکداون عمومی امن" },
+  { tag: "tr", marker: "herkese acik guvenli markdown" },
+  { tag: "vi", marker: "markdown cong khai an toan" },
+  { tag: "id", marker: "markdown aman publik" },
+  { tag: "fil", marker: "pampublikong ligtas na markdown" },
+  { tag: "th", marker: "มาร์กดาวน์สาธารณะที่ปลอดภัย" },
+  { tag: "ms", marker: "markdown selamat awam" },
+];
+const forbiddenMetadataOnlyMarkers = [
+  "Local mock conversion",
+  "source segment",
+  "protected term",
+  "Conversion local simulada",
+  "segmento fuente",
+  "Conversion locale simulee",
+  "segment source",
+  "स्थानीय मॉक रूपांतरण",
+  "स्रोत खंड",
+  "تحويل محلي تجريبي",
+  "مقطع المصدر",
+  "ローカルモック変換",
+  "ソース区分",
+  "המרת מוק מקומית",
+  "מקטע מקור",
 ];
 
 type Issue280Response = {
@@ -94,7 +131,7 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
       await expect(page.getByText("Running local/mock Issue 280 multilingual demo.")).toBeVisible();
       await expect(page.getByText("COMPLETED")).toBeVisible();
       await expect(page.getByText(`targetLanguage=${expectation.tag}`)).toBeVisible();
-      await expect(page.getByText(expectation.marker).first()).toBeVisible();
+      await expect(page.getByLabel("Issue 280 output evidence").getByText(expectation.marker).first()).toBeVisible();
       await expect(page.getByText("implementation evidence")).toBeVisible();
       await expect(page.getByText("source-grounded detail")).toBeVisible();
       await expect(page.getByText("tradeoff")).toBeVisible();
@@ -119,9 +156,14 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
         expect(segment.targetText).toContain(`[${segment.citationIndexes[0]}]`);
         expect(segment.contextRefIds.length).toBeGreaterThan(0);
         expect(segment.claimSupportIds.length).toBeGreaterThan(0);
-        expect(segment.targetText).not.toContain("accepts bounded public-safe markdown");
-        expect(segment.targetText).not.toContain("source-backed claims about release rituals");
-        expect(segment.targetText).not.toContain("Unsupported claims are refused");
+        for (const marker of forbiddenMetadataOnlyMarkers) {
+          expect(segment.targetText).not.toContain(marker);
+        }
+        if (expectation.tag !== "en") {
+          expect(segment.targetText).not.toContain("accepts bounded public-safe markdown");
+          expect(segment.targetText).not.toContain("source-backed claims about release rituals");
+          expect(segment.targetText).not.toContain("Unsupported claims are refused");
+        }
       }
       expect(body?.providerPosture).toMatchObject({
         paidProvidersEnabled: false,
@@ -216,7 +258,7 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
     await fillIssue280Form(page, { targetLanguage: "ar", depth: "STANDARD", audience: "CUSTOMER" });
     await page.getByRole("button", { name: "Run Issue 280 local demo" }).tap();
     await expect(page.getByText("COMPLETED")).toBeVisible();
-    await expect(page.getByText("تحويل محلي").first()).toBeVisible();
+    await expect(page.getByText("ماركداون عام آمن").first()).toBeVisible();
     await expect(page.getByText("customer value")).toBeVisible();
     await expect(page.getByLabel("Issue 280 validated transcript")).toHaveAttribute("dir", "rtl");
     await assertNoHorizontalOverflow(page);

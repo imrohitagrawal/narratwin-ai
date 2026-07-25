@@ -33,6 +33,7 @@
   "statusValues": [
     "STATIC_CONTRACT_PASS",
     "EXECUTABLE_CONTRACT_PASS",
+    "SEMANTIC_EXECUTABLE_PASS",
     "RED_EVIDENCE_CAPTURED",
     "PLANNED_IMPLEMENTATION",
     "PLANNED_EXECUTABLE_GATE",
@@ -210,8 +211,8 @@
         {
           "id": "R280-S6-001",
           "requirement": "Bounded unseen synthetic facts are not refused only because they are not golden fixture sentences; deterministic local/mock conversion or honest refusal; validate script/direction, body-level translation, no English fallback except protected terms, no romanized fallback where native script required, and no partial/metadata/artifact-only success.",
-          "status": "EXECUTABLE_CONTRACT_PASS",
-          "evidenceType": "acceptance-test",
+          "status": "SEMANTIC_EXECUTABLE_PASS",
+          "evidenceType": "semantic-output-correctness-verifier",
           "plannedCommand": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
           "ownerPrSlice": "PR E",
           "prEClosureEvidence": {
@@ -219,7 +220,10 @@
             "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
             "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
             "outputCorrectnessVerifier": "make issue280-output-correctness",
-            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json",
+            "semanticBackendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "semanticBrowserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "semanticVerifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
           }
         },
         {
@@ -397,8 +401,8 @@
         {
           "id": "R280-CONVERSION-001",
           "requirement": "Source facts -> grounded English -> target transcript -> stored output -> UI -> downloadable artifacts -> Stage 7 placeholder/export, with citations/contextRefs/claimSupports bound throughout.",
-          "status": "EXECUTABLE_CONTRACT_PASS",
-          "evidenceType": "output-correctness-verifier",
+          "status": "SEMANTIC_EXECUTABLE_PASS",
+          "evidenceType": "semantic-output-correctness-verifier",
           "plannedCommand": "make issue280-output-correctness",
           "ownerPrSlice": "PR E",
           "prEClosureEvidence": {
@@ -406,7 +410,10 @@
             "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
             "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
             "outputCorrectnessVerifier": "make issue280-output-correctness",
-            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json",
+            "semanticBackendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "semanticBrowserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "semanticVerifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
           }
         }
       ]
@@ -439,8 +446,8 @@
         {
           "id": "R280-QUALITY-001",
           "requirement": "Reject unsupported facts, untranslated English fallback, romanized native-script fallback, heading-only success, partial document/section/segment success, metadata-only success, artifact-only success, stale evidence, planned-language fake success, citation drift, contextRef drift, claimSupport drift, and UI/export mismatch.",
-          "status": "EXECUTABLE_CONTRACT_PASS",
-          "evidenceType": "output-correctness-verifier",
+          "status": "SEMANTIC_EXECUTABLE_PASS",
+          "evidenceType": "semantic-output-correctness-verifier",
           "plannedCommand": "make issue280-output-correctness",
           "ownerPrSlice": "PR E",
           "prEClosureEvidence": {
@@ -448,7 +455,10 @@
             "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
             "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
             "outputCorrectnessVerifier": "make issue280-output-correctness",
-            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json",
+            "semanticBackendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "semanticBrowserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "semanticVerifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
           }
         }
       ]
@@ -534,8 +544,8 @@
         {
           "id": "R280-OUTPUT-CORRECTNESS-001",
           "requirement": "Planned gate `make issue280-output-correctness` must eventually execute create project -> upload markdown -> approve -> ingest -> generate English Stage 4 -> translate Stage 6 -> avatar placeholder/export Stage 7 -> UI render -> download/decode artifacts -> compare report.",
-          "status": "EXECUTABLE_CONTRACT_PASS",
-          "evidenceType": "output-correctness-verifier",
+          "status": "SEMANTIC_EXECUTABLE_PASS",
+          "evidenceType": "semantic-output-correctness-verifier",
           "plannedCommand": "make issue280-output-correctness",
           "ownerPrSlice": "PR E",
           "prEClosureEvidence": {
@@ -543,7 +553,10 @@
             "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
             "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
             "outputCorrectnessVerifier": "make issue280-output-correctness",
-            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json",
+            "semanticBackendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "semanticBrowserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "semanticVerifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
           }
         }
       ]
@@ -603,5 +616,18 @@
   "issue280SatisfiedByPrE": true,
   "issue280RemainsOpenAfterPrEUntilMergeCloseout": true,
   "prEOutputCorrectnessVerifier": "make issue280-output-correctness",
-  "prEVerifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+  "prEVerifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json",
+  "issue298SemanticCorrection": {
+    "issue": 298,
+    "status": "in-progress corrective PR",
+    "branch": "phase-1-closure-298-issue280-semantic-multilingual-correction",
+    "memoryArtifact": "docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md",
+    "semanticGate": "make issue280-output-correctness",
+    "blockedEvidenceClasses": [
+      "metadata-only target text",
+      "English fallback for non-English target transcript",
+      "mock conversion template as output correctness evidence",
+      "artifact-only or API-only success"
+    ]
+  }
 }

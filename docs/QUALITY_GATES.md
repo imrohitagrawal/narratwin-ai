@@ -37,7 +37,7 @@ The `Makefile` must expose:
 | `make final-review-quality` | Runs executable Final Review artifact checks |
 | `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
 | `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, C3A-CP4 media-artifacts, C3A-CP5 access/quota/retention, C3A-CP6 security/observability, C3A-CP7 performance, C3A-CP8 real-browser E2E, and C3A-R2 full-project multilingual corpus probes implemented for local/mock controlled-demo evidence only |
-| `make issue280-output-correctness` | Runs the C3A-R3 PR E output-correctness verifier: PR E backend acceptance, API/artifact parity contract, and dedicated Issue 280 Playwright desktop/mobile browser evidence |
+| `make issue280-output-correctness` | Runs the C3A-R3 PR E/#298 output-correctness verifier: semantic backend acceptance, API/artifact parity contract, and dedicated Issue 280 Playwright desktop/mobile browser evidence across all 25 supported local-demo languages |
 | `make lint` | Runs backend Ruff and frontend ESLint |
 | `make typecheck` | Runs backend mypy and frontend TypeScript checks |
 | `make test` | Runs backend unit tests and frontend unit tests |
@@ -700,17 +700,21 @@ executes:
 - `uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q`
 - `npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts`
 
-The PR E verifier proves, for bounded public-safe synthetic markdown submitted
-through the browser, grounded English script generation, deterministic
-local/mock conversion across the 25 supported Priority 1 languages, meaningful
-CONCISE/STANDARD/DEEP differences, distinct supported-audience emphasis,
-citation markers, context refs, claim supports, evaluation IDs/checksums, trace
-metadata, glossary preservation, artifact/report parity, provider-disabled
-posture, safe refusal/validation/replay states, and desktop/mobile browser
-visibility. It remains local/mock demo evidence only: no paid providers, real
-provider calls, hosted/public production demo, cloned identity runtime, real
-media, public distribution, arbitrary human-grade or real-world translation
-quality, provider quality, or production-readiness claim.
+The PR E/#298 verifier proves, for bounded public-safe synthetic markdown
+submitted through the browser, grounded English script generation,
+deterministic local semantic conversion across the 25 supported Priority 1
+languages, meaningful CONCISE/STANDARD/DEEP differences, distinct
+supported-audience emphasis, citation markers, context refs, claim supports,
+evaluation IDs/checksums, trace metadata, glossary preservation,
+artifact/report parity, provider-disabled posture, safe
+refusal/validation/replay states, and desktop/mobile browser visibility. The
+gate fails on metadata-only target text, generic mock-conversion templates,
+English fallback in non-English target transcripts, missing citations, broken
+segment counts, unsafe output, and artifact/API-only success. It remains local
+demo evidence only: no paid providers, real provider calls, hosted/public
+production demo, cloned identity runtime, real media, public distribution,
+arbitrary human-grade or real-world translation quality, provider quality, or
+production-readiness claim.
 
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
