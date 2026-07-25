@@ -8205,6 +8205,23 @@ def test_issue280_matrix_pr_e_requires_output_correctness_verifier(monkeypatch: 
     assert f"{phase1.ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the verifier." in failures
 
 
+def test_issue280_matrix_rejects_malformed_semantic_failure_evidence(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["semanticClosure"]["reviewFans"] = []
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert any(
+        failure.startswith(
+            f"{phase1.ISSUE_280_MATRIX_PATH} semanticClosure invariant failure:"
+        )
+        and "missing-review-fan:output-correctness" in failure
+        for failure in failures
+    )
+
+
 def test_issue280_matrix_requires_pr_b_to_keep_issue280_open(monkeypatch: Any) -> None:
     matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
     matrix["prSlice"] = "PR A+PR B"

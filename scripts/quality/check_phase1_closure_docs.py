@@ -6138,6 +6138,17 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
     )
     if result.closed:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must preserve Issue #280 semantic FAILED state.")
+    expected_failure_reasons = {
+        reason
+        for row_id in ISSUE_280_SEMANTIC_CLOSURE_ROW_IDS
+        for reason in (f"{row_id}:FAILED", f"{row_id}:semantic-requires-SEMANTIC_PASS")
+    }
+    if set(result.reasons) != expected_failure_reasons:
+        fail(
+            failures,
+            f"{ISSUE_280_MATRIX_PATH} semanticClosure invariant failure: "
+            + ", ".join(sorted(set(result.reasons) ^ expected_failure_reasons)),
+        )
     atomic_rows = semantic_closure.get("atomicRows")
     if not isinstance(atomic_rows, list) or any(
         not isinstance(row, dict) or row.get("classification") != "FAILED"
