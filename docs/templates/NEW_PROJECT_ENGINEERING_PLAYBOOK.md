@@ -81,6 +81,7 @@ prototype, explicitly mark which items are skipped and why.
 | ADRs | `docs/ADR/` | accepted architecture decisions and alternatives | pending |
 | Review register | `docs/RECOMMENDED_REVIEW_ITEMS.md` or equivalent | findings, owner, required stage, disposition | pending |
 | Learnings tracker | `docs/PROJECT_LEARNINGS_TRACKER.md` or equivalent | reusable engineering lessons | pending |
+| Semantic closure gate | `docs/templates/SEMANTIC_CLOSURE_GATE.md` or equivalent | execution-verifier rule, semantic/structural classifications, false-pass examples | pending |
 | Third-party notices | `docs/THIRD_PARTY_NOTICES.md` | packages, tools, models, providers, datasets, licenses | pending |
 | Skill/tool lock | `docs/SKILL_LOCK.md` or equivalent | agent tools, versions, trust posture | pending |
 | README links | `README.md` | links to the governance docs above | pending |
@@ -343,6 +344,42 @@ Matrix variants to add when relevant:
 | Data/privacy | sensitive input, path disclosure, raw payload logging, retention/cleanup, export/delete request, tenant boundary, backup/restore disclosure |
 | CI/release/supply chain | missing required context, renamed status context, scanner unavailable, confirmed vulnerability, unpinned action, excessive workflow token permissions, release without signing or provenance |
 | Ops/observability | missing metrics, metrics without scrape path, alert absent, log redaction, trace correlation, readiness versus liveness ambiguity, rollback path |
+
+## Gate 3S: Semantic Closure Gate
+
+Use `docs/templates/SEMANTIC_CLOSURE_GATE.md` as the reusable project-memory
+pattern for any implementation that has user-visible meaning or derived output.
+Copy the template into new projects and adapt it before coding.
+
+Default rule:
+
+```text
+SATISFIED means product behavior proves the requirement.
+It does not mean code exists, tests passed, metadata is present, or docs say done.
+```
+
+Every implementation PR should preserve this chain:
+
+```text
+intent -> requirement row -> failure modes -> executable verifier
+-> visible observed output -> classification -> matrix/status update
+```
+
+Use these statuses in matrices and PR evidence:
+
+| Status | Meaning | May Mark Requirement Satisfied? |
+|---|---|---:|
+| `STRUCTURAL_PASS` | The endpoint, schema, UI shell, artifact, or metadata exists. | no |
+| `SEMANTIC_PASS` | The user-visible behavior satisfies the intended requirement. | yes |
+| `NOT_PROVEN` | Evidence does not prove the user-visible requirement. | no |
+| `FAILED` | Executed evidence contradicts the requirement. | no |
+
+For AI, translation, summarization, dashboards, documents, generated media,
+workflow automation, reports, imports, exports, or portfolio/demo experiences,
+make the semantic closure gate part of the default architecture. Build verifier
+hooks, source refs, trace IDs, artifact checksums, and visible evidence surfaces
+into the design early. Do not add them as an afterthought after reviewers find a
+gap.
 
 ## Executable Invariants Before Implementation
 

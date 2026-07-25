@@ -889,6 +889,15 @@ metadata/artifact false-pass rejection cannot be marked satisfied with
 It requires `SEMANTIC_PASS` or an equivalent semantic pass status such as the
 Issue 280 transitional `SEMANTIC_EXECUTABLE_PASS`.
 
+This rule is reusable outside NarraTwin through
+`docs/templates/SEMANTIC_CLOSURE_GATE.md`. New projects should treat that
+template as the default semantic quality backbone whenever product value depends
+on generated text, translation, explanation, recommendations, dashboards,
+documents, media, imports/exports, or other meaning-bearing user-visible output.
+The project may still use mock/local/demo infrastructure, but the user-visible
+outcome must match the claim being made or the row remains `NOT_PROVEN` or
+`FAILED`.
+
 The PR template also requires a `Human verification checklist` for non-trivial
 PRs. This checklist converts reviewer-focus points into rows with exact
 data/source/artifact references, official URL and verified/accessed date when

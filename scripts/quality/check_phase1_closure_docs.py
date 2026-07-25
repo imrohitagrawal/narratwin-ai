@@ -603,6 +603,8 @@ ISSUE_298_ALLOWED_CHANGED_FILES = {
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
     "docs/ADR/0040-issue280-semantic-local-demo-correction.md",
+    "docs/templates/SEMANTIC_CLOSURE_GATE.md",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
     "docs/reviews/ISSUE_298_REPO_SEMANTIC_GATE_PREFLIGHT.md",
     "docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md",
     "frontend/tests/issue280-ui-browser.spec.ts",
@@ -6151,6 +6153,7 @@ def check_process_docs(failures: list[str]) -> None:
         "docs/SKILL_EXECUTION_PLAN.md",
         "docs/SKILL_SELECTION_AND_EVIDENCE.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        "docs/templates/SEMANTIC_CLOSURE_GATE.md",
     )
     for rel in required_files:
         if not (ROOT / rel).is_file():
@@ -6565,6 +6568,40 @@ def check_process_docs(failures: list[str]) -> None:
             fail(
                 failures,
                 "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md missing merge-closeout marker: "
+                f"{marker}",
+            )
+
+    semantic_gate = read("docs/templates/SEMANTIC_CLOSURE_GATE.md")
+    check_required_headings(
+        failures,
+        semantic_gate,
+        "docs/templates/SEMANTIC_CLOSURE_GATE.md",
+        (
+            "Purpose",
+            "When To Use",
+            "Required Memory Shape",
+            "Classifications",
+            "Verifier Contract",
+            "False-Pass Examples",
+            "Matrix Rule",
+            "Architecture Guidance",
+        ),
+    )
+    normalized_semantic_gate = re.sub(r"\s+", " ", semantic_gate.lower())
+    for marker in (
+        "satisfied means product behavior proves the requirement",
+        "metadata-only evidence",
+        "screenshot-only evidence",
+        "semantic_pass",
+        "structural_pass",
+        "not_proven",
+        "failed",
+        "default architecture backbone",
+    ):
+        if marker not in normalized_semantic_gate:
+            fail(
+                failures,
+                "docs/templates/SEMANTIC_CLOSURE_GATE.md missing reusable semantic closure marker: "
                 f"{marker}",
             )
 
