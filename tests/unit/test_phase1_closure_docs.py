@@ -6662,6 +6662,41 @@ def test_issue289_allowlist_rejects_near_match_and_runtime_files(monkeypatch: An
         ]
 
 
+def test_issue296_allowlist_allows_only_frontend_brace_expansion_audit_scope(monkeypatch: Any) -> None:
+    expected = {
+        "docs/governance/preflights/issue-296.json",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/ADR/0039-frontend-brace-expansion-audit-remediation.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "frontend/package.json",
+        "frontend/package-lock.json",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+    assert phase1.ISSUE_296_ALLOWED_CHANGED_FILES == expected
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-process-296-frontend-brace-expansion-audit",
+        files=sorted(expected),
+    ) == []
+
+    for branch in (
+        "phase-1-closure-process-296-frontend-brace-expansion-audit-extra",
+        "phase-1-closure-process-294-issue280-closure-ledger",
+    ):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=["frontend/package-lock.json"]) == [
+            f"Phase 1 Closure branch {branch} may not change frontend/package-lock.json."
+        ]
+
+    branch = "phase-1-closure-process-296-frontend-brace-expansion-audit"
+    for path in ("backend/app/main.py", "frontend/src/app/page.tsx"):
+        assert run_changed_files_check(monkeypatch, branch=branch, files=[path]) == [
+            f"Phase 1 Closure branch {branch} may not change {path}."
+        ]
+
+
 def test_issue219_branch_allows_only_frontend_audit_remediation_scope(monkeypatch: Any) -> None:
     expected = {
         "docs/governance/preflights/issue-219.json",

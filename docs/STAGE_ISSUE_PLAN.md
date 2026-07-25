@@ -318,6 +318,7 @@ Allowed changes:
 - `docs/RECOMMENDED_REVIEW_ITEMS.md`
 - `docs/STAGE_ISSUE_PLAN.md`
 - `docs/STATUS.md`
+- `docs/ADR/0039-frontend-brace-expansion-audit-remediation.md`
 - `docs/TRACEABILITY.md`
 - `docs/THIRD_PARTY_NOTICES.md`
 - `pyproject.toml`
@@ -1855,6 +1856,28 @@ touch only:
 touch PR `#284`, backend or frontend product behavior, provider/media paths,
 hosted/public launch, paid spend, production-readiness claims, or
 issue-closing wording for `#249` and `#280`.
+
+`phase-1-closure-process-296-frontend-brace-expansion-audit` is reserved for
+issue `#296`, the minimal frontend dependency-audit unblock for the
+`brace-expansion` advisory surfaced by the required npm audit after PR `#293`.
+It pins the frontend lint-tooling glob stack to `minimatch@10.2.5` and
+`brace-expansion@5.0.8` rather than upgrading Next or replacing ESLint.
+It may touch only:
+
+- `docs/governance/preflights/issue-296.json`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `docs/THIRD_PARTY_NOTICES.md`
+- `frontend/package.json`
+- `frontend/package-lock.json`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+`phase-1-closure-process-296-frontend-brace-expansion-audit` must not touch
+backend or frontend product behavior, provider/media paths, hosted/public
+launch, paid spend, production-readiness claims, PR `#295`, or issue-closing
+wording for `#249`.
 
 `phase-1-closure-141-*` is reserved for issue `#141`, the architecture and
 ownership prerequisite for the production-like durability readiness sequence.
