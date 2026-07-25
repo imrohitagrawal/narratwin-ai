@@ -51,6 +51,32 @@ The project memory should include:
 - the requirement classification;
 - remaining `NOT_PROVEN` or `FAILED` rows.
 
+## Usage Flow
+
+Use this flow for every implementation PR that claims user-visible behavior:
+
+1. Record the intended outcome before coding.
+2. Map each requirement row to a false-pass risk and an executable verifier.
+3. Add or update tests so the old false pass fails for the right reason.
+4. Implement the narrow product change.
+5. Run the post-implementation verifier from a clean local or CI runtime.
+6. For UI/UX claims, open the actual UI in a real browser and perform the user
+   flow: enter input, select options, submit, wait through loading, inspect
+   success/refusal/error states, and verify rendered text or visual output.
+7. Capture actual network/API calls as supporting evidence, not as a substitute
+   for browser-visible proof.
+8. Compare rendered output with artifacts or backend state when the product
+   exposes artifacts, downloads, exports, traces, citations, or checksums.
+9. Classify each requirement as `STRUCTURAL_PASS`, `SEMANTIC_PASS`,
+   `NOT_PROVEN`, or `FAILED`.
+10. Update the matrix/status only after the classification is backed by the
+    observed product evidence.
+
+For browser-facing behavior, an API/contract test may prove data transport,
+metadata parity, or artifact binding. It does not prove UI/UX correctness by
+itself. The closure authority is the visible rendered behavior observed through
+the user path.
+
 ## Classifications
 
 Use these statuses in requirement matrices, PR bodies, and verifier reports:
@@ -75,10 +101,14 @@ end. It cannot be read-only.
 Minimum verifier evidence:
 
 - starts the product through repo-supported commands;
-- exercises the real user path, preferably through a browser when the feature is
+- exercises the real user path through a real browser when the feature is
   user-facing;
 - captures actual network/API calls where relevant;
 - inspects rendered user-visible output, not only response shape;
+- checks expected loading, success, empty, retry, refusal, validation, and error
+  states for the slice;
+- checks desktop/mobile or other relevant viewport/device modes when UI layout
+  or accessibility is part of the claim;
 - verifies important negative cases and refusal/error paths;
 - compares visible output with artifacts or backend state when artifacts exist;
 - records deterministic pass/fail evidence and traceable report files.
@@ -93,6 +123,30 @@ Do not accept these as semantic proof:
 - mocked-status-only evidence;
 - fixture-only happy paths that do not exercise arbitrary bounded input;
 - API-only evidence for browser-visible claims.
+
+## PR-Visible Evidence
+
+Reviewer evidence must be accessible from the pull request. A local-only path in
+an ignored directory is not reviewable evidence.
+
+Acceptable PR-visible evidence includes:
+
+- committed public-safe screenshots or reports linked with repository blob/raw
+  URLs for the exact PR head;
+- GitHub Actions artifacts linked from the workflow run, with artifact name and
+  run URL;
+- PR comment attachments uploaded through GitHub, with image/report links in
+  the PR body;
+- textual summaries of browser-observed output when the raw artifact cannot be
+  public-safe, plus a human-only review owner and residual-risk decision.
+
+Do not rely on these as reviewer-accessible evidence:
+
+- `/tmp/...` paths;
+- ignored local `reports/...` files that are not committed or uploaded;
+- screenshots listed only as filenames;
+- evidence that requires the reviewer to rerun the verifier before they can see
+  what was observed.
 
 ## False-Pass Examples
 

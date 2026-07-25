@@ -609,6 +609,10 @@ ISSUE_298_ALLOWED_CHANGED_FILES = {
     "docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md",
     "frontend/tests/issue280-ui-browser.spec.ts",
     ISSUE_280_MATRIX_PATH,
+    "reports/checkpoint3-issue280/issue280-pr-e-desktop-output-evidence.png",
+    "reports/checkpoint3-issue280/issue280-pr-e-mobile-output-evidence.png",
+    "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-execution-verifier.json",
+    "reports/checkpoint3-issue280/issue280-pr-e-mobile-browser-evidence.json",
     "scripts/guardrails_check.py",
     "scripts/quality/check_phase1_closure_docs.py",
     "scripts/quality/verify_issue280_output_correctness.py",
@@ -6580,8 +6584,10 @@ def check_process_docs(failures: list[str]) -> None:
             "Purpose",
             "When To Use",
             "Required Memory Shape",
+            "Usage Flow",
             "Classifications",
             "Verifier Contract",
+            "PR-Visible Evidence",
             "False-Pass Examples",
             "Matrix Rule",
             "Architecture Guidance",
@@ -6597,6 +6603,11 @@ def check_process_docs(failures: list[str]) -> None:
         "not_proven",
         "failed",
         "default architecture backbone",
+        "local-only path",
+        "real browser",
+        "closure authority is the visible rendered behavior",
+        "api/contract test may prove data transport",
+        "github actions artifacts",
     ):
         if marker not in normalized_semantic_gate:
             fail(
