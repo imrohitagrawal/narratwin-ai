@@ -1411,6 +1411,7 @@ evidence. The branch may change only:
 
 - `backend/app/issue280.py`
 - `docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md`
+- `docs/ADR/0040-issue280-semantic-local-demo-correction.md`
 - `reports/checkpoint3-issue280/requirement-matrix.json`
 - `docs/QUALITY_GATES.md`
 - `docs/STAGE_ISSUE_PLAN.md`

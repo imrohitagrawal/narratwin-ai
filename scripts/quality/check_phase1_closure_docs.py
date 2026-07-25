@@ -596,6 +596,7 @@ ISSUE_298_ALLOWED_CHANGED_FILES = {
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
+    "docs/ADR/0040-issue280-semantic-local-demo-correction.md",
     "docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md",
     "frontend/tests/issue280-ui-browser.spec.ts",
     ISSUE_280_MATRIX_PATH,
