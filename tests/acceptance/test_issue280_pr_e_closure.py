@@ -200,6 +200,15 @@ def test_issue280_pr_e_depth_changes_output_materially_without_losing_evidence()
     assert len(concise_text.split()) < len(standard_text.split()) < len(deep_text.split())
     assert "source-grounded detail" in deep_text
     assert "tradeoff" in deep_text
+    concise_target_text = "\n".join(segment["targetText"] for segment in concise["multilingual"]["segments"])
+    standard_target_text = "\n".join(segment["targetText"] for segment in standard["multilingual"]["segments"])
+    deep_target_text = "\n".join(segment["targetText"] for segment in deep["multilingual"]["segments"])
+    assert concise_target_text != standard_target_text
+    assert standard_target_text != deep_target_text
+    assert len(concise_target_text) < len(standard_target_text) < len(deep_target_text)
+    assert "contexto equilibrado" in standard_target_text
+    assert "detalle basado en la fuente" in deep_target_text
+    assert "detalle basado en la fuente" not in concise_target_text
     for body in (concise, standard, deep):
         assert body["evaluation"]["unsupportedClaimCount"] == 0
         assert len(body["evaluation"]["claimSupports"]) == len(body["multilingual"]["segments"])

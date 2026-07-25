@@ -132,9 +132,10 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
       await expect(page.getByText("COMPLETED")).toBeVisible();
       await expect(page.getByText(`targetLanguage=${expectation.tag}`)).toBeVisible();
       await expect(page.getByLabel("Issue 280 output evidence").getByText(expectation.marker).first()).toBeVisible();
-      await expect(page.getByText("implementation evidence")).toBeVisible();
-      await expect(page.getByText("source-grounded detail")).toBeVisible();
-      await expect(page.getByText("tradeoff")).toBeVisible();
+      const groundedScriptSection = page.locator('section[aria-labelledby="issue280-script-title"]');
+      await expect(groundedScriptSection.getByText("implementation evidence")).toBeVisible();
+      await expect(groundedScriptSection.getByText("source-grounded detail")).toBeVisible();
+      await expect(groundedScriptSection.getByText("tradeoff")).toBeVisible();
       await expect(page.getByText("unsupportedClaimCount=0")).toBeVisible();
       await expect(page.getByText("artifactBundleChecksum", { exact: false })).toHaveCount(0);
       await expect(page.getByText("Artifact bundle")).toBeVisible();
@@ -249,6 +250,29 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
         screenshot: "reports/checkpoint3-issue280/issue280-pr-e-desktop-output-evidence.png",
       },
     });
+    await assertNoLeakage(page);
+  });
+
+  test("verifies browser-visible target transcript changes by selected depth", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "issue280-desktop", "desktop-only depth verifier");
+    const visibleTranscriptByDepth: Record<string, string> = {};
+
+    for (const depth of ["CONCISE", "STANDARD", "DEEP"] as const) {
+      await fillIssue280Form(page, { targetLanguage: "es", depth, audience: "ENGINEER" });
+      await page.getByRole("button", { name: "Run Issue 280 local demo" }).click();
+      await expect(page.getByText("COMPLETED")).toBeVisible();
+      await expect(page.getByText(`depth=${depth}`)).toBeVisible();
+      visibleTranscriptByDepth[depth] = await page.getByLabel("Issue 280 validated transcript").innerText();
+    }
+
+    expect(visibleTranscriptByDepth.CONCISE).not.toEqual(visibleTranscriptByDepth.STANDARD);
+    expect(visibleTranscriptByDepth.STANDARD).not.toEqual(visibleTranscriptByDepth.DEEP);
+    expect(visibleTranscriptByDepth.CONCISE.length).toBeLessThan(visibleTranscriptByDepth.STANDARD.length);
+    expect(visibleTranscriptByDepth.STANDARD.length).toBeLessThan(visibleTranscriptByDepth.DEEP.length);
+    expect(visibleTranscriptByDepth.STANDARD).toContain("contexto equilibrado");
+    expect(visibleTranscriptByDepth.DEEP).toContain("detalle basado en la fuente");
+    expect(visibleTranscriptByDepth.CONCISE).not.toContain("detalle basado en la fuente");
+    await assertNoHorizontalOverflow(page);
     await assertNoLeakage(page);
   });
 

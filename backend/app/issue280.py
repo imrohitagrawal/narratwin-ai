@@ -278,6 +278,108 @@ _METADATA_ONLY_TARGET_MARKERS = (
     "המרת מוק מקומית",
     "מקטע מקור",
 )
+_LOCAL_DEPTH_CONTEXT = {
+    "en": {
+        "STANDARD": " with balanced context",
+        "DEEP": " with source-grounded detail and tradeoff context",
+    },
+    "hi": {
+        "STANDARD": " संतुलित संदर्भ के साथ",
+        "DEEP": " स्रोत-आधारित विवरण और ट्रेडऑफ़ संदर्भ के साथ",
+    },
+    "es": {
+        "STANDARD": " con contexto equilibrado",
+        "DEEP": " con detalle basado en la fuente y contexto de compensaciones",
+    },
+    "de": {
+        "STANDARD": " mit ausgewogenem Kontext",
+        "DEEP": " mit quellengestuetztem Detail und Abwaegungskontext",
+    },
+    "fr": {
+        "STANDARD": " avec un contexte equilibre",
+        "DEEP": " avec des details appuyes par la source et un contexte de compromis",
+    },
+    "pt-BR": {
+        "STANDARD": " com contexto equilibrado",
+        "DEEP": " com detalhe baseado em fonte e contexto de tradeoff",
+    },
+    "it": {
+        "STANDARD": " con contesto bilanciato",
+        "DEEP": " con dettaglio fondato sulla fonte e contesto di compromesso",
+    },
+    "nl": {
+        "STANDARD": " met gebalanceerde context",
+        "DEEP": " met brononderbouwd detail en afwegingscontext",
+    },
+    "pl": {
+        "STANDARD": " ze zrownowazonym kontekstem",
+        "DEEP": " ze szczegolem opartym na zrodle i kontekstem kompromisu",
+    },
+    "uk": {
+        "STANDARD": " зі збалансованим контекстом",
+        "DEEP": " з деталями на основі джерела та контекстом компромісів",
+    },
+    "ru": {
+        "STANDARD": " со сбалансированным контекстом",
+        "DEEP": " с деталями на основе источника и контекстом компромиссов",
+    },
+    "zh-Hans": {
+        "STANDARD": "，并提供均衡上下文",
+        "DEEP": "，并提供来源支撑细节和权衡上下文",
+    },
+    "zh-Hant": {
+        "STANDARD": "，並提供均衡情境",
+        "DEEP": "，並提供來源支撐細節和取捨情境",
+    },
+    "ja": {
+        "STANDARD": "、バランスの取れた文脈付きで",
+        "DEEP": "、ソース根拠の詳細とトレードオフ文脈付きで",
+    },
+    "ko": {
+        "STANDARD": " 균형 잡힌 맥락과 함께",
+        "DEEP": " 출처 기반 세부사항과 절충 맥락과 함께",
+    },
+    "ar": {
+        "STANDARD": " مع سياق متوازن",
+        "DEEP": " مع تفاصيل مدعومة بالمصدر وسياق للمفاضلات",
+    },
+    "arz": {
+        "STANDARD": " مع سياق متوازن",
+        "DEEP": " مع تفاصيل مسنودة بمصدر وسياق للمفاضلات",
+    },
+    "he": {
+        "STANDARD": " עם הקשר מאוזן",
+        "DEEP": " עם פירוט מגובה מקור והקשר של פשרות",
+    },
+    "fa": {
+        "STANDARD": " با زمینه متوازن",
+        "DEEP": " با جزئیات پشتیبانی‌شده با منبع و زمینه مصالحه‌ها",
+    },
+    "tr": {
+        "STANDARD": " dengeli baglamla",
+        "DEEP": " kaynak destekli ayrinti ve takas baglamiyla",
+    },
+    "vi": {
+        "STANDARD": " voi ngu canh can bang",
+        "DEEP": " voi chi tiet dua tren nguon va ngu canh danh doi",
+    },
+    "id": {
+        "STANDARD": " dengan konteks seimbang",
+        "DEEP": " dengan detail berbasis sumber dan konteks tradeoff",
+    },
+    "fil": {
+        "STANDARD": " na may balanseng konteksto",
+        "DEEP": " na may detalyeng suportado ng source at konteksto ng tradeoff",
+    },
+    "th": {
+        "STANDARD": " พร้อมบริบทที่สมดุล",
+        "DEEP": " พร้อมรายละเอียดจากแหล่งอ้างอิงและบริบทของการแลกเปลี่ยน",
+    },
+    "ms": {
+        "STANDARD": " dengan konteks seimbang",
+        "DEEP": " dengan perincian bersumber dan konteks pertukaran",
+    },
+}
 
 
 @dataclass(frozen=True)
@@ -701,6 +803,7 @@ class Issue280LocalDemoService:
             target_language=target_language,
             target_record=target_record,
             glossary_terms=request.glossary_terms,
+            depth=request.depth,
         )
         evaluation_checksum = _evaluation_checksum(claim_supports)
         output_checksum = checksum_text(
@@ -947,6 +1050,7 @@ def _build_multilingual_response(
     target_language: str,
     target_record: LanguageCatalogRecord,
     glossary_terms: list[str],
+    depth: str,
 ) -> Issue280LocalDemoMultilingualResponse:
     facts_by_citation = {fact.citation_index: fact for fact in facts}
     segments: list[Issue280LocalDemoTranscriptSegmentResponse] = []
@@ -960,6 +1064,7 @@ def _build_multilingual_response(
                     fact=fact,
                     target_record=target_record,
                     glossary_terms=glossary_terms,
+                    depth=depth,
                 ),
                 englishReferenceText=fact.fact_text,
                 contextRefIds=[fact.context_ref_id],
@@ -976,6 +1081,7 @@ def _build_multilingual_response(
             json.dumps(
                 {
                     "targetLanguage": target_language,
+                    "depth": depth,
                     "glossaryTerms": glossary_terms,
                     "segments": [segment.segment_id for segment in segments],
                 },
@@ -992,6 +1098,7 @@ def _translate_fact(
     fact: Issue280GroundedFact,
     target_record: LanguageCatalogRecord,
     glossary_terms: list[str],
+    depth: str,
 ) -> str:
     citation = f"[{fact.citation_index}]"
     preserved_terms = _preserved_glossary_terms(glossary_terms)
@@ -1004,6 +1111,12 @@ def _translate_fact(
         if language_templates is None:
             raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetLanguage")
         target_text = language_templates[semantic_key].format(term=term, citation=citation)
+    target_text = _apply_depth_context(
+        target_text=target_text,
+        target_language=target_record.language_tag,
+        depth=depth,
+        citation=citation,
+    )
     _assert_semantic_target_text(
         source_text=fact.fact_text,
         target_text=target_text,
@@ -1011,6 +1124,17 @@ def _translate_fact(
         citation=citation,
     )
     return target_text
+
+
+def _apply_depth_context(*, target_text: str, target_language: str, depth: str, citation: str) -> str:
+    if depth == "CONCISE":
+        return target_text
+    depth_context = _LOCAL_DEPTH_CONTEXT.get(target_language, {}).get(depth)
+    if depth_context is None:
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "depth")
+    if citation not in target_text:
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetText")
+    return target_text.replace(citation, f"{depth_context}{citation}", 1)
 
 
 def _semantic_clause_key(fact_text: str) -> str:
