@@ -1907,7 +1907,11 @@ def preflight_artifact_exists(value: str) -> bool:
     if not artifact or artifact.startswith(("/", "~")):
         return False
     artifact_path = strip_artifact_fragment_or_line(artifact)
-    return (ROOT / artifact_path).is_file()
+    if not (ROOT / artifact_path).is_file():
+        return False
+    if (ROOT / ".git").exists():
+        return git_command_succeeds(["ls-files", "--error-unmatch", "--", artifact_path])
+    return True
 
 
 def clean_markdown_reference(value: str) -> str:

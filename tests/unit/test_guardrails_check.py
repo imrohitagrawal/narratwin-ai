@@ -1984,6 +1984,42 @@ def test_nontrivial_pull_request_accepts_completed_preflight_evidence(
     assert failures == []
 
 
+def test_preflight_repo_file_artifact_must_be_tracked_inside_git_checkout(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    artifact = tmp_path / "docs" / "reviews" / "local-only-report.json"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text("{}", encoding="utf-8")
+    (tmp_path / ".git").mkdir()
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    monkeypatch.setattr(guardrails, "git_command_succeeds", lambda _args: False)
+
+    assert guardrails.preflight_artifact_exists("`docs/reviews/local-only-report.json`") is False
+
+
+def test_preflight_repo_file_artifact_accepts_tracked_file_inside_git_checkout(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    artifact = tmp_path / "docs" / "reviews" / "tracked-report.md"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text("tracked evidence", encoding="utf-8")
+    (tmp_path / ".git").mkdir()
+
+    tracked_commands: list[list[str]] = []
+
+    def fake_git_command_succeeds(args: list[str]) -> bool:
+        tracked_commands.append(args)
+        return args == ["ls-files", "--error-unmatch", "--", "docs/reviews/tracked-report.md"]
+
+    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
+    monkeypatch.setattr(guardrails, "git_command_succeeds", fake_git_command_succeeds)
+
+    assert guardrails.preflight_artifact_exists("`docs/reviews/tracked-report.md`") is True
+    assert tracked_commands == [["ls-files", "--error-unmatch", "--", "docs/reviews/tracked-report.md"]]
+
+
 def test_pull_request_check_refreshes_stale_ci_event_body_from_github(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -2908,6 +2944,8 @@ def test_nontrivial_pull_request_accepts_verified_commit_order_preimplementation
         if args == ["cat-file", "-e", f"{earlier}^{{commit}}"]:
             return True
         if args == ["cat-file", "-e", f"{later}^{{commit}}"]:
+            return True
+        if args[:3] == ["ls-files", "--error-unmatch", "--"]:
             return True
         return args == ["merge-base", "--is-ancestor", earlier, later]
 
