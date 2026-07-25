@@ -255,13 +255,16 @@ type Issue280LocalDemoResponse = {
   };
   multilingual: {
     sourceLanguage: "en";
-    targetLanguage: "en" | "hi" | "es";
-    direction: "ltr";
+    targetLanguage: string;
+    direction: "ltr" | "rtl";
     translationMode: string;
+    multilingualRunId: string;
+    preservedGlossaryTerms: string[];
     segments: Issue280TranscriptSegment[];
   };
   evaluation: {
     evaluationId: string;
+    evaluationChecksum: string;
     status: "PASSED";
     unsupportedClaimCount: number;
     claimSupports: Issue280ClaimSupport[];
@@ -271,6 +274,33 @@ type Issue280LocalDemoResponse = {
     outputId: string;
     outputChecksum: string;
     metadataChecksum: string;
+    artifactBundleChecksum: string;
+    reportChecksum: string;
+  };
+  artifacts: {
+    translatedScript: DownloadableArtifact;
+    subtitles: DownloadableArtifact;
+    transcriptMetadata: DownloadableArtifact;
+    voiceManifest: DownloadableArtifact;
+    avatarDemo: DownloadableArtifact;
+    renderManifest: DownloadableArtifact;
+    videoPlaceholder: DownloadableArtifact;
+  };
+  correctnessReport: {
+    status: "PASSED";
+    traceId: string;
+    audience: string;
+    depth: Issue280Depth;
+    targetLanguage: string;
+    direction: "ltr" | "rtl";
+    segmentCount: number;
+    evaluationId: string;
+    evaluationChecksum: string;
+    outputChecksum: string;
+    metadataChecksum: string;
+    artifactBundleChecksum: string;
+    reportChecksum: string;
+    checks: Record<string, string>;
   };
   providerPosture: {
     llm: "mock";
@@ -359,17 +389,46 @@ const unsafeApiErrorMessagePattern =
   /contentBase64|fake-invite-input|fake-session-input|idem_[A-Za-z0-9_.:-]*|session_[A-Za-z0-9_.:-]*|inviteSecret|sessionSecret|auth token|bearer token|cookie|raw prompt|raw script|provider payload/i;
 
 const safeIssue280Defaults = {
-  projectName: "Issue 280 PR D Synthetic Demo",
-  markdown: `# Issue 280 Synthetic Knowledge
+  projectName: "Issue 280 PR E Synthetic Demo",
+  markdown: `# Meridian Planner
 
-NarraTwin AI turns approved project knowledge into grounded walkthrough scripts.
+Meridian Planner accepts bounded public-safe markdown from product teams.
 
-The local demo uses mock local LLM, translation, voice, and avatar adapters.
+The local demo extracts source-backed claims about release rituals, adoption signals, and evidence handoffs.
 
-Every generated walkthrough claim must cite retrieved source chunks from approved knowledge.
+Unsupported claims are refused before the stored walkthrough is shown in the browser.
 
-Recruiters, engineers, and product leaders need audience-aware explanations.`,
+Local mock artifacts keep citations, context references, claim supports, and checksums aligned.`,
 };
+
+const issue280SupportedLanguageOptions = [
+  { value: "en", label: "English / English" },
+  { value: "hi", label: "Hindi / हिन्दी" },
+  { value: "es", label: "Spanish / Español" },
+  { value: "de", label: "German / Deutsch" },
+  { value: "fr", label: "French / Français" },
+  { value: "pt-BR", label: "Brazilian Portuguese / Português do Brasil" },
+  { value: "it", label: "Italian / Italiano" },
+  { value: "nl", label: "Dutch / Nederlands" },
+  { value: "pl", label: "Polish / Polski" },
+  { value: "uk", label: "Ukrainian / Українська" },
+  { value: "ru", label: "Russian / Русский" },
+  { value: "zh-Hans", label: "Chinese Simplified / 简体中文" },
+  { value: "zh-Hant", label: "Chinese Traditional / 繁體中文" },
+  { value: "ja", label: "Japanese / 日本語" },
+  { value: "ko", label: "Korean / 한국어" },
+  { value: "ar", label: "Arabic / العربية" },
+  { value: "arz", label: "Egyptian Arabic / مصري" },
+  { value: "he", label: "Hebrew / עברית" },
+  { value: "fa", label: "Persian/Farsi / فارسی" },
+  { value: "tr", label: "Turkish / Türkçe" },
+  { value: "vi", label: "Vietnamese / Tiếng Việt" },
+  { value: "id", label: "Indonesian / Bahasa Indonesia" },
+  { value: "fil", label: "Filipino/Tagalog / Filipino" },
+  { value: "th", label: "Thai / ไทย" },
+  { value: "ms", label: "Malay / Bahasa Melayu" },
+  { value: "bn", label: "Bengali / বাংলা - planned refusal" },
+];
 
 async function postJson<T>(path: string, body: object, idempotencyKey: string): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
@@ -696,7 +755,7 @@ export default function Home() {
       glossaryTerms,
     };
     const requestSeed = checksumSeed(
-      "issue280-pr-d",
+      "issue280-pr-e",
       projectName,
       markdown,
       contentType,
@@ -1068,22 +1127,21 @@ export default function Home() {
         <section className={styles.issue280Shell} aria-labelledby="issue280-title">
           <div className={styles.resultHeader}>
             <div>
-              <p className={styles.kicker}>Issue 280 PR D</p>
-              <h2 id="issue280-title">Issue 280 PR D local/mock verifier</h2>
+              <p className={styles.kicker}>Issue 280 PR E</p>
+              <h2 id="issue280-title">Issue 280 local multilingual demo</h2>
             </div>
             <span className={styles.badge}>local/mock only</span>
           </div>
           <p className={styles.scopeNotice}>
-            Developer verifier only: this quarantined panel validates the PR C local/mock request-response
-            contract, citations, context refs, claim supports, replay, and safe refusals through the PR D
-            browser path. It does not perform full multilingual project-knowledge conversion. Use the main
-            avatar demo export form above for the product multilingual flow.
+            Local/demo path for arbitrary bounded public-safe synthetic markdown. It generates a grounded
+            English script, deterministically converts it into the selected supported language, preserves
+            citations and evaluation metadata, and keeps all providers disabled or mocked.
           </p>
           <form className={styles.issue280Form} aria-label="Issue 280 local demo form" onSubmit={runIssue280LocalDemo}>
             <div className={styles.field}>
               <span className={styles.labelWithInfo}>
-                Verifier project name
-                {infoControl("Issue 280 project field info", "Names only the public-safe synthetic project name used for this verifier.")}
+                Project name
+                {infoControl("Issue 280 project field info", "Names only the public-safe synthetic project used for the local demo.")}
               </span>
               <input
                 aria-label="Issue 280 synthetic project"
@@ -1094,10 +1152,10 @@ export default function Home() {
 
             <div className={styles.field}>
               <span className={styles.labelWithInfo}>
-                Verifier synthetic knowledge
+                Synthetic project knowledge
                 {infoControl(
                   "Issue 280 knowledge field info",
-                  "Submit bounded synthetic markdown only; this verifier extracts grounded facts and does not translate the full document.",
+                  "Submit bounded public-safe markdown; the local demo extracts grounded facts and converts the generated script.",
                 )}
               </span>
               <textarea
@@ -1119,7 +1177,7 @@ export default function Home() {
               <label className={styles.field}>
                 <span className={styles.labelWithInfo}>
                   Audience
-                  {infoControl("Audience info", "Controls the reader perspective used by the deterministic local verifier script.")}
+                  {infoControl("Audience info", "Controls the reader emphasis used by the deterministic source-grounded script.")}
                 </span>
                 <select aria-label="Issue 280 audience" name="issue280Audience" defaultValue="ENGINEER">
                   {audienceOptions.map((option) => (
@@ -1135,7 +1193,7 @@ export default function Home() {
               <label className={styles.field}>
                 <span className={styles.labelWithInfo}>
                   Depth
-                  {infoControl("Depth info", "Select CONCISE, STANDARD, or DEEP local verifier script coverage for the same grounded facts.")}
+                  {infoControl("Depth info", "Select CONCISE, STANDARD, or DEEP coverage for the same grounded facts.")}
                 </span>
                 <select aria-label="Issue 280 depth" name="issue280Depth" defaultValue="STANDARD">
                   <option value="CONCISE">Concise</option>
@@ -1145,21 +1203,22 @@ export default function Home() {
               </label>
               <label className={styles.field}>
                 <span className={styles.labelWithInfo}>
-                  Verifier target language
-                  {infoControl("Target language info", "Verifier-only mock languages are en, hi, and es; this is not the product language catalog.")}
+                  Target language
+                  {infoControl("Target language info", "The local demo supports the 25 Priority 1 languages and safely refuses planned languages.")}
                 </span>
-                <select aria-label="Issue 280 verifier target language" name="issue280TargetLanguage" defaultValue="hi">
-                  <option value="en">English verifier mock</option>
-                  <option value="hi">Hindi verifier mock (prefix only)</option>
-                  <option value="es">Spanish verifier mock (prefix only)</option>
-                  <option value="de">German refusal test</option>
+                <select aria-label="Issue 280 target language" name="issue280TargetLanguage" defaultValue="hi">
+                  {issue280SupportedLanguageOptions.map((language) => (
+                    <option key={language.value} value={language.value}>
+                      {language.label}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
 
             <div className={styles.field}>
               <span className={styles.labelWithInfo}>
-                Verifier glossary terms
+                Preserved glossary terms
                 {infoControl("Issue 280 glossary help", "Preserved project terms are separated from instructions and bounded by the PR B contract.")}
               </span>
               <textarea
@@ -1179,8 +1238,8 @@ export default function Home() {
                 onChange={(event) => setIssue280AvatarBoundary(event.currentTarget.checked)}
               />
               <span className={styles.labelWithInfo}>
-                Synthetic avatar consent: local/mock preview only, no cloned face or voice
-                {infoControl("Issue 280 avatar boundary info", "No cloned face or voice is enabled; PR D shows local/mock browser evidence only.")}
+                Synthetic avatar boundary: local/mock preview only, no cloned face or voice
+                {infoControl("Issue 280 avatar boundary info", "No cloned face or voice is enabled; PR E shows local/mock artifact evidence only.")}
               </span>
             </div>
 
@@ -1191,7 +1250,7 @@ export default function Home() {
 
           {issue280IsRunning ? (
             <p className={styles.supportStatus} aria-live="polite">
-              Running local/mock Issue 280 verifier.
+              Running local/mock Issue 280 multilingual demo.
             </p>
           ) : null}
           {issue280Error ? (
@@ -1218,7 +1277,7 @@ function renderIssue280Evidence(
         <section className={styles.result} aria-labelledby="issue280-empty-script">
           <div className={styles.resultHeader}>
             <h3 id="issue280-empty-script">
-              Grounded English script {infoControl("Walkthrough script info", "The PR C accepted script is English citation-bound verifier output, not full target-language conversion.")}
+              Grounded English script {infoControl("Walkthrough script info", "The accepted script is English citation-bound output generated from the submitted markdown.")}
             </h3>
             <span className={styles.badge}>READY</span>
           </div>
@@ -1227,11 +1286,11 @@ function renderIssue280Evidence(
         </section>
         <section className={styles.result} aria-labelledby="issue280-empty-transcript">
           <div className={styles.resultHeader}>
-            <h3 id="issue280-empty-transcript">Mock target transcript evidence {infoControl("Demo preview info", "A local/mock target transcript evidence panel appears after the stored result exists.")}</h3>
+            <h3 id="issue280-empty-transcript">Target transcript evidence {infoControl("Demo preview info", "A local/mock target transcript appears after the stored result exists.")}</h3>
             <span className={styles.badge}>READY</span>
           </div>
           <p className={styles.emptyState}>Transcript pending</p>
-          <p className={styles.emptyState}>Target transcript is mock evidence, not full product translation.</p>
+          <p className={styles.emptyState}>Target transcript is deterministic local/mock conversion evidence.</p>
         </section>
         <section className={styles.result} aria-labelledby="issue280-empty-citations">
           <div className={styles.resultHeader}>
@@ -1254,9 +1313,9 @@ function renderIssue280Evidence(
           </div>
           <p className={styles.emptyState}>Storage pending</p>
           <p className={styles.emptyState}>Provider posture pending</p>
-          <p className={styles.emptyState}>Export artifacts are not generated in PR D.</p>
+          <p className={styles.emptyState}>Export artifacts pending</p>
           <span className={styles.visuallyInline}>
-            {infoControl("Export artifacts info", "Export artifact parity remains out of scope for PR D.")}
+            {infoControl("Export artifacts info", "Export artifact parity appears after the local/mock run completes.")}
           </span>
         </section>
       </div>
@@ -1286,7 +1345,7 @@ function renderIssue280Evidence(
       <section className={styles.result} aria-labelledby="issue280-script-title">
         <div className={styles.resultHeader}>
           <h3 id="issue280-script-title">
-            Grounded English script {infoControl("Walkthrough script info", "The PR C accepted script is English citation-bound verifier output, not full target-language conversion.")}
+            Grounded English script {infoControl("Walkthrough script info", "The accepted script is English citation-bound output generated from the submitted markdown.")}
           </h3>
           <span className={styles.badge}>{response.status}</span>
         </div>
@@ -1316,6 +1375,10 @@ function renderIssue280Evidence(
             <dd>{`targetLanguage=${response.request.targetLanguage}`}</dd>
           </div>
           <div>
+            <dt>Conversion run</dt>
+            <dd>{response.multilingual.multilingualRunId}</dd>
+          </div>
+          <div>
             <dt>Glossary terms</dt>
             <dd>{result.glossaryTerms.length ? result.glossaryTerms.join(", ") : "none"}</dd>
           </div>
@@ -1329,13 +1392,13 @@ function renderIssue280Evidence(
 
       <section className={styles.result} aria-labelledby="issue280-preview-title">
         <div className={styles.resultHeader}>
-          <h3 id="issue280-preview-title">Mock target transcript evidence {infoControl("Demo preview info", "Preview shows shortened local/mock transcript evidence, not the full translated document.")}</h3>
+          <h3 id="issue280-preview-title">Target transcript evidence {infoControl("Demo preview info", "Preview shows deterministic local/mock converted transcript evidence.")}</h3>
           <span className={styles.badge}>{response.multilingual.translationMode}</span>
         </div>
         <p className={styles.supportStatus}>
-          {`Showing ${visibleSegments.length} of ${segments.length} transcript segments. Target transcript is mock evidence, not full product translation.`}
+          {`Showing ${visibleSegments.length} of ${segments.length} transcript segments. Target transcript is deterministic local/mock conversion evidence.`}
         </p>
-        <div className={styles.transcript} aria-label="Issue 280 validated transcript">
+        <div className={styles.transcript} aria-label="Issue 280 validated transcript" dir={response.multilingual.direction}>
           {visibleSegments.map((segment) => (
             <article className={styles.transcriptSegment} key={segment.segmentId}>
               <div className={styles.segmentTextGrid}>
@@ -1445,12 +1508,60 @@ function renderIssue280Evidence(
             <dt>Metadata checksum</dt>
             <dd>{response.storage.metadataChecksum}</dd>
           </div>
+          <div>
+            <dt>Artifact bundle</dt>
+            <dd>{response.storage.artifactBundleChecksum}</dd>
+          </div>
+          <div>
+            <dt>Report checksum</dt>
+            <dd>{response.storage.reportChecksum}</dd>
+          </div>
+          <div>
+            <dt>Evaluation checksum</dt>
+            <dd>{response.evaluation.evaluationChecksum}</dd>
+          </div>
         </dl>
         {response.session.replayed ? <p className={styles.supportStatus}>Idempotent replay observed</p> : null}
-        <p className={styles.emptyState}>
-          Export artifacts are not generated in PR D.
-          {infoControl("Export artifacts info", "Export artifact and stored report parity remain out of scope for PR D.")}
-        </p>
+      </section>
+
+      <section className={styles.result} aria-labelledby="issue280-artifacts-title">
+        <div className={styles.resultHeader}>
+          <h3 id="issue280-artifacts-title">
+            Export artifacts
+            {infoControl("Export artifacts info", "Artifacts are generated locally and preserve transcript, subtitle, metadata, voice, render, and placeholder evidence.")}
+          </h3>
+          <span className={styles.badge}>7 artifacts</span>
+        </div>
+        <div className={styles.artifactList} aria-label="Issue 280 export artifact list">
+          {renderIssue280ArtifactRow("Translated script", response.artifacts.translatedScript)}
+          {renderIssue280ArtifactRow("Subtitles", response.artifacts.subtitles)}
+          {renderIssue280ArtifactRow("Transcript metadata", response.artifacts.transcriptMetadata)}
+          {renderIssue280ArtifactRow("Voice manifest", response.artifacts.voiceManifest)}
+          {renderIssue280ArtifactRow("Avatar demo", response.artifacts.avatarDemo)}
+          {renderIssue280ArtifactRow("Render manifest", response.artifacts.renderManifest)}
+          {renderIssue280ArtifactRow("Video placeholder", response.artifacts.videoPlaceholder)}
+        </div>
+      </section>
+
+      <section className={styles.result} aria-labelledby="issue280-report-title">
+        <div className={styles.resultHeader}>
+          <h3 id="issue280-report-title">Output correctness report</h3>
+          <span className={styles.badge}>{response.correctnessReport.status}</span>
+        </div>
+        <dl className={styles.metadata} aria-label="Issue 280 correctness report">
+          <div>
+            <dt>Trace</dt>
+            <dd>{response.correctnessReport.traceId}</dd>
+          </div>
+          <div>
+            <dt>Segments</dt>
+            <dd>{response.correctnessReport.segmentCount}</dd>
+          </div>
+          <div>
+            <dt>Checks</dt>
+            <dd>{Object.entries(response.correctnessReport.checks).map(([name, status]) => `${name}=${status}`).join(" ")}</dd>
+          </div>
+        </dl>
       </section>
     </div>
   );
@@ -1459,6 +1570,22 @@ function renderIssue280Evidence(
 export function languageOptionLabel(language: LanguageCatalogRecord) {
   const baseLabel = `${language.englishName} / ${language.nativeName}`;
   return language.localDemoSupportStatus === "SUPPORTED" ? baseLabel : `${baseLabel} - Planned`;
+}
+
+function renderIssue280ArtifactRow(label: string, artifact: DownloadableArtifact) {
+  const href = `data:${artifact.mimeType};base64,${artifact.contentBase64}`;
+  return (
+    <div className={styles.artifactRow}>
+      <div>
+        <strong>{label}</strong>
+        <span>{artifact.fileName}</span>
+        <small>{artifact.checksum}</small>
+      </div>
+      <a href={href} download={artifact.fileName} aria-label={`Download Issue 280 artifact ${label}`}>
+        Download
+      </a>
+    </div>
+  );
 }
 
 function audiencePromptLabel(audience: string) {

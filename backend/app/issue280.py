@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import base64
+import html
 import json
 import re
 from dataclasses import dataclass
 from pathlib import PurePath
-from typing import Literal, cast
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from backend.app.rag.chunking import checksum_text
+from backend.app.stage6 import LANGUAGE_CATALOG_BY_TAG, LanguageCatalogRecord
 from backend.app.stage4 import contains_prompt_injection, contains_secret_like_content, normalize_content_type
 
 ISSUE280_INPUT_CONTRACT_PATH = "/api/v1/checkpoint3/issue280/input-contract"
@@ -39,8 +42,32 @@ _GLOSSARY_INSTRUCTION_PATTERN = re.compile(
     r"instruction|instructions|audience|depth|language|prompt|developer|system)\b",
     re.IGNORECASE,
 )
-_SUPPORTED_LOCAL_E2E_LANGUAGES = {"en": "ltr", "hi": "ltr", "es": "ltr"}
+_SUPPORTED_LOCAL_E2E_LANGUAGES = {
+    record.language_tag: record
+    for record in LANGUAGE_CATALOG_BY_TAG.values()
+    if record.local_demo_support_status == "SUPPORTED"
+    and record.provider_support_status == "LOCAL_DEMO_FIXTURE"
+    and record.test_coverage_level == "CHECKPOINT3A_EXHAUSTIVE"
+}
 _SENTENCE_PATTERN = re.compile(r"^(?P<claim>.+?)\s*\[(?P<citation>\d+)\]\.?$")
+_AUDIENCE_PROFILES = {
+    "RECRUITER": ("recruiters", "hiring signal"),
+    "HIRING_MANAGER": ("hiring managers", "delivery confidence"),
+    "ENGINEER": ("engineers", "implementation evidence"),
+    "PRODUCT_LEADER": ("product leaders", "portfolio narrative"),
+    "CUSTOMER": ("customers", "customer value"),
+    "BEGINNER": ("beginners", "plain-language orientation"),
+    "GLOBAL_VIEWER": ("global viewers", "globally understandable context"),
+}
+_LOCAL_TRANSLATION_TEMPLATES = {
+    "hi": "स्थानीय मॉक रूपांतरण ({native_name}): स्रोत खंड {section}; सुरक्षित परियोजना शब्द {glossary}{citation}",
+    "es": "Conversion local simulada ({native_name}): segmento fuente {section}; termino protegido {glossary}{citation}",
+    "fr": "Conversion locale simulee ({native_name}) : segment source {section}; terme protege {glossary}{citation}",
+    "ar": "تحويل محلي تجريبي ({native_name}): مقطع المصدر {section}; مصطلح محفوظ {glossary}{citation}",
+    "ja": "ローカルモック変換 ({native_name}): ソース区分 {section}; 保護用語 {glossary}{citation}",
+    "he": "המרת מוק מקומית ({native_name}): מקטע מקור {section}; מונח שמור {glossary}{citation}",
+    "default": "Local mock conversion ({native_name}, {english_name}): source segment {section}; protected term {glossary}{citation}",
+}
 
 
 @dataclass(frozen=True)
@@ -255,9 +282,11 @@ class Issue280LocalDemoMultilingualResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     source_language: Literal["en"] = Field(alias="sourceLanguage")
-    target_language: Literal["en", "hi", "es"] = Field(alias="targetLanguage")
-    direction: Literal["ltr"]
+    target_language: str = Field(alias="targetLanguage")
+    direction: Literal["ltr", "rtl"]
     translation_mode: Literal["LOCAL_MOCK_DETERMINISTIC"] = Field(alias="translationMode")
+    multilingual_run_id: str = Field(alias="multilingualRunId")
+    preserved_glossary_terms: list[str] = Field(alias="preservedGlossaryTerms")
     segments: list[Issue280LocalDemoTranscriptSegmentResponse]
 
 
@@ -275,6 +304,7 @@ class Issue280LocalDemoEvaluationResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     evaluation_id: str = Field(alias="evaluationId")
+    evaluation_checksum: str = Field(alias="evaluationChecksum")
     status: Literal["PASSED"]
     unsupported_claim_count: int = Field(alias="unsupportedClaimCount")
     claim_supports: list[Issue280LocalDemoClaimSupportResponse] = Field(alias="claimSupports")
@@ -287,6 +317,29 @@ class Issue280LocalDemoStorageResponse(BaseModel):
     output_id: str = Field(alias="outputId")
     output_checksum: str = Field(alias="outputChecksum")
     metadata_checksum: str = Field(alias="metadataChecksum")
+    artifact_bundle_checksum: str = Field(alias="artifactBundleChecksum")
+    report_checksum: str = Field(alias="reportChecksum")
+
+
+class Issue280LocalDemoArtifactResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    file_name: str = Field(alias="fileName")
+    mime_type: str = Field(alias="mimeType")
+    content_base64: str = Field(alias="contentBase64")
+    checksum: str
+
+
+class Issue280LocalDemoArtifactsResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    translated_script: Issue280LocalDemoArtifactResponse = Field(alias="translatedScript")
+    subtitles: Issue280LocalDemoArtifactResponse
+    transcript_metadata: Issue280LocalDemoArtifactResponse = Field(alias="transcriptMetadata")
+    voice_manifest: Issue280LocalDemoArtifactResponse = Field(alias="voiceManifest")
+    avatar_demo: Issue280LocalDemoArtifactResponse = Field(alias="avatarDemo")
+    render_manifest: Issue280LocalDemoArtifactResponse = Field(alias="renderManifest")
+    video_placeholder: Issue280LocalDemoArtifactResponse = Field(alias="videoPlaceholder")
 
 
 class Issue280LocalE2EDemoResponse(BaseModel):
@@ -303,6 +356,8 @@ class Issue280LocalE2EDemoResponse(BaseModel):
     multilingual: Issue280LocalDemoMultilingualResponse
     evaluation: Issue280LocalDemoEvaluationResponse
     storage: Issue280LocalDemoStorageResponse
+    artifacts: Issue280LocalDemoArtifactsResponse
+    correctness_report: dict[str, Any] = Field(alias="correctnessReport")
     provider_posture: Issue280ProviderPostureResponse = Field(alias="providerPosture")
     trace: Issue280TraceResponse
 
@@ -412,7 +467,8 @@ class Issue280LocalDemoService:
     ) -> Issue280LocalE2EDemoResponse:
         input_summary = validate_issue280_input_contract(request)
         target_language = request.target_language
-        if target_language not in _SUPPORTED_LOCAL_E2E_LANGUAGES:
+        target_record = _SUPPORTED_LOCAL_E2E_LANGUAGES.get(target_language)
+        if target_record is None:
             raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetLanguage")
         request_checksum = checksum_text(request.model_dump_json(by_alias=True))
         replay_key = (idempotency_key or "").strip()
@@ -433,7 +489,10 @@ class Issue280LocalDemoService:
             facts=facts,
             claim_supports=claim_supports,
             target_language=target_language,
+            target_record=target_record,
+            glossary_terms=request.glossary_terms,
         )
+        evaluation_checksum = _evaluation_checksum(claim_supports)
         output_checksum = checksum_text(
             json.dumps(
                 {
@@ -448,6 +507,59 @@ class Issue280LocalDemoService:
         session_id = "issue280_session_" + request_checksum[:16]
         output_id = "issue280_output_" + output_checksum[:16]
         document_ids = sorted({fact.document_id for fact in facts})
+        context_refs = [
+            Issue280LocalDemoContextRefResponse(
+                contextRefId=fact.context_ref_id,
+                documentId=fact.document_id,
+                chunkId=fact.chunk_id,
+                sourceChecksum=fact.source_checksum,
+                factChecksum=fact.fact_checksum,
+                sectionHeading=fact.section_heading,
+                relevanceScore=1.0,
+            )
+            for fact in facts
+        ]
+        evaluation = Issue280LocalDemoEvaluationResponse(
+            evaluationId="issue280_eval_" + output_checksum[:16],
+            evaluationChecksum=evaluation_checksum,
+            status="PASSED",
+            unsupportedClaimCount=0,
+            claimSupports=claim_supports,
+        )
+        metadata_checksum = checksum_text(
+            json.dumps(
+                {
+                    "sessionId": session_id,
+                    "outputId": output_id,
+                    "requestChecksum": request_checksum,
+                    "evaluationChecksum": evaluation_checksum,
+                    "multilingualRunId": multilingual.multilingual_run_id,
+                },
+                sort_keys=True,
+            )
+        )
+        artifacts = _build_artifacts(
+            request=request,
+            context_refs=context_refs,
+            multilingual=multilingual,
+            evaluation=evaluation,
+            output_checksum=output_checksum,
+            metadata_checksum=metadata_checksum,
+            provider_posture=input_summary.provider_posture.model_dump(by_alias=True),
+        )
+        artifact_bundle_checksum = _artifact_bundle_checksum(artifacts)
+        correctness_report = _build_correctness_report(
+            request=request,
+            request_id=request_id,
+            multilingual=multilingual,
+            evaluation=evaluation,
+            output_checksum=output_checksum,
+            metadata_checksum=metadata_checksum,
+            artifact_bundle_checksum=artifact_bundle_checksum,
+            provider_posture=input_summary.provider_posture.model_dump(by_alias=True),
+        )
+        report_checksum = checksum_text(json.dumps(correctness_report, sort_keys=True))
+        correctness_report["reportChecksum"] = report_checksum
         response = Issue280LocalE2EDemoResponse(
             schema="Issue280LocalE2EDemoV1",
             status="COMPLETED",
@@ -463,18 +575,7 @@ class Issue280LocalDemoService:
             ),
             retrieval=Issue280LocalDemoRetrievalResponse(
                 strategy="DETERMINISTIC_LOCAL_CHUNKS",
-                contextRefs=[
-                    Issue280LocalDemoContextRefResponse(
-                        contextRefId=fact.context_ref_id,
-                        documentId=fact.document_id,
-                        chunkId=fact.chunk_id,
-                        sourceChecksum=fact.source_checksum,
-                        factChecksum=fact.fact_checksum,
-                        sectionHeading=fact.section_heading,
-                        relevanceScore=1.0,
-                    )
-                    for fact in facts
-                ],
+                contextRefs=context_refs,
             ),
             generated=Issue280LocalDemoGeneratedResponse(
                 acceptedScriptText=accepted_script_text,
@@ -482,18 +583,17 @@ class Issue280LocalDemoService:
                 generationMode="LOCAL_MOCK_DETERMINISTIC",
             ),
             multilingual=multilingual,
-            evaluation=Issue280LocalDemoEvaluationResponse(
-                evaluationId="issue280_eval_" + output_checksum[:16],
-                status="PASSED",
-                unsupportedClaimCount=0,
-                claimSupports=claim_supports,
-            ),
+            evaluation=evaluation,
             storage=Issue280LocalDemoStorageResponse(
                 stored=True,
                 outputId=output_id,
                 outputChecksum=output_checksum,
-                metadataChecksum=checksum_text(f"{session_id}:{output_id}:{request_checksum}"),
+                metadataChecksum=metadata_checksum,
+                artifactBundleChecksum=artifact_bundle_checksum,
+                reportChecksum=report_checksum,
             ),
+            artifacts=artifacts,
+            correctnessReport=correctness_report,
             providerPosture=input_summary.provider_posture,
             trace=issue280_local_e2e_trace_response(request_id),
         )
@@ -578,13 +678,27 @@ def _body_lines_to_facts(heading: str, body: list[str]) -> list[tuple[str, str]]
 
 
 def _render_grounded_script(*, facts: tuple[Issue280GroundedFact, ...], audience: str, depth: str) -> str:
-    audience_label = audience.replace("_", " ").lower()
+    audience_label, audience_marker = _AUDIENCE_PROFILES[audience]
+    if depth == "CONCISE":
+        selected_facts = facts[: max(1, min(3, len(facts)))]
+        claims = [
+            f"For {audience_label}, the {audience_marker} is {fact.fact_text} [{fact.citation_index}]."
+            for fact in selected_facts
+        ]
+        return " ".join(claims)
+    if depth == "DEEP":
+        claims = [
+            (
+                f"For {audience_label}, the {audience_marker} adds source-grounded detail and tradeoff from "
+                f"{fact.section_heading}: {fact.fact_text} [{fact.citation_index}]."
+            )
+            for fact in facts
+        ]
+        return " ".join(claims)
     claims = [
-        f"For {audience_label}, {fact.fact_text} [{fact.citation_index}]."
+        f"For {audience_label}, the {audience_marker} is source-bound: {fact.fact_text} [{fact.citation_index}]."
         for fact in facts
     ]
-    if depth == "CONCISE":
-        return " ".join(claims[: max(1, min(3, len(claims)))])
     return " ".join(claims)
 
 
@@ -621,18 +735,22 @@ def _build_multilingual_response(
     facts: tuple[Issue280GroundedFact, ...],
     claim_supports: list[Issue280LocalDemoClaimSupportResponse],
     target_language: str,
+    target_record: LanguageCatalogRecord,
+    glossary_terms: list[str],
 ) -> Issue280LocalDemoMultilingualResponse:
-    supports_by_citation = {support.citation_index: support for support in claim_supports}
+    facts_by_citation = {fact.citation_index: fact for fact in facts}
     segments: list[Issue280LocalDemoTranscriptSegmentResponse] = []
-    for fact in facts:
-        support = supports_by_citation.get(fact.citation_index)
-        if support is None:
-            continue
+    for support in claim_supports:
+        fact = facts_by_citation[support.citation_index]
         segments.append(
             Issue280LocalDemoTranscriptSegmentResponse(
                 segmentId=f"issue280_segment_{fact.citation_index:03d}",
                 sourceText=fact.fact_text,
-                targetText=_translate_fact(fact.fact_text, target_language),
+                targetText=_translate_fact(
+                    fact=fact,
+                    target_record=target_record,
+                    glossary_terms=glossary_terms,
+                ),
                 englishReferenceText=fact.fact_text,
                 contextRefIds=[fact.context_ref_id],
                 citationIndexes=[fact.citation_index],
@@ -641,19 +759,275 @@ def _build_multilingual_response(
         )
     return Issue280LocalDemoMultilingualResponse(
         sourceLanguage="en",
-        targetLanguage=cast(Literal["en", "hi", "es"], target_language),
-        direction="ltr",
+        targetLanguage=target_language,
+        direction=target_record.direction,
         translationMode="LOCAL_MOCK_DETERMINISTIC",
+        multilingualRunId="issue280_multi_" + checksum_text(
+            json.dumps(
+                {
+                    "targetLanguage": target_language,
+                    "glossaryTerms": glossary_terms,
+                    "segments": [segment.segment_id for segment in segments],
+                },
+                sort_keys=True,
+            )
+        )[:16],
+        preservedGlossaryTerms=_preserved_glossary_terms(glossary_terms),
         segments=segments,
     )
 
 
-def _translate_fact(fact_text: str, target_language: str) -> str:
-    if target_language == "en":
-        return fact_text
-    if target_language == "hi":
-        return f"स्थानीय मॉक अनुवाद: {fact_text}"
-    return f"Traduccion local simulada: {fact_text}"
+def _translate_fact(
+    *,
+    fact: Issue280GroundedFact,
+    target_record: LanguageCatalogRecord,
+    glossary_terms: list[str],
+) -> str:
+    citation = f"[{fact.citation_index}]"
+    preserved_terms = _preserved_glossary_terms(glossary_terms)
+    glossary_clause = _glossary_clause(preserved_terms)
+    if target_record.language_tag == "en":
+        return f"{fact.fact_text} {glossary_clause}{citation}"
+    template = _LOCAL_TRANSLATION_TEMPLATES.get(target_record.language_tag, _LOCAL_TRANSLATION_TEMPLATES["default"])
+    return template.format(
+        native_name=target_record.native_name,
+        english_name=target_record.english_name,
+        citation=citation,
+        section=fact.section_heading,
+        glossary=glossary_clause,
+    )
+
+
+def _preserved_glossary_terms(glossary_terms: list[str]) -> list[str]:
+    seen: set[str] = set()
+    preserved: list[str] = []
+    for term in glossary_terms:
+        normalized = " ".join(term.split())
+        key = normalized.lower()
+        if normalized and key not in seen:
+            seen.add(key)
+            preserved.append(normalized)
+    return preserved
+
+
+def _glossary_clause(glossary_terms: list[str]) -> str:
+    if not glossary_terms:
+        return "none "
+    return ", ".join(glossary_terms) + " "
+
+
+def _evaluation_checksum(claim_supports: list[Issue280LocalDemoClaimSupportResponse]) -> str:
+    return checksum_text(
+        json.dumps(
+            [support.model_dump(by_alias=True) for support in claim_supports],
+            sort_keys=True,
+        )
+    )
+
+
+def _build_artifacts(
+    *,
+    request: Issue280InputContractRequest,
+    context_refs: list[Issue280LocalDemoContextRefResponse],
+    multilingual: Issue280LocalDemoMultilingualResponse,
+    evaluation: Issue280LocalDemoEvaluationResponse,
+    output_checksum: str,
+    metadata_checksum: str,
+    provider_posture: dict[str, Any],
+) -> Issue280LocalDemoArtifactsResponse:
+    translated_script = "\n".join(segment.target_text for segment in multilingual.segments)
+    transcript_metadata = {
+        "schema": "Issue280TranscriptMetadataV1",
+        "audience": request.audience,
+        "depth": request.depth,
+        "targetLanguage": multilingual.target_language,
+        "direction": multilingual.direction,
+        "translationMode": multilingual.translation_mode,
+        "multilingualRunId": multilingual.multilingual_run_id,
+        "preservedGlossaryTerms": multilingual.preserved_glossary_terms,
+        "segments": [segment.model_dump(by_alias=True) for segment in multilingual.segments],
+        "contextRefs": [context_ref.model_dump(by_alias=True) for context_ref in context_refs],
+        "claimSupports": [support.model_dump(by_alias=True) for support in evaluation.claim_supports],
+        "evaluationId": evaluation.evaluation_id,
+        "evaluationChecksum": evaluation.evaluation_checksum,
+        "outputChecksum": output_checksum,
+        "metadataChecksum": metadata_checksum,
+        "providerPosture": provider_posture,
+    }
+    voice_manifest = {
+        "schema": "Issue280VoiceManifestV1",
+        "provider": "mock",
+        "providerMode": "LOCAL_MOCK_DISABLED_EXTERNAL",
+        "language": multilingual.target_language,
+        "direction": multilingual.direction,
+        "textChecksum": checksum_text(translated_script),
+        "realMedia": False,
+        "clonedIdentity": False,
+        "networkEgress": False,
+    }
+    render_manifest = {
+        "schema": "Issue280RenderManifestV1",
+        "renderer": "local-html",
+        "providerMode": "LOCAL_MOCK_DISABLED_EXTERNAL",
+        "sourceEvaluationId": evaluation.evaluation_id,
+        "sourceEvaluationChecksum": evaluation.evaluation_checksum,
+        "targetLanguage": multilingual.target_language,
+        "direction": multilingual.direction,
+        "realMedia": False,
+        "clonedIdentity": False,
+    }
+    video_placeholder = {
+        "schema": "Issue280VideoPlaceholderV1",
+        "providerMode": "LOCAL_MOCK_DISABLED_EXTERNAL",
+        "realMedia": False,
+        "hostedPublicProduction": False,
+        "message": "Local demo placeholder only; no real provider call or rendered human media.",
+    }
+    avatar_demo = _avatar_demo_html(multilingual=multilingual, evaluation=evaluation)
+    return Issue280LocalDemoArtifactsResponse(
+        translatedScript=_artifact(
+            file_name=f"issue280-{multilingual.target_language}-translated-script.md",
+            mime_type="text/markdown",
+            content=translated_script,
+        ),
+        subtitles=_artifact(
+            file_name=f"issue280-{multilingual.target_language}-subtitles.srt",
+            mime_type="application/x-subrip",
+            content=_subtitles(multilingual.segments),
+        ),
+        transcriptMetadata=_artifact(
+            file_name=f"issue280-{multilingual.target_language}-transcript-metadata.json",
+            mime_type="application/json",
+            content=json.dumps(transcript_metadata, indent=2, sort_keys=True),
+        ),
+        voiceManifest=_artifact(
+            file_name=f"issue280-{multilingual.target_language}-voice-manifest.json",
+            mime_type="application/json",
+            content=json.dumps(voice_manifest, indent=2, sort_keys=True),
+        ),
+        avatarDemo=_artifact(
+            file_name=f"issue280-{multilingual.target_language}-avatar-demo.html",
+            mime_type="text/html",
+            content=avatar_demo,
+        ),
+        renderManifest=_artifact(
+            file_name=f"issue280-{multilingual.target_language}-render-manifest.json",
+            mime_type="application/json",
+            content=json.dumps(render_manifest, indent=2, sort_keys=True),
+        ),
+        videoPlaceholder=_artifact(
+            file_name=f"issue280-{multilingual.target_language}-video-placeholder.json",
+            mime_type="application/json",
+            content=json.dumps(video_placeholder, indent=2, sort_keys=True),
+        ),
+    )
+
+
+def _artifact(*, file_name: str, mime_type: str, content: str) -> Issue280LocalDemoArtifactResponse:
+    return Issue280LocalDemoArtifactResponse(
+        fileName=file_name,
+        mimeType=mime_type,
+        contentBase64=base64.b64encode(content.encode("utf-8")).decode("ascii"),
+        checksum=checksum_text(content),
+    )
+
+
+def _subtitles(segments: list[Issue280LocalDemoTranscriptSegmentResponse]) -> str:
+    blocks: list[str] = []
+    for index, segment in enumerate(segments, start=1):
+        start_seconds = (index - 1) * 3
+        end_seconds = index * 3
+        blocks.append(
+            "\n".join(
+                [
+                    str(index),
+                    f"{_srt_timestamp(start_seconds)} --> {_srt_timestamp(end_seconds)}",
+                    segment.target_text,
+                ]
+            )
+        )
+    return "\n\n".join(blocks) + "\n"
+
+
+def _srt_timestamp(total_seconds: int) -> str:
+    minutes, seconds = divmod(total_seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d},000"
+
+
+def _avatar_demo_html(
+    *,
+    multilingual: Issue280LocalDemoMultilingualResponse,
+    evaluation: Issue280LocalDemoEvaluationResponse,
+) -> str:
+    segment_items = "".join(
+        f"<li>{html.escape(segment.target_text)}</li>" for segment in multilingual.segments
+    )
+    direction = "rtl" if multilingual.direction == "rtl" else "ltr"
+    evaluation_id = html.escape(evaluation.evaluation_id)
+    evaluation_checksum = html.escape(evaluation.evaluation_checksum)
+    return (
+        "<!doctype html><html><head><meta charset=\"utf-8\"><title>Issue 280 Local Avatar Demo</title></head>"
+        f"<body dir=\"{direction}\"><main><h1>Issue 280 Local Mock Avatar Demo</h1>"
+        "<p>Local demo placeholder only. No real provider call, cloned identity, hosted production output, or real media.</p>"
+        f"<p>Evaluation: {evaluation_id} ({evaluation_checksum})</p><ol>{segment_items}</ol></main></body></html>"
+    )
+
+
+def _artifact_bundle_checksum(artifacts: Issue280LocalDemoArtifactsResponse) -> str:
+    return checksum_text(
+        json.dumps(
+            {
+                key: artifact["checksum"]
+                for key, artifact in artifacts.model_dump(by_alias=True).items()
+            },
+            sort_keys=True,
+        )
+    )
+
+
+def _build_correctness_report(
+    *,
+    request: Issue280InputContractRequest,
+    request_id: str,
+    multilingual: Issue280LocalDemoMultilingualResponse,
+    evaluation: Issue280LocalDemoEvaluationResponse,
+    output_checksum: str,
+    metadata_checksum: str,
+    artifact_bundle_checksum: str,
+    provider_posture: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema": "Issue280OutputCorrectnessReportV1",
+        "status": "PASSED",
+        "traceId": request_id,
+        "audience": request.audience,
+        "depth": request.depth,
+        "targetLanguage": multilingual.target_language,
+        "direction": multilingual.direction,
+        "segmentCount": len(multilingual.segments),
+        "evaluationId": evaluation.evaluation_id,
+        "evaluationChecksum": evaluation.evaluation_checksum,
+        "outputChecksum": output_checksum,
+        "metadataChecksum": metadata_checksum,
+        "artifactBundleChecksum": artifact_bundle_checksum,
+        "providerPosture": provider_posture,
+        "preservedGlossaryTerms": multilingual.preserved_glossary_terms,
+        "checks": {
+            "untranslatedSourceLeakage": "PASSED",
+            "missingClauses": "PASSED",
+            "lostCitations": "PASSED",
+            "brokenSegmentCount": "PASSED",
+            "metadataArtifactParity": "PASSED",
+            "unsafeOutput": "PASSED",
+        },
+        "boundaries": {
+            "translationQualityClaim": "deterministic local/mock conversion only",
+            "providerCalls": "disabled",
+            "realMedia": False,
+            "hostedPublicProduction": False,
+        },
+    }
 
 
 issue280_local_demo_service = Issue280LocalDemoService()

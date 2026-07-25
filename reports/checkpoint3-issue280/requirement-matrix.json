@@ -1,8 +1,8 @@
 {
   "issue": 280,
-  "prSlice": "PR A+PR B+PR C+PR D",
+  "prSlice": "PR A+PR B+PR C+PR D+PR E",
   "schemaVersion": "Issue280RequirementMatrixV1",
-  "runtimeBehaviorImplemented": false,
+  "runtimeBehaviorImplemented": true,
   "prBExecutableContractSliceImplemented": true,
   "prCExecutableLocalE2ESliceImplemented": true,
   "prDExecutableUiBrowserDemoSliceImplemented": true,
@@ -154,10 +154,17 @@
         {
           "id": "R280-DEPTH-002",
           "requirement": "Depth changes amount and structure without altering evidence boundaries; deep cannot add uncited details, concise cannot hide required caveats, and standard cannot be identical to concise.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-test",
-          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_depth_contract.py -q",
-          "ownerPrSlice": "PR B"
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "acceptance-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         }
       ]
     },
@@ -168,10 +175,17 @@
         {
           "id": "R280-AUDIENCE-DEPTH-001",
           "requirement": "Same source across all audiences and depths; deep source-supported example accepted; deep unsupported example refused; cross-language audience framing preserved; UI/export shows generating audience/depth.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-test",
-          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_audience_depth_contract.py -q",
-          "ownerPrSlice": "PR B"
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "acceptance-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         }
       ]
     },
@@ -196,10 +210,17 @@
         {
           "id": "R280-S6-001",
           "requirement": "Bounded unseen synthetic facts are not refused only because they are not golden fixture sentences; deterministic local/mock conversion or honest refusal; validate script/direction, body-level translation, no English fallback except protected terms, no romanized fallback where native script required, and no partial/metadata/artifact-only success.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-test",
-          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_multilingual_demo_contract.py -q",
-          "ownerPrSlice": "Future PR"
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "acceptance-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         },
         {
           "id": "R280-S6-002",
@@ -218,10 +239,17 @@
         {
           "id": "R280-GLOSSARY-001",
           "requirement": "Glossary terms are protected project terms/acronyms, not instructions; cover required/absent terms, duplicates, case/diacritics, multi-word terms, acronyms, RTL/CJK/no-space behavior, source-present preservation, missing-preservation failure, and visible preserved-term metadata.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-test",
-          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_glossary_contract.py -q",
-          "ownerPrSlice": "PR B"
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "acceptance-test",
+          "plannedCommand": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         }
       ]
     },
@@ -315,7 +343,14 @@
           "status": "EXECUTABLE_CONTRACT_PASS",
           "evidenceType": "browser-test",
           "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
-          "ownerPrSlice": "PR D"
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         },
         {
           "id": "R280-UI-002",
@@ -323,7 +358,14 @@
           "status": "EXECUTABLE_CONTRACT_PASS",
           "evidenceType": "browser-test",
           "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
-          "ownerPrSlice": "PR D"
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         }
       ]
     },
@@ -337,7 +379,14 @@
           "status": "EXECUTABLE_CONTRACT_PASS",
           "evidenceType": "browser-test",
           "plannedCommand": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
-          "ownerPrSlice": "PR D"
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         }
       ]
     },
@@ -348,10 +397,17 @@
         {
           "id": "R280-CONVERSION-001",
           "requirement": "Source facts -> grounded English -> target transcript -> stored output -> UI -> downloadable artifacts -> Stage 7 placeholder/export, with citations/contextRefs/claimSupports bound throughout.",
-          "status": "PLANNED_EXECUTABLE_GATE",
-          "evidenceType": "planned-gate",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "output-correctness-verifier",
           "plannedCommand": "make issue280-output-correctness",
-          "ownerPrSlice": "PR E"
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         }
       ]
     },
@@ -362,10 +418,17 @@
         {
           "id": "R280-CRITICAL-CONNECTIONS-001",
           "requirement": "Parity fields include run IDs, multilingual run IDs, target language, direction, audience, depth, glossary terms, preserved terms, source text, target text, English reference, citations, context refs, claim supports, evaluation ID, checksums, transcript metadata, subtitles, voice manifest, avatar demo, render manifest, video placeholder, coverage matrix, and correctness report.",
-          "status": "PLANNED_EXECUTABLE_GATE",
-          "evidenceType": "planned-gate",
-          "plannedCommand": "make issue280-output-correctness",
-          "ownerPrSlice": "PR E"
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "contract-test",
+          "plannedCommand": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         }
       ]
     },
@@ -376,10 +439,17 @@
         {
           "id": "R280-QUALITY-001",
           "requirement": "Reject unsupported facts, untranslated English fallback, romanized native-script fallback, heading-only success, partial document/section/segment success, metadata-only success, artifact-only success, stale evidence, planned-language fake success, citation drift, contextRef drift, claimSupport drift, and UI/export mismatch.",
-          "status": "PLANNED_EXECUTABLE_GATE",
-          "evidenceType": "planned-gate",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "output-correctness-verifier",
           "plannedCommand": "make issue280-output-correctness",
-          "ownerPrSlice": "PR E"
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         }
       ]
     },
@@ -420,10 +490,17 @@
         {
           "id": "R280-TEST-STRATEGY-003",
           "requirement": "Contract tests must prove API, stored output, UI-visible metadata, exports, reports, citations, contextRefs, claimSupports, run IDs, language, audience, depth, glossary, and checksum bindings remain in parity across the conversion flow.",
-          "status": "PLANNED_IMPLEMENTATION",
-          "evidenceType": "planned-contract-test",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "contract-test",
           "plannedCommand": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
-          "ownerPrSlice": "PR E"
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         },
         {
           "id": "R280-TEST-STRATEGY-004",
@@ -436,10 +513,17 @@
         {
           "id": "R280-TEST-STRATEGY-005",
           "requirement": "The final output-correctness gate must execute the full local/mock flow and preserve regression coverage so later enhancements cannot break the developing feature: create project -> upload markdown -> approve -> ingest -> generate -> translate -> render UI -> download/decode artifacts -> compare reports.",
-          "status": "PLANNED_EXECUTABLE_GATE",
-          "evidenceType": "planned-gate",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "output-correctness-verifier",
           "plannedCommand": "make issue280-output-correctness",
-          "ownerPrSlice": "PR E"
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         }
       ]
     },
@@ -450,10 +534,17 @@
         {
           "id": "R280-OUTPUT-CORRECTNESS-001",
           "requirement": "Planned gate `make issue280-output-correctness` must eventually execute create project -> upload markdown -> approve -> ingest -> generate English Stage 4 -> translate Stage 6 -> avatar placeholder/export Stage 7 -> UI render -> download/decode artifacts -> compare report.",
-          "status": "PLANNED_EXECUTABLE_GATE",
-          "evidenceType": "planned-gate",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "output-correctness-verifier",
           "plannedCommand": "make issue280-output-correctness",
-          "ownerPrSlice": "PR E"
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "backendAcceptance": "uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q",
+            "apiArtifactParity": "uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q",
+            "browserVerifier": "npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts",
+            "outputCorrectnessVerifier": "make issue280-output-correctness",
+            "verifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
+          }
         }
       ]
     },
@@ -492,8 +583,25 @@
           "evidenceType": "static-validator",
           "plannedCommand": "uv run pytest tests/unit/test_phase1_closure_docs.py -q",
           "ownerPrSlice": "PR D"
+        },
+        {
+          "id": "R280-GOV-005",
+          "requirement": "PR E branch allowlist, matrix closure semantics, and output-correctness verifier are governed by executable phase-closure checks before PR readiness.",
+          "status": "EXECUTABLE_CONTRACT_PASS",
+          "evidenceType": "governance-test",
+          "plannedCommand": "uv run pytest tests/unit/test_phase1_closure_docs.py -q",
+          "ownerPrSlice": "PR E",
+          "prEClosureEvidence": {
+            "phaseClosureDocs": "python3 scripts/quality/check_phase1_closure_docs.py",
+            "unitGuardrails": "uv run pytest tests/unit/test_phase1_closure_docs.py -q"
+          }
         }
       ]
     }
-  ]
+  ],
+  "prEExecutableArbitraryDemoClosureImplemented": true,
+  "issue280SatisfiedByPrE": true,
+  "issue280RemainsOpenAfterPrEUntilMergeCloseout": true,
+  "prEOutputCorrectnessVerifier": "make issue280-output-correctness",
+  "prEVerifierReport": "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-report.json"
 }
