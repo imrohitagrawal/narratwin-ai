@@ -1,0 +1,59 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 300,
+  "branch": "phase-1-closure-process-300-issue280-semantic-closure-reset",
+  "objective": "Reset Issue #280 governance before any further product implementation. Positive claims: GOV300-CLASS-001 makes STRUCTURAL_PASS, SEMANTIC_PASS, NOT_PROVEN, and FAILED the only canonical atomic outcomes; GOV300-CLOSE-001 computes closure only from required atomic rows and fails closed on NOT_PROVEN or FAILED; GOV300-SKILL-001 creates and locks one repository-owned output-correctness skill; GOV300-FANS-001 requires two independent exact-head fans, pm-ai-shipping:intended-vs-implemented and a non-read-only output-correctness execution verifier; GOV300-MUTATION-001 builds and mutation-tests the verifier before runtime work; GOV300-CHECKPOINT-001 blocks product code until architecture feasibility and the semantic oracle are reviewed. Negative invariants: no editable aggregate satisfaction claim can close a requirement, no structural evidence can become semantic proof, no stale or partial execution can pass, no shared pass signal can make the fans independent, no product/runtime file may change, PR #299 is not merged or sent for review, and Issue #280/PR #299 history remains forensic evidence.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-300.json",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-300.json",
+      "docs/STATUS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/SKILL_LOCK.md",
+      "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "docs/reviews/ISSUE_300_GOVERNANCE_RESET_PREFLIGHT.md",
+      "docs/templates/SEMANTIC_CLOSURE_GATE.md",
+      ".github/pull_request_template.md",
+      ".gitignore",
+      ".codex/skills/output-correctness/SKILL.md",
+      "Makefile",
+      "reports/checkpoint3-issue280/requirement-matrix.json",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "scripts/quality/semantic_closure.py",
+      "scripts/quality/verify_issue280_output_correctness.py",
+      "tests/unit/test_guardrails_check.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "tests/unit/test_semantic_closure.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      "docker-compose.yml",
+      ".github/workflows/",
+      "provider/",
+      "database/",
+      "runtime product code",
+      "provider SDKs",
+      "provider keys",
+      "real provider calls",
+      "paid spend",
+      "hosted deployment",
+      "public URL",
+      "cloned identity",
+      "real media generation",
+      "public distribution",
+      "production-readiness claims",
+      "PR #299 mutation",
+      "Issue #280 history rewrite"
+    ]
+  }
+}
