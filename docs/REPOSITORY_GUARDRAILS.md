@@ -91,6 +91,9 @@ The policy check fails CI for:
 - semantic closure without two independent exact-head fans:
   `pm-ai-shipping:intended-vs-implemented` and the repository-owned,
   non-read-only `output-correctness` verifier
+- a semantic pass accepted from matrix/fan metadata or self-attestation without
+  invoking the non-read-only output-correctness verifier and matching its
+  exact-head row classifications and observations
 - Issue `#280` product/runtime repair before the architecture feasibility
   checkpoint and semantic oracle are reviewed
 

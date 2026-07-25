@@ -867,8 +867,11 @@ Issue `#300` replaces editable Issue `#280` satisfaction fields with atomic
 closure. `scripts/quality/semantic_closure.py` accepts only
 `STRUCTURAL_PASS`, `SEMANTIC_PASS`, `NOT_PROVEN`, and `FAILED`; a required
 semantic row closes only with `SEMANTIC_PASS`, and any `NOT_PROVEN` or `FAILED`
-row returns nonzero. `make issue280-output-correctness` evaluates the locked
-semantic row set and therefore intentionally fails for the forensic
+row returns nonzero. A semantic row still cannot close from matrix or fan
+metadata alone: the evaluator must invoke a non-read-only output verifier and
+match its exact-head reviewer, evidence identity, row classification, and
+observation. `make issue280-output-correctness` evaluates the locked semantic
+row set and therefore intentionally fails for the forensic
 `f93653e8a11e697c88766b207fb01c18662339d6` evidence. Governance quality may
 pass while accurately recording that product closure failed.
 

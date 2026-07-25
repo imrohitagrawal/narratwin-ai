@@ -46,7 +46,8 @@ not upgrade structural evidence to semantic proof.
 
 ## Atomic Closure Model
 
-Closure is a pure computation over atomic rows:
+Closure is computed from atomic rows, with semantic passes corroborated by an
+invoked output verifier:
 
 1. The declared required row IDs must exactly equal the observed row IDs.
 2. Every row must use one canonical classification.
@@ -56,7 +57,10 @@ Closure is a pure computation over atomic rows:
 5. Any `NOT_PROVEN` or `FAILED` row makes closure false and the CLI nonzero.
 6. Every semantic pass must bind to the exact reviewed head and the
    non-read-only output-correctness fan.
-7. Editable aggregate fields such as `satisfied`, `complete`,
+7. `SEMANTIC_PASS` metadata alone cannot close a row. The evaluator must invoke
+   a non-read-only output verifier whose exact head, independent reviewer,
+   evidence identity, classification, and observation agree with the row.
+8. Editable aggregate fields such as `satisfied`, `complete`,
    `issue280SatisfiedByPrE`, and report-level `status: PASSED` are forbidden
    inputs and cannot affect closure.
 
@@ -70,9 +74,10 @@ Two fans are mandatory and exact-head bound:
 | `output-correctness` | non-read-only execution | execute the user-visible slice and emit semantic observations |
 
 The fans must use distinct reviewer identities and evidence records. The
-output-correctness fan must declare `executionMode: non-read-only`. A shared
-editable pass field, identical evidence record, stale commit, missing fan, or
-same reviewer makes closure false.
+output-correctness fan must execute, not merely declare
+`executionMode: non-read-only`. A shared editable pass field, identical
+evidence record, stale commit, missing execution result, missing fan, or same
+reviewer makes closure false.
 
 ## Architecture Feasibility Checkpoint
 

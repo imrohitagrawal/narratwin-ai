@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import replace
 import json
 from pathlib import Path
 
 import pytest
 
-from scripts.quality.semantic_closure import Classification, evaluate_closure
+from scripts.quality.semantic_closure import (
+    Classification,
+    OutputCorrectnessExecution,
+    evaluate_closure,
+)
 from scripts.quality import verify_issue280_output_correctness as issue280_verifier
 
 
@@ -58,6 +63,17 @@ def valid_matrix() -> dict[str, object]:
     }
 
 
+def valid_output_execution() -> OutputCorrectnessExecution:
+    return OutputCorrectnessExecution(
+        exact_head=HEAD,
+        reviewer="execution-reviewer",
+        evidence_id="execution-evidence",
+        execution_mode="non-read-only",
+        classifications={"SEM-1": Classification.SEMANTIC_PASS},
+        observations={"SEM-1": "Executed output matched the reviewed semantic oracle."},
+    )
+
+
 def test_canonical_classifications_are_exact_and_load_bearing() -> None:
     assert {item.value for item in Classification} == {
         "STRUCTURAL_PASS",
@@ -65,7 +81,56 @@ def test_canonical_classifications_are_exact_and_load_bearing() -> None:
         "NOT_PROVEN",
         "FAILED",
     }
-    assert evaluate_closure(valid_matrix(), expected_head=HEAD).closed is True
+    assert evaluate_closure(
+        valid_matrix(),
+        expected_head=HEAD,
+        output_correctness_verifier=valid_output_execution,
+    ).closed is True
+
+
+def test_semantic_pass_metadata_cannot_close_without_executing_output_verifier() -> None:
+    result = evaluate_closure(valid_matrix(), expected_head=HEAD)
+
+    assert result.closed is False
+    assert "output-correctness:execution-not-provided" in result.reasons
+
+
+@pytest.mark.parametrize(
+    ("execution", "reason"),
+    [
+        (
+            replace(valid_output_execution(), exact_head="0" * 40),
+            "output-correctness:execution-stale-head",
+        ),
+        (
+            replace(valid_output_execution(), execution_mode="read-only"),
+            "output-correctness:execution-must-be-non-read-only",
+        ),
+        (
+            replace(
+                valid_output_execution(),
+                classifications={"SEM-1": Classification.NOT_PROVEN},
+            ),
+            "SEM-1:execution-did-not-prove-SEMANTIC_PASS",
+        ),
+        (
+            replace(valid_output_execution(), reviewer="intent-reviewer"),
+            "output-correctness:execution-reviewer-mismatch",
+        ),
+    ],
+)
+def test_output_execution_mutations_fail_closed(
+    execution: OutputCorrectnessExecution,
+    reason: str,
+) -> None:
+    result = evaluate_closure(
+        valid_matrix(),
+        expected_head=HEAD,
+        output_correctness_verifier=lambda: execution,
+    )
+
+    assert result.closed is False
+    assert reason in result.reasons
 
 
 @pytest.mark.parametrize("classification", ["NOT_PROVEN", "FAILED"])

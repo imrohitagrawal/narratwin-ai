@@ -7,7 +7,7 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Callable, Mapping, Sequence
 
 
 class Classification(str, Enum):
@@ -21,6 +21,18 @@ class Classification(str, Enum):
 class ClosureResult:
     closed: bool
     reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class OutputCorrectnessExecution:
+    """Result returned by an invoked, non-read-only semantic verifier."""
+
+    exact_head: str
+    reviewer: str
+    evidence_id: str
+    execution_mode: str
+    classifications: Mapping[str, Classification]
+    observations: Mapping[str, str]
 
 
 _REQUIRED_FANS = {
@@ -58,6 +70,7 @@ def evaluate_closure(
     *,
     expected_head: str,
     expected_row_ids: Sequence[str] | None = None,
+    output_correctness_verifier: Callable[[], OutputCorrectnessExecution] | None = None,
 ) -> ClosureResult:
     """Evaluate closure without trusting aggregate pass/satisfaction fields."""
 
@@ -138,6 +151,7 @@ def evaluate_closure(
         if row_id not in declared_ids:
             reasons.append(f"undeclared-atomic-row:{row_id}")
 
+    semantic_pass_ids: list[str] = []
     for row_id, row in row_by_id.items():
         raw_classification = _text(row.get("classification"))
         try:
@@ -169,10 +183,31 @@ def evaluate_closure(
         if evidence_fan not in fan_by_id:
             reasons.append(f"{row_id}:unknown-evidence-fan")
         if claim_kind == "semantic" and classification is Classification.SEMANTIC_PASS:
+            semantic_pass_ids.append(row_id)
             if evidence_fan != "output-correctness":
                 reasons.append(f"{row_id}:semantic-pass-requires-output-correctness-fan")
             if not _text(row.get("observation")).strip():
                 reasons.append(f"{row_id}:semantic-pass-missing-observation")
+
+    if semantic_pass_ids:
+        if output_correctness_verifier is None:
+            reasons.append("output-correctness:execution-not-provided")
+        else:
+            execution = output_correctness_verifier()
+            if execution.exact_head != expected_head:
+                reasons.append("output-correctness:execution-stale-head")
+            if execution.execution_mode != "non-read-only":
+                reasons.append("output-correctness:execution-must-be-non-read-only")
+            if output_fan is not None:
+                if execution.reviewer != _text(output_fan.get("reviewer")):
+                    reasons.append("output-correctness:execution-reviewer-mismatch")
+                if execution.evidence_id != _text(output_fan.get("evidenceId")):
+                    reasons.append("output-correctness:execution-evidence-mismatch")
+            for row_id in semantic_pass_ids:
+                if execution.classifications.get(row_id) is not Classification.SEMANTIC_PASS:
+                    reasons.append(f"{row_id}:execution-did-not-prove-SEMANTIC_PASS")
+                if not execution.observations.get(row_id, "").strip():
+                    reasons.append(f"{row_id}:execution-missing-observation")
 
     return ClosureResult(closed=not reasons, reasons=tuple(dict.fromkeys(reasons)))
 
