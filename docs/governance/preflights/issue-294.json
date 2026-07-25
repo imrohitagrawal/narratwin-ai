@@ -1,0 +1,41 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 294,
+  "branch": "phase-1-closure-process-294-issue280-closure-ledger",
+  "objective": "Correct the repository-tracked Phase 1 Closure ledger after PR #293 merged and issue #280 closed, because the current StatusStateV1 table and matching checker still point agents at issue #280 / PR E as active work. Positive claims: STATUS-294-001 updates docs/STATUS.md so #280 is recorded as closed by merged PR #293 while #249 remains open; STATUS-294-002 updates the executable StatusStateV1 checker and tests so the gate rejects reintroduction of the stale #280-active pointer; STATUS-294-003 preserves Phase 1 Closure No-Go, no provider setup, no hosted/public demo, no cloned identity, no real media, no paid spend, no public distribution, and no production-readiness boundaries; STATUS-294-004 records that this is a material wrong-active-work correction, not a routine post-merge status-only loop, and that this PR must not create a successor reconciliation. Negative invariants: no product runtime code, no backend/frontend/provider/deployment/media changes, no closure of #249, no reopening or mutation of PR #293, no production-readiness claim, no hosted/public demo claim, no provider or paid-spend enablement, and no follow-on status-only successor.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-294.json",
+      "docs/STATUS.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-294.json",
+      "docs/STATUS.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker-compose.yml",
+      "provider SDKs",
+      "provider keys",
+      "runtime product code",
+      "real provider calls",
+      "paid spend",
+      "hosted deployment",
+      "public URL",
+      "cloned identity",
+      "real media generation",
+      "public distribution",
+      "production-readiness claims",
+      "closing #249",
+      "PR #293 mutation",
+      "successor status-only reconciliation"
+    ]
+  }
+}
