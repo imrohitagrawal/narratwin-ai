@@ -55,7 +55,10 @@ Use it to answer:
   closed after PR `#279` merged the bounded C3A-R2 full-project multilingual
   corpus gate and ADR `0034` at
   `da3efe71b39c1c03a0fd28748a1270ee175cc2dd`, with post-merge main quality
-  workflow run `30079561208` passing. Issue `#280` is the current C3A-R3 child.
+  workflow run `30079561208` passing. Issue `#280` is closed after PR `#293`
+  merged the C3A-R3 PR E local/demo closure slice at
+  `bce64b6fe3eb01de013b72e092f0d21e0db69a7b`, with post-merge main quality
+  workflow run `30144564045` passing.
   PR A completed planning/preflight, public-source persona/audience/depth
   research, a machine-checkable requirement matrix, reviewer checklist, future
   implementation test-strategy contract, and merge-safe red-evidence framework
@@ -74,24 +77,26 @@ Use it to answer:
   merged PR C at `09584b264c0f30da3eecd6693829e5bcb071e568`, with
   post-merge main quality workflow run `30095714825` passing. PR D completed
   the exact UI/browser demo slice through merged PR `#284` at
-  `3f3bbdd05f844384311f193c16075b45e9d076f2`. PR E is the active final
-  local/demo closure slice on branch
-  `phase-1-closure-280-c3a-r3-pr-e-arbitrary-demo-closure`: arbitrary bounded
+  `3f3bbdd05f844384311f193c16075b45e9d076f2`. PR E completed through merged PR
+  `#293` at `bce64b6fe3eb01de013b72e092f0d21e0db69a7b`: arbitrary bounded
   public-safe synthetic markdown, grounded English script generation,
   deterministic local/mock conversion across the 25 supported Priority 1
   languages, depth and audience adaptation, artifact/report parity, ADR
-  `0038`, and browser-visible output-correctness evidence. PR E does not prove arbitrary
-  human-grade or real-world translation quality, provider quality,
-  hosted/public demo behavior, cloned identity runtime, real media, public
-  distribution, or production readiness. Issue `#274` is satisfied by its prior
+  `0038`, and browser-visible output-correctness evidence through
+  `make issue280-output-correctness`. PR E does not prove arbitrary human-grade
+  or real-world translation quality, provider quality, hosted/public demo
+  behavior, cloned identity runtime, real media, public distribution, or
+  production readiness. Issue `#274` is satisfied by its prior
   reviewed PR as the
   public-safe Checkpoint 3B consent/provenance planning gate only:
   consent/provenance planning, acceptance contracts, risk boundaries, and future
   issue sequencing. Issue `#249` remains open as the public Checkpoint 3 tracker
-  after this child, and issue `#280` remains open until PR E receives human
-  review and merge-eligible CI on the exact latest head. C3B remains blocked
-  until issue `#280` is satisfied or reviewed/re-scoped. This state
-  does not authorize Checkpoint 3B implementation, Checkpoint 3C,
+  after this child. C3B/3C work still requires a fresh issue, branch, PR,
+  review, and green CI. This issue `#294` material ledger correction records
+  the intended post-merge target state and must not create a successor
+  status-only reconciliation; routine post-merge facts for this correction
+  belong in PR/issue comments. This state does not authorize Checkpoint 3B
+  implementation, Checkpoint 3C,
   hosted/public demo, provider setup, cloned identity runtime, real media,
   public distribution, arbitrary-project translation quality, provider quality,
   or production readiness.
@@ -103,7 +108,7 @@ Use it to answer:
   real provider calls, paid spend, public distribution, or production-readiness
   claim is permitted by issues `#225`, `#229`, `#235`, `#237`, `#241`, `#243`,
   `#245`, `#247`, `#249`, `#251`, `#253`, `#255`, `#257`, `#259`, `#261`,
-  `#263`, `#265`, `#267`, `#269`, `#274`, `#276`, `#278`, or `#280`.
+  `#263`, `#265`, `#267`, `#269`, `#274`, `#276`, `#278`, `#280`, or `#294`.
   Issue `#39`
   media/provider/security rows are non-downgradeable for production Go unless
   the affected provider, media, export, and replay paths remain disabled.
@@ -253,7 +258,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | issue #280 / c3a-r3-pr-e-arbitrary-demo-closure | c3a-r3-pr-e-active | c3a-r3-pr-e-active | Issue #280 is active for C3A-R3 PR E after PR D merged through PR #284 at 3f3bbdd05f844384311f193c16075b45e9d076f2. PR E is the final local/demo closure slice: arbitrary bounded public-safe synthetic markdown, grounded English generation, deterministic local/mock conversion across the 25 supported Priority 1 languages, depth and audience adaptation, citation/context/claim-support/evaluation metadata preservation, artifact/report parity, and browser-visible output-correctness evidence through `make issue280-output-correctness`. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open until PR E receives human review and merge-eligible CI on the exact latest head, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claims. |
+| SSV1-NEXT | next-action | issue #249 / checkpoint3-tracker-after-c3a-r3 | checkpoint3-tracker-open-after-c3a-r3 | checkpoint3-tracker-open-after-c3a-r3 | Issue #280 is closed after PR #293 merged C3A-R3 PR E at bce64b6fe3eb01de013b72e092f0d21e0db69a7b with post-merge main quality workflow run 30144564045 passing. PR E satisfied the local/demo Issue 280 closure rows for bounded public-safe synthetic markdown, grounded English generation, deterministic local/mock conversion across the 25 supported Priority 1 languages, depth and audience adaptation, citation/context/claim-support/evaluation metadata preservation, artifact/report parity, and browser-visible output-correctness evidence through `make issue280-output-correctness`. issue #249 remains open as the public Checkpoint 3 tracker. Issue #274 remains satisfied by its prior reviewed PR as public-safe Checkpoint 3B consent/provenance planning only. C3B/3C work still requires a fresh issue, branch, PR, review, and green CI. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claims. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -498,7 +503,7 @@ Use these files together with this tracker:
 | `#243` | Closed | Demo Checkpoint 1 PR 5 hosted-demo access/quota/retention polish | Completed through merged PR `#244` as local/fake hosted-demo access, quota, retention, disclosure, and redacted-observability evidence. It created no hosted deployment, public URL, provider setup, paid spend, real provider call, cloned identity, Product Mode 2, public distribution, or production-readiness claim. |
 | `#245` | Closed | Checkpoint 1 acceptance hardening | Completed through merged PR `#246` for post-PR244 local/fake acceptance hardening, preserving the disabled-default local reviewer boundary and authorizing no provider setup, hosted deployment, public URL, cloned identity, paid spend, real provider calls, or production-readiness claim. |
 | `#247` | Closed | Local demo safe refusal UX | Completed through merged PR `#248` at `5456760e4b1f16f708b3c0cff8abe5f31ae29abc`; low-confidence grounded-generation refusals now stop before downstream media calls and show bounded refusal UI instead of a generic `422`. Checkpoint 1 remains local/fake disabled-default reviewer evidence only. |
-| `#249` | Open | Checkpoint 3 tracker after C3-PR1 planning/guardrails | C3-PR1 planning and guardrails completed through merged PR `#250` at `41b262fa2431f55cd1c813eab4071968c1c96ba0`. Issue `#249` remains open as the public Checkpoint 3 tracker after the currently listed Checkpoint 3A executable acceptance probe set completed through CP1-CP8 and while issue `#280` carries the current C3A-R3 PR E closure slice. It must not expose private plan details and authorizes no cloned identity runtime, real-person likeness, provider setup, real provider call, paid spend, public URL, product runtime implementation beyond approved local/mock checkpoint probes, public distribution, or production-readiness claim. |
+| `#249` | Open | Checkpoint 3 tracker after C3A-R3 closure | C3-PR1 planning and guardrails completed through merged PR `#250` at `41b262fa2431f55cd1c813eab4071968c1c96ba0`. Issue `#249` remains open as the public Checkpoint 3 tracker after the Checkpoint 3A executable acceptance probe set completed through CP1-CP8 and C3A-R3 completed through merged PR `#293` at `bce64b6fe3eb01de013b72e092f0d21e0db69a7b`. It must not expose private plan details and authorizes no cloned identity runtime, real-person likeness, provider setup, real provider call, paid spend, public URL, product runtime implementation beyond approved local/mock checkpoint probes, public distribution, or production-readiness claim. |
 | `#251` | Closed | Post-PR-250 status reconciliation | Completed through PR `#252`, reconciling the repository ledger after PR `#250` merged while leaving issue `#249` open and preserving no-runtime, no-provider, no-paid-spend, no-public-URL, no-cloned-identity, and no-production-readiness boundaries. |
 | `#253` | Closed | Checkpoint 3A child CP1 acceptance harness/API E2E foundation | Completed through merged PR `#254` at `28695fbfec2af63de646a21859c80dd9c6e97a14`. The C3A-CP1 branch added an executable `make checkpoint3-acceptance` dispatcher and the first local/mock API E2E acceptance probe for synthetic approved knowledge, ingestion/chunk/store, retrieval, grounded walkthrough generation, unsupported-claim evaluation, stored API replay evidence, bounded ops evidence, and negative coverage for docs/static false-pass, missing approval, cross-project replay, and unsupported-claim acceptance. It keeps issue `#249` open and leaves language quality, media artifacts, access/quota/retention, security/observability, performance, real-browser E2E, and output-correctness probes planned/non-passing. It authorizes no hosted deployment, public URL, provider setup, real provider call, paid spend, cloned identity, public distribution, or production-readiness claim. |
 | `#257` | Closed | Checkpoint 3A child CP2 output-correctness probe | Closed after PR `#258` merged at `a93948434dbc50a62a7b0b86eeef07f4d9f97cd6`. The C3A-CP2 branch added the second executable `make checkpoint3-acceptance` probe for runtime output-correctness: approved synthetic knowledge, local API generation, idempotent API replay, visible citation binding, `contextRefs`, `claimSupports`, evidence snapshots, project/document/chunk identity, source checksums, unsupported-claim rejection, cross-project fact replay rejection, correct-looking text without evidence binding rejection, docs/prose/static/canned success rejection, bounded subprocess timeout, and redacted failure summaries. It kept issue `#249` open and left language quality, media artifacts, access/quota/retention, security/observability, performance, and real-browser E2E probes planned/non-passing. It authorized no hosted deployment, public URL, provider setup, real provider call, paid spend, cloned identity, public distribution, or production-readiness claim. |
@@ -509,10 +514,10 @@ Use these files together with this tracker:
 | `#267` | Closed | Checkpoint 3A child CP7 performance probe | Closed after PR `#268` merged at `caa8183be7ebf3fa5a3cf34d653727cc5522bf7f`. The C3A-CP7 branch added the seventh executable `make checkpoint3-acceptance` probe for runtime performance: approved synthetic local projects, knowledge upload/approval/ingestion, grounded walkthrough generation, idempotent replay, bounded ops/status evidence, named operation timings, explicit thresholds, request ID binding, elapsed durations, pass/fail status, source-run/evaluation binding, generation trace latency, local/mock provider posture, docs/prose/static/canned success rejection, style-only/status-only rejection, stale and cross-project false-pass rejection, bounded subprocess timeout, and redacted failure summaries. It kept issue `#249` open and left real-browser E2E planned/non-passing at the time of merge. It authorized no hosted deployment, public URL, provider setup, real provider call, paid spend, cloned identity, real media binaries, public distribution, or production-readiness claim. |
 | `#269` | Closed | Checkpoint 3A child CP8 real-browser E2E probe | Closed after PR `#273` merged at `0f737c564f9245b66640988573ac04f4432e06d5`. The C3A-CP8 branch added the eighth executable `make checkpoint3-acceptance` probe for real-browser E2E evidence: approved synthetic local project knowledge through the user-visible workflow, local backend/frontend launch, browser-observed API request/response binding, runtime nonce, project/document/ingestion/run/evaluation/source binding, artifact metadata, bounded ops/status evidence, local/mock provider posture, no success-path interception, docs/prose/static/API-only/canned-success rejection, stale and cross-project false-pass rejection, bounded subprocess timeout, and redacted failure summaries. It kept issue `#249` open. It authorized no hosted deployment, public URL, provider setup, real provider call, paid spend, cloned identity, real media binaries, public distribution, Checkpoint 3B, Checkpoint 3C, or production-readiness claim. |
 | `#274` | Satisfied by prior reviewed PR | Checkpoint 3B child PR1 consent/provenance planning gate | Public-safe consent/provenance planning, acceptance contracts, risk boundaries, and future issue sequencing are satisfied by the prior reviewed PR. It kept issue `#249` open as the public Checkpoint 3 tracker and authorized no Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URL, provider setup, real provider call, paid spend, cloned identity runtime, real media binaries, public distribution, or production-readiness claim. |
-| `#280` | Open | Checkpoint 3A C3A-R3 arbitrary local/demo multilingual closure | PR A-D are merged through PRs `#281`, `#282`, `#283`, and `#284`. PR E is active on branch `phase-1-closure-280-c3a-r3-pr-e-arbitrary-demo-closure` to satisfy the remaining R280 rows with executable local/mock evidence: arbitrary bounded public-safe synthetic markdown, grounded English script generation, deterministic 25-language local/mock conversion, depth and audience adaptation, citation/context/claim-support/evaluation preservation, artifact/report parity, safe browser-visible states, ADR `0038`, and `make issue280-output-correctness`. Issue `#280` remains open until PR E has green local/CI evidence and human review on the exact latest head. It authorizes no hosted/public demo, provider setup, paid spend, real provider calls, cloned identity runtime, real media, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claim. |
+| `#280` | Closed | Checkpoint 3A C3A-R3 arbitrary local/demo multilingual closure | Completed through merged PR `#293` at `bce64b6fe3eb01de013b72e092f0d21e0db69a7b` after latest-head human approval on `9f80b16dcf86890043f8ecbdad434f609786917d` and post-merge main quality workflow run `30144564045` passing. PR E satisfied the local/demo Issue 280 closure rows for arbitrary bounded public-safe synthetic markdown, grounded English script generation, deterministic local/mock 25-language conversion, depth and audience adaptation, citation/context/claim-support/evaluation metadata preservation, artifact/report parity, safe browser-visible states, ADR `0038`, and `make issue280-output-correctness`. Issue `#249` remains open as the public Checkpoint 3 tracker. It authorizes no hosted/public demo, provider setup, paid spend, real provider calls, cloned identity runtime, real media, public distribution, arbitrary human-grade or real-world translation quality, provider quality, Checkpoint 3B implementation, Checkpoint 3C, or production-readiness claim. |
 | `#287` | Open | Governance quality-gate drift repair | Superseded for merge purposes by combined issue `#289` because the governance-only PR is circularly blocked by the inherited PostCSS audit advisory on `main`. |
 | `#289` | Open | Security unblock for PostCSS audit and Stage 8 gate drift | Combined unblock branch `phase-1-closure-process-289-security-postcss-stage8-gate-unblock` intentionally includes the PostCSS dependency metadata remediation, required ADR/traceability/third-party notice updates, and the inherited Stage 8 quality-marker drift repair so required CI can pass atomically. PR `#284` is now merged and settled before PR E. Issue `#289` authorizes no product/runtime code, provider setup, paid spend, hosted/public demo, Next downgrade, production-readiness claim, or issue-closing wording for `#249` or `#280`. |
-| `#296` | Open | Frontend brace-expansion audit unblock | Branch `phase-1-closure-process-296-frontend-brace-expansion-audit` is limited to the npm audit blocker surfaced while validating PR `#295`: pin transitive `minimatch` to `10.2.5` and `brace-expansion` to `5.0.8` through the frontend override and lockfile, keep frontend lint/typecheck/test/build green, and update the exact branch allowlist, ADR `0039`, status, traceability, and notices. It authorizes no product/runtime code, backend changes, provider setup, paid spend, hosted/public demo, real media, public distribution, production-readiness claim, PR `#295` mutation, or issue-closing wording for `#249`. |
+| `#296` | Closed | Frontend brace-expansion audit unblock | Completed through merged PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` after latest-head human approval on `3b5b24a722beac6cfc6e586ecdc1d46757a5084d` and post-merge main quality workflow run `30146305236` passing. The fix pins transitive `minimatch` to `10.2.5` and `brace-expansion` to `5.0.8` through the frontend override and lockfile, keeps frontend lint/typecheck/test/build green, and updates the exact branch allowlist, ADR `0039`, status, traceability, and notices. It authorized no product/runtime code, backend changes, provider setup, paid spend, hosted/public demo, real media, public distribution, production-readiness claim, PR `#295` mutation, or issue-closing wording for `#249`. |
 
 ## Pull Request Ledger
 
@@ -823,18 +828,18 @@ Use these files together with this tracker:
    `#168` as evidence only. Do not resume, patch, rebase, merge, close, delete,
    or rewrite that implementation history.
 2. Keep issue `#8` open until its actual acceptance contract is satisfied.
-3. Complete issue `#280` C3A-R3 through reviewed PR slices. PR A completed
+3. Keep issue `#249` open as the public Checkpoint 3 tracker after issue
+   `#280` C3A-R3 closed through reviewed PR slices. PR A completed
    planning/preflight, public-source persona/audience/depth research, matrix,
    checklist, future implementation test-strategy contract, and merge-safe
-   red-evidence framework only. PR B is limited to the first executable
-   input/API/error contract slice and is merged through PR `#282`. PR C
-   completed the narrow local/mock end-to-end API slice through PR `#283`. PR D
-   completed exact UI/browser evidence through PR `#284`. PR E is the active
-   final local/demo closure slice for arbitrary bounded synthetic markdown,
+   red-evidence framework only. PR B completed the first executable
+   input/API/error contract slice through PR `#282`. PR C completed the narrow
+   local/mock end-to-end API slice through PR `#283`. PR D completed exact
+   UI/browser evidence through PR `#284`. PR E completed the final local/demo
+   closure slice through PR `#293`: arbitrary bounded synthetic markdown,
    25-language deterministic local/mock conversion, artifact parity, and
-   output-correctness evidence. Issues `#249` and `#280` remain open until PR E
-   receives human review and merge-eligible CI on the exact latest head, and
-   C3B remains blocked until issue `#280` is satisfied or reviewed/re-scoped.
+   output-correctness evidence. C3B and C3C still require a fresh issue,
+   branch, PR, review, and green CI.
 4. Keep production,
    multi-worker deployment, hosted launch, Product Mode 2, external provider
    use, real audio/video export, and public synthetic-media distribution No-Go
@@ -868,6 +873,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-07-25 | PR `#297` merged the issue `#296` frontend brace-expansion audit unblock at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` after latest-head human approval on `3b5b24a722beac6cfc6e586ecdc1d46757a5084d`; issue `#296` is closed and post-merge main quality workflow run `30146305236` passed. Scope stayed limited to frontend dependency metadata plus required ADR/status/traceability/notice/checker/test evidence, with no product/runtime code, backend changes, provider setup, paid spend, hosted/public demo, real media, public distribution, production-readiness claim, PR `#295` mutation, or issue-closing wording for `#249`. |
 | 2026-07-25 | Issue `#296` started on branch `phase-1-closure-process-296-frontend-brace-expansion-audit` after local `make ci` for PR `#295` found the frontend npm audit blocked by GHSA-mh99-v99m-4gvg in transitive `brace-expansion`. Scope is limited to pinning `minimatch` to `10.2.5` and `brace-expansion` to `5.0.8` through the frontend npm override/lockfile and the required governance allowlist/status/traceability/notice updates. It authorizes no product/runtime code, provider setup, paid spend, hosted/public demo, real media, public distribution, production-readiness claim, PR `#295` mutation, or issue-closing wording for `#249`. |
 | 2026-07-25 | Issue `#280` continued as C3A-R3 PR E on branch `phase-1-closure-280-c3a-r3-pr-e-arbitrary-demo-closure` after PR `#284` merged PR D at `3f3bbdd05f844384311f193c16075b45e9d076f2`. Scope is the final local/demo closure slice for arbitrary bounded public-safe synthetic markdown, grounded English generation, deterministic local/mock 25-language conversion, depth and audience adaptation, citation/context/claim-support/evaluation preservation, artifact/report parity, browser evidence, ADR `0038`, and `make issue280-output-correctness`. Issues `#249` and `#280` remain open until PR E has green evidence, green CI, and human review on the exact latest head; PR E authorizes no hosted/public demo, provider setup, paid spend, real provider calls, cloned identity runtime, real media, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claim. |
 | 2026-07-25 | PR `#284` merged the Issue `#280` PR D UI/browser slice at `3f3bbdd05f844384311f193c16075b45e9d076f2` after the security-only backend runtime `uv` bump cleared the backend image scan blocker. Issues `#249` and `#280` remained open after PR D; no hosted/public demo, provider setup, paid spend, cloned identity runtime, real media, public distribution, production-readiness claim, or issue-closing wording was authorized. |
