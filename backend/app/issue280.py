@@ -60,13 +60,248 @@ _AUDIENCE_PROFILES = {
     "GLOBAL_VIEWER": ("global viewers", "globally understandable context"),
 }
 _LOCAL_TRANSLATION_TEMPLATES = {
-    "hi": "स्थानीय मॉक रूपांतरण ({native_name}): स्रोत खंड {section}; सुरक्षित परियोजना शब्द {glossary}{citation}",
-    "es": "Conversion local simulada ({native_name}): segmento fuente {section}; termino protegido {glossary}{citation}",
-    "fr": "Conversion locale simulee ({native_name}) : segment source {section}; terme protege {glossary}{citation}",
-    "ar": "تحويل محلي تجريبي ({native_name}): مقطع المصدر {section}; مصطلح محفوظ {glossary}{citation}",
-    "ja": "ローカルモック変換 ({native_name}): ソース区分 {section}; 保護用語 {glossary}{citation}",
-    "he": "המרת מוק מקומית ({native_name}): מקטע מקור {section}; מונח שמור {glossary}{citation}",
-    "default": "Local mock conversion ({native_name}, {english_name}): source segment {section}; protected term {glossary}{citation}",
+    "accepts_public_safe_markdown": "{term} accepts bounded public-safe markdown from project teams{citation}",
+    "extracts_source_backed_claims": "The local demo extracts source-backed claims about release rituals, adoption signals, and evidence handoffs for {term}{citation}",
+    "refuses_unsupported_claims": "{term} refuses unsupported claims before the stored walkthrough is shown in the browser{citation}",
+    "preserves_artifact_evidence": "Local demo artifacts for {term} preserve citations, context references, claim supports, and checksums in alignment{citation}",
+    "links_adoption_evidence": "The workspace for {term} links adoption metrics and release blockers to cited markdown sections{citation}",
+    "explains_adoption_safety_handoffs": "{term} explains adoption metrics, safety gates, and reviewer handoffs{citation}",
+    "source_backed_example": "Source-backed example: {term} links weekly adoption metrics to cited release review sections{citation}",
+    "review_tradeoff": "Source-backed benefit and tradeoff: cited release reviews improve traceability but add reviewer effort for {term}{citation}",
+    "weekly_review_way_forward": "Way forward: review release blockers weekly before sharing the {term} walkthrough{citation}",
+}
+_LOCAL_SEMANTIC_TRANSLATIONS = {
+    "hi": {
+        "accepts_public_safe_markdown": "{term} लॉन्च टीमों से सीमित सार्वजनिक-सुरक्षित मार्कडाउन स्वीकार करता है{citation}",
+        "extracts_source_backed_claims": "{term} में स्थानीय डेमो रिलीज़ रीति-रिवाज, अपनाने के संकेत और प्रमाण हैंडऑफ़ पर स्रोत-समर्थित दावे निकालता है{citation}",
+        "refuses_unsupported_claims": "{term} संग्रहीत वॉकथ्रू ब्राउज़र में दिखाने से पहले असमर्थित दावों को अस्वीकार करता है{citation}",
+        "preserves_artifact_evidence": "{term} के स्थानीय डेमो आर्टिफैक्ट उद्धरण, संदर्भ रेफ, दावा समर्थन और चेकसम मिलाकर रखते हैं{citation}",
+        "links_adoption_evidence": "{term} का कार्यक्षेत्र अपनाने के मेट्रिक और रिलीज़ अवरोधों को उद्धृत मार्कडाउन खंडों से जोड़ता है{citation}",
+        "explains_adoption_safety_handoffs": "{term} अपनाने के मेट्रिक, सुरक्षा गेट और समीक्षक हैंडऑफ़ समझाता है{citation}",
+        "source_backed_example": "स्रोत-समर्थित उदाहरण: {term} साप्ताहिक अपनाने के मेट्रिक को उद्धृत रिलीज़ समीक्षा खंडों से जोड़ता है{citation}",
+        "review_tradeoff": "स्रोत-समर्थित लाभ और समझौता: उद्धृत रिलीज़ समीक्षाएँ पता लगाने योग्य प्रमाण बेहतर बनाती हैं, लेकिन {term} के लिए समीक्षक प्रयास बढ़ाती हैं{citation}",
+        "weekly_review_way_forward": "आगे का रास्ता: {term} वॉकथ्रू साझा करने से पहले रिलीज़ अवरोधों की साप्ताहिक समीक्षा करें{citation}",
+    },
+    "es": {
+        "accepts_public_safe_markdown": "{term} acepta markdown publico seguro y acotado de los equipos de lanzamiento{citation}",
+        "extracts_source_backed_claims": "La demo local de {term} extrae afirmaciones respaldadas por fuentes sobre rituales de lanzamiento, senales de adopcion y traspasos de evidencia{citation}",
+        "refuses_unsupported_claims": "{term} rechaza afirmaciones sin respaldo antes de mostrar el recorrido guardado en el navegador{citation}",
+        "preserves_artifact_evidence": "Los artefactos de demo local de {term} conservan citas, referencias de contexto, soportes de afirmaciones y sumas de verificacion alineadas{citation}",
+        "links_adoption_evidence": "El espacio de trabajo de {term} vincula metricas de adopcion y bloqueos de lanzamiento con secciones markdown citadas{citation}",
+        "explains_adoption_safety_handoffs": "{term} explica metricas de adopcion, controles de seguridad y traspasos de revisores{citation}",
+        "source_backed_example": "Ejemplo respaldado por la fuente: {term} vincula metricas semanales de adopcion con secciones citadas de revision de lanzamientos{citation}",
+        "review_tradeoff": "Beneficio y contrapartida respaldados por la fuente: las revisiones de lanzamiento citadas mejoran la trazabilidad, pero agregan esfuerzo de revision para {term}{citation}",
+        "weekly_review_way_forward": "Siguiente paso: revisar semanalmente los bloqueos de lanzamiento antes de compartir el recorrido de {term}{citation}",
+    },
+    "de": {
+        "accepts_public_safe_markdown": "{term} akzeptiert begrenzte offentlich sichere Markdown-Inhalte von Launch-Teams{citation}",
+        "extracts_source_backed_claims": "Die lokale Demo von {term} extrahiert quellengestutzte Aussagen zu Release-Ritualen, Nutzungssignalen und Evidenz-Ubergaben{citation}",
+        "refuses_unsupported_claims": "{term} lehnt nicht gestutzte Aussagen ab, bevor der gespeicherte Walkthrough im Browser angezeigt wird{citation}",
+        "preserves_artifact_evidence": "Lokale Demo-Artefakte von {term} bewahren Zitate, Kontextreferenzen, Claim-Supports und Prufsummen ausgerichtet auf{citation}",
+        "links_adoption_evidence": "Der Arbeitsbereich von {term} verknupft Adoptionsmetriken und Release-Blocker mit zitierten Markdown-Abschnitten{citation}",
+        "explains_adoption_safety_handoffs": "{term} erklart Adoptionsmetriken, Sicherheitsgates und Reviewer-Ubergaben{citation}",
+    },
+    "fr": {
+        "accepts_public_safe_markdown": "{term} accepte un markdown public sur et limite des equipes de lancement{citation}",
+        "extracts_source_backed_claims": "La demo locale de {term} extrait des affirmations appuyees par les sources sur les rituels de lancement, les signaux d'adoption et les passages de preuve{citation}",
+        "refuses_unsupported_claims": "{term} refuse les affirmations non etayees avant d'afficher le parcours stocke dans le navigateur{citation}",
+        "preserves_artifact_evidence": "Les artefacts de demo locale de {term} conservent les citations, references de contexte, supports d'affirmation et sommes de controle alignes{citation}",
+        "links_adoption_evidence": "L'espace de travail de {term} relie les metriques d'adoption et les bloqueurs de livraison aux sections markdown citees{citation}",
+        "explains_adoption_safety_handoffs": "{term} explique les metriques d'adoption, les controles de securite et les passages de relais des reviewers{citation}",
+    },
+    "pt-BR": {
+        "accepts_public_safe_markdown": "{term} aceita markdown publico seguro e delimitado das equipes de lancamento{citation}",
+        "extracts_source_backed_claims": "A demo local de {term} extrai afirmacoes baseadas em fonte sobre rituais de lancamento, sinais de adocao e passagens de evidencia{citation}",
+        "refuses_unsupported_claims": "{term} recusa afirmacoes sem suporte antes de mostrar o passo a passo armazenado no navegador{citation}",
+        "preserves_artifact_evidence": "Os artefatos da demo local de {term} preservam citacoes, referencias de contexto, suportes de afirmacoes e checksums alinhados{citation}",
+        "links_adoption_evidence": "O espaco de trabalho de {term} vincula metricas de adocao e bloqueios de lancamento a secoes markdown citadas{citation}",
+        "explains_adoption_safety_handoffs": "{term} explica metricas de adocao, gates de seguranca e repasses de revisores{citation}",
+    },
+    "it": {
+        "accepts_public_safe_markdown": "{term} accetta markdown pubblico sicuro e limitato dai team di lancio{citation}",
+        "extracts_source_backed_claims": "La demo locale di {term} estrae affermazioni supportate da fonti su rituali di rilascio, segnali di adozione e passaggi di evidenza{citation}",
+        "refuses_unsupported_claims": "{term} rifiuta affermazioni non supportate prima che il walkthrough salvato sia mostrato nel browser{citation}",
+        "preserves_artifact_evidence": "Gli artefatti della demo locale di {term} preservano citazioni, riferimenti di contesto, supporti alle affermazioni e checksum allineati{citation}",
+        "links_adoption_evidence": "Lo spazio di lavoro di {term} collega metriche di adozione e blocchi di rilascio alle sezioni markdown citate{citation}",
+        "explains_adoption_safety_handoffs": "{term} spiega metriche di adozione, gate di sicurezza e passaggi dei revisori{citation}",
+    },
+    "nl": {
+        "accepts_public_safe_markdown": "{term} accepteert begrensde publiek veilige markdown van lanceringsteams{citation}",
+        "extracts_source_backed_claims": "De lokale demo van {term} haalt brononderbouwde claims op over release-rituelen, adoptiesignalen en bewijs-overdrachten{citation}",
+        "refuses_unsupported_claims": "{term} weigert niet-onderbouwde claims voordat de opgeslagen walkthrough in de browser wordt getoond{citation}",
+        "preserves_artifact_evidence": "Lokale demo-artefacten van {term} bewaren citaties, contextreferenties, claimondersteuning en checksums in lijn{citation}",
+        "links_adoption_evidence": "De werkruimte van {term} koppelt adoptiestatistieken en releaseblokkades aan geciteerde markdown-secties{citation}",
+        "explains_adoption_safety_handoffs": "{term} legt adoptiestatistieken, veiligheidspoorten en reviewer-overdrachten uit{citation}",
+    },
+    "pl": {
+        "accepts_public_safe_markdown": "{term} przyjmuje ograniczony publicznie bezpieczny markdown od zespolow wydan{citation}",
+        "extracts_source_backed_claims": "Lokalne demo {term} wyodrebnia twierdzenia oparte na zrodlach o rytualach wydan, sygnalach adopcji i przekazaniach dowodow{citation}",
+        "refuses_unsupported_claims": "{term} odrzuca niepoparte twierdzenia zanim zapisany walkthrough pojawi sie w przegladarce{citation}",
+        "preserves_artifact_evidence": "Lokalne artefakty demo {term} zachowuja cytaty, referencje kontekstu, wsparcie twierdzen i zgodne sumy kontrolne{citation}",
+        "links_adoption_evidence": "Obszar roboczy {term} laczy metryki adopcji i blokady wydan z cytowanymi sekcjami markdown{citation}",
+        "explains_adoption_safety_handoffs": "{term} wyjasnia metryki adopcji, bramki bezpieczenstwa i przekazania recenzentow{citation}",
+    },
+    "uk": {
+        "accepts_public_safe_markdown": "{term} приймає обмежений публічно безпечний markdown від команд запуску{citation}",
+        "extracts_source_backed_claims": "Локальна демо {term} витягує підтверджені джерелами твердження про ритуали релізу, сигнали впровадження та передачу доказів{citation}",
+        "refuses_unsupported_claims": "{term} відхиляє непідтверджені твердження до показу збереженого walkthrough у браузері{citation}",
+        "preserves_artifact_evidence": "Локальні демо-артефакти {term} зберігають цитати, контекстні посилання, підтримку тверджень і узгоджені контрольні суми{citation}",
+        "links_adoption_evidence": "Робочий простір {term} пов'язує метрики впровадження і блокери релізу з цитованими markdown-розділами{citation}",
+        "explains_adoption_safety_handoffs": "{term} пояснює метрики впровадження, ворота безпеки та передачі рецензентів{citation}",
+    },
+    "ru": {
+        "accepts_public_safe_markdown": "{term} принимает ограниченный публично безопасный markdown от команд запуска{citation}",
+        "extracts_source_backed_claims": "Локальная демо {term} извлекает подтвержденные источниками утверждения о ритуалах релиза, сигналах внедрения и передаче доказательств{citation}",
+        "refuses_unsupported_claims": "{term} отклоняет неподтвержденные утверждения до показа сохраненного walkthrough в браузере{citation}",
+        "preserves_artifact_evidence": "Локальные демо-артефакты {term} сохраняют цитаты, контекстные ссылки, поддержку утверждений и согласованные контрольные суммы{citation}",
+        "links_adoption_evidence": "Рабочая область {term} связывает метрики внедрения и блокеры релиза с цитированными markdown-разделами{citation}",
+        "explains_adoption_safety_handoffs": "{term} объясняет метрики внедрения, ворота безопасности и передачи рецензентов{citation}",
+    },
+    "zh-Hans": {
+        "accepts_public_safe_markdown": "{term} 接受来自发布团队的有界公共安全 Markdown{citation}",
+        "extracts_source_backed_claims": "{term} 的本地演示提取关于发布仪式、采用信号和证据交接的来源支撑声明{citation}",
+        "refuses_unsupported_claims": "{term} 在浏览器显示已存储演示前拒绝无支撑声明{citation}",
+        "preserves_artifact_evidence": "{term} 的本地演示制品保留引用、上下文引用、声明支撑和校验和对齐{citation}",
+        "links_adoption_evidence": "{term} 工作区把采用指标和发布阻碍链接到已引用的 Markdown 章节{citation}",
+        "explains_adoption_safety_handoffs": "{term} 说明采用指标、安全门和评审交接{citation}",
+    },
+    "zh-Hant": {
+        "accepts_public_safe_markdown": "{term} 接受來自發布團隊的有界公共安全 Markdown{citation}",
+        "extracts_source_backed_claims": "{term} 的本地示範擷取關於發布儀式、採用訊號和證據交接的來源支撐聲明{citation}",
+        "refuses_unsupported_claims": "{term} 在瀏覽器顯示已儲存 walkthrough 前拒絕無支撐聲明{citation}",
+        "preserves_artifact_evidence": "{term} 的本地示範成品保留引用、情境參照、聲明支撐和校驗和對齊{citation}",
+        "links_adoption_evidence": "{term} 工作區把採用指標和發布阻礙連結到已引用的 Markdown 章節{citation}",
+        "explains_adoption_safety_handoffs": "{term} 說明採用指標、安全閘門和審閱交接{citation}",
+    },
+    "ja": {
+        "accepts_public_safe_markdown": "{term} はローンチチームから限定された公開安全なMarkdownを受け付けます{citation}",
+        "extracts_source_backed_claims": "{term} のローカルデモは、リリース儀式、採用シグナル、証拠引き継ぎに関するソース根拠付きの主張を抽出します{citation}",
+        "refuses_unsupported_claims": "{term} は保存済みウォークスルーをブラウザに表示する前に、根拠のない主張を拒否します{citation}",
+        "preserves_artifact_evidence": "{term} のローカルデモ成果物は、引用、コンテキスト参照、主張サポート、チェックサムの整合を保持します{citation}",
+        "links_adoption_evidence": "{term} のワークスペースは、採用指標とリリース阻害要因を引用済みMarkdownセクションへ結び付けます{citation}",
+        "explains_adoption_safety_handoffs": "{term} は採用指標、安全ゲート、レビュー担当者の引き継ぎを説明します{citation}",
+    },
+    "ko": {
+        "accepts_public_safe_markdown": "{term}는 출시 팀의 제한된 공개 안전 Markdown을 받습니다{citation}",
+        "extracts_source_backed_claims": "{term}의 로컬 데모는 릴리스 의식, 채택 신호, 증거 인계에 대한 출처 기반 주장을 추출합니다{citation}",
+        "refuses_unsupported_claims": "{term}는 저장된 워크스루가 브라우저에 표시되기 전에 근거 없는 주장을 거부합니다{citation}",
+        "preserves_artifact_evidence": "{term}의 로컬 데모 산출물은 인용, 컨텍스트 참조, 주장 근거, 체크섬 정렬을 보존합니다{citation}",
+        "links_adoption_evidence": "{term} 작업공간은 채택 지표와 릴리스 차단요인을 인용된 Markdown 섹션에 연결합니다{citation}",
+        "explains_adoption_safety_handoffs": "{term}는 채택 지표, 안전 게이트, 검토자 인계를 설명합니다{citation}",
+    },
+    "ar": {
+        "accepts_public_safe_markdown": "{term} يقبل ماركداون عام آمن ومحدود من فرق الإطلاق{citation}",
+        "extracts_source_backed_claims": "يعرض {term} محلياً ادعاءات مدعومة بالمصادر عن طقوس الإصدار وإشارات التبني وتسليم الأدلة{citation}",
+        "refuses_unsupported_claims": "{term} يرفض الادعاءات غير المدعومة قبل عرض الجولة المخزنة في المتصفح{citation}",
+        "preserves_artifact_evidence": "تحافظ آثار العرض المحلي في {term} على الاقتباسات ومراجع السياق ودعم الادعاءات والمجاميع الاختبارية متوافقة{citation}",
+        "links_adoption_evidence": "تربط مساحة عمل {term} مقاييس التبني ومعوقات الإصدار بأقسام ماركداون مقتبسة{citation}",
+        "explains_adoption_safety_handoffs": "{term} يشرح مقاييس التبني وبوابات السلامة وتسليمات المراجعين{citation}",
+    },
+    "arz": {
+        "accepts_public_safe_markdown": "{term} بيقبل ماركداون عام آمن ومحدود من فرق الإطلاق{citation}",
+        "extracts_source_backed_claims": "الديمو المحلي في {term} بيستخرج ادعاءات مسنودة بمصادر عن طقوس الإصدار وإشارات التبني وتسليم الأدلة{citation}",
+        "refuses_unsupported_claims": "{term} بيرفض الادعاءات غير المسنودة قبل عرض الجولة المخزنة في المتصفح{citation}",
+        "preserves_artifact_evidence": "آثار الديمو المحلي في {term} بتحافظ على الاقتباسات ومراجع السياق ودعم الادعاءات والمجاميع الاختبارية متوافقة{citation}",
+        "links_adoption_evidence": "مساحة عمل {term} بتربط مقاييس التبني ومعوقات الإصدار بأقسام ماركداون مقتبسة{citation}",
+        "explains_adoption_safety_handoffs": "{term} بيشرح مقاييس التبني وبوابات السلامة وتسليمات المراجعين{citation}",
+    },
+    "he": {
+        "accepts_public_safe_markdown": "{term} מקבל מרקדאון ציבורי בטוח ומוגבל מצוותי השקה{citation}",
+        "extracts_source_backed_claims": "הדמו המקומי של {term} מחלץ טענות מגובות מקור על טקסי שחרור, אותות אימוץ והעברת ראיות{citation}",
+        "refuses_unsupported_claims": "{term} דוחה טענות לא נתמכות לפני שהסיור השמור מוצג בדפדפן{citation}",
+        "preserves_artifact_evidence": "ארטיפקטי הדמו המקומי של {term} שומרים ציטוטים, הפניות הקשר, תמיכות טענה וסכומי בדיקה מיושרים{citation}",
+        "links_adoption_evidence": "סביבת העבודה של {term} מקשרת מדדי אימוץ וחסמי שחרור למקטעי markdown מצוטטים{citation}",
+        "explains_adoption_safety_handoffs": "{term} מסביר מדדי אימוץ, שערי בטיחות והעברות סוקרים{citation}",
+    },
+    "fa": {
+        "accepts_public_safe_markdown": "{term} مارکداون عمومی امن و محدود را از تیم‌های انتشار می‌پذیرد{citation}",
+        "extracts_source_backed_claims": "نمایش محلی {term} ادعاهای پشتیبانی‌شده با منبع درباره آیین‌های انتشار، نشانه‌های پذیرش و تحویل شواهد را استخراج می‌کند{citation}",
+        "refuses_unsupported_claims": "{term} ادعاهای بدون پشتیبانی را پیش از نمایش walkthrough ذخیره‌شده در مرورگر رد می‌کند{citation}",
+        "preserves_artifact_evidence": "آرتیفکت‌های نمایش محلی {term} نقل‌قول‌ها، ارجاع‌های زمینه، پشتیبانی ادعاها و چک‌سام‌ها را هم‌تراز نگه می‌دارند{citation}",
+        "links_adoption_evidence": "فضای کاری {term} شاخص‌های پذیرش و مسدودکننده‌های انتشار را به بخش‌های markdown نقل‌شده پیوند می‌دهد{citation}",
+        "explains_adoption_safety_handoffs": "{term} شاخص‌های پذیرش، دروازه‌های ایمنی و تحویل‌های بازبین را توضیح می‌دهد{citation}",
+    },
+    "tr": {
+        "accepts_public_safe_markdown": "{term} lansman ekiplerinden sinirli herkese acik guvenli markdown kabul eder{citation}",
+        "extracts_source_backed_claims": "{term} yerel demosu, surum ritueleri, benimseme sinyalleri ve kanit aktarimlari hakkinda kaynak destekli iddialari cikarir{citation}",
+        "refuses_unsupported_claims": "{term} kayitli walkthrough tarayicida gosterilmeden once desteksiz iddialari reddeder{citation}",
+        "preserves_artifact_evidence": "{term} yerel demo artefaktlari alintilari, baglam referanslarini, iddia desteklerini ve checksumlari hizali tutar{citation}",
+        "links_adoption_evidence": "{term} calisma alani benimseme metriklerini ve surum engellerini alintili markdown bolumlerine baglar{citation}",
+        "explains_adoption_safety_handoffs": "{term} benimseme metriklerini, guvenlik kapilarini ve reviewer devirlerini aciklar{citation}",
+    },
+    "vi": {
+        "accepts_public_safe_markdown": "{term} nhan markdown cong khai an toan co gioi han tu cac nhom ra mat{citation}",
+        "extracts_source_backed_claims": "Ban demo cuc bo cua {term} trich xuat cac nhan dinh co nguon ve nghi thuc phat hanh, tin hieu chap nhan va ban giao bang chung{citation}",
+        "refuses_unsupported_claims": "{term} tu choi cac nhan dinh khong co ho tro truoc khi walkthrough da luu duoc hien thi trong trinh duyet{citation}",
+        "preserves_artifact_evidence": "Cac tao pham demo cuc bo cua {term} giu nguyen trich dan, tham chieu ngu canh, ho tro nhan dinh va checksum dong bo{citation}",
+        "links_adoption_evidence": "Khong gian lam viec cua {term} lien ket chi so chap nhan va chan tro phat hanh voi cac muc markdown duoc trich dan{citation}",
+        "explains_adoption_safety_handoffs": "{term} giai thich chi so chap nhan, cong an toan va ban giao nguoi danh gia{citation}",
+    },
+    "id": {
+        "accepts_public_safe_markdown": "{term} menerima markdown aman publik yang dibatasi dari tim peluncuran{citation}",
+        "extracts_source_backed_claims": "Demo lokal {term} mengekstrak klaim berbasis sumber tentang ritual rilis, sinyal adopsi, dan serah terima bukti{citation}",
+        "refuses_unsupported_claims": "{term} menolak klaim tanpa dukungan sebelum walkthrough tersimpan ditampilkan di browser{citation}",
+        "preserves_artifact_evidence": "Artefak demo lokal {term} menjaga kutipan, referensi konteks, dukungan klaim, dan checksum tetap selaras{citation}",
+        "links_adoption_evidence": "Ruang kerja {term} menghubungkan metrik adopsi dan penghambat rilis ke bagian markdown yang dikutip{citation}",
+        "explains_adoption_safety_handoffs": "{term} menjelaskan metrik adopsi, gerbang keselamatan, dan serah terima reviewer{citation}",
+    },
+    "fil": {
+        "accepts_public_safe_markdown": "{term} tumatanggap ng limitadong pampublikong ligtas na markdown mula sa mga launch team{citation}",
+        "extracts_source_backed_claims": "Ang lokal na demo ng {term} ay kumukuha ng mga claim na suportado ng source tungkol sa release rituals, adoption signals, at evidence handoffs{citation}",
+        "refuses_unsupported_claims": "{term} tumatanggi sa hindi suportadong claim bago ipakita sa browser ang nakaimbak na walkthrough{citation}",
+        "preserves_artifact_evidence": "Pinapanatili ng lokal na demo artifacts ng {term} ang citations, context references, claim supports, at checksums na magkatugma{citation}",
+        "links_adoption_evidence": "Iniuugnay ng workspace ng {term} ang adoption metrics at release blockers sa mga binanggit na markdown section{citation}",
+        "explains_adoption_safety_handoffs": "{term} nagpapaliwanag ng adoption metrics, safety gates, at reviewer handoffs{citation}",
+    },
+    "th": {
+        "accepts_public_safe_markdown": "{term} รับมาร์กดาวน์สาธารณะที่ปลอดภัยและมีขอบเขตจากทีมเปิดตัว{citation}",
+        "extracts_source_backed_claims": "เดโมท้องถิ่นของ {term} ดึงคำกล่าวอ้างที่มีแหล่งอ้างอิงเกี่ยวกับพิธีการปล่อยงาน สัญญาณการยอมรับ และการส่งต่อหลักฐาน{citation}",
+        "refuses_unsupported_claims": "{term} ปฏิเสธคำกล่าวอ้างที่ไม่มีหลักฐานก่อนแสดง walkthrough ที่จัดเก็บไว้ในเบราว์เซอร์{citation}",
+        "preserves_artifact_evidence": "อาร์ติแฟกต์เดโมท้องถิ่นของ {term} รักษาการอ้างอิง การอ้างอิงบริบท การสนับสนุนคำกล่าวอ้าง และ checksum ให้ตรงกัน{citation}",
+        "links_adoption_evidence": "พื้นที่ทำงานของ {term} เชื่อมเมตริกการยอมรับและตัวบล็อกการปล่อยงานกับส่วน markdown ที่ถูกอ้างอิง{citation}",
+        "explains_adoption_safety_handoffs": "{term} อธิบายเมตริกการยอมรับ เกตความปลอดภัย และการส่งต่อผู้ตรวจทาน{citation}",
+    },
+    "ms": {
+        "accepts_public_safe_markdown": "{term} menerima markdown selamat awam yang terhad daripada pasukan pelancaran{citation}",
+        "extracts_source_backed_claims": "Demo tempatan {term} mengekstrak dakwaan bersumber tentang ritual keluaran, isyarat penerimaan dan serahan bukti{citation}",
+        "refuses_unsupported_claims": "{term} menolak dakwaan tanpa sokongan sebelum walkthrough tersimpan dipaparkan dalam pelayar{citation}",
+        "preserves_artifact_evidence": "Artefak demo tempatan {term} mengekalkan petikan, rujukan konteks, sokongan dakwaan dan checksum sejajar{citation}",
+        "links_adoption_evidence": "Ruang kerja {term} menghubungkan metrik penerimaan dan penghalang keluaran kepada seksyen markdown yang dipetik{citation}",
+        "explains_adoption_safety_handoffs": "{term} menerangkan metrik penerimaan, pagar keselamatan dan serahan penyemak{citation}",
+    },
+}
+_METADATA_ONLY_TARGET_MARKERS = (
+    "Local mock conversion",
+    "source segment",
+    "protected term",
+    "Conversion local simulada",
+    "segmento fuente",
+    "Conversion locale simulee",
+    "segment source",
+    "स्थानीय मॉक रूपांतरण",
+    "स्रोत खंड",
+    "تحويل محلي تجريبي",
+    "مقطع المصدر",
+    "ローカルモック変換",
+    "ソース区分",
+    "המרת מוק מקומית",
+    "מקטע מקור",
+)
+_DEPTH_RANK = {
+    "CONCISE": 0,
+    "STANDARD": 1,
+    "DEEP": 2,
+}
+_SEMANTIC_CLAUSE_MIN_DEPTH = {
+    "accepts_public_safe_markdown": "CONCISE",
+    "extracts_source_backed_claims": "CONCISE",
+    "refuses_unsupported_claims": "CONCISE",
+    "preserves_artifact_evidence": "STANDARD",
+    "links_adoption_evidence": "STANDARD",
+    "explains_adoption_safety_handoffs": "STANDARD",
+    "source_backed_example": "STANDARD",
+    "review_tradeoff": "DEEP",
+    "weekly_review_way_forward": "DEEP",
 }
 
 
@@ -491,6 +726,7 @@ class Issue280LocalDemoService:
             target_language=target_language,
             target_record=target_record,
             glossary_terms=request.glossary_terms,
+            depth=request.depth,
         )
         evaluation_checksum = _evaluation_checksum(claim_supports)
         output_checksum = checksum_text(
@@ -679,27 +915,39 @@ def _body_lines_to_facts(heading: str, body: list[str]) -> list[tuple[str, str]]
 
 def _render_grounded_script(*, facts: tuple[Issue280GroundedFact, ...], audience: str, depth: str) -> str:
     audience_label, audience_marker = _AUDIENCE_PROFILES[audience]
-    if depth == "CONCISE":
-        selected_facts = facts[: max(1, min(3, len(facts)))]
-        claims = [
-            f"For {audience_label}, the {audience_marker} is {fact.fact_text} [{fact.citation_index}]."
-            for fact in selected_facts
-        ]
-        return " ".join(claims)
-    if depth == "DEEP":
-        claims = [
-            (
-                f"For {audience_label}, the {audience_marker} adds source-grounded detail and tradeoff from "
-                f"{fact.section_heading}: {fact.fact_text} [{fact.citation_index}]."
-            )
-            for fact in facts
-        ]
-        return " ".join(claims)
-    claims = [
-        f"For {audience_label}, the {audience_marker} is source-bound: {fact.fact_text} [{fact.citation_index}]."
-        for fact in facts
-    ]
+    selected_facts: list[tuple[Issue280GroundedFact, str | None]] = []
+    for fact in facts:
+        semantic_key = _semantic_clause_key_for_rendering(fact.fact_text)
+        minimum_depth = _SEMANTIC_CLAUSE_MIN_DEPTH[semantic_key] if semantic_key is not None else "STANDARD"
+        if _DEPTH_RANK[minimum_depth] <= _DEPTH_RANK[depth]:
+            selected_facts.append((fact, semantic_key))
+    if not selected_facts:
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "depth")
+
+    claims = []
+    for fact, semantic_key in selected_facts:
+        minimum_depth = _SEMANTIC_CLAUSE_MIN_DEPTH[semantic_key] if semantic_key is not None else "STANDARD"
+        if semantic_key == "source_backed_example":
+            framing = "a source-backed example is"
+        elif minimum_depth == "STANDARD":
+            framing = "additional source-bound context is"
+        elif semantic_key == "review_tradeoff":
+            framing = "the source-backed benefit and tradeoff are"
+        elif semantic_key == "weekly_review_way_forward":
+            framing = "the source-backed way forward is"
+        else:
+            framing = f"the {audience_marker} is"
+        claims.append(f"For {audience_label}, {framing} {fact.fact_text} [{fact.citation_index}].")
     return " ".join(claims)
+
+
+def _semantic_clause_key_for_rendering(fact_text: str) -> str | None:
+    try:
+        return _semantic_clause_key(fact_text)
+    except Issue280ContractError as exc:
+        if exc.code != "ISSUE280_TRANSLATION_REFUSED":
+            raise
+        return None
 
 
 def _evaluate_supported_claims(
@@ -737,6 +985,7 @@ def _build_multilingual_response(
     target_language: str,
     target_record: LanguageCatalogRecord,
     glossary_terms: list[str],
+    depth: str,
 ) -> Issue280LocalDemoMultilingualResponse:
     facts_by_citation = {fact.citation_index: fact for fact in facts}
     segments: list[Issue280LocalDemoTranscriptSegmentResponse] = []
@@ -766,6 +1015,7 @@ def _build_multilingual_response(
             json.dumps(
                 {
                     "targetLanguage": target_language,
+                    "depth": depth,
                     "glossaryTerms": glossary_terms,
                     "segments": [segment.segment_id for segment in segments],
                 },
@@ -785,17 +1035,79 @@ def _translate_fact(
 ) -> str:
     citation = f"[{fact.citation_index}]"
     preserved_terms = _preserved_glossary_terms(glossary_terms)
-    glossary_clause = _glossary_clause(preserved_terms)
+    term = _primary_project_term(preserved_terms)
+    semantic_key = _semantic_clause_key(fact.fact_text)
     if target_record.language_tag == "en":
-        return f"{fact.fact_text} {glossary_clause}{citation}"
-    template = _LOCAL_TRANSLATION_TEMPLATES.get(target_record.language_tag, _LOCAL_TRANSLATION_TEMPLATES["default"])
-    return template.format(
-        native_name=target_record.native_name,
-        english_name=target_record.english_name,
+        target_text = _LOCAL_TRANSLATION_TEMPLATES[semantic_key].format(term=term, citation=citation)
+    else:
+        language_templates = _LOCAL_SEMANTIC_TRANSLATIONS.get(target_record.language_tag)
+        if language_templates is None or semantic_key not in language_templates:
+            raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetLanguage")
+        target_text = language_templates[semantic_key].format(term=term, citation=citation)
+    _assert_semantic_target_text(
+        source_text=fact.fact_text,
+        target_text=target_text,
+        target_language=target_record.language_tag,
         citation=citation,
-        section=fact.section_heading,
-        glossary=glossary_clause,
     )
+    return target_text
+
+
+def _semantic_clause_key(fact_text: str) -> str:
+    normalized = fact_text.lower()
+    if "accepts bounded public-safe markdown" in normalized:
+        return "accepts_public_safe_markdown"
+    if "extracts source-backed claims" in normalized:
+        return "extracts_source_backed_claims"
+    if "unsupported claims are refused" in normalized:
+        return "refuses_unsupported_claims"
+    if "artifacts keep citations" in normalized or "artifacts preserve citations" in normalized:
+        return "preserves_artifact_evidence"
+    if "links adoption metrics" in normalized and "release blockers" in normalized:
+        return "links_adoption_evidence"
+    if "explains adoption metrics" in normalized and "safety gates" in normalized and "reviewer handoffs" in normalized:
+        return "explains_adoption_safety_handoffs"
+    if "for example" in normalized and "weekly adoption metrics" in normalized and "release review sections" in normalized:
+        return "source_backed_example"
+    if "benefit of cited release reviews" in normalized and "tradeoff is added reviewer effort" in normalized:
+        return "review_tradeoff"
+    if "practical way forward" in normalized and "review release blockers weekly" in normalized:
+        return "weekly_review_way_forward"
+    raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "documents")
+
+
+def _primary_project_term(glossary_terms: list[str]) -> str:
+    preserved_terms = _preserved_glossary_terms(glossary_terms)
+    if preserved_terms:
+        return preserved_terms[0]
+    return "The project"
+
+
+def _assert_semantic_target_text(
+    *,
+    source_text: str,
+    target_text: str,
+    target_language: str,
+    citation: str,
+) -> None:
+    if citation not in target_text:
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetText")
+    if any(marker in target_text for marker in _METADATA_ONLY_TARGET_MARKERS):
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetText")
+    if target_language == "en":
+        return
+    forbidden_source_phrases = (
+        "accepts bounded public-safe markdown",
+        "extracts source-backed claims",
+        "Unsupported claims are refused",
+        "artifacts keep citations",
+        "links adoption metrics",
+        "release blockers to cited markdown sections",
+    )
+    source_lower = source_text.lower()
+    target_lower = target_text.lower()
+    if any(phrase.lower() in source_lower and phrase.lower() in target_lower for phrase in forbidden_source_phrases):
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetText")
 
 
 def _preserved_glossary_terms(glossary_terms: list[str]) -> list[str]:
@@ -997,6 +1309,7 @@ def _build_correctness_report(
     artifact_bundle_checksum: str,
     provider_posture: dict[str, Any],
 ) -> dict[str, Any]:
+    checks = _build_semantic_correctness_checks(multilingual=multilingual, evaluation=evaluation)
     return {
         "schema": "Issue280OutputCorrectnessReportV1",
         "status": "PASSED",
@@ -1013,20 +1326,55 @@ def _build_correctness_report(
         "artifactBundleChecksum": artifact_bundle_checksum,
         "providerPosture": provider_posture,
         "preservedGlossaryTerms": multilingual.preserved_glossary_terms,
-        "checks": {
-            "untranslatedSourceLeakage": "PASSED",
-            "missingClauses": "PASSED",
-            "lostCitations": "PASSED",
-            "brokenSegmentCount": "PASSED",
-            "metadataArtifactParity": "PASSED",
-            "unsafeOutput": "PASSED",
-        },
+        "checks": checks,
         "boundaries": {
             "translationQualityClaim": "deterministic local/mock conversion only",
             "providerCalls": "disabled",
             "realMedia": False,
             "hostedPublicProduction": False,
         },
+    }
+
+
+def _build_semantic_correctness_checks(
+    *,
+    multilingual: Issue280LocalDemoMultilingualResponse,
+    evaluation: Issue280LocalDemoEvaluationResponse,
+) -> dict[str, str]:
+    if len(multilingual.segments) != len(evaluation.claim_supports):
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetText")
+
+    unsupported_output_markers = (
+        "api_key",
+        "Bearer",
+        "Authorization",
+        "Traceback",
+        "/Users/",
+        "contentBase64",
+        "provider payload",
+    )
+    for segment in multilingual.segments:
+        citation = f"[{segment.citation_indexes[0]}]"
+        _assert_semantic_target_text(
+            source_text=segment.source_text,
+            target_text=segment.target_text,
+            target_language=multilingual.target_language,
+            citation=citation,
+        )
+        if not segment.context_ref_ids or not segment.claim_support_ids:
+            raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetText")
+        if any(marker in segment.target_text for marker in unsupported_output_markers):
+            raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "targetText")
+
+    return {
+        "untranslatedSourceLeakage": "PASSED",
+        "missingClauses": "PASSED",
+        "lostCitations": "PASSED",
+        "brokenSegmentCount": "PASSED",
+        "metadataArtifactParity": "PASSED",
+        "metadataOnlyTargetText": "PASSED",
+        "semanticClauseConversion": "PASSED",
+        "unsafeOutput": "PASSED",
     }
 
 

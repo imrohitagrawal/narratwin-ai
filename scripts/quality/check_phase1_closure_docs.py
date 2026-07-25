@@ -31,6 +31,7 @@ ISSUE_280_PR_B_BRANCH = "phase-1-closure-280-c3a-r3-pr-b-input-api-error-contrac
 ISSUE_280_PR_C_BRANCH = "phase-1-closure-280-c3a-r3-pr-c-local-e2e-demo-slice"
 ISSUE_280_PR_D_BRANCH = "phase-1-closure-280-c3a-r3-pr-d-ui-browser-demo-slice"
 ISSUE_280_PR_E_BRANCH = "phase-1-closure-280-c3a-r3-pr-e-arbitrary-demo-closure"
+ISSUE_298_BRANCH = "phase-1-closure-298-issue280-semantic-multilingual-correction"
 ISSUE_280_MATRIX_PATH = "reports/checkpoint3-issue280/requirement-matrix.json"
 ISSUE_280_RED_EVIDENCE_PATH = "reports/checkpoint3-issue280/red-evidence-plan.json"
 ISSUE_280_REQUIRED_SECTIONS = {
@@ -55,8 +56,13 @@ ISSUE_280_REQUIRED_SECTIONS = {
     "R280-GOV",
 }
 ISSUE_280_ALLOWED_ROW_STATUSES = {
+    "STRUCTURAL_PASS",
+    "SEMANTIC_PASS",
+    "NOT_PROVEN",
+    "FAILED",
     "STATIC_CONTRACT_PASS",
     "EXECUTABLE_CONTRACT_PASS",
+    "SEMANTIC_EXECUTABLE_PASS",
     "RED_EVIDENCE_CAPTURED",
     "PLANNED_IMPLEMENTATION",
     "PLANNED_EXECUTABLE_GATE",
@@ -586,6 +592,33 @@ ISSUE_280_PR_E_ALLOWED_CHANGED_FILES = {
     "scripts/quality/verify_issue280_output_correctness.py",
     "tests/acceptance/test_issue280_pr_e_closure.py",
     "tests/contract/test_issue280_ui_api_artifact_parity.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_298_ALLOWED_CHANGED_FILES = {
+    ".github/pull_request_template.md",
+    "backend/app/issue280.py",
+    "docs/QUALITY_GATES.md",
+    "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/ADR/0040-issue280-semantic-local-demo-correction.md",
+    "docs/templates/SEMANTIC_CLOSURE_GATE.md",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+    "docs/reviews/ISSUE_298_REPO_SEMANTIC_GATE_PREFLIGHT.md",
+    "docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md",
+    "frontend/tests/issue280-ui-browser.spec.ts",
+    ISSUE_280_MATRIX_PATH,
+    "reports/checkpoint3-issue280/issue280-pr-e-desktop-output-evidence.png",
+    "reports/checkpoint3-issue280/issue280-pr-e-mobile-output-evidence.png",
+    "reports/checkpoint3-issue280/issue280-pr-e-output-correctness-execution-verifier.json",
+    "reports/checkpoint3-issue280/issue280-pr-e-mobile-browser-evidence.json",
+    "scripts/guardrails_check.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "scripts/quality/verify_issue280_output_correctness.py",
+    "tests/acceptance/test_issue280_pr_e_closure.py",
+    "tests/contract/test_issue280_ui_api_artifact_parity.py",
+    "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_274_ALLOWED_CHANGED_FILES = {
@@ -1900,10 +1933,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #280 / c3a-r3-pr-e-arbitrary-demo-closure",
-        "c3a-r3-pr-e-active",
-        "c3a-r3-pr-e-active",
-        "Issue #280 is active for C3A-R3 PR E after PR D merged through PR #284 at 3f3bbdd05f844384311f193c16075b45e9d076f2. PR E is the final local/demo closure slice: arbitrary bounded public-safe synthetic markdown, grounded English generation, deterministic local/mock conversion across the 25 supported Priority 1 languages, depth and audience adaptation, citation/context/claim-support/evaluation metadata preservation, artifact/report parity, and browser-visible output-correctness evidence through `make issue280-output-correctness`. Issue #249 remains open as the public Checkpoint 3 tracker, issue #280 remains open until PR E receives human review and merge-eligible CI on the exact latest head, and C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claims.",
+        "issue #298 / issue #280 semantic correction",
+        "issue280-semantic-correction-active",
+        "issue280-semantic-correction-active",
+        "Issue #298 is the active corrective slice after real-browser evidence showed that the prior #280 closure evidence accepted metadata-only/mock target transcripts as multilingual output correctness. The branch `phase-1-closure-298-issue280-semantic-multilingual-correction` preserves the memory artifact `docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md`, strengthens `make issue280-output-correctness` to reject metadata-only target text and English fallback, repairs the deterministic 25-language local/demo path for bounded public-safe synthetic project clauses while preserving citations/context refs/claim supports/evaluation metadata/artifact parity, and installs a repo-level guardrail requiring future implementation PRs to include non-read-only post-implementation execution-verifier evidence before semantic/output rows may be treated as satisfied. Issue #249 remains open as the public Checkpoint 3 tracker. C3B remains blocked until issue #280's semantic closure evidence is reviewed/merged or explicitly re-scoped. This state does not authorize Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URLs, provider account setup, dashboard configuration, paid plan activation, wallet funding, paid spend, real provider calls, cloned identity runtime, cloned voice, cloned face, digital twin, real-person likeness, real media binaries, public distribution, arbitrary human-grade or real-world translation quality, provider quality, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -4027,6 +4060,8 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_280_PR_D_ALLOWED_CHANGED_FILES
     elif branch == ISSUE_280_PR_E_BRANCH:
         allowed_files = ISSUE_280_PR_E_ALLOWED_CHANGED_FILES
+    elif branch == ISSUE_298_BRANCH:
+        allowed_files = ISSUE_298_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-c3b-pr1-consent-provenance-planning-274":
         allowed_files = ISSUE_274_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-280-"):
@@ -6004,7 +6039,17 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
     if pr_slice == "PR A+PR B+PR C+PR D+PR E":
         if artifact.get("runtimeBehaviorImplemented") is not True:
             fail(failures, f"{ISSUE_280_MATRIX_PATH} must mark runtimeBehaviorImplemented true for PR E closure.")
-        if artifact.get("issue280SatisfiedByPrE") is not True:
+        semantic_correction = artifact.get("issue298SemanticCorrection")
+        semantic_correction_active = (
+            isinstance(semantic_correction, dict)
+            and semantic_correction.get("status") == "in-progress corrective PR"
+        )
+        if semantic_correction_active and artifact.get("issue280SatisfiedByPrE") is not False:
+            fail(
+                failures,
+                f"{ISSUE_280_MATRIX_PATH} must keep issue280SatisfiedByPrE false while semantic correction is active.",
+            )
+        elif not semantic_correction_active and artifact.get("issue280SatisfiedByPrE") is not True:
             fail(failures, f"{ISSUE_280_MATRIX_PATH} must mark issue280SatisfiedByPrE true for PR E closure.")
         if artifact.get("prEOutputCorrectnessVerifier") != "make issue280-output-correctness":
             fail(failures, f"{ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the PR E verifier.")
@@ -6122,6 +6167,7 @@ def check_process_docs(failures: list[str]) -> None:
         "docs/SKILL_EXECUTION_PLAN.md",
         "docs/SKILL_SELECTION_AND_EVIDENCE.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        "docs/templates/SEMANTIC_CLOSURE_GATE.md",
     )
     for rel in required_files:
         if not (ROOT / rel).is_file():
@@ -6536,6 +6582,47 @@ def check_process_docs(failures: list[str]) -> None:
             fail(
                 failures,
                 "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md missing merge-closeout marker: "
+                f"{marker}",
+            )
+
+    semantic_gate = read("docs/templates/SEMANTIC_CLOSURE_GATE.md")
+    check_required_headings(
+        failures,
+        semantic_gate,
+        "docs/templates/SEMANTIC_CLOSURE_GATE.md",
+        (
+            "Purpose",
+            "When To Use",
+            "Required Memory Shape",
+            "Usage Flow",
+            "Classifications",
+            "Verifier Contract",
+            "PR-Visible Evidence",
+            "False-Pass Examples",
+            "Matrix Rule",
+            "Architecture Guidance",
+        ),
+    )
+    normalized_semantic_gate = re.sub(r"\s+", " ", semantic_gate.lower())
+    for marker in (
+        "satisfied means product behavior proves the requirement",
+        "metadata-only evidence",
+        "screenshot-only evidence",
+        "semantic_pass",
+        "structural_pass",
+        "not_proven",
+        "failed",
+        "default architecture backbone",
+        "local-only path",
+        "real browser",
+        "closure authority is the visible rendered behavior",
+        "api/contract test may prove data transport",
+        "github actions artifacts",
+    ):
+        if marker not in normalized_semantic_gate:
+            fail(
+                failures,
+                "docs/templates/SEMANTIC_CLOSURE_GATE.md missing reusable semantic closure marker: "
                 f"{marker}",
             )
 

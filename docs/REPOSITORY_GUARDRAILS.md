@@ -67,6 +67,20 @@ The policy check fails CI for:
 - non-trivial pull requests without a meaningful five-point `Reviewer overview`
   before detailed governance/evidence sections; all template points and both
   Scope labels are required, and placeholders or copied instructions do not count
+- implementation pull requests without a `Post-implementation execution verifier`
+  section that proves the relevant slice was executed end to end after
+  implementation and was not read-only
+- user-visible semantic or output-correctness claims without browser-visible
+  semantic verifier evidence. Requirement outcomes must be classified as
+  `STRUCTURAL_PASS`, `SEMANTIC_PASS`, `NOT_PROVEN`, or `FAILED`; semantic rows
+  may not be marked satisfied unless `SEMANTIC_PASS` or an equivalent semantic
+  pass status is achieved.
+- output-correctness evidence that treats metadata-only, screenshot-only,
+  docs-only, matrix-only, artifact-only, or mocked-status-only proof as
+  sufficient
+- multilingual output evidence that treats template text, English fallback,
+  source-heading summaries, or metadata-only target sentences as successful
+  translation/conversion evidence
 - non-trivial pull requests whose failure-matrix IDs are not fully covered by
   test, gate, source, human-only, or non-goal evidence, or whose tests lack
   old-behavior proof language such as RED, mutation, break-test,
@@ -283,7 +297,12 @@ values in these fields.
 
 Use `docs/ENGINEERING_PROCESS_RCA.md` for the NarraTwin-specific failure lessons
 and `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` when creating a new
-project or reusable project template.
+project or reusable project template. For projects where user-visible meaning
+can false-pass behind correct metadata or APIs, also use
+`docs/templates/SEMANTIC_CLOSURE_GATE.md` as the project-memory backbone. The
+semantic closure gate is intentionally portable to new projects, including
+AI-generated experiences such as Dreaming: structural success can inform
+progress, but only `SEMANTIC_PASS` evidence may close a semantic requirement.
 
 ## Codex instruction
 

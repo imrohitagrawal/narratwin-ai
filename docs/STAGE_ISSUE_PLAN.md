@@ -1403,6 +1403,47 @@ cloned face, digital twin, real-person likeness, real media, public
 distribution, arbitrary human-grade or real-world translation quality, provider
 quality, or production-readiness claims.
 
+Issue `#298` branch
+`phase-1-closure-298-issue280-semantic-multilingual-correction` is limited to
+the corrective semantic-output slice for issue `#280` and the repo-level
+recurrence-prevention guardrail after browser evidence showed that
+metadata-only/mock target transcripts had been accepted as closure evidence.
+The branch may change only:
+
+- `.github/pull_request_template.md`
+- `backend/app/issue280.py`
+- `docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md`
+- `docs/reviews/ISSUE_298_REPO_SEMANTIC_GATE_PREFLIGHT.md`
+- `docs/ADR/0040-issue280-semantic-local-demo-correction.md`
+- `docs/REPOSITORY_GUARDRAILS.md`
+- `reports/checkpoint3-issue280/requirement-matrix.json`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+- `docs/STATUS.md`
+- `docs/TRACEABILITY.md`
+- `frontend/tests/issue280-ui-browser.spec.ts`
+- `scripts/guardrails_check.py`
+- `scripts/quality/check_phase1_closure_docs.py`
+- `scripts/quality/verify_issue280_output_correctness.py`
+- `tests/acceptance/test_issue280_pr_e_closure.py`
+- `tests/contract/test_issue280_ui_api_artifact_parity.py`
+- `tests/unit/test_guardrails_check.py`
+- `tests/unit/test_phase1_closure_docs.py`
+
+Issue `#298` must prove semantic visible-output behavior, not just response
+shape. Its verifier must fail on "Local mock conversion", source-segment
+metadata templates, untranslated source clauses, English fallback for
+non-English target transcripts, metadata-only target text, artifact-only
+success, API-only success, missing citations, broken segment counts, unsafe
+output, and overclaiming local/demo output as arbitrary human-grade or
+production translation quality. It authorizes no provider setup, provider SDKs,
+provider keys, paid spend, real provider calls, hosted/public demo behavior,
+cloned identity runtime, real media, public distribution, or
+production-readiness claims. The repo-level guardrail must also require future
+implementation PRs to include a non-read-only post-implementation execution
+verifier and must reject semantic requirement-matrix rows marked satisfied
+without `SEMANTIC_PASS` or equivalent semantic pass evidence.
+
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
 repository adapter or CI/GitHub evidence verifier:

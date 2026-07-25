@@ -1,0 +1,18 @@
+{
+  "endpointPath": "/api/v1/checkpoint3/issue280/local-e2e-demo",
+  "desktop": {
+    "observedRequestCount": 7,
+    "observedResponseStatuses": [
+      201,
+      201,
+      422,
+      415,
+      422,
+      422,
+      422
+    ],
+    "replayObserved": true,
+    "outputIdsObserved": 2,
+    "screenshot": "reports/checkpoint3-issue280/issue280-pr-e-desktop-output-evidence.png"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "endpointPath": "/api/v1/checkpoint3/issue280/local-e2e-demo",
+  "mobile": {
+    "completedVisible": true,
+    "rtlVisible": true,
+    "localMockPostureVisible": true,
+    "screenshot": "reports/checkpoint3-issue280/issue280-pr-e-mobile-output-evidence.png"
+  }
+}

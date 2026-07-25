@@ -37,7 +37,7 @@ The `Makefile` must expose:
 | `make final-review-quality` | Runs executable Final Review artifact checks |
 | `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
 | `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, C3A-CP4 media-artifacts, C3A-CP5 access/quota/retention, C3A-CP6 security/observability, C3A-CP7 performance, C3A-CP8 real-browser E2E, and C3A-R2 full-project multilingual corpus probes implemented for local/mock controlled-demo evidence only |
-| `make issue280-output-correctness` | Runs the C3A-R3 PR E output-correctness verifier: PR E backend acceptance, API/artifact parity contract, and dedicated Issue 280 Playwright desktop/mobile browser evidence |
+| `make issue280-output-correctness` | Runs the C3A-R3 PR E/#298 output-correctness verifier: semantic backend acceptance, API/artifact parity contract, and dedicated Issue 280 Playwright desktop/mobile browser evidence across all 25 supported local-demo languages |
 | `make lint` | Runs backend Ruff and frontend ESLint |
 | `make typecheck` | Runs backend mypy and frontend TypeScript checks |
 | `make test` | Runs backend unit tests and frontend unit tests |
@@ -700,17 +700,21 @@ executes:
 - `uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q`
 - `npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts`
 
-The PR E verifier proves, for bounded public-safe synthetic markdown submitted
-through the browser, grounded English script generation, deterministic
-local/mock conversion across the 25 supported Priority 1 languages, meaningful
-CONCISE/STANDARD/DEEP differences, distinct supported-audience emphasis,
-citation markers, context refs, claim supports, evaluation IDs/checksums, trace
-metadata, glossary preservation, artifact/report parity, provider-disabled
-posture, safe refusal/validation/replay states, and desktop/mobile browser
-visibility. It remains local/mock demo evidence only: no paid providers, real
-provider calls, hosted/public production demo, cloned identity runtime, real
-media, public distribution, arbitrary human-grade or real-world translation
-quality, provider quality, or production-readiness claim.
+The PR E/#298 verifier proves, for bounded public-safe synthetic markdown
+submitted through the browser, grounded English script generation,
+deterministic local semantic conversion across the 25 supported Priority 1
+languages, meaningful CONCISE/STANDARD/DEEP differences, distinct
+supported-audience emphasis, citation markers, context refs, claim supports,
+evaluation IDs/checksums, trace metadata, glossary preservation,
+artifact/report parity, provider-disabled posture, safe
+refusal/validation/replay states, and desktop/mobile browser visibility. The
+gate fails on metadata-only target text, generic mock-conversion templates,
+English fallback in non-English target transcripts, missing citations, broken
+segment counts, unsafe output, and artifact/API-only success. It remains local
+demo evidence only: no paid providers, real provider calls, hosted/public
+production demo, cloned identity runtime, real media, public distribution,
+arbitrary human-grade or real-world translation quality, provider quality, or
+production-readiness claim.
 
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
@@ -862,6 +866,37 @@ evidence.
 Process-critical governance docs and process-review registers stay in the
 non-trivial category even for text-only edits because those files define future
 automation behavior and review-loop prevention.
+
+Implementation PRs must also include a `Post-implementation execution verifier`
+section. The section is enforced by `scripts/guardrails_check.py` for backend,
+frontend, app, or source implementation changes. It must describe a
+post-implementation verifier that executed the relevant slice end to end, was
+not read-only, records observed pass/fail behavior, and classifies requirement
+outcomes as `STRUCTURAL_PASS`, `SEMANTIC_PASS`, `NOT_PROVEN`, or `FAILED`.
+When the PR claims user-visible semantic or output correctness, the verifier
+must prove browser-visible user text or rendered output. Metadata-only,
+screenshot-only, docs-only, matrix-only, artifact-only, and mocked-status-only
+evidence is not sufficient. For multilingual work, template text, English
+fallback, source-heading summaries, and metadata-only target sentences are
+failures unless the requirement is explicitly classified as `FAILED` or
+`NOT_PROVEN`.
+
+Requirement matrices checked into `reports/**` use the same rule. A row whose
+strongest claim is semantic, browser-visible, output-correctness,
+target-transcript, no-English-fallback, full-sentence translation, or
+metadata/artifact false-pass rejection cannot be marked satisfied with
+`STRUCTURAL_PASS`, `EXECUTABLE_CONTRACT_PASS`, or similar structural evidence.
+It requires `SEMANTIC_PASS` or an equivalent semantic pass status such as the
+Issue 280 transitional `SEMANTIC_EXECUTABLE_PASS`.
+
+This rule is reusable outside NarraTwin through
+`docs/templates/SEMANTIC_CLOSURE_GATE.md`. New projects should treat that
+template as the default semantic quality backbone whenever product value depends
+on generated text, translation, explanation, recommendations, dashboards,
+documents, media, imports/exports, or other meaning-bearing user-visible output.
+The project may still use mock/local/demo infrastructure, but the user-visible
+outcome must match the claim being made or the row remains `NOT_PROVEN` or
+`FAILED`.
 
 The PR template also requires a `Human verification checklist` for non-trivial
 PRs. This checklist converts reviewer-focus points into rows with exact

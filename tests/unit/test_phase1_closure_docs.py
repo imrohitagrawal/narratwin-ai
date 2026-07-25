@@ -2936,7 +2936,7 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "PR `#281`",
         "`3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c`",
         "post-merge main quality workflow run `30085558061` passing",
-        "c3a-r3-pr-e-active",
+        "issue280-semantic-correction-active",
         "PR `#282`",
         "`b889604a490c9f014130e420c1c949af7879dd84`",
         "post-merge main quality workflow run `30092008592` passing",
@@ -2944,10 +2944,10 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "`09584b264c0f30da3eecd6693829e5bcb071e568`",
         "post-merge main quality workflow run `30095714825` passing",
         "Issue `#278` is closed after PR `#279` merged the bounded C3A-R2 full-project multilingual corpus gate",
-        "Issue #280 is active for C3A-R3 PR E",
-        "PR E is the final local/demo closure slice",
-        "issue #280 remains open until PR E receives human review",
-        "C3B remains blocked until issue #280 is satisfied or reviewed/re-scoped",
+        "Issue #298 is the active corrective slice",
+        "metadata-only/mock target transcripts",
+        "docs/reviews/ISSUE_280_SEMANTIC_GAP_MEMORY_2026-07-25.md",
+        "C3B remains blocked until issue #280's semantic closure evidence is reviewed/merged or explicitly re-scoped",
         "full-project multilingual corpus gate",
         "ADR `0034`",
         "major-market multilingual output correctness",
@@ -8084,6 +8084,30 @@ def test_issue280_pr_e_rejects_provider_dependency_changes(monkeypatch: Any) -> 
     }
 
 
+def test_issue298_semantic_correction_allowed_files_pass(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_298_BRANCH,
+        files=sorted(phase1.ISSUE_298_ALLOWED_CHANGED_FILES),
+    )
+
+    assert failures == []
+
+
+def test_issue298_semantic_correction_rejects_provider_dependency_changes(monkeypatch: Any) -> None:
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_298_BRANCH,
+        files=["backend/app/stage6.py", "frontend/package.json", "pyproject.toml"],
+    )
+
+    assert set(failures) == {
+        f"Phase 1 Closure branch {phase1.ISSUE_298_BRANCH} may not change backend/app/stage6.py.",
+        f"Phase 1 Closure branch {phase1.ISSUE_298_BRANCH} may not change frontend/package.json.",
+        f"Phase 1 Closure branch {phase1.ISSUE_298_BRANCH} may not change pyproject.toml.",
+    }
+
+
 def test_issue280_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     failures = run_changed_files_check(
         monkeypatch,
@@ -8109,11 +8133,11 @@ def test_issue280_matrix_rejects_runtime_completion_claim(monkeypatch: Any) -> N
     )
 
 
-def test_issue280_matrix_allows_pr_e_runtime_closure_with_verifier(monkeypatch: Any) -> None:
+def test_issue280_matrix_keeps_issue_open_during_semantic_correction(monkeypatch: Any) -> None:
     matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
     matrix["prSlice"] = "PR A+PR B+PR C+PR D+PR E"
     matrix["runtimeBehaviorImplemented"] = True
-    matrix["issue280SatisfiedByPrE"] = True
+    matrix["issue280SatisfiedByPrE"] = False
     matrix["prEOutputCorrectnessVerifier"] = "make issue280-output-correctness"
     failures = run_issue280_review_artifacts_check(
         monkeypatch,
@@ -8121,14 +8145,32 @@ def test_issue280_matrix_allows_pr_e_runtime_closure_with_verifier(monkeypatch: 
     )
 
     assert f"{phase1.ISSUE_280_MATRIX_PATH} cannot claim full runtime implementation complete before all R280 rows pass." not in failures
-    assert f"{phase1.ISSUE_280_MATRIX_PATH} must mark issue280SatisfiedByPrE true for PR E closure." not in failures
+    assert (
+        f"{phase1.ISSUE_280_MATRIX_PATH} must keep issue280SatisfiedByPrE false while semantic correction is active."
+        not in failures
+    )
+    assert failures == []
+
+
+def test_issue280_matrix_rejects_satisfaction_claim_during_semantic_correction(monkeypatch: Any) -> None:
+    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
+    matrix["issue280SatisfiedByPrE"] = True
+    failures = run_issue280_review_artifacts_check(
+        monkeypatch,
+        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
+    )
+
+    assert (
+        f"{phase1.ISSUE_280_MATRIX_PATH} must keep issue280SatisfiedByPrE false while semantic correction is active."
+        in failures
+    )
 
 
 def test_issue280_matrix_pr_e_requires_output_correctness_verifier(monkeypatch: Any) -> None:
     matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
     matrix["prSlice"] = "PR A+PR B+PR C+PR D+PR E"
     matrix["runtimeBehaviorImplemented"] = True
-    matrix["issue280SatisfiedByPrE"] = True
+    matrix["issue280SatisfiedByPrE"] = False
     matrix["prEOutputCorrectnessVerifier"] = "issue comment"
     failures = run_issue280_review_artifacts_check(
         monkeypatch,

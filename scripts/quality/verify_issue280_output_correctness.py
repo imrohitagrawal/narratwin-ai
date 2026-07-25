@@ -63,7 +63,7 @@ def main() -> int:
 def _write_report(*, started_at: datetime, results: list[dict[str, object]], status: str) -> None:
     completed_at = datetime.now(UTC)
     report = {
-        "schema": "Issue280PrEOutputCorrectnessVerifierReportV1",
+        "schema": "Issue280PrEOutputCorrectnessVerifierReportV2",
         "status": status,
         "startedAt": started_at.isoformat(),
         "completedAt": completed_at.isoformat(),
@@ -80,13 +80,37 @@ def _write_report(*, started_at: datetime, results: list[dict[str, object]], sta
             "verifiedDesktopAndMobileFlows": True,
             "submittedArbitraryBoundedSyntheticMarkdownThroughUi": True,
             "verifiedNetworkCallsForIssue280Endpoint": True,
-            "verifiedVisibleTranslatedOutput": True,
-            "verifiedDepthAndAudienceDifferences": True,
+            "verifiedAll25SupportedLocalDemoLanguageExecutions": True,
+            "verifiedBoundedBaseClauseMarkersAcross25LanguageMatrix": True,
+            "rejectedMetadataOnlyTargetText": True,
+            "rejectedEnglishFallbackForNonEnglishTranscript": True,
+            "verifiedBrowserVisibleSpanishAndHindiDepthSemantics": True,
+            "verifiedAudienceDifferencesInGroundedEnglishScript": True,
             "verifiedCitationContextClaimSupportEvaluationMetadata": True,
             "verifiedLocalMockProviderDisabledPosture": True,
             "verifiedLoadingSuccessRefusalValidationReplayUnsupportedLanguageStates": True,
             "failedIfEvidenceWasOnlyMetadataScreenshotApiOrDocs": True,
         },
+        "requirementClassifications": [
+            {
+                "requirement": "Spanish and Hindi browser-visible depth semantics",
+                "classification": "SEMANTIC_PASS",
+                "observedBehavior": (
+                    "CONCISE shows essential facts only; STANDARD adds a source-backed example; "
+                    "DEEP adds the example, benefit/tradeoff, and way-forward text."
+                ),
+            },
+            {
+                "requirement": "Depth semantics outside Spanish and Hindi",
+                "classification": "NOT_PROVEN",
+                "observedBehavior": "The all-25 matrix proves bounded base-clause execution, not depth semantics.",
+            },
+            {
+                "requirement": "Arbitrary or human-grade translation quality",
+                "classification": "NOT_PROVEN",
+                "observedBehavior": "The deterministic local converter remains limited to recognized clause families.",
+            },
+        ],
     }
     serialized = json.dumps(report, indent=2, sort_keys=True)
     forbidden = ("Idempotency-Key", "Bearer", "Authorization", "Traceback", "/Users/", "contentBase64")

@@ -23,16 +23,82 @@ Unsupported claims are refused before the stored walkthrough is shown in the bro
 
 Local mock artifacts keep citations, context references, claim supports, and checksums aligned.`;
 
+const depthSemanticMarkdown = `# Meridian Planner
+
+## Upload workflow
+
+Meridian Planner accepts bounded public-safe markdown from product teams.
+
+## Retrieval workflow
+
+The local demo extracts source-backed claims about release rituals, adoption signals, and evidence handoffs.
+
+## Evaluation workflow
+
+Unsupported claims are refused before the stored walkthrough is shown in the browser.
+
+## Source-backed example
+
+For example, Meridian Planner links weekly adoption metrics to cited release review sections.
+
+## Benefit and tradeoff
+
+The benefit of cited release reviews is traceable adoption evidence, while the tradeoff is added reviewer effort.
+
+## Way forward
+
+A practical way forward is to review release blockers weekly before sharing the walkthrough.`;
+
 const languageExpectations = [
-  { tag: "hi", marker: "स्थानीय मॉक रूपांतरण" },
-  { tag: "es", marker: "Conversion local simulada" },
-  { tag: "fr", marker: "Conversion locale simulee" },
-  { tag: "ar", marker: "تحويل محلي" },
-  { tag: "ja", marker: "ローカルモック変換" },
+  { tag: "en", marker: "public-safe markdown" },
+  { tag: "hi", marker: "सार्वजनिक-सुरक्षित मार्कडाउन" },
+  { tag: "es", marker: "markdown publico seguro" },
+  { tag: "de", marker: "offentlich sichere Markdown" },
+  { tag: "fr", marker: "markdown public sur" },
+  { tag: "pt-BR", marker: "markdown publico seguro" },
+  { tag: "it", marker: "markdown pubblico sicuro" },
+  { tag: "nl", marker: "publiek veilige markdown" },
+  { tag: "pl", marker: "publicznie bezpieczny markdown" },
+  { tag: "uk", marker: "публічно безпечний markdown" },
+  { tag: "ru", marker: "публично безопасный markdown" },
+  { tag: "zh-Hans", marker: "公共安全 Markdown" },
+  { tag: "zh-Hant", marker: "公共安全 Markdown" },
+  { tag: "ja", marker: "公開安全なMarkdown" },
+  { tag: "ko", marker: "공개 안전 Markdown" },
+  { tag: "ar", marker: "ماركداون عام آمن" },
+  { tag: "arz", marker: "ماركداون عام آمن" },
+  { tag: "he", marker: "מרקדאון ציבורי בטוח" },
+  { tag: "fa", marker: "مارکداون عمومی امن" },
+  { tag: "tr", marker: "herkese acik guvenli markdown" },
+  { tag: "vi", marker: "markdown cong khai an toan" },
+  { tag: "id", marker: "markdown aman publik" },
+  { tag: "fil", marker: "pampublikong ligtas na markdown" },
+  { tag: "th", marker: "มาร์กดาวน์สาธารณะที่ปลอดภัย" },
+  { tag: "ms", marker: "markdown selamat awam" },
+];
+const forbiddenMetadataOnlyMarkers = [
+  "Local mock conversion",
+  "source segment",
+  "protected term",
+  "Conversion local simulada",
+  "segmento fuente",
+  "Conversion locale simulee",
+  "segment source",
+  "स्थानीय मॉक रूपांतरण",
+  "स्रोत खंड",
+  "تحويل محلي تجريبي",
+  "مقطع المصدر",
+  "ローカルモック変換",
+  "ソース区分",
+  "המרת מוק מקומית",
+  "מקטע מקור",
 ];
 
 type Issue280Response = {
   session: { replayed: boolean; outputId: string };
+  retrieval: {
+    contextRefs: Array<{ contextRefId: string }>;
+  };
   multilingual: {
     targetLanguage: string;
     direction: "ltr" | "rtl";
@@ -49,7 +115,12 @@ type Issue280Response = {
     evaluationId: string;
     evaluationChecksum: string;
     unsupportedClaimCount: number;
-    claimSupports: unknown[];
+    claimSupports: Array<{
+      claimSupportId: string;
+      contextRefId: string;
+      citationIndex: number;
+      supportStatus: "SUPPORTED";
+    }>;
   };
   storage: {
     outputChecksum: string;
@@ -86,7 +157,7 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
         }
       });
 
-      await fillIssue280Form(page, { targetLanguage: expectation.tag, depth: "DEEP", audience: "ENGINEER" });
+      await fillIssue280Form(page, { targetLanguage: expectation.tag, depth: "STANDARD", audience: "ENGINEER" });
       await expect(page.getByText("No Issue 280 result yet.")).toBeVisible();
       await page.getByRole("button", { name: "Run Issue 280 local demo" }).click();
 
@@ -94,10 +165,10 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
       await expect(page.getByText("Running local/mock Issue 280 multilingual demo.")).toBeVisible();
       await expect(page.getByText("COMPLETED")).toBeVisible();
       await expect(page.getByText(`targetLanguage=${expectation.tag}`)).toBeVisible();
-      await expect(page.getByText(expectation.marker).first()).toBeVisible();
-      await expect(page.getByText("implementation evidence")).toBeVisible();
-      await expect(page.getByText("source-grounded detail")).toBeVisible();
-      await expect(page.getByText("tradeoff")).toBeVisible();
+      await expect(page.getByLabel("Issue 280 output evidence").getByText(expectation.marker).first()).toBeVisible();
+      const groundedScriptSection = page.locator('section[aria-labelledby="issue280-script-title"]');
+      await expect(groundedScriptSection.getByText("implementation evidence")).toBeVisible();
+      await expect(groundedScriptSection.getByText("additional source-bound context")).toBeVisible();
       await expect(page.getByText("unsupportedClaimCount=0")).toBeVisible();
       await expect(page.getByText("artifactBundleChecksum", { exact: false })).toHaveCount(0);
       await expect(page.getByText("Artifact bundle")).toBeVisible();
@@ -119,9 +190,14 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
         expect(segment.targetText).toContain(`[${segment.citationIndexes[0]}]`);
         expect(segment.contextRefIds.length).toBeGreaterThan(0);
         expect(segment.claimSupportIds.length).toBeGreaterThan(0);
-        expect(segment.targetText).not.toContain("accepts bounded public-safe markdown");
-        expect(segment.targetText).not.toContain("source-backed claims about release rituals");
-        expect(segment.targetText).not.toContain("Unsupported claims are refused");
+        for (const marker of forbiddenMetadataOnlyMarkers) {
+          expect(segment.targetText).not.toContain(marker);
+        }
+        if (expectation.tag !== "en") {
+          expect(segment.targetText).not.toContain("accepts bounded public-safe markdown");
+          expect(segment.targetText).not.toContain("source-backed claims about release rituals");
+          expect(segment.targetText).not.toContain("Unsupported claims are refused");
+        }
       }
       expect(body?.providerPosture).toMatchObject({
         paidProvidersEnabled: false,
@@ -161,7 +237,12 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
     await expect(page.getByRole("heading", { name: "Avatar demo export" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Issue 280 local multilingual demo" })).toBeVisible();
     await expect(page.getByText("Local/demo path for arbitrary bounded public-safe synthetic markdown.")).toBeVisible();
-    await fillIssue280Form(page, { targetLanguage: "hi", depth: "DEEP", audience: "ENGINEER" });
+    await fillIssue280Form(page, {
+      targetLanguage: "hi",
+      depth: "DEEP",
+      audience: "ENGINEER",
+      markdown: depthSemanticMarkdown,
+    });
     await expectInfoTooltip(page, "Issue 280 project field info", "public-safe synthetic project");
     await expectInfoTooltip(page, "Issue 280 knowledge field info", "bounded public-safe markdown");
     await expectInfoTooltip(page, "Audience info", "reader emphasis");
@@ -210,13 +291,123 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
     await assertNoLeakage(page);
   });
 
+  test("proves browser-visible Spanish and Hindi depth semantics from the same source", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "issue280-desktop", "desktop-only depth verifier");
+    const languageDepthSemantics = [
+      {
+        tag: "es",
+        example: "Ejemplo respaldado por la fuente",
+        tradeoff: "contrapartida",
+        wayForward: "Siguiente paso",
+      },
+      {
+        tag: "hi",
+        example: "स्रोत-समर्थित उदाहरण",
+        tradeoff: "समझौता",
+        wayForward: "आगे का रास्ता",
+      },
+    ];
+
+    for (const language of languageDepthSemantics) {
+      const targetTextByDepth: Record<string, string> = {};
+      const responseByDepth: Record<string, Issue280Response> = {};
+
+      for (const depth of ["CONCISE", "STANDARD", "DEEP"] as const) {
+        await fillIssue280Form(page, {
+          targetLanguage: language.tag,
+          depth,
+          audience: "ENGINEER",
+          markdown: depthSemanticMarkdown,
+        });
+        const responsePromise = page.waitForResponse(
+          (response) => response.url().includes(endpointPath) && response.status() === 201,
+        );
+        await page.getByRole("button", { name: "Run Issue 280 local demo" }).click();
+        const response = await responsePromise;
+        const body = (await response.json()) as Issue280Response;
+        responseByDepth[depth] = body;
+
+        await expect(page.getByText("COMPLETED")).toBeVisible();
+        await expect(page.getByText(`depth=${depth}`)).toBeVisible();
+        const expandTranscript = page.getByRole("button", { name: "Expand full Issue 280 transcript" });
+        if (await expandTranscript.isVisible()) {
+          await expandTranscript.click();
+        }
+
+        const transcript = page.getByLabel("Issue 280 validated transcript");
+        const articles = transcript.locator("article");
+        const visibleTargetParagraphs = transcript.locator(
+          "article > div:first-child > div:nth-child(2) > p",
+        );
+        await expect(articles).toHaveCount(body.multilingual.segments.length);
+        await expect(visibleTargetParagraphs).toHaveCount(body.multilingual.segments.length);
+        for (const paragraph of await visibleTargetParagraphs.all()) {
+          await expect(paragraph).toBeVisible();
+        }
+        targetTextByDepth[depth] = (await visibleTargetParagraphs.allInnerTexts()).join("\n");
+
+        expect(body.evaluation.unsupportedClaimCount).toBe(0);
+        expect(body.evaluation.claimSupports).toHaveLength(body.multilingual.segments.length);
+        await expect(page.getByText("unsupportedClaimCount=0")).toBeVisible();
+        for (const [index, segment] of body.multilingual.segments.entries()) {
+          const article = articles.nth(index);
+          const support = body.evaluation.claimSupports[index];
+          expect(segment.contextRefIds).toHaveLength(1);
+          expect(segment.claimSupportIds).toHaveLength(1);
+          expect(segment.citationIndexes).toHaveLength(1);
+          expect(support).toMatchObject({
+            claimSupportId: segment.claimSupportIds[0],
+            contextRefId: segment.contextRefIds[0],
+            citationIndex: segment.citationIndexes[0],
+            supportStatus: "SUPPORTED",
+          });
+          expect(body.retrieval.contextRefs).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                contextRefId: segment.contextRefIds[0],
+              }),
+            ]),
+          );
+          await expect(article.getByText(`[${segment.citationIndexes[0]}]`, { exact: true })).toBeVisible();
+          await expect(article.getByText(segment.contextRefIds[0], { exact: true })).toBeVisible();
+          await expect(article.getByText(segment.claimSupportIds[0], { exact: true })).toBeVisible();
+          await expect(article.getByText(body.evaluation.evaluationId, { exact: true })).toBeVisible();
+        }
+        expect(body.evaluation.evaluationChecksum).toMatch(/^sha256:/);
+        await expect(page.getByText(body.evaluation.evaluationChecksum, { exact: true })).toBeVisible();
+        expect(Object.values(body.correctnessReport.checks).every((status) => status === "PASSED")).toBe(true);
+        for (const marker of forbiddenMetadataOnlyMarkers) {
+          expect(targetTextByDepth[depth]).not.toContain(marker);
+        }
+        expect(targetTextByDepth[depth]).not.toContain("accepts bounded public-safe markdown");
+        expect(targetTextByDepth[depth]).not.toContain("source-backed claims about release rituals");
+      }
+
+      expect(responseByDepth.CONCISE.multilingual.segments).toHaveLength(3);
+      expect(responseByDepth.STANDARD.multilingual.segments).toHaveLength(4);
+      expect(responseByDepth.DEEP.multilingual.segments).toHaveLength(6);
+      expect(targetTextByDepth.CONCISE).not.toContain(language.example);
+      expect(targetTextByDepth.CONCISE).not.toContain(language.tradeoff);
+      expect(targetTextByDepth.CONCISE).not.toContain(language.wayForward);
+      expect(targetTextByDepth.STANDARD).toContain(language.example);
+      expect(targetTextByDepth.STANDARD).not.toContain(language.tradeoff);
+      expect(targetTextByDepth.STANDARD).not.toContain(language.wayForward);
+      expect(targetTextByDepth.DEEP).toContain(language.example);
+      expect(targetTextByDepth.DEEP).toContain(language.tradeoff);
+      expect(targetTextByDepth.DEEP).toContain(language.wayForward);
+    }
+
+    await assertNoHorizontalOverflow(page);
+    await assertNoLeakage(page);
+  });
+
   test("verifies mobile layout, Arabic RTL output, and keyboard focus", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "issue280-mobile", "mobile-only verifier");
     const consoleMessages = observeConsole(page);
     await fillIssue280Form(page, { targetLanguage: "ar", depth: "STANDARD", audience: "CUSTOMER" });
     await page.getByRole("button", { name: "Run Issue 280 local demo" }).tap();
     await expect(page.getByText("COMPLETED")).toBeVisible();
-    await expect(page.getByText("تحويل محلي").first()).toBeVisible();
+    await expect(page.getByText("ماركداون عام آمن").first()).toBeVisible();
     await expect(page.getByText("customer value")).toBeVisible();
     await expect(page.getByLabel("Issue 280 validated transcript")).toHaveAttribute("dir", "rtl");
     await assertNoHorizontalOverflow(page);
@@ -242,10 +433,15 @@ test.describe("Issue 280 PR E UI/browser output correctness verifier", () => {
 
 async function fillIssue280Form(
   page: Page,
-  options: { targetLanguage: string; depth: "CONCISE" | "STANDARD" | "DEEP"; audience: string },
+  options: {
+    targetLanguage: string;
+    depth: "CONCISE" | "STANDARD" | "DEEP";
+    audience: string;
+    markdown?: string;
+  },
 ) {
   await page.getByLabel("Issue 280 synthetic project").fill(safeProjectName);
-  await page.getByLabel("Issue 280 synthetic markdown").fill(safeMarkdown);
+  await page.getByLabel("Issue 280 synthetic markdown").fill(options.markdown ?? safeMarkdown);
   await page.getByLabel("Issue 280 content type").selectOption("text/markdown");
   await page.getByLabel("Issue 280 audience").selectOption(options.audience);
   await page.getByLabel("Issue 280 depth").selectOption(options.depth);
