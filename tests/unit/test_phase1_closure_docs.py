@@ -2945,7 +2945,7 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "post-merge main quality workflow run `30095714825` passing",
         "Issue `#278` is closed after PR `#279` merged the bounded C3A-R2 full-project multilingual corpus gate",
             "Issue #300 is the active negative-forensic-only reset",
-            "Evidence head f93653e8a11e697c88766b207fb01c18662339d6 establishes that Issue #280 is not fixed",
+            "Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed",
             "Product/runtime repair remains separate",
         "full-project multilingual corpus gate",
         "ADR `0034`",

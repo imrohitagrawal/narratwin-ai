@@ -45,49 +45,31 @@ Source identities before correction:
 | Packet execution evidence `20_DELTA007_EXECUTION_EVIDENCE.json` | `98943e56952f35b613475c210be239bd3f91fb6702a853dad577efdd8e481b50` |
 | Packet blind review `08_CLAUDE_BLIND_REVIEW_RESPONSE.md` | `03a581d205930ed5305731b10633b60c89dffef46a42edcb7228aa908e2a5bc8` |
 
+The corrected aggregate comes from two deterministic canonical `payload()` runs (fixture SHA-256
+`e1b5b35615324cc7ad09a3ba7a4473ddae73ba8c2d02cc84a9c90deebcbc7e64`) recorded in revision-pinned
+`ISSUE280_AGGREGATE_EXECUTION_V1.json` (`4d037de6d40d3098b327c2eb5e87ec8849082c08d206db8caac6d18e9be399b2`)
+and bound through `PUBLIC_PROVENANCE_MANIFEST.md` (`61c92fdd428246dc54843118c508f82e908b8b9617415e6c6e5fe8d8d0ca26fc`). It records 525/525 completed, zero refused,
+seven accepted scripts, and one visible target body in each of 75 groups. Packet file 20 is only
+English/STANDARD seven-audience slice evidence, never the aggregate source. The old 217/308/31-group
+aggregate was not reproduced and remains only a superseded, unsupported historical assertion.
+
 ### E1 — positive-path reachability
 
-Command:
-
-```text
-/usr/local/bin/python3 /private/tmp/narratwin-issue300-red.3gx1YM/scripts/quality/verify_issue280_output_correctness.py --expected-head f93653e8a11e697c88766b207fb01c18662339d6
-```
-
-Exit: `1`; stderr: empty; stdout:
-
-```text
-Issue 280 semantic closure FAILED at exact head f93653e8a11e697c88766b207fb01c18662339d6:
-- output-correctness:execution-not-provided
-```
+- Command: `/usr/local/bin/python3 /private/tmp/narratwin-issue300-red.3gx1YM/scripts/quality/verify_issue280_output_correctness.py --expected-head f93653e8a11e697c88766b207fb01c18662339d6`
+- Exit: `1`; stderr: empty.
+- Stdout: `Issue 280 semantic closure FAILED at exact head f93653e8a11e697c88766b207fb01c18662339d6: output-correctness:execution-not-provided`.
 
 ### E2 — claim-kind laundering
 
-The same issue-specific command ran after all seven scratch rows were relabeled
-`structural` / `STRUCTURAL_PASS` with structural observations.
-
-Exit: `0`; stderr: empty; stdout:
-
-```text
-Issue 280 semantic closure passed at exact head f93653e8a11e697c88766b207fb01c18662339d6.
-```
-
-This is the false-positive path being removed.
+- Mutation: all seven scratch rows were relabeled `structural` / `STRUCTURAL_PASS`.
+- Exit: `0`; stderr: empty.
+- Stdout: `Issue 280 semantic closure passed at exact head f93653e8a11e697c88766b207fb01c18662339d6.` This is the removed false-positive path.
 
 ### E5 — self-declared scope
 
-Command:
-
-```text
-/usr/local/bin/python3 /private/tmp/narratwin-issue300-red.3gx1YM/scripts/quality/semantic_closure.py /private/tmp/narratwin-issue300-red.3gx1YM/e5-self-declared-one-row.json --expected-head f93653e8a11e697c88766b207fb01c18662339d6
-```
-
-Exit: `0`; stderr: empty; stdout:
-
-```json
-{"closed": true, "reasons": []}
-```
-
-This proves that a caller-selected one-row scope could emit closure.
+- Command: `/usr/local/bin/python3 /private/tmp/narratwin-issue300-red.3gx1YM/scripts/quality/semantic_closure.py /private/tmp/narratwin-issue300-red.3gx1YM/e5-self-declared-one-row.json --expected-head f93653e8a11e697c88766b207fb01c18662339d6`
+- Exit: `0`; stderr: empty; stdout: `{"closed": true, "reasons": []}`.
+- Meaning: a caller-selected one-row scope could emit closure.
 
 ### Focused TDD RED
 
@@ -104,6 +86,11 @@ key, an unknown forensic key, and an unknown observed-execution key, the focused
 suite produced four failures before the denylist was replaced by exact schema
 allowlists. The retained tests now require unknown keys to produce
 `ISSUE_280_EVIDENCE_MALFORMED` / exit `3`, including when another identity is stale.
+
+For the public-provenance correction, the focused suite produced 11 RED failures before
+implementation: the old aggregate remained accepted, V2 and its pinned identities were absent,
+source/hash mutations were malformed instead of stale, the accepted-script measurement was absent,
+and the old 217/308 aggregate still returned `ISSUE_280_NOT_FIXED`.
 
 ## Negative-Only Result Contract
 
@@ -123,7 +110,8 @@ required CI may run unit tests for expected negative behavior and static forensi
 - Final diff: exactly 11 paths.
 - Hand-authored changed lines: at most 750.
 - Net executable semantic logic: at most zero; the generic evaluator is removed.
-- The 6,714-line phase checker receives only subtractive/static containment.
+- The 6,714-line checker count applies to pre-correction head
+  `16536867dc2f3bca8c19281b58e924615475c158`; this PR adds no semantic authority to it.
 - This preflight: at most 1,800 words and 220 lines.
 - No parallel status, learning, semantic, or assurance registry.
 - Stop and split work if any budget or allowlist boundary is exceeded.

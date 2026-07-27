@@ -616,11 +616,14 @@ hosted/public demo readiness, raw uploaded knowledge-document translation API
 behavior, public distribution, or production readiness.
 
 C3A-R3 PR A-D and the attempted PR E remain historical implementation records,
-not current completion authority. ADR `0038` and the PR E preflight preserve only
-that superseded contract. The immutable PR E evidence head
-`f93653e8a11e697c88766b207fb01c18662339d6` attempted 525 combinations, completed
-217, refused 308, completed STANDARD and DEEP only 21/175 each, and emitted one
-target body across seven audiences in all 31 successful language/depth groups.
+not current completion authority. Two deterministic executions of canonical
+`tests/acceptance/test_issue280_pr_e_closure.py::payload` at evidence head
+`f93653e8a11e697c88766b207fb01c18662339d6` completed all 525 combinations with
+zero translation refusals: CONCISE, STANDARD, and DEEP each completed 175. All
+75 successful language/depth groups retained seven distinct accepted English
+scripts but collapsed to one visible target body across seven audiences. The
+historical 217-completed/308-refused/31-group aggregate was not reproduced and
+is a superseded, unsupported assertion rather than current evidence.
 
 `make issue280-output-correctness` now reads only the strict negative forensic
 artifact. It does not start services or execute backend, API, contract, browser,

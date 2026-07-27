@@ -7,13 +7,10 @@ import json
 import os
 import re
 import subprocess
-import sys
 from pathlib import Path
 from typing import cast
 
 ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
 PHASE1_BRANCH = re.compile(r"^phase-1-closure-.+")
 PROCESS_BRANCH = re.compile(r"^phase-1-closure-process-(\d+)-.+$")
@@ -1844,7 +1841,7 @@ STATUS_STATE_V1_ROWS = {
         "issue #300 / issue #280 forensic containment",
         "issue280-governance-reset-active",
         "issue280-governance-reset-active",
-        "Issue #300 is the active negative-forensic-only reset. Evidence head f93653e8a11e697c88766b207fb01c18662339d6 establishes that Issue #280 is not fixed: 217 of 525 combinations completed, 308 returned ISSUE280_TRANSLATION_REFUSED, STANDARD and DEEP each completed only 21 of 175 times, and all 31 successful language/depth groups emitted one target body across seven audiences. Issue #280's historical GitHub closure, issue #298, and PR #299 remain preserved forensic evidence. Product/runtime repair remains separate. This state does not authorize backend, frontend, workflow, provider, RAG, avatar, database, Docker, hosted/public demo, paid spend, real media, public distribution, semantic-oracle/runner work, or production-readiness claims.",
+        "Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed: all 525 combinations completed without translation refusal, accepted scripts remained audience-sensitive, and all 75 successful language/depth groups emitted one visible target body across seven audiences. The old 217/308 aggregate was not reproduced. Issue #280's historical GitHub closure, issue #298, and PR #299 remain preserved forensic evidence. Product/runtime repair remains separate. This state does not authorize backend, frontend, workflow, provider, RAG, avatar, database, Docker, hosted/public demo, paid spend, real media, public distribution, semantic-oracle/runner work, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -5937,7 +5934,7 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
         return
     if set(artifact) != {"schemaVersion", "issue", "forensicEvidence"}:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must use only the strict top-level forensic schema.")
-    if artifact.get("schemaVersion") != "Issue280NegativeForensicArtifactV1" or artifact.get(
+    if artifact.get("schemaVersion") != "Issue280NegativeForensicArtifactV2" or artifact.get(
         "issue"
     ) != 280:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must identify the Issue #280 negative artifact.")
@@ -5952,18 +5949,24 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
         "evidenceHead",
         "packetReviewedSourceHead",
         "approvedContractSha256",
-        "historicalSourceRefs",
+        "canonicalFixtureSha256",
+        "aggregateEvidenceSha256",
+        "provenanceManifestSha256",
+        "forensicSourceRefs",
         "observedExecution",
     }
     if set(forensic) != expected_forensic_keys:
         fail(failures, f"{ISSUE_280_MATRIX_PATH} must use only the strict forensicEvidence keys.")
     required_forensic_markers = {
-        "schemaVersion": "Issue280ForensicEvidenceV1",
+        "schemaVersion": "Issue280ForensicEvidenceV2",
         "subject": "issue-280",
         "pr299BaseHead": "cc89b2dd52da38e8d8a9acbd813e327737cf0ca1",
         "evidenceHead": ISSUE_280_FORENSIC_FAILED_HEAD,
         "packetReviewedSourceHead": "16536867dc2f3bca8c19281b58e924615475c158",
         "approvedContractSha256": "14ca82c43768975f4a904a308db10aab77ef50cdedd97e92601ecba67ab7e75a",
+        "canonicalFixtureSha256": "e1b5b35615324cc7ad09a3ba7a4473ddae73ba8c2d02cc84a9c90deebcbc7e64",
+        "aggregateEvidenceSha256": "4d037de6d40d3098b327c2eb5e87ec8849082c08d206db8caac6d18e9be399b2",
+        "provenanceManifestSha256": "61c92fdd428246dc54843118c508f82e908b8b9617415e6c6e5fe8d8d0ca26fc",
     }
     for key, expected in required_forensic_markers.items():
         if forensic.get(key) != expected:
@@ -5979,6 +5982,7 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
         "deepCompleted",
         "successfulLanguageDepthGroups",
         "audiencesPerSuccessfulGroup",
+        "uniqueAcceptedScriptBodiesPerSuccessfulGroup",
         "uniqueTargetBodiesPerSuccessfulGroup",
     }
     if not isinstance(observed, dict) or set(observed) != expected_observed_keys:
