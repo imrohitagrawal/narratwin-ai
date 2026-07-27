@@ -4,29 +4,8 @@
   "branch": "phase-1-closure-process-300-issue280-semantic-closure-reset",
   "objective": "Preserve the falsification of Issue #280, remove positive semantic-closure authority from PR #301, and provide only a negative issue-specific forensic verifier. Issue #280 is not fixed.",
   "status_decision": "update-minimally",
-  "git_identities": {
-    "pr299_base_head": "cc89b2dd52da38e8d8a9acbd813e327737cf0ca1",
-    "pr299_head_and_evidence_head": "f93653e8a11e697c88766b207fb01c18662339d6",
-    "pr301_base_head": "cc89b2dd52da38e8d8a9acbd813e327737cf0ca1",
-    "merge_base": "cc89b2dd52da38e8d8a9acbd813e327737cf0ca1",
-    "pr301_pre_correction_head": "16536867dc2f3bca8c19281b58e924615475c158",
-    "review_head": null,
-    "review_head_reason": "No corrected commit or GitHub review is authorized yet.",
-    "deployment_identity": null,
-    "deployment_identity_reason": "Deployment is outside Issue #300 and is not authorized."
-  },
-  "approved_contract_sha256": "14ca82c43768975f4a904a308db10aab77ef50cdedd97e92601ecba67ab7e75a",
-  "budgets": {
-    "final_changed_files": 11,
-    "hand_authored_changed_lines_max": 750,
-    "net_executable_semantic_logic_max": 0,
-    "monolith_new_semantic_logic_lines_max": 0,
-    "preflight_words_max": 1800,
-    "preflight_lines_max": 220,
-    "agent_context": "The approved contract packet, repository-required documents, current Git/GitHub identities, and this issue only; split any additional assurance or product work."
-  },
   "scope": {
-    "allowed_paths": [
+    "required": [
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
@@ -39,25 +18,29 @@
       "tests/unit/test_phase1_closure_docs.py",
       "tests/unit/test_issue280_forensic_verifier.py"
     ],
-    "cleanup_only_base": "cc89b2dd52da38e8d8a9acbd813e327737cf0ca1",
-    "cleanup_only_paths": [
-      ".codex/skills/output-correctness/SKILL.md",
-      ".codex/skills/output-correctness/agents/openai.yaml",
-      ".github/pull_request_template.md",
+    "allowed_prefixes": [
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/governance/preflights/issue-300.json",
+      "docs/reviews/ISSUE_300_GOVERNANCE_RESET_PREFLIGHT.md",
+      "reports/checkpoint3-issue280/requirement-matrix.json",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "scripts/quality/verify_issue280_output_correctness.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "tests/unit/test_issue280_forensic_verifier.py"
+    ],
+    "forbidden": [
+      ".codex/",
+      ".github/",
       ".gitignore",
+      "backend/",
+      "frontend/",
       "docs/REPOSITORY_GUARDRAILS.md",
       "docs/SKILL_LOCK.md",
       "scripts/quality/semantic_closure.py",
       "tests/unit/test_semantic_closure.py"
-    ],
-    "forbidden": [
-      "backend/",
-      "frontend/",
-      ".github/workflows/",
-      "product or runtime repair",
-      "generic assurance infrastructure",
-      "deployment or provider changes",
-      "external review-packet changes"
     ]
   }
 }

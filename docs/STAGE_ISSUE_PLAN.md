@@ -1373,7 +1373,7 @@ not authorize current work.
 
 The current `make issue280-output-correctness` target is negative-only forensic
 integrity. It executes no product path and cannot satisfy Issue #280. Issue
-#280 is closed in GitHub but is not fixed. Product repair and a real execution
+`#280` is closed in GitHub but is not fixed. Product repair and a real execution
 runner require separate later issues, branches, PRs, RED tests, and approval.
 
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
