@@ -1,145 +1,136 @@
-# Issue 300 Governance Reset Preflight
+# Issue 300 Negative Forensic Containment Preflight
 
 ## Objective
 
-Repair the Issue #280 semantic-closure governance and verifier before any
-product/runtime recovery. Issue #280 is semantically `FAILED` at exact head
-`f93653e8a11e697c88766b207fb01c18662339d6`.
+Contain PR #301 to negative evidence, remove positive authority, and avoid product repair. Issue #280 is not fixed.
 
-## Forensic Source Facts
+## Bound Identities
 
-The following observed execution facts are inputs, not editable pass claims:
+| Label | Bound value |
+|---|---|
+| PR #299 base | `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` |
+| PR #299 head / evidence head | `f93653e8a11e697c88766b207fb01c18662339d6` |
+| PR #301 base | `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` |
+| Merge base | `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` |
+| PR #301 pre-correction head | `16536867dc2f3bca8c19281b58e924615475c158` |
+| Review head | Unassigned: no corrected commit or review is authorized |
+| Deployment identity | Not applicable: deployment is outside scope |
+| Approved contract SHA-256 | `14ca82c43768975f4a904a308db10aab77ef50cdedd97e92601ecba67ab7e75a` |
 
-| Fact ID | Exact-head observation | Classification impact |
-|---|---|---|
-| GOV300-FACT-001 | API and browser attempted 525 combinations | structural execution occurred |
-| GOV300-FACT-002 | 217 succeeded and 308 returned `ISSUE280_TRANSLATION_REFUSED` | required matrix is `FAILED` |
-| GOV300-FACT-003 | CONCISE 175/175, STANDARD 21/175, DEEP 21/175 | depth matrix is `FAILED` |
-| GOV300-FACT-004 | All 31 successful language/depth groups emitted identical target text for seven audiences | audience semantics are `FAILED` |
-| GOV300-FACT-005 | Existing gate exits zero with `NOT_PROVEN` rows | closure verifier is `FAILED` |
-
-Issue #280, merged PR #293, Issue #298, and PR #299 remain unchanged forensic
-history. PR #299 must not be merged or sent for human review in this recovery.
+These labels are not interchangeable; a later review must bind a newly verified review head.
 
 ## Scope And Non-Goals
 
-Allowed work is limited to governance documents, repository guardrails,
-semantic-closure verifier code, atomic evidence schemas, a repository-owned
-output-correctness skill, and focused tests.
+The exact final 11-path allowlist is recorded in `docs/governance/preflights/issue-300.json`
+and enforced statically. Eight PR paths may only be restored to the exact PR #301 base bytes.
 
-No backend, frontend, provider, RAG, avatar, database, Docker, hosted, public,
-paid, real-media, cloned-identity, or other product/runtime implementation is
-allowed. This issue does not attempt translation repair.
+No backend, frontend, workflow, provider, RAG, avatar, media, database, Docker, deployment,
+product repair, generic assurance, external packet, PR #299, or Issue #280 history change is allowed.
+The runtime/browser `correctnessReport.status = "PASSED"` surface is a later P0 product-repair
+blocker; this PR revokes its authority but does not edit runtime code.
 
-## Canonical Classification Contract
+## Preserved Behavioral RED Evidence
 
-| Classification | Meaning | May satisfy a semantic row? |
-|---|---|---:|
-| `STRUCTURAL_PASS` | path, schema, artifact, or execution structure is mechanically valid | No |
-| `SEMANTIC_PASS` | an independent, non-read-only exact-head oracle observed the required meaning | Yes |
-| `NOT_PROVEN` | proof is missing, stale, partial, or incapable of proving the claim | No |
-| `FAILED` | observed behavior contradicts the requirement or exposes a false pass | No |
+The pre-correction sources were copied to scratch and the packet's `17_REPRODUCE_BASELINE.py`
+harness changed only its scratch matrix, restored it, matched each result, and exited `0`.
+That wrapper exit means reproduction succeeded; it is not product or semantic success.
 
-These are the only allowed atomic outcomes. Documentation, metadata,
-screenshots, matrix status, artifact downloadability, and self-attestation do
-not upgrade structural evidence to semantic proof.
+Source identities before correction:
 
-## Atomic Closure Model
+| Artifact | SHA-256 |
+|---|---|
+| `scripts/quality/semantic_closure.py` | `29509fa2cd476682099566f03f460a4f607b975894acc68fba1c3b2e22f832c7` |
+| `scripts/quality/verify_issue280_output_correctness.py` | `367aaf945748d4433ea5754e2cd1e128c1c0f84777113ed576d20d831607c0dc` |
+| `reports/checkpoint3-issue280/requirement-matrix.json` | `443300320f9c6eaca8245ab9693a50bea8e98bc0630bf7ddacabda3ea6fd6e5f` |
+| Packet execution evidence `20_DELTA007_EXECUTION_EVIDENCE.json` | `98943e56952f35b613475c210be239bd3f91fb6702a853dad577efdd8e481b50` |
+| Packet blind review `08_CLAUDE_BLIND_REVIEW_RESPONSE.md` | `03a581d205930ed5305731b10633b60c89dffef46a42edcb7228aa908e2a5bc8` |
 
-Closure is computed from atomic rows, with semantic passes corroborated by an
-invoked output verifier:
+### E1 — positive-path reachability
 
-1. The declared required row IDs must exactly equal the observed row IDs.
-2. Every row must use one canonical classification.
-3. Every required semantic row must be `SEMANTIC_PASS`.
-4. Every required structural row must be `STRUCTURAL_PASS` or
-   `SEMANTIC_PASS`.
-5. Any `NOT_PROVEN` or `FAILED` row makes closure false and the CLI nonzero.
-6. Every semantic pass must bind to the exact reviewed head and the
-   non-read-only output-correctness fan.
-7. `SEMANTIC_PASS` metadata alone cannot close a row. The evaluator must invoke
-   a non-read-only output verifier whose exact head, independent reviewer,
-   evidence identity, classification, and observation agree with the row.
-8. Editable aggregate fields such as `satisfied`, `complete`,
-   `issue280SatisfiedByPrE`, and report-level `status: PASSED` are forbidden
-   inputs and cannot affect closure.
+Command:
 
-## Review Fan Contract
+```text
+/usr/local/bin/python3 /private/tmp/narratwin-issue300-red.3gx1YM/scripts/quality/verify_issue280_output_correctness.py --expected-head f93653e8a11e697c88766b207fb01c18662339d6
+```
 
-Two fans are mandatory and exact-head bound:
+Exit: `1`; stderr: empty; stdout:
 
-| Fan | Mode | Independent responsibility |
-|---|---|---|
-| `pm-ai-shipping:intended-vs-implemented` | analytical review | compare documented atomic intent with cited enforcement and observed behavior |
-| `output-correctness` | non-read-only execution | execute the user-visible slice and emit semantic observations |
+```text
+Issue 280 semantic closure FAILED at exact head f93653e8a11e697c88766b207fb01c18662339d6:
+- output-correctness:execution-not-provided
+```
 
-The fans must use distinct reviewer identities and evidence records. The
-output-correctness fan must execute, not merely declare
-`executionMode: non-read-only`. A shared editable pass field, identical
-evidence record, stale commit, missing execution result, missing fan, or same
-reviewer makes closure false.
+### E2 — claim-kind laundering
 
-## Architecture Feasibility Checkpoint
+The same issue-specific command ran after all seven scratch rows were relabeled
+`structural` / `STRUCTURAL_PASS` with structural observations.
 
-Before any later runtime issue starts, an exact-head review must select one:
+Exit: `0`; stderr: empty; stdout:
 
-- feasible with a reviewed executable semantic oracle;
-- reduced/demoted support with honest refusal and matching product claims; or
-- blocked.
+```text
+Issue 280 semantic closure passed at exact head f93653e8a11e697c88766b207fb01c18662339d6.
+```
 
-Expected-output text authored solely by the implementation path cannot be the
-oracle. Until this checkpoint and the semantic oracle are reviewed, product code
-remains blocked.
+This is the false-positive path being removed.
 
-## Semantic Oracle Contract
+### E5 — self-declared scope
 
-The future oracle must:
+Command:
 
-- execute through the user-visible path without synthetic success interception;
-- bind every observation to the exact commit;
-- cover every required atomic language/depth/audience row;
-- detect refusals, source-language fallback, partial output, invariant audience
-  output, and unsupported semantic additions;
-- keep structural and semantic observations separate;
-- fail closed on missing, partial, stale, or malformed evidence.
+```text
+/usr/local/bin/python3 /private/tmp/narratwin-issue300-red.3gx1YM/scripts/quality/semantic_closure.py /private/tmp/narratwin-issue300-red.3gx1YM/e5-self-declared-one-row.json --expected-head f93653e8a11e697c88766b207fb01c18662339d6
+```
 
-## Failure Matrix
+Exit: `0`; stderr: empty; stdout:
 
-| ID | Mutation / false pass | Required result |
-|---|---|---|
-| GOV300-FM-001 | `NOT_PROVEN` row with aggregate `satisfied: true` | nonzero |
-| GOV300-FM-002 | `FAILED` row with report `status: PASSED` | nonzero |
-| GOV300-FM-003 | semantic row classified `STRUCTURAL_PASS` | nonzero |
-| GOV300-FM-004 | evidence head differs from reviewed head | nonzero |
-| GOV300-FM-005 | required atomic row omitted | nonzero |
-| GOV300-FM-006 | output fan is read-only | nonzero |
-| GOV300-FM-007 | two fans share reviewer/evidence identity | nonzero |
-| GOV300-FM-008 | audience-invariant execution is marked passed | rejected as `FAILED` |
-| GOV300-FM-009 | translation refusals are hidden by successful rows | rejected as `FAILED` |
-| GOV300-FM-010 | unknown classification or editable aggregate closure key | nonzero |
+```json
+{"closed": true, "reasons": []}
+```
 
-## Matrix-To-Test Mapping
+This proves that a caller-selected one-row scope could emit closure.
 
-`tests/unit/test_semantic_closure.py` owns GOV300-FM-001 through
-GOV300-FM-010. Focused tests must be observed RED before
-`scripts/quality/semantic_closure.py` is implemented. Mutation coverage changes
-one load-bearing field at a time and requires the computed closure to remain
-false.
+### Focused TDD RED
 
-## Skill And Tool Selection Ledger
+Before implementing the correction,
+`uv run pytest tests/unit/test_issue280_forensic_verifier.py -q` produced 19
+failures. They exposed the absent `forensicEvidence` schema and the verifier's
+dependency on the now-removed generic positive evaluator.
 
-| Claim/boundary | Option | Decision | Evidence or prevented action |
-|---|---|---|---|
-| intent gap | `pm-ai-shipping:intended-vs-implemented` | required fan | prevents docs/matrix claims from standing without implementation evidence |
-| semantic output | repository-owned `output-correctness` | create and lock | supplies the missing non-read-only execution method |
-| behavior change | TDD | invoke | RED verifier mutations precede implementation |
-| GitHub state | GitHub skill plus local `gh`/`git` | invoke | exact issue, PR, branch, and head state verified |
-| product implementation skills | frontend/backend/provider workflows | rejected now | architecture/oracle checkpoints are not reviewed |
-| third-party custom skill | external skill install | rejected | a narrow first-party repository skill avoids new code, network, telemetry, hooks, and credentials |
+Independent-review scratch mutations then added top-level
+`overallVerdict: PASSED` and `authorVerdict: FIXED` to the interim artifact.
+Both incorrectly reached `ISSUE_280_NOT_FIXED` with exit `1`. After tests were
+added for those mutations, a renamed arbitrary verdict, an unknown top-level
+key, an unknown forensic key, and an unknown observed-execution key, the focused
+suite produced four failures before the denylist was replaced by exact schema
+allowlists. The retained tests now require unknown keys to produce
+`ISSUE_280_EVIDENCE_MALFORMED` / exit `3`, including when another identity is stale.
 
-## Stop Rule
+## Negative-Only Result Contract
 
-Stop before product/runtime code. A newly discovered false-pass class requires
-updating this contract and adding a RED mutation before changing the verifier.
-Runtime recovery requires a later issue/branch/PR only after the architecture
-feasibility checkpoint and semantic oracle are reviewed.
+| Exit | Reason | Meaning |
+|---:|---|---|
+| `1` | `ISSUE_280_NOT_FIXED` | evidence is valid and preserves the known failure |
+| `2` | `ISSUE_280_EVIDENCE_STALE` | a bound identity differs |
+| `3` | `ISSUE_280_EVIDENCE_MALFORMED` | shape, type, or unknown schema key is invalid |
+| `4` | `ISSUE_280_EVIDENCE_CONTRADICTORY` | well-formed observations differ from the preserved facts |
+
+There is no exit `0` or positive semantic-closure result. The direct verifier exits `1`;
+Make reports its failed recipe as exit `2`. The target is not a required green CI job;
+required CI may run unit tests for expected negative behavior and static forensic integrity.
+
+## Artifact And Context Budgets
+
+- Final diff: exactly 11 paths.
+- Hand-authored changed lines: at most 750.
+- Net executable semantic logic: at most zero; the generic evaluator is removed.
+- The 6,714-line phase checker receives only subtractive/static containment.
+- This preflight: at most 1,800 words and 220 lines.
+- No parallel status, learning, semantic, or assurance registry.
+- Stop and split work if any budget or allowlist boundary is exceeded.
+
+## Completion And Stop Rule
+
+Completion requires mutation coverage for exits `1`–`4`, no positive closure entrypoint,
+exact-base cleanup proof, focused tests, complete quality, and forbidden-path proof.
+Issue #280 remains not fixed. Stop before commit, push, GitHub mutation, review, merge,
+deployment, product repair, runner/oracle work, Q&A, avatar/media, or packet modification.

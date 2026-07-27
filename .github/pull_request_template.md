@@ -85,16 +85,6 @@ and final merge-message wording.
 - [ ] Process/durability/governance work considered whether `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` should receive reusable lessons for future projects/apps.
 - [ ] Implementation or release-readiness changes completed invariant, exploit-matrix, and contract/gate review per `docs/REVIEW_RIGOR_RETROSPECTIVE.md`.
 - [ ] PR title, body, branch commit messages, and final merge/squash message plan were checked for automation-sensitive wording such as issue-closing keywords.
-- [ ] Semantic/output requirements use only `STRUCTURAL_PASS`, `SEMANTIC_PASS`, `NOT_PROVEN`, or `FAILED`, and closure is computed from required atomic rows.
-- [ ] Semantic closure has independent exact-head `pm-ai-shipping:intended-vs-implemented` and invoked non-read-only `output-correctness` evidence; metadata/self-attestation cannot prove a semantic pass, and any `NOT_PROVEN` or `FAILED` row exits nonzero.
-
-## Atomic semantic closure
-
-Do not enter an editable aggregate satisfaction result.
-
-| Atomic requirement ID | Claim kind | Classification | Exact-head evidence | Independent fan | Observation |
-|---|---|---|---|---|---|
-|  | structural / semantic | STRUCTURAL_PASS / SEMANTIC_PASS / NOT_PROVEN / FAILED |  | intended-vs-implemented / output-correctness |  |
 
 ## Preflight evidence
 

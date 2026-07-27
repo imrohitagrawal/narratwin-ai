@@ -37,7 +37,7 @@ The `Makefile` must expose:
 | `make final-review-quality` | Runs executable Final Review artifact checks |
 | `make phase1-closure-quality` | Runs executable Phase 1 Closure governance checks |
 | `make checkpoint3-acceptance` | Executable Checkpoint 3A acceptance harness with C3A-CP1 API E2E, C3A-CP2 output-correctness, C3A-CP3 language-quality, C3A-CP4 media-artifacts, C3A-CP5 access/quota/retention, C3A-CP6 security/observability, C3A-CP7 performance, C3A-CP8 real-browser E2E, and C3A-R2 full-project multilingual corpus probes implemented for local/mock controlled-demo evidence only |
-| `make issue280-output-correctness` | Runs the C3A-R3 PR E output-correctness verifier: PR E backend acceptance, API/artifact parity contract, and dedicated Issue 280 Playwright desktop/mobile browser evidence |
+| `make issue280-output-correctness` | Runs only the negative Issue #280 forensic-integrity verifier; valid known-failure evidence is intentionally nonzero and the target executes no backend, API, or browser product path |
 | `make lint` | Runs backend Ruff and frontend ESLint |
 | `make typecheck` | Runs backend mypy and frontend TypeScript checks |
 | `make test` | Runs backend unit tests and frontend unit tests |
@@ -615,102 +615,20 @@ it does not prove arbitrary-project translation quality, provider quality,
 hosted/public demo readiness, raw uploaded knowledge-document translation API
 behavior, public distribution, or production readiness.
 
-C3A-R3 issue `#280` PR A defines the planned
-`make issue280-output-correctness` gate contract without implementing that
-runtime gate in PR A. The eventual gate must execute create project -> upload
-bounded synthetic markdown -> approve -> ingest -> generate grounded English
-Stage 4 output -> translate Stage 6 output -> generate Stage 7
-placeholder/export evidence -> render UI -> download/decode artifacts ->
-compare report, with run IDs, multilingual run IDs, target language, direction,
-audience, depth, glossary terms, preserved terms, source text, target text,
-English reference, citations, context refs, claim supports, evaluation ID,
-checksums, transcript metadata, subtitles, voice manifest, avatar demo, render
-manifest, video placeholder, coverage matrix, and correctness report kept in
-parity. PR A records only the public-safe static matrix, reviewer checklist,
-and merge-safe red-evidence framework; it does not prove arbitrary real-world
-translation quality, provider quality, hosted/public demo readiness, cloned
-identity runtime, real media, public distribution, or production readiness.
-PR A also defines the future implementation testing contract for issue `#280`:
-each later development PR must account for positive cases, negative cases,
-corner cases, API tests, contract tests, exact real-browser UI validation from
-what the user sees and acts upon, end-to-end flow evidence, and regression tests
-before it claims owned R280 behavior rows are satisfied or reviewed/re-scoped.
-PR B implements only the first executable contract slice behind
-`/api/v1/checkpoint3/issue280/input-contract`: bounded arbitrary synthetic
-markdown input, local/mock provider-disabled response posture, public-safe error
-taxonomy mapping, prompt-injection refusal, unsafe/private/secret-like input
-refusal, and positive/negative/corner/API/contract/regression tests for that
-narrow API surface. PR B does not implement the final
-`make issue280-output-correctness` flow, exact UI evidence, hosted/public demo
-behavior, provider setup, paid spend, cloned identity runtime, real media,
-public distribution, or production-readiness claims.
+C3A-R3 PR A-D and the attempted PR E remain historical implementation records,
+not current completion authority. ADR `0038` and the PR E preflight preserve only
+that superseded contract. The immutable PR E evidence head
+`f93653e8a11e697c88766b207fb01c18662339d6` attempted 525 combinations, completed
+217, refused 308, completed STANDARD and DEEP only 21/175 each, and emitted one
+target body across seven audiences in all 31 successful language/depth groups.
 
-PR C implements the next executable local/mock API slice behind
-`/api/v1/checkpoint3/issue280/local-e2e-demo`. The endpoint reuses the PR B
-input and error taxonomy, creates an issue-specific local synthetic demo
-session, derives deterministic local chunks/facts from bounded markdown,
-retrieves grounded context, generates citation-bound walkthrough text, creates
-narrow local/mock multilingual segments for `en`, `hi`, and `es`, evaluates
-unsupported generated claims, stores generated output/evaluation metadata in
-the issue-specific test-safe service, and returns provider-disabled posture and
-request trace metadata. PR C does not touch the UI, does not implement the final
-`make issue280-output-correctness` flow, exact UI evidence, hosted/public demo
-behavior, provider setup, paid spend, cloned identity runtime, real media,
-public distribution, arbitrary real-world translation quality, provider quality,
-or production-readiness claims. Issues `#249` and `#280` remain open after PR C
-unless all remaining R280 rows are later satisfied with executable evidence or
-reviewed/re-scoped.
-
-PR D implements the exact local UI/browser evidence slice for the PR C endpoint
-using:
-
-```bash
-npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts
-```
-
-The dedicated verifier launches local backend and frontend services, opens the
-UI in desktop and mobile browser projects, submits bounded arbitrary synthetic
-markdown through the UI, observes the
-`/api/v1/checkpoint3/issue280/local-e2e-demo` request/response without
-success-path interception, and verifies visible stored output, accepted script,
-transcript preview/expansion, citations, context refs, claim support IDs,
-evaluation metadata, storage metadata, retry/replay state, safe refusal states,
-keyboard-reachable info tooltips, mobile/touch behavior, and local/mock
-provider-disabled posture. PR D keeps Playwright tracing disabled for committed
-Issue 280 evidence and writes only public-safe verifier metadata; screenshots
-and tool traces are local run artifacts, not closure evidence. PR D does not
-implement the final `make issue280-output-correctness` flow, export/API/stored
-report parity, hosted/public demo behavior, provider setup, paid spend, real
-provider calls, cloned identity runtime, real media, public distribution,
-arbitrary real-world translation quality, provider quality, or
-production-readiness claims. Issues `#249` and `#280` remain open after PR D
-unless all remaining R280 rows are later satisfied with executable evidence or
-reviewed/re-scoped.
-
-PR E implements the final local/demo Issue 280 verifier through:
-
-```bash
-make issue280-output-correctness
-```
-
-The target runs `scripts/quality/verify_issue280_output_correctness.py`, which
-executes:
-
-- `uv run pytest tests/acceptance/test_issue280_pr_e_closure.py -q`
-- `uv run pytest tests/contract/test_issue280_ui_api_artifact_parity.py -q`
-- `npm --prefix frontend run test:smoke -- --config=playwright.issue280.config.ts`
-
-The PR E verifier proves, for bounded public-safe synthetic markdown submitted
-through the browser, grounded English script generation, deterministic
-local/mock conversion across the 25 supported Priority 1 languages, meaningful
-CONCISE/STANDARD/DEEP differences, distinct supported-audience emphasis,
-citation markers, context refs, claim supports, evaluation IDs/checksums, trace
-metadata, glossary preservation, artifact/report parity, provider-disabled
-posture, safe refusal/validation/replay states, and desktop/mobile browser
-visibility. It remains local/mock demo evidence only: no paid providers, real
-provider calls, hosted/public production demo, cloned identity runtime, real
-media, public distribution, arbitrary human-grade or real-world translation
-quality, provider quality, or production-readiness claim.
+`make issue280-output-correctness` now reads only the strict negative forensic
+artifact. It does not start services or execute backend, API, contract, browser,
+download, or canonical product-path tests. Valid evidence returns
+`ISSUE_280_NOT_FIXED`; stale, malformed, and contradictory artifacts return
+distinct nonzero results. Issue #280 is closed in GitHub but is not fixed. Any
+future execution runner, oracle, or product repair requires a separate issue,
+branch, PR, tests, evidence, and approval.
 
 C3A-CP3 implements the third executable probe, language quality, by dispatching
 `uv run pytest tests/acceptance/test_checkpoint3_language_quality.py -q`
@@ -863,23 +781,12 @@ Process-critical governance docs and process-review registers stay in the
 non-trivial category even for text-only edits because those files define future
 automation behavior and review-loop prevention.
 
-Issue `#300` replaces editable Issue `#280` satisfaction fields with atomic
-closure. `scripts/quality/semantic_closure.py` accepts only
-`STRUCTURAL_PASS`, `SEMANTIC_PASS`, `NOT_PROVEN`, and `FAILED`; a required
-semantic row closes only with `SEMANTIC_PASS`, and any `NOT_PROVEN` or `FAILED`
-row returns nonzero. A semantic row still cannot close from matrix or fan
-metadata alone: the evaluator must invoke a non-read-only output verifier and
-match its exact-head reviewer, evidence identity, row classification, and
-observation. `make issue280-output-correctness` evaluates the locked semantic
-row set and therefore intentionally fails for the forensic
-`f93653e8a11e697c88766b207fb01c18662339d6` evidence. Governance quality may
-pass while accurately recording that product closure failed.
-
-Future semantic closure requires two independent exact-head evidence fans:
-`pm-ai-shipping:intended-vs-implemented` and the repository-owned
-`output-correctness` skill in non-read-only execution mode. Product/runtime
-repair remains blocked until the architecture feasibility checkpoint and
-semantic oracle are reviewed.
+Issue `#300` makes `make issue280-output-correctness` negative-only. Its verifier
+exits `1` with `ISSUE_280_NOT_FIXED`; stale, malformed, and contradictory evidence
+have distinct nonzero exits. It is not a required green CI job; CI may run its
+tests and static integrity through `make quality`. Make reports recipe failure as exit `2`.
+Product/runtime repair, including the runtime/browser
+`correctnessReport.status = "PASSED"` surface, belongs to a later issue.
 
 The PR template also requires a `Human verification checklist` for non-trivial
 PRs. This checklist converts reviewer-focus points into rows with exact

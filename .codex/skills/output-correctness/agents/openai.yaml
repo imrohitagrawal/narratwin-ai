@@ -1,4 +1,0 @@
-interface:
-  display_name: "Output Correctness"
-  short_description: "Verify meaning-bearing outputs with exact-head execution"
-  default_prompt: "Use $output-correctness to execute and classify the user-visible output claims at the exact reviewed head."

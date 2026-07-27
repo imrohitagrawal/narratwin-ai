@@ -15,9 +15,6 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.quality.semantic_closure import evaluate_closure  # noqa: E402
-
-
 PHASE1_BRANCH = re.compile(r"^phase-1-closure-.+")
 PROCESS_BRANCH = re.compile(r"^phase-1-closure-process-(\d+)-.+$")
 ISSUE_278_BRANCH = "phase-1-closure-278-c3a-r2-full-project-multilingual-corpus"
@@ -40,44 +37,6 @@ ISSUE_280_PR_E_BRANCH = "phase-1-closure-280-c3a-r3-pr-e-arbitrary-demo-closure"
 ISSUE_280_MATRIX_PATH = "reports/checkpoint3-issue280/requirement-matrix.json"
 ISSUE_280_RED_EVIDENCE_PATH = "reports/checkpoint3-issue280/red-evidence-plan.json"
 ISSUE_280_FORENSIC_FAILED_HEAD = "f93653e8a11e697c88766b207fb01c18662339d6"
-ISSUE_280_SEMANTIC_CLOSURE_ROW_IDS = (
-    "R280-AUDIENCE-001",
-    "R280-DEPTH-002",
-    "R280-AUDIENCE-DEPTH-001",
-    "R280-S6-001",
-    "R280-CONVERSION-001",
-    "R280-QUALITY-001",
-    "R280-OUTPUT-CORRECTNESS-001",
-)
-ISSUE_280_REQUIRED_SECTIONS = {
-    "R280-SCOPE",
-    "R280-INPUT",
-    "R280-AUDIENCE",
-    "R280-PERSONA",
-    "R280-DEPTH",
-    "R280-AUDIENCE-DEPTH",
-    "R280-S4",
-    "R280-S6",
-    "R280-GLOSSARY",
-    "R280-ERROR",
-    "R280-UI",
-    "R280-CONVERSATION-UX",
-    "R280-CONVERSION",
-    "R280-CRITICAL-CONNECTIONS",
-    "R280-QUALITY",
-    "R280-EVIL-SET",
-    "R280-TEST-STRATEGY",
-    "R280-OUTPUT-CORRECTNESS",
-    "R280-GOV",
-}
-ISSUE_280_ALLOWED_ROW_STATUSES = {
-    "STATIC_CONTRACT_PASS",
-    "EXECUTABLE_CONTRACT_PASS",
-    "RED_EVIDENCE_CAPTURED",
-    "PLANNED_IMPLEMENTATION",
-    "PLANNED_EXECUTABLE_GATE",
-    "REVIEWED_RE_SCOPE",
-}
 ISSUE_280_REQUIRED_AUDIENCES = {
     "Recruiter",
     "Hiring manager",
@@ -111,52 +70,6 @@ ISSUE_280_REQUIRED_PUBLIC_SOURCES = (
     "https://pair.withgoogle.com/chapter/mental-models/",
     "https://www.microsoft.com/en-us/haxtoolkit/ai-guidelines/",
     "https://www.w3.org/WAI/WCAG22/Understanding/language-of-parts",
-)
-ISSUE_280_REQUIRED_INPUT_LIMIT_MARKERS = (
-    "maxbytes",
-    "20000",
-    "maxdocuments",
-    "3",
-    "maxsectionsperdocument",
-    "12",
-    "maxbodycharspersection",
-    "2000",
-    "maxtranscriptsegments",
-    "40",
-    "maxglossaryterms",
-    "20",
-    "maxglossarytermchars",
-    "64",
-    "maxcaptionchars",
-    "240",
-    "maxexportbundlebytes",
-    "1000000",
-)
-ISSUE_280_REQUIRED_ERROR_CODES = (
-    "ISSUE280_INPUT_TOO_LARGE",
-    "ISSUE280_UNSUPPORTED_FILE_TYPE",
-    "ISSUE280_TOO_MANY_DOCUMENTS",
-    "ISSUE280_PROMPT_INJECTION_REJECTED",
-    "ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED",
-    "ISSUE280_GLOSSARY_INVALID",
-    "ISSUE280_TRANSLATION_REFUSED",
-    "ISSUE280_INTERNAL_ERROR_SAFE",
-)
-ISSUE_280_REQUIRED_TEST_STRATEGY_MARKERS = (
-    "futureimplementationtestingcontract",
-    "positivecases",
-    "negativecases",
-    "cornercases",
-    "apitests",
-    "contracttests",
-    "exactuivalidationtests",
-    "endtoendflowtests",
-    "regressiontests",
-    "apiassumption",
-    "tests/acceptance/test_issue280_api_contract.py",
-    "tests/contract/test_issue280_ui_api_artifact_parity.py",
-    "playwright.issue280.config.ts",
-    "make issue280-output-correctness",
 )
 POLICY_ONLY_ENV = "NARRATWIN_POLICY_ONLY"
 
@@ -687,30 +600,17 @@ ISSUE_296_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_300_ALLOWED_CHANGED_FILES = {
-    ".codex/skills/output-correctness/SKILL.md",
-    ".codex/skills/output-correctness/agents/openai.yaml",
-    ".github/pull_request_template.md",
-    ".gitignore",
-    "Makefile",
     "docs/QUALITY_GATES.md",
-    "docs/REPOSITORY_GUARDRAILS.md",
-    "docs/SKILL_LOCK.md",
-    "docs/SKILL_SELECTION_AND_EVIDENCE.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
-    "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
     "docs/governance/preflights/issue-300.json",
     "docs/reviews/ISSUE_300_GOVERNANCE_RESET_PREFLIGHT.md",
-    "docs/templates/SEMANTIC_CLOSURE_GATE.md",
     "reports/checkpoint3-issue280/requirement-matrix.json",
-    "scripts/guardrails_check.py",
     "scripts/quality/check_phase1_closure_docs.py",
-    "scripts/quality/semantic_closure.py",
     "scripts/quality/verify_issue280_output_correctness.py",
-    "tests/unit/test_guardrails_check.py",
     "tests/unit/test_phase1_closure_docs.py",
-    "tests/unit/test_semantic_closure.py",
+    "tests/unit/test_issue280_forensic_verifier.py",
 }
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
@@ -1660,8 +1560,7 @@ def changed_files() -> list[str]:
     base = resolve_base()
     outputs: list[str] = []
     for args in (
-        ["diff", "--name-only", base, "HEAD"],
-        ["diff", "--name-only", "HEAD"],
+        ["diff", "--name-only", base],
         ["ls-files", "--others", "--exclude-standard"],
     ):
         output = run_git(args)
@@ -1942,10 +1841,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #300 / issue #280 semantic governance reset",
+        "issue #300 / issue #280 forensic containment",
         "issue280-governance-reset-active",
         "issue280-governance-reset-active",
-        "Issue #300 is the active governance/verifier-only reset. Issue #280 is semantically FAILED at f93653e8a11e697c88766b207fb01c18662339d6: 217 of 525 combinations succeeded, 308 returned ISSUE280_TRANSLATION_REFUSED, STANDARD and DEEP each succeeded only 21 of 175 times, and all 31 successful language/depth groups emitted identical target text for seven audiences. Issue #280's historical GitHub closure, issue #298, and PR #299 remain preserved forensic evidence; PR #299 must not be merged or sent for human review. Product/runtime repair and C3B remain blocked until the architecture feasibility checkpoint and semantic oracle are reviewed. This state does not authorize backend, frontend, provider, RAG, avatar, database, Docker, hosted/public demo, provider setup, paid spend, real provider calls, cloned identity runtime, real media, public distribution, arbitrary human-grade translation, provider quality, or production-readiness claims.",
+        "Issue #300 is the active negative-forensic-only reset. Evidence head f93653e8a11e697c88766b207fb01c18662339d6 establishes that Issue #280 is not fixed: 217 of 525 combinations completed, 308 returned ISSUE280_TRANSLATION_REFUSED, STANDARD and DEEP each completed only 21 of 175 times, and all 31 successful language/depth groups emitted one target body across seven audiences. Issue #280's historical GitHub closure, issue #298, and PR #299 remain preserved forensic evidence. Product/runtime repair remains separate. This state does not authorize backend, frontend, workflow, provider, RAG, avatar, database, Docker, hosted/public demo, paid spend, real media, public distribution, semantic-oracle/runner work, or production-readiness claims.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -6036,130 +5935,54 @@ def check_issue280_requirement_matrix(failures: list[str]) -> None:
     artifact = load_json_artifact(failures, ISSUE_280_MATRIX_PATH)
     if not isinstance(artifact, dict):
         return
-    if artifact.get("issue") != 280:
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must target issue 280.")
-    allowed_pr_slices = {"PR A", "PR A+PR B", "PR A+PR B+PR C", "PR A+PR B+PR C+PR D", "PR A+PR B+PR C+PR D+PR E"}
-    pr_slice = artifact.get("prSlice")
-    if pr_slice not in allowed_pr_slices:
-        fail(
-            failures,
-            f"{ISSUE_280_MATRIX_PATH} must be scoped to PR A through the current approved PR E slice.",
-        )
-    forbidden_aggregate_keys = {
-        "runtimeBehaviorImplemented",
-        "prBExecutableContractSliceImplemented",
-        "prCExecutableLocalE2ESliceImplemented",
-        "prDExecutableUiBrowserDemoSliceImplemented",
-        "prEExecutableArbitraryDemoClosureImplemented",
-        "issue280SatisfiedByPrE",
-        "issue280RemainsOpenAfterPrEUntilMergeCloseout",
-    }
-    present_aggregate_keys = sorted(forbidden_aggregate_keys & artifact.keys())
-    if present_aggregate_keys:
-        fail(
-            failures,
-            f"{ISSUE_280_MATRIX_PATH} contains editable aggregate closure claims: "
-            + ", ".join(present_aggregate_keys),
-        )
-    if artifact.get("prEOutputCorrectnessVerifier") != "make issue280-output-correctness":
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the verifier.")
-    if artifact.get("checkpoint3TrackerRemainsOpen") is not True:
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #249 open.")
-    if artifact.get("issue280RemainsOpenAfterPrA") is not True:
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #280 open after PR A.")
-    if artifact.get("prSlice") == "PR A+PR B" and artifact.get("issue280RemainsOpenAfterPrB") is not True:
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #280 open after PR B.")
-    if artifact.get("prSlice") == "PR A+PR B+PR C" and artifact.get("issue280RemainsOpenAfterPrC") is not True:
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #280 open after PR C.")
-    if artifact.get("prSlice") == "PR A+PR B+PR C+PR D" and artifact.get("issue280RemainsOpenAfterPrD") is not True:
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must keep #280 open after PR D.")
-    if artifact.get("plannedGate") != "make issue280-output-correctness":
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the planned gate.")
-    matrix_text = json.dumps(artifact, sort_keys=True).lower()
-    for marker in ISSUE_280_REQUIRED_INPUT_LIMIT_MARKERS:
-        if marker.lower() not in matrix_text:
-            fail(failures, f"{ISSUE_280_MATRIX_PATH} missing concrete input limit marker: {marker}")
-    for code in ISSUE_280_REQUIRED_ERROR_CODES:
-        if code.lower() not in matrix_text:
-            fail(failures, f"{ISSUE_280_MATRIX_PATH} missing planned error taxonomy code: {code}")
-    for marker in ISSUE_280_REQUIRED_TEST_STRATEGY_MARKERS:
-        if marker.lower() not in matrix_text:
-            fail(failures, f"{ISSUE_280_MATRIX_PATH} missing future implementation test strategy marker: {marker}")
-    sections = artifact.get("sections")
-    if not isinstance(sections, list):
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} sections must be a list.")
+    if set(artifact) != {"schemaVersion", "issue", "forensicEvidence"}:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must use only the strict top-level forensic schema.")
+    if artifact.get("schemaVersion") != "Issue280NegativeForensicArtifactV1" or artifact.get(
+        "issue"
+    ) != 280:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must identify the Issue #280 negative artifact.")
+    forensic = artifact.get("forensicEvidence")
+    if not isinstance(forensic, dict):
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must include static forensicEvidence.")
         return
-    seen_sections: set[str] = set()
-    seen_rows: set[str] = set()
-    for section_item in sections:
-        if not isinstance(section_item, dict):
-            fail(failures, f"{ISSUE_280_MATRIX_PATH} section entries must be objects.")
-            continue
-        section_id = str(section_item.get("id", ""))
-        seen_sections.add(section_id)
-        rows = section_item.get("rows")
-        if not isinstance(rows, list) or not rows:
-            fail(failures, f"{ISSUE_280_MATRIX_PATH} section {section_id} must contain row objects.")
-            continue
-        for row in rows:
-            if not isinstance(row, dict):
-                fail(failures, f"{ISSUE_280_MATRIX_PATH} section {section_id} contains a non-object row.")
-                continue
-            row_id = str(row.get("id", ""))
-            if not row_id or row_id in seen_rows:
-                fail(failures, f"{ISSUE_280_MATRIX_PATH} has missing or duplicate row id: {row_id}")
-            seen_rows.add(row_id)
-            status = str(row.get("legacyEvidenceMaturity", ""))
-            evidence_type = str(row.get("evidenceType", ""))
-            planned_command = str(row.get("plannedCommand", ""))
-            owner = str(row.get("ownerPrSlice", ""))
-            if status not in ISSUE_280_ALLOWED_ROW_STATUSES:
-                fail(
-                    failures,
-                    f"{ISSUE_280_MATRIX_PATH} row {row_id} has invalid legacy evidence maturity: {status}",
-                )
-            if not evidence_type:
-                fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} must include evidenceType.")
-            if not planned_command and status != "REVIEWED_RE_SCOPE":
-                fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} must include planned executable evidence.")
-            if not owner:
-                fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} must include ownerPrSlice.")
-            if "issue comment" in evidence_type.lower() or "issue comment" in planned_command.lower():
-                fail(failures, f"{ISSUE_280_MATRIX_PATH} row {row_id} cannot use issue comments alone as evidence.")
-    missing_sections = sorted(ISSUE_280_REQUIRED_SECTIONS - seen_sections)
-    if missing_sections:
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} missing R280 sections: " + ", ".join(missing_sections))
-    semantic_closure = artifact.get("semanticClosure")
-    if not isinstance(semantic_closure, dict):
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must include semanticClosure atomic rows.")
-        return
-    result = evaluate_closure(
-        semantic_closure,
-        expected_head=ISSUE_280_FORENSIC_FAILED_HEAD,
-        expected_row_ids=ISSUE_280_SEMANTIC_CLOSURE_ROW_IDS,
-    )
-    if result.closed:
-        fail(failures, f"{ISSUE_280_MATRIX_PATH} must preserve Issue #280 semantic FAILED state.")
-    expected_failure_reasons = {
-        reason
-        for row_id in ISSUE_280_SEMANTIC_CLOSURE_ROW_IDS
-        for reason in (f"{row_id}:FAILED", f"{row_id}:semantic-requires-SEMANTIC_PASS")
+    expected_forensic_keys = {
+        "schemaVersion",
+        "subject",
+        "pr299BaseHead",
+        "evidenceHead",
+        "packetReviewedSourceHead",
+        "approvedContractSha256",
+        "historicalSourceRefs",
+        "observedExecution",
     }
-    if set(result.reasons) != expected_failure_reasons:
-        fail(
-            failures,
-            f"{ISSUE_280_MATRIX_PATH} semanticClosure invariant failure: "
-            + ", ".join(sorted(set(result.reasons) ^ expected_failure_reasons)),
-        )
-    atomic_rows = semantic_closure.get("atomicRows")
-    if not isinstance(atomic_rows, list) or any(
-        not isinstance(row, dict) or row.get("classification") != "FAILED"
-        for row in atomic_rows
-    ):
-        fail(
-            failures,
-            f"{ISSUE_280_MATRIX_PATH} forensic semantic rows must all be classified FAILED.",
-        )
+    if set(forensic) != expected_forensic_keys:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must use only the strict forensicEvidence keys.")
+    required_forensic_markers = {
+        "schemaVersion": "Issue280ForensicEvidenceV1",
+        "subject": "issue-280",
+        "pr299BaseHead": "cc89b2dd52da38e8d8a9acbd813e327737cf0ca1",
+        "evidenceHead": ISSUE_280_FORENSIC_FAILED_HEAD,
+        "packetReviewedSourceHead": "16536867dc2f3bca8c19281b58e924615475c158",
+        "approvedContractSha256": "14ca82c43768975f4a904a308db10aab77ef50cdedd97e92601ecba67ab7e75a",
+    }
+    for key, expected in required_forensic_markers.items():
+        if forensic.get(key) != expected:
+            fail(failures, f"{ISSUE_280_MATRIX_PATH} forensic {key} must match the preserved identity.")
+    observed = forensic.get("observedExecution")
+    expected_observed_keys = {
+        "attemptedCombinations",
+        "completedCombinations",
+        "refusedCombinations",
+        "refusalCode",
+        "conciseCompleted",
+        "standardCompleted",
+        "deepCompleted",
+        "successfulLanguageDepthGroups",
+        "audiencesPerSuccessfulGroup",
+        "uniqueTargetBodiesPerSuccessfulGroup",
+    }
+    if not isinstance(observed, dict) or set(observed) != expected_observed_keys:
+        fail(failures, f"{ISSUE_280_MATRIX_PATH} must use only strict observedExecution keys.")
 
 
 def check_issue280_red_evidence_plan(failures: list[str]) -> None:
@@ -6201,31 +6024,19 @@ def check_issue280_review_artifacts(failures: list[str]) -> None:
 
 def check_issue300_semantic_governance(failures: list[str]) -> None:
     required_markers = {
-        ".codex/skills/output-correctness/SKILL.md": (
-            "non-read-only execution fan",
-            "STRUCTURAL_PASS",
-            "SEMANTIC_PASS",
-            "NOT_PROVEN",
-            "FAILED",
-            "exact reviewed head",
-            "Do not change product/runtime code",
-        ),
         "docs/reviews/ISSUE_300_GOVERNANCE_RESET_PREFLIGHT.md": (
-            "GOV300-FM-001",
-            "GOV300-FM-010",
-            "Architecture Feasibility Checkpoint",
-            "Semantic Oracle Contract",
-            "pm-ai-shipping:intended-vs-implemented",
-            "output-correctness",
+            "Preserved Behavioral RED Evidence",
+            "E1",
+            "E2",
+            "E5",
+            "ISSUE_280_NOT_FIXED",
+            "Issue #280 is not fixed",
         ),
-        "docs/SKILL_LOCK.md": (
-            "| Output Correctness |",
-            ".codex/skills/output-correctness/SKILL.md",
-            "no network, telemetry, hooks, credentials",
-        ),
-        ".github/pull_request_template.md": (
-            "## Atomic semantic closure",
-            "Do not enter an editable aggregate satisfaction result.",
+        "scripts/quality/verify_issue280_output_correctness.py": (
+            "ISSUE_280_NOT_FIXED",
+            "ISSUE_280_EVIDENCE_STALE",
+            "ISSUE_280_EVIDENCE_MALFORMED",
+            "ISSUE_280_EVIDENCE_CONTRADICTORY",
         ),
     }
     for rel, markers in required_markers.items():
@@ -6236,12 +6047,9 @@ def check_issue300_semantic_governance(failures: list[str]) -> None:
         for marker in markers:
             if marker not in text:
                 fail(failures, f"{rel} missing load-bearing marker: {marker}")
-    for rel in (
-        ".codex/skills/output-correctness/SKILL.md",
-        ".codex/skills/output-correctness/agents/openai.yaml",
-    ):
-        if (ROOT / rel).is_file() and not git_ok(["ls-files", "--error-unmatch", rel]):
-            fail(failures, f"Issue 300 repository-owned skill artifact must be tracked: {rel}")
+    verifier = read("scripts/quality/verify_issue280_output_correctness.py")
+    if "return 0" in verifier or "closure passed" in verifier.lower():
+        fail(failures, "Issue #280 forensic verifier must not contain a positive closure path.")
 
 
 def check_process_docs(failures: list[str]) -> None:

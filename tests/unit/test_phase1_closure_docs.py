@@ -2932,7 +2932,7 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "Issue `#274` is satisfied by its prior reviewed PR as the public-safe Checkpoint 3B consent/provenance planning gate only",
         "Issue `#276` is closed after PR `#277` merged the Checkpoint 3A repair child for major-market multilingual output correctness",
         "Issue `#278` is closed after PR `#279` merged the bounded C3A-R2 full-project multilingual corpus gate",
-        "Issue `#280` is the current C3A-R3 child",
+            "Issue `#280` is closed in GitHub but not fixed",
         "PR `#281`",
         "`3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c`",
         "post-merge main quality workflow run `30085558061` passing",
@@ -2944,10 +2944,9 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "`09584b264c0f30da3eecd6693829e5bcb071e568`",
         "post-merge main quality workflow run `30095714825` passing",
         "Issue `#278` is closed after PR `#279` merged the bounded C3A-R2 full-project multilingual corpus gate",
-            "Issue #300 is the active governance/verifier-only reset",
-            "Issue #280 is semantically FAILED at f93653e8a11e697c88766b207fb01c18662339d6",
-            "PR #299 must not be merged or sent for human review",
-            "Product/runtime repair and C3B remain blocked until the architecture feasibility checkpoint",
+            "Issue #300 is the active negative-forensic-only reset",
+            "Evidence head f93653e8a11e697c88766b207fb01c18662339d6 establishes that Issue #280 is not fixed",
+            "Product/runtime repair remains separate",
         "full-project multilingual corpus gate",
         "ADR `0034`",
         "major-market multilingual output correctness",
@@ -2971,7 +2970,7 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "post-merge main quality workflow run `29925008358` passing",
         "post-merge main quality workflow run `29937721472` passing",
         "post-merge main quality workflow run `29994103118` passing",
-        "currently listed Checkpoint 3A executable acceptance probe set",
+        "The current `make issue280-output-correctness` target is negative forensic integrity only",
         "consent/provenance planning",
         "acceptance contracts",
         "risk boundaries",
@@ -4200,6 +4199,23 @@ def test_main_push_resolve_base_keeps_previous_commit(monkeypatch: Any) -> None:
 
     assert phase1.resolve_base() == "previous-main"
     assert calls == [["rev-parse", "--verify", "previous-main^{commit}"]]
+
+
+def test_changed_files_uses_final_worktree_diff_from_base(monkeypatch: Any) -> None:
+    calls: list[list[str]] = []
+    monkeypatch.setattr(phase1, "resolve_base", lambda: "pinned-base")
+
+    def fake_run_git(args: list[str]) -> str:
+        calls.append(args)
+        return "docs/STATUS.md" if args[0] == "diff" else "tests/unit/new_test.py"
+
+    monkeypatch.setattr(phase1, "run_git", fake_run_git)
+
+    assert phase1.changed_files() == ["docs/STATUS.md", "tests/unit/new_test.py"]
+    assert calls == [
+        ["diff", "--name-only", "pinned-base"],
+        ["ls-files", "--others", "--exclude-standard"],
+    ]
 
 
 def test_quality_gates_workflow_passes_event_name_to_stage_quality(monkeypatch: Any) -> None:
@@ -6697,32 +6713,19 @@ def test_issue296_allowlist_allows_only_frontend_brace_expansion_audit_scope(mon
         ]
 
 
-def test_issue300_allowlist_is_governance_verifier_and_skill_only(monkeypatch: Any) -> None:
+def test_issue300_allowlist_is_exact_bounded_forensic_scope(monkeypatch: Any) -> None:
     expected = {
-        ".codex/skills/output-correctness/SKILL.md",
-        ".codex/skills/output-correctness/agents/openai.yaml",
-        ".github/pull_request_template.md",
-        ".gitignore",
-        "Makefile",
         "docs/QUALITY_GATES.md",
-        "docs/REPOSITORY_GUARDRAILS.md",
-        "docs/SKILL_LOCK.md",
-        "docs/SKILL_SELECTION_AND_EVIDENCE.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
-        "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
         "docs/governance/preflights/issue-300.json",
         "docs/reviews/ISSUE_300_GOVERNANCE_RESET_PREFLIGHT.md",
-        "docs/templates/SEMANTIC_CLOSURE_GATE.md",
         "reports/checkpoint3-issue280/requirement-matrix.json",
-        "scripts/guardrails_check.py",
         "scripts/quality/check_phase1_closure_docs.py",
-        "scripts/quality/semantic_closure.py",
         "scripts/quality/verify_issue280_output_correctness.py",
-        "tests/unit/test_guardrails_check.py",
         "tests/unit/test_phase1_closure_docs.py",
-        "tests/unit/test_semantic_closure.py",
+        "tests/unit/test_issue280_forensic_verifier.py",
     }
     assert phase1.ISSUE_300_ALLOWED_CHANGED_FILES == expected
     branch = "phase-1-closure-process-300-issue280-semantic-closure-reset"
@@ -6736,28 +6739,28 @@ def test_issue300_allowlist_is_governance_verifier_and_skill_only(monkeypatch: A
 
 def test_issue300_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-300-issue280-semantic-closure-reset-extra"
-    path = ".codex/skills/output-correctness/SKILL.md"
+    path = "scripts/quality/verify_issue280_output_correctness.py"
     assert run_changed_files_check(monkeypatch, branch=branch, files=[path]) == [
         f"Phase 1 Closure branch {branch} may not change {path}."
     ]
 
 
-def test_issue300_contract_rejects_read_only_output_skill(monkeypatch: Any) -> None:
-    skill_path = ".codex/skills/output-correctness/SKILL.md"
-    original = phase1.read(skill_path)
+def test_issue300_contract_rejects_positive_closure_path(monkeypatch: Any) -> None:
+    verifier_path = "scripts/quality/verify_issue280_output_correctness.py"
+    original = phase1.read(verifier_path)
     monkeypatch.setattr(
         phase1,
         "read",
         read_with_overrides(
             phase1,
-            {skill_path: original.replace("non-read-only execution fan", "read-only inspection fan", 1)},
+            {verifier_path: original + "\n# closure passed\n"},
         ),
     )
     failures: list[str] = []
 
     phase1.check_issue300_semantic_governance(failures)
 
-    assert f"{skill_path} missing load-bearing marker: non-read-only execution fan" in failures
+    assert "Issue #280 forensic verifier must not contain a positive closure path." in failures
 
 
 def test_issue219_branch_allows_only_frontend_audit_remediation_scope(monkeypatch: Any) -> None:
@@ -8157,116 +8160,37 @@ def test_issue280_near_match_branch_fails_closed(monkeypatch: Any) -> None:
     assert any("docs/governance/preflights/issue-280.json" in failure for failure in failures)
 
 
-def test_issue280_matrix_rejects_runtime_completion_claim(monkeypatch: Any) -> None:
+def test_issue280_matrix_rejects_unknown_top_level_key(monkeypatch: Any) -> None:
     matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["prSlice"] = "PR A+PR B+PR C+PR D"
-    matrix["runtimeBehaviorImplemented"] = True
+    matrix["overallVerdict"] = "PASSED"
     failures = run_issue280_review_artifacts_check(
         monkeypatch,
         read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
     )
 
-    assert (
-        f"{phase1.ISSUE_280_MATRIX_PATH} contains editable aggregate closure claims: "
-        "runtimeBehaviorImplemented"
-    ) in failures
+    assert f"{phase1.ISSUE_280_MATRIX_PATH} must use only the strict top-level forensic schema." in failures
 
 
-def test_issue280_matrix_rejects_editable_pr_e_satisfaction_claims(monkeypatch: Any) -> None:
+def test_issue280_matrix_rejects_unknown_nested_key(monkeypatch: Any) -> None:
     matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["prSlice"] = "PR A+PR B+PR C+PR D+PR E"
-    matrix["runtimeBehaviorImplemented"] = True
-    matrix["issue280SatisfiedByPrE"] = True
-    matrix["prEOutputCorrectnessVerifier"] = "make issue280-output-correctness"
+    matrix["forensicEvidence"]["observedExecution"]["authorVerdict"] = "FIXED"
     failures = run_issue280_review_artifacts_check(
         monkeypatch,
         read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
     )
 
-    assert any(
-        failure.startswith(
-            f"{phase1.ISSUE_280_MATRIX_PATH} contains editable aggregate closure claims:"
-        )
-        for failure in failures
-    )
+    assert f"{phase1.ISSUE_280_MATRIX_PATH} must use only strict observedExecution keys." in failures
 
 
-def test_issue280_matrix_pr_e_requires_output_correctness_verifier(monkeypatch: Any) -> None:
+def test_issue280_matrix_rejects_stale_forensic_identity(monkeypatch: Any) -> None:
     matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["prSlice"] = "PR A+PR B+PR C+PR D+PR E"
-    matrix["runtimeBehaviorImplemented"] = True
-    matrix["issue280SatisfiedByPrE"] = True
-    matrix["prEOutputCorrectnessVerifier"] = "issue comment"
+    matrix["forensicEvidence"]["evidenceHead"] = "0" * 40
     failures = run_issue280_review_artifacts_check(
         monkeypatch,
         read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
     )
 
-    assert f"{phase1.ISSUE_280_MATRIX_PATH} must name make issue280-output-correctness as the verifier." in failures
-
-
-def test_issue280_matrix_rejects_malformed_semantic_failure_evidence(monkeypatch: Any) -> None:
-    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["semanticClosure"]["reviewFans"] = []
-    failures = run_issue280_review_artifacts_check(
-        monkeypatch,
-        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
-    )
-
-    assert any(
-        failure.startswith(
-            f"{phase1.ISSUE_280_MATRIX_PATH} semanticClosure invariant failure:"
-        )
-        and "missing-review-fan:output-correctness" in failure
-        for failure in failures
-    )
-
-
-def test_issue280_matrix_requires_pr_b_to_keep_issue280_open(monkeypatch: Any) -> None:
-    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["prSlice"] = "PR A+PR B"
-    matrix["issue280RemainsOpenAfterPrB"] = False
-    failures = run_issue280_review_artifacts_check(
-        monkeypatch,
-        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
-    )
-
-    assert f"{phase1.ISSUE_280_MATRIX_PATH} must keep #280 open after PR B." in failures
-
-
-def test_issue280_matrix_requires_pr_c_to_keep_issue280_open(monkeypatch: Any) -> None:
-    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["prSlice"] = "PR A+PR B+PR C"
-    matrix["issue280RemainsOpenAfterPrC"] = False
-    failures = run_issue280_review_artifacts_check(
-        monkeypatch,
-        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
-    )
-
-    assert f"{phase1.ISSUE_280_MATRIX_PATH} must keep #280 open after PR C." in failures
-
-
-def test_issue280_matrix_requires_pr_d_to_keep_issue280_open(monkeypatch: Any) -> None:
-    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["prSlice"] = "PR A+PR B+PR C+PR D"
-    matrix["issue280RemainsOpenAfterPrD"] = False
-    failures = run_issue280_review_artifacts_check(
-        monkeypatch,
-        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
-    )
-
-    assert f"{phase1.ISSUE_280_MATRIX_PATH} must keep #280 open after PR D." in failures
-
-
-def test_issue280_matrix_requires_checkpoint3_tracker_to_remain_open(monkeypatch: Any) -> None:
-    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["checkpoint3TrackerRemainsOpen"] = False
-    failures = run_issue280_review_artifacts_check(
-        monkeypatch,
-        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
-    )
-
-    assert f"{phase1.ISSUE_280_MATRIX_PATH} must keep #249 open." in failures
+    assert f"{phase1.ISSUE_280_MATRIX_PATH} forensic evidenceHead must match the preserved identity." in failures
 
 
 def test_issue280_preflight_requires_public_safe_boundaries(monkeypatch: Any) -> None:
@@ -8283,77 +8207,6 @@ def test_issue280_preflight_requires_public_safe_boundaries(monkeypatch: Any) ->
     )
 
     assert any("no provider setup" in failure for failure in failures)
-
-
-def test_issue280_matrix_rejects_issue_comment_only_evidence(monkeypatch: Any) -> None:
-    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["sections"][0]["rows"][0]["evidenceType"] = "issue comment only"
-    failures = run_issue280_review_artifacts_check(
-        monkeypatch,
-        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
-    )
-
-    assert any("cannot use issue comments alone as evidence" in failure for failure in failures)
-
-
-def test_issue280_matrix_requires_planned_executable_evidence(monkeypatch: Any) -> None:
-    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["sections"][0]["rows"][0]["plannedCommand"] = ""
-    failures = run_issue280_review_artifacts_check(
-        monkeypatch,
-        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
-    )
-
-    assert any("must include planned executable evidence" in failure for failure in failures)
-
-
-def test_issue280_matrix_requires_concrete_input_limits(monkeypatch: Any) -> None:
-    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["sections"][1]["rows"][0]["plannedInputBounds"].pop("maxBytes")
-    matrix["sections"][1]["rows"][0]["requirement"] = matrix["sections"][1]["rows"][0]["requirement"].replace(
-        "maxBytes 20000 per document, ",
-        "",
-    )
-    failures = run_issue280_review_artifacts_check(
-        monkeypatch,
-        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
-    )
-
-    assert any("missing concrete input limit marker: maxbytes" in failure for failure in failures)
-
-
-def test_issue280_matrix_requires_planned_error_taxonomy_codes(monkeypatch: Any) -> None:
-    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["sections"][9]["rows"][0]["plannedErrorTaxonomy"] = [
-        item
-        for item in matrix["sections"][9]["rows"][0]["plannedErrorTaxonomy"]
-        if item["code"] != "ISSUE280_INTERNAL_ERROR_SAFE"
-    ]
-    matrix["sections"][9]["rows"][0]["requirement"] = matrix["sections"][9]["rows"][0]["requirement"].replace(
-        ", and ISSUE280_INTERNAL_ERROR_SAFE/500",
-        "",
-    )
-    failures = run_issue280_review_artifacts_check(
-        monkeypatch,
-        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
-    )
-
-    assert any("missing planned error taxonomy code: ISSUE280_INTERNAL_ERROR_SAFE" in failure for failure in failures)
-
-
-def test_issue280_matrix_requires_future_implementation_test_strategy(monkeypatch: Any) -> None:
-    matrix = json.loads(phase1.read(phase1.ISSUE_280_MATRIX_PATH))
-    matrix["futureImplementationTestingContract"]["requiredTestLevels"].remove("apiTests")
-    matrix["sections"] = [
-        section for section in matrix["sections"] if section["id"] != "R280-TEST-STRATEGY"
-    ]
-    failures = run_issue280_review_artifacts_check(
-        monkeypatch,
-        read_overrides={phase1.ISSUE_280_MATRIX_PATH: json.dumps(matrix)},
-    )
-
-    assert any("missing future implementation test strategy marker: apitests" in failure for failure in failures)
-    assert any("missing R280 sections: R280-TEST-STRATEGY" in failure for failure in failures)
 
 
 def test_issue280_red_evidence_rejects_permanent_failing_tests(monkeypatch: Any) -> None:

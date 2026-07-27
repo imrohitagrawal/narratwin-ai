@@ -82,20 +82,6 @@ The policy check fails CI for:
 - failing eval result reports
 - security reports with critical/high findings
 - scanner-consensus artifacts that hide raw Trivy or Grype findings
-- semantic closure derived from editable aggregate satisfaction/completion
-  fields instead of required atomic rows
-- semantic/output rows using any outcome outside `STRUCTURAL_PASS`,
-  `SEMANTIC_PASS`, `NOT_PROVEN`, or `FAILED`
-- a zero-exit semantic closure command when any atomic row is `NOT_PROVEN` or
-  `FAILED`, or when a semantic row has only `STRUCTURAL_PASS`
-- semantic closure without two independent exact-head fans:
-  `pm-ai-shipping:intended-vs-implemented` and the repository-owned,
-  non-read-only `output-correctness` verifier
-- a semantic pass accepted from matrix/fan metadata or self-attestation without
-  invoking the non-read-only output-correctness verifier and matching its
-  exact-head row classifications and observations
-- Issue `#280` product/runtime repair before the architecture feasibility
-  checkpoint and semantic oracle are reviewed
 
 Direct pushes to `main` must be prevented by repository settings such as branch protection or rulesets; the CI policy check is not the enforcement layer for that event.
 
