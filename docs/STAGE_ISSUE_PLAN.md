@@ -1364,44 +1364,17 @@ real-person likeness, real media, public distribution, arbitrary real-world
 translation quality, provider quality, or production-readiness claims.
 
 Issue `#280` PR E branch
-`phase-1-closure-280-c3a-r3-pr-e-arbitrary-demo-closure` is limited to final
-local/demo closure evidence for `/api/v1/checkpoint3/issue280/local-e2e-demo`:
-arbitrary bounded public-safe synthetic markdown, grounded English script
-generation, deterministic local/mock conversion across the 25 supported
-Priority 1 languages, meaningful depth and audience adaptation, citation,
-context-ref, claim-support, evaluation, trace, glossary, artifact, and report
-parity, safe refusal/error states, desktop/mobile browser evidence, and the
-dedicated `make issue280-output-correctness` verifier. It may change only:
+`phase-1-closure-280-c3a-r3-pr-e-arbitrary-demo-closure` is historical and has
+no live implementation or closure authority. Its evidence head
+`f93653e8a11e697c88766b207fb01c18662339d6` is retained only as falsifying
+evidence. The former PR E allowlist, including `scripts/guardrails_check.py`,
+backend/frontend paths, acceptance/contract tests, and Playwright paths, does
+not authorize current work.
 
-- `Makefile`
-- `backend/app/issue280.py`
-- `docs/reviews/ISSUE_280_C3A_R3_PR_E_PREFLIGHT.md`
-- `docs/ADR/0038-issue280-pr-e-local-demo-closure-contract.md`
-- `reports/checkpoint3-issue280/requirement-matrix.json`
-- `docs/QUALITY_GATES.md`
-- `docs/STAGE_ISSUE_PLAN.md`
-- `docs/STATUS.md`
-- `docs/TRACEABILITY.md`
-- `frontend/src/app/page.module.css`
-- `frontend/src/app/page.test.tsx`
-- `frontend/src/app/page.tsx`
-- `frontend/tests/issue280-ui-browser.spec.ts`
-- `scripts/quality/check_phase1_closure_docs.py`
-- `scripts/quality/verify_issue280_output_correctness.py`
-- `tests/acceptance/test_issue280_pr_e_closure.py`
-- `tests/contract/test_issue280_ui_api_artifact_parity.py`
-- `tests/unit/test_phase1_closure_docs.py`
-
-PR E may mark the R280 runtime closure rows satisfied only when
-`make issue280-output-correctness`, targeted backend/API tests, targeted
-frontend/browser tests, and phase-closure governance checks pass. It must keep
-issue `#249` open as the public Checkpoint 3 tracker and keep issue `#280` open
-until PR E has green CI and human review on the exact latest head. It must not
-authorize hosted/public demo behavior, provider setup, provider SDKs, provider
-keys, paid spend, real provider calls, cloned identity runtime, cloned voice,
-cloned face, digital twin, real-person likeness, real media, public
-distribution, arbitrary human-grade or real-world translation quality, provider
-quality, or production-readiness claims.
+The current `make issue280-output-correctness` target is negative-only forensic
+integrity. It executes no product path and cannot satisfy Issue #280. Issue
+`#280` is closed in GitHub but is not fixed. Product repair and a real execution
+runner require separate later issues, branches, PRs, RED tests, and approval.
 
 PR A branch `phase-1-closure-process-172-gpf-v1-offline-core` may additionally
 change only the offline core paths below. This exception does not authorize a
@@ -2071,6 +2044,22 @@ reviewed closure PR with explicit downgrade evidence.
 
 Changes to the three Phase 1 quality scripts above require explicit reviewer
 scrutiny because the PR branch executes its own in-repo gate code.
+
+## Issue 300 Governance Reset
+
+Issue `#300` uses branch
+`phase-1-closure-process-300-issue280-semantic-closure-reset`. Its first
+commit contains only `docs/governance/preflights/issue-300.json`.
+
+Allowed scope is the exact 11-path governance, forensic-verifier, matrix, and
+focused-test allowlist in `scripts/quality/check_phase1_closure_docs.py`.
+
+Backend, frontend, provider, RAG, avatar, database, Docker, workflow, and
+product/runtime implementation are forbidden. Evidence head
+`f93653e8a11e697c88766b207fb01c18662339d6` establishes that Issue `#280` is
+not fixed. Its GitHub closure, Issue `#298`, and PR `#299` remain unchanged
+forensic history. The command intentionally exits nonzero and is not a required
+green CI job.
 
 Blocked changes:
 

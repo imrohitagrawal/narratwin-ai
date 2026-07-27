@@ -1,0 +1,46 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 300,
+  "branch": "phase-1-closure-process-300-issue280-semantic-closure-reset",
+  "objective": "Preserve the falsification of Issue #280, remove positive semantic-closure authority from PR #301, and provide only a negative issue-specific forensic verifier. Issue #280 is not fixed.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/governance/preflights/issue-300.json",
+      "docs/reviews/ISSUE_300_GOVERNANCE_RESET_PREFLIGHT.md",
+      "reports/checkpoint3-issue280/requirement-matrix.json",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "scripts/quality/verify_issue280_output_correctness.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "tests/unit/test_issue280_forensic_verifier.py"
+    ],
+    "allowed_prefixes": [
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/governance/preflights/issue-300.json",
+      "docs/reviews/ISSUE_300_GOVERNANCE_RESET_PREFLIGHT.md",
+      "reports/checkpoint3-issue280/requirement-matrix.json",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "scripts/quality/verify_issue280_output_correctness.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "tests/unit/test_issue280_forensic_verifier.py"
+    ],
+    "forbidden": [
+      ".codex/",
+      ".github/",
+      ".gitignore",
+      "backend/",
+      "frontend/",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/SKILL_LOCK.md",
+      "scripts/quality/semantic_closure.py",
+      "tests/unit/test_semantic_closure.py"
+    ]
+  }
+}
