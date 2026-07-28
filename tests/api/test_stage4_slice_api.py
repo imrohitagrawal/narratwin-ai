@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -6,7 +7,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app.main import Stage8RequestSizeLimitMiddleware, app, reset_app_state_for_tests
+from backend.app.main import Stage8RequestSizeLimitMiddleware, app, local_principal, reset_app_state_for_tests
 from backend.app.curation import SourceAssertions
 from backend.app.stage4 import (
     MAX_PROJECTS_PER_TENANT, MAX_UPLOAD_BYTES, MAX_UPLOAD_REQUEST_BYTES, LocalPrincipal, Stage4Error, Stage4Service,
@@ -55,21 +56,19 @@ def approve_a1(client: TestClient, project_id: str, pending: dict[str, object]) 
         json=payload, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-approve"},
     )
     assert response.status_code == 200
-def test_a1_submit_allow_pending_and_exact_replay() -> None:
+def test_a1_submit_allow_pending_and_exact_replay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(stage4_service, "state_path", tmp_path / "replay.json")
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id, body = create_a1_pending(client)
-    assert body.get("code") == "SOURCE_PENDING_REVIEW"
-    assert body["decisionState"] == "PENDING_REVIEW"
-    assert body["rawContentRetained"] is True
-    assert body["idempotencyReplayed"] is False
-    replay = client.post(
-        f"/api/v1/projects/{project_id}/knowledge-documents", data=PUBLIC_CURATED_FORM,
-        files={"file": ("heartbeat-public.md", PUBLIC_CURATED_FIXTURE, "text/markdown")},
-        headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit"},
-    )
+    assert (body.get("code"), body["decisionState"], body["ingestionStatus"], body["rawContentRetained"], body["idempotencyReplayed"]) == ("SOURCE_PENDING_REVIEW", "PENDING_REVIEW", "NOT_STARTED", True, False)
+    approve_a1(client, project_id, body)
+    client.post(f"/api/v1/projects/{project_id}/ingestion-runs", json={"documentIds": [], "sourceIds": [body["sourceId"]]}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-ingest-replay"})
+    replay = client.post(f"/api/v1/projects/{project_id}/knowledge-documents", data=PUBLIC_CURATED_FORM, files={"file": ("heartbeat-public.md", PUBLIC_CURATED_FIXTURE, "text/markdown")}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit"})
     assert replay.status_code == 201
     assert replay.json() == {**body, "idempotencyReplayed": True}
+    restored = Stage4Service(state_path=tmp_path / "replay.json").submit_curated_source(principal=LocalPrincipal("tenant_local", "curator_demo"), project_id=project_id, source_filename="heartbeat-public.md", content_type="text/markdown", data=PUBLIC_CURATED_FIXTURE, assertions=SourceAssertions(**{"classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rights_basis": "PROJECT_OWNED", "rights_status": "ELIGIBLE", "usage_policy": "LOCAL_TEST_REUSE_ALLOWED", "source_version": "heartbeat1-public-v1"}), schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key="a1-submit")
+    assert (restored.decision.decision_state, restored.source.ingestion_status, restored.idempotency_replayed) == ("PENDING_REVIEW", "NOT_STARTED", True)
 @pytest.mark.parametrize("case", ["matching", "checksum", "version", "policy", "decision", "assertions"])
 def test_a1_approval_rechecks_bindings_and_replays(case: str) -> None:
     reset_app_state_for_tests()
@@ -78,7 +77,9 @@ def test_a1_approval_rechecks_bindings_and_replays(case: str) -> None:
     payload = {"approvalStatus": "APPROVED", "curationSchemaVersion": "source-curation-v1", "action": "APPROVE", "sourceId": pending["sourceId"], "decisionId": pending["decisionId"], "policyVersion": pending["policyVersion"], "sourceVersion": pending["sourceVersion"], "checksum": pending["checksum"], "assertionsFingerprint": pending["assertionsFingerprint"]}
     drift = {"checksum": "0" * 64, "version": "heartbeat1-public-v0", "policy": "source-curation-policy-v0", "decision": "decision_999999", "assertions": "f" * 64}
     field = {"version": "sourceVersion", "policy": "policyVersion", "decision": "decisionId", "assertions": "assertionsFingerprint"}.get(case, case)
-    if case != "matching":
+    if case in {"checksum", "version", "policy", "assertions"}:
+        setattr(stage4_service.source_decisions[str(pending["decisionId"])], {"version": "source_version", "policy": "policy_version", "assertions": "assertions_fingerprint"}.get(case, case), drift[case])
+    elif case != "matching":
         payload[field] = drift[case]
     response = client.patch(
         f"/api/v1/projects/{project_id}/knowledge-documents/{pending['sourceId']}/approval",
@@ -87,6 +88,7 @@ def test_a1_approval_rechecks_bindings_and_replays(case: str) -> None:
     assert response.status_code == (200 if case == "matching" else 409)
     code = response.json().get("code") if case == "matching" else response.json()["error"]["code"]
     assert code == ("SOURCE_APPROVED" if case == "matching" else "SOURCE_NOT_APPROVABLE")
+    assert case != "matching" or client.patch(f"/api/v1/projects/{project_id}/knowledge-documents/{pending['sourceId']}/approval", json=payload, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": f"a1-approve-{case}"}).json()["idempotencyReplayed"] is True
 @pytest.mark.parametrize("principal,project_id,status", [(LocalPrincipal("tenant_other", "curator_demo"), "proj_000001", 403), (LocalPrincipal("tenant_local", "other_demo"), "proj_000001", 403), (LocalPrincipal("tenant_local", "curator_demo"), "proj_000002", 404)])
 def test_a1_curated_scope_and_logs_are_bounded(
     principal: LocalPrincipal, project_id: str, status: int, caplog: pytest.LogCaptureFixture,
