@@ -45,7 +45,7 @@ from backend.app.observability import (
     record_walkthrough_metrics,
     with_trace,
 )
-from backend.app.curation import (CURATION_POLICY_VERSION, CURATION_SCHEMA_VERSION, CuratedOutcome, SourceAssertions, SourceDecisionRecord, SourceRecord, allowed_for_review, assertions_digest, canonical_digest, restore_curated)
+from backend.app.curation import (CURATION_POLICY_VERSION, CURATION_SCHEMA_VERSION, CuratedOutcome, SourceAssertions, SourceDecisionRecord, SourceRecord, allowed_for_review, assertions_digest, canonical_digest, legal_pair, restore_curated)
 
 MAX_UPLOAD_BYTES = 1_048_576
 MAX_PROJECT_CORPUS_BYTES = 5 * 1_048_576
@@ -279,8 +279,7 @@ class Stage4Service:
                 and self.projects[document.project_id].tenant_id == document.tenant_id
                 and self.projects[document.project_id].owner_id == document.owner_id
             }
-            self.sources, self.source_decisions = restore_curated(
-                payload.get("sources", []), payload.get("sourceDecisions", []), self.projects)
+            self.sources, self.source_decisions = restore_curated(payload.get("sources", []), payload.get("sourceDecisions", []), self.projects, self._restored_curated_source_is_safe)
             self.ingestion_runs = {
                 str(row["ingestion_run_id"]): IngestionRunRecord(**row)
                 for row in payload.get("ingestionRuns", [])
@@ -415,7 +414,7 @@ class Stage4Service:
             return False
         ids = run.document_ids or run.source_ids
         members = [self.documents.get(identifier) or self.sources.get(identifier) for identifier in ids]
-        return bool(ids and all(member and (member.tenant_id, member.owner_id, member.project_id) == (run.tenant_id, run.actor_id, run.project_id) for member in members) and all(any(decision.source_id == identifier and decision.decision_state == "APPROVED" and decision.policy_version == CURATION_POLICY_VERSION for decision in self.source_decisions.values()) for identifier in run.source_ids))
+        return bool(bool(run.document_ids) != bool(run.source_ids) and len(ids) == len(set(ids)) and all(member and (member.tenant_id, member.owner_id, member.project_id) == (run.tenant_id, run.actor_id, run.project_id) for member in members) and all(any(decision.source_id == identifier and legal_pair(self.sources[identifier], decision) and decision.decision_state == "APPROVED" for decision in self.source_decisions.values()) for identifier in run.source_ids))
 
     def _restored_ingestion_run_has_chunks(self, run: IngestionRunRecord) -> bool:
         if not self._restored_ingestion_run_is_valid(run):
@@ -494,6 +493,11 @@ class Stage4Service:
             for candidate in expected_chunks
         )
 
+    def _restored_curated_source_is_safe(self, source: SourceRecord) -> bool:
+        try:
+            return source.size_bytes <= MAX_UPLOAD_BYTES and bool(source.text.strip()) and sanitize_filename(source.source_filename) == source.source_filename and normalize_content_type(source.content_type) == ALLOWED_CONTENT_TYPES_BY_EXTENSION.get(PurePath(source.source_filename).suffix.lower()) and not contains_secret_like_content(source.text) and not contains_prompt_injection(source.text) and validate_upload_bytes(source.text.encode()) is None  # type: ignore[func-returns-value]
+        except Stage4Error:
+            return False
     def _restored_walkthrough_run_is_valid(self, run: WalkthroughRunRecord) -> bool:
         project = self.projects.get(run.project_id)
         if project is None:
@@ -551,7 +555,7 @@ class Stage4Service:
         ):
             return False
         return all(
-            support.document_id in self.documents
+            (support.document_id in self.documents or support.document_id in self.sources)
             and support.claim_id in claim_ids
             and support.context_ref_id in context_by_ref
             and context_by_ref[support.context_ref_id].chunk.chunk_id == support.chunk_id
@@ -573,7 +577,7 @@ class Stage4Service:
             "sourceDecisions": deepcopy(self.source_decisions),
             "ingestionRuns": deepcopy(self.ingestion_runs),
             "walkthroughRuns": deepcopy(self.walkthrough_runs),
-            "idempotencyRecords": self.idempotency_records.copy(),
+            "idempotencyRecords": deepcopy(self.idempotency_records),
             "activeIngestions": deepcopy(self._active_ingestions),
             "activeGenerations": deepcopy(self._active_generations),
             "counters": {
@@ -737,9 +741,7 @@ class Stage4Service:
         return document
 
     def submit_curated_source(
-        self, *, principal: LocalPrincipal, project_id: str, source_filename: str, content_type: str,
-        data: bytes, assertions: SourceAssertions, schema_version: str, action: str, idempotency_key: str | None = None,
-        file_sha256: str | None = None, size_bytes: int | None = None,
+        self, *, principal: LocalPrincipal, project_id: str, source_filename: str, content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str, action: str, idempotency_key: str | None = None, file_sha256: str | None = None, size_bytes: int | None = None,
     ) -> CuratedOutcome:
         file_sha256, size_bytes = file_sha256 or hashlib.sha256(data).hexdigest(), size_bytes if size_bytes is not None else len(data)
         fingerprint = canonical_digest({"endpoint": "curated-submit", "schema": schema_version, "tenant": principal.tenant_id, "actor": principal.actor_id, "project": project_id, "filename": source_filename, "mime": content_type, "fileSha256": file_sha256, "fileBytes": size_bytes, "assertions": asdict(assertions), "action": action})
@@ -770,11 +772,10 @@ class Stage4Service:
         self._source_counter += 1
         source_id, decision_id, now = f"source_{self._source_counter:06d}", f"decision_{self._source_counter:06d}", _now()
         checksum, assertion_hash = file_sha256, assertions_digest(assertions)
-        source = SourceRecord(source_id, principal.tenant_id, principal.actor_id, project_id, filename, mime, size_bytes, checksum, text, assertions.source_version, assertion_hash, created_at=now)
+        source = SourceRecord(source_id, principal.tenant_id, principal.actor_id, project_id, filename, mime, size_bytes, checksum, text, assertions, assertion_hash, created_at=now)
         decision = SourceDecisionRecord(decision_id, source_id, principal.tenant_id, principal.actor_id, project_id, checksum, assertions.source_version, assertion_hash, created_at=now)
         self.sources[source_id], self.source_decisions[decision_id] = source, decision
-        return CuratedOutcome("SOURCE_PENDING_REVIEW", source, decision)
-
+        return CuratedOutcome("SOURCE_PENDING_REVIEW", deepcopy(source), deepcopy(decision))
     def approve_document(
         self,
         *,
@@ -826,7 +827,6 @@ class Stage4Service:
             scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint,
             create=lambda: self._approve_curated_once(principal, project_id, source_id, bindings),
         )
-
     def _approve_curated_once(
         self, principal: LocalPrincipal, project_id: str, source_id: str, bindings: Mapping[str, str],
     ) -> CuratedOutcome:
@@ -837,12 +837,11 @@ class Stage4Service:
         supplied = (bindings.get("curationSchemaVersion"), bindings.get("action"), bindings.get("sourceId"), bindings.get("policyVersion"))
         if source is None or source.project_id != project_id:
             raise Stage4Error(404, "NOT_FOUND", "Curated source not found.")
-        if decision is None or supplied != expected or decision.source_id != source_id or decision.decision_state != "PENDING_REVIEW" or (bindings.get("sourceVersion"), bindings.get("checksum"), bindings.get("assertionsFingerprint")) != (source.source_version, source.checksum, source.assertions_fingerprint):
+        if decision is None or supplied != expected or not legal_pair(source, decision) or decision.decision_state != "PENDING_REVIEW" or (bindings.get("sourceVersion"), bindings.get("checksum"), bindings.get("assertionsFingerprint")) != (source.assertions.source_version, source.checksum, source.assertions_fingerprint):
             raise Stage4Error(409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale.")
         decision.action, decision.reason, decision.decision_state = "APPROVE", "CURATOR_APPROVED_POLICY_VERIFIED", "APPROVED"
         decision.approved_at = _now()
-        return CuratedOutcome("SOURCE_APPROVED", source, decision)
-
+        return CuratedOutcome("SOURCE_APPROVED", deepcopy(source), deepcopy(decision))
     def ingest_documents(
         self,
         *,
@@ -868,17 +867,15 @@ class Stage4Service:
                 ),
             ),
         )
-
     def ingest_curated_sources(
         self, *, principal: LocalPrincipal, project_id: str, source_ids: list[str], idempotency_key: str | None,
     ) -> IngestionRunRecord:
         return self._idempotent(principal=principal, endpoint="POST /api/v1/projects/{projectId}/ingestion-runs", scope=project_id, idempotency_key=idempotency_key, request_checksum=canonical_digest({"project": project_id, "sourceIds": source_ids}), create=lambda: self._ingest_curated_once(principal, project_id, source_ids))
-
     def _ingest_curated_once(
         self, principal: LocalPrincipal, project_id: str, source_ids: list[str],
     ) -> IngestionRunRecord:
         self._require_project(principal=principal, project_id=project_id)
-        if not source_ids or len(source_ids) > MAX_DOCUMENTS_PER_INGESTION:
+        if not source_ids or len(source_ids) > MAX_DOCUMENTS_PER_INGESTION or len(source_ids) != len(set(source_ids)):
             raise Stage4Error(422, "SOURCE_NOT_INGESTIBLE", "At least one bounded curated source is required.")
         prepared: list[tuple[SourceRecord, list[KnowledgeChunk]]] = []
         for source_id in source_ids:
@@ -886,7 +883,7 @@ class Stage4Service:
                 raise Stage4Error(422, "SOURCE_KIND_MISMATCH", "Legacy documents cannot use curated ingestion.")
             source = self.sources.get(source_id)
             decision = next((value for value in self.source_decisions.values() if value.source_id == source_id), None)
-            if source is None or source.project_id != project_id or decision is None or decision.decision_state != "APPROVED" or decision.policy_version != CURATION_POLICY_VERSION or source.ingestion_status != "NOT_STARTED":
+            if source is None or (source.tenant_id, source.owner_id, source.project_id) != (principal.tenant_id, principal.actor_id, project_id) or decision is None or not legal_pair(source, decision) or decision.decision_state != "APPROVED" or source.ingestion_status != "NOT_STARTED":
                 raise Stage4Error(422, "SOURCE_NOT_INGESTIBLE", "Every curated source must be approved and current.")
             text = parse_document_text(source.text)
             if contains_prompt_injection(text):
@@ -903,7 +900,6 @@ class Stage4Service:
         run = IngestionRunRecord(f"ing_{self._ingestion_counter:06d}", principal.tenant_id, principal.actor_id, project_id, [], "COMPLETED", len(stored), len(stored), now, source_ids)
         self.ingestion_runs[run.ingestion_run_id] = run
         return run
-
     def _ingest_documents_once(
         self,
         *,
@@ -1650,7 +1646,7 @@ def idempotency_record_to_dict(record: IdempotencyRecord) -> dict[str, Any]:
     elif isinstance(value, WalkthroughRunRecord):
         row["value"] = {"kind": "walkthrough", "id": value.run_id}
     elif isinstance(value, CuratedOutcome):
-        row["value"] = {"kind": "curated", "code": value.code, "source": value.source.source_id, "decision": value.decision.decision_id}
+        row["value"] = {"kind": "curated", "code": value.code, "source": asdict(value.source), "decision": asdict(value.decision)}
     else:
         row["value"] = {"kind": "none"}
     return row
@@ -1677,8 +1673,9 @@ def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) ->
         elif kind == "walkthrough":
             value = service.walkthrough_runs.get(identifier)
         elif kind == "curated":
-            source, decision = service.sources.get(str(value_ref.get("source", ""))), service.source_decisions.get(str(value_ref.get("decision", "")))
-            value = CuratedOutcome(str(value_ref.get("code", "")), source, decision) if source and decision else None
+            source_data, decision_data = cast(dict[str, Any], value_ref.get("source", {})), cast(dict[str, Any], value_ref.get("decision", {}))
+            source, decision = SourceRecord(**(source_data | {"assertions": SourceAssertions(**cast(dict[str, Any], source_data.get("assertions", {})))})), SourceDecisionRecord(**decision_data)
+            value = CuratedOutcome(str(value_ref.get("code", "")), source, decision) if service.sources.get(source.source_id) and service.source_decisions.get(decision.decision_id) and legal_pair(source, decision) and (source.tenant_id, source.owner_id, source.project_id, source.checksum, source.assertions_fingerprint) == (service.sources[source.source_id].tenant_id, service.sources[source.source_id].owner_id, service.sources[source.source_id].project_id, service.sources[source.source_id].checksum, service.sources[source.source_id].assertions_fingerprint) else None
     status = str(row["status"])
     if status not in {"PENDING", "COMPLETED", "FAILED"}:
         raise ValueError(f"Unsupported Stage 4 idempotency status: {status}")
