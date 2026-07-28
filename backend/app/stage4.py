@@ -45,17 +45,7 @@ from backend.app.observability import (
     record_walkthrough_metrics,
     with_trace,
 )
-from backend.app.curation import (
-    CURATION_POLICY_VERSION,
-    CURATION_SCHEMA_VERSION,
-    CuratedOutcome,
-    SourceAssertions,
-    SourceDecisionRecord,
-    SourceRecord,
-    allowed_for_review,
-    assertions_digest,
-    canonical_digest,
-)
+from backend.app.curation import (CURATION_POLICY_VERSION, CURATION_SCHEMA_VERSION, CuratedOutcome, SourceAssertions, SourceDecisionRecord, SourceRecord, allowed_for_review, assertions_digest, canonical_digest)
 
 MAX_UPLOAD_BYTES = 1_048_576
 MAX_PROJECT_CORPUS_BYTES = 5 * 1_048_576
@@ -172,6 +162,7 @@ class IngestionRunRecord:
     chunk_count: int
     embedding_count: int
     created_at: str
+    source_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -288,24 +279,11 @@ class Stage4Service:
                 and self.projects[document.project_id].tenant_id == document.tenant_id
                 and self.projects[document.project_id].owner_id == document.owner_id
             }
-            self.sources = {
-                str(row["source_id"]): SourceRecord(**row)
-                for row in payload.get("sources", [])
-                if isinstance(row, dict) and "source_id" in row
-            }
-            self.source_decisions = {
-                str(row["decision_id"]): SourceDecisionRecord(**row)
-                for row in payload.get("sourceDecisions", [])
-                if isinstance(row, dict) and "decision_id" in row
-            }
-            self.sources = {
-                key: source for key, source in self.sources.items()
-                if self._restored_source_is_valid(source)
-            }
-            self.source_decisions = {
-                key: decision for key, decision in self.source_decisions.items()
-                if self._restored_decision_is_valid(decision)
-            }
+            self.sources = {str(row["source_id"]): SourceRecord(**row) for row in payload.get("sources", []) if isinstance(row, dict) and "source_id" in row}
+            self.source_decisions = {str(row["decision_id"]): SourceDecisionRecord(**row) for row in payload.get("sourceDecisions", []) if isinstance(row, dict) and "decision_id" in row}
+            self.sources = {key: value for key, value in self.sources.items() if self._restored_source_is_valid(value)}
+            self.source_decisions = {key: value for key, value in self.source_decisions.items()
+                                     if self._restored_decision_is_valid(value)}
             linked_sources = {decision.source_id for decision in self.source_decisions.values()}
             self.sources = {key: source for key, source in self.sources.items() if key in linked_sources}
             self.ingestion_runs = {
@@ -448,26 +426,11 @@ class Stage4Service:
 
     def _restored_source_is_valid(self, source: SourceRecord) -> bool:
         project = self.projects.get(source.project_id)
-        return bool(
-            project
-            and project.tenant_id == source.tenant_id
-            and project.owner_id == source.owner_id
-            and source.checksum == hashlib.sha256(source.text.encode("utf-8")).hexdigest()
-            and source.ingestion_status in {"NOT_STARTED", "INGESTED"}
-        )
+        return bool(project and (project.tenant_id, project.owner_id) == (source.tenant_id, source.owner_id) and source.checksum == hashlib.sha256(source.text.encode()).hexdigest() and source.ingestion_status in {"NOT_STARTED", "INGESTED"})
 
     def _restored_decision_is_valid(self, decision: SourceDecisionRecord) -> bool:
         source = self.sources.get(decision.source_id)
-        return bool(
-            source
-            and decision.decision_state in {"PENDING_REVIEW", "APPROVED"}
-            and decision.raw_content_retained
-            and (decision.tenant_id, decision.actor_id, decision.project_id)
-            == (source.tenant_id, source.owner_id, source.project_id)
-            and (decision.checksum, decision.source_version, decision.assertions_fingerprint)
-            == (source.checksum, source.source_version, source.assertions_fingerprint)
-            and decision.policy_version == CURATION_POLICY_VERSION
-        )
+        return bool(source and decision.decision_state in {"PENDING_REVIEW", "APPROVED"} and decision.raw_content_retained and decision.policy_version == CURATION_POLICY_VERSION and (decision.tenant_id, decision.actor_id, decision.project_id, decision.checksum, decision.source_version, decision.assertions_fingerprint) == (source.tenant_id, source.owner_id, source.project_id, source.checksum, source.source_version, source.assertions_fingerprint))
 
     def _restored_ingestion_run_has_chunks(self, run: IngestionRunRecord) -> bool:
         if not self._restored_ingestion_run_is_valid(run):
@@ -778,9 +741,8 @@ class Stage4Service:
         return document
 
     def submit_curated_source(
-        self, *, principal: LocalPrincipal, project_id: str, source_filename: str,
-        content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str,
-        action: str, idempotency_key: str | None = None,
+        self, *, principal: LocalPrincipal, project_id: str, source_filename: str, content_type: str,
+        data: bytes, assertions: SourceAssertions, schema_version: str, action: str, idempotency_key: str | None = None,
     ) -> CuratedOutcome:
         fingerprint = canonical_digest({
             "endpoint": "curated-submit", "schema": schema_version, "tenant": principal.tenant_id,
@@ -820,9 +782,7 @@ class Stage4Service:
         decision = SourceDecisionRecord(decision_id, source_id, principal.tenant_id, principal.actor_id,
                                         project_id, checksum, assertions.source_version, assertion_hash, created_at=now)
         self.sources[source_id], self.source_decisions[decision_id] = source, decision
-        return CuratedOutcome("SOURCE_PENDING_REVIEW", source_id, decision_id, principal.tenant_id,
-                              principal.actor_id, project_id, checksum, assertions.source_version,
-                              assertion_hash, CURATION_POLICY_VERSION, "PENDING_REVIEW", "NOT_STARTED", True, now)
+        return CuratedOutcome("SOURCE_PENDING_REVIEW", source, decision)
 
     def approve_document(
         self,
@@ -894,10 +854,7 @@ class Stage4Service:
             raise Stage4Error(409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale.")
         decision.action, decision.reason, decision.decision_state = "APPROVE", "CURATOR_APPROVED_POLICY_VERIFIED", "APPROVED"
         decision.approved_at = _now()
-        return CuratedOutcome("SOURCE_APPROVED", source_id, decision.decision_id, source.tenant_id, source.owner_id,
-                              project_id, source.checksum, source.source_version, source.assertions_fingerprint,
-                              decision.policy_version, decision.decision_state, source.ingestion_status, True,
-                              decision.approved_at)
+        return CuratedOutcome("SOURCE_APPROVED", source, decision)
 
     def ingest_documents(
         self,
@@ -924,6 +881,48 @@ class Stage4Service:
                 ),
             ),
         )
+
+    def ingest_curated_sources(
+        self, *, principal: LocalPrincipal, project_id: str, source_ids: list[str], idempotency_key: str | None,
+    ) -> IngestionRunRecord:
+        return self._idempotent(principal=principal, endpoint="POST /api/v1/projects/{projectId}/ingestion-runs",
+                                scope=project_id, idempotency_key=idempotency_key,
+                                request_checksum=canonical_digest({"project": project_id, "sourceIds": source_ids}),
+                                create=lambda: self._ingest_curated_once(principal, project_id, source_ids))
+
+    def _ingest_curated_once(
+        self, principal: LocalPrincipal, project_id: str, source_ids: list[str],
+    ) -> IngestionRunRecord:
+        self._require_project(principal=principal, project_id=project_id)
+        if not source_ids or len(source_ids) > MAX_DOCUMENTS_PER_INGESTION:
+            raise Stage4Error(422, "SOURCE_NOT_INGESTIBLE", "At least one bounded curated source is required.")
+        prepared: list[tuple[SourceRecord, list[KnowledgeChunk]]] = []
+        for source_id in source_ids:
+            if source_id in self.documents:
+                raise Stage4Error(422, "SOURCE_KIND_MISMATCH", "Legacy documents cannot use curated ingestion.")
+            source = self.sources.get(source_id)
+            decision = next((value for value in self.source_decisions.values() if value.source_id == source_id), None)
+            if source is None or source.project_id != project_id or decision is None or decision.decision_state != "APPROVED" or decision.policy_version != CURATION_POLICY_VERSION or source.ingestion_status != "NOT_STARTED":
+                raise Stage4Error(422, "SOURCE_NOT_INGESTIBLE", "Every curated source must be approved and current.")
+            text = parse_document_text(source.text)
+            if contains_prompt_injection(text):
+                raise Stage4Error(422, "UNSAFE_DOCUMENT_CONTENT", "Curated source contains unsafe content.")
+            chunks = chunk_document(document_id=source_id, project_id=project_id, tenant_id=principal.tenant_id,
+                                    source_filename=source.source_filename, text=text,
+                                    source_document_checksum=source.checksum, approved_at=decision.approved_at or decision.created_at,
+                                    max_chunks=MAX_CHUNKS_PER_DOCUMENT)
+            prepared.append((source, chunks))
+        chunks = [chunk for _source, values in prepared for chunk in values]
+        if self.rag_store.chunk_count_for_project(tenant_id=principal.tenant_id, project_id=project_id) + len(chunks) > MAX_CHUNKS_PER_PROJECT:
+            raise Stage4Error(413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 chunk limit.")
+        stored, now = self.rag_store.add_chunks(chunks, self.embedder), _now()
+        for source, _chunks in prepared:
+            source.ingestion_status, source.ingested_at = "INGESTED", now
+        self._ingestion_counter += 1
+        run = IngestionRunRecord(f"ing_{self._ingestion_counter:06d}", principal.tenant_id, principal.actor_id,
+                                 project_id, [], "COMPLETED", len(stored), len(stored), now, source_ids)
+        self.ingestion_runs[run.ingestion_run_id] = run
+        return run
 
     def _ingest_documents_once(
         self,
@@ -1837,6 +1836,8 @@ def ingestion_to_api(run: IngestionRunRecord) -> dict[str, Any]:
         "projectId": run.project_id,
         "status": run.status,
         "documentIds": run.document_ids,
+        "sourceIds": run.source_ids,
+        "ingestionKind": "CURATED" if run.source_ids else "LEGACY",
         "chunkCount": run.chunk_count,
         "embeddingCount": run.embedding_count,
         "createdAt": run.created_at,

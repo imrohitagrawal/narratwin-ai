@@ -69,19 +69,8 @@ class LegacySourceProjection:
 @dataclass(frozen=True)
 class CuratedOutcome:
     code: str
-    source_id: str
-    decision_id: str
-    tenant_id: str
-    owner_id: str
-    project_id: str
-    checksum: str
-    source_version: str
-    assertions_fingerprint: str
-    policy_version: str
-    decision_state: str
-    ingestion_status: str
-    raw_content_retained: bool
-    created_at: str
+    source: SourceRecord
+    decision: SourceDecisionRecord
     idempotency_replayed: bool = False
 
 

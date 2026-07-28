@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import os
 import re
 import time
@@ -233,6 +233,7 @@ class StartIngestionRequest(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     document_ids: list[str] = Field(alias="documentIds")
+    source_ids: list[str] | None = Field(default=None, alias="sourceIds")
 
 
 class GenerateWalkthroughRequest(BaseModel):
@@ -484,7 +485,6 @@ class DocumentResponse(BaseModel):
 
 class CuratedSourceResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, from_attributes=True)
-
     code: str
     source_id: str = Field(alias="sourceId")
     decision_id: str = Field(alias="decisionId")
@@ -502,6 +502,12 @@ class CuratedSourceResponse(BaseModel):
     idempotency_replayed: bool = Field(alias="idempotencyReplayed")
 
 
+def curated_response(outcome: object) -> CuratedSourceResponse:
+    values = asdict(outcome)  # type: ignore[arg-type]
+    values = values["source"] | values["decision"] | values
+    return CuratedSourceResponse.model_validate(values)
+
+
 class IngestionRunResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
@@ -511,6 +517,8 @@ class IngestionRunResponse(BaseModel):
     project_id: str = Field(alias="projectId")
     status: Literal["COMPLETED"]
     document_ids: list[str] = Field(alias="documentIds")
+    source_ids: list[str] = Field(default_factory=list, alias="sourceIds")
+    ingestion_kind: str = Field(default="LEGACY", alias="ingestionKind")
     chunk_count: int = Field(alias="chunkCount")
     embedding_count: int = Field(alias="embeddingCount")
     created_at: str = Field(alias="createdAt")
@@ -1552,18 +1560,15 @@ async def upload_knowledge_document(
     source_version: str | None = Form(default=None, alias="sourceVersion"),
 ) -> DocumentResponse | CuratedSourceResponse:
     data = await read_upload_with_limit(file)
-    curated_fields = (curation_schema_version, action, classification, provenance, rights_basis,
-                      rights_status, usage_policy, source_version)
+    curated_fields = (curation_schema_version, action, classification, provenance, rights_basis, rights_status, usage_policy, source_version)
     if any(value is not None for value in curated_fields):
         outcome = stage4_service.submit_curated_source(
             principal=principal, project_id=project_id, source_filename=file.filename or "",
             content_type=file.content_type or "application/octet-stream", data=data,
-            assertions=SourceAssertions(classification or "", provenance or "", rights_basis or "",
-                                        rights_status or "", usage_policy or "", source_version or ""),
-            schema_version=curation_schema_version or "", action=action or "",
-            idempotency_key=idempotency_key,
+            assertions=SourceAssertions(classification or "", provenance or "", rights_basis or "", rights_status or "", usage_policy or "", source_version or ""),
+            schema_version=curation_schema_version or "", action=action or "", idempotency_key=idempotency_key,
         )
-        return CuratedSourceResponse.model_validate(outcome)
+        return curated_response(outcome)
     document = stage4_service.upload_document(
         principal=principal,
         project_id=project_id,
@@ -1592,7 +1597,7 @@ def approve_knowledge_document(
             principal=principal, project_id=project_id, source_id=document_id,
             bindings=request.model_dump(by_alias=True, exclude_none=True), idempotency_key=idempotency_key,
         )
-        return CuratedSourceResponse.model_validate(outcome)
+        return curated_response(outcome)
     document = stage4_service.approve_document(
         principal=principal,
         project_id=project_id,
@@ -1614,6 +1619,12 @@ def start_ingestion_run(
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
 ) -> IngestionRunResponse:
+    if request.source_ids is not None:
+        run = stage4_service.ingest_curated_sources(
+            principal=principal, project_id=project_id, source_ids=request.source_ids,
+            idempotency_key=idempotency_key,
+        )
+        return IngestionRunResponse.model_validate(ingestion_to_api(run))
     run = stage4_service.ingest_documents(
         principal=principal,
         project_id=project_id,
