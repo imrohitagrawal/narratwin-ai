@@ -5,7 +5,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import app, reset_app_state_for_tests
-from backend.app.stage4 import MAX_PROJECTS_PER_TENANT, MAX_UPLOAD_REQUEST_BYTES, redact_public_text, stage4_service
+from backend.app.stage4 import (
+    MAX_PROJECTS_PER_TENANT, MAX_UPLOAD_REQUEST_BYTES, LocalPrincipal, Stage4Error,
+    redact_public_text, stage4_service,
+)
 
 # Stage 4 generated script API tests require trace/run_id metadata and source_chunk citations.
 
@@ -35,35 +38,77 @@ PUBLIC_CURATED_FORM = {
 }
 
 
-def test_a1_submit_allow_pending_and_exact_replay() -> None:
-    reset_app_state_for_tests()
-    client = TestClient(app)
+def create_a1_pending(client: TestClient) -> tuple[str, dict[str, object]]:
     headers = {"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-project"}
     project = client.post("/api/v1/projects", json={"name": "Project Lantern"}, headers=headers).json()
     path = f"/api/v1/projects/{project['projectId']}/knowledge-documents"
-    upload_headers = {"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit"}
-
     response = client.post(
-        path,
-        data=PUBLIC_CURATED_FORM,
+        path, data=PUBLIC_CURATED_FORM,
         files={"file": ("heartbeat-public.md", PUBLIC_CURATED_FIXTURE, "text/markdown")},
-        headers=upload_headers,
+        headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit"},
     )
-
     assert response.status_code == 201
-    body = response.json()
+    return project["projectId"], response.json()
+
+
+def test_a1_submit_allow_pending_and_exact_replay() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, body = create_a1_pending(client)
     assert body.get("code") == "SOURCE_PENDING_REVIEW"
     assert body["decisionState"] == "PENDING_REVIEW"
     assert body["rawContentRetained"] is True
     assert body["idempotencyReplayed"] is False
     replay = client.post(
-        path,
-        data=PUBLIC_CURATED_FORM,
+        f"/api/v1/projects/{project_id}/knowledge-documents", data=PUBLIC_CURATED_FORM,
         files={"file": ("heartbeat-public.md", PUBLIC_CURATED_FIXTURE, "text/markdown")},
-        headers=upload_headers,
+        headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit"},
     )
     assert replay.status_code == 201
     assert replay.json() == {**body, "idempotencyReplayed": True}
+
+
+@pytest.mark.parametrize("case", ["matching", "checksum", "version", "policy", "decision", "assertions"])
+def test_a1_approval_rechecks_bindings_and_replays(case: str) -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, pending = create_a1_pending(client)
+    payload = {
+        "approvalStatus": "APPROVED", "curationSchemaVersion": "source-curation-v1", "action": "APPROVE",
+        "sourceId": pending["sourceId"], "decisionId": pending["decisionId"],
+        "policyVersion": pending["policyVersion"], "sourceVersion": pending["sourceVersion"],
+        "checksum": pending["checksum"], "assertionsFingerprint": pending["assertionsFingerprint"],
+    }
+    drift = {"checksum": "0" * 64, "version": "heartbeat1-public-v0", "policy": "source-curation-policy-v0",
+             "decision": "decision_999999", "assertions": "f" * 64}
+    field = {"version": "sourceVersion", "policy": "policyVersion", "decision": "decisionId",
+             "assertions": "assertionsFingerprint"}.get(case, case)
+    if case != "matching":
+        payload[field] = drift[case]
+    response = client.patch(
+        f"/api/v1/projects/{project_id}/knowledge-documents/{pending['sourceId']}/approval",
+        json=payload, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": f"a1-approve-{case}"},
+    )
+    assert response.status_code == (200 if case == "matching" else 409)
+    assert response.json().get("code") == ("SOURCE_APPROVED" if case == "matching" else "SOURCE_NOT_APPROVABLE")
+
+
+@pytest.mark.parametrize("principal,project_id,status", [
+    (LocalPrincipal("tenant_other", "curator_demo"), "proj_000001", 403),
+    (LocalPrincipal("tenant_local", "other_demo"), "proj_000001", 403),
+    (LocalPrincipal("tenant_local", "curator_demo"), "proj_000002", 404),
+])
+def test_a1_curated_scope_and_logs_are_bounded(
+    principal: LocalPrincipal, project_id: str, status: int, caplog: pytest.LogCaptureFixture,
+) -> None:
+    reset_app_state_for_tests()
+    create_a1_pending(TestClient(app))
+    with pytest.raises(Stage4Error) as raised:
+        stage4_service.approve_document(principal=principal, project_id=project_id,
+                                        document_id="source_000001", idempotency_key="a1-scope")
+    assert "source.approval.denied" in caplog.text
+    assert raised.value.status_code == status
+    assert "heartbeat-public.md" not in caplog.text and "Project Lantern" not in caplog.text
 
 
 def test_write_endpoints_require_idempotency_key() -> None:
