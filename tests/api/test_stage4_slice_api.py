@@ -38,7 +38,6 @@ PUBLIC_CURATED_FORM = {
     "usagePolicy": "LOCAL_TEST_REUSE_ALLOWED",
     "sourceVersion": "heartbeat1-public-v1",
 }
-
 def create_a1_pending(client: TestClient) -> tuple[str, dict[str, object]]:
     headers = {"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-project"}
     project = client.post("/api/v1/projects", json={"name": "Project Lantern"}, headers=headers).json()
@@ -49,7 +48,6 @@ def create_a1_pending(client: TestClient) -> tuple[str, dict[str, object]]:
     )
     assert response.status_code == 201
     return project["projectId"], response.json()
-
 def approve_a1(client: TestClient, project_id: str, pending: dict[str, object]) -> None:
     payload = {"approvalStatus": "APPROVED", "curationSchemaVersion": "source-curation-v1", "action": "APPROVE", "sourceId": pending["sourceId"], "decisionId": pending["decisionId"], "policyVersion": pending["policyVersion"], "sourceVersion": pending["sourceVersion"], "checksum": pending["checksum"], "assertionsFingerprint": pending["assertionsFingerprint"]}
     response = client.patch(
@@ -57,7 +55,6 @@ def approve_a1(client: TestClient, project_id: str, pending: dict[str, object]) 
         json=payload, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-approve"},
     )
     assert response.status_code == 200
-
 def test_a1_submit_allow_pending_and_exact_replay() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
@@ -73,7 +70,6 @@ def test_a1_submit_allow_pending_and_exact_replay() -> None:
     )
     assert replay.status_code == 201
     assert replay.json() == {**body, "idempotencyReplayed": True}
-
 @pytest.mark.parametrize("case", ["matching", "checksum", "version", "policy", "decision", "assertions"])
 def test_a1_approval_rechecks_bindings_and_replays(case: str) -> None:
     reset_app_state_for_tests()
@@ -91,7 +87,6 @@ def test_a1_approval_rechecks_bindings_and_replays(case: str) -> None:
     assert response.status_code == (200 if case == "matching" else 409)
     code = response.json().get("code") if case == "matching" else response.json()["error"]["code"]
     assert code == ("SOURCE_APPROVED" if case == "matching" else "SOURCE_NOT_APPROVABLE")
-
 @pytest.mark.parametrize("principal,project_id,status", [(LocalPrincipal("tenant_other", "curator_demo"), "proj_000001", 403), (LocalPrincipal("tenant_local", "other_demo"), "proj_000001", 403), (LocalPrincipal("tenant_local", "curator_demo"), "proj_000002", 404)])
 def test_a1_curated_scope_and_logs_are_bounded(
     principal: LocalPrincipal, project_id: str, status: int, caplog: pytest.LogCaptureFixture,
@@ -104,8 +99,6 @@ def test_a1_curated_scope_and_logs_are_bounded(
     assert "source.approval.denied" in caplog.text
     assert raised.value.status_code == status
     assert "heartbeat-public.md" not in caplog.text and "Project Lantern" not in caplog.text
-
-
 @pytest.mark.parametrize("case", ["success", "pending", "wrong_kind", "policy_drift", "mixed"])
 def test_a1_curated_ingestion_is_atomic(case: str) -> None:
     reset_app_state_for_tests()
@@ -136,8 +129,6 @@ def test_a1_curated_ingestion_is_atomic(case: str) -> None:
         assert response.json()["error"]["code"] == expected
         assert stage4_service.rag_store.chunk_count_for_project(tenant_id="tenant_local", project_id=project_id) == 0
         assert all(source.ingestion_status == "NOT_STARTED" for source in stage4_service.sources.values())
-
-
 def test_a1_transport_413_is_bounded_and_nondurable(caplog: pytest.LogCaptureFixture) -> None:
     reset_app_state_for_tests()
     calls, sent = 0, []
@@ -161,8 +152,6 @@ def test_a1_transport_413_is_bounded_and_nondurable(caplog: pytest.LogCaptureFix
     assert f'"observed_bytes": {MAX_UPLOAD_REQUEST_BYTES + 1}' in caplog.text
     assert '"event": "upload.transport.rejected"' in caplog.text
     assert stage4_service.idempotency_records == {}
-
-
 def test_a1_application_413_persists_and_replays(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path = tmp_path / "stage4.json"
     monkeypatch.setattr(stage4_service, "state_path", state_path)
@@ -188,16 +177,12 @@ def test_a1_application_413_persists_and_replays(tmp_path: Path, monkeypatch: py
             content_type="text/markdown", data=b"a" * (MAX_UPLOAD_BYTES + 1), assertions=assertions,
             schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key="a1-large")
     assert (exact.value.status_code, exact.value.code) == (413, "UPLOAD_FILE_TOO_LARGE")
-
-
 def test_a1_v1_restore_preserves_legacy_without_decision(tmp_path: Path) -> None:
     service = Stage4Service(state_path=tmp_path / "legacy.json")
     project = service.create_project(principal=LocalPrincipal(), name="Legacy", idempotency_key="p")
     service.upload_document(principal=LocalPrincipal(), project_id=project.project_id, source_filename="legacy.md", content_type="text/markdown", data=b"Legacy source.", idempotency_key="d")
     restored = Stage4Service(state_path=tmp_path / "legacy.json")
     assert list(restored.documents) == ["doc_000001"] and restored.source_decisions == {}
-
-
 def test_a1_restore_prunes_curated_tamper(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path = tmp_path / "tampered.json"
     monkeypatch.setattr(stage4_service, "state_path", state_path)
@@ -213,7 +198,17 @@ def test_a1_restore_prunes_curated_tamper(tmp_path: Path, monkeypatch: pytest.Mo
     repaired = json.loads(state_path.read_text())
     assert restored.sources == restored.source_decisions == restored.ingestion_runs == {}
     assert repaired["sources"] == repaired["sourceDecisions"] == repaired["ingestionRuns"] == []
-
+def test_a1_branch_allowlist_is_exact_and_near_match_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    from scripts.quality import check_phase1_closure_docs as gate
+    files = {"backend/app/curation.py", "backend/app/stage4.py", "backend/app/main.py", "tests/api/test_stage4_slice_api.py", "docs/API_CONTRACT.md", "docs/ADR/0040-heartbeat1-a1-curated-eligibility.md", "docs/TRACEABILITY.md", "docs/STATUS.md", "docs/STAGE_ISSUE_PLAN.md", "scripts/quality/check_phase1_closure_docs.py"}
+    monkeypatch.setattr(gate, "changed_files", lambda: sorted(files))
+    monkeypatch.setattr(gate, "current_branch", lambda: "phase-1-closure-302-heartbeat1-a1-eligible")
+    failures: list[str] = []
+    gate.check_changed_files(failures)
+    assert failures == []
+    monkeypatch.setattr(gate, "current_branch", lambda: "phase-1-closure-302-heartbeat1-a1-eligible-near")
+    gate.check_changed_files(failures)
+    assert failures and "may not change" in failures[-1]
 
 def test_write_endpoints_require_idempotency_key() -> None:
     reset_app_state_for_tests()
