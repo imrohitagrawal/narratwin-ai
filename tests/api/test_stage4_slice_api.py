@@ -6,8 +6,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import Stage8RequestSizeLimitMiddleware, app, reset_app_state_for_tests
+from backend.app.curation import SourceAssertions
 from backend.app.stage4 import (
-    MAX_PROJECTS_PER_TENANT, MAX_UPLOAD_BYTES, MAX_UPLOAD_REQUEST_BYTES, LocalPrincipal, Stage4Error,
+    MAX_PROJECTS_PER_TENANT, MAX_UPLOAD_BYTES, MAX_UPLOAD_REQUEST_BYTES, LocalPrincipal, Stage4Error, Stage4Service,
     redact_public_text, stage4_service,
 )
 
@@ -186,7 +187,9 @@ def test_a1_transport_413_is_bounded_and_nondurable(caplog: pytest.LogCaptureFix
     assert stage4_service.idempotency_records == {}
 
 
-def test_a1_application_413_persists_and_replays() -> None:
+def test_a1_application_413_persists_and_replays(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    state_path = tmp_path / "stage4.json"
+    monkeypatch.setattr(stage4_service, "state_path", state_path)
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id = client.post("/api/v1/projects", json={"name": "Oversize"},
@@ -201,6 +204,14 @@ def test_a1_application_413_persists_and_replays() -> None:
     assert any(record.idempotency_key == "a1-large" and record.status == "FAILED"
                for record in stage4_service.idempotency_records.values())
     assert stage4_service.sources == {} and stage4_service.source_decisions == {}
+    restored = Stage4Service(state_path=state_path)
+    assertions = SourceAssertions("PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED",
+                                  "ELIGIBLE", "LOCAL_TEST_REUSE_ALLOWED", "heartbeat1-public-v1")
+    with pytest.raises(Stage4Error) as exact:
+        restored.submit_curated_source(principal=LocalPrincipal(), project_id=project_id, source_filename="large.md",
+            content_type="text/markdown", data=b"a" * (MAX_UPLOAD_BYTES + 1), assertions=assertions,
+            schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key="a1-large")
+    assert (exact.value.status_code, exact.value.code) == (413, "UPLOAD_FILE_TOO_LARGE")
 
 
 def test_write_endpoints_require_idempotency_key() -> None:

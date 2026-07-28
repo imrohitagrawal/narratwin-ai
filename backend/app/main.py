@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass
+import hashlib
 import os
 import re
 import time
@@ -21,7 +22,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.app.rag.models import OWNER_LOCAL
 from backend.app.curation import SourceAssertions
-from backend.app.observability import is_langfuse_enabled
+from backend.app.observability import is_langfuse_enabled, log_event
 from backend.app.stage4 import (
     MAX_API_REQUEST_BYTES,
     LocalPrincipal,
@@ -483,19 +484,12 @@ class DocumentResponse(BaseModel):
     approved_at: str | None = Field(default=None, alias="approvedAt")
 
 
-CuratedSourceResponse = TypedDict("CuratedSourceResponse", {"code": str, "sourceId": str,
-    "decisionId": str, "tenantId": str, "ownerId": str, "projectId": str, "checksum": str,
-    "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str,
-    "decisionState": str, "ingestionStatus": str, "rawContentRetained": bool,
-    "createdAt": str, "idempotencyReplayed": bool})
-
+CuratedSourceResponse = TypedDict("CuratedSourceResponse", {"code": str, "sourceId": str, "decisionId": str, "tenantId": str, "ownerId": str, "projectId": str, "checksum": str, "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str, "decisionState": str, "ingestionStatus": str, "rawContentRetained": bool, "createdAt": str, "idempotencyReplayed": bool})
 
 def curated_response(outcome: object) -> CuratedSourceResponse:
     values = asdict(outcome)  # type: ignore[arg-type]
     values = values["source"] | values["decision"] | values
-    return cast(CuratedSourceResponse, {"".join([parts[0], *map(str.title, parts[1:])]): value
-            for key, value in values.items() if not isinstance(value, dict) for parts in [key.split("_")]})
-
+    return cast(CuratedSourceResponse, {"".join([parts[0], *map(str.title, parts[1:])]): value for key, value in values.items() if not isinstance(value, dict) for parts in [key.split("_")]})
 
 class IngestionRunResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
@@ -1049,6 +1043,7 @@ class Stage8RequestSizeLimitMiddleware:
             )
             return
         if declared_bytes > request_limit:
+            log_event(event_name="upload.transport.rejected", request_id=request_id, route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=0, peak_buffered_bytes=0, limit=request_limit, status=413, code="UPLOAD_TOO_LARGE")
             await send_stage8_error(
                 scope,
                 send,
@@ -1075,16 +1070,16 @@ class Stage8RequestSizeLimitMiddleware:
         actual_bytes = 0
         while True:
             message = await receive()
-            messages.append(message)
             if message["type"] == "http.request":
                 body = cast(bytes, message.get("body", b""))
-                actual_bytes += len(body)
+                actual_bytes = min(request_limit + 1, actual_bytes + len(body))
                 if actual_bytes > request_limit:
                     exc = Stage8BodyTooLarge(
                         status_code=413,
                         code="UPLOAD_TOO_LARGE" if request_limit == MAX_UPLOAD_REQUEST_BYTES else "REQUEST_TOO_LARGE",
                         message="Request exceeds the Stage 8 size limit.",
                     )
+                    log_event(event_name="upload.transport.rejected", request_id=request_id, route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=actual_bytes, peak_buffered_bytes=sum(len(cast(bytes, item.get("body", b""))) for item in messages), limit=request_limit, status=413, code=exc.code)
                     await send_stage8_error(
                         scope,
                         send,
@@ -1094,6 +1089,7 @@ class Stage8RequestSizeLimitMiddleware:
                         request_id=request_id,
                     )
                     return
+                messages.append(message)
                 if not message.get("more_body", False):
                     break
             else:
@@ -1548,7 +1544,7 @@ async def upload_knowledge_document(
     usage_policy: str | None = Form(default=None, alias="usagePolicy"),
     source_version: str | None = Form(default=None, alias="sourceVersion"),
 ) -> DocumentResponse | CuratedSourceResponse:
-    data = await read_upload_with_limit(file)
+    data, file_sha256, file_size = await read_upload_with_limit(file)
     curated_fields = (curation_schema_version, action, classification, provenance, rights_basis, rights_status, usage_policy, source_version)
     if any(value is not None for value in curated_fields):
         outcome = stage4_service.submit_curated_source(
@@ -1556,8 +1552,11 @@ async def upload_knowledge_document(
             content_type=file.content_type or "application/octet-stream", data=data,
             assertions=SourceAssertions(classification or "", provenance or "", rights_basis or "", rights_status or "", usage_policy or "", source_version or ""),
             schema_version=curation_schema_version or "", action=action or "", idempotency_key=idempotency_key,
+            file_sha256=file_sha256, size_bytes=file_size,
         )
         return curated_response(outcome)
+    if file_size > MAX_UPLOAD_BYTES:
+        raise Stage4Error(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit.")
     document = stage4_service.upload_document(
         principal=principal,
         project_id=project_id,
@@ -1831,15 +1830,17 @@ async def create_hosted_demo_access_decision(request: Request) -> HostedDemoDeci
     return hosted_demo_service.decide(access_request)
 
 
-async def read_upload_with_limit(file: UploadFile) -> bytes:
+async def read_upload_with_limit(file: UploadFile) -> tuple[bytes, str, int]:
     data = bytearray()
+    digest, size = hashlib.sha256(), 0
     while True:
         chunk = await file.read(64 * 1024)
         if not chunk:
-            return bytes(data)
-        data.extend(chunk)
-        if len(data) > MAX_UPLOAD_BYTES:
-            raise Stage4Error(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit.")
+            return bytes(data), digest.hexdigest(), size
+        digest.update(chunk)
+        size += len(chunk)
+        if len(data) <= MAX_UPLOAD_BYTES:
+            data.extend(chunk[: MAX_UPLOAD_BYTES + 1 - len(data)])
 
 
 def reset_app_state_for_tests() -> None:

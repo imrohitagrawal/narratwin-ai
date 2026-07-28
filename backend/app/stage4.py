@@ -730,26 +730,32 @@ class Stage4Service:
     def submit_curated_source(
         self, *, principal: LocalPrincipal, project_id: str, source_filename: str, content_type: str,
         data: bytes, assertions: SourceAssertions, schema_version: str, action: str, idempotency_key: str | None = None,
+        file_sha256: str | None = None, size_bytes: int | None = None,
     ) -> CuratedOutcome:
+        file_sha256, size_bytes = file_sha256 or hashlib.sha256(data).hexdigest(), size_bytes if size_bytes is not None else len(data)
         fingerprint = canonical_digest({
             "endpoint": "curated-submit", "schema": schema_version, "tenant": principal.tenant_id,
             "actor": principal.actor_id, "project": project_id, "filename": source_filename,
-            "mime": content_type, "fileSha256": hashlib.sha256(data).hexdigest(),
-            "fileBytes": len(data), "assertions": asdict(assertions), "action": action,
+            "mime": content_type, "fileSha256": file_sha256,
+            "fileBytes": size_bytes, "assertions": asdict(assertions), "action": action,
         })
         return self._idempotent(
             principal=principal, endpoint="POST /api/v1/projects/{projectId}/knowledge-documents",
             scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint,
             create=lambda: self._submit_curated_source_once(
-                principal, project_id, source_filename, content_type, data, assertions, schema_version, action
+                principal, project_id, source_filename, content_type, data, assertions, schema_version, action,
+                file_sha256, size_bytes,
             ),
         )
 
     def _submit_curated_source_once(
         self, principal: LocalPrincipal, project_id: str, source_filename: str,
         content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str, action: str,
+        file_sha256: str, size_bytes: int,
     ) -> CuratedOutcome:
         self._require_project(principal=principal, project_id=project_id)
+        if size_bytes > MAX_UPLOAD_BYTES:
+            raise Stage4Error(413, "UPLOAD_FILE_TOO_LARGE", "Curated source file exceeds the size limit.")
         if schema_version != CURATION_SCHEMA_VERSION or action != "ACCEPT_FOR_REVIEW" or not allowed_for_review(assertions):
             raise Stage4Error(422, "VALIDATION_ERROR", "Curated source assertions are incomplete or ineligible.")
         filename = sanitize_filename(source_filename)
@@ -763,9 +769,9 @@ class Stage4Service:
             raise Stage4Error(422, code, "Curated source content is not safe to retain.")
         self._source_counter += 1
         source_id, decision_id, now = f"source_{self._source_counter:06d}", f"decision_{self._source_counter:06d}", _now()
-        checksum, assertion_hash = hashlib.sha256(data).hexdigest(), assertions_digest(assertions)
+        checksum, assertion_hash = file_sha256, assertions_digest(assertions)
         source = SourceRecord(source_id, principal.tenant_id, principal.actor_id, project_id, filename, mime,
-                              len(data), checksum, text, assertions.source_version, assertion_hash, created_at=now)
+                              size_bytes, checksum, text, assertions.source_version, assertion_hash, created_at=now)
         decision = SourceDecisionRecord(decision_id, source_id, principal.tenant_id, principal.actor_id,
                                         project_id, checksum, assertions.source_version, assertion_hash, created_at=now)
         self.sources[source_id], self.source_decisions[decision_id] = source, decision
@@ -1656,6 +1662,8 @@ def idempotency_record_to_dict(record: IdempotencyRecord) -> dict[str, Any]:
         row["value"] = {"kind": "ingestion", "id": value.ingestion_run_id}
     elif isinstance(value, WalkthroughRunRecord):
         row["value"] = {"kind": "walkthrough", "id": value.run_id}
+    elif isinstance(value, CuratedOutcome):
+        row["value"] = {"kind": "curated", "code": value.code, "source": value.source.source_id, "decision": value.decision.decision_id}
     else:
         row["value"] = {"kind": "none"}
     return row
@@ -1681,6 +1689,9 @@ def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) ->
             value = service.ingestion_runs.get(identifier)
         elif kind == "walkthrough":
             value = service.walkthrough_runs.get(identifier)
+        elif kind == "curated":
+            source, decision = service.sources.get(str(value_ref.get("source", ""))), service.source_decisions.get(str(value_ref.get("decision", "")))
+            value = CuratedOutcome(str(value_ref.get("code", "")), source, decision) if source and decision else None
     status = str(row["status"])
     if status not in {"PENDING", "COMPLETED", "FAILED"}:
         raise ValueError(f"Unsupported Stage 4 idempotency status: {status}")
