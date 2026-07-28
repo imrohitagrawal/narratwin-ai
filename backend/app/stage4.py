@@ -95,6 +95,7 @@ SECRET_REDACTION_PATTERNS = (
 T = TypeVar("T")
 WalkthroughRunStatus = Literal["COMPLETED", "FAILED", "REFUSED"]
 LOGGER = logging.getLogger(__name__)
+SAFE_RESTORED_FAILURES = {(400, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key header is required for write requests."), (403, "FORBIDDEN", "Document is not accessible to this principal."), (403, "FORBIDDEN", "Project is not accessible to this principal."), (404, "NOT_FOUND", "Curated source not found."), (404, "NOT_FOUND", "Knowledge document not found."), (404, "NOT_FOUND", "Project not found."), (409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request."), (409, "IDEMPOTENCY_IN_PROGRESS", "Idempotency key is already in progress."), (409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale."), (413, "DOCUMENT_TOO_LARGE", "Document exceeds the Stage 4 chunk limit."), (413, "INGESTION_TOO_LARGE", "Too many documents requested for one ingestion run."), (413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 chunk limit."), (413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 corpus size limit."), (413, "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "Project exceeds the Stage 4 document limit."), (413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit."), (413, "UPLOAD_FILE_TOO_LARGE", "Curated source file exceeds the size limit."), (413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit."), (415, "UNSUPPORTED_MEDIA_TYPE", "Archive uploads are not accepted in Stage 4."), (415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted."), (422, "DOCUMENT_NOT_APPROVED", "Document must be approved before ingestion."), (422, "SECRET_LIKE_CONTENT", "Prompt contains secret-like content."), (422, "SECRET_LIKE_CONTENT", "Uploaded document contains secret-like content."), (422, "SOURCE_KIND_MISMATCH", "Legacy documents cannot use curated ingestion."), (422, "SOURCE_NOT_INGESTIBLE", "At least one bounded curated source is required."), (422, "SOURCE_NOT_INGESTIBLE", "Every curated source must be approved and current."), (422, "UNSAFE_DOCUMENT_CONTENT", "Curated source contains unsafe content."), (422, "UNSAFE_DOCUMENT_CONTENT", "Document contains unsafe instruction-like content."), (422, "VALIDATION_ERROR", "At least one document is required."), (422, "VALIDATION_ERROR", "Curated source assertions are incomplete or ineligible."), (422, "VALIDATION_ERROR", "Invalid filename."), (422, "VALIDATION_ERROR", "Project name is required."), (422, "VALIDATION_ERROR", "Uploaded document contains NUL bytes."), (422, "VALIDATION_ERROR", "Uploaded document contains too many control characters."), (422, "VALIDATION_ERROR", "Uploaded document is empty."), (422, "VALIDATION_ERROR", "Uploaded document must be UTF-8 text."), (429, "BACKPRESSURE_QUEUE_FULL", "Another Stage 4 operation is already active for this project."), (429, "RESOURCE_LIMIT_EXCEEDED", "Project exceeds the Stage 4 generation run limit."), (429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit."), (429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 project limit."), (422, "VALIDATION_ERROR", "Curated source content is not safe to retain."), (422, "SECRET_LIKE_CONTENT", "Curated source content is not safe to retain."), (422, "UNSAFE_DOCUMENT_CONTENT", "Curated source content is not safe to retain.")}
 
 
 def _now() -> str:
@@ -743,21 +744,11 @@ class Stage4Service:
         self.documents[document.document_id] = document
         return document
 
-    def submit_curated_source(
-        self, *, principal: LocalPrincipal, project_id: str, source_filename: str, content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str, action: str, idempotency_key: str | None = None, file_sha256: str | None = None, size_bytes: int | None = None,
-    ) -> CuratedOutcome:
+    def submit_curated_source(self, *, principal: LocalPrincipal, project_id: str, source_filename: str, content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str, action: str, idempotency_key: str | None = None, file_sha256: str | None = None, size_bytes: int | None = None) -> CuratedOutcome:
         file_sha256, size_bytes = file_sha256 or hashlib.sha256(data).hexdigest(), size_bytes if size_bytes is not None else len(data)
         fingerprint = canonical_digest({"endpoint": "curated-submit", "schema": schema_version, "tenant": principal.tenant_id, "actor": principal.actor_id, "project": project_id, "filename": source_filename.strip(), "mime": normalize_content_type(content_type), "fileSha256": file_sha256, "fileBytes": size_bytes, "assertions": asdict(assertions), "action": action})
-        return self._idempotent(
-            principal=principal, endpoint="POST /api/v1/projects/{projectId}/knowledge-documents",
-            scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint,
-            create=lambda: self._submit_curated_source_once(principal, project_id, source_filename, content_type, data, assertions, schema_version, action, file_sha256, size_bytes),
-        )
-    def _submit_curated_source_once(
-        self, principal: LocalPrincipal, project_id: str, source_filename: str,
-        content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str, action: str,
-        file_sha256: str, size_bytes: int,
-    ) -> CuratedOutcome:
+        return self._idempotent(principal=principal, endpoint="POST /api/v1/projects/{projectId}/knowledge-documents", scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint, create=lambda: self._submit_curated_source_once(principal, project_id, source_filename, content_type, data, assertions, schema_version, action, file_sha256, size_bytes))
+    def _submit_curated_source_once(self, principal: LocalPrincipal, project_id: str, source_filename: str, content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str, action: str, file_sha256: str, size_bytes: int) -> CuratedOutcome:
         self._require_project(principal=principal, project_id=project_id)
         if size_bytes > MAX_UPLOAD_BYTES:
             raise Stage4Error(413, "UPLOAD_FILE_TOO_LARGE", "Curated source file exceeds the size limit.")
@@ -813,27 +804,19 @@ class Stage4Service:
         document.approved_at = _now()
         return document
 
-    def approve_curated_source(
-        self, *, principal: LocalPrincipal, project_id: str, source_id: str,
-        bindings: Mapping[str, str], idempotency_key: str | None,
-    ) -> CuratedOutcome:
+    def approve_curated_source(self, *, principal: LocalPrincipal, project_id: str, source_id: str, bindings: Mapping[str, str], idempotency_key: str | None) -> CuratedOutcome:
         fingerprint = canonical_digest({"endpoint": "curated-approval", "tenant": principal.tenant_id, "actor": principal.actor_id, "project": project_id, **{key: bindings.get(key) for key in ("curationSchemaVersion", "action", "sourceId", "decisionId", "policyVersion", "sourceVersion", "checksum", "assertionsFingerprint")}})
         try:
             return self._idempotent(principal=principal, endpoint="PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval", scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint, create=lambda: self._approve_curated_once(principal, project_id, source_id, bindings))
         except Stage4Error as exc:
             log_event(event_name="source.approval.denied", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, source_id=source_id, status=exc.status_code, code=exc.code)
             raise
-    def _approve_curated_once(
-        self, principal: LocalPrincipal, project_id: str, source_id: str, bindings: Mapping[str, str],
-    ) -> CuratedOutcome:
+    def _approve_curated_once(self, principal: LocalPrincipal, project_id: str, source_id: str, bindings: Mapping[str, str]) -> CuratedOutcome:
         self._require_project(principal=principal, project_id=project_id)
-        source = self.sources.get(source_id)
-        decision = self.source_decisions.get(bindings.get("decisionId", ""))
-        expected = ("source-curation-v1", "APPROVE", source_id, CURATION_POLICY_VERSION)
-        supplied = (bindings.get("curationSchemaVersion"), bindings.get("action"), bindings.get("sourceId"), bindings.get("policyVersion"))
+        source, decision = self.sources.get(source_id), self.source_decisions.get(bindings.get("decisionId", ""))
         if source is None or source.project_id != project_id:
             raise Stage4Error(404, "NOT_FOUND", "Curated source not found.")
-        if decision is None or supplied != expected or not legal_pair(source, decision) or decision.decision_state != "PENDING_REVIEW" or (bindings.get("sourceVersion"), bindings.get("checksum"), bindings.get("assertionsFingerprint")) != (source.assertions.source_version, source.checksum, source.assertions_fingerprint):
+        if decision is None or (bindings.get("curationSchemaVersion"), bindings.get("action"), bindings.get("sourceId"), bindings.get("policyVersion")) != ("source-curation-v1", "APPROVE", source_id, CURATION_POLICY_VERSION) or not legal_pair(source, decision) or decision.decision_state != "PENDING_REVIEW" or (bindings.get("sourceVersion"), bindings.get("checksum"), bindings.get("assertionsFingerprint")) != (source.assertions.source_version, source.checksum, source.assertions_fingerprint):
             raise Stage4Error(409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale.")
         decision.action, decision.reason, decision.decision_state = "APPROVE", "CURATOR_APPROVED_POLICY_VERIFIED", "APPROVED"
         decision.approved_at = _now()
@@ -866,9 +849,7 @@ class Stage4Service:
         )
     def ingest_curated_sources(self, *, principal: LocalPrincipal, project_id: str, source_ids: list[str], idempotency_key: str | None) -> IngestionRunRecord:
         return self._idempotent(principal=principal, endpoint="POST /api/v1/projects/{projectId}/ingestion-runs", scope=project_id, idempotency_key=idempotency_key, request_checksum=canonical_digest({"project": project_id, "sourceIds": source_ids}), create=lambda: self._ingest_curated_once(principal, project_id, source_ids))
-    def _ingest_curated_once(
-        self, principal: LocalPrincipal, project_id: str, source_ids: list[str],
-    ) -> IngestionRunRecord:
+    def _ingest_curated_once(self, principal: LocalPrincipal, project_id: str, source_ids: list[str]) -> IngestionRunRecord:
         self._require_project(principal=principal, project_id=project_id)
         if not source_ids or len(source_ids) > MAX_DOCUMENTS_PER_INGESTION or len(source_ids) != len(set(source_ids)):
             raise Stage4Error(422, "SOURCE_NOT_INGESTIBLE", "At least one bounded curated source is required.")
@@ -1632,7 +1613,7 @@ def idempotency_record_to_dict(record: IdempotencyRecord) -> dict[str, Any]:
     }
     value = record.value
     if isinstance(value, Stage4Error):
-        row["value"] = {"kind": "error", "status_code": value.status_code, "code": value.code, "message": value.message}
+        row["value"] = {"kind": "error", "status_code": value.status_code, "code": value.code, "message": value.message, "binding": [record.tenant_id, record.actor_id, record.idempotency_scope, record.endpoint, record.request_checksum]}
     elif isinstance(value, ProjectRecord):
         row["value"] = {"kind": "project", "id": value.project_id}
     elif isinstance(value, DocumentRecord):
@@ -1640,7 +1621,7 @@ def idempotency_record_to_dict(record: IdempotencyRecord) -> dict[str, Any]:
     elif isinstance(value, IngestionRunRecord):
         row["value"] = {"kind": "ingestion", "id": value.ingestion_run_id}
     elif isinstance(value, WalkthroughRunRecord):
-        row["value"] = {"kind": "walkthrough", "id": value.run_id}
+        row["value"] = {"kind": "walkthrough", "id": value.run_id, "binding": [record.tenant_id, record.actor_id, record.idempotency_scope, record.endpoint, record.request_checksum]}
     elif isinstance(value, CuratedOutcome):
         row["value"] = {"kind": "curated", "code": value.code, "source": asdict(value.source), "decision": asdict(value.decision)}
     else:
@@ -1649,27 +1630,34 @@ def idempotency_record_to_dict(record: IdempotencyRecord) -> dict[str, Any]:
 
 
 def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) -> IdempotencyRecord:
+    names = ("idempotency_record_id", "tenant_id", "actor_id", "idempotency_scope", "endpoint", "idempotency_key", "request_checksum", "status", "created_at", "updated_at")
+    if not all(isinstance(row.get(name), str) for name in names):
+        raise ValueError("Stage 4 idempotency fields must be strings.")
+    record_id, tenant_id, actor_id, scope, endpoint, key, request_checksum, status, created_at, updated_at = (row[name] for name in names)
+    if record_id != "idem_" + hashlib.sha256(f"{tenant_id}:{actor_id}:{scope}:{endpoint}:{key}".encode()).hexdigest()[:16] or re.fullmatch(r"(?:sha256:)?[0-9a-f]{64}", request_checksum) is None:
+        raise ValueError("Stage 4 idempotency binding is invalid.")
     value_ref = row.get("value", {})
     value: Any = None
     if isinstance(value_ref, dict):
         kind = value_ref.get("kind")
-        identifier = str(value_ref.get("id", ""))
+        identifier = cast(str, value_ref.get("id")) if isinstance(value_ref.get("id"), str) else ""
         if kind == "error":
-            value = Stage4Error(
-                int(value_ref.get("status_code", 500)),
-                str(value_ref.get("code", "INTERNAL_SERVER_ERROR")),
-                str(value_ref.get("message", "Request failed.")),
-            )
+            failure = (value_ref.get("status_code"), value_ref.get("code"), value_ref.get("message"))
+            projection = [tenant_id, actor_id, scope, endpoint, request_checksum]
+            legacy = failure in {(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit."), (422, "VALIDATION_ERROR", "Project name is required.")}
+            value = Stage4Error(*failure) if failure in SAFE_RESTORED_FAILURES and (value_ref.get("binding") == projection or value_ref.get("binding") is None and legacy) else None
         elif kind == "project":
-            value = service.projects.get(identifier)
+            value = project_value if (project_value := service.projects.get(identifier)) is not None and (tenant_id, actor_id, scope, endpoint, request_checksum) == (project_value.tenant_id, project_value.owner_id, "project:create", "POST /api/v1/projects", checksum_text(f"{project_value.name}\n{project_value.description}\n{project_value.default_audience}\n{project_value.default_language}")) else None
         elif kind == "document":
-            value = service.documents.get(identifier)
+            value = document_value if (document_value := service.documents.get(identifier)) is not None and (tenant_id, actor_id, scope, request_checksum) == (document_value.tenant_id, document_value.owner_id, document_value.project_id, checksum_text(f"{document_value.project_id}\n{document_value.source_filename}\n{document_value.content_type}\n{document_value.checksum}") if endpoint == "POST /api/v1/projects/{projectId}/knowledge-documents" else checksum_text(f"{document_value.project_id}\n{document_value.document_id}\nAPPROVED") if endpoint == "PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval" else "") else None
         elif kind == "ingestion":
-            value = service.ingestion_runs.get(identifier)
+            value = ingestion_value if (ingestion_value := service.ingestion_runs.get(identifier)) is not None and (tenant_id, actor_id, scope, endpoint, request_checksum) == (ingestion_value.tenant_id, ingestion_value.actor_id, ingestion_value.project_id, "POST /api/v1/projects/{projectId}/ingestion-runs", canonical_digest({"project": ingestion_value.project_id, "sourceIds": ingestion_value.source_ids}) if ingestion_value.source_ids else checksum_text(f"{ingestion_value.project_id}\n{','.join(ingestion_value.document_ids)}")) else None
         elif kind == "walkthrough":
-            value = service.walkthrough_runs.get(identifier)
+            value = walkthrough_value if (walkthrough_value := service.walkthrough_runs.get(identifier)) is not None and (tenant_id, actor_id, scope, endpoint) == (walkthrough_value.tenant_id, walkthrough_value.actor_id, walkthrough_value.project_id, "POST /api/v1/projects/{projectId}/walkthrough-runs") and (value_ref.get("binding") == [tenant_id, actor_id, scope, endpoint, request_checksum] or value_ref.get("binding") is None) else None
         elif kind == "curated":
             source_data, decision_data = cast(dict[str, Any], value_ref.get("source", {})), cast(dict[str, Any], value_ref.get("decision", {}))
+            if not isinstance(source_data, dict) or not isinstance(source_data.get("assertions"), dict) or not isinstance(decision_data, dict):
+                raise ValueError("Curated idempotency projection is malformed.")
             source, decision = SourceRecord(**(source_data | {"assertions": SourceAssertions(**cast(dict[str, Any], source_data.get("assertions", {})))})), SourceDecisionRecord(**decision_data)
             live_source, live_decision = service.sources.get(source.source_id) if isinstance(source.source_id, str) else None, service.source_decisions.get(decision.decision_id) if isinstance(decision.decision_id, str) else None
             code = str(value_ref.get("code", ""))
