@@ -1688,7 +1688,6 @@ def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) ->
         elif kind == "walkthrough":
             walkthrough_value = service.walkthrough_runs.get(identifier)
             if walkthrough_value is not None and (tenant_id, actor_id, scope, endpoint) == (walkthrough_value.tenant_id, walkthrough_value.actor_id, walkthrough_value.project_id, "POST /api/v1/projects/{projectId}/walkthrough-runs"):
-                projection = row.get("request_projection")
                 if walkthrough_value.request_checksum:
                     request_checksum = walkthrough_value.request_checksum
                     value = walkthrough_value
