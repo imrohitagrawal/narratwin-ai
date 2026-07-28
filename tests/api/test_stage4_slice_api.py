@@ -1,12 +1,13 @@
+import asyncio
 import re
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app.main import app, reset_app_state_for_tests
+from backend.app.main import Stage8RequestSizeLimitMiddleware, app, reset_app_state_for_tests
 from backend.app.stage4 import (
-    MAX_PROJECTS_PER_TENANT, MAX_UPLOAD_REQUEST_BYTES, LocalPrincipal, Stage4Error,
+    MAX_PROJECTS_PER_TENANT, MAX_UPLOAD_BYTES, MAX_UPLOAD_REQUEST_BYTES, LocalPrincipal, Stage4Error,
     redact_public_text, stage4_service,
 )
 
@@ -158,6 +159,48 @@ def test_a1_curated_ingestion_is_atomic(case: str) -> None:
         assert response.json()["error"]["code"] == expected
         assert stage4_service.rag_store.chunk_count_for_project(tenant_id="tenant_local", project_id=project_id) == 0
         assert all(source.ingestion_status == "NOT_STARTED" for source in stage4_service.sources.values())
+
+
+def test_a1_transport_413_is_bounded_and_nondurable(caplog: pytest.LogCaptureFixture) -> None:
+    reset_app_state_for_tests()
+    calls, sent = 0, []
+    caplog.set_level(20, logger="narratwin-ai")
+    scope = {"type": "http", "method": "POST", "path": "/api/v1/projects/proj_000001/knowledge-documents",
+             "headers": [(b"content-length", str(MAX_UPLOAD_REQUEST_BYTES).encode())]}
+
+    async def receive() -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        return {"type": "http.request", "body": b"x" * (MAX_UPLOAD_REQUEST_BYTES + 2), "more_body": False}
+
+    async def send(message: dict[str, object]) -> None:
+        sent.append(message)
+
+    async def downstream(_scope: object, _receive: object, _send: object) -> None:
+        pytest.fail("oversized transport reached the endpoint")
+
+    asyncio.run(Stage8RequestSizeLimitMiddleware(downstream)(scope, receive, send))  # type: ignore[arg-type]
+    assert calls == 1 and sent[0]["status"] == 413
+    assert f'"observed_bytes": {MAX_UPLOAD_REQUEST_BYTES + 1}' in caplog.text
+    assert '"event": "upload.transport.rejected"' in caplog.text
+    assert stage4_service.idempotency_records == {}
+
+
+def test_a1_application_413_persists_and_replays() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id = client.post("/api/v1/projects", json={"name": "Oversize"},
+                             headers={"Idempotency-Key": "a1-large-project"}).json()["projectId"]
+    path = f"/api/v1/projects/{project_id}/knowledge-documents"
+    request = dict(url=path, data=PUBLIC_CURATED_FORM,
+                   files={"file": ("large.md", b"a" * (MAX_UPLOAD_BYTES + 1), "text/markdown")},
+                   headers={"Idempotency-Key": "a1-large"})
+    response, replay = client.post(**request), client.post(**request)
+    assert response.status_code == replay.status_code == 413
+    assert response.json()["error"]["code"] == replay.json()["error"]["code"] == "UPLOAD_FILE_TOO_LARGE"
+    assert any(record.idempotency_key == "a1-large" and record.status == "FAILED"
+               for record in stage4_service.idempotency_records.values())
+    assert stage4_service.sources == {} and stage4_service.source_decisions == {}
 
 
 def test_write_endpoints_require_idempotency_key() -> None:
