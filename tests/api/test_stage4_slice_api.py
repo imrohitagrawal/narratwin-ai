@@ -28,23 +28,18 @@ def frontend_default_knowledge() -> bytes:
 PUBLIC_CURATED_FIXTURE = b"# NarraTwin Heartbeat Public Fixture\n\nProject Lantern is a controlled local demonstration.\nThe curator approves only public-safe project knowledge.\nGrounded chunks retain source and checksum identity.\n"
 PUBLIC_CURATED_FORM = {"curationSchemaVersion": "source-curation-v1", "action": "ACCEPT_FOR_REVIEW", "classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rightsBasis": "PROJECT_OWNED", "rightsStatus": "ELIGIBLE", "usagePolicy": "LOCAL_TEST_REUSE_ALLOWED", "sourceVersion": "heartbeat1-public-v1"}
 def create_a1_pending(client: TestClient, filename: str = "heartbeat-public.md", mime: str = "text/markdown") -> tuple[str, dict[str, object]]:
-    headers = {"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-project"}
-    project = client.post("/api/v1/projects", json={"name": "Project Lantern"}, headers=headers).json()
-    path = f"/api/v1/projects/{project['projectId']}/knowledge-documents"
-    response = client.post(path, data=PUBLIC_CURATED_FORM, files={"file": (filename, PUBLIC_CURATED_FIXTURE, mime)}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit"})
-    assert response.status_code == 201
-    return project["projectId"], response.json()
+    headers = {"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-project"}; project = client.post("/api/v1/projects", json={"name": "Project Lantern"}, headers=headers).json()
+    path = f"/api/v1/projects/{project['projectId']}/knowledge-documents"; response = client.post(path, data=PUBLIC_CURATED_FORM, files={"file": (filename, PUBLIC_CURATED_FIXTURE, mime)}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit"})
+    assert response.status_code == 201; return project["projectId"], response.json()
 def a1_approval_payload(pending: dict[str, object]) -> dict[str, object]:
     return {"approvalStatus": "APPROVED", "reviewNote": "Approved fixture.", "curationSchemaVersion": "source-curation-v1", "action": "APPROVE", "sourceId": pending["sourceId"], "decisionId": pending["decisionId"], "policyVersion": pending["policyVersion"], "sourceVersion": pending["sourceVersion"], "checksum": pending["checksum"], "assertionsFingerprint": pending["assertionsFingerprint"]}
 def approve_a1(client: TestClient, project_id: str, pending: dict[str, object]) -> dict[str, object]:
     response = client.patch(f"/api/v1/projects/{project_id}/knowledge-documents/{pending['sourceId']}/approval", json=a1_approval_payload(pending), headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-approve"})
     assert response.status_code == 200; return cast(dict[str, object], response.json())
 def test_a1_submit_allow_pending_and_exact_replay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(stage4_service, "state_path", tmp_path / "replay.json"); reset_app_state_for_tests()
-    client = TestClient(app); project_id, body = create_a1_pending(client, " heartbeat-public.md ", "Text/Markdown; charset=UTF-8")
+    monkeypatch.setattr(stage4_service, "state_path", tmp_path / "replay.json"); reset_app_state_for_tests(); client = TestClient(app); project_id, body = create_a1_pending(client, " heartbeat-public.md ", "Text/Markdown; charset=UTF-8")
     assert (body.get("code"), body["decisionState"], body["ingestionStatus"], body["rawContentRetained"], body["idempotencyReplayed"]) == ("SOURCE_PENDING_REVIEW", "PENDING_REVIEW", "NOT_STARTED", True, False)
-    approved = approve_a1(client, project_id, body)
-    client.post(f"/api/v1/projects/{project_id}/ingestion-runs", json={"documentIds": [], "sourceIds": [body["sourceId"]]}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-ingest-replay"})
+    approved = approve_a1(client, project_id, body); client.post(f"/api/v1/projects/{project_id}/ingestion-runs", json={"documentIds": [], "sourceIds": [body["sourceId"]]}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-ingest-replay"})
     replay = client.post(f"/api/v1/projects/{project_id}/knowledge-documents", data=PUBLIC_CURATED_FORM, files={"file": (" heartbeat-public.md ", PUBLIC_CURATED_FIXTURE, "Text/Markdown; charset=UTF-8")}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit"})
     assert replay.status_code == 201 and replay.json() == {**body, "idempotencyReplayed": True}
     restored_service = Stage4Service(state_path=tmp_path / "replay.json"); restored = restored_service.submit_curated_source(principal=LocalPrincipal("tenant_local", "curator_demo"), project_id=project_id, source_filename=" heartbeat-public.md ", content_type="Text/Markdown; charset=UTF-8", data=PUBLIC_CURATED_FIXTURE, assertions=SourceAssertions(**{"classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rights_basis": "PROJECT_OWNED", "rights_status": "ELIGIBLE", "usage_policy": "LOCAL_TEST_REUSE_ALLOWED", "source_version": "heartbeat1-public-v1"}), schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key="a1-submit")
@@ -54,10 +49,8 @@ def test_a1_approval_rechecks_bindings_and_replays(case: str) -> None:
     reset_app_state_for_tests(); client = TestClient(app); project_id, pending = create_a1_pending(client); payload = a1_approval_payload(pending)
     drift = {"checksum": "0" * 64, "version": "heartbeat1-public-v0", "policy": "source-curation-policy-v0", "decision": "decision_999999", "assertions": "f" * 64}
     field = {"version": "sourceVersion", "policy": "policyVersion", "decision": "decisionId", "assertions": "assertionsFingerprint"}.get(case, case)
-    if case in {"checksum", "version", "policy", "assertions"}:
-        setattr(stage4_service.source_decisions[str(pending["decisionId"])], {"version": "source_version", "policy": "policy_version", "assertions": "assertions_fingerprint"}.get(case, case), drift[case])
-    elif case != "matching":
-        payload[field] = drift[case]
+    if case in {"checksum", "version", "policy", "assertions"}: setattr(stage4_service.source_decisions[str(pending["decisionId"])], {"version": "source_version", "policy": "policy_version", "assertions": "assertions_fingerprint"}.get(case, case), drift[case])
+    elif case != "matching": payload[field] = drift[case]
     response = client.patch(f"/api/v1/projects/{project_id}/knowledge-documents/{pending['sourceId']}/approval", json=payload, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": f"a1-approve-{case}"})
     assert response.status_code == (200 if case == "matching" else 409)
     code = response.json().get("code") if case == "matching" else response.json()["error"]["code"]
@@ -65,9 +58,7 @@ def test_a1_approval_rechecks_bindings_and_replays(case: str) -> None:
     assert case != "matching" or client.patch(f"/api/v1/projects/{project_id}/knowledge-documents/{pending['sourceId']}/approval", json=payload, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": f"a1-approve-{case}"}).json()["idempotencyReplayed"] is True
 @pytest.mark.parametrize("principal,project_id,status", [(LocalPrincipal("tenant_other", "curator_demo"), "proj_000001", 403), (LocalPrincipal("tenant_local", "other_demo"), "proj_000001", 403), (LocalPrincipal("tenant_local", "curator_demo"), "proj_000002", 404)])
 def test_a1_curated_scope_and_logs_are_bounded(principal: LocalPrincipal, project_id: str, status: int, caplog: pytest.LogCaptureFixture) -> None:
-    reset_app_state_for_tests(); caplog.set_level(20, logger="narratwin-ai"); client = TestClient(app)
-    _, pending = create_a1_pending(client)
-    app.dependency_overrides[local_principal] = lambda: principal
+    reset_app_state_for_tests(); caplog.set_level(20, logger="narratwin-ai"); client = TestClient(app); _, pending = create_a1_pending(client); app.dependency_overrides[local_principal] = lambda: principal
     response = client.patch(f"/api/v1/projects/{project_id}/knowledge-documents/{pending['sourceId']}/approval", json=a1_approval_payload(pending), headers={"Idempotency-Key": f"a1-scope-{status}"})
     app.dependency_overrides.clear()
     assert response.status_code == status and caplog.text.count("source.approval.denied") == 1
@@ -78,8 +69,7 @@ def test_a1_curated_ingestion_is_atomic(case: str, monkeypatch: pytest.MonkeyPat
     path = f"/api/v1/projects/{project_id}/knowledge-documents"
     second = client.post(path, data=PUBLIC_CURATED_FORM, files={"file": ("second.md", PUBLIC_CURATED_FIXTURE, "text/markdown")}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit-2"}).json()
     legacy = client.post(path, files={"file": ("legacy.md", b"Legacy source.", "text/markdown")}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-legacy"}).json()
-    if case == "policy_drift":
-        stage4_service.source_decisions[str(first["decisionId"])].policy_version = "source-curation-policy-v0"
+    if case == "policy_drift": stage4_service.source_decisions[str(first["decisionId"])].policy_version = "source-curation-policy-v0"
     ids = {"success": [first["sourceId"]], "pending": [second["sourceId"]], "wrong_kind": [legacy["documentId"]], "policy_drift": [first["sourceId"]], "mixed": [first["sourceId"], second["sourceId"]], "mixed_fields": [first["sourceId"]], "duplicate": [first["sourceId"], first["sourceId"]], "persist_failure": [first["sourceId"]]}[case]
     if case == "persist_failure":
         monkeypatch.setattr(stage4_service, "_persist_locked", lambda: (_ for _ in ()).throw(OSError("disk")))
@@ -103,8 +93,7 @@ def test_a1_curated_ingestion_is_atomic(case: str, monkeypatch: pytest.MonkeyPat
         assert all(source.ingestion_status == "NOT_STARTED" for source in stage4_service.sources.values())
 @pytest.mark.parametrize("case", ["declared", "one_chunk", "streamed"])
 def test_a1_transport_413_is_bounded_and_nondurable(case: str, caplog: pytest.LogCaptureFixture) -> None:
-    reset_app_state_for_tests()
-    calls, sent = 0, []; caplog.set_level(20, logger="narratwin-ai")
+    reset_app_state_for_tests(); calls, sent = 0, []; caplog.set_level(20, logger="narratwin-ai")
     chunks = [] if case == "declared" else [b"x" * (MAX_UPLOAD_REQUEST_BYTES + 2)] if case == "one_chunk" else [b"x" * MAX_UPLOAD_REQUEST_BYTES, b"yz", b"A1_RAW_CANARY"]; scope = {"type": "http", "method": "POST", "path": "/api/v1/projects/proj_000001/knowledge-documents", "headers": [(b"content-length", str(MAX_UPLOAD_REQUEST_BYTES + (case == "declared")).encode()), (b"x-local-user-id", b"A1_ACTOR_CANARY\xff")]}
     async def receive() -> dict[str, object]:
         nonlocal calls
@@ -174,17 +163,14 @@ def test_a1_v1_restore_preserves_legacy_without_decision(case: str, tmp_path: Pa
     assert restored.source_decisions == {} and (restored_document.approval_status, restored_document.ingestion_status) == {"pending": ("PENDING", "NOT_STARTED"), "approved": ("APPROVED", "NOT_STARTED")}.get(case, ("APPROVED", "INGESTED") if case != "failed_replay" else ("APPROVED", "NOT_STARTED")); assert case not in {"ingested", "run", "evaluation", "completed_replay"} or restored.rag_store.chunk_count_for_project(tenant_id=principal.tenant_id, project_id=project.project_id) > 0; assert case not in {"run", "evaluation", "completed_replay"} or (len(restored.walkthrough_runs) == 1 and (case != "evaluation" or next(iter(restored.walkthrough_runs.values())).evaluation is not None))
     if case == "completed_replay": assert restored.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Create a concise grounded walkthrough for a recruiter.", idempotency_key="w") == next(iter(restored.walkthrough_runs.values()))
     if case == "failed_replay": replayed = pytest.raises(Stage4Error, restored.upload_document, principal=principal, project_id=project.project_id, source_filename="large.md", content_type="text/markdown", data=b"a" * (MAX_UPLOAD_BYTES + 1), idempotency_key="f"); assert (replayed.value.status_code, replayed.value.code) == (413, "UPLOAD_TOO_LARGE")
-@pytest.mark.parametrize("case", ["pair", "type_null", "type_object", "type_array", "type_bool", "type_number", "chunk", "chunk_meta", "ingestion", "walkthrough", "evaluation", "idempotency", "idem_raw", "idem_immutable", "idem_code", "idem_row", "idem_type"])
+@pytest.mark.parametrize("case", ["pair", "type_null", "type_object", "type_array", "type_bool", "type_number", "chunk", "chunk_meta", "ingestion", "walkthrough", "evaluation", "idempotency", "idem_raw", "idem_immutable", "idem_code", "idem_row", "idem_type", "ingestion_exact", "ingestion_changed", "ingestion_actor", "ingestion_scope", "ingestion_endpoint", "ingestion_checksum", "failure_message", "failure_code", "failure_status", "failure_actor", "failure_scope", "failure_endpoint", "failure_checksum", "idem_source_null", "idem_source_array", "idem_source_bool", "idem_source_number", "idem_source_string", "idem_assertions_array", "idem_decision_null", "idem_approved_at_object", "idem_raw_int", "id_alias"])
 def test_a1_restore_prunes_curated_tamper(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    state_path = tmp_path / "tampered.json"
-    monkeypatch.setattr(stage4_service, "state_path", state_path)
-    reset_app_state_for_tests()
-    client = TestClient(app)
+    state_path = tmp_path / "tampered.json"; monkeypatch.setattr(stage4_service, "state_path", state_path); reset_app_state_for_tests(); client = TestClient(app)
     project_id, pending = create_a1_pending(client); sibling = client.post(f"/api/v1/projects/{project_id}/knowledge-documents", files={"file": ("legacy-sibling.md", PUBLIC_CURATED_FIXTURE, "text/markdown")}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "tamper-sibling"}).json()
-    approve_a1(client, project_id, pending)
-    client.post(f"/api/v1/projects/{project_id}/ingestion-runs", json={"documentIds": [], "sourceIds": [pending["sourceId"]]}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "tamper-ingest"})
+    approve_a1(client, project_id, pending); client.post(f"/api/v1/projects/{project_id}/ingestion-runs", json={"documentIds": [], "sourceIds": [pending["sourceId"]]}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "tamper-ingest"})
     run = client.post(f"/api/v1/projects/{project_id}/walkthrough-runs", json={"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Project Lantern controlled local demonstration curator approves public-safe project knowledge grounded chunks source checksum identity."}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "tamper-run"})
     assert run.status_code == 201 and Stage4Service(state_path=state_path).walkthrough_runs
+    if case.startswith("failure_"): assert client.post(f"/api/v1/projects/{project_id}/knowledge-documents", data=PUBLIC_CURATED_FORM, files={"file": ("large.md", b"a" * (MAX_UPLOAD_BYTES + 1), "text/markdown")}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "tamper-failure"}).status_code == 413
     payload = json.loads(state_path.read_text())
     if case == "pair":
         source = payload["sources"][0]; source["text"] = "Internal private source."; source["size_bytes"] = len(source["text"].encode()); source["checksum"] = hashlib.sha256(source["text"].encode()).hexdigest(); source["assertions"].update({"classification": "INTERNAL", "rights_status": "INELIGIBLE", "usage_policy": "INTERNAL_NO_REUSE"}); source["assertions_fingerprint"] = canonical_digest(source["assertions"]); payload["sourceDecisions"][0].update({"checksum": source["checksum"], "assertions_fingerprint": source["assertions_fingerprint"]})
@@ -194,13 +180,26 @@ def test_a1_restore_prunes_curated_tamper(case: str, tmp_path: Path, monkeypatch
     elif case == "walkthrough": payload["walkthroughRuns"][0]["project_id"] = "proj_999999"
     elif case == "evaluation": payload["walkthroughRuns"][0]["evaluation"]["project_id"] = "proj_999999"
     elif case == "idempotency": next(row for row in payload["idempotencyRecords"] if row["idempotency_key"] == "tamper-run")["value"]["id"] = "run_999999"
+    elif case == "id_alias": payload["sources"][0]["source_id"] = sibling["documentId"]; payload["sourceDecisions"][0]["source_id"] = sibling["documentId"]
+    elif case in {"ingestion_exact", "ingestion_changed"}: pass
+    elif case.startswith("ingestion_"): idem = next(row for row in payload["idempotencyRecords"] if row["idempotency_key"] == "tamper-ingest"); field, value = {"ingestion_actor": ("actor_id", "other_demo"), "ingestion_scope": ("idempotency_scope", "proj_999999"), "ingestion_endpoint": ("endpoint", "POST /wrong"), "ingestion_checksum": ("request_checksum", "0" * 64)}[case]; idem[field] = value
+    elif case.startswith("failure_"): idem = next(row for row in payload["idempotencyRecords"] if row["idempotency_key"] == "tamper-failure"); field, value = {"failure_message": ("message", "A1_PRIVATE_RAW_CANARY"), "failure_code": ("code", "RAW_CANARY"), "failure_status": ("status_code", 200), "failure_actor": ("actor_id", "other_demo"), "failure_scope": ("idempotency_scope", "proj_999999"), "failure_endpoint": ("endpoint", "POST /wrong"), "failure_checksum": ("request_checksum", "0" * 64)}[case]; (idem["value"] if field in {"message", "code", "status_code"} else idem)[field] = value
+    elif case.startswith("idem_source_"): next(row for row in payload["idempotencyRecords"] if row["idempotency_key"] == "a1-approve")["value"]["source"] = {"idem_source_null": None, "idem_source_array": [], "idem_source_bool": True, "idem_source_number": 7, "idem_source_string": "bad"}[case]
+    elif case in {"idem_assertions_array", "idem_decision_null", "idem_approved_at_object", "idem_raw_int"}: snapshot = next(row for row in payload["idempotencyRecords"] if row["idempotency_key"] == "a1-approve")["value"]; snapshot["source"]["assertions"] = [] if case == "idem_assertions_array" else snapshot["source"]["assertions"]; snapshot["decision"] = None if case == "idem_decision_null" else snapshot["decision"]; snapshot["decision"].__setitem__("approved_at", {}) if case == "idem_approved_at_object" else snapshot["decision"].__setitem__("raw_content_retained", 1) if case == "idem_raw_int" else None
     else:
         idem = next(row for row in payload["idempotencyRecords"] if row["idempotency_key"] == "a1-submit"); snapshot = idem["value"]; snapshot["source"].__setitem__("text" if case in {"idem_raw", "idem_type"} else "source_filename", None if case == "idem_type" else "A1_PRIVATE_RAW_CANARY" if case == "idem_raw" else "spoof.md") if case in {"idem_raw", "idem_immutable", "idem_type"} else snapshot.__setitem__("code", "SOURCE_APPROVED") if case == "idem_code" else idem.update({"actor_id": "other_demo", "idempotency_scope": "proj_999999", "endpoint": "POST /wrong", "request_checksum": "0" * 64})
     state_path.write_text(json.dumps(payload))
     restored = Stage4Service(state_path=state_path); repaired = json.loads(state_path.read_text())
     if case == "pair" or case.startswith("type_"): assert not restored.sources and repaired["sources"] == repaired["sourceDecisions"] == [] and sibling["documentId"] in restored.documents
+    elif case == "id_alias": approved = restored.approve_document(principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, document_id=str(sibling["documentId"]), idempotency_key="alias-legacy"); assert not restored.sources and approved.approval_status == "APPROVED"
     elif case in {"chunk", "chunk_meta", "ingestion"}: assert restored.rag_store.chunk_count_for_project(tenant_id="tenant_local", project_id=project_id) == 0 and not restored.walkthrough_runs
     elif case in {"walkthrough", "evaluation"}: assert not restored.walkthrough_runs
+    elif case == "ingestion_exact": assert restored.ingest_curated_sources(principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, source_ids=[str(pending["sourceId"])], idempotency_key="tamper-ingest").source_ids == [pending["sourceId"]]
+    elif case == "ingestion_changed": changed = pytest.raises(Stage4Error, restored.ingest_curated_sources, principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, source_ids=[str(pending["sourceId"]), str(pending["sourceId"])], idempotency_key="tamper-ingest"); assert changed.value.status_code == 409
+    elif case == "ingestion_actor": denied = pytest.raises(Stage4Error, restored.ingest_curated_sources, principal=LocalPrincipal(actor_id="other_demo"), project_id=project_id, source_ids=[str(pending["sourceId"])], idempotency_key="tamper-ingest"); assert denied.value.status_code == 403
+    elif case.startswith("ingestion_"): assert not any(record.idempotency_key == "tamper-ingest" for record in restored.idempotency_records.values())
+    elif case.startswith("failure_"): assert not any(record.idempotency_key == "tamper-failure" for record in restored.idempotency_records.values()) and "A1_PRIVATE_RAW_CANARY" not in state_path.read_text()
+    elif case.startswith("idem_source_") or case in {"idem_assertions_array", "idem_decision_null", "idem_approved_at_object", "idem_raw_int"}: assert sibling["documentId"] in restored.documents and not any(record.idempotency_key == "a1-approve" for record in restored.idempotency_records.values())
     else: assert not any(record.idempotency_key == ("tamper-run" if case == "idempotency" else "a1-submit") for record in restored.idempotency_records.values())
 
 def test_issue302_a1_allowlist_is_exact_and_near_match_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
