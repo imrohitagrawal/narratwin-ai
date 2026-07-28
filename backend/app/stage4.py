@@ -5,11 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 import re
 import time
 from collections.abc import Callable, Mapping
 from copy import deepcopy
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path, PurePath
 from threading import RLock
@@ -45,6 +46,7 @@ from backend.app.observability import (
     record_walkthrough_metrics,
     with_trace,
 )
+from backend.app.curation import (CURATION_POLICY_VERSION, CURATION_SCHEMA_VERSION, CuratedOutcome, SourceAssertions, SourceDecisionRecord, SourceRecord, allowed_for_review, assertions_digest, canonical_digest, legal_pair, record_is_valid, restore_curated, restored_records)
 
 MAX_UPLOAD_BYTES = 1_048_576
 MAX_PROJECT_CORPUS_BYTES = 5 * 1_048_576
@@ -94,6 +96,14 @@ SECRET_REDACTION_PATTERNS = (
 T = TypeVar("T")
 WalkthroughRunStatus = Literal["COMPLETED", "FAILED", "REFUSED"]
 LOGGER = logging.getLogger(__name__)
+SAFE_RESTORED_FAILURES = {(400, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key header is required for write requests."), (403, "FORBIDDEN", "Document is not accessible to this principal."), (403, "FORBIDDEN", "Project is not accessible to this principal."), (404, "NOT_FOUND", "Curated source not found."), (404, "NOT_FOUND", "Knowledge document not found."), (404, "NOT_FOUND", "Project not found."), (409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request."), (409, "IDEMPOTENCY_IN_PROGRESS", "Idempotency key is already in progress."), (409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale."), (413, "DOCUMENT_TOO_LARGE", "Document exceeds the Stage 4 chunk limit."), (413, "INGESTION_TOO_LARGE", "Too many documents requested for one ingestion run."), (413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 chunk limit."), (413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 corpus size limit."), (413, "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "Project exceeds the Stage 4 document limit."), (413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit."), (413, "UPLOAD_FILE_TOO_LARGE", "Curated source file exceeds the size limit."), (413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit."), (415, "UNSUPPORTED_MEDIA_TYPE", "Archive uploads are not accepted in Stage 4."), (415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted."), (422, "DOCUMENT_NOT_APPROVED", "Document must be approved before ingestion."), (422, "SECRET_LIKE_CONTENT", "Prompt contains secret-like content."), (422, "SECRET_LIKE_CONTENT", "Uploaded document contains secret-like content."), (422, "SOURCE_KIND_MISMATCH", "Legacy documents cannot use curated ingestion."), (422, "SOURCE_NOT_INGESTIBLE", "At least one bounded curated source is required."), (422, "SOURCE_NOT_INGESTIBLE", "Every curated source must be approved and current."), (422, "UNSAFE_DOCUMENT_CONTENT", "Curated source contains unsafe content."), (422, "UNSAFE_DOCUMENT_CONTENT", "Document contains unsafe instruction-like content."), (422, "VALIDATION_ERROR", "At least one document is required."), (422, "VALIDATION_ERROR", "Curated source assertions are incomplete or ineligible."), (422, "VALIDATION_ERROR", "Invalid filename."), (422, "VALIDATION_ERROR", "Project name is required."), (422, "VALIDATION_ERROR", "Uploaded document contains NUL bytes."), (422, "VALIDATION_ERROR", "Uploaded document contains too many control characters."), (422, "VALIDATION_ERROR", "Uploaded document is empty."), (422, "VALIDATION_ERROR", "Uploaded document must be UTF-8 text."), (429, "BACKPRESSURE_QUEUE_FULL", "Another Stage 4 operation is already active for this project."), (429, "RESOURCE_LIMIT_EXCEEDED", "Project exceeds the Stage 4 generation run limit."), (429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit."), (429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 project limit."), (422, "VALIDATION_ERROR", "Curated source content is not safe to retain."), (422, "SECRET_LIKE_CONTENT", "Curated source content is not safe to retain."), (422, "UNSAFE_DOCUMENT_CONTENT", "Curated source content is not safe to retain.")}
+RESTORED_FAILURE_CODES_BY_ENDPOINT = {
+    "POST /api/v1/projects": {"VALIDATION_ERROR", "RESOURCE_LIMIT_EXCEEDED"},
+    "POST /api/v1/projects/{projectId}/knowledge-documents": {"FORBIDDEN", "NOT_FOUND", "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "PROJECT_CORPUS_TOO_LARGE", "UPLOAD_TOO_LARGE", "UPLOAD_FILE_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "VALIDATION_ERROR", "SECRET_LIKE_CONTENT", "UNSAFE_DOCUMENT_CONTENT"},
+    "PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval": {"FORBIDDEN", "NOT_FOUND", "SOURCE_NOT_APPROVABLE"},
+    "POST /api/v1/projects/{projectId}/ingestion-runs": {"FORBIDDEN", "NOT_FOUND", "SOURCE_NOT_INGESTIBLE", "SOURCE_KIND_MISMATCH", "VALIDATION_ERROR", "INGESTION_TOO_LARGE", "DOCUMENT_NOT_APPROVED", "UNSAFE_DOCUMENT_CONTENT", "DOCUMENT_TOO_LARGE", "PROJECT_CORPUS_TOO_LARGE", "BACKPRESSURE_QUEUE_FULL"},
+    "POST /api/v1/projects/{projectId}/walkthrough-runs": {"FORBIDDEN", "NOT_FOUND", "PROMPT_TOO_LARGE", "SECRET_LIKE_CONTENT", "RESOURCE_LIMIT_EXCEEDED", "BACKPRESSURE_QUEUE_FULL"},
+}
 
 
 def _now() -> str:
@@ -110,6 +120,7 @@ class Stage4Error(Exception):
         self.status_code = status_code
         self.code = code
         self.message = message
+    def __deepcopy__(self, _memo: object) -> Stage4Error: return Stage4Error(self.status_code, self.code, self.message)
 
 
 @dataclass
@@ -161,6 +172,7 @@ class IngestionRunRecord:
     chunk_count: int
     embedding_count: int
     created_at: str
+    source_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -186,6 +198,7 @@ class WalkthroughRunRecord:
     retrieved_context: list[RetrievedContext]
     evaluation: EvaluationResult | None
     created_at: str
+    request_checksum: str = ""
 
 
 @dataclass
@@ -203,6 +216,18 @@ class IdempotencyRecord:
     updated_at: str
 
 
+def restored_rag_store(payload: object) -> InMemoryRagStore:
+    rows = payload.get("chunks", []) if isinstance(payload, dict) else []
+    valid_rows: list[dict[str, Any]] = []
+    for row in rows if isinstance(rows, list) else []:
+        try:
+            candidate = InMemoryRagStore.from_dict({"chunks": [row]})
+            valid_rows.extend(cast(list[dict[str, Any]], candidate.to_dict()["chunks"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return InMemoryRagStore.from_dict({"chunks": valid_rows})
+
+
 class Stage4Service:
     WALKTHROUGH_REFUSAL_REASON_PROMPT_INJECTION = "PROMPT_INJECTION_DETECTED"
     WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL = "LOW_RETRIEVAL_CONFIDENCE"
@@ -216,6 +241,8 @@ class Stage4Service:
         self.state_path = state_path
         self.projects: dict[str, ProjectRecord] = {}
         self.documents: dict[str, DocumentRecord] = {}
+        self.sources: dict[str, SourceRecord] = {}
+        self.source_decisions: dict[str, SourceDecisionRecord] = {}
         self.ingestion_runs: dict[str, IngestionRunRecord] = {}
         self.walkthrough_runs: dict[str, WalkthroughRunRecord] = {}
         self.idempotency_records: dict[tuple[str, str, str, str, str], IdempotencyRecord] = {}
@@ -224,6 +251,7 @@ class Stage4Service:
         self._operation_lock = RLock()
         self._project_counter = 0
         self._document_counter = 0
+        self._source_counter = 0
         self._ingestion_counter = 0
         self._run_counter = 0
         self._restore()
@@ -237,6 +265,8 @@ class Stage4Service:
         self.rag_store.clear()
         self.projects.clear()
         self.documents.clear()
+        self.sources.clear()
+        self.source_decisions.clear()
         self.ingestion_runs.clear()
         self.walkthrough_runs.clear()
         self.idempotency_records.clear()
@@ -244,6 +274,7 @@ class Stage4Service:
         self._active_generations.clear()
         self._project_counter = 0
         self._document_counter = 0
+        self._source_counter = 0
         self._ingestion_counter = 0
         self._run_counter = 0
 
@@ -254,53 +285,28 @@ class Stage4Service:
         try:
             if payload.get("schema") != "stage4-local-state-v1":
                 raise ValueError("Stage 4 state schema mismatch.")
-            self.projects = {
-                str(row["project_id"]): ProjectRecord(**row)
-                for row in payload.get("projects", [])
-                if isinstance(row, dict) and "project_id" in row
-            }
-            self.documents = {
-                str(row["document_id"]): DocumentRecord(**row)
-                for row in payload.get("documents", [])
-                if isinstance(row, dict) and "document_id" in row
-            }
-            self.documents = {
-                document_id: document
-                for document_id, document in self.documents.items()
-                if document.project_id in self.projects
-                and self.projects[document.project_id].tenant_id == document.tenant_id
-                and self.projects[document.project_id].owner_id == document.owner_id
-            }
-            self.ingestion_runs = {
-                str(row["ingestion_run_id"]): IngestionRunRecord(**row)
-                for row in payload.get("ingestionRuns", [])
-                if isinstance(row, dict) and "ingestion_run_id" in row
-            }
-            self.ingestion_runs = {
-                run_id: run
-                for run_id, run in self.ingestion_runs.items()
-                if self._restored_ingestion_run_is_valid(run)
-            }
-            self.rag_store = InMemoryRagStore.from_dict(cast(dict[str, Any], payload.get("ragStore", {})))
-            self.walkthrough_runs = {
-                str(row["run_id"]): walkthrough_run_from_dict(row)
-                for row in payload.get("walkthroughRuns", [])
-                if isinstance(row, dict) and "run_id" in row
-            }
-            self.rag_store.prune(self._restored_chunk_is_valid)
+            self.projects = restored_records(payload.get("projects"), "project_id", lambda row: ProjectRecord(**row), self._restored_project_is_valid)
+            self.documents = restored_records(payload.get("documents"), "document_id", lambda row: DocumentRecord(**row), self._restored_document_is_valid)
+            self.sources, self.source_decisions = restore_curated(payload.get("sources"), payload.get("sourceDecisions"), self.projects, self._restored_curated_source_is_safe, self.documents)
+            self.ingestion_runs = restored_records(payload.get("ingestionRuns"), "ingestion_run_id", lambda row: IngestionRunRecord(**row), self._restored_ingestion_run_is_valid)
+            self.rag_store = restored_rag_store(payload.get("ragStore"))
+            self.walkthrough_runs = restored_records(payload.get("walkthroughRuns"), "run_id", walkthrough_run_from_dict, lambda _run: True)
+            self.rag_store.prune(lambda chunk: record_is_valid(chunk, self._restored_chunk_is_valid))
             self.ingestion_runs = {
                 run_id: run
                 for run_id, run in self.ingestion_runs.items()
                 if self._restored_ingestion_run_has_chunks(run)
             }
             self._reconcile_restored_document_ingestion_status()
+            self.rag_store.prune(lambda chunk: record_is_valid(chunk, self._restored_chunk_is_valid))
             self.walkthrough_runs = {
                 run_id: run
                 for run_id, run in self.walkthrough_runs.items()
-                if self._restored_walkthrough_run_is_valid(run)
+                if record_is_valid(run, self._restored_walkthrough_run_is_valid)
             }
             self.idempotency_records = {}
-            for row in payload.get("idempotencyRecords", []):
+            idempotency_rows = payload.get("idempotencyRecords")
+            for row in idempotency_rows if isinstance(idempotency_rows, list) else []:
                 if not isinstance(row, dict):
                     continue
                 if row.get("status") == "PENDING":
@@ -308,7 +314,7 @@ class Stage4Service:
                 try:
                     record = idempotency_record_from_dict(row, self)
                 except (KeyError, TypeError, ValueError) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 4 idempotency record at %s: %s", self.state_path, exc)
+                    LOGGER.warning("Skipping incompatible Stage 4 idempotency record: %s", exc)
                     continue
                 key = (
                     record.tenant_id,
@@ -321,20 +327,18 @@ class Stage4Service:
             counters = payload.get("counters", {})
             project_counter = max_numeric_suffix(self.projects, "proj_")
             document_counter = max_numeric_suffix(self.documents, "doc_")
+            source_counter = max(max_numeric_suffix(self.sources, "source_"), max_numeric_suffix(self.source_decisions, "decision_"))
             ingestion_counter = max_numeric_suffix(self.ingestion_runs, "ing_")
             run_counter = max_numeric_suffix(self.walkthrough_runs, "run_")
-            if isinstance(counters, dict):
-                self._project_counter = max(int(counters.get("project", project_counter)), project_counter)
-                self._document_counter = max(int(counters.get("document", document_counter)), document_counter)
-                self._ingestion_counter = max(int(counters.get("ingestion", ingestion_counter)), ingestion_counter)
-                self._run_counter = max(int(counters.get("run", run_counter)), run_counter)
-            else:
-                self._project_counter = project_counter
-                self._document_counter = document_counter
-                self._ingestion_counter = ingestion_counter
-                self._run_counter = run_counter
+            counter_values = counters if isinstance(counters, dict) else {}
+            self._project_counter = max(counter_values.get("project", 0), project_counter) if type(counter_values.get("project", 0)) is int else project_counter
+            self._document_counter = max(counter_values.get("document", 0), document_counter) if type(counter_values.get("document", 0)) is int else document_counter
+            self._source_counter = min(999999, max(counter_values.get("source", 0), source_counter)) if type(counter_values.get("source", 0)) is int else min(999999, source_counter)
+            self._ingestion_counter = max(counter_values.get("ingestion", 0), ingestion_counter) if type(counter_values.get("ingestion", 0)) is int else ingestion_counter
+            self._run_counter = max(counter_values.get("run", 0), run_counter) if type(counter_values.get("run", 0)) is int else run_counter
+            self._persist_locked()
         except (KeyError, TypeError, ValueError) as exc:
-            LOGGER.warning("Ignoring incompatible Stage 4 local state snapshot at %s: %s", self.state_path, exc)
+            LOGGER.warning("Ignoring incompatible Stage 4 local state snapshot: %s", exc)
             self._clear_runtime_state()
 
     def _restore_failed_operation_locked(
@@ -362,7 +366,7 @@ class Stage4Service:
                 self.documents.pop(value.document_id, None)
         elif isinstance(value, IngestionRunRecord):
             prior_rag_store = InMemoryRagStore.from_dict(snapshot["ragStore"])
-            failed_document_ids = set(value.document_ids)
+            failed_document_ids = set(value.document_ids or value.source_ids)
             self.rag_store.prune(
                 lambda chunk: not (
                     chunk.tenant_id == value.tenant_id
@@ -376,31 +380,65 @@ class Stage4Service:
                 )
             )
             self.ingestion_runs.pop(value.ingestion_run_id, None)
-            for document_id in value.document_ids:
+            for document_id in value.document_ids or value.source_ids:
                 if document_id in snapshot["documents"]:
                     self.documents[document_id] = snapshot["documents"][document_id]
+                elif document_id in snapshot["sources"]:
+                    self.sources[document_id] = snapshot["sources"][document_id]
         elif isinstance(value, WalkthroughRunRecord):
             self.walkthrough_runs.pop(value.run_id, None)
+        elif isinstance(value, CuratedOutcome):
+            self.sources = deepcopy(snapshot["sources"])
+            self.source_decisions = deepcopy(snapshot["sourceDecisions"])
         counters = snapshot["counters"]
         self._project_counter = max(int(counters["project"]), max_numeric_suffix(self.projects, "proj_"))
         self._document_counter = max(int(counters["document"]), max_numeric_suffix(self.documents, "doc_"))
+        self._source_counter = max(int(counters["source"]), max_numeric_suffix(self.sources, "source_"))
         self._ingestion_counter = max(int(counters["ingestion"]), max_numeric_suffix(self.ingestion_runs, "ing_"))
         self._run_counter = max(int(counters["run"]), max_numeric_suffix(self.walkthrough_runs, "run_"))
 
+    def _restored_project_is_valid(self, project: ProjectRecord) -> bool:
+        fields = (project.project_id, project.tenant_id, project.owner_id, project.name, project.description, project.default_audience, project.default_language, project.created_at, project.updated_at)
+        return all(isinstance(value, str) for value in fields) and bool(project.project_id and project.tenant_id and project.owner_id and project.name.strip())
+
+    def _restored_document_is_valid(self, document: DocumentRecord) -> bool:
+        project = self.projects.get(document.project_id) if isinstance(document.project_id, str) else None
+        strings = (document.document_id, document.tenant_id, document.owner_id, document.project_id, document.source_filename, document.content_type, document.checksum, document.text, document.document_status, document.approval_status, document.ingestion_status, document.created_at)
+        timestamps_valid = (document.approved_at is None or isinstance(document.approved_at, str)) and (document.ingested_at is None or isinstance(document.ingested_at, str))
+        state_valid = (document.approval_status, document.ingestion_status, document.approved_at is not None, document.ingested_at is not None) in {("PENDING", "NOT_STARTED", False, False), ("APPROVED", "NOT_STARTED", True, False), ("APPROVED", "INGESTED", True, True)}
+        suffix = PurePath(document.source_filename).suffix.lower() if isinstance(document.source_filename, str) else ""
+        content_valid = bool(document.text.strip()) and document.size_bytes == len(document.text.encode()) and document.checksum == checksum_text(document.text) and document.size_bytes <= MAX_UPLOAD_BYTES
+        try:
+            validate_upload_bytes(document.text.encode())
+            boundary_valid = sanitize_filename(document.source_filename) == document.source_filename and normalize_content_type(document.content_type) == ALLOWED_CONTENT_TYPES_BY_EXTENSION.get(suffix)
+        except Stage4Error:
+            return False
+        return all(isinstance(value, str) for value in strings) and isinstance(document.size_bytes, int) and not isinstance(document.size_bytes, bool) and timestamps_valid and state_valid and document.document_status == "STORED" and project is not None and (project.tenant_id, project.owner_id) == (document.tenant_id, document.owner_id) and content_valid and boundary_valid and not contains_secret_like_content(document.text) and not contains_prompt_injection(document.text)
+
+    def _restored_failure_is_valid(self, tenant_id: str, actor_id: str, scope: str, endpoint: str, failure: tuple[object, object, object]) -> bool:
+        codes = RESTORED_FAILURE_CODES_BY_ENDPOINT.get(endpoint)
+        if failure not in SAFE_RESTORED_FAILURES or codes is None or failure[1] not in codes:
+            return False
+        if endpoint == "POST /api/v1/projects":
+            return scope == "project:create"
+        project = self.projects.get(scope)
+        if project is None:
+            return failure == (404, "NOT_FOUND", "Project not found.")
+        if (project.tenant_id, project.owner_id) != (tenant_id, actor_id):
+            return failure == (403, "FORBIDDEN", "Project is not accessible to this principal.")
+        return failure not in {(404, "NOT_FOUND", "Project not found."), (403, "FORBIDDEN", "Project is not accessible to this principal."), (403, "FORBIDDEN", "Document is not accessible to this principal.")}
+
     def _restored_ingestion_run_is_valid(self, run: IngestionRunRecord) -> bool:
+        if not all(isinstance(value, str) for value in (run.ingestion_run_id, run.tenant_id, run.actor_id, run.project_id, run.status, run.created_at)) or not isinstance(run.document_ids, list) or not isinstance(run.source_ids, list) or not all(isinstance(value, str) for value in run.document_ids + run.source_ids) or not all(isinstance(value, int) and not isinstance(value, bool) for value in (run.chunk_count, run.embedding_count)) or run.status != "COMPLETED":
+            return False
         project = self.projects.get(run.project_id)
         if project is None:
             return False
         if project.tenant_id != run.tenant_id or project.owner_id != run.actor_id:
             return False
-        if not all(document_id in self.documents for document_id in run.document_ids):
-            return False
-        return all(
-            self.documents[document_id].tenant_id == run.tenant_id
-            and self.documents[document_id].owner_id == run.actor_id
-            and self.documents[document_id].project_id == run.project_id
-            for document_id in run.document_ids
-        )
+        ids = run.document_ids or run.source_ids
+        members = [self.documents.get(identifier) or self.sources.get(identifier) for identifier in ids]
+        return bool(bool(run.document_ids) != bool(run.source_ids) and len(ids) == len(set(ids)) and all(member and (member.tenant_id, member.owner_id, member.project_id) == (run.tenant_id, run.actor_id, run.project_id) for member in members) and all(any(decision.source_id == identifier and legal_pair(self.sources[identifier], decision) and decision.decision_state == "APPROVED" for decision in self.source_decisions.values()) for identifier in run.source_ids))
 
     def _restored_ingestion_run_has_chunks(self, run: IngestionRunRecord) -> bool:
         if not self._restored_ingestion_run_is_valid(run):
@@ -408,13 +446,13 @@ class Stage4Service:
         chunks = [
             chunk
             for chunk in self.rag_store.chunks_for_project(tenant_id=run.tenant_id, project_id=run.project_id)
-            if chunk.document_id in set(run.document_ids)
+            if chunk.document_id in set(run.document_ids or run.source_ids)
         ]
         chunk_document_ids = {chunk.document_id for chunk in chunks}
         return (
             run.chunk_count == len(chunks)
             and run.embedding_count == len(chunks)
-            and all(document_id in chunk_document_ids for document_id in run.document_ids)
+            and all(document_id in chunk_document_ids for document_id in (run.document_ids or run.source_ids))
         )
 
     def _reconcile_restored_document_ingestion_status(self) -> None:
@@ -425,13 +463,25 @@ class Stage4Service:
             if document.ingestion_status == "INGESTED" and document.document_id not in ingested_document_ids:
                 document.ingestion_status = "NOT_STARTED"
                 document.ingested_at = None
+        ingested_source_ids = {source_id for run in self.ingestion_runs.values() for source_id in run.source_ids}
+        for source in self.sources.values():
+            if source.ingestion_status == "INGESTED" and source.source_id not in ingested_source_ids:
+                source.ingestion_status, source.ingested_at = "NOT_STARTED", None
 
     def _restored_chunk_is_valid(self, chunk: KnowledgeChunk) -> bool:
+        source = self.sources.get(chunk.document_id)
+        if source is not None:
+            decision = next((value for value in self.source_decisions.values() if value.source_id == source.source_id), None)
+            if decision is None or decision.decision_state != "APPROVED" or source.ingestion_status != "INGESTED":
+                return False
+            expected = chunk_document(document_id=source.source_id, project_id=source.project_id, tenant_id=source.tenant_id, source_filename=source.source_filename, text=source.text, source_document_checksum=source.checksum, approved_at=decision.approved_at or decision.created_at, max_chunks=MAX_CHUNKS_PER_DOCUMENT)
+            return any(replace(value, embedding=self.embedder.embed(value.text)) == chunk for value in expected)
         document = self.documents.get(chunk.document_id)
         if document is None:
             return False
         if (
-            chunk.tenant_id != document.tenant_id
+            document.ingestion_status != "INGESTED"
+            or chunk.tenant_id != document.tenant_id
             or chunk.project_id != document.project_id
             or chunk.source_filename != document.source_filename
             or chunk.source_document_checksum != document.checksum
@@ -468,7 +518,16 @@ class Stage4Service:
             for candidate in expected_chunks
         )
 
+    def _restored_curated_source_is_safe(self, source: SourceRecord) -> bool:
+        try:
+            return source.size_bytes <= MAX_UPLOAD_BYTES and bool(source.text.strip()) and allowed_for_review(source.assertions) and sanitize_filename(source.source_filename) == source.source_filename and normalize_content_type(source.content_type) == ALLOWED_CONTENT_TYPES_BY_EXTENSION.get(PurePath(source.source_filename).suffix.lower()) and not contains_secret_like_content(source.text) and not contains_prompt_injection(source.text) and validate_upload_bytes(source.text.encode()) is None  # type: ignore[func-returns-value]
+        except (AttributeError, Stage4Error, TypeError):
+            return False
     def _restored_walkthrough_run_is_valid(self, run: WalkthroughRunRecord) -> bool:
+        if not isinstance(run.audience, str) or not isinstance(run.requested_language, str) or not isinstance(run.depth, str) or not isinstance(run.style, str):
+            return False
+        if not isinstance(run.request_checksum, str) or run.request_checksum and re.fullmatch(r"sha256:[0-9a-f]{64}", run.request_checksum) is None:
+            return False
         project = self.projects.get(run.project_id)
         if project is None:
             return False
@@ -510,6 +569,8 @@ class Stage4Service:
             return False
         if run.evaluation is None:
             return True
+        if any(type(getattr(run.evaluation, name)) is bool or not math.isfinite(float(getattr(run.evaluation, name))) for name in ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage")):
+            return False
         if (
             run.evaluation.run_id != run.run_id
             or run.evaluation.tenant_id != run.tenant_id
@@ -525,7 +586,7 @@ class Stage4Service:
         ):
             return False
         return all(
-            support.document_id in self.documents
+            (support.document_id in self.documents or support.document_id in self.sources)
             and support.claim_id in claim_ids
             and support.context_ref_id in context_by_ref
             and context_by_ref[support.context_ref_id].chunk.chunk_id == support.chunk_id
@@ -543,14 +604,17 @@ class Stage4Service:
             "ragStore": self.rag_store.to_dict(),
             "projects": deepcopy(self.projects),
             "documents": deepcopy(self.documents),
+            "sources": deepcopy(self.sources),
+            "sourceDecisions": deepcopy(self.source_decisions),
             "ingestionRuns": deepcopy(self.ingestion_runs),
             "walkthroughRuns": deepcopy(self.walkthrough_runs),
-            "idempotencyRecords": self.idempotency_records.copy(),
+            "idempotencyRecords": deepcopy(self.idempotency_records),
             "activeIngestions": deepcopy(self._active_ingestions),
             "activeGenerations": deepcopy(self._active_generations),
             "counters": {
                 "project": self._project_counter,
                 "document": self._document_counter,
+                "source": self._source_counter,
                 "ingestion": self._ingestion_counter,
                 "run": self._run_counter,
             },
@@ -563,6 +627,8 @@ class Stage4Service:
                 "schema": "stage4-local-state-v1",
                 "projects": [asdict(project) for project in self.projects.values()],
                 "documents": [asdict(document) for document in self.documents.values()],
+                "sources": [asdict(source) for source in self.sources.values()],
+                "sourceDecisions": [asdict(decision) for decision in self.source_decisions.values()],
                 "ingestionRuns": [asdict(run) for run in self.ingestion_runs.values()],
                 "walkthroughRuns": [
                     walkthrough_run_to_dict(run) for run in self.walkthrough_runs.values()
@@ -575,6 +641,7 @@ class Stage4Service:
                 "counters": {
                     "project": self._project_counter,
                     "document": self._document_counter,
+                    "source": self._source_counter,
                     "ingestion": self._ingestion_counter,
                     "run": self._run_counter,
                 },
@@ -704,6 +771,33 @@ class Stage4Service:
         self.documents[document.document_id] = document
         return document
 
+    def submit_curated_source(self, *, principal: LocalPrincipal, project_id: str, source_filename: str, content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str, action: str, idempotency_key: str | None = None, file_sha256: str | None = None, size_bytes: int | None = None) -> CuratedOutcome:
+        file_sha256, size_bytes = file_sha256 or hashlib.sha256(data).hexdigest(), size_bytes if size_bytes is not None else len(data)
+        fingerprint = canonical_digest({"endpoint": "curated-submit", "schema": schema_version, "tenant": principal.tenant_id, "actor": principal.actor_id, "project": project_id, "filename": source_filename.strip(), "mime": normalize_content_type(content_type), "fileSha256": file_sha256, "fileBytes": size_bytes, "assertions": asdict(assertions), "action": action})
+        return self._idempotent(principal=principal, endpoint="POST /api/v1/projects/{projectId}/knowledge-documents", scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint, create=lambda: self._submit_curated_source_once(principal, project_id, source_filename, content_type, data, assertions, schema_version, action, file_sha256, size_bytes))
+    def _submit_curated_source_once(self, principal: LocalPrincipal, project_id: str, source_filename: str, content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str, action: str, file_sha256: str, size_bytes: int) -> CuratedOutcome:
+        self._require_project(principal=principal, project_id=project_id)
+        if size_bytes > MAX_UPLOAD_BYTES:
+            raise Stage4Error(413, "UPLOAD_FILE_TOO_LARGE", "Curated source file exceeds the size limit.")
+        if schema_version != CURATION_SCHEMA_VERSION or action != "ACCEPT_FOR_REVIEW" or not allowed_for_review(assertions):
+            raise Stage4Error(422, "VALIDATION_ERROR", "Curated source assertions are incomplete or ineligible.")
+        filename = sanitize_filename(source_filename)
+        suffix, mime = PurePath(filename).suffix.lower(), normalize_content_type(content_type)
+        if suffix not in ALLOWED_EXTENSIONS or mime != ALLOWED_CONTENT_TYPES_BY_EXTENSION.get(suffix):
+            raise Stage4Error(415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted.")
+        validate_upload_bytes(data)
+        text = decode_upload(data)
+        if not text.strip() or contains_secret_like_content(text) or contains_prompt_injection(text):
+            code = "VALIDATION_ERROR" if not text.strip() else "SECRET_LIKE_CONTENT" if contains_secret_like_content(text) else "UNSAFE_DOCUMENT_CONTENT"
+            raise Stage4Error(422, code, "Curated source content is not safe to retain.")
+        self._source_counter += 1
+        source_id, decision_id, now = f"source_{self._source_counter:06d}", f"decision_{self._source_counter:06d}", _now()
+        checksum, assertion_hash = file_sha256, assertions_digest(assertions)
+        source = SourceRecord(source_id, principal.tenant_id, principal.actor_id, project_id, filename, mime, size_bytes, checksum, text, assertions, assertion_hash, created_at=now)
+        decision = SourceDecisionRecord(decision_id, source_id, principal.tenant_id, principal.actor_id, project_id, checksum, assertions.source_version, assertion_hash, created_at=now)
+        self.sources[source_id], self.source_decisions[decision_id] = source, decision
+        log_event(event_name="source.decision.allowed", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, source_id=source_id, decision_id=decision_id, decision_state=decision.decision_state)
+        return CuratedOutcome("SOURCE_PENDING_REVIEW", deepcopy(source), deepcopy(decision))
     def approve_document(
         self,
         *,
@@ -737,6 +831,24 @@ class Stage4Service:
         document.approved_at = _now()
         return document
 
+    def approve_curated_source(self, *, principal: LocalPrincipal, project_id: str, source_id: str, bindings: Mapping[str, str], idempotency_key: str | None) -> CuratedOutcome:
+        fingerprint = canonical_digest({"endpoint": "curated-approval", "tenant": principal.tenant_id, "actor": principal.actor_id, "project": project_id, **{key: bindings.get(key) for key in ("curationSchemaVersion", "action", "sourceId", "decisionId", "policyVersion", "sourceVersion", "checksum", "assertionsFingerprint")}})
+        try:
+            return self._idempotent(principal=principal, endpoint="PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval", scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint, create=lambda: self._approve_curated_once(principal, project_id, source_id, bindings))
+        except Stage4Error as exc:
+            log_event(event_name="source.approval.denied", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, source_id=source_id, status=exc.status_code, code=exc.code)
+            raise
+    def _approve_curated_once(self, principal: LocalPrincipal, project_id: str, source_id: str, bindings: Mapping[str, str]) -> CuratedOutcome:
+        self._require_project(principal=principal, project_id=project_id)
+        source, decision = self.sources.get(source_id), self.source_decisions.get(bindings.get("decisionId", ""))
+        if source is None or source.project_id != project_id:
+            raise Stage4Error(404, "NOT_FOUND", "Curated source not found.")
+        if decision is None or (bindings.get("curationSchemaVersion"), bindings.get("action"), bindings.get("sourceId"), bindings.get("policyVersion")) != ("source-curation-v1", "APPROVE", source_id, CURATION_POLICY_VERSION) or not legal_pair(source, decision) or decision.decision_state != "PENDING_REVIEW" or (bindings.get("sourceVersion"), bindings.get("checksum"), bindings.get("assertionsFingerprint")) != (source.assertions.source_version, source.checksum, source.assertions_fingerprint):
+            raise Stage4Error(409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale.")
+        decision.action, decision.reason, decision.decision_state = "APPROVE", "CURATOR_APPROVED_POLICY_VERIFIED", "APPROVED"
+        decision.approved_at = _now()
+        log_event(event_name="source.approval.completed", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, source_id=source_id, decision_id=decision.decision_id, decision_state=decision.decision_state)
+        return CuratedOutcome("SOURCE_APPROVED", deepcopy(source), deepcopy(decision))
     def ingest_documents(
         self,
         *,
@@ -762,7 +874,36 @@ class Stage4Service:
                 ),
             ),
         )
-
+    def ingest_curated_sources(self, *, principal: LocalPrincipal, project_id: str, source_ids: list[str], idempotency_key: str | None) -> IngestionRunRecord:
+        return self._idempotent(principal=principal, endpoint="POST /api/v1/projects/{projectId}/ingestion-runs", scope=project_id, idempotency_key=idempotency_key, request_checksum=canonical_digest({"project": project_id, "sourceIds": source_ids}), create=lambda: self._ingest_curated_once(principal, project_id, source_ids))
+    def _ingest_curated_once(self, principal: LocalPrincipal, project_id: str, source_ids: list[str]) -> IngestionRunRecord:
+        self._require_project(principal=principal, project_id=project_id)
+        if not source_ids or len(source_ids) > MAX_DOCUMENTS_PER_INGESTION or len(source_ids) != len(set(source_ids)):
+            raise Stage4Error(422, "SOURCE_NOT_INGESTIBLE", "At least one bounded curated source is required.")
+        prepared: list[tuple[SourceRecord, list[KnowledgeChunk]]] = []
+        for source_id in source_ids:
+            if source_id in self.documents:
+                raise Stage4Error(422, "SOURCE_KIND_MISMATCH", "Legacy documents cannot use curated ingestion.")
+            source = self.sources.get(source_id)
+            decision = next((value for value in self.source_decisions.values() if value.source_id == source_id), None)
+            if source is None or (source.tenant_id, source.owner_id, source.project_id) != (principal.tenant_id, principal.actor_id, project_id) or decision is None or not legal_pair(source, decision) or decision.decision_state != "APPROVED" or source.ingestion_status != "NOT_STARTED":
+                raise Stage4Error(422, "SOURCE_NOT_INGESTIBLE", "Every curated source must be approved and current.")
+            text = parse_document_text(source.text)
+            if contains_prompt_injection(text):
+                raise Stage4Error(422, "UNSAFE_DOCUMENT_CONTENT", "Curated source contains unsafe content.")
+            chunks = chunk_document(document_id=source_id, project_id=project_id, tenant_id=principal.tenant_id, source_filename=source.source_filename, text=text, source_document_checksum=source.checksum, approved_at=decision.approved_at or decision.created_at, max_chunks=MAX_CHUNKS_PER_DOCUMENT)
+            prepared.append((source, chunks))
+        chunks = [chunk for _source, values in prepared for chunk in values]
+        if self.rag_store.chunk_count_for_project(tenant_id=principal.tenant_id, project_id=project_id) + len(chunks) > MAX_CHUNKS_PER_PROJECT:
+            raise Stage4Error(413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 chunk limit.")
+        stored, now = self.rag_store.add_chunks(chunks, self.embedder), _now()
+        for source, _chunks in prepared:
+            source.ingestion_status, source.ingested_at = "INGESTED", now
+        self._ingestion_counter += 1
+        run = IngestionRunRecord(f"ing_{self._ingestion_counter:06d}", principal.tenant_id, principal.actor_id, project_id, [], "COMPLETED", len(stored), len(stored), now, source_ids)
+        self.ingestion_runs[run.ingestion_run_id] = run
+        log_event(event_name="source.ingestion.completed", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, ingestion_run_id=run.ingestion_run_id, source_count=len(source_ids), chunk_count=len(stored))
+        return run
     def _ingest_documents_once(
         self,
         *,
@@ -1249,6 +1390,8 @@ class Stage4Service:
                     raise Stage4Error(409, "IDEMPOTENCY_IN_PROGRESS", "Idempotency key is already in progress.")
                 if existing.status == "FAILED":
                     raise cast(Stage4Error, existing.value)
+                if isinstance(existing.value, CuratedOutcome):
+                    return cast(T, replace(existing.value, idempotency_replayed=True))
                 return cast(T, existing.value)
             if self._idempotency_count_for_tenant(principal=principal) >= MAX_IDEMPOTENCY_RECORDS_PER_TENANT:
                 raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit.")
@@ -1274,6 +1417,8 @@ class Stage4Service:
         try:
             with self._operation_lock:
                 value = create()
+                if isinstance(value, WalkthroughRunRecord):
+                    value.request_checksum = request_checksum
         except Stage4Error as exc:
             with self._operation_lock:
                 pending.status = "FAILED"
@@ -1439,6 +1584,9 @@ def generated_script_from_dict(row: dict[str, Any]) -> GeneratedScript:
 
 
 def evaluation_from_dict(row: dict[str, Any]) -> EvaluationResult:
+    for field_name in ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage"):
+        if type(row.get(field_name)) is bool:
+            raise TypeError("Evaluation metrics must not be boolean.")
     return EvaluationResult(
         evaluation_id=str(row["evaluation_id"]),
         run_id=str(row["run_id"]),
@@ -1497,7 +1645,7 @@ def idempotency_record_to_dict(record: IdempotencyRecord) -> dict[str, Any]:
     }
     value = record.value
     if isinstance(value, Stage4Error):
-        row["value"] = {"kind": "error", "status_code": value.status_code, "code": value.code, "message": value.message}
+        row["value"] = {"kind": "error", "status_code": value.status_code, "code": value.code, "message": value.message, "binding": [record.tenant_id, record.actor_id, record.idempotency_scope, record.endpoint, record.request_checksum]}
     elif isinstance(value, ProjectRecord):
         row["value"] = {"kind": "project", "id": value.project_id}
     elif isinstance(value, DocumentRecord):
@@ -1505,36 +1653,59 @@ def idempotency_record_to_dict(record: IdempotencyRecord) -> dict[str, Any]:
     elif isinstance(value, IngestionRunRecord):
         row["value"] = {"kind": "ingestion", "id": value.ingestion_run_id}
     elif isinstance(value, WalkthroughRunRecord):
-        row["value"] = {"kind": "walkthrough", "id": value.run_id}
+        row["value"] = {"kind": "walkthrough", "id": value.run_id, "binding": [record.tenant_id, record.actor_id, record.idempotency_scope, record.endpoint, record.request_checksum]}
+    elif isinstance(value, CuratedOutcome):
+        row["value"] = {"kind": "curated", "code": value.code, "source": asdict(value.source), "decision": asdict(value.decision)}
     else:
         row["value"] = {"kind": "none"}
     return row
 
 
 def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) -> IdempotencyRecord:
+    names = ("idempotency_record_id", "tenant_id", "actor_id", "idempotency_scope", "endpoint", "idempotency_key", "request_checksum", "status", "created_at", "updated_at")
+    if not all(isinstance(row.get(name), str) for name in names):
+        raise ValueError("Stage 4 idempotency fields must be strings.")
+    record_id, tenant_id, actor_id, scope, endpoint, key, request_checksum, status, created_at, updated_at = (row[name] for name in names)
+    if record_id != "idem_" + hashlib.sha256(f"{tenant_id}:{actor_id}:{scope}:{endpoint}:{key}".encode()).hexdigest()[:16] or re.fullmatch(r"(?:sha256:)?[0-9a-f]{64}", request_checksum) is None:
+        raise ValueError("Stage 4 idempotency binding is invalid.")
     value_ref = row.get("value", {})
     value: Any = None
     if isinstance(value_ref, dict):
         kind = value_ref.get("kind")
-        identifier = str(value_ref.get("id", ""))
+        identifier = cast(str, value_ref.get("id")) if isinstance(value_ref.get("id"), str) else ""
         if kind == "error":
-            value = Stage4Error(
-                int(value_ref.get("status_code", 500)),
-                str(value_ref.get("code", "INTERNAL_SERVER_ERROR")),
-                str(value_ref.get("message", "Request failed.")),
-            )
+            failure = (value_ref.get("status_code"), value_ref.get("code"), value_ref.get("message"))
+            projection = [tenant_id, actor_id, scope, endpoint, request_checksum]
+            legacy = failure in {(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit."), (422, "VALIDATION_ERROR", "Project name is required.")}
+            current = value_ref.get("binding") == projection and endpoint != "POST /api/v1/projects"
+            value = Stage4Error(cast(int, failure[0]), cast(str, failure[1]), cast(str, failure[2])) if service._restored_failure_is_valid(tenant_id, actor_id, scope, endpoint, failure) and (current or value_ref.get("binding") is None and legacy) else None
         elif kind == "project":
-            value = service.projects.get(identifier)
+            value = project_value if (project_value := service.projects.get(identifier)) is not None and (tenant_id, actor_id, scope, endpoint, request_checksum) == (project_value.tenant_id, project_value.owner_id, "project:create", "POST /api/v1/projects", checksum_text(f"{project_value.name}\n{project_value.description}\n{project_value.default_audience}\n{project_value.default_language}")) else None
         elif kind == "document":
-            value = service.documents.get(identifier)
+            value = document_value if (document_value := service.documents.get(identifier)) is not None and (tenant_id, actor_id, scope, request_checksum) == (document_value.tenant_id, document_value.owner_id, document_value.project_id, checksum_text(f"{document_value.project_id}\n{document_value.source_filename}\n{document_value.content_type}\n{document_value.checksum.removeprefix('sha256:')}") if endpoint == "POST /api/v1/projects/{projectId}/knowledge-documents" else checksum_text(f"{document_value.project_id}\n{document_value.document_id}\nAPPROVED") if endpoint == "PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval" else "") else None
         elif kind == "ingestion":
-            value = service.ingestion_runs.get(identifier)
+            value = ingestion_value if (ingestion_value := service.ingestion_runs.get(identifier)) is not None and (tenant_id, actor_id, scope, endpoint, request_checksum) == (ingestion_value.tenant_id, ingestion_value.actor_id, ingestion_value.project_id, "POST /api/v1/projects/{projectId}/ingestion-runs", canonical_digest({"project": ingestion_value.project_id, "sourceIds": ingestion_value.source_ids}) if ingestion_value.source_ids else checksum_text(f"{ingestion_value.project_id}\n{','.join(ingestion_value.document_ids)}")) else None
         elif kind == "walkthrough":
-            value = service.walkthrough_runs.get(identifier)
+            walkthrough_value = service.walkthrough_runs.get(identifier)
+            if walkthrough_value is not None and (tenant_id, actor_id, scope, endpoint) == (walkthrough_value.tenant_id, walkthrough_value.actor_id, walkthrough_value.project_id, "POST /api/v1/projects/{projectId}/walkthrough-runs"):
+                if walkthrough_value.request_checksum:
+                    request_checksum = walkthrough_value.request_checksum
+                    value = walkthrough_value
+                elif value_ref.get("binding") is None:
+                    value = walkthrough_value
+        elif kind == "curated":
+            source_data, decision_data = cast(dict[str, Any], value_ref.get("source", {})), cast(dict[str, Any], value_ref.get("decision", {}))
+            if not isinstance(source_data, dict) or not isinstance(source_data.get("assertions"), dict) or not isinstance(decision_data, dict):
+                raise ValueError("Curated idempotency projection is malformed.")
+            source, decision = SourceRecord(**(source_data | {"assertions": SourceAssertions(**cast(dict[str, Any], source_data.get("assertions", {})))})), SourceDecisionRecord(**decision_data)
+            live_source, live_decision = service.sources.get(source.source_id) if isinstance(source.source_id, str) else None, service.source_decisions.get(decision.decision_id) if isinstance(decision.decision_id, str) else None
+            code = str(value_ref.get("code", ""))
+            expected_checksum = canonical_digest({"endpoint": "curated-submit", "schema": CURATION_SCHEMA_VERSION, "tenant": source.tenant_id, "actor": source.owner_id, "project": source.project_id, "filename": source.source_filename, "mime": source.content_type, "fileSha256": source.checksum, "fileBytes": source.size_bytes, "assertions": asdict(source.assertions), "action": decision.action} if code == "SOURCE_PENDING_REVIEW" else {"endpoint": "curated-approval", "tenant": source.tenant_id, "actor": source.owner_id, "project": source.project_id, "curationSchemaVersion": CURATION_SCHEMA_VERSION, "action": "APPROVE", "sourceId": source.source_id, "decisionId": decision.decision_id, "policyVersion": decision.policy_version, "sourceVersion": decision.source_version, "checksum": decision.checksum, "assertionsFingerprint": decision.assertions_fingerprint} if code == "SOURCE_APPROVED" else {})
+            value = CuratedOutcome(code, source, decision) if live_source is not None and live_decision is not None and service._restored_curated_source_is_safe(source) and legal_pair(source, decision) and (code, decision.decision_state, source.ingestion_status) in (("SOURCE_PENDING_REVIEW", "PENDING_REVIEW", "NOT_STARTED"), ("SOURCE_APPROVED", "APPROVED", "NOT_STARTED")) and replace(source, ingestion_status=live_source.ingestion_status, ingested_at=live_source.ingested_at) == live_source and replace(decision, action=live_decision.action, reason=live_decision.reason, decision_state=live_decision.decision_state, approved_at=live_decision.approved_at) == live_decision and (str(row.get("tenant_id", "")), str(row.get("actor_id", "")), str(row.get("idempotency_scope", "")), str(row.get("endpoint", "")), str(row.get("request_checksum", ""))) == (source.tenant_id, source.owner_id, source.project_id, "POST /api/v1/projects/{projectId}/knowledge-documents" if code == "SOURCE_PENDING_REVIEW" else "PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval", expected_checksum) else None
     status = str(row["status"])
     if status not in {"PENDING", "COMPLETED", "FAILED"}:
         raise ValueError(f"Unsupported Stage 4 idempotency status: {status}")
-    if status == "COMPLETED" and value is None:
+    if status == "COMPLETED" and (value is None or isinstance(value, Stage4Error)):
         raise ValueError("Completed Stage 4 idempotency record references missing value.")
     if status == "FAILED" and not isinstance(value, Stage4Error):
         raise ValueError("Failed Stage 4 idempotency record references missing error.")
@@ -1545,7 +1716,7 @@ def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) ->
         idempotency_scope=str(row["idempotency_scope"]),
         endpoint=str(row["endpoint"]),
         idempotency_key=str(row["idempotency_key"]),
-        request_checksum=str(row["request_checksum"]),
+        request_checksum=request_checksum,
         status=cast(Literal["PENDING", "COMPLETED", "FAILED"], status),
         value=value,
         created_at=str(row["created_at"]),
@@ -1673,6 +1844,8 @@ def ingestion_to_api(run: IngestionRunRecord) -> dict[str, Any]:
         "projectId": run.project_id,
         "status": run.status,
         "documentIds": run.document_ids,
+        "sourceIds": run.source_ids,
+        "ingestionKind": "CURATED" if run.source_ids else "LEGACY",
         "chunkCount": run.chunk_count,
         "embeddingCount": run.embedding_count,
         "createdAt": run.created_at,

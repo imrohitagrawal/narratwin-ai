@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+import hashlib
 import os
 import re
 import time
 from datetime import UTC, datetime
 from threading import Lock
-from typing import Annotated, Literal, cast
+from typing import Annotated, Literal, TypedDict, cast
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, FastAPI, File, Header, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, FastAPI, File, Form, Header, HTTPException, Request, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -20,7 +21,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.app.rag.models import OWNER_LOCAL
-from backend.app.observability import is_langfuse_enabled
+from backend.app.curation import CuratedOutcome, SourceAssertions
+from backend.app.observability import is_langfuse_enabled, log_event
 from backend.app.stage4 import (
     MAX_API_REQUEST_BYTES,
     LocalPrincipal,
@@ -218,12 +220,21 @@ class ApproveDocumentRequest(BaseModel):
 
     approval_status: Literal["APPROVED"] = Field(alias="approvalStatus")
     review_note: str = Field(default="", alias="reviewNote")
+    curation_schema_version: str | None = Field(default=None, alias="curationSchemaVersion")
+    action: str | None = None
+    source_id: str | None = Field(default=None, alias="sourceId")
+    decision_id: str | None = Field(default=None, alias="decisionId")
+    policy_version: str | None = Field(default=None, alias="policyVersion")
+    source_version: str | None = Field(default=None, alias="sourceVersion")
+    checksum: str | None = None
+    assertions_fingerprint: str | None = Field(default=None, alias="assertionsFingerprint")
 
 
 class StartIngestionRequest(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     document_ids: list[str] = Field(alias="documentIds")
+    source_ids: list[str] | None = Field(default=None, alias="sourceIds")
 
 
 class GenerateWalkthroughRequest(BaseModel):
@@ -473,6 +484,11 @@ class DocumentResponse(BaseModel):
     approved_at: str | None = Field(default=None, alias="approvedAt")
 
 
+CuratedSourceResponse = TypedDict("CuratedSourceResponse", {"code": str, "sourceId": str, "decisionId": str, "tenantId": str, "ownerId": str, "projectId": str, "checksum": str, "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str, "serverDecision": str, "decisionState": str, "ingestionStatus": str, "rawContentRetained": bool, "createdAt": str, "idempotencyReplayed": bool})
+def curated_response(outcome: CuratedOutcome) -> CuratedSourceResponse:
+    values = asdict(outcome)
+    values = values["source"] | values["decision"] | values
+    return cast(CuratedSourceResponse, {"".join([parts[0], *map(str.title, parts[1:])]): value for key, value in values.items() if not isinstance(value, dict) for parts in [key.split("_")]})
 class IngestionRunResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
@@ -482,6 +498,8 @@ class IngestionRunResponse(BaseModel):
     project_id: str = Field(alias="projectId")
     status: Literal["COMPLETED"]
     document_ids: list[str] = Field(alias="documentIds")
+    source_ids: list[str] = Field(default_factory=list, alias="sourceIds")
+    ingestion_kind: str = Field(default="LEGACY", alias="ingestionKind")
     chunk_count: int = Field(alias="chunkCount")
     embedding_count: int = Field(alias="embeddingCount")
     created_at: str = Field(alias="createdAt")
@@ -1023,6 +1041,7 @@ class Stage8RequestSizeLimitMiddleware:
             )
             return
         if declared_bytes > request_limit:
+            log_event(event_name="upload.transport.rejected", request_id=request_id, actor_id="UNRESOLVED", route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=0, peak_buffered_bytes=0, limit=request_limit, status=413, code="UPLOAD_TOO_LARGE")
             await send_stage8_error(
                 scope,
                 send,
@@ -1049,16 +1068,16 @@ class Stage8RequestSizeLimitMiddleware:
         actual_bytes = 0
         while True:
             message = await receive()
-            messages.append(message)
             if message["type"] == "http.request":
                 body = cast(bytes, message.get("body", b""))
-                actual_bytes += len(body)
+                actual_bytes = min(request_limit + 1, actual_bytes + len(body))
                 if actual_bytes > request_limit:
                     exc = Stage8BodyTooLarge(
                         status_code=413,
                         code="UPLOAD_TOO_LARGE" if request_limit == MAX_UPLOAD_REQUEST_BYTES else "REQUEST_TOO_LARGE",
                         message="Request exceeds the Stage 8 size limit.",
                     )
+                    log_event(event_name="upload.transport.rejected", request_id=request_id, actor_id="UNRESOLVED", route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=actual_bytes, peak_buffered_bytes=sum(len(cast(bytes, item.get("body", b""))) for item in messages), limit=request_limit, status=413, code=exc.code)
                     await send_stage8_error(
                         scope,
                         send,
@@ -1068,6 +1087,7 @@ class Stage8RequestSizeLimitMiddleware:
                         request_id=request_id,
                     )
                     return
+                messages.append(message)
                 if not message.get("more_body", False):
                     break
             else:
@@ -1505,7 +1525,7 @@ def create_project(
 @api_v1.post(
     "/projects/{project_id}/knowledge-documents",
     status_code=201,
-    response_model=DocumentResponse,
+    response_model=DocumentResponse | CuratedSourceResponse,
     tags=["knowledge"],
 )
 async def upload_knowledge_document(
@@ -1513,8 +1533,28 @@ async def upload_knowledge_document(
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
     file: UploadFile = File(...),
-) -> DocumentResponse:
-    data = await read_upload_with_limit(file)
+    curation_schema_version: str | None = Form(default=None, alias="curationSchemaVersion"),
+    action: str | None = Form(default=None),
+    classification: str | None = Form(default=None),
+    provenance: str | None = Form(default=None),
+    rights_basis: str | None = Form(default=None, alias="rightsBasis"),
+    rights_status: str | None = Form(default=None, alias="rightsStatus"),
+    usage_policy: str | None = Form(default=None, alias="usagePolicy"),
+    source_version: str | None = Form(default=None, alias="sourceVersion"),
+) -> DocumentResponse | CuratedSourceResponse:
+    data, file_sha256, file_size = await read_upload_with_limit(file)
+    curated_fields = (curation_schema_version, action, classification, provenance, rights_basis, rights_status, usage_policy, source_version)
+    if any(value is not None for value in curated_fields):
+        outcome = stage4_service.submit_curated_source(
+            principal=principal, project_id=project_id, source_filename=file.filename or "",
+            content_type=file.content_type or "application/octet-stream", data=data,
+            assertions=SourceAssertions(classification or "", provenance or "", rights_basis or "", rights_status or "", usage_policy or "", source_version or ""),
+            schema_version=curation_schema_version or "", action=action or "", idempotency_key=idempotency_key,
+            file_sha256=file_sha256, size_bytes=file_size,
+        )
+        return curated_response(outcome)
+    if file_size > MAX_UPLOAD_BYTES:
+        raise Stage4Error(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit.")
     document = stage4_service.upload_document(
         principal=principal,
         project_id=project_id,
@@ -1528,7 +1568,7 @@ async def upload_knowledge_document(
 
 @api_v1.patch(
     "/projects/{project_id}/knowledge-documents/{document_id}/approval",
-    response_model=DocumentResponse,
+    response_model=DocumentResponse | CuratedSourceResponse,
     tags=["knowledge"],
 )
 def approve_knowledge_document(
@@ -1537,8 +1577,13 @@ def approve_knowledge_document(
     request: ApproveDocumentRequest,
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
-) -> DocumentResponse:
-    del request
+) -> DocumentResponse | CuratedSourceResponse:
+    if document_id in stage4_service.sources:
+        outcome = stage4_service.approve_curated_source(
+            principal=principal, project_id=project_id, source_id=document_id,
+            bindings=request.model_dump(by_alias=True, exclude_none=True), idempotency_key=idempotency_key,
+        )
+        return curated_response(outcome)
     document = stage4_service.approve_document(
         principal=principal,
         project_id=project_id,
@@ -1560,6 +1605,14 @@ def start_ingestion_run(
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
 ) -> IngestionRunResponse:
+    if request.source_ids is not None:
+        if request.document_ids:
+            raise Stage4Error(422, "SOURCE_KIND_MISMATCH", "Choose exactly one ingestion target kind.")
+        run = stage4_service.ingest_curated_sources(
+            principal=principal, project_id=project_id, source_ids=request.source_ids,
+            idempotency_key=idempotency_key,
+        )
+        return IngestionRunResponse.model_validate(ingestion_to_api(run))
     run = stage4_service.ingest_documents(
         principal=principal,
         project_id=project_id,
@@ -1777,15 +1830,17 @@ async def create_hosted_demo_access_decision(request: Request) -> HostedDemoDeci
     return hosted_demo_service.decide(access_request)
 
 
-async def read_upload_with_limit(file: UploadFile) -> bytes:
+async def read_upload_with_limit(file: UploadFile) -> tuple[bytes, str, int]:
     data = bytearray()
+    digest, size = hashlib.sha256(), 0
     while True:
         chunk = await file.read(64 * 1024)
         if not chunk:
-            return bytes(data)
-        data.extend(chunk)
-        if len(data) > MAX_UPLOAD_BYTES:
-            raise Stage4Error(413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit.")
+            return bytes(data), digest.hexdigest(), size
+        digest.update(chunk)
+        size += len(chunk)
+        if len(data) <= MAX_UPLOAD_BYTES:
+            data.extend(chunk[: MAX_UPLOAD_BYTES + 1 - len(data)])
 
 
 def reset_app_state_for_tests() -> None:

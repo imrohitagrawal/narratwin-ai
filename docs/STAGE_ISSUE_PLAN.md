@@ -2069,3 +2069,13 @@ Blocked changes:
 - real video export
 - external avatar provider or public synthetic-media distribution
 - release tag creation before all Phase 1 gates pass
+## Issue 302 Heartbeat 1 A1 branch scope
+
+Issue `#302` A1 uses exact branch `phase-1-closure-302-heartbeat1-a1-eligible`.
+The branch is limited to eligible curated submit, pending review, binding/policy recheck, approval, atomic ingestion, persistence, restore repair, and deterministic replay.
+The accepted envelope is exactly 10 changed files, at most 900 hand-authored changed lines, and six surfaces.
+Allowed runtime files are `backend/app/curation.py`, `backend/app/stage4.py`, and `backend/app/main.py`.
+Allowed evidence is `tests/api/test_stage4_slice_api.py`, `docs/API_CONTRACT.md`, ADR `0040`, `docs/TRACEABILITY.md`, `docs/STATUS.md`, `docs/STAGE_ISSUE_PLAN.md`, and the Phase 1 closure checker.
+The checker requires exact branch equality; every `phase-1-closure-302-*` near-match fails closed.
+Issue `#302` and its canonical evidence comment must be re-resolved before push, review, and merge.
+A2 exclusion, UI/browser evidence, Heartbeat 2, providers, hosted/public behavior, and production-readiness claims remain deferred.

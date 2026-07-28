@@ -1809,3 +1809,19 @@ Stage 6 expands this contract.
 - generated output includes context refs and evaluation state
 - provider keys are never accepted from frontend request bodies
 - future media endpoints require disclosure and consent metadata
+## Heartbeat 1 A1 curated-source contract
+
+`POST /api/v1/projects/{projectId}/knowledge-documents` remains backward compatible for file-only uploads.
+Curated multipart submissions add `curationSchemaVersion=source-curation-v1`, `action=ACCEPT_FOR_REVIEW`, five eligibility assertions, and `sourceVersion`.
+Only the exact public-safe, project-authored, project-owned, eligible, local-test-reuse assertion tuple is accepted for review.
+Accepted content returns `201`, `SOURCE_PENDING_REVIEW`, source/decision identities, immutable binding digests, and `rawContentRetained=true`.
+`PATCH .../{sourceId}/approval` adds `action=APPROVE` plus the exact source, decision, policy, version, checksum, and assertion bindings.
+Approval rechecks current policy and returns `409 SOURCE_NOT_APPROVABLE` for any drift.
+`POST /ingestion-runs` accepts either legacy `documentIds` or curated `sourceIds`; kinds cannot be mixed.
+Curated ingestion requires every source to be approved and policy-current before any chunk/store/status mutation.
+Exact idempotency replay returns the durable terminal result; changed payloads conflict.
+Transport overflow returns nondurable `413 UPLOAD_TOO_LARGE` with bounded byte observations.
+File overflow after endpoint dispatch returns durable, replayable `413 UPLOAD_FILE_TOO_LARGE` and retains no source record.
+Tenant, owner, and project checks remain mandatory and denial logs exclude raw content, filenames, hashes, and local state paths.
+Legacy v1 records restore without fabricated curation decisions; invalid curated graphs are pruned and the repaired snapshot is persisted.
+Issue `#302` A2 exclusion, browser/UI work, and Heartbeat 2 remain outside this contract.
