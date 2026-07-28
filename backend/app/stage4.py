@@ -569,7 +569,7 @@ class Stage4Service:
             return False
         if run.evaluation is None:
             return True
-        if any(not math.isfinite(float(getattr(run.evaluation, name))) for name in ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage")):
+        if any(type(getattr(run.evaluation, name)) is bool or not math.isfinite(float(getattr(run.evaluation, name))) for name in ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage")):
             return False
         if (
             run.evaluation.run_id != run.run_id
@@ -1584,6 +1584,9 @@ def generated_script_from_dict(row: dict[str, Any]) -> GeneratedScript:
 
 
 def evaluation_from_dict(row: dict[str, Any]) -> EvaluationResult:
+    for field_name in ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage"):
+        if type(row.get(field_name)) is bool:
+            raise TypeError("Evaluation metrics must not be boolean.")
     return EvaluationResult(
         evaluation_id=str(row["evaluation_id"]),
         run_id=str(row["run_id"]),

@@ -234,7 +234,7 @@ def test_a1_restore_rejects_coordinated_terminal_rebinding(case: str, tmp_path: 
         conflict = pytest.raises(Stage4Error, restored.submit_curated_source, principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, source_filename="large.md", content_type="text/markdown", data=b"a" * MAX_UPLOAD_BYTES, assertions=SourceAssertions("PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "ELIGIBLE", "LOCAL_TEST_REUSE_ALLOWED", "heartbeat1-public-v2"), schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key=key); assert conflict.value.status_code == 409
     else: assert not any(record.idempotency_key == key for record in restored.idempotency_records.values())
 
-@pytest.mark.parametrize("case", ["sources_null", "sources_object", "sources_bool", "sources_number", "sources_string", "decisions_null", "documents_null", "legacy_checksum", "legacy_size", "legacy_secret", "legacy_scalar", "source_zero", "source_long", "decision_zero", "legacy_collision", "walkthrough_audience", "evaluation_nan", "legacy_embedding", "counter_overlong"])
+@pytest.mark.parametrize("case", ["sources_null", "sources_object", "sources_bool", "sources_number", "sources_string", "decisions_null", "documents_null", "legacy_checksum", "legacy_size", "legacy_secret", "legacy_scalar", "source_zero", "source_long", "decision_zero", "legacy_collision", "walkthrough_audience", "evaluation_nan", "evaluation_bool", "legacy_embedding", "counter_overlong"])
 def test_a1_restore_prunes_malformed_graphs_and_namespace_collisions(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path, project_id, pending, sibling = fifth_red_state(tmp_path, monkeypatch); payload = json.loads(state_path.read_text()); legacy = payload["documents"][0]
     malformed: dict[str, object] = {"sources_null": None, "sources_object": {}, "sources_bool": True, "sources_number": 7, "sources_string": "bad"}
@@ -249,6 +249,7 @@ def test_a1_restore_prunes_malformed_graphs_and_namespace_collisions(case: str, 
     elif case == "decision_zero": payload["sourceDecisions"][0]["decision_id"] = "decision_000000"
     elif case == "walkthrough_audience": payload["walkthroughRuns"][0]["audience"] = True
     elif case == "evaluation_nan": payload["walkthroughRuns"][0]["evaluation"]["groundedness_score"] = float("nan")
+    elif case == "evaluation_bool": payload["walkthroughRuns"][0]["evaluation"]["groundedness_score"] = True
     elif case == "legacy_embedding": payload["ragStore"]["chunks"][0]["embedding"][0] += 1
     elif case == "counter_overlong": payload["counters"]["source"] = 1_000_000
     else: legacy["document_id"] = pending["sourceId"]
@@ -258,7 +259,7 @@ def test_a1_restore_prunes_malformed_graphs_and_namespace_collisions(case: str, 
     elif case.startswith("sources_") or case == "decisions_null": assert sibling["documentId"] in restored.documents
     elif case.startswith("legacy_") and case not in {"legacy_collision", "legacy_embedding"}: assert legacy["document_id"] not in restored.documents and pending["sourceId"] in restored.sources
     elif case == "legacy_collision": assert pending["sourceId"] in restored.documents and pending["sourceId"] not in restored.sources
-    elif case == "walkthrough_audience" or case == "evaluation_nan": assert not restored.walkthrough_runs
+    elif case in {"walkthrough_audience", "evaluation_nan", "evaluation_bool"}: assert not restored.walkthrough_runs
     elif case == "legacy_embedding": assert restored.rag_store.chunk_count_for_project(tenant_id="tenant_local", project_id=project_id) == 0
     elif case == "counter_overlong": assert restored._source_counter < 1_000_000
     else: assert not restored.sources and sibling["documentId"] in restored.documents
