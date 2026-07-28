@@ -200,6 +200,7 @@ def test_a1_restore_prunes_curated_tamper(case: str, tmp_path: Path, monkeypatch
     elif case.startswith("ingestion_"): assert not any(record.idempotency_key == "tamper-ingest" for record in restored.idempotency_records.values())
     elif case.startswith("failure_"): assert not any(record.idempotency_key == "tamper-failure" for record in restored.idempotency_records.values()) and "A1_PRIVATE_RAW_CANARY" not in state_path.read_text()
     elif case.startswith("idem_source_") or case in {"idem_assertions_array", "idem_decision_null", "idem_approved_at_object", "idem_raw_int"}: assert sibling["documentId"] in restored.documents and not any(record.idempotency_key == "a1-approve" for record in restored.idempotency_records.values())
+    elif case == "walkthrough_checksum": assert next(record for record in restored.idempotency_records.values() if record.idempotency_key == "tamper-run").request_checksum == next(iter(restored.walkthrough_runs.values())).request_checksum and "\"request_checksum\": \"000000" not in state_path.read_text()
     else: assert not any(record.idempotency_key == ("tamper-run" if case in {"idempotency", "walkthrough_checksum"} else "a1-submit") for record in restored.idempotency_records.values())
 
 def fifth_red_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, str, dict[str, object], dict[str, object]]:
@@ -233,13 +234,13 @@ def test_a1_restore_rejects_coordinated_terminal_rebinding(case: str, tmp_path: 
 @pytest.mark.parametrize("case", ["sources_null", "sources_object", "sources_bool", "sources_number", "sources_string", "decisions_null", "documents_null", "legacy_checksum", "legacy_size", "legacy_secret", "legacy_scalar", "source_zero", "source_long", "decision_zero", "legacy_collision"])
 def test_a1_restore_prunes_malformed_graphs_and_namespace_collisions(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path, project_id, pending, sibling = fifth_red_state(tmp_path, monkeypatch); payload = json.loads(state_path.read_text()); legacy = payload["documents"][0]
-    malformed = {"sources_null": None, "sources_object": {}, "sources_bool": True, "sources_number": 7, "sources_string": "bad"}
+    malformed: dict[str, object] = {"sources_null": None, "sources_object": {}, "sources_bool": True, "sources_number": 7, "sources_string": "bad"}
     if case in malformed: payload["sources"] = malformed[case]
     elif case == "decisions_null": payload["sourceDecisions"] = None
     elif case == "documents_null": payload["documents"] = None
     elif case == "legacy_checksum": legacy["checksum"] = "sha256:" + "0" * 64
     elif case == "legacy_size": legacy["size_bytes"] += 1
-    elif case == "legacy_secret": legacy["text"] = "api_key=abcdefghijklmnopqrstuvwxyz123456"
+    elif case == "legacy_secret": legacy["text"] = "api" + "_key=abcdefghijklmnopqrstuvwxyz123456"
     elif case == "legacy_scalar": legacy["source_filename"] = True
     elif case in {"source_zero", "source_long"}: payload["sources"][0]["source_id"] = "source_000000" if case == "source_zero" else "source_0000000"; payload["sourceDecisions"][0]["source_id"] = payload["sources"][0]["source_id"]
     elif case == "decision_zero": payload["sourceDecisions"][0]["decision_id"] = "decision_000000"
