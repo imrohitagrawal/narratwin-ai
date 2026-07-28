@@ -215,23 +215,29 @@ def rebind_idempotency_row(row: dict[str, object]) -> None:
     row["idempotency_record_id"] = "idem_" + hashlib.sha256(f"{row['tenant_id']}:{row['actor_id']}:{row['idempotency_scope']}:{row['endpoint']}:{row['idempotency_key']}".encode()).hexdigest()[:16]
     cast(dict[str, object], row["value"])["binding"] = [row[name] for name in ("tenant_id", "actor_id", "idempotency_scope", "endpoint", "request_checksum")]
 
-@pytest.mark.parametrize("case", ["failure_actor", "failure_endpoint", "walkthrough_request", "completed_error", "failed_walkthrough"])
+@pytest.mark.parametrize("case", ["failure_actor", "failure_endpoint", "failure_request", "walkthrough_request", "walkthrough_coordinated_request", "completed_error", "failed_walkthrough"])
 def test_a1_restore_rejects_coordinated_terminal_rebinding(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path, project_id, _, _ = fifth_red_state(tmp_path, monkeypatch); payload = json.loads(state_path.read_text())
-    key = "fifth-run" if case in {"walkthrough_request", "failed_walkthrough"} else "fifth-failure"; row = next(value for value in payload["idempotencyRecords"] if value["idempotency_key"] == key)
+    key = "fifth-run" if case in {"walkthrough_request", "walkthrough_coordinated_request", "failed_walkthrough"} else "fifth-failure"; row = next(value for value in payload["idempotencyRecords"] if value["idempotency_key"] == key)
     if case == "failure_actor":
         row["actor_id"] = "other_demo"; row["request_checksum"] = canonical_digest({"endpoint": "curated-submit", "schema": "source-curation-v1", "tenant": "tenant_local", "actor": "other_demo", "project": project_id, "filename": "large.md", "mime": "text/markdown", "fileSha256": hashlib.sha256(b"a" * (MAX_UPLOAD_BYTES + 1)).hexdigest(), "fileBytes": MAX_UPLOAD_BYTES + 1, "assertions": {"classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rights_basis": "PROJECT_OWNED", "rights_status": "ELIGIBLE", "usage_policy": "LOCAL_TEST_REUSE_ALLOWED", "source_version": "heartbeat1-public-v1"}, "action": "ACCEPT_FOR_REVIEW"})
+    elif case == "failure_request": row["request_checksum"] = canonical_digest({"endpoint": "curated-submit", "schema": "source-curation-v1", "tenant": "tenant_local", "actor": "curator_demo", "project": project_id, "filename": "large.md", "mime": "text/markdown", "fileSha256": hashlib.sha256(b"a" * MAX_UPLOAD_BYTES).hexdigest(), "fileBytes": MAX_UPLOAD_BYTES, "assertions": {"classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rights_basis": "PROJECT_OWNED", "rights_status": "ELIGIBLE", "usage_policy": "LOCAL_TEST_REUSE_ALLOWED", "source_version": "heartbeat1-public-v2"}, "action": "ACCEPT_FOR_REVIEW"})
     elif case == "failure_endpoint": row["endpoint"] = "POST /wrong"
-    elif case == "walkthrough_request": row["request_checksum"] = "sha256:" + hashlib.sha256(f"{project_id}\nRECRUITER\nen\nCONCISE\nCONFIDENT\nchanged request".encode()).hexdigest()
-    else: row["status"] = "COMPLETED" if case == "completed_error" else "FAILED"
+    elif case in {"walkthrough_request", "walkthrough_coordinated_request"}: row["request_checksum"] = "sha256:" + hashlib.sha256(f"{project_id}\nRECRUITER\nen\nCONCISE\nCONFIDENT\nchanged request".encode()).hexdigest()
+    if case == "walkthrough_coordinated_request":
+        next(run for run in payload["walkthroughRuns"] if run["run_id"] == cast(dict[str, object], row["value"])["id"])["request_checksum"] = row["request_checksum"]
+    elif case in {"completed_error", "failed_walkthrough"}: row["status"] = "COMPLETED" if case == "completed_error" else "FAILED"
     rebind_idempotency_row(row); state_path.write_text(json.dumps(payload)); restored = Stage4Service(state_path=state_path)
     if case == "failure_actor":
         denied = pytest.raises(Stage4Error, restored.submit_curated_source, principal=LocalPrincipal(actor_id="other_demo"), project_id=project_id, source_filename="large.md", content_type="text/markdown", data=b"a" * (MAX_UPLOAD_BYTES + 1), assertions=SourceAssertions("PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "ELIGIBLE", "LOCAL_TEST_REUSE_ALLOWED", "heartbeat1-public-v1"), schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key=key); assert denied.value.status_code == 403
-    elif case == "walkthrough_request":
+    elif case == "failure_request":
+        conflict = pytest.raises(Stage4Error, restored.submit_curated_source, principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, source_filename="large.md", content_type="text/markdown", data=b"a" * (MAX_UPLOAD_BYTES + 1), assertions=SourceAssertions("PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "ELIGIBLE", "LOCAL_TEST_REUSE_ALLOWED", "heartbeat1-public-v2"), schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key=key); assert conflict.value.status_code == 409
+    elif case in {"walkthrough_request", "walkthrough_coordinated_request"}:
+        if case == "walkthrough_coordinated_request": assert key in restored.idempotency_records
         conflict = pytest.raises(Stage4Error, restored.generate_walkthrough, principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="changed request", idempotency_key=key); assert conflict.value.status_code == 409
     else: assert not any(record.idempotency_key == key for record in restored.idempotency_records.values())
 
-@pytest.mark.parametrize("case", ["sources_null", "sources_object", "sources_bool", "sources_number", "sources_string", "decisions_null", "documents_null", "legacy_checksum", "legacy_size", "legacy_secret", "legacy_scalar", "source_zero", "source_long", "decision_zero", "legacy_collision"])
+@pytest.mark.parametrize("case", ["sources_null", "sources_object", "sources_bool", "sources_number", "sources_string", "decisions_null", "documents_null", "legacy_checksum", "legacy_size", "legacy_secret", "legacy_scalar", "source_zero", "source_long", "decision_zero", "legacy_collision", "walkthrough_audience", "evaluation_nan", "legacy_embedding", "counter_overlong"])
 def test_a1_restore_prunes_malformed_graphs_and_namespace_collisions(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path, project_id, pending, sibling = fifth_red_state(tmp_path, monkeypatch); payload = json.loads(state_path.read_text()); legacy = payload["documents"][0]
     malformed: dict[str, object] = {"sources_null": None, "sources_object": {}, "sources_bool": True, "sources_number": 7, "sources_string": "bad"}
@@ -244,14 +250,26 @@ def test_a1_restore_prunes_malformed_graphs_and_namespace_collisions(case: str, 
     elif case == "legacy_scalar": legacy["source_filename"] = True
     elif case in {"source_zero", "source_long"}: payload["sources"][0]["source_id"] = "source_000000" if case == "source_zero" else "source_0000000"; payload["sourceDecisions"][0]["source_id"] = payload["sources"][0]["source_id"]
     elif case == "decision_zero": payload["sourceDecisions"][0]["decision_id"] = "decision_000000"
+    elif case == "walkthrough_audience": payload["walkthroughRuns"][0]["audience"] = True
+    elif case == "evaluation_nan": payload["walkthroughRuns"][0]["evaluation"]["groundedness_score"] = float("nan")
+    elif case == "legacy_embedding": payload["ragStore"]["chunks"][0]["embedding"][0] += 1
+    elif case == "counter_overlong": payload["counters"]["source"] = 1_000_000
     else: legacy["document_id"] = pending["sourceId"]
     state_path.write_text(json.dumps(payload)); restored = Stage4Service(state_path=state_path); repaired = json.loads(state_path.read_text())
     assert project_id in restored.projects and isinstance(repaired["sources"], list) and isinstance(repaired["documents"], list)
     if case == "documents_null": assert pending["sourceId"] in restored.sources
     elif case.startswith("sources_") or case == "decisions_null": assert sibling["documentId"] in restored.documents
-    elif case.startswith("legacy_") and case != "legacy_collision": assert legacy["document_id"] not in restored.documents and pending["sourceId"] in restored.sources
+    elif case.startswith("legacy_") and case not in {"legacy_collision", "legacy_embedding"}: assert legacy["document_id"] not in restored.documents and pending["sourceId"] in restored.sources
     elif case == "legacy_collision": assert pending["sourceId"] in restored.documents and pending["sourceId"] not in restored.sources
+    elif case == "walkthrough_audience" or case == "evaluation_nan": assert not restored.walkthrough_runs
+    elif case == "legacy_embedding": assert restored.rag_store.chunk_count_for_project(tenant_id="tenant_local", project_id=project_id) == 0
+    elif case == "counter_overlong": assert restored._source_counter < 1_000_000
     else: assert not restored.sources and sibling["documentId"] in restored.documents
+
+def test_issue302_a1_envelope_docs_track_sixth_contract() -> None:
+    for path in ("docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md"):
+        text = Path(path).read_text(encoding="utf-8")
+        assert "610 hand-authored" not in text and "900 hand-authored" in text
 
 def test_issue302_a1_allowlist_is_exact_and_near_match_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     from scripts.quality import check_phase1_closure_docs as gate
