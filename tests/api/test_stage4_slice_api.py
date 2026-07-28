@@ -17,6 +17,55 @@ def frontend_default_knowledge() -> bytes:
     return match.group("knowledge").encode()
 
 
+PUBLIC_CURATED_FIXTURE = b"""# NarraTwin Heartbeat Public Fixture
+
+Project Lantern is a controlled local demonstration.
+The curator approves only public-safe project knowledge.
+Grounded chunks retain source and checksum identity.
+"""
+PUBLIC_CURATED_FORM = {
+    "curationSchemaVersion": "source-curation-v1",
+    "action": "ACCEPT_FOR_REVIEW",
+    "classification": "PUBLIC_SAFE",
+    "provenance": "PROJECT_AUTHORED_SYNTHETIC",
+    "rightsBasis": "PROJECT_OWNED",
+    "rightsStatus": "ELIGIBLE",
+    "usagePolicy": "LOCAL_TEST_REUSE_ALLOWED",
+    "sourceVersion": "heartbeat1-public-v1",
+}
+
+
+def test_a1_submit_allow_pending_and_exact_replay() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    headers = {"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-project"}
+    project = client.post("/api/v1/projects", json={"name": "Project Lantern"}, headers=headers).json()
+    path = f"/api/v1/projects/{project['projectId']}/knowledge-documents"
+    upload_headers = {"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit"}
+
+    response = client.post(
+        path,
+        data=PUBLIC_CURATED_FORM,
+        files={"file": ("heartbeat-public.md", PUBLIC_CURATED_FIXTURE, "text/markdown")},
+        headers=upload_headers,
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body.get("code") == "SOURCE_PENDING_REVIEW"
+    assert body["decisionState"] == "PENDING_REVIEW"
+    assert body["rawContentRetained"] is True
+    assert body["idempotencyReplayed"] is False
+    replay = client.post(
+        path,
+        data=PUBLIC_CURATED_FORM,
+        files={"file": ("heartbeat-public.md", PUBLIC_CURATED_FIXTURE, "text/markdown")},
+        headers=upload_headers,
+    )
+    assert replay.status_code == 201
+    assert replay.json() == {**body, "idempotencyReplayed": True}
+
+
 def test_write_endpoints_require_idempotency_key() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
