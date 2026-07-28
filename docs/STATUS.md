@@ -1008,3 +1008,10 @@ Required update rules:
 | 2026-07-10 | PR `#76` opened for issue `#66` Context 2 planning for issue `#39` on branch `phase-1-closure-39-context2-idempotency-lease-outbox`; ADR `0009` defines advisory-only idempotency, lease, and outbox contracts while `#39` remains open and all runtime implementation remains deferred. |
 | 2026-07-10 | PR `#77` merged migration/rollback context planning for issue `#67`; issue `#67` is closed and runtime migration tooling remains deferred pending later implementation contexts. |
 | 2026-07-10 | PR `#78` opened for issue `#68` on branch `phase-1-closure-39-context4-backup-restore-drill`; advisory-only ADR and evidence-planning updates for `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` added no runtime implementation. |
+## Issue 302 Heartbeat 1 A1 status
+
+- State: implementation and local gate verification in progress on `phase-1-closure-302-heartbeat1-a1-eligible`.
+- Scope: one eligible curated source path from submit through approval, atomic ingestion, persistence, restore repair, and deterministic replay.
+- Frozen envelope: exactly 10 changed files, at most 610 hand-authored changed lines, and six surfaces.
+- Evidence authority: issue `#302` plus its bound preflight comment; both must be re-resolved before push, review, and merge.
+- Deferred: A2 exclusion, UI/browser proof, Heartbeat 2, paid providers, hosted/public behavior, and production-readiness claims.
