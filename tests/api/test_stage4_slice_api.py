@@ -99,8 +99,8 @@ def test_a1_curated_scope_and_logs_are_bounded(
     assert "source.approval.denied" in caplog.text
     assert raised.value.status_code == status
     assert "heartbeat-public.md" not in caplog.text and "Project Lantern" not in caplog.text
-@pytest.mark.parametrize("case", ["success", "pending", "wrong_kind", "policy_drift", "mixed"])
-def test_a1_curated_ingestion_is_atomic(case: str) -> None:
+@pytest.mark.parametrize("case", ["success", "pending", "wrong_kind", "policy_drift", "mixed", "persist_failure"])
+def test_a1_curated_ingestion_is_atomic(case: str, monkeypatch: pytest.MonkeyPatch) -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id, first = create_a1_pending(client)
@@ -116,7 +116,12 @@ def test_a1_curated_ingestion_is_atomic(case: str) -> None:
     ).json()
     if case == "policy_drift":
         stage4_service.source_decisions[str(first["decisionId"])].policy_version = "source-curation-policy-v0"
-    ids = {"success": [first["sourceId"]], "pending": [second["sourceId"]], "wrong_kind": [legacy["documentId"]], "policy_drift": [first["sourceId"]], "mixed": [first["sourceId"], second["sourceId"]]}[case]
+    ids = {"success": [first["sourceId"]], "pending": [second["sourceId"]], "wrong_kind": [legacy["documentId"]], "policy_drift": [first["sourceId"]], "mixed": [first["sourceId"], second["sourceId"]], "persist_failure": [first["sourceId"]]}[case]
+    if case == "persist_failure":
+        monkeypatch.setattr(stage4_service, "_persist_locked", lambda: (_ for _ in ()).throw(OSError("disk")))
+        with pytest.raises(OSError): stage4_service.ingest_curated_sources(principal=LocalPrincipal("tenant_local", "curator_demo"), project_id=project_id, source_ids=ids, idempotency_key="a1-ingest-persist")
+        assert stage4_service.rag_store.chunk_count_for_project(tenant_id="tenant_local", project_id=project_id) == 0 and stage4_service.sources[str(first["sourceId"])].ingestion_status == "NOT_STARTED"
+        return
     response = client.post(
         f"/api/v1/projects/{project_id}/ingestion-runs", json={"documentIds": [], "sourceIds": ids},
         headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": f"a1-ingest-{case}"},
@@ -135,7 +140,6 @@ def test_a1_transport_413_is_bounded_and_nondurable(caplog: pytest.LogCaptureFix
     caplog.set_level(20, logger="narratwin-ai")
     scope = {"type": "http", "method": "POST", "path": "/api/v1/projects/proj_000001/knowledge-documents",
              "headers": [(b"content-length", str(MAX_UPLOAD_REQUEST_BYTES).encode())]}
-
     async def receive() -> dict[str, object]:
         nonlocal calls
         calls += 1

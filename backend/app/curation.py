@@ -78,7 +78,6 @@ def allowed_for_review(assertions: SourceAssertions) -> bool:
             assertions.rights_status, assertions.usage_policy) == (
             "PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "ELIGIBLE",
             "LOCAL_TEST_REUSE_ALLOWED") and bool(assertions.source_version.strip())
-
 def restore_curated(source_rows: list[Any], decision_rows: list[Any], projects: Mapping[str, Any],
                     ) -> tuple[dict[str, SourceRecord], dict[str, SourceDecisionRecord]]:
     sources: dict[str, SourceRecord] = {}
@@ -99,7 +98,8 @@ def restore_curated(source_rows: list[Any], decision_rows: list[Any], projects: 
         source = sources.get(decision.source_id)
         identity = (decision.tenant_id, decision.actor_id, decision.project_id, decision.checksum,
                     decision.source_version, decision.assertions_fingerprint)
-        if source and decision.decision_state in {"PENDING_REVIEW", "APPROVED"} and decision.raw_content_retained and decision.policy_version == CURATION_POLICY_VERSION and identity == (source.tenant_id, source.owner_id, source.project_id, source.checksum, source.source_version, source.assertions_fingerprint):
+        legal_pair = (decision.decision_state, decision.action, decision.reason, decision.approved_at is not None) in {("PENDING_REVIEW", "ACCEPT_FOR_REVIEW", "AWAITING_CURATOR_APPROVAL", False), ("APPROVED", "APPROVE", "CURATOR_APPROVED_POLICY_VERIFIED", True)}
+        if source and legal_pair and decision.raw_content_retained and decision.policy_version == CURATION_POLICY_VERSION and identity == (source.tenant_id, source.owner_id, source.project_id, source.checksum, source.source_version, source.assertions_fingerprint):
             decisions[decision.decision_id] = decision
     linked = {decision.source_id for decision in decisions.values()}
     return {key: value for key, value in sources.items() if key in linked}, decisions

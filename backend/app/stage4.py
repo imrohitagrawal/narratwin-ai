@@ -376,7 +376,7 @@ class Stage4Service:
                 self.documents.pop(value.document_id, None)
         elif isinstance(value, IngestionRunRecord):
             prior_rag_store = InMemoryRagStore.from_dict(snapshot["ragStore"])
-            failed_document_ids = set(value.document_ids)
+            failed_document_ids = set(value.document_ids or value.source_ids)
             self.rag_store.prune(
                 lambda chunk: not (
                     chunk.tenant_id == value.tenant_id
@@ -390,9 +390,10 @@ class Stage4Service:
                 )
             )
             self.ingestion_runs.pop(value.ingestion_run_id, None)
-            for document_id in value.document_ids:
+            for document_id in value.document_ids or value.source_ids:
                 if document_id in snapshot["documents"]:
                     self.documents[document_id] = snapshot["documents"][document_id]
+                elif document_id in snapshot["sources"]: self.sources[document_id] = snapshot["sources"][document_id]
         elif isinstance(value, WalkthroughRunRecord):
             self.walkthrough_runs.pop(value.run_id, None)
         elif isinstance(value, CuratedOutcome):
