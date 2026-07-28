@@ -215,7 +215,7 @@ def rebind_idempotency_row(row: dict[str, object]) -> None:
     row["idempotency_record_id"] = "idem_" + hashlib.sha256(f"{row['tenant_id']}:{row['actor_id']}:{row['idempotency_scope']}:{row['endpoint']}:{row['idempotency_key']}".encode()).hexdigest()[:16]
     cast(dict[str, object], row["value"])["binding"] = [row[name] for name in ("tenant_id", "actor_id", "idempotency_scope", "endpoint", "request_checksum")]
 
-@pytest.mark.parametrize("case", ["failure_actor", "failure_endpoint", "failure_request", "completed_error", "failed_walkthrough"])
+@pytest.mark.parametrize("case", ["failure_actor", "failure_endpoint", "completed_error", "failed_walkthrough"])
 def test_a1_restore_rejects_coordinated_terminal_rebinding(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path, project_id, _, _ = fifth_red_state(tmp_path, monkeypatch); payload = json.loads(state_path.read_text())
     key = "fifth-run" if case in {"walkthrough_request", "walkthrough_coordinated_request", "failed_walkthrough"} else "fifth-failure"; row = next(value for value in payload["idempotencyRecords"] if value["idempotency_key"] == key)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 import re
 import time
 from collections.abc import Callable, Mapping
@@ -523,6 +524,8 @@ class Stage4Service:
         except (AttributeError, Stage4Error, TypeError):
             return False
     def _restored_walkthrough_run_is_valid(self, run: WalkthroughRunRecord) -> bool:
+        if not isinstance(run.audience, str) or not isinstance(run.requested_language, str) or not isinstance(run.depth, str) or not isinstance(run.style, str):
+            return False
         if not isinstance(run.request_checksum, str) or run.request_checksum and re.fullmatch(r"sha256:[0-9a-f]{64}", run.request_checksum) is None:
             return False
         project = self.projects.get(run.project_id)
@@ -566,6 +569,8 @@ class Stage4Service:
             return False
         if run.evaluation is None:
             return True
+        if any(not math.isfinite(float(getattr(run.evaluation, name))) for name in ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage")):
+            return False
         if (
             run.evaluation.run_id != run.run_id
             or run.evaluation.tenant_id != run.tenant_id
