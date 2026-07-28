@@ -609,6 +609,8 @@ ISSUE_300_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_issue280_forensic_verifier.py",
 }
+ISSUE_302_A1_BRANCH = "phase-1-closure-302-heartbeat1-a1-eligible"
+ISSUE_302_A1_ALLOWED_CHANGED_FILES = {"backend/app/curation.py", "backend/app/stage4.py", "backend/app/main.py", "tests/api/test_stage4_slice_api.py", "docs/API_CONTRACT.md", "docs/ADR/0040-heartbeat1-a1-curated-eligibility.md", "docs/TRACEABILITY.md", "docs/STATUS.md", "docs/STAGE_ISSUE_PLAN.md", "scripts/quality/check_phase1_closure_docs.py"}
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
     "tests/unit/test_governance_preflight_github.py", ".github/workflows/quality-gates.yml",
@@ -3907,6 +3909,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_296_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-300-issue280-semantic-closure-reset":
         allowed_files = ISSUE_300_ALLOWED_CHANGED_FILES
+    elif branch == ISSUE_302_A1_BRANCH:
+        allowed_files = ISSUE_302_A1_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-302-"):
+        allowed_files = set()
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
