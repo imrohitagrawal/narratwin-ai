@@ -90,7 +90,8 @@ def test_a1_approval_rechecks_bindings_and_replays(case: str) -> None:
         json=payload, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": f"a1-approve-{case}"},
     )
     assert response.status_code == (200 if case == "matching" else 409)
-    assert response.json().get("code") == ("SOURCE_APPROVED" if case == "matching" else "SOURCE_NOT_APPROVABLE")
+    code = response.json().get("code") if case == "matching" else response.json()["error"]["code"]
+    assert code == ("SOURCE_APPROVED" if case == "matching" else "SOURCE_NOT_APPROVABLE")
 
 
 @pytest.mark.parametrize("principal,project_id,status", [
@@ -102,6 +103,7 @@ def test_a1_curated_scope_and_logs_are_bounded(
     principal: LocalPrincipal, project_id: str, status: int, caplog: pytest.LogCaptureFixture,
 ) -> None:
     reset_app_state_for_tests()
+    caplog.set_level(20, logger="narratwin-ai")
     create_a1_pending(TestClient(app))
     with pytest.raises(Stage4Error) as raised:
         stage4_service.approve_document(principal=principal, project_id=project_id,

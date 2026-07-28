@@ -219,6 +219,14 @@ class ApproveDocumentRequest(BaseModel):
 
     approval_status: Literal["APPROVED"] = Field(alias="approvalStatus")
     review_note: str = Field(default="", alias="reviewNote")
+    curation_schema_version: str | None = Field(default=None, alias="curationSchemaVersion")
+    action: str | None = None
+    source_id: str | None = Field(default=None, alias="sourceId")
+    decision_id: str | None = Field(default=None, alias="decisionId")
+    policy_version: str | None = Field(default=None, alias="policyVersion")
+    source_version: str | None = Field(default=None, alias="sourceVersion")
+    checksum: str | None = None
+    assertions_fingerprint: str | None = Field(default=None, alias="assertionsFingerprint")
 
 
 class StartIngestionRequest(BaseModel):
@@ -1569,7 +1577,7 @@ async def upload_knowledge_document(
 
 @api_v1.patch(
     "/projects/{project_id}/knowledge-documents/{document_id}/approval",
-    response_model=DocumentResponse,
+    response_model=DocumentResponse | CuratedSourceResponse,
     tags=["knowledge"],
 )
 def approve_knowledge_document(
@@ -1578,8 +1586,13 @@ def approve_knowledge_document(
     request: ApproveDocumentRequest,
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
-) -> DocumentResponse:
-    del request
+) -> DocumentResponse | CuratedSourceResponse:
+    if document_id in stage4_service.sources:
+        outcome = stage4_service.approve_curated_source(
+            principal=principal, project_id=project_id, source_id=document_id,
+            bindings=request.model_dump(by_alias=True, exclude_none=True), idempotency_key=idempotency_key,
+        )
+        return CuratedSourceResponse.model_validate(outcome)
     document = stage4_service.approve_document(
         principal=principal,
         project_id=project_id,

@@ -832,6 +832,14 @@ class Stage4Service:
         document_id: str,
         idempotency_key: str | None = None,
     ) -> DocumentRecord:
+        if document_id in self.sources:
+            try:
+                self._require_project(principal=principal, project_id=project_id)
+            except Stage4Error as exc:
+                log_event(event_name="source.approval.denied", tenant_id=principal.tenant_id,
+                          actor_id=principal.actor_id, project_id=project_id, source_id=document_id,
+                          status=exc.status_code, code=exc.code)
+                raise
         return self._idempotent(
             principal=principal,
             endpoint="PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval",
@@ -856,6 +864,40 @@ class Stage4Service:
         document.approval_status = "APPROVED"
         document.approved_at = _now()
         return document
+
+    def approve_curated_source(
+        self, *, principal: LocalPrincipal, project_id: str, source_id: str,
+        bindings: Mapping[str, str], idempotency_key: str | None,
+    ) -> CuratedOutcome:
+        fingerprint = canonical_digest({"endpoint": "curated-approval", "tenant": principal.tenant_id,
+                                        "actor": principal.actor_id, "project": project_id, **bindings})
+        return self._idempotent(
+            principal=principal, endpoint="PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval",
+            scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint,
+            create=lambda: self._approve_curated_once(principal, project_id, source_id, bindings),
+        )
+
+    def _approve_curated_once(
+        self, principal: LocalPrincipal, project_id: str, source_id: str, bindings: Mapping[str, str],
+    ) -> CuratedOutcome:
+        self._require_project(principal=principal, project_id=project_id)
+        source = self.sources.get(source_id)
+        decision = self.source_decisions.get(bindings.get("decisionId", ""))
+        expected = ("source-curation-v1", "APPROVE", source_id, CURATION_POLICY_VERSION)
+        supplied = (bindings.get("curationSchemaVersion"), bindings.get("action"), bindings.get("sourceId"),
+                    bindings.get("policyVersion"))
+        if source is None or source.project_id != project_id:
+            raise Stage4Error(404, "NOT_FOUND", "Curated source not found.")
+        if decision is None or supplied != expected or decision.source_id != source_id or decision.decision_state != "PENDING_REVIEW" or (
+            bindings.get("sourceVersion"), bindings.get("checksum"), bindings.get("assertionsFingerprint")
+        ) != (source.source_version, source.checksum, source.assertions_fingerprint):
+            raise Stage4Error(409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale.")
+        decision.action, decision.reason, decision.decision_state = "APPROVE", "CURATOR_APPROVED_POLICY_VERIFIED", "APPROVED"
+        decision.approved_at = _now()
+        return CuratedOutcome("SOURCE_APPROVED", source_id, decision.decision_id, source.tenant_id, source.owner_id,
+                              project_id, source.checksum, source.source_version, source.assertions_fingerprint,
+                              decision.policy_version, decision.decision_state, source.ingestion_status, True,
+                              decision.approved_at)
 
     def ingest_documents(
         self,
