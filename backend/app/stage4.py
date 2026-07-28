@@ -9,7 +9,7 @@ import re
 import time
 from collections.abc import Callable, Mapping
 from copy import deepcopy
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path, PurePath
 from threading import RLock
@@ -44,6 +44,17 @@ from backend.app.observability import (
     log_event,
     record_walkthrough_metrics,
     with_trace,
+)
+from backend.app.curation import (
+    CURATION_POLICY_VERSION,
+    CURATION_SCHEMA_VERSION,
+    CuratedOutcome,
+    SourceAssertions,
+    SourceDecisionRecord,
+    SourceRecord,
+    allowed_for_review,
+    assertions_digest,
+    canonical_digest,
 )
 
 MAX_UPLOAD_BYTES = 1_048_576
@@ -216,6 +227,8 @@ class Stage4Service:
         self.state_path = state_path
         self.projects: dict[str, ProjectRecord] = {}
         self.documents: dict[str, DocumentRecord] = {}
+        self.sources: dict[str, SourceRecord] = {}
+        self.source_decisions: dict[str, SourceDecisionRecord] = {}
         self.ingestion_runs: dict[str, IngestionRunRecord] = {}
         self.walkthrough_runs: dict[str, WalkthroughRunRecord] = {}
         self.idempotency_records: dict[tuple[str, str, str, str, str], IdempotencyRecord] = {}
@@ -224,6 +237,7 @@ class Stage4Service:
         self._operation_lock = RLock()
         self._project_counter = 0
         self._document_counter = 0
+        self._source_counter = 0
         self._ingestion_counter = 0
         self._run_counter = 0
         self._restore()
@@ -237,6 +251,8 @@ class Stage4Service:
         self.rag_store.clear()
         self.projects.clear()
         self.documents.clear()
+        self.sources.clear()
+        self.source_decisions.clear()
         self.ingestion_runs.clear()
         self.walkthrough_runs.clear()
         self.idempotency_records.clear()
@@ -244,6 +260,7 @@ class Stage4Service:
         self._active_generations.clear()
         self._project_counter = 0
         self._document_counter = 0
+        self._source_counter = 0
         self._ingestion_counter = 0
         self._run_counter = 0
 
@@ -271,6 +288,26 @@ class Stage4Service:
                 and self.projects[document.project_id].tenant_id == document.tenant_id
                 and self.projects[document.project_id].owner_id == document.owner_id
             }
+            self.sources = {
+                str(row["source_id"]): SourceRecord(**row)
+                for row in payload.get("sources", [])
+                if isinstance(row, dict) and "source_id" in row
+            }
+            self.source_decisions = {
+                str(row["decision_id"]): SourceDecisionRecord(**row)
+                for row in payload.get("sourceDecisions", [])
+                if isinstance(row, dict) and "decision_id" in row
+            }
+            self.sources = {
+                key: source for key, source in self.sources.items()
+                if self._restored_source_is_valid(source)
+            }
+            self.source_decisions = {
+                key: decision for key, decision in self.source_decisions.items()
+                if self._restored_decision_is_valid(decision)
+            }
+            linked_sources = {decision.source_id for decision in self.source_decisions.values()}
+            self.sources = {key: source for key, source in self.sources.items() if key in linked_sources}
             self.ingestion_runs = {
                 str(row["ingestion_run_id"]): IngestionRunRecord(**row)
                 for row in payload.get("ingestionRuns", [])
@@ -321,16 +358,19 @@ class Stage4Service:
             counters = payload.get("counters", {})
             project_counter = max_numeric_suffix(self.projects, "proj_")
             document_counter = max_numeric_suffix(self.documents, "doc_")
+            source_counter = max(max_numeric_suffix(self.sources, "source_"), max_numeric_suffix(self.source_decisions, "decision_"))
             ingestion_counter = max_numeric_suffix(self.ingestion_runs, "ing_")
             run_counter = max_numeric_suffix(self.walkthrough_runs, "run_")
             if isinstance(counters, dict):
                 self._project_counter = max(int(counters.get("project", project_counter)), project_counter)
                 self._document_counter = max(int(counters.get("document", document_counter)), document_counter)
+                self._source_counter = max(int(counters.get("source", source_counter)), source_counter)
                 self._ingestion_counter = max(int(counters.get("ingestion", ingestion_counter)), ingestion_counter)
                 self._run_counter = max(int(counters.get("run", run_counter)), run_counter)
             else:
                 self._project_counter = project_counter
                 self._document_counter = document_counter
+                self._source_counter = source_counter
                 self._ingestion_counter = ingestion_counter
                 self._run_counter = run_counter
         except (KeyError, TypeError, ValueError) as exc:
@@ -381,9 +421,13 @@ class Stage4Service:
                     self.documents[document_id] = snapshot["documents"][document_id]
         elif isinstance(value, WalkthroughRunRecord):
             self.walkthrough_runs.pop(value.run_id, None)
+        elif isinstance(value, CuratedOutcome):
+            self.sources = deepcopy(snapshot["sources"])
+            self.source_decisions = deepcopy(snapshot["sourceDecisions"])
         counters = snapshot["counters"]
         self._project_counter = max(int(counters["project"]), max_numeric_suffix(self.projects, "proj_"))
         self._document_counter = max(int(counters["document"]), max_numeric_suffix(self.documents, "doc_"))
+        self._source_counter = max(int(counters["source"]), max_numeric_suffix(self.sources, "source_"))
         self._ingestion_counter = max(int(counters["ingestion"]), max_numeric_suffix(self.ingestion_runs, "ing_"))
         self._run_counter = max(int(counters["run"]), max_numeric_suffix(self.walkthrough_runs, "run_"))
 
@@ -400,6 +444,29 @@ class Stage4Service:
             and self.documents[document_id].owner_id == run.actor_id
             and self.documents[document_id].project_id == run.project_id
             for document_id in run.document_ids
+        )
+
+    def _restored_source_is_valid(self, source: SourceRecord) -> bool:
+        project = self.projects.get(source.project_id)
+        return bool(
+            project
+            and project.tenant_id == source.tenant_id
+            and project.owner_id == source.owner_id
+            and source.checksum == hashlib.sha256(source.text.encode("utf-8")).hexdigest()
+            and source.ingestion_status in {"NOT_STARTED", "INGESTED"}
+        )
+
+    def _restored_decision_is_valid(self, decision: SourceDecisionRecord) -> bool:
+        source = self.sources.get(decision.source_id)
+        return bool(
+            source
+            and decision.decision_state in {"PENDING_REVIEW", "APPROVED"}
+            and decision.raw_content_retained
+            and (decision.tenant_id, decision.actor_id, decision.project_id)
+            == (source.tenant_id, source.owner_id, source.project_id)
+            and (decision.checksum, decision.source_version, decision.assertions_fingerprint)
+            == (source.checksum, source.source_version, source.assertions_fingerprint)
+            and decision.policy_version == CURATION_POLICY_VERSION
         )
 
     def _restored_ingestion_run_has_chunks(self, run: IngestionRunRecord) -> bool:
@@ -543,6 +610,8 @@ class Stage4Service:
             "ragStore": self.rag_store.to_dict(),
             "projects": deepcopy(self.projects),
             "documents": deepcopy(self.documents),
+            "sources": deepcopy(self.sources),
+            "sourceDecisions": deepcopy(self.source_decisions),
             "ingestionRuns": deepcopy(self.ingestion_runs),
             "walkthroughRuns": deepcopy(self.walkthrough_runs),
             "idempotencyRecords": self.idempotency_records.copy(),
@@ -551,6 +620,7 @@ class Stage4Service:
             "counters": {
                 "project": self._project_counter,
                 "document": self._document_counter,
+                "source": self._source_counter,
                 "ingestion": self._ingestion_counter,
                 "run": self._run_counter,
             },
@@ -563,6 +633,8 @@ class Stage4Service:
                 "schema": "stage4-local-state-v1",
                 "projects": [asdict(project) for project in self.projects.values()],
                 "documents": [asdict(document) for document in self.documents.values()],
+                "sources": [asdict(source) for source in self.sources.values()],
+                "sourceDecisions": [asdict(decision) for decision in self.source_decisions.values()],
                 "ingestionRuns": [asdict(run) for run in self.ingestion_runs.values()],
                 "walkthroughRuns": [
                     walkthrough_run_to_dict(run) for run in self.walkthrough_runs.values()
@@ -575,6 +647,7 @@ class Stage4Service:
                 "counters": {
                     "project": self._project_counter,
                     "document": self._document_counter,
+                    "source": self._source_counter,
                     "ingestion": self._ingestion_counter,
                     "run": self._run_counter,
                 },
@@ -703,6 +776,53 @@ class Stage4Service:
         )
         self.documents[document.document_id] = document
         return document
+
+    def submit_curated_source(
+        self, *, principal: LocalPrincipal, project_id: str, source_filename: str,
+        content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str,
+        action: str, idempotency_key: str | None = None,
+    ) -> CuratedOutcome:
+        fingerprint = canonical_digest({
+            "endpoint": "curated-submit", "schema": schema_version, "tenant": principal.tenant_id,
+            "actor": principal.actor_id, "project": project_id, "filename": source_filename,
+            "mime": content_type, "fileSha256": hashlib.sha256(data).hexdigest(),
+            "fileBytes": len(data), "assertions": asdict(assertions), "action": action,
+        })
+        return self._idempotent(
+            principal=principal, endpoint="POST /api/v1/projects/{projectId}/knowledge-documents",
+            scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint,
+            create=lambda: self._submit_curated_source_once(
+                principal, project_id, source_filename, content_type, data, assertions, schema_version, action
+            ),
+        )
+
+    def _submit_curated_source_once(
+        self, principal: LocalPrincipal, project_id: str, source_filename: str,
+        content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str, action: str,
+    ) -> CuratedOutcome:
+        self._require_project(principal=principal, project_id=project_id)
+        if schema_version != CURATION_SCHEMA_VERSION or action != "ACCEPT_FOR_REVIEW" or not allowed_for_review(assertions):
+            raise Stage4Error(422, "VALIDATION_ERROR", "Curated source assertions are incomplete or ineligible.")
+        filename = sanitize_filename(source_filename)
+        suffix, mime = PurePath(filename).suffix.lower(), normalize_content_type(content_type)
+        if suffix not in ALLOWED_EXTENSIONS or mime != ALLOWED_CONTENT_TYPES_BY_EXTENSION.get(suffix):
+            raise Stage4Error(415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted.")
+        validate_upload_bytes(data)
+        text = decode_upload(data)
+        if not text.strip() or contains_secret_like_content(text) or contains_prompt_injection(text):
+            code = "SECRET_LIKE_CONTENT" if contains_secret_like_content(text) else "UNSAFE_DOCUMENT_CONTENT"
+            raise Stage4Error(422, code, "Curated source content is not safe to retain.")
+        self._source_counter += 1
+        source_id, decision_id, now = f"source_{self._source_counter:06d}", f"decision_{self._source_counter:06d}", _now()
+        checksum, assertion_hash = hashlib.sha256(data).hexdigest(), assertions_digest(assertions)
+        source = SourceRecord(source_id, principal.tenant_id, principal.actor_id, project_id, filename, mime,
+                              len(data), checksum, text, assertions.source_version, assertion_hash, created_at=now)
+        decision = SourceDecisionRecord(decision_id, source_id, principal.tenant_id, principal.actor_id,
+                                        project_id, checksum, assertions.source_version, assertion_hash, created_at=now)
+        self.sources[source_id], self.source_decisions[decision_id] = source, decision
+        return CuratedOutcome("SOURCE_PENDING_REVIEW", source_id, decision_id, principal.tenant_id,
+                              principal.actor_id, project_id, checksum, assertions.source_version,
+                              assertion_hash, CURATION_POLICY_VERSION, "PENDING_REVIEW", "NOT_STARTED", True, now)
 
     def approve_document(
         self,
@@ -1249,6 +1369,8 @@ class Stage4Service:
                     raise Stage4Error(409, "IDEMPOTENCY_IN_PROGRESS", "Idempotency key is already in progress.")
                 if existing.status == "FAILED":
                     raise cast(Stage4Error, existing.value)
+                if isinstance(existing.value, CuratedOutcome):
+                    return cast(T, replace(existing.value, idempotency_replayed=True))
                 return cast(T, existing.value)
             if self._idempotency_count_for_tenant(principal=principal) >= MAX_IDEMPOTENCY_RECORDS_PER_TENANT:
                 raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit.")

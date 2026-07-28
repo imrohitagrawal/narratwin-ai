@@ -12,7 +12,7 @@ from threading import Lock
 from typing import Annotated, Literal, cast
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, FastAPI, File, Header, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, FastAPI, File, Form, Header, HTTPException, Request, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -20,6 +20,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.app.rag.models import OWNER_LOCAL
+from backend.app.curation import SourceAssertions
 from backend.app.observability import is_langfuse_enabled
 from backend.app.stage4 import (
     MAX_API_REQUEST_BYTES,
@@ -471,6 +472,26 @@ class DocumentResponse(BaseModel):
     ingestion_status: Literal["NOT_STARTED", "INGESTED"] = Field(alias="ingestionStatus")
     created_at: str = Field(alias="createdAt")
     approved_at: str | None = Field(default=None, alias="approvedAt")
+
+
+class CuratedSourceResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True, from_attributes=True)
+
+    code: str
+    source_id: str = Field(alias="sourceId")
+    decision_id: str = Field(alias="decisionId")
+    tenant_id: str = Field(alias="tenantId")
+    owner_id: str = Field(alias="ownerId")
+    project_id: str = Field(alias="projectId")
+    checksum: str
+    source_version: str = Field(alias="sourceVersion")
+    assertions_fingerprint: str = Field(alias="assertionsFingerprint")
+    policy_version: str = Field(alias="policyVersion")
+    decision_state: str = Field(alias="decisionState")
+    ingestion_status: str = Field(alias="ingestionStatus")
+    raw_content_retained: bool = Field(alias="rawContentRetained")
+    created_at: str = Field(alias="createdAt")
+    idempotency_replayed: bool = Field(alias="idempotencyReplayed")
 
 
 class IngestionRunResponse(BaseModel):
@@ -1505,7 +1526,7 @@ def create_project(
 @api_v1.post(
     "/projects/{project_id}/knowledge-documents",
     status_code=201,
-    response_model=DocumentResponse,
+    response_model=DocumentResponse | CuratedSourceResponse,
     tags=["knowledge"],
 )
 async def upload_knowledge_document(
@@ -1513,8 +1534,28 @@ async def upload_knowledge_document(
     principal: LocalPrincipal = Depends(local_principal),
     idempotency_key: str | None = Depends(idempotency_key_header),
     file: UploadFile = File(...),
-) -> DocumentResponse:
+    curation_schema_version: str | None = Form(default=None, alias="curationSchemaVersion"),
+    action: str | None = Form(default=None),
+    classification: str | None = Form(default=None),
+    provenance: str | None = Form(default=None),
+    rights_basis: str | None = Form(default=None, alias="rightsBasis"),
+    rights_status: str | None = Form(default=None, alias="rightsStatus"),
+    usage_policy: str | None = Form(default=None, alias="usagePolicy"),
+    source_version: str | None = Form(default=None, alias="sourceVersion"),
+) -> DocumentResponse | CuratedSourceResponse:
     data = await read_upload_with_limit(file)
+    curated_fields = (curation_schema_version, action, classification, provenance, rights_basis,
+                      rights_status, usage_policy, source_version)
+    if any(value is not None for value in curated_fields):
+        outcome = stage4_service.submit_curated_source(
+            principal=principal, project_id=project_id, source_filename=file.filename or "",
+            content_type=file.content_type or "application/octet-stream", data=data,
+            assertions=SourceAssertions(classification or "", provenance or "", rights_basis or "",
+                                        rights_status or "", usage_policy or "", source_version or ""),
+            schema_version=curation_schema_version or "", action=action or "",
+            idempotency_key=idempotency_key,
+        )
+        return CuratedSourceResponse.model_validate(outcome)
     document = stage4_service.upload_document(
         principal=principal,
         project_id=project_id,
