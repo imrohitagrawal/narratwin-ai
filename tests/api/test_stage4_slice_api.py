@@ -202,6 +202,56 @@ def test_a1_restore_prunes_curated_tamper(case: str, tmp_path: Path, monkeypatch
     elif case.startswith("idem_source_") or case in {"idem_assertions_array", "idem_decision_null", "idem_approved_at_object", "idem_raw_int"}: assert sibling["documentId"] in restored.documents and not any(record.idempotency_key == "a1-approve" for record in restored.idempotency_records.values())
     else: assert not any(record.idempotency_key == ("tamper-run" if case in {"idempotency", "walkthrough_checksum"} else "a1-submit") for record in restored.idempotency_records.values())
 
+def fifth_red_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, str, dict[str, object], dict[str, object]]:
+    state_path = tmp_path / "fifth-red.json"; monkeypatch.setattr(stage4_service, "state_path", state_path); reset_app_state_for_tests(); client = TestClient(app)
+    project_id, pending = create_a1_pending(client); sibling = client.post(f"/api/v1/projects/{project_id}/knowledge-documents", files={"file": ("legacy-sibling.md", PUBLIC_CURATED_FIXTURE, "text/markdown")}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "fifth-sibling"}).json()
+    approve_a1(client, project_id, pending); client.post(f"/api/v1/projects/{project_id}/ingestion-runs", json={"documentIds": [], "sourceIds": [pending["sourceId"]]}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "fifth-ingest"})
+    client.post(f"/api/v1/projects/{project_id}/walkthrough-runs", json={"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Project Lantern controlled local demonstration curator approves public-safe project knowledge grounded chunks source checksum identity."}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "fifth-run"})
+    client.post(f"/api/v1/projects/{project_id}/knowledge-documents", data=PUBLIC_CURATED_FORM, files={"file": ("large.md", b"a" * (MAX_UPLOAD_BYTES + 1), "text/markdown")}, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "fifth-failure"})
+    return state_path, project_id, pending, sibling
+
+def rebind_idempotency_row(row: dict[str, object]) -> None:
+    row["idempotency_record_id"] = "idem_" + hashlib.sha256(f"{row['tenant_id']}:{row['actor_id']}:{row['idempotency_scope']}:{row['endpoint']}:{row['idempotency_key']}".encode()).hexdigest()[:16]
+    cast(dict[str, object], row["value"])["binding"] = [row[name] for name in ("tenant_id", "actor_id", "idempotency_scope", "endpoint", "request_checksum")]
+
+@pytest.mark.parametrize("case", ["failure_actor", "failure_endpoint", "walkthrough_request", "completed_error", "failed_walkthrough"])
+def test_a1_restore_rejects_coordinated_terminal_rebinding(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    state_path, project_id, _, _ = fifth_red_state(tmp_path, monkeypatch); payload = json.loads(state_path.read_text())
+    key = "fifth-run" if case in {"walkthrough_request", "failed_walkthrough"} else "fifth-failure"; row = next(value for value in payload["idempotencyRecords"] if value["idempotency_key"] == key)
+    if case == "failure_actor":
+        row["actor_id"] = "other_demo"; row["request_checksum"] = canonical_digest({"endpoint": "curated-submit", "schema": "source-curation-v1", "tenant": "tenant_local", "actor": "other_demo", "project": project_id, "filename": "large.md", "mime": "text/markdown", "fileSha256": hashlib.sha256(b"a" * (MAX_UPLOAD_BYTES + 1)).hexdigest(), "fileBytes": MAX_UPLOAD_BYTES + 1, "assertions": {"classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rights_basis": "PROJECT_OWNED", "rights_status": "ELIGIBLE", "usage_policy": "LOCAL_TEST_REUSE_ALLOWED", "source_version": "heartbeat1-public-v1"}, "action": "ACCEPT_FOR_REVIEW"})
+    elif case == "failure_endpoint": row["endpoint"] = "POST /wrong"
+    elif case == "walkthrough_request": row["request_checksum"] = "sha256:" + hashlib.sha256(f"{project_id}\nRECRUITER\nen\nCONCISE\nCONFIDENT\nchanged request".encode()).hexdigest()
+    else: row["status"] = "COMPLETED" if case == "completed_error" else "FAILED"
+    rebind_idempotency_row(row); state_path.write_text(json.dumps(payload)); restored = Stage4Service(state_path=state_path)
+    if case == "failure_actor":
+        denied = pytest.raises(Stage4Error, restored.submit_curated_source, principal=LocalPrincipal(actor_id="other_demo"), project_id=project_id, source_filename="large.md", content_type="text/markdown", data=b"a" * (MAX_UPLOAD_BYTES + 1), assertions=SourceAssertions("PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "ELIGIBLE", "LOCAL_TEST_REUSE_ALLOWED", "heartbeat1-public-v1"), schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key=key); assert denied.value.status_code == 403
+    elif case == "walkthrough_request":
+        conflict = pytest.raises(Stage4Error, restored.generate_walkthrough, principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="changed request", idempotency_key=key); assert conflict.value.status_code == 409
+    else: assert not any(record.idempotency_key == key for record in restored.idempotency_records.values())
+
+@pytest.mark.parametrize("case", ["sources_null", "sources_object", "sources_bool", "sources_number", "sources_string", "decisions_null", "documents_null", "legacy_checksum", "legacy_size", "legacy_secret", "legacy_scalar", "source_zero", "source_long", "decision_zero", "legacy_collision"])
+def test_a1_restore_prunes_malformed_graphs_and_namespace_collisions(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    state_path, project_id, pending, sibling = fifth_red_state(tmp_path, monkeypatch); payload = json.loads(state_path.read_text()); legacy = payload["documents"][0]
+    malformed = {"sources_null": None, "sources_object": {}, "sources_bool": True, "sources_number": 7, "sources_string": "bad"}
+    if case in malformed: payload["sources"] = malformed[case]
+    elif case == "decisions_null": payload["sourceDecisions"] = None
+    elif case == "documents_null": payload["documents"] = None
+    elif case == "legacy_checksum": legacy["checksum"] = "sha256:" + "0" * 64
+    elif case == "legacy_size": legacy["size_bytes"] += 1
+    elif case == "legacy_secret": legacy["text"] = "api_key=abcdefghijklmnopqrstuvwxyz123456"
+    elif case == "legacy_scalar": legacy["source_filename"] = True
+    elif case in {"source_zero", "source_long"}: payload["sources"][0]["source_id"] = "source_000000" if case == "source_zero" else "source_0000000"; payload["sourceDecisions"][0]["source_id"] = payload["sources"][0]["source_id"]
+    elif case == "decision_zero": payload["sourceDecisions"][0]["decision_id"] = "decision_000000"
+    else: legacy["document_id"] = pending["sourceId"]
+    state_path.write_text(json.dumps(payload)); restored = Stage4Service(state_path=state_path); repaired = json.loads(state_path.read_text())
+    assert project_id in restored.projects and isinstance(repaired["sources"], list) and isinstance(repaired["documents"], list)
+    if case == "documents_null": assert pending["sourceId"] in restored.sources
+    elif case.startswith("sources_") or case == "decisions_null": assert sibling["documentId"] in restored.documents
+    elif case.startswith("legacy_") and case != "legacy_collision": assert legacy["document_id"] not in restored.documents and pending["sourceId"] in restored.sources
+    elif case == "legacy_collision": assert pending["sourceId"] in restored.documents and pending["sourceId"] not in restored.sources
+    else: assert not restored.sources and sibling["documentId"] in restored.documents
+
 def test_issue302_a1_allowlist_is_exact_and_near_match_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     from scripts.quality import check_phase1_closure_docs as gate
     files = {"backend/app/curation.py", "backend/app/stage4.py", "backend/app/main.py", "tests/api/test_stage4_slice_api.py", "docs/API_CONTRACT.md", "docs/ADR/0040-heartbeat1-a1-curated-eligibility.md", "docs/TRACEABILITY.md", "docs/STATUS.md", "docs/STAGE_ISSUE_PLAN.md", "scripts/quality/check_phase1_closure_docs.py"}
