@@ -111,6 +111,7 @@ class Stage4Error(Exception):
         self.status_code = status_code
         self.code = code
         self.message = message
+    def __deepcopy__(self, _memo: object) -> Stage4Error: return Stage4Error(self.status_code, self.code, self.message)
 
 
 @dataclass
@@ -303,6 +304,7 @@ class Stage4Service:
                 if self._restored_ingestion_run_has_chunks(run)
             }
             self._reconcile_restored_document_ingestion_status()
+            self.rag_store.prune(self._restored_chunk_is_valid)
             self.walkthrough_runs = {
                 run_id: run
                 for run_id, run in self.walkthrough_runs.items()
@@ -448,7 +450,7 @@ class Stage4Service:
         source = self.sources.get(chunk.document_id)
         if source is not None:
             decision = next((value for value in self.source_decisions.values() if value.source_id == source.source_id), None)
-            if decision is None or decision.decision_state != "APPROVED":
+            if decision is None or decision.decision_state != "APPROVED" or source.ingestion_status != "INGESTED":
                 return False
             expected = chunk_document(document_id=source.source_id, project_id=source.project_id, tenant_id=source.tenant_id, source_filename=source.source_filename, text=source.text, source_document_checksum=source.checksum, approved_at=decision.approved_at or decision.created_at, max_chunks=MAX_CHUNKS_PER_DOCUMENT)
             return any(value.chunk_id == chunk.chunk_id and value.text == chunk.text and value.checksum == chunk.checksum for value in expected)
@@ -456,7 +458,8 @@ class Stage4Service:
         if document is None:
             return False
         if (
-            chunk.tenant_id != document.tenant_id
+            document.ingestion_status != "INGESTED"
+            or chunk.tenant_id != document.tenant_id
             or chunk.project_id != document.project_id
             or chunk.source_filename != document.source_filename
             or chunk.source_document_checksum != document.checksum
@@ -767,7 +770,7 @@ class Stage4Service:
         validate_upload_bytes(data)
         text = decode_upload(data)
         if not text.strip() or contains_secret_like_content(text) or contains_prompt_injection(text):
-            code = "SECRET_LIKE_CONTENT" if contains_secret_like_content(text) else "UNSAFE_DOCUMENT_CONTENT"
+            code = "VALIDATION_ERROR" if not text.strip() else "SECRET_LIKE_CONTENT" if contains_secret_like_content(text) else "UNSAFE_DOCUMENT_CONTENT"
             raise Stage4Error(422, code, "Curated source content is not safe to retain.")
         self._source_counter += 1
         source_id, decision_id, now = f"source_{self._source_counter:06d}", f"decision_{self._source_counter:06d}", _now()
@@ -775,6 +778,7 @@ class Stage4Service:
         source = SourceRecord(source_id, principal.tenant_id, principal.actor_id, project_id, filename, mime, size_bytes, checksum, text, assertions, assertion_hash, created_at=now)
         decision = SourceDecisionRecord(decision_id, source_id, principal.tenant_id, principal.actor_id, project_id, checksum, assertions.source_version, assertion_hash, created_at=now)
         self.sources[source_id], self.source_decisions[decision_id] = source, decision
+        log_event(event_name="source.decision.allowed", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, source_id=source_id, decision_id=decision_id, decision_state=decision.decision_state)
         return CuratedOutcome("SOURCE_PENDING_REVIEW", deepcopy(source), deepcopy(decision))
     def approve_document(
         self,
@@ -784,14 +788,6 @@ class Stage4Service:
         document_id: str,
         idempotency_key: str | None = None,
     ) -> DocumentRecord:
-        if document_id in self.sources:
-            try:
-                self._require_project(principal=principal, project_id=project_id)
-            except Stage4Error as exc:
-                log_event(event_name="source.approval.denied", tenant_id=principal.tenant_id,
-                          actor_id=principal.actor_id, project_id=project_id, source_id=document_id,
-                          status=exc.status_code, code=exc.code)
-                raise
         return self._idempotent(
             principal=principal,
             endpoint="PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval",
@@ -822,11 +818,11 @@ class Stage4Service:
         bindings: Mapping[str, str], idempotency_key: str | None,
     ) -> CuratedOutcome:
         fingerprint = canonical_digest({"endpoint": "curated-approval", "tenant": principal.tenant_id, "actor": principal.actor_id, "project": project_id, **bindings})
-        return self._idempotent(
-            principal=principal, endpoint="PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval",
-            scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint,
-            create=lambda: self._approve_curated_once(principal, project_id, source_id, bindings),
-        )
+        try:
+            return self._idempotent(principal=principal, endpoint="PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval", scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint, create=lambda: self._approve_curated_once(principal, project_id, source_id, bindings))
+        except Stage4Error as exc:
+            log_event(event_name="source.approval.denied", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, source_id=source_id, status=exc.status_code, code=exc.code)
+            raise
     def _approve_curated_once(
         self, principal: LocalPrincipal, project_id: str, source_id: str, bindings: Mapping[str, str],
     ) -> CuratedOutcome:
@@ -841,6 +837,7 @@ class Stage4Service:
             raise Stage4Error(409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale.")
         decision.action, decision.reason, decision.decision_state = "APPROVE", "CURATOR_APPROVED_POLICY_VERIFIED", "APPROVED"
         decision.approved_at = _now()
+        log_event(event_name="source.approval.completed", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, source_id=source_id, decision_id=decision.decision_id, decision_state=decision.decision_state)
         return CuratedOutcome("SOURCE_APPROVED", deepcopy(source), deepcopy(decision))
     def ingest_documents(
         self,
@@ -899,6 +896,7 @@ class Stage4Service:
         self._ingestion_counter += 1
         run = IngestionRunRecord(f"ing_{self._ingestion_counter:06d}", principal.tenant_id, principal.actor_id, project_id, [], "COMPLETED", len(stored), len(stored), now, source_ids)
         self.ingestion_runs[run.ingestion_run_id] = run
+        log_event(event_name="source.ingestion.completed", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, ingestion_run_id=run.ingestion_run_id, source_count=len(source_ids), chunk_count=len(stored))
         return run
     def _ingest_documents_once(
         self,

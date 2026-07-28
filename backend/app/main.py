@@ -484,13 +484,11 @@ class DocumentResponse(BaseModel):
     approved_at: str | None = Field(default=None, alias="approvedAt")
 
 
-CuratedSourceResponse = TypedDict("CuratedSourceResponse", {"code": str, "sourceId": str, "decisionId": str, "tenantId": str, "ownerId": str, "projectId": str, "checksum": str, "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str, "decisionState": str, "ingestionStatus": str, "rawContentRetained": bool, "createdAt": str, "idempotencyReplayed": bool})
-
+CuratedSourceResponse = TypedDict("CuratedSourceResponse", {"code": str, "sourceId": str, "decisionId": str, "tenantId": str, "ownerId": str, "projectId": str, "checksum": str, "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str, "serverDecision": str, "decisionState": str, "ingestionStatus": str, "rawContentRetained": bool, "createdAt": str, "idempotencyReplayed": bool})
 def curated_response(outcome: CuratedOutcome) -> CuratedSourceResponse:
     values = asdict(outcome)
     values = values["source"] | values["decision"] | values
     return cast(CuratedSourceResponse, {"".join([parts[0], *map(str.title, parts[1:])]): value for key, value in values.items() if not isinstance(value, dict) for parts in [key.split("_")]})
-
 class IngestionRunResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
@@ -1043,7 +1041,7 @@ class Stage8RequestSizeLimitMiddleware:
             )
             return
         if declared_bytes > request_limit:
-            log_event(event_name="upload.transport.rejected", request_id=request_id, route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=0, peak_buffered_bytes=0, limit=request_limit, status=413, code="UPLOAD_TOO_LARGE")
+            log_event(event_name="upload.transport.rejected", request_id=request_id, actor_id=(dict(headers_from_scope(scope)).get(b"x-local-user-id") or OWNER_LOCAL.encode()).decode("ascii", "replace")[:64], route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=0, peak_buffered_bytes=0, limit=request_limit, status=413, code="UPLOAD_TOO_LARGE")
             await send_stage8_error(
                 scope,
                 send,
@@ -1079,7 +1077,7 @@ class Stage8RequestSizeLimitMiddleware:
                         code="UPLOAD_TOO_LARGE" if request_limit == MAX_UPLOAD_REQUEST_BYTES else "REQUEST_TOO_LARGE",
                         message="Request exceeds the Stage 8 size limit.",
                     )
-                    log_event(event_name="upload.transport.rejected", request_id=request_id, route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=actual_bytes, peak_buffered_bytes=sum(len(cast(bytes, item.get("body", b""))) for item in messages), limit=request_limit, status=413, code=exc.code)
+                    log_event(event_name="upload.transport.rejected", request_id=request_id, actor_id=(dict(headers_from_scope(scope)).get(b"x-local-user-id") or OWNER_LOCAL.encode()).decode("ascii", "replace")[:64], route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=actual_bytes, peak_buffered_bytes=sum(len(cast(bytes, item.get("body", b""))) for item in messages), limit=request_limit, status=413, code=exc.code)
                     await send_stage8_error(
                         scope,
                         send,
@@ -1608,6 +1606,8 @@ def start_ingestion_run(
     idempotency_key: str | None = Depends(idempotency_key_header),
 ) -> IngestionRunResponse:
     if request.source_ids is not None:
+        if request.document_ids:
+            raise Stage4Error(422, "SOURCE_KIND_MISMATCH", "Choose exactly one ingestion target kind.")
         run = stage4_service.ingest_curated_sources(
             principal=principal, project_id=project_id, source_ids=request.source_ids,
             idempotency_key=idempotency_key,
