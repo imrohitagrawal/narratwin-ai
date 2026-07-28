@@ -9,7 +9,7 @@ import re
 import time
 from datetime import UTC, datetime
 from threading import Lock
-from typing import Annotated, Literal, cast
+from typing import Annotated, Literal, TypedDict, cast
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, FastAPI, File, Form, Header, HTTPException, Request, Response, UploadFile
@@ -483,29 +483,18 @@ class DocumentResponse(BaseModel):
     approved_at: str | None = Field(default=None, alias="approvedAt")
 
 
-class CuratedSourceResponse(BaseModel):
-    model_config = ConfigDict(frozen=True, populate_by_name=True, from_attributes=True)
-    code: str
-    source_id: str = Field(alias="sourceId")
-    decision_id: str = Field(alias="decisionId")
-    tenant_id: str = Field(alias="tenantId")
-    owner_id: str = Field(alias="ownerId")
-    project_id: str = Field(alias="projectId")
-    checksum: str
-    source_version: str = Field(alias="sourceVersion")
-    assertions_fingerprint: str = Field(alias="assertionsFingerprint")
-    policy_version: str = Field(alias="policyVersion")
-    decision_state: str = Field(alias="decisionState")
-    ingestion_status: str = Field(alias="ingestionStatus")
-    raw_content_retained: bool = Field(alias="rawContentRetained")
-    created_at: str = Field(alias="createdAt")
-    idempotency_replayed: bool = Field(alias="idempotencyReplayed")
+CuratedSourceResponse = TypedDict("CuratedSourceResponse", {"code": str, "sourceId": str,
+    "decisionId": str, "tenantId": str, "ownerId": str, "projectId": str, "checksum": str,
+    "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str,
+    "decisionState": str, "ingestionStatus": str, "rawContentRetained": bool,
+    "createdAt": str, "idempotencyReplayed": bool})
 
 
 def curated_response(outcome: object) -> CuratedSourceResponse:
     values = asdict(outcome)  # type: ignore[arg-type]
     values = values["source"] | values["decision"] | values
-    return CuratedSourceResponse.model_validate(values)
+    return cast(CuratedSourceResponse, {"".join([parts[0], *map(str.title, parts[1:])]): value
+            for key, value in values.items() if not isinstance(value, dict) for parts in [key.split("_")]})
 
 
 class IngestionRunResponse(BaseModel):

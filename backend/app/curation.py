@@ -60,35 +60,46 @@ class SourceDecisionRecord:
 
 
 @dataclass(frozen=True)
-class LegacySourceProjection:
-    document_id: str
-    source_contract: Literal["UNSEALED_LEGACY"] = "UNSEALED_LEGACY"
-    h1_eligible: bool = False
-
-
-@dataclass(frozen=True)
 class CuratedOutcome:
     code: str
     source: SourceRecord
     decision: SourceDecisionRecord
     idempotency_replayed: bool = False
 
-
 def canonical_digest(values: Mapping[str, Any]) -> str:
     encoded = json.dumps(values, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 
-
 def assertions_digest(assertions: SourceAssertions) -> str:
     return canonical_digest(asdict(assertions))
 
-
 def allowed_for_review(assertions: SourceAssertions) -> bool:
-    return (
-        assertions.classification == "PUBLIC_SAFE"
-        and assertions.provenance == "PROJECT_AUTHORED_SYNTHETIC"
-        and assertions.rights_basis == "PROJECT_OWNED"
-        and assertions.rights_status == "ELIGIBLE"
-        and assertions.usage_policy == "LOCAL_TEST_REUSE_ALLOWED"
-        and bool(assertions.source_version.strip())
-    )
+    return (assertions.classification, assertions.provenance, assertions.rights_basis,
+            assertions.rights_status, assertions.usage_policy) == (
+            "PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "ELIGIBLE",
+            "LOCAL_TEST_REUSE_ALLOWED") and bool(assertions.source_version.strip())
+
+def restore_curated(source_rows: list[Any], decision_rows: list[Any], projects: Mapping[str, Any],
+                    ) -> tuple[dict[str, SourceRecord], dict[str, SourceDecisionRecord]]:
+    sources: dict[str, SourceRecord] = {}
+    for row in source_rows:
+        try:
+            source = SourceRecord(**row)
+        except (KeyError, TypeError, ValueError):
+            continue
+        project = projects.get(source.project_id)
+        if project and (project.tenant_id, project.owner_id) == (source.tenant_id, source.owner_id) and source.checksum == hashlib.sha256(source.text.encode()).hexdigest() and source.ingestion_status in {"NOT_STARTED", "INGESTED"}:
+            sources[source.source_id] = source
+    decisions: dict[str, SourceDecisionRecord] = {}
+    for row in decision_rows:
+        try:
+            decision = SourceDecisionRecord(**row)
+        except (KeyError, TypeError, ValueError):
+            continue
+        source = sources.get(decision.source_id)
+        identity = (decision.tenant_id, decision.actor_id, decision.project_id, decision.checksum,
+                    decision.source_version, decision.assertions_fingerprint)
+        if source and decision.decision_state in {"PENDING_REVIEW", "APPROVED"} and decision.raw_content_retained and decision.policy_version == CURATION_POLICY_VERSION and identity == (source.tenant_id, source.owner_id, source.project_id, source.checksum, source.source_version, source.assertions_fingerprint):
+            decisions[decision.decision_id] = decision
+    linked = {decision.source_id for decision in decisions.values()}
+    return {key: value for key, value in sources.items() if key in linked}, decisions

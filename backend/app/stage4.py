@@ -45,7 +45,7 @@ from backend.app.observability import (
     record_walkthrough_metrics,
     with_trace,
 )
-from backend.app.curation import (CURATION_POLICY_VERSION, CURATION_SCHEMA_VERSION, CuratedOutcome, SourceAssertions, SourceDecisionRecord, SourceRecord, allowed_for_review, assertions_digest, canonical_digest)
+from backend.app.curation import (CURATION_POLICY_VERSION, CURATION_SCHEMA_VERSION, CuratedOutcome, SourceAssertions, SourceDecisionRecord, SourceRecord, allowed_for_review, assertions_digest, canonical_digest, restore_curated)
 
 MAX_UPLOAD_BYTES = 1_048_576
 MAX_PROJECT_CORPUS_BYTES = 5 * 1_048_576
@@ -279,13 +279,8 @@ class Stage4Service:
                 and self.projects[document.project_id].tenant_id == document.tenant_id
                 and self.projects[document.project_id].owner_id == document.owner_id
             }
-            self.sources = {str(row["source_id"]): SourceRecord(**row) for row in payload.get("sources", []) if isinstance(row, dict) and "source_id" in row}
-            self.source_decisions = {str(row["decision_id"]): SourceDecisionRecord(**row) for row in payload.get("sourceDecisions", []) if isinstance(row, dict) and "decision_id" in row}
-            self.sources = {key: value for key, value in self.sources.items() if self._restored_source_is_valid(value)}
-            self.source_decisions = {key: value for key, value in self.source_decisions.items()
-                                     if self._restored_decision_is_valid(value)}
-            linked_sources = {decision.source_id for decision in self.source_decisions.values()}
-            self.sources = {key: source for key, source in self.sources.items() if key in linked_sources}
+            self.sources, self.source_decisions = restore_curated(
+                payload.get("sources", []), payload.get("sourceDecisions", []), self.projects)
             self.ingestion_runs = {
                 str(row["ingestion_run_id"]): IngestionRunRecord(**row)
                 for row in payload.get("ingestionRuns", [])
@@ -423,14 +418,6 @@ class Stage4Service:
             and self.documents[document_id].project_id == run.project_id
             for document_id in run.document_ids
         )
-
-    def _restored_source_is_valid(self, source: SourceRecord) -> bool:
-        project = self.projects.get(source.project_id)
-        return bool(project and (project.tenant_id, project.owner_id) == (source.tenant_id, source.owner_id) and source.checksum == hashlib.sha256(source.text.encode()).hexdigest() and source.ingestion_status in {"NOT_STARTED", "INGESTED"})
-
-    def _restored_decision_is_valid(self, decision: SourceDecisionRecord) -> bool:
-        source = self.sources.get(decision.source_id)
-        return bool(source and decision.decision_state in {"PENDING_REVIEW", "APPROVED"} and decision.raw_content_retained and decision.policy_version == CURATION_POLICY_VERSION and (decision.tenant_id, decision.actor_id, decision.project_id, decision.checksum, decision.source_version, decision.assertions_fingerprint) == (source.tenant_id, source.owner_id, source.project_id, source.checksum, source.source_version, source.assertions_fingerprint))
 
     def _restored_ingestion_run_has_chunks(self, run: IngestionRunRecord) -> bool:
         if not self._restored_ingestion_run_is_valid(run):
