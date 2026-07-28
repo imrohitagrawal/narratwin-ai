@@ -51,6 +51,18 @@ def create_a1_pending(client: TestClient) -> tuple[str, dict[str, object]]:
     return project["projectId"], response.json()
 
 
+def approve_a1(client: TestClient, project_id: str, pending: dict[str, object]) -> None:
+    payload = {"approvalStatus": "APPROVED", "curationSchemaVersion": "source-curation-v1",
+               "action": "APPROVE", "sourceId": pending["sourceId"], "decisionId": pending["decisionId"],
+               "policyVersion": pending["policyVersion"], "sourceVersion": pending["sourceVersion"],
+               "checksum": pending["checksum"], "assertionsFingerprint": pending["assertionsFingerprint"]}
+    response = client.patch(
+        f"/api/v1/projects/{project_id}/knowledge-documents/{pending['sourceId']}/approval",
+        json=payload, headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-approve"},
+    )
+    assert response.status_code == 200
+
+
 def test_a1_submit_allow_pending_and_exact_replay() -> None:
     reset_app_state_for_tests()
     client = TestClient(app)
@@ -111,6 +123,41 @@ def test_a1_curated_scope_and_logs_are_bounded(
     assert "source.approval.denied" in caplog.text
     assert raised.value.status_code == status
     assert "heartbeat-public.md" not in caplog.text and "Project Lantern" not in caplog.text
+
+
+@pytest.mark.parametrize("case", ["success", "pending", "wrong_kind", "policy_drift", "mixed"])
+def test_a1_curated_ingestion_is_atomic(case: str) -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, first = create_a1_pending(client)
+    approve_a1(client, project_id, first)
+    path = f"/api/v1/projects/{project_id}/knowledge-documents"
+    second = client.post(
+        path, data=PUBLIC_CURATED_FORM,
+        files={"file": ("second.md", PUBLIC_CURATED_FIXTURE, "text/markdown")},
+        headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-submit-2"},
+    ).json()
+    legacy = client.post(
+        path, files={"file": ("legacy.md", b"Legacy source.", "text/markdown")},
+        headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": "a1-legacy"},
+    ).json()
+    if case == "policy_drift":
+        stage4_service.source_decisions[str(first["decisionId"])].policy_version = "source-curation-policy-v0"
+    ids = {"success": [first["sourceId"]], "pending": [second["sourceId"]],
+           "wrong_kind": [legacy["documentId"]], "policy_drift": [first["sourceId"]],
+           "mixed": [first["sourceId"], second["sourceId"]]}[case]
+    response = client.post(
+        f"/api/v1/projects/{project_id}/ingestion-runs", json={"documentIds": [], "sourceIds": ids},
+        headers={"X-Local-User-Id": "curator_demo", "Idempotency-Key": f"a1-ingest-{case}"},
+    )
+    assert response.status_code == (201 if case == "success" else 422)
+    if case == "success":
+        assert response.json()["sourceIds"] == ["source_000001"]
+    else:
+        expected = "SOURCE_KIND_MISMATCH" if case == "wrong_kind" else "SOURCE_NOT_INGESTIBLE"
+        assert response.json()["error"]["code"] == expected
+        assert stage4_service.rag_store.chunk_count_for_project(tenant_id="tenant_local", project_id=project_id) == 0
+        assert all(source.ingestion_status == "NOT_STARTED" for source in stage4_service.sources.values())
 
 
 def test_write_endpoints_require_idempotency_key() -> None:
