@@ -453,7 +453,7 @@ class Stage4Service:
             if decision is None or decision.decision_state != "APPROVED" or source.ingestion_status != "INGESTED":
                 return False
             expected = chunk_document(document_id=source.source_id, project_id=source.project_id, tenant_id=source.tenant_id, source_filename=source.source_filename, text=source.text, source_document_checksum=source.checksum, approved_at=decision.approved_at or decision.created_at, max_chunks=MAX_CHUNKS_PER_DOCUMENT)
-            return any(value.chunk_id == chunk.chunk_id and value.text == chunk.text and value.checksum == chunk.checksum for value in expected)
+            return any(replace(value, embedding=self.embedder.embed(value.text)) == chunk for value in expected)
         document = self.documents.get(chunk.document_id)
         if document is None:
             return False
@@ -864,9 +864,7 @@ class Stage4Service:
                 ),
             ),
         )
-    def ingest_curated_sources(
-        self, *, principal: LocalPrincipal, project_id: str, source_ids: list[str], idempotency_key: str | None,
-    ) -> IngestionRunRecord:
+    def ingest_curated_sources(self, *, principal: LocalPrincipal, project_id: str, source_ids: list[str], idempotency_key: str | None) -> IngestionRunRecord:
         return self._idempotent(principal=principal, endpoint="POST /api/v1/projects/{projectId}/ingestion-runs", scope=project_id, idempotency_key=idempotency_key, request_checksum=canonical_digest({"project": project_id, "sourceIds": source_ids}), create=lambda: self._ingest_curated_once(principal, project_id, source_ids))
     def _ingest_curated_once(
         self, principal: LocalPrincipal, project_id: str, source_ids: list[str],
@@ -1673,7 +1671,10 @@ def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) ->
         elif kind == "curated":
             source_data, decision_data = cast(dict[str, Any], value_ref.get("source", {})), cast(dict[str, Any], value_ref.get("decision", {}))
             source, decision = SourceRecord(**(source_data | {"assertions": SourceAssertions(**cast(dict[str, Any], source_data.get("assertions", {})))})), SourceDecisionRecord(**decision_data)
-            value = CuratedOutcome(str(value_ref.get("code", "")), source, decision) if service.sources.get(source.source_id) and service.source_decisions.get(decision.decision_id) and legal_pair(source, decision) and (source.tenant_id, source.owner_id, source.project_id, source.checksum, source.assertions_fingerprint) == (service.sources[source.source_id].tenant_id, service.sources[source.source_id].owner_id, service.sources[source.source_id].project_id, service.sources[source.source_id].checksum, service.sources[source.source_id].assertions_fingerprint) else None
+            live_source, live_decision = service.sources.get(source.source_id), service.source_decisions.get(decision.decision_id)
+            code = str(value_ref.get("code", ""))
+            expected_checksum = canonical_digest({"endpoint": "curated-submit", "schema": CURATION_SCHEMA_VERSION, "tenant": source.tenant_id, "actor": source.owner_id, "project": source.project_id, "filename": source.source_filename, "mime": source.content_type, "fileSha256": source.checksum, "fileBytes": source.size_bytes, "assertions": asdict(source.assertions), "action": decision.action} if code == "SOURCE_PENDING_REVIEW" else {"endpoint": "curated-approval", "tenant": source.tenant_id, "actor": source.owner_id, "project": source.project_id, "approvalStatus": "APPROVED", "reviewNote": "", "curationSchemaVersion": CURATION_SCHEMA_VERSION, "action": "APPROVE", "sourceId": source.source_id, "decisionId": decision.decision_id, "policyVersion": decision.policy_version, "sourceVersion": decision.source_version, "checksum": decision.checksum, "assertionsFingerprint": decision.assertions_fingerprint} if code == "SOURCE_APPROVED" else {})
+            value = CuratedOutcome(code, source, decision) if live_source is not None and live_decision is not None and service._restored_curated_source_is_safe(source) and legal_pair(source, decision) and (code, decision.decision_state, source.ingestion_status) in {("SOURCE_PENDING_REVIEW", "PENDING_REVIEW", "NOT_STARTED"), ("SOURCE_APPROVED", "APPROVED", "NOT_STARTED")} and replace(source, ingestion_status=live_source.ingestion_status, ingested_at=live_source.ingested_at) == live_source and replace(decision, action=live_decision.action, reason=live_decision.reason, decision_state=live_decision.decision_state, approved_at=live_decision.approved_at) == live_decision and (str(row.get("tenant_id", "")), str(row.get("actor_id", "")), str(row.get("idempotency_scope", "")), str(row.get("endpoint", "")), str(row.get("request_checksum", ""))) == (source.tenant_id, source.owner_id, source.project_id, "POST /api/v1/projects/{projectId}/knowledge-documents" if code == "SOURCE_PENDING_REVIEW" else "PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval", expected_checksum) else None
     status = str(row["status"])
     if status not in {"PENDING", "COMPLETED", "FAILED"}:
         raise ValueError(f"Unsupported Stage 4 idempotency status: {status}")

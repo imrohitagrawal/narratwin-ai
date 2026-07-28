@@ -1041,7 +1041,7 @@ class Stage8RequestSizeLimitMiddleware:
             )
             return
         if declared_bytes > request_limit:
-            log_event(event_name="upload.transport.rejected", request_id=request_id, actor_id=(dict(headers_from_scope(scope)).get(b"x-local-user-id") or OWNER_LOCAL.encode()).decode("ascii", "replace")[:64], route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=0, peak_buffered_bytes=0, limit=request_limit, status=413, code="UPLOAD_TOO_LARGE")
+            log_event(event_name="upload.transport.rejected", request_id=request_id, actor_id="UNRESOLVED", route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=0, peak_buffered_bytes=0, limit=request_limit, status=413, code="UPLOAD_TOO_LARGE")
             await send_stage8_error(
                 scope,
                 send,
@@ -1077,7 +1077,7 @@ class Stage8RequestSizeLimitMiddleware:
                         code="UPLOAD_TOO_LARGE" if request_limit == MAX_UPLOAD_REQUEST_BYTES else "REQUEST_TOO_LARGE",
                         message="Request exceeds the Stage 8 size limit.",
                     )
-                    log_event(event_name="upload.transport.rejected", request_id=request_id, actor_id=(dict(headers_from_scope(scope)).get(b"x-local-user-id") or OWNER_LOCAL.encode()).decode("ascii", "replace")[:64], route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=actual_bytes, peak_buffered_bytes=sum(len(cast(bytes, item.get("body", b""))) for item in messages), limit=request_limit, status=413, code=exc.code)
+                    log_event(event_name="upload.transport.rejected", request_id=request_id, actor_id="UNRESOLVED", route=str(scope.get("path", "")), declared_bytes=declared_bytes, observed_bytes=actual_bytes, peak_buffered_bytes=sum(len(cast(bytes, item.get("body", b""))) for item in messages), limit=request_limit, status=413, code=exc.code)
                     await send_stage8_error(
                         scope,
                         send,
