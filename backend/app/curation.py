@@ -95,11 +95,11 @@ def restore_curated(source_rows: list[Any], decision_rows: list[Any], projects: 
             decision = SourceDecisionRecord(**row)
         except (KeyError, TypeError, ValueError):
             continue
-        source = sources.get(decision.source_id)
+        restored_source = sources.get(decision.source_id)
         identity = (decision.tenant_id, decision.actor_id, decision.project_id, decision.checksum,
                     decision.source_version, decision.assertions_fingerprint)
         legal_pair = (decision.decision_state, decision.action, decision.reason, decision.approved_at is not None) in {("PENDING_REVIEW", "ACCEPT_FOR_REVIEW", "AWAITING_CURATOR_APPROVAL", False), ("APPROVED", "APPROVE", "CURATOR_APPROVED_POLICY_VERIFIED", True)}
-        if source and legal_pair and decision.raw_content_retained and decision.policy_version == CURATION_POLICY_VERSION and identity == (source.tenant_id, source.owner_id, source.project_id, source.checksum, source.source_version, source.assertions_fingerprint):
+        if restored_source and legal_pair and decision.raw_content_retained and decision.policy_version == CURATION_POLICY_VERSION and identity == (restored_source.tenant_id, restored_source.owner_id, restored_source.project_id, restored_source.checksum, restored_source.source_version, restored_source.assertions_fingerprint):
             decisions[decision.decision_id] = decision
     linked = {decision.source_id for decision in decisions.values()}
     return {key: value for key, value in sources.items() if key in linked}, decisions

@@ -393,7 +393,8 @@ class Stage4Service:
             for document_id in value.document_ids or value.source_ids:
                 if document_id in snapshot["documents"]:
                     self.documents[document_id] = snapshot["documents"][document_id]
-                elif document_id in snapshot["sources"]: self.sources[document_id] = snapshot["sources"][document_id]
+                elif document_id in snapshot["sources"]:
+                    self.sources[document_id] = snapshot["sources"][document_id]
         elif isinstance(value, WalkthroughRunRecord):
             self.walkthrough_runs.pop(value.run_id, None)
         elif isinstance(value, CuratedOutcome):
@@ -747,7 +748,6 @@ class Stage4Service:
             scope=project_id, idempotency_key=idempotency_key, request_checksum=fingerprint,
             create=lambda: self._submit_curated_source_once(principal, project_id, source_filename, content_type, data, assertions, schema_version, action, file_sha256, size_bytes),
         )
-
     def _submit_curated_source_once(
         self, principal: LocalPrincipal, project_id: str, source_filename: str,
         content_type: str, data: bytes, assertions: SourceAssertions, schema_version: str, action: str,

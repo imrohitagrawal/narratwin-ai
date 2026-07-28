@@ -119,7 +119,8 @@ def test_a1_curated_ingestion_is_atomic(case: str, monkeypatch: pytest.MonkeyPat
     ids = {"success": [first["sourceId"]], "pending": [second["sourceId"]], "wrong_kind": [legacy["documentId"]], "policy_drift": [first["sourceId"]], "mixed": [first["sourceId"], second["sourceId"]], "persist_failure": [first["sourceId"]]}[case]
     if case == "persist_failure":
         monkeypatch.setattr(stage4_service, "_persist_locked", lambda: (_ for _ in ()).throw(OSError("disk")))
-        with pytest.raises(OSError): stage4_service.ingest_curated_sources(principal=LocalPrincipal("tenant_local", "curator_demo"), project_id=project_id, source_ids=ids, idempotency_key="a1-ingest-persist")
+        with pytest.raises(OSError):
+            stage4_service.ingest_curated_sources(principal=LocalPrincipal("tenant_local", "curator_demo"), project_id=project_id, source_ids=ids, idempotency_key="a1-ingest-persist")
         assert stage4_service.rag_store.chunk_count_for_project(tenant_id="tenant_local", project_id=project_id) == 0 and stage4_service.sources[str(first["sourceId"])].ingestion_status == "NOT_STARTED"
         return
     response = client.post(
@@ -164,10 +165,8 @@ def test_a1_application_413_persists_and_replays(tmp_path: Path, monkeypatch: py
     project_id = client.post("/api/v1/projects", json={"name": "Oversize"},
                              headers={"Idempotency-Key": "a1-large-project"}).json()["projectId"]
     path = f"/api/v1/projects/{project_id}/knowledge-documents"
-    request = dict(url=path, data=PUBLIC_CURATED_FORM,
-                   files={"file": ("large.md", b"a" * (MAX_UPLOAD_BYTES + 1), "text/markdown")},
-                   headers={"Idempotency-Key": "a1-large"})
-    response, replay = client.post(**request), client.post(**request)
+    response = client.post(path, data=PUBLIC_CURATED_FORM, files={"file": ("large.md", b"a" * (MAX_UPLOAD_BYTES + 1), "text/markdown")}, headers={"Idempotency-Key": "a1-large"})
+    replay = client.post(path, data=PUBLIC_CURATED_FORM, files={"file": ("large.md", b"a" * (MAX_UPLOAD_BYTES + 1), "text/markdown")}, headers={"Idempotency-Key": "a1-large"})
     assert response.status_code == replay.status_code == 413
     assert response.json()["error"]["code"] == replay.json()["error"]["code"] == "UPLOAD_FILE_TOO_LARGE"
     assert any(record.idempotency_key == "a1-large" and record.status == "FAILED"
@@ -200,7 +199,7 @@ def test_a1_restore_prunes_curated_tamper(tmp_path: Path, monkeypatch: pytest.Mo
     state_path.write_text(json.dumps(payload))
     restored = Stage4Service(state_path=state_path)
     repaired = json.loads(state_path.read_text())
-    assert restored.sources == restored.source_decisions == restored.ingestion_runs == {}
+    assert not restored.sources and not restored.source_decisions and not restored.ingestion_runs
     assert repaired["sources"] == repaired["sourceDecisions"] == repaired["ingestionRuns"] == []
 def test_a1_branch_allowlist_is_exact_and_near_match_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     from scripts.quality import check_phase1_closure_docs as gate

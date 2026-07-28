@@ -21,7 +21,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.app.rag.models import OWNER_LOCAL
-from backend.app.curation import SourceAssertions
+from backend.app.curation import CuratedOutcome, SourceAssertions
 from backend.app.observability import is_langfuse_enabled, log_event
 from backend.app.stage4 import (
     MAX_API_REQUEST_BYTES,
@@ -486,8 +486,8 @@ class DocumentResponse(BaseModel):
 
 CuratedSourceResponse = TypedDict("CuratedSourceResponse", {"code": str, "sourceId": str, "decisionId": str, "tenantId": str, "ownerId": str, "projectId": str, "checksum": str, "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str, "decisionState": str, "ingestionStatus": str, "rawContentRetained": bool, "createdAt": str, "idempotencyReplayed": bool})
 
-def curated_response(outcome: object) -> CuratedSourceResponse:
-    values = asdict(outcome)  # type: ignore[arg-type]
+def curated_response(outcome: CuratedOutcome) -> CuratedSourceResponse:
+    values = asdict(outcome)
     values = values["source"] | values["decision"] | values
     return cast(CuratedSourceResponse, {"".join([parts[0], *map(str.title, parts[1:])]): value for key, value in values.items() if not isinstance(value, dict) for parts in [key.split("_")]})
 
