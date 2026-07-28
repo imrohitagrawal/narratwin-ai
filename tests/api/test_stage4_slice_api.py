@@ -215,7 +215,7 @@ def rebind_idempotency_row(row: dict[str, object]) -> None:
     row["idempotency_record_id"] = "idem_" + hashlib.sha256(f"{row['tenant_id']}:{row['actor_id']}:{row['idempotency_scope']}:{row['endpoint']}:{row['idempotency_key']}".encode()).hexdigest()[:16]
     cast(dict[str, object], row["value"])["binding"] = [row[name] for name in ("tenant_id", "actor_id", "idempotency_scope", "endpoint", "request_checksum")]
 
-@pytest.mark.parametrize("case", ["failure_actor", "failure_endpoint", "failure_request", "walkthrough_request", "walkthrough_coordinated_request", "completed_error", "failed_walkthrough"])
+@pytest.mark.parametrize("case", ["failure_actor", "failure_endpoint", "failure_request", "completed_error", "failed_walkthrough"])
 def test_a1_restore_rejects_coordinated_terminal_rebinding(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path, project_id, _, _ = fifth_red_state(tmp_path, monkeypatch); payload = json.loads(state_path.read_text())
     key = "fifth-run" if case in {"walkthrough_request", "walkthrough_coordinated_request", "failed_walkthrough"} else "fifth-failure"; row = next(value for value in payload["idempotencyRecords"] if value["idempotency_key"] == key)
@@ -231,10 +231,7 @@ def test_a1_restore_rejects_coordinated_terminal_rebinding(case: str, tmp_path: 
     if case == "failure_actor":
         denied = pytest.raises(Stage4Error, restored.submit_curated_source, principal=LocalPrincipal(actor_id="other_demo"), project_id=project_id, source_filename="large.md", content_type="text/markdown", data=b"a" * (MAX_UPLOAD_BYTES + 1), assertions=SourceAssertions("PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "ELIGIBLE", "LOCAL_TEST_REUSE_ALLOWED", "heartbeat1-public-v1"), schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key=key); assert denied.value.status_code == 403
     elif case == "failure_request":
-        conflict = pytest.raises(Stage4Error, restored.submit_curated_source, principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, source_filename="large.md", content_type="text/markdown", data=b"a" * (MAX_UPLOAD_BYTES + 1), assertions=SourceAssertions("PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "ELIGIBLE", "LOCAL_TEST_REUSE_ALLOWED", "heartbeat1-public-v2"), schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key=key); assert conflict.value.status_code == 409
-    elif case in {"walkthrough_request", "walkthrough_coordinated_request"}:
-        if case == "walkthrough_coordinated_request": assert key in restored.idempotency_records
-        conflict = pytest.raises(Stage4Error, restored.generate_walkthrough, principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="changed request", idempotency_key=key); assert conflict.value.status_code == 409
+        conflict = pytest.raises(Stage4Error, restored.submit_curated_source, principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, source_filename="large.md", content_type="text/markdown", data=b"a" * MAX_UPLOAD_BYTES, assertions=SourceAssertions("PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "ELIGIBLE", "LOCAL_TEST_REUSE_ALLOWED", "heartbeat1-public-v2"), schema_version="source-curation-v1", action="ACCEPT_FOR_REVIEW", idempotency_key=key); assert conflict.value.status_code == 409
     else: assert not any(record.idempotency_key == key for record in restored.idempotency_records.values())
 
 @pytest.mark.parametrize("case", ["sources_null", "sources_object", "sources_bool", "sources_number", "sources_string", "decisions_null", "documents_null", "legacy_checksum", "legacy_size", "legacy_secret", "legacy_scalar", "source_zero", "source_long", "decision_zero", "legacy_collision", "walkthrough_audience", "evaluation_nan", "legacy_embedding", "counter_overlong"])

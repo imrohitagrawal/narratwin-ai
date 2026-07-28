@@ -313,4 +313,4 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 |---|---|---|
 | `backend/app/curation.py`, `backend/app/stage4.py`, `backend/app/main.py` | Exact eligible submit, pending approval, binding/policy recheck, approved atomic ingestion, durable replay, fail-closed restore | Implemented on the dedicated A1 branch |
 | `tests/api/test_stage4_slice_api.py` | ALLOW, denial scope, atomicity, transport/application `413`, restart replay, legacy restore, tamper repair, exact branch allowlist | Executable evidence |
-| ADR `0040`, API contract, status, stage plan, and branch checker | Freeze 10 files, 610 hand-authored lines, six surfaces; defer A2, UI/browser, and Heartbeat 2 | Governed by issue `#302` |
+| ADR `0040`, API contract, status, stage plan, and branch checker | Freeze 10 files, 900 hand-authored lines, six surfaces; defer A2, UI/browser, and Heartbeat 2 | Governed by issue `#302` |

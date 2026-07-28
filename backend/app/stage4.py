@@ -332,7 +332,7 @@ class Stage4Service:
             counter_values = counters if isinstance(counters, dict) else {}
             self._project_counter = max(counter_values.get("project", 0), project_counter) if type(counter_values.get("project", 0)) is int else project_counter
             self._document_counter = max(counter_values.get("document", 0), document_counter) if type(counter_values.get("document", 0)) is int else document_counter
-            self._source_counter = max(counter_values.get("source", 0), source_counter) if type(counter_values.get("source", 0)) is int else source_counter
+            self._source_counter = min(999999, max(counter_values.get("source", 0), source_counter)) if type(counter_values.get("source", 0)) is int else min(999999, source_counter)
             self._ingestion_counter = max(counter_values.get("ingestion", 0), ingestion_counter) if type(counter_values.get("ingestion", 0)) is int else ingestion_counter
             self._run_counter = max(counter_values.get("run", 0), run_counter) if type(counter_values.get("run", 0)) is int else run_counter
             self._persist_locked()
@@ -1680,6 +1680,7 @@ def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) ->
         elif kind == "walkthrough":
             walkthrough_value = service.walkthrough_runs.get(identifier)
             if walkthrough_value is not None and (tenant_id, actor_id, scope, endpoint) == (walkthrough_value.tenant_id, walkthrough_value.actor_id, walkthrough_value.project_id, "POST /api/v1/projects/{projectId}/walkthrough-runs"):
+                projection = row.get("request_projection")
                 if walkthrough_value.request_checksum:
                     request_checksum = walkthrough_value.request_checksum
                     value = walkthrough_value

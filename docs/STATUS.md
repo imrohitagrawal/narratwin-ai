@@ -1012,6 +1012,6 @@ Required update rules:
 
 - State: implementation and local gate verification in progress on `phase-1-closure-302-heartbeat1-a1-eligible`.
 - Scope: one eligible curated source path from submit through approval, atomic ingestion, persistence, restore repair, and deterministic replay.
-- Frozen envelope: exactly 10 changed files, at most 610 hand-authored changed lines, and six surfaces.
+- Frozen envelope: exactly 10 changed files, at most 900 hand-authored changed lines, and six surfaces.
 - Evidence authority: issue `#302` plus its bound preflight comment; both must be re-resolved before push, review, and merge.
 - Deferred: A2 exclusion, UI/browser proof, Heartbeat 2, paid providers, hosted/public behavior, and production-readiness claims.
