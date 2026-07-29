@@ -1454,6 +1454,51 @@ def product_context_failures(body: str) -> list[str]:
                 "content; issue references and links are supplemental only."
             )
 
+    exact_changes = point_content.get(3, "")
+    count_words = {
+        word: count
+        for count, word in enumerate(
+            (
+                "zero",
+                "one",
+                "two",
+                "three",
+                "four",
+                "five",
+                "six",
+                "seven",
+                "eight",
+                "nine",
+                "ten",
+                "eleven",
+                "twelve",
+                "thirteen",
+                "fourteen",
+                "fifteen",
+                "sixteen",
+                "seventeen",
+                "eighteen",
+                "nineteen",
+                "twenty",
+            )
+        )
+    }
+    counted_change_pattern = re.compile(
+        r"\b(?P<count>\d+|" + "|".join(count_words) + r")\s+"
+        r"(?:(?:mandatory|required|new|distinct|separate|exact|reviewer|product[- ]context|governance)\s+){0,4}"
+        r"(?:fields?|changes?|controls?|checks?|items?|components?|files?|paths?|rules?|requirements?)\b",
+        re.IGNORECASE,
+    )
+    listed_items = re.findall(r"(?m)^[ \t]*(?:[-*+]|\d+[.)])[ \t]+\S", exact_changes)
+    for claim in counted_change_pattern.finditer(exact_changes):
+        raw_count = claim.group("count").lower()
+        claimed_count = int(raw_count) if raw_count.isdigit() else count_words[raw_count]
+        if claimed_count > len(listed_items):
+            result.append(
+                "Product context point 4 must enumerate every item in a counted exact-change claim."
+            )
+            break
+
     reviewer_content = point_content.get(9)
     if reviewer_content is not None and meaningful(reviewer_content):
         for field in reviewer_fields:
