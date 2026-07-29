@@ -1489,18 +1489,37 @@ def product_context_failures(body: str) -> list[str]:
         r"(?:fields?|changes?|controls?|checks?|items?|components?|files?|paths?|rules?|requirements?)\b",
         re.IGNORECASE,
     )
-    listed_items = re.findall(
-        r"(?m)^[ \t]*(?:[-*+]|\d+[.)])[ \t]+(\S.*)$",
-        exact_changes,
-    )
-    distinct_meaningful_items = {
-        normalized_prose(item)
-        for item in listed_items
-        if meaningful(item, field=True)
-    }
+    list_item_pattern = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)])[ \t]+(\S.*)$")
+
+    def claim_list_items(claim: re.Match[str]) -> list[str]:
+        line_end = exact_changes.find("\n", claim.end())
+        if line_end == -1:
+            return []
+        items: list[str] = []
+        for line in exact_changes[line_end + 1 :].splitlines():
+            item_match = list_item_pattern.match(line)
+            if item_match is not None:
+                items.append(item_match.group(1))
+                continue
+            if not line.strip():
+                if items:
+                    break
+                continue
+            if items and line[:1].isspace():
+                items[-1] += f" {line.strip()}"
+                continue
+            break
+        return items
+
     for claim in counted_change_pattern.finditer(exact_changes):
         raw_count = claim.group("count").lower()
         claimed_count = int(raw_count) if raw_count.isdigit() else count_words[raw_count]
+        listed_items = claim_list_items(claim)
+        distinct_meaningful_items = {
+            normalized_prose(item)
+            for item in listed_items
+            if meaningful(item, field=True)
+        }
         if claimed_count > len(distinct_meaningful_items):
             result.append(
                 "Product context point 4 must enumerate every item in a counted exact-change claim."
