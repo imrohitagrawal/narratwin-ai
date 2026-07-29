@@ -1845,7 +1845,7 @@ STATUS_STATE_V1_ROWS = {
         "issue #304 under issue #302",
         "heartbeat1-a2-contract",
         "heartbeat1-a2-contract",
-        "Issue #304 governs only metadata-only exclusion, owner summary, replay, and restore repair after merged A1 PR #303. The prior issue280-governance-reset-active token is historical only; Issue #280 and PR #299 remain untouched forensic history. UI/browser proof, Heartbeat 2, providers, hosted/public behavior, paid spend, deployment, and production-readiness claims remain unauthorized.",
+        "Issue #304 governs only metadata-only exclusion, owner summary, replay, and restore repair after merged A1 PR #303. The prior issue280-governance-reset-active token is historical only; Issue #280 and PR #299 remain untouched forensic history. UI/browser proof, Heartbeat 2, providers, hosted/public behavior, paid spend, deployment, and production-readiness claims remain unauthorized. Historical evidence remains verbatim: Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate. These phrases describe preserved forensic history, not current next-action authority.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
