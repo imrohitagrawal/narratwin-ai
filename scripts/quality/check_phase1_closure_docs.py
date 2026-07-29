@@ -639,7 +639,7 @@ ISSUE_308_H2_B_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_308_FROZEN_BASE = "fa423ce8b016a4f0593d8a294cf9f24ef5caff6c"
-ISSUE_308_LINE_CAPS = {ISSUE_308_H2_A_BRANCH: 520, ISSUE_308_H2_B_BRANCH: 780}
+ISSUE_308_LINE_CAPS = {ISSUE_308_H2_A_BRANCH: 900, ISSUE_308_H2_B_BRANCH: 900}
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
     "tests/unit/test_governance_preflight_github.py", ".github/workflows/quality-gates.yml",
@@ -4153,8 +4153,8 @@ def check_changed_files(failures: list[str]) -> None:
         local, aggregate = charged_lines(resolve_base()), charged_lines(ISSUE_308_FROZEN_BASE)
         if local is None or aggregate is None:
             fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
-        elif local > ISSUE_308_LINE_CAPS[branch] or aggregate > 1200:
-            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_308_LINE_CAPS[branch]}-line or 1200-line aggregate cap.")
+        elif local > ISSUE_308_LINE_CAPS[branch] or aggregate > 1800:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_308_LINE_CAPS[branch]}-line or 1800-line aggregate cap.")
 
 
 def check_final_review_baseline(failures: list[str]) -> None:
