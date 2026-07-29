@@ -46,8 +46,8 @@ def scan_h2_browser_sources(entry: Path) -> dict[str, Any]:
     forbidden = tuple(token for token in FORBIDDEN_BROWSER_TOKENS if token not in {".postdata", "postdatabuffer"})
     imports = [match.group(1) for match in IMPORT.finditer(text)]
     dynamic = (".evaluate(", "evaluatehandle(", "function(", "eval(", "cdpsession", "newcdpsession", "fetch.enable", "fulfillrequest", "addinitscript(", "exposefunction(", "removealllisteners(")
-    dangerous = re.search(r"\b(?:eval|function|constructor|setTimeout|setInterval|removeAllListeners|removeListener)\b|\.\s*(?:off|bind|call|apply)\s*\(", text, re.IGNORECASE)
-    if "/*" in comments or "//" in comments or dangerous or any(token in compact for token in (*forbidden, *dynamic)) or any(match.group("base") not in {"const", "let", "var", "return"} for match in COMPUTED_MEMBER.finditer(text)) or any(item.startswith(".") or item not in ALLOWED_BROWSER_IMPORTS for item in imports):
+    dangerous = re.search(r"\b(?:eval|function|constructor|setTimeout|setInterval|removeAllListeners|removeListener|return|throw|break|continue)\b|\btest\s*\.|\.\s*(?:off|bind|call|apply|close|stop|abort)\s*\(", text, re.IGNORECASE)
+    if "/*" in comments or "//" in comments or "\\u" in text.lower() or dangerous or any(token in compact for token in (*forbidden, *dynamic)) or any(match.group("base") not in {"const", "let", "var", "return"} for match in COMPUTED_MEMBER.finditer(text)) or any(item.startswith(".") or item not in ALLOWED_BROWSER_IMPORTS for item in imports):
         raise EvidenceError("BROWSER_SOURCE")
     return {"entry": entry.as_posix(), "fileCount": 1, "aggregateSha256": sha256(sha256(data).encode()), "forbiddenMatchCount": 0}
 def _multipart(raw: bytes, content_type: Any) -> dict[str, tuple[str, bytes]]:
