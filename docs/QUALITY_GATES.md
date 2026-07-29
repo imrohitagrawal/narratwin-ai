@@ -846,3 +846,11 @@ The gate owns one frontend and two sequential backend PIDs, proves a waited-for 
 Traces begin only after both controlled responses and protected runtime inputs are deleted.
 Full evidence may upload only after `scripts/ci/heartbeat1_evidence.py` recursively scans the snapshot, logs, reports, DOM, screenshots, archives, and archive members and records `ZERO_MATCH` for the exact run/head.
 Focused A1/A2 regressions, exact-branch/allowlist enforcement, `make quality`, required CI/security checks, and independent exact-head approval remain mandatory.
+
+## Heartbeat 2 evidence integrity gate
+
+Issue `#308` directly authorizes a post-Checkpoint-B local/mock curated reviewer demo; it is not Product Mode 2 or Issue `#20`. PR A uses exact branch `phase-1-closure-308-heartbeat2-evidence-contract`, at most eight files, 520 charged lines, and four surfaces.
+
+`scripts/ci/heartbeat2_evidence.py` must fail closed on stale run/head identity, any skipped or non-passing browser result, a malformed/extra write ledger, request/response mismatch, wrong origin, interception/substitution, source-graph drift, broken source/chunk/context/evaluation/media joins, artifact mismatch, unsafe archive, or forbidden material. PR B remains blocked until PR A is approved at exact head, merged, and verified.
+
+Both PRs require behavioral RED before GREEN, exact branch/allowlist checks, focused regressions, guardrails, `make quality`, required CI/security gates, and eligible non-author exact-head approval. Evidence upload is success-only; providers, real media, deployment, hosting, production claims, private data, and Q&A remain absent.

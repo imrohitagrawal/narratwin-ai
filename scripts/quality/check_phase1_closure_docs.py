@@ -622,6 +622,22 @@ ISSUE_306_B_ALLOWED_CHANGED_FILES = {
     "scripts/ci/heartbeat1_evidence.py", "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_heartbeat1_evidence.py", "tests/unit/test_phase1_closure_docs.py",
 }
+ISSUE_308_H2_A_BRANCH = "phase-1-closure-308-heartbeat2-evidence-contract"
+ISSUE_308_H2_A_ALLOWED_CHANGED_FILES = {
+    "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/PHASE_PLAN.md",
+    "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
+    "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_308_H2_B_BRANCH = "phase-1-closure-308-heartbeat2-curated-reviewer-demo"
+ISSUE_308_H2_B_ALLOWED_CHANGED_FILES = {
+    ".github/workflows/ci.yml", "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md",
+    "docs/STATUS.md", "docs/TRACEABILITY.md", "frontend/playwright.heartbeat2.config.ts",
+    "frontend/src/app/page.tsx", "frontend/src/app/page.test.tsx",
+    "frontend/tests/heartbeat2-browser.spec.ts", "scripts/ci/heartbeat2-browser.sh",
+    "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
     "tests/unit/test_governance_preflight_github.py", ".github/workflows/quality-gates.yml",
@@ -1851,10 +1867,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #8",
-        "heartbeat1-complete-awaiting-next-authority",
-        "heartbeat1-complete-awaiting-next-authority",
-        "The substantive Issue #306 PR completes the approved Heartbeat 1 A1+A2+B repository envelope when merged; closeout then closes #306 and #302 only after required post-merge gates. Issue #8 remains open as the product-definition parent. No next product implementation is authorized; Heartbeat 2, providers, hosted/public behavior, paid spend, deployment, production-readiness claims, and work on #280/PR #299/#300/#301 remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate.",
+        "issue #308",
+        "heartbeat2-pr-a-evidence-contract",
+        "heartbeat2-pr-a-evidence-contract",
+        "Heartbeat 1 is merged and closed. Owner-authored #308 directly authorizes the two-PR, local/mock H2 curated reviewer demo; PR A establishes evidence integrity before PR B product integration. Issue #8 remains open product memory. Providers, hosting, deployment, production claims, private data, #20, and protected tracker mutation remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3931,6 +3947,12 @@ def check_changed_files(failures: list[str]) -> None:
     elif branch == ISSUE_306_B_BRANCH:
         allowed_files = ISSUE_306_B_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-306-"):
+        allowed_files = set()
+    elif branch == ISSUE_308_H2_A_BRANCH:
+        allowed_files = ISSUE_308_H2_A_ALLOWED_CHANGED_FILES
+    elif branch == ISSUE_308_H2_B_BRANCH:
+        allowed_files = ISSUE_308_H2_B_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-308-"):
         allowed_files = set()
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES

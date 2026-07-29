@@ -8320,7 +8320,7 @@ def test_issue308_near_match_and_backend_changes_fail_closed(monkeypatch: Any) -
 
 def write_heartbeat2_packet(root: Path) -> dict[str, Any]:
     artifact = root / "artifacts" / "video-placeholder.json"
-    artifact.parent.mkdir()
+    artifact.parent.mkdir(exist_ok=True)
     artifact.write_text('{"kind":"local-placeholder"}\n', encoding="utf-8")
     digest = __import__("hashlib").sha256(artifact.read_bytes()).hexdigest()
     report = {"stats": {"expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}}
@@ -8354,6 +8354,7 @@ def write_heartbeat2_packet(root: Path) -> dict[str, Any]:
         "otherDemo": {"readStatus": 403, "actionsHidden": True},
     }
     (root / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    verifier = Path("scripts/ci/heartbeat2_evidence.py")
     manifest = {
         "schema": "heartbeat2-evidence-v1",
         "runId": "run-308",
@@ -8361,7 +8362,9 @@ def write_heartbeat2_packet(root: Path) -> dict[str, Any]:
         "testReport": "playwright.json",
         "ledger": "ledger.json",
         "summary": "summary.json",
-        "sourceGraph": [],
+        "sourceGraph": [{"path": verifier.as_posix(), "sha256": __import__("hashlib").sha256(verifier.read_bytes()).hexdigest()}],
+        "interceptionUsed": False,
+        "substitutionUsed": False,
         "forbiddenMatchCount": 0,
     }
     (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
@@ -8386,3 +8389,29 @@ def test_heartbeat2_verifier_accepts_exact_packet_and_rejects_false_passes(tmp_p
     (tmp_path / "summary.json").write_text(json.dumps(packet["summary"]), encoding="utf-8")
     with pytest.raises(evidence.EvidenceError, match="GROUNDING_JOIN"):
         evidence.verify_evidence(tmp_path, expected_head="a" * 40, expected_run_id="run-308")
+
+
+def test_heartbeat2_verifier_rejects_ledger_artifact_source_and_forbidden_mutations(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    packet = write_heartbeat2_packet(tmp_path)
+    packet["ledger"].append(packet["ledger"][-1])
+    (tmp_path / "ledger.json").write_text(json.dumps(packet["ledger"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="WRITE_LEDGER"):
+        evidence.verify_evidence(tmp_path, expected_head="a" * 40, expected_run_id="run-308")
+
+    packet = write_heartbeat2_packet(tmp_path)
+    packet["artifact"].write_bytes(b"tampered")
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence.verify_evidence(tmp_path, expected_head="a" * 40, expected_run_id="run-308")
+
+    packet = write_heartbeat2_packet(tmp_path)
+    packet["manifest"]["sourceGraph"][0]["sha256"] = "0" * 64
+    (tmp_path / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="SOURCE_GRAPH"):
+        evidence.verify_evidence(tmp_path, expected_head="a" * 40, expected_run_id="run-308")
+
+    packet = write_heartbeat2_packet(tmp_path)
+    marker = b"synthetic-forbidden-308"
+    (tmp_path / "leak.bin").write_bytes(marker)
+    with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_MATERIAL"):
+        evidence.verify_evidence(tmp_path, expected_head="a" * 40, expected_run_id="run-308", forbidden=(marker,))

@@ -110,6 +110,10 @@ Only the registered tables in this section are authoritative for PHF-020A.
 |---|---|---|---|
 | PM-MODE-001 | PM-1 | PM-GATE-10 | active-local-checkpoint |
 
+## Heartbeat 2 Direct Exception
+
+Owner-authored issue `#308` directly authorizes the exact two-PR post-Checkpoint-B local/mock curated reviewer integration frozen there. It is separate from the PHF-020A tables above, does not rewrite issue `#8` or reopen `#155`, and is not Product Mode 2 or issue `#20`. Providers, real media, hosting, deployment, production claims, and private data remain prohibited.
+
 ## Boundaries
 
 Always:

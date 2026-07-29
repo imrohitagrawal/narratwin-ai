@@ -2103,3 +2103,13 @@ The checker requires exact branch equality; every `phase-1-closure-306-*` near-m
 Issue `#302`, child `#306`, and canonical comment database ID `5116015473` must re-resolve without identity, timestamp, or digest drift before review and merge.
 Behavioral RED, focused browser/scanner tests, unchanged A1/A2 regressions, guardrails, full quality, required CI/security/policy, and independent exact-head review are mandatory.
 No backend contract, provider, deployment, spend, real private data, protected-issue body mutation, Heartbeat 2, or work on `#280`, PR `#299`, `#300`, or `#301` is authorized.
+
+## Issue 308 Heartbeat 2 serialized branch scope
+
+Issue `#308` is the direct owner-authored H2 acceptance authority; issue `#8` remains open product memory. H2 is post-Checkpoint-B local/mock integration, not Product Mode 2 or issue `#20`, and does not reopen `#155` or mutate `#43`/`#249`.
+
+PR A uses exact branch `phase-1-closure-308-heartbeat2-evidence-contract`, at most eight files, 520 charged lines, and four surfaces. Its exact allowlist is ADR `0043`, `docs/PHASE_PLAN.md`, `docs/QUALITY_GATES.md`, this plan, `docs/STATUS.md`, the H2 evidence verifier, the Phase 1 checker, and its existing unit-test module.
+
+PR B may start only after PR A exact-head approval, merge, and closeout. It uses exact branch `phase-1-closure-308-heartbeat2-curated-reviewer-demo`, at most 12 files, 780 charged lines, and six surfaces. Across both PRs the frozen ceiling is 15 unique files, 1,200 charged additions plus deletions, and eight surfaces.
+
+The canonical comment database ID is `5118185764`. Issue #8, #308, and that comment must re-resolve without digest or identity drift before review and merge. Backend/API/storage/provider/deployment/hosting/production/private-data/Q&A work is forbidden; any essential unlisted path, third PR, or budget expansion stops H2.
