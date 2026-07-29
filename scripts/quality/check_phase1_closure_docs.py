@@ -1901,7 +1901,7 @@ STATUS_STATE_V1_ROWS = {
         "issue #308",
         "heartbeat2-pr-a-evidence-contract",
         "heartbeat2-pr-a-evidence-contract",
-        "Heartbeat 1 is merged and closed. Owner-authored #308 directly authorizes the two-PR, local/mock H2 curated reviewer demo; PR A establishes evidence integrity before PR B product integration. Issue #8 remains open product memory. Providers, hosting, deployment, production claims, private data, #20, and protected tracker mutation remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate.",
+        "Heartbeat 1 is merged and closed. This PR completes Heartbeat 2 PR A's evidence-integrity contract; after exact-head review, merge, and closeout, the next authorized action is PR B's read-only re-preflight under #308. PR B product integration remains blocked until that closeout. Issue #8 remains open product memory. Providers, hosting, deployment, production claims, private data, #20, and protected tracker mutation remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
