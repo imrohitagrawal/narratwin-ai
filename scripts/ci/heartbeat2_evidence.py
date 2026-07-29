@@ -17,7 +17,6 @@ SHA, RUN_ID, ORIGIN = re.compile(r"^[0-9a-f]{40}$"), re.compile(r"^[A-Za-z0-9][A
 SPEC, TEST_TITLE, MAX_ARCHIVE_MEMBERS = "heartbeat2-browser.spec.ts", "Heartbeat 2 local reviewer demo", 10_000
 PUBLIC_FIXTURE_SHA256 = "e7ed2f48cf62645575771fd10e918568ad77ec4fb0b75620f6e4ecff2a3d8200"
 FORBIDDEN_SHA256S = {"controlledSha256": "d6bba9d5a1916d515ea982b3517c6528bfff5f7ee9d7a7ab03267fd6fefd6eb2", "canarySha256": "9fbe84f0ec72ee1d8de0cae899d15b98c1ec3e979514b861ed584ac8d62fa84c"}
-ACTIVE_HTML = re.compile(r'(<script\b|<iframe\b|<form\b|<object\b|<embed\b|<link\b|<base\b|<style\b|<meta\s+http-equiv\b|<[^>]+\s(?:on[a-z]+|src|href|srcset|style)\s*=|<[^>]+javascript:)', re.IGNORECASE)
 SOURCES = ("scripts/ci/heartbeat1_evidence.py", "scripts/ci/heartbeat2_evidence.py", "scripts/ci/heartbeat2-browser.sh", "frontend/playwright.heartbeat2.config.ts", "frontend/tests/heartbeat2-browser.spec.ts")
 WRITES = (("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201))
 READS = (("languages", "GET", 200, "curator_demo"), ("summary", "GET", 200, "curator_demo"), ("other-summary", "GET", 403, "other_demo"))
@@ -26,6 +25,19 @@ class EvidenceError(RuntimeError):
     pass
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+def _strict_json(data: str | bytes, error: str) -> Any:
+    def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        if len({key for key, _ in pairs}) != len(pairs):
+            raise EvidenceError(error)
+        return dict(pairs)
+    try:
+        return json.loads(data, object_pairs_hook=unique)
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise EvidenceError(error) from exc
+def _static_preview(text: str) -> bool:
+    allowed = {"html": {'', 'lang="en"'}, "head": {''}, "meta": {'charset="utf-8"'}, "title": {''}, "body": {''}, "main": {''}, "h1": {''}, "p": {''}, "article": {''}}
+    tags = re.findall(r"<\s*(/?)\s*([a-z0-9]+)([^>]*)>", text, re.IGNORECASE)
+    return bool(tags) and all(tag.lower() in allowed and (not closing or not attrs.strip()) and attrs.strip().lower().removesuffix("/").strip() in allowed[tag.lower()] for closing, tag, attrs in tags)
 def scan_h2_browser_sources(entry: Path) -> dict[str, Any]:
     if not entry.is_file() or entry.is_symlink():
         raise EvidenceError("BROWSER_SOURCE")
@@ -33,7 +45,7 @@ def scan_h2_browser_sources(entry: Path) -> dict[str, Any]:
     compact, comments = re.sub(r"\s+", "", text).lower(), text.replace(ORIGIN, "")
     forbidden = tuple(token for token in FORBIDDEN_BROWSER_TOKENS if token not in {".postdata", "postdatabuffer"})
     imports = [match.group(1) for match in IMPORT.finditer(text)]
-    dynamic = (".evaluate(", "evaluatehandle(", "function(", "cdpsession", "newcdpsession", "fetch.enable", "fulfillrequest", "addinitscript(", "exposefunction(")
+    dynamic = (".evaluate(", "evaluatehandle(", "function(", "eval(", "cdpsession", "newcdpsession", "fetch.enable", "fulfillrequest", "addinitscript(", "exposefunction(", "removealllisteners(")
     if "/*" in comments or "//" in comments or any(token in compact for token in (*forbidden, *dynamic)) or any(match.group("base") not in {"const", "let", "var", "return"} for match in COMPUTED_MEMBER.finditer(text)) or any(item.startswith(".") or item not in ALLOWED_BROWSER_IMPORTS for item in imports):
         raise EvidenceError("BROWSER_SOURCE")
     return {"entry": entry.as_posix(), "fileCount": 1, "aggregateSha256": sha256(sha256(data).encode()), "forbiddenMatchCount": 0}
@@ -115,8 +127,8 @@ def _path(root: Path, value: Any) -> Path:
     return path
 def _json(root: Path, value: Any) -> Any:
     try:
-        return json.loads(_path(root, value).read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return _strict_json(_path(root, value).read_text(encoding="utf-8"), "EVIDENCE_JSON")
+    except OSError as exc:
         raise EvidenceError("EVIDENCE_JSON") from exc
 def _playwright(report: Any) -> int:
     if not isinstance(report, dict) or set(report) != {"config", "errors", "stats", "suites"} or report["errors"] != []:
@@ -176,7 +188,7 @@ def _traffic(traffic: Any, bundle: dict[str, Any]) -> None:
             raw = base64.b64decode(response["bodyBase64"], validate=True)
             if response["bodySha256"] != sha256(raw):
                 raise EvidenceError("TRAFFIC_LEDGER")
-            payloads[request["operation"]] = json.loads(raw)
+            payloads[request["operation"]] = _strict_json(raw, "TRAFFIC_LEDGER")
         source_payload = {"sourceId": source, "checksum": bundle["source"]["checksum"]}
         valid_payloads = (
             payloads["project"].get("projectId") == project
@@ -202,11 +214,11 @@ def _artifacts(root: Path, artifacts: Any, bundle: dict[str, Any]) -> None:
             mime = "text/markdown" if name == "translated" else "application/x-subrip" if name == "subtitles" else "text/html" if name == "preview" else "application/json"
             valid = item["filename"] == path.name and item["sha256"] == sha256(data) and item["mime"] == mime
             if name in {"voice", "renderManifest", "video"}:
-                parsed = json.loads(data)
+                parsed = _strict_json(data, "ARTIFACT_BINDING")
                 valid = valid and isinstance(parsed, dict) and _local_only(parsed)
                 if name == "voice":
                     profile = parsed.get("mockAudioProfile", {})
-                    valid = valid and set(parsed) == {"provider", "providerMode", "language", "textChecksum", "mockAudioProfile", "disclosure"} and set(profile) == {"durationMillisecondsEstimate", "sampleRateHz", "channels"} and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and isinstance(parsed.get("textChecksum"), str) and re.fullmatch(r"sha256:[0-9a-f]{64}", parsed["textChecksum"]) is not None and isinstance(parsed.get("disclosure"), str) and "Mock local TTS placeholder" in parsed["disclosure"] and isinstance(profile.get("durationMillisecondsEstimate"), int) and profile["durationMillisecondsEstimate"] >= 0 and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
+                    valid = valid and set(parsed) == {"provider", "providerMode", "language", "textChecksum", "mockAudioProfile", "disclosure"} and set(profile) == {"durationMillisecondsEstimate", "sampleRateHz", "channels"} and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and parsed.get("textChecksum") == f"sha256:{artifacts['translated']['sha256']}" and isinstance(parsed.get("disclosure"), str) and "Mock local TTS placeholder" in parsed["disclosure"] and isinstance(profile.get("durationMillisecondsEstimate"), int) and profile["durationMillisecondsEstimate"] >= 0 and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
                 else:
                     provider, source, media = parsed.get("providerConfig", {}), parsed.get("source", {}), parsed.get("multilingualBundle", {})
                     expected_keys = {"schema", "providerConfig", "source", "multilingualBundle"} | ({"realVideoProduced"} if name == "video" else set())
@@ -218,7 +230,7 @@ def _artifacts(root: Path, artifacts: Any, bundle: dict[str, Any]) -> None:
             elif name == "subtitles":
                 valid = valid and data.startswith(b"1\n00:00:00,000 -->") and b"[1]" in data
             else:
-                valid = valid and b"<html" in data.lower() and b"synthetic" in data.lower() and ACTIVE_HTML.search(data.decode("utf-8")) is None
+                valid = valid and b"<html" in data.lower() and b"synthetic" in data.lower() and _static_preview(data.decode("utf-8"))
         except (KeyError, TypeError, OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise EvidenceError("ARTIFACT_BINDING") from exc
         if not valid:
@@ -298,11 +310,11 @@ def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any], *, spe
             prefix = names[0][:-len(".network")]
             if {prefix + ".trace", prefix + ".stacks"} - set(archive.namelist()):
                 raise EvidenceError("TRACE_BINDING")
-            contexts = [json.loads(line) for line in archive.read(prefix + ".trace").splitlines()]
-            stacks = json.loads(archive.read(prefix + ".stacks"))
+            contexts = [_strict_json(line, "TRACE_BINDING") for line in archive.read(prefix + ".trace").splitlines()]
+            stacks = _strict_json(archive.read(prefix + ".stacks"), "TRACE_BINDING")
             if not contexts or contexts[0].get("type") != "context-options" or contexts[0].get("browserName") != "chromium" or contexts[0].get("options", {}).get("baseURL") != ORIGIN or contexts[0].get("options", {}).get("serviceWorkers") != "block" or not any(str(name).endswith("frontend/tests/" + SPEC) for name in stacks.get("files", [])):
                 raise EvidenceError("TRACE_BINDING")
-            records = [json.loads(line) for line in archive.read(names[0]).splitlines()]
+            records = [_strict_json(line, "TRACE_BINDING") for line in archive.read(names[0]).splitlines()]
             resource_bytes = {name: archive.read(name) for name in archive.namelist() if name.startswith("resources/")}
             before = {item.get("callId"): item.get("method") for item in contexts if item.get("type") == "before" and item.get("pageId") and item.get("method")}
             after = {item.get("callId") for item in contexts if item.get("type") == "after"}
@@ -349,7 +361,8 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
     if not all(re.search(pattern, spec_text, re.DOTALL) for pattern in semantic_patterns):
         raise EvidenceError("BROWSER_SOURCE")
     test_call = re.search(r'\btest\(\s*["\']' + re.escape(TEST_TITLE) + r'["\']\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>', spec_text)
-    if test_call is None or len(re.findall(r"\btest\(", spec_text)) != 1 or spec_text[:test_call.start()].count("{") != spec_text[:test_call.start()].count("}"):
+    valid_import = re.match(r'\Aimport\s*\{\s*test\s*,\s*(?:expect\s*,\s*)?type\s+Request\s*\}\s*from\s*["\']@playwright/test["\'];', spec_text)
+    if test_call is None or valid_import is None or re.search(r"\b(?:const|let|var|function|class)\s+test\b", spec_text) or len(re.findall(r"\btest\(", spec_text)) != 1 or spec_text[:test_call.start()].count("{") != spec_text[:test_call.start()].count("}"):
         raise EvidenceError("BROWSER_SOURCE")
     arrow = spec_text.find("=>", test_call.start())
     block = spec_text.find("{", arrow)

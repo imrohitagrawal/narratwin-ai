@@ -8348,7 +8348,7 @@ await page.goto("/");
     payloads = {
         "translated": "# Recorrido sintético [1]\n",
         "subtitles": "1\n00:00:00,000 --> 00:00:01,000\nBounded synthetic caption [1]\n",
-        "voice": json.dumps({"provider": "mock", "providerMode": "LOCAL", "language": "es", "textChecksum": "sha256:" + "a" * 64, "mockAudioProfile": {"durationMillisecondsEstimate": 1000, "sampleRateHz": 16000, "channels": 1}, "disclosure": "Mock local TTS placeholder"}),
+        "voice": json.dumps({"provider": "mock", "providerMode": "LOCAL", "language": "es", "textChecksum": "sha256:3821d826d9dd404793c4ee0077de2a15ecd4f9af8a7351fec392e8419610c0bc", "mockAudioProfile": {"durationMillisecondsEstimate": 1000, "sampleRateHz": 16000, "channels": 1}, "disclosure": "Mock local TTS placeholder"}),
         "preview": "<!doctype html><html><body>Local synthetic preview</body></html>",
         "renderManifest": json.dumps({"schema": "Stage7AvatarRenderManifest", "providerConfig": local_provider, "source": source_meta, "multilingualBundle": multilingual_meta}),
         "video": json.dumps({"schema": "Stage7VideoExportPlaceholder", "realVideoProduced": False, "providerConfig": local_provider, "source": source_meta, "multilingualBundle": multilingual_meta}),
