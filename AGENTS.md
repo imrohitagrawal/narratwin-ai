@@ -60,7 +60,8 @@ Before changing files, read:
     production readiness, deployment, release, or public availability unless a
     separate authorized gate proves that claim. When `Exact changes` claims a
     number of fields, changes, controls, checks, items, components, files,
-    paths, rules, or requirements, enumerate every counted item.
+    paths, rules, or requirements, enumerate every counted item as a distinct,
+    meaningful Markdown list entry.
 
 ## Approved Build Stages
 

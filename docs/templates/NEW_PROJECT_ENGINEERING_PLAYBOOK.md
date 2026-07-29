@@ -759,8 +759,9 @@ not the explanation. Put these ten fields before detailed evidence:
 
 If `Exact changes` claims a number of fields, changes, controls, checks, items,
 components, files, paths, rules, or requirements, enumerate every counted item
-as a Markdown list. “Adds ten required fields” without listing all ten is
-incomplete and must fail review and CI. Reject placeholders, copied
+as a distinct, meaningful Markdown list entry. “Adds ten required fields”
+without listing all ten—or with duplicated or placeholder rows—is incomplete
+and must fail review and CI. Reject placeholders, copied
 instructions, issue-only or link-only prose, generic filler, and unsupported
 production-readiness, deployment, release, or public-availability claims.
 Automation checks structure and known false-pass classes; an independent

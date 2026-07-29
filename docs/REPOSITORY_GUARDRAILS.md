@@ -229,8 +229,9 @@ Issue-only, link-only, placeholder, copied-template, fenced-placeholder, and
 generic filler content fails the executable `policy-gates` check. Links remain
 evidence but cannot replace plain-English product context. A counted claim in
 `Exact changes` must enumerate every claimed field, change, control, check,
-item, component, file, path, rule, or requirement; naming only the count is a
-false pass and blocks the PR.
+item, component, file, path, rule, or requirement as a distinct, meaningful
+Markdown list entry; naming only the count, duplicating entries, or using
+placeholders is a false pass and blocks the PR.
 
 Reviewer validation must separately name expected behavior, prohibited
 behavior, evidence, pass condition, and fail condition. Automation proves that

@@ -803,8 +803,9 @@ evidence/pass/fail reviewer fields, and rejects unsupported affirmative claims
 of production readiness, production deployment, release, or public
 availability. When `Exact changes` claims a number of fields, changes,
 controls, checks, items, components, files, paths, rules, or requirements, the
-same section must contain at least that many Markdown list entries. A bare
-count therefore cannot pass as a complete explanation.
+same section must contain at least that many distinct, meaningful Markdown list
+entries. A bare count, duplicated entries, or placeholder entries therefore
+cannot pass as a complete explanation.
 
 This gate connects each contribution to the end-to-end demo and eventual
 production path without treating that direction as production authorization.

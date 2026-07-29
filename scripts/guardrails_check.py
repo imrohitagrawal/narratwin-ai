@@ -1489,11 +1489,19 @@ def product_context_failures(body: str) -> list[str]:
         r"(?:fields?|changes?|controls?|checks?|items?|components?|files?|paths?|rules?|requirements?)\b",
         re.IGNORECASE,
     )
-    listed_items = re.findall(r"(?m)^[ \t]*(?:[-*+]|\d+[.)])[ \t]+\S", exact_changes)
+    listed_items = re.findall(
+        r"(?m)^[ \t]*(?:[-*+]|\d+[.)])[ \t]+(\S.*)$",
+        exact_changes,
+    )
+    distinct_meaningful_items = {
+        normalized_prose(item)
+        for item in listed_items
+        if meaningful(item, field=True)
+    }
     for claim in counted_change_pattern.finditer(exact_changes):
         raw_count = claim.group("count").lower()
         claimed_count = int(raw_count) if raw_count.isdigit() else count_words[raw_count]
-        if claimed_count > len(listed_items):
+        if claimed_count > len(distinct_meaningful_items):
             result.append(
                 "Product context point 4 must enumerate every item in a counted exact-change claim."
             )
