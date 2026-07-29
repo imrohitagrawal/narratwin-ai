@@ -1599,7 +1599,10 @@ def changed_files() -> list[str]:
 
 
 def charged_lines(base: str) -> int | None:
-    rows = run_git(["diff", "--numstat", f"{base}...HEAD"])
+    result = subprocess.run(["git", "diff", "--numstat", f"{base}...HEAD"], cwd=ROOT, check=False, text=True, capture_output=True)
+    if result.returncode:
+        return None
+    rows = result.stdout.strip()
     total = 0
     for row in rows.splitlines():
         fields = row.split("\t")

@@ -8258,8 +8258,6 @@ def test_issue306_heartbeat1_b_rejects_backend_or_ninth_surface(monkeypatch: Any
     assert run_changed_files_check(monkeypatch, branch="phase-1-closure-306-heartbeat1-b-browser-reopen", files=[rel]) == [
         "Phase 1 Closure branch phase-1-closure-306-heartbeat1-b-browser-reopen may not change backend/app/main.py."
     ]
-
-
 def load_heartbeat2_evidence_module() -> ModuleType:
     module_path = Path(__file__).parents[2] / "scripts" / "ci" / "heartbeat2_evidence.py"
     spec = importlib.util.spec_from_file_location("heartbeat2_evidence_under_test", module_path)
@@ -8267,34 +8265,9 @@ def load_heartbeat2_evidence_module() -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
-
 def test_issue308_exact_branches_accept_only_the_frozen_allowlists(monkeypatch: Any) -> None:
-    evidence = {
-        "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md",
-        "docs/PHASE_PLAN.md",
-        "docs/QUALITY_GATES.md",
-        "docs/STAGE_ISSUE_PLAN.md",
-        "docs/STATUS.md",
-        "scripts/ci/heartbeat2_evidence.py",
-        "scripts/quality/check_phase1_closure_docs.py",
-        "tests/unit/test_phase1_closure_docs.py",
-    }
-    demo = {
-        ".github/workflows/ci.yml",
-        "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md",
-        "docs/STATUS.md",
-        "docs/TRACEABILITY.md",
-        "frontend/playwright.heartbeat2.config.ts",
-        "frontend/src/app/page.tsx",
-        "frontend/src/app/page.test.tsx",
-        "frontend/tests/heartbeat2-browser.spec.ts",
-        "scripts/ci/heartbeat2-browser.sh",
-        "scripts/ci/heartbeat2_evidence.py",
-        "scripts/quality/check_phase1_closure_docs.py",
-        "tests/unit/test_phase1_closure_docs.py",
-    }
-
+    evidence = {"docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/PHASE_PLAN.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"}
+    demo = {".github/workflows/ci.yml", "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "frontend/playwright.heartbeat2.config.ts", "frontend/src/app/page.tsx", "frontend/src/app/page.test.tsx", "frontend/tests/heartbeat2-browser.spec.ts", "scripts/ci/heartbeat2-browser.sh", "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"}
     assert phase1.ISSUE_308_H2_A_BRANCH == "phase-1-closure-308-heartbeat2-evidence-contract"
     assert phase1.ISSUE_308_H2_A_ALLOWED_CHANGED_FILES == evidence
     assert phase1.ISSUE_308_H2_B_BRANCH == "phase-1-closure-308-heartbeat2-curated-reviewer-demo"
@@ -8328,11 +8301,13 @@ def test_issue308_charged_line_caps_fail_closed(monkeypatch: Any) -> None:
     assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_B_BRANCH, files=[]) == [
         f"Phase 1 Closure branch {phase1.ISSUE_308_H2_B_BRANCH} has uncountable or binary charged lines."
     ]
+    failed = type("FailedGit", (), {"returncode": 1, "stdout": ""})()
+    monkeypatch.setattr(phase1.subprocess, "run", lambda *args, **kwargs: failed)
+    assert phase1.charged_lines("missing-base") is None
 
 
 def write_heartbeat2_packet(root: Path, source_root: Path, evidence: Any) -> dict[str, Any]:
     import hashlib
-
     root.mkdir(parents=True, exist_ok=True)
     graph = []
     for relative in evidence.SOURCES:
@@ -8341,27 +8316,37 @@ def write_heartbeat2_packet(root: Path, source_root: Path, evidence: Any) -> dic
         path.write_text("bounded committed source\n", encoding="utf-8")
         graph.append({"path": relative, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
     artifacts = {}
-    for name, filename, mime in (("translated", "translated.json", "application/json"), ("subtitles", "captions.srt", "application/x-subrip"), ("voice", "voice.json", "application/json"), ("preview", "preview.html", "text/html"), ("renderManifest", "render.json", "application/json"), ("video", "video.json", "application/json")):
+    payloads = {"translated": "# Recorrido sintético [1]\n", "subtitles": "1\n00:00:00,000 --> 00:00:01,000\nBounded synthetic caption [1]\n", "voice": '{"schemaVersion":"stage6-tts-manifest-v2","provider":"mock"}', "preview": "<!doctype html><html><body>Local synthetic preview</body></html>", "renderManifest": '{"multilingualBundle":{"multilingualRunId":"multi-1"}}', "video": '{"providerConfig":{"providerMode":"LOCAL"}}'}
+    for name, filename, mime in (("translated", "translated.md", "text/markdown"), ("subtitles", "captions.srt", "application/x-subrip"), ("voice", "voice.json", "application/json"), ("preview", "preview.html", "text/html"), ("renderManifest", "render.json", "application/json"), ("video", "video.json", "application/json")):
         path = root / "artifacts" / filename
         path.parent.mkdir(exist_ok=True)
-        path.write_text(f"bounded {name}\n", encoding="utf-8")
+        path.write_text(payloads[name], encoding="utf-8")
         artifacts[name] = {"path": path.relative_to(root).as_posix(), "filename": filename, "mime": mime, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-    report = {"stats": {"startTime": "2026-07-29T00:00:00Z", "duration": 10, "expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}, "suites": [{"specs": [{"tests": [{"expectedStatus": "passed", "results": [{"status": "passed", "retry": 0, "errors": []}]}]}]}]}
-    source = {"id": "source-1", "checksum": "source-sha", "status": "SOURCE_INGESTED", "retained": True, "chunks": [{"id": "chunk-1", "checksum": "chunk-sha"}]}
-    contexts = [{"contextRefId": "context-1", "documentId": "source-1", "sourceChecksum": "source-sha", "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}]
+    report = {"config": {"configFile": "frontend/playwright.heartbeat2.config.ts", "rootDir": "frontend/tests", "version": "1.61.1", "projects": [{"id": "chromium", "name": "chromium"}]}, "errors": [], "stats": {"startTime": "2026-07-29T00:00:00Z", "duration": 10, "expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}, "suites": [{"title": "", "file": "heartbeat2-browser.spec.ts", "line": 0, "column": 0, "specs": [{"title": "Heartbeat 2", "id": "spec-1", "file": "heartbeat2-browser.spec.ts", "line": 1, "column": 1, "ok": True, "tags": [], "tests": [{"expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium", "timeout": 30000, "annotations": [], "results": [{"status": "passed", "retry": 0, "errors": [], "duration": 10, "startTime": "2026-07-29T00:00:00Z", "workerIndex": 0, "parallelIndex": 0, "stdout": [], "stderr": [], "annotations": [], "attachments": [{"name": "trace", "contentType": "application/zip", "path": "/tmp/trace.zip"}]}]}]}]}]}
+    source = {"id": "source-1", "checksum": "source-sha", "states": ["PENDING_REVIEW", "APPROVED", "SOURCE_INGESTED"], "status": "SOURCE_INGESTED", "retained": True, "chunks": [{"id": "chunk-1", "checksum": "chunk-sha"}]}
+    contexts = [{"contextRefId": "context-1", "claimId": "claim-1", "documentId": "source-1", "sourceChecksum": "source-sha", "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}]
     evaluation = {"id": "eval-1", "checksum": "eval-sha", "status": "PASSED", "unsupportedClaimCount": 0}
-    walkthrough = {"projectId": "project-1", "runId": "run-1", "status": "COMPLETED", "contextRefs": contexts, "claimSupports": [{"contextRefId": "context-1"}], "citations": [{"contextRefId": "context-1", "index": 1}], "evaluation": evaluation}
+    walkthrough = {"projectId": "project-1", "runId": "run-1", "status": "COMPLETED", "contextRefs": contexts, "claimSupports": [{"claimId": "claim-1", "contextRefId": "context-1", "documentId": "source-1", "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}], "citations": [{"claimId": "claim-1", "contextRefId": "context-1", "index": 1}], "evaluation": evaluation}
     media = {"projectId": "project-1", "runId": "multi-1", "sourceRunId": "run-1", "supportedLanguage": True, "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "translationMode": "mock", "voiceMode": "mock", "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("translated", "subtitles", "voice")}}
-    render = {"projectId": "project-1", "sourceRunId": "run-1", "multilingualRunId": "multi-1", "consentId": "consent-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "avatarMode": "local", "cloneEnabled": False, "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("preview", "renderManifest", "video")}}
-    bundle = {"principal": "curator_demo", "projectCount": 1, "projectId": "project-1", "legacySources": [], "source": source, "walkthrough": walkthrough, "visibleCitationContextIds": ["context-1"], "multilingual": media, "consent": {"id": "consent-1", "projectId": "project-1"}, "render": render, "artifacts": artifacts, "otherDemo": {"readStatus": 403, "actionsHidden": True}}
+    render = {"id": "render-1", "projectId": "project-1", "sourceRunId": "run-1", "multilingualRunId": "multi-1", "consentId": "consent-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "avatarMode": "local", "cloneEnabled": False, "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("preview", "renderManifest", "video")}}
+    bundle = {"principal": "curator_demo", "projectCount": 1, "projectId": "project-1", "legacySources": [], "source": source, "walkthrough": walkthrough, "visibleCitations": [{"claimId": "claim-1", "contextRefId": "context-1", "chunkId": "chunk-1"}], "multilingual": media, "consent": {"id": "consent-1", "projectId": "project-1"}, "render": render, "artifacts": artifacts, "otherDemo": {"actionsHidden": True}}
     methods = [("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201)]
     paths = ["/api/v1/projects", "/api/v1/projects/project-1/knowledge-documents", "/api/v1/projects/project-1/knowledge-documents/source-1/approval", "/api/v1/projects/project-1/ingestion-runs", "/api/v1/projects/project-1/walkthrough-runs", "/api/v1/projects/project-1/walkthrough-runs/run-1/multilingual-runs", "/api/v1/projects/project-1/walkthrough-runs/run-1/avatar-consents", "/api/v1/projects/project-1/walkthrough-runs/run-1/avatar-renders"]
-    writes = [{"sequence": i, "operation": op, "method": method, "status": status, "path": paths[i - 1], "origin": evidence.ORIGIN, "principal": "curator_demo", "projectId": "project-1", "requestId": f"w{i}", "responseRequestId": f"w{i}"} for i, (op, method, status) in enumerate(methods, 1)]
-    reads = [{"sequence": i, "operation": op, "method": "GET", "status": status, "path": "/api/v1/languages" if i == 1 else "/api/v1/projects/project-1/source-curation-summary", "origin": evidence.ORIGIN, "principal": principal, "projectId": "" if i == 1 else "project-1", "requestId": f"r{i}", "responseRequestId": f"r{i}"} for i, (op, status, principal) in enumerate(evidence.READS, 1)]
-    manifest = {"schema": "heartbeat2-evidence-v2", "runId": "run-308", "headSha": "a" * 40, "testReport": "playwright.json", "traffic": "traffic.json", "bundle": "bundle.json", "sourceGraph": graph}
-    for filename, value in (("playwright.json", report), ("traffic.json", {"writes": writes, "reads": reads}), ("bundle.json", bundle), ("manifest.json", manifest)):
+    requests = [{"sequence": i, "operation": op, "method": method, "path": paths[i - 1], "origin": evidence.ORIGIN, "principal": "curator_demo", "projectId": "project-1", "id": f"w{i}"} for i, (op, method, status) in enumerate(methods, 1)]
+    requests += [{"sequence": i, "operation": op, "method": method, "path": "/api/v1/languages" if i == 1 else "/api/v1/projects/project-1/source-curation-summary", "origin": evidence.ORIGIN, "principal": principal, "projectId": "" if i == 1 else "project-1", "id": f"r{i}"} for i, (op, method, status, principal) in enumerate(evidence.READS, 1)]
+    denial_paths = paths[4:5] + paths[5:8]
+    requests += [{"sequence": i, "operation": op, "method": method, "path": denial_paths[i - 1], "origin": evidence.ORIGIN, "principal": "other_demo", "projectId": "project-1", "id": f"d{i}"} for i, (op, method, status) in enumerate(evidence.DENIALS, 1)]
+    statuses = [status for _, _, status in methods] + [status for _, _, status, _ in evidence.READS] + [status for _, _, status in evidence.DENIALS]
+    responses = [{"requestId": request["id"], "status": status} for request, status in zip(requests, statuses, strict=True)]
+    import zipfile
+    records = [{"type": "resource-snapshot", "snapshot": {"request": {"url": request["origin"] + request["path"], "method": request["method"], "headers": [{"name": "X-Local-User-Id", "value": request["principal"]}]}, "response": {"status": response["status"]}}} for request, response in zip(requests, responses, strict=True)]
+    with zipfile.ZipFile(root / "trace.zip", "w") as archive:
+        archive.writestr("0-trace.network", "\n".join(json.dumps(record) for record in records))
+    trace_sha = hashlib.sha256((root / "trace.zip").read_bytes()).hexdigest()
+    manifest = {"schema": "heartbeat2-evidence-v2", "runId": "run-308", "headSha": "a" * 40, "testReport": "playwright.json", "traffic": "traffic.json", "trace": "trace.zip", "traceSha256": trace_sha, "bundle": "bundle.json", "sourceGraph": graph}
+    for filename, value in (("playwright.json", report), ("traffic.json", {"requests": requests, "responses": responses}), ("bundle.json", bundle), ("manifest.json", manifest)):
         (root / filename).write_text(json.dumps(value), encoding="utf-8")
-    return {"manifest": manifest, "report": report, "traffic": {"writes": writes, "reads": reads}, "bundle": bundle, "artifact": root / "artifacts" / "video.json"}
+    return {"manifest": manifest, "report": report, "traffic": {"requests": requests, "responses": responses}, "bundle": bundle, "artifact": root / "artifacts" / "video.json"}
 
 
 def test_heartbeat2_verifier_accepts_exact_packet_and_rejects_false_passes(tmp_path: Path) -> None:
@@ -8372,6 +8357,11 @@ def test_heartbeat2_verifier_accepts_exact_packet_and_rejects_false_passes(tmp_p
     assert result["outcome"] == "PASS"
     assert result["writeCount"] == 8
     assert packet["report"]["stats"]["startTime"]
+    packet["report"].pop("config")
+    (root / "playwright.json").write_text(json.dumps(packet["report"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    packet = write_heartbeat2_packet(root, sources, evidence)
     packet["report"]["stats"].update({"expected": 0, "skipped": 1})
     (root / "playwright.json").write_text(json.dumps(packet["report"]), encoding="utf-8")
     with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT"):
@@ -8381,33 +8371,32 @@ def test_heartbeat2_verifier_accepts_exact_packet_and_rejects_false_passes(tmp_p
 def test_heartbeat2_verifier_rejects_ledger_artifact_source_and_forbidden_mutations(tmp_path: Path) -> None:
     evidence: Any = load_heartbeat2_evidence_module()
     sources = tmp_path / "sources"
-    root = tmp_path / "traffic"
-    packet = write_heartbeat2_packet(root, sources, evidence)
-    packet["traffic"]["writes"][0]["principal"] = "other_demo"
-    (root / "traffic.json").write_text(json.dumps(packet["traffic"]), encoding="utf-8")
-    with pytest.raises(evidence.EvidenceError, match="OWNER_JOIN"):
-        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
-
+    mutations = (
+        ("traffic", "traffic", lambda p: p["traffic"]["requests"][0].__setitem__("principal", "other_demo"), "OWNER_JOIN"),
+        ("method", "traffic", lambda p: p["traffic"]["requests"][8].__setitem__("method", "POST"), "READ_LEDGER"),
+        ("joins", "bundle", lambda p: p["bundle"]["walkthrough"]["contextRefs"][0].__setitem__("sourceChecksum", "wrong"), "PRODUCT_JOIN"),
+        ("lifecycle", "bundle", lambda p: p["bundle"]["source"].__setitem__("states", ["SOURCE_INGESTED"]), "PRODUCT_JOIN"),
+        ("source", "manifest", lambda p: p["manifest"]["sourceGraph"].pop(), "SOURCE_GRAPH"),
+    )
+    for label, payload, mutate, code in mutations:
+        root, packet = tmp_path / label, write_heartbeat2_packet(tmp_path / label, sources, evidence)
+        cast(Callable[[dict[str, Any]], Any], mutate)(packet)
+        (root / f"{payload}.json").write_text(json.dumps(packet[payload]), encoding="utf-8")
+        with pytest.raises(evidence.EvidenceError, match=code):
+            evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
     root = tmp_path / "artifact"
     packet = write_heartbeat2_packet(root, sources, evidence)
     packet["artifact"].write_bytes(b"tampered")
     with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
-
-    root = tmp_path / "joins"
+    root = tmp_path / "payload"
     packet = write_heartbeat2_packet(root, sources, evidence)
-    packet["bundle"]["walkthrough"]["contextRefs"][0]["sourceChecksum"] = "wrong"
+    packet["artifact"].write_text("not-json", encoding="utf-8")
+    packet["bundle"]["artifacts"]["video"]["sha256"] = evidence.sha256(packet["artifact"].read_bytes())
+    packet["bundle"]["render"]["artifactChecksums"]["video"] = packet["bundle"]["artifacts"]["video"]["sha256"]
     (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
-    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
-
-    root = tmp_path / "source"
-    packet = write_heartbeat2_packet(root, sources, evidence)
-    packet["manifest"]["sourceGraph"].pop()
-    (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
-    with pytest.raises(evidence.EvidenceError, match="SOURCE_GRAPH"):
-        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
-
     root = tmp_path / "privacy"
     write_heartbeat2_packet(root, sources, evidence)
     marker = b"synthetic-forbidden-308"
@@ -8416,7 +8405,13 @@ def test_heartbeat2_verifier_rejects_ledger_artifact_source_and_forbidden_mutati
     nested = io.BytesIO()
     with zipfile.ZipFile(nested, "w") as archive:
         archive.writestr("member.bin", marker)
-    with zipfile.ZipFile(root / "trace.zip", "w") as archive:
+    with zipfile.ZipFile(root / "nested-privacy.zip", "w") as archive:
         archive.writestr("nested.zip", nested.getvalue())
     with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_OR_ARCHIVE"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", forbidden=(marker,), source_root=sources)
+    root = tmp_path / "unsafe-archive"
+    write_heartbeat2_packet(root, sources, evidence)
+    with zipfile.ZipFile(root / "unsafe.zip", "w") as archive:
+        archive.writestr("../../escape.txt", "bounded")
+    with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_OR_ARCHIVE"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
