@@ -930,6 +930,21 @@ def test_product_context_rejects_duplicate_or_placeholder_counted_items(
     ]
 
 
+def test_product_context_does_not_reuse_one_enumeration_for_another_counted_claim() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = (
+        "This PR adds two required controls:\n"
+        "1. The author supplies exact product context.\n"
+        "2. The reviewer checks explicit pass conditions.\n\n"
+        "This PR also changes three governance files:\n"
+        "1. The pull request template changes.\n"
+        "2. The local guardrail parser changes."
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 4 must enumerate every item in a counted exact-change claim."
+    ]
+
+
 @pytest.mark.parametrize(
     "missing_field",
     ("Expected behavior", "Prohibited behavior", "Evidence", "Pass condition", "Fail condition"),
