@@ -8258,3 +8258,131 @@ def test_issue306_heartbeat1_b_rejects_backend_or_ninth_surface(monkeypatch: Any
     assert run_changed_files_check(monkeypatch, branch="phase-1-closure-306-heartbeat1-b-browser-reopen", files=[rel]) == [
         "Phase 1 Closure branch phase-1-closure-306-heartbeat1-b-browser-reopen may not change backend/app/main.py."
     ]
+
+
+def load_heartbeat2_evidence_module() -> ModuleType:
+    module_path = Path(__file__).parents[2] / "scripts" / "ci" / "heartbeat2_evidence.py"
+    spec = importlib.util.spec_from_file_location("heartbeat2_evidence_under_test", module_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_issue308_exact_branches_accept_only_the_frozen_allowlists(monkeypatch: Any) -> None:
+    evidence = {
+        "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md",
+        "docs/PHASE_PLAN.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "scripts/ci/heartbeat2_evidence.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+    demo = {
+        ".github/workflows/ci.yml",
+        "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "frontend/playwright.heartbeat2.config.ts",
+        "frontend/src/app/page.tsx",
+        "frontend/src/app/page.test.tsx",
+        "frontend/tests/heartbeat2-browser.spec.ts",
+        "scripts/ci/heartbeat2-browser.sh",
+        "scripts/ci/heartbeat2_evidence.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+
+    assert phase1.ISSUE_308_H2_A_BRANCH == "phase-1-closure-308-heartbeat2-evidence-contract"
+    assert phase1.ISSUE_308_H2_A_ALLOWED_CHANGED_FILES == evidence
+    assert phase1.ISSUE_308_H2_B_BRANCH == "phase-1-closure-308-heartbeat2-curated-reviewer-demo"
+    assert phase1.ISSUE_308_H2_B_ALLOWED_CHANGED_FILES == demo
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_A_BRANCH, files=sorted(evidence)) == []
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_B_BRANCH, files=sorted(demo)) == []
+
+
+def test_issue308_near_match_and_backend_changes_fail_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-308-heartbeat2-evidence-contract-extra"
+    rel = "docs/STATUS.md"
+    assert run_changed_files_check(monkeypatch, branch=branch, files=[rel]) == [
+        f"Phase 1 Closure branch {branch} may not change {rel}."
+    ]
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-308-heartbeat2-curated-reviewer-demo",
+        files=["backend/app/main.py"],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-308-heartbeat2-curated-reviewer-demo may not change backend/app/main.py."
+    ]
+
+
+def write_heartbeat2_packet(root: Path) -> dict[str, Any]:
+    artifact = root / "artifacts" / "video-placeholder.json"
+    artifact.parent.mkdir()
+    artifact.write_text('{"kind":"local-placeholder"}\n', encoding="utf-8")
+    digest = __import__("hashlib").sha256(artifact.read_bytes()).hexdigest()
+    report = {"stats": {"expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}}
+    (root / "playwright.json").write_text(json.dumps(report), encoding="utf-8")
+    operations = ["project", "submit", "approve", "ingest", "walkthrough", "multilingual", "consent", "render"]
+    ledger = [
+        {
+            "sequence": index,
+            "operation": operation,
+            "requestKey": f"request-{index}",
+            "responseKey": f"request-{index}",
+            "method": "POST",
+            "origin": "http://127.0.0.1:3122",
+            "status": 200,
+        }
+        for index, operation in enumerate(operations, 1)
+    ]
+    (root / "ledger.json").write_text(json.dumps(ledger), encoding="utf-8")
+    summary = {
+        "principal": "curator_demo",
+        "projectCount": 1,
+        "projectId": "project-1",
+        "legacySources": [],
+        "source": {"id": "source-1", "checksum": "source-sha", "chunks": [{"id": "chunk-1", "checksum": "chunk-sha"}]},
+        "contextDocuments": [{"documentId": "source-1", "chunkId": "chunk-1", "checksum": "chunk-sha"}],
+        "claimSupport": [{"chunkId": "chunk-1", "checksum": "chunk-sha"}],
+        "evaluation": {"passed": True, "unsupportedClaimCount": 0},
+        "media": {"language": "hi", "translated": True, "subtitles": True, "voiceMode": "mock"},
+        "consent": {"id": "consent-1", "projectId": "project-1"},
+        "render": {"projectId": "project-1", "consentId": "consent-1", "artifact": artifact.relative_to(root).as_posix(), "sha256": digest, "mime": "application/json", "filename": artifact.name},
+        "otherDemo": {"readStatus": 403, "actionsHidden": True},
+    }
+    (root / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    manifest = {
+        "schema": "heartbeat2-evidence-v1",
+        "runId": "run-308",
+        "headSha": "a" * 40,
+        "testReport": "playwright.json",
+        "ledger": "ledger.json",
+        "summary": "summary.json",
+        "sourceGraph": [],
+        "forbiddenMatchCount": 0,
+    }
+    (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return {"manifest": manifest, "ledger": ledger, "summary": summary, "artifact": artifact}
+
+
+def test_heartbeat2_verifier_accepts_exact_packet_and_rejects_false_passes(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    packet = write_heartbeat2_packet(tmp_path)
+
+    result = evidence.verify_evidence(tmp_path, expected_head="a" * 40, expected_run_id="run-308")
+    assert result["outcome"] == "PASS"
+    assert result["writeCount"] == 8
+
+    report = {"stats": {"expected": 0, "unexpected": 0, "skipped": 1, "flaky": 0}}
+    (tmp_path / "playwright.json").write_text(json.dumps(report), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT"):
+        evidence.verify_evidence(tmp_path, expected_head="a" * 40, expected_run_id="run-308")
+
+    (tmp_path / "playwright.json").write_text(json.dumps({"stats": {"expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}}), encoding="utf-8")
+    packet["summary"]["contextDocuments"][0]["documentId"] = "wrong-source"
+    (tmp_path / "summary.json").write_text(json.dumps(packet["summary"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="GROUNDING_JOIN"):
+        evidence.verify_evidence(tmp_path, expected_head="a" * 40, expected_run_id="run-308")
