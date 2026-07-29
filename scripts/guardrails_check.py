@@ -1354,6 +1354,209 @@ def reviewer_overview_failures(body: str) -> list[str]:
     return result
 
 
+def product_context_failures(body: str) -> list[str]:
+    points = (
+        "1. End product goal",
+        "2. Current state",
+        "3. Problem being addressed",
+        "4. Exact changes in this PR",
+        "5. What is complete after merge",
+        "6. Expected outcome",
+        "7. Not expected / out of scope",
+        "8. End-goal impact",
+        "9. Remaining gap",
+        "10. Reviewer validation",
+    )
+    reviewer_fields = (
+        "Expected behavior",
+        "Prohibited behavior",
+        "Evidence",
+        "Pass condition",
+        "Fail condition",
+    )
+    generic_or_instruction_text = {
+        "todo",
+        "tbd",
+        "pending",
+        "n a",
+        "na",
+        "not applicable",
+        "updates the project with the required changes",
+        "see the linked issue and other details for more information",
+        "describe narratwin s end product goal and how this pr relates to it",
+        "state what works today and what remains incomplete before this pr",
+        "describe the user or product problem without relying on an issue number or link",
+        "list the concrete behavior documents components and boundaries changed by this pr",
+        "state the verified repository or product state that will exist after merge",
+        "describe what users operators reviewers or later work should be able to expect",
+        "state what this pr deliberately does not change authorize or prove",
+        "explain whether this pr advances the end to end demo removes a dependency establishes production path evidence or does not directly advance product behavior",
+        "state what still prevents the end to end demo production readiness or release",
+    }
+
+    cleaned = re.sub(r"(?s)<!--.*?-->", "", body)
+    cleaned = re.sub(r"(?ms)^[ \t]*(```|~~~)[^\n]*\n.*?^[ \t]*\1[ \t]*$", "", cleaned)
+    headings = list(re.finditer(r"(?im)^[ \t]*(##|###)[ \t]+(.+?)[ \t]*#*[ \t]*$", cleaned))
+    section = next(
+        (
+            match
+            for match in headings
+            if match[1] == "##" and match[2].strip().lower() == "product and reviewer context"
+        ),
+        None,
+    )
+    if section is None:
+        return ["Non-trivial pull requests must include a Product and reviewer context section."]
+    section_end = next(
+        (match.start() for match in headings if match.start() > section.start() and match[1] == "##"),
+        len(cleaned),
+    )
+    section_headings = [
+        match for match in headings if section.end() <= match.start() < section_end and match[1] == "###"
+    ]
+
+    def normalized_prose(value: str) -> str:
+        without_links = re.sub(r"\[[^\]]*\]\([^)]*\)", " ", value)
+        without_links = re.sub(r"https?://\S+", " ", without_links)
+        without_links = re.sub(r"(?i)\b(?:issue|refs?|pull request|pr)?\s*#\d+\b", " ", without_links)
+        return re.sub(r"[^a-z0-9]+", " ", without_links.lower()).strip()
+
+    def meaningful(value: str, *, field: bool = False) -> bool:
+        normalized = normalized_prose(value)
+        words = normalized.split()
+        minimum_words = 3 if field else 8
+        minimum_length = 15 if field else 45
+        return (
+            normalized not in generic_or_instruction_text
+            and len(words) >= minimum_words
+            and len(normalized) >= minimum_length
+        )
+
+    result: list[str] = []
+    point_content: dict[int, str] = {}
+    for index, point in enumerate(points):
+        heading = next(
+            (match for match in section_headings if match[2].strip().lower() == point.lower()),
+            None,
+        )
+        if heading is None:
+            result.append(f"Product context must include point {point.replace('.', ':', 1)}.")
+            continue
+        content_end = next(
+            (match.start() for match in headings if heading.end() <= match.start() < section_end),
+            section_end,
+        )
+        content = cleaned[heading.end() : content_end]
+        point_content[index] = content
+        if not meaningful(content):
+            result.append(
+                f"Product context point {index + 1} must contain self-contained PR-specific plain-English "
+                "content; issue references and links are supplemental only."
+            )
+
+    exact_changes = point_content.get(3, "")
+    count_words = {
+        word: count
+        for count, word in enumerate(
+            (
+                "zero",
+                "one",
+                "two",
+                "three",
+                "four",
+                "five",
+                "six",
+                "seven",
+                "eight",
+                "nine",
+                "ten",
+                "eleven",
+                "twelve",
+                "thirteen",
+                "fourteen",
+                "fifteen",
+                "sixteen",
+                "seventeen",
+                "eighteen",
+                "nineteen",
+                "twenty",
+            )
+        )
+    }
+    counted_change_pattern = re.compile(
+        r"\b(?P<count>\d+|" + "|".join(count_words) + r")\s+"
+        r"(?:(?:mandatory|required|new|distinct|separate|exact|reviewer|product[- ]context|governance)\s+){0,4}"
+        r"(?:fields?|changes?|controls?|checks?|items?|components?|files?|paths?|rules?|requirements?)\b",
+        re.IGNORECASE,
+    )
+    list_item_pattern = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)])[ \t]+(\S.*)$")
+
+    def claim_list_items(claim: re.Match[str]) -> list[str]:
+        line_end = exact_changes.find("\n", claim.end())
+        if line_end == -1:
+            return []
+        items: list[str] = []
+        for line in exact_changes[line_end + 1 :].splitlines():
+            item_match = list_item_pattern.match(line)
+            if item_match is not None:
+                items.append(item_match.group(1))
+                continue
+            if not line.strip():
+                if items:
+                    break
+                continue
+            if items and line[:1].isspace():
+                items[-1] += f" {line.strip()}"
+                continue
+            break
+        return items
+
+    for claim in counted_change_pattern.finditer(exact_changes):
+        raw_count = claim.group("count").lower()
+        claimed_count = int(raw_count) if raw_count.isdigit() else count_words[raw_count]
+        listed_items = claim_list_items(claim)
+        distinct_meaningful_items = {
+            normalized_prose(item)
+            for item in listed_items
+            if meaningful(item, field=True)
+        }
+        if claimed_count > len(distinct_meaningful_items):
+            result.append(
+                "Product context point 4 must enumerate every item in a counted exact-change claim."
+            )
+            break
+
+    reviewer_content = point_content.get(9)
+    if reviewer_content is not None and meaningful(reviewer_content):
+        for field in reviewer_fields:
+            field_match = re.search(
+                rf"(?im)^[ \t]*[-*+]?[ \t]*{re.escape(field)}:[ \t]*(.+)$",
+                reviewer_content,
+            )
+            if field_match is None or not meaningful(field_match.group(1), field=True):
+                result.append(
+                    f"Product context reviewer validation must include {field.lower()}."
+                )
+
+    section_text = cleaned[section.end() : section_end]
+    affirmative_production_patterns = (
+        r"\bmak(?:e|es)\b[^.\n]{0,60}\bproduction[- ]ready\b",
+        r"\b(?:is|now)\b[^.\n]{0,40}\bready for production(?: deployment)?\b",
+        r"\b(?:is|now) deployed to production\b",
+        r"\bmak(?:e|es)\b[^.\n]{0,60}\bpublicly available\b",
+    )
+    for sentence in re.split(r"[.\n]+", section_text.lower()):
+        if re.search(r"\b(?:not|does not|must not|without|no)\b", sentence):
+            continue
+        if any(re.search(pattern, sentence) for pattern in affirmative_production_patterns):
+            result.append(
+                "Product context must not claim production readiness, production deployment, release, or "
+                "public availability without separate authorization."
+            )
+            break
+    return result
+
+
 def parse_preflight_row(cells: list[str]) -> PreflightEvidenceRow | None:
     if len(cells) >= 9:
         evidence, artifact, reference_type, matrix_ids, command, reviewer, evidence_type, status, residual = cells[:9]
@@ -1917,6 +2120,7 @@ def check_issue_linked_pull_request() -> None:
     if not reference_only_issue_39 and not is_canonical_stage_branch and not re.search(issue_link_pattern(), body):
         failures.append("Pull request body must link an issue using reference-only wording such as Refs #<issue>.")
     if is_nontrivial_pull_request(changes):
+        failures.extend(product_context_failures(body))
         failures.extend(reviewer_overview_failures(body))
         failures.extend(status_impact_finalization_failures(changes, body))
         if not has_completed_preflight_evidence(body):

@@ -49,6 +49,19 @@ Before changing files, read:
 18. For non-trivial requirements, architecture, coding, release, or governance work, consult `docs/ENGINEERING_PROCESS_RCA.md` before implementation and record the preflight evidence required by `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md`.
 19. For non-trivial work, select skills and test levels from the claim and boundary being proved, record invoked and rejected options plus their evidence or prevented action, and follow `docs/SKILL_SELECTION_AND_EVIDENCE.md`. A skill invocation is not evidence by itself.
 20. Every non-trivial pull request body must include the five-point `## Reviewer overview` from `.github/pull_request_template.md` before detailed governance/evidence tables. Replace every instruction or placeholder with meaningful PR-specific content; evidence tables are not a substitute for this overview.
+21. Every non-trivial pull request body must also include `## Product and
+    reviewer context` before detailed evidence. In self-contained plain English,
+    state the end product goal, current state, problem, exact changes, completed
+    state after merge, expected outcome, not-expected or out-of-scope behavior,
+    end-goal impact, remaining gap, and reviewer validation with expected and
+    prohibited behavior, evidence, and pass/fail conditions. Issue references
+    and links are supplemental; they never replace this explanation. Relate the
+    PR to the end-to-end demo and eventual production path without claiming
+    production readiness, deployment, release, or public availability unless a
+    separate authorized gate proves that claim. When `Exact changes` claims a
+    number of fields, changes, controls, checks, items, components, files,
+    paths, rules, or requirements, enumerate every counted item as a distinct,
+    meaningful Markdown list entry.
 
 ## Approved Build Stages
 

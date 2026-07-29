@@ -1,0 +1,53 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 315,
+  "branch": "phase-1-closure-process-315-pr-product-context-gate",
+  "objective": "Make every non-trivial pull request explain NarraTwin's end product goal, current state, concrete problem, exact changes, completed state, expected and prohibited outcomes, end-to-end demo and production-path impact, remaining gap, and outcome-oriented reviewer validation in self-contained plain English. Positive claims PRCTX-001 through PRCTX-009 require exact headings before evidence, PR-specific prose that survives removal of links and issue references, complete enumeration of any counted exact-change claim, complete reviewer pass/fail fields, bounded production-direction language, preservation of existing PR checks, durable policy across agent/template/gate/docs/status and the reusable new-project engineering playbook, and exact scope enforcement. Negative invariants forbid issue-only, link-only, placeholder, copied-instruction, generic-filler, fenced-placeholder, unexpanded counted-change, or unsupported production-readiness false passes; automation does not replace human truth and strategic review; no runtime, workflow, dependency, provider, deployment, unrelated issue/PR, protected tracker, or forensic mutation is authorized. Evidence requires first-commit preflight, committed behavioral RED before GREEN, field-level mutations, forced pull-request-event validation, complete local and exact-head CI gates, independent exact-head approval, reference-only merge wording, and full post-merge closeout.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-315.json",
+      "AGENTS.md",
+      ".github/pull_request_template.md",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/SKILL_EXECUTION_PLAN.md",
+      "docs/STATUS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-315.json",
+      "AGENTS.md",
+      ".github/pull_request_template.md",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/SKILL_EXECUTION_PLAN.md",
+      "docs/STATUS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker/",
+      "Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json",
+      "reports/",
+      "runtime product behavior, schema, API, or provider changes",
+      "deployment, hosting, public URL, release, or production-readiness claim",
+      "paid services, credentials, private data, or real/cloned media",
+      "unrelated issue, PR, branch, protected tracker, or forensic evidence mutation"
+    ]
+  }
+}

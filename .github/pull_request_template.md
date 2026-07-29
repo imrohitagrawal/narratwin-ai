@@ -6,6 +6,55 @@ If this PR is intentionally meant to close an issue, state the exact closing
 keyword and issue here and explain why closure is correct. Otherwise use
 reference-only wording.
 
+## Product and reviewer context
+
+<!-- Required for non-trivial PRs. Complete every point with self-contained,
+PR-specific plain English. Issue references and links are supplemental evidence,
+not substitutes for the explanation. -->
+
+### 1. End product goal
+<!-- Describe NarraTwin's end product goal and how this PR relates to it. -->
+
+### 2. Current state
+<!-- State what works today and what remains incomplete before this PR. -->
+
+### 3. Problem being addressed
+<!-- Describe the user or product problem without relying on an issue number or link. -->
+
+### 4. Exact changes in this PR
+<!-- List the concrete behavior, documents, components, and boundaries changed by this PR.
+If this section claims a number of fields, changes, controls, checks, items,
+components, files, paths, rules, or requirements, enumerate every counted item
+as a distinct, meaningful Markdown list entry. -->
+
+### 5. What is complete after merge
+<!-- State the verified repository or product state that will exist after merge. -->
+
+### 6. Expected outcome
+<!-- Describe what users, operators, reviewers, or later work should be able to expect. -->
+
+### 7. Not expected / out of scope
+<!-- State what this PR deliberately does not change, authorize, or prove. -->
+
+### 8. End-goal impact
+<!-- Explain whether this PR advances the end-to-end demo, removes a dependency,
+establishes production-path evidence, or does not directly advance product behavior. -->
+
+### 9. Remaining gap
+<!-- State what still prevents the end-to-end demo, production readiness, or release. -->
+
+### 10. Reviewer validation
+
+Expected behavior: <!-- State the expected product or repository behavior. -->
+
+Prohibited behavior: <!-- State what must remain false or unchanged. -->
+
+Evidence: <!-- Name the tests, artifacts, or observations that prove the claims. -->
+
+Pass condition: <!-- State the exact outcome that makes review pass. -->
+
+Fail condition: <!-- State the exact outcome that must block approval. -->
+
 ## Reviewer overview
 
 <!-- Required for non-trivial PRs. Complete all five points with PR-specific content before the evidence tables. -->

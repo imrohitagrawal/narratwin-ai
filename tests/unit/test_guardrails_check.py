@@ -46,6 +46,34 @@ REVIEWER_MEANING_FAILURES = (
     "Reviewer overview point 4 must contain meaningful PR-specific content.",
     "Reviewer overview point 5 must contain meaningful PR-specific content.",
 )
+PRODUCT_CONTEXT_HEADINGS = (
+    "1. End product goal",
+    "2. Current state",
+    "3. Problem being addressed",
+    "4. Exact changes in this PR",
+    "5. What is complete after merge",
+    "6. Expected outcome",
+    "7. Not expected / out of scope",
+    "8. End-goal impact",
+    "9. Remaining gap",
+    "10. Reviewer validation",
+)
+PRODUCT_CONTEXT_CONTENT = (
+    "NarraTwin is progressing toward an end-to-end audience-aware multilingual demo and a separately approved production path.",
+    "The repository blocks placeholder reviewer overviews, but it does not yet require self-contained product and end-goal context.",
+    "Reviewers currently have to open nested issue and document links to reconstruct the product intent and expected outcome.",
+    "This PR adds a product-context template, a local PR-body parser, negative tests, and matching governance documentation.",
+    "After merge, policy-gates rejects non-trivial PRs that omit any required self-contained product-context field.",
+    "Reviewers can understand the change, product impact, expected result, and validation target directly from the PR body.",
+    "This PR does not change runtime behavior and does not authorize deployment, public release, or production readiness.",
+    "This governance change removes review ambiguity; it does not directly add another step to the user-facing demo flow.",
+    "The end-to-end demo and all independent production-readiness evidence remain separate product and release work.",
+    "Expected behavior: incomplete product context blocks policy-gates.\n"
+    "Prohibited behavior: issue-only or link-only text must not pass.\n"
+    "Evidence: focused parser mutations and a forced pull-request event.\n"
+    "Pass condition: every required field is specific and the complete body passes.\n"
+    "Fail condition: any required field is missing, generic, or unsupported.",
+)
 
 
 def reviewer_overview_body(
@@ -55,6 +83,18 @@ def reviewer_overview_body(
 ) -> str:
     rows = ["## Reviewer overview"]
     for index, (heading, content) in enumerate(zip(REVIEWER_POINT_HEADINGS, contents, strict=True)):
+        if index != omit:
+            rows.extend(("", f"### {heading}", "", content))
+    return "\n".join(rows) + "\n"
+
+
+def product_context_body(
+    contents: tuple[str, ...] = PRODUCT_CONTEXT_CONTENT,
+    *,
+    omit: int | None = None,
+) -> str:
+    rows = ["## Product and reviewer context"]
+    for index, (heading, content) in enumerate(zip(PRODUCT_CONTEXT_HEADINGS, contents, strict=True)):
         if index != omit:
             rows.extend(("", f"### {heading}", "", content))
     return "\n".join(rows) + "\n"
@@ -442,6 +482,7 @@ def completed_preflight_body(
     )
     return (
         "Refs #44\n\n"
+        f"{product_context_body()}\n"
         f"{reviewer_overview_body()}\n"
         "## Status impact\n\n"
         "No repository-tracked status change is claimed by this PR. Routine post-merge facts go to "
@@ -799,6 +840,192 @@ def test_reviewer_overview_does_not_change_nontrivial_detection_or_add_external_
     monkeypatch.setattr(guardrails, "github_pull_request_is_merged", fail_external_lookup)
     monkeypatch.setattr(guardrails, "os", type("NoEnvironment", (), {"__getattr__": fail_external_lookup})())
     assert guardrails.reviewer_overview_failures(reviewer_overview_body()) == []
+
+
+def test_product_context_accepts_complete_self_contained_pr_specific_content() -> None:
+    assert guardrails.product_context_failures(product_context_body()) == []
+
+
+def test_product_context_rejects_missing_section() -> None:
+    assert guardrails.product_context_failures(reviewer_overview_body()) == [
+        "Non-trivial pull requests must include a Product and reviewer context section."
+    ]
+
+
+@pytest.mark.parametrize(("missing_index", "heading"), tuple(enumerate(PRODUCT_CONTEXT_HEADINGS)))
+def test_product_context_rejects_each_missing_subsection(
+    missing_index: int,
+    heading: str,
+) -> None:
+    assert guardrails.product_context_failures(product_context_body(omit=missing_index)) == [
+        f"Product context must include point {heading.replace('.', ':', 1)}."
+    ]
+
+
+@pytest.mark.parametrize(
+    "insufficient_content",
+    (
+        "Issue #315",
+        "Refs #315",
+        "https://github.com/imrohitagrawal/narratwin-ai/issues/315",
+        "[Issue 315](https://github.com/imrohitagrawal/narratwin-ai/issues/315)",
+        "Updates the project with the required changes.",
+        "See the linked issue and other details for more information.",
+        "TODO",
+        "```text\nTBD\n```",
+    ),
+)
+def test_product_context_rejects_non_self_contained_or_generic_content(
+    insufficient_content: str,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[2] = insufficient_content
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 3 must contain self-contained PR-specific plain-English content; issue references and links are supplemental only."
+    ]
+
+
+@pytest.mark.parametrize(
+    "unexpanded_claim",
+    (
+        "This PR adds ten mandatory product-context fields to the pull request template.",
+        "This PR adds 10 required reviewer controls to the pull request template.",
+    ),
+)
+def test_product_context_rejects_counted_exact_changes_without_complete_enumeration(
+    unexpanded_claim: str,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = unexpanded_claim
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 4 must enumerate every item in a counted exact-change claim."
+    ]
+
+
+def test_product_context_accepts_counted_exact_changes_with_complete_enumeration() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = "This PR adds ten mandatory product-context fields:\n" + "\n".join(
+        f"{index}. Field {index} has a distinct reviewer outcome." for index in range(1, 11)
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
+
+
+@pytest.mark.parametrize(
+    "invalid_items",
+    (
+        ["The same repeated field description."] * 10,
+        [f"Field {index} has a distinct reviewer outcome." for index in range(1, 10)]
+        + ["TBD"],
+    ),
+)
+def test_product_context_rejects_duplicate_or_placeholder_counted_items(
+    invalid_items: list[str],
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = "This PR adds ten mandatory product-context fields:\n" + "\n".join(
+        f"{index}. {item}" for index, item in enumerate(invalid_items, start=1)
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 4 must enumerate every item in a counted exact-change claim."
+    ]
+
+
+def test_product_context_does_not_reuse_one_enumeration_for_another_counted_claim() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = (
+        "This PR adds two required controls:\n"
+        "1. The author supplies exact product context.\n"
+        "2. The reviewer checks explicit pass conditions.\n\n"
+        "This PR also changes three governance files:\n"
+        "1. The pull request template changes.\n"
+        "2. The local guardrail parser changes."
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 4 must enumerate every item in a counted exact-change claim."
+    ]
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    ("Expected behavior", "Prohibited behavior", "Evidence", "Pass condition", "Fail condition"),
+)
+def test_product_context_reviewer_validation_requires_each_outcome_field(
+    missing_field: str,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[9] = "\n".join(
+        line for line in contents[9].splitlines() if not line.startswith(f"{missing_field}:")
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        f"Product context reviewer validation must include {missing_field.lower()}."
+    ]
+
+
+@pytest.mark.parametrize(
+    "unsupported_claim",
+    (
+        "This PR makes NarraTwin production-ready for customers.",
+        "NarraTwin is now ready for production deployment to external customers worldwide.",
+        "The product is deployed to production by this change.",
+        "This change makes NarraTwin publicly available to external users immediately.",
+    ),
+)
+def test_product_context_rejects_unsupported_production_or_release_claims(
+    unsupported_claim: str,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[7] = unsupported_claim
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context must not claim production readiness, production deployment, release, or public availability without separate authorization."
+    ]
+
+
+def test_product_context_contract_is_durable_across_rules_template_and_policy_docs() -> None:
+    root = Path(__file__).parents[2]
+    template = (root / ".github/pull_request_template.md").read_text(encoding="utf-8")
+    for heading in ("## Product and reviewer context", *PRODUCT_CONTEXT_HEADINGS):
+        assert heading in template
+
+    required_markers = {
+        "AGENTS.md": (
+            "self-contained plain English",
+            "end product goal",
+            "issue references and links are supplemental",
+        ),
+        "docs/REPOSITORY_GUARDRAILS.md": (
+            "Product and reviewer context",
+            "issue-only",
+            "policy-gates",
+        ),
+        "docs/QUALITY_GATES.md": (
+            "Product and reviewer context",
+            "production path",
+            "product_context_failures",
+        ),
+        "docs/SKILL_EXECUTION_PLAN.md": (
+            "Issue 315",
+            "product-context",
+            "TDD",
+        ),
+        "docs/STATUS.md": (
+            "issue #315",
+            "self-contained product and end-goal context",
+            "runtime and production authorization remain unchanged",
+        ),
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+            "End product goal",
+            "Exact changes",
+            "enumerate every counted item",
+            "independent reviewer",
+        ),
+    }
+    for relative_path, markers in required_markers.items():
+        text = (root / relative_path).read_text(encoding="utf-8")
+        normalized_text = " ".join(text.lower().split())
+        for marker in markers:
+            assert " ".join(marker.lower().split()) in normalized_text, (
+                f"{relative_path} missing durable product-context marker: {marker}"
+            )
 
 
 def test_phase1_issue39_pull_request_allows_reference_only_body(

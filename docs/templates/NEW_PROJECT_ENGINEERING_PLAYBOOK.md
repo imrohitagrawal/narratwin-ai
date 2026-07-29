@@ -735,7 +735,41 @@ Do not rubber-stamp the reviewer. Re-read the artifact and decide.
 
 ## Gate 7: PR Evidence
 
-Every non-trivial PR must include an evidence table, not just checked boxes.
+Every non-trivial PR must first explain its product and reviewer context in
+self-contained plain English. An issue number or link is supporting evidence,
+not the explanation. Put these ten fields before detailed evidence:
+
+1. **End product goal:** the complete product outcome and the limit on any
+   eventual production claim.
+2. **Current state:** what works or is already governed before the PR.
+3. **Problem being addressed:** the user, product, engineering, security, or
+   governance gap being removed.
+4. **Exact changes:** the concrete behaviors, contracts, files, or controls
+   changed in this PR.
+5. **What is complete after merge:** the specific capability or governance
+   state that this PR finishes.
+6. **Expected outcome:** the observable result that should occur.
+7. **Not expected / out of scope:** what must remain unchanged or unauthorized.
+8. **End-goal impact:** how the PR advances, enables, protects, or deliberately
+   does not add a step to the end-to-end product path.
+9. **Remaining gap:** what the product still cannot do and which gates or
+   decisions remain.
+10. **Reviewer validation:** expected behavior, prohibited behavior, evidence,
+    pass condition, and fail condition.
+
+If `Exact changes` claims a number of fields, changes, controls, checks, items,
+components, files, paths, rules, or requirements, enumerate every counted item
+as a distinct, meaningful Markdown list entry. “Adds ten required fields”
+without listing all ten—or with duplicated or placeholder rows—is incomplete
+and must fail review and CI. Reject placeholders, copied
+instructions, issue-only or link-only prose, generic filler, and unsupported
+production-readiness, deployment, release, or public-availability claims.
+Automation checks structure and known false-pass classes; an independent
+reviewer still judges truth, strategic alignment, and whether the evidence
+supports the expected and prohibited outcomes.
+
+Every non-trivial PR must then include an evidence table, not just checked
+boxes.
 
 ```markdown
 | Evidence | Artifact Path / URL | Matrix IDs | Command / CI / Source | Reviewer | Status | Residual Risk Decision |

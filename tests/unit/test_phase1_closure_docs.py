@@ -2936,7 +2936,7 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "PR `#281`",
         "`3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c`",
         "post-merge main quality workflow run `30085558061` passing",
-            "repair-feasibility-decision-complete",
+                "pr-product-context-gate-complete",
         "PR `#282`",
         "`b889604a490c9f014130e420c1c949af7879dd84`",
         "post-merge main quality workflow run `30092008592` passing",
@@ -2944,7 +2944,9 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "`09584b264c0f30da3eecd6693829e5bcb071e568`",
         "post-merge main quality workflow run `30095714825` passing",
         "Issue `#278` is closed after PR `#279` merged the bounded C3A-R2 full-project multilingual corpus gate",
-            "Issue #313 defines the still-unfixed Issue #280 defect",
+                "| `#313` | Decision complete when reviewed and merged",
+                "Issue #315 requires self-contained product and end-goal context",
+                "Runtime and production authorization remain unchanged",
             "Issue #300 and PR #301 are completed historical negative-containment evidence",
             "Runtime repair remains NO-GO until a separate controlling issue",
         "full-project multilingual corpus gate",
@@ -3382,6 +3384,60 @@ def test_issue313_charged_line_cap_fails_closed(monkeypatch: Any) -> None:
 
     assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_313_BRANCH, files=[]) == [
         f"Phase 1 Closure branch {phase1.ISSUE_313_BRANCH} exceeds its 950-line cap."
+    ]
+
+
+def test_issue315_branch_scope_and_budget_are_exact() -> None:
+    expected = {
+        "docs/governance/preflights/issue-315.json",
+        "AGENTS.md",
+        ".github/pull_request_template.md",
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/QUALITY_GATES.md",
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/STATUS.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+    }
+
+    assert phase1.ISSUE_315_BRANCH == (
+        "phase-1-closure-process-315-pr-product-context-gate"
+    )
+    assert phase1.ISSUE_315_ALLOWED_CHANGED_FILES == expected
+    assert phase1.ISSUE_315_LINE_CAP == 1000
+
+
+def test_issue315_scope_gate_fails_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 0)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_315_BRANCH,
+        files=sorted(phase1.ISSUE_315_ALLOWED_CHANGED_FILES),
+    ) == []
+    near_match = f"{phase1.ISSUE_315_BRANCH}-extra"
+    assert run_changed_files_check(monkeypatch, branch=near_match, files=["docs/STATUS.md"]) == [
+        f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."
+    ]
+    for path in (
+        ".github/workflows/quality-gates.yml",
+        "backend/app/main.py",
+        "frontend/src/app/page.tsx",
+        "pyproject.toml",
+    ):
+        assert run_changed_files_check(
+            monkeypatch, branch=phase1.ISSUE_315_BRANCH, files=[path]
+        ) == [f"Phase 1 Closure branch {phase1.ISSUE_315_BRANCH} may not change {path}."]
+
+
+def test_issue315_charged_line_cap_fails_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "resolve_base", lambda: "branch-base")
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 1001)
+
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_315_BRANCH, files=[]) == [
+        f"Phase 1 Closure branch {phase1.ISSUE_315_BRANCH} exceeds its 1000-line cap."
     ]
 
 

@@ -220,6 +220,27 @@ quality/guardrail scripts remain non-trivial even for text-only edits. These
 files define the review loop and therefore must carry preflight evidence rather
 than relying on marker-only wording.
 
+Every non-trivial PR must include a `## Product and reviewer context` section
+before detailed evidence. The section makes the review self-contained by
+stating the end product goal, current state, problem, exact changes, completed
+state after merge, expected outcome, not-expected or out-of-scope behavior,
+end-goal impact, remaining gap, and outcome-oriented reviewer validation.
+Issue-only, link-only, placeholder, copied-template, fenced-placeholder, and
+generic filler content fails the executable `policy-gates` check. Links remain
+evidence but cannot replace plain-English product context. A counted claim in
+`Exact changes` must enumerate every claimed field, change, control, check,
+item, component, file, path, rule, or requirement as a distinct, meaningful
+Markdown list entry; naming only the count, duplicating entries, or using
+placeholders is a false pass and blocks the PR.
+
+Reviewer validation must separately name expected behavior, prohibited
+behavior, evidence, pass condition, and fail condition. Automation proves that
+the review contract is complete and rejects defined false-pass classes; the
+independent reviewer remains responsible for whether the current-state and
+end-goal claims are truthful. A production-path explanation must distinguish
+direction from authorization and must not claim production readiness,
+deployment, release, or public availability without a separate approved gate.
+
 Every non-trivial PR body must make reviewer-focus points self-serve through a
 `## Human verification checklist` section. The checklist must identify the
 focus area, what the reviewer must verify, the exact data/source/artifact to
