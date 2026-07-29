@@ -1,4 +1,4 @@
-"""Issue #302 A1 owner-curation policy and durable record types."""
+"""Issue #302 owner-curation policy and durable record types."""
 from __future__ import annotations
 import hashlib
 import json
@@ -44,8 +44,8 @@ class SourceDecisionRecord:
     source_version: str
     assertions_fingerprint: str
     policy_version: str = CURATION_POLICY_VERSION
-    server_decision: Literal["ALLOW"] = "ALLOW"
-    action: Literal["ACCEPT_FOR_REVIEW", "APPROVE"] = "ACCEPT_FOR_REVIEW"
+    server_decision: Literal["ALLOW", "DENY"] = "ALLOW"
+    action: Literal["ACCEPT_FOR_REVIEW", "EXCLUDE", "APPROVE"] = "ACCEPT_FOR_REVIEW"
     reason: str = "AWAITING_CURATOR_APPROVAL"
     decision_state: SourceDecisionState = "PENDING_REVIEW"
     raw_content_retained: bool = True
@@ -54,7 +54,7 @@ class SourceDecisionRecord:
 @dataclass(frozen=True)
 class CuratedOutcome:
     code: str
-    source: SourceRecord
+    source: SourceRecord | None
     decision: SourceDecisionRecord
     idempotency_replayed: bool = False
 T = TypeVar("T")
@@ -99,6 +99,12 @@ def legal_pair(source: SourceRecord, decision: SourceDecisionRecord) -> bool:
                 source.checksum, source.assertions.source_version, source.assertions_fingerprint)
     state = (decision.decision_state, decision.action, decision.reason, decision.approved_at is not None)
     return isinstance(source.assertions, SourceAssertions) and all(isinstance(value, str) for value in (source.source_id, source.tenant_id, source.owner_id, source.project_id, source.source_filename, source.content_type, source.checksum, source.text, source.assertions_fingerprint, source.ingestion_status, source.created_at, source.assertions.classification, source.assertions.provenance, source.assertions.rights_basis, source.assertions.rights_status, source.assertions.usage_policy, source.assertions.source_version, decision.decision_id, decision.source_id, decision.tenant_id, decision.actor_id, decision.project_id, decision.checksum, decision.source_version, decision.assertions_fingerprint, decision.policy_version, decision.server_decision, decision.action, decision.reason, decision.decision_state, decision.created_at)) and isinstance(source.size_bytes, int) and not isinstance(source.size_bytes, bool) and isinstance(decision.raw_content_retained, bool) and (source.ingested_at is None or isinstance(source.ingested_at, str)) and (decision.approved_at is None or isinstance(decision.approved_at, str)) and canonical_record_id(source.source_id, "source") and canonical_record_id(decision.decision_id, "decision") and identity == expected and decision.raw_content_retained and decision.server_decision == "ALLOW" and decision.policy_version == CURATION_POLICY_VERSION and allowed_for_review(source_assertions(source)) and source.assertions_fingerprint == assertions_digest(source_assertions(source)) and state in (("PENDING_REVIEW", "ACCEPT_FOR_REVIEW", "AWAITING_CURATOR_APPROVAL", False), ("APPROVED", "APPROVE", "CURATOR_APPROVED_POLICY_VERIFIED", True)) and (decision.decision_state == "APPROVED" or source.ingestion_status == "NOT_STARTED")
+def legal_exclusion(decision: SourceDecisionRecord) -> bool:
+    strings = (decision.decision_id, decision.source_id, decision.tenant_id, decision.actor_id,
+               decision.project_id, decision.checksum, decision.source_version,
+               decision.assertions_fingerprint, decision.policy_version, decision.server_decision,
+               decision.action, decision.reason, decision.decision_state, decision.created_at)
+    return all(isinstance(value, str) and value for value in strings) and canonical_record_id(decision.source_id, "source") and canonical_record_id(decision.decision_id, "decision") and re.fullmatch(r"[0-9a-f]{64}", decision.checksum) is not None and re.fullmatch(r"[0-9a-f]{64}", decision.assertions_fingerprint) is not None and 0 < len(decision.source_version.strip()) <= 128 and decision.policy_version == CURATION_POLICY_VERSION and decision.server_decision == "DENY" and (decision.action, decision.reason) in {("EXCLUDE", "CURATOR_EXCLUDED"), ("ACCEPT_FOR_REVIEW", "SERVER_POLICY_DENIED")} and decision.decision_state == "EXCLUDED" and decision.raw_content_retained is False and decision.approved_at is None
 def restore_curated(source_rows: object, decision_rows: object, projects: Mapping[str, Any],
                     source_valid: Callable[[SourceRecord], bool], legacy_document_ids: Collection[str]) -> tuple[dict[str, SourceRecord], dict[str, SourceDecisionRecord]]:
     source_rows = source_rows if isinstance(source_rows, list) else []
@@ -124,7 +130,11 @@ def restore_curated(source_rows: object, decision_rows: object, projects: Mappin
         except (KeyError, TypeError, ValueError):
             continue
         restored_source = sources.get(decision.source_id) if isinstance(decision.source_id, str) else None
-        if decision_ids.count(decision.decision_id) == decision_source_ids.count(decision.source_id) == 1 and all(isinstance(value, str) for value in (decision.decision_id, decision.source_id, decision.tenant_id, decision.actor_id, decision.project_id, decision.checksum, decision.source_version, decision.assertions_fingerprint, decision.policy_version, decision.server_decision, decision.action, decision.reason, decision.decision_state, decision.created_at)) and isinstance(decision.raw_content_retained, bool) and (decision.approved_at is None or isinstance(decision.approved_at, str)) and restored_source and legal_pair(restored_source, decision) and not any(value.source_id == decision.source_id for value in decisions.values()):
+        project = projects.get(decision.project_id) if isinstance(decision.project_id, str) else None
+        scope_valid = project and (project.tenant_id, project.owner_id) == (decision.tenant_id, decision.actor_id)
+        pair_valid = restored_source is not None and legal_pair(restored_source, decision)
+        exclusion_valid = legal_exclusion(decision) and decision.source_id not in legacy_document_ids
+        if decision_ids.count(decision.decision_id) == decision_source_ids.count(decision.source_id) == 1 and scope_valid and (pair_valid or exclusion_valid) and not any(value.source_id == decision.source_id for value in decisions.values()):
             decisions[decision.decision_id] = decision
-    linked = {decision.source_id for decision in decisions.values()}
+    linked = {decision.source_id for decision in decisions.values() if decision.decision_state != "EXCLUDED"}
     return {key: value for key, value in sources.items() if key in linked}, decisions
