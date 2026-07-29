@@ -382,14 +382,14 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
         except PrivacyError as exc:
             raise EvidenceError("BROWSER_SOURCE") from exc
     return spec_text[:test_call.start()].count("\n") + 1, len(spec_text.splitlines())
-def _ci_execution(root: Path, manifest: dict[str, Any], head: str, context: dict[str, str]) -> None:
+def _ci_execution(root: Path, manifest: dict[str, Any], head: str, run_id: str, context: dict[str, str]) -> None:
     keys = {"repository", "eventName", "workflow", "workflowRef", "workflowSha", "job", "runId", "runAttempt", "headSha"}
     if set(context) != keys or context.get("repository") != "imrohitagrawal/narratwin-ai" or context.get("eventName") not in {"pull_request", "push"} or context.get("workflow") != "ci" or context.get("job") != "frontend" or context.get("headSha") != head or not SHA.match(context.get("workflowSha", "")) or not context.get("runId", "").isdigit() or not context.get("runAttempt", "").isdigit() or int(context["runAttempt"]) < 1 or ".github/workflows/ci.yml@" not in context.get("workflowRef", ""):
         raise EvidenceError("CI_PROVENANCE")
     record = _json(root, manifest.get("execution"))
-    record_keys = {"schema", "provider", *keys, "producer", "playwrightExitCode", "startedAt", "completedAt", "workflowSourceSha256", "runnerSourceSha256", "reportSha256", "traceSha256"}
+    record_keys = {"schema", "provider", *keys, "evidenceRunId", "producer", "playwrightExitCode", "startedAt", "completedAt", "workflowSourceSha256", "runnerSourceSha256", "reportSha256", "traceSha256"}
     graph = {item.get("path"): item.get("sha256") for item in manifest.get("sourceGraph", [])}
-    expected = {"schema": "heartbeat2-ci-execution-v1", "provider": "github-actions", **context, "producer": "scripts/ci/heartbeat2-browser.sh", "playwrightExitCode": 0}
+    expected = {"schema": "heartbeat2-ci-execution-v1", "provider": "github-actions", **context, "evidenceRunId": run_id, "producer": "scripts/ci/heartbeat2-browser.sh", "playwrightExitCode": 0}
     stamp = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
     valid = isinstance(record, dict) and set(record) == record_keys and all(record.get(key) == value for key, value in expected.items()) and stamp.match(str(record.get("startedAt", ""))) and stamp.match(str(record.get("completedAt", ""))) and record["startedAt"] < record["completedAt"]
     valid = valid and record.get("workflowSourceSha256") == graph.get(".github/workflows/ci.yml") and record.get("runnerSourceSha256") == graph.get("scripts/ci/heartbeat2-browser.sh") and record.get("reportSha256") == sha256(_path(root, manifest.get("testReport")).read_bytes()) and record.get("traceSha256") == manifest.get("traceSha256") == sha256(_path(root, manifest.get("trace")).read_bytes())
@@ -419,12 +419,12 @@ def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, for
         if manifest.get("execution") is not None:
             raise EvidenceError("CI_PROVENANCE")
     else:
-        _ci_execution(root, manifest, expected_head, ci_context)
+        _ci_execution(root, manifest, expected_head, expected_run_id, ci_context)
     try:
         stats = scan_evidence([root], controlled=forbidden[0] if forbidden else b"synthetic-never-present-h2", canary=forbidden[1] if len(forbidden) > 1 else b"synthetic-canary-never-present-h2")
     except PrivacyError as exc:
         raise EvidenceError("FORBIDDEN_OR_ARCHIVE") from exc
-    return {"schema": "heartbeat2-verification-v3", "runId": expected_run_id, "headSha": expected_head, "outcome": "CI_EXECUTION_BOUND" if ci_context else "SEMANTIC_PASS_LOCAL", "executionAuthenticity": "GITHUB_ACTIONS" if ci_context else "UNATTESTED", "writeCount": 8, "readCount": 3, "filesScanned": stats["fileCount"], "membersScanned": stats["memberCount"]}
+    return {"schema": "heartbeat2-verification-v3", "runId": expected_run_id, "headSha": expected_head, "outcome": "CI_EXECUTION_BOUND" if ci_context else "SEMANTIC_PASS_LOCAL", "executionAuthenticity": "GITHUB_ACTIONS" if ci_context else "UNATTESTED", "githubRunId": ci_context["runId"] if ci_context else None, "githubRunAttempt": ci_context["runAttempt"] if ci_context else None, "writeCount": 8, "readCount": 3, "filesScanned": stats["fileCount"], "membersScanned": stats["memberCount"]}
 def _main(argv: list[str]) -> int:
     class Parser(argparse.ArgumentParser):
         def error(self, message: str) -> NoReturn:
