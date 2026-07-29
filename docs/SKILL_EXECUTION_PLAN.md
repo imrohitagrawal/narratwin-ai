@@ -16,6 +16,8 @@ Only `docs/PHASE_PLAN.md` registered tables are authoritative for durable
 Product Mode policy. Explanatory prose, examples, comments, quoted text, and
 relocated tables do not authorize policy changes.
 
+Before coding, PM/spec skills must validate both Product Mode 1 and Product Mode 2 and the reusable `project-avatar-pack` contract across the PRD, roadmap, architecture, and Slice 1 planning.
+
 Skill selection and execution must respect the gate order
 `PM-GATE-00 -> PM-GATE-10 -> PM-GATE-20 -> PM-GATE-30` before any Product Mode
 claim is made. `docs/STATUS.md` StatusStateV1 table is the normalized mutable current-state authority,

@@ -97,12 +97,12 @@ Only the registered tables in this section are authoritative for PHF-020A.
 
 | Acceptance ID | Source | Stable policy row | Evidence |
 |---|---|---|---|
-| ISSUE8-01 | #8 | taxonomy distinctions | DP-1/DP-2/P1C/PM-1/PM-2 |
-| ISSUE8-02 | #8 | Product Mode 1 local checkpoint | PM-1 |
-| ISSUE8-03 | #8 | Product Mode 2 future reset | PM-2 |
-| ISSUE8-04 | #8 | optional media independence | #18/#19 |
-| ISSUE8-05 | #8 | duplicate reconciliation | DUP-01..DUP-05 |
-| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |
+| ISSUE8-01 | #8 | PRD names both product modes | docs/PRD.md#6-product-modes |
+| ISSUE8-02 | #8 | Project-avatar-pack contract is documented | docs/PROJECT_AVATAR_PACK.md |
+| ISSUE8-03 | #8 | Roadmap preserves focused Slice 1 and later video/interactive phases | docs/ROADMAP.md#product-mode-alignment |
+| ISSUE8-04 | #8 | AI build brief preserves the full product vision | docs/AI_BUILD_BRIEF.md#product-modes-to-preserve |
+| ISSUE8-05 | #8 | Skill plan requires PM/spec validation before coding | docs/SKILL_EXECUTION_PLAN.md#product-mode-policy-authority-handoff |
+| ISSUE8-06 | #8 | No application code changes | Issue #311 exact governance-only branch gate |
 
 ### PM-MODE-001 Activation Evidence
 
