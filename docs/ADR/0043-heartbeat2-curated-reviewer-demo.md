@@ -16,6 +16,8 @@ The verified chain must join curated source/checksum/chunks to walkthrough conte
 
 Evidence is valid only when `scripts/ci/heartbeat2_evidence.py` independently confirms exact run/head identity, one non-skipped browser case, request-object-paired traffic, no interception/substitution, exact joins, artifact bytes and metadata, safe archives, source digests, and zero forbidden matches.
 
+Owner-authorized Contract reset 4 preserves the same paths and surfaces while requiring exact test identity, genuine trace structure, raw response-byte joins, duplicate rejection, semantic local/mock artifact validation, executable listener structure, and one recursive archive budget. Its exact ceilings are PR A 8 files / 900 lines / 4 surfaces, PR B 12 / 900 / 6, and aggregate 15 / 1,800 / 8.
+
 ## Boundaries
 
 This is a post-Checkpoint-B local reviewer integration heartbeat, not Product Mode 2. It changes no backend/API/storage contract and authorizes no providers, paid service, real media, cloned identity, deployment, hosting, public distribution, production claim, private data, or Issue #20 Q&A. Issue #8 remains open product memory; #155 stays closed; #20, #43, and #249 stay unchanged.

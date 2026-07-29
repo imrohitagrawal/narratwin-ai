@@ -8351,7 +8351,7 @@ page.on("response", async (response) => {
     contexts = [{"contextRefId": "context-1", "claimId": "claim-1", "documentId": "source-1", "sourceChecksum": "source-sha", "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}]
     evaluation = {"id": "eval-1", "checksum": "eval-sha", "status": "PASSED", "unsupportedClaimCount": 0}
     walkthrough = {"projectId": "project-1", "runId": "run-1", "status": "COMPLETED", "contextRefs": contexts, "claimSupports": [{"claimId": "claim-1", "contextRefId": "context-1", "documentId": "source-1", "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}], "citations": [{"claimId": "claim-1", "contextRefId": "context-1", "index": 1}], "evaluation": evaluation}
-    media = {"projectId": "project-1", "runId": "multi-1", "sourceRunId": "run-1", "supportedLanguage": True, "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "translationMode": "mock", "voiceMode": "mock", "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("translated", "subtitles", "voice")}}
+    media = {"projectId": "project-1", "runId": "multi-1", "sourceRunId": "run-1", "targetLanguage": "es", "supportedLanguage": True, "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "translationMode": "mock", "voiceMode": "mock", "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("translated", "subtitles", "voice")}}
     render = {"id": "render-1", "projectId": "project-1", "sourceRunId": "run-1", "multilingualRunId": "multi-1", "consentId": "consent-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "avatarMode": "local", "cloneEnabled": False, "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("preview", "renderManifest", "video")}}
     consent = {"id": "consent-1", "projectId": "project-1", "sourceRunId": "run-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "granted": True}
     bundle = {"principal": "curator_demo", "projectCount": 1, "projectId": "project-1", "legacySources": [], "source": source, "walkthrough": walkthrough, "visibleCitations": [{"claimId": "claim-1", "contextRefId": "context-1", "chunkId": "chunk-1"}], "multilingual": media, "consent": consent, "render": render, "artifacts": artifacts, "otherDemo": {"actionsHidden": True}}
@@ -8364,15 +8364,15 @@ page.on("response", async (response) => {
     statuses = [status for _, _, status in methods] + [status for _, _, status, _ in evidence.READS] + [status for _, _, status in evidence.DENIALS]
     response_payloads = [
         {"projectId": "project-1"},
-        {"documentId": "source-1", "checksum": "source-sha", "status": "PENDING_REVIEW"},
-        {"documentId": "source-1", "checksum": "source-sha", "status": "APPROVED"},
-        {"documentId": "source-1", "status": "SOURCE_INGESTED", "chunks": source["chunks"]},
+        {"sourceId": "source-1", "checksum": "source-sha", "decisionState": "PENDING_REVIEW"},
+        {"sourceId": "source-1", "checksum": "source-sha", "decisionState": "APPROVED"},
+        {"status": "COMPLETED", "sourceIds": ["source-1"], "chunkCount": 1},
         walkthrough,
         media,
-        consent,
+        {"consentRecordId": "consent-1", "projectId": "project-1", "sourceRunId": "run-1", "sourceEvaluationId": "eval-1", "sourceEvaluationChecksum": "eval-sha", "consentToUseSyntheticAvatar": True},
         render,
         {"languages": [{"languageTag": "es", "localDemoSupportStatus": "SUPPORTED"}]},
-        {"projectId": "project-1", "source": source},
+        {"projectId": "project-1", "curatedSources": [source], "legacySources": []},
         {"error": {"code": "FORBIDDEN"}},
         *({"error": {"code": "FORBIDDEN"}} for _ in range(4)),
     ]
@@ -8439,7 +8439,7 @@ def test_heartbeat2_verifier_rejects_ledger_artifact_source_and_forbidden_mutati
     root = tmp_path / "artifact"
     packet = write_heartbeat2_packet(root, sources, evidence)
     packet["artifact"].write_bytes(b"tampered")
-    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN|ARTIFACT_BINDING"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
     root = tmp_path / "payload"
     packet = write_heartbeat2_packet(root, sources, evidence)
@@ -8447,7 +8447,7 @@ def test_heartbeat2_verifier_rejects_ledger_artifact_source_and_forbidden_mutati
     packet["bundle"]["artifacts"]["video"]["sha256"] = evidence.sha256(packet["artifact"].read_bytes())
     packet["bundle"]["render"]["artifactChecksums"]["video"] = packet["bundle"]["artifacts"]["video"]["sha256"]
     (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
-    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN|ARTIFACT_BINDING"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
     root = tmp_path / "privacy"
     write_heartbeat2_packet(root, sources, evidence)
@@ -8505,9 +8505,15 @@ def test_heartbeat2_verifier_rejects_dead_listener_markers_and_payload_disagreem
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
     root = tmp_path / "payload-disagreement"
     packet = write_heartbeat2_packet(root, sources, evidence)
-    packet["traffic"]["responses"][4]["bodyBase64"] = "e30="
+    forged = dict(packet["bundle"]["walkthrough"])
+    forged["status"] = "FORGED"
+    raw = json.dumps(forged, separators=(",", ":"), sort_keys=True).encode()
+    import base64
+    packet["traffic"]["responses"][4].update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    packet["bundle"]["walkthrough"] = forged
     (root / "traffic.json").write_text(json.dumps(packet["traffic"]), encoding="utf-8")
-    with pytest.raises(evidence.EvidenceError, match="TRAFFIC_LEDGER|PRODUCT_JOIN|TRACE_BINDING"):
+    (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="TRACE_BINDING"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
 
 
@@ -8534,6 +8540,8 @@ def test_heartbeat2_verifier_rejects_duplicate_claim_consent_and_semantic_artifa
     packet["bundle"]["render"]["artifactChecksums"]["video"] = digest
     (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
     with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN|ARTIFACT_BINDING"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
 
 

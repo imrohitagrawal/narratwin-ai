@@ -2,6 +2,7 @@
 """Independent fail-closed verifier for Heartbeat 2 browser evidence."""
 from __future__ import annotations
 import argparse
+import base64
 import hashlib
 import io
 import json
@@ -13,6 +14,7 @@ from pathlib import Path
 from typing import Any, NoReturn
 from scripts.ci.heartbeat1_evidence import EvidenceError as PrivacyError, MAX_ARCHIVE_DEPTH, MAX_SCAN_BYTES, scan_browser_sources, scan_evidence
 SHA, RUN_ID, ORIGIN = re.compile(r"^[0-9a-f]{40}$"), re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"), "http://127.0.0.1:3122"
+SPEC, TEST_TITLE, MAX_ARCHIVE_MEMBERS = "heartbeat2-browser.spec.ts", "Heartbeat 2 local reviewer demo", 10_000
 SOURCES = ("scripts/ci/heartbeat1_evidence.py", "scripts/ci/heartbeat2_evidence.py", "scripts/ci/heartbeat2-browser.sh", "frontend/playwright.heartbeat2.config.ts", "frontend/tests/heartbeat2-browser.spec.ts")
 WRITES = (("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201))
 READS = (("languages", "GET", 200, "curator_demo"), ("summary", "GET", 200, "curator_demo"), ("other-summary", "GET", 403, "other_demo"))
@@ -46,6 +48,7 @@ def _playwright(report: Any) -> None:
     if set(stats) != {"startTime", "duration", "expected", "unexpected", "skipped", "flaky"} or any(stats.get(key) != expected for key, expected in {"expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}.items()):
         raise EvidenceError("PLAYWRIGHT_RESULT")
     tests: list[Any] = []
+    identities: list[tuple[Any, Any]] = []
     pending = list(report.get("suites", []))
     while pending:
         suite = pending.pop()
@@ -54,7 +57,8 @@ def _playwright(report: Any) -> None:
         if not {"column", "file", "line", "specs", "title"} <= set(suite) or any(not {"column", "file", "id", "line", "ok", "tags", "tests", "title"} <= set(spec) for spec in specs):
             raise EvidenceError("PLAYWRIGHT_RESULT")
         tests.extend(test for spec in specs for test in spec.get("tests", []))
-    if len(tests) != 1:
+        identities.extend((spec.get("file"), spec.get("title")) for spec in specs)
+    if len(tests) != 1 or identities != [(SPEC, TEST_TITLE)]:
         raise EvidenceError("PLAYWRIGHT_RESULT")
     test = tests[0]
     results = test.get("results", [])
@@ -86,9 +90,28 @@ def _traffic(traffic: Any, bundle: dict[str, Any]) -> None:
             raise EvidenceError("TRAFFIC_LEDGER")
         if any(x["principal"] != "curator_demo" or x["projectId"] != project for x in writes) or any(x["projectId"] not in ("", project) for x in reads) or any(x["principal"] != "other_demo" or x["projectId"] != project for x in denials):
             raise EvidenceError("OWNER_JOIN")
-    except (KeyError, TypeError) as exc:
+        payloads: dict[str, Any] = {}
+        for request in requests:
+            response = next(item for item in responses if item["requestId"] == request["id"])
+            raw = base64.b64decode(response["bodyBase64"], validate=True)
+            if response["bodySha256"] != sha256(raw):
+                raise EvidenceError("TRAFFIC_LEDGER")
+            payloads[request["operation"]] = json.loads(raw)
+        source_payload = {"sourceId": source, "checksum": bundle["source"]["checksum"]}
+        valid_payloads = (
+            payloads["project"].get("projectId") == project
+            and all(payloads[name].get(key) == value for name, state in (("submit", "PENDING_REVIEW"), ("approve", "APPROVED")) for key, value in (source_payload | {"decisionState": state}).items())
+            and payloads["ingest"].get("status") == "COMPLETED" and payloads["ingest"].get("sourceIds") == [source]
+            and payloads["walkthrough"] == bundle["walkthrough"] and payloads["multilingual"] == bundle["multilingual"]
+            and payloads["consent"].get("consentRecordId") == bundle["consent"]["id"] and payloads["render"] == bundle["render"]
+            and payloads["summary"].get("curatedSources") == [bundle["source"]] and payloads["summary"].get("legacySources") == []
+            and all(payloads[name].get("error", {}).get("code") == "FORBIDDEN" for name in ("other-summary", *[x[0] for x in DENIALS]))
+        )
+        if not valid_payloads:
+            raise EvidenceError("PRODUCT_JOIN")
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         raise EvidenceError("TRAFFIC_LEDGER") from exc
-def _artifacts(root: Path, artifacts: Any) -> None:
+def _artifacts(root: Path, artifacts: Any, bundle: dict[str, Any]) -> None:
     if not isinstance(artifacts, dict) or set(artifacts) != {"translated", "subtitles", "voice", "preview", "renderManifest", "video"}:
         raise EvidenceError("ARTIFACT_BINDING")
     for name, item in artifacts.items():
@@ -98,7 +121,16 @@ def _artifacts(root: Path, artifacts: Any) -> None:
             mime = "text/markdown" if name == "translated" else "application/x-subrip" if name == "subtitles" else "text/html" if name == "preview" else "application/json"
             valid = item["filename"] == path.name and item["sha256"] == sha256(data) and item["mime"] == mime
             if name in {"voice", "renderManifest", "video"}:
-                valid = valid and isinstance(json.loads(data), dict)
+                parsed = json.loads(data)
+                valid = valid and isinstance(parsed, dict)
+                if name == "voice":
+                    profile = parsed.get("mockAudioProfile", {})
+                    valid = valid and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
+                else:
+                    provider, source, media = parsed.get("providerConfig", {}), parsed.get("source", {}), parsed.get("multilingualBundle", {})
+                    valid = valid and parsed.get("schema") == ("Stage7AvatarRenderManifest" if name == "renderManifest" else "Stage7VideoExportPlaceholder") and provider == {"provider": "mock", "providerMode": "LOCAL", "allowNetworkEgress": False, "requiresApiKey": False, "supportsRealVideo": False, "supportsClonedIdentity": False}
+                    valid = valid and source == {"runId": bundle["walkthrough"]["runId"], "evaluationId": bundle["walkthrough"]["evaluation"]["id"], "evaluationChecksum": bundle["walkthrough"]["evaluation"]["checksum"], "contextRefIds": [x["contextRefId"] for x in bundle["walkthrough"]["contextRefs"]], "citationIndexes": [x["index"] for x in bundle["walkthrough"]["citations"]]}
+                    valid = valid and media == {"sourceRunId": bundle["walkthrough"]["runId"], "multilingualRunId": bundle["multilingual"]["runId"], "contextRefIds": [x["contextRefId"] for x in bundle["walkthrough"]["contextRefs"]], "citationIndexes": [x["index"] for x in bundle["walkthrough"]["citations"]], "evaluationId": bundle["walkthrough"]["evaluation"]["id"], "evaluationChecksum": bundle["walkthrough"]["evaluation"]["checksum"]} and (name != "video" or parsed.get("realVideoProduced") is False)
             elif name == "translated":
                 valid = valid and b"[1]" in data
             elif name == "subtitles":
@@ -112,21 +144,23 @@ def _artifacts(root: Path, artifacts: Any) -> None:
 def _joins(root: Path, bundle: dict[str, Any]) -> None:
     try:
         source, run, media, consent, render = (bundle[key] for key in ("source", "walkthrough", "multilingual", "consent", "render"))
-        chunks = {(x["id"], x["checksum"]) for x in source["chunks"]}
+        chunk_rows = [(x["id"], x["checksum"]) for x in source["chunks"]]
+        chunks = set(chunk_rows)
         contexts = run["contextRefs"]
         context_chunks = {(x["chunkId"], x["chunkChecksum"]) for x in contexts}
         context_ids = [x["contextRefId"] for x in contexts]
         citation_indexes = [x["index"] for x in run["citations"]]
         valid = (
-            bundle["principal"] == "curator_demo" and bundle["projectCount"] == 1 and bundle["legacySources"] == []
+            bundle["principal"] == "curator_demo" and bundle["projectCount"] == 1 and bundle["legacySources"] == [] and len(chunk_rows) == len(chunks) and len(contexts) == len(set(context_ids))
             and source["states"] == ["PENDING_REVIEW", "APPROVED", "SOURCE_INGESTED"] and source["status"] == "SOURCE_INGESTED" and source["retained"] is True and chunks and chunks == context_chunks
             and all(x["documentId"] == source["id"] and x["sourceChecksum"] == source["checksum"] for x in contexts)
             and {(x["claimId"], x["contextRefId"], x["documentId"], x["chunkId"], x["chunkChecksum"]) for x in run["claimSupports"]} == {(x["claimId"], x["contextRefId"], x["documentId"], x["chunkId"], x["chunkChecksum"]) for x in contexts}
-            and [x["contextRefId"] for x in run["citations"]] == context_ids and citation_indexes == list(range(1, len(contexts) + 1))
+            and [(x["claimId"], x["contextRefId"]) for x in run["citations"]] == [(x["claimId"], x["contextRefId"]) for x in contexts] and citation_indexes == list(range(1, len(contexts) + 1))
             and [(x["claimId"], x["contextRefId"], x["chunkId"]) for x in bundle["visibleCitations"]] == [(x["claimId"], x["contextRefId"], x["chunkId"]) for x in contexts]
             and run["projectId"] == media["projectId"] == consent["projectId"] == render["projectId"] == bundle["projectId"]
             and run["status"] == "COMPLETED" and run["evaluation"]["status"] == "PASSED" and run["evaluation"]["unsupportedClaimCount"] == 0
             and media["sourceRunId"] == render["sourceRunId"] == run["runId"] and media["supportedLanguage"] is True
+            and consent["granted"] is True and consent["sourceRunId"] == run["runId"] and consent["evaluationId"] == run["evaluation"]["id"] and consent["evaluationChecksum"] == run["evaluation"]["checksum"]
             and media["evaluationId"] == render["evaluationId"] == run["evaluation"]["id"]
             and media["evaluationChecksum"] == render["evaluationChecksum"] == run["evaluation"]["checksum"]
             and media["contextRefIds"] == render["contextRefIds"] == context_ids and media["citationIndexes"] == render["citationIndexes"] == citation_indexes
@@ -140,14 +174,17 @@ def _joins(root: Path, bundle: dict[str, Any]) -> None:
         raise EvidenceError("PRODUCT_JOIN") from exc
     if not valid:
         raise EvidenceError("PRODUCT_JOIN")
-    _artifacts(root, bundle.get("artifacts"))
-def _safe_archive(data: bytes, depth: int = 1) -> None:
+    _artifacts(root, bundle.get("artifacts"), bundle)
+def _safe_archive(data: bytes, depth: int = 1, budget: dict[str, int] | None = None) -> None:
+    budget = budget if budget is not None else {"bytes": 0, "members": 0}
     if depth > MAX_ARCHIVE_DEPTH:
         raise EvidenceError("FORBIDDEN_OR_ARCHIVE")
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             members = archive.infolist()
-            if sum(item.file_size for item in members) > MAX_SCAN_BYTES:
+            budget["bytes"] += sum(item.file_size for item in members)
+            budget["members"] += len(members)
+            if budget["bytes"] > MAX_SCAN_BYTES or budget["members"] > MAX_ARCHIVE_MEMBERS:
                 raise EvidenceError("FORBIDDEN_OR_ARCHIVE")
             for item in members:
                 name = item.filename.replace("\\", "/")
@@ -155,16 +192,17 @@ def _safe_archive(data: bytes, depth: int = 1) -> None:
                     raise EvidenceError("FORBIDDEN_OR_ARCHIVE")
                 payload = archive.read(item)
                 if zipfile.is_zipfile(io.BytesIO(payload)):
-                    _safe_archive(payload, depth + 1)
+                    _safe_archive(payload, depth + 1, budget)
     except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
         raise EvidenceError("FORBIDDEN_OR_ARCHIVE") from exc
 def _safe_archives(root: Path) -> None:
+    budget = {"bytes": 0, "members": 0}
     for path in root.rglob("*"):
         if path.is_file():
             if path.stat().st_size > MAX_SCAN_BYTES:
                 raise EvidenceError("FORBIDDEN_OR_ARCHIVE")
             if zipfile.is_zipfile(path):
-                _safe_archive(path.read_bytes())
+                _safe_archive(path.read_bytes(), budget=budget)
 def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any]) -> None:
     path = _path(root, manifest.get("trace"))
     if sha256(path.read_bytes()) != manifest.get("traceSha256"):
@@ -174,16 +212,27 @@ def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any]) -> Non
             names = [name for name in archive.namelist() if name.endswith("-trace.network")]
             if len(names) != 1:
                 raise EvidenceError("TRACE_BINDING")
+            prefix = names[0][:-len(".network")]
+            if {prefix + ".trace", prefix + ".stacks"} - set(archive.namelist()):
+                raise EvidenceError("TRACE_BINDING")
+            contexts = [json.loads(line) for line in archive.read(prefix + ".trace").splitlines()]
+            stacks = json.loads(archive.read(prefix + ".stacks"))
+            if not contexts or contexts[0].get("type") != "context-options" or contexts[0].get("browserName") != "chromium" or contexts[0].get("options", {}).get("baseURL") != ORIGIN or contexts[0].get("options", {}).get("serviceWorkers") != "block" or not any(str(name).endswith("frontend/tests/" + SPEC) for name in stacks.get("files", [])):
+                raise EvidenceError("TRACE_BINDING")
             records = [json.loads(line) for line in archive.read(names[0]).splitlines()]
+            resource_bytes = {name: archive.read(name) for name in archive.namelist() if name.startswith("resources/")}
         facts = []
         for record in records:
             snapshot = record.get("snapshot", {})
             request, response = snapshot.get("request", {}), snapshot.get("response", {})
             if record.get("type") == "resource-snapshot" and str(request.get("url", "")).startswith(f"{ORIGIN}/api/v1/"):
                 headers = {str(x.get("name", "")).lower(): x.get("value") for x in request.get("headers", [])}
-                facts.append((request["url"], request["method"], response["status"], headers.get("x-local-user-id")))
+                resource = response.get("content", {}).get("_sha1")
+                body = resource_bytes.get("resources/" + resource, b"") if isinstance(resource, str) else b""
+                facts.append((request["url"], request["method"], response["status"], headers.get("x-local-user-id"), sha256(body)))
         statuses = {x["requestId"]: x["status"] for x in traffic["responses"]}
-        expected = [(x["origin"] + x["path"], x["method"], statuses[x["id"]], x["principal"]) for x in traffic["requests"]]
+        bodies = {x["requestId"]: x["bodySha256"] for x in traffic["responses"]}
+        expected = [(x["origin"] + x["path"], x["method"], statuses[x["id"]], x["principal"], bodies[x["id"]]) for x in traffic["requests"]]
     except (KeyError, TypeError, OSError, UnicodeError, json.JSONDecodeError, zipfile.BadZipFile) as exc:
         raise EvidenceError("TRACE_BINDING") from exc
     if facts != expected:
@@ -202,15 +251,16 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
             result = subprocess.run(["git", "show", f"{head}:{item['path']}"], capture_output=True)
             if result.returncode or result.stdout != path.read_bytes():
                 raise EvidenceError("SOURCE_GRAPH")
+    spec_text = (source_root / "frontend/tests/heartbeat2-browser.spec.ts").read_text(encoding="utf-8")
+    semantic_patterns = (r"new\s+WeakMap<\s*Request", r"page\.on\([\"']request[\"']\s*,\s*\(request\)\s*=>\s*\{[^}]*requestIds\.set\(request", r"request\.postDataBuffer\(\)", r"page\.on\([\"']response[\"']\s*,\s*async\s*\(response\)\s*=>\s*\{[^}]*response\.request\(\)[^}]*responses\.push", r"await\s+response\.body\(\)")
+    if not all(re.search(pattern, spec_text, re.DOTALL) for pattern in semantic_patterns):
+        raise EvidenceError("BROWSER_SOURCE")
     if committed:
         try:
             scan_browser_sources(Path("frontend/tests/heartbeat2-browser.spec.ts"), head)
             scan_browser_sources(Path("frontend/playwright.heartbeat2.config.ts"), head)
         except PrivacyError as exc:
             raise EvidenceError("BROWSER_SOURCE") from exc
-        text = Path("frontend/tests/heartbeat2-browser.spec.ts").read_text(encoding="utf-8")
-        if not all(re.search(pattern, text) for pattern in (r"page\.on\([\"']request[\"']", r"page\.on\([\"']response[\"']", r"response\.request\(\)", r"new WeakMap<.*Request")):
-            raise EvidenceError("BROWSER_SOURCE")
 def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, forbidden: tuple[bytes, ...] = (), committed: bool = False, source_root: Path = Path.cwd()) -> dict[str, Any]:
     if not SHA.match(expected_head) or not RUN_ID.match(expected_run_id):
         raise EvidenceError("EXPECTED_IDENTITY")
