@@ -3400,6 +3400,7 @@ def test_issue315_branch_scope_and_budget_are_exact() -> None:
         "docs/QUALITY_GATES.md",
         "docs/SKILL_EXECUTION_PLAN.md",
         "docs/STATUS.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
     }
 
     assert phase1.ISSUE_315_BRANCH == (
