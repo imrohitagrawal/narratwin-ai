@@ -1842,10 +1842,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #300 / issue #280 forensic containment",
-        "issue280-governance-reset-active",
-        "issue280-governance-reset-active",
-        "Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed: all 525 combinations completed without translation refusal, accepted scripts remained audience-sensitive, and all 75 successful language/depth groups emitted one visible target body across seven audiences. The old 217/308 aggregate was not reproduced. Issue #280's historical GitHub closure, issue #298, and PR #299 remain preserved forensic evidence. Product/runtime repair remains separate. This state does not authorize backend, frontend, workflow, provider, RAG, avatar, database, Docker, hosted/public demo, paid spend, real media, public distribution, semantic-oracle/runner work, or production-readiness claims.",
+        "issue #304 under issue #302",
+        "heartbeat1-a2-contract",
+        "heartbeat1-a2-contract",
+        "Issue #304 governs only metadata-only exclusion, owner summary, replay, and restore repair after merged A1 PR #303. The prior issue280-governance-reset-active token is historical only; Issue #280 and PR #299 remain untouched forensic history. UI/browser proof, Heartbeat 2, providers, hosted/public behavior, paid spend, deployment, and production-readiness claims remain unauthorized.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
