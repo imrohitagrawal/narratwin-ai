@@ -8218,3 +8218,43 @@ def test_issue280_red_evidence_rejects_permanent_failing_tests(monkeypatch: Any)
     )
 
     assert f"{phase1.ISSUE_280_RED_EVIDENCE_PATH} must reject permanently failing tests." in failures
+
+
+def test_issue306_heartbeat1_b_exact_branch_accepts_only_the_frozen_allowlist(monkeypatch: Any) -> None:
+    expected = {
+        ".github/workflows/ci.yml",
+        "docs/ADR/0042-heartbeat1-b-browser-reopen-evidence.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "frontend/playwright.heartbeat1.config.ts",
+        "frontend/src/app/page.tsx",
+        "frontend/tests/heartbeat1-browser.spec.ts",
+        "scripts/ci/heartbeat1-browser.sh",
+        "scripts/ci/heartbeat1_evidence.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_heartbeat1_evidence.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+
+    assert phase1.ISSUE_306_B_BRANCH == "phase-1-closure-306-heartbeat1-b-browser-reopen"
+    assert phase1.ISSUE_306_B_ALLOWED_CHANGED_FILES == expected
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_306_B_BRANCH, files=sorted(expected)) == []
+
+
+def test_issue306_heartbeat1_b_near_match_branch_fails_closed(monkeypatch: Any) -> None:
+    branch = "phase-1-closure-306-heartbeat1-b-browser-reopen-extra"
+    rel = "frontend/tests/heartbeat1-browser.spec.ts"
+
+    assert run_changed_files_check(monkeypatch, branch=branch, files=[rel]) == [
+        f"Phase 1 Closure branch {branch} may not change {rel}."
+    ]
+
+
+def test_issue306_heartbeat1_b_rejects_backend_or_ninth_surface(monkeypatch: Any) -> None:
+    rel = "backend/app/main.py"
+
+    assert run_changed_files_check(monkeypatch, branch="phase-1-closure-306-heartbeat1-b-browser-reopen", files=[rel]) == [
+        "Phase 1 Closure branch phase-1-closure-306-heartbeat1-b-browser-reopen may not change backend/app/main.py."
+    ]
