@@ -918,10 +918,11 @@ export default function Home() {
     await h2Run(async () => {
       const file = new FormData(form).get("file");
       if (!(file instanceof File) || !h2ProjectId) throw new Error("FILE_REQUIRED");
-      const body = new FormData();
-      for (const [name, value] of Object.entries({ action: "ACCEPT_FOR_REVIEW", classification: "PUBLIC_SAFE", provenance: "PROJECT_AUTHORED_SYNTHETIC", rightsBasis: "PROJECT_OWNED", rightsStatus: "ELIGIBLE", usagePolicy: "LOCAL_TEST_REUSE_ALLOWED", curationSchemaVersion: "source-curation-v1", sourceVersion: "heartbeat2-public-v1" })) body.append(name, value);
-      body.append("file", file);
-      setH2Source(await h1Json<H1Outcome>(`/projects/${h2ProjectId}/knowledge-documents`, h2Principal, { method: "POST", headers: h1Headers("heartbeat2-submit"), body }));
+      const boundary = "heartbeat2-reset5-boundary";
+      const parts: Array<string | Blob> = [];
+      for (const [name, value] of Object.entries({ action: "ACCEPT_FOR_REVIEW", classification: "PUBLIC_SAFE", provenance: "PROJECT_AUTHORED_SYNTHETIC", rightsBasis: "PROJECT_OWNED", rightsStatus: "ELIGIBLE", usagePolicy: "LOCAL_TEST_REUSE_ALLOWED", curationSchemaVersion: "source-curation-v1", sourceVersion: "heartbeat2-public-v1" })) parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`);
+      parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="heartbeat2-public.md"\r\nContent-Type: text/markdown\r\n\r\n`, file, `\r\n--${boundary}--\r\n`);
+      setH2Source(await h1Json<H1Outcome>(`/projects/${h2ProjectId}/knowledge-documents`, h2Principal, { method: "POST", headers: { ...h1Headers("heartbeat2-submit"), "Content-Type": `multipart/form-data; boundary=${boundary}` }, body: new Blob(parts) }));
     });
     form.reset();
   }

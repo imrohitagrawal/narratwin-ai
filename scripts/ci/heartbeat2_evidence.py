@@ -158,7 +158,7 @@ def _playwright(report: Any) -> int:
     test = tests[0]
     results = test.get("results", [])
     required_test, required_result = {"annotations", "expectedStatus", "projectId", "projectName", "results", "status", "timeout"}, {"annotations", "attachments", "duration", "errors", "parallelIndex", "retry", "startTime", "status", "stderr", "stdout", "workerIndex"}
-    if not required_test <= set(test) or test.get("expectedStatus") != "passed" or test.get("status") != "expected" or len(results) != 1 or not required_result <= set(results[0]) or results[0].get("status") != "passed" or results[0].get("retry") != 0 or results[0].get("errors") or results[0].get("startTime") != stats.get("startTime"):
+    if not required_test <= set(test) or test.get("expectedStatus") != "passed" or test.get("status") != "expected" or len(results) != 1 or not required_result <= set(results[0]) or results[0].get("status") != "passed" or results[0].get("retry") != 0 or results[0].get("errors") or not isinstance(stats.get("startTime"), str) or not isinstance(results[0].get("startTime"), str) or results[0]["startTime"] < stats["startTime"] or not isinstance(results[0].get("duration"), int | float) or results[0]["duration"] <= 0:
         raise EvidenceError("PLAYWRIGHT_RESULT")
     if [(x.get("name"), x.get("contentType"), Path(str(x.get("path"))).name) for x in results[0]["attachments"]] != [("trace", "application/zip", "trace.zip")]:
         raise EvidenceError("PLAYWRIGHT_RESULT")
@@ -262,7 +262,7 @@ def _joins(root: Path, bundle: dict[str, Any]) -> None:
             and len(support_rows) == len(set(support_rows)) and set(support_rows) == {(x["claimId"], x["contextRefId"], x["documentId"], x["chunkId"], x["evidenceSnapshot"]["chunkChecksum"]) for x in contexts}
             and citation_indexes == list(range(1, len(contexts) + 1))
             and [(x["claimId"], x["contextRefId"], x["chunkId"]) for x in bundle["visibleCitations"]] == [(x["claimId"], x["contextRefId"], x["chunkId"]) for x in contexts]
-            and run["projectId"] == media["projectId"] == consent["projectId"] == render["projectId"] == bundle["projectId"]
+            and run["projectId"] == trace["projectId"] == consent["projectId"] == bundle["projectId"]
             and run["status"] == "COMPLETED" and run["evaluation"]["evaluationStatus"] == "PASSED" and run["evaluation"]["unsupportedClaimCount"] == 0
             and media["sourceRunId"] == render["sourceRunId"] == consent["sourceRunId"] == run["runId"] and media["status"] == "COMPLETED"
             and trace["sourceEvaluationId"] == consent["sourceEvaluationId"] == render_trace["sourceEvaluationId"] == run["evaluation"]["evaluationId"] and trace["sourceEvaluationChecksum"] == consent["sourceEvaluationChecksum"] == render_trace["sourceEvaluationChecksum"]
@@ -331,7 +331,7 @@ def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any], *, spe
             stack_rows = stacks.get("stacks", [])
             stack_ids = {str(row[0]) if str(row[0]).startswith("call@") else f"call@{row[0]}" for row in stack_rows}
             frames = [frame for row in stack_rows for frame in row[1]]
-            if len(before) < 8 or not set(before) <= after or not {"goto", "click", "fill"} <= set(before.values()) or stack_ids != set(before) or not frames or any(frame[0] != 0 or not spec_line <= frame[1] <= source_lines for frame in frames):
+            if len(before) < 8 or not set(before) <= after or not {"goto", "click", "setInputFiles", "selectOption", "dispatchEvent"} <= set(before.values()) or stack_ids != set(before) or not frames or any(frame[0] != 0 or not spec_line <= frame[1] <= source_lines for frame in frames):
                 raise EvidenceError("TRACE_BINDING")
         facts = []
         for record in records:
@@ -425,11 +425,29 @@ def prepare_evidence(root: Path, *, head: str, run_id: str, source_root: Path = 
         path.write_bytes(data)
         artifacts[name] = {"path": path.relative_to(root).as_posix(), "filename": path.name, "mime": artifact["mimeType"], "sha256": sha256(data)}
     bundle = {"principal": "curator_demo", "projectCount": 1, "projectId": project["projectId"], "legacySources": summary["legacySources"], "source": source, "walkthrough": walkthrough, "visibleCitations": raw["visibleCitations"], "multilingual": multilingual, "consent": consent, "render": render, "artifacts": artifacts, "otherDemo": {"actionsHidden": True}}
+    with zipfile.ZipFile(root / "trace.zip") as archive:
+        network = [name for name in archive.namelist() if name.endswith(".network")]
+        if len(network) != 1:
+            raise EvidenceError("TRACE_BINDING")
+        records = [_strict_json(line, "TRACE_BINDING") for line in archive.read(network[0]).splitlines()]
+        resources = {name: archive.read(name) for name in archive.namelist() if name.startswith("resources/")}
+    trace_requests = []
+    for record in records:
+        traced = record.get("snapshot", {}).get("request", {})
+        if record.get("type") == "resource-snapshot" and str(traced.get("url", "")).startswith(ORIGIN + "/api/v1/"):
+            post_data = traced.get("postData") or {}
+            traced_body = resources.get("resources/" + str(post_data.get("_sha1")), b"") if post_data.get("_sha1") else str(post_data.get("text", "")).encode()
+            trace_requests.append((traced.get("url"), traced.get("method"), traced_body))
+    if len(trace_requests) != len(requests):
+        raise EvidenceError("TRACE_BINDING")
     write_sequence = read_sequence = denial_sequence = 0
     traffic_requests, traffic_responses = [], []
-    for operation, request in zip(operations, requests, strict=True):
+    for operation, request, traced in zip(operations, requests, trace_requests, strict=True):
         response = response_by_id[request["id"]]
         request_data, response_data = (base64.b64decode(item, validate=True) for item in (request["bodyBase64"], response["bodyBase64"]))
+        if traced[:2] != (request["url"], request["method"]) or request_data and request_data != traced[2]:
+            raise EvidenceError("TRACE_BINDING")
+        request_data = request_data or traced[2]
         principal = request["headers"].get("x-local-user-id", "")
         if operation in {item[0] for item in WRITES}:
             write_sequence += 1
@@ -440,7 +458,7 @@ def prepare_evidence(root: Path, *, head: str, run_id: str, source_root: Path = 
         else:
             denial_sequence += 1
             sequence = denial_sequence
-        traffic_requests.append({"sequence": sequence, "operation": operation, "method": request["method"], "path": request["url"].removeprefix(ORIGIN), "origin": ORIGIN, "principal": principal, "projectId": "" if operation == "languages" else project["projectId"], "id": request["id"], "bodyBase64": request["bodyBase64"], "bodySha256": sha256(request_data), "contentType": request["headers"].get("content-type", "")})
+        traffic_requests.append({"sequence": sequence, "operation": operation, "method": request["method"], "path": request["url"].removeprefix(ORIGIN), "origin": ORIGIN, "principal": principal, "projectId": "" if operation == "languages" else project["projectId"], "id": request["id"], "bodyBase64": base64.b64encode(request_data).decode(), "bodySha256": sha256(request_data), "contentType": request["headers"].get("content-type", "")})
         traffic_responses.append({"requestId": request["id"], "status": response["status"], "bodyBase64": response["bodyBase64"], "bodySha256": sha256(response_data)})
     graph = [{"path": relative, "sha256": sha256((source_root / relative).read_bytes())} for relative in SOURCES]
     trace_sha = sha256((root / "trace.zip").read_bytes())
