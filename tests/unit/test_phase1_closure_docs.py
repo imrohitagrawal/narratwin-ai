@@ -9023,6 +9023,12 @@ def test_heartbeat2_reset6_workflow_is_exact_head_fail_fast_and_success_only() -
     assert "continue-on-error" not in workflow
 
 
+def test_heartbeat2_runner_supports_clean_checkout_without_optional_public_directory() -> None:
+    runner = Path("scripts/ci/heartbeat2-browser.sh").read_text(encoding="utf-8")
+    assert "if [ -d frontend/public ]; then" in runner
+    assert "mkdir -p frontend/.next/standalone/public" in runner
+
+
 def test_heartbeat2_reset6_separates_local_semantics_from_ci_execution(tmp_path: Path) -> None:
     evidence: Any = load_heartbeat2_evidence_module()
     root, sources = tmp_path / "packet", tmp_path / "sources"
