@@ -8,8 +8,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.curation import SourceAssertions
-from backend.app.main import app, reset_app_state_for_tests, stage4_service
-from backend.app.stage4 import LocalPrincipal, Stage4Error, Stage4Service
+from backend.app.main import app, reset_app_state_for_tests
+from backend.app.stage4 import LocalPrincipal, Stage4Error, Stage4Service, stage4_service
 
 
 INTERNAL_FIXTURE = b"NarraTwin Heartbeat Internal Fixture\n\nINTERNAL USE ONLY.\nProject Lantern private launch code name is Ember.\nThis source must never enter approved chunks or retrieval-visible material.\n"

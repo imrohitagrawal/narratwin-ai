@@ -54,7 +54,7 @@ class SourceDecisionRecord:
 @dataclass(frozen=True)
 class CuratedOutcome:
     code: str
-    source: SourceRecord | None
+    source: Any
     decision: SourceDecisionRecord
     idempotency_replayed: bool = False
 T = TypeVar("T")
