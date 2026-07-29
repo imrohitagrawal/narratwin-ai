@@ -1853,13 +1853,21 @@ PHF020A_DUPLICATE_DUTIES = {
     "DUP-05": ("PHF-020B", "Normalize mutable current state later", "successor issue"),
 }
 PHF020A_ACCEPTANCE_TRANSFER = {
-    "ISSUE8-01": ("#8", "taxonomy distinctions", "DP-1/DP-2/P1C/PM-1/PM-2"),
-    "ISSUE8-02": ("#8", "Product Mode 1 local checkpoint", "PM-1"),
-    "ISSUE8-03": ("#8", "Product Mode 2 future reset", "PM-2"),
-    "ISSUE8-04": ("#8", "optional media independence", "#18/#19"),
-    "ISSUE8-05": ("#8", "duplicate reconciliation", "DUP-01..DUP-05"),
-    "ISSUE8-06": ("#8", "no runtime authorization", "PM-GATE prohibitions"),
+    "ISSUE8-01": ("#8", "PRD names both product modes", "docs/PRD.md#6-product-modes"),
+    "ISSUE8-02": ("#8", "Project-avatar-pack contract is documented", "docs/PROJECT_AVATAR_PACK.md"),
+    "ISSUE8-03": ("#8", "Roadmap preserves focused Slice 1 and later video/interactive phases", "docs/ROADMAP.md#product-mode-alignment"),
+    "ISSUE8-04": ("#8", "AI build brief preserves the full product vision", "docs/AI_BUILD_BRIEF.md#product-modes-to-preserve"),
+    "ISSUE8-05": ("#8", "Skill plan requires PM/spec validation before coding", "docs/SKILL_EXECUTION_PLAN.md#product-mode-policy-authority-handoff"),
+    "ISSUE8-06": ("#8", "No application code changes", "Issue #311 exact governance-only branch gate"),
 }
+ISSUE8_SKILL_PLAN_MARKER = "Before coding, PM/spec skills must validate both Product Mode 1 and Product Mode 2 and the reusable `project-avatar-pack` contract across the PRD, roadmap, architecture, and Slice 1 planning."
+ISSUE_311_BRANCH = "phase-1-closure-process-311-issue8-product-memory-closeout"
+ISSUE_311_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-311.json", "docs/PHASE_PLAN.md",
+    "docs/SKILL_EXECUTION_PLAN.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
+    "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_311_LINE_CAP = 350
 PHF020A_ACTIVATION = {
     "Evidence ID": "PM-MODE-001",
     "Mode": "PM-1",
@@ -1904,17 +1912,17 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #308",
-        "heartbeat2-pr-b-curated-reviewer-demo",
-        "heartbeat2-pr-b-curated-reviewer-demo",
-        "Heartbeat 1 is closed and Heartbeat 2 PR A merged through PR #309 at 4922178cf1add925f4a0f6b21b288d18dafda9fe. PR B is active under canonical re-preflight comment 5122147727 and the 11-file / 900-line / six-surface envelope. Issue #8 remains open product memory. Providers, hosting, deployment, production claims, private data, #20, and protected tracker mutation remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate.",
+        "issue #311",
+        "product-memory-closeout-complete",
+        "product-memory-closeout-complete",
+        "Heartbeat 2 is complete through PRs #309/#310 and Issue #308 is closed. Issue #8 is satisfied by Issue #311 once its PR merges and may close after post-merge verification. Heartbeat 3, Product Mode 2/#20, providers, hosting, deployment, production, private data, and protected-tracker work remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
         "#8",
-        "open",
-        "open",
-        "Issue #8 remains open for its separate product-definition acceptance contract.",
+        "closed",
+        "closed",
+        "Issue #8 is satisfied by Issue #311 once its PR merges; close only after post-merge six-criterion verification.",
     ),
     "SSV1-ISSUE155": (
         "product-mode-controller",
@@ -2212,6 +2220,22 @@ def status_state_v1_findings(text: str) -> list[str]:
     if seen != set(STATUS_STATE_V1_ROWS):
         return ["SSV1.REQUIRED.MISSING"]
     return []
+
+
+def issue8_product_memory_findings(documents: dict[str, str]) -> list[str]:
+    requirements = {
+        "I8.AC01.PRODUCT_MODES": ("docs/PRD.md", ("### Mode 1: Pre-rendered Multilingual Demo Video", "### Mode 2: Interactive AI Avatar Walkthrough")),
+        "I8.AC02.PACK_CONTRACT": ("docs/PROJECT_AVATAR_PACK.md", ("# Project Avatar Pack Contract",)),
+        "I8.AC03.ROADMAP": ("docs/ROADMAP.md", ("### Stage 4: Slice 1, Project Upload To Grounded Script Generation", "### Stage 6: Multilingual Scripts, Subtitles, And Voice Adapter", "### Stage 7: Avatar Rendering Adapter And Export", "interactive Q&A")),
+        "I8.AC04.BUILD_BRIEF": ("docs/AI_BUILD_BRIEF.md", ("## Product modes to preserve", "### Mode 1: Pre-rendered multilingual demo video", "### Mode 2: Interactive AI avatar guide", "project-avatar-pack", "Slice 1")),
+        "I8.AC05.SKILL_PLAN": ("docs/SKILL_EXECUTION_PLAN.md", (ISSUE8_SKILL_PLAN_MARKER,)),
+    }
+    return [code for code, (path, markers) in requirements.items() if any(marker not in documents.get(path, "") for marker in markers)]
+
+
+def issue8_closeout_status_findings(text: str) -> list[str]:
+    required = ("| SSV1-NEXT | next-action | issue #311 | product-memory-closeout-complete | product-memory-closeout-complete |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
+    return ["I8.STATUS.TERMINAL" for marker in required if marker not in text]
 
 
 def expanded_issue_numbers(value: str) -> set[str]:
@@ -3991,6 +4015,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_308_H2_B_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-308-"):
         allowed_files = set()
+    elif branch == ISSUE_311_BRANCH:
+        allowed_files = ISSUE_311_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-311-"):
+        allowed_files = set()
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
@@ -4180,6 +4208,12 @@ def check_changed_files(failures: list[str]) -> None:
             fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
         elif local > ISSUE_308_LINE_CAPS[branch] or aggregate > ISSUE_308_AGGREGATE_CAP:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_308_LINE_CAPS[branch]}-line or {ISSUE_308_AGGREGATE_CAP}-line aggregate cap.")
+    if branch == ISSUE_311_BRANCH:
+        local = charged_lines(resolve_base())
+        if local is None:
+            fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
+        elif local > ISSUE_311_LINE_CAP:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_311_LINE_CAP}-line cap.")
 
 
 def check_final_review_baseline(failures: list[str]) -> None:
@@ -4593,6 +4627,12 @@ def check_phf020a_policy_contract(failures: list[str]) -> None:
     for marker in required_skill_plan_markers:
         if marker not in skill_plan:
             fail(failures, f"docs/SKILL_EXECUTION_PLAN.md missing PHF-020A handoff marker: {marker}")
+
+    issue8_documents = {rel: read(rel) for rel in ("docs/PRD.md", "docs/PROJECT_AVATAR_PACK.md", "docs/ROADMAP.md", "docs/AI_BUILD_BRIEF.md", "docs/SKILL_EXECUTION_PLAN.md")}
+    for finding in issue8_product_memory_findings(issue8_documents):
+        fail(failures, f"Issue #8 product-memory finding: {finding}")
+    for finding in issue8_closeout_status_findings(read("docs/STATUS.md")):
+        fail(failures, f"Issue #8 closeout-status finding: {finding}")
 
     agents = read("AGENTS.md")
     if "- `docs/PHASE_PLAN.md`" not in agents:

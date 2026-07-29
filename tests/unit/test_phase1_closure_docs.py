@@ -523,12 +523,12 @@ Only the registered tables in this section are authoritative for PHF-020A.
 
 | Acceptance ID | Source | Stable policy row | Evidence |
 |---|---|---|---|
-| ISSUE8-01 | #8 | taxonomy distinctions | DP-1/DP-2/P1C/PM-1/PM-2 |
-| ISSUE8-02 | #8 | Product Mode 1 local checkpoint | PM-1 |
-| ISSUE8-03 | #8 | Product Mode 2 future reset | PM-2 |
-| ISSUE8-04 | #8 | optional media independence | #18/#19 |
-| ISSUE8-05 | #8 | duplicate reconciliation | DUP-01..DUP-05 |
-| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |
+| ISSUE8-01 | #8 | PRD names both product modes | docs/PRD.md#6-product-modes |
+| ISSUE8-02 | #8 | Project-avatar-pack contract is documented | docs/PROJECT_AVATAR_PACK.md |
+| ISSUE8-03 | #8 | Roadmap preserves focused Slice 1 and later video/interactive phases | docs/ROADMAP.md#product-mode-alignment |
+| ISSUE8-04 | #8 | AI build brief preserves the full product vision | docs/AI_BUILD_BRIEF.md#product-modes-to-preserve |
+| ISSUE8-05 | #8 | Skill plan requires PM/spec validation before coding | docs/SKILL_EXECUTION_PLAN.md#product-mode-policy-authority-handoff |
+| ISSUE8-06 | #8 | No application code changes | Issue #311 exact governance-only branch gate |
 
 ### PM-MODE-001 Activation Evidence
 
@@ -729,10 +729,10 @@ def phf020a_mutated_policy(family: str, *, seed: int = 0, variant: int = 0) -> t
     if family == "issue-#8 acceptance mapping":
         selector = variant % 3
         if selector == 0:
-            return text.replace("| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |\n", ""), ["PHF020A.ACCEPTANCE.MISSING"]
+            return text.replace("| ISSUE8-06 | #8 | No application code changes | Issue #311 exact governance-only branch gate |\n", ""), ["PHF020A.ACCEPTANCE.MISSING"]
         if selector == 1:
-            return text.replace("| ISSUE8-04 | #8 | optional media independence | #18/#19 |", "| ISSUE8-04 | #155 | optional media independence | #18/#19 |"), ["PHF020A.ACCEPTANCE.SOURCE_INVALID"]
-        return text.replace("no runtime authorization", f"runtime authorization {seed}-{variant}"), ["PHF020A.ACCEPTANCE.ROW_INVALID"]
+            return text.replace("| ISSUE8-04 | #8 | AI build brief preserves the full product vision |", "| ISSUE8-04 | #155 | AI build brief preserves the full product vision |"), ["PHF020A.ACCEPTANCE.SOURCE_INVALID"]
+        return text.replace("No application code changes", f"Application code changes {seed}-{variant}"), ["PHF020A.ACCEPTANCE.ROW_INVALID"]
     if family == "current-state mixing":
         return text + f"\n\nCurrent module is CH-M1-{variant + 1:02d}.\n", ["PHF020A.STATE.MUTABLE_CURRENT_STATE"]
     if family == "resource/unicode/format bounds":
@@ -3057,7 +3057,7 @@ def test_status_state_v1_contract_rejects_duplicate_authority_section() -> None:
         ),
         (
             "issue8-transfer-weakened",
-            PHF020A_VALID_POLICY.replace("no runtime authorization", "runtime authorization"),
+            PHF020A_VALID_POLICY.replace("No application code changes", "Application code changes"),
             ["PHF020A.ACCEPTANCE.ROW_INVALID"],
         ),
         (
@@ -3087,8 +3087,8 @@ def test_status_state_v1_contract_rejects_duplicate_authority_section() -> None:
         (
             "duplicate-acceptance-row",
             PHF020A_VALID_POLICY.replace(
-                "| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |\n",
-                "| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |\n| ISSUE8-06 | #8 | no runtime authorization | PM-GATE prohibitions |\n",
+                "| ISSUE8-06 | #8 | No application code changes | Issue #311 exact governance-only branch gate |\n",
+                "| ISSUE8-06 | #8 | No application code changes | Issue #311 exact governance-only branch gate |\n| ISSUE8-06 | #8 | No application code changes | Issue #311 exact governance-only branch gate |\n",
             ),
             ["PHF020A.DUPLICATE.ACCEPTANCE"],
         ),

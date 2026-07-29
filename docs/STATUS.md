@@ -14,7 +14,7 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-25
+- Last reviewed date: 2026-07-30
 - Current stage marker: `.stage/current = 8`
 - Forensic override: evidence at exact head
   `f93653e8a11e697c88766b207fb01c18662339d6` establishes that Issue `#280` is
@@ -240,8 +240,8 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | issue #308 | heartbeat2-pr-b-curated-reviewer-demo | heartbeat2-pr-b-curated-reviewer-demo | Heartbeat 1 is closed and Heartbeat 2 PR A merged through PR #309 at 4922178cf1add925f4a0f6b21b288d18dafda9fe. PR B is active under canonical re-preflight comment 5122147727 and the 11-file / 900-line / six-surface envelope. Issue #8 remains open product memory. Providers, hosting, deployment, production claims, private data, #20, and protected tracker mutation remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate. |
-| SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
+| SSV1-NEXT | next-action | issue #311 | product-memory-closeout-complete | product-memory-closeout-complete | Heartbeat 2 is complete through PRs #309/#310 and Issue #308 is closed. Issue #8 is satisfied by Issue #311 once its PR merges and may close after post-merge verification. Heartbeat 3, Product Mode 2/#20, providers, hosting, deployment, production, private data, and protected-tracker work remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate. |
+| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed | Issue #8 is satisfied by Issue #311 once its PR merges; close only after post-merge six-criterion verification. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
 | SSV1-FORBIDDEN | prohibited-work | repository | forbidden | forbidden | Product Mode 2, hosted launch, provider enablement, public media distribution, production-readiness claims, and product/runtime implementation outside approved follow-up scope remain forbidden. |
@@ -445,8 +445,8 @@ Use these files together with this tracker:
 | Issue | State | Role | Notes |
 |---|---|---|---|
 | `#3` | Open | Legacy governance issue | Uses obsolete `Stage -1` naming and should be reconciled or closed. |
-| `#8` | Open | Product-definition support | Captures two product modes and project-avatar-pack contract; concept already exists in docs but issue remains open. |
-| `#308` | Open | Heartbeat 2 authority | PR #309 merged PR A at `4922178c`; PR B is active on `phase-1-closure-308-heartbeat2-curated-reviewer-demo` under canonical comment `5122147727`. This is not Product Mode 2 and does not authorize providers, real media, hosting, deployment, production, private data, or #20. |
+| `#8` | Closed | Product-definition support | Its six original product-memory criteria are mapped and enforced by reference-only child `#311`; closure follows that PR's post-merge verification. |
+| `#308` | Closed | Heartbeat 2 authority | PR A merged through PR `#309` at `4922178cf1add925f4a0f6b21b288d18dafda9fe`; PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`. Heartbeat 2 is complete. |
 | `#9` | Closed | Superseded placeholder | Explicitly marked as superseded. |
 | `#17` | Open | Future slice | Translation/localization and subtitles. |
 | `#18` | Open | Future slice | Optional TTS audio provider boundary. |
@@ -1031,6 +1031,6 @@ Required update rules:
 - Authority: owner-authored issue `#308`, reset-6 canonical comment database ID `5121265229`, frozen base `fa423ce8b016a4f0593d8a294cf9f24ef5caff6c`.
 - PR A post-merge target state is complete through PR `#309`: owner-authorized Contract reset 6 permits 9 files / 1,600 charged lines / five surfaces and binds execution authenticity to exact-head required CI plus success-only workflow artifacts. Local verification proves semantics/privacy only.
 - PR A merged through PR `#309` at `4922178cf1add925f4a0f6b21b288d18dafda9fe`; its exact-head CI and independent review gates passed and its branch was cleaned up.
-- PR B re-preflight passed under canonical comment `5122147727`; implementation is active on `phase-1-closure-308-heartbeat2-curated-reviewer-demo` with an exact 11-file / 900-line / six-surface cap.
+- PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`; its exact-head CI and independent review gates passed and its branch was cleaned up.
 - Aggregate reset envelope remains 15 unique files, 2,500 charged lines, eight surfaces; synthetic fixtures and local/mock media only.
 - Excluded: backend/API changes, providers, spend, real media/private data, deployment/hosting/production claims, Product Mode 2/#20, and mutation of #8/#43/#155/#249 or protected trackers.
