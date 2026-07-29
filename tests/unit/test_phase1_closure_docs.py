@@ -8822,6 +8822,29 @@ def test_heartbeat2_verifier_redacts_forbidden_bytes_from_failure_frame(tmp_path
     assert marker.decode() not in repr(verifier_frame.f_locals)
 
 
+def test_heartbeat2_verifier_drops_privacy_exception_chain_and_rejects_unsafe_artifact_paths(tmp_path: Path, monkeypatch: Any) -> None:
+    import base64
+    import traceback
+
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+    def fail_scan(*args: Any, **kwargs: Any) -> None:
+        protected_local = b"controlled-chain-marker"
+        encoded_local = base64.b64encode(protected_local)
+        if encoded_local:
+            raise evidence.PrivacyError("FORBIDDEN")
+    monkeypatch.setattr(evidence, "scan_evidence", fail_scan)
+    with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_OR_ARCHIVE") as captured:
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    rendered = "".join(traceback.TracebackException.from_exception(captured.value, capture_locals=True).format())
+    assert "controlled-chain-marker" not in rendered
+    assert "Y29udHJvbGxlZC1jaGFpbi1tYXJrZXI=" not in rendered
+    for filename in ("../escape.json", "/tmp/escape.json", "nested/escape.json", "nested\\escape.json"):
+        with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+            evidence._artifact_path(root, filename)
+
+
 @pytest.mark.parametrize("body", [
     '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); await page.evaluate(() => Function("globalThis.fe" + "tch = () => ({ok:true})")());''',
     '''const marker = "}"; if (false) { const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); }''',
@@ -9027,6 +9050,7 @@ def test_heartbeat2_runner_supports_clean_checkout_without_optional_public_direc
     runner = Path("scripts/ci/heartbeat2-browser.sh").read_text(encoding="utf-8")
     assert "if [ -d frontend/public ]; then" in runner
     assert "mkdir -p frontend/.next/standalone/public" in runner
+    assert 'cp "$RUNTIME/verification.json" "$PUBLISHED/ci-verification.json"' in runner
 
 
 def test_heartbeat2_reset6_separates_local_semantics_from_ci_execution(tmp_path: Path) -> None:

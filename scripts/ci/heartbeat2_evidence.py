@@ -409,6 +409,14 @@ def _ci_execution(root: Path, manifest: dict[str, Any], head: str, run_id: str, 
     valid = valid and record.get("workflowSourceSha256") == graph.get(".github/workflows/ci.yml") and record.get("runnerSourceSha256") == graph.get("scripts/ci/heartbeat2-browser.sh") and record.get("reportSha256") == sha256(_path(root, manifest.get("testReport")).read_bytes()) and record.get("traceSha256") == manifest.get("traceSha256") == sha256(_path(root, manifest.get("trace")).read_bytes())
     if not valid:
         raise EvidenceError("CI_PROVENANCE")
+def _artifact_path(root: Path, filename: Any) -> Path:
+    if not isinstance(filename, str) or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", filename) is None:
+        raise EvidenceError("ARTIFACT_BINDING")
+    artifact_root = (root / "artifacts").resolve()
+    path = (artifact_root / filename).resolve()
+    if path.parent != artifact_root:
+        raise EvidenceError("ARTIFACT_BINDING")
+    return path
 def prepare_evidence(root: Path, *, head: str, run_id: str, source_root: Path = Path.cwd()) -> None:
     raw = _json(root, "browser-traffic.raw.json")
     requests, response_rows = raw.get("requests", []), raw.get("responses", [])
@@ -426,10 +434,10 @@ def prepare_evidence(root: Path, *, head: str, run_id: str, source_root: Path = 
         raise EvidenceError("PRODUCT_JOIN")
     artifact_apis = {"translated": multilingual["artifacts"]["translatedScript"], "subtitles": multilingual["artifacts"]["subtitles"], "voice": multilingual["artifacts"]["voiceManifest"], "preview": render["artifacts"]["demoExport"], "renderManifest": render["artifacts"]["renderManifest"], "video": render["artifacts"]["videoExportPlaceholder"]}
     artifacts: dict[str, Any] = {}
+    (root / "artifacts").mkdir(parents=True, exist_ok=True)
     for name, artifact in artifact_apis.items():
         data = base64.b64decode(artifact["contentBase64"], validate=True)
-        path = root / "artifacts" / artifact["fileName"]
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path = _artifact_path(root, artifact["fileName"])
         path.write_bytes(data)
         artifacts[name] = {"path": path.relative_to(root).as_posix(), "filename": path.name, "mime": artifact["mimeType"], "sha256": sha256(data)}
     bundle = {"principal": "curator_demo", "projectCount": 1, "projectId": project["projectId"], "legacySources": summary["legacySources"], "source": source, "walkthrough": walkthrough, "visibleCitations": raw["visibleCitations"], "multilingual": multilingual, "consent": consent, "render": render, "artifacts": artifacts, "otherDemo": {"actionsHidden": True}}
@@ -511,8 +519,10 @@ def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, for
         _ci_execution(root, manifest, expected_head, expected_run_id, ci_context)
     try:
         stats = scan_evidence([root], controlled=protected_forbidden[0] if protected_forbidden else b"synthetic-never-present-h2", canary=protected_forbidden[1] if len(protected_forbidden) > 1 else b"synthetic-canary-never-present-h2")
-    except PrivacyError as exc:
-        raise EvidenceError("FORBIDDEN_OR_ARCHIVE") from exc
+    except PrivacyError:
+        stats = None
+    if stats is None:
+        raise EvidenceError("FORBIDDEN_OR_ARCHIVE")
     return {"schema": "heartbeat2-verification-v3", "runId": expected_run_id, "headSha": expected_head, "outcome": "CI_EXECUTION_BOUND" if ci_context else "SEMANTIC_PASS_LOCAL", "executionAuthenticity": "GITHUB_ACTIONS" if ci_context else "UNATTESTED", "githubRunId": ci_context["runId"] if ci_context else None, "githubRunAttempt": ci_context["runAttempt"] if ci_context else None, "writeCount": 8, "readCount": 3, "filesScanned": stats["fileCount"], "membersScanned": stats["memberCount"]}
 def _main(argv: list[str]) -> int:
     class Parser(argparse.ArgumentParser):
@@ -528,7 +538,7 @@ def _main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     if args.ci and os.environ.get("GITHUB_ACTIONS") != "true":
         raise EvidenceError("CI_PROVENANCE")
-    forbidden = tuple(Path(value).read_bytes() for value in args.forbidden_file)
+    forbidden = tuple(RedactedBytes(Path(value).read_bytes()) for value in args.forbidden_file)
     if args.prepare:
         prepare_evidence(Path(args.evidence), head=args.head, run_id=args.run_id)
     env = {"repository": "GITHUB_REPOSITORY", "eventName": "GITHUB_EVENT_NAME", "workflow": "GITHUB_WORKFLOW", "workflowRef": "GITHUB_WORKFLOW_REF", "workflowSha": "GITHUB_WORKFLOW_SHA", "job": "GITHUB_JOB", "runId": "GITHUB_RUN_ID", "runAttempt": "GITHUB_RUN_ATTEMPT", "headSha": "NARRATWIN_H2_EXPECTED_HEAD"}

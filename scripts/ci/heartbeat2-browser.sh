@@ -104,6 +104,7 @@ fi
 if [ "${GITHUB_ACTIONS:-}" = true ]; then
   cp "$RUNTIME/verification.json" "$CANDIDATE/ci-verification.json"
   mv "$CANDIDATE" "$PUBLISHED/$RUN_ID"
+  cp "$RUNTIME/verification.json" "$PUBLISHED/ci-verification.json"
   echo "Heartbeat 2 trusted evidence published."
 else
   cp "$RUNTIME/verification.json" "$CANDIDATE/local-verification.json"
