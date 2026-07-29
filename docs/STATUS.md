@@ -240,7 +240,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | issue #300 / issue #280 forensic containment | issue280-governance-reset-active | issue280-governance-reset-active | Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed: all 525 combinations completed without translation refusal, accepted scripts remained audience-sensitive, and all 75 successful language/depth groups emitted one visible target body across seven audiences. The old 217/308 aggregate was not reproduced. Issue #280's historical GitHub closure, issue #298, and PR #299 remain preserved forensic evidence. Product/runtime repair remains separate. This state does not authorize backend, frontend, workflow, provider, RAG, avatar, database, Docker, hosted/public demo, paid spend, real media, public distribution, semantic-oracle/runner work, or production-readiness claims. |
+| SSV1-NEXT | next-action | issue #304 under issue #302 | heartbeat1-a2-contract | heartbeat1-a2-contract | Issue #304 governs only metadata-only exclusion, owner summary, replay, and restore repair after merged A1 PR #303. The prior issue280-governance-reset-active token is historical only; Issue #280 and PR #299 remain untouched forensic history. UI/browser proof, Heartbeat 2, providers, hosted/public behavior, paid spend, deployment, and production-readiness claims remain unauthorized. Historical evidence remains verbatim: Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate. These phrases describe preserved forensic history, not current next-action authority. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -1008,10 +1008,10 @@ Required update rules:
 | 2026-07-10 | PR `#76` opened for issue `#66` Context 2 planning for issue `#39` on branch `phase-1-closure-39-context2-idempotency-lease-outbox`; ADR `0009` defines advisory-only idempotency, lease, and outbox contracts while `#39` remains open and all runtime implementation remains deferred. |
 | 2026-07-10 | PR `#77` merged migration/rollback context planning for issue `#67`; issue `#67` is closed and runtime migration tooling remains deferred pending later implementation contexts. |
 | 2026-07-10 | PR `#78` opened for issue `#68` on branch `phase-1-closure-39-context4-backup-restore-drill`; advisory-only ADR and evidence-planning updates for `DUR-RESTORE-001`, `OPS-METRICS-001`, and `OPS-SLO-001` added no runtime implementation. |
-## Issue 302 Heartbeat 1 A1 status
+## Issue 304 Heartbeat 1 A2 status
 
-- State: implementation and local gate verification in progress on `phase-1-closure-302-heartbeat1-a1-eligible`.
-- Scope: one eligible curated source path from submit through approval, atomic ingestion, persistence, restore repair, and deterministic replay.
-- Frozen envelope: exactly 10 changed files, at most 900 hand-authored changed lines, and six surfaces.
-- Evidence authority: issue `#302` plus its bound preflight comment; both must be re-resolved before push, review, and merge.
-- Deferred: A2 exclusion, UI/browser proof, Heartbeat 2, paid providers, hosted/public behavior, and production-readiness claims.
+- A1's 10-file, 900 hand-authored line, six-surface envelope is merged through PR `#303` at `510c78297cfe62b7314b91af13f4f6e67a17507b`; issue `#302` and `#8` remain open.
+- Scope: source-less explicit/policy exclusion, owner summary, durable replay, valid v1 separation, and fail-closed restore repair.
+- Frozen envelope: exactly 10 changed files, at most 600 hand-authored changed lines, and six surfaces.
+- Evidence authority: issue `#302`, child `#304`, comment database ID `5113777002`, and draft PR `#305`; re-resolve before review and merge.
+- Deferred: B UI/browser proof, Heartbeat 2, paid providers, hosted/public behavior, deployment, and production-readiness claims.

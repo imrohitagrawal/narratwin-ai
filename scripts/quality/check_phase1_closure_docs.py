@@ -611,6 +611,8 @@ ISSUE_300_ALLOWED_CHANGED_FILES = {
 }
 ISSUE_302_A1_BRANCH = "phase-1-closure-302-heartbeat1-a1-eligible"
 ISSUE_302_A1_ALLOWED_CHANGED_FILES = {"backend/app/curation.py", "backend/app/stage4.py", "backend/app/main.py", "tests/api/test_stage4_slice_api.py", "docs/API_CONTRACT.md", "docs/ADR/0040-heartbeat1-a1-curated-eligibility.md", "docs/TRACEABILITY.md", "docs/STATUS.md", "docs/STAGE_ISSUE_PLAN.md", "scripts/quality/check_phase1_closure_docs.py"}
+ISSUE_304_A2_BRANCH = "phase-1-closure-304-heartbeat1-a2-exclusion-summary"
+ISSUE_304_A2_ALLOWED_CHANGED_FILES = {"backend/app/curation.py", "backend/app/stage4.py", "backend/app/main.py", "tests/api/test_heartbeat1_a2_exclusion_api.py", "docs/API_CONTRACT.md", "docs/ADR/0041-heartbeat1-a2-exclusion-summary.md", "docs/TRACEABILITY.md", "docs/STATUS.md", "docs/STAGE_ISSUE_PLAN.md", "scripts/quality/check_phase1_closure_docs.py"}
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
     "tests/unit/test_governance_preflight_github.py", ".github/workflows/quality-gates.yml",
@@ -1840,10 +1842,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #300 / issue #280 forensic containment",
-        "issue280-governance-reset-active",
-        "issue280-governance-reset-active",
-        "Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed: all 525 combinations completed without translation refusal, accepted scripts remained audience-sensitive, and all 75 successful language/depth groups emitted one visible target body across seven audiences. The old 217/308 aggregate was not reproduced. Issue #280's historical GitHub closure, issue #298, and PR #299 remain preserved forensic evidence. Product/runtime repair remains separate. This state does not authorize backend, frontend, workflow, provider, RAG, avatar, database, Docker, hosted/public demo, paid spend, real media, public distribution, semantic-oracle/runner work, or production-readiness claims.",
+        "issue #304 under issue #302",
+        "heartbeat1-a2-contract",
+        "heartbeat1-a2-contract",
+        "Issue #304 governs only metadata-only exclusion, owner summary, replay, and restore repair after merged A1 PR #303. The prior issue280-governance-reset-active token is historical only; Issue #280 and PR #299 remain untouched forensic history. UI/browser proof, Heartbeat 2, providers, hosted/public behavior, paid spend, deployment, and production-readiness claims remain unauthorized. Historical evidence remains verbatim: Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate. These phrases describe preserved forensic history, not current next-action authority.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3912,6 +3914,10 @@ def check_changed_files(failures: list[str]) -> None:
     elif branch == ISSUE_302_A1_BRANCH:
         allowed_files = ISSUE_302_A1_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-302-"):
+        allowed_files = set()
+    elif branch == ISSUE_304_A2_BRANCH:
+        allowed_files = ISSUE_304_A2_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-304-"):
         allowed_files = set()
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 import hashlib
 import os
 import re
@@ -484,11 +484,54 @@ class DocumentResponse(BaseModel):
     approved_at: str | None = Field(default=None, alias="approvedAt")
 
 
-CuratedSourceResponse = TypedDict("CuratedSourceResponse", {"code": str, "sourceId": str, "decisionId": str, "tenantId": str, "ownerId": str, "projectId": str, "checksum": str, "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str, "serverDecision": str, "decisionState": str, "ingestionStatus": str, "rawContentRetained": bool, "createdAt": str, "idempotencyReplayed": bool})
+class CuratedRetainedResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+    code: Literal["SOURCE_PENDING_REVIEW", "SOURCE_APPROVED"]
+    source_id: str = Field(alias="sourceId")
+    decision_id: str = Field(alias="decisionId")
+    tenant_id: str = Field(alias="tenantId")
+    owner_id: str = Field(alias="ownerId")
+    project_id: str = Field(alias="projectId")
+    checksum: str
+    source_version: str = Field(alias="sourceVersion")
+    assertions_fingerprint: str = Field(alias="assertionsFingerprint")
+    policy_version: str = Field(alias="policyVersion")
+    server_decision: Literal["ALLOW"] = Field(alias="serverDecision")
+    decision_state: Literal["PENDING_REVIEW", "APPROVED"] = Field(alias="decisionState")
+    ingestion_status: Literal["NOT_STARTED", "INGESTED"] = Field(alias="ingestionStatus")
+    raw_content_retained: Literal[True] = Field(alias="rawContentRetained")
+    created_at: str = Field(alias="createdAt")
+    idempotency_replayed: bool = Field(alias="idempotencyReplayed")
+class CuratedExcludedResponse(BaseModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+    code: Literal["SOURCE_EXCLUDED"]
+    source_id: str = Field(alias="sourceId")
+    decision_id: str = Field(alias="decisionId")
+    tenant_id: str = Field(alias="tenantId")
+    owner_id: str = Field(alias="ownerId")
+    project_id: str = Field(alias="projectId")
+    checksum: str
+    source_version: str = Field(alias="sourceVersion")
+    assertions_fingerprint: str = Field(alias="assertionsFingerprint")
+    policy_version: str = Field(alias="policyVersion")
+    server_decision: Literal["DENY"] = Field(alias="serverDecision")
+    decision_state: Literal["EXCLUDED"] = Field(alias="decisionState")
+    reason: Literal["CURATOR_EXCLUDED", "SERVER_POLICY_DENIED"]
+    raw_content_retained: Literal[False] = Field(alias="rawContentRetained")
+    created_at: str = Field(alias="createdAt")
+    idempotency_replayed: bool = Field(alias="idempotencyReplayed")
+CuratedSourceResponse = CuratedRetainedResponse | CuratedExcludedResponse
 def curated_response(outcome: CuratedOutcome) -> CuratedSourceResponse:
-    values = asdict(outcome)
-    values = values["source"] | values["decision"] | values
-    return cast(CuratedSourceResponse, {"".join([parts[0], *map(str.title, parts[1:])]): value for key, value in values.items() if not isinstance(value, dict) for parts in [key.split("_")]})
+    decision, source = outcome.decision, outcome.source
+    shared = {"code": outcome.code, "source_id": decision.source_id, "decision_id": decision.decision_id, "tenant_id": decision.tenant_id, "owner_id": decision.actor_id, "project_id": decision.project_id, "checksum": decision.checksum, "source_version": decision.source_version, "assertions_fingerprint": decision.assertions_fingerprint, "policy_version": decision.policy_version, "server_decision": decision.server_decision, "decision_state": decision.decision_state, "raw_content_retained": decision.raw_content_retained, "created_at": decision.created_at, "idempotency_replayed": outcome.idempotency_replayed}
+    if source is None:
+        return CuratedExcludedResponse.model_validate(shared | {"reason": decision.reason})
+    return CuratedRetainedResponse.model_validate(shared | {"owner_id": source.owner_id, "ingestion_status": source.ingestion_status})
+AcceptedChunkSummary = TypedDict("AcceptedChunkSummary", {"chunkId": str, "checksum": str})
+CuratedSummaryItem = TypedDict("CuratedSummaryItem", {"sourceId": str, "decisionId": str, "checksum": str, "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str, "serverDecision": str, "decisionState": str, "ingestionStatus": str, "acceptedChunks": list[AcceptedChunkSummary]})
+ExcludedSummaryItem = TypedDict("ExcludedSummaryItem", {"sourceId": str, "decisionId": str, "checksum": str, "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str, "serverDecision": str, "decisionState": str, "reason": str, "rawContentRetained": bool, "createdAt": str})
+LegacySummaryItem = TypedDict("LegacySummaryItem", {"documentId": str, "checksum": str, "approvalStatus": str, "ingestionStatus": str, "sourceKind": str})
+SourceCurationSummaryResponse = TypedDict("SourceCurationSummaryResponse", {"schema": str, "tenantId": str, "ownerId": str, "projectId": str, "curatedSources": list[CuratedSummaryItem], "excludedDecisions": list[ExcludedSummaryItem], "legacySources": list[LegacySummaryItem]})
 class IngestionRunResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
@@ -1564,6 +1607,18 @@ async def upload_knowledge_document(
         idempotency_key=idempotency_key,
     )
     return DocumentResponse.model_validate(document_to_api(document))
+
+
+@api_v1.get(
+    "/projects/{project_id}/source-curation-summary",
+    response_model=SourceCurationSummaryResponse,
+    tags=["knowledge"],
+)
+def get_source_curation_summary(
+    project_id: str,
+    principal: LocalPrincipal = Depends(local_principal),
+) -> SourceCurationSummaryResponse:
+    return cast(SourceCurationSummaryResponse, stage4_service.curation_summary(principal=principal, project_id=project_id))
 
 
 @api_v1.patch(

@@ -1825,3 +1825,21 @@ File overflow after endpoint dispatch returns durable, replayable `413 UPLOAD_FI
 Tenant, owner, and project checks remain mandatory and denial logs exclude raw content, filenames, hashes, and local state paths.
 Legacy v1 records restore without fabricated curation decisions; invalid curated graphs are pruned and the repaired snapshot is persisted.
 Issue `#302` A2 exclusion, browser/UI work, and Heartbeat 2 remain outside this contract.
+
+## Heartbeat 1 A2 exclusion and owner-summary contract
+
+Curated multipart submissions validate file safety before `EXCLUDE` or eligibility policy.
+Safe explicit exclusion returns `201 SOURCE_EXCLUDED` with `EXCLUDED/CURATOR_EXCLUDED` metadata.
+Safe ineligible acceptance returns `201 SOURCE_EXCLUDED` with `EXCLUDED/SERVER_POLICY_DENIED` metadata.
+Both return `serverDecision=DENY` and `rawContentRetained=false`; neither creates a source record, text, chunk, or ingestion membership.
+Exact idempotency replay preserves decision identity and time across restart; changed bound input returns nondisclosing `409 IDEMPOTENCY_CONFLICT`.
+Unsafe excluded content retains the existing bounded application failure and no decision.
+
+`GET /api/v1/projects/{projectId}/source-curation-summary` is an owner-scoped bounded aggregate.
+It returns `schema=source-curation-summary-v1`, stable identity ordering, and three separate collections.
+`curatedSources` exposes retained identity/checksum/version/state plus accepted chunk IDs and checksums, never text.
+`excludedDecisions` exposes source-less decision bindings and the exact bounded exclusion reason, never filename or body.
+`legacySources` derives surviving v1 documents as `UNSEALED_LEGACY`; it creates no decision and is absent from H1/H2 counts.
+Another principal receives the existing `403` owner denial without project-specific disclosure.
+Restore preserves legal source-less exclusions and prunes any attached source, chunk, ingestion, dependent, or invalid replay graph before repaired persistence.
+A2 adds no frontend/browser, publication, provider, hosted, deployment, or production contract.

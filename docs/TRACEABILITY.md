@@ -311,6 +311,11 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 
 | Evidence | Requirement | State |
 |---|---|---|
-| `backend/app/curation.py`, `backend/app/stage4.py`, `backend/app/main.py` | Exact eligible submit, pending approval, binding/policy recheck, approved atomic ingestion, durable replay, fail-closed restore | Implemented on the dedicated A1 branch |
+| `backend/app/curation.py`, `backend/app/stage4.py`, `backend/app/main.py` | Exact eligible submit, pending approval, binding/policy recheck, approved atomic ingestion, durable replay, fail-closed restore | Merged by PR `#303` at `510c78297cfe62b7314b91af13f4f6e67a17507b` |
 | `tests/api/test_stage4_slice_api.py` | ALLOW, denial scope, atomicity, transport/application `413`, restart replay, legacy restore, tamper repair, exact branch allowlist | Executable evidence |
-| ADR `0040`, API contract, status, stage plan, and branch checker | Freeze 10 files, 900 hand-authored lines, six surfaces; defer A2, UI/browser, and Heartbeat 2 | Governed by issue `#302` |
+| ADR `0040`, API contract, status, stage plan, and branch checker | Freeze 10 files, 900 hand-authored lines, six surfaces; defer A2, UI/browser, and Heartbeat 2 | A1 governed by issue `#302`; A2 separately governed by `#304` |
+
+## Issue 304 A2 traceability
+- A1 merged through PR `#303` at `510c78297cfe62b7314b91af13f4f6e67a17507b`.
+- Curation, Stage 4, API, and `test_heartbeat1_a2_exclusion_api.py` prove metadata-only exclusions, safety precedence, replay, owner summary, legacy separation, tamper repair, and bounded denial logs.
+- ADR `0041`, API contract, status, stage plan, and checker enforce the 10/600/6 ceiling in PR `#305` under `#304` and parent `#302`.
