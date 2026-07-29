@@ -1,6 +1,6 @@
 import { test, expect, type Request } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
-import path from "node:path";
+import { join } from "node:path";
 
 test("Heartbeat 2 local reviewer demo", async ({ page }) => {
   const requestIds = new WeakMap<Request, string>();
@@ -55,5 +55,5 @@ test("Heartbeat 2 local reviewer demo", async ({ page }) => {
   await expect(page.getByTestId("h2-safe-error")).toHaveText("FORBIDDEN");
   await expect.poll(() => responses.length).toBe(requests.length);
   const actionsHidden = await page.getByTestId("h2-owner-actions").isHidden();
-  await writeFile(path.join(process.env.H2_CANDIDATE_DIR ?? "", "browser-traffic.raw.json"), JSON.stringify({ requests, responses, sourceIdentity, visibleCitations, actionsHidden }));
+  await writeFile(join(process.env.H2_CANDIDATE_DIR ?? "", "browser-traffic.raw.json"), JSON.stringify({ requests, responses, sourceIdentity, visibleCitations, actionsHidden }));
 });
