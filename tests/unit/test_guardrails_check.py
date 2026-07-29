@@ -886,6 +886,31 @@ def test_product_context_rejects_non_self_contained_or_generic_content(
 
 
 @pytest.mark.parametrize(
+    "unexpanded_claim",
+    (
+        "This PR adds ten mandatory product-context fields to the pull request template.",
+        "This PR adds 10 required reviewer controls to the pull request template.",
+    ),
+)
+def test_product_context_rejects_counted_exact_changes_without_complete_enumeration(
+    unexpanded_claim: str,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = unexpanded_claim
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 4 must enumerate every item in a counted exact-change claim."
+    ]
+
+
+def test_product_context_accepts_counted_exact_changes_with_complete_enumeration() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = "This PR adds ten mandatory product-context fields:\n" + "\n".join(
+        f"{index}. Field {index} has a distinct reviewer outcome." for index in range(1, 11)
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
+
+
+@pytest.mark.parametrize(
     "missing_field",
     ("Expected behavior", "Prohibited behavior", "Evidence", "Pass condition", "Fail condition"),
 )
