@@ -17,7 +17,6 @@ INTERNAL_ASSERTIONS = {"classification": "INTERNAL", "provenance": "PROJECT_AUTH
 PUBLIC_FIXTURE = b"# Public\n\nProject Lantern is a controlled local demonstration.\nGrounded chunks retain source and checksum identity.\n"
 PUBLIC_ASSERTIONS = {"curationSchemaVersion": "source-curation-v1", "action": "ACCEPT_FOR_REVIEW", "classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rightsBasis": "PROJECT_OWNED", "rightsStatus": "ELIGIBLE", "usagePolicy": "LOCAL_TEST_REUSE_ALLOWED", "sourceVersion": "heartbeat1-public-v1"}
 
-
 def create_project(client: TestClient) -> str:
     response = client.post(
         "/api/v1/projects",
@@ -26,7 +25,6 @@ def create_project(client: TestClient) -> str:
     )
     assert response.status_code == 201
     return cast(str, response.json()["projectId"])
-
 
 def exclusion_form(action: str) -> dict[str, str]:
     return {"curationSchemaVersion": "source-curation-v1", "action": action} | INTERNAL_ASSERTIONS
@@ -44,7 +42,6 @@ def create_a2_graph(client: TestClient) -> tuple[str, dict[str, object], dict[st
     legacy = client.post(path, files={"file": ("legacy.md", PUBLIC_FIXTURE, "text/markdown")}, headers=owner | {"Idempotency-Key": "a2-legacy"}).json()
     return project_id, accepted, excluded, legacy
 
-
 @pytest.mark.parametrize(("action", "reason"), [("EXCLUDE", "CURATOR_EXCLUDED"), ("ACCEPT_FOR_REVIEW", "SERVER_POLICY_DENIED")])
 def test_a2_explicit_and_policy_exclusions_are_metadata_only(action: str, reason: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path = tmp_path / f"{action.lower()}.json"
@@ -58,7 +55,7 @@ def test_a2_explicit_and_policy_exclusions_are_metadata_only(action: str, reason
     response = client.post(
         path,
         data=exclusion_form(action),
-        files={"file": ("heartbeat-internal.txt", INTERNAL_FIXTURE, "text/plain")},
+        files={"file": ("heartbeat-internal.TXT", INTERNAL_FIXTURE, "text/plain")},
         headers=headers,
     )
 
@@ -75,7 +72,7 @@ def test_a2_explicit_and_policy_exclusions_are_metadata_only(action: str, reason
     replay = client.post(
         path,
         data=exclusion_form(action),
-        files={"file": ("heartbeat-internal.txt", INTERNAL_FIXTURE, "text/plain")},
+        files={"file": ("heartbeat-internal.TXT", INTERNAL_FIXTURE, "text/plain")},
         headers=headers,
     )
     assert replay.status_code == 201 and replay.json() == {**body, "idempotencyReplayed": True}
@@ -83,13 +80,15 @@ def test_a2_explicit_and_policy_exclusions_are_metadata_only(action: str, reason
     restored = Stage4Service(state_path=state_path)
     outcome = restored.submit_curated_source(
         principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id,
-        source_filename="heartbeat-internal.txt", content_type="text/plain", data=INTERNAL_FIXTURE,
+        source_filename="heartbeat-internal.TXT", content_type="text/plain", data=INTERNAL_FIXTURE,
         assertions=SourceAssertions("INTERNAL", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "INELIGIBLE", "INTERNAL_NO_REUSE", "heartbeat1-internal-v1"),
         schema_version="source-curation-v1", action=action, idempotency_key=f"a2-{action.lower()}",
     )
     assert outcome.decision.decision_id == body["decisionId"] and outcome.idempotency_replayed is True
     assert outcome.source is None and INTERNAL_FIXTURE.decode() not in state_path.read_text()
-
+    with pytest.raises(Stage4Error) as conflict:
+        restored.submit_curated_source(principal=LocalPrincipal(actor_id="curator_demo"), project_id=project_id, source_filename="changed.TXT", content_type="text/plain", data=INTERNAL_FIXTURE, assertions=SourceAssertions("INTERNAL", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "INELIGIBLE", "INTERNAL_NO_REUSE", "heartbeat1-internal-v1"), schema_version="source-curation-v1", action=action, idempotency_key=f"a2-{action.lower()}")
+    assert (conflict.value.status_code, conflict.value.code) == (409, "IDEMPOTENCY_CONFLICT")
 
 def test_a2_safety_precedes_exclusion_without_retention(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
     state_path = tmp_path / "unsafe.json"
@@ -119,8 +118,6 @@ def test_a2_safety_precedes_exclusion_without_retention(tmp_path: Path, monkeypa
             schema_version="source-curation-v1", action="EXCLUDE", idempotency_key="a2-unsafe",
         )
     assert (replay.value.status_code, replay.value.code) == (422, "UNSAFE_DOCUMENT_CONTENT")
-
-
 def test_a2_owner_summary_separates_curated_excluded_and_legacy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
     state_path = tmp_path / "summary.json"
     monkeypatch.setattr(stage4_service, "state_path", state_path)
@@ -140,8 +137,6 @@ def test_a2_owner_summary_separates_curated_excluded_and_legacy(tmp_path: Path, 
     assert INTERNAL_FIXTURE.decode() not in response.text and "source.summary.read" in caplog.text
     denied = client.get(f"/api/v1/projects/{project_id}/source-curation-summary", headers={"X-Local-User-Id": "other_demo"})
     assert denied.status_code == 403 and "source.summary.denied" in caplog.text and INTERNAL_FIXTURE.decode() not in caplog.text
-
-
 @pytest.mark.parametrize("case", ["attached_graph", "raw_flag", "reason", "request_checksum"])
 def test_a2_restore_prunes_tampered_exclusion_graph(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path = tmp_path / f"tamper-{case}.json"
@@ -179,8 +174,6 @@ def test_a2_restore_prunes_tampered_exclusion_graph(case: str, tmp_path: Path, m
     else:
         assert excluded["decisionId"] in restored.source_decisions and not any(record.idempotency_key == "a2-exclude" for record in restored.idempotency_records.values())
     assert INTERNAL_FIXTURE.decode() not in repaired and all(chunk.document_id != excluded["sourceId"] for chunk in restored.rag_store.chunks_for_project(tenant_id="tenant_local", project_id="proj_000001"))
-
-
 def test_issue304_a2_allowlist_is_exact_and_near_match_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     from scripts.quality import check_phase1_closure_docs as gate
     files = {"backend/app/curation.py", "backend/app/stage4.py", "backend/app/main.py", "tests/api/test_heartbeat1_a2_exclusion_api.py", "docs/API_CONTRACT.md", "docs/ADR/0041-heartbeat1-a2-exclusion-summary.md", "docs/TRACEABILITY.md", "docs/STATUS.md", "docs/STAGE_ISSUE_PLAN.md", "scripts/quality/check_phase1_closure_docs.py"}

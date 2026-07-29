@@ -57,6 +57,7 @@ class CuratedOutcome:
     source: Any
     decision: SourceDecisionRecord
     idempotency_replayed: bool = False
+    request_projection: Mapping[str, Any] | None = None
 T = TypeVar("T")
 def restored_records(rows: object, identity_field: str, decode: Callable[[dict[str, Any]], T],
                      valid: Callable[[T], bool]) -> dict[str, T]:
@@ -105,6 +106,21 @@ def legal_exclusion(decision: SourceDecisionRecord) -> bool:
                decision.assertions_fingerprint, decision.policy_version, decision.server_decision,
                decision.action, decision.reason, decision.decision_state, decision.created_at)
     return all(isinstance(value, str) and value for value in strings) and canonical_record_id(decision.source_id, "source") and canonical_record_id(decision.decision_id, "decision") and re.match(r"^[0-9a-f]{64}$", decision.checksum) is not None and re.match(r"^[0-9a-f]{64}$", decision.assertions_fingerprint) is not None and 0 < len(decision.source_version.strip()) <= 128 and decision.policy_version == CURATION_POLICY_VERSION and decision.server_decision == "DENY" and (decision.action, decision.reason) in {("EXCLUDE", "CURATOR_EXCLUDED"), ("ACCEPT_FOR_REVIEW", "SERVER_POLICY_DENIED")} and decision.decision_state == "EXCLUDED" and decision.raw_content_retained is False and decision.approved_at is None
+def legal_exclusion_request(decision: SourceDecisionRecord, projection: object, request_checksum: str) -> bool:
+    if not isinstance(projection, dict) or set(projection) != {"endpoint", "schema", "tenant", "actor", "project", "filename", "mime", "fileSha256", "fileBytes", "assertions", "action"}:
+        return False
+    assertion_values = projection.get("assertions")
+    if not isinstance(assertion_values, dict) or set(assertion_values) != {"classification", "provenance", "rights_basis", "rights_status", "usage_policy", "source_version"}:
+        return False
+    try:
+        assertions = SourceAssertions(**assertion_values)
+    except (TypeError, ValueError):
+        return False
+    filename, mime, file_bytes = projection["filename"], projection["mime"], projection["fileBytes"]
+    strings = tuple(projection[key] for key in ("endpoint", "schema", "tenant", "actor", "project", "filename", "mime", "fileSha256", "action")) + tuple(assertion_values.values())
+    file_shape = isinstance(filename, str) and filename == filename.strip() and 0 < len(filename) <= 160 and not any(char in filename for char in ("/", "\\")) and not any(ord(char) < 32 for char in filename)
+    media_shape = isinstance(filename, str) and isinstance(mime, str) and ((filename.lower().endswith(".md") and mime == "text/markdown") or (filename.lower().endswith(".txt") and mime == "text/plain"))
+    return all(isinstance(value, str) for value in strings) and isinstance(file_bytes, int) and not isinstance(file_bytes, bool) and file_bytes >= 0 and file_shape and media_shape and canonical_digest(projection) == request_checksum and (projection["endpoint"], projection["schema"], projection["tenant"], projection["actor"], projection["project"], projection["fileSha256"], projection["action"], assertions.source_version, assertions_digest(assertions)) == ("curated-submit", CURATION_SCHEMA_VERSION, decision.tenant_id, decision.actor_id, decision.project_id, decision.checksum, decision.action, decision.source_version, decision.assertions_fingerprint)
 def restore_curated(source_rows: object, decision_rows: object, projects: Mapping[str, Any],
                     source_valid: Callable[[SourceRecord], bool], legacy_document_ids: Collection[str]) -> tuple[dict[str, SourceRecord], dict[str, SourceDecisionRecord]]:
     source_rows = source_rows if isinstance(source_rows, list) else []
