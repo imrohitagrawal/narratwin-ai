@@ -46,7 +46,8 @@ def scan_h2_browser_sources(entry: Path) -> dict[str, Any]:
     forbidden = tuple(token for token in FORBIDDEN_BROWSER_TOKENS if token not in {".postdata", "postdatabuffer"})
     imports = [match.group(1) for match in IMPORT.finditer(text)]
     dynamic = (".evaluate(", "evaluatehandle(", "function(", "eval(", "cdpsession", "newcdpsession", "fetch.enable", "fulfillrequest", "addinitscript(", "exposefunction(", "removealllisteners(")
-    if "/*" in comments or "//" in comments or any(token in compact for token in (*forbidden, *dynamic)) or any(match.group("base") not in {"const", "let", "var", "return"} for match in COMPUTED_MEMBER.finditer(text)) or any(item.startswith(".") or item not in ALLOWED_BROWSER_IMPORTS for item in imports):
+    dangerous = re.search(r"\b(?:eval|function|constructor|setTimeout|setInterval|removeAllListeners|removeListener)\b|\.\s*(?:off|bind|call|apply)\s*\(", text, re.IGNORECASE)
+    if "/*" in comments or "//" in comments or dangerous or any(token in compact for token in (*forbidden, *dynamic)) or any(match.group("base") not in {"const", "let", "var", "return"} for match in COMPUTED_MEMBER.finditer(text)) or any(item.startswith(".") or item not in ALLOWED_BROWSER_IMPORTS for item in imports):
         raise EvidenceError("BROWSER_SOURCE")
     return {"entry": entry.as_posix(), "fileCount": 1, "aggregateSha256": sha256(sha256(data).encode()), "forbiddenMatchCount": 0}
 def _multipart(raw: bytes, content_type: Any) -> dict[str, tuple[str, bytes]]:
@@ -362,7 +363,10 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
         raise EvidenceError("BROWSER_SOURCE")
     test_call = re.search(r'\btest\(\s*["\']' + re.escape(TEST_TITLE) + r'["\']\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>', spec_text)
     valid_import = re.match(r'\Aimport\s*\{\s*test\s*,\s*(?:expect\s*,\s*)?type\s+Request\s*\}\s*from\s*["\']@playwright/test["\'];', spec_text)
-    if test_call is None or valid_import is None or re.search(r"\b(?:const|let|var|function|class)\s+test\b", spec_text) or len(re.findall(r"\btest\(", spec_text)) != 1 or spec_text[:test_call.start()].count("{") != spec_text[:test_call.start()].count("}"):
+    if test_call is None or valid_import is None:
+        raise EvidenceError("BROWSER_SOURCE")
+    prefix = spec_text[valid_import.end():test_call.start()]
+    if re.fullmatch(r'(?:\s*import\s+\{[^;]+\}\s+from\s+["\'][^"\']+["\'];)*\s*', prefix) is None or re.search(r"\b(?:const|let|var|function|class)\s+test\b", spec_text) or len(re.findall(r"\btest\(", spec_text)) != 1:
         raise EvidenceError("BROWSER_SOURCE")
     arrow = spec_text.find("=>", test_call.start())
     block = spec_text.find("{", arrow)
