@@ -142,7 +142,7 @@ def test_a2_owner_summary_separates_curated_excluded_and_legacy(tmp_path: Path, 
     assert denied.status_code == 403 and "source.summary.denied" in caplog.text and INTERNAL_FIXTURE.decode() not in caplog.text
 
 
-@pytest.mark.parametrize("case", ["attached_graph", "raw_flag", "reason"])
+@pytest.mark.parametrize("case", ["attached_graph", "raw_flag", "reason", "request_checksum"])
 def test_a2_restore_prunes_tampered_exclusion_graph(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path = tmp_path / f"tamper-{case}.json"
     monkeypatch.setattr(stage4_service, "state_path", state_path)
@@ -164,15 +164,20 @@ def test_a2_restore_prunes_tampered_exclusion_graph(case: str, tmp_path: Path, m
         payload["ingestionRuns"].append(run)
     elif case == "raw_flag":
         decision["raw_content_retained"] = True
-    else:
+    elif case == "reason":
         decision["reason"] = "UNBOUNDED_REASON"
+    else:
+        record = next(row for row in payload["idempotencyRecords"] if row["value"].get("code") == "SOURCE_EXCLUDED")
+        record["request_checksum"] = record["value"]["binding"][-1] = "0" * 64
     state_path.write_text(json.dumps(payload))
     restored = Stage4Service(state_path=state_path)
     repaired = state_path.read_text()
     if case == "attached_graph":
         assert excluded["decisionId"] in restored.source_decisions and excluded["sourceId"] not in restored.sources and all(excluded["sourceId"] not in run.source_ids for run in restored.ingestion_runs.values())
-    else:
+    elif case in {"raw_flag", "reason"}:
         assert excluded["decisionId"] not in restored.source_decisions and not any(record.idempotency_key == "a2-exclude" for record in restored.idempotency_records.values())
+    else:
+        assert excluded["decisionId"] in restored.source_decisions and not any(record.idempotency_key == "a2-exclude" for record in restored.idempotency_records.values())
     assert INTERNAL_FIXTURE.decode() not in repaired and all(chunk.document_id != excluded["sourceId"] for chunk in restored.rag_store.chunks_for_project(tenant_id="tenant_local", project_id="proj_000001"))
 
 
