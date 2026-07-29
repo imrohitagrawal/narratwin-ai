@@ -8270,7 +8270,7 @@ def load_heartbeat2_evidence_module() -> ModuleType:
 def test_issue308_exact_branches_accept_only_the_frozen_allowlists(monkeypatch: Any) -> None:
     monkeypatch.setattr(phase1, "charged_lines", lambda base: 0)
     evidence = {".github/workflows/ci.yml", "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/PHASE_PLAN.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"}
-    demo = {".github/workflows/ci.yml", "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "frontend/playwright.heartbeat2.config.ts", "frontend/src/app/page.tsx", "frontend/src/app/page.test.tsx", "frontend/tests/heartbeat2-browser.spec.ts", "scripts/ci/heartbeat2-browser.sh", "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"}
+    demo = {"docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "frontend/playwright.heartbeat2.config.ts", "frontend/src/app/page.tsx", "frontend/src/app/page.test.tsx", "frontend/tests/heartbeat2-browser.spec.ts", "scripts/ci/heartbeat2-browser.sh", "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"}
     assert phase1.ISSUE_308_H2_A_BRANCH == "phase-1-closure-308-heartbeat2-evidence-contract"
     assert phase1.ISSUE_308_H2_A_ALLOWED_CHANGED_FILES == evidence
     assert phase1.ISSUE_308_H2_B_BRANCH == "phase-1-closure-308-heartbeat2-curated-reviewer-demo"
@@ -8316,6 +8316,7 @@ def test_issue308_charged_line_caps_fail_closed(monkeypatch: Any) -> None:
 
 
 def write_heartbeat2_packet(root: Path, source_root: Path, evidence: Any) -> dict[str, Any]:
+    import ast
     import base64
     import hashlib
     root.mkdir(parents=True, exist_ok=True)
@@ -8360,6 +8361,15 @@ await page.goto("/");
         artifacts[name] = {"path": path.relative_to(root).as_posix(), "filename": filename, "mime": mime, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
     report = {"config": {"configFile": "frontend/playwright.heartbeat2.config.ts", "rootDir": "frontend/tests", "version": "1.61.1", "projects": [{"id": "chromium", "name": "chromium"}]}, "errors": [], "stats": {"startTime": "2026-07-29T00:00:00Z", "duration": 10, "expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}, "suites": [{"title": "", "file": "heartbeat2-browser.spec.ts", "line": 0, "column": 0, "specs": [{"title": "Heartbeat 2 local reviewer demo", "id": "spec-1", "file": "heartbeat2-browser.spec.ts", "line": 2, "column": 1, "ok": True, "tags": [], "tests": [{"expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium", "timeout": 30000, "annotations": [], "results": [{"status": "passed", "retry": 0, "errors": [], "duration": 10, "startTime": "2026-07-29T00:00:00Z", "workerIndex": 0, "parallelIndex": 0, "stdout": [], "stderr": [], "annotations": [], "attachments": [{"name": "trace", "contentType": "application/zip", "path": "/tmp/trace.zip"}]}]}]}]}]}
     fixture = b"# Heartbeat 2 controlled synthetic public reviewer fixture.\n"
+    fixture_tree = ast.parse((Path(__file__).parents[1] / "api" / "test_stage6_multilingual_api.py").read_bytes())
+    fixture = next(
+        value
+        for node in ast.walk(fixture_tree)
+        if isinstance(node, ast.Constant)
+        and isinstance(node.value, (str, bytes))
+        and hashlib.sha256(value := node.value.encode() if isinstance(node.value, str) else node.value).hexdigest()
+        == "9cefe4184b2a67d4cdc56d66d005b90409e06ad449c4c426b7d6e012125bfcb6"
+    )
     source_checksum = hashlib.sha256(fixture).hexdigest()
     source = {"id": "source-1", "checksum": source_checksum, "decisionId": "decision-1", "policyVersion": "curation-policy-v1", "sourceVersion": "heartbeat2-public-v1", "assertionsFingerprint": "assertions-sha", "states": ["PENDING_REVIEW", "APPROVED", "SOURCE_INGESTED"], "status": "SOURCE_INGESTED", "retained": True, "chunks": [{"id": "chunk-1", "checksum": "chunk-sha"}]}
     contexts = [{"contextRefId": "context-1", "claimId": "claim-1", "documentId": "source-1", "sourceChecksum": source_checksum, "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}]
@@ -8367,7 +8377,7 @@ await page.goto("/");
     walkthrough = {"projectId": "project-1", "runId": "run-1", "status": "COMPLETED", "contextRefs": contexts, "claimSupports": [{"claimId": "claim-1", "contextRefId": "context-1", "documentId": "source-1", "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}], "citations": [{"claimId": "claim-1", "contextRefId": "context-1", "index": 1}], "evaluation": evaluation}
     media = {"projectId": "project-1", "runId": "multi-1", "sourceRunId": "run-1", "targetLanguage": "es", "supportedLanguage": True, "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "translationMode": "mock", "voiceMode": "mock", "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("translated", "subtitles", "voice")}}
     render = {"id": "render-1", "projectId": "project-1", "sourceRunId": "run-1", "multilingualRunId": "multi-1", "consentId": "consent-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "avatarMode": "local", "cloneEnabled": False, "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("preview", "renderManifest", "video")}}
-    consent = {"id": "consent-1", "projectId": "project-1", "sourceRunId": "run-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "granted": True}
+    consent = {"id": "consent-1", "projectId": "project-1", "sourceRunId": "run-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "statementVersion": "avatar-consent-v1", "granted": True}
     bundle = {"principal": "curator_demo", "projectCount": 1, "projectId": "project-1", "legacySources": [], "source": source, "walkthrough": walkthrough, "visibleCitations": [{"claimId": "claim-1", "contextRefId": "context-1", "chunkId": "chunk-1"}], "multilingual": media, "consent": consent, "render": render, "artifacts": artifacts, "otherDemo": {"actionsHidden": True}}
     methods = [("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201)]
     paths = ["/api/v1/projects", "/api/v1/projects/project-1/knowledge-documents", "/api/v1/projects/project-1/knowledge-documents/source-1/approval", "/api/v1/projects/project-1/ingestion-runs", "/api/v1/projects/project-1/walkthrough-runs", "/api/v1/projects/project-1/walkthrough-runs/run-1/multilingual-runs", "/api/v1/projects/project-1/walkthrough-runs/run-1/avatar-consents", "/api/v1/projects/project-1/walkthrough-runs/run-1/avatar-renders"]
@@ -8378,7 +8388,7 @@ await page.goto("/");
     boundary = "heartbeat2-reset5-boundary"
     form = {"action": "ACCEPT_FOR_REVIEW", "classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rightsBasis": "PROJECT_OWNED", "rightsStatus": "ELIGIBLE", "usagePolicy": "LOCAL_TEST_REUSE_ALLOWED", "curationSchemaVersion": "source-curation-v1", "sourceVersion": source["sourceVersion"]}
     multipart = b"".join(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n".encode() for name, value in form.items()) + f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"heartbeat2-public.md\"\r\nContent-Type: text/markdown\r\n\r\n".encode() + fixture + f"\r\n--{boundary}--\r\n".encode()
-    multilingual_bundle = {"sourceRunId": "run-1", "multilingualRunId": "multi-1", "targetLanguage": "es", "contextRefIds": ["context-1"], "citationIndexes": [1], "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "providerPosture": {"translationProvider": "mock", "translationProviderMode": "LOCAL", "voiceProvider": "mock", "voiceProviderMode": "LOCAL"}}
+    multilingual_bundle = {"sourceRunId": "run-1", "multilingualRunId": "multi-1", "targetLanguage": "es", "translatedScriptChecksum": f"sha256:{artifacts['translated']['sha256']}", "subtitlesChecksum": f"sha256:{artifacts['subtitles']['sha256']}", "voiceManifestChecksum": f"sha256:{artifacts['voice']['sha256']}", "contextRefIds": ["context-1"], "citationIndexes": [1], "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "providerPosture": {"translationProvider": "mock", "translationProviderMode": "LOCAL", "voiceProvider": "mock", "voiceProviderMode": "LOCAL"}, "consentDisclosureVersion": consent["statementVersion"]}
     write_payloads = [{"name": "Heartbeat 2 reviewer demo", "description": "Controlled synthetic curated walkthrough", "defaultAudience": "RECRUITER", "defaultLanguage": "en"}, None, {"approvalStatus": "APPROVED", "action": "APPROVE", "curationSchemaVersion": "source-curation-v1", "sourceId": source["id"], "decisionId": source["decisionId"], "policyVersion": source["policyVersion"], "sourceVersion": source["sourceVersion"], "checksum": source["checksum"], "assertionsFingerprint": source["assertionsFingerprint"]}, {"documentIds": [], "sourceIds": [source["id"]]}, {"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Create the controlled synthetic grounded reviewer walkthrough."}, {"targetLanguage": "es", "glossaryTerms": [], "requestedVoiceProvider": "mock"}, {"consentToUseSyntheticAvatar": True}, {"requestedAvatarProvider": "mock", "consentToUseSyntheticAvatar": True, "consentRecordId": "consent-1", "clonedIdentityRequested": False, "multilingualBundle": multilingual_bundle}]
     for index, request in enumerate(requests):
         raw = multipart if index == 1 else json.dumps(write_payloads[index] if index < 8 else {"operation": request["operation"]}, separators=(",", ":"), sort_keys=True).encode() if request["method"] != "GET" else b""
@@ -8962,6 +8972,22 @@ def test_heartbeat2_reset6_binds_authority_budget_and_workflow_allowlist() -> No
     assert phase1.ISSUE_308_RESET6_AUTHORITY == {"url": "https://github.com/imrohitagrawal/narratwin-ai/issues/308#issuecomment-5121265229", "databaseId": 5121265229, "author": "imrohitagrawal", "createdAt": "2026-07-29T17:24:48Z", "updatedAt": "2026-07-29T17:24:48Z", "sha256": "6fcfa8d626f45a0791a157c810471c057eed1d6160543406ecf6a22baa3a6810", "preflightSha256": "20d7c1be5154d139a7149d43b960df639c31a671e7da5f9d8ba1b1c0447a0db6"}
     assert phase1.ISSUE_308_LINE_CAPS[phase1.ISSUE_308_H2_A_BRANCH] == 1600
     assert ".github/workflows/ci.yml" in phase1.ISSUE_308_H2_A_ALLOWED_CHANGED_FILES
+
+
+def test_heartbeat2_pr_b_binds_preflight_and_product_faithful_fixture() -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    assert phase1.ISSUE_308_H2_B_PREFLIGHT_AUTHORITY == {
+        "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/308#issuecomment-5122147727",
+        "databaseId": 5122147727,
+        "author": "imrohitagrawal",
+        "createdAt": "2026-07-29T18:47:19Z",
+        "updatedAt": "2026-07-29T18:47:19Z",
+        "sha256": "0b2272ae16352f5dbc723598abbcaf28518ed5106e6c678214cf1c6775e40534",
+    }
+    assert phase1.ISSUE_308_LINE_CAPS[phase1.ISSUE_308_H2_B_BRANCH] == 900
+    assert len(phase1.ISSUE_308_H2_B_ALLOWED_CHANGED_FILES) == 11
+    assert ".github/workflows/ci.yml" not in phase1.ISSUE_308_H2_B_ALLOWED_CHANGED_FILES
+    assert evidence.PUBLIC_FIXTURE_SHA256 == "9cefe4184b2a67d4cdc56d66d005b90409e06ad449c4c426b7d6e012125bfcb6"
 
 
 def test_heartbeat2_reset6_workflow_is_exact_head_fail_fast_and_success_only() -> None:

@@ -16,6 +16,20 @@ import Home, {
 } from "./page";
 
 describe("Home", () => {
+  it("renders the Heartbeat 2 curated reviewer path gated on current curation state", () => {
+    const html = renderToStaticMarkup(<Home />);
+
+    expect(html).toContain('data-testid="h2-curation-panel"');
+    expect(html).toContain("Heartbeat 2 curated reviewer demo");
+    expect(html).toContain('data-testid="h2-submit-source"');
+    expect(html).toContain('data-testid="h2-approve-source"');
+    expect(html).toContain('data-testid="h2-ingest-source"');
+    expect(html).toContain('data-testid="h2-generate-demo"');
+    expect(html).toContain("One curated source must be approved and ingested before generation.");
+    expect(html).toContain("Synthetic local media only");
+    expect(html).not.toContain("production demo");
+  });
+
   it("renders the Stage 7 avatar export workflow", () => {
     // The UI must expose trace/run_id metadata and source_chunk citation evidence
     // for generated script claims.
