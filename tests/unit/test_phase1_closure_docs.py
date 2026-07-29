@@ -3334,6 +3334,114 @@ def test_issue311_charged_line_cap_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue313_branch_scope_and_budget_are_exact() -> None:
+    expected = {
+        "docs/governance/preflights/issue-313.json",
+        "docs/reviews/ISSUE_313_ISSUE280_REPAIR_FEASIBILITY.md",
+        "docs/evals/issue280_semantic_oracle_v1.json",
+        "docs/ADR/0044-issue280-repair-architecture-feasibility.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+
+    assert phase1.ISSUE_313_BRANCH == (
+        "phase-1-closure-process-313-issue280-repair-feasibility-oracle"
+    )
+    assert phase1.ISSUE_313_ALLOWED_CHANGED_FILES == expected
+    assert phase1.ISSUE_313_LINE_CAP == 950
+
+
+def test_issue313_scope_gate_fails_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 0)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_313_BRANCH,
+        files=sorted(phase1.ISSUE_313_ALLOWED_CHANGED_FILES),
+    ) == []
+    near_match = f"{phase1.ISSUE_313_BRANCH}-extra"
+    assert run_changed_files_check(monkeypatch, branch=near_match, files=["docs/STATUS.md"]) == [
+        f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."
+    ]
+    for path in (
+        "backend/app/issue280.py",
+        "frontend/src/app/page.tsx",
+        "reports/checkpoint3-issue280/requirement-matrix.json",
+        "scripts/quality/verify_issue280_output_correctness.py",
+    ):
+        assert run_changed_files_check(
+            monkeypatch, branch=phase1.ISSUE_313_BRANCH, files=[path]
+        ) == [f"Phase 1 Closure branch {phase1.ISSUE_313_BRANCH} may not change {path}."]
+
+
+def test_issue313_charged_line_cap_fails_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "resolve_base", lambda: "branch-base")
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 951)
+
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_313_BRANCH, files=[]) == [
+        f"Phase 1 Closure branch {phase1.ISSUE_313_BRANCH} exceeds its 950-line cap."
+    ]
+
+
+def test_issue313_semantic_oracle_contract_is_complete() -> None:
+    oracle = json.loads(
+        Path("docs/evals/issue280_semantic_oracle_v1.json").read_text(encoding="utf-8")
+    )
+
+    assert phase1.issue313_oracle_findings(oracle) == []
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    (
+        ("unknown-key", "F280.ORACLE.SCHEMA"),
+        ("weaken-threshold", "F280.ORACLE.METRICS"),
+        ("remove-adversarial-case", "F280.ORACLE.ADVERSARIAL"),
+        ("self-authored-verdict", "F280.ORACLE.VERDICT"),
+        ("runtime-import", "F280.ORACLE.INDEPENDENCE"),
+    ),
+)
+def test_issue313_semantic_oracle_rejects_false_pass_mutations(
+    mutation: str, expected: str
+) -> None:
+    oracle = json.loads(
+        Path("docs/evals/issue280_semantic_oracle_v1.json").read_text(encoding="utf-8")
+    )
+    if mutation == "unknown-key":
+        oracle["authorVerdict"] = "FIXED"
+    elif mutation == "weaken-threshold":
+        oracle["mandatoryMetrics"][0]["threshold"] = 0.8
+    elif mutation == "remove-adversarial-case":
+        oracle["adversarialCases"].pop()
+    elif mutation == "self-authored-verdict":
+        oracle["verdict"]["computedOnly"] = False
+    else:
+        oracle["independence"]["forbiddenInputs"].remove("runtime converter source")
+
+    assert expected in phase1.issue313_oracle_findings(oracle)
+
+
+def test_issue313_feasibility_decision_contract_is_complete() -> None:
+    decision = Path("docs/reviews/ISSUE_313_ISSUE280_REPAIR_FEASIBILITY.md").read_text(
+        encoding="utf-8"
+    )
+    adr = Path("docs/ADR/0044-issue280-repair-architecture-feasibility.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert phase1.issue313_decision_findings(decision, adr) == []
+
+
+def test_issue313_status_corrects_closed_issue300_and_merged_pr301() -> None:
+    status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
+
+    assert phase1.issue313_status_findings(status_text) == []
+    assert "Issue #300 is the active negative-forensic-only reset" not in status_text
+    assert "Complete PR #301 negative forensic containment" not in status_text
+
+
 def run_issue141_platform_contract_check(
     monkeypatch: Any, *, read_overrides: dict[str, str] | None = None
 ) -> list[str]:
