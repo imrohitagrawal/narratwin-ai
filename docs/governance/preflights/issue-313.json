@@ -1,0 +1,51 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 313,
+  "branch": "phase-1-closure-process-313-issue280-repair-feasibility-oracle",
+  "objective": "Define the still-unfixed Issue #280 semantic defect, establish an implementation-independent measurable semantic oracle contract, compare feasible local/mock repair architectures, and record a GO/NO-GO decision for a later repair issue without changing runtime behavior. Positive claims: F280-DEFECT-001 binds the audience-collapse and semantic false-pass defect; F280-ORACLE-001 through F280-ORACLE-003 require a schema-closed independent oracle, mandatory exact thresholds, and adversarial false-pass rejection; F280-ARCH-001 and F280-DECISION-001 compare at least three architectures and select only a bounded candidate for later implementation; F280-STATUS-001 corrects the stale Issue #300 and PR #301 status pointers; F280-SCOPE-001 enforces exactly nine paths, at most 950 charged lines, and seven meaningful surfaces. Negative invariants: no runtime repair, backend, frontend, API, provider, RAG, database, Docker, workflow, dependency, schema, report, verifier, existing forensic evidence, PR #299, protected tracker, real/private data, paid service, deployment, hosting, public/production claim, real/cloned identity, Product Mode 2, or Heartbeat 3 change. Evidence requires first-commit preflight, committed behavioral RED before GREEN, mutation coverage, full local and exact-head CI gates, independent exact-head approval, reference-only merge wording, and post-merge evidence-preservation verification.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-313.json",
+      "docs/reviews/ISSUE_313_ISSUE280_REPAIR_FEASIBILITY.md",
+      "docs/evals/issue280_semantic_oracle_v1.json",
+      "docs/ADR/0044-issue280-repair-architecture-feasibility.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/SKILL_EXECUTION_PLAN.md",
+      "docs/STATUS.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-313.json",
+      "docs/reviews/ISSUE_313_ISSUE280_REPAIR_FEASIBILITY.md",
+      "docs/evals/issue280_semantic_oracle_v1.json",
+      "docs/ADR/0044-issue280-repair-architecture-feasibility.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/SKILL_EXECUTION_PLAN.md",
+      "docs/STATUS.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker/",
+      "Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json",
+      "reports/",
+      "scripts/quality/verify_issue280_output_correctness.py",
+      "existing Issue #280 forensic artifacts or public provenance",
+      "PR #299 or stopped/protected tracker mutation",
+      "runtime repair or positive Issue #280 closure claim",
+      "provider SDKs, keys, paid services, or spending",
+      "deployment, hosting, public URL, or production claim",
+      "real/private/third-party data or real/cloned media identity",
+      "Heartbeat 3 or Product Mode 2 / Issue #20"
+    ]
+  }
+}
