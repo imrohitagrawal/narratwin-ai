@@ -8348,7 +8348,7 @@ await page.goto("/");
     payloads = {
         "translated": "# Recorrido sintético [1]\n",
         "subtitles": "1\n00:00:00,000 --> 00:00:01,000\nBounded synthetic caption [1]\n",
-        "voice": json.dumps({"provider": "mock", "providerMode": "LOCAL", "language": "es", "textChecksum": "sha256:synthetic", "mockAudioProfile": {"durationMillisecondsEstimate": 1000, "sampleRateHz": 16000, "channels": 1}, "disclosure": "Mock local TTS placeholder"}),
+        "voice": json.dumps({"provider": "mock", "providerMode": "LOCAL", "language": "es", "textChecksum": "sha256:" + "a" * 64, "mockAudioProfile": {"durationMillisecondsEstimate": 1000, "sampleRateHz": 16000, "channels": 1}, "disclosure": "Mock local TTS placeholder"}),
         "preview": "<!doctype html><html><body>Local synthetic preview</body></html>",
         "renderManifest": json.dumps({"schema": "Stage7AvatarRenderManifest", "providerConfig": local_provider, "source": source_meta, "multilingualBundle": multilingual_meta}),
         "video": json.dumps({"schema": "Stage7VideoExportPlaceholder", "realVideoProduced": False, "providerConfig": local_provider, "source": source_meta, "multilingualBundle": multilingual_meta}),
@@ -8358,7 +8358,7 @@ await page.goto("/");
         path.parent.mkdir(exist_ok=True)
         path.write_text(payloads[name], encoding="utf-8")
         artifacts[name] = {"path": path.relative_to(root).as_posix(), "filename": filename, "mime": mime, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-    report = {"config": {"configFile": "frontend/playwright.heartbeat2.config.ts", "rootDir": "frontend/tests", "version": "1.61.1", "projects": [{"id": "chromium", "name": "chromium"}]}, "errors": [], "stats": {"startTime": "2026-07-29T00:00:00Z", "duration": 10, "expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}, "suites": [{"title": "", "file": "heartbeat2-browser.spec.ts", "line": 0, "column": 0, "specs": [{"title": "Heartbeat 2 local reviewer demo", "id": "spec-1", "file": "heartbeat2-browser.spec.ts", "line": 1, "column": 1, "ok": True, "tags": [], "tests": [{"expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium", "timeout": 30000, "annotations": [], "results": [{"status": "passed", "retry": 0, "errors": [], "duration": 10, "startTime": "2026-07-29T00:00:00Z", "workerIndex": 0, "parallelIndex": 0, "stdout": [], "stderr": [], "annotations": [], "attachments": [{"name": "trace", "contentType": "application/zip", "path": "/tmp/trace.zip"}]}]}]}]}]}
+    report = {"config": {"configFile": "frontend/playwright.heartbeat2.config.ts", "rootDir": "frontend/tests", "version": "1.61.1", "projects": [{"id": "chromium", "name": "chromium"}]}, "errors": [], "stats": {"startTime": "2026-07-29T00:00:00Z", "duration": 10, "expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}, "suites": [{"title": "", "file": "heartbeat2-browser.spec.ts", "line": 0, "column": 0, "specs": [{"title": "Heartbeat 2 local reviewer demo", "id": "spec-1", "file": "heartbeat2-browser.spec.ts", "line": 2, "column": 1, "ok": True, "tags": [], "tests": [{"expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium", "timeout": 30000, "annotations": [], "results": [{"status": "passed", "retry": 0, "errors": [], "duration": 10, "startTime": "2026-07-29T00:00:00Z", "workerIndex": 0, "parallelIndex": 0, "stdout": [], "stderr": [], "annotations": [], "attachments": [{"name": "trace", "contentType": "application/zip", "path": "/tmp/trace.zip"}]}]}]}]}]}
     fixture = b"# Heartbeat 2 controlled synthetic public reviewer fixture.\n"
     source_checksum = hashlib.sha256(fixture).hexdigest()
     source = {"id": "source-1", "checksum": source_checksum, "decisionId": "decision-1", "policyVersion": "curation-policy-v1", "sourceVersion": "heartbeat2-public-v1", "assertionsFingerprint": "assertions-sha", "states": ["PENDING_REVIEW", "APPROVED", "SOURCE_INGESTED"], "status": "SOURCE_INGESTED", "retained": True, "chunks": [{"id": "chunk-1", "checksum": "chunk-sha"}]}
@@ -8417,7 +8417,7 @@ await page.goto("/");
         trace_records = [{"version": 8, "type": "context-options", "browserName": "chromium", "playwrightVersion": "1.61.1", "options": {"baseURL": evidence.ORIGIN, "serviceWorkers": "block"}}] + [item for index, method in enumerate(actions, 1) for item in ({"type": "before", "callId": f"call@{index}", "class": "Frame", "method": method, "pageId": "page@1"}, {"type": "after", "callId": f"call@{index}"})]
         archive.writestr("0-trace.trace", "\n".join(json.dumps(item) for item in trace_records))
         archive.writestr("0-trace.network", "\n".join(json.dumps(record) for record in records))
-        archive.writestr("0-trace.stacks", json.dumps({"files": ["/workspace/frontend/tests/heartbeat2-browser.spec.ts"], "stacks": [[index, [[0, 12 + index, 1, ""]]] for index in range(1, 9)]}))
+        archive.writestr("0-trace.stacks", json.dumps({"files": ["/workspace/frontend/tests/heartbeat2-browser.spec.ts"], "stacks": [[index, [[0, min(3 + index, 12), 1, ""]]] for index in range(1, 9)]}))
         for name, raw in resources.items():
             archive.writestr(f"resources/{name}", raw)
     trace_sha = hashlib.sha256((root / "trace.zip").read_bytes()).hexdigest()
@@ -8781,7 +8781,7 @@ def test_heartbeat2_reset5_rejects_unbound_forbidden_sentinels(tmp_path: Path, m
         "canarySha256": evidence.sha256(b"reset5-canary"),
     }
     (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
-    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: None)
+    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: (2, 13))
 
     with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_INPUT"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True, forbidden=forbidden)
@@ -8796,7 +8796,7 @@ def test_heartbeat2_reset5_accepts_only_canonical_forbidden_sentinels(tmp_path: 
     values = fixture_constants(Path(__file__).parents[1] / "api" / "test_heartbeat1_a2_exclusion_api.py")
     packet["manifest"]["forbiddenInputs"] = evidence.FORBIDDEN_SHA256S
     (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
-    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: None)
+    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: (2, 13))
 
     result = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True, forbidden=(values["INTERNAL_FIXTURE"], values["canary"]))
     assert result["outcome"] == "PASS"
@@ -8805,6 +8805,8 @@ def test_heartbeat2_reset5_accepts_only_canonical_forbidden_sentinels(tmp_path: 
 @pytest.mark.parametrize("body", [
     '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); await page.evaluate(() => Function("globalThis.fe" + "tch = () => ({ok:true})")());''',
     '''const marker = "}"; if (false) { const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); }''',
+    '''return; const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); });''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); await page.context().newCDPSession(page);''',
 ])
 def test_heartbeat2_reset5_rejects_dynamic_execution_and_dead_listener_control_flow(tmp_path: Path, body: str) -> None:
     evidence: Any = load_heartbeat2_evidence_module()
@@ -8863,5 +8865,34 @@ def test_heartbeat2_reset5_rejects_active_local_preview_content(tmp_path: Path) 
     digest = evidence.sha256(preview.read_bytes())
     packet["bundle"]["artifacts"]["preview"]["sha256"] = digest
     packet["bundle"]["render"]["artifactChecksums"]["preview"] = digest
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
+
+
+def test_heartbeat2_reset5_rejects_non_json_write_content_type(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["traffic"]["requests"][0]["contentType"] = "text/plain"
+    with pytest.raises(evidence.EvidenceError, match="REQUEST_BINDING"):
+        evidence._request_contract(packet["traffic"]["requests"][:8], packet["bundle"])
+
+
+@pytest.mark.parametrize("mutate", [
+    lambda voice: voice.update({"textChecksum": "sha256:unbound"}),
+    lambda voice: voice["mockAudioProfile"].update({"durationMillisecondsEstimate": -1}),
+    lambda voice: voice.update({"disclosure": {"text": "Mock local TTS placeholder"}}),
+])
+def test_heartbeat2_reset5_rejects_malformed_voice_semantics(tmp_path: Path, mutate: Any) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    voice = root / packet["bundle"]["artifacts"]["voice"]["path"]
+    payload = json.loads(voice.read_text())
+    mutate(payload)
+    voice.write_text(json.dumps(payload), encoding="utf-8")
+    digest = evidence.sha256(voice.read_bytes())
+    packet["bundle"]["artifacts"]["voice"]["sha256"] = digest
+    packet["bundle"]["multilingual"]["artifactChecksums"]["voice"] = digest
     with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
         evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])

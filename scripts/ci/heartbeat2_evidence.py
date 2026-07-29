@@ -17,6 +17,7 @@ SHA, RUN_ID, ORIGIN = re.compile(r"^[0-9a-f]{40}$"), re.compile(r"^[A-Za-z0-9][A
 SPEC, TEST_TITLE, MAX_ARCHIVE_MEMBERS = "heartbeat2-browser.spec.ts", "Heartbeat 2 local reviewer demo", 10_000
 PUBLIC_FIXTURE_SHA256 = "e7ed2f48cf62645575771fd10e918568ad77ec4fb0b75620f6e4ecff2a3d8200"
 FORBIDDEN_SHA256S = {"controlledSha256": "d6bba9d5a1916d515ea982b3517c6528bfff5f7ee9d7a7ab03267fd6fefd6eb2", "canarySha256": "9fbe84f0ec72ee1d8de0cae899d15b98c1ec3e979514b861ed584ac8d62fa84c"}
+ACTIVE_HTML = re.compile(r'(<script\b|<iframe\b|<form\b|<object\b|<embed\b|<link\b|<base\b|<style\b|<meta\s+http-equiv\b|<[^>]+\s(?:on[a-z]+|src|href|srcset|style)\s*=|<[^>]+javascript:)', re.IGNORECASE)
 SOURCES = ("scripts/ci/heartbeat1_evidence.py", "scripts/ci/heartbeat2_evidence.py", "scripts/ci/heartbeat2-browser.sh", "frontend/playwright.heartbeat2.config.ts", "frontend/tests/heartbeat2-browser.spec.ts")
 WRITES = (("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201))
 READS = (("languages", "GET", 200, "curator_demo"), ("summary", "GET", 200, "curator_demo"), ("other-summary", "GET", 403, "other_demo"))
@@ -32,7 +33,8 @@ def scan_h2_browser_sources(entry: Path) -> dict[str, Any]:
     compact, comments = re.sub(r"\s+", "", text).lower(), text.replace(ORIGIN, "")
     forbidden = tuple(token for token in FORBIDDEN_BROWSER_TOKENS if token not in {".postdata", "postdatabuffer"})
     imports = [match.group(1) for match in IMPORT.finditer(text)]
-    if "/*" in comments or "//" in comments or any(token in compact for token in forbidden) or any(match.group("base") not in {"const", "let", "var", "return"} for match in COMPUTED_MEMBER.finditer(text)) or any(item.startswith(".") or item not in ALLOWED_BROWSER_IMPORTS for item in imports):
+    dynamic = (".evaluate(", "evaluatehandle(", "function(", "cdpsession", "newcdpsession", "fetch.enable", "fulfillrequest", "addinitscript(", "exposefunction(")
+    if "/*" in comments or "//" in comments or any(token in compact for token in (*forbidden, *dynamic)) or any(match.group("base") not in {"const", "let", "var", "return"} for match in COMPUTED_MEMBER.finditer(text)) or any(item.startswith(".") or item not in ALLOWED_BROWSER_IMPORTS for item in imports):
         raise EvidenceError("BROWSER_SOURCE")
     return {"entry": entry.as_posix(), "fileCount": 1, "aggregateSha256": sha256(sha256(data).encode()), "forbiddenMatchCount": 0}
 def _multipart(raw: bytes, content_type: Any) -> dict[str, tuple[str, bytes]]:
@@ -45,18 +47,26 @@ def _multipart(raw: bytes, content_type: Any) -> dict[str, tuple[str, bytes]]:
             header, body = item.removeprefix(b"\r\n").split(b"\r\n\r\n", 1)
             body = body.removesuffix(b"\r\n")
             name = re.search(rb'name="([^"]+)"', header).group(1).decode()  # type: ignore[union-attr]
+            if name in parts:
+                raise EvidenceError("REQUEST_BINDING")
             parts[name] = (header.decode(), body)
         except (AttributeError, UnicodeError, ValueError) as exc:
             raise EvidenceError("REQUEST_BINDING") from exc
     return parts
 def _request_contract(writes: list[Any], bundle: dict[str, Any]) -> None:
+    def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        if len({key for key, _ in pairs}) != len(pairs):
+            raise EvidenceError("REQUEST_BINDING")
+        return dict(pairs)
     decoded: dict[str, Any] = {}
     for request in writes:
         try:
             raw = base64.b64decode(request["bodyBase64"], validate=True)
             if request["bodySha256"] != sha256(raw):
                 raise EvidenceError("REQUEST_BINDING")
-            decoded[request["operation"]] = _multipart(raw, request.get("contentType")) if request["operation"] == "submit" else json.loads(raw)
+            if request["operation"] != "submit" and request.get("contentType") != "application/json":
+                raise EvidenceError("REQUEST_BINDING")
+            decoded[request["operation"]] = _multipart(raw, request.get("contentType")) if request["operation"] == "submit" else json.loads(raw, object_pairs_hook=unique)
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
             raise EvidenceError("REQUEST_BINDING") from exc
     source, run, media, consent = bundle["source"], bundle["walkthrough"], bundle["multilingual"], bundle["consent"]
@@ -108,7 +118,7 @@ def _json(root: Path, value: Any) -> Any:
         return json.loads(_path(root, value).read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise EvidenceError("EVIDENCE_JSON") from exc
-def _playwright(report: Any) -> None:
+def _playwright(report: Any) -> int:
     if not isinstance(report, dict) or set(report) != {"config", "errors", "stats", "suites"} or report["errors"] != []:
         raise EvidenceError("PLAYWRIGHT_RESULT")
     config, stats = report["config"], report["stats"]
@@ -117,7 +127,7 @@ def _playwright(report: Any) -> None:
     if set(stats) != {"startTime", "duration", "expected", "unexpected", "skipped", "flaky"} or any(stats.get(key) != expected for key, expected in {"expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}.items()):
         raise EvidenceError("PLAYWRIGHT_RESULT")
     tests: list[Any] = []
-    identities: list[tuple[Any, Any]] = []
+    identities: list[tuple[Any, Any, Any]] = []
     pending = list(report.get("suites", []))
     while pending:
         suite = pending.pop()
@@ -126,16 +136,17 @@ def _playwright(report: Any) -> None:
         if not {"column", "file", "line", "specs", "title"} <= set(suite) or any(not {"column", "file", "id", "line", "ok", "tags", "tests", "title"} <= set(spec) for spec in specs):
             raise EvidenceError("PLAYWRIGHT_RESULT")
         tests.extend(test for spec in specs for test in spec.get("tests", []))
-        identities.extend((spec.get("file"), spec.get("title")) for spec in specs)
-    if len(tests) != 1 or identities != [(SPEC, TEST_TITLE)]:
+        identities.extend((spec.get("file"), spec.get("title"), spec.get("line")) for spec in specs)
+    if len(tests) != 1 or len(identities) != 1 or identities[0][:2] != (SPEC, TEST_TITLE) or not isinstance(identities[0][2], int) or identities[0][2] < 1:
         raise EvidenceError("PLAYWRIGHT_RESULT")
     test = tests[0]
     results = test.get("results", [])
     required_test, required_result = {"annotations", "expectedStatus", "projectId", "projectName", "results", "status", "timeout"}, {"annotations", "attachments", "duration", "errors", "parallelIndex", "retry", "startTime", "status", "stderr", "stdout", "workerIndex"}
-    if not required_test <= set(test) or test.get("expectedStatus") != "passed" or test.get("status") != "expected" or len(results) != 1 or not required_result <= set(results[0]) or results[0].get("status") != "passed" or results[0].get("retry") != 0 or results[0].get("errors"):
+    if not required_test <= set(test) or test.get("expectedStatus") != "passed" or test.get("status") != "expected" or len(results) != 1 or not required_result <= set(results[0]) or results[0].get("status") != "passed" or results[0].get("retry") != 0 or results[0].get("errors") or results[0].get("startTime") != stats.get("startTime"):
         raise EvidenceError("PLAYWRIGHT_RESULT")
     if [(x.get("name"), x.get("contentType"), Path(str(x.get("path"))).name) for x in results[0]["attachments"]] != [("trace", "application/zip", "trace.zip")]:
         raise EvidenceError("PLAYWRIGHT_RESULT")
+    return identities[0][2]
 def _traffic(traffic: Any, bundle: dict[str, Any]) -> None:
     try:
         requests, responses = traffic["requests"], traffic["responses"]
@@ -195,7 +206,7 @@ def _artifacts(root: Path, artifacts: Any, bundle: dict[str, Any]) -> None:
                 valid = valid and isinstance(parsed, dict) and _local_only(parsed)
                 if name == "voice":
                     profile = parsed.get("mockAudioProfile", {})
-                    valid = valid and set(parsed) == {"provider", "providerMode", "language", "textChecksum", "mockAudioProfile", "disclosure"} and set(profile) == {"durationMillisecondsEstimate", "sampleRateHz", "channels"} and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
+                    valid = valid and set(parsed) == {"provider", "providerMode", "language", "textChecksum", "mockAudioProfile", "disclosure"} and set(profile) == {"durationMillisecondsEstimate", "sampleRateHz", "channels"} and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and isinstance(parsed.get("textChecksum"), str) and re.fullmatch(r"sha256:[0-9a-f]{64}", parsed["textChecksum"]) is not None and isinstance(parsed.get("disclosure"), str) and "Mock local TTS placeholder" in parsed["disclosure"] and isinstance(profile.get("durationMillisecondsEstimate"), int) and profile["durationMillisecondsEstimate"] >= 0 and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
                 else:
                     provider, source, media = parsed.get("providerConfig", {}), parsed.get("source", {}), parsed.get("multilingualBundle", {})
                     expected_keys = {"schema", "providerConfig", "source", "multilingualBundle"} | ({"realVideoProduced"} if name == "video" else set())
@@ -207,7 +218,7 @@ def _artifacts(root: Path, artifacts: Any, bundle: dict[str, Any]) -> None:
             elif name == "subtitles":
                 valid = valid and data.startswith(b"1\n00:00:00,000 -->") and b"[1]" in data
             else:
-                valid = valid and b"<html" in data.lower() and b"synthetic" in data.lower()
+                valid = valid and b"<html" in data.lower() and b"synthetic" in data.lower() and ACTIVE_HTML.search(data.decode("utf-8")) is None
         except (KeyError, TypeError, OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise EvidenceError("ARTIFACT_BINDING") from exc
         if not valid:
@@ -275,7 +286,7 @@ def _safe_archives(root: Path) -> None:
                 raise EvidenceError("FORBIDDEN_OR_ARCHIVE")
             if zipfile.is_zipfile(path):
                 _safe_archive(path.read_bytes(), budget=budget)
-def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any]) -> None:
+def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any], *, spec_line: int, source_lines: int) -> None:
     path = _path(root, manifest.get("trace"))
     if sha256(path.read_bytes()) != manifest.get("traceSha256"):
         raise EvidenceError("TRACE_BINDING")
@@ -295,7 +306,10 @@ def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any]) -> Non
             resource_bytes = {name: archive.read(name) for name in archive.namelist() if name.startswith("resources/")}
             before = {item.get("callId"): item.get("method") for item in contexts if item.get("type") == "before" and item.get("pageId") and item.get("method")}
             after = {item.get("callId") for item in contexts if item.get("type") == "after"}
-            if len(before) < 8 or not set(before) <= after or not {"goto", "click", "fill"} <= set(before.values()) or len(stacks.get("stacks", [])) < len(before):
+            stack_rows = stacks.get("stacks", [])
+            stack_ids = {str(row[0]) if str(row[0]).startswith("call@") else f"call@{row[0]}" for row in stack_rows}
+            frames = [frame for row in stack_rows for frame in row[1]]
+            if len(before) < 8 or not set(before) <= after or not {"goto", "click", "fill"} <= set(before.values()) or stack_ids != set(before) or not frames or any(frame[0] != 0 or not spec_line <= frame[1] <= source_lines for frame in frames):
                 raise EvidenceError("TRACE_BINDING")
         facts = []
         for record in records:
@@ -315,7 +329,7 @@ def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any]) -> Non
         raise EvidenceError("TRACE_BINDING") from exc
     if facts != expected:
         raise EvidenceError("TRACE_BINDING")
-def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_root: Path) -> None:
+def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_root: Path) -> tuple[int, int]:
     graph = manifest.get("sourceGraph")
     if not isinstance(graph, list) or {x.get("path") for x in graph} != set(SOURCES):
         raise EvidenceError("SOURCE_GRAPH")
@@ -337,15 +351,17 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
     test_call = re.search(r'\btest\(\s*["\']' + re.escape(TEST_TITLE) + r'["\']\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>', spec_text)
     if test_call is None or len(re.findall(r"\btest\(", spec_text)) != 1 or spec_text[:test_call.start()].count("{") != spec_text[:test_call.start()].count("}"):
         raise EvidenceError("BROWSER_SOURCE")
-    arrow, positions = (-1 if test_call is None else spec_text.find("=>", test_call.start())), [spec_text.find(f'page.on("{event}"') for event in ("request", "response")]
+    arrow = spec_text.find("=>", test_call.start())
     block = spec_text.find("{", arrow)
-    if arrow < 0 or block < 0 or any(position < 0 or spec_text[block:position].count("{") - spec_text[block:position].count("}") != 1 for position in positions):
+    listener = re.match(r'\s*const\s+requestIds\s*=\s*new\s+WeakMap<\s*Request[^;]*;\s*page\.on\(["\']request["\'].*?requestIds\.set.*?postDataBuffer\(\).*?\}\);\s*page\.on\(["\']response["\'].*?response\.request\(\).*?await\s+response\.body\(\).*?\}\);', spec_text[block + 1:], re.DOTALL)
+    if arrow < 0 or block < 0 or listener is None or re.search(r"\b(?:if|return|for|while|switch|try)\b", listener.group(0)):
         raise EvidenceError("BROWSER_SOURCE")
     if committed:
         try:
             scan_browser_sources(Path("frontend/playwright.heartbeat2.config.ts"), head)
         except PrivacyError as exc:
             raise EvidenceError("BROWSER_SOURCE") from exc
+    return spec_text[:test_call.start()].count("\n") + 1, len(spec_text.splitlines())
 def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, forbidden: tuple[bytes, ...] = (), committed: bool = False, source_root: Path = Path.cwd()) -> dict[str, Any]:
     if not SHA.match(expected_head) or not RUN_ID.match(expected_run_id):
         raise EvidenceError("EXPECTED_IDENTITY")
@@ -355,15 +371,17 @@ def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, for
         raise EvidenceError("FORBIDDEN_INPUT")
     if manifest.get("schema") != "heartbeat2-evidence-v2" or manifest.get("headSha") != expected_head or manifest.get("runId") != expected_run_id:
         raise EvidenceError("STALE_EVIDENCE")
-    _playwright(_json(root, manifest.get("testReport")))
+    report_line = _playwright(_json(root, manifest.get("testReport")))
     bundle = _json(root, manifest.get("bundle"))
     traffic = _json(root, manifest.get("traffic"))
     _traffic(traffic, bundle)
     _request_contract(traffic["requests"][:8], bundle)
     _safe_archives(root)
-    _trace(root, manifest, traffic)
+    source_line, source_lines = _sources(manifest, expected_head, committed=committed, source_root=source_root)
+    if report_line != source_line:
+        raise EvidenceError("PLAYWRIGHT_RESULT")
+    _trace(root, manifest, traffic, spec_line=source_line, source_lines=source_lines)
     _joins(root, bundle)
-    _sources(manifest, expected_head, committed=committed, source_root=source_root)
     try:
         stats = scan_evidence([root], controlled=forbidden[0] if forbidden else b"synthetic-never-present-h2", canary=forbidden[1] if len(forbidden) > 1 else b"synthetic-canary-never-present-h2")
     except PrivacyError as exc:
