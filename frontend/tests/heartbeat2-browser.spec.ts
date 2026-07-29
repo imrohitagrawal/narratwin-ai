@@ -1,0 +1,61 @@
+import { test, expect, type Request } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
+
+test.skip(!process.env.H2_CANDIDATE_DIR, "runs only through the canonical Heartbeat 2 evidence runner");
+
+test("Heartbeat 2 local reviewer demo", async ({ page }) => {
+  const requestIds = new WeakMap<Request, string>();
+  page.on("request", (request) => {
+    void (request.url().startsWith("http://127.0.0.1:3122/api/v1/") && (requestSequence += 1) && requestIds.set(request, `request-${requestSequence}`) && requests.push({ id: `request-${requestSequence}`, url: request.url(), method: request.method(), headers: request.headers(), bodyBase64: request.postDataBuffer()?.toString("base64") ?? "" }));
+  });
+  page.on("response", async (response) => {
+    void (requestIds.has(response.request()) && responses.push({ requestId: requestIds.get(response.request()) ?? "", url: response.url(), status: response.status(), headers: response.headers(), bodyBase64: (await response.body()).toString("base64") }));
+  });
+  const requests: Array<Record<string, unknown>> = [];
+  const responses: Array<Record<string, unknown>> = [];
+  let requestSequence = 0;
+  const languagesLoaded = page.waitForResponse((response) => response.url().endsWith("/api/v1/languages") && response.status() === 200);
+  await page.goto("/");
+  await languagesLoaded;
+  await expect(page.getByTestId("h2-curation-panel")).toBeVisible();
+  await expect(page.getByTestId("h2-generate-demo")).toBeDisabled();
+  await page.getByTestId("h2-create-project").click();
+  await expect(page.getByTestId("h2-project-id")).not.toBeEmpty();
+  await page.getByTestId("h2-public-file").setInputFiles(process.env.H2_PUBLIC_FIXTURE ?? "");
+  await page.getByTestId("h2-submit-source").click();
+  await expect(page.getByTestId("h2-source-state")).toContainText("PENDING_REVIEW");
+  await page.getByTestId("h2-approve-source").click();
+  await expect(page.getByTestId("h2-source-state")).toContainText("APPROVED");
+  await page.getByTestId("h2-ingest-source").click();
+  await expect(page.getByTestId("h2-accepted-source")).toContainText("INGESTED");
+  await expect(page.getByTestId("h2-accepted-chunk").first()).toBeVisible();
+  await expect(page.getByTestId("h2-generate-demo")).toBeEnabled();
+  await page.getByTestId("h2-generate-demo").click();
+  await expect(page.getByTestId("h2-render")).toContainText("COMPLETED");
+  await expect(page.getByTestId("h2-visible-citation").first()).toBeVisible();
+  await expect(page.getByTestId("h2-artifact-video")).toBeVisible();
+  const sourceIdentity = await page.getByTestId("h2-accepted-source").getAttribute("data-identity");
+  const visibleCitations = await Promise.all((await page.getByTestId("h2-visible-citation").all()).map(async (item) => ({ claimId: await item.getAttribute("data-claim-id"), contextRefId: await item.getAttribute("data-context-ref-id"), documentId: await item.getAttribute("data-document-id"), chunkId: await item.getAttribute("data-chunk-id"), sourceChecksum: await item.getAttribute("data-source-checksum"), chunkChecksum: await item.getAttribute("data-chunk-checksum") })));
+  await page.getByTestId("h2-principal").selectOption("other_demo");
+  await expect(page.getByTestId("h2-owner-actions")).toBeHidden();
+  const summaryDenied = page.waitForResponse((response) => response.url().endsWith("/source-curation-summary") && response.status() === 403);
+  await page.getByTestId("h2-reopen-project").dispatchEvent("click");
+  await summaryDenied;
+  const walkthroughDenied = page.waitForResponse((response) => response.url().endsWith("/walkthrough-runs") && response.status() === 403);
+  await page.getByTestId("h2-other-walkthrough").dispatchEvent("click");
+  await walkthroughDenied;
+  const multilingualDenied = page.waitForResponse((response) => response.url().endsWith("/multilingual-runs") && response.status() === 403);
+  await page.getByTestId("h2-other-multilingual").dispatchEvent("click");
+  await multilingualDenied;
+  const consentDenied = page.waitForResponse((response) => response.url().endsWith("/avatar-consents") && response.status() === 403);
+  await page.getByTestId("h2-other-consent").dispatchEvent("click");
+  await consentDenied;
+  const renderDenied = page.waitForResponse((response) => response.url().endsWith("/avatar-renders") && response.status() === 403);
+  await page.getByTestId("h2-other-render").dispatchEvent("click");
+  await renderDenied;
+  await expect(page.getByTestId("h2-safe-error")).toHaveText("FORBIDDEN");
+  await expect.poll(() => responses.length).toBe(requests.length);
+  const actionsHidden = await page.getByTestId("h2-owner-actions").isHidden();
+  await writeFile(join(process.env.H2_CANDIDATE_DIR ?? "", "browser-traffic.raw.json"), JSON.stringify({ requests, responses, sourceIdentity, visibleCitations, actionsHidden }));
+});

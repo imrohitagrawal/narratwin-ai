@@ -18,6 +18,8 @@ The verified chain must join curated source/checksum/chunks to walkthrough conte
 
 Owner-authorized Contract reset 6 adds only the existing CI workflow to PR A and replaces the impossible standalone source-authenticity claim with trusted execution provenance. Its exact ceilings are PR A 9 files / 1,600 lines / 5 surfaces, PR B 12 / 900 / 6, and aggregate 15 / 2,500 / 8. PR A proves verifier and workflow-contract behavior with synthetic packets; only PR B may produce genuine browser evidence.
 
+PR A merged as `4922178cf1add925f4a0f6b21b288d18dafda9fe`. PR B's canonical re-preflight comment `5122147727` narrows its envelope to 11 files / 900 charged lines / six surfaces. The browser uses the existing chunkable synthetic fixture identified by SHA-256 `9cefe4184b2a67d4cdc56d66d005b90409e06ad449c4c426b7d6e012125bfcb6`; the verifier binds the real Stage 6 voice manifest and full Stage 7 disabled-avatar/render/video-placeholder schemas rather than simplified test-only shapes.
+
 ## Boundaries
 
 This is a post-Checkpoint-B local reviewer integration heartbeat, not Product Mode 2. It changes no backend/API/storage contract and authorizes no providers, paid service, real media, cloned identity, deployment, hosting, public distribution, production claim, private data, or Issue #20 Q&A. Issue #8 remains open product memory; #155 stays closed; #20, #43, and #249 stay unchanged.
