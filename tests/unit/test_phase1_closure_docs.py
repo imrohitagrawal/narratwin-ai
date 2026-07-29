@@ -3212,6 +3212,128 @@ def test_phf020a_generated_suite_contract_is_exact() -> None:
             assert family in PHF020A_FAMILY_CODE_PREFIXES[case["family"]], case["id"]
 
 
+ISSUE8_ORIGINAL_ACCEPTANCE_TRANSFER = {
+    "ISSUE8-01": (
+        "#8",
+        "PRD names both product modes",
+        "docs/PRD.md#6-product-modes",
+    ),
+    "ISSUE8-02": (
+        "#8",
+        "Project-avatar-pack contract is documented",
+        "docs/PROJECT_AVATAR_PACK.md",
+    ),
+    "ISSUE8-03": (
+        "#8",
+        "Roadmap preserves focused Slice 1 and later video/interactive phases",
+        "docs/ROADMAP.md#product-mode-alignment",
+    ),
+    "ISSUE8-04": (
+        "#8",
+        "AI build brief preserves the full product vision",
+        "docs/AI_BUILD_BRIEF.md#product-modes-to-preserve",
+    ),
+    "ISSUE8-05": (
+        "#8",
+        "Skill plan requires PM/spec validation before coding",
+        "docs/SKILL_EXECUTION_PLAN.md#product-mode-policy-authority-handoff",
+    ),
+    "ISSUE8-06": (
+        "#8",
+        "No application code changes",
+        "Issue #311 exact governance-only branch gate",
+    ),
+}
+
+
+def issue8_documents() -> dict[str, str]:
+    return {
+        rel: Path(rel).read_text(encoding="utf-8")
+        for rel in (
+            "docs/PRD.md",
+            "docs/PROJECT_AVATAR_PACK.md",
+            "docs/ROADMAP.md",
+            "docs/AI_BUILD_BRIEF.md",
+            "docs/SKILL_EXECUTION_PLAN.md",
+        )
+    }
+
+
+def test_issue311_original_issue8_acceptance_contract_is_current() -> None:
+    assert phase1.PHF020A_ACCEPTANCE_TRANSFER == ISSUE8_ORIGINAL_ACCEPTANCE_TRANSFER
+    assert phase1.issue8_product_memory_findings(issue8_documents()) == []
+
+
+@pytest.mark.parametrize(
+    ("path", "old", "expected"),
+    (
+        ("docs/PRD.md", "### Mode 2: Interactive AI Avatar Walkthrough", "I8.AC01.PRODUCT_MODES"),
+        ("docs/PROJECT_AVATAR_PACK.md", "# Project Avatar Pack Contract", "I8.AC02.PACK_CONTRACT"),
+        ("docs/ROADMAP.md", "### Stage 4: Slice 1, Project Upload To Grounded Script Generation", "I8.AC03.ROADMAP"),
+        ("docs/AI_BUILD_BRIEF.md", "## Product modes to preserve", "I8.AC04.BUILD_BRIEF"),
+        ("docs/SKILL_EXECUTION_PLAN.md", "`project-avatar-pack`", "I8.AC05.SKILL_PLAN"),
+    ),
+)
+def test_issue311_product_memory_contract_rejects_missing_evidence(
+    path: str,
+    old: str,
+    expected: str,
+) -> None:
+    documents = issue8_documents()
+    documents[path] = documents[path].replace(old, "removed", 1)
+
+    assert expected in phase1.issue8_product_memory_findings(documents)
+
+
+def test_issue311_status_requires_terminal_heartbeat2_and_issue8_target() -> None:
+    status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
+
+    assert phase1.issue8_closeout_status_findings(status_text) == []
+
+
+def test_issue311_branch_scope_and_budget_are_exact() -> None:
+    expected = {
+        "docs/governance/preflights/issue-311.json",
+        "docs/PHASE_PLAN.md",
+        "docs/SKILL_EXECUTION_PLAN.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+
+    assert phase1.ISSUE_311_BRANCH == "phase-1-closure-process-311-issue8-product-memory-closeout"
+    assert phase1.ISSUE_311_ALLOWED_CHANGED_FILES == expected
+    assert phase1.ISSUE_311_LINE_CAP == 350
+
+
+def test_issue311_scope_gate_fails_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 0)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_311_BRANCH,
+        files=sorted(phase1.ISSUE_311_ALLOWED_CHANGED_FILES),
+    ) == []
+    near_match = f"{phase1.ISSUE_311_BRANCH}-extra"
+    assert run_changed_files_check(monkeypatch, branch=near_match, files=["docs/STATUS.md"]) == [
+        f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."
+    ]
+    assert run_changed_files_check(
+        monkeypatch, branch=phase1.ISSUE_311_BRANCH, files=["backend/app/main.py"]
+    ) == [
+        f"Phase 1 Closure branch {phase1.ISSUE_311_BRANCH} may not change backend/app/main.py."
+    ]
+
+
+def test_issue311_charged_line_cap_fails_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "resolve_base", lambda: "branch-base")
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 351)
+
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_311_BRANCH, files=[]) == [
+        f"Phase 1 Closure branch {phase1.ISSUE_311_BRANCH} exceeds its 350-line cap."
+    ]
+
+
 def run_issue141_platform_contract_check(
     monkeypatch: Any, *, read_overrides: dict[str, str] | None = None
 ) -> list[str]:
