@@ -1,0 +1,141 @@
+{
+  "schemaVersion": "Issue280SemanticRepairSlice1ManifestV1",
+  "authority": {
+    "controllingIssue": 317,
+    "architectureDecision": "ADR-0044",
+    "dataClass": "public-safe synthetic only",
+    "language": "es",
+    "depth": "STANDARD",
+    "glossaryTerms": ["NarraTwin"]
+  },
+  "fixture": {
+    "fixtureId": "issue280-sr1-narratwin-audience-cohort",
+    "filename": "narratwin-semantic-repair-slice1.md",
+    "contentType": "text/markdown",
+    "markdown": "# NarraTwin semantic repair slice 1\n\n## Essential product outcome\n\nNarraTwin converts approved project knowledge into grounded walkthroughs with citations.\n\nThe local mock workflow refuses unsupported claims before storing output.\n\n## Audience evidence\n\nRecruiters review role relevance and concise hiring evidence.\n\nHiring managers review delivery ownership and execution confidence.\n\nEngineers review source bindings, deterministic behavior, and technical tradeoffs.\n\nProduct leaders review user outcomes, adoption signals, and roadmap decisions.\n\nCustomers review practical value, trustworthy evidence, and expected results.\n\nBeginners receive plain-language orientation and a clear next step.\n\nGlobal viewers receive culturally neutral context and glossary-preserved terminology.\n"
+  },
+  "propositions": [
+    {
+      "id": "P-ESS-01",
+      "sourceText": "NarraTwin converts approved project knowledge into grounded walkthroughs with citations",
+      "targetClause": "NarraTwin convierte conocimiento aprobado del proyecto en recorridos fundamentados con citas",
+      "citationIndex": 1,
+      "essential": true,
+      "audience": null,
+      "depthRoles": ["STANDARD"],
+      "glossaryTerms": ["NarraTwin"]
+    },
+    {
+      "id": "P-ESS-02",
+      "sourceText": "The local mock workflow refuses unsupported claims before storing output",
+      "targetClause": "El flujo simulado local rechaza afirmaciones no respaldadas antes de guardar el resultado",
+      "citationIndex": 2,
+      "essential": true,
+      "audience": null,
+      "depthRoles": ["STANDARD"],
+      "glossaryTerms": []
+    },
+    {
+      "id": "P-AUD-REC",
+      "sourceText": "Recruiters review role relevance and concise hiring evidence",
+      "targetClause": "Para reclutadores, destaca la relevancia para el puesto y evidencia concisa de contratación",
+      "citationIndex": 3,
+      "essential": false,
+      "audience": "RECRUITER",
+      "depthRoles": ["STANDARD"],
+      "glossaryTerms": []
+    },
+    {
+      "id": "P-AUD-HM",
+      "sourceText": "Hiring managers review delivery ownership and execution confidence",
+      "targetClause": "Para responsables de contratación, destaca la responsabilidad de entrega y la confianza de ejecución",
+      "citationIndex": 4,
+      "essential": false,
+      "audience": "HIRING_MANAGER",
+      "depthRoles": ["STANDARD"],
+      "glossaryTerms": []
+    },
+    {
+      "id": "P-AUD-ENG",
+      "sourceText": "Engineers review source bindings, deterministic behavior, and technical tradeoffs",
+      "targetClause": "Para ingeniería, destaca los vínculos de fuente, el comportamiento determinista y las compensaciones técnicas",
+      "citationIndex": 5,
+      "essential": false,
+      "audience": "ENGINEER",
+      "depthRoles": ["STANDARD"],
+      "glossaryTerms": []
+    },
+    {
+      "id": "P-AUD-PROD",
+      "sourceText": "Product leaders review user outcomes, adoption signals, and roadmap decisions",
+      "targetClause": "Para líderes de producto, destaca resultados de usuario, señales de adopción y decisiones de hoja de ruta",
+      "citationIndex": 6,
+      "essential": false,
+      "audience": "PRODUCT_LEADER",
+      "depthRoles": ["STANDARD"],
+      "glossaryTerms": []
+    },
+    {
+      "id": "P-AUD-CUST",
+      "sourceText": "Customers review practical value, trustworthy evidence, and expected results",
+      "targetClause": "Para clientes, destaca el valor práctico, la evidencia confiable y los resultados esperados",
+      "citationIndex": 7,
+      "essential": false,
+      "audience": "CUSTOMER",
+      "depthRoles": ["STANDARD"],
+      "glossaryTerms": []
+    },
+    {
+      "id": "P-AUD-BEG",
+      "sourceText": "Beginners receive plain-language orientation and a clear next step",
+      "targetClause": "Para principiantes, ofrece orientación en lenguaje claro y un siguiente paso definido",
+      "citationIndex": 8,
+      "essential": false,
+      "audience": "BEGINNER",
+      "depthRoles": ["STANDARD"],
+      "glossaryTerms": []
+    },
+    {
+      "id": "P-AUD-GLOB",
+      "sourceText": "Global viewers receive culturally neutral context and glossary-preserved terminology",
+      "targetClause": "Para audiencias globales, ofrece contexto culturalmente neutral y terminología preservada del glosario",
+      "citationIndex": 9,
+      "essential": false,
+      "audience": "GLOBAL_VIEWER",
+      "depthRoles": ["STANDARD"],
+      "glossaryTerms": []
+    }
+  ],
+  "mandatoryRows": [
+    {"rowId": "SR1-ES-STANDARD-RECRUITER", "audience": "RECRUITER", "requiredPropositionIds": ["P-ESS-01", "P-ESS-02", "P-AUD-REC"]},
+    {"rowId": "SR1-ES-STANDARD-HIRING-MANAGER", "audience": "HIRING_MANAGER", "requiredPropositionIds": ["P-ESS-01", "P-ESS-02", "P-AUD-HM"]},
+    {"rowId": "SR1-ES-STANDARD-ENGINEER", "audience": "ENGINEER", "requiredPropositionIds": ["P-ESS-01", "P-ESS-02", "P-AUD-ENG"]},
+    {"rowId": "SR1-ES-STANDARD-PRODUCT-LEADER", "audience": "PRODUCT_LEADER", "requiredPropositionIds": ["P-ESS-01", "P-ESS-02", "P-AUD-PROD"]},
+    {"rowId": "SR1-ES-STANDARD-CUSTOMER", "audience": "CUSTOMER", "requiredPropositionIds": ["P-ESS-01", "P-ESS-02", "P-AUD-CUST"]},
+    {"rowId": "SR1-ES-STANDARD-BEGINNER", "audience": "BEGINNER", "requiredPropositionIds": ["P-ESS-01", "P-ESS-02", "P-AUD-BEG"]},
+    {"rowId": "SR1-ES-STANDARD-GLOBAL-VIEWER", "audience": "GLOBAL_VIEWER", "requiredPropositionIds": ["P-ESS-01", "P-ESS-02", "P-AUD-GLOB"]}
+  ],
+  "thresholds": {
+    "essentialPropositionRecall": 1.0,
+    "unsupportedPropositionCount": 0,
+    "citationSupportPrecision": 1.0,
+    "audienceRequiredEmphasisRecall": 1.0,
+    "pairwiseAudienceCollapseCount": 0,
+    "depthRoleViolationCount": 0,
+    "glossaryLossCount": 0,
+    "targetScriptViolationCount": 0,
+    "mandatoryRowCoverage": 1.0
+  },
+  "disallowedTargetText": [
+    "Local mock conversion",
+    "source segment",
+    "protected term",
+    "For recruiters",
+    "For hiring managers",
+    "For engineers",
+    "For product leaders",
+    "For customers",
+    "For beginners",
+    "For global viewers"
+  ]
+}
