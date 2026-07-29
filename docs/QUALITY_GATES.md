@@ -838,3 +838,11 @@ The CI layer must continue to enforce:
   evidence that still preserves raw Trivy and Grype reports.
 
 Direct pushes to `main` remain a repository-settings requirement enforced through branch protection or rulesets rather than the stage-quality workflow itself.
+
+## Heartbeat 1 B browser evidence gate
+
+Issue `#306` must run `scripts/ci/heartbeat1-browser.sh` at the exact reviewed head.
+The gate owns one frontend and two sequential backend PIDs, proves a waited-for restart against one hash-bound snapshot, and permits no browser interception or direct-backend shortcut.
+Traces begin only after both controlled responses and protected runtime inputs are deleted.
+Full evidence may upload only after `scripts/ci/heartbeat1_evidence.py` recursively scans the snapshot, logs, reports, DOM, screenshots, archives, and archive members and records `ZERO_MATCH` for the exact run/head.
+Focused A1/A2 regressions, exact-branch/allowlist enforcement, `make quality`, required CI/security checks, and independent exact-head approval remain mandatory.

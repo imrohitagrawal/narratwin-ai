@@ -186,6 +186,17 @@ type ProjectResponse = {
   projectId: string;
 };
 
+type H1Outcome = {
+  code: string; sourceId: string; decisionId: string; checksum: string; sourceVersion: string;
+  assertionsFingerprint: string; policyVersion: string; decisionState: string; ingestionStatus?: string;
+  rawContentRetained: boolean; reason?: string;
+};
+type H1SummaryItem = H1Outcome & { acceptedChunks: Array<{ chunkId: string; checksum: string }> };
+type H1Summary = {
+  projectId: string; ownerId: string; curatedSources: H1SummaryItem[];
+  excludedDecisions: H1Outcome[]; legacySources: unknown[];
+};
+
 type DocumentResponse = {
   documentId: string;
 };
@@ -465,6 +476,18 @@ export async function readJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function h1Json<T>(path: string, principal: string, init: RequestInit = {}): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set("X-Local-User-Id", principal);
+  const response = await fetch(`${apiBase}${path}`, { ...init, headers });
+  const payload = (await response.json()) as T & { error?: { code?: unknown } };
+  if (!response.ok) {
+    const code = typeof payload.error?.code === "string" && /^[A-Z0-9_]{1,64}$/.test(payload.error.code) ? payload.error.code : `HTTP_${response.status}`;
+    throw new Error(code);
+  }
+  return payload;
+}
+
 function issue280SafeError(caught: unknown) {
   const message = caught instanceof Error ? caught.message : "Issue 280 local demo request failed.";
   if (unsafeApiErrorMessagePattern.test(message)) {
@@ -554,6 +577,12 @@ export default function Home() {
   const [issue280IsRunning, setIssue280IsRunning] = useState(false);
   const [issue280TranscriptExpanded, setIssue280TranscriptExpanded] = useState(false);
   const [issue280AvatarBoundary, setIssue280AvatarBoundary] = useState(false);
+  const [h1Principal, setH1Principal] = useState("curator_demo");
+  const [h1ProjectId, setH1ProjectId] = useState("");
+  const [h1Source, setH1Source] = useState<H1Outcome | null>(null);
+  const [h1Exclusion, setH1Exclusion] = useState<H1Outcome | null>(null);
+  const [h1Summary, setH1Summary] = useState<H1Summary | null>(null);
+  const [h1Error, setH1Error] = useState("");
 
   useEffect(() => {
     let isActive = true;
@@ -794,6 +823,68 @@ export default function Home() {
     }
   }
 
+  async function h1Run(action: () => Promise<void>) {
+    setH1Error("");
+    try { await action(); } catch (caught) { setH1Error(caught instanceof Error ? caught.message : "REQUEST_FAILED"); }
+  }
+
+  function h1Headers(key: string, json = false) {
+    return { "Idempotency-Key": key, ...(json ? { "Content-Type": "application/json" } : {}) };
+  }
+
+  async function h1Create() {
+    await h1Run(async () => {
+      const project = await h1Json<ProjectResponse>("/projects", h1Principal, {
+        method: "POST", headers: h1Headers("heartbeat1-project", true),
+        body: JSON.stringify({ name: "Heartbeat 1 browser proof", description: "Local controlled curation proof" }),
+      });
+      setH1ProjectId(project.projectId);
+    });
+  }
+
+  async function h1Submit(event: FormEvent<HTMLFormElement>, kind: "public" | "internal") {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await h1Run(async () => {
+      const input = new FormData(form).get("file");
+      if (!(input instanceof File) || !h1ProjectId) throw new Error("FILE_REQUIRED");
+      const body = new FormData();
+      body.append("file", input);
+      const fields = kind === "public"
+        ? ["ACCEPT_FOR_REVIEW", "PUBLIC_SAFE", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "ELIGIBLE", "LOCAL_TEST_REUSE_ALLOWED"]
+        : ["EXCLUDE", "INTERNAL", "PROJECT_AUTHORED_SYNTHETIC", "PROJECT_OWNED", "INELIGIBLE", "INTERNAL_NO_REUSE"];
+      for (const [name, value] of [["action", fields[0]], ["classification", fields[1]], ["provenance", fields[2]], ["rightsBasis", fields[3]], ["rightsStatus", fields[4]], ["usagePolicy", fields[5]], ["curationSchemaVersion", "source-curation-v1"], ["sourceVersion", `heartbeat1-${kind}-v1`]]) body.append(name, value);
+      const outcome = await h1Json<H1Outcome>(`/projects/${h1ProjectId}/knowledge-documents`, h1Principal, {
+        method: "POST", headers: h1Headers(`heartbeat1-${kind}-${h1ProjectId}`), body,
+      });
+      if (kind === "public") setH1Source(outcome); else setH1Exclusion(outcome);
+    });
+    form.reset();
+  }
+
+  async function h1Approve() {
+    if (!h1Source) return;
+    await h1Run(async () => setH1Source(await h1Json<H1Outcome>(`/projects/${h1ProjectId}/knowledge-documents/${h1Source.sourceId}/approval`, h1Principal, {
+      method: "PATCH", headers: h1Headers(`heartbeat1-approve-${h1ProjectId}`, true),
+      body: JSON.stringify({ approvalStatus: "APPROVED", action: "APPROVE", curationSchemaVersion: "source-curation-v1", sourceId: h1Source.sourceId, decisionId: h1Source.decisionId, policyVersion: h1Source.policyVersion, sourceVersion: h1Source.sourceVersion, checksum: h1Source.checksum, assertionsFingerprint: h1Source.assertionsFingerprint }),
+    })));
+  }
+
+  async function h1Ingest() {
+    if (!h1Source) return;
+    await h1Run(async () => { await h1Json(`/projects/${h1ProjectId}/ingestion-runs`, h1Principal, {
+      method: "POST", headers: h1Headers(`heartbeat1-ingest-${h1ProjectId}`, true), body: JSON.stringify({ documentIds: [], sourceIds: [h1Source.sourceId] }),
+    }); await h1Reopen(); });
+  }
+
+  async function h1Reopen() {
+    await h1Run(async () => setH1Summary(await h1Json<H1Summary>(`/projects/${h1ProjectId}/source-curation-summary`, h1Principal)));
+  }
+
+  function h1ChangePrincipal(value: string) {
+    setH1Principal(value); setH1Source(null); setH1Exclusion(null); setH1Summary(null); setH1Error("");
+  }
+
   const supports = run?.evaluation?.claimSupports ?? [];
   const selectedLanguage = languageCatalog.find((language) => language.languageTag === targetLanguage);
   const previewScript =
@@ -807,6 +898,23 @@ export default function Home() {
 
   return (
     <main className={styles.page} aria-busy={isGenerating || issue280IsRunning}>
+      <section className={styles.workspace} data-testid="h1-curation-panel" aria-labelledby="h1-title">
+        <h2 id="h1-title">Heartbeat 1 source curation</h2>
+        <label className={styles.field}>Principal<select data-testid="h1-principal" value={h1Principal} onChange={(event) => h1ChangePrincipal(event.currentTarget.value)}><option>curator_demo</option><option>other_demo</option></select></label>
+        <label className={styles.field}>Project ID<input data-testid="h1-project-id" value={h1ProjectId} onChange={(event) => setH1ProjectId(event.currentTarget.value)} /></label>
+        <button type="button" data-testid="h1-create-project" onClick={h1Create} hidden={h1Principal !== "curator_demo"} disabled={Boolean(h1ProjectId)}>Create project</button>
+        <form hidden={h1Principal !== "curator_demo"} onSubmit={(event) => h1Submit(event, "public")}><label className={styles.field}>Public source<input name="file" type="file" accept=".md,text/markdown" data-testid="h1-public-file" /></label><button type="submit" data-testid="h1-submit-public" disabled={!h1ProjectId}>Submit public source</button></form>
+        <form hidden={h1Principal !== "curator_demo"} onSubmit={(event) => h1Submit(event, "internal")}><label className={styles.field}>Internal source<input name="file" type="file" accept=".md,text/markdown" data-testid="h1-internal-file" /></label><button type="submit" data-testid="h1-submit-internal" disabled={!h1ProjectId}>Exclude internal source</button></form>
+        {h1Source ? <p data-testid="h1-public-status">{h1Source.code} <span data-testid="h1-public-source-id">{h1Source.sourceId}</span> <span data-testid="h1-public-checksum">{h1Source.checksum}</span> <span data-testid="h1-public-version">{h1Source.sourceVersion}</span></p> : null}
+        {h1Exclusion ? <p data-testid="h1-exclusion-status">{h1Exclusion.code} {h1Exclusion.decisionState} retained={String(h1Exclusion.rawContentRetained)} <span data-testid="h1-exclusion-decision-id">{h1Exclusion.decisionId}</span> <span data-testid="h1-exclusion-checksum">{h1Exclusion.checksum}</span></p> : null}
+        <div data-testid="h1-owner-actions" hidden={h1Principal !== "curator_demo" || !h1Source}><button type="button" data-testid="h1-approve-source" onClick={h1Approve}>Approve source</button><button type="button" data-testid="h1-ingest-source" onClick={h1Ingest}>Ingest source</button></div>
+        <button type="button" data-testid="h1-reopen-project" onClick={h1Reopen} disabled={!h1ProjectId} hidden={h1Principal !== "curator_demo" && h1Error === "FORBIDDEN"}>Reopen project</button>
+        {h1Error ? <p role="alert" data-testid="h1-safe-error">{h1Error}</p> : null}
+        {h1Summary ? <section data-testid="h1-summary" aria-label="Heartbeat 1 metadata summary">
+          {h1Summary.curatedSources.map((source) => <article data-testid="h1-curated-item" data-identity={`${source.sourceId}|${source.checksum}|${source.sourceVersion}`} key={source.sourceId}><span>{source.sourceId}</span> <span>{source.checksum}</span> <span>{source.sourceVersion}</span> {source.decisionState} {source.ingestionStatus} {source.acceptedChunks.map((chunk) => <span data-testid="h1-accepted-chunk" key={chunk.chunkId}>{chunk.chunkId}:{chunk.checksum}</span>)}</article>)}
+          {h1Summary.excludedDecisions.map((decision) => <article data-testid="h1-excluded-item" data-identity={`${decision.decisionId}|${decision.checksum}`} key={decision.decisionId}>{decision.decisionId} {decision.checksum} {decision.decisionState} {decision.reason} retained={String(decision.rawContentRetained)}</article>)}
+        </section> : null}
+      </section>
       <section className={styles.workspace} aria-labelledby="workspace-title">
         <div className={styles.header}>
           <p className={styles.kicker}>NarraTwin AI</p>

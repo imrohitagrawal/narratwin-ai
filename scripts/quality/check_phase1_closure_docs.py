@@ -613,6 +613,15 @@ ISSUE_302_A1_BRANCH = "phase-1-closure-302-heartbeat1-a1-eligible"
 ISSUE_302_A1_ALLOWED_CHANGED_FILES = {"backend/app/curation.py", "backend/app/stage4.py", "backend/app/main.py", "tests/api/test_stage4_slice_api.py", "docs/API_CONTRACT.md", "docs/ADR/0040-heartbeat1-a1-curated-eligibility.md", "docs/TRACEABILITY.md", "docs/STATUS.md", "docs/STAGE_ISSUE_PLAN.md", "scripts/quality/check_phase1_closure_docs.py"}
 ISSUE_304_A2_BRANCH = "phase-1-closure-304-heartbeat1-a2-exclusion-summary"
 ISSUE_304_A2_ALLOWED_CHANGED_FILES = {"backend/app/curation.py", "backend/app/stage4.py", "backend/app/main.py", "tests/api/test_heartbeat1_a2_exclusion_api.py", "docs/API_CONTRACT.md", "docs/ADR/0041-heartbeat1-a2-exclusion-summary.md", "docs/TRACEABILITY.md", "docs/STATUS.md", "docs/STAGE_ISSUE_PLAN.md", "scripts/quality/check_phase1_closure_docs.py"}
+ISSUE_306_B_BRANCH = "phase-1-closure-306-heartbeat1-b-browser-reopen"
+ISSUE_306_B_ALLOWED_CHANGED_FILES = {
+    ".github/workflows/ci.yml", "docs/ADR/0042-heartbeat1-b-browser-reopen-evidence.md",
+    "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+    "frontend/playwright.heartbeat1.config.ts", "frontend/src/app/page.tsx",
+    "frontend/tests/heartbeat1-browser.spec.ts", "scripts/ci/heartbeat1-browser.sh",
+    "scripts/ci/heartbeat1_evidence.py", "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_heartbeat1_evidence.py", "tests/unit/test_phase1_closure_docs.py",
+}
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
     "tests/unit/test_governance_preflight_github.py", ".github/workflows/quality-gates.yml",
@@ -1842,10 +1851,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #304 under issue #302",
-        "heartbeat1-a2-contract",
-        "heartbeat1-a2-contract",
-        "Issue #304 governs only metadata-only exclusion, owner summary, replay, and restore repair after merged A1 PR #303. The prior issue280-governance-reset-active token is historical only; Issue #280 and PR #299 remain untouched forensic history. UI/browser proof, Heartbeat 2, providers, hosted/public behavior, paid spend, deployment, and production-readiness claims remain unauthorized. Historical evidence remains verbatim: Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate. These phrases describe preserved forensic history, not current next-action authority.",
+        "issue #8",
+        "heartbeat1-complete-awaiting-next-authority",
+        "heartbeat1-complete-awaiting-next-authority",
+        "The substantive Issue #306 PR completes the approved Heartbeat 1 A1+A2+B repository envelope when merged; closeout then closes #306 and #302 only after required post-merge gates. Issue #8 remains open as the product-definition parent. No next product implementation is authorized; Heartbeat 2, providers, hosted/public behavior, paid spend, deployment, production-readiness claims, and work on #280/PR #299/#300/#301 remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -3918,6 +3927,10 @@ def check_changed_files(failures: list[str]) -> None:
     elif branch == ISSUE_304_A2_BRANCH:
         allowed_files = ISSUE_304_A2_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-304-"):
+        allowed_files = set()
+    elif branch == ISSUE_306_B_BRANCH:
+        allowed_files = ISSUE_306_B_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-306-"):
         allowed_files = set()
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
