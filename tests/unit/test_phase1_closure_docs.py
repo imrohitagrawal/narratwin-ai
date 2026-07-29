@@ -8343,16 +8343,21 @@ await page.goto("/");
         path.write_text(content, encoding="utf-8")
         graph.append({"path": relative, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
     artifacts = {}
-    source_meta = {"runId": "run-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1]}
-    local_provider = {"provider": "mock", "providerMode": "LOCAL", "allowNetworkEgress": False, "requiresApiKey": False, "supportsRealVideo": False, "supportsClonedIdentity": False}
-    multilingual_meta = {"sourceRunId": "run-1", "multilingualRunId": "multi-1", "contextRefIds": ["context-1"], "citationIndexes": [1], "evaluationId": "eval-1", "evaluationChecksum": "eval-sha"}
+    translated = "# Recorrido sintético [1]\n"
+    subtitles = "1\n00:00:00,000 --> 00:00:01,000\nBounded synthetic caption [1]\n"
+    voice = json.dumps({"provider": "mock", "providerMode": "LOCAL", "language": "es", "languageDisplayName": "Spanish", "textChecksum": f"sha256:{hashlib.sha256(translated.encode()).hexdigest()}", "durationSecondsEstimate": 1, "mockAudioProfile": {"durationMillisecondsEstimate": 1000, "sampleRateHz": 16000, "channels": 1}, "disclosure": "Mock local TTS placeholder"})
+    source_meta = {"runId": "run-1", "traceId": "trace-1", "contextRefCount": 1, "contextRefIds": ["context-1"], "citationCount": 1, "citationIndexes": [1], "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "evaluationStatus": "PASSED", "scriptChecksum": "sha256:script-sha"}
+    local_provider = {"provider": "mock", "providerMode": "LOCAL", "adapterKind": "MOCK_LOCAL", "allowNetworkEgress": False, "requiresApiKey": False, "supportsRealVideo": False, "supportsClonedIdentity": False}
+    avatar_boundary = {"provider": "disabled", "providerMode": "DISABLED", "enabled": False, "allowNetworkEgress": False, "requiresApiKey": True, "supportsRealVideo": False, "supportsClonedIdentity": False, "assetProvenancePolicy": "fully_synthetic_or_provider_stock_non_identifiable_only", "disclosureText": "AI-generated synthetic avatar/video. No cloned identity was used.", "disclosureVersion": "stage7-avatar-video-disclosure-v1", "retentionState": "NOT_CREATED", "deletionState": "NOT_REQUESTED"}
+    disclosure = {"aiGenerated": True, "clonedIdentity": False, "consentRequired": True, "consentStatus": "CONFIRMED", "message": "Synthetic local avatar disclosure"}
+    multilingual_meta = {"sourceRunId": "run-1", "multilingualRunId": "multi-1", "targetLanguage": "es", "translatedScriptChecksum": f"sha256:{hashlib.sha256(translated.encode()).hexdigest()}", "subtitlesChecksum": f"sha256:{hashlib.sha256(subtitles.encode()).hexdigest()}", "voiceManifestChecksum": f"sha256:{hashlib.sha256(voice.encode()).hexdigest()}", "contextRefIds": ["context-1"], "citationIndexes": [1], "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "providerPosture": {"translationProvider": "mock", "translationProviderMode": "LOCAL", "voiceProvider": "mock", "voiceProviderMode": "LOCAL"}, "consentDisclosureVersion": "avatar-consent-v1"}
     payloads = {
-        "translated": "# Recorrido sintético [1]\n",
-        "subtitles": "1\n00:00:00,000 --> 00:00:01,000\nBounded synthetic caption [1]\n",
-        "voice": json.dumps({"provider": "mock", "providerMode": "LOCAL", "language": "es", "textChecksum": "sha256:3821d826d9dd404793c4ee0077de2a15ecd4f9af8a7351fec392e8419610c0bc", "mockAudioProfile": {"durationMillisecondsEstimate": 1000, "sampleRateHz": 16000, "channels": 1}, "disclosure": "Mock local TTS placeholder"}),
+        "translated": translated,
+        "subtitles": subtitles,
+        "voice": voice,
         "preview": "<!doctype html><html><body>Local synthetic preview</body></html>",
-        "renderManifest": json.dumps({"schema": "Stage7AvatarRenderManifest", "providerConfig": local_provider, "source": source_meta, "multilingualBundle": multilingual_meta}),
-        "video": json.dumps({"schema": "Stage7VideoExportPlaceholder", "realVideoProduced": False, "providerConfig": local_provider, "source": source_meta, "multilingualBundle": multilingual_meta}),
+        "renderManifest": json.dumps({"schema": "Stage7AvatarRenderManifest", "version": "stage7-mock-avatar-render-v1", "provider": {"provider": "mock", "providerMode": "LOCAL", "requestedProvider": "mock", "fallbackReason": None}, "providerConfig": local_provider, "avatarVideoProvider": avatar_boundary, "renderer": {"renderer": "local-html", "rendererMode": "LOCAL", "exportFormat": "html"}, "source": source_meta, "disclosure": disclosure, "sceneCountEstimate": 1, "videoExportPlaceholder": {"status": "PLACEHOLDER_ONLY", "mimeType": "application/json", "realVideoProduced": False}, "publicUseLicenseCheck": "mock-local-provider-only-no-third-party-media", "multilingualBundle": multilingual_meta}),
+        "video": json.dumps({"schema": "Stage7VideoExportPlaceholder", "version": "stage7-video-export-placeholder-v1", "status": "PLACEHOLDER_ONLY", "realVideoProduced": False, "renderer": "local-html", "providerConfig": local_provider, "avatarVideoProvider": avatar_boundary, "disclosure": disclosure, "source": source_meta, "publicUseLicenseCheck": "mock-local-provider-only-no-third-party-media", "sourceRunId": "run-1", "traceId": "trace-1", "reason": "Stage 7 exports a validated HTML demo and metadata, not a real video binary.", "multilingualBundle": multilingual_meta}),
     }
     for name, filename, mime in (("translated", "translated.md", "text/markdown"), ("subtitles", "captions.srt", "application/x-subrip"), ("voice", "voice.json", "application/json"), ("preview", "preview.html", "text/html"), ("renderManifest", "render.json", "application/json"), ("video", "video.json", "application/json")):
         path = root / "artifacts" / filename
@@ -8371,48 +8376,44 @@ await page.goto("/");
         == "9cefe4184b2a67d4cdc56d66d005b90409e06ad449c4c426b7d6e012125bfcb6"
     )
     source_checksum = hashlib.sha256(fixture).hexdigest()
-    source = {"id": "source-1", "checksum": source_checksum, "decisionId": "decision-1", "policyVersion": "curation-policy-v1", "sourceVersion": "heartbeat2-public-v1", "assertionsFingerprint": "assertions-sha", "states": ["PENDING_REVIEW", "APPROVED", "SOURCE_INGESTED"], "status": "SOURCE_INGESTED", "retained": True, "chunks": [{"id": "chunk-1", "checksum": "chunk-sha"}]}
-    contexts = [{"contextRefId": "context-1", "claimId": "claim-1", "documentId": "source-1", "sourceChecksum": source_checksum, "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}]
-    evaluation = {"id": "eval-1", "checksum": "eval-sha", "status": "PASSED", "unsupportedClaimCount": 0}
-    walkthrough = {"projectId": "project-1", "runId": "run-1", "status": "COMPLETED", "contextRefs": contexts, "claimSupports": [{"claimId": "claim-1", "contextRefId": "context-1", "documentId": "source-1", "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}], "citations": [{"claimId": "claim-1", "contextRefId": "context-1", "index": 1}], "evaluation": evaluation}
-    media = {"projectId": "project-1", "runId": "multi-1", "sourceRunId": "run-1", "targetLanguage": "es", "supportedLanguage": True, "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "translationMode": "mock", "voiceMode": "mock", "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("translated", "subtitles", "voice")}}
-    render = {"id": "render-1", "projectId": "project-1", "sourceRunId": "run-1", "multilingualRunId": "multi-1", "consentId": "consent-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "avatarMode": "local", "cloneEnabled": False, "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("preview", "renderManifest", "video")}}
-    consent = {"id": "consent-1", "projectId": "project-1", "sourceRunId": "run-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "statementVersion": "avatar-consent-v1", "granted": True}
+    source = {"sourceId": "source-1", "checksum": source_checksum, "decisionId": "decision-1", "policyVersion": "curation-policy-v1", "sourceVersion": "heartbeat2-public-v1", "assertionsFingerprint": "assertions-sha", "serverDecision": "ACCEPT_FOR_REVIEW", "decisionState": "APPROVED", "ingestionStatus": "SOURCE_INGESTED", "acceptedChunks": [{"chunkId": "chunk-1", "checksum": "chunk-sha"}]}
+    snapshot = {"sourceDocumentChecksum": source_checksum, "chunkChecksum": "chunk-sha"}
+    contexts = [{"contextRefId": "context-1", "claimId": "claim-1", "documentId": "source-1", "chunkId": "chunk-1", "evidenceSnapshot": snapshot}]
+    supports = [{"claimId": "claim-1", "contextRefId": "context-1", "documentId": "source-1", "chunkId": "chunk-1", "citationIndex": 1, "evidenceSnapshot": snapshot}]
+    evaluation = {"evaluationId": "eval-1", "evaluationStatus": "PASSED", "unsupportedClaimCount": 0, "claimSupports": supports}
+    walkthrough = {"projectId": "project-1", "runId": "run-1", "status": "COMPLETED", "acceptedScriptText": "Synthetic grounded walkthrough [1]", "contextRefs": contexts, "evaluation": evaluation}
+    media_artifacts = {key: {"checksum": f"sha256:{artifacts[name]['sha256']}"} for key, name in (("translatedScript", "translated"), ("subtitles", "subtitles"), ("voiceManifest", "voice"))}
+    trace = {"sourceContextRefIds": ["context-1"], "sourceCitationIndexes": [1], "sourceEvaluationId": "eval-1", "sourceEvaluationChecksum": "eval-sha"}
+    media = {"projectId": "project-1", "multilingualRunId": "multi-1", "sourceRunId": "run-1", "targetLanguage": "es", "status": "COMPLETED", "translationProvider": {"provider": "mock", "providerMode": "LOCAL"}, "voice": {"provider": "mock", "providerMode": "LOCAL"}, "artifacts": media_artifacts, "trace": trace}
+    render_artifacts = {key: {"checksum": f"sha256:{artifacts[name]['sha256']}"} for key, name in (("demoExport", "preview"), ("renderManifest", "renderManifest"), ("videoExportPlaceholder", "video"))}
+    consent = {"consentRecordId": "consent-1", "projectId": "project-1", "sourceRunId": "run-1", "sourceContextRefIds": ["context-1"], "sourceCitationIndexes": [1], "sourceEvaluationId": "eval-1", "sourceEvaluationChecksum": "eval-sha", "evaluationStatus": "PASSED", "consentStatementVersion": "avatar-consent-v1"}
+    render = {"avatarRenderId": "render-1", "consentRecordId": "consent-1", "projectId": "project-1", "sourceRunId": "run-1", "providerConfig": local_provider, "disclosure": disclosure, "artifacts": render_artifacts, "trace": trace | {"multilingualRunId": "multi-1"}}
     bundle = {"principal": "curator_demo", "projectCount": 1, "projectId": "project-1", "legacySources": [], "source": source, "walkthrough": walkthrough, "visibleCitations": [{"claimId": "claim-1", "contextRefId": "context-1", "chunkId": "chunk-1"}], "multilingual": media, "consent": consent, "render": render, "artifacts": artifacts, "otherDemo": {"actionsHidden": True}}
     methods = [("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201)]
     paths = ["/api/v1/projects", "/api/v1/projects/project-1/knowledge-documents", "/api/v1/projects/project-1/knowledge-documents/source-1/approval", "/api/v1/projects/project-1/ingestion-runs", "/api/v1/projects/project-1/walkthrough-runs", "/api/v1/projects/project-1/walkthrough-runs/run-1/multilingual-runs", "/api/v1/projects/project-1/walkthrough-runs/run-1/avatar-consents", "/api/v1/projects/project-1/walkthrough-runs/run-1/avatar-renders"]
-    requests = [{"sequence": i, "operation": op, "method": method, "path": paths[i - 1], "origin": evidence.ORIGIN, "principal": "curator_demo", "projectId": "project-1", "id": f"w{i}"} for i, (op, method, status) in enumerate(methods, 1)]
-    requests += [{"sequence": i, "operation": op, "method": method, "path": "/api/v1/languages" if i == 1 else "/api/v1/projects/project-1/source-curation-summary", "origin": evidence.ORIGIN, "principal": principal, "projectId": "" if i == 1 else "project-1", "id": f"r{i}"} for i, (op, method, status, principal) in enumerate(evidence.READS, 1)]
+    writes = [{"sequence": i, "operation": op, "method": method, "path": paths[i - 1], "origin": evidence.ORIGIN, "principal": "curator_demo", "projectId": "project-1", "id": f"w{i}"} for i, (op, method, status) in enumerate(methods, 1)]
+    reads = [{"sequence": i, "operation": op, "method": method, "path": "/api/v1/languages" if i == 1 else "/api/v1/projects/project-1/source-curation-summary", "origin": evidence.ORIGIN, "principal": principal, "projectId": "" if i == 1 else "project-1", "id": f"r{i}"} for i, (op, method, status, principal) in enumerate(evidence.READS, 1)]
     denial_paths = paths[4:5] + paths[5:8]
-    requests += [{"sequence": i, "operation": op, "method": method, "path": denial_paths[i - 1], "origin": evidence.ORIGIN, "principal": "other_demo", "projectId": "project-1", "id": f"d{i}"} for i, (op, method, status) in enumerate(evidence.DENIALS, 1)]
+    denials = [{"sequence": i, "operation": op, "method": method, "path": denial_paths[i - 1], "origin": evidence.ORIGIN, "principal": "other_demo", "projectId": "project-1", "id": f"d{i}"} for i, (op, method, status) in enumerate(evidence.DENIALS, 1)]
+    requests = [reads[0], *writes[:4], reads[1], *writes[4:], reads[2], *denials]
     boundary = "heartbeat2-reset5-boundary"
     form = {"action": "ACCEPT_FOR_REVIEW", "classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rightsBasis": "PROJECT_OWNED", "rightsStatus": "ELIGIBLE", "usagePolicy": "LOCAL_TEST_REUSE_ALLOWED", "curationSchemaVersion": "source-curation-v1", "sourceVersion": source["sourceVersion"]}
     multipart = b"".join(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n".encode() for name, value in form.items()) + f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"heartbeat2-public.md\"\r\nContent-Type: text/markdown\r\n\r\n".encode() + fixture + f"\r\n--{boundary}--\r\n".encode()
-    multilingual_bundle = {"sourceRunId": "run-1", "multilingualRunId": "multi-1", "targetLanguage": "es", "translatedScriptChecksum": f"sha256:{artifacts['translated']['sha256']}", "subtitlesChecksum": f"sha256:{artifacts['subtitles']['sha256']}", "voiceManifestChecksum": f"sha256:{artifacts['voice']['sha256']}", "contextRefIds": ["context-1"], "citationIndexes": [1], "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "providerPosture": {"translationProvider": "mock", "translationProviderMode": "LOCAL", "voiceProvider": "mock", "voiceProviderMode": "LOCAL"}, "consentDisclosureVersion": consent["statementVersion"]}
-    write_payloads = [{"name": "Heartbeat 2 reviewer demo", "description": "Controlled synthetic curated walkthrough", "defaultAudience": "RECRUITER", "defaultLanguage": "en"}, None, {"approvalStatus": "APPROVED", "action": "APPROVE", "curationSchemaVersion": "source-curation-v1", "sourceId": source["id"], "decisionId": source["decisionId"], "policyVersion": source["policyVersion"], "sourceVersion": source["sourceVersion"], "checksum": source["checksum"], "assertionsFingerprint": source["assertionsFingerprint"]}, {"documentIds": [], "sourceIds": [source["id"]]}, {"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Create the controlled synthetic grounded reviewer walkthrough."}, {"targetLanguage": "es", "glossaryTerms": [], "requestedVoiceProvider": "mock"}, {"consentToUseSyntheticAvatar": True}, {"requestedAvatarProvider": "mock", "consentToUseSyntheticAvatar": True, "consentRecordId": "consent-1", "clonedIdentityRequested": False, "multilingualBundle": multilingual_bundle}]
-    for index, request in enumerate(requests):
-        raw = multipart if index == 1 else json.dumps(write_payloads[index] if index < 8 else {"operation": request["operation"]}, separators=(",", ":"), sort_keys=True).encode() if request["method"] != "GET" else b""
-        content_type = f"multipart/form-data; boundary={boundary}" if index == 1 else "application/json" if raw else ""
+    multilingual_bundle = {"sourceRunId": "run-1", "multilingualRunId": "multi-1", "targetLanguage": "es", "translatedScriptChecksum": f"sha256:{artifacts['translated']['sha256']}", "subtitlesChecksum": f"sha256:{artifacts['subtitles']['sha256']}", "voiceManifestChecksum": f"sha256:{artifacts['voice']['sha256']}", "contextRefIds": ["context-1"], "citationIndexes": [1], "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "providerPosture": {"translationProvider": "mock", "translationProviderMode": "LOCAL", "voiceProvider": "mock", "voiceProviderMode": "LOCAL"}, "consentDisclosureVersion": consent["consentStatementVersion"]}
+    write_payloads = [{"name": "Heartbeat 2 reviewer demo", "description": "Controlled synthetic curated walkthrough", "defaultAudience": "RECRUITER", "defaultLanguage": "en"}, None, {"approvalStatus": "APPROVED", "action": "APPROVE", "curationSchemaVersion": "source-curation-v1", "sourceId": source["sourceId"], "decisionId": source["decisionId"], "policyVersion": source["policyVersion"], "sourceVersion": source["sourceVersion"], "checksum": source["checksum"], "assertionsFingerprint": source["assertionsFingerprint"]}, {"documentIds": [], "sourceIds": [source["sourceId"]]}, {"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Create the controlled synthetic grounded reviewer walkthrough."}, {"targetLanguage": "es", "glossaryTerms": [], "requestedVoiceProvider": "mock"}, {"consentToUseSyntheticAvatar": True}, {"requestedAvatarProvider": "mock", "consentToUseSyntheticAvatar": True, "consentRecordId": "consent-1", "clonedIdentityRequested": False, "multilingualBundle": multilingual_bundle}]
+    payload_by_operation = dict(zip((item[0] for item in methods), write_payloads, strict=True))
+    for request in requests:
+        operation = request["operation"].removeprefix("other-")
+        raw = multipart if operation == "submit" else json.dumps(payload_by_operation.get(operation, {}), separators=(",", ":"), sort_keys=True).encode() if request["method"] != "GET" else b""
+        content_type = f"multipart/form-data; boundary={boundary}" if operation == "submit" else "application/json" if raw else ""
         request.update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": hashlib.sha256(raw).hexdigest(), "contentType": content_type})
-    statuses = [status for _, _, status in methods] + [status for _, _, status, _ in evidence.READS] + [status for _, _, status in evidence.DENIALS]
-    response_payloads = [
-        {"projectId": "project-1"},
-        {"sourceId": "source-1", "checksum": source_checksum, "decisionState": "PENDING_REVIEW"},
-        {"sourceId": "source-1", "checksum": source_checksum, "decisionState": "APPROVED"},
-        {"status": "COMPLETED", "sourceIds": ["source-1"], "chunkCount": 1},
-        walkthrough,
-        media,
-        {"consentRecordId": "consent-1", "projectId": "project-1", "sourceRunId": "run-1", "sourceEvaluationId": "eval-1", "sourceEvaluationChecksum": "eval-sha", "consentToUseSyntheticAvatar": True},
-        render,
-        {"languages": [{"languageTag": "es", "localDemoSupportStatus": "SUPPORTED"}]},
-        {"projectId": "project-1", "curatedSources": [source], "legacySources": []},
-        {"error": {"code": "FORBIDDEN"}},
-        *({"error": {"code": "FORBIDDEN"}} for _ in range(4)),
-    ]
+    statuses = {op: status for op, _, status in methods} | {op: status for op, _, status, _ in evidence.READS} | {op: status for op, _, status in evidence.DENIALS}
+    response_payloads = {"project": {"projectId": "project-1"}, "submit": {"sourceId": "source-1", "checksum": source_checksum, "decisionState": "PENDING_REVIEW"}, "approve": {"sourceId": "source-1", "checksum": source_checksum, "decisionState": "APPROVED"}, "ingest": {"status": "COMPLETED", "sourceIds": ["source-1"], "chunkCount": 1}, "walkthrough": walkthrough, "multilingual": media, "consent": consent, "render": render, "languages": {"languages": [{"languageTag": "es", "localDemoSupportStatus": "SUPPORTED"}]}, "summary": {"projectId": "project-1", "curatedSources": [source], "legacySources": []}}
     responses = []
-    for request, status, body in zip(requests, statuses, response_payloads, strict=True):
+    for request in requests:
+        body = response_payloads.get(request["operation"], {"error": {"code": "FORBIDDEN"}})
         raw = json.dumps(body, separators=(",", ":"), sort_keys=True).encode()
-        responses.append({"requestId": request["id"], "status": status, "bodyBase64": base64.b64encode(raw).decode(), "bodySha256": hashlib.sha256(raw).hexdigest()})
+        responses.append({"requestId": request["id"], "status": statuses[request["operation"]], "bodyBase64": base64.b64encode(raw).decode(), "bodySha256": hashlib.sha256(raw).hexdigest()})
     import zipfile
     records = []
     resources: dict[str, bytes] = {}
@@ -8492,10 +8493,10 @@ def test_heartbeat2_verifier_rejects_ledger_artifact_source_and_forbidden_mutati
     evidence: Any = load_heartbeat2_evidence_module()
     sources = tmp_path / "sources"
     mutations = (
-        ("traffic", "traffic", lambda p: p["traffic"]["requests"][0].__setitem__("principal", "other_demo"), "OWNER_JOIN"),
-        ("method", "traffic", lambda p: p["traffic"]["requests"][8].__setitem__("method", "POST"), "READ_LEDGER"),
-        ("joins", "bundle", lambda p: p["bundle"]["walkthrough"]["contextRefs"][0].__setitem__("sourceChecksum", "wrong"), "PRODUCT_JOIN"),
-        ("lifecycle", "bundle", lambda p: p["bundle"]["source"].__setitem__("states", ["SOURCE_INGESTED"]), "PRODUCT_JOIN"),
+        ("traffic", "traffic", lambda p: p["traffic"]["requests"][0].__setitem__("principal", "other_demo"), "READ_LEDGER"),
+        ("method", "traffic", lambda p: p["traffic"]["requests"][10].__setitem__("method", "POST"), "READ_LEDGER"),
+        ("joins", "bundle", lambda p: p["bundle"]["walkthrough"]["contextRefs"][0]["evidenceSnapshot"].__setitem__("sourceDocumentChecksum", "wrong"), "PRODUCT_JOIN"),
+        ("lifecycle", "bundle", lambda p: p["bundle"]["source"].__setitem__("decisionState", "PENDING_REVIEW"), "PRODUCT_JOIN"),
         ("source", "manifest", lambda p: p["manifest"]["sourceGraph"].pop(), "SOURCE_GRAPH"),
     )
     for label, payload, mutate, code in mutations:
@@ -8513,7 +8514,6 @@ def test_heartbeat2_verifier_rejects_ledger_artifact_source_and_forbidden_mutati
     packet = write_heartbeat2_packet(root, sources, evidence)
     packet["artifact"].write_text("not-json", encoding="utf-8")
     packet["bundle"]["artifacts"]["video"]["sha256"] = evidence.sha256(packet["artifact"].read_bytes())
-    packet["bundle"]["render"]["artifactChecksums"]["video"] = packet["bundle"]["artifacts"]["video"]["sha256"]
     (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
     with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN|ARTIFACT_BINDING"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
@@ -8582,7 +8582,7 @@ def test_heartbeat2_verifier_rejects_dead_listener_markers_and_payload_disagreem
     forged["status"] = "FORGED"
     raw = json.dumps(forged, separators=(",", ":"), sort_keys=True).encode()
     import base64
-    packet["traffic"]["responses"][4].update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    packet["traffic"]["responses"][6].update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
     packet["bundle"]["walkthrough"] = forged
     (root / "traffic.json").write_text(json.dumps(packet["traffic"]), encoding="utf-8")
     (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
@@ -8594,9 +8594,9 @@ def test_heartbeat2_verifier_rejects_duplicate_claim_consent_and_semantic_artifa
     evidence: Any = load_heartbeat2_evidence_module()
     sources = tmp_path / "sources"
     mutations = (
-        ("duplicate", lambda p: p["bundle"]["source"]["chunks"].append(dict(p["bundle"]["source"]["chunks"][0]))),
-        ("claim", lambda p: p["bundle"]["walkthrough"]["citations"][0].__setitem__("claimId", "claim-other")),
-        ("consent", lambda p: p["bundle"]["consent"].update({"granted": False, "sourceRunId": "run-other", "evaluationId": "eval-other"})),
+        ("duplicate", lambda p: p["bundle"]["source"]["acceptedChunks"].append(dict(p["bundle"]["source"]["acceptedChunks"][0]))),
+        ("claim", lambda p: p["bundle"]["walkthrough"]["evaluation"]["claimSupports"][0].__setitem__("claimId", "claim-other")),
+        ("consent", lambda p: p["bundle"]["consent"].update({"sourceRunId": "run-other", "sourceEvaluationId": "eval-other"})),
     )
     for label, mutate in mutations:
         root = tmp_path / label
@@ -8610,7 +8610,6 @@ def test_heartbeat2_verifier_rejects_duplicate_claim_consent_and_semantic_artifa
     packet["artifact"].write_text('{"forged":"unrelated"}', encoding="utf-8")
     digest = evidence.sha256(packet["artifact"].read_bytes())
     packet["bundle"]["artifacts"]["video"]["sha256"] = digest
-    packet["bundle"]["render"]["artifactChecksums"]["video"] = digest
     (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
     with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
         evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
@@ -8667,17 +8666,17 @@ def test_heartbeat2_verifier_rejects_response_scope_duplicates_and_active_artifa
     sources = tmp_path / "sources"
     root = tmp_path / "consent-response"
     write_heartbeat2_packet(root, sources, evidence)
-    replace_heartbeat2_response(root, 6, {"consentRecordId": "consent-1", "projectId": "wrong", "sourceRunId": "wrong", "sourceEvaluationId": "wrong", "sourceEvaluationChecksum": "wrong", "consentToUseSyntheticAvatar": False}, evidence)
+    replace_heartbeat2_response(root, 8, {"consentRecordId": "consent-1", "projectId": "wrong", "sourceRunId": "wrong", "sourceEvaluationId": "wrong", "sourceEvaluationChecksum": "wrong"}, evidence)
     with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
     root = tmp_path / "empty-languages"
     write_heartbeat2_packet(root, sources, evidence)
-    replace_heartbeat2_response(root, 8, {"languages": []}, evidence)
+    replace_heartbeat2_response(root, 0, {"languages": []}, evidence)
     with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
     root = tmp_path / "duplicate-support"
     packet = write_heartbeat2_packet(root, sources, evidence)
-    packet["bundle"]["walkthrough"]["claimSupports"].append(dict(packet["bundle"]["walkthrough"]["claimSupports"][0]))
+    packet["bundle"]["walkthrough"]["evaluation"]["claimSupports"].append(dict(packet["bundle"]["walkthrough"]["evaluation"]["claimSupports"][0]))
     with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
         evidence._joins(root, packet["bundle"])
     video = json.loads(packet["artifact"].read_text())
@@ -8685,7 +8684,6 @@ def test_heartbeat2_verifier_rejects_response_scope_duplicates_and_active_artifa
     packet["artifact"].write_text(json.dumps(video), encoding="utf-8")
     digest = evidence.sha256(packet["artifact"].read_bytes())
     packet["bundle"]["artifacts"]["video"]["sha256"] = digest
-    packet["bundle"]["render"]["artifactChecksums"]["video"] = digest
     with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
         evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
 
@@ -8775,7 +8773,6 @@ def test_heartbeat2_reset5_rejects_semantic_artifact_aliases(tmp_path: Path) -> 
     packet["artifact"].write_text(json.dumps(video), encoding="utf-8")
     digest = evidence.sha256(packet["artifact"].read_bytes())
     packet["bundle"]["artifacts"]["video"]["sha256"] = digest
-    packet["bundle"]["render"]["artifactChecksums"]["video"] = digest
 
     with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
         evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
@@ -8889,7 +8886,7 @@ def test_heartbeat2_reset5_rejects_duplicate_multipart_and_json_keys(tmp_path: P
     import base64
     evidence: Any = load_heartbeat2_evidence_module()
     sources = tmp_path / "sources"
-    mutations: tuple[tuple[str, int, Callable[[bytes], bytes]], ...] = (("multipart", 1, lambda raw: raw.replace(b'name="action"', b'name="action"\r\n\r\nACCEPT_FOR_REVIEW\r\n--heartbeat2-reset5-boundary\r\nContent-Disposition: form-data; name="action"', 1)), ("json", 0, lambda raw: raw.replace(b"{", b'{"name":"conflict",', 1)))
+    mutations: tuple[tuple[str, int, Callable[[bytes], bytes]], ...] = (("multipart", 2, lambda raw: raw.replace(b'name="action"', b'name="action"\r\n\r\nACCEPT_FOR_REVIEW\r\n--heartbeat2-reset5-boundary\r\nContent-Disposition: form-data; name="action"', 1)), ("json", 1, lambda raw: raw.replace(b"{", b'{"name":"conflict",', 1)))
     for label, index, mutate in mutations:
         root = tmp_path / label
         packet = write_heartbeat2_packet(root, sources, evidence)
@@ -8908,7 +8905,6 @@ def test_heartbeat2_reset5_rejects_active_local_preview_content(tmp_path: Path, 
     preview.write_text(preview.read_text().replace("</body>", active + "</body>"), encoding="utf-8")
     digest = evidence.sha256(preview.read_bytes())
     packet["bundle"]["artifacts"]["preview"]["sha256"] = digest
-    packet["bundle"]["render"]["artifactChecksums"]["preview"] = digest
     with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
         evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
 
@@ -8917,9 +8913,9 @@ def test_heartbeat2_reset5_rejects_non_json_write_content_type(tmp_path: Path) -
     evidence: Any = load_heartbeat2_evidence_module()
     root, sources = tmp_path / "packet", tmp_path / "sources"
     packet = write_heartbeat2_packet(root, sources, evidence)
-    packet["traffic"]["requests"][0]["contentType"] = "text/plain"
+    packet["traffic"]["requests"][1]["contentType"] = "text/plain"
     with pytest.raises(evidence.EvidenceError, match="REQUEST_BINDING"):
-        evidence._request_contract(packet["traffic"]["requests"][:8], packet["bundle"])
+        evidence._request_contract([item for item in packet["traffic"]["requests"] if item["operation"] in {row[0] for row in evidence.WRITES}], packet["bundle"])
 
 
 @pytest.mark.parametrize("mutate", [
@@ -8938,7 +8934,6 @@ def test_heartbeat2_reset5_rejects_malformed_voice_semantics(tmp_path: Path, mut
     voice.write_text(json.dumps(payload), encoding="utf-8")
     digest = evidence.sha256(voice.read_bytes())
     packet["bundle"]["artifacts"]["voice"]["sha256"] = digest
-    packet["bundle"]["multilingual"]["artifactChecksums"]["voice"] = digest
     with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
         evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
 
@@ -8949,7 +8944,7 @@ def test_heartbeat2_reset5_rejects_duplicate_response_json_keys(tmp_path: Path) 
     root, sources = tmp_path / "packet", tmp_path / "sources"
     packet = write_heartbeat2_packet(root, sources, evidence)
     response = packet["traffic"]["responses"][0]
-    raw = base64.b64decode(response["bodyBase64"]).replace(b"{", b'{"projectId":"conflict",', 1)
+    raw = base64.b64decode(response["bodyBase64"]).replace(b"{", b'{"languages":"conflict",', 1)
     response.update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
     with pytest.raises(evidence.EvidenceError, match="TRAFFIC_LEDGER"):
         evidence._traffic(packet["traffic"], packet["bundle"])

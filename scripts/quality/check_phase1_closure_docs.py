@@ -631,8 +631,8 @@ ISSUE_308_H2_A_ALLOWED_CHANGED_FILES = {
 }
 ISSUE_308_H2_B_BRANCH = "phase-1-closure-308-heartbeat2-curated-reviewer-demo"
 ISSUE_308_H2_B_ALLOWED_CHANGED_FILES = {
-    ".github/workflows/ci.yml", "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md",
-    "docs/STATUS.md", "docs/TRACEABILITY.md", "frontend/playwright.heartbeat2.config.ts",
+    "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+    "frontend/playwright.heartbeat2.config.ts",
     "frontend/src/app/page.tsx", "frontend/src/app/page.test.tsx",
     "frontend/tests/heartbeat2-browser.spec.ts", "scripts/ci/heartbeat2-browser.sh",
     "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py",
@@ -652,6 +652,12 @@ ISSUE_308_RESET6_AUTHORITY = {
     "author": "imrohitagrawal", "createdAt": "2026-07-29T17:24:48Z", "updatedAt": "2026-07-29T17:24:48Z",
     "sha256": "6fcfa8d626f45a0791a157c810471c057eed1d6160543406ecf6a22baa3a6810",
     "preflightSha256": "20d7c1be5154d139a7149d43b960df639c31a671e7da5f9d8ba1b1c0447a0db6",
+}
+ISSUE_308_H2_B_PREFLIGHT_AUTHORITY = {
+    "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/308#issuecomment-5122147727",
+    "databaseId": 5122147727, "author": "imrohitagrawal",
+    "createdAt": "2026-07-29T18:47:19Z", "updatedAt": "2026-07-29T18:47:19Z",
+    "sha256": "0b2272ae16352f5dbc723598abbcaf28518ed5106e6c678214cf1c6775e40534",
 }
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
@@ -1899,9 +1905,9 @@ STATUS_STATE_V1_ROWS = {
     "SSV1-NEXT": (
         "next-action",
         "issue #308",
-        "heartbeat2-pr-a-evidence-contract",
-        "heartbeat2-pr-a-evidence-contract",
-        "Heartbeat 1 is merged and closed. This PR completes Heartbeat 2 PR A's evidence-integrity contract; after exact-head review, merge, and closeout, the next authorized action is PR B's read-only re-preflight under #308. PR B product integration remains blocked until that closeout. Issue #8 remains open product memory. Providers, hosting, deployment, production claims, private data, #20, and protected tracker mutation remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate.",
+        "heartbeat2-pr-b-curated-reviewer-demo",
+        "heartbeat2-pr-b-curated-reviewer-demo",
+        "Heartbeat 1 is closed and Heartbeat 2 PR A merged through PR #309 at 4922178cf1add925f4a0f6b21b288d18dafda9fe. PR B is active under canonical re-preflight comment 5122147727 and the 11-file / 900-line / six-surface envelope. Issue #8 remains open product memory. Providers, hosting, deployment, production claims, private data, #20, and protected tracker mutation remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 remains a separate negative-forensic-only reset.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",

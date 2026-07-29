@@ -16,7 +16,7 @@ from typing import Any, NoReturn
 from scripts.ci.heartbeat1_evidence import ALLOWED_BROWSER_IMPORTS, COMPUTED_MEMBER, FORBIDDEN_BROWSER_TOKENS, IMPORT, EvidenceError as PrivacyError, MAX_ARCHIVE_DEPTH, MAX_SCAN_BYTES, scan_browser_sources, scan_evidence
 SHA, RUN_ID, ORIGIN = re.compile(r"^[0-9a-f]{40}$"), re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"), "http://127.0.0.1:3122"
 SPEC, TEST_TITLE, MAX_ARCHIVE_MEMBERS = "heartbeat2-browser.spec.ts", "Heartbeat 2 local reviewer demo", 10_000
-PUBLIC_FIXTURE_SHA256 = "e7ed2f48cf62645575771fd10e918568ad77ec4fb0b75620f6e4ecff2a3d8200"
+PUBLIC_FIXTURE_SHA256 = "9cefe4184b2a67d4cdc56d66d005b90409e06ad449c4c426b7d6e012125bfcb6"
 FORBIDDEN_SHA256S = {"controlledSha256": "d6bba9d5a1916d515ea982b3517c6528bfff5f7ee9d7a7ab03267fd6fefd6eb2", "canarySha256": "9fbe84f0ec72ee1d8de0cae899d15b98c1ec3e979514b861ed584ac8d62fa84c"}
 SOURCES = (".github/workflows/ci.yml", "scripts/ci/heartbeat1_evidence.py", "scripts/ci/heartbeat2_evidence.py", "scripts/ci/heartbeat2-browser.sh", "frontend/playwright.heartbeat2.config.ts", "frontend/tests/heartbeat2-browser.spec.ts")
 WRITES = (("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201))
@@ -89,15 +89,15 @@ def _request_contract(writes: list[Any], bundle: dict[str, Any]) -> None:
     expected_fields = {"action": "ACCEPT_FOR_REVIEW", "classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rightsBasis": "PROJECT_OWNED", "rightsStatus": "ELIGIBLE", "usagePolicy": "LOCAL_TEST_REUSE_ALLOWED", "curationSchemaVersion": "source-curation-v1", "sourceVersion": source["sourceVersion"]}
     expected = {
         "project": {"name": "Heartbeat 2 reviewer demo", "description": "Controlled synthetic curated walkthrough", "defaultAudience": "RECRUITER", "defaultLanguage": "en"},
-        "approve": {"approvalStatus": "APPROVED", "action": "APPROVE", "curationSchemaVersion": "source-curation-v1", **{key: source[key] for key in ("id", "decisionId", "policyVersion", "sourceVersion", "checksum", "assertionsFingerprint")}},
-        "ingest": {"documentIds": [], "sourceIds": [source["id"]]},
+        "approve": {"approvalStatus": "APPROVED", "action": "APPROVE", "curationSchemaVersion": "source-curation-v1", **{key: source[key] for key in ("sourceId", "decisionId", "policyVersion", "sourceVersion", "checksum", "assertionsFingerprint")}},
+        "ingest": {"documentIds": [], "sourceIds": [source["sourceId"]]},
         "walkthrough": {"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Create the controlled synthetic grounded reviewer walkthrough."},
         "multilingual": {"targetLanguage": media["targetLanguage"], "glossaryTerms": [], "requestedVoiceProvider": "mock"},
         "consent": {"consentToUseSyntheticAvatar": True},
     }
-    expected["approve"]["sourceId"] = expected["approve"].pop("id")
     render = decoded["render"]
-    render_ok = set(render) == {"requestedAvatarProvider", "consentToUseSyntheticAvatar", "consentRecordId", "clonedIdentityRequested", "multilingualBundle"} and render["requestedAvatarProvider"] == "mock" and render["consentToUseSyntheticAvatar"] is True and render["consentRecordId"] == consent["id"] and render["clonedIdentityRequested"] is False and render["multilingualBundle"] == {"sourceRunId": run["runId"], "multilingualRunId": media["runId"], "targetLanguage": media["targetLanguage"], "contextRefIds": media["contextRefIds"], "citationIndexes": media["citationIndexes"], "evaluationId": media["evaluationId"], "evaluationChecksum": media["evaluationChecksum"], "providerPosture": {"translationProvider": "mock", "translationProviderMode": "LOCAL", "voiceProvider": "mock", "voiceProviderMode": "LOCAL"}}
+    render_bundle = {"sourceRunId": run["runId"], "multilingualRunId": media["multilingualRunId"], "targetLanguage": media["targetLanguage"], "translatedScriptChecksum": media["artifacts"]["translatedScript"]["checksum"], "subtitlesChecksum": media["artifacts"]["subtitles"]["checksum"], "voiceManifestChecksum": media["artifacts"]["voiceManifest"]["checksum"], "contextRefIds": media["trace"]["sourceContextRefIds"], "citationIndexes": media["trace"]["sourceCitationIndexes"], "evaluationId": media["trace"]["sourceEvaluationId"], "evaluationChecksum": media["trace"]["sourceEvaluationChecksum"], "providerPosture": {"translationProvider": "mock", "translationProviderMode": "LOCAL", "voiceProvider": "mock", "voiceProviderMode": "LOCAL"}, "consentDisclosureVersion": consent["consentStatementVersion"]}
+    render_ok = set(render) == {"requestedAvatarProvider", "consentToUseSyntheticAvatar", "consentRecordId", "clonedIdentityRequested", "multilingualBundle"} and render["requestedAvatarProvider"] == "mock" and render["consentToUseSyntheticAvatar"] is True and render["consentRecordId"] == consent["consentRecordId"] and render["clonedIdentityRequested"] is False and render["multilingualBundle"] == render_bundle
     file_header, fixture = submit.get("file", ("", b""))
     if fields != expected_fields or set(submit) != {*expected_fields, "file"} or 'filename="heartbeat2-public.md"' not in file_header or "Content-Type: text/markdown" not in file_header or sha256(fixture) != source["checksum"] or source["checksum"] != PUBLIC_FIXTURE_SHA256 or any(decoded[name] != value for name, value in expected.items()) or not render_ok:
         raise EvidenceError("REQUEST_BINDING")
@@ -105,7 +105,9 @@ def _local_only(value: Any) -> bool:
     if isinstance(value, dict):
         for key, item in value.items():
             normalized = re.sub(r"[^a-z]", "", str(key).lower())
-            if normalized in {"allownetworkegress", "requiresapikey", "supportsrealvideo", "supportsclonedidentity", "realvideoproduced", "realaudioproduced", "providercallmade"} and item is not False:
+            if normalized == "requiresapikey" and item is not False and value.get("providerMode") != "DISABLED":
+                return False
+            if normalized in {"allownetworkegress", "supportsrealvideo", "supportsclonedidentity", "realvideoproduced", "realaudioproduced", "providercallmade"} and item is not False:
                 return False
             if ("url" in normalized or "endpoint" in normalized) and item:
                 return False
@@ -166,7 +168,8 @@ def _traffic(traffic: Any, bundle: dict[str, Any]) -> None:
         requests, responses = traffic["requests"], traffic["responses"]
         if len(requests) != len(responses) or len({x["id"] for x in requests}) != len(requests) or len({x["requestId"] for x in responses}) != len(responses) or {x["id"] for x in requests} != {x["requestId"] for x in responses}:
             raise EvidenceError("TRAFFIC_LEDGER")
-        status, (writes, reads, denials) = {x["requestId"]: x["status"] for x in responses}, (requests[:8], requests[8:11], requests[11:])
+        status = {x["requestId"]: x["status"] for x in responses}
+        writes, reads, denials = requests[1:5] + requests[6:10], [requests[0], requests[5], requests[10]], requests[11:]
         if [(x["operation"], x["method"], status[x["id"]]) for x in writes] != list(WRITES):
             raise EvidenceError("WRITE_LEDGER")
         if [(x["operation"], x["method"], status[x["id"]], x["principal"]) for x in reads] != list(READS):
@@ -177,7 +180,7 @@ def _traffic(traffic: Any, bundle: dict[str, Any]) -> None:
             raise EvidenceError("TRAFFIC_LEDGER")
         if any(x["origin"] != ORIGIN for x in requests):
             raise EvidenceError("TRAFFIC_LEDGER")
-        project, source, run = bundle["projectId"], bundle["source"]["id"], bundle["walkthrough"]["runId"]
+        project, source, run = bundle["projectId"], bundle["source"]["sourceId"], bundle["walkthrough"]["runId"]
         paths = ("/api/v1/projects", f"/api/v1/projects/{project}/knowledge-documents", f"/api/v1/projects/{project}/knowledge-documents/{source}/approval", f"/api/v1/projects/{project}/ingestion-runs", f"/api/v1/projects/{project}/walkthrough-runs", f"/api/v1/projects/{project}/walkthrough-runs/{run}/multilingual-runs", f"/api/v1/projects/{project}/walkthrough-runs/{run}/avatar-consents", f"/api/v1/projects/{project}/walkthrough-runs/{run}/avatar-renders")
         summary = paths[3].replace("ingestion-runs", "source-curation-summary")
         if tuple(x["path"] for x in writes) != paths or tuple(x["path"] for x in reads) != ("/api/v1/languages", summary, summary) or tuple(x["path"] for x in denials) != paths[4:5] + paths[5:8]:
@@ -197,7 +200,7 @@ def _traffic(traffic: Any, bundle: dict[str, Any]) -> None:
             and all(payloads[name].get(key) == value for name, state in (("submit", "PENDING_REVIEW"), ("approve", "APPROVED")) for key, value in (source_payload | {"decisionState": state}).items())
             and payloads["ingest"].get("status") == "COMPLETED" and payloads["ingest"].get("sourceIds") == [source]
             and payloads["walkthrough"] == bundle["walkthrough"] and payloads["multilingual"] == bundle["multilingual"]
-            and payloads["consent"] == {"consentRecordId": bundle["consent"]["id"], "projectId": project, "sourceRunId": run, "sourceEvaluationId": bundle["walkthrough"]["evaluation"]["id"], "sourceEvaluationChecksum": bundle["walkthrough"]["evaluation"]["checksum"], "consentToUseSyntheticAvatar": True} and payloads["render"] == bundle["render"]
+            and payloads["consent"] == bundle["consent"] and payloads["render"] == bundle["render"]
             and any(item.get("languageTag") == bundle["multilingual"]["targetLanguage"] and item.get("localDemoSupportStatus") == "SUPPORTED" for item in payloads["languages"].get("languages", []))
             and payloads["summary"].get("curatedSources") == [bundle["source"]] and payloads["summary"].get("legacySources") == []
             and all(payloads[name].get("error", {}).get("code") == "FORBIDDEN" for name in ("other-summary", *[x[0] for x in DENIALS]))
@@ -220,13 +223,16 @@ def _artifacts(root: Path, artifacts: Any, bundle: dict[str, Any]) -> None:
                 valid = valid and isinstance(parsed, dict) and _local_only(parsed)
                 if name == "voice":
                     profile = parsed.get("mockAudioProfile", {})
-                    valid = valid and set(parsed) == {"provider", "providerMode", "language", "textChecksum", "mockAudioProfile", "disclosure"} and set(profile) == {"durationMillisecondsEstimate", "sampleRateHz", "channels"} and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and parsed.get("textChecksum") == f"sha256:{artifacts['translated']['sha256']}" and isinstance(parsed.get("disclosure"), str) and "Mock local TTS placeholder" in parsed["disclosure"] and isinstance(profile.get("durationMillisecondsEstimate"), int) and profile["durationMillisecondsEstimate"] >= 0 and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
+                    valid = valid and set(parsed) == {"provider", "providerMode", "language", "languageDisplayName", "textChecksum", "durationSecondsEstimate", "mockAudioProfile", "disclosure"} and set(profile) == {"durationMillisecondsEstimate", "sampleRateHz", "channels"} and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and isinstance(parsed.get("languageDisplayName"), str) and parsed["languageDisplayName"] and parsed.get("textChecksum") == f"sha256:{artifacts['translated']['sha256']}" and isinstance(parsed.get("durationSecondsEstimate"), int | float) and parsed["durationSecondsEstimate"] >= 0 and isinstance(parsed.get("disclosure"), str) and "Mock local TTS placeholder" in parsed["disclosure"] and isinstance(profile.get("durationMillisecondsEstimate"), int) and profile["durationMillisecondsEstimate"] >= 0 and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
                 else:
                     provider, source, media = parsed.get("providerConfig", {}), parsed.get("source", {}), parsed.get("multilingualBundle", {})
-                    expected_keys = {"schema", "providerConfig", "source", "multilingualBundle"} | ({"realVideoProduced"} if name == "video" else set())
-                    valid = valid and set(parsed) == expected_keys and parsed.get("schema") == ("Stage7AvatarRenderManifest" if name == "renderManifest" else "Stage7VideoExportPlaceholder") and provider == {"provider": "mock", "providerMode": "LOCAL", "allowNetworkEgress": False, "requiresApiKey": False, "supportsRealVideo": False, "supportsClonedIdentity": False}
-                    valid = valid and source == {"runId": bundle["walkthrough"]["runId"], "evaluationId": bundle["walkthrough"]["evaluation"]["id"], "evaluationChecksum": bundle["walkthrough"]["evaluation"]["checksum"], "contextRefIds": [x["contextRefId"] for x in bundle["walkthrough"]["contextRefs"]], "citationIndexes": [x["index"] for x in bundle["walkthrough"]["citations"]]}
-                    valid = valid and media == {"sourceRunId": bundle["walkthrough"]["runId"], "multilingualRunId": bundle["multilingual"]["runId"], "contextRefIds": [x["contextRefId"] for x in bundle["walkthrough"]["contextRefs"]], "citationIndexes": [x["index"] for x in bundle["walkthrough"]["citations"]], "evaluationId": bundle["walkthrough"]["evaluation"]["id"], "evaluationChecksum": bundle["walkthrough"]["evaluation"]["checksum"]} and (name != "video" or parsed.get("realVideoProduced") is False)
+                    run, multilingual = bundle["walkthrough"], bundle["multilingual"]
+                    expected_media = {"sourceRunId": run["runId"], "multilingualRunId": multilingual["multilingualRunId"], "targetLanguage": multilingual["targetLanguage"], "translatedScriptChecksum": f"sha256:{artifacts['translated']['sha256']}", "subtitlesChecksum": f"sha256:{artifacts['subtitles']['sha256']}", "voiceManifestChecksum": f"sha256:{artifacts['voice']['sha256']}", "contextRefIds": multilingual["trace"]["sourceContextRefIds"], "citationIndexes": multilingual["trace"]["sourceCitationIndexes"], "evaluationId": multilingual["trace"]["sourceEvaluationId"], "evaluationChecksum": multilingual["trace"]["sourceEvaluationChecksum"], "providerPosture": {"translationProvider": "mock", "translationProviderMode": "LOCAL", "voiceProvider": "mock", "voiceProviderMode": "LOCAL"}, "consentDisclosureVersion": bundle["consent"]["consentStatementVersion"]}
+                    expected_keys = {"schema", "version", "providerConfig", "avatarVideoProvider", "renderer", "source", "disclosure", "publicUseLicenseCheck", "multilingualBundle"} | ({"status", "realVideoProduced", "sourceRunId", "traceId", "reason"} if name == "video" else {"provider", "sceneCountEstimate", "videoExportPlaceholder"})
+                    boundary = parsed.get("avatarVideoProvider", {})
+                    valid = valid and set(parsed) == expected_keys and parsed.get("schema") == ("Stage7AvatarRenderManifest" if name == "renderManifest" else "Stage7VideoExportPlaceholder") and provider == {"provider": "mock", "providerMode": "LOCAL", "adapterKind": "MOCK_LOCAL", "allowNetworkEgress": False, "requiresApiKey": False, "supportsRealVideo": False, "supportsClonedIdentity": False}
+                    valid = valid and source.get("runId") == run["runId"] and source.get("contextRefIds") == multilingual["trace"]["sourceContextRefIds"] and source.get("citationIndexes") == multilingual["trace"]["sourceCitationIndexes"] and source.get("evaluationId") == run["evaluation"]["evaluationId"] and source.get("evaluationChecksum") == multilingual["trace"]["sourceEvaluationChecksum"] and source.get("evaluationStatus") == "PASSED"
+                    valid = valid and media == expected_media and boundary.get("enabled") is False and boundary.get("providerMode") == "DISABLED" and boundary.get("allowNetworkEgress") is False and boundary.get("supportsRealVideo") is False and boundary.get("supportsClonedIdentity") is False and parsed.get("disclosure", {}).get("clonedIdentity") is False and parsed.get("publicUseLicenseCheck") == "mock-local-provider-only-no-third-party-media" and (name != "video" or parsed.get("realVideoProduced") is False)
             elif name == "translated":
                 valid = valid and b"[1]" in data
             elif name == "subtitles":
@@ -240,31 +246,31 @@ def _artifacts(root: Path, artifacts: Any, bundle: dict[str, Any]) -> None:
 def _joins(root: Path, bundle: dict[str, Any]) -> None:
     try:
         source, run, media, consent, render = (bundle[key] for key in ("source", "walkthrough", "multilingual", "consent", "render"))
-        chunk_rows = [(x["id"], x["checksum"]) for x in source["chunks"]]
+        chunk_rows = [(x["chunkId"], x["checksum"]) for x in source["acceptedChunks"]]
         chunks = set(chunk_rows)
         contexts = run["contextRefs"]
-        context_chunks = {(x["chunkId"], x["chunkChecksum"]) for x in contexts}
+        context_chunks = {(x["chunkId"], x["evidenceSnapshot"]["chunkChecksum"]) for x in contexts}
         context_ids = [x["contextRefId"] for x in contexts]
-        support_rows = [(x["claimId"], x["contextRefId"], x["documentId"], x["chunkId"], x["chunkChecksum"]) for x in run["claimSupports"]]
-        citation_indexes = [x["index"] for x in run["citations"]]
+        supports = run["evaluation"]["claimSupports"]
+        support_rows = [(x["claimId"], x["contextRefId"], x["documentId"], x["chunkId"], x["evidenceSnapshot"]["chunkChecksum"]) for x in supports]
+        citation_indexes = [x["citationIndex"] for x in supports]
+        trace, render_trace = media["trace"], render["trace"]
         valid = (
             bundle["principal"] == "curator_demo" and bundle["projectCount"] == 1 and bundle["legacySources"] == [] and len(chunk_rows) == len(chunks) and len(contexts) == len(set(context_ids))
-            and source["states"] == ["PENDING_REVIEW", "APPROVED", "SOURCE_INGESTED"] and source["status"] == "SOURCE_INGESTED" and source["retained"] is True and chunks and chunks == context_chunks
-            and all(x["documentId"] == source["id"] and x["sourceChecksum"] == source["checksum"] for x in contexts)
-            and len(support_rows) == len(set(support_rows)) and set(support_rows) == {(x["claimId"], x["contextRefId"], x["documentId"], x["chunkId"], x["chunkChecksum"]) for x in contexts}
-            and [(x["claimId"], x["contextRefId"]) for x in run["citations"]] == [(x["claimId"], x["contextRefId"]) for x in contexts] and citation_indexes == list(range(1, len(contexts) + 1))
+            and source["decisionState"] == "APPROVED" and source["ingestionStatus"] == "SOURCE_INGESTED" and source["checksum"] == PUBLIC_FIXTURE_SHA256 and chunks and chunks == context_chunks
+            and all(x["documentId"] == source["sourceId"] and x["evidenceSnapshot"]["sourceDocumentChecksum"] == source["checksum"] for x in contexts)
+            and len(support_rows) == len(set(support_rows)) and set(support_rows) == {(x["claimId"], x["contextRefId"], x["documentId"], x["chunkId"], x["evidenceSnapshot"]["chunkChecksum"]) for x in contexts}
+            and citation_indexes == list(range(1, len(contexts) + 1))
             and [(x["claimId"], x["contextRefId"], x["chunkId"]) for x in bundle["visibleCitations"]] == [(x["claimId"], x["contextRefId"], x["chunkId"]) for x in contexts]
             and run["projectId"] == media["projectId"] == consent["projectId"] == render["projectId"] == bundle["projectId"]
-            and run["status"] == "COMPLETED" and run["evaluation"]["status"] == "PASSED" and run["evaluation"]["unsupportedClaimCount"] == 0
-            and media["sourceRunId"] == render["sourceRunId"] == run["runId"] and media["supportedLanguage"] is True
-            and consent["granted"] is True and consent["sourceRunId"] == run["runId"] and consent["evaluationId"] == run["evaluation"]["id"] and consent["evaluationChecksum"] == run["evaluation"]["checksum"]
-            and media["evaluationId"] == render["evaluationId"] == run["evaluation"]["id"]
-            and media["evaluationChecksum"] == render["evaluationChecksum"] == run["evaluation"]["checksum"]
-            and media["contextRefIds"] == render["contextRefIds"] == context_ids and media["citationIndexes"] == render["citationIndexes"] == citation_indexes
-            and media["translationMode"] == "mock" and media["voiceMode"] == "mock" and render["avatarMode"] == "local"
-            and media["artifactChecksums"] == {name: bundle["artifacts"][name]["sha256"] for name in ("translated", "subtitles", "voice")}
-            and render["artifactChecksums"] == {name: bundle["artifacts"][name]["sha256"] for name in ("preview", "renderManifest", "video")}
-            and render["multilingualRunId"] == media["runId"] and render["consentId"] == consent["id"] and render["cloneEnabled"] is False
+            and run["status"] == "COMPLETED" and run["evaluation"]["evaluationStatus"] == "PASSED" and run["evaluation"]["unsupportedClaimCount"] == 0
+            and media["sourceRunId"] == render["sourceRunId"] == consent["sourceRunId"] == run["runId"] and media["status"] == "COMPLETED"
+            and trace["sourceEvaluationId"] == consent["sourceEvaluationId"] == render_trace["sourceEvaluationId"] == run["evaluation"]["evaluationId"] and trace["sourceEvaluationChecksum"] == consent["sourceEvaluationChecksum"] == render_trace["sourceEvaluationChecksum"]
+            and trace["sourceContextRefIds"] == render_trace["sourceContextRefIds"] == consent["sourceContextRefIds"] == context_ids and trace["sourceCitationIndexes"] == render_trace["sourceCitationIndexes"] == consent["sourceCitationIndexes"] == citation_indexes
+            and media["translationProvider"] == {"provider": "mock", "providerMode": "LOCAL"} and media["voice"]["provider"] == "mock" and media["voice"]["providerMode"] == "LOCAL" and render["providerConfig"]["allowNetworkEgress"] is False and render["providerConfig"]["supportsRealVideo"] is False
+            and {name: media["artifacts"][key]["checksum"].removeprefix("sha256:") for name, key in (("translated", "translatedScript"), ("subtitles", "subtitles"), ("voice", "voiceManifest"))} == {name: bundle["artifacts"][name]["sha256"] for name in ("translated", "subtitles", "voice")}
+            and {name: render["artifacts"][key]["checksum"].removeprefix("sha256:") for name, key in (("preview", "demoExport"), ("renderManifest", "renderManifest"), ("video", "videoExportPlaceholder"))} == {name: bundle["artifacts"][name]["sha256"] for name in ("preview", "renderManifest", "video")}
+            and render_trace["multilingualRunId"] == media["multilingualRunId"] and render["consentRecordId"] == consent["consentRecordId"] and render["disclosure"]["clonedIdentity"] is False
             and bundle["otherDemo"] == {"actionsHidden": True}
         )
     except (KeyError, TypeError, ValueError) as exc:
@@ -395,6 +401,58 @@ def _ci_execution(root: Path, manifest: dict[str, Any], head: str, run_id: str, 
     valid = valid and record.get("workflowSourceSha256") == graph.get(".github/workflows/ci.yml") and record.get("runnerSourceSha256") == graph.get("scripts/ci/heartbeat2-browser.sh") and record.get("reportSha256") == sha256(_path(root, manifest.get("testReport")).read_bytes()) and record.get("traceSha256") == manifest.get("traceSha256") == sha256(_path(root, manifest.get("trace")).read_bytes())
     if not valid:
         raise EvidenceError("CI_PROVENANCE")
+def prepare_evidence(root: Path, *, head: str, run_id: str, source_root: Path = Path.cwd()) -> None:
+    raw = _json(root, "browser-traffic.raw.json")
+    requests, response_rows = raw.get("requests", []), raw.get("responses", [])
+    operations = ("languages", "project", "submit", "approve", "ingest", "summary", "walkthrough", "multilingual", "consent", "render", "other-summary", "other-walkthrough", "other-multilingual", "other-consent", "other-render")
+    if len(requests) != len(operations) or len(response_rows) != len(operations):
+        raise EvidenceError("TRAFFIC_LEDGER")
+    response_by_id = {item["requestId"]: item for item in response_rows}
+    if len(response_by_id) != len(operations):
+        raise EvidenceError("TRAFFIC_LEDGER")
+    bodies = [_strict_json(base64.b64decode(response_by_id[item["id"]]["bodyBase64"], validate=True), "TRAFFIC_LEDGER") for item in requests]
+    project, summary, walkthrough, multilingual, consent, render = bodies[1], bodies[5], bodies[6], bodies[7], bodies[8], bodies[9]
+    source = summary["curatedSources"][0]
+    expected_identity = "|".join((source["sourceId"], source["checksum"], source["sourceVersion"]))
+    if raw.get("sourceIdentity") != expected_identity or raw.get("actionsHidden") is not True:
+        raise EvidenceError("PRODUCT_JOIN")
+    artifact_apis = {"translated": multilingual["artifacts"]["translatedScript"], "subtitles": multilingual["artifacts"]["subtitles"], "voice": multilingual["artifacts"]["voiceManifest"], "preview": render["artifacts"]["demoExport"], "renderManifest": render["artifacts"]["renderManifest"], "video": render["artifacts"]["videoExportPlaceholder"]}
+    artifacts: dict[str, Any] = {}
+    for name, artifact in artifact_apis.items():
+        data = base64.b64decode(artifact["contentBase64"], validate=True)
+        path = root / "artifacts" / artifact["fileName"]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        artifacts[name] = {"path": path.relative_to(root).as_posix(), "filename": path.name, "mime": artifact["mimeType"], "sha256": sha256(data)}
+    bundle = {"principal": "curator_demo", "projectCount": 1, "projectId": project["projectId"], "legacySources": summary["legacySources"], "source": source, "walkthrough": walkthrough, "visibleCitations": raw["visibleCitations"], "multilingual": multilingual, "consent": consent, "render": render, "artifacts": artifacts, "otherDemo": {"actionsHidden": True}}
+    write_sequence = read_sequence = denial_sequence = 0
+    traffic_requests, traffic_responses = [], []
+    for operation, request in zip(operations, requests, strict=True):
+        response = response_by_id[request["id"]]
+        request_data, response_data = (base64.b64decode(item, validate=True) for item in (request["bodyBase64"], response["bodyBase64"]))
+        principal = request["headers"].get("x-local-user-id", "")
+        if operation in {item[0] for item in WRITES}:
+            write_sequence += 1
+            sequence = write_sequence
+        elif operation in {item[0] for item in READS}:
+            read_sequence += 1
+            sequence = read_sequence
+        else:
+            denial_sequence += 1
+            sequence = denial_sequence
+        traffic_requests.append({"sequence": sequence, "operation": operation, "method": request["method"], "path": request["url"].removeprefix(ORIGIN), "origin": ORIGIN, "principal": principal, "projectId": "" if operation == "languages" else project["projectId"], "id": request["id"], "bodyBase64": request["bodyBase64"], "bodySha256": sha256(request_data), "contentType": request["headers"].get("content-type", "")})
+        traffic_responses.append({"requestId": request["id"], "status": response["status"], "bodyBase64": response["bodyBase64"], "bodySha256": sha256(response_data)})
+    graph = [{"path": relative, "sha256": sha256((source_root / relative).read_bytes())} for relative in SOURCES]
+    trace_sha = sha256((root / "trace.zip").read_bytes())
+    execution = None
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        context = {key: os.environ.get(name, "") for key, name in {"repository": "GITHUB_REPOSITORY", "eventName": "GITHUB_EVENT_NAME", "workflow": "GITHUB_WORKFLOW", "workflowRef": "GITHUB_WORKFLOW_REF", "workflowSha": "GITHUB_WORKFLOW_SHA", "job": "GITHUB_JOB", "runId": "GITHUB_RUN_ID", "runAttempt": "GITHUB_RUN_ATTEMPT", "headSha": "NARRATWIN_H2_EXPECTED_HEAD"}.items()}
+        record = {"schema": "heartbeat2-ci-execution-v1", "provider": "github-actions", **context, "evidenceRunId": run_id, "producer": "scripts/ci/heartbeat2-browser.sh", "playwrightExitCode": 0, "startedAt": os.environ.get("H2_STARTED_AT", ""), "completedAt": os.environ.get("H2_COMPLETED_AT", ""), "workflowSourceSha256": next(item["sha256"] for item in graph if item["path"] == ".github/workflows/ci.yml"), "runnerSourceSha256": next(item["sha256"] for item in graph if item["path"] == "scripts/ci/heartbeat2-browser.sh"), "reportSha256": sha256((root / "playwright.json").read_bytes()), "traceSha256": trace_sha}
+        (root / "execution.json").write_text(json.dumps(record, sort_keys=True), encoding="utf-8")
+        execution = "execution.json"
+    manifest = {"schema": "heartbeat2-evidence-v2", "runId": run_id, "headSha": head, "testReport": "playwright.json", "traffic": "traffic.json", "trace": "trace.zip", "traceSha256": trace_sha, "bundle": "bundle.json", "sourceGraph": graph, "forbiddenInputs": FORBIDDEN_SHA256S, "execution": execution}
+    for filename, value in (("traffic.json", {"requests": traffic_requests, "responses": traffic_responses}), ("bundle.json", bundle), ("manifest.json", manifest)):
+        (root / filename).write_text(json.dumps(value, sort_keys=True), encoding="utf-8")
 def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, forbidden: tuple[bytes, ...] = (), committed: bool = False, source_root: Path = Path.cwd(), ci_context: dict[str, str] | None = None) -> dict[str, Any]:
     if not SHA.match(expected_head) or not RUN_ID.match(expected_run_id):
         raise EvidenceError("EXPECTED_IDENTITY")
@@ -408,7 +466,7 @@ def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, for
     bundle = _json(root, manifest.get("bundle"))
     traffic = _json(root, manifest.get("traffic"))
     _traffic(traffic, bundle)
-    _request_contract(traffic["requests"][:8], bundle)
+    _request_contract([request for request in traffic["requests"] if request.get("operation") in {item[0] for item in WRITES}], bundle)
     _safe_archives(root)
     source_line, source_lines = _sources(manifest, expected_head, committed=committed, source_root=source_root)
     if report_line != source_line:
@@ -435,10 +493,13 @@ def _main(argv: list[str]) -> int:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--forbidden-file", action="append", default=[])
     parser.add_argument("--ci", action="store_true")
+    parser.add_argument("--prepare", action="store_true")
     args = parser.parse_args(argv)
     if args.ci and os.environ.get("GITHUB_ACTIONS") != "true":
         raise EvidenceError("CI_PROVENANCE")
     forbidden = tuple(Path(value).read_bytes() for value in args.forbidden_file)
+    if args.prepare:
+        prepare_evidence(Path(args.evidence), head=args.head, run_id=args.run_id)
     env = {"repository": "GITHUB_REPOSITORY", "eventName": "GITHUB_EVENT_NAME", "workflow": "GITHUB_WORKFLOW", "workflowRef": "GITHUB_WORKFLOW_REF", "workflowSha": "GITHUB_WORKFLOW_SHA", "job": "GITHUB_JOB", "runId": "GITHUB_RUN_ID", "runAttempt": "GITHUB_RUN_ATTEMPT", "headSha": "NARRATWIN_H2_EXPECTED_HEAD"}
     context = {key: os.environ.get(name, "") for key, name in env.items()} if args.ci else None
     print(json.dumps(verify_evidence(Path(args.evidence), expected_head=args.head, expected_run_id=args.run_id, forbidden=forbidden, committed=True, ci_context=context), sort_keys=True))

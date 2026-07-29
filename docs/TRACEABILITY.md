@@ -328,3 +328,12 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | Two-PID runner and recursive evidence scanner | `H1-STATE-01`, `H1-ABSENT-01`, `H1-EVID-01` | Exact-run/head zero-match gate |
 | Unchanged A1/A2 regressions and Phase 1 checker | `H1-LEGACY-01`, `H1-ELIG-01`, `H1-INGEST-01`, `H1-IDEMP-01`, `H1-SCOPE-01` | Regression and exact-envelope gates |
 | ADR `0042`, quality gates, status, and stage plan | Preserve sole authority, privacy boundary, 15/1,090/8 ceiling, and no Heartbeat 2 | Repository contract |
+
+## Issue 308 Heartbeat 2 traceability
+
+| Evidence | Requirement | State |
+|---|---|---|
+| PR `#309`, verifier, trusted-CI workflow contract | Fail-closed exact-head execution and privacy evidence boundary | PR A merged at `4922178cf1add925f4a0f6b21b288d18dafda9fe` |
+| Curated UI, passive Playwright capture, and canonical runner | One curated project through grounded walkthrough, mock translation/voice, consent, local render, visible citations, and owner isolation | PR B governed by canonical comment `5122147727` |
+| Real artifact-schema joins and recursive zero-match scan | Bind source/chunks/evaluation to Stage 6/7 artifacts while excluding forbidden fixtures from evidence | Exact-head CI gate; local result is semantic-only |
+| ADR `0043`, status, and Phase 1 checker | Preserve 11/900/6 PR B and 15/2,500/8 aggregate caps plus all provider/hosting/private-data/#20 exclusions | Repository contract |

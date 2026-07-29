@@ -9,14 +9,21 @@ type ClaimSupport = {
   claimId: string;
   contextRefId: string;
   citationIndex: number;
+  documentId?: string;
+  chunkId?: string;
+  evidenceSnapshot?: { chunkChecksum: string };
 };
 
 type ContextRef = {
   contextRefId: string;
   sourceFilename: string;
   chunkId: string;
+  documentId?: string;
+  claimId?: string;
   evidenceSnapshot: {
     redactedExcerpt: string;
+    sourceDocumentChecksum?: string;
+    chunkChecksum?: string;
   };
 };
 
@@ -25,6 +32,8 @@ type WalkthroughRun = {
   status: string;
   acceptedScriptText?: string;
   evaluation?: {
+    evaluationId?: string;
+    evaluationStatus?: string;
     unsupportedClaimCount: number;
     claimSupports: ClaimSupport[];
   };
@@ -583,10 +592,16 @@ export default function Home() {
   const [h1Exclusion, setH1Exclusion] = useState<H1Outcome | null>(null);
   const [h1Summary, setH1Summary] = useState<H1Summary | null>(null);
   const [h1Error, setH1Error] = useState("");
+  const [h2Principal, setH2Principal] = useState("curator_demo");
+  const [h2ProjectId, setH2ProjectId] = useState("");
+  const [h2Source, setH2Source] = useState<H1Outcome | null>(null);
+  const [h2Summary, setH2Summary] = useState<H1Summary | null>(null);
+  const [h2Consent, setH2Consent] = useState<AvatarConsent | null>(null);
+  const [h2Error, setH2Error] = useState("");
 
   useEffect(() => {
     let isActive = true;
-    fetch(`${apiBase}/languages`)
+    fetch(`${apiBase}/languages`, { headers: { "X-Local-User-Id": "curator_demo" } })
       .then((response) => readJson<LanguageCatalogResponse>(response))
       .then((catalog) => {
         if (isActive && Array.isArray(catalog.languages) && catalog.languages.length > 0) {
@@ -885,19 +900,116 @@ export default function Home() {
     setH1Principal(value); setH1Source(null); setH1Exclusion(null); setH1Summary(null); setH1Error("");
   }
 
+  async function h2Run(action: () => Promise<void>) {
+    setH2Error("");
+    try { await action(); } catch (caught) { setH2Error(caught instanceof Error ? caught.message : "REQUEST_FAILED"); }
+  }
+
+  async function h2Create() {
+    await h2Run(async () => {
+      const project = await h1Json<ProjectResponse>("/projects", h2Principal, { method: "POST", headers: h1Headers("heartbeat2-project", true), body: JSON.stringify({ name: "Heartbeat 2 reviewer demo", description: "Controlled synthetic curated walkthrough", defaultAudience: "RECRUITER", defaultLanguage: "en" }) });
+      setH2ProjectId(project.projectId);
+    });
+  }
+
+  async function h2Submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await h2Run(async () => {
+      const file = new FormData(form).get("file");
+      if (!(file instanceof File) || !h2ProjectId) throw new Error("FILE_REQUIRED");
+      const body = new FormData();
+      for (const [name, value] of Object.entries({ action: "ACCEPT_FOR_REVIEW", classification: "PUBLIC_SAFE", provenance: "PROJECT_AUTHORED_SYNTHETIC", rightsBasis: "PROJECT_OWNED", rightsStatus: "ELIGIBLE", usagePolicy: "LOCAL_TEST_REUSE_ALLOWED", curationSchemaVersion: "source-curation-v1", sourceVersion: "heartbeat2-public-v1" })) body.append(name, value);
+      body.append("file", file);
+      setH2Source(await h1Json<H1Outcome>(`/projects/${h2ProjectId}/knowledge-documents`, h2Principal, { method: "POST", headers: h1Headers("heartbeat2-submit"), body }));
+    });
+    form.reset();
+  }
+
+  async function h2Approve() {
+    if (!h2Source) return;
+    await h2Run(async () => setH2Source(await h1Json<H1Outcome>(`/projects/${h2ProjectId}/knowledge-documents/${h2Source.sourceId}/approval`, h2Principal, { method: "PATCH", headers: h1Headers("heartbeat2-approve", true), body: JSON.stringify({ approvalStatus: "APPROVED", action: "APPROVE", curationSchemaVersion: "source-curation-v1", sourceId: h2Source.sourceId, decisionId: h2Source.decisionId, policyVersion: h2Source.policyVersion, sourceVersion: h2Source.sourceVersion, checksum: h2Source.checksum, assertionsFingerprint: h2Source.assertionsFingerprint }) })));
+  }
+
+  async function h2Reopen() {
+    await h2Run(async () => setH2Summary(await h1Json<H1Summary>(`/projects/${h2ProjectId}/source-curation-summary`, h2Principal)));
+  }
+
+  async function h2Ingest() {
+    if (!h2Source) return;
+    await h2Run(async () => {
+      await h1Json(`/projects/${h2ProjectId}/ingestion-runs`, h2Principal, { method: "POST", headers: h1Headers("heartbeat2-ingest", true), body: JSON.stringify({ documentIds: [], sourceIds: [h2Source.sourceId] }) });
+      setH2Summary(await h1Json<H1Summary>(`/projects/${h2ProjectId}/source-curation-summary`, h2Principal));
+    });
+  }
+
+  const h2WalkthroughBody = { audience: "RECRUITER", requestedLanguage: "en", depth: "CONCISE", style: "CONFIDENT", prompt: "Create the controlled synthetic grounded reviewer walkthrough." };
+  const h2MediaBody = { targetLanguage: "es", glossaryTerms: [], requestedVoiceProvider: "mock" };
+  const h2ConsentBody = { consentToUseSyntheticAvatar: true };
+
+  async function h2Generate() {
+    await h2Run(async () => {
+      const generated = await h1Json<WalkthroughRun>(`/projects/${h2ProjectId}/walkthrough-runs`, h2Principal, { method: "POST", headers: h1Headers("heartbeat2-walkthrough", true), body: JSON.stringify(h2WalkthroughBody) });
+      const multilingual = await h1Json<MultilingualWalkthrough>(`/projects/${h2ProjectId}/walkthrough-runs/${generated.runId}/multilingual-runs`, h2Principal, { method: "POST", headers: h1Headers("heartbeat2-multilingual", true), body: JSON.stringify(h2MediaBody) });
+      const consent = await h1Json<AvatarConsent>(`/projects/${h2ProjectId}/walkthrough-runs/${generated.runId}/avatar-consents`, h2Principal, { method: "POST", headers: h1Headers("heartbeat2-consent", true), body: JSON.stringify(h2ConsentBody) });
+      const avatar = await h1Json<AvatarRender>(`/projects/${h2ProjectId}/walkthrough-runs/${generated.runId}/avatar-renders`, h2Principal, { method: "POST", headers: h1Headers("heartbeat2-render", true), body: JSON.stringify({ requestedAvatarProvider: "mock", consentToUseSyntheticAvatar: true, consentRecordId: consent.consentRecordId, clonedIdentityRequested: false, multilingualBundle: buildStage7MultilingualBundle(multilingual, consent) }) });
+      setRun(generated); setMultilingualRun(multilingual); setH2Consent(consent); setAvatarRender(avatar);
+    });
+  }
+
+  async function h2Probe(operation: "walkthrough" | "multilingual" | "consent" | "render") {
+    if (!run || !multilingualRun || !h2Consent) return;
+    const requests = {
+      walkthrough: [`/projects/${h2ProjectId}/walkthrough-runs`, h2WalkthroughBody, "heartbeat2-other-walkthrough"],
+      multilingual: [`/projects/${h2ProjectId}/walkthrough-runs/${run.runId}/multilingual-runs`, h2MediaBody, "heartbeat2-other-multilingual"],
+      consent: [`/projects/${h2ProjectId}/walkthrough-runs/${run.runId}/avatar-consents`, h2ConsentBody, "heartbeat2-other-consent"],
+      render: [`/projects/${h2ProjectId}/walkthrough-runs/${run.runId}/avatar-renders`, { requestedAvatarProvider: "mock", consentToUseSyntheticAvatar: true, consentRecordId: h2Consent.consentRecordId, clonedIdentityRequested: false, multilingualBundle: buildStage7MultilingualBundle(multilingualRun, h2Consent) }, "heartbeat2-other-render"],
+    } as const;
+    const [path, body, key] = requests[operation];
+    await h2Run(async () => { await h1Json(path, h2Principal, { method: "POST", headers: h1Headers(key, true), body: JSON.stringify(body) }); });
+  }
+
   const supports = run?.evaluation?.claimSupports ?? [];
   const selectedLanguage = languageCatalog.find((language) => language.languageTag === targetLanguage);
   const previewScript =
     multilingualRun?.translatedScriptText ??
     run?.acceptedScriptText ??
     "Generate a grounded script to display cited output.";
-	  const avatarPreviewScript =
+  const avatarPreviewScript =
 	    avatarRender?.sourceScriptText ?? run?.acceptedScriptText ?? "Generate a grounded script to display cited output.";
 	  const artifactContext = { multilingualRun, avatarRender };
   const avatarPreviewCanExpand = avatarPreviewScript.length > AVATAR_PREVIEW_COLLAPSED_CHARACTER_LIMIT;
+  const h2Accepted = h2Summary?.curatedSources[0];
+  const h2Ready = h2Summary?.curatedSources.length === 1 && h2Accepted?.decisionState === "APPROVED" && h2Accepted.ingestionStatus === "SOURCE_INGESTED" && h2Accepted.acceptedChunks.length > 0;
 
   return (
     <main className={styles.page} aria-busy={isGenerating || issue280IsRunning}>
+      <section className={styles.workspace} data-testid="h2-curation-panel" aria-labelledby="h2-title">
+        <h2 id="h2-title">Heartbeat 2 curated reviewer demo</h2>
+        <p>Synthetic local media only — no provider calls, cloned identity, or hosted-production claim.</p>
+        <label className={styles.field}>Principal<select data-testid="h2-principal" value={h2Principal} onChange={(event) => { setH2Principal(event.currentTarget.value); setH2Error(""); }}><option>curator_demo</option><option>other_demo</option></select></label>
+        <p data-testid="h2-project-id">{h2ProjectId}</p>
+        <button type="button" data-testid="h2-create-project" onClick={h2Create} hidden={h2Principal !== "curator_demo"} disabled={Boolean(h2ProjectId)}>Create one project</button>
+        <form hidden={h2Principal !== "curator_demo"} onSubmit={h2Submit}><label className={styles.field}>Controlled public-safe source<input name="file" type="file" accept=".md,text/markdown" data-testid="h2-public-file" /></label><button type="submit" data-testid="h2-submit-source" disabled={!h2ProjectId}>Submit for review</button></form>
+        {h2Source ? <p data-testid="h2-source-state">{h2Source.decisionState} <span data-testid="h2-source-id">{h2Source.sourceId}</span> <span data-testid="h2-source-checksum">{h2Source.checksum}</span> <span data-testid="h2-source-version">{h2Source.sourceVersion}</span></p> : null}
+        <div data-testid="h2-owner-actions" hidden={h2Principal !== "curator_demo"}>
+          <button type="button" data-testid="h2-approve-source" onClick={h2Approve} disabled={!h2Source}>Approve source</button>
+          <button type="button" data-testid="h2-ingest-source" onClick={h2Ingest} disabled={h2Source?.decisionState !== "APPROVED"}>Ingest source</button>
+          <button type="button" data-testid="h2-generate-demo" onClick={h2Generate} disabled={!h2Ready}>Generate local reviewer demo</button>
+        </div>
+        <button type="button" data-testid="h2-reopen-project" onClick={h2Reopen} hidden={h2Principal !== "curator_demo" || !h2ProjectId}>Reopen curated project</button>
+        <button type="button" data-testid="h2-other-walkthrough" onClick={() => h2Probe("walkthrough")} hidden>Probe walkthrough authorization</button>
+        <button type="button" data-testid="h2-other-multilingual" onClick={() => h2Probe("multilingual")} hidden>Probe multilingual authorization</button>
+        <button type="button" data-testid="h2-other-consent" onClick={() => h2Probe("consent")} hidden>Probe consent authorization</button>
+        <button type="button" data-testid="h2-other-render" onClick={() => h2Probe("render")} hidden>Probe render authorization</button>
+        {!h2Ready ? <p>One curated source must be approved and ingested before generation.</p> : null}
+        {h2Error ? <p role="alert" data-testid="h2-safe-error">{h2Error}</p> : null}
+        {h2Accepted ? <article data-testid="h2-accepted-source" data-identity={`${h2Accepted.sourceId}|${h2Accepted.checksum}|${h2Accepted.sourceVersion}`}><p>{h2Accepted.sourceId} {h2Accepted.checksum} {h2Accepted.sourceVersion} {h2Accepted.ingestionStatus}</p>{h2Accepted.acceptedChunks.map((chunk) => <span data-testid="h2-accepted-chunk" key={chunk.chunkId}>{chunk.chunkId}:{chunk.checksum}</span>)}</article> : null}
+        {run ? <section data-testid="h2-walkthrough" data-run-id={run.runId}><p>{run.status} evaluation={run.evaluation?.evaluationStatus} unsupported={run.evaluation?.unsupportedClaimCount}</p>{run.contextRefs.map((context) => <p data-testid="h2-visible-citation" data-claim-id={context.claimId} data-context-ref-id={context.contextRefId} data-document-id={context.documentId} data-chunk-id={context.chunkId} data-source-checksum={context.evidenceSnapshot.sourceDocumentChecksum} data-chunk-checksum={context.evidenceSnapshot.chunkChecksum} key={context.contextRefId}>[{supports.find((support) => support.contextRefId === context.contextRefId)?.citationIndex}] {context.contextRefId} {context.chunkId}</p>)}</section> : null}
+        {multilingualRun ? <section data-testid="h2-multilingual" data-run-id={multilingualRun.multilingualRunId}><p>{multilingualRun.status} {multilingualRun.targetLanguage} translation={multilingualRun.translationProvider.providerMode} voice={multilingualRun.voice.providerMode}</p>{[["translated", multilingualRun.artifacts.translatedScript], ["subtitles", multilingualRun.artifacts.subtitles], ["voice", multilingualRun.artifacts.voiceManifest]].map(([name, artifact]) => <p data-testid={`h2-artifact-${name}`} data-filename={(artifact as DownloadableArtifact).fileName} data-checksum={(artifact as DownloadableArtifact).checksum} key={name as string}>{(artifact as DownloadableArtifact).fileName} {(artifact as DownloadableArtifact).checksum}</p>)}</section> : null}
+        {h2Consent ? <p data-testid="h2-consent">consent={h2Consent.consentRecordId} version={h2Consent.consentStatementVersion}</p> : null}
+        {avatarRender ? <section data-testid="h2-render" data-render-id={avatarRender.avatarRenderId}><p>{avatarRender.status} renderer={avatarRender.videoRenderer.renderer} egress={String(avatarRender.providerConfig.allowNetworkEgress)} cloned={String(avatarRender.disclosure.clonedIdentity)}</p>{[["preview", avatarRender.artifacts.demoExport], ["renderManifest", avatarRender.artifacts.renderManifest], ["video", avatarRender.artifacts.videoExportPlaceholder]].map(([name, artifact]) => <p data-testid={`h2-artifact-${name}`} data-filename={(artifact as DownloadableArtifact).fileName} data-checksum={(artifact as DownloadableArtifact).checksum} key={name as string}>{(artifact as DownloadableArtifact).fileName} {(artifact as DownloadableArtifact).checksum}</p>)}</section> : null}
+      </section>
       <section className={styles.workspace} data-testid="h1-curation-panel" aria-labelledby="h1-title">
         <h2 id="h1-title">Heartbeat 1 source curation</h2>
         <label className={styles.field}>Principal<select data-testid="h1-principal" value={h1Principal} onChange={(event) => h1ChangePrincipal(event.currentTarget.value)}><option>curator_demo</option><option>other_demo</option></select></label>
