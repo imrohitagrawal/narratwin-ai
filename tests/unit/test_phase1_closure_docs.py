@@ -8807,6 +8807,8 @@ def test_heartbeat2_reset5_accepts_only_canonical_forbidden_sentinels(tmp_path: 
     '''const marker = "}"; if (false) { const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); }''',
     '''return; const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); });''',
     '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); await page.context().newCDPSession(page);''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); eval("globalThis.fe" + "tch = () => ({ok:true})");''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); page.removeAllListeners("request"); page.removeAllListeners("response");''',
 ])
 def test_heartbeat2_reset5_rejects_dynamic_execution_and_dead_listener_control_flow(tmp_path: Path, body: str) -> None:
     evidence: Any = load_heartbeat2_evidence_module()
@@ -8814,6 +8816,17 @@ def test_heartbeat2_reset5_rejects_dynamic_execution_and_dead_listener_control_f
     packet = write_heartbeat2_packet(root, sources, evidence)
     spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
     spec.write_text(f'import {{ test, type Request }} from "@playwright/test"; test("Heartbeat 2 local reviewer demo", async ({{ page }}) => {{ {body} await page.goto("/"); }});', encoding="utf-8")
+    next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_shadowed_playwright_test_binding(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text(spec.read_text().replace("import { test, type Request }", "import { type Request }; const test = (...args: unknown[]) => undefined;"), encoding="utf-8")
     next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
     with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
         evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
@@ -8857,12 +8870,13 @@ def test_heartbeat2_reset5_rejects_duplicate_multipart_and_json_keys(tmp_path: P
             evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
 
 
-def test_heartbeat2_reset5_rejects_active_local_preview_content(tmp_path: Path) -> None:
+@pytest.mark.parametrize("active", ['<script src="//example.invalid/active.js"></script>', '<video poster="//example.invalid/frame.png"></video>'])
+def test_heartbeat2_reset5_rejects_active_local_preview_content(tmp_path: Path, active: str) -> None:
     evidence: Any = load_heartbeat2_evidence_module()
     root, sources = tmp_path / "packet", tmp_path / "sources"
     packet = write_heartbeat2_packet(root, sources, evidence)
     preview = root / packet["bundle"]["artifacts"]["preview"]["path"]
-    preview.write_text(preview.read_text().replace("</body>", '<script src="//example.invalid/active.js"></script></body>'), encoding="utf-8")
+    preview.write_text(preview.read_text().replace("</body>", active + "</body>"), encoding="utf-8")
     digest = evidence.sha256(preview.read_bytes())
     packet["bundle"]["artifacts"]["preview"]["sha256"] = digest
     packet["bundle"]["render"]["artifactChecksums"]["preview"] = digest
@@ -8881,6 +8895,7 @@ def test_heartbeat2_reset5_rejects_non_json_write_content_type(tmp_path: Path) -
 
 @pytest.mark.parametrize("mutate", [
     lambda voice: voice.update({"textChecksum": "sha256:unbound"}),
+    lambda voice: voice.update({"textChecksum": "sha256:" + "0" * 64}),
     lambda voice: voice["mockAudioProfile"].update({"durationMillisecondsEstimate": -1}),
     lambda voice: voice.update({"disclosure": {"text": "Mock local TTS placeholder"}}),
 ])
@@ -8897,3 +8912,15 @@ def test_heartbeat2_reset5_rejects_malformed_voice_semantics(tmp_path: Path, mut
     packet["bundle"]["multilingual"]["artifactChecksums"]["voice"] = digest
     with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
         evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
+
+
+def test_heartbeat2_reset5_rejects_duplicate_response_json_keys(tmp_path: Path) -> None:
+    import base64
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    response = packet["traffic"]["responses"][0]
+    raw = base64.b64decode(response["bodyBase64"]).replace(b"{", b'{"projectId":"conflict",', 1)
+    response.update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    with pytest.raises(evidence.EvidenceError, match="TRAFFIC_LEDGER"):
+        evidence._traffic(packet["traffic"], packet["bundle"])
