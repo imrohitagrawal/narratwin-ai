@@ -905,9 +905,9 @@ def test_product_context_reviewer_validation_requires_each_outcome_field(
     "unsupported_claim",
     (
         "This PR makes NarraTwin production-ready for customers.",
-        "NarraTwin is now ready for production deployment.",
+        "NarraTwin is now ready for production deployment to external customers worldwide.",
         "The product is deployed to production by this change.",
-        "This change makes NarraTwin publicly available.",
+        "This change makes NarraTwin publicly available to external users immediately.",
     ),
 )
 def test_product_context_rejects_unsupported_production_or_release_claims(
@@ -918,6 +918,45 @@ def test_product_context_rejects_unsupported_production_or_release_claims(
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
         "Product context must not claim production readiness, production deployment, release, or public availability without separate authorization."
     ]
+
+
+def test_product_context_contract_is_durable_across_rules_template_and_policy_docs() -> None:
+    root = Path(__file__).parents[2]
+    template = (root / ".github/pull_request_template.md").read_text(encoding="utf-8")
+    for heading in ("## Product and reviewer context", *PRODUCT_CONTEXT_HEADINGS):
+        assert heading in template
+
+    required_markers = {
+        "AGENTS.md": (
+            "self-contained plain English",
+            "end product goal",
+            "issue references and links are supplemental",
+        ),
+        "docs/REPOSITORY_GUARDRAILS.md": (
+            "Product and reviewer context",
+            "issue-only",
+            "policy-gates",
+        ),
+        "docs/QUALITY_GATES.md": (
+            "Product and reviewer context",
+            "production path",
+            "product_context_failures",
+        ),
+        "docs/SKILL_EXECUTION_PLAN.md": (
+            "Issue 315",
+            "product-context",
+            "TDD",
+        ),
+        "docs/STATUS.md": (
+            "issue #315",
+            "self-contained product and end-goal context",
+            "runtime and production authorization remain unchanged",
+        ),
+    }
+    for relative_path, markers in required_markers.items():
+        text = (root / relative_path).read_text(encoding="utf-8")
+        for marker in markers:
+            assert marker in text, f"{relative_path} missing durable product-context marker: {marker}"
 
 
 def test_phase1_issue39_pull_request_allows_reference_only_body(
