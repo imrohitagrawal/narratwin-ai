@@ -89,7 +89,7 @@ export H2_COMPLETED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 FAILURE_STAGE="verification"
 VERIFY_ARGS=(--evidence "$CANDIDATE" --head "$HEAD_SHA" --run-id "$RUN_ID" --prepare --forbidden-file "$RUNTIME/internal.md" --forbidden-file "$RUNTIME/canary.bin")
 [ "${GITHUB_ACTIONS:-}" = true ] && VERIFY_ARGS+=(--ci)
-if ! uv run python scripts/ci/heartbeat2_evidence.py "${VERIFY_ARGS[@]}" >"$RUNTIME/verification.json" 2>"$RUNTIME/verification-error.json"; then
+if ! uv run python -m scripts.ci.heartbeat2_evidence "${VERIFY_ARGS[@]}" >"$RUNTIME/verification.json" 2>"$RUNTIME/verification-error.json"; then
   cp "$RUNTIME/verification-error.json" "$CANDIDATE/verification-error.json"
   withhold
 fi
