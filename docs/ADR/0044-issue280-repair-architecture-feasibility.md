@@ -7,8 +7,8 @@
 
 ## Context
 
-Issue #280 is administratively closed but not semantically fixed. Preserved PR
-#299 evidence at `f93653e8a11e697c88766b207fb01c18662339d6` shows completed output
+Issue #280 is administratively closed but not semantically fixed. Preserved
+PR #299 evidence at `f93653e8a11e697c88766b207fb01c18662339d6` shows completed output
 whose visible target bodies collapse across audience selections. Negative
 containment through Issue #300 and PR #301 prevents that evidence from becoming
 a positive closure claim, but does not select a repair architecture or provide

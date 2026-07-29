@@ -141,8 +141,8 @@ A later controlling issue may authorize runtime repair only when it freezes:
 7. explicit refusal behavior for unsupported clauses and languages.
 
 No implementation may claim Issue #280 fixed until every mandatory oracle row
-is `SEMANTIC_PASS`, all adversarial cases are rejected, and the original Issue
-#280 acceptance contract is reconciled without proxy criteria.
+is `SEMANTIC_PASS`, all adversarial cases are rejected, and the original
+Issue #280 acceptance contract is reconciled without proxy criteria.
 
 ## Skills And Test Selection
 
