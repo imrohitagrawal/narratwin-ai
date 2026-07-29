@@ -8809,6 +8809,9 @@ def test_heartbeat2_reset5_accepts_only_canonical_forbidden_sentinels(tmp_path: 
     '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); await page.context().newCDPSession(page);''',
     '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); eval("globalThis.fe" + "tch = () => ({ok:true})");''',
     '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); page.removeAllListeners("request"); page.removeAllListeners("response");''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); (0, eval)("globalThis.fe" + "tch = () => ({ok:true})");''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); ([]["filter"]["constructor"])("globalThis.fe" + "tch = () => ({ok:true})")();''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); page.removeAllListeners.bind(page)("request"); page.removeAllListeners.bind(page)("response");''',
 ])
 def test_heartbeat2_reset5_rejects_dynamic_execution_and_dead_listener_control_flow(tmp_path: Path, body: str) -> None:
     evidence: Any = load_heartbeat2_evidence_module()
@@ -8827,6 +8830,17 @@ def test_heartbeat2_reset5_rejects_shadowed_playwright_test_binding(tmp_path: Pa
     packet = write_heartbeat2_packet(root, sources, evidence)
     spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
     spec.write_text(spec.read_text().replace("import { test, type Request }", "import { type Request }; const test = (...args: unknown[]) => undefined;"), encoding="utf-8")
+    next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_conditional_top_level_test_registration(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text(spec.read_text().replace("\ntest(", "\nfalse && test("), encoding="utf-8")
     next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
     with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
         evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
