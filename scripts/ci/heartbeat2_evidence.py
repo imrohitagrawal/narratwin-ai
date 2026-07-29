@@ -12,9 +12,11 @@ import sys
 import zipfile
 from pathlib import Path
 from typing import Any, NoReturn
-from scripts.ci.heartbeat1_evidence import EvidenceError as PrivacyError, MAX_ARCHIVE_DEPTH, MAX_SCAN_BYTES, scan_browser_sources, scan_evidence
+from scripts.ci.heartbeat1_evidence import ALLOWED_BROWSER_IMPORTS, COMPUTED_MEMBER, FORBIDDEN_BROWSER_TOKENS, IMPORT, EvidenceError as PrivacyError, MAX_ARCHIVE_DEPTH, MAX_SCAN_BYTES, scan_browser_sources, scan_evidence
 SHA, RUN_ID, ORIGIN = re.compile(r"^[0-9a-f]{40}$"), re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"), "http://127.0.0.1:3122"
 SPEC, TEST_TITLE, MAX_ARCHIVE_MEMBERS = "heartbeat2-browser.spec.ts", "Heartbeat 2 local reviewer demo", 10_000
+PUBLIC_FIXTURE_SHA256 = "e7ed2f48cf62645575771fd10e918568ad77ec4fb0b75620f6e4ecff2a3d8200"
+FORBIDDEN_SHA256S = {"controlledSha256": "d6bba9d5a1916d515ea982b3517c6528bfff5f7ee9d7a7ab03267fd6fefd6eb2", "canarySha256": "9fbe84f0ec72ee1d8de0cae899d15b98c1ec3e979514b861ed584ac8d62fa84c"}
 SOURCES = ("scripts/ci/heartbeat1_evidence.py", "scripts/ci/heartbeat2_evidence.py", "scripts/ci/heartbeat2-browser.sh", "frontend/playwright.heartbeat2.config.ts", "frontend/tests/heartbeat2-browser.spec.ts")
 WRITES = (("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201))
 READS = (("languages", "GET", 200, "curator_demo"), ("summary", "GET", 200, "curator_demo"), ("other-summary", "GET", 403, "other_demo"))
@@ -23,6 +25,58 @@ class EvidenceError(RuntimeError):
     pass
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+def scan_h2_browser_sources(entry: Path) -> dict[str, Any]:
+    if not entry.is_file() or entry.is_symlink():
+        raise EvidenceError("BROWSER_SOURCE")
+    data, text = entry.read_bytes(), entry.read_text(encoding="utf-8")
+    compact, comments = re.sub(r"\s+", "", text).lower(), text.replace(ORIGIN, "")
+    forbidden = tuple(token for token in FORBIDDEN_BROWSER_TOKENS if token not in {".postdata", "postdatabuffer"})
+    imports = [match.group(1) for match in IMPORT.finditer(text)]
+    if "/*" in comments or "//" in comments or any(token in compact for token in forbidden) or any(match.group("base") not in {"const", "let", "var", "return"} for match in COMPUTED_MEMBER.finditer(text)) or any(item.startswith(".") or item not in ALLOWED_BROWSER_IMPORTS for item in imports):
+        raise EvidenceError("BROWSER_SOURCE")
+    return {"entry": entry.as_posix(), "fileCount": 1, "aggregateSha256": sha256(sha256(data).encode()), "forbiddenMatchCount": 0}
+def _multipart(raw: bytes, content_type: Any) -> dict[str, tuple[str, bytes]]:
+    match = re.fullmatch(r"multipart/form-data;\s*boundary=([^;\s]+)", str(content_type))
+    if not match:
+        raise EvidenceError("REQUEST_BINDING")
+    parts: dict[str, tuple[str, bytes]] = {}
+    for item in raw.split(b"--" + match.group(1).encode())[1:-1]:
+        try:
+            header, body = item.removeprefix(b"\r\n").split(b"\r\n\r\n", 1)
+            body = body.removesuffix(b"\r\n")
+            name = re.search(rb'name="([^"]+)"', header).group(1).decode()  # type: ignore[union-attr]
+            parts[name] = (header.decode(), body)
+        except (AttributeError, UnicodeError, ValueError) as exc:
+            raise EvidenceError("REQUEST_BINDING") from exc
+    return parts
+def _request_contract(writes: list[Any], bundle: dict[str, Any]) -> None:
+    decoded: dict[str, Any] = {}
+    for request in writes:
+        try:
+            raw = base64.b64decode(request["bodyBase64"], validate=True)
+            if request["bodySha256"] != sha256(raw):
+                raise EvidenceError("REQUEST_BINDING")
+            decoded[request["operation"]] = _multipart(raw, request.get("contentType")) if request["operation"] == "submit" else json.loads(raw)
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise EvidenceError("REQUEST_BINDING") from exc
+    source, run, media, consent = bundle["source"], bundle["walkthrough"], bundle["multilingual"], bundle["consent"]
+    submit = decoded["submit"]
+    fields = {name: value.decode() for name, (_, value) in submit.items() if name != "file"}
+    expected_fields = {"action": "ACCEPT_FOR_REVIEW", "classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rightsBasis": "PROJECT_OWNED", "rightsStatus": "ELIGIBLE", "usagePolicy": "LOCAL_TEST_REUSE_ALLOWED", "curationSchemaVersion": "source-curation-v1", "sourceVersion": source["sourceVersion"]}
+    expected = {
+        "project": {"name": "Heartbeat 2 reviewer demo", "description": "Controlled synthetic curated walkthrough", "defaultAudience": "RECRUITER", "defaultLanguage": "en"},
+        "approve": {"approvalStatus": "APPROVED", "action": "APPROVE", "curationSchemaVersion": "source-curation-v1", **{key: source[key] for key in ("id", "decisionId", "policyVersion", "sourceVersion", "checksum", "assertionsFingerprint")}},
+        "ingest": {"documentIds": [], "sourceIds": [source["id"]]},
+        "walkthrough": {"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Create the controlled synthetic grounded reviewer walkthrough."},
+        "multilingual": {"targetLanguage": media["targetLanguage"], "glossaryTerms": [], "requestedVoiceProvider": "mock"},
+        "consent": {"consentToUseSyntheticAvatar": True},
+    }
+    expected["approve"]["sourceId"] = expected["approve"].pop("id")
+    render = decoded["render"]
+    render_ok = set(render) == {"requestedAvatarProvider", "consentToUseSyntheticAvatar", "consentRecordId", "clonedIdentityRequested", "multilingualBundle"} and render["requestedAvatarProvider"] == "mock" and render["consentToUseSyntheticAvatar"] is True and render["consentRecordId"] == consent["id"] and render["clonedIdentityRequested"] is False and render["multilingualBundle"] == {"sourceRunId": run["runId"], "multilingualRunId": media["runId"], "targetLanguage": media["targetLanguage"], "contextRefIds": media["contextRefIds"], "citationIndexes": media["citationIndexes"], "evaluationId": media["evaluationId"], "evaluationChecksum": media["evaluationChecksum"], "providerPosture": {"translationProvider": "mock", "translationProviderMode": "LOCAL", "voiceProvider": "mock", "voiceProviderMode": "LOCAL"}}
+    file_header, fixture = submit.get("file", ("", b""))
+    if fields != expected_fields or set(submit) != {*expected_fields, "file"} or 'filename="heartbeat2-public.md"' not in file_header or "Content-Type: text/markdown" not in file_header or sha256(fixture) != source["checksum"] or source["checksum"] != PUBLIC_FIXTURE_SHA256 or any(decoded[name] != value for name, value in expected.items()) or not render_ok:
+        raise EvidenceError("REQUEST_BINDING")
 def _local_only(value: Any) -> bool:
     if isinstance(value, dict):
         for key, item in value.items():
@@ -141,10 +195,11 @@ def _artifacts(root: Path, artifacts: Any, bundle: dict[str, Any]) -> None:
                 valid = valid and isinstance(parsed, dict) and _local_only(parsed)
                 if name == "voice":
                     profile = parsed.get("mockAudioProfile", {})
-                    valid = valid and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
+                    valid = valid and set(parsed) == {"provider", "providerMode", "language", "textChecksum", "mockAudioProfile", "disclosure"} and set(profile) == {"durationMillisecondsEstimate", "sampleRateHz", "channels"} and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
                 else:
                     provider, source, media = parsed.get("providerConfig", {}), parsed.get("source", {}), parsed.get("multilingualBundle", {})
-                    valid = valid and parsed.get("schema") == ("Stage7AvatarRenderManifest" if name == "renderManifest" else "Stage7VideoExportPlaceholder") and provider == {"provider": "mock", "providerMode": "LOCAL", "allowNetworkEgress": False, "requiresApiKey": False, "supportsRealVideo": False, "supportsClonedIdentity": False}
+                    expected_keys = {"schema", "providerConfig", "source", "multilingualBundle"} | ({"realVideoProduced"} if name == "video" else set())
+                    valid = valid and set(parsed) == expected_keys and parsed.get("schema") == ("Stage7AvatarRenderManifest" if name == "renderManifest" else "Stage7VideoExportPlaceholder") and provider == {"provider": "mock", "providerMode": "LOCAL", "allowNetworkEgress": False, "requiresApiKey": False, "supportsRealVideo": False, "supportsClonedIdentity": False}
                     valid = valid and source == {"runId": bundle["walkthrough"]["runId"], "evaluationId": bundle["walkthrough"]["evaluation"]["id"], "evaluationChecksum": bundle["walkthrough"]["evaluation"]["checksum"], "contextRefIds": [x["contextRefId"] for x in bundle["walkthrough"]["contextRefs"]], "citationIndexes": [x["index"] for x in bundle["walkthrough"]["citations"]]}
                     valid = valid and media == {"sourceRunId": bundle["walkthrough"]["runId"], "multilingualRunId": bundle["multilingual"]["runId"], "contextRefIds": [x["contextRefId"] for x in bundle["walkthrough"]["contextRefs"]], "citationIndexes": [x["index"] for x in bundle["walkthrough"]["citations"]], "evaluationId": bundle["walkthrough"]["evaluation"]["id"], "evaluationChecksum": bundle["walkthrough"]["evaluation"]["checksum"]} and (name != "video" or parsed.get("realVideoProduced") is False)
             elif name == "translated":
@@ -238,9 +293,9 @@ def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any]) -> Non
                 raise EvidenceError("TRACE_BINDING")
             records = [json.loads(line) for line in archive.read(names[0]).splitlines()]
             resource_bytes = {name: archive.read(name) for name in archive.namelist() if name.startswith("resources/")}
-            before = {item.get("callId") for item in contexts if item.get("type") == "before" and item.get("pageId") and item.get("method")}
+            before = {item.get("callId"): item.get("method") for item in contexts if item.get("type") == "before" and item.get("pageId") and item.get("method")}
             after = {item.get("callId") for item in contexts if item.get("type") == "after"}
-            if not before or not before <= after or not stacks.get("stacks"):
+            if len(before) < 8 or not set(before) <= after or not {"goto", "click", "fill"} <= set(before.values()) or len(stacks.get("stacks", [])) < len(before):
                 raise EvidenceError("TRACE_BINDING")
         facts = []
         for record in records:
@@ -252,10 +307,10 @@ def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any]) -> Non
                 body = resource_bytes.get("resources/" + resource, b"") if isinstance(resource, str) else b""
                 post_data = request.get("postData") or {}
                 request_body = resource_bytes.get("resources/" + str(post_data.get("_sha1")), b"") if post_data.get("_sha1") else str(post_data.get("text", "")).encode()
-                facts.append((request["url"], request["method"], response["status"], headers.get("x-local-user-id"), sha256(request_body), sha256(body)))
+                facts.append((request["url"], request["method"], response["status"], headers.get("x-local-user-id"), headers.get("content-type", ""), sha256(request_body), sha256(body)))
         statuses = {x["requestId"]: x["status"] for x in traffic["responses"]}
         bodies = {x["requestId"]: x["bodySha256"] for x in traffic["responses"]}
-        expected = [(x["origin"] + x["path"], x["method"], statuses[x["id"]], x["principal"], x["bodySha256"], bodies[x["id"]]) for x in traffic["requests"]]
+        expected = [(x["origin"] + x["path"], x["method"], statuses[x["id"]], x["principal"], x.get("contentType", ""), x["bodySha256"], bodies[x["id"]]) for x in traffic["requests"]]
     except (KeyError, TypeError, OSError, UnicodeError, json.JSONDecodeError, zipfile.BadZipFile) as exc:
         raise EvidenceError("TRACE_BINDING") from exc
     if facts != expected:
@@ -275,31 +330,36 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
             if result.returncode or result.stdout != path.read_bytes():
                 raise EvidenceError("SOURCE_GRAPH")
     spec_text = (source_root / "frontend/tests/heartbeat2-browser.spec.ts").read_text(encoding="utf-8")
+    scan_h2_browser_sources(source_root / "frontend/tests/heartbeat2-browser.spec.ts")
     semantic_patterns = (r"new\s+WeakMap<\s*Request", r"page\.on\([\"']request[\"']\s*,\s*\(request\)\s*=>\s*\{[^}]*requestIds\.set\(request", r"request\.postDataBuffer\(\)", r"page\.on\([\"']response[\"']\s*,\s*async\s*\(response\)\s*=>\s*\{[^}]*response\.request\(\)[^}]*responses\.push", r"await\s+response\.body\(\)")
     if not all(re.search(pattern, spec_text, re.DOTALL) for pattern in semantic_patterns):
         raise EvidenceError("BROWSER_SOURCE")
-    arrow, positions = spec_text.find("=>", spec_text.find(TEST_TITLE)), [spec_text.find(f'page.on("{event}"') for event in ("request", "response")]
+    test_call = re.search(r'\btest\(\s*["\']' + re.escape(TEST_TITLE) + r'["\']\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>', spec_text)
+    if test_call is None or len(re.findall(r"\btest\(", spec_text)) != 1 or spec_text[:test_call.start()].count("{") != spec_text[:test_call.start()].count("}"):
+        raise EvidenceError("BROWSER_SOURCE")
+    arrow, positions = (-1 if test_call is None else spec_text.find("=>", test_call.start())), [spec_text.find(f'page.on("{event}"') for event in ("request", "response")]
     block = spec_text.find("{", arrow)
     if arrow < 0 or block < 0 or any(position < 0 or spec_text[block:position].count("{") - spec_text[block:position].count("}") != 1 for position in positions):
         raise EvidenceError("BROWSER_SOURCE")
     if committed:
         try:
-            scan_browser_sources(Path("frontend/tests/heartbeat2-browser.spec.ts"), head)
             scan_browser_sources(Path("frontend/playwright.heartbeat2.config.ts"), head)
         except PrivacyError as exc:
             raise EvidenceError("BROWSER_SOURCE") from exc
 def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, forbidden: tuple[bytes, ...] = (), committed: bool = False, source_root: Path = Path.cwd()) -> dict[str, Any]:
     if not SHA.match(expected_head) or not RUN_ID.match(expected_run_id):
         raise EvidenceError("EXPECTED_IDENTITY")
-    if committed and len(forbidden) != 2:
-        raise EvidenceError("FORBIDDEN_INPUT")
     manifest = _json(root, "manifest.json")
+    expected_forbidden = manifest.get("forbiddenInputs")
+    if committed and (len(forbidden) != 2 or not all(forbidden) or forbidden[0] == forbidden[1] or expected_forbidden != FORBIDDEN_SHA256S or {"controlledSha256": sha256(forbidden[0]), "canarySha256": sha256(forbidden[1])} != FORBIDDEN_SHA256S):
+        raise EvidenceError("FORBIDDEN_INPUT")
     if manifest.get("schema") != "heartbeat2-evidence-v2" or manifest.get("headSha") != expected_head or manifest.get("runId") != expected_run_id:
         raise EvidenceError("STALE_EVIDENCE")
     _playwright(_json(root, manifest.get("testReport")))
     bundle = _json(root, manifest.get("bundle"))
     traffic = _json(root, manifest.get("traffic"))
     _traffic(traffic, bundle)
+    _request_contract(traffic["requests"][:8], bundle)
     _safe_archives(root)
     _trace(root, manifest, traffic)
     _joins(root, bundle)

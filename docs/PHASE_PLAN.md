@@ -112,7 +112,7 @@ Only the registered tables in this section are authoritative for PHF-020A.
 
 ## Heartbeat 2 Direct Exception
 
-Owner-authored issue `#308` directly authorizes the exact two-PR post-Checkpoint-B local/mock curated reviewer integration frozen there. Contract reset 4 preserves its 15-file/eight-surface boundary with a 1,800-line aggregate ceiling after adversarial evidence-integrity findings. It is separate from the PHF-020A tables above, does not rewrite issue `#8` or reopen `#155`, and is not Product Mode 2 or issue `#20`. Providers, real media, hosting, deployment, production claims, and private data remain prohibited.
+Owner-authored issue `#308` directly authorizes the exact two-PR post-Checkpoint-B local/mock curated reviewer integration frozen there. Contract reset 5 preserves its 15-file/eight-surface boundary with a 2,200-line aggregate ceiling after adversarial evidence-integrity findings. It is separate from the PHF-020A tables above, does not rewrite issue `#8` or reopen `#155`, and is not Product Mode 2 or issue `#20`. Providers, real media, hosting, deployment, production claims, and private data remain prohibited.
 
 ## Boundaries
 

@@ -849,7 +849,7 @@ Focused A1/A2 regressions, exact-branch/allowlist enforcement, `make quality`, r
 
 ## Heartbeat 2 evidence integrity gate
 
-Issue `#308` directly authorizes a post-Checkpoint-B local/mock curated reviewer demo; it is not Product Mode 2 or Issue `#20`. Contract reset 4, explicitly owner-authorized after adversarial review, keeps the allowlist and surfaces fixed while setting PR A to at most eight files, 900 charged lines, and four surfaces.
+Issue `#308` directly authorizes a post-Checkpoint-B local/mock curated reviewer demo; it is not Product Mode 2 or Issue `#20`. Contract reset 5, explicitly owner-authorized after adversarial review, keeps the allowlist and surfaces fixed while setting PR A to at most eight files, 1,300 charged lines, and four surfaces; PR B remains 12/900/6 and the aggregate becomes 15/2,200/8.
 
 `scripts/ci/heartbeat2_evidence.py` must fail closed on stale run/head identity, any skipped or non-passing browser result, a malformed/extra write ledger, request/response mismatch, wrong origin, interception/substitution, source-graph drift, broken source/chunk/context/evaluation/media joins, artifact mismatch, unsafe archive, or forbidden material. PR B remains blocked until PR A is approved at exact head, merged, and verified.
 

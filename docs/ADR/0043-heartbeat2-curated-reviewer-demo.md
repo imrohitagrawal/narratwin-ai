@@ -16,7 +16,7 @@ The verified chain must join curated source/checksum/chunks to walkthrough conte
 
 Evidence is valid only when `scripts/ci/heartbeat2_evidence.py` independently confirms exact run/head identity, one non-skipped browser case, request-object-paired traffic, no interception/substitution, exact joins, artifact bytes and metadata, safe archives, source digests, and zero forbidden matches.
 
-Owner-authorized Contract reset 4 preserves the same paths and surfaces while requiring exact test identity, genuine trace structure, raw response-byte joins, duplicate rejection, semantic local/mock artifact validation, executable listener structure, and one recursive archive budget. Its exact ceilings are PR A 8 files / 900 lines / 4 surfaces, PR B 12 / 900 / 6, and aggregate 15 / 1,800 / 8.
+Owner-authorized Contract reset 5 preserves the same paths and surfaces while closing passive-capture scanner conflicts, fabricated minimal execution, semantically unbound write bodies, open artifact schemas, and unbound privacy sentinels. Its exact ceilings are PR A 8 files / 1,300 lines / 4 surfaces, PR B 12 / 900 / 6, and aggregate 15 / 2,200 / 8. PR A proves verifier behavior with synthetic packets; only PR B may produce genuine browser evidence.
 
 ## Boundaries
 

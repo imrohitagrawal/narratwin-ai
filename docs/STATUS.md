@@ -1029,7 +1029,7 @@ Required update rules:
 ## Issue 308 Heartbeat 2 status
 
 - Authority: owner-authored issue `#308`, canonical comment database ID `5118185764`, frozen base `fa423ce8b016a4f0593d8a294cf9f24ef5caff6c`.
-- PR A is active on exact branch `phase-1-closure-308-heartbeat2-evidence-contract`; owner-authorized Contract reset 4 raises only its line ceiling to 8 files, 900 charged lines, four surfaces.
+- PR A is active on exact branch `phase-1-closure-308-heartbeat2-evidence-contract`; owner-authorized Contract reset 5 keeps its paths/surfaces at 8 files/four surfaces and raises its evidence-integrity ceiling to 1,300 charged lines.
 - PR B remains blocked pending PR A exact-head review, merge, verification, synchronization, and closeout.
-- Aggregate reset envelope: 15 unique files, 1,800 charged lines, eight surfaces; PR B is capped at 12 files / 900 lines / six surfaces; synthetic fixtures and local/mock media only.
+- Aggregate reset envelope: 15 unique files, 2,200 charged lines, eight surfaces; PR B remains capped at 12 files / 900 lines / six surfaces; synthetic fixtures and local/mock media only.
 - Excluded: backend/API changes, providers, spend, real media/private data, deployment/hosting/production claims, Product Mode 2/#20, and mutation of #8/#43/#155/#249 or protected trackers.
