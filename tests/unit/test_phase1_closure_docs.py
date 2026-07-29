@@ -8970,6 +8970,7 @@ def test_heartbeat2_reset6_workflow_is_exact_head_fail_fast_and_success_only() -
     assert "NARRATWIN_H2_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}" in workflow
     assert "if: ${{ hashFiles('scripts/ci/heartbeat2-browser.sh') != '' }}" in workflow
     assert "run: bash scripts/ci/heartbeat2-browser.sh" in workflow
+    assert "jq -e '.outcome == \"CI_EXECUTION_BOUND\" and .executionAuthenticity == \"GITHUB_ACTIONS\"' reports/heartbeat2/published/ci-verification.json" in workflow
     assert "if: success() && hashFiles('reports/heartbeat2/published/**') != ''" in workflow
     assert "name: heartbeat2-browser-evidence-${{ github.run_id }}-${{ github.run_attempt }}" in workflow
     assert "if-no-files-found: error" in workflow
