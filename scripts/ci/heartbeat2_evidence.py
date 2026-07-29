@@ -105,9 +105,9 @@ def _local_only(value: Any) -> bool:
     if isinstance(value, dict):
         for key, item in value.items():
             normalized = re.sub(r"[^a-z]", "", str(key).lower())
-            if normalized == "requiresapikey" and item is not False and value.get("providerMode") != "DISABLED":
+            if normalized in {"requiresapikey", "supportsrealvideo"} and item is not False and value.get("providerMode") != "DISABLED":
                 return False
-            if normalized in {"allownetworkegress", "supportsrealvideo", "supportsclonedidentity", "realvideoproduced", "realaudioproduced", "providercallmade"} and item is not False:
+            if normalized in {"allownetworkegress", "supportsclonedidentity", "realvideoproduced", "realaudioproduced", "providercallmade"} and item is not False:
                 return False
             if ("url" in normalized or "endpoint" in normalized) and item:
                 return False
@@ -223,7 +223,7 @@ def _artifacts(root: Path, artifacts: Any, bundle: dict[str, Any]) -> None:
                 valid = valid and isinstance(parsed, dict) and _local_only(parsed)
                 if name == "voice":
                     profile = parsed.get("mockAudioProfile", {})
-                    valid = valid and set(parsed) == {"provider", "providerMode", "language", "languageDisplayName", "textChecksum", "durationSecondsEstimate", "mockAudioProfile", "disclosure"} and set(profile) == {"durationMillisecondsEstimate", "sampleRateHz", "channels"} and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and isinstance(parsed.get("languageDisplayName"), str) and parsed["languageDisplayName"] and parsed.get("textChecksum") == f"sha256:{artifacts['translated']['sha256']}" and isinstance(parsed.get("durationSecondsEstimate"), int | float) and parsed["durationSecondsEstimate"] >= 0 and isinstance(parsed.get("disclosure"), str) and "Mock local TTS placeholder" in parsed["disclosure"] and isinstance(profile.get("durationMillisecondsEstimate"), int) and profile["durationMillisecondsEstimate"] >= 0 and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
+                    valid = valid and set(parsed) == {"provider", "providerMode", "language", "languageDisplayName", "textChecksum", "durationSecondsEstimate", "mockAudioProfile", "disclosure"} and set(profile) == {"durationMillisecondsEstimate", "sampleRateHz", "channels"} and parsed.get("provider") == "mock" and parsed.get("providerMode") == "LOCAL" and parsed.get("language") == bundle["multilingual"]["targetLanguage"] and isinstance(parsed.get("languageDisplayName"), str) and parsed["languageDisplayName"] and parsed.get("textChecksum") == f"sha256:{sha256(bundle['multilingual']['translatedScriptText'].encode())}" and isinstance(parsed.get("durationSecondsEstimate"), int | float) and parsed["durationSecondsEstimate"] >= 0 and isinstance(parsed.get("disclosure"), str) and "Mock local TTS placeholder" in parsed["disclosure"] and isinstance(profile.get("durationMillisecondsEstimate"), int) and profile["durationMillisecondsEstimate"] >= 0 and profile.get("sampleRateHz") == 16000 and profile.get("channels") == 1
                 else:
                     provider, source, media = parsed.get("providerConfig", {}), parsed.get("source", {}), parsed.get("multilingualBundle", {})
                     run, multilingual = bundle["walkthrough"], bundle["multilingual"]
@@ -232,7 +232,7 @@ def _artifacts(root: Path, artifacts: Any, bundle: dict[str, Any]) -> None:
                     boundary = parsed.get("avatarVideoProvider", {})
                     valid = valid and set(parsed) == expected_keys and parsed.get("schema") == ("Stage7AvatarRenderManifest" if name == "renderManifest" else "Stage7VideoExportPlaceholder") and provider == {"provider": "mock", "providerMode": "LOCAL", "adapterKind": "MOCK_LOCAL", "allowNetworkEgress": False, "requiresApiKey": False, "supportsRealVideo": False, "supportsClonedIdentity": False}
                     valid = valid and source.get("runId") == run["runId"] and source.get("contextRefIds") == multilingual["trace"]["sourceContextRefIds"] and source.get("citationIndexes") == multilingual["trace"]["sourceCitationIndexes"] and source.get("evaluationId") == run["evaluation"]["evaluationId"] and source.get("evaluationChecksum") == multilingual["trace"]["sourceEvaluationChecksum"] and source.get("evaluationStatus") == "PASSED"
-                    valid = valid and media == expected_media and boundary.get("enabled") is False and boundary.get("providerMode") == "DISABLED" and boundary.get("allowNetworkEgress") is False and boundary.get("supportsRealVideo") is False and boundary.get("supportsClonedIdentity") is False and parsed.get("disclosure", {}).get("clonedIdentity") is False and parsed.get("publicUseLicenseCheck") == "mock-local-provider-only-no-third-party-media" and (name != "video" or parsed.get("realVideoProduced") is False)
+                    valid = valid and media == expected_media and boundary.get("enabled") is False and boundary.get("providerMode") == "DISABLED" and boundary.get("allowNetworkEgress") is False and boundary.get("supportsRealVideo") is True and boundary.get("supportsClonedIdentity") is False and parsed.get("disclosure", {}).get("clonedIdentity") is False and parsed.get("publicUseLicenseCheck") == "mock-local-provider-only-no-third-party-media" and (name != "video" or parsed.get("realVideoProduced") is False)
             elif name == "translated":
                 valid = valid and b"[1]" in data
             elif name == "subtitles":
