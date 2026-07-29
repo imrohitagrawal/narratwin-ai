@@ -8800,3 +8800,68 @@ def test_heartbeat2_reset5_accepts_only_canonical_forbidden_sentinels(tmp_path: 
 
     result = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True, forbidden=(values["INTERNAL_FIXTURE"], values["canary"]))
     assert result["outcome"] == "PASS"
+
+
+@pytest.mark.parametrize("body", [
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); await page.evaluate(() => Function("globalThis.fe" + "tch = () => ({ok:true})")());''',
+    '''const marker = "}"; if (false) { const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); }''',
+])
+def test_heartbeat2_reset5_rejects_dynamic_execution_and_dead_listener_control_flow(tmp_path: Path, body: str) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text(f'import {{ test, type Request }} from "@playwright/test"; test("Heartbeat 2 local reviewer demo", async ({{ page }}) => {{ {body} await page.goto("/"); }});', encoding="utf-8")
+    next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_uncorrelated_report_and_trace_stacks(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["report"]["stats"]["startTime"] = "2040-01-01T00:00:00Z"
+    packet["report"]["suites"][0]["specs"][0]["line"] = 999
+    (root / "playwright.json").write_text(json.dumps(packet["report"]), encoding="utf-8")
+    rewrite_heartbeat2_trace(root, lambda members: members.__setitem__("0-trace.stacks", b'{"files":["/workspace/frontend/tests/heartbeat2-browser.spec.ts"],"stacks":[[900,[[0,999,1,""]]],[901,[[0,999,1,""]]],[902,[[0,999,1,""]]],[903,[[0,999,1,""]]],[904,[[0,999,1,""]]],[905,[[0,999,1,""]]],[906,[[0,999,1,""]]],[907,[[0,999,1,""]]]]}'), evidence)
+    with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT|TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def replace_heartbeat2_request(root: Path, index: int, raw: bytes, evidence: Any) -> None:
+    import base64
+    traffic = json.loads((root / "traffic.json").read_text())
+    traffic["requests"][index].update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    (root / "traffic.json").write_text(json.dumps(traffic), encoding="utf-8")
+    def mutate(members: dict[str, bytes]) -> None:
+        rows = [json.loads(line) for line in members["0-trace.network"].splitlines()]
+        rows[index]["snapshot"]["request"]["postData"] = {"text": raw.decode()}
+        members["0-trace.network"] = "\n".join(json.dumps(row) for row in rows).encode()
+    rewrite_heartbeat2_trace(root, mutate, evidence)
+
+
+def test_heartbeat2_reset5_rejects_duplicate_multipart_and_json_keys(tmp_path: Path) -> None:
+    import base64
+    evidence: Any = load_heartbeat2_evidence_module()
+    sources = tmp_path / "sources"
+    for label, index, mutate in (("multipart", 1, lambda raw: raw.replace(b'name="action"', b'name="action"\r\n\r\nACCEPT_FOR_REVIEW\r\n--heartbeat2-reset5-boundary\r\nContent-Disposition: form-data; name="action"', 1)), ("json", 0, lambda raw: raw.replace(b"{", b'{"name":"conflict",', 1))):
+        root = tmp_path / label
+        packet = write_heartbeat2_packet(root, sources, evidence)
+        raw = mutate(base64.b64decode(packet["traffic"]["requests"][index]["bodyBase64"]))
+        replace_heartbeat2_request(root, index, raw, evidence)
+        with pytest.raises(evidence.EvidenceError, match="REQUEST_BINDING"):
+            evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_active_local_preview_content(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    preview = root / packet["bundle"]["artifacts"]["preview"]["path"]
+    preview.write_text(preview.read_text().replace("</body>", '<script src="//example.invalid/active.js"></script></body>'), encoding="utf-8")
+    digest = evidence.sha256(preview.read_bytes())
+    packet["bundle"]["artifacts"]["preview"]["sha256"] = digest
+    packet["bundle"]["render"]["artifactChecksums"]["preview"] = digest
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
