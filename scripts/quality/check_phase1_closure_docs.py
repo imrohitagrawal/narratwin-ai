@@ -1907,7 +1907,7 @@ STATUS_STATE_V1_ROWS = {
         "issue #308",
         "heartbeat2-pr-b-curated-reviewer-demo",
         "heartbeat2-pr-b-curated-reviewer-demo",
-        "Heartbeat 1 is closed and Heartbeat 2 PR A merged through PR #309 at 4922178cf1add925f4a0f6b21b288d18dafda9fe. PR B is active under canonical re-preflight comment 5122147727 and the 11-file / 900-line / six-surface envelope. Issue #8 remains open product memory. Providers, hosting, deployment, production claims, private data, #20, and protected tracker mutation remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 remains a separate negative-forensic-only reset.",
+        "Heartbeat 1 is closed and Heartbeat 2 PR A merged through PR #309 at 4922178cf1add925f4a0f6b21b288d18dafda9fe. PR B is active under canonical re-preflight comment 5122147727 and the 11-file / 900-line / six-surface envelope. Issue #8 remains open product memory. Providers, hosting, deployment, production claims, private data, #20, and protected tracker mutation remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
