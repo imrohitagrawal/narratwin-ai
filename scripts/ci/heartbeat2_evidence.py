@@ -16,6 +16,7 @@ from typing import Any, NoReturn
 from scripts.ci.heartbeat1_evidence import ALLOWED_BROWSER_IMPORTS, COMPUTED_MEMBER, FORBIDDEN_BROWSER_TOKENS, IMPORT, EvidenceError as PrivacyError, MAX_ARCHIVE_DEPTH, MAX_SCAN_BYTES, scan_browser_sources, scan_evidence
 SHA, RUN_ID, ORIGIN = re.compile(r"^[0-9a-f]{40}$"), re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"), "http://127.0.0.1:3122"
 SPEC, TEST_TITLE, MAX_ARCHIVE_MEMBERS = "heartbeat2-browser.spec.ts", "Heartbeat 2 local reviewer demo", 10_000
+TEST_GUARD = 'test.skip(!process.env.H2_CANDIDATE_DIR, "runs only through the canonical Heartbeat 2 evidence runner");'
 PUBLIC_FIXTURE_SHA256 = "9cefe4184b2a67d4cdc56d66d005b90409e06ad449c4c426b7d6e012125bfcb6"
 FORBIDDEN_SHA256S = {"controlledSha256": "d6bba9d5a1916d515ea982b3517c6528bfff5f7ee9d7a7ab03267fd6fefd6eb2", "canarySha256": "9fbe84f0ec72ee1d8de0cae899d15b98c1ec3e979514b861ed584ac8d62fa84c"}
 SOURCES = (".github/workflows/ci.yml", "scripts/ci/heartbeat1_evidence.py", "scripts/ci/heartbeat2_evidence.py", "scripts/ci/heartbeat2-browser.sh", "frontend/playwright.heartbeat2.config.ts", "frontend/tests/heartbeat2-browser.spec.ts")
@@ -24,6 +25,9 @@ READS = (("languages", "GET", 200, "curator_demo"), ("summary", "GET", 200, "cur
 DENIALS = (("other-walkthrough", "POST", 403), ("other-multilingual", "POST", 403), ("other-consent", "POST", 403), ("other-render", "POST", 403))
 class EvidenceError(RuntimeError):
     pass
+class RedactedBytes(bytes):
+    def __repr__(self) -> str:
+        return "<redacted bytes>"
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 def _strict_json(data: str | bytes, error: str) -> Any:
@@ -43,12 +47,15 @@ def scan_h2_browser_sources(entry: Path) -> dict[str, Any]:
     if not entry.is_file() or entry.is_symlink():
         raise EvidenceError("BROWSER_SOURCE")
     data, text = entry.read_bytes(), entry.read_text(encoding="utf-8")
-    compact, comments = re.sub(r"\s+", "", text).lower(), text.replace(ORIGIN, "")
+    if text.count(TEST_GUARD) != 1:
+        raise EvidenceError("BROWSER_SOURCE")
+    guarded_text = text.replace(TEST_GUARD, "")
+    compact, comments = re.sub(r"\s+", "", guarded_text).lower(), guarded_text.replace(ORIGIN, "")
     forbidden = tuple(token for token in FORBIDDEN_BROWSER_TOKENS if token not in {".postdata", "postdatabuffer"})
     imports = [match.group(1) for match in IMPORT.finditer(text)]
     dynamic = (".evaluate(", "evaluatehandle(", "function(", "eval(", "cdpsession", "newcdpsession", "fetch.enable", "fulfillrequest", "addinitscript(", "exposefunction(", "removealllisteners(")
-    dangerous = re.search(r"\b(?:eval|function|constructor|setTimeout|setInterval|removeAllListeners|removeListener|return|throw|break|continue)\b|\btest\s*\.|\.\s*(?:off|bind|call|apply|close|stop|abort)\s*\(", text, re.IGNORECASE)
-    if "/*" in comments or "//" in comments or "\\u" in text.lower() or dangerous or any(token in compact for token in (*forbidden, *dynamic)) or any(match.group("base") not in {"const", "let", "var", "return"} for match in COMPUTED_MEMBER.finditer(text)) or any(item.startswith(".") or item not in ALLOWED_BROWSER_IMPORTS for item in imports):
+    dangerous = re.search(r"\b(?:eval|function|constructor|setTimeout|setInterval|removeAllListeners|removeListener|return|throw|break|continue)\b|\btest\s*\.|\.\s*(?:off|bind|call|apply|close|stop|abort)\s*\(", guarded_text, re.IGNORECASE)
+    if "/*" in comments or "//" in comments or "\\u" in guarded_text.lower() or dangerous or any(token in compact for token in (*forbidden, *dynamic)) or any(match.group("base") not in {"const", "let", "var", "return"} for match in COMPUTED_MEMBER.finditer(guarded_text)) or any(item.startswith(".") or item not in ALLOWED_BROWSER_IMPORTS for item in imports):
         raise EvidenceError("BROWSER_SOURCE")
     return {"entry": entry.as_posix(), "fileCount": 1, "aggregateSha256": sha256(sha256(data).encode()), "forbiddenMatchCount": 0}
 def _multipart(raw: bytes, content_type: Any) -> dict[str, tuple[str, bytes]]:
@@ -375,7 +382,8 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
     if test_call is None or valid_import is None:
         raise EvidenceError("BROWSER_SOURCE")
     prefix = spec_text[valid_import.end():test_call.start()]
-    if re.fullmatch(r'(?:\s*import\s+\{[^;]+\}\s+from\s+["\'][^"\']+["\'];)*\s*', prefix) is None or re.search(r"\b(?:const|let|var|function|class)\s+test\b", spec_text) or len(re.findall(r"\btest\(", spec_text)) != 1:
+    allowed_prefix = r'(?:\s*import\s+\{[^;]+\}\s+from\s+["\'][^"\']+["\'];)*\s*' + re.escape(TEST_GUARD) + r'\s*'
+    if re.fullmatch(allowed_prefix, prefix) is None or re.search(r"\b(?:const|let|var|function|class)\s+test\b", spec_text) or len(re.findall(r"\btest\(", spec_text)) != 1:
         raise EvidenceError("BROWSER_SOURCE")
     arrow = spec_text.find("=>", test_call.start())
     block = spec_text.find("{", arrow)
@@ -472,11 +480,16 @@ def prepare_evidence(root: Path, *, head: str, run_id: str, source_root: Path = 
     for filename, value in (("traffic.json", {"requests": traffic_requests, "responses": traffic_responses}), ("bundle.json", bundle), ("manifest.json", manifest)):
         (root / filename).write_text(json.dumps(value, sort_keys=True), encoding="utf-8")
 def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, forbidden: tuple[bytes, ...] = (), committed: bool = False, source_root: Path = Path.cwd(), ci_context: dict[str, str] | None = None) -> dict[str, Any]:
+    protected_forbidden: tuple[RedactedBytes, ...] = ()
+    try:
+        protected_forbidden = tuple(RedactedBytes(value) for value in forbidden)
+    finally:
+        del forbidden
     if not SHA.match(expected_head) or not RUN_ID.match(expected_run_id):
         raise EvidenceError("EXPECTED_IDENTITY")
     manifest = _json(root, "manifest.json")
     expected_forbidden = manifest.get("forbiddenInputs")
-    if committed and (len(forbidden) != 2 or not all(forbidden) or forbidden[0] == forbidden[1] or expected_forbidden != FORBIDDEN_SHA256S or {"controlledSha256": sha256(forbidden[0]), "canarySha256": sha256(forbidden[1])} != FORBIDDEN_SHA256S):
+    if committed and (len(protected_forbidden) != 2 or not all(protected_forbidden) or protected_forbidden[0] == protected_forbidden[1] or expected_forbidden != FORBIDDEN_SHA256S or {"controlledSha256": sha256(protected_forbidden[0]), "canarySha256": sha256(protected_forbidden[1])} != FORBIDDEN_SHA256S):
         raise EvidenceError("FORBIDDEN_INPUT")
     if manifest.get("schema") != "heartbeat2-evidence-v2" or manifest.get("headSha") != expected_head or manifest.get("runId") != expected_run_id:
         raise EvidenceError("STALE_EVIDENCE")
@@ -497,7 +510,7 @@ def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, for
     else:
         _ci_execution(root, manifest, expected_head, expected_run_id, ci_context)
     try:
-        stats = scan_evidence([root], controlled=forbidden[0] if forbidden else b"synthetic-never-present-h2", canary=forbidden[1] if len(forbidden) > 1 else b"synthetic-canary-never-present-h2")
+        stats = scan_evidence([root], controlled=protected_forbidden[0] if protected_forbidden else b"synthetic-never-present-h2", canary=protected_forbidden[1] if len(protected_forbidden) > 1 else b"synthetic-canary-never-present-h2")
     except PrivacyError as exc:
         raise EvidenceError("FORBIDDEN_OR_ARCHIVE") from exc
     return {"schema": "heartbeat2-verification-v3", "runId": expected_run_id, "headSha": expected_head, "outcome": "CI_EXECUTION_BOUND" if ci_context else "SEMANTIC_PASS_LOCAL", "executionAuthenticity": "GITHUB_ACTIONS" if ci_context else "UNATTESTED", "githubRunId": ci_context["runId"] if ci_context else None, "githubRunAttempt": ci_context["runAttempt"] if ci_context else None, "writeCount": 8, "readCount": 3, "filesScanned": stats["fileCount"], "membersScanned": stats["memberCount"]}

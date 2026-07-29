@@ -8327,6 +8327,7 @@ def write_heartbeat2_packet(root: Path, source_root: Path, evidence: Any) -> dic
         content = "bounded committed source\n"
         if relative == "frontend/tests/heartbeat2-browser.spec.ts":
             content = '''import { test, type Request } from "@playwright/test";
+test.skip(!process.env.H2_CANDIDATE_DIR, "runs only through the canonical Heartbeat 2 evidence runner");
 test("Heartbeat 2 local reviewer demo", async ({ page }) => {
 const requestIds = new WeakMap<Request, string>();
 page.on("request", (request) => {
@@ -8364,7 +8365,7 @@ await page.goto("/");
         path.parent.mkdir(exist_ok=True)
         path.write_text(payloads[name], encoding="utf-8")
         artifacts[name] = {"path": path.relative_to(root).as_posix(), "filename": filename, "mime": mime, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-    report = {"config": {"configFile": "frontend/playwright.heartbeat2.config.ts", "rootDir": "frontend/tests", "version": "1.61.1", "projects": [{"id": "chromium", "name": "chromium"}]}, "errors": [], "stats": {"startTime": "2026-07-29T00:00:00Z", "duration": 10, "expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}, "suites": [{"title": "", "file": "heartbeat2-browser.spec.ts", "line": 0, "column": 0, "specs": [{"title": "Heartbeat 2 local reviewer demo", "id": "spec-1", "file": "heartbeat2-browser.spec.ts", "line": 2, "column": 1, "ok": True, "tags": [], "tests": [{"expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium", "timeout": 30000, "annotations": [], "results": [{"status": "passed", "retry": 0, "errors": [], "duration": 10, "startTime": "2026-07-29T00:00:00Z", "workerIndex": 0, "parallelIndex": 0, "stdout": [], "stderr": [], "annotations": [], "attachments": [{"name": "trace", "contentType": "application/zip", "path": "/tmp/trace.zip"}]}]}]}]}]}
+    report = {"config": {"configFile": "frontend/playwright.heartbeat2.config.ts", "rootDir": "frontend/tests", "version": "1.61.1", "projects": [{"id": "chromium", "name": "chromium"}]}, "errors": [], "stats": {"startTime": "2026-07-29T00:00:00Z", "duration": 10, "expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}, "suites": [{"title": "", "file": "heartbeat2-browser.spec.ts", "line": 0, "column": 0, "specs": [{"title": "Heartbeat 2 local reviewer demo", "id": "spec-1", "file": "heartbeat2-browser.spec.ts", "line": 3, "column": 1, "ok": True, "tags": [], "tests": [{"expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium", "timeout": 30000, "annotations": [], "results": [{"status": "passed", "retry": 0, "errors": [], "duration": 10, "startTime": "2026-07-29T00:00:00Z", "workerIndex": 0, "parallelIndex": 0, "stdout": [], "stderr": [], "annotations": [], "attachments": [{"name": "trace", "contentType": "application/zip", "path": "/tmp/trace.zip"}]}]}]}]}]}
     fixture = b"# Heartbeat 2 controlled synthetic public reviewer fixture.\n"
     fixture_tree = ast.parse((Path(__file__).parents[1] / "api" / "test_stage6_multilingual_api.py").read_bytes())
     fixture = next(
@@ -8788,7 +8789,7 @@ def test_heartbeat2_reset5_rejects_unbound_forbidden_sentinels(tmp_path: Path, m
         "canarySha256": evidence.sha256(b"reset5-canary"),
     }
     (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
-    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: (2, 13))
+    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: (3, 14))
 
     with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_INPUT"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True, forbidden=forbidden)
@@ -8803,10 +8804,22 @@ def test_heartbeat2_reset5_accepts_only_canonical_forbidden_sentinels(tmp_path: 
     values = fixture_constants(Path(__file__).parents[1] / "api" / "test_heartbeat1_a2_exclusion_api.py")
     packet["manifest"]["forbiddenInputs"] = evidence.FORBIDDEN_SHA256S
     (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
-    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: (2, 13))
+    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: (3, 14))
 
     result = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True, forbidden=(values["INTERNAL_FIXTURE"], values["canary"]))
     assert result["outcome"] == "SEMANTIC_PASS_LOCAL"
+
+
+def test_heartbeat2_verifier_redacts_forbidden_bytes_from_failure_frame(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+    marker = b"controlled-diagnostic-marker"
+    with pytest.raises(evidence.EvidenceError, match="STALE_EVIDENCE") as captured:
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="other-run", source_root=sources, forbidden=(marker,))
+    verifier_frame = next(entry.frame for entry in captured.traceback if entry.name == "verify_evidence")
+    assert "forbidden" not in verifier_frame.f_locals
+    assert marker.decode() not in repr(verifier_frame.f_locals)
 
 
 @pytest.mark.parametrize("body", [
@@ -8842,6 +8855,18 @@ def test_heartbeat2_reset5_rejects_shadowed_playwright_test_binding(tmp_path: Pa
     packet = write_heartbeat2_packet(root, sources, evidence)
     spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
     spec.write_text(spec.read_text().replace("import { test, type Request }", "import { type Request }; const test = (...args: unknown[]) => undefined;"), encoding="utf-8")
+    next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
+
+
+@pytest.mark.parametrize("replacement", ["", "test.skip(!process.env.H2_WRONG_DIR, \"runs only through the canonical Heartbeat 2 evidence runner\");"])
+def test_heartbeat2_rejects_missing_or_altered_canonical_test_guard(tmp_path: Path, replacement: str) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text(spec.read_text().replace(evidence.TEST_GUARD, replacement), encoding="utf-8")
     next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
     with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
         evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
