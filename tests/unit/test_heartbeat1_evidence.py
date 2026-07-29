@@ -28,7 +28,7 @@ def assert_safe_error(error: Exception, marker: bytes) -> None:
 
 def test_authority_encoding_set_is_exact_and_every_form_is_detected(tmp_path: Path) -> None:
     evidence: Any = load_evidence_module()
-    marker = b"synthetic-private-scan-marker-306"
+    marker = b"synthetic private scan marker 306"
     canary = b"synthetic-canary-306"
 
     assert evidence.ENCODING_NAMES == (
@@ -39,7 +39,12 @@ def test_authority_encoding_set_is_exact_and_every_form_is_detected(tmp_path: Pa
         "percent-encoded",
         "JSON-escaped UTF-8",
     )
-    for index, encoded in enumerate(evidence.encoded_patterns(marker).values()):
+    canonical = evidence.encoded_patterns(marker)
+    variants = list(canonical.values()) + [
+        canonical["percent-encoded"].lower(), canonical["Base64"].rstrip(b"="),
+        evidence.quote_plus(marker.decode(), safe="").lower().encode(),
+    ]
+    for index, encoded in enumerate(variants):
         candidate = tmp_path / f"candidate-{index}.bin"
         candidate.write_bytes(encoded)
         with pytest.raises(evidence.EvidenceError) as caught:
@@ -54,10 +59,14 @@ def test_recursive_zip_scan_passes_clean_members_and_blocks_member_match(tmp_pat
     canary = b"synthetic-canary-archive-306"
     clean = tmp_path / "clean.zip"
     blocked = tmp_path / "blocked.zip"
+    metadata_blocked = tmp_path / "metadata-blocked.zip"
     with zipfile.ZipFile(clean, "w") as archive:
         archive.writestr("safe/member.txt", b"bounded public-safe evidence")
     with zipfile.ZipFile(blocked, "w") as archive:
         archive.writestr("safe/member.txt", marker)
+    with zipfile.ZipFile(metadata_blocked, "w") as archive:
+        member = zipfile.ZipInfo(marker.decode())
+        archive.writestr(member, b"bounded public-safe evidence")
 
     result = evidence.scan_evidence([clean], controlled=marker, canary=canary)
     assert result["matchCount"] == 0
@@ -67,6 +76,29 @@ def test_recursive_zip_scan_passes_clean_members_and_blocks_member_match(tmp_pat
         evidence.scan_evidence([blocked], controlled=marker, canary=canary)
     assert caught.value.code == "CONTROLLED_MATCH"
     assert_safe_error(caught.value, marker)
+    with pytest.raises(evidence.EvidenceError) as caught:
+        evidence.scan_evidence([metadata_blocked], controlled=marker, canary=canary)
+    assert caught.value.code == "CONTROLLED_MATCH"
+
+
+def test_malformed_archive_and_symlink_fail_closed(tmp_path: Path) -> None:
+    evidence: Any = load_evidence_module()
+    malformed = tmp_path / "broken.zip"
+    malformed.write_bytes(b"bounded-non-archive")
+    with pytest.raises(evidence.EvidenceError) as caught:
+        evidence.scan_evidence([malformed], controlled=b"synthetic private 306", canary=b"canary 306")
+    assert caught.value.code == "ARCHIVE_INVALID"
+    nested = tmp_path / "nested.zip"
+    with zipfile.ZipFile(nested, "w") as archive:
+        archive.writestr("resources/blob.bin", b"PK\x03\x04bounded-non-archive")
+    with pytest.raises(evidence.EvidenceError) as caught:
+        evidence.scan_evidence([nested], controlled=b"synthetic private 306", canary=b"canary 306")
+    assert caught.value.code == "ARCHIVE_INVALID"
+    link = tmp_path / "link.zip"
+    link.symlink_to(malformed)
+    with pytest.raises(evidence.EvidenceError) as caught:
+        evidence.scan_evidence([link], controlled=b"synthetic private 306", canary=b"canary 306")
+    assert caught.value.code == "SCAN_INPUT_INVALID"
 
 
 def test_ast_materialization_is_restricted_and_writes_mode_0600(tmp_path: Path) -> None:
@@ -75,7 +107,8 @@ def test_ast_materialization_is_restricted_and_writes_mode_0600(tmp_path: Path) 
     source.write_text(
         "PUBLIC_FIXTURE = b'public-synthetic-306'\n"
         "INTERNAL_FIXTURE = b'synthetic-private-materialized-306'\n"
-        "canary = b'synthetic-canary-materialized-306'\n",
+        "def canary_holder():\n"
+        "    canary = b'synthetic-canary-materialized-306'\n",
         encoding="utf-8",
     )
     runtime = tmp_path / "runtime"
@@ -92,13 +125,20 @@ def test_ast_materialization_is_restricted_and_writes_mode_0600(tmp_path: Path) 
 def test_browser_source_scan_rejects_success_interception_without_echoing_source(tmp_path: Path) -> None:
     evidence: Any = load_evidence_module()
     entry = tmp_path / "browser.spec.ts"
-    entry.write_text("test('blocked', async ({ page }) => { await page.route('/api/v1/**', () => {}); });\n")
-
-    with pytest.raises(evidence.EvidenceError) as caught:
-        evidence.scan_browser_sources(entry)
-
-    assert caught.value.code == "FORBIDDEN_BROWSER_SOURCE"
+    helper = tmp_path / "helper.ts"
+    entry.write_text("import './helper';\n")
+    for source in (
+        "const method = ['ro', 'ute'].join(''); const blocked = context/* bounded */[method];\n",
+        "const method = ['ro', 'ute'].join(''); const blocked = context // bounded\n[method];\n",
+    ):
+        helper.write_text(source)
+        with pytest.raises(evidence.EvidenceError) as caught:
+            evidence.scan_browser_sources(entry)
+        assert caught.value.code == "FORBIDDEN_BROWSER_SOURCE"
     assert "page.route" not in str(caught.value)
+    with pytest.raises(evidence.EvidenceError) as caught:
+        evidence.scan_browser_sources(Path("frontend/tests/heartbeat1-browser.spec.ts"), "0" * 40)
+    assert caught.value.code == "BROWSER_HEAD_MISMATCH"
 
 
 def test_safe_failure_summary_never_contains_marker_or_encoding() -> None:

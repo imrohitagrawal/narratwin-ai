@@ -319,3 +319,12 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 - A1 merged through PR `#303` at `510c78297cfe62b7314b91af13f4f6e67a17507b`.
 - Curation, Stage 4, API, and `test_heartbeat1_a2_exclusion_api.py` prove metadata-only exclusions, safety precedence, replay, owner summary, legacy separation, tamper repair, and bounded denial logs.
 - ADR `0041`, API contract, status, stage plan, and checker enforce the 10/600/6 ceiling in PR `#305` under `#304` and parent `#302`.
+
+## Issue 306 Heartbeat 1 B traceability
+
+| Evidence | Requirement | State |
+|---|---|---|
+| Heartbeat 1 UI and Playwright browser phases | `H1-OUTCOME-01`, `H1-RAW-01`, `H1-VERSION-01`, `H1-AUTHZ-01` | Issue `#306` substantive B review under `#302` |
+| Two-PID runner and recursive evidence scanner | `H1-STATE-01`, `H1-ABSENT-01`, `H1-EVID-01` | Exact-run/head zero-match gate |
+| Unchanged A1/A2 regressions and Phase 1 checker | `H1-LEGACY-01`, `H1-ELIG-01`, `H1-INGEST-01`, `H1-IDEMP-01`, `H1-SCOPE-01` | Regression and exact-envelope gates |
+| ADR `0042`, quality gates, status, and stage plan | Preserve sole authority, privacy boundary, 15/1,090/8 ceiling, and no Heartbeat 2 | Repository contract |

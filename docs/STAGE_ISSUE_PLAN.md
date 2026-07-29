@@ -2092,3 +2092,14 @@ Issue `#302`, child `#304`, and comment database ID `5113777002` must re-resolve
 Behavioral RED precedes each implementation seam; focused A2, unchanged A1, guardrails, full quality, required CI/security/policy, and independent exact-head review are mandatory.
 Raw content, filename, path, secrets, and excluded chunks must remain absent from responses, summaries, logs, and evidence.
 B UI/browser evidence, Heartbeat 2, providers, hosted/public behavior, deployment, spend, and production-readiness claims remain deferred.
+
+## Issue 306 Heartbeat 1 B branch scope
+
+Issue `#306` is reference-only under sole editable acceptance authority `#302` and uses exact branch `phase-1-closure-306-heartbeat1-b-browser-reopen`.
+Scope is real browser-to-Next-to-backend curation, metadata-only internal exclusion, public approval/ingestion, genuine snapshot restart/reopen, owner isolation, and privacy-safe exact-head evidence.
+The accepted envelope is at most 15 changed files, 1,090 hand-authored changed lines, and eight surfaces; the frozen implementation allowlist contains the 14 paths enforced by the Phase 1 checker, and deletions grant no credit.
+Exactly two controlled submissions are permitted; protected runtime copies are deleted after both responses, tracing starts afterward, and evidence uploads only after recursive zero-match scanning.
+The checker requires exact branch equality; every `phase-1-closure-306-*` near-match fails closed.
+Issue `#302`, child `#306`, and canonical comment database ID `5116015473` must re-resolve without identity, timestamp, or digest drift before review and merge.
+Behavioral RED, focused browser/scanner tests, unchanged A1/A2 regressions, guardrails, full quality, required CI/security/policy, and independent exact-head review are mandatory.
+No backend contract, provider, deployment, spend, real private data, protected-issue body mutation, Heartbeat 2, or work on `#280`, PR `#299`, `#300`, or `#301` is authorized.

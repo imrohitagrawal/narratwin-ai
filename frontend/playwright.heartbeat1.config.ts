@@ -1,4 +1,4 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
@@ -8,7 +8,7 @@ export default defineConfig({
   retries: 0,
   timeout: 85_000,
   reporter: [["line"]],
-  outputDir: "../reports/heartbeat1/candidate/playwright-output",
+  outputDir: `${process.env.NARRATWIN_HEARTBEAT1_CANDIDATE_DIR ?? "../reports/heartbeat1/candidate"}/playwright-${process.env.NARRATWIN_HEARTBEAT1_PHASE ?? "unset"}`,
   use: {
     baseURL: "http://127.0.0.1:3122",
     serviceWorkers: "block",
@@ -16,5 +16,5 @@ export default defineConfig({
     screenshot: "off",
     video: "off",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [{ name: "chromium", use: { browserName: "chromium" } }],
 });
