@@ -179,7 +179,11 @@ def test_a2_restore_prunes_tampered_exclusion_graph(case: str, tmp_path: Path, m
 def test_issue304_a2_allowlist_is_exact_and_near_match_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     from scripts.quality import check_phase1_closure_docs as gate
     files = {"backend/app/curation.py", "backend/app/stage4.py", "backend/app/main.py", "tests/api/test_heartbeat1_a2_exclusion_api.py", "docs/API_CONTRACT.md", "docs/ADR/0041-heartbeat1-a2-exclusion-summary.md", "docs/TRACEABILITY.md", "docs/STATUS.md", "docs/STAGE_ISSUE_PLAN.md", "scripts/quality/check_phase1_closure_docs.py"}
-    monkeypatch.setattr(gate, "changed_files", lambda: sorted(files)); monkeypatch.setattr(gate, "current_branch", lambda: "phase-1-closure-304-heartbeat1-a2-exclusion-summary")
-    failures: list[str] = []; gate.check_changed_files(failures); assert failures == []
+    monkeypatch.setattr(gate, "changed_files", lambda: sorted(files))
+    monkeypatch.setattr(gate, "current_branch", lambda: "phase-1-closure-304-heartbeat1-a2-exclusion-summary")
+    failures: list[str] = []
+    gate.check_changed_files(failures)
+    assert failures == []
     monkeypatch.setattr(gate, "current_branch", lambda: "phase-1-closure-304-heartbeat1-a2-exclusion-summary-near")
-    gate.check_changed_files(failures); assert failures and "may not change" in failures[-1]
+    gate.check_changed_files(failures)
+    assert failures and "may not change" in failures[-1]

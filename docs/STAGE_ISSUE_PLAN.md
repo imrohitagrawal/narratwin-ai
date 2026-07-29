@@ -2079,3 +2079,16 @@ Allowed evidence is `tests/api/test_stage4_slice_api.py`, `docs/API_CONTRACT.md`
 The checker requires exact branch equality; every `phase-1-closure-302-*` near-match fails closed.
 Issue `#302` and its canonical evidence comment must be re-resolved before push, review, and merge.
 A2 exclusion, UI/browser evidence, Heartbeat 2, providers, hosted/public behavior, and production-readiness claims remain deferred.
+
+## Issue 304 Heartbeat 1 A2 branch scope
+
+Issue `#304`, under sole parent authority `#302`, uses exact branch `phase-1-closure-304-heartbeat1-a2-exclusion-summary`.
+Scope is source-less explicit/policy exclusion, owner curation summary, durable replay, valid v1 separation, and fail-closed restore repair.
+The accepted envelope is exactly 10 changed files, at most 600 hand-authored changed lines, and six surfaces; deletions grant no credit.
+Allowed runtime files are `backend/app/curation.py`, `backend/app/stage4.py`, and `backend/app/main.py`.
+Allowed evidence is `tests/api/test_heartbeat1_a2_exclusion_api.py`, `docs/API_CONTRACT.md`, ADR `0041`, `docs/TRACEABILITY.md`, `docs/STATUS.md`, this plan, and the Phase 1 checker.
+The checker requires exact branch equality; every `phase-1-closure-304-*` near-match fails closed.
+Issue `#302`, child `#304`, and comment database ID `5113777002` must re-resolve without identity, timestamp, or digest drift before push, review, and merge.
+Behavioral RED precedes each implementation seam; focused A2, unchanged A1, guardrails, full quality, required CI/security/policy, and independent exact-head review are mandatory.
+Raw content, filename, path, secrets, and excluded chunks must remain absent from responses, summaries, logs, and evidence.
+B UI/browser evidence, Heartbeat 2, providers, hosted/public behavior, deployment, spend, and production-readiness claims remain deferred.
