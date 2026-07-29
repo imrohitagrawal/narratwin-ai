@@ -911,6 +911,26 @@ def test_product_context_accepts_counted_exact_changes_with_complete_enumeration
 
 
 @pytest.mark.parametrize(
+    "invalid_items",
+    (
+        ["The same repeated field description."] * 10,
+        [f"Field {index} has a distinct reviewer outcome." for index in range(1, 10)]
+        + ["TBD"],
+    ),
+)
+def test_product_context_rejects_duplicate_or_placeholder_counted_items(
+    invalid_items: list[str],
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = "This PR adds ten mandatory product-context fields:\n" + "\n".join(
+        f"{index}. {item}" for index, item in enumerate(invalid_items, start=1)
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 4 must enumerate every item in a counted exact-change claim."
+    ]
+
+
+@pytest.mark.parametrize(
     "missing_field",
     ("Expected behavior", "Prohibited behavior", "Evidence", "Pass condition", "Fail condition"),
 )
