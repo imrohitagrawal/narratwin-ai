@@ -76,8 +76,10 @@ export NARRATWIN_STAGE4_STATE_FILE="$CANDIDATE/stage4-state.json" NARRATWIN_STAG
 FAILURE_STAGE="backend"
 uv run uvicorn backend.app.main:app --host 127.0.0.1 --port 8122 >"$CANDIDATE/backend.log" 2>&1 & BACKEND_PID=$!
 ready "http://127.0.0.1:8122/api/v1/readyz" "$BACKEND_PID" || withhold
+FAILURE_STAGE="frontend-build"
+bounded 75 npm --prefix frontend run build >"$CANDIDATE/frontend-build.log" 2>&1 || withhold
 FAILURE_STAGE="frontend"
-(cd "$ROOT/frontend" && exec node_modules/.bin/next dev --hostname 127.0.0.1 --port 3122) >"$CANDIDATE/frontend.log" 2>&1 & FRONTEND_PID=$!
+(cd "$ROOT/frontend" && exec env HOSTNAME=127.0.0.1 PORT=3122 npm start) >"$CANDIDATE/frontend.log" 2>&1 & FRONTEND_PID=$!
 ready "http://127.0.0.1:3122" "$FRONTEND_PID" || withhold
 FAILURE_STAGE="browser"
 bounded 75 frontend/node_modules/.bin/playwright test --config frontend/playwright.heartbeat2.config.ts --output "$CANDIDATE/playwright-output" >"$CANDIDATE/browser.log" 2>&1 || withhold
