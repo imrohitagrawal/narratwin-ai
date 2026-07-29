@@ -43,6 +43,22 @@ sufficient and those options introduce dependency, license, resource, or
 circular-evaluation risk. A later Issue #280 repair must make a fresh selection
 from its own behavioral claim and frozen implementation boundary.
 
+## Issue 315 Product-Context Quality Gate
+
+Issue `#315` uses GitHub workflow guidance, spec-driven development,
+planning-and-task-breakdown, context engineering, TDD, and incremental
+implementation for a governance-only product-context gate. Evidence is the
+owner-approved issue contract, first-commit preflight, committed parser and
+durability RED tests before GREEN, field-level false-pass mutations, forced PR
+event validation, full quality gates, and independent exact-head review.
+
+Backend, frontend, browser, provider, runtime security, performance,
+observability, deployment, and shipping implementation skills are rejected as
+wrong-surface because Issue #315 changes only PR authoring and review policy.
+Custom skills, external models, and new dependencies are rejected because the
+existing local parser and approved process guidance are sufficient. Skill
+invocation is not evidence without the committed TDD and gate results.
+
 ## Stage-Aligned Skill Use
 
 | Stage | Stage name | Skill/tool posture | Allowed outputs |

@@ -791,6 +791,26 @@ tests and static integrity through `make quality`. Make reports recipe failure a
 Product/runtime repair, including the runtime/browser
 `correctnessReport.status = "PASSED"` surface, belongs to a later issue.
 
+The required `Product and reviewer context` section is executable policy for
+every non-trivial PR. `scripts/guardrails_check.py` applies
+`product_context_failures` to the PR body on pull-request events and requires
+ten PR-specific subsections: end product goal, current state, problem, exact
+changes, completed state, expected outcome, not-expected scope, end-goal
+impact, remaining gap, and reviewer validation. The parser removes issue
+references and links before measuring whether prose is self-contained, rejects
+template instructions and generic filler, requires expected/prohibited/
+evidence/pass/fail reviewer fields, and rejects unsupported affirmative claims
+of production readiness, production deployment, release, or public
+availability.
+
+This gate connects each contribution to the end-to-end demo and eventual
+production path without treating that direction as production authorization.
+CI can verify section shape and known false-pass classes; the independent
+reviewer must validate the truth of the product position, the expected and
+prohibited outcomes, and the remaining gap. Because `policy-gates` is required
+by branch protection and reruns on `pull_request.edited`, an incomplete edited
+body blocks merge even when code checks remain green.
+
 The PR template also requires a `Human verification checklist` for non-trivial
 PRs. This checklist converts reviewer-focus points into rows with exact
 data/source/artifact references, official URL and verified/accessed date when

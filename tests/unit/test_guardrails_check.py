@@ -955,8 +955,11 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
     }
     for relative_path, markers in required_markers.items():
         text = (root / relative_path).read_text(encoding="utf-8")
+        normalized_text = " ".join(text.lower().split())
         for marker in markers:
-            assert marker in text, f"{relative_path} missing durable product-context marker: {marker}"
+            assert " ".join(marker.lower().split()) in normalized_text, (
+                f"{relative_path} missing durable product-context marker: {marker}"
+            )
 
 
 def test_phase1_issue39_pull_request_allows_reference_only_body(
