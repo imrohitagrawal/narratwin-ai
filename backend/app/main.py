@@ -10,7 +10,7 @@ import re
 import time
 from datetime import UTC, datetime
 from threading import Lock
-from typing import Annotated, Literal, cast
+from typing import Annotated, Literal, TypedDict, cast
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, FastAPI, File, Form, Header, HTTPException, Request, Response, UploadFile
@@ -527,6 +527,11 @@ def curated_response(outcome: CuratedOutcome) -> CuratedSourceResponse:
     if source is None:
         return CuratedExcludedResponse.model_validate(shared | {"reason": decision.reason})
     return CuratedRetainedResponse.model_validate(shared | {"owner_id": source.owner_id, "ingestion_status": source.ingestion_status})
+AcceptedChunkSummary = TypedDict("AcceptedChunkSummary", {"chunkId": str, "checksum": str})
+CuratedSummaryItem = TypedDict("CuratedSummaryItem", {"sourceId": str, "decisionId": str, "checksum": str, "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str, "serverDecision": str, "decisionState": str, "ingestionStatus": str, "acceptedChunks": list[AcceptedChunkSummary]})
+ExcludedSummaryItem = TypedDict("ExcludedSummaryItem", {"sourceId": str, "decisionId": str, "checksum": str, "sourceVersion": str, "assertionsFingerprint": str, "policyVersion": str, "serverDecision": str, "decisionState": str, "reason": str, "rawContentRetained": bool, "createdAt": str})
+LegacySummaryItem = TypedDict("LegacySummaryItem", {"documentId": str, "checksum": str, "approvalStatus": str, "ingestionStatus": str, "sourceKind": str})
+SourceCurationSummaryResponse = TypedDict("SourceCurationSummaryResponse", {"schema": str, "tenantId": str, "ownerId": str, "projectId": str, "curatedSources": list[CuratedSummaryItem], "excludedDecisions": list[ExcludedSummaryItem], "legacySources": list[LegacySummaryItem]})
 class IngestionRunResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
@@ -1602,6 +1607,18 @@ async def upload_knowledge_document(
         idempotency_key=idempotency_key,
     )
     return DocumentResponse.model_validate(document_to_api(document))
+
+
+@api_v1.get(
+    "/projects/{project_id}/source-curation-summary",
+    response_model=SourceCurationSummaryResponse,
+    tags=["knowledge"],
+)
+def get_source_curation_summary(
+    project_id: str,
+    principal: LocalPrincipal = Depends(local_principal),
+) -> SourceCurationSummaryResponse:
+    return cast(SourceCurationSummaryResponse, stage4_service.curation_summary(principal=principal, project_id=project_id))
 
 
 @api_v1.patch(

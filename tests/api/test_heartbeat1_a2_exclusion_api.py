@@ -45,7 +45,9 @@ def exclusion_form(action: str) -> dict[str, str]:
 
 
 def create_a2_graph(client: TestClient) -> tuple[str, dict[str, object], dict[str, object], dict[str, object]]:
-    project_id = create_project(client); path = f"/api/v1/projects/{project_id}/knowledge-documents"; owner = {"X-Local-User-Id": "curator_demo"}
+    project_id = create_project(client)
+    path = f"/api/v1/projects/{project_id}/knowledge-documents"
+    owner = {"X-Local-User-Id": "curator_demo"}
     accepted = client.post(path, data=PUBLIC_ASSERTIONS, files={"file": ("public.md", PUBLIC_FIXTURE, "text/markdown")}, headers=owner | {"Idempotency-Key": "a2-public"}).json()
     approval = {"approvalStatus": "APPROVED", "reviewNote": "Approved.", "curationSchemaVersion": "source-curation-v1", "action": "APPROVE", "sourceId": accepted["sourceId"], "decisionId": accepted["decisionId"], "policyVersion": accepted["policyVersion"], "sourceVersion": accepted["sourceVersion"], "checksum": accepted["checksum"], "assertionsFingerprint": accepted["assertionsFingerprint"]}
     assert client.patch(f"{path}/{accepted['sourceId']}/approval", json=approval, headers=owner | {"Idempotency-Key": "a2-approve"}).status_code == 200
@@ -55,13 +57,8 @@ def create_a2_graph(client: TestClient) -> tuple[str, dict[str, object], dict[st
     return project_id, accepted, excluded, legacy
 
 
-@pytest.mark.parametrize(
-    ("action", "reason"),
-    [("EXCLUDE", "CURATOR_EXCLUDED"), ("ACCEPT_FOR_REVIEW", "SERVER_POLICY_DENIED")],
-)
-def test_a2_explicit_and_policy_exclusions_are_metadata_only(
-    action: str, reason: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+@pytest.mark.parametrize(("action", "reason"), [("EXCLUDE", "CURATOR_EXCLUDED"), ("ACCEPT_FOR_REVIEW", "SERVER_POLICY_DENIED")])
+def test_a2_explicit_and_policy_exclusions_are_metadata_only(action: str, reason: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_path = tmp_path / f"{action.lower()}.json"
     monkeypatch.setattr(stage4_service, "state_path", state_path)
     reset_app_state_for_tests()
@@ -106,9 +103,7 @@ def test_a2_explicit_and_policy_exclusions_are_metadata_only(
     assert outcome.source is None and INTERNAL_FIXTURE.decode() not in state_path.read_text()
 
 
-def test_a2_safety_precedes_exclusion_without_retention(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_a2_safety_precedes_exclusion_without_retention(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
     state_path = tmp_path / "unsafe.json"
     monkeypatch.setattr(stage4_service, "state_path", state_path)
     reset_app_state_for_tests()
@@ -139,13 +134,19 @@ def test_a2_safety_precedes_exclusion_without_retention(
 
 
 def test_a2_owner_summary_separates_curated_excluded_and_legacy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
-    state_path = tmp_path / "summary.json"; monkeypatch.setattr(stage4_service, "state_path", state_path); reset_app_state_for_tests(); client = TestClient(app)
-    project_id, accepted, excluded, legacy = create_a2_graph(client); caplog.set_level(20, logger="narratwin-ai")
+    state_path = tmp_path / "summary.json"
+    monkeypatch.setattr(stage4_service, "state_path", state_path)
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, accepted, excluded, legacy = create_a2_graph(client)
+    caplog.set_level(20, logger="narratwin-ai")
     response = client.get(f"/api/v1/projects/{project_id}/source-curation-summary", headers={"X-Local-User-Id": "curator_demo"})
     assert response.status_code == 200
-    body = response.json(); assert (body["schema"], body["projectId"], body["ownerId"]) == ("source-curation-summary-v1", project_id, "curator_demo")
+    body = response.json()
+    assert (body["schema"], body["projectId"], body["ownerId"]) == ("source-curation-summary-v1", project_id, "curator_demo")
     assert [(row["sourceId"], row["decisionState"]) for row in body["curatedSources"]] == [(accepted["sourceId"], "APPROVED")]
-    chunks = body["curatedSources"][0]["acceptedChunks"]; assert chunks and all(set(row) == {"chunkId", "checksum"} for row in chunks)
+    chunks = body["curatedSources"][0]["acceptedChunks"]
+    assert chunks and all(set(row) == {"chunkId", "checksum"} for row in chunks)
     assert [(row["sourceId"], row["reason"]) for row in body["excludedDecisions"]] == [(excluded["sourceId"], "CURATOR_EXCLUDED")]
     assert body["legacySources"] == [{"documentId": legacy["documentId"], "checksum": legacy["checksum"], "approvalStatus": "PENDING", "ingestionStatus": "NOT_STARTED", "sourceKind": "UNSEALED_LEGACY"}]
     assert INTERNAL_FIXTURE.decode() not in response.text and "source.summary.read" in caplog.text
@@ -155,15 +156,33 @@ def test_a2_owner_summary_separates_curated_excluded_and_legacy(tmp_path: Path, 
 
 @pytest.mark.parametrize("case", ["attached_graph", "raw_flag", "reason"])
 def test_a2_restore_prunes_tampered_exclusion_graph(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    state_path = tmp_path / f"tamper-{case}.json"; monkeypatch.setattr(stage4_service, "state_path", state_path); reset_app_state_for_tests(); client = TestClient(app)
-    _, _, excluded, _ = create_a2_graph(client); payload = json.loads(state_path.read_text()); decision = next(row for row in payload["sourceDecisions"] if row["decision_id"] == excluded["decisionId"])
+    state_path = tmp_path / f"tamper-{case}.json"
+    monkeypatch.setattr(stage4_service, "state_path", state_path)
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    _, _, excluded, _ = create_a2_graph(client)
+    payload = json.loads(state_path.read_text())
+    decision = next(row for row in payload["sourceDecisions"] if row["decision_id"] == excluded["decisionId"])
     if case == "attached_graph":
-        source = dict(payload["sources"][0]); source.update({"source_id": excluded["sourceId"], "text": INTERNAL_FIXTURE.decode(), "size_bytes": len(INTERNAL_FIXTURE), "checksum": excluded["checksum"], "assertions_fingerprint": excluded["assertionsFingerprint"], "ingestion_status": "NOT_STARTED", "ingested_at": None}); source["assertions"] = {"classification": "INTERNAL", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rights_basis": "PROJECT_OWNED", "rights_status": "INELIGIBLE", "usage_policy": "INTERNAL_NO_REUSE", "source_version": "heartbeat1-internal-v1"}; payload["sources"].append(source)
-        chunk = dict(payload["ragStore"]["chunks"][0]); chunk["document_id"] = excluded["sourceId"]; payload["ragStore"]["chunks"].append(chunk)
-        run = dict(payload["ingestionRuns"][0]); run.update({"ingestion_run_id": "ing_999999", "document_ids": [], "source_ids": [excluded["sourceId"]]}); payload["ingestionRuns"].append(run)
-    elif case == "raw_flag": decision["raw_content_retained"] = True
-    else: decision["reason"] = "UNBOUNDED_REASON"
-    state_path.write_text(json.dumps(payload)); restored = Stage4Service(state_path=state_path); repaired = state_path.read_text()
-    if case == "attached_graph": assert excluded["decisionId"] in restored.source_decisions and excluded["sourceId"] not in restored.sources and all(excluded["sourceId"] not in run.source_ids for run in restored.ingestion_runs.values())
-    else: assert excluded["decisionId"] not in restored.source_decisions and not any(record.idempotency_key == "a2-exclude" for record in restored.idempotency_records.values())
+        source = dict(payload["sources"][0])
+        source.update({"source_id": excluded["sourceId"], "text": INTERNAL_FIXTURE.decode(), "size_bytes": len(INTERNAL_FIXTURE), "checksum": excluded["checksum"], "assertions_fingerprint": excluded["assertionsFingerprint"], "ingestion_status": "NOT_STARTED", "ingested_at": None})
+        source["assertions"] = {"classification": "INTERNAL", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rights_basis": "PROJECT_OWNED", "rights_status": "INELIGIBLE", "usage_policy": "INTERNAL_NO_REUSE", "source_version": "heartbeat1-internal-v1"}
+        payload["sources"].append(source)
+        chunk = dict(payload["ragStore"]["chunks"][0])
+        chunk["document_id"] = excluded["sourceId"]
+        payload["ragStore"]["chunks"].append(chunk)
+        run = dict(payload["ingestionRuns"][0])
+        run.update({"ingestion_run_id": "ing_999999", "document_ids": [], "source_ids": [excluded["sourceId"]]})
+        payload["ingestionRuns"].append(run)
+    elif case == "raw_flag":
+        decision["raw_content_retained"] = True
+    else:
+        decision["reason"] = "UNBOUNDED_REASON"
+    state_path.write_text(json.dumps(payload))
+    restored = Stage4Service(state_path=state_path)
+    repaired = state_path.read_text()
+    if case == "attached_graph":
+        assert excluded["decisionId"] in restored.source_decisions and excluded["sourceId"] not in restored.sources and all(excluded["sourceId"] not in run.source_ids for run in restored.ingestion_runs.values())
+    else:
+        assert excluded["decisionId"] not in restored.source_decisions and not any(record.idempotency_key == "a2-exclude" for record in restored.idempotency_records.values())
     assert INTERNAL_FIXTURE.decode() not in repaired and all(chunk.document_id != excluded["sourceId"] for chunk in restored.rag_store.chunks_for_project(tenant_id="tenant_local", project_id="proj_000001"))

@@ -910,6 +910,32 @@ class Stage4Service:
         self.ingestion_runs[run.ingestion_run_id] = run
         log_event(event_name="source.ingestion.completed", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, ingestion_run_id=run.ingestion_run_id, source_count=len(source_ids), chunk_count=len(stored))
         return run
+    def curation_summary(self, *, principal: LocalPrincipal, project_id: str) -> dict[str, Any]:
+        try:
+            project = self._require_project(principal=principal, project_id=project_id)
+        except Stage4Error as exc:
+            log_event(event_name="source.summary.denied", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, status=exc.status_code, code=exc.code)
+            raise
+        by_source = {decision.source_id: decision for decision in self.source_decisions.values()}
+        curated = []
+        for source in sorted(self.sources.values(), key=lambda value: value.source_id):
+            decision = by_source.get(source.source_id)
+            if source.project_id != project_id or decision is None or not legal_pair(source, decision):
+                continue
+            chunks = sorted((chunk for chunk in self.rag_store.chunks_for_project(tenant_id=principal.tenant_id, project_id=project_id) if chunk.document_id == source.source_id), key=lambda value: value.chunk_id)
+            curated.append({"sourceId": source.source_id, "decisionId": decision.decision_id, "checksum": source.checksum, "sourceVersion": decision.source_version, "assertionsFingerprint": decision.assertions_fingerprint, "policyVersion": decision.policy_version, "serverDecision": decision.server_decision, "decisionState": decision.decision_state, "ingestionStatus": source.ingestion_status, "acceptedChunks": [{"chunkId": chunk.chunk_id, "checksum": chunk.checksum} for chunk in chunks]})
+        excluded = [
+            {"sourceId": decision.source_id, "decisionId": decision.decision_id, "checksum": decision.checksum, "sourceVersion": decision.source_version, "assertionsFingerprint": decision.assertions_fingerprint, "policyVersion": decision.policy_version, "serverDecision": decision.server_decision, "decisionState": decision.decision_state, "reason": decision.reason, "rawContentRetained": decision.raw_content_retained, "createdAt": decision.created_at}
+            for decision in sorted(self.source_decisions.values(), key=lambda value: value.source_id)
+            if decision.project_id == project_id and legal_exclusion(decision) and decision.source_id not in self.sources
+        ]
+        legacy = [
+            {"documentId": document.document_id, "checksum": document.checksum, "approvalStatus": document.approval_status, "ingestionStatus": document.ingestion_status, "sourceKind": "UNSEALED_LEGACY"}
+            for document in sorted(self.documents.values(), key=lambda value: value.document_id)
+            if document.project_id == project_id and (document.tenant_id, document.owner_id) == (principal.tenant_id, principal.actor_id)
+        ]
+        log_event(event_name="source.summary.read", tenant_id=principal.tenant_id, actor_id=principal.actor_id, project_id=project_id, curated_count=len(curated), excluded_count=len(excluded), legacy_count=len(legacy))
+        return {"schema": "source-curation-summary-v1", "tenantId": project.tenant_id, "ownerId": project.owner_id, "projectId": project.project_id, "curatedSources": curated, "excludedDecisions": excluded, "legacySources": legacy}
     def _ingest_documents_once(
         self,
         *,
