@@ -8528,7 +8528,7 @@ def test_heartbeat2_verifier_rejects_duplicate_claim_consent_and_semantic_artifa
     for label, mutate in mutations:
         root = tmp_path / label
         packet = write_heartbeat2_packet(root, sources, evidence)
-        mutate(packet)
+        cast(Callable[[dict[str, Any]], Any], mutate)(packet)
         (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
         with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
             evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
