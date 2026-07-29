@@ -1584,15 +1584,17 @@ def resolve_base() -> str:
     return "HEAD~1"
 
 
-def changed_files() -> list[str]:
+def changed_files() -> list[str] | None:
     base = resolve_base()
     outputs: list[str] = []
     for args in (
         ["diff", "--name-only", base],
         ["ls-files", "--others", "--exclude-standard"],
     ):
-        output = run_git(args)
-        outputs.append(output)
+        result = subprocess.run(["git", *args], cwd=ROOT, check=False, text=True, capture_output=True)
+        if result.returncode:
+            return None
+        outputs.append(result.stdout.strip())
     return sorted(
         {line.strip() for output in outputs for line in output.splitlines() if line.strip()}
     )
@@ -4144,7 +4146,11 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_42_ALLOWED_CHANGED_FILES
     else:
         allowed_files = MODULE_A_ALLOWED_CHANGED_FILES
-    for rel in changed_files():
+    changed = changed_files()
+    if changed is None:
+        fail(failures, f"Phase 1 Closure branch {branch} could not resolve its changed-file set.")
+        return
+    for rel in changed:
         if rel == allowed_process_preflight:
             continue
         if rel not in allowed_files:
@@ -6141,7 +6147,11 @@ def check_process_docs(failures: list[str]) -> None:
             fail(failures, f"Missing required process artifact: {rel}")
 
     pr_template = read(".github/pull_request_template.md")
-    changed = set(changed_files())
+    changed_rows = changed_files()
+    if changed_rows is None:
+        fail(failures, "Phase 1 Closure process checks could not resolve the changed-file set.")
+        changed_rows = []
+    changed = set(changed_rows)
     check_issue241_avatar_video_preflight(failures)
     check_issue243_hosted_demo_preflight(failures)
     check_issue249_checkpoint3a_preflight(failures)

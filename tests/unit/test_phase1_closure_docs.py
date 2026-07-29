@@ -4205,11 +4205,13 @@ def test_changed_files_uses_final_worktree_diff_from_base(monkeypatch: Any) -> N
     calls: list[list[str]] = []
     monkeypatch.setattr(phase1, "resolve_base", lambda: "pinned-base")
 
-    def fake_run_git(args: list[str]) -> str:
-        calls.append(args)
-        return "docs/STATUS.md" if args[0] == "diff" else "tests/unit/new_test.py"
+    def fake_run(args: list[str], **kwargs: Any) -> Any:
+        git_args = args[1:]
+        calls.append(git_args)
+        stdout = "docs/STATUS.md" if git_args[0] == "diff" else "tests/unit/new_test.py"
+        return type("GitResult", (), {"returncode": 0, "stdout": stdout})()
 
-    monkeypatch.setattr(phase1, "run_git", fake_run_git)
+    monkeypatch.setattr(phase1.subprocess, "run", fake_run)
 
     assert phase1.changed_files() == ["docs/STATUS.md", "tests/unit/new_test.py"]
     assert calls == [
@@ -8292,6 +8294,7 @@ def test_issue308_near_match_and_backend_changes_fail_closed(monkeypatch: Any) -
 
 
 def test_issue308_charged_line_caps_fail_closed(monkeypatch: Any) -> None:
+    real_changed_files = phase1.changed_files
     monkeypatch.setattr(phase1, "resolve_base", lambda: "branch-base")
     monkeypatch.setattr(phase1, "charged_lines", lambda base: 901 if base == "branch-base" else 901)
     assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_A_BRANCH, files=[]) == [
@@ -8302,8 +8305,12 @@ def test_issue308_charged_line_caps_fail_closed(monkeypatch: Any) -> None:
         f"Phase 1 Closure branch {phase1.ISSUE_308_H2_B_BRANCH} has uncountable or binary charged lines."
     ]
     failed = type("FailedGit", (), {"returncode": 1, "stdout": ""})()
+    monkeypatch.setattr(phase1, "changed_files", real_changed_files)
     monkeypatch.setattr(phase1.subprocess, "run", lambda *args, **kwargs: failed)
     assert phase1.charged_lines("missing-base") is None
+    failures: list[str] = []
+    phase1.check_changed_files(failures)
+    assert failures == [f"Phase 1 Closure branch {phase1.ISSUE_308_H2_B_BRANCH} could not resolve its changed-file set."]
 
 
 def write_heartbeat2_packet(root: Path, source_root: Path, evidence: Any) -> dict[str, Any]:
@@ -8447,6 +8454,8 @@ def test_heartbeat2_verifier_accepts_exact_packet_and_rejects_false_passes(tmp_p
     assert result["outcome"] == "PASS"
     assert result["writeCount"] == 8
     assert packet["report"]["stats"]["startTime"]
+    with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_INPUT"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True)
     packet["report"].pop("config")
     (root / "playwright.json").write_text(json.dumps(packet["report"]), encoding="utf-8")
     with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT"):
