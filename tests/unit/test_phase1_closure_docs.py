@@ -8433,8 +8433,8 @@ await page.goto("/");
             archive.writestr(f"resources/{name}", raw)
     trace_sha = hashlib.sha256((root / "trace.zip").read_bytes()).hexdigest()
     manifest = {"schema": "heartbeat2-evidence-v2", "runId": "run-308", "headSha": "a" * 40, "testReport": "playwright.json", "traffic": "traffic.json", "trace": "trace.zip", "traceSha256": trace_sha, "bundle": "bundle.json", "sourceGraph": graph}
-    for filename, value in (("playwright.json", report), ("traffic.json", {"requests": requests, "responses": responses}), ("bundle.json", bundle), ("manifest.json", manifest)):
-        (root / filename).write_text(json.dumps(value), encoding="utf-8")
+    for filename, payload in (("playwright.json", report), ("traffic.json", {"requests": requests, "responses": responses}), ("bundle.json", bundle), ("manifest.json", manifest)):
+        (root / filename).write_text(json.dumps(payload), encoding="utf-8")
     return {"manifest": manifest, "report": report, "traffic": {"requests": requests, "responses": responses}, "bundle": bundle, "artifact": root / "artifacts" / "video.json"}
 
 

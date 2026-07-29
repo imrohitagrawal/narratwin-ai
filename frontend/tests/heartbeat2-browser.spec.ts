@@ -2,6 +2,8 @@ import { test, expect, type Request } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+test.skip(!process.env.H2_CANDIDATE_DIR, "runs only through the canonical Heartbeat 2 evidence runner");
+
 test("Heartbeat 2 local reviewer demo", async ({ page }) => {
   const requestIds = new WeakMap<Request, string>();
   page.on("request", (request) => {
