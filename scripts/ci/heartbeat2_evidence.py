@@ -6,6 +6,7 @@ import base64
 import hashlib
 import io
 import json
+import os
 import re
 import subprocess
 import sys
@@ -17,7 +18,7 @@ SHA, RUN_ID, ORIGIN = re.compile(r"^[0-9a-f]{40}$"), re.compile(r"^[A-Za-z0-9][A
 SPEC, TEST_TITLE, MAX_ARCHIVE_MEMBERS = "heartbeat2-browser.spec.ts", "Heartbeat 2 local reviewer demo", 10_000
 PUBLIC_FIXTURE_SHA256 = "e7ed2f48cf62645575771fd10e918568ad77ec4fb0b75620f6e4ecff2a3d8200"
 FORBIDDEN_SHA256S = {"controlledSha256": "d6bba9d5a1916d515ea982b3517c6528bfff5f7ee9d7a7ab03267fd6fefd6eb2", "canarySha256": "9fbe84f0ec72ee1d8de0cae899d15b98c1ec3e979514b861ed584ac8d62fa84c"}
-SOURCES = ("scripts/ci/heartbeat1_evidence.py", "scripts/ci/heartbeat2_evidence.py", "scripts/ci/heartbeat2-browser.sh", "frontend/playwright.heartbeat2.config.ts", "frontend/tests/heartbeat2-browser.spec.ts")
+SOURCES = (".github/workflows/ci.yml", "scripts/ci/heartbeat1_evidence.py", "scripts/ci/heartbeat2_evidence.py", "scripts/ci/heartbeat2-browser.sh", "frontend/playwright.heartbeat2.config.ts", "frontend/tests/heartbeat2-browser.spec.ts")
 WRITES = (("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201))
 READS = (("languages", "GET", 200, "curator_demo"), ("summary", "GET", 200, "curator_demo"), ("other-summary", "GET", 403, "other_demo"))
 DENIALS = (("other-walkthrough", "POST", 403), ("other-multilingual", "POST", 403), ("other-consent", "POST", 403), ("other-render", "POST", 403))
@@ -316,6 +317,8 @@ def _trace(root: Path, manifest: dict[str, Any], traffic: dict[str, Any], *, spe
             if not contexts or contexts[0].get("type") != "context-options" or contexts[0].get("browserName") != "chromium" or contexts[0].get("options", {}).get("baseURL") != ORIGIN or contexts[0].get("options", {}).get("serviceWorkers") != "block" or not any(str(name).endswith("frontend/tests/" + SPEC) for name in stacks.get("files", [])):
                 raise EvidenceError("TRACE_BINDING")
             records = [_strict_json(line, "TRACE_BINDING") for line in archive.read(names[0]).splitlines()]
+            if any(record.get("type") == "resource-snapshot" and (url := str(record.get("snapshot", {}).get("request", {}).get("url", ""))) and url != ORIGIN and not url.startswith(ORIGIN + "/") for record in records):
+                raise EvidenceError("TRACE_BINDING")
             resource_bytes = {name: archive.read(name) for name in archive.namelist() if name.startswith("resources/")}
             before = {item.get("callId"): item.get("method") for item in contexts if item.get("type") == "before" and item.get("pageId") and item.get("method")}
             after = {item.get("callId") for item in contexts if item.get("type") == "after"}
@@ -379,7 +382,20 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
         except PrivacyError as exc:
             raise EvidenceError("BROWSER_SOURCE") from exc
     return spec_text[:test_call.start()].count("\n") + 1, len(spec_text.splitlines())
-def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, forbidden: tuple[bytes, ...] = (), committed: bool = False, source_root: Path = Path.cwd()) -> dict[str, Any]:
+def _ci_execution(root: Path, manifest: dict[str, Any], head: str, context: dict[str, str]) -> None:
+    keys = {"repository", "eventName", "workflow", "workflowRef", "workflowSha", "job", "runId", "runAttempt", "headSha"}
+    if set(context) != keys or context.get("repository") != "imrohitagrawal/narratwin-ai" or context.get("eventName") not in {"pull_request", "push"} or context.get("workflow") != "ci" or context.get("job") != "frontend" or context.get("headSha") != head or not SHA.match(context.get("workflowSha", "")) or not context.get("runId", "").isdigit() or not context.get("runAttempt", "").isdigit() or int(context["runAttempt"]) < 1 or ".github/workflows/ci.yml@" not in context.get("workflowRef", ""):
+        raise EvidenceError("CI_PROVENANCE")
+    record = _json(root, manifest.get("execution"))
+    record_keys = {"schema", "provider", *keys, "producer", "playwrightExitCode", "startedAt", "completedAt", "workflowSourceSha256", "runnerSourceSha256", "reportSha256", "traceSha256"}
+    graph = {item.get("path"): item.get("sha256") for item in manifest.get("sourceGraph", [])}
+    expected = {"schema": "heartbeat2-ci-execution-v1", "provider": "github-actions", **context, "producer": "scripts/ci/heartbeat2-browser.sh", "playwrightExitCode": 0}
+    stamp = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+    valid = isinstance(record, dict) and set(record) == record_keys and all(record.get(key) == value for key, value in expected.items()) and stamp.match(str(record.get("startedAt", ""))) and stamp.match(str(record.get("completedAt", ""))) and record["startedAt"] < record["completedAt"]
+    valid = valid and record.get("workflowSourceSha256") == graph.get(".github/workflows/ci.yml") and record.get("runnerSourceSha256") == graph.get("scripts/ci/heartbeat2-browser.sh") and record.get("reportSha256") == sha256(_path(root, manifest.get("testReport")).read_bytes()) and record.get("traceSha256") == manifest.get("traceSha256") == sha256(_path(root, manifest.get("trace")).read_bytes())
+    if not valid:
+        raise EvidenceError("CI_PROVENANCE")
+def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, forbidden: tuple[bytes, ...] = (), committed: bool = False, source_root: Path = Path.cwd(), ci_context: dict[str, str] | None = None) -> dict[str, Any]:
     if not SHA.match(expected_head) or not RUN_ID.match(expected_run_id):
         raise EvidenceError("EXPECTED_IDENTITY")
     manifest = _json(root, "manifest.json")
@@ -399,11 +415,16 @@ def verify_evidence(root: Path, *, expected_head: str, expected_run_id: str, for
         raise EvidenceError("PLAYWRIGHT_RESULT")
     _trace(root, manifest, traffic, spec_line=source_line, source_lines=source_lines)
     _joins(root, bundle)
+    if ci_context is None:
+        if manifest.get("execution") is not None:
+            raise EvidenceError("CI_PROVENANCE")
+    else:
+        _ci_execution(root, manifest, expected_head, ci_context)
     try:
         stats = scan_evidence([root], controlled=forbidden[0] if forbidden else b"synthetic-never-present-h2", canary=forbidden[1] if len(forbidden) > 1 else b"synthetic-canary-never-present-h2")
     except PrivacyError as exc:
         raise EvidenceError("FORBIDDEN_OR_ARCHIVE") from exc
-    return {"schema": "heartbeat2-verification-v2", "runId": expected_run_id, "headSha": expected_head, "outcome": "PASS", "writeCount": 8, "readCount": 3, "filesScanned": stats["fileCount"], "membersScanned": stats["memberCount"]}
+    return {"schema": "heartbeat2-verification-v3", "runId": expected_run_id, "headSha": expected_head, "outcome": "CI_EXECUTION_BOUND" if ci_context else "SEMANTIC_PASS_LOCAL", "executionAuthenticity": "GITHUB_ACTIONS" if ci_context else "UNATTESTED", "writeCount": 8, "readCount": 3, "filesScanned": stats["fileCount"], "membersScanned": stats["memberCount"]}
 def _main(argv: list[str]) -> int:
     class Parser(argparse.ArgumentParser):
         def error(self, message: str) -> NoReturn:
@@ -413,14 +434,19 @@ def _main(argv: list[str]) -> int:
     parser.add_argument("--head", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--forbidden-file", action="append", default=[])
+    parser.add_argument("--ci", action="store_true")
     args = parser.parse_args(argv)
+    if args.ci and os.environ.get("GITHUB_ACTIONS") != "true":
+        raise EvidenceError("CI_PROVENANCE")
     forbidden = tuple(Path(value).read_bytes() for value in args.forbidden_file)
-    print(json.dumps(verify_evidence(Path(args.evidence), expected_head=args.head, expected_run_id=args.run_id, forbidden=forbidden, committed=True), sort_keys=True))
+    env = {"repository": "GITHUB_REPOSITORY", "eventName": "GITHUB_EVENT_NAME", "workflow": "GITHUB_WORKFLOW", "workflowRef": "GITHUB_WORKFLOW_REF", "workflowSha": "GITHUB_WORKFLOW_SHA", "job": "GITHUB_JOB", "runId": "GITHUB_RUN_ID", "runAttempt": "GITHUB_RUN_ATTEMPT", "headSha": "NARRATWIN_H2_EXPECTED_HEAD"}
+    context = {key: os.environ.get(name, "") for key, name in env.items()} if args.ci else None
+    print(json.dumps(verify_evidence(Path(args.evidence), expected_head=args.head, expected_run_id=args.run_id, forbidden=forbidden, committed=True, ci_context=context), sort_keys=True))
     return 0
 if __name__ == "__main__":
     try:
         raise SystemExit(_main(sys.argv[1:]))
     except (EvidenceError, OSError) as error:
         code = str(error) if isinstance(error, EvidenceError) else "INPUT_READ"
-        print(json.dumps({"schema": "heartbeat2-verification-v2", "outcome": "WITHHELD", "failureCode": code}, sort_keys=True), file=sys.stderr)
+        print(json.dumps({"schema": "heartbeat2-verification-v3", "outcome": "WITHHELD", "failureCode": code}, sort_keys=True), file=sys.stderr)
         raise SystemExit(1)

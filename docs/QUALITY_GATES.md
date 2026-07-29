@@ -849,8 +849,8 @@ Focused A1/A2 regressions, exact-branch/allowlist enforcement, `make quality`, r
 
 ## Heartbeat 2 evidence integrity gate
 
-Issue `#308` directly authorizes a post-Checkpoint-B local/mock curated reviewer demo; it is not Product Mode 2 or Issue `#20`. Contract reset 5, explicitly owner-authorized after adversarial review, keeps the allowlist and surfaces fixed while setting PR A to at most eight files, 1,300 charged lines, and four surfaces; PR B remains 12/900/6 and the aggregate becomes 15/2,200/8.
+Issue `#308` directly authorizes a post-Checkpoint-B local/mock curated reviewer demo; it is not Product Mode 2 or Issue `#20`. Contract reset 6 sets PR A to at most nine files, 1,600 charged lines, and five surfaces; PR B remains 12/900/6 and the aggregate is 15/2,500/8.
 
-`scripts/ci/heartbeat2_evidence.py` must fail closed on stale run/head identity, any skipped or non-passing browser result, a malformed/extra write ledger, request/response mismatch, wrong origin, interception/substitution, source-graph drift, broken source/chunk/context/evaluation/media joins, artifact mismatch, unsafe archive, or forbidden material. PR B remains blocked until PR A is approved at exact head, merged, and verified.
+`scripts/ci/heartbeat2_evidence.py` must fail closed on stale identity, malformed provenance, any skipped/non-passing result, malformed ledgers, request/response mismatch, non-local trace traffic, source drift, broken product joins, artifact mismatch, unsafe archive, or forbidden material. `SEMANTIC_PASS_LOCAL` is not execution evidence. CI acceptance additionally requires exact-head checkout, zero-exit runner execution, `CI_EXECUTION_BOUND`, success-only upload, and post-run artifact/workflow metadata reconciliation. PR B remains blocked until PR A is approved at exact head, merged, and verified.
 
 Both PRs require behavioral RED before GREEN, exact branch/allowlist checks, focused regressions, guardrails, `make quality`, required CI/security gates, and eligible non-author exact-head approval. Evidence upload is success-only; providers, real media, deployment, hosting, production claims, private data, and Q&A remain absent.

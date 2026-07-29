@@ -624,7 +624,7 @@ ISSUE_306_B_ALLOWED_CHANGED_FILES = {
 }
 ISSUE_308_H2_A_BRANCH = "phase-1-closure-308-heartbeat2-evidence-contract"
 ISSUE_308_H2_A_ALLOWED_CHANGED_FILES = {
-    "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/PHASE_PLAN.md",
+    ".github/workflows/ci.yml", "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/PHASE_PLAN.md",
     "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
     "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py",
     "tests/unit/test_phase1_closure_docs.py",
@@ -639,12 +639,19 @@ ISSUE_308_H2_B_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_308_FROZEN_BASE = "fa423ce8b016a4f0593d8a294cf9f24ef5caff6c"
-ISSUE_308_LINE_CAPS = {ISSUE_308_H2_A_BRANCH: 1300, ISSUE_308_H2_B_BRANCH: 900}
+ISSUE_308_LINE_CAPS = {ISSUE_308_H2_A_BRANCH: 1600, ISSUE_308_H2_B_BRANCH: 900}
+ISSUE_308_AGGREGATE_CAP = 2500
 ISSUE_308_RESET5_AUTHORITY = {
     "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/308#issuecomment-5118185764", "databaseId": 5118185764,
     "author": "imrohitagrawal", "createdAt": "2026-07-29T13:09:38Z", "updatedAt": "2026-07-29T15:34:06Z",
     "sha256": "31da9a24040a729c46f4d0f6c4c465b0b24145765b58f50394aab5fc0948626f",
     "preflightSha256": "1310c249e4ebe793c9fbfe94d833e9e7d5bde8191927f3b2a52237663a4e9cbd",
+}
+ISSUE_308_RESET6_AUTHORITY = {
+    "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/308#issuecomment-5121265229", "databaseId": 5121265229,
+    "author": "imrohitagrawal", "createdAt": "2026-07-29T17:24:48Z", "updatedAt": "2026-07-29T17:24:48Z",
+    "sha256": "6fcfa8d626f45a0791a157c810471c057eed1d6160543406ecf6a22baa3a6810",
+    "preflightSha256": "20d7c1be5154d139a7149d43b960df639c31a671e7da5f9d8ba1b1c0447a0db6",
 }
 ISSUE_178_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-178.json", "scripts/governance_preflight_github.py",
@@ -4165,8 +4172,8 @@ def check_changed_files(failures: list[str]) -> None:
         local, aggregate = charged_lines(resolve_base()), charged_lines(ISSUE_308_FROZEN_BASE)
         if local is None or aggregate is None:
             fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
-        elif local > ISSUE_308_LINE_CAPS[branch] or aggregate > 2200:
-            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_308_LINE_CAPS[branch]}-line or 2200-line aggregate cap.")
+        elif local > ISSUE_308_LINE_CAPS[branch] or aggregate > ISSUE_308_AGGREGATE_CAP:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_308_LINE_CAPS[branch]}-line or {ISSUE_308_AGGREGATE_CAP}-line aggregate cap.")
 
 
 def check_final_review_baseline(failures: list[str]) -> None:

@@ -9017,3 +9017,10 @@ def test_heartbeat2_reset6_rejects_ignored_external_trace_resource(tmp_path: Pat
     rewrite_heartbeat2_trace(root, add_external, evidence)
     with pytest.raises(evidence.EvidenceError, match="TRACE_BINDING"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_reset6_cli_refuses_ci_claim_outside_github_actions(monkeypatch: Any) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    with pytest.raises(evidence.EvidenceError, match="CI_PROVENANCE"):
+        evidence._main(["--evidence", "missing", "--head", "a" * 40, "--run-id", "run-308", "--ci"])
