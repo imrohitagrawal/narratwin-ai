@@ -8269,7 +8269,7 @@ def load_heartbeat2_evidence_module() -> ModuleType:
     return module
 def test_issue308_exact_branches_accept_only_the_frozen_allowlists(monkeypatch: Any) -> None:
     monkeypatch.setattr(phase1, "charged_lines", lambda base: 0)
-    evidence = {"docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/PHASE_PLAN.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"}
+    evidence = {".github/workflows/ci.yml", "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/PHASE_PLAN.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"}
     demo = {".github/workflows/ci.yml", "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "frontend/playwright.heartbeat2.config.ts", "frontend/src/app/page.tsx", "frontend/src/app/page.test.tsx", "frontend/tests/heartbeat2-browser.spec.ts", "scripts/ci/heartbeat2-browser.sh", "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"}
     assert phase1.ISSUE_308_H2_A_BRANCH == "phase-1-closure-308-heartbeat2-evidence-contract"
     assert phase1.ISSUE_308_H2_A_ALLOWED_CHANGED_FILES == evidence
@@ -8298,9 +8298,9 @@ def test_issue308_near_match_and_backend_changes_fail_closed(monkeypatch: Any) -
 def test_issue308_charged_line_caps_fail_closed(monkeypatch: Any) -> None:
     real_changed_files = phase1.changed_files
     monkeypatch.setattr(phase1, "resolve_base", lambda: "branch-base")
-    monkeypatch.setattr(phase1, "charged_lines", lambda base: 1301 if base == "branch-base" else 1301)
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 1601 if base == "branch-base" else 2501)
     assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_A_BRANCH, files=[]) == [
-        f"Phase 1 Closure branch {phase1.ISSUE_308_H2_A_BRANCH} exceeds its 1300-line or 2200-line aggregate cap."
+        f"Phase 1 Closure branch {phase1.ISSUE_308_H2_A_BRANCH} exceeds its 1600-line or 2500-line aggregate cap."
     ]
     monkeypatch.setattr(phase1, "charged_lines", lambda base: None)
     assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_B_BRANCH, files=[]) == [
@@ -8462,7 +8462,7 @@ def test_heartbeat2_verifier_accepts_exact_packet_and_rejects_false_passes(tmp_p
     root, sources = tmp_path / "evidence", tmp_path / "sources"
     packet = write_heartbeat2_packet(root, sources, evidence)
     result = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
-    assert result["outcome"] == "PASS"
+    assert result["outcome"] == "SEMANTIC_PASS_LOCAL"
     assert result["writeCount"] == 8
     assert packet["report"]["stats"]["startTime"]
     with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_INPUT"):
@@ -8799,7 +8799,7 @@ def test_heartbeat2_reset5_accepts_only_canonical_forbidden_sentinels(tmp_path: 
     monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: (2, 13))
 
     result = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True, forbidden=(values["INTERNAL_FIXTURE"], values["canary"]))
-    assert result["outcome"] == "PASS"
+    assert result["outcome"] == "SEMANTIC_PASS_LOCAL"
 
 
 @pytest.mark.parametrize("body", [
@@ -8943,3 +8943,76 @@ def test_heartbeat2_reset5_rejects_duplicate_response_json_keys(tmp_path: Path) 
     response.update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
     with pytest.raises(evidence.EvidenceError, match="TRAFFIC_LEDGER"):
         evidence._traffic(packet["traffic"], packet["bundle"])
+
+
+def heartbeat2_ci_context() -> dict[str, str]:
+    return {"repository": "imrohitagrawal/narratwin-ai", "eventName": "pull_request", "workflow": "ci", "workflowRef": "imrohitagrawal/narratwin-ai/.github/workflows/ci.yml@refs/pull/309/merge", "workflowSha": "b" * 40, "job": "frontend", "runId": "5121265229", "runAttempt": "1", "headSha": "a" * 40}
+
+
+def bind_heartbeat2_ci_execution(root: Path, packet: dict[str, Any], evidence: Any, ci: dict[str, str]) -> dict[str, Any]:
+    graph = {item["path"]: item["sha256"] for item in packet["manifest"]["sourceGraph"]}
+    record = {"schema": "heartbeat2-ci-execution-v1", "provider": "github-actions", **ci, "producer": "scripts/ci/heartbeat2-browser.sh", "playwrightExitCode": 0, "startedAt": "2026-07-29T17:00:00Z", "completedAt": "2026-07-29T17:00:10Z", "workflowSourceSha256": graph[".github/workflows/ci.yml"], "runnerSourceSha256": graph["scripts/ci/heartbeat2-browser.sh"], "reportSha256": evidence.sha256((root / "playwright.json").read_bytes()), "traceSha256": evidence.sha256((root / "trace.zip").read_bytes())}
+    (root / "execution.json").write_text(json.dumps(record), encoding="utf-8")
+    packet["manifest"]["execution"] = "execution.json"
+    (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
+    return record
+
+
+def test_heartbeat2_reset6_binds_authority_budget_and_workflow_allowlist() -> None:
+    assert phase1.ISSUE_308_RESET6_AUTHORITY == {"url": "https://github.com/imrohitagrawal/narratwin-ai/issues/308#issuecomment-5121265229", "databaseId": 5121265229, "author": "imrohitagrawal", "createdAt": "2026-07-29T17:24:48Z", "updatedAt": "2026-07-29T17:24:48Z", "sha256": "6fcfa8d626f45a0791a157c810471c057eed1d6160543406ecf6a22baa3a6810", "preflightSha256": "20d7c1be5154d139a7149d43b960df639c31a671e7da5f9d8ba1b1c0447a0db6"}
+    assert phase1.ISSUE_308_LINE_CAPS[phase1.ISSUE_308_H2_A_BRANCH] == 1600
+    assert ".github/workflows/ci.yml" in phase1.ISSUE_308_H2_A_ALLOWED_CHANGED_FILES
+
+
+def test_heartbeat2_reset6_workflow_is_exact_head_fail_fast_and_success_only() -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "ref: ${{ github.event.pull_request.head.sha || github.sha }}" in workflow
+    assert "NARRATWIN_H2_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}" in workflow
+    assert "if: ${{ hashFiles('scripts/ci/heartbeat2-browser.sh') != '' }}" in workflow
+    assert "run: bash scripts/ci/heartbeat2-browser.sh" in workflow
+    assert "if: success() && hashFiles('reports/heartbeat2/published/**') != ''" in workflow
+    assert "name: heartbeat2-browser-evidence-${{ github.run_id }}-${{ github.run_attempt }}" in workflow
+    assert "if-no-files-found: error" in workflow
+    assert "continue-on-error" not in workflow
+
+
+def test_heartbeat2_reset6_separates_local_semantics_from_ci_execution(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+    local = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    assert local["outcome"] == "SEMANTIC_PASS_LOCAL" and local["executionAuthenticity"] == "UNATTESTED"
+
+
+def test_heartbeat2_reset6_accepts_exact_ci_execution_binding(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet, ci = write_heartbeat2_packet(root, sources, evidence), heartbeat2_ci_context()
+    bind_heartbeat2_ci_execution(root, packet, evidence, ci)
+    result = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, ci_context=ci)
+    assert result["outcome"] == "CI_EXECUTION_BOUND" and result["executionAuthenticity"] == "GITHUB_ACTIONS"
+
+
+@pytest.mark.parametrize(("field", "value"), [("headSha", "c" * 40), ("runAttempt", "2"), ("playwrightExitCode", 1), ("traceSha256", "0" * 64)])
+def test_heartbeat2_reset6_rejects_rebound_or_failed_ci_execution(tmp_path: Path, field: str, value: Any) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / field, tmp_path / "sources"
+    packet, ci = write_heartbeat2_packet(root, sources, evidence), heartbeat2_ci_context()
+    record = bind_heartbeat2_ci_execution(root, packet, evidence, ci)
+    record[field] = value
+    (root / "execution.json").write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="CI_PROVENANCE"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, ci_context=ci)
+
+
+def test_heartbeat2_reset6_rejects_ignored_external_trace_resource(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+    def add_external(members: dict[str, bytes]) -> None:
+        rows = members["0-trace.network"].splitlines()
+        rows.append(json.dumps({"type": "resource-snapshot", "snapshot": {"request": {"url": "https://example.invalid/ignored", "method": "GET", "headers": []}, "response": {"status": 200, "content": {}}}}).encode())
+        members["0-trace.network"] = b"\n".join(rows)
+    rewrite_heartbeat2_trace(root, add_external, evidence)
+    with pytest.raises(evidence.EvidenceError, match="TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
