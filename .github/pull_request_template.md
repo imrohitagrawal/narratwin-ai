@@ -22,7 +22,10 @@ not substitutes for the explanation. -->
 <!-- Describe the user or product problem without relying on an issue number or link. -->
 
 ### 4. Exact changes in this PR
-<!-- List the concrete behavior, documents, components, and boundaries changed by this PR. -->
+<!-- List the concrete behavior, documents, components, and boundaries changed by this PR.
+If this section claims a number of fields, changes, controls, checks, items,
+components, files, paths, rules, or requirements, enumerate every counted item
+as a Markdown list. -->
 
 ### 5. What is complete after merge
 <!-- State the verified repository or product state that will exist after merge. -->

@@ -977,6 +977,12 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
             "self-contained product and end-goal context",
             "runtime and production authorization remain unchanged",
         ),
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+            "End product goal",
+            "Exact changes",
+            "enumerate every counted item",
+            "independent reviewer",
+        ),
     }
     for relative_path, markers in required_markers.items():
         text = (root / relative_path).read_text(encoding="utf-8")

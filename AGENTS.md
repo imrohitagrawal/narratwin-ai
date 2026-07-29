@@ -58,7 +58,9 @@ Before changing files, read:
     and links are supplemental; they never replace this explanation. Relate the
     PR to the end-to-end demo and eventual production path without claiming
     production readiness, deployment, release, or public availability unless a
-    separate authorized gate proves that claim.
+    separate authorized gate proves that claim. When `Exact changes` claims a
+    number of fields, changes, controls, checks, items, components, files,
+    paths, rules, or requirements, enumerate every counted item.
 
 ## Approved Build Stages
 

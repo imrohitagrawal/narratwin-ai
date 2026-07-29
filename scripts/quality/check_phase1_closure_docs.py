@@ -1894,6 +1894,7 @@ ISSUE_315_ALLOWED_CHANGED_FILES = {
     "docs/QUALITY_GATES.md",
     "docs/SKILL_EXECUTION_PLAN.md",
     "docs/STATUS.md",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
 }
 ISSUE_315_LINE_CAP = 1000
 ISSUE_313_ORACLE_PATH = "docs/evals/issue280_semantic_oracle_v1.json"

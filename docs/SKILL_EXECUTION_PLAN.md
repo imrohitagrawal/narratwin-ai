@@ -49,8 +49,11 @@ Issue `#315` uses GitHub workflow guidance, spec-driven development,
 planning-and-task-breakdown, context engineering, TDD, and incremental
 implementation for a governance-only product-context gate. Evidence is the
 owner-approved issue contract, first-commit preflight, committed parser and
-durability RED tests before GREEN, field-level false-pass mutations, forced PR
-event validation, full quality gates, and independent exact-head review.
+durability RED tests before GREEN, field-level and unexpanded-count false-pass
+mutations, forced PR event validation, full quality gates, and independent
+exact-head review. The reusable authoring rule is also copied into the new-
+project engineering playbook so later repositories do not depend on this chat
+or NarraTwin-only policy.
 
 Backend, frontend, browser, provider, runtime security, performance,
 observability, deployment, and shipping implementation skills are rejected as
