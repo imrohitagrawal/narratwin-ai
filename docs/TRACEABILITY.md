@@ -318,4 +318,4 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 ## Issue 304 A2 traceability
 - A1 merged through PR `#303` at `510c78297cfe62b7314b91af13f4f6e67a17507b`.
 - Curation, Stage 4, API, and `test_heartbeat1_a2_exclusion_api.py` prove metadata-only exclusions, safety precedence, replay, owner summary, legacy separation, tamper repair, and bounded denial logs.
-- ADR `0041`, API contract, status, stage plan, and checker enforce the 10/600/6 ceiling under `#304` and parent `#302`.
+- ADR `0041`, API contract, status, stage plan, and checker enforce the 10/600/6 ceiling in PR `#305` under `#304` and parent `#302`.

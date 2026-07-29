@@ -1013,5 +1013,5 @@ Required update rules:
 - A1's 10-file, 900 hand-authored line, six-surface envelope is merged through PR `#303` at `510c78297cfe62b7314b91af13f4f6e67a17507b`; issue `#302` and `#8` remain open.
 - Scope: source-less explicit/policy exclusion, owner summary, durable replay, valid v1 separation, and fail-closed restore repair.
 - Frozen envelope: exactly 10 changed files, at most 600 hand-authored changed lines, and six surfaces.
-- Evidence authority: issue `#302`, child `#304`, and comment database ID `5113777002`; re-resolve before push, review, and merge.
+- Evidence authority: issue `#302`, child `#304`, comment database ID `5113777002`, and draft PR `#305`; re-resolve before review and merge.
 - Deferred: B UI/browser proof, Heartbeat 2, paid providers, hosted/public behavior, deployment, and production-readiness claims.
