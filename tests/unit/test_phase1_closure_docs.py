@@ -8296,9 +8296,9 @@ def test_issue308_near_match_and_backend_changes_fail_closed(monkeypatch: Any) -
 def test_issue308_charged_line_caps_fail_closed(monkeypatch: Any) -> None:
     real_changed_files = phase1.changed_files
     monkeypatch.setattr(phase1, "resolve_base", lambda: "branch-base")
-    monkeypatch.setattr(phase1, "charged_lines", lambda base: 901 if base == "branch-base" else 901)
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 1301 if base == "branch-base" else 1301)
     assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_A_BRANCH, files=[]) == [
-        f"Phase 1 Closure branch {phase1.ISSUE_308_H2_A_BRANCH} exceeds its 900-line or 1800-line aggregate cap."
+        f"Phase 1 Closure branch {phase1.ISSUE_308_H2_A_BRANCH} exceeds its 1300-line or 2200-line aggregate cap."
     ]
     monkeypatch.setattr(phase1, "charged_lines", lambda base: None)
     assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_B_BRANCH, files=[]) == [
@@ -8667,3 +8667,106 @@ def test_heartbeat2_verifier_rejects_response_scope_duplicates_and_active_artifa
     packet["bundle"]["render"]["artifactChecksums"]["video"] = digest
     with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
         evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
+
+
+def test_heartbeat2_reset5_binds_canonical_authority() -> None:
+    assert phase1.ISSUE_308_RESET5_AUTHORITY == {
+        "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/308#issuecomment-5118185764",
+        "databaseId": 5118185764,
+        "author": "imrohitagrawal",
+        "createdAt": "2026-07-29T13:09:38Z",
+        "updatedAt": "2026-07-29T15:34:06Z",
+        "sha256": "31da9a24040a729c46f4d0f6c4c465b0b24145765b58f50394aab5fc0948626f",
+        "preflightSha256": "1310c249e4ebe793c9fbfe94d833e9e7d5bde8191927f3b2a52237663a4e9cbd",
+    }
+
+
+def test_heartbeat2_reset5_uses_capture_safe_browser_source_policy(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+
+    assert evidence.scan_h2_browser_sources(spec)["forbiddenMatchCount"] == 0
+    spec.write_text(spec.read_text().replace('await page.goto("/");', 'await page.route("**/*", route => route.fulfill());'), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence.scan_h2_browser_sources(spec)
+
+
+def test_heartbeat2_reset5_rejects_handcrafted_minimal_execution(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+
+    with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT|TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_decoy_title_listener_capture(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text('''import { test, type Request } from "@playwright/test";
+const title = "Heartbeat 2 local reviewer demo";
+const neverCalled = (page: any) => {
+  const requestIds = new WeakMap<Request, string>();
+  page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); });
+  page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); });
+};
+test(title, async ({ page }) => { await page.goto("/"); });
+''', encoding="utf-8")
+    next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_rebound_write_request_body(tmp_path: Path) -> None:
+    import base64
+
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    raw = b'{"operation":"submit","body":"unrelated"}'
+    packet["traffic"]["requests"][1].update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    (root / "traffic.json").write_text(json.dumps(packet["traffic"]), encoding="utf-8")
+    def rebind(members: dict[str, bytes]) -> None:
+        rows = [json.loads(line) for line in members["0-trace.network"].splitlines()]
+        rows[1]["snapshot"]["request"]["postData"] = {"text": raw.decode()}
+        members["0-trace.network"] = "\n".join(json.dumps(row) for row in rows).encode()
+    rewrite_heartbeat2_trace(root, rebind, evidence)
+
+    with pytest.raises(evidence.EvidenceError, match="REQUEST_BINDING|PRODUCT_JOIN|TRAFFIC_LEDGER"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_semantic_artifact_aliases(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    video = json.loads(packet["artifact"].read_text())
+    video.update({"networkEgressEnabled": True, "externalProviderCallMade": True, "realAudioGenerated": True})
+    packet["artifact"].write_text(json.dumps(video), encoding="utf-8")
+    digest = evidence.sha256(packet["artifact"].read_bytes())
+    packet["bundle"]["artifacts"]["video"]["sha256"] = digest
+    packet["bundle"]["render"]["artifactChecksums"]["video"] = digest
+
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
+
+
+@pytest.mark.parametrize("forbidden", [(b"", b""), (b"same", b"same"), (b"unrelated-one", b"unrelated-two")])
+def test_heartbeat2_reset5_rejects_unbound_forbidden_sentinels(tmp_path: Path, monkeypatch: Any, forbidden: tuple[bytes, bytes]) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["manifest"]["forbiddenInputs"] = {
+        "controlledSha256": evidence.sha256(b"reset5-controlled"),
+        "canarySha256": evidence.sha256(b"reset5-canary"),
+    }
+    (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
+    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: None)
+
+    with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_INPUT"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True, forbidden=forbidden)
