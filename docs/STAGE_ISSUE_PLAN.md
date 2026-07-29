@@ -2117,3 +2117,24 @@ The reset-6 canonical comment database ID is `5121265229`. Issue #8, #308, and t
 ## Issue 311 Issue #8 product-memory closeout scope
 
 Issue `#311` is reference-only under `#8` and uses exact branch `phase-1-closure-process-311-issue8-product-memory-closeout`. Its governance-only envelope is exactly seven changed files, at most 350 charged lines, and five surfaces: preflight, policy/skill plans, stage/status ledgers, checker, and unit tests. The allowlist is `docs/governance/preflights/issue-311.json`, `docs/PHASE_PLAN.md`, `docs/SKILL_EXECUTION_PLAN.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/STATUS.md`, `scripts/quality/check_phase1_closure_docs.py`, and `tests/unit/test_phase1_closure_docs.py`; every near-match branch fails closed. No application/runtime change, Heartbeat 3, Product Mode 2/#20, provider, spend, deployment, hosting, public/production claim, real/private data, real/cloned identity, or protected/unrelated tracker mutation is authorized.
+
+## Issue 313 Issue #280 repair feasibility and oracle scope
+
+Issue `#313` is the controlling architecture/evaluation decision workstream for
+the still-unfixed Issue `#280`. It uses exact branch
+`phase-1-closure-process-313-issue280-repair-feasibility-oracle` and is limited
+to exactly nine paths, at most 950 charged lines, and seven surfaces:
+GovernancePreflightV1, feasibility decision, machine-readable oracle contract,
+ADR, stage/skill/status ledgers, checker, and unit tests.
+
+The independent oracle owns expected propositions, mandatory rows, exact
+zero-tolerance thresholds, adversarial false-pass cases, and computed verdicts.
+It must not import the runtime converter, accept converter-authored target text,
+use caller-selected scope, or treat structural success as semantic proof.
+
+ADR `0044` selects a source-grounded semantic-frame intermediate representation
+with deterministic fail-closed local/mock renderers only as the bounded GO
+candidate for a later controlling repair issue. Runtime repair remains
+`NO_GO_UNTIL_SEPARATE_REPAIR_ISSUE`. PR `#299`, existing Issue #280 reports,
+the negative forensic verifier, public provenance, Issues `#280`, `#298`,
+`#300`, `#301`, and all stopped/protected evidence remain unchanged.

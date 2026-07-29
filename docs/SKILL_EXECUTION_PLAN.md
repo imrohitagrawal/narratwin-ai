@@ -26,6 +26,23 @@ alongside live GitHub issue and PR state.
 No Product Mode 2, runtime, media, provider, hosted, public, or production work
 is authorized by this handoff or by StatusStateV1.
 
+## Issue 313 Architecture And Oracle Decision
+
+Issue `#313` uses GitHub triage, spec-driven development,
+planning-and-task-breakdown, context engineering, TDD, and incremental
+implementation as process guidance for a governance-only architecture and
+evaluation decision. Evidence is the frozen issue/preflight, committed failing
+tests before checker/docs GREEN, oracle mutation coverage, quality gates, and
+independent exact-head review; skill invocation alone proves nothing.
+
+Backend, frontend, API, RAG, provider, browser, performance, observability, and
+runtime security implementation skills are rejected as wrong-surface because
+Issue #313 changes no product behavior. Custom skills, external translation
+models, and model judges are rejected because existing approved guidance is
+sufficient and those options introduce dependency, license, resource, or
+circular-evaluation risk. A later Issue #280 repair must make a fresh selection
+from its own behavioral claim and frozen implementation boundary.
+
 ## Stage-Aligned Skill Use
 
 | Stage | Stage name | Skill/tool posture | Allowed outputs |

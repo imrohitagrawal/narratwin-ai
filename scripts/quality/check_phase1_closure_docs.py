@@ -1868,6 +1868,43 @@ ISSUE_311_ALLOWED_CHANGED_FILES = {
     "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_311_LINE_CAP = 350
+ISSUE_313_BRANCH = "phase-1-closure-process-313-issue280-repair-feasibility-oracle"
+ISSUE_313_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-313.json",
+    "docs/reviews/ISSUE_313_ISSUE280_REPAIR_FEASIBILITY.md",
+    "docs/evals/issue280_semantic_oracle_v1.json",
+    "docs/ADR/0044-issue280-repair-architecture-feasibility.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/STATUS.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_313_LINE_CAP = 950
+ISSUE_313_ORACLE_PATH = "docs/evals/issue280_semantic_oracle_v1.json"
+ISSUE_313_METRICS = [
+    ("essential-proposition-recall", "eq", 1.0),
+    ("unsupported-proposition-count", "eq", 0),
+    ("citation-support-precision", "eq", 1.0),
+    ("audience-required-emphasis-recall", "eq", 1.0),
+    ("pairwise-audience-collapse-count", "eq", 0),
+    ("depth-role-violation-count", "eq", 0),
+    ("glossary-loss-count", "eq", 0),
+    ("target-script-violation-count", "eq", 0),
+    ("mandatory-row-coverage", "eq", 1.0),
+]
+ISSUE_313_ADVERSARIAL_CASES = [
+    "identical-audience-bodies",
+    "prefix-only-audience-difference",
+    "metadata-or-template-target-text",
+    "english-fallback-for-non-english-target",
+    "missing-user-sentinel-proposition",
+    "uncited-deep-example-tradeoff-or-caveat",
+    "required-glossary-term-loss",
+    "mandatory-row-omission-or-duplication",
+    "unknown-schema-key-or-author-verdict",
+    "unsupported-clause-or-language-false-success",
+]
 PHF020A_ACTIVATION = {
     "Evidence ID": "PM-MODE-001",
     "Mode": "PM-1",
@@ -1912,10 +1949,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #311",
-        "product-memory-closeout-complete",
-        "product-memory-closeout-complete",
-        "Heartbeat 2 is complete through PRs #309/#310 and Issue #308 is closed. Issue #8 is satisfied by Issue #311 once its PR merges and may close after post-merge verification. Heartbeat 3, Product Mode 2/#20, providers, hosting, deployment, production, private data, and protected-tracker work remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate.",
+        "issue #313",
+        "repair-feasibility-decision-complete",
+        "repair-feasibility-decision-complete",
+        "Issue #313 defines the still-unfixed Issue #280 defect, an independent semantic oracle contract, and a bounded semantic-frame repair candidate for a later issue. Issue #300 and PR #301 are completed historical negative-containment evidence; PR #299 and all forensic artifacts remain preserved. Runtime repair, Heartbeat 3, Product Mode 2/#20, providers, hosting, deployment, production, private data, and protected-tracker work remain unauthorized.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -2234,8 +2271,121 @@ def issue8_product_memory_findings(documents: dict[str, str]) -> list[str]:
 
 
 def issue8_closeout_status_findings(text: str) -> list[str]:
-    required = ("| SSV1-NEXT | next-action | issue #311 | product-memory-closeout-complete | product-memory-closeout-complete |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
+    required = ("| SSV1-NEXT | next-action | issue #313 | repair-feasibility-decision-complete | repair-feasibility-decision-complete |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
     return ["I8.STATUS.TERMINAL" for marker in required if marker not in text]
+
+
+def issue313_oracle_findings(oracle: object) -> list[str]:
+    if not isinstance(oracle, dict):
+        return ["F280.ORACLE.SCHEMA"]
+    expected_top = {
+        "schemaVersion", "authority", "independence", "fixtureContract",
+        "mandatoryMetrics", "adversarialCases", "verdict", "subsequentRepairGate",
+    }
+    if set(oracle) != expected_top or oracle.get("schemaVersion") != "Issue280SemanticOracleV1":
+        return ["F280.ORACLE.SCHEMA"]
+    authority = oracle.get("authority")
+    if authority != {
+        "controllingIssue": 313,
+        "defectIssue": 280,
+        "forensicPr": 299,
+        "evidenceHead": "f93653e8a11e697c88766b207fb01c18662339d6",
+        "runtimeRepairAuthorized": False,
+        "dataClass": "public-safe synthetic only",
+    }:
+        return ["F280.ORACLE.AUTHORITY"]
+    independence = oracle.get("independence")
+    if not isinstance(independence, dict) or set(independence) != {
+        "expectedSemanticsSource", "actualOutputSource", "forbiddenInputs", "requiredSeparation"
+    }:
+        return ["F280.ORACLE.INDEPENDENCE"]
+    forbidden = independence.get("forbiddenInputs")
+    separation = independence.get("requiredSeparation")
+    if not isinstance(forbidden, list) or not isinstance(separation, list):
+        return ["F280.ORACLE.INDEPENDENCE"]
+    if "runtime converter source" not in forbidden or "caller-selected row set" not in forbidden:
+        return ["F280.ORACLE.INDEPENDENCE"]
+    if not any("must not import backend/app/issue280.py" in row for row in separation):
+        return ["F280.ORACLE.INDEPENDENCE"]
+    metrics = oracle.get("mandatoryMetrics")
+    if not isinstance(metrics, list):
+        return ["F280.ORACLE.METRICS"]
+    observed_metrics = []
+    for metric in metrics:
+        if not isinstance(metric, dict) or set(metric) != {
+            "id", "measure", "operator", "threshold", "mandatory"
+        } or not metric.get("measure") or metric.get("mandatory") is not True:
+            return ["F280.ORACLE.METRICS"]
+        observed_metrics.append((metric.get("id"), metric.get("operator"), metric.get("threshold")))
+    if observed_metrics != ISSUE_313_METRICS:
+        return ["F280.ORACLE.METRICS"]
+    if oracle.get("adversarialCases") != ISSUE_313_ADVERSARIAL_CASES:
+        return ["F280.ORACLE.ADVERSARIAL"]
+    verdict = oracle.get("verdict")
+    if verdict != {
+        "computedOnly": True,
+        "semanticPassRule": "all mandatory metrics pass on every mandatory row and every adversarial case is rejected",
+        "allowedClassifications": ["SEMANTIC_PASS", "NOT_PROVEN", "FAILED"],
+        "structuralPassCanSatisfySemanticClaim": False,
+    }:
+        return ["F280.ORACLE.VERDICT"]
+    gate = oracle.get("subsequentRepairGate")
+    if gate != {
+        "newControllingIssueRequired": True,
+        "committedBehavioralRedRequired": True,
+        "independentOracleExecutorRequired": True,
+        "exactHeadIndependentReviewRequired": True,
+        "runtimeRepairStatus": "NO_GO_UNTIL_SEPARATE_REPAIR_ISSUE",
+    }:
+        return ["F280.ORACLE.REPAIR_GATE"]
+    fixture = oracle.get("fixtureContract")
+    if not isinstance(fixture, dict) or set(fixture) != {
+        "inputAuthority", "propositionManifest", "mandatoryAxes", "rowSelection"
+    } or not isinstance(fixture.get("mandatoryAxes"), list) or len(fixture["mandatoryAxes"]) != 5:
+        return ["F280.ORACLE.FIXTURES"]
+    return []
+
+
+def issue313_decision_findings(decision: str, adr: str) -> list[str]:
+    markers = (
+        "Audience-collapse defect",
+        "Independent semantic oracle",
+        "Semantic-frame intermediate representation",
+        "Phrasebook expansion",
+        "Local model adapter",
+        "Refusal-only containment",
+        "GO for a subsequent repair issue",
+        "NO-GO for runtime repair in Issue #313",
+        "f93653e8a11e697c88766b207fb01c18662339d6",
+        "PR #299 remains unchanged",
+    )
+    findings = ["F280.DECISION.MISSING" for marker in markers if marker not in decision]
+    for marker in (
+        "Status: Accepted",
+        "Semantic-frame intermediate representation",
+        "independent proposition oracle",
+        "NO-GO_UNTIL_SEPARATE_REPAIR_ISSUE",
+        "No runtime code changes",
+    ):
+        if marker not in adr:
+            findings.append("F280.ADR.MISSING")
+    return findings
+
+
+def issue313_status_findings(text: str) -> list[str]:
+    required = (
+        "| SSV1-NEXT | next-action | issue #313 | repair-feasibility-decision-complete | repair-feasibility-decision-complete |",
+        "Issue #300 and PR #301 are completed historical negative-containment evidence",
+        "Runtime repair remains NO-GO until a separate controlling issue",
+    )
+    findings = ["F280.STATUS.MISSING" for marker in required if marker not in text]
+    for stale in (
+        "Issue #300 is the active negative-forensic-only reset",
+        "Complete PR #301 negative forensic containment",
+    ):
+        if stale in text:
+            findings.append("F280.STATUS.STALE")
+    return findings
 
 
 def expanded_issue_numbers(value: str) -> set[str]:
@@ -4019,6 +4169,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_311_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-311-"):
         allowed_files = set()
+    elif branch == ISSUE_313_BRANCH:
+        allowed_files = ISSUE_313_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-313-"):
+        allowed_files = set()
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
@@ -4214,6 +4368,12 @@ def check_changed_files(failures: list[str]) -> None:
             fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
         elif local > ISSUE_311_LINE_CAP:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_311_LINE_CAP}-line cap.")
+    if branch == ISSUE_313_BRANCH:
+        local = charged_lines(resolve_base())
+        if local is None:
+            fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
+        elif local > ISSUE_313_LINE_CAP:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_313_LINE_CAP}-line cap.")
 
 
 def check_final_review_baseline(failures: list[str]) -> None:
@@ -6190,6 +6350,23 @@ def check_issue300_semantic_governance(failures: list[str]) -> None:
         fail(failures, "Issue #280 forensic verifier must not contain a positive closure path.")
 
 
+def check_issue313_repair_feasibility(failures: list[str]) -> None:
+    try:
+        oracle = json.loads(read(ISSUE_313_ORACLE_PATH))
+    except (json.JSONDecodeError, OSError):
+        fail(failures, f"{ISSUE_313_ORACLE_PATH} must contain valid JSON.")
+    else:
+        for finding in issue313_oracle_findings(oracle):
+            fail(failures, f"Issue #313 semantic-oracle finding: {finding}")
+    for finding in issue313_decision_findings(
+        read("docs/reviews/ISSUE_313_ISSUE280_REPAIR_FEASIBILITY.md"),
+        read("docs/ADR/0044-issue280-repair-architecture-feasibility.md"),
+    ):
+        fail(failures, f"Issue #313 feasibility-decision finding: {finding}")
+    for finding in issue313_status_findings(read("docs/STATUS.md")):
+        fail(failures, f"Issue #313 status finding: {finding}")
+
+
 def check_process_docs(failures: list[str]) -> None:
     required_files = (
         ".github/CODEOWNERS",
@@ -6649,6 +6826,7 @@ def main() -> int:
         check_status_state_v1_contract(failures)
         check_process_docs(failures)
         check_issue300_semantic_governance(failures)
+        check_issue313_repair_feasibility(failures)
 
     if failures:
         print("Phase 1 Closure quality failures:")
