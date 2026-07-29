@@ -47,7 +47,9 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
+          fetch-depth: 0
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "26"
@@ -72,6 +74,24 @@ jobs:
         with:
           name: heartbeat1-browser-evidence
           path: reports/heartbeat1/published
+          if-no-files-found: error
+          retention-days: 7
+      - name: Heartbeat 2 trusted browser evidence
+        if: ${{ hashFiles('scripts/ci/heartbeat2-browser.sh') != '' }}
+        env:
+          NARRATWIN_H2_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/heartbeat2-browser.sh
+      - name: Verify Heartbeat 2 CI execution binding
+        if: success() && hashFiles('scripts/ci/heartbeat2-browser.sh') != ''
+        env:
+          NARRATWIN_H2_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: jq -e '.outcome == "CI_EXECUTION_BOUND" and .executionAuthenticity == "GITHUB_ACTIONS" and .headSha == env.NARRATWIN_H2_EXPECTED_HEAD and .githubRunId == env.GITHUB_RUN_ID and .githubRunAttempt == env.GITHUB_RUN_ATTEMPT' reports/heartbeat2/published/ci-verification.json
+      - name: Upload Heartbeat 2 trusted evidence
+        if: success() && hashFiles('scripts/ci/heartbeat2-browser.sh') != '' && hashFiles('reports/heartbeat2/published/**') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: heartbeat2-browser-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/heartbeat2/published
           if-no-files-found: error
           retention-days: 7
 

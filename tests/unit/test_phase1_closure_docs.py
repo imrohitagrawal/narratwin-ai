@@ -4205,11 +4205,13 @@ def test_changed_files_uses_final_worktree_diff_from_base(monkeypatch: Any) -> N
     calls: list[list[str]] = []
     monkeypatch.setattr(phase1, "resolve_base", lambda: "pinned-base")
 
-    def fake_run_git(args: list[str]) -> str:
-        calls.append(args)
-        return "docs/STATUS.md" if args[0] == "diff" else "tests/unit/new_test.py"
+    def fake_run(args: list[str], **kwargs: Any) -> Any:
+        git_args = args[1:]
+        calls.append(git_args)
+        stdout = "docs/STATUS.md" if git_args[0] == "diff" else "tests/unit/new_test.py"
+        return type("GitResult", (), {"returncode": 0, "stdout": stdout})()
 
-    monkeypatch.setattr(phase1, "run_git", fake_run_git)
+    monkeypatch.setattr(phase1.subprocess, "run", fake_run)
 
     assert phase1.changed_files() == ["docs/STATUS.md", "tests/unit/new_test.py"]
     assert calls == [
@@ -8258,3 +8260,768 @@ def test_issue306_heartbeat1_b_rejects_backend_or_ninth_surface(monkeypatch: Any
     assert run_changed_files_check(monkeypatch, branch="phase-1-closure-306-heartbeat1-b-browser-reopen", files=[rel]) == [
         "Phase 1 Closure branch phase-1-closure-306-heartbeat1-b-browser-reopen may not change backend/app/main.py."
     ]
+def load_heartbeat2_evidence_module() -> ModuleType:
+    module_path = Path(__file__).parents[2] / "scripts" / "ci" / "heartbeat2_evidence.py"
+    spec = importlib.util.spec_from_file_location("heartbeat2_evidence_under_test", module_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+def test_issue308_exact_branches_accept_only_the_frozen_allowlists(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 0)
+    evidence = {".github/workflows/ci.yml", "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/PHASE_PLAN.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"}
+    demo = {".github/workflows/ci.yml", "docs/ADR/0043-heartbeat2-curated-reviewer-demo.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "frontend/playwright.heartbeat2.config.ts", "frontend/src/app/page.tsx", "frontend/src/app/page.test.tsx", "frontend/tests/heartbeat2-browser.spec.ts", "scripts/ci/heartbeat2-browser.sh", "scripts/ci/heartbeat2_evidence.py", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"}
+    assert phase1.ISSUE_308_H2_A_BRANCH == "phase-1-closure-308-heartbeat2-evidence-contract"
+    assert phase1.ISSUE_308_H2_A_ALLOWED_CHANGED_FILES == evidence
+    assert phase1.ISSUE_308_H2_B_BRANCH == "phase-1-closure-308-heartbeat2-curated-reviewer-demo"
+    assert phase1.ISSUE_308_H2_B_ALLOWED_CHANGED_FILES == demo
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_A_BRANCH, files=sorted(evidence)) == []
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_B_BRANCH, files=sorted(demo)) == []
+
+
+def test_issue308_near_match_and_backend_changes_fail_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 0)
+    branch = "phase-1-closure-308-heartbeat2-evidence-contract-extra"
+    rel = "docs/STATUS.md"
+    assert run_changed_files_check(monkeypatch, branch=branch, files=[rel]) == [
+        f"Phase 1 Closure branch {branch} may not change {rel}."
+    ]
+    assert run_changed_files_check(
+        monkeypatch,
+        branch="phase-1-closure-308-heartbeat2-curated-reviewer-demo",
+        files=["backend/app/main.py"],
+    ) == [
+        "Phase 1 Closure branch phase-1-closure-308-heartbeat2-curated-reviewer-demo may not change backend/app/main.py."
+    ]
+
+
+def test_issue308_charged_line_caps_fail_closed(monkeypatch: Any) -> None:
+    real_changed_files = phase1.changed_files
+    monkeypatch.setattr(phase1, "resolve_base", lambda: "branch-base")
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 1601 if base == "branch-base" else 2501)
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_A_BRANCH, files=[]) == [
+        f"Phase 1 Closure branch {phase1.ISSUE_308_H2_A_BRANCH} exceeds its 1600-line or 2500-line aggregate cap."
+    ]
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: None)
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_308_H2_B_BRANCH, files=[]) == [
+        f"Phase 1 Closure branch {phase1.ISSUE_308_H2_B_BRANCH} has uncountable or binary charged lines."
+    ]
+    failed = type("FailedGit", (), {"returncode": 1, "stdout": ""})()
+    monkeypatch.setattr(phase1, "changed_files", real_changed_files)
+    monkeypatch.setattr(phase1.subprocess, "run", lambda *args, **kwargs: failed)
+    assert phase1.charged_lines("missing-base") is None
+    failures: list[str] = []
+    phase1.check_changed_files(failures)
+    assert failures == [f"Phase 1 Closure branch {phase1.ISSUE_308_H2_B_BRANCH} could not resolve its changed-file set."]
+
+
+def write_heartbeat2_packet(root: Path, source_root: Path, evidence: Any) -> dict[str, Any]:
+    import base64
+    import hashlib
+    root.mkdir(parents=True, exist_ok=True)
+    graph = []
+    for relative in evidence.SOURCES:
+        path = source_root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        content = "bounded committed source\n"
+        if relative == "frontend/tests/heartbeat2-browser.spec.ts":
+            content = '''import { test, type Request } from "@playwright/test";
+test("Heartbeat 2 local reviewer demo", async ({ page }) => {
+const requestIds = new WeakMap<Request, string>();
+page.on("request", (request) => {
+  requestIds.set(request, request.url());
+  requests.push({ method: request.method(), body: request.postDataBuffer() });
+});
+page.on("response", async (response) => {
+  const request = response.request();
+  responses.push({ requestId: requestIds.get(request), status: response.status(), body: await response.body() });
+});
+await page.goto("/");
+});
+'''
+        path.write_text(content, encoding="utf-8")
+        graph.append({"path": relative, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
+    artifacts = {}
+    source_meta = {"runId": "run-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1]}
+    local_provider = {"provider": "mock", "providerMode": "LOCAL", "allowNetworkEgress": False, "requiresApiKey": False, "supportsRealVideo": False, "supportsClonedIdentity": False}
+    multilingual_meta = {"sourceRunId": "run-1", "multilingualRunId": "multi-1", "contextRefIds": ["context-1"], "citationIndexes": [1], "evaluationId": "eval-1", "evaluationChecksum": "eval-sha"}
+    payloads = {
+        "translated": "# Recorrido sintético [1]\n",
+        "subtitles": "1\n00:00:00,000 --> 00:00:01,000\nBounded synthetic caption [1]\n",
+        "voice": json.dumps({"provider": "mock", "providerMode": "LOCAL", "language": "es", "textChecksum": "sha256:3821d826d9dd404793c4ee0077de2a15ecd4f9af8a7351fec392e8419610c0bc", "mockAudioProfile": {"durationMillisecondsEstimate": 1000, "sampleRateHz": 16000, "channels": 1}, "disclosure": "Mock local TTS placeholder"}),
+        "preview": "<!doctype html><html><body>Local synthetic preview</body></html>",
+        "renderManifest": json.dumps({"schema": "Stage7AvatarRenderManifest", "providerConfig": local_provider, "source": source_meta, "multilingualBundle": multilingual_meta}),
+        "video": json.dumps({"schema": "Stage7VideoExportPlaceholder", "realVideoProduced": False, "providerConfig": local_provider, "source": source_meta, "multilingualBundle": multilingual_meta}),
+    }
+    for name, filename, mime in (("translated", "translated.md", "text/markdown"), ("subtitles", "captions.srt", "application/x-subrip"), ("voice", "voice.json", "application/json"), ("preview", "preview.html", "text/html"), ("renderManifest", "render.json", "application/json"), ("video", "video.json", "application/json")):
+        path = root / "artifacts" / filename
+        path.parent.mkdir(exist_ok=True)
+        path.write_text(payloads[name], encoding="utf-8")
+        artifacts[name] = {"path": path.relative_to(root).as_posix(), "filename": filename, "mime": mime, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    report = {"config": {"configFile": "frontend/playwright.heartbeat2.config.ts", "rootDir": "frontend/tests", "version": "1.61.1", "projects": [{"id": "chromium", "name": "chromium"}]}, "errors": [], "stats": {"startTime": "2026-07-29T00:00:00Z", "duration": 10, "expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0}, "suites": [{"title": "", "file": "heartbeat2-browser.spec.ts", "line": 0, "column": 0, "specs": [{"title": "Heartbeat 2 local reviewer demo", "id": "spec-1", "file": "heartbeat2-browser.spec.ts", "line": 2, "column": 1, "ok": True, "tags": [], "tests": [{"expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium", "timeout": 30000, "annotations": [], "results": [{"status": "passed", "retry": 0, "errors": [], "duration": 10, "startTime": "2026-07-29T00:00:00Z", "workerIndex": 0, "parallelIndex": 0, "stdout": [], "stderr": [], "annotations": [], "attachments": [{"name": "trace", "contentType": "application/zip", "path": "/tmp/trace.zip"}]}]}]}]}]}
+    fixture = b"# Heartbeat 2 controlled synthetic public reviewer fixture.\n"
+    source_checksum = hashlib.sha256(fixture).hexdigest()
+    source = {"id": "source-1", "checksum": source_checksum, "decisionId": "decision-1", "policyVersion": "curation-policy-v1", "sourceVersion": "heartbeat2-public-v1", "assertionsFingerprint": "assertions-sha", "states": ["PENDING_REVIEW", "APPROVED", "SOURCE_INGESTED"], "status": "SOURCE_INGESTED", "retained": True, "chunks": [{"id": "chunk-1", "checksum": "chunk-sha"}]}
+    contexts = [{"contextRefId": "context-1", "claimId": "claim-1", "documentId": "source-1", "sourceChecksum": source_checksum, "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}]
+    evaluation = {"id": "eval-1", "checksum": "eval-sha", "status": "PASSED", "unsupportedClaimCount": 0}
+    walkthrough = {"projectId": "project-1", "runId": "run-1", "status": "COMPLETED", "contextRefs": contexts, "claimSupports": [{"claimId": "claim-1", "contextRefId": "context-1", "documentId": "source-1", "chunkId": "chunk-1", "chunkChecksum": "chunk-sha"}], "citations": [{"claimId": "claim-1", "contextRefId": "context-1", "index": 1}], "evaluation": evaluation}
+    media = {"projectId": "project-1", "runId": "multi-1", "sourceRunId": "run-1", "targetLanguage": "es", "supportedLanguage": True, "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "translationMode": "mock", "voiceMode": "mock", "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("translated", "subtitles", "voice")}}
+    render = {"id": "render-1", "projectId": "project-1", "sourceRunId": "run-1", "multilingualRunId": "multi-1", "consentId": "consent-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "contextRefIds": ["context-1"], "citationIndexes": [1], "avatarMode": "local", "cloneEnabled": False, "artifactChecksums": {name: artifacts[name]["sha256"] for name in ("preview", "renderManifest", "video")}}
+    consent = {"id": "consent-1", "projectId": "project-1", "sourceRunId": "run-1", "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "granted": True}
+    bundle = {"principal": "curator_demo", "projectCount": 1, "projectId": "project-1", "legacySources": [], "source": source, "walkthrough": walkthrough, "visibleCitations": [{"claimId": "claim-1", "contextRefId": "context-1", "chunkId": "chunk-1"}], "multilingual": media, "consent": consent, "render": render, "artifacts": artifacts, "otherDemo": {"actionsHidden": True}}
+    methods = [("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201)]
+    paths = ["/api/v1/projects", "/api/v1/projects/project-1/knowledge-documents", "/api/v1/projects/project-1/knowledge-documents/source-1/approval", "/api/v1/projects/project-1/ingestion-runs", "/api/v1/projects/project-1/walkthrough-runs", "/api/v1/projects/project-1/walkthrough-runs/run-1/multilingual-runs", "/api/v1/projects/project-1/walkthrough-runs/run-1/avatar-consents", "/api/v1/projects/project-1/walkthrough-runs/run-1/avatar-renders"]
+    requests = [{"sequence": i, "operation": op, "method": method, "path": paths[i - 1], "origin": evidence.ORIGIN, "principal": "curator_demo", "projectId": "project-1", "id": f"w{i}"} for i, (op, method, status) in enumerate(methods, 1)]
+    requests += [{"sequence": i, "operation": op, "method": method, "path": "/api/v1/languages" if i == 1 else "/api/v1/projects/project-1/source-curation-summary", "origin": evidence.ORIGIN, "principal": principal, "projectId": "" if i == 1 else "project-1", "id": f"r{i}"} for i, (op, method, status, principal) in enumerate(evidence.READS, 1)]
+    denial_paths = paths[4:5] + paths[5:8]
+    requests += [{"sequence": i, "operation": op, "method": method, "path": denial_paths[i - 1], "origin": evidence.ORIGIN, "principal": "other_demo", "projectId": "project-1", "id": f"d{i}"} for i, (op, method, status) in enumerate(evidence.DENIALS, 1)]
+    boundary = "heartbeat2-reset5-boundary"
+    form = {"action": "ACCEPT_FOR_REVIEW", "classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rightsBasis": "PROJECT_OWNED", "rightsStatus": "ELIGIBLE", "usagePolicy": "LOCAL_TEST_REUSE_ALLOWED", "curationSchemaVersion": "source-curation-v1", "sourceVersion": source["sourceVersion"]}
+    multipart = b"".join(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n".encode() for name, value in form.items()) + f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"heartbeat2-public.md\"\r\nContent-Type: text/markdown\r\n\r\n".encode() + fixture + f"\r\n--{boundary}--\r\n".encode()
+    multilingual_bundle = {"sourceRunId": "run-1", "multilingualRunId": "multi-1", "targetLanguage": "es", "contextRefIds": ["context-1"], "citationIndexes": [1], "evaluationId": "eval-1", "evaluationChecksum": "eval-sha", "providerPosture": {"translationProvider": "mock", "translationProviderMode": "LOCAL", "voiceProvider": "mock", "voiceProviderMode": "LOCAL"}}
+    write_payloads = [{"name": "Heartbeat 2 reviewer demo", "description": "Controlled synthetic curated walkthrough", "defaultAudience": "RECRUITER", "defaultLanguage": "en"}, None, {"approvalStatus": "APPROVED", "action": "APPROVE", "curationSchemaVersion": "source-curation-v1", "sourceId": source["id"], "decisionId": source["decisionId"], "policyVersion": source["policyVersion"], "sourceVersion": source["sourceVersion"], "checksum": source["checksum"], "assertionsFingerprint": source["assertionsFingerprint"]}, {"documentIds": [], "sourceIds": [source["id"]]}, {"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Create the controlled synthetic grounded reviewer walkthrough."}, {"targetLanguage": "es", "glossaryTerms": [], "requestedVoiceProvider": "mock"}, {"consentToUseSyntheticAvatar": True}, {"requestedAvatarProvider": "mock", "consentToUseSyntheticAvatar": True, "consentRecordId": "consent-1", "clonedIdentityRequested": False, "multilingualBundle": multilingual_bundle}]
+    for index, request in enumerate(requests):
+        raw = multipart if index == 1 else json.dumps(write_payloads[index] if index < 8 else {"operation": request["operation"]}, separators=(",", ":"), sort_keys=True).encode() if request["method"] != "GET" else b""
+        content_type = f"multipart/form-data; boundary={boundary}" if index == 1 else "application/json" if raw else ""
+        request.update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": hashlib.sha256(raw).hexdigest(), "contentType": content_type})
+    statuses = [status for _, _, status in methods] + [status for _, _, status, _ in evidence.READS] + [status for _, _, status in evidence.DENIALS]
+    response_payloads = [
+        {"projectId": "project-1"},
+        {"sourceId": "source-1", "checksum": source_checksum, "decisionState": "PENDING_REVIEW"},
+        {"sourceId": "source-1", "checksum": source_checksum, "decisionState": "APPROVED"},
+        {"status": "COMPLETED", "sourceIds": ["source-1"], "chunkCount": 1},
+        walkthrough,
+        media,
+        {"consentRecordId": "consent-1", "projectId": "project-1", "sourceRunId": "run-1", "sourceEvaluationId": "eval-1", "sourceEvaluationChecksum": "eval-sha", "consentToUseSyntheticAvatar": True},
+        render,
+        {"languages": [{"languageTag": "es", "localDemoSupportStatus": "SUPPORTED"}]},
+        {"projectId": "project-1", "curatedSources": [source], "legacySources": []},
+        {"error": {"code": "FORBIDDEN"}},
+        *({"error": {"code": "FORBIDDEN"}} for _ in range(4)),
+    ]
+    responses = []
+    for request, status, body in zip(requests, statuses, response_payloads, strict=True):
+        raw = json.dumps(body, separators=(",", ":"), sort_keys=True).encode()
+        responses.append({"requestId": request["id"], "status": status, "bodyBase64": base64.b64encode(raw).decode(), "bodySha256": hashlib.sha256(raw).hexdigest()})
+    import zipfile
+    records = []
+    resources: dict[str, bytes] = {}
+    for request, response in zip(requests, responses, strict=True):
+        raw = base64.b64decode(response["bodyBase64"])
+        resource = f"{hashlib.sha1(raw).hexdigest()}.json"
+        resources[resource] = raw
+        request_raw = base64.b64decode(request["bodyBase64"])
+        records.append({"type": "resource-snapshot", "snapshot": {"request": {"url": request["origin"] + request["path"], "method": request["method"], "headers": [{"name": "X-Local-User-Id", "value": request["principal"]}, {"name": "Content-Type", "value": request["contentType"]}], "postData": {"text": request_raw.decode()} if request_raw else None}, "response": {"status": response["status"], "content": {"_sha1": resource}}}})
+    with zipfile.ZipFile(root / "trace.zip", "w") as archive:
+        actions = ["goto", "click", "fill", "click", "click", "click", "click", "click"]
+        trace_records = [{"version": 8, "type": "context-options", "browserName": "chromium", "playwrightVersion": "1.61.1", "options": {"baseURL": evidence.ORIGIN, "serviceWorkers": "block"}}] + [item for index, method in enumerate(actions, 1) for item in ({"type": "before", "callId": f"call@{index}", "class": "Frame", "method": method, "pageId": "page@1"}, {"type": "after", "callId": f"call@{index}"})]
+        archive.writestr("0-trace.trace", "\n".join(json.dumps(item) for item in trace_records))
+        archive.writestr("0-trace.network", "\n".join(json.dumps(record) for record in records))
+        archive.writestr("0-trace.stacks", json.dumps({"files": ["/workspace/frontend/tests/heartbeat2-browser.spec.ts"], "stacks": [[index, [[0, min(3 + index, 12), 1, ""]]] for index in range(1, 9)]}))
+        for name, raw in resources.items():
+            archive.writestr(f"resources/{name}", raw)
+    trace_sha = hashlib.sha256((root / "trace.zip").read_bytes()).hexdigest()
+    manifest = {"schema": "heartbeat2-evidence-v2", "runId": "run-308", "headSha": "a" * 40, "testReport": "playwright.json", "traffic": "traffic.json", "trace": "trace.zip", "traceSha256": trace_sha, "bundle": "bundle.json", "sourceGraph": graph}
+    for filename, value in (("playwright.json", report), ("traffic.json", {"requests": requests, "responses": responses}), ("bundle.json", bundle), ("manifest.json", manifest)):
+        (root / filename).write_text(json.dumps(value), encoding="utf-8")
+    return {"manifest": manifest, "report": report, "traffic": {"requests": requests, "responses": responses}, "bundle": bundle, "artifact": root / "artifacts" / "video.json"}
+
+
+def rewrite_heartbeat2_trace(root: Path, mutate: Callable[[dict[str, bytes]], None], evidence: Any) -> None:
+    import zipfile
+    path = root / "trace.zip"
+    with zipfile.ZipFile(path) as archive:
+        members = {name: archive.read(name) for name in archive.namelist()}
+    mutate(members)
+    with zipfile.ZipFile(path, "w") as archive:
+        for name, data in members.items():
+            archive.writestr(name, data)
+    manifest = json.loads((root / "manifest.json").read_text())
+    manifest["traceSha256"] = evidence.sha256(path.read_bytes())
+    (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def replace_heartbeat2_response(root: Path, index: int, body: dict[str, Any], evidence: Any) -> None:
+    import base64
+    import hashlib
+    raw = json.dumps(body, separators=(",", ":"), sort_keys=True).encode()
+    traffic = json.loads((root / "traffic.json").read_text())
+    traffic["responses"][index].update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    (root / "traffic.json").write_text(json.dumps(traffic), encoding="utf-8")
+    def mutate(members: dict[str, bytes]) -> None:
+        records = [json.loads(line) for line in members["0-trace.network"].splitlines()]
+        resource = f"{hashlib.sha1(raw).hexdigest()}.json"
+        records[index]["snapshot"]["response"]["content"]["_sha1"] = resource
+        members["0-trace.network"] = "\n".join(json.dumps(item) for item in records).encode()
+        members[f"resources/{resource}"] = raw
+    rewrite_heartbeat2_trace(root, mutate, evidence)
+
+
+def test_heartbeat2_verifier_accepts_exact_packet_and_rejects_false_passes(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "evidence", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    result = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    assert result["outcome"] == "SEMANTIC_PASS_LOCAL"
+    assert result["writeCount"] == 8
+    assert packet["report"]["stats"]["startTime"]
+    with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_INPUT"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True)
+    packet["report"].pop("config")
+    (root / "playwright.json").write_text(json.dumps(packet["report"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["report"]["stats"].update({"expected": 0, "skipped": 1})
+    (root / "playwright.json").write_text(json.dumps(packet["report"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_verifier_rejects_ledger_artifact_source_and_forbidden_mutations(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    sources = tmp_path / "sources"
+    mutations = (
+        ("traffic", "traffic", lambda p: p["traffic"]["requests"][0].__setitem__("principal", "other_demo"), "OWNER_JOIN"),
+        ("method", "traffic", lambda p: p["traffic"]["requests"][8].__setitem__("method", "POST"), "READ_LEDGER"),
+        ("joins", "bundle", lambda p: p["bundle"]["walkthrough"]["contextRefs"][0].__setitem__("sourceChecksum", "wrong"), "PRODUCT_JOIN"),
+        ("lifecycle", "bundle", lambda p: p["bundle"]["source"].__setitem__("states", ["SOURCE_INGESTED"]), "PRODUCT_JOIN"),
+        ("source", "manifest", lambda p: p["manifest"]["sourceGraph"].pop(), "SOURCE_GRAPH"),
+    )
+    for label, payload, mutate, code in mutations:
+        root, packet = tmp_path / label, write_heartbeat2_packet(tmp_path / label, sources, evidence)
+        cast(Callable[[dict[str, Any]], Any], mutate)(packet)
+        (root / f"{payload}.json").write_text(json.dumps(packet[payload]), encoding="utf-8")
+        with pytest.raises(evidence.EvidenceError, match=code):
+            evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "artifact"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["artifact"].write_bytes(b"tampered")
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN|ARTIFACT_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "payload"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["artifact"].write_text("not-json", encoding="utf-8")
+    packet["bundle"]["artifacts"]["video"]["sha256"] = evidence.sha256(packet["artifact"].read_bytes())
+    packet["bundle"]["render"]["artifactChecksums"]["video"] = packet["bundle"]["artifacts"]["video"]["sha256"]
+    (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN|ARTIFACT_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "privacy"
+    write_heartbeat2_packet(root, sources, evidence)
+    marker = b"synthetic-forbidden-308"
+    import io
+    import zipfile
+    nested = io.BytesIO()
+    with zipfile.ZipFile(nested, "w") as archive:
+        archive.writestr("member.bin", marker)
+    with zipfile.ZipFile(root / "nested-privacy.zip", "w") as archive:
+        archive.writestr("nested.zip", nested.getvalue())
+    with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_OR_ARCHIVE"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", forbidden=(marker,), source_root=sources)
+    root = tmp_path / "unsafe-archive"
+    write_heartbeat2_packet(root, sources, evidence)
+    with zipfile.ZipFile(root / "unsafe.zip", "w") as archive:
+        archive.writestr("../../escape.txt", "bounded")
+    with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_OR_ARCHIVE"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_verifier_rejects_unrelated_test_and_non_genuine_trace(tmp_path: Path) -> None:
+    import zipfile
+
+    evidence: Any = load_heartbeat2_evidence_module()
+    sources = tmp_path / "sources"
+    root = tmp_path / "unrelated-test"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["report"]["suites"][0]["specs"][0].update({"file": "unrelated.spec.ts", "title": "unrelated passing test"})
+    (root / "playwright.json").write_text(json.dumps(packet["report"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "metadata-trace"
+    write_heartbeat2_packet(root, sources, evidence)
+    rewrite_heartbeat2_trace(root, lambda members: members.__setitem__("0-trace.trace", members["0-trace.trace"].splitlines()[0]), evidence)
+    with pytest.raises(evidence.EvidenceError, match="TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "network-only"
+    write_heartbeat2_packet(root, sources, evidence)
+    with zipfile.ZipFile(root / "trace.zip", "w") as archive:
+        archive.writestr("0-trace.network", "")
+    manifest = json.loads((root / "manifest.json").read_text())
+    manifest["traceSha256"] = evidence.sha256((root / "trace.zip").read_bytes())
+    (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_verifier_rejects_dead_listener_markers_and_payload_disagreement(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    sources = tmp_path / "sources"
+    root = tmp_path / "dead-listeners"
+    write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text('const dead = [\'page.on("request")\', \'page.on("response")\', "response.request()", "new WeakMap<Request"];\n', encoding="utf-8")
+    manifest = json.loads((root / "manifest.json").read_text())
+    next(item for item in manifest["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+    (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "payload-disagreement"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    forged = dict(packet["bundle"]["walkthrough"])
+    forged["status"] = "FORGED"
+    raw = json.dumps(forged, separators=(",", ":"), sort_keys=True).encode()
+    import base64
+    packet["traffic"]["responses"][4].update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    packet["bundle"]["walkthrough"] = forged
+    (root / "traffic.json").write_text(json.dumps(packet["traffic"]), encoding="utf-8")
+    (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_verifier_rejects_duplicate_claim_consent_and_semantic_artifact_forgery(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    sources = tmp_path / "sources"
+    mutations = (
+        ("duplicate", lambda p: p["bundle"]["source"]["chunks"].append(dict(p["bundle"]["source"]["chunks"][0]))),
+        ("claim", lambda p: p["bundle"]["walkthrough"]["citations"][0].__setitem__("claimId", "claim-other")),
+        ("consent", lambda p: p["bundle"]["consent"].update({"granted": False, "sourceRunId": "run-other", "evaluationId": "eval-other"})),
+    )
+    for label, mutate in mutations:
+        root = tmp_path / label
+        packet = write_heartbeat2_packet(root, sources, evidence)
+        cast(Callable[[dict[str, Any]], Any], mutate)(packet)
+        (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
+        with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
+            evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "semantic-artifact"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["artifact"].write_text('{"forged":"unrelated"}', encoding="utf-8")
+    digest = evidence.sha256(packet["artifact"].read_bytes())
+    packet["bundle"]["artifacts"]["video"]["sha256"] = digest
+    packet["bundle"]["render"]["artifactChecksums"]["video"] = digest
+    (root / "bundle.json").write_text(json.dumps(packet["bundle"]), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN|ARTIFACT_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_verifier_rejects_aggregate_nested_archive_expansion(tmp_path: Path, monkeypatch: Any) -> None:
+    import io
+    import zipfile
+
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "aggregate", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+    monkeypatch.setattr(evidence, "MAX_SCAN_BYTES", 1024)
+    nested_archives = []
+    for marker in (b"a", b"b"):
+        nested = io.BytesIO()
+        with zipfile.ZipFile(nested, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("payload.bin", marker * 700)
+        nested_archives.append(nested.getvalue())
+    with zipfile.ZipFile(root / "aggregate.zip", "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("one.zip", nested_archives[0])
+        archive.writestr("two.zip", nested_archives[1])
+    with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_OR_ARCHIVE"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_verifier_rejects_nested_listener_and_request_body_laundering(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    sources = tmp_path / "sources"
+    root = tmp_path / "nested-listener"
+    write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text('test("Heartbeat 2 local reviewer demo", async ({ page }) => { function neverCalled() { const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); } await page.goto("/"); });', encoding="utf-8")
+    manifest = json.loads((root / "manifest.json").read_text())
+    next(item for item in manifest["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+    (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "request-body"
+    write_heartbeat2_packet(root, sources, evidence)
+    def forge_request(members: dict[str, bytes]) -> None:
+        records = [json.loads(line) for line in members["0-trace.network"].splitlines()]
+        records[0]["snapshot"]["request"]["postData"] = {"text": "forged"}
+        members["0-trace.network"] = "\n".join(json.dumps(item) for item in records).encode()
+    rewrite_heartbeat2_trace(root, forge_request, evidence)
+    with pytest.raises(evidence.EvidenceError, match="TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_verifier_rejects_response_scope_duplicates_and_active_artifact_fields(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    sources = tmp_path / "sources"
+    root = tmp_path / "consent-response"
+    write_heartbeat2_packet(root, sources, evidence)
+    replace_heartbeat2_response(root, 6, {"consentRecordId": "consent-1", "projectId": "wrong", "sourceRunId": "wrong", "sourceEvaluationId": "wrong", "sourceEvaluationChecksum": "wrong", "consentToUseSyntheticAvatar": False}, evidence)
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "empty-languages"
+    write_heartbeat2_packet(root, sources, evidence)
+    replace_heartbeat2_response(root, 8, {"languages": []}, evidence)
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "duplicate-support"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["bundle"]["walkthrough"]["claimSupports"].append(dict(packet["bundle"]["walkthrough"]["claimSupports"][0]))
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
+        evidence._joins(root, packet["bundle"])
+    video = json.loads(packet["artifact"].read_text())
+    video.update({"allowNetworkEgress": True, "providerCallMade": True, "hostedUrl": "https://example.invalid", "realAudioProduced": True})
+    packet["artifact"].write_text(json.dumps(video), encoding="utf-8")
+    digest = evidence.sha256(packet["artifact"].read_bytes())
+    packet["bundle"]["artifacts"]["video"]["sha256"] = digest
+    packet["bundle"]["render"]["artifactChecksums"]["video"] = digest
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
+
+
+def test_heartbeat2_reset5_binds_canonical_authority() -> None:
+    assert phase1.ISSUE_308_RESET5_AUTHORITY == {
+        "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/308#issuecomment-5118185764",
+        "databaseId": 5118185764,
+        "author": "imrohitagrawal",
+        "createdAt": "2026-07-29T13:09:38Z",
+        "updatedAt": "2026-07-29T15:34:06Z",
+        "sha256": "31da9a24040a729c46f4d0f6c4c465b0b24145765b58f50394aab5fc0948626f",
+        "preflightSha256": "1310c249e4ebe793c9fbfe94d833e9e7d5bde8191927f3b2a52237663a4e9cbd",
+    }
+
+
+def test_heartbeat2_reset5_uses_capture_safe_browser_source_policy(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+
+    assert evidence.scan_h2_browser_sources(spec)["forbiddenMatchCount"] == 0
+    spec.write_text(spec.read_text().replace('await page.goto("/");', 'await page.route("**/*", route => route.fulfill());'), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence.scan_h2_browser_sources(spec)
+
+
+def test_heartbeat2_reset5_rejects_handcrafted_minimal_execution(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+    def minimal(members: dict[str, bytes]) -> None:
+        members["0-trace.trace"] = b'{"version":8,"type":"context-options","browserName":"chromium","options":{"baseURL":"http://127.0.0.1:3122","serviceWorkers":"block"}}\n{"type":"before","callId":"call@1","class":"Frame","method":"goto","pageId":"page@1"}\n{"type":"after","callId":"call@1"}'
+        members["0-trace.stacks"] = b'{"files":["/workspace/frontend/tests/heartbeat2-browser.spec.ts"],"stacks":[[1,[[0,12,1,""]]]]}'
+    rewrite_heartbeat2_trace(root, minimal, evidence)
+
+    with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT|TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_decoy_title_listener_capture(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text('''import { test, type Request } from "@playwright/test";
+const title = "Heartbeat 2 local reviewer demo";
+const neverCalled = (page: any) => {
+  const requestIds = new WeakMap<Request, string>();
+  page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); });
+  page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); });
+};
+test(title, async ({ page }) => { await page.goto("/"); });
+''', encoding="utf-8")
+    next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_rebound_write_request_body(tmp_path: Path) -> None:
+    import base64
+
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    raw = b'{"operation":"submit","body":"unrelated"}'
+    packet["traffic"]["requests"][1].update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    (root / "traffic.json").write_text(json.dumps(packet["traffic"]), encoding="utf-8")
+    def rebind(members: dict[str, bytes]) -> None:
+        rows = [json.loads(line) for line in members["0-trace.network"].splitlines()]
+        rows[1]["snapshot"]["request"]["postData"] = {"text": raw.decode()}
+        members["0-trace.network"] = "\n".join(json.dumps(row) for row in rows).encode()
+    rewrite_heartbeat2_trace(root, rebind, evidence)
+
+    with pytest.raises(evidence.EvidenceError, match="REQUEST_BINDING|PRODUCT_JOIN|TRAFFIC_LEDGER"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_semantic_artifact_aliases(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    video = json.loads(packet["artifact"].read_text())
+    video.update({"networkEgressEnabled": True, "externalProviderCallMade": True, "realAudioGenerated": True})
+    packet["artifact"].write_text(json.dumps(video), encoding="utf-8")
+    digest = evidence.sha256(packet["artifact"].read_bytes())
+    packet["bundle"]["artifacts"]["video"]["sha256"] = digest
+    packet["bundle"]["render"]["artifactChecksums"]["video"] = digest
+
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
+
+
+@pytest.mark.parametrize("forbidden", [(b"", b""), (b"same", b"same"), (b"unrelated-one", b"unrelated-two")])
+def test_heartbeat2_reset5_rejects_unbound_forbidden_sentinels(tmp_path: Path, monkeypatch: Any, forbidden: tuple[bytes, bytes]) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["manifest"]["forbiddenInputs"] = {
+        "controlledSha256": evidence.sha256(b"reset5-controlled"),
+        "canarySha256": evidence.sha256(b"reset5-canary"),
+    }
+    (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
+    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: (2, 13))
+
+    with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_INPUT"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True, forbidden=forbidden)
+
+
+def test_heartbeat2_reset5_accepts_only_canonical_forbidden_sentinels(tmp_path: Path, monkeypatch: Any) -> None:
+    from scripts.ci.heartbeat1_evidence import fixture_constants
+
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    values = fixture_constants(Path(__file__).parents[1] / "api" / "test_heartbeat1_a2_exclusion_api.py")
+    packet["manifest"]["forbiddenInputs"] = evidence.FORBIDDEN_SHA256S
+    (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
+    monkeypatch.setattr(evidence, "_sources", lambda *args, **kwargs: (2, 13))
+
+    result = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, committed=True, forbidden=(values["INTERNAL_FIXTURE"], values["canary"]))
+    assert result["outcome"] == "SEMANTIC_PASS_LOCAL"
+
+
+@pytest.mark.parametrize("body", [
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); await page.evaluate(() => Function("globalThis.fe" + "tch = () => ({ok:true})")());''',
+    '''const marker = "}"; if (false) { const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); }''',
+    '''return; const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); });''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); await page.context().newCDPSession(page);''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); eval("globalThis.fe" + "tch = () => ({ok:true})");''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); page.removeAllListeners("request"); page.removeAllListeners("response");''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); (0, eval)("globalThis.fe" + "tch = () => ({ok:true})");''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); ([]["filter"]["constructor"])("globalThis.fe" + "tch = () => ({ok:true})")();''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); page.removeAllListeners.bind(page)("request"); page.removeAllListeners.bind(page)("response");''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); return;''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); test.skip();''',
+    '''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); throw new Error("stop");''',
+    r'''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); \u0065val("globalThis.fe" + "tch = () => ({ok:true})");''',
+    r'''const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); page.rem\u006fveAllListeners("request");''',
+])
+def test_heartbeat2_reset5_rejects_dynamic_execution_and_dead_listener_control_flow(tmp_path: Path, body: str) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text(f'import {{ test, type Request }} from "@playwright/test"; test("Heartbeat 2 local reviewer demo", async ({{ page }}) => {{ {body} await page.goto("/"); }});', encoding="utf-8")
+    next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_shadowed_playwright_test_binding(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text(spec.read_text().replace("import { test, type Request }", "import { type Request }; const test = (...args: unknown[]) => undefined;"), encoding="utf-8")
+    next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_conditional_top_level_test_registration(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text(spec.read_text().replace("\ntest(", "\nfalse && test("), encoding="utf-8")
+    next(item for item in packet["manifest"]["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence._sources(packet["manifest"], "a" * 40, committed=False, source_root=sources)
+
+
+def test_heartbeat2_reset5_rejects_uncorrelated_report_and_trace_stacks(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["report"]["stats"]["startTime"] = "2040-01-01T00:00:00Z"
+    packet["report"]["suites"][0]["specs"][0]["line"] = 999
+    (root / "playwright.json").write_text(json.dumps(packet["report"]), encoding="utf-8")
+    rewrite_heartbeat2_trace(root, lambda members: members.__setitem__("0-trace.stacks", b'{"files":["/workspace/frontend/tests/heartbeat2-browser.spec.ts"],"stacks":[[900,[[0,999,1,""]]],[901,[[0,999,1,""]]],[902,[[0,999,1,""]]],[903,[[0,999,1,""]]],[904,[[0,999,1,""]]],[905,[[0,999,1,""]]],[906,[[0,999,1,""]]],[907,[[0,999,1,""]]]]}'), evidence)
+    with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT|TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def replace_heartbeat2_request(root: Path, index: int, raw: bytes, evidence: Any) -> None:
+    import base64
+    traffic = json.loads((root / "traffic.json").read_text())
+    traffic["requests"][index].update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    (root / "traffic.json").write_text(json.dumps(traffic), encoding="utf-8")
+    def mutate(members: dict[str, bytes]) -> None:
+        rows = [json.loads(line) for line in members["0-trace.network"].splitlines()]
+        rows[index]["snapshot"]["request"]["postData"] = {"text": raw.decode()}
+        members["0-trace.network"] = "\n".join(json.dumps(row) for row in rows).encode()
+    rewrite_heartbeat2_trace(root, mutate, evidence)
+
+
+def test_heartbeat2_reset5_rejects_duplicate_multipart_and_json_keys(tmp_path: Path) -> None:
+    import base64
+    evidence: Any = load_heartbeat2_evidence_module()
+    sources = tmp_path / "sources"
+    mutations: tuple[tuple[str, int, Callable[[bytes], bytes]], ...] = (("multipart", 1, lambda raw: raw.replace(b'name="action"', b'name="action"\r\n\r\nACCEPT_FOR_REVIEW\r\n--heartbeat2-reset5-boundary\r\nContent-Disposition: form-data; name="action"', 1)), ("json", 0, lambda raw: raw.replace(b"{", b'{"name":"conflict",', 1)))
+    for label, index, mutate in mutations:
+        root = tmp_path / label
+        packet = write_heartbeat2_packet(root, sources, evidence)
+        raw = mutate(base64.b64decode(packet["traffic"]["requests"][index]["bodyBase64"]))
+        replace_heartbeat2_request(root, index, raw, evidence)
+        with pytest.raises(evidence.EvidenceError, match="REQUEST_BINDING"):
+            evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+@pytest.mark.parametrize("active", ['<script src="//example.invalid/active.js"></script>', '<video poster="//example.invalid/frame.png"></video>'])
+def test_heartbeat2_reset5_rejects_active_local_preview_content(tmp_path: Path, active: str) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    preview = root / packet["bundle"]["artifacts"]["preview"]["path"]
+    preview.write_text(preview.read_text().replace("</body>", active + "</body>"), encoding="utf-8")
+    digest = evidence.sha256(preview.read_bytes())
+    packet["bundle"]["artifacts"]["preview"]["sha256"] = digest
+    packet["bundle"]["render"]["artifactChecksums"]["preview"] = digest
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
+
+
+def test_heartbeat2_reset5_rejects_non_json_write_content_type(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["traffic"]["requests"][0]["contentType"] = "text/plain"
+    with pytest.raises(evidence.EvidenceError, match="REQUEST_BINDING"):
+        evidence._request_contract(packet["traffic"]["requests"][:8], packet["bundle"])
+
+
+@pytest.mark.parametrize("mutate", [
+    lambda voice: voice.update({"textChecksum": "sha256:unbound"}),
+    lambda voice: voice.update({"textChecksum": "sha256:" + "0" * 64}),
+    lambda voice: voice["mockAudioProfile"].update({"durationMillisecondsEstimate": -1}),
+    lambda voice: voice.update({"disclosure": {"text": "Mock local TTS placeholder"}}),
+])
+def test_heartbeat2_reset5_rejects_malformed_voice_semantics(tmp_path: Path, mutate: Any) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    voice = root / packet["bundle"]["artifacts"]["voice"]["path"]
+    payload = json.loads(voice.read_text())
+    mutate(payload)
+    voice.write_text(json.dumps(payload), encoding="utf-8")
+    digest = evidence.sha256(voice.read_bytes())
+    packet["bundle"]["artifacts"]["voice"]["sha256"] = digest
+    packet["bundle"]["multilingual"]["artifactChecksums"]["voice"] = digest
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
+
+
+def test_heartbeat2_reset5_rejects_duplicate_response_json_keys(tmp_path: Path) -> None:
+    import base64
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    response = packet["traffic"]["responses"][0]
+    raw = base64.b64decode(response["bodyBase64"]).replace(b"{", b'{"projectId":"conflict",', 1)
+    response.update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    with pytest.raises(evidence.EvidenceError, match="TRAFFIC_LEDGER"):
+        evidence._traffic(packet["traffic"], packet["bundle"])
+
+
+def heartbeat2_ci_context() -> dict[str, str]:
+    return {"repository": "imrohitagrawal/narratwin-ai", "eventName": "pull_request", "workflow": "ci", "workflowRef": "imrohitagrawal/narratwin-ai/.github/workflows/ci.yml@refs/pull/309/merge", "workflowSha": "b" * 40, "job": "frontend", "runId": "5121265229", "runAttempt": "1", "headSha": "a" * 40}
+
+
+def bind_heartbeat2_ci_execution(root: Path, packet: dict[str, Any], evidence: Any, ci: dict[str, str]) -> dict[str, Any]:
+    graph = {item["path"]: item["sha256"] for item in packet["manifest"]["sourceGraph"]}
+    record = {"schema": "heartbeat2-ci-execution-v1", "provider": "github-actions", **ci, "evidenceRunId": "run-308", "producer": "scripts/ci/heartbeat2-browser.sh", "playwrightExitCode": 0, "startedAt": "2026-07-29T17:00:00Z", "completedAt": "2026-07-29T17:00:10Z", "workflowSourceSha256": graph[".github/workflows/ci.yml"], "runnerSourceSha256": graph["scripts/ci/heartbeat2-browser.sh"], "reportSha256": evidence.sha256((root / "playwright.json").read_bytes()), "traceSha256": evidence.sha256((root / "trace.zip").read_bytes())}
+    (root / "execution.json").write_text(json.dumps(record), encoding="utf-8")
+    packet["manifest"]["execution"] = "execution.json"
+    (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
+    return record
+
+
+def test_heartbeat2_reset6_binds_authority_budget_and_workflow_allowlist() -> None:
+    assert phase1.ISSUE_308_RESET6_AUTHORITY == {"url": "https://github.com/imrohitagrawal/narratwin-ai/issues/308#issuecomment-5121265229", "databaseId": 5121265229, "author": "imrohitagrawal", "createdAt": "2026-07-29T17:24:48Z", "updatedAt": "2026-07-29T17:24:48Z", "sha256": "6fcfa8d626f45a0791a157c810471c057eed1d6160543406ecf6a22baa3a6810", "preflightSha256": "20d7c1be5154d139a7149d43b960df639c31a671e7da5f9d8ba1b1c0447a0db6"}
+    assert phase1.ISSUE_308_LINE_CAPS[phase1.ISSUE_308_H2_A_BRANCH] == 1600
+    assert ".github/workflows/ci.yml" in phase1.ISSUE_308_H2_A_ALLOWED_CHANGED_FILES
+
+
+def test_heartbeat2_reset6_workflow_is_exact_head_fail_fast_and_success_only() -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "ref: ${{ github.event.pull_request.head.sha || github.sha }}" in workflow
+    assert "NARRATWIN_H2_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}" in workflow
+    assert "if: ${{ hashFiles('scripts/ci/heartbeat2-browser.sh') != '' }}" in workflow
+    assert "run: bash scripts/ci/heartbeat2-browser.sh" in workflow
+    assert "jq -e '.outcome == \"CI_EXECUTION_BOUND\" and .executionAuthenticity == \"GITHUB_ACTIONS\" and .headSha == env.NARRATWIN_H2_EXPECTED_HEAD and .githubRunId == env.GITHUB_RUN_ID and .githubRunAttempt == env.GITHUB_RUN_ATTEMPT' reports/heartbeat2/published/ci-verification.json" in workflow
+    assert "if: success() && hashFiles('scripts/ci/heartbeat2-browser.sh') != '' && hashFiles('reports/heartbeat2/published/**') != ''" in workflow
+    assert "name: heartbeat2-browser-evidence-${{ github.run_id }}-${{ github.run_attempt }}" in workflow
+    assert "if-no-files-found: error" in workflow
+    assert "continue-on-error" not in workflow
+
+
+def test_heartbeat2_reset6_separates_local_semantics_from_ci_execution(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+    local = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    assert local["outcome"] == "SEMANTIC_PASS_LOCAL" and local["executionAuthenticity"] == "UNATTESTED"
+
+
+def test_heartbeat2_reset6_accepts_exact_ci_execution_binding(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    packet, ci = write_heartbeat2_packet(root, sources, evidence), heartbeat2_ci_context()
+    bind_heartbeat2_ci_execution(root, packet, evidence, ci)
+    result = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, ci_context=ci)
+    assert result["outcome"] == "CI_EXECUTION_BOUND" and result["executionAuthenticity"] == "GITHUB_ACTIONS"
+    assert result["githubRunId"] == ci["runId"] and result["githubRunAttempt"] == ci["runAttempt"]
+
+
+@pytest.mark.parametrize(("field", "value"), [("headSha", "c" * 40), ("runAttempt", "2"), ("evidenceRunId", "other-run"), ("playwrightExitCode", 1), ("traceSha256", "0" * 64)])
+def test_heartbeat2_reset6_rejects_rebound_or_failed_ci_execution(tmp_path: Path, field: str, value: Any) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / field, tmp_path / "sources"
+    packet, ci = write_heartbeat2_packet(root, sources, evidence), heartbeat2_ci_context()
+    record = bind_heartbeat2_ci_execution(root, packet, evidence, ci)
+    record[field] = value
+    (root / "execution.json").write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="CI_PROVENANCE"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, ci_context=ci)
+
+
+def test_heartbeat2_reset6_rejects_ignored_external_trace_resource(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    root, sources = tmp_path / "packet", tmp_path / "sources"
+    write_heartbeat2_packet(root, sources, evidence)
+    def add_external(members: dict[str, bytes]) -> None:
+        rows = members["0-trace.network"].splitlines()
+        rows.append(json.dumps({"type": "resource-snapshot", "snapshot": {"request": {"url": "https://example.invalid/ignored", "method": "GET", "headers": []}, "response": {"status": 200, "content": {}}}}).encode())
+        members["0-trace.network"] = b"\n".join(rows)
+    rewrite_heartbeat2_trace(root, add_external, evidence)
+    with pytest.raises(evidence.EvidenceError, match="TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_reset6_cli_refuses_ci_claim_outside_github_actions(monkeypatch: Any) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    with pytest.raises(evidence.EvidenceError, match="CI_PROVENANCE"):
+        evidence._main(["--evidence", "missing", "--head", "a" * 40, "--run-id", "run-308", "--ci"])

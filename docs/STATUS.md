@@ -240,7 +240,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | issue #8 | heartbeat1-complete-awaiting-next-authority | heartbeat1-complete-awaiting-next-authority | The substantive Issue #306 PR completes the approved Heartbeat 1 A1+A2+B repository envelope when merged; closeout then closes #306 and #302 only after required post-merge gates. Issue #8 remains open as the product-definition parent. No next product implementation is authorized; Heartbeat 2, providers, hosted/public behavior, paid spend, deployment, production-readiness claims, and work on #280/PR #299/#300/#301 remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate. |
+| SSV1-NEXT | next-action | issue #308 | heartbeat2-pr-a-evidence-contract | heartbeat2-pr-a-evidence-contract | Heartbeat 1 is merged and closed. This PR completes Heartbeat 2 PR A's evidence-integrity contract; after exact-head review, merge, and closeout, the next authorized action is PR B's read-only re-preflight under #308. PR B product integration remains blocked until that closeout. Issue #8 remains open product memory. Providers, hosting, deployment, production claims, private data, #20, and protected tracker mutation remain unauthorized. The prior issue280-governance-reset-active token is historical only. Issue #300 is the active negative-forensic-only reset. Two canonical payload executions at evidence head f93653e8a11e697c88766b207fb01c18662339d6 establish that Issue #280 is not fixed. Product/runtime repair remains separate. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | open | open | Issue #8 remains open for its separate product-definition acceptance contract. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -446,6 +446,7 @@ Use these files together with this tracker:
 |---|---|---|---|
 | `#3` | Open | Legacy governance issue | Uses obsolete `Stage -1` naming and should be reconciled or closed. |
 | `#8` | Open | Product-definition support | Captures two product modes and project-avatar-pack contract; concept already exists in docs but issue remains open. |
+| `#308` | Open | Heartbeat 2 authority | Direct owner authorization for a two-PR post-Checkpoint-B curated-source local reviewer demo. PR #309 completes PR A's evidence-integrity contract on merge; PR B re-preflight is the next action only after PR A exact-head approval, merge, verification, synchronization, and closeout. This is not Product Mode 2 and does not authorize providers, real media, hosting, deployment, production, private data, or #20. |
 | `#9` | Closed | Superseded placeholder | Explicitly marked as superseded. |
 | `#17` | Open | Future slice | Translation/localization and subtitles. |
 | `#18` | Open | Future slice | Optional TTS audio provider boundary. |
@@ -1024,3 +1025,11 @@ Required update rules:
 - Evidence authority: issue `#302`, child `#306`, and canonical comment database ID `5116015473`; all must re-resolve before review and merge.
 - Merge-closeout may close `#306` and `#302` only after required CI, independent exact-head approval, post-merge validation, and collective A1+A2+B acceptance; issue `#8` remains open.
 - Deferred: Heartbeat 2, providers, deployment, spend, production/hosted behavior, real private data, and protected-issue body mutation.
+
+## Issue 308 Heartbeat 2 status
+
+- Authority: owner-authored issue `#308`, reset-6 canonical comment database ID `5121265229`, frozen base `fa423ce8b016a4f0593d8a294cf9f24ef5caff6c`.
+- PR A post-merge target state is complete through PR `#309`: owner-authorized Contract reset 6 permits 9 files / 1,600 charged lines / five surfaces and binds execution authenticity to exact-head required CI plus success-only workflow artifacts. Local verification proves semantics/privacy only.
+- PR B re-preflight is the next authorized action after PR A exact-head review, merge, verification, synchronization, and closeout; product integration remains blocked until then.
+- Aggregate reset envelope: 15 unique files, 2,500 charged lines, eight surfaces; PR B remains capped at 12 files / 900 lines / six surfaces; synthetic fixtures and local/mock media only.
+- Excluded: backend/API changes, providers, spend, real media/private data, deployment/hosting/production claims, Product Mode 2/#20, and mutation of #8/#43/#155/#249 or protected trackers.
