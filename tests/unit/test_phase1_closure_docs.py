@@ -8847,7 +8847,8 @@ def test_heartbeat2_reset5_rejects_duplicate_multipart_and_json_keys(tmp_path: P
     import base64
     evidence: Any = load_heartbeat2_evidence_module()
     sources = tmp_path / "sources"
-    for label, index, mutate in (("multipart", 1, lambda raw: raw.replace(b'name="action"', b'name="action"\r\n\r\nACCEPT_FOR_REVIEW\r\n--heartbeat2-reset5-boundary\r\nContent-Disposition: form-data; name="action"', 1)), ("json", 0, lambda raw: raw.replace(b"{", b'{"name":"conflict",', 1))):
+    mutations: tuple[tuple[str, int, Callable[[bytes], bytes]], ...] = (("multipart", 1, lambda raw: raw.replace(b'name="action"', b'name="action"\r\n\r\nACCEPT_FOR_REVIEW\r\n--heartbeat2-reset5-boundary\r\nContent-Disposition: form-data; name="action"', 1)), ("json", 0, lambda raw: raw.replace(b"{", b'{"name":"conflict",', 1)))
+    for label, index, mutate in mutations:
         root = tmp_path / label
         packet = write_heartbeat2_packet(root, sources, evidence)
         raw = mutate(base64.b64decode(packet["traffic"]["requests"][index]["bodyBase64"]))
