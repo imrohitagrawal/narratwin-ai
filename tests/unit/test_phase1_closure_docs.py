@@ -8316,7 +8316,8 @@ def write_heartbeat2_packet(root: Path, source_root: Path, evidence: Any) -> dic
         path.parent.mkdir(parents=True, exist_ok=True)
         content = "bounded committed source\n"
         if relative == "frontend/tests/heartbeat2-browser.spec.ts":
-            content = '''import type { Request } from "@playwright/test";
+            content = '''import { test, type Request } from "@playwright/test";
+test("Heartbeat 2 local reviewer demo", async ({ page }) => {
 const requestIds = new WeakMap<Request, string>();
 page.on("request", (request) => {
   requestIds.set(request, request.url());
@@ -8325,6 +8326,8 @@ page.on("request", (request) => {
 page.on("response", async (response) => {
   const request = response.request();
   responses.push({ requestId: requestIds.get(request), status: response.status(), body: await response.body() });
+});
+await page.goto("/");
 });
 '''
         path.write_text(content, encoding="utf-8")
@@ -8361,6 +8364,9 @@ page.on("response", async (response) => {
     requests += [{"sequence": i, "operation": op, "method": method, "path": "/api/v1/languages" if i == 1 else "/api/v1/projects/project-1/source-curation-summary", "origin": evidence.ORIGIN, "principal": principal, "projectId": "" if i == 1 else "project-1", "id": f"r{i}"} for i, (op, method, status, principal) in enumerate(evidence.READS, 1)]
     denial_paths = paths[4:5] + paths[5:8]
     requests += [{"sequence": i, "operation": op, "method": method, "path": denial_paths[i - 1], "origin": evidence.ORIGIN, "principal": "other_demo", "projectId": "project-1", "id": f"d{i}"} for i, (op, method, status) in enumerate(evidence.DENIALS, 1)]
+    for request in requests:
+        raw = json.dumps({"operation": request["operation"]}, separators=(",", ":"), sort_keys=True).encode() if request["method"] != "GET" else b""
+        request.update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": hashlib.sha256(raw).hexdigest()})
     statuses = [status for _, _, status in methods] + [status for _, _, status, _ in evidence.READS] + [status for _, _, status in evidence.DENIALS]
     response_payloads = [
         {"projectId": "project-1"},
@@ -8387,11 +8393,13 @@ page.on("response", async (response) => {
         raw = base64.b64decode(response["bodyBase64"])
         resource = f"{hashlib.sha1(raw).hexdigest()}.json"
         resources[resource] = raw
-        records.append({"type": "resource-snapshot", "snapshot": {"request": {"url": request["origin"] + request["path"], "method": request["method"], "headers": [{"name": "X-Local-User-Id", "value": request["principal"]}]}, "response": {"status": response["status"], "content": {"_sha1": resource}}}})
+        request_raw = base64.b64decode(request["bodyBase64"])
+        records.append({"type": "resource-snapshot", "snapshot": {"request": {"url": request["origin"] + request["path"], "method": request["method"], "headers": [{"name": "X-Local-User-Id", "value": request["principal"]}], "postData": {"text": request_raw.decode()} if request_raw else None}, "response": {"status": response["status"], "content": {"_sha1": resource}}}})
     with zipfile.ZipFile(root / "trace.zip", "w") as archive:
-        archive.writestr("0-trace.trace", json.dumps({"version": 8, "type": "context-options", "browserName": "chromium", "playwrightVersion": "1.61.1", "options": {"baseURL": evidence.ORIGIN, "serviceWorkers": "block"}}))
+        trace_records = [{"version": 8, "type": "context-options", "browserName": "chromium", "playwrightVersion": "1.61.1", "options": {"baseURL": evidence.ORIGIN, "serviceWorkers": "block"}}, {"type": "before", "callId": "call@1", "class": "Frame", "method": "goto", "pageId": "page@1"}, {"type": "after", "callId": "call@1"}]
+        archive.writestr("0-trace.trace", "\n".join(json.dumps(item) for item in trace_records))
         archive.writestr("0-trace.network", "\n".join(json.dumps(record) for record in records))
-        archive.writestr("0-trace.stacks", json.dumps({"files": ["/workspace/frontend/tests/heartbeat2-browser.spec.ts"], "stacks": []}))
+        archive.writestr("0-trace.stacks", json.dumps({"files": ["/workspace/frontend/tests/heartbeat2-browser.spec.ts"], "stacks": [[1, [[0, 12, 1, ""]]]]}))
         for name, raw in resources.items():
             archive.writestr(f"resources/{name}", raw)
     trace_sha = hashlib.sha256((root / "trace.zip").read_bytes()).hexdigest()
@@ -8399,6 +8407,36 @@ page.on("response", async (response) => {
     for filename, value in (("playwright.json", report), ("traffic.json", {"requests": requests, "responses": responses}), ("bundle.json", bundle), ("manifest.json", manifest)):
         (root / filename).write_text(json.dumps(value), encoding="utf-8")
     return {"manifest": manifest, "report": report, "traffic": {"requests": requests, "responses": responses}, "bundle": bundle, "artifact": root / "artifacts" / "video.json"}
+
+
+def rewrite_heartbeat2_trace(root: Path, mutate: Callable[[dict[str, bytes]], None], evidence: Any) -> None:
+    import zipfile
+    path = root / "trace.zip"
+    with zipfile.ZipFile(path) as archive:
+        members = {name: archive.read(name) for name in archive.namelist()}
+    mutate(members)
+    with zipfile.ZipFile(path, "w") as archive:
+        for name, data in members.items():
+            archive.writestr(name, data)
+    manifest = json.loads((root / "manifest.json").read_text())
+    manifest["traceSha256"] = evidence.sha256(path.read_bytes())
+    (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def replace_heartbeat2_response(root: Path, index: int, body: dict[str, Any], evidence: Any) -> None:
+    import base64
+    import hashlib
+    raw = json.dumps(body, separators=(",", ":"), sort_keys=True).encode()
+    traffic = json.loads((root / "traffic.json").read_text())
+    traffic["responses"][index].update({"bodyBase64": base64.b64encode(raw).decode(), "bodySha256": evidence.sha256(raw)})
+    (root / "traffic.json").write_text(json.dumps(traffic), encoding="utf-8")
+    def mutate(members: dict[str, bytes]) -> None:
+        records = [json.loads(line) for line in members["0-trace.network"].splitlines()]
+        resource = f"{hashlib.sha1(raw).hexdigest()}.json"
+        records[index]["snapshot"]["response"]["content"]["_sha1"] = resource
+        members["0-trace.network"] = "\n".join(json.dumps(item) for item in records).encode()
+        members[f"resources/{resource}"] = raw
+    rewrite_heartbeat2_trace(root, mutate, evidence)
 
 
 def test_heartbeat2_verifier_accepts_exact_packet_and_rejects_false_passes(tmp_path: Path) -> None:
@@ -8479,6 +8517,11 @@ def test_heartbeat2_verifier_rejects_unrelated_test_and_non_genuine_trace(tmp_pa
     packet["report"]["suites"][0]["specs"][0].update({"file": "unrelated.spec.ts", "title": "unrelated passing test"})
     (root / "playwright.json").write_text(json.dumps(packet["report"]), encoding="utf-8")
     with pytest.raises(evidence.EvidenceError, match="PLAYWRIGHT_RESULT"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "metadata-trace"
+    write_heartbeat2_packet(root, sources, evidence)
+    rewrite_heartbeat2_trace(root, lambda members: members.__setitem__("0-trace.trace", members["0-trace.trace"].splitlines()[0]), evidence)
+    with pytest.raises(evidence.EvidenceError, match="TRACE_BINDING"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
     root = tmp_path / "network-only"
     write_heartbeat2_packet(root, sources, evidence)
@@ -8564,3 +8607,54 @@ def test_heartbeat2_verifier_rejects_aggregate_nested_archive_expansion(tmp_path
         archive.writestr("two.zip", nested_archives[1])
     with pytest.raises(evidence.EvidenceError, match="FORBIDDEN_OR_ARCHIVE"):
         evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_verifier_rejects_nested_listener_and_request_body_laundering(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    sources = tmp_path / "sources"
+    root = tmp_path / "nested-listener"
+    write_heartbeat2_packet(root, sources, evidence)
+    spec = sources / "frontend/tests/heartbeat2-browser.spec.ts"
+    spec.write_text('test("Heartbeat 2 local reviewer demo", async ({ page }) => { function neverCalled() { const requestIds = new WeakMap<Request, string>(); page.on("request", (request) => { requestIds.set(request, request.url()); requests.push({body: request.postDataBuffer()}); }); page.on("response", async (response) => { const request = response.request(); responses.push({requestId: requestIds.get(request), body: await response.body()}); }); } await page.goto("/"); });', encoding="utf-8")
+    manifest = json.loads((root / "manifest.json").read_text())
+    next(item for item in manifest["sourceGraph"] if item["path"].endswith("heartbeat2-browser.spec.ts"))["sha256"] = evidence.sha256(spec.read_bytes())
+    (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(evidence.EvidenceError, match="BROWSER_SOURCE"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "request-body"
+    write_heartbeat2_packet(root, sources, evidence)
+    def forge_request(members: dict[str, bytes]) -> None:
+        records = [json.loads(line) for line in members["0-trace.network"].splitlines()]
+        records[0]["snapshot"]["request"]["postData"] = {"text": "forged"}
+        members["0-trace.network"] = "\n".join(json.dumps(item) for item in records).encode()
+    rewrite_heartbeat2_trace(root, forge_request, evidence)
+    with pytest.raises(evidence.EvidenceError, match="TRACE_BINDING"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+
+
+def test_heartbeat2_verifier_rejects_response_scope_duplicates_and_active_artifact_fields(tmp_path: Path) -> None:
+    evidence: Any = load_heartbeat2_evidence_module()
+    sources = tmp_path / "sources"
+    root = tmp_path / "consent-response"
+    write_heartbeat2_packet(root, sources, evidence)
+    replace_heartbeat2_response(root, 6, {"consentRecordId": "consent-1", "projectId": "wrong", "sourceRunId": "wrong", "sourceEvaluationId": "wrong", "sourceEvaluationChecksum": "wrong", "consentToUseSyntheticAvatar": False}, evidence)
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "empty-languages"
+    write_heartbeat2_packet(root, sources, evidence)
+    replace_heartbeat2_response(root, 8, {"languages": []}, evidence)
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
+        evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources)
+    root = tmp_path / "duplicate-support"
+    packet = write_heartbeat2_packet(root, sources, evidence)
+    packet["bundle"]["walkthrough"]["claimSupports"].append(dict(packet["bundle"]["walkthrough"]["claimSupports"][0]))
+    with pytest.raises(evidence.EvidenceError, match="PRODUCT_JOIN"):
+        evidence._joins(root, packet["bundle"])
+    video = json.loads(packet["artifact"].read_text())
+    video.update({"allowNetworkEgress": True, "providerCallMade": True, "hostedUrl": "https://example.invalid", "realAudioProduced": True})
+    packet["artifact"].write_text(json.dumps(video), encoding="utf-8")
+    digest = evidence.sha256(packet["artifact"].read_bytes())
+    packet["bundle"]["artifacts"]["video"]["sha256"] = digest
+    packet["bundle"]["render"]["artifactChecksums"]["video"] = digest
+    with pytest.raises(evidence.EvidenceError, match="ARTIFACT_BINDING"):
+        evidence._artifacts(root, packet["bundle"]["artifacts"], packet["bundle"])
