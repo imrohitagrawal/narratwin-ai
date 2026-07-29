@@ -8951,7 +8951,7 @@ def heartbeat2_ci_context() -> dict[str, str]:
 
 def bind_heartbeat2_ci_execution(root: Path, packet: dict[str, Any], evidence: Any, ci: dict[str, str]) -> dict[str, Any]:
     graph = {item["path"]: item["sha256"] for item in packet["manifest"]["sourceGraph"]}
-    record = {"schema": "heartbeat2-ci-execution-v1", "provider": "github-actions", **ci, "producer": "scripts/ci/heartbeat2-browser.sh", "playwrightExitCode": 0, "startedAt": "2026-07-29T17:00:00Z", "completedAt": "2026-07-29T17:00:10Z", "workflowSourceSha256": graph[".github/workflows/ci.yml"], "runnerSourceSha256": graph["scripts/ci/heartbeat2-browser.sh"], "reportSha256": evidence.sha256((root / "playwright.json").read_bytes()), "traceSha256": evidence.sha256((root / "trace.zip").read_bytes())}
+    record = {"schema": "heartbeat2-ci-execution-v1", "provider": "github-actions", **ci, "evidenceRunId": "run-308", "producer": "scripts/ci/heartbeat2-browser.sh", "playwrightExitCode": 0, "startedAt": "2026-07-29T17:00:00Z", "completedAt": "2026-07-29T17:00:10Z", "workflowSourceSha256": graph[".github/workflows/ci.yml"], "runnerSourceSha256": graph["scripts/ci/heartbeat2-browser.sh"], "reportSha256": evidence.sha256((root / "playwright.json").read_bytes()), "traceSha256": evidence.sha256((root / "trace.zip").read_bytes())}
     (root / "execution.json").write_text(json.dumps(record), encoding="utf-8")
     packet["manifest"]["execution"] = "execution.json"
     (root / "manifest.json").write_text(json.dumps(packet["manifest"]), encoding="utf-8")
@@ -8970,8 +8970,8 @@ def test_heartbeat2_reset6_workflow_is_exact_head_fail_fast_and_success_only() -
     assert "NARRATWIN_H2_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}" in workflow
     assert "if: ${{ hashFiles('scripts/ci/heartbeat2-browser.sh') != '' }}" in workflow
     assert "run: bash scripts/ci/heartbeat2-browser.sh" in workflow
-    assert "jq -e '.outcome == \"CI_EXECUTION_BOUND\" and .executionAuthenticity == \"GITHUB_ACTIONS\"' reports/heartbeat2/published/ci-verification.json" in workflow
-    assert "if: success() && hashFiles('reports/heartbeat2/published/**') != ''" in workflow
+    assert "jq -e '.outcome == \"CI_EXECUTION_BOUND\" and .executionAuthenticity == \"GITHUB_ACTIONS\" and .headSha == env.NARRATWIN_H2_EXPECTED_HEAD and .githubRunId == env.GITHUB_RUN_ID and .githubRunAttempt == env.GITHUB_RUN_ATTEMPT' reports/heartbeat2/published/ci-verification.json" in workflow
+    assert "if: success() && hashFiles('scripts/ci/heartbeat2-browser.sh') != '' && hashFiles('reports/heartbeat2/published/**') != ''" in workflow
     assert "name: heartbeat2-browser-evidence-${{ github.run_id }}-${{ github.run_attempt }}" in workflow
     assert "if-no-files-found: error" in workflow
     assert "continue-on-error" not in workflow
@@ -8992,9 +8992,10 @@ def test_heartbeat2_reset6_accepts_exact_ci_execution_binding(tmp_path: Path) ->
     bind_heartbeat2_ci_execution(root, packet, evidence, ci)
     result = evidence.verify_evidence(root, expected_head="a" * 40, expected_run_id="run-308", source_root=sources, ci_context=ci)
     assert result["outcome"] == "CI_EXECUTION_BOUND" and result["executionAuthenticity"] == "GITHUB_ACTIONS"
+    assert result["githubRunId"] == ci["runId"] and result["githubRunAttempt"] == ci["runAttempt"]
 
 
-@pytest.mark.parametrize(("field", "value"), [("headSha", "c" * 40), ("runAttempt", "2"), ("playwrightExitCode", 1), ("traceSha256", "0" * 64)])
+@pytest.mark.parametrize(("field", "value"), [("headSha", "c" * 40), ("runAttempt", "2"), ("evidenceRunId", "other-run"), ("playwrightExitCode", 1), ("traceSha256", "0" * 64)])
 def test_heartbeat2_reset6_rejects_rebound_or_failed_ci_execution(tmp_path: Path, field: str, value: Any) -> None:
     evidence: Any = load_heartbeat2_evidence_module()
     root, sources = tmp_path / field, tmp_path / "sources"
