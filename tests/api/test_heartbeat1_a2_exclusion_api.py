@@ -12,20 +12,8 @@ from backend.app.main import app, reset_app_state_for_tests, stage4_service
 from backend.app.stage4 import LocalPrincipal, Stage4Error, Stage4Service
 
 
-INTERNAL_FIXTURE = (
-    b"NarraTwin Heartbeat Internal Fixture\n\n"
-    b"INTERNAL USE ONLY.\n"
-    b"Project Lantern private launch code name is Ember.\n"
-    b"This source must never enter approved chunks or retrieval-visible material.\n"
-)
-INTERNAL_ASSERTIONS = {
-    "classification": "INTERNAL",
-    "provenance": "PROJECT_AUTHORED_SYNTHETIC",
-    "rightsBasis": "PROJECT_OWNED",
-    "rightsStatus": "INELIGIBLE",
-    "usagePolicy": "INTERNAL_NO_REUSE",
-    "sourceVersion": "heartbeat1-internal-v1",
-}
+INTERNAL_FIXTURE = b"NarraTwin Heartbeat Internal Fixture\n\nINTERNAL USE ONLY.\nProject Lantern private launch code name is Ember.\nThis source must never enter approved chunks or retrieval-visible material.\n"
+INTERNAL_ASSERTIONS = {"classification": "INTERNAL", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rightsBasis": "PROJECT_OWNED", "rightsStatus": "INELIGIBLE", "usagePolicy": "INTERNAL_NO_REUSE", "sourceVersion": "heartbeat1-internal-v1"}
 PUBLIC_FIXTURE = b"# Public\n\nProject Lantern is a controlled local demonstration.\nGrounded chunks retain source and checksum identity.\n"
 PUBLIC_ASSERTIONS = {"curationSchemaVersion": "source-curation-v1", "action": "ACCEPT_FOR_REVIEW", "classification": "PUBLIC_SAFE", "provenance": "PROJECT_AUTHORED_SYNTHETIC", "rightsBasis": "PROJECT_OWNED", "rightsStatus": "ELIGIBLE", "usagePolicy": "LOCAL_TEST_REUSE_ALLOWED", "sourceVersion": "heartbeat1-public-v1"}
 
@@ -186,3 +174,12 @@ def test_a2_restore_prunes_tampered_exclusion_graph(case: str, tmp_path: Path, m
     else:
         assert excluded["decisionId"] not in restored.source_decisions and not any(record.idempotency_key == "a2-exclude" for record in restored.idempotency_records.values())
     assert INTERNAL_FIXTURE.decode() not in repaired and all(chunk.document_id != excluded["sourceId"] for chunk in restored.rag_store.chunks_for_project(tenant_id="tenant_local", project_id="proj_000001"))
+
+
+def test_issue304_a2_allowlist_is_exact_and_near_match_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    from scripts.quality import check_phase1_closure_docs as gate
+    files = {"backend/app/curation.py", "backend/app/stage4.py", "backend/app/main.py", "tests/api/test_heartbeat1_a2_exclusion_api.py", "docs/API_CONTRACT.md", "docs/ADR/0041-heartbeat1-a2-exclusion-summary.md", "docs/TRACEABILITY.md", "docs/STATUS.md", "docs/STAGE_ISSUE_PLAN.md", "scripts/quality/check_phase1_closure_docs.py"}
+    monkeypatch.setattr(gate, "changed_files", lambda: sorted(files)); monkeypatch.setattr(gate, "current_branch", lambda: "phase-1-closure-304-heartbeat1-a2-exclusion-summary")
+    failures: list[str] = []; gate.check_changed_files(failures); assert failures == []
+    monkeypatch.setattr(gate, "current_branch", lambda: "phase-1-closure-304-heartbeat1-a2-exclusion-summary-near")
+    gate.check_changed_files(failures); assert failures and "may not change" in failures[-1]
