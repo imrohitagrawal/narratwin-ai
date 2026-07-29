@@ -8376,7 +8376,7 @@ await page.goto("/");
         == "9cefe4184b2a67d4cdc56d66d005b90409e06ad449c4c426b7d6e012125bfcb6"
     )
     source_checksum = hashlib.sha256(fixture).hexdigest()
-    source = {"sourceId": "source-1", "checksum": source_checksum, "decisionId": "decision-1", "policyVersion": "curation-policy-v1", "sourceVersion": "heartbeat2-public-v1", "assertionsFingerprint": "assertions-sha", "serverDecision": "ACCEPT_FOR_REVIEW", "decisionState": "APPROVED", "ingestionStatus": "SOURCE_INGESTED", "acceptedChunks": [{"chunkId": "chunk-1", "checksum": "chunk-sha"}]}
+    source = {"sourceId": "source-1", "checksum": source_checksum, "decisionId": "decision-1", "policyVersion": "curation-policy-v1", "sourceVersion": "heartbeat2-public-v1", "assertionsFingerprint": "assertions-sha", "serverDecision": "ACCEPT_FOR_REVIEW", "decisionState": "APPROVED", "ingestionStatus": "INGESTED", "acceptedChunks": [{"chunkId": "chunk-1", "checksum": "chunk-sha"}]}
     snapshot = {"sourceDocumentChecksum": source_checksum, "chunkChecksum": "chunk-sha"}
     contexts = [{"contextRefId": "context-1", "claimId": "claim-1", "documentId": "source-1", "chunkId": "chunk-1", "evidenceSnapshot": snapshot}]
     supports = [{"claimId": "claim-1", "contextRefId": "context-1", "documentId": "source-1", "chunkId": "chunk-1", "citationIndex": 1, "evidenceSnapshot": snapshot}]

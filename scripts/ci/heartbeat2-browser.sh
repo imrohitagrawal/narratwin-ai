@@ -62,7 +62,7 @@ mkdir -p "$PUBLISHED"
 [ -z "$(find "$PUBLISHED" -mindepth 1 -print -quit)" ] || { echo "Heartbeat 2 published path is not empty."; exit 1; }
 mkdir -p "$CANDIDATE"
 export APP_ENV=test LLM_PROVIDER=mock EMBEDDING_PROVIDER=mock EVALUATION_PROVIDER=mock STORAGE_PROVIDER=local
-export NARRATWIN_API_PROXY_TARGET="http://127.0.0.1:8122" NARRATWIN_STAGE4_STATE_FILE="$CANDIDATE/stage4-state.json" NARRATWIN_STAGE6_STATE_FILE="$CANDIDATE/stage6-state.json" NARRATWIN_STAGE7_STATE_FILE="$CANDIDATE/stage7-state.json"
+export NARRATWIN_API_PROXY_TARGET="http://127.0.0.1:8122" NARRATWIN_STAGE4_STATE_FILE="$RUNTIME/regression-stage4.json" NARRATWIN_STAGE6_STATE_FILE="$RUNTIME/regression-stage6.json" NARRATWIN_STAGE7_STATE_FILE="$RUNTIME/regression-stage7.json"
 export H2_CANDIDATE_DIR="$CANDIDATE" H2_PLAYWRIGHT_REPORT="$CANDIDATE/playwright.json" H2_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 unset OPENAI_API_KEY ANTHROPIC_API_KEY GEMINI_API_KEY GOOGLE_API_KEY OPENROUTER_API_KEY LANGFUSE_PUBLIC_KEY LANGFUSE_SECRET_KEY
 
@@ -72,6 +72,7 @@ uv run python -c 'import ast,hashlib,sys; from pathlib import Path; tree=ast.par
 export H2_PUBLIC_FIXTURE="$RUNTIME/public.md"
 FAILURE_STAGE="regressions"
 bounded 90 bash -c 'uv run pytest -q -p no:cacheprovider tests/api/test_stage4_slice_api.py -k a1 && uv run pytest -q -p no:cacheprovider tests/api/test_heartbeat1_a2_exclusion_api.py && uv run pytest -q -p no:cacheprovider tests/api/test_stage6_multilingual_api.py tests/api/test_stage7_avatar_api.py' >"$CANDIDATE/regressions.log" 2>&1 || withhold
+export NARRATWIN_STAGE4_STATE_FILE="$CANDIDATE/stage4-state.json" NARRATWIN_STAGE6_STATE_FILE="$CANDIDATE/stage6-state.json" NARRATWIN_STAGE7_STATE_FILE="$CANDIDATE/stage7-state.json"
 FAILURE_STAGE="backend"
 uv run uvicorn backend.app.main:app --host 127.0.0.1 --port 8122 >"$CANDIDATE/backend.log" 2>&1 & BACKEND_PID=$!
 ready "http://127.0.0.1:8122/api/v1/readyz" "$BACKEND_PID" || withhold

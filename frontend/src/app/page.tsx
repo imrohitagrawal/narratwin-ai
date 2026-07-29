@@ -980,7 +980,7 @@ export default function Home() {
 	  const artifactContext = { multilingualRun, avatarRender };
   const avatarPreviewCanExpand = avatarPreviewScript.length > AVATAR_PREVIEW_COLLAPSED_CHARACTER_LIMIT;
   const h2Accepted = h2Summary?.curatedSources[0];
-  const h2Ready = h2Summary?.curatedSources.length === 1 && h2Accepted?.decisionState === "APPROVED" && h2Accepted.ingestionStatus === "SOURCE_INGESTED" && h2Accepted.acceptedChunks.length > 0;
+  const h2Ready = h2Summary?.curatedSources.length === 1 && h2Accepted?.decisionState === "APPROVED" && h2Accepted.ingestionStatus === "INGESTED" && h2Accepted.acceptedChunks.length > 0;
 
   return (
     <main className={styles.page} aria-busy={isGenerating || issue280IsRunning}>

@@ -26,7 +26,7 @@ test("Heartbeat 2 local reviewer demo", async ({ page }) => {
   await page.getByTestId("h2-approve-source").click();
   await expect(page.getByTestId("h2-source-state")).toContainText("APPROVED");
   await page.getByTestId("h2-ingest-source").click();
-  await expect(page.getByTestId("h2-accepted-source")).toContainText("SOURCE_INGESTED");
+  await expect(page.getByTestId("h2-accepted-source")).toContainText("INGESTED");
   await expect(page.getByTestId("h2-accepted-chunk").first()).toBeVisible();
   await expect(page.getByTestId("h2-generate-demo")).toBeEnabled();
   await page.getByTestId("h2-generate-demo").click();
