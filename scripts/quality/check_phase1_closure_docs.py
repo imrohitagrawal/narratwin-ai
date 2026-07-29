@@ -1881,6 +1881,21 @@ ISSUE_313_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
 }
 ISSUE_313_LINE_CAP = 950
+ISSUE_315_BRANCH = "phase-1-closure-process-315-pr-product-context-gate"
+ISSUE_315_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-315.json",
+    "AGENTS.md",
+    ".github/pull_request_template.md",
+    "scripts/guardrails_check.py",
+    "tests/unit/test_guardrails_check.py",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/QUALITY_GATES.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "docs/STATUS.md",
+}
+ISSUE_315_LINE_CAP = 1000
 ISSUE_313_ORACLE_PATH = "docs/evals/issue280_semantic_oracle_v1.json"
 ISSUE_313_METRICS = [
     ("essential-proposition-recall", "eq", 1.0),
@@ -1949,10 +1964,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #313",
-        "repair-feasibility-decision-complete",
-        "repair-feasibility-decision-complete",
-        "Issue #313 defines the still-unfixed Issue #280 defect, an independent semantic oracle contract, and a bounded semantic-frame repair candidate for a later issue. Issue #300 and PR #301 are completed historical negative-containment evidence; PR #299 and all forensic artifacts remain preserved. Runtime repair, Heartbeat 3, Product Mode 2/#20, providers, hosting, deployment, production, private data, and protected-tracker work remain unauthorized.",
+        "issue #315",
+        "pr-product-context-gate-complete",
+        "pr-product-context-gate-complete",
+        "Issue #315 requires self-contained product and end-goal context for every non-trivial PR and makes missing, issue-only, link-only, generic, or production-overclaim context fail `policy-gates`. It explains each contribution against the end-to-end demo and eventual production path while independent reviewers retain truth and strategic judgment. Issue #300 and PR #301 are completed historical negative-containment evidence; PR #299 and all forensic artifacts remain preserved. Runtime and production authorization remain unchanged; Issue #280 repair, Heartbeat 3, Product Mode 2/#20, providers, hosting, deployment, private data, and protected work remain unauthorized.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -2271,7 +2286,7 @@ def issue8_product_memory_findings(documents: dict[str, str]) -> list[str]:
 
 
 def issue8_closeout_status_findings(text: str) -> list[str]:
-    required = ("| SSV1-NEXT | next-action | issue #313 | repair-feasibility-decision-complete | repair-feasibility-decision-complete |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
+    required = ("| SSV1-NEXT | next-action | issue #315 | pr-product-context-gate-complete | pr-product-context-gate-complete |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
     return ["I8.STATUS.TERMINAL" for marker in required if marker not in text]
 
 
@@ -2374,7 +2389,7 @@ def issue313_decision_findings(decision: str, adr: str) -> list[str]:
 
 def issue313_status_findings(text: str) -> list[str]:
     required = (
-        "| SSV1-NEXT | next-action | issue #313 | repair-feasibility-decision-complete | repair-feasibility-decision-complete |",
+        "| `#313` | Decision complete when reviewed and merged | Issue #280 repair feasibility and independent semantic oracle |",
         "Issue #300 and PR #301 are completed historical negative-containment evidence",
         "Runtime repair remains NO-GO until a separate controlling issue",
     )
@@ -4173,6 +4188,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_313_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-313-"):
         allowed_files = set()
+    elif branch == ISSUE_315_BRANCH:
+        allowed_files = ISSUE_315_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-315-"):
+        allowed_files = set()
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
@@ -4374,6 +4393,12 @@ def check_changed_files(failures: list[str]) -> None:
             fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
         elif local > ISSUE_313_LINE_CAP:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_313_LINE_CAP}-line cap.")
+    if branch == ISSUE_315_BRANCH:
+        local = charged_lines(resolve_base())
+        if local is None:
+            fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
+        elif local > ISSUE_315_LINE_CAP:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_315_LINE_CAP}-line cap.")
 
 
 def check_final_review_baseline(failures: list[str]) -> None:
