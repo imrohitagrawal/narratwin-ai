@@ -199,9 +199,9 @@ def test_cli_intersects_child_with_supplied_narrower_parent_capsule() -> None:
          "--parent-capsule-json", json.dumps(parent)],
         check=False, capture_output=True, text=True,
     )
-    codes = {item["code"] for item in json.loads(child_run.stdout)["findings"]}
-    assert child_run.returncode == 1
-    assert "CTX.AUTH.CHILD_WIDENS_PARENT" in codes
+    payload = json.loads(child_run.stdout)
+    codes = {item["code"] for item in payload["findings"]}
+    assert child_run.returncode == 1 and "CTX.AUTH.CHILD_WIDENS_PARENT" in codes and payload["taskCapsule"]["parentCapsuleId"].endswith(parent["capsuleDigest"])
 def test_cli_rejects_digest_consistent_semantically_invalid_parent() -> None:
     base = ["python3", "-m", "scripts.agent_context.cli", "route", "--commit", "WORKTREE"]
     run = subprocess.run([*base, "--fixture-id", "RFV1-06-COLD-PR-REVIEW"], check=True, capture_output=True, text=True)

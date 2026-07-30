@@ -223,6 +223,7 @@ def _run_route(args: argparse.Namespace) -> int:
     repository_authority, issue_authority, parent_capsule = _authority_layers(
         manifest, fixture, issue_scope
     )
+    modules_by_id = {str(item.get("moduleId")): item for item in manifest.get("modules", [])}
     role = str(fixture.get("request", {}).get("role", ""))
     if args.parent_capsule_json:
         parent_capsule = load_json_bytes_strict(args.parent_capsule_json.encode())
@@ -231,22 +232,27 @@ def _run_route(args: argparse.Namespace) -> int:
     if "CHILD" not in role and parent_capsule is not None:
         route_findings.append(Finding("CTX.CAPSULE.PARENT_UNEXPECTED"))
     if parent_capsule is not None:
-        route_findings.extend(validate_schema_instance(parent_capsule, contract, "AgentTaskCapsuleV1"))
-        if parent_capsule.get("branch") != branch or parent_capsule.get("expectedHead") != head_commit:
-            route_findings.append(Finding("CTX.CAPSULE.PARENT_STALE"))
-        parent_payload = {key: value for key, value in parent_capsule.items() if key != "capsuleDigest"}
-        if parent_capsule.get("capsuleDigest") != canonical_digest(parent_payload):
-            route_findings.append(Finding("CTX.CAPSULE.PARENT_DIGEST_MISMATCH"))
-        parent_authority = parent_capsule.get("authority", {})
-        if parent_capsule.get("authorityDigest") != canonical_digest(parent_authority):
-            route_findings.append(Finding("CTX.CAPSULE.PARENT_AUTHORITY_DIGEST_MISMATCH"))
-        bounded_parent, parent_findings = intersect_authority(
-            repository_authority, issue_authority, None, parent_authority
-        )
-        route_findings.extend(parent_findings)
-        if bounded_parent != parent_authority:
-            route_findings.append(Finding("CTX.CAPSULE.PARENT_AUTHORITY_MISMATCH"))
-    parent_id = str(parent_capsule.get("capsuleId")) if parent_capsule else None
+        matches = [item for item in fixture_set.get("fixtures", []) if item.get("fixtureId") == parent_capsule.get("fixtureId")]
+        if len(matches) != 1 or parent_capsule.get("parentCapsuleId") is not None:
+            route_findings.append(Finding("CTX.CAPSULE.PARENT_ROUTE_INVALID"))
+        else:
+            parent_fixture = matches[0]
+            parent_route, parent_route_findings = route_request(
+                manifest, parent_fixture["request"], fixture_set=fixture_set
+            )
+            parent_route.update({"repositoryCommit": head_commit, "bootstrapMetrics": bootstrap_metrics})
+            parent_route["receiptDigest"] = canonical_digest({k: v for k, v in parent_route.items() if k != "receiptDigest"})
+            parent_hashes = {module_id: str(modules_by_id[module_id]["contentSha256"]) for module_id in parent_route["dependencyClosure"]}
+            route_findings.extend(parent_route_findings)
+            route_findings.extend(validate_capsule(
+                parent_capsule, repository_authority=repository_authority,
+                issue_authority=issue_authority, parent_capsule=None, actual_branch=branch,
+                actual_head=head_commit, actual_base=base_commit, contract_schema=contract,
+                expected_rule_ids=set(parent_route["selectedRuleIds"]),
+                expected_module_hashes=parent_hashes, expected_fixture=parent_fixture,
+                expected_route=parent_route,
+            ))
+    parent_id = f"{parent_capsule.get('capsuleId')}@{parent_capsule.get('capsuleDigest')}" if parent_capsule else None
     proposed_capsule = build_capsule(
         manifest, fixture, route, repository_commit=head_commit, base_commit=base_commit,
         branch=branch, parent_capsule_id=parent_id,
@@ -272,11 +278,6 @@ def _run_route(args: argparse.Namespace) -> int:
         parent_capsule_id=parent_id,
         authority_override=effective_authority,
     )
-    modules_by_id = {
-        str(module.get("moduleId")): module
-        for module in manifest.get("modules", [])
-        if isinstance(module, dict)
-    }
     expected_module_hashes = {
         module_id: str(modules_by_id[module_id].get("contentSha256"))
         for module_id in route.get("dependencyClosure", [])
