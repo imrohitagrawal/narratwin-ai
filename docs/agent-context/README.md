@@ -67,6 +67,8 @@ Every deny wins. Missing GitHub, provider, secret, deployment, destructive, or
 external authority is a denial. A child may narrow an allow or add a deny; it
 cannot add an allow or remove an inherited deny. Exact paths reject traversal,
 absolute paths, globs, prose, symlinks, and normalized parallel collisions.
+The manifest owns typed, commit-pinned repository and Issue `#319` authority
+profiles; fixture proposals are intersected with them and never construct them.
 
 `AgentTaskCapsuleV1` binds the branch, distinct base/head, objective, deliverable,
 authority digest, selected rules/module hashes, tests, assumptions, budgets,
@@ -81,7 +83,8 @@ manifest/rules/modules, sources, inspected and changed files, commands and exit
 results, findings, proved/disproved/untested claims, assumptions, blockers,
 risks, prevented actions, budgets, collision check, and follow-up. Validation
 rejects missing command evidence, authority/head mismatches, read-only changes,
-out-of-scope writes, and any self-certification.
+out-of-scope reads or writes, unauthorized typed claims, missing required-source
+evidence, incoherent command results, malformed budgets, and self-certification.
 
 A receipt cannot approve a PR, declare merge eligibility, close an issue,
 authorize release, or claim production readiness. Parent verification and an
@@ -118,7 +121,7 @@ mandatory baseline uses `cl100k_base` for comparison.
 
 At corrected GREEN, the universal bootstrap measures 43 lines and 928 estimated
 tokens. Routed packets measure 158–369 lines and 2,079–3,913 estimated tokens;
-capsules measure 114–167 pretty-printed lines and 724–1,162 estimated tokens.
+capsules measure 114–177 pretty-printed lines and 724–1,394 estimated tokens.
 All are validated against their executable ceilings.
 Smaller size is not acceptance evidence; seeded-defect recall, critical-rule
 completeness, cold reconstruction, and false-positive behavior remain the

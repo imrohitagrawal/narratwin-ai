@@ -85,6 +85,7 @@ def _manifest() -> JsonObject:
             {"ruleId": "CONST-001", "moduleId": "repo-constitution", "status": "active"},
             {"ruleId": "STATE-001", "moduleId": "current-state", "status": "active"},
         ],
+        "authorityProfiles": {"repository": _authority(), "issue": _authority()},
     }
 
 

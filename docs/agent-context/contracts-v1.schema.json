@@ -93,7 +93,7 @@
     "ContextPolicyManifestV1": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "manifestId", "repository", "effectiveVersion", "shadowOnly", "currentStateModuleId", "modules", "rules", "budgets", "reservedDecisions"],
+      "required": ["schemaVersion", "manifestId", "repository", "effectiveVersion", "shadowOnly", "currentStateModuleId", "modules", "rules", "budgets", "reservedDecisions", "authorityProfiles"],
       "properties": {
         "schemaVersion": {"const": "ContextPolicyManifestV1"},
         "manifestId": {"type": "string"},
@@ -104,7 +104,12 @@
         "modules": {"type": "array", "items": {"$ref": "#/$defs/Module"}, "minItems": 1},
         "rules": {"type": "array", "items": {"$ref": "#/$defs/Rule"}, "minItems": 1},
         "budgets": {"type": "object"},
-        "reservedDecisions": {"$ref": "#/$defs/StringSet"}
+        "reservedDecisions": {"$ref": "#/$defs/StringSet"},
+        "authorityProfiles": {
+          "type": "object", "additionalProperties": false,
+          "required": ["repository", "issue"],
+          "properties": {"repository": {"$ref": "#/$defs/Authority"}, "issue": {"$ref": "#/$defs/Authority"}}
+        }
       }
     },
     "AgentTaskCapsuleV1": {
@@ -184,7 +189,7 @@
           }
         },
         "findings": {"type": "array"},
-        "claimsProved": {"type": "array"},
+        "claimsProved": {"$ref": "#/$defs/StringSet"},
         "claimsDisproved": {"type": "array"},
         "claimsNotTested": {"type": "array"},
         "assumptions": {"type": "array"},

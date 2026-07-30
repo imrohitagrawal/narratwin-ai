@@ -33,6 +33,7 @@ MANIFEST_FIELDS = {
     "rules",
     "budgets",
     "reservedDecisions",
+    "authorityProfiles",
 }
 MODULE_FIELDS = {
     "moduleId",
@@ -121,7 +122,7 @@ PROSE = re.compile(r"\s")
 DATE_TIME = re.compile(
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
 )
-FROZEN_FIXTURE_DIGEST = "6757fa98d5c16385c90c58616bc20f540d1fa83fd0ea64adcd685bbaa51daf4e"
+FROZEN_FIXTURE_DIGEST = "aac018e816ea393daa6de560aed6a13834222219be0ec67b8a8b0a186d072d37"
 RESERVED_RECEIPT_CLAIMS = {
     "APPROVAL", "COMPLETION", "MERGE_ELIGIBILITY", "RELEASE", "PRODUCTION_READINESS"
 }
@@ -571,6 +572,12 @@ def validate_capsule(
         findings.append(_finding("CTX.CAPSULE.RULE_SCOPE_MISMATCH"))
     if expected_module_hashes is not None and capsule.get("moduleHashes") != expected_module_hashes:
         findings.append(_finding("CTX.CAPSULE.MODULE_SCOPE_MISMATCH"))
+    if expected_rule_ids is None or expected_module_hashes is None:
+        findings.append(_finding("CTX.CAPSULE.ROUTE_BINDING_MISSING"))
+    if any(not _list(capsule.get(field)) for field in ("claims", "requiredPaths", "selectedRuleIds")) or not capsule.get(
+        "moduleHashes"
+    ):
+        findings.append(_finding("CTX.CAPSULE.EMPTY_BINDING"))
     budget = capsule.get("budgets", {})
     if isinstance(budget, dict):
         lines = budget.get("actualLines")
@@ -656,7 +663,7 @@ def build_capsule(
         "deliverable": deliverable,
         "claims": authority["allows"]["claims"],
         "negativeInvariants": [f"deny:{item}" for item in authority["denies"]["claims"]],
-        "requiredPaths": authority["allows"]["readPaths"],
+        "requiredPaths": fixture.get("requiredPaths", authority["allows"]["readPaths"]),
         "authority": authority,
         "selectedRuleIds": route.get("selectedRuleIds", []),
         "moduleHashes": module_hashes,
@@ -697,6 +704,8 @@ def validate_receipt(
     findings = _unknown_fields(receipt, RECEIPT_FIELDS, "receipt")
     if contract_schema is not None:
         findings.extend(validate_schema_instance(receipt, contract_schema, "HandoffReceiptV1"))
+    else:
+        findings.append(_finding("CTX.SCHEMA.CONTRACT_MISSING", "HandoffReceiptV1"))
     if receipt.get("schemaVersion") != "HandoffReceiptV1":
         findings.append(_finding("CTX.SCHEMA.VERSION"))
     for field in sorted(RECEIPT_FIELDS):
@@ -729,14 +738,26 @@ def validate_receipt(
     }
     if reserved_proved:
         findings.append(_finding("CTX.RECEIPT.RESERVED_CLAIM", ",".join(sorted(reserved_proved))))
+    proved_claims = {str(item) for item in _list(receipt.get("claimsProved"))}
+    authority = capsule.get("authority", {})
+    allowed_claims = _domain(authority if isinstance(authority, dict) else {}, "allows", "claims")
+    denied_claims = _domain(authority if isinstance(authority, dict) else {}, "denies", "claims")
+    if proved_claims - allowed_claims or proved_claims & denied_claims:
+        findings.append(_finding("CTX.RECEIPT.CLAIM_SCOPE_MISMATCH"))
     budget = receipt.get("budget", {})
     capsule_budget = capsule.get("budgets", {})
     if isinstance(budget, dict) and isinstance(capsule_budget, dict):
-        if int(budget.get("actualLines", 0)) > int(capsule_budget.get("lineCeiling", 0)) or int(
-            budget.get("actualTokens", 0)
-        ) > int(capsule_budget.get("tokenCeiling", 0)):
+        actual_lines = budget.get("actualLines")
+        actual_tokens = budget.get("actualTokens")
+        values = [budget.get(key) for key in ("estimatedLines", "actualLines", "estimatedTokens", "actualTokens")]
+        if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in values):
+            findings.append(_finding("CTX.BUDGET.RECEIPT_INVALID"))
+        elif isinstance(actual_lines, int) and isinstance(actual_tokens, int) and (
+            actual_lines > int(capsule_budget.get("lineCeiling", 0)) or actual_tokens > int(
+            capsule_budget.get("tokenCeiling", 0)
+            )
+        ):
             findings.append(_finding("CTX.BUDGET.RECEIPT_OVERFLOW"))
-    authority = capsule.get("authority", {})
     if capsule.get("actionMode") == "READ_ONLY" and _list(receipt.get("filesChanged")):
         findings.append(_finding("CTX.RECEIPT.READ_ONLY_CHANGED"))
     allowed_writes = _domain(authority if isinstance(authority, dict) else {}, "allows", "writePaths")
@@ -751,6 +772,9 @@ def validate_receipt(
     }
     if inspected - allowed_reads:
         findings.append(_finding("CTX.RECEIPT.READ_SCOPE_MISMATCH"))
+    required = {_normalized_path(str(item)) for item in _list(capsule.get("requiredPaths"))}
+    if required - inspected:
+        findings.append(_finding("CTX.RECEIPT.REQUIRED_EVIDENCE_MISSING"))
     if {str(item) for item in _list(receipt.get("validatedRules"))} != {
         str(item) for item in _list(capsule.get("selectedRuleIds"))
     }:

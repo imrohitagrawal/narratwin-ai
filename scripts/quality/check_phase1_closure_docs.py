@@ -6952,7 +6952,7 @@ def check_issue319_agent_context(failures: list[str]) -> None:
         or provenance.get("routerOutputUsedAsExpectedValue") is not False
     ):
         fail(failures, "Issue #319 routing fixtures lost frozen independent provenance or coverage.")
-    if fixture_sha != "394abe652b0dee2b245bbc3dd43f3b12e88c683ee4a56d686142f12b390baa08":
+    if fixture_sha != "37872e94d14685fcfca819a4effe4cacd11dbcedac784877a172538e4ef3af76":
         fail(failures, "Issue #319 independently frozen routing fixture content drifted.")
     result = subprocess.run(
         ["python3", "-m", "scripts.agent_context.cli", "validate", "--commit", "WORKTREE"],
