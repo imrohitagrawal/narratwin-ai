@@ -523,8 +523,7 @@ def validate_capsule(
     contract_schema: JsonObject | None = None,
     expected_rule_ids: set[str] | None = None,
     expected_module_hashes: JsonObject | None = None,
-    expected_fixture: JsonObject | None = None,
-    expected_route: JsonObject | None = None,
+    expected_fixture: JsonObject | None = None, expected_route: JsonObject | None = None, expected_repository: str | None = None,
 ) -> list[Finding]:
     """Validate exact state, typed authority, non-widening, and review independence."""
 
@@ -541,6 +540,8 @@ def validate_capsule(
         findings.append(_finding("CTX.STALE.HEAD"))
     if actual_base is not None and capsule.get("baseCommit") != actual_base:
         findings.append(_finding("CTX.STALE.BASE"))
+    if expected_repository is not None and capsule.get("repository") != expected_repository:
+        findings.append(_finding("CTX.CAPSULE.REPOSITORY_MISMATCH"))
     authority = capsule.get("authority")
     if not isinstance(authority, dict):
         return _dedupe(findings + [_finding("CTX.AUTH.MISSING")])
@@ -598,6 +599,9 @@ def validate_capsule(
         findings.append(_finding("CTX.CAPSULE.EMPTY_BINDING"))
     budget = capsule.get("budgets", {})
     if isinstance(budget, dict):
+        expected_budget = expected_fixture.get("budgets", {}).get("taskCapsule", {}) if expected_fixture else {}
+        if expected_budget and any(budget.get(key) != expected_budget.get(key) for key in ("lineCeiling", "tokenCeiling")):
+            findings.append(_finding("CTX.BUDGET.CAPSULE_SCOPE_MISMATCH"))
         lines = budget.get("actualLines")
         tokens = budget.get("actualTokens")
         if not isinstance(lines, int) or not isinstance(tokens, int):
@@ -632,6 +636,7 @@ def _task_binding(fixture: JsonObject, route: JsonObject) -> JsonObject:
     posture = fixture.get("coldHistoryPosture", {})
     posture = posture if isinstance(posture, dict) else {}
     return {
+        "capsuleId": f"capsule-{fixture.get('fixtureId')}",
         "fixtureId": fixture.get("fixtureId"),
         "requestDigest": canonical_digest(request),
         "routeDigest": canonical_digest(route),
@@ -680,7 +685,6 @@ def build_capsule(
     task_binding = _task_binding(fixture, route)
     capsule: JsonObject = {
         "schemaVersion": "AgentTaskCapsuleV1",
-        "capsuleId": f"capsule-{fixture.get('fixtureId')}",
         "parentCapsuleId": parent_capsule_id,
         "repository": manifest.get("repository"),
         "branch": branch,

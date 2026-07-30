@@ -250,7 +250,7 @@ def _run_route(args: argparse.Namespace) -> int:
                 actual_head=head_commit, actual_base=base_commit, contract_schema=contract,
                 expected_rule_ids=set(parent_route["selectedRuleIds"]),
                 expected_module_hashes=parent_hashes, expected_fixture=parent_fixture,
-                expected_route=parent_route,
+                expected_route=parent_route, expected_repository=str(manifest.get("repository")),
             ))
     parent_id = f"{parent_capsule.get('capsuleId')}@{parent_capsule.get('capsuleDigest')}" if parent_capsule else None
     proposed_capsule = build_capsule(
@@ -295,8 +295,7 @@ def _run_route(args: argparse.Namespace) -> int:
         contract_schema=contract,
         expected_rule_ids={str(item) for item in route.get("selectedRuleIds", [])},
         expected_module_hashes=expected_module_hashes,
-        expected_fixture=fixture,
-        expected_route=route,
+        expected_fixture=fixture, expected_route=route, expected_repository=str(manifest.get("repository")),
     )
     budget_name = str(route.get("packetBudget"))
     budget = manifest.get("budgets", {}).get(budget_name, {})
