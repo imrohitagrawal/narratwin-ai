@@ -549,16 +549,20 @@ def validate_capsule(
     digest_payload = {key: value for key, value in capsule.items() if key != "capsuleDigest"}
     if capsule.get("capsuleDigest") != canonical_digest(digest_payload):
         findings.append(_finding("CTX.CAPSULE.DIGEST_MISMATCH"))
-    parent_authority: JsonObject | None = None
-    if parent_capsule is not None and isinstance(parent_capsule.get("authority"), dict):
-        parent_authority = parent_capsule["authority"]
-    _, authority_findings = intersect_authority(
-        repository_authority, issue_authority, parent_authority, authority
-    )
+    parent_authority = parent_capsule.get("authority") if parent_capsule is not None else None
+    expected_parent = f"{parent_capsule.get('capsuleId')}@{parent_capsule.get('capsuleDigest')}" if parent_capsule else None
+    if capsule.get("parentCapsuleId") != expected_parent:
+        findings.append(_finding("CTX.CAPSULE.PARENT_BINDING_MISMATCH"))
+    _, authority_findings = intersect_authority(repository_authority, issue_authority, parent_authority, authority)
     findings.extend(authority_findings)
     write_paths = _domain(authority, "allows", "writePaths")
-    if capsule.get("actionMode") == "READ_ONLY" and write_paths:
+    mode = capsule.get("actionMode")
+    if mode == "READ_ONLY" and write_paths:
         findings.append(_finding("CTX.MODE.READ_ONLY_WRITE"))
+    elif mode == "EDIT" and not write_paths:
+        findings.append(_finding("CTX.MODE.EDIT_WITHOUT_WRITE"))
+    elif mode == "GITHUB_MUTATION" and not _domain(authority, "allows", "externalActions"):
+        findings.append(_finding("CTX.MODE.GITHUB_WITHOUT_EXTERNAL"))
     for plane in ("allows", "denies"):
         for domain in ("readPaths", "writePaths"):
             for path in _domain(authority, plane, domain):
@@ -700,19 +704,14 @@ def build_capsule(
         "requiredTests": [f"fixture:{fixture.get('fixtureId')}.seededDefectIds"],
         "assumptions": [],
         "budgets": dict(fixture.get("budgets", {}).get("taskCapsule", {})),
-        "stopConditions": [
-            "AUTHORITY_SCOPE_OR_BUDGET_DRIFT",
-            "STALE_STATE_CONFLICT_OR_WRITESET_COLLISION",
-        ],
+        "stopConditions": ["AUTHORITY_SCOPE_OR_BUDGET_DRIFT", "STALE_STATE_CONFLICT_OR_WRITESET_COLLISION"],
         "expiresAt": "2026-08-30T00:00:00Z",
         "expectedReceiptSchema": "HandoffReceiptV1",
         "authorityDigest": canonical_digest(authority),
     }
     measured_lines, measured_tokens = _capsule_metrics(capsule)
-    capsule["budgets"].update(
-        {"actualLines": measured_lines, "actualTokens": measured_tokens,
-         "estimateAlgorithm": "ceil-utf8-bytes-divided-by-4"}
-    )
+    capsule["budgets"].update({"actualLines": measured_lines, "actualTokens": measured_tokens,
+                               "estimateAlgorithm": "ceil-utf8-bytes-divided-by-4"})
     capsule["capsuleDigest"] = canonical_digest(capsule)
     return capsule
 
