@@ -10,7 +10,7 @@ from typing import Any, cast
 
 import pytest
 
-from scripts.agent_context import build_packet, route_request
+from scripts.agent_context import build_packet, canonical_digest, intersect_authority, route_request
 
 FIXTURE_PATH = Path("docs/agent-context/fixtures/routing-fixtures-v1.json")
 
@@ -202,6 +202,19 @@ def test_cli_intersects_child_with_supplied_narrower_parent_capsule() -> None:
     codes = {item["code"] for item in json.loads(child_run.stdout)["findings"]}
     assert child_run.returncode == 1
     assert "CTX.AUTH.CHILD_WIDENS_PARENT" in codes
+def test_cli_rejects_digest_consistent_semantically_invalid_parent() -> None:
+    base = ["python3", "-m", "scripts.agent_context.cli", "route", "--commit", "WORKTREE"]
+    run = subprocess.run([*base, "--fixture-id", "RFV1-06-COLD-PR-REVIEW"], check=True, capture_output=True, text=True)
+    parent = json.loads(run.stdout)["taskCapsule"]
+    manifest = json.loads(Path("docs/agent-context/context-policy-manifest-v1.json").read_text())
+    repository, issue = (manifest["authorityProfiles"][key] for key in ("repository", "issue"))
+    parent["authority"], _ = intersect_authority(repository, issue, None, issue)
+    parent["authorityDigest"] = canonical_digest(parent["authority"])
+    parent["capsuleDigest"] = canonical_digest({k: v for k, v in parent.items() if k != "capsuleDigest"})
+    child = subprocess.run([*base, "--fixture-id", "RFV1-09-DISJOINT-WRITE-CHILD", "--parent-capsule-json", json.dumps(parent)], check=False, capture_output=True, text=True)
+    codes = {item["code"] for item in json.loads(child.stdout)["findings"]}
+    assert child.returncode == 1
+    assert "CTX.MODE.READ_ONLY_WRITE" in codes
 
 
 def test_emitted_capsule_records_inherited_repository_denies() -> None:
