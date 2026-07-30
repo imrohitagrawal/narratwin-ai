@@ -2089,7 +2089,7 @@ STATUS_STATE_V1_ROWS = {
         "repo owner",
         "decision-required",
         "decision-required",
-        "Issues #317 and #321 are closed after the bounded Spanish STANDARD slice and compatibility correction completed through PR #318 at c293b4a62a5afdaf893af83f3f23efd65f11b950 and PR #322 at 704c5b9536c62e29ba7fd74c7344d067770c728e. Issue #280 remains administratively closed but not semantically fixed, Issue #298 remains open, and PR #299 remains immutable open forensic evidence. The next product action requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request. Mandatory reading and broader product/runtime, provider, deployment, release, and production posture remain unchanged.",
+        "Issues #317 and #321 are closed after the bounded Spanish STANDARD slice and compatibility correction completed through PR #318 at c293b4a62a5afdaf893af83f3f23efd65f11b950 and PR #322 at 704c5b9536c62e29ba7fd74c7344d067770c728e. Issue #280 remains administratively closed but not semantically fixed, Issue #298 remains open, and PR #299 remains immutable open forensic evidence. Before any Slice 2 controller is created, the Issue #294 replacement must pass merged-tree acceptance, PR #295 must close unmerged as superseded, and Issue #294 must close as satisfied by the replacement. The next product action then requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request. Mandatory reading and broader product/runtime, provider, deployment, release, and production posture remain unchanged.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -2419,7 +2419,11 @@ def issue294_replacement_ledger_findings(documents: dict[str, str]) -> list[str]
     required = {
         "I294.STATUS.296": (
             status,
-            "| `#296` | Closed | Frontend brace-expansion audit unblock | Completed through merged PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1`",
+            "| `#296` | Closed | Frontend brace-expansion audit unblock | Completed through merged PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` after exact-head approval on `3b5b24a722beac6cfc6e586ecdc1d46757a5084d`",
+        ),
+        "I294.STATUS.313": (
+            status,
+            "| `#313` | Closed | Issue #280 repair feasibility and independent semantic oracle | Completed through merged PR `#314` at `84be60c6df59c4b482edc4cff5ae2bfd4ab54b25`",
         ),
         "I294.STATUS.317": (
             status,
@@ -2433,9 +2437,37 @@ def issue294_replacement_ledger_findings(documents: dict[str, str]) -> list[str]
             status,
             "The next product action requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.",
         ),
+        "I294.STATUS.PROTECTED": (
+            status,
+            "PR #299 remains immutable open forensic evidence at head `f93653e8a11e697c88766b207fb01c18662339d6`",
+        ),
+        "I294.STATUS.TERMINAL": (
+            status,
+            "Before any Slice 2 controller is created, the Issue #294 replacement must pass merged-tree acceptance, PR #295 must close unmerged as superseded, and Issue #294 must close as satisfied by the replacement.",
+        ),
+        "I294.STAGE.300": (
+            stage,
+            "Issue `#300` and PR `#301` are completed historical negative containment.",
+        ),
+        "I294.STAGE.313": (
+            stage,
+            "Issue `#313` and PR `#314` completed the architecture and independent-oracle decision.",
+        ),
+        "I294.STAGE.317": (
+            stage,
+            "Issue `#317` and PR `#318` completed the bounded Spanish `STANDARD` semantic slice.",
+        ),
         "I294.STAGE.CLOSEOUT": (
             stage,
             "Issue `#321` and PR `#322` completed the renderer compatibility correction.",
+        ),
+        "I294.STAGE.NEXT": (
+            stage,
+            "Further product work requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.",
+        ),
+        "I294.STAGE.TERMINAL": (
+            stage,
+            "Before that controller is created, the Issue `#294` replacement must pass merged-tree acceptance, PR `#295` must close unmerged as superseded, and Issue `#294` must close as satisfied by the replacement.",
         ),
         "I294.TRACE.296": (
             traceability,
@@ -2444,12 +2476,14 @@ def issue294_replacement_ledger_findings(documents: dict[str, str]) -> list[str]
     }
     findings = [code for code, (text, marker) in required.items() if marker not in text]
     forbidden = {
-        "I294.STALE.300": "Issue `#300` is the active negative-forensic-only reset",
-        "I294.STALE.317": "Issue `#317` remains open",
-        "I294.STALE.321": "Once Issue #321's reviewed correction merges",
-        "I294.STALE.UNMERGED": "Until merge, this is an intended target state",
+        "I294.STALE.300": (status, "Issue `#300` is the active negative-forensic-only reset"),
+        "I294.STALE.317": (status, "Issue `#317` remains open"),
+        "I294.STALE.321": (status, "Once Issue #321's reviewed correction merges"),
+        "I294.STALE.UNMERGED": (status, "Until merge, this is an intended target state"),
+        "I294.STALE.CLOSE_ONLY": (stage, "Close only after the reviewed correction merges"),
+        "I294.STALE.OWNER_DECISION": (status, "Do not select a correction without the reserved owner decision"),
     }
-    findings.extend(code for code, marker in forbidden.items() if marker in status)
+    findings.extend(code for code, (text, marker) in forbidden.items() if marker in text)
     return findings
 
 
@@ -2551,17 +2585,18 @@ def issue313_decision_findings(decision: str, adr: str) -> list[str]:
 
 
 def issue313_status_findings(text: str) -> list[str]:
+    normalized = re.sub(r"\s+", " ", text)
     required = (
         "| `#313` | Closed | Issue #280 repair feasibility and independent semantic oracle |",
         "Issue #300 and PR #301 are completed historical negative-containment evidence",
         "The next product action requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request",
     )
-    findings = ["F280.STATUS.MISSING" for marker in required if marker not in text]
+    findings = ["F280.STATUS.MISSING" for marker in required if marker not in normalized]
     for stale in (
         "Issue #300 is the active negative-forensic-only reset",
         "Complete PR #301 negative forensic containment",
     ):
-        if stale in text:
+        if stale in normalized:
             findings.append("F280.STATUS.STALE")
     return findings
 
@@ -4565,6 +4600,9 @@ def check_changed_files(failures: list[str]) -> None:
         missing = ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES - set(changed)
         for rel in sorted(missing):
             fail(failures, f"Phase 1 Closure branch {branch} must change {rel}.")
+        for rel in sorted(ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES):
+            if not (ROOT / rel).is_file():
+                fail(failures, f"Phase 1 Closure branch {branch} must retain {rel} as a regular file.")
         active_surfaces = {
             surface
             for surface, paths in ISSUE_294_REPLACEMENT_MEANINGFUL_SURFACES.items()

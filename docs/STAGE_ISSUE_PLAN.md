@@ -2210,3 +2210,6 @@ protected. No broader language/depth/audience work, dependency, workflow,
 provider, database, Docker, deployment, release, public, or production change
 was authorized. Any further semantic product work requires a separately
 controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.
+Before that controller is created, the Issue `#294` replacement must pass
+merged-tree acceptance, PR `#295` must close unmerged as superseded, and Issue
+`#294` must close as satisfied by the replacement.

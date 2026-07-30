@@ -28,7 +28,9 @@ Use it to answer:
   for human review. No broader Issue `#280`, product/runtime, or C3B completion
   may be inferred from these bounded results. The next product action requires
   a separately controlled, repository-owner-authorized Slice 2 issue, branch,
-  and pull request.
+  and pull request. Before that controller is created, the Issue `#294`
+  replacement must pass merged-tree acceptance, PR `#295` must close unmerged
+  as superseded, and Issue `#294` must close as satisfied by the replacement.
 - Current implementation permission: Phase 1 Closure governance only. Demo
   Phase 0 planning for issue `#225` completed through PR `#226`; Checkpoint 1
   is accepted as local/fake disabled-default reviewer evidence only through
@@ -245,7 +247,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | repo owner | decision-required | decision-required | Issues #317 and #321 are closed after the bounded Spanish STANDARD slice and compatibility correction completed through PR #318 at c293b4a62a5afdaf893af83f3f23efd65f11b950 and PR #322 at 704c5b9536c62e29ba7fd74c7344d067770c728e. Issue #280 remains administratively closed but not semantically fixed, Issue #298 remains open, and PR #299 remains immutable open forensic evidence. The next product action requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request. Mandatory reading and broader product/runtime, provider, deployment, release, and production posture remain unchanged. |
+| SSV1-NEXT | next-action | repo owner | decision-required | decision-required | Issues #317 and #321 are closed after the bounded Spanish STANDARD slice and compatibility correction completed through PR #318 at c293b4a62a5afdaf893af83f3f23efd65f11b950 and PR #322 at 704c5b9536c62e29ba7fd74c7344d067770c728e. Issue #280 remains administratively closed but not semantically fixed, Issue #298 remains open, and PR #299 remains immutable open forensic evidence. Before any Slice 2 controller is created, the Issue #294 replacement must pass merged-tree acceptance, PR #295 must close unmerged as superseded, and Issue #294 must close as satisfied by the replacement. The next product action then requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request. Mandatory reading and broader product/runtime, provider, deployment, release, and production posture remain unchanged. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed | Issue #8 is satisfied by Issue #311 once its PR merges; close only after post-merge six-criterion verification. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -831,7 +833,9 @@ Use these files together with this tracker:
    remains open, PR #299 and existing forensic evidence remain unchanged, and
    issue `#249` remains open. Further product work requires a separately
    controlled, repository-owner-authorized Slice 2 issue, branch, and pull
-   request.
+   request, after the Issue `#294` replacement passes merged-tree acceptance,
+   PR `#295` closes unmerged as superseded, and Issue `#294` closes as satisfied
+   by the replacement.
 4. Keep production,
    multi-worker deployment, hosted launch, Product Mode 2, external provider
    use, real audio/video export, and public synthetic-media distribution No-Go
