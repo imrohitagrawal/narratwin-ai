@@ -245,6 +245,16 @@ def test_current_and_historical_state_are_separate(
     assert expected in _codes(findings)
 
 
+def test_duplicate_current_fact_ids_fail_closed() -> None:
+    findings = detect_state_contradictions(
+        {"facts": [{"id": "issue-317", "value": "open"},
+                   {"id": "issue-317", "value": "complete"}]},
+        prose_claims=[],
+        historical_entries=[],
+    )
+    assert "CTX.STATE.DUPLICATE_FACT" in _codes(findings)
+
+
 def _receipt() -> JsonObject:
     capsule = _capsule()
     return {
@@ -394,6 +404,72 @@ def test_receipt_rejects_wrong_schema_empty_commands_and_reserved_claims() -> No
         "CTX.RECEIPT.COMMAND_MISSING",
         "CTX.RECEIPT.RESERVED_CLAIM",
     }.issubset(_codes(findings))
+
+
+def test_capsule_declarative_fields_must_match_typed_authority_and_route() -> None:
+    capsule = _capsule()
+    capsule["claims"] = ["APPROVAL"]
+    capsule["requiredPaths"] = ["docs/SECRET.md"]
+    findings = validate_capsule(
+        capsule,
+        repository_authority=_authority(),
+        issue_authority=_authority(),
+        parent_capsule=_capsule(),
+        actual_branch="issue-branch",
+        actual_head=SHA,
+        expected_rule_ids={"CONST-001"},
+        expected_module_hashes={"repo-constitution": "1" * 64},
+    )
+    assert {
+        "CTX.CAPSULE.CLAIM_SCOPE_MISMATCH",
+        "CTX.CAPSULE.REQUIRED_PATH_SCOPE_MISMATCH",
+        "CTX.CAPSULE.RULE_SCOPE_MISMATCH",
+        "CTX.CAPSULE.MODULE_SCOPE_MISMATCH",
+    } <= _codes(findings)
+
+
+def test_receipt_rejects_false_evidence_and_plain_language_reserved_claim() -> None:
+    receipt = _receipt()
+    receipt["claimsProved"] = ["production readiness"]
+    receipt["validatedRules"] = ["BOGUS-999"]
+    receipt["moduleHashes"] = {"bogus": "not-a-hash"}
+    receipt["filesInspected"] = ["docs/SECRET.md"]
+    receipt["commands"] = [{"argv": ["false"], "exitCode": 1, "result": "PASS"}]
+    findings = validate_receipt(
+        receipt,
+        capsule=_capsule(),
+        manifest_digest="3" * 64,
+        actual_branch="issue-branch",
+        actual_head=SHA,
+    )
+    assert {
+        "CTX.RECEIPT.RESERVED_CLAIM",
+        "CTX.RECEIPT.RULE_MISMATCH",
+        "CTX.RECEIPT.MODULE_MISMATCH",
+        "CTX.RECEIPT.READ_SCOPE_MISMATCH",
+        "CTX.RECEIPT.COMMAND_RESULT_MISMATCH",
+    } <= _codes(findings)
+
+
+def test_contract_rejects_calendar_invalid_date_time() -> None:
+    contract = json.loads(Path("docs/agent-context/contracts-v1.schema.json").read_text())
+    capsule = _capsule()
+    capsule.update(
+        {
+            "capsuleDigest": "0" * 64,
+            "expiresAt": "2026-99-99T99:99:99Z",
+            "budgets": {
+                "lineCeiling": 1,
+                "tokenCeiling": 1,
+                "actualLines": 0,
+                "actualTokens": 0,
+                "estimateAlgorithm": "ceil-utf8-bytes-divided-by-4",
+            },
+        }
+    )
+    assert "CTX.SCHEMA.FORMAT" in _codes(
+        validate_schema_instance(capsule, contract, "AgentTaskCapsuleV1")
+    )
 
 
 def test_packet_rejects_rule_without_owning_module() -> None:
