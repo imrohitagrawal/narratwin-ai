@@ -20,6 +20,7 @@ from scripts.agent_context import (
     validate_receipt,
     validate_schema_instance,
 )
+from scripts.agent_context.cli import _authority_layers
 
 JsonObject = dict[str, Any]
 SHA = "a" * 40
@@ -470,6 +471,60 @@ def test_contract_rejects_calendar_invalid_date_time() -> None:
     assert "CTX.SCHEMA.FORMAT" in _codes(
         validate_schema_instance(capsule, contract, "AgentTaskCapsuleV1")
     )
+
+
+def test_authority_layers_do_not_mirror_injected_child_reads_or_claims() -> None:
+    manifest = json.loads(Path("docs/agent-context/context-policy-manifest-v1.json").read_text())
+    fixtures = json.loads(Path("docs/agent-context/fixtures/routing-fixtures-v1.json").read_text())
+    fixture = copy.deepcopy(fixtures["fixtures"][5])
+    fixture["authority"]["grants"]["readPaths"].append("backend/private.py")
+    fixture["authority"]["grants"]["claims"].append("ISSUE_317_FIXED")
+    fixture["authority"]["grants"]["writePaths"].append("docs/STATUS.md/child")
+    issue_scope = json.loads(Path("docs/governance/preflights/issue-319.json").read_text())
+    repository, issue, _ = _authority_layers(manifest, fixture, issue_scope)
+    for layer in (repository, issue):
+        assert "backend/private.py" not in layer["allows"]["readPaths"]
+        assert "ISSUE_317_FIXED" not in layer["allows"]["claims"]
+    assert "docs/STATUS.md/child" not in issue["allows"]["writePaths"]
+
+
+def test_receipt_requires_authorized_claims_required_reads_and_typed_budget() -> None:
+    receipt = _receipt()
+    receipt["claimsProved"] = ["ISSUE_317_FIXED"]
+    receipt["filesInspected"] = []
+    receipt["budget"]["actualLines"] = "x"
+    findings = validate_receipt(
+        receipt,
+        capsule=_capsule(),
+        manifest_digest="3" * 64,
+        actual_branch="issue-branch",
+        actual_head=SHA,
+    )
+    assert {
+        "CTX.RECEIPT.CLAIM_SCOPE_MISMATCH",
+        "CTX.RECEIPT.REQUIRED_EVIDENCE_MISSING",
+        "CTX.BUDGET.RECEIPT_INVALID",
+    } <= _codes(findings)
+
+
+def test_capsule_requires_intrinsic_content_and_route_binding() -> None:
+    capsule = _capsule()
+    capsule["claims"] = []
+    capsule["requiredPaths"] = []
+    capsule["selectedRuleIds"] = []
+    capsule["moduleHashes"] = {}
+    findings = validate_capsule(
+        capsule,
+        repository_authority=_authority(),
+        issue_authority=_authority(),
+        parent_capsule=_capsule(),
+        actual_branch="issue-branch",
+        actual_head=SHA,
+    )
+    assert {
+        "CTX.CAPSULE.EMPTY_BINDING",
+        "CTX.CAPSULE.ROUTE_BINDING_MISSING",
+    } <= _codes(findings)
 
 
 def test_packet_rejects_rule_without_owning_module() -> None:
