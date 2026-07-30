@@ -53,13 +53,13 @@ def _capsule(*, mode: str = "READ_ONLY") -> dict[str, Any]:
         "objective": "Inspect bounded evidence.",
         "deliverable": "Findings only.",
         "claims": ["FINDING"],
-        "negativeInvariants": ["No approval claim."],
+        "negativeInvariants": "No approval claim.",
         "requiredPaths": ["docs/STATUS.md"],
         "authority": authority,
         "selectedRuleIds": ["CONST-001", "STATE-001"],
         "moduleHashes": {"repo-constitution": "1" * 64, "current-state": "2" * 64},
-        "requiredTests": [],
-        "assumptions": [],
+        "requiredTests": "fixture:test.seededDefectIds",
+        "assumptions": None,
         "budgets": {"lineCeiling": 600, "tokenCeiling": 6000},
         "stopConditions": ["STALE_HEAD"],
         "expiresAt": "2026-07-31T00:00:00Z",
@@ -159,7 +159,7 @@ def test_github_mutation_defaults_to_denied() -> None:
 
 def test_prohibited_claim_cannot_hide_in_prose() -> None:
     capsule = _capsule()
-    capsule["negativeInvariants"] = ["Do not claim production readiness."]
+    capsule["negativeInvariants"] = "Do not claim production readiness."
     capsule["authority"]["denies"]["claims"] = []
     findings = validate_capsule(
         capsule,

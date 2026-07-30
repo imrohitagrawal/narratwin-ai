@@ -607,7 +607,7 @@ def validate_capsule(
         measured_lines, measured_tokens = _capsule_metrics(capsule)
         if lines != measured_lines or tokens != measured_tokens:
             findings.append(_finding("CTX.BUDGET.CAPSULE_MISMATCH"))
-    negative_text = " ".join(str(item).casefold() for item in _list(capsule.get("negativeInvariants")))
+    negative_text = str(capsule.get("negativeInvariants", "")).casefold()
     if "production readiness" in negative_text and "PRODUCTION_READINESS" not in denied_claims:
         findings.append(_finding("CTX.TYPE.PROHIBITED_CLAIM_UNTYPED"))
     untrusted = capsule.get("untrustedData")
@@ -621,14 +621,7 @@ def validate_capsule(
 
 
 def _capsule_metrics(capsule: JsonObject) -> tuple[int, int]:
-    payload = {key: value for key, value in capsule.items() if key != "capsuleDigest"}
-    budget = payload.get("budgets", {})
-    if isinstance(budget, dict):
-        payload["budgets"] = {
-            key: value for key, value in budget.items()
-            if key not in {"actualLines", "actualTokens", "estimateAlgorithm"}
-        }
-    rendered = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)
+    rendered = json.dumps(capsule, ensure_ascii=False, indent=2, sort_keys=True)
     return _line_count(rendered), _estimated_tokens(rendered)
 
 
@@ -696,23 +689,28 @@ def build_capsule(
         **task_binding,
         "actionMode": action_mode,
         "claims": authority["allows"]["claims"],
-        "negativeInvariants": ["All typed authority denies remain binding."],
+        "negativeInvariants": "All typed authority denies remain binding.",
         "requiredPaths": fixture.get("requiredPaths", authority["allows"]["readPaths"]),
         "authority": authority,
         "selectedRuleIds": route.get("selectedRuleIds", []),
         "moduleHashes": module_hashes,
-        "requiredTests": [f"fixture:{fixture.get('fixtureId')}.seededDefectIds"],
-        "assumptions": [],
+        "requiredTests": f"fixture:{fixture.get('fixtureId')}.seededDefectIds",
+        "assumptions": None,
         "budgets": dict(fixture.get("budgets", {}).get("taskCapsule", {})),
-        "stopConditions": ["AUTHORITY_SCOPE_OR_BUDGET_DRIFT", "STALE_STATE_CONFLICT_OR_WRITESET_COLLISION"],
+        "stopConditions": ["AUTHORITY_SCOPE_BUDGET_STATE_CONFLICT_OR_COLLISION"],
         "expiresAt": "2026-08-30T00:00:00Z",
         "expectedReceiptSchema": "HandoffReceiptV1",
         "authorityDigest": canonical_digest(authority),
     }
-    measured_lines, measured_tokens = _capsule_metrics(capsule)
-    capsule["budgets"].update({"actualLines": measured_lines, "actualTokens": measured_tokens,
+    capsule["budgets"].update({"actualLines": 0, "actualTokens": 0,
                                "estimateAlgorithm": "ceil-utf8-bytes-divided-by-4"})
-    capsule["capsuleDigest"] = canonical_digest(capsule)
+    for _ in range(4):
+        capsule["capsuleDigest"] = canonical_digest({key: value for key, value in capsule.items() if key != "capsuleDigest"})
+        measured_lines, measured_tokens = _capsule_metrics(capsule)
+        if (measured_lines, measured_tokens) == (capsule["budgets"]["actualLines"], capsule["budgets"]["actualTokens"]):
+            break
+        capsule["budgets"].update({"actualLines": measured_lines, "actualTokens": measured_tokens})
+    capsule["capsuleDigest"] = canonical_digest({key: value for key, value in capsule.items() if key != "capsuleDigest"})
     return capsule
 
 
