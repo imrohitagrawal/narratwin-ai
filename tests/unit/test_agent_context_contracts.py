@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import copy
+import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -316,3 +318,93 @@ def test_packet_budget_overflow_fails_closed() -> None:
         token_ceiling=20,
     )
     assert "CTX.BUDGET.OVERFLOW" in _codes(findings)
+
+
+def test_incomplete_manifest_contract_fails_closed() -> None:
+    incomplete = {
+        "schemaVersion": "ContextPolicyManifestV1",
+        "currentStateModuleId": "current-state",
+        "modules": [{"moduleId": "current-state", "status": "active"}],
+        "rules": [],
+    }
+    assert "CTX.SCHEMA.REQUIRED" in _codes(validate_manifest(incomplete))
+
+
+def test_capsule_digest_binds_objective_and_budget() -> None:
+    capsule = _capsule()
+    capsule["budgets"].update({"actualLines": 1, "actualTokens": 1})
+    capsule["capsuleDigest"] = canonical_digest(capsule)
+    capsule["objective"] = "Widened after capsule creation."
+    capsule["budgets"].update({"actualLines": 9999, "actualTokens": 9999})
+    findings = validate_capsule(
+        capsule,
+        repository_authority=_authority(),
+        issue_authority=_authority(),
+        parent_capsule=_capsule(),
+        actual_branch="issue-branch",
+        actual_head=SHA,
+    )
+    assert "CTX.CAPSULE.DIGEST_MISMATCH" in _codes(findings)
+    assert "CTX.BUDGET.CAPSULE_OVERFLOW" in _codes(findings)
+
+
+def test_receipt_rejects_wrong_schema_empty_commands_and_reserved_claims() -> None:
+    receipt = _receipt()
+    receipt["schemaVersion"] = "Wrong"
+    receipt["commands"] = []
+    receipt["claimsProved"] = ["APPROVAL", "PRODUCTION_READINESS"]
+    findings = validate_receipt(
+        receipt,
+        capsule=_capsule(),
+        manifest_digest="3" * 64,
+        actual_branch="issue-branch",
+        actual_head=SHA,
+    )
+    assert {
+        "CTX.SCHEMA.VERSION",
+        "CTX.RECEIPT.COMMAND_MISSING",
+        "CTX.RECEIPT.RESERVED_CLAIM",
+    }.issubset(_codes(findings))
+
+
+def test_packet_rejects_rule_without_owning_module() -> None:
+    manifest = _manifest()
+    manifest["rules"].append(
+        {"ruleId": "SEC-001", "moduleId": "security-boundaries", "status": "active"}
+    )
+    _, findings = build_packet(
+        manifest,
+        {
+            "includedModules": [{"moduleId": "repo-constitution"}],
+            "selectedRuleIds": ["SEC-001"],
+        },
+        {"repo-constitution": "binding authority"},
+        line_ceiling=100,
+        token_ceiling=1000,
+    )
+    assert "CTX.PACKET.RULE_MODULE_MISSING" in _codes(findings)
+
+
+def test_cli_capsule_binds_distinct_repository_base_and_head() -> None:
+    result = subprocess.run(
+        [
+            "python3",
+            "-m",
+            "scripts.agent_context.cli",
+            "route",
+            "--commit",
+            "HEAD",
+            "--fixture-id",
+            "RFV1-06-COLD-PR-REVIEW",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0
+    assert payload["taskCapsule"]["baseCommit"] == "c293b4a62a5afdaf893af83f3f23efd65f11b950"
+    assert payload["taskCapsule"]["expectedHead"] == subprocess.run(
+        ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    assert payload["taskCapsule"]["baseCommit"] != payload["taskCapsule"]["expectedHead"]

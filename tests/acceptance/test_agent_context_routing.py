@@ -100,3 +100,23 @@ def test_router_output_cannot_become_expected_fixture() -> None:
     request = fixture_set["fixtures"][0]["request"]
     _, findings = route_request(_manifest(fixture_set), request, fixture_set=fixture_set)
     assert "CTX.FIXTURE.CIRCULAR_ORACLE" in {finding.code for finding in findings}
+
+
+def test_frozen_fixture_content_drift_fails_closed() -> None:
+    fixture_set = _fixture_set()
+    fixture_set["fixtures"][0]["includedModules"][0]["reason"] = "Synchronized oracle edit."
+    _, findings = route_request(
+        _manifest(fixture_set), fixture_set["fixtures"][0]["request"], fixture_set=fixture_set
+    )
+    assert "CTX.FIXTURE.DRIFT" in {finding.code for finding in findings}
+
+
+def test_router_derives_manifest_closure_instead_of_trusting_fixture_copy() -> None:
+    fixture_set = _fixture_set()
+    fixture = fixture_set["fixtures"][7]
+    fixture["dependencyClosure"] = ["repo-constitution"]
+    receipt, findings = route_request(
+        _manifest(fixture_set), fixture["request"], fixture_set=fixture_set
+    )
+    assert "CTX.ROUTE.CLOSURE_MISMATCH" in {finding.code for finding in findings}
+    assert receipt["dependencyClosure"] != fixture["dependencyClosure"]

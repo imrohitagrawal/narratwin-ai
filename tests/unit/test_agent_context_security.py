@@ -103,6 +103,18 @@ def test_normalized_parallel_write_sets_collide() -> None:
     assert "CTX.WRITESET.COLLISION" in _codes(detect_write_set_collisions(capsules))
 
 
+def test_normalized_deny_wins_inside_authority_algebra() -> None:
+    child = _authority()
+    child["allows"]["writePaths"] = ["docs/Café.md"]
+    repository = _authority(writes=["docs/Café.md"])
+    issue = _authority(writes=["docs/Café.md"])
+    parent = _authority(writes=["docs/Café.md"])
+    parent["denies"]["writePaths"] = ["docs/Cafe\u0301.md"]
+    effective, findings = intersect_authority(repository, issue, parent, child)
+    assert effective["allows"]["writePaths"] == []
+    assert "CTX.AUTH.DENY_WINS" in _codes(findings)
+
+
 def test_prefix_parallel_write_sets_collide() -> None:
     capsules = [
         {"capsuleId": "a", "authority": {"allows": {"writePaths": ["docs/policy"]}}},
