@@ -104,6 +104,12 @@ review, cold PR review, merge/closeout, a read-only child, and a disjoint-path
 write child. The router performs exact deterministic matching only; it does not
 claim arbitrary task classification.
 
+Routing a cohort does not grant its proposed authority. The CLI independently
+intersects the proposal with the repository layer and the commit-pinned Issue
+`#319` preflight. Cohorts outside that issue scope, or external actions absent
+from its structured authority, produce a reproducible `FAIL_CLOSED` capsule;
+the exact Issue `#319` write-child cohort remains authorized.
+
 Ceilings are 250 lines/2,500 tokens for bootstrap, 180/2,000 for a capsule,
 600/6,000 for discovery, 1,200/12,000 for proof review, 1,800/18,000 for
 implementation, and 2,000/24,000 for high-risk governance/security. Token

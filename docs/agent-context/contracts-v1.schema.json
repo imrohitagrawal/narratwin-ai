@@ -165,7 +165,7 @@
         "manifestVersion": {"type": "string"},
         "manifestHash": {"$ref": "#/$defs/Sha256"},
         "validatedRules": {"$ref": "#/$defs/StringSet"},
-        "moduleHashes": {"type": "object"},
+        "moduleHashes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Sha256"}},
         "additionalSources": {"$ref": "#/$defs/PathSet"},
         "filesInspected": {"$ref": "#/$defs/PathSet"},
         "filesChanged": {"$ref": "#/$defs/PathSet"},
@@ -191,7 +191,17 @@
         "blockers": {"type": "array"},
         "residualRisks": {"type": "array"},
         "preventedActions": {"type": "array"},
-        "budget": {"type": "object"},
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["estimatedLines", "actualLines", "estimatedTokens", "actualTokens"],
+          "properties": {
+            "estimatedLines": {"type": "integer", "minimum": 0},
+            "actualLines": {"type": "integer", "minimum": 0},
+            "estimatedTokens": {"type": "integer", "minimum": 0},
+            "actualTokens": {"type": "integer", "minimum": 0}
+          }
+        },
         "worktreeCollisionCheck": {"type": "string"},
         "suggestedFollowUp": {"type": "string"},
         "selfCertification": {"type": "array", "maxItems": 0}

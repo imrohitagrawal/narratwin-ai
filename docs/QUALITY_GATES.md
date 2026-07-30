@@ -449,7 +449,7 @@ When `docs/STATUS.md` StatusStateV1 records `SSV1-MODE` as `phase1-closure`, pla
 
 Issue `#319` adds `make agent-context-quality` as a shadow-only sub-gate. It
 validates exact source/section hashes, module closure, active rule uniqueness,
-current/history separation, frozen fixture independence, and the 50 focused
+current/history separation, frozen fixture independence, and the focused
 authority/router/receipt/security tests. The Phase 1 checker invokes the
 shadow validator on the worktree so a stale hash, unresolved current-state
 contradiction, or fixture provenance change fails `make quality`. This does not

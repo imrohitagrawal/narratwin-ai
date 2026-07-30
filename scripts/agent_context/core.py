@@ -9,6 +9,7 @@ import re
 import unicodedata
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -308,8 +309,17 @@ def validate_schema_instance(value: Any, contract: JsonObject, definition: str) 
             pattern = rule.get("pattern")
             if isinstance(pattern, str) and re.search(pattern, instance) is None:
                 findings.append(_finding("CTX.SCHEMA.PATTERN", path))
-            if rule.get("format") == "date-time" and DATE_TIME.match(instance) is None:
-                findings.append(_finding("CTX.SCHEMA.FORMAT", path))
+            if rule.get("format") == "date-time":
+                valid_date_time = DATE_TIME.match(instance) is not None
+                if valid_date_time:
+                    try:
+                        valid_date_time = datetime.fromisoformat(
+                            instance.replace("Z", "+00:00")
+                        ).tzinfo is not None
+                    except ValueError:
+                        valid_date_time = False
+                if not valid_date_time:
+                    findings.append(_finding("CTX.SCHEMA.FORMAT", path))
 
     walk(value, schema, definition)
     return _dedupe(findings)
@@ -507,6 +517,8 @@ def validate_capsule(
     actual_base: str | None = None,
     repository_root: Path | None = None,
     contract_schema: JsonObject | None = None,
+    expected_rule_ids: set[str] | None = None,
+    expected_module_hashes: JsonObject | None = None,
 ) -> list[Finding]:
     """Validate exact state, typed authority, non-widening, and review independence."""
 
@@ -545,6 +557,20 @@ def validate_capsule(
         for domain in ("readPaths", "writePaths"):
             for path in _domain(authority, plane, domain):
                 findings.extend(validate_path(path, repository_root=repository_root))
+    declared_claims = {str(item) for item in _list(capsule.get("claims"))}
+    allowed_claims = _domain(authority, "allows", "claims")
+    denied_claims = _domain(authority, "denies", "claims")
+    if declared_claims - allowed_claims or declared_claims & denied_claims:
+        findings.append(_finding("CTX.CAPSULE.CLAIM_SCOPE_MISMATCH"))
+    required_paths = {_normalized_path(str(item)) for item in _list(capsule.get("requiredPaths"))}
+    if required_paths - _domain(authority, "allows", "readPaths"):
+        findings.append(_finding("CTX.CAPSULE.REQUIRED_PATH_SCOPE_MISMATCH"))
+    if expected_rule_ids is not None and {
+        str(item) for item in _list(capsule.get("selectedRuleIds"))
+    } != expected_rule_ids:
+        findings.append(_finding("CTX.CAPSULE.RULE_SCOPE_MISMATCH"))
+    if expected_module_hashes is not None and capsule.get("moduleHashes") != expected_module_hashes:
+        findings.append(_finding("CTX.CAPSULE.MODULE_SCOPE_MISMATCH"))
     budget = capsule.get("budgets", {})
     if isinstance(budget, dict):
         lines = budget.get("actualLines")
@@ -557,7 +583,6 @@ def validate_capsule(
         if lines != measured_lines or tokens != measured_tokens:
             findings.append(_finding("CTX.BUDGET.CAPSULE_MISMATCH"))
     negative_text = " ".join(str(item).casefold() for item in _list(capsule.get("negativeInvariants")))
-    denied_claims = _domain(authority, "denies", "claims")
     if "production readiness" in negative_text and "PRODUCTION_READINESS" not in denied_claims:
         findings.append(_finding("CTX.TYPE.PROHIBITED_CLAIM_UNTYPED"))
     untrusted = capsule.get("untrustedData")
@@ -693,12 +718,14 @@ def validate_receipt(
     for index, command in enumerate(commands):
         if set(command) != {"argv", "exitCode", "result"}:
             findings.append(_finding("CTX.RECEIPT.COMMAND_INCOMPLETE", str(index)))
+        elif (command.get("result") == "PASS") != (command.get("exitCode") == 0):
+            findings.append(_finding("CTX.RECEIPT.COMMAND_RESULT_MISMATCH", str(index)))
     self_certification = receipt.get("selfCertification")
     if not isinstance(self_certification, list) or self_certification:
         findings.append(_finding("CTX.RECEIPT.SELF_CERTIFICATION"))
-    proved_text = canonical_json(_list(receipt.get("claimsProved"))).upper()
+    proved_text = re.sub(r"[^A-Z0-9]+", "_", canonical_json(_list(receipt.get("claimsProved"))).upper())
     reserved_proved = {
-        claim for claim in RESERVED_RECEIPT_CLAIMS if re.search(rf"\b{claim}\b", proved_text)
+        claim for claim in RESERVED_RECEIPT_CLAIMS if claim in proved_text
     }
     if reserved_proved:
         findings.append(_finding("CTX.RECEIPT.RESERVED_CLAIM", ",".join(sorted(reserved_proved))))
@@ -716,6 +743,20 @@ def validate_receipt(
     changed = {str(item) for item in _list(receipt.get("filesChanged"))}
     if changed - allowed_writes:
         findings.append(_finding("CTX.RECEIPT.WRITE_SCOPE_MISMATCH"))
+    allowed_reads = _domain(authority if isinstance(authority, dict) else {}, "allows", "readPaths")
+    inspected = {
+        _normalized_path(str(item))
+        for field in ("filesInspected", "additionalSources")
+        for item in _list(receipt.get(field))
+    }
+    if inspected - allowed_reads:
+        findings.append(_finding("CTX.RECEIPT.READ_SCOPE_MISMATCH"))
+    if {str(item) for item in _list(receipt.get("validatedRules"))} != {
+        str(item) for item in _list(capsule.get("selectedRuleIds"))
+    }:
+        findings.append(_finding("CTX.RECEIPT.RULE_MISMATCH"))
+    if receipt.get("moduleHashes") != capsule.get("moduleHashes"):
+        findings.append(_finding("CTX.RECEIPT.MODULE_MISMATCH"))
     return _dedupe(findings)
 
 
@@ -757,7 +798,12 @@ def detect_state_contradictions(
         return [_finding("CTX.STATE.CURRENT_MISSING")]
     findings: list[Finding] = []
     claims = _objects(current_state.get("claims")) or _objects(current_state.get("facts"))
-    current = {str(item.get("id")): item.get("value") for item in claims}
+    current: dict[str, Any] = {}
+    for item in claims:
+        claim_id = str(item.get("id"))
+        if claim_id in current:
+            findings.append(_finding("CTX.STATE.DUPLICATE_FACT", claim_id))
+        current[claim_id] = item.get("value")
     for claim in prose_claims:
         claim_id = str(claim.get("id"))
         if claim_id in current and current[claim_id] != claim.get("value"):

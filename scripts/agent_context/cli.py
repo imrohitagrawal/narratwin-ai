@@ -126,6 +126,7 @@ def _validate(
         history_text = _read_source(root, commit, HISTORY.as_posix()).decode("utf-8")
         for line_number, line in enumerate(history_text.splitlines(), 1):
             entry = json.loads(line)
+            findings.extend(validate_schema_instance(entry, contract, "HistoryEntryV1"))
             if not isinstance(entry, dict) or entry.get("status") != "historical" or entry.get("authorizing") is not False:
                 findings.append(Finding("CTX.STATE.HISTORY_AS_CURRENT", str(line_number)))
     except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -134,42 +135,88 @@ def _validate(
 
 
 def _authority_layers(
-    manifest: dict[str, Any], fixture: dict[str, Any]
+    manifest: dict[str, Any], fixture: dict[str, Any], issue_scope: dict[str, Any]
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any] | None]:
     fixture_authority = fixture.get("authority", {})
     grants = fixture_authority.get("grants", {}) if isinstance(fixture_authority, dict) else {}
     child_denies = fixture_authority.get("denies", {}) if isinstance(fixture_authority, dict) else {}
     request = fixture.get("request", {})
     requested_external = set(request.get("externalActions", [])) if isinstance(request, dict) else set()
-    default_external = {
+    external_catalog = {
         "GITHUB_MUTATION", "PROVIDER_CALL", "PROVIDER_SPEND", "DEPLOYMENT", "SECRET_ACCESS",
         "DESTRUCTIVE_ACTION", "MERGE_PULL_REQUEST", "COMMENT_CLOSEOUT", "CLOSE_SATISFIED_ISSUE",
         "DELETE_MERGED_BRANCH",
-    } - requested_external
+    }
+    repository_external_allows = {
+        "MERGE_PULL_REQUEST", "COMMENT_CLOSEOUT", "CLOSE_SATISFIED_ISSUE", "DELETE_MERGED_BRANCH"
+    }
+    repository_action_allows = {
+        "READ_REPOSITORY", "REPORT_FINDINGS", "RUN_READ_ONLY_CHECKS", "WRITE_EXACT_PATHS",
+        "RUN_LOCAL_TESTS", "COMMIT_LOCAL", "RUN_LOCAL_BROWSER", "VERIFY_LIVE_STATE",
+        "MERGE_AFTER_GATES", "VERIFY_POST_MERGE", "SYNC_LOCAL_MAIN",
+        "DELETE_ONLY_MERGED_BRANCH", "RECORD_CLOSEOUT", "VALIDATE_JSON",
+    }
+    reserved_claims = {
+        "APPROVAL", "COMPLETION", "MERGE_ELIGIBILITY", "RELEASE", "PRODUCTION_READINESS"
+    }
 
-    def layer() -> dict[str, Any]:
+    def proposed_allows() -> dict[str, list[str]]:
         allows = {
             domain: sorted({str(item) for item in grants.get(domain, [])})
             for domain in ("readPaths", "writePaths", "actions", "externalActions", "claims", "reservedDecisions")
         }
-        allows["externalActions"] = sorted(requested_external)
+        return allows
+
+    def denies(*, deny_all_external: bool) -> dict[str, list[str]]:
         denies = {
             domain: sorted({str(item) for item in child_denies.get(domain, [])})
-            for domain in allows
+            for domain in ("readPaths", "writePaths", "actions", "externalActions", "claims", "reservedDecisions")
         }
-        denies["externalActions"] = sorted(set(denies["externalActions"]) | default_external)
-        denies["claims"] = sorted(set(denies["claims"]) | {
-            "APPROVAL", "COMPLETION", "MERGE_ELIGIBILITY", "RELEASE", "PRODUCTION_READINESS"
-        })
+        external_denies = external_catalog if deny_all_external else external_catalog - repository_external_allows
+        denies["externalActions"] = sorted(set(denies["externalActions"]) | external_denies)
+        denies["claims"] = sorted(set(denies["claims"]) | reserved_claims)
         denies["reservedDecisions"] = sorted(
             set(denies["reservedDecisions"]) | set(manifest.get("reservedDecisions", []))
         )
-        return {"allows": allows, "denies": denies}
+        return denies
 
-    repository_authority = layer()
-    issue_authority = layer()
+    proposed = proposed_allows()
+    repository_allows = {
+        **proposed,
+        "actions": sorted(set(proposed["actions"]) & repository_action_allows),
+        "externalActions": sorted(requested_external & repository_external_allows),
+        "claims": sorted(set(proposed["claims"]) - reserved_claims),
+        "reservedDecisions": [],
+    }
+    repository_authority = {"allows": repository_allows, "denies": denies(deny_all_external=False)}
+
+    scope = issue_scope.get("scope", {})
+    allowed_prefixes = [str(item) for item in scope.get("allowed_prefixes", [])] if isinstance(scope, dict) else []
+    forbidden_prefixes = [str(item) for item in scope.get("forbidden", [])] if isinstance(scope, dict) else []
+
+    def within(path: str, prefixes: list[str]) -> bool:
+        return any(path == prefix.rstrip("/") or path.startswith(prefix.rstrip("/") + "/") for prefix in prefixes)
+
+    issue_writes = [
+        path for path in proposed["writePaths"]
+        if within(path, allowed_prefixes) and not within(path, forbidden_prefixes)
+    ]
+    all_writes_authorized = set(issue_writes) == set(proposed["writePaths"])
+    issue_actions = set(proposed["actions"])
+    if not all_writes_authorized:
+        issue_actions -= {"WRITE_EXACT_PATHS", "COMMIT_LOCAL", "RUN_LOCAL_TESTS", "RUN_LOCAL_BROWSER"}
+    issue_allows = {
+        **proposed,
+        "writePaths": sorted(issue_writes),
+        "actions": sorted(issue_actions & repository_action_allows),
+        "externalActions": [],
+        "claims": sorted(set(proposed["claims"]) - reserved_claims),
+        "reservedDecisions": [],
+    }
+    issue_authority = {"allows": issue_allows, "denies": denies(deny_all_external=True)}
+
     role = str(request.get("role", "")) if isinstance(request, dict) else ""
-    parent = {"authority": layer()} if "CHILD" in role else None
+    parent = {"authority": issue_authority} if "CHILD" in role else None
     return repository_authority, issue_authority, parent
 
 
@@ -251,7 +298,19 @@ def _run_route(args: argparse.Namespace) -> int:
         base_commit=base_commit,
         branch=branch,
     )
-    repository_authority, issue_authority, parent_capsule = _authority_layers(manifest, fixture)
+    repository_authority, issue_authority, parent_capsule = _authority_layers(
+        manifest, fixture, issue_scope
+    )
+    modules_by_id = {
+        str(module.get("moduleId")): module
+        for module in manifest.get("modules", [])
+        if isinstance(module, dict)
+    }
+    expected_module_hashes = {
+        module_id: str(modules_by_id[module_id].get("contentSha256"))
+        for module_id in route.get("dependencyClosure", [])
+        if module_id in modules_by_id
+    }
     capsule_findings = validate_capsule(
         capsule,
         repository_authority=repository_authority,
@@ -262,6 +321,8 @@ def _run_route(args: argparse.Namespace) -> int:
         actual_base=base_commit,
         repository_root=root if commit == "WORKTREE" else None,
         contract_schema=contract,
+        expected_rule_ids={str(item) for item in route.get("selectedRuleIds", [])},
+        expected_module_hashes=expected_module_hashes,
     )
     budget_name = str(route.get("packetBudget"))
     budget = manifest.get("budgets", {}).get(budget_name, {})
