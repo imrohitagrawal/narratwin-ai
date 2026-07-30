@@ -205,7 +205,7 @@ def test_internal_semantic_renderer_type_error_is_safe_and_never_retried(
         facts: tuple[issue280.Issue280GroundedFact, ...],
         audience: str,
         depth: str,
-        semantic_frame: issue280.Issue280SemanticFrame,
+        semantic_frame: issue280.Issue280SemanticFrame | None = None,
     ) -> str:
         nonlocal calls
         del facts, audience, depth, semantic_frame
