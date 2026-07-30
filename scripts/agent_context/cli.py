@@ -16,6 +16,7 @@ from scripts.agent_context.core import (
     canonical_digest,
     content_digest,
     extract_binding,
+    intersect_authority,
     load_json_bytes_strict,
     regular_file_within,
     route_request,
@@ -217,7 +218,7 @@ def _run_route(args: argparse.Namespace) -> int:
     branch = str(issue_scope["branch"])
     base_commit = _resolve_commit(root, str(current_state["baseCommit"]))
     head_commit = commit if commit != "WORKTREE" else _resolve_commit(root, "HEAD")
-    capsule = build_capsule(
+    proposed_capsule = build_capsule(
         manifest,
         fixture,
         route,
@@ -227,6 +228,26 @@ def _run_route(args: argparse.Namespace) -> int:
     )
     repository_authority, issue_authority, parent_capsule = _authority_layers(
         manifest, fixture, issue_scope
+    )
+    parent_authority = (
+        parent_capsule.get("authority")
+        if isinstance(parent_capsule, dict) and isinstance(parent_capsule.get("authority"), dict)
+        else None
+    )
+    effective_authority, proposal_findings = intersect_authority(
+        repository_authority,
+        issue_authority,
+        parent_authority,
+        proposed_capsule["authority"],
+    )
+    capsule = build_capsule(
+        manifest,
+        fixture,
+        route,
+        repository_commit=head_commit,
+        base_commit=base_commit,
+        branch=branch,
+        authority_override=effective_authority,
     )
     modules_by_id = {
         str(module.get("moduleId")): module
@@ -238,7 +259,7 @@ def _run_route(args: argparse.Namespace) -> int:
         for module_id in route.get("dependencyClosure", [])
         if module_id in modules_by_id
     }
-    capsule_findings = validate_capsule(
+    capsule_findings = proposal_findings + validate_capsule(
         capsule,
         repository_authority=repository_authority,
         issue_authority=issue_authority,

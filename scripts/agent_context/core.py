@@ -654,6 +654,7 @@ def build_capsule(
     base_commit: str,
     branch: str,
     parent_capsule_id: str | None = None,
+    authority_override: JsonObject | None = None,
 ) -> JsonObject:
     """Build one deterministic task capsule from independently frozen authority."""
 
@@ -665,7 +666,8 @@ def build_capsule(
         source = value if isinstance(value, dict) else {}
         return {domain: sorted({str(item) for item in _list(source.get(domain))}) for domain in AUTHORITY_DOMAINS}
 
-    authority: JsonObject = {"allows": plane(grants), "denies": plane(denies)}
+    proposed_authority: JsonObject = {"allows": plane(grants), "denies": plane(denies)}
+    authority = authority_override if authority_override is not None else proposed_authority
     execution_mode = str(route.get("executionMode"))
     if execution_mode in {"READ_ONLY", "READ_ONLY_CHILD"}:
         action_mode = "READ_ONLY"
@@ -690,20 +692,17 @@ def build_capsule(
         **task_binding,
         "actionMode": action_mode,
         "claims": authority["allows"]["claims"],
-        "negativeInvariants": [f"deny:{item}" for item in authority["denies"]["claims"]],
+        "negativeInvariants": ["All typed authority denies remain binding."],
         "requiredPaths": fixture.get("requiredPaths", authority["allows"]["readPaths"]),
         "authority": authority,
         "selectedRuleIds": route.get("selectedRuleIds", []),
         "moduleHashes": module_hashes,
-        "requiredTests": fixture.get("seededDefectIds", []),
+        "requiredTests": [f"fixture:{fixture.get('fixtureId')}.seededDefectIds"],
         "assumptions": [],
         "budgets": dict(fixture.get("budgets", {}).get("taskCapsule", {})),
         "stopConditions": [
-            "AUTHORITY_DRIFT",
-            "BUDGET_OVERFLOW",
-            "STALE_BASE_OR_HEAD",
-            "UNRESOLVED_CONFLICT",
-            "WRITESET_COLLISION",
+            "AUTHORITY_SCOPE_OR_BUDGET_DRIFT",
+            "STALE_STATE_CONFLICT_OR_WRITESET_COLLISION",
         ],
         "expiresAt": "2026-08-30T00:00:00Z",
         "expectedReceiptSchema": "HandoffReceiptV1",

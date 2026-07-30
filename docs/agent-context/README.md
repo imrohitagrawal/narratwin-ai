@@ -75,6 +75,8 @@ digests, role and history posture, objective, deliverable, authority digest,
 selected rules/module hashes, tests, assumptions, budgets, stop conditions, and expected receipt. The CLI emits one deterministic capsule
 with every routed fixture. The capsule is evidence of delegated bounds, not
 proof that the child obeyed them.
+Required-test references resolve to the independently frozen fixture's seeded
+defect IDs; they do not copy or regenerate the fixture oracle.
 
 ## Handoff Receipts
 
@@ -121,7 +123,7 @@ mandatory baseline uses `cl100k_base` for comparison.
 
 At corrected GREEN, the universal bootstrap measures 43 lines and 928 estimated
 tokens. Routed packets measure 158–369 lines and 2,079–3,913 estimated tokens;
-capsules measure 116–179 pretty-printed lines and 778–1,449 estimated tokens.
+capsules measure 120–180 pretty-printed lines and 852–1,502 estimated tokens.
 All are validated against their executable ceilings.
 Smaller size is not acceptance evidence; seeded-defect recall, critical-rule
 completeness, cold reconstruction, and false-positive behavior remain the
