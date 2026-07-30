@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 
 from scripts.agent_context import (
+    build_capsule,
     build_packet,
     canonical_digest,
     detect_state_contradictions,
@@ -548,6 +549,58 @@ def test_capsule_requires_intrinsic_content_and_route_binding() -> None:
         "CTX.CAPSULE.EMPTY_BINDING",
         "CTX.CAPSULE.ROUTE_BINDING_MISSING",
     } <= _codes(findings)
+
+
+def test_capsule_rejects_recomputed_digest_when_exact_task_binding_is_absent() -> None:
+    capsule = _capsule()
+    capsule["objective"] = "MERGE_PULL_REQUEST"
+    capsule["deliverable"] = "Approve, merge, and close Issue 319."
+    capsule["budgets"].update({"actualLines": 1, "actualTokens": 1})
+    capsule["capsuleDigest"] = canonical_digest(capsule)
+    findings = validate_capsule(
+        capsule,
+        repository_authority=_authority(),
+        issue_authority=_authority(),
+        parent_capsule=_capsule(),
+        actual_branch="issue-branch",
+        actual_head=SHA,
+        expected_rule_ids={"CONST-001", "STATE-001"},
+        expected_module_hashes={
+            "repo-constitution": "1" * 64,
+            "current-state": "2" * 64,
+        },
+    )
+    assert "CTX.CAPSULE.ROUTE_BINDING_MISSING" in _codes(findings)
+
+
+def test_built_capsule_carries_exact_route_and_cold_review_binding() -> None:
+    fixture = {
+        "fixtureId": "RFV1-06-COLD-PR-REVIEW",
+        "request": {
+            "operation": "REVIEW_PULL_REQUEST",
+            "role": "INDEPENDENT_PR_REVIEWER",
+            "claims": [{"class": "REVIEW_FINDING", "value": "Findings only."}],
+        },
+        "coldHistoryPosture": {"authorReasoning": "EXCLUDED"},
+        "authority": {"grants": _authority()["allows"], "denies": _authority()["denies"]},
+        "budgets": {"taskCapsule": {"lineCeiling": 180, "tokenCeiling": 2000}},
+    }
+    route = {
+        "fixtureId": fixture["fixtureId"],
+        "executionMode": "READ_ONLY",
+        "requestDigest": canonical_digest(fixture["request"]),
+        "dependencyClosure": ["repo-constitution", "current-state"],
+        "selectedRuleIds": ["CONST-001", "STATE-001"],
+    }
+    capsule = build_capsule(
+        _manifest(), fixture, route,
+        repository_commit=SHA, base_commit=SHA, branch="issue-branch",
+    )
+    assert capsule["fixtureId"] == fixture["fixtureId"]
+    assert capsule["requestDigest"] == route["requestDigest"]
+    assert capsule["routeDigest"] == canonical_digest(route)
+    assert capsule["role"] == "INDEPENDENT_PR_REVIEWER"
+    assert capsule["historyMode"] == "EXCLUDED"
 
 
 def test_packet_rejects_rule_without_owning_module() -> None:
