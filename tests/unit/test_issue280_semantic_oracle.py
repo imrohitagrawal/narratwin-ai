@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -16,7 +16,10 @@ MANIFEST_PATH = ROOT / "docs/evals/issue280_semantic_repair_slice1.json"
 
 @pytest.fixture
 def manifest() -> dict[str, Any]:
-    return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    return cast(
+        dict[str, Any],
+        json.loads(MANIFEST_PATH.read_text(encoding="utf-8")),
+    )
 
 
 @pytest.fixture
