@@ -1,0 +1,318 @@
+"""Behavioral RED for Issue #319 contracts and authority algebra."""
+
+from __future__ import annotations
+
+import copy
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from scripts.agent_context import (
+    build_packet,
+    canonical_digest,
+    detect_state_contradictions,
+    intersect_authority,
+    validate_capsule,
+    validate_manifest,
+    validate_receipt,
+)
+
+JsonObject = dict[str, Any]
+SHA = "a" * 40
+
+
+def _codes(findings: list[Any]) -> set[str]:
+    return {finding.code for finding in findings}
+
+
+def _authority(*, writes: list[str] | None = None) -> JsonObject:
+    return {
+        "allows": {
+            "readPaths": ["docs/STATUS.md"],
+            "writePaths": writes or [],
+            "actions": ["READ_REPOSITORY"],
+            "externalActions": [],
+            "claims": ["FINDING"],
+            "reservedDecisions": [],
+        },
+        "denies": {
+            "readPaths": [],
+            "writePaths": [],
+            "actions": ["MERGE"],
+            "externalActions": ["GITHUB_MUTATION"],
+            "claims": ["APPROVAL"],
+            "reservedDecisions": ["RELEASE"],
+        },
+    }
+
+
+def _manifest() -> JsonObject:
+    return {
+        "schemaVersion": "ContextPolicyManifestV1",
+        "manifestId": "test-manifest",
+        "repository": "imrohitagrawal/narratwin-ai",
+        "currentStateModuleId": "current-state",
+        "modules": [
+            {
+                "moduleId": "repo-constitution",
+                "status": "active",
+                "authorityLevel": "repository",
+                "location": "AGENTS.md",
+                "contentSha256": "1" * 64,
+                "dependsOn": [],
+                "supersedes": [],
+                "conflictsWith": [],
+                "ruleIds": ["CONST-001"],
+            },
+            {
+                "moduleId": "current-state",
+                "status": "active",
+                "authorityLevel": "current-state",
+                "location": "docs/agent-context/current-state-v1.json",
+                "contentSha256": "2" * 64,
+                "dependsOn": ["repo-constitution"],
+                "supersedes": [],
+                "conflictsWith": [],
+                "ruleIds": ["STATE-001"],
+            },
+        ],
+        "rules": [
+            {"ruleId": "CONST-001", "moduleId": "repo-constitution", "status": "active"},
+            {"ruleId": "STATE-001", "moduleId": "current-state", "status": "active"},
+        ],
+    }
+
+
+def _capsule(*, mode: str = "READ_ONLY", head: str = SHA) -> JsonObject:
+    authority = _authority()
+    return {
+        "schemaVersion": "AgentTaskCapsuleV1",
+        "capsuleId": "capsule-child",
+        "parentCapsuleId": "capsule-parent",
+        "repository": "imrohitagrawal/narratwin-ai",
+        "branch": "issue-branch",
+        "baseCommit": SHA,
+        "expectedHead": head,
+        "actionMode": mode,
+        "objective": "Inspect bounded evidence.",
+        "deliverable": "Findings only.",
+        "claims": ["FINDING"],
+        "negativeInvariants": ["No approval claim."],
+        "requiredPaths": ["docs/STATUS.md"],
+        "authority": authority,
+        "selectedRuleIds": ["CONST-001", "STATE-001"],
+        "moduleHashes": {"repo-constitution": "1" * 64, "current-state": "2" * 64},
+        "requiredTests": [],
+        "assumptions": [],
+        "budgets": {"lineCeiling": 600, "tokenCeiling": 6000},
+        "stopConditions": ["STALE_HEAD"],
+        "expiresAt": "2026-07-31T00:00:00Z",
+        "expectedReceiptSchema": "HandoffReceiptV1",
+        "authorityDigest": canonical_digest(authority),
+    }
+
+
+@pytest.mark.parametrize(
+    ("layer", "expected"),
+    [("parent", "CTX.AUTH.CHILD_WIDENS_PARENT"), ("repository", "CTX.AUTH.CHILD_WIDENS_REPOSITORY")],
+)
+def test_child_authority_cannot_widen_any_layer(layer: str, expected: str) -> None:
+    repository = _authority()
+    issue = _authority()
+    parent = _authority()
+    child = _authority(writes=["backend/app/escape.py"])
+    if layer == "repository":
+        repository["allows"]["readPaths"] = []
+        child["allows"]["readPaths"] = ["docs/STATUS.md"]
+    _, findings = intersect_authority(repository, issue, parent, child)
+    assert expected in _codes(findings)
+
+
+def test_inherited_deny_wins_over_child_allow() -> None:
+    child = _authority()
+    child["allows"]["actions"].append("MERGE")
+    effective, findings = intersect_authority(_authority(), _authority(), _authority(), child)
+    assert "MERGE" not in effective["allows"]["actions"]
+    assert "CTX.AUTH.DENY_WINS" in _codes(findings)
+
+
+def test_capsule_rejects_authority_snapshot_expansion() -> None:
+    capsule = _capsule()
+    capsule["authority"]["allows"]["writePaths"] = ["backend/"]
+    findings = validate_capsule(
+        capsule,
+        repository_authority=_authority(),
+        issue_authority=_authority(),
+        parent_capsule=_capsule(),
+        actual_branch="issue-branch",
+        actual_head=SHA,
+    )
+    assert "CTX.AUTH.SNAPSHOT_DRIFT" in _codes(findings)
+
+
+def test_capsule_rejects_stale_base_or_head() -> None:
+    findings = validate_capsule(
+        _capsule(head="b" * 40),
+        repository_authority=_authority(),
+        issue_authority=_authority(),
+        parent_capsule=_capsule(),
+        actual_branch="issue-branch",
+        actual_head=SHA,
+    )
+    assert "CTX.STALE.HEAD" in _codes(findings)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    [
+        (lambda value: value.update({"surprise": True}), "CTX.SCHEMA.UNKNOWN_FIELD"),
+        (lambda value: value["modules"].pop(), "CTX.MODULE.REQUIRED_MISSING"),
+        (
+            lambda value: value["modules"][1].update({"dependsOn": ["missing-module"]}),
+            "CTX.MODULE.DEPENDENCY_MISSING",
+        ),
+        (
+            lambda value: value["modules"][0].update({"contentSha256": "0" * 64}),
+            "CTX.MODULE.HASH_MISMATCH",
+        ),
+        (
+            lambda value: value["modules"][0].update({"dependsOn": ["current-state"]}),
+            "CTX.GRAPH.CYCLE",
+        ),
+        (
+            lambda value: value["modules"][0].update({"conflictsWith": ["current-state"]}),
+            "CTX.CONFLICT.UNRESOLVED",
+        ),
+        (
+            lambda value: value["rules"].append(copy.deepcopy(value["rules"][0])),
+            "CTX.RULE.DUPLICATE_ACTIVE",
+        ),
+        (
+            lambda value: value["modules"][0].update({"supersedes": ["absent"]}),
+            "CTX.RULE.DANGLING_SUPERSESSION",
+        ),
+        (
+            lambda value: value.update({"currentStateModuleId": "absent"}),
+            "CTX.STATE.CURRENT_MISSING",
+        ),
+    ],
+)
+def test_manifest_fails_closed_on_structural_or_authority_defect(
+    mutation: Any, expected: str
+) -> None:
+    manifest = _manifest()
+    mutation(manifest)
+    findings = validate_manifest(
+        manifest,
+        repository_root=Path("."),
+        repository_commit=SHA,
+        module_content={"repo-constitution": b"different", "current-state": b"different"},
+    )
+    assert expected in _codes(findings)
+
+
+@pytest.mark.parametrize(
+    ("current", "prose", "history", "expected"),
+    [
+        (None, [], [], "CTX.STATE.CURRENT_MISSING"),
+        (
+            {"claims": [{"id": "issue-317", "value": "complete"}]},
+            [{"id": "issue-317", "value": "open"}],
+            [],
+            "CTX.STATE.CONTRADICTION",
+        ),
+        (
+            {"claims": []},
+            [],
+            [{"id": "next-action", "value": "historical-action", "status": "historical"}],
+            "CTX.STATE.HISTORY_AS_CURRENT",
+        ),
+    ],
+)
+def test_current_and_historical_state_are_separate(
+    current: JsonObject | None,
+    prose: list[JsonObject],
+    history: list[JsonObject],
+    expected: str,
+) -> None:
+    findings = detect_state_contradictions(
+        current, prose_claims=prose, historical_entries=history
+    )
+    assert expected in _codes(findings)
+
+
+def _receipt() -> JsonObject:
+    capsule = _capsule()
+    return {
+        "schemaVersion": "HandoffReceiptV1",
+        "receiptId": "receipt-1",
+        "capsuleId": capsule["capsuleId"],
+        "parentIdentity": "primary",
+        "childIdentity": "child",
+        "acceptedAuthorityDigest": capsule["authorityDigest"],
+        "branch": "issue-branch",
+        "head": SHA,
+        "manifestVersion": "v1",
+        "manifestHash": "3" * 64,
+        "validatedRules": ["CONST-001"],
+        "moduleHashes": {"repo-constitution": "1" * 64},
+        "additionalSources": [],
+        "filesInspected": ["docs/STATUS.md"],
+        "filesChanged": [],
+        "commands": [{"argv": ["git", "status"], "exitCode": 0, "result": "PASS"}],
+        "findings": [],
+        "claimsProved": [],
+        "claimsDisproved": [],
+        "claimsNotTested": [],
+        "assumptions": [],
+        "blockers": [],
+        "residualRisks": [],
+        "preventedActions": [],
+        "budget": {"estimatedLines": 10, "actualLines": 10, "estimatedTokens": 20, "actualTokens": 20},
+        "worktreeCollisionCheck": "CLEAR",
+        "suggestedFollowUp": "none",
+        "selfCertification": [],
+    }
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    [
+        (lambda value: value.pop("filesInspected"), "CTX.RECEIPT.FIELD_MISSING"),
+        (lambda value: value["commands"][0].pop("exitCode"), "CTX.RECEIPT.COMMAND_INCOMPLETE"),
+        (
+            lambda value: value.update({"acceptedAuthorityDigest": "0" * 64}),
+            "CTX.RECEIPT.AUTHORITY_MISMATCH",
+        ),
+        (lambda value: value.update({"head": "b" * 40}), "CTX.RECEIPT.HEAD_MISMATCH"),
+        (
+            lambda value: value["selfCertification"].append("APPROVAL"),
+            "CTX.RECEIPT.SELF_CERTIFICATION",
+        ),
+    ],
+)
+def test_receipt_fails_closed_on_incomplete_or_overclaiming_evidence(
+    mutation: Any, expected: str
+) -> None:
+    receipt = _receipt()
+    mutation(receipt)
+    findings = validate_receipt(
+        receipt,
+        capsule=_capsule(),
+        manifest_digest="3" * 64,
+        actual_branch="issue-branch",
+        actual_head=SHA,
+    )
+    assert expected in _codes(findings)
+
+
+def test_packet_budget_overflow_fails_closed() -> None:
+    _, findings = build_packet(
+        _manifest(),
+        {"routeId": "test"},
+        {"repo-constitution": "authority\n" * 50},
+        line_ceiling=10,
+        token_ceiling=20,
+    )
+    assert "CTX.BUDGET.OVERFLOW" in _codes(findings)
