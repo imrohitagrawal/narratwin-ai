@@ -362,3 +362,12 @@ durability, deployment, and release decisions remain outside this trace.
 | 50 behavioral RED then GREEN tests | `CTX-AUTH-*`, `CTX-PATH-*`, `CTX-RECEIPT-*`, injection/collision/summary/claim cases | Deterministic standard-library evidence |
 | CLI packets/capsules and Phase 1 checker | exact commit/hash reproduction, non-widening delegation, budget measurement | Existing mandatory reading remains binding |
 | ADR `0046`, STATUS reconciliation, Issue `#319` | detected Issue `#317` state contradiction and reserved correction | No Issue `#317` repair, product, provider, release, or production authority |
+
+## Issue 321 renderer compatibility correction traceability
+
+| Surface | Requirement | Preserved boundary |
+|---|---|---|
+| `backend/app/issue280.py` and focused acceptance tests | Non-semantic renderers receive only `facts`, `audience`, and `depth`; semantic renderers receive the exact frame; both are called once | No `TypeError` catch/retry, signature inspection, adapter, or double render |
+| Existing legacy unsupported-output tests | Unsupported citation and uncited unsupported claims return `ISSUE280_TRANSLATION_REFUSED` HTTP 422 | Internal renderer defects remain `ISSUE280_INTERNAL_ERROR_SAFE` HTTP 500 |
+| Existing Issue #317 oracle/runtime/parity/browser suites | Spanish `STANDARD` seven-audience behavior, proposition/citation bindings, replay, artifacts, and visible output remain unchanged | No new language, depth, audience, proposition, provider, release, or full Issue #280 claim |
+| PR #299 head `f93653e8a11e697c88766b207fb01c18662339d6`, tree `60d97b3c1b2c48dba32d07dd514fc0f6ce577088` | Protected forensic identity remains unchanged | No Issue #280/#298/#300/#301/#313 or forensic mutation |

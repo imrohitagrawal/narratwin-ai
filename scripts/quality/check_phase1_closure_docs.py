@@ -1970,6 +1970,32 @@ ISSUE_319_MEANINGFUL_SURFACES = {
     "status-traceability": {"docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md"},
     "skill-evidence": {"docs/SKILL_EXECUTION_PLAN.md"},
 }
+ISSUE_321_BRANCH = "phase-1-closure-321-issue317-renderer-compatibility"
+ISSUE_321_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-321.json",
+    "backend/app/issue280.py",
+    "tests/acceptance/test_issue280_semantic_repair_slice1.py",
+    "docs/ADR/0045-issue280-semantic-repair-slice1.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_321_LINE_CAP = 800
+ISSUE_321_MEANINGFUL_SURFACES = {
+    "governance-authority": {"docs/governance/preflights/issue-321.json"},
+    "runtime-compatibility": {"backend/app/issue280.py"},
+    "behavioral-contracts": {"tests/acceptance/test_issue280_semantic_repair_slice1.py"},
+    "architecture-status-traceability": {
+        "docs/ADR/0045-issue280-semantic-repair-slice1.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
+    "scope-budget-gate": {"scripts/quality/check_phase1_closure_docs.py"},
+    "scope-budget-tests": {"tests/unit/test_phase1_closure_docs.py"},
+}
 ISSUE_313_ORACLE_PATH = "docs/evals/issue280_semantic_oracle_v1.json"
 ISSUE_313_METRICS = [
     ("essential-proposition-recall", "eq", 1.0),
@@ -2041,7 +2067,7 @@ STATUS_STATE_V1_ROWS = {
         "repo owner",
         "decision-required",
         "decision-required",
-        "After Issue #319 closeout, the next action requires explicit authority. Issue #317 remains open after post-merge acceptance found two compatibility regressions; its correction remains a reserved owner decision. Mandatory reading, Issue #280, PR #299, product/runtime, providers, deployment, release, and production posture remain unchanged.",
+        "Once Issue #321's reviewed correction merges and merged-tree acceptance passes, Issues #321 and #317 are satisfied only for the bounded Spanish STANDARD slice and the next action again requires explicit authority. Until merge, this is an intended target state, not a completion claim. Mandatory reading, Issue #280, PR #299, broader product/runtime, providers, deployment, release, and production posture remain unchanged.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -4274,6 +4300,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_319_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-319-"):
         allowed_files = set()
+    elif branch == ISSUE_321_BRANCH:
+        allowed_files = ISSUE_321_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-321-"):
+        allowed_files = set()
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
@@ -4468,6 +4498,17 @@ def check_changed_files(failures: list[str]) -> None:
         active_surfaces = {surface for surface, paths in ISSUE_319_MEANINGFUL_SURFACES.items() if paths & set(changed)}
         if len(active_surfaces) > 10:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its 10-surface cap.")
+    if branch == ISSUE_321_BRANCH:
+        missing = ISSUE_321_ALLOWED_CHANGED_FILES - set(changed)
+        for rel in sorted(missing):
+            fail(failures, f"Phase 1 Closure branch {branch} must change {rel}.")
+        active_surfaces = {
+            surface
+            for surface, paths in ISSUE_321_MEANINGFUL_SURFACES.items()
+            if paths & set(changed)
+        }
+        if len(active_surfaces) > 6:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its 6-surface cap.")
     if branch in ISSUE_308_LINE_CAPS:
         local, aggregate = charged_lines(resolve_base()), charged_lines(ISSUE_308_FROZEN_BASE)
         if local is None or aggregate is None:
@@ -4504,6 +4545,12 @@ def check_changed_files(failures: list[str]) -> None:
             fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
         elif local > ISSUE_319_LINE_CAP:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_319_LINE_CAP}-line cap.")
+    if branch == ISSUE_321_BRANCH:
+        local = charged_lines(resolve_base())
+        if local is None:
+            fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
+        elif local > ISSUE_321_LINE_CAP:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_321_LINE_CAP}-line cap.")
 
 
 def check_final_review_baseline(failures: list[str]) -> None:
