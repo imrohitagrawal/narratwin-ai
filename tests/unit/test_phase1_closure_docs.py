@@ -3000,7 +3000,7 @@ def test_issue294_replacement_executable_ledger_rejects_fact_and_stale_mutations
         assert phase1.issue294_replacement_ledger_findings(mutated)
 
     for rel, stale in (
-        ("docs/STAGE_ISSUE_PLAN.md", "Close only after the reviewed correction merges"),
+        ("docs/STATUS.md", "Close only after the reviewed correction merges"),
         ("docs/STATUS.md", "Do not select a correction without the reserved owner decision"),
     ):
         mutated = dict(documents)
@@ -3713,16 +3713,26 @@ def test_issue294_replacement_scope_and_budget_fail_closed(
     ) == [f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."]
 
 
-def test_issue294_replacement_rejects_deleted_required_path(monkeypatch: Any) -> None:
+@pytest.mark.parametrize(("is_file", "is_symlink"), ((False, False), (True, True)))
+def test_issue294_replacement_rejects_deleted_or_symlinked_required_path(
+    monkeypatch: Any, is_file: bool, is_symlink: bool
+) -> None:
     target = "tests/unit/test_phase1_closure_docs.py"
     original_is_file = Path.is_file
+    original_is_symlink = Path.is_symlink
 
-    def is_file(path: Path) -> bool:
+    def patched_is_file(path: Path) -> bool:
         if path == phase1.ROOT / target:
-            return False
+            return is_file
         return original_is_file(path)
 
-    monkeypatch.setattr(Path, "is_file", is_file)
+    def patched_is_symlink(path: Path) -> bool:
+        if path == phase1.ROOT / target:
+            return is_symlink
+        return original_is_symlink(path)
+
+    monkeypatch.setattr(Path, "is_file", patched_is_file)
+    monkeypatch.setattr(Path, "is_symlink", patched_is_symlink)
     failures = run_changed_files_check(
         monkeypatch,
         branch=phase1.ISSUE_294_REPLACEMENT_BRANCH,

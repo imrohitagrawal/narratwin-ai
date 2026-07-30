@@ -2480,7 +2480,7 @@ def issue294_replacement_ledger_findings(documents: dict[str, str]) -> list[str]
         "I294.STALE.317": (status, "Issue `#317` remains open"),
         "I294.STALE.321": (status, "Once Issue #321's reviewed correction merges"),
         "I294.STALE.UNMERGED": (status, "Until merge, this is an intended target state"),
-        "I294.STALE.CLOSE_ONLY": (stage, "Close only after the reviewed correction merges"),
+        "I294.STALE.CLOSE_ONLY": (status, "Close only after the reviewed correction merges"),
         "I294.STALE.OWNER_DECISION": (status, "Do not select a correction without the reserved owner decision"),
     }
     findings.extend(code for code, (text, marker) in forbidden.items() if marker in text)
@@ -4601,7 +4601,7 @@ def check_changed_files(failures: list[str]) -> None:
         for rel in sorted(missing):
             fail(failures, f"Phase 1 Closure branch {branch} must change {rel}.")
         for rel in sorted(ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES):
-            if not (ROOT / rel).is_file():
+            if not (ROOT / rel).is_file() or (ROOT / rel).is_symlink():
                 fail(failures, f"Phase 1 Closure branch {branch} must retain {rel} as a regular file.")
         active_surfaces = {
             surface
