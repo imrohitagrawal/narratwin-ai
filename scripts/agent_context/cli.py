@@ -138,14 +138,16 @@ def _validate(
 def _authority_layers(
     manifest: dict[str, Any], fixture: dict[str, Any], issue_scope: dict[str, Any]
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any] | None]:
-    del issue_scope
-    request = fixture.get("request", {})
+    del fixture
     profiles = manifest.get("authorityProfiles", {})
     repository_authority = profiles.get("repository", {}) if isinstance(profiles, dict) else {}
     issue_authority = profiles.get("issue", {}) if isinstance(profiles, dict) else {}
-    role = str(request.get("role", "")) if isinstance(request, dict) else ""
-    parent = {"authority": issue_authority} if "CHILD" in role else None
-    return repository_authority, issue_authority, parent
+    scope = issue_scope.get("scope", {})
+    allowed = {str(item) for item in scope.get("allowed_prefixes", [])}
+    writes = set(issue_authority.get("allows", {}).get("writePaths", []))
+    if writes != allowed:
+        raise ValueError("Issue authority does not match pinned preflight scope")
+    return repository_authority, issue_authority, None
 
 
 def _render(value: dict[str, Any]) -> None:
@@ -218,16 +220,36 @@ def _run_route(args: argparse.Namespace) -> int:
     branch = str(issue_scope["branch"])
     base_commit = _resolve_commit(root, str(current_state["baseCommit"]))
     head_commit = commit if commit != "WORKTREE" else _resolve_commit(root, "HEAD")
-    proposed_capsule = build_capsule(
-        manifest,
-        fixture,
-        route,
-        repository_commit=head_commit,
-        base_commit=base_commit,
-        branch=branch,
-    )
     repository_authority, issue_authority, parent_capsule = _authority_layers(
         manifest, fixture, issue_scope
+    )
+    role = str(fixture.get("request", {}).get("role", ""))
+    if args.parent_capsule_json:
+        parent_capsule = load_json_bytes_strict(args.parent_capsule_json.encode())
+    if "CHILD" in role and parent_capsule is None:
+        route_findings.append(Finding("CTX.CAPSULE.PARENT_REQUIRED"))
+    if "CHILD" not in role and parent_capsule is not None:
+        route_findings.append(Finding("CTX.CAPSULE.PARENT_UNEXPECTED"))
+    if parent_capsule is not None:
+        route_findings.extend(validate_schema_instance(parent_capsule, contract, "AgentTaskCapsuleV1"))
+        if parent_capsule.get("branch") != branch or parent_capsule.get("expectedHead") != head_commit:
+            route_findings.append(Finding("CTX.CAPSULE.PARENT_STALE"))
+        parent_payload = {key: value for key, value in parent_capsule.items() if key != "capsuleDigest"}
+        if parent_capsule.get("capsuleDigest") != canonical_digest(parent_payload):
+            route_findings.append(Finding("CTX.CAPSULE.PARENT_DIGEST_MISMATCH"))
+        parent_authority = parent_capsule.get("authority", {})
+        if parent_capsule.get("authorityDigest") != canonical_digest(parent_authority):
+            route_findings.append(Finding("CTX.CAPSULE.PARENT_AUTHORITY_DIGEST_MISMATCH"))
+        bounded_parent, parent_findings = intersect_authority(
+            repository_authority, issue_authority, None, parent_authority
+        )
+        route_findings.extend(parent_findings)
+        if bounded_parent != parent_authority:
+            route_findings.append(Finding("CTX.CAPSULE.PARENT_AUTHORITY_MISMATCH"))
+    parent_id = str(parent_capsule.get("capsuleId")) if parent_capsule else None
+    proposed_capsule = build_capsule(
+        manifest, fixture, route, repository_commit=head_commit, base_commit=base_commit,
+        branch=branch, parent_capsule_id=parent_id,
     )
     parent_authority = (
         parent_capsule.get("authority")
@@ -247,6 +269,7 @@ def _run_route(args: argparse.Namespace) -> int:
         repository_commit=head_commit,
         base_commit=base_commit,
         branch=branch,
+        parent_capsule_id=parent_id,
         authority_override=effective_authority,
     )
     modules_by_id = {
@@ -320,6 +343,7 @@ def _parser() -> argparse.ArgumentParser:
     route = subparsers.add_parser("route")
     route.add_argument("--commit", default="HEAD")
     route.add_argument("--fixture-id", required=True)
+    route.add_argument("--parent-capsule-json")
     route.set_defaults(handler=_run_route)
     return parser
 

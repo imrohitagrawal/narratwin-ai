@@ -166,7 +166,7 @@ def test_cli_fails_closed_when_representative_authority_exceeds_issue_319(
     assert expected_code in {finding["code"] for finding in payload["findings"]}
 
 
-def test_cli_accepts_issue_319_exact_path_child_authority() -> None:
+def test_cli_requires_real_parent_for_write_child_authority() -> None:
     result = subprocess.run(
         [
             "python3",
@@ -183,8 +183,25 @@ def test_cli_accepts_issue_319_exact_path_child_authority() -> None:
         text=True,
     )
     payload = json.loads(result.stdout)
-    assert result.returncode == 0
-    assert payload["status"] == "PASS"
+    assert result.returncode == 1
+    assert "CTX.CAPSULE.PARENT_REQUIRED" in {item["code"] for item in payload["findings"]}
+
+
+def test_cli_intersects_child_with_supplied_narrower_parent_capsule() -> None:
+    base = ["python3", "-m", "scripts.agent_context.cli", "route", "--commit", "WORKTREE"]
+    parent_run = subprocess.run(
+        [*base, "--fixture-id", "RFV1-06-COLD-PR-REVIEW"],
+        check=True, capture_output=True, text=True,
+    )
+    parent = json.loads(parent_run.stdout)["taskCapsule"]
+    child_run = subprocess.run(
+        [*base, "--fixture-id", "RFV1-08-READONLY-CHILD",
+         "--parent-capsule-json", json.dumps(parent)],
+        check=False, capture_output=True, text=True,
+    )
+    codes = {item["code"] for item in json.loads(child_run.stdout)["findings"]}
+    assert child_run.returncode == 1
+    assert "CTX.AUTH.CHILD_WIDENS_PARENT" in codes
 
 
 def test_emitted_capsule_records_inherited_repository_denies() -> None:

@@ -67,8 +67,10 @@ Every deny wins. Missing GitHub, provider, secret, deployment, destructive, or
 external authority is a denial. A child may narrow an allow or add a deny; it
 cannot add an allow or remove an inherited deny. Exact paths reject traversal,
 absolute paths, globs, prose, symlinks, and normalized parallel collisions.
-The manifest owns typed, commit-pinned repository and Issue `#319` authority
-profiles; fixture proposals are intersected with them and never construct them.
+The manifest owns typed, commit-pinned repository and Issue `#319` profiles;
+the Issue write plane must exactly match the pinned preflight allowlist. Child
+CLI routes require a schema-valid exact-head parent capsule and intersect its
+real authority; fixture proposals never construct either authority layer.
 
 `AgentTaskCapsuleV1` binds the branch, distinct base/head, frozen fixture/request/route
 digests, role and history posture, objective, deliverable, authority digest,
