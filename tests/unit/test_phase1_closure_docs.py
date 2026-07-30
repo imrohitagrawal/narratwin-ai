@@ -2936,7 +2936,7 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "PR `#281`",
         "`3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c`",
         "post-merge main quality workflow run `30085558061` passing",
-                "agent-context-shadow-slice1-in-progress",
+                "| SSV1-NEXT | next-action | repo owner | decision-required | decision-required |",
         "PR `#282`",
         "`b889604a490c9f014130e420c1c949af7879dd84`",
         "post-merge main quality workflow run `30092008592` passing",

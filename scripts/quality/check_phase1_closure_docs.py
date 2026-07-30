@@ -2037,10 +2037,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #319",
-        "agent-context-shadow-slice1-in-progress",
-        "agent-context-shadow-slice1-in-progress",
-        "Issue #317 remains open after post-merge acceptance found two compatibility regressions; corrective authority remains reserved and outside Issue #319. Issue #319 authorizes only a standard-library shadow context manifest, deterministic routing, non-widening capsules, handoff receipts, reproducible packets, and contradiction evidence. Mandatory reading, Issue #280, PR #299, product/runtime, providers, deployment, release, and production posture remain unchanged.",
+        "repo owner",
+        "decision-required",
+        "decision-required",
+        "After Issue #319 closeout, the next action requires explicit authority. Issue #317 remains open after post-merge acceptance found two compatibility regressions; its correction remains a reserved owner decision. Mandatory reading, Issue #280, PR #299, product/runtime, providers, deployment, release, and production posture remain unchanged.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -2359,7 +2359,7 @@ def issue8_product_memory_findings(documents: dict[str, str]) -> list[str]:
 
 
 def issue8_closeout_status_findings(text: str) -> list[str]:
-    required = ("| SSV1-NEXT | next-action | issue #319 | agent-context-shadow-slice1-in-progress | agent-context-shadow-slice1-in-progress |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
+    required = ("| SSV1-NEXT | next-action | repo owner | decision-required | decision-required |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
     return ["I8.STATUS.TERMINAL" for marker in required if marker not in text]
 
 

@@ -32,8 +32,8 @@
       "sourceRefs": ["https://github.com/imrohitagrawal/narratwin-ai/issues/317"]
     },
     {
-      "id": "issue-319-lifecycle",
-      "value": "open-shadow-slice-in-progress",
+      "id": "issue-319-authority-boundary",
+      "value": "bounded-shadow-controller-close-only-after-merged-tree-acceptance",
       "sourceRefs": ["https://github.com/imrohitagrawal/narratwin-ai/issues/319"]
     },
     {
