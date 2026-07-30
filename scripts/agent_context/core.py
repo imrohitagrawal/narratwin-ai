@@ -117,6 +117,13 @@ ACTIVE = {"active"}
 SHA_256 = re.compile(r"^[0-9a-f]{64}$")
 GLOB = re.compile(r"[*?\[\]]")
 PROSE = re.compile(r"\s")
+DATE_TIME = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
+)
+FROZEN_FIXTURE_DIGEST = "6757fa98d5c16385c90c58616bc20f540d1fa83fd0ea64adcd685bbaa51daf4e"
+RESERVED_RECEIPT_CLAIMS = {
+    "APPROVAL", "COMPLETION", "MERGE_ELIGIBILITY", "RELEASE", "PRODUCTION_READINESS"
+}
 
 
 @dataclass(frozen=True, order=True)
@@ -154,8 +161,8 @@ def content_digest(value: bytes | str) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def load_json_strict(path: Path) -> JsonObject:
-    """Load one object while rejecting duplicate keys and non-object roots."""
+def load_json_bytes_strict(raw: bytes) -> JsonObject:
+    """Load one UTF-8 object while rejecting duplicate keys and non-object roots."""
 
     def reject_duplicates(pairs: list[tuple[str, Any]]) -> JsonObject:
         result: JsonObject = {}
@@ -165,10 +172,16 @@ def load_json_strict(path: Path) -> JsonObject:
             result[key] = value
         return result
 
-    value = json.loads(path.read_text(), object_pairs_hook=reject_duplicates)
+    value = json.loads(raw.decode("utf-8"), object_pairs_hook=reject_duplicates)
     if not isinstance(value, dict):
         raise ValueError("JSON root must be an object")
     return value
+
+
+def load_json_strict(path: Path) -> JsonObject:
+    """Load one strict JSON object from a local path."""
+
+    return load_json_bytes_strict(path.read_bytes())
 
 
 def extract_binding(source: str, binding: JsonObject) -> str:
@@ -202,6 +215,106 @@ def _unknown_fields(value: JsonObject, allowed: set[str], prefix: str) -> list[F
     return [_finding("CTX.SCHEMA.UNKNOWN_FIELD", f"{prefix}.{key}") for key in value if key not in allowed]
 
 
+def _required_fields(value: JsonObject, required: set[str], prefix: str) -> list[Finding]:
+    return [_finding("CTX.SCHEMA.REQUIRED", f"{prefix}.{key}") for key in sorted(required - value.keys())]
+
+
+def validate_schema_instance(value: Any, contract: JsonObject, definition: str) -> list[Finding]:
+    """Validate the JSON-Schema subset used by the checked-in V1 contracts."""
+
+    definitions = contract.get("$defs", {})
+    schema = definitions.get(definition) if isinstance(definitions, dict) else None
+    if not isinstance(schema, dict):
+        return [_finding("CTX.SCHEMA.CONTRACT_MISSING", definition)]
+    findings: list[Finding] = []
+
+    def walk(instance: Any, rule: JsonObject, path: str) -> None:
+        alternatives = rule.get("oneOf")
+        if isinstance(alternatives, list):
+            matches = 0
+            for alternative in alternatives:
+                if not isinstance(alternative, dict):
+                    continue
+                checkpoint = len(findings)
+                walk(instance, alternative, path)
+                if len(findings) == checkpoint:
+                    matches += 1
+                del findings[checkpoint:]
+            if matches != 1:
+                findings.append(_finding("CTX.SCHEMA.ONE_OF", path))
+            return
+        ref = rule.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/$defs/"):
+            target = definitions.get(ref.removeprefix("#/$defs/"))
+            if not isinstance(target, dict):
+                findings.append(_finding("CTX.SCHEMA.CONTRACT_MISSING", ref))
+                return
+            walk(instance, target, path)
+            return
+        expected = rule.get("type")
+        expected_types = expected if isinstance(expected, list) else [expected]
+        checks = {
+            "object": lambda item: isinstance(item, dict),
+            "array": lambda item: isinstance(item, list),
+            "string": lambda item: isinstance(item, str),
+            "integer": lambda item: isinstance(item, int) and not isinstance(item, bool),
+            "boolean": lambda item: isinstance(item, bool),
+            "null": lambda item: item is None,
+        }
+        if expected is not None and not any(
+            checks.get(str(kind), lambda _: False)(instance) for kind in expected_types
+        ):
+            findings.append(_finding("CTX.SCHEMA.TYPE", path))
+            return
+        if "const" in rule and instance != rule["const"]:
+            findings.append(_finding("CTX.SCHEMA.CONST", path))
+        if "enum" in rule and instance not in rule["enum"]:
+            findings.append(_finding("CTX.SCHEMA.ENUM", path))
+        minimum = rule.get("minimum")
+        if isinstance(instance, (int, float)) and not isinstance(instance, bool) and isinstance(
+            minimum, (int, float)
+        ) and instance < minimum:
+            findings.append(_finding("CTX.SCHEMA.MINIMUM", path))
+        if isinstance(instance, dict):
+            required = rule.get("required", [])
+            for key in required if isinstance(required, list) else []:
+                if key not in instance:
+                    findings.append(_finding("CTX.SCHEMA.REQUIRED", f"{path}.{key}"))
+            properties = rule.get("properties", {})
+            properties = properties if isinstance(properties, dict) else {}
+            additional = rule.get("additionalProperties", True)
+            for key, item in instance.items():
+                child_rule = properties.get(key)
+                if isinstance(child_rule, dict):
+                    walk(item, child_rule, f"{path}.{key}")
+                elif additional is False:
+                    findings.append(_finding("CTX.SCHEMA.UNKNOWN_FIELD", f"{path}.{key}"))
+                elif isinstance(additional, dict):
+                    walk(item, additional, f"{path}.{key}")
+        if isinstance(instance, list):
+            if len(instance) < int(rule.get("minItems", 0)):
+                findings.append(_finding("CTX.SCHEMA.MIN_ITEMS", path))
+            if "maxItems" in rule and len(instance) > int(rule["maxItems"]):
+                findings.append(_finding("CTX.SCHEMA.MAX_ITEMS", path))
+            if rule.get("uniqueItems") and len({canonical_json(item) for item in instance}) != len(instance):
+                findings.append(_finding("CTX.SCHEMA.UNIQUE", path))
+            items = rule.get("items")
+            if isinstance(items, dict):
+                for index, item in enumerate(instance):
+                    walk(item, items, f"{path}[{index}]")
+        if isinstance(instance, str):
+            if len(instance) < int(rule.get("minLength", 0)):
+                findings.append(_finding("CTX.SCHEMA.MIN_LENGTH", path))
+            pattern = rule.get("pattern")
+            if isinstance(pattern, str) and re.search(pattern, instance) is None:
+                findings.append(_finding("CTX.SCHEMA.PATTERN", path))
+            if rule.get("format") == "date-time" and DATE_TIME.match(instance) is None:
+                findings.append(_finding("CTX.SCHEMA.FORMAT", path))
+
+    walk(value, schema, definition)
+    return _dedupe(findings)
+
+
 def _list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
 
@@ -226,6 +339,8 @@ def validate_path(path: str, *, repository_root: Path | None = None) -> list[Fin
         findings.append(_finding("CTX.PATH.INVALID", path))
     if PROSE.search(path):
         findings.append(_finding("CTX.TYPE.PROSE_IN_PATH", path))
+    if unicodedata.normalize("NFC", path) != path:
+        findings.append(_finding("CTX.PATH.NONCANONICAL", path))
     if path.endswith("/"):
         findings.append(_finding("CTX.PATH.NOT_EXACT", path))
     if repository_root is not None and not findings:
@@ -275,12 +390,14 @@ def validate_manifest(
 
     del repository_commit
     findings = _unknown_fields(manifest, MANIFEST_FIELDS, "manifest")
+    findings.extend(_required_fields(manifest, MANIFEST_FIELDS, "manifest"))
     if manifest.get("schemaVersion") != "ContextPolicyManifestV1":
         findings.append(_finding("CTX.SCHEMA.VERSION"))
     module_items = _objects(manifest.get("modules"))
     modules: dict[str, JsonObject] = {}
     for module in module_items:
         findings.extend(_unknown_fields(module, MODULE_FIELDS, "module"))
+        findings.extend(_required_fields(module, MODULE_FIELDS, "module"))
         module_id = module.get("moduleId")
         if not isinstance(module_id, str) or module_id in modules:
             findings.append(_finding("CTX.MODULE.DUPLICATE", str(module_id)))
@@ -316,6 +433,7 @@ def validate_manifest(
     active_rules: dict[str, str] = {}
     for rule in _objects(manifest.get("rules")):
         findings.extend(_unknown_fields(rule, RULE_FIELDS, "rule"))
+        findings.extend(_required_fields(rule, RULE_FIELDS, "rule"))
         rule_id = rule.get("ruleId")
         module_id = rule.get("moduleId")
         if module_id not in modules:
@@ -335,20 +453,25 @@ def _domain(authority: JsonObject, plane: str, domain: str) -> set[str]:
     value = authority.get(plane, {})
     if not isinstance(value, dict):
         return set()
-    return {str(item) for item in _list(value.get(domain))}
+    items = {str(item) for item in _list(value.get(domain))}
+    if domain in {"readPaths", "writePaths"}:
+        return {_normalized_path(item) for item in items}
+    return items
 
 
 def intersect_authority(
     repository: JsonObject,
     issue: JsonObject,
-    parent: JsonObject,
+    parent: JsonObject | None,
     child: JsonObject,
 ) -> tuple[JsonObject, list[Finding]]:
     """Intersect allow planes and union denies; child expansion is always a finding."""
 
     findings: list[Finding] = []
     effective: JsonObject = {"allows": {}, "denies": {}}
-    layers = (("REPOSITORY", repository), ("ISSUE", issue), ("PARENT", parent))
+    layers = [("REPOSITORY", repository), ("ISSUE", issue)]
+    if parent is not None:
+        layers.append(("PARENT", parent))
     for domain in AUTHORITY_DOMAINS:
         requested = _domain(child, "allows", domain)
         for layer_name, layer in layers:
@@ -382,10 +505,16 @@ def validate_capsule(
     actual_branch: str,
     actual_head: str,
     actual_base: str | None = None,
+    repository_root: Path | None = None,
+    contract_schema: JsonObject | None = None,
 ) -> list[Finding]:
     """Validate exact state, typed authority, non-widening, and review independence."""
 
     findings = _unknown_fields(capsule, CAPSULE_FIELDS, "capsule")
+    required = CAPSULE_FIELDS - {"role", "historyMode", "untrustedData"}
+    findings.extend(_required_fields(capsule, required, "capsule"))
+    if contract_schema is not None:
+        findings.extend(validate_schema_instance(capsule, contract_schema, "AgentTaskCapsuleV1"))
     if capsule.get("schemaVersion") != "AgentTaskCapsuleV1":
         findings.append(_finding("CTX.SCHEMA.VERSION"))
     if capsule.get("branch") != actual_branch:
@@ -399,7 +528,10 @@ def validate_capsule(
         return _dedupe(findings + [_finding("CTX.AUTH.MISSING")])
     if capsule.get("authorityDigest") != canonical_digest(authority):
         findings.append(_finding("CTX.AUTH.SNAPSHOT_DRIFT"))
-    parent_authority: JsonObject = {}
+    digest_payload = {key: value for key, value in capsule.items() if key != "capsuleDigest"}
+    if capsule.get("capsuleDigest") != canonical_digest(digest_payload):
+        findings.append(_finding("CTX.CAPSULE.DIGEST_MISMATCH"))
+    parent_authority: JsonObject | None = None
     if parent_capsule is not None and isinstance(parent_capsule.get("authority"), dict):
         parent_authority = parent_capsule["authority"]
     _, authority_findings = intersect_authority(
@@ -412,7 +544,18 @@ def validate_capsule(
     for plane in ("allows", "denies"):
         for domain in ("readPaths", "writePaths"):
             for path in _domain(authority, plane, domain):
-                findings.extend(validate_path(path))
+                findings.extend(validate_path(path, repository_root=repository_root))
+    budget = capsule.get("budgets", {})
+    if isinstance(budget, dict):
+        lines = budget.get("actualLines")
+        tokens = budget.get("actualTokens")
+        if not isinstance(lines, int) or not isinstance(tokens, int):
+            findings.append(_finding("CTX.BUDGET.CAPSULE_MISSING"))
+        elif lines > int(budget.get("lineCeiling", 0)) or tokens > int(budget.get("tokenCeiling", 0)):
+            findings.append(_finding("CTX.BUDGET.CAPSULE_OVERFLOW"))
+        measured_lines, measured_tokens = _capsule_metrics(capsule)
+        if lines != measured_lines or tokens != measured_tokens:
+            findings.append(_finding("CTX.BUDGET.CAPSULE_MISMATCH"))
     negative_text = " ".join(str(item).casefold() for item in _list(capsule.get("negativeInvariants")))
     denied_claims = _domain(authority, "denies", "claims")
     if "production readiness" in negative_text and "PRODUCTION_READINESS" not in denied_claims:
@@ -427,12 +570,25 @@ def validate_capsule(
     return _dedupe(findings)
 
 
+def _capsule_metrics(capsule: JsonObject) -> tuple[int, int]:
+    payload = {key: value for key, value in capsule.items() if key != "capsuleDigest"}
+    budget = payload.get("budgets", {})
+    if isinstance(budget, dict):
+        payload["budgets"] = {
+            key: value for key, value in budget.items()
+            if key not in {"actualLines", "actualTokens", "estimateAlgorithm"}
+        }
+    rendered = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)
+    return _line_count(rendered), _estimated_tokens(rendered)
+
+
 def build_capsule(
     manifest: JsonObject,
     fixture: JsonObject,
     route: JsonObject,
     *,
     repository_commit: str,
+    base_commit: str,
     branch: str,
     parent_capsule_id: str | None = None,
 ) -> JsonObject:
@@ -468,7 +624,7 @@ def build_capsule(
         "parentCapsuleId": parent_capsule_id,
         "repository": manifest.get("repository"),
         "branch": branch,
-        "baseCommit": repository_commit,
+        "baseCommit": base_commit,
         "expectedHead": repository_commit,
         "actionMode": action_mode,
         "objective": objective,
@@ -481,7 +637,7 @@ def build_capsule(
         "moduleHashes": module_hashes,
         "requiredTests": fixture.get("seededDefectIds", []),
         "assumptions": ["shadow-mode-only", "mandatory-reading-unchanged"],
-        "budgets": fixture.get("budgets", {}).get("taskCapsule", {}),
+        "budgets": dict(fixture.get("budgets", {}).get("taskCapsule", {})),
         "stopConditions": [
             "AUTHORITY_DRIFT",
             "BUDGET_OVERFLOW",
@@ -493,6 +649,11 @@ def build_capsule(
         "expectedReceiptSchema": "HandoffReceiptV1",
         "authorityDigest": canonical_digest(authority),
     }
+    measured_lines, measured_tokens = _capsule_metrics(capsule)
+    capsule["budgets"].update(
+        {"actualLines": measured_lines, "actualTokens": measured_tokens,
+         "estimateAlgorithm": "ceil-utf8-bytes-divided-by-4"}
+    )
     capsule["capsuleDigest"] = canonical_digest(capsule)
     return capsule
 
@@ -504,10 +665,15 @@ def validate_receipt(
     manifest_digest: str,
     actual_branch: str,
     actual_head: str,
+    contract_schema: JsonObject | None = None,
 ) -> list[Finding]:
     """Bind a receipt to its capsule, manifest, branch/head, commands, and claim limits."""
 
     findings = _unknown_fields(receipt, RECEIPT_FIELDS, "receipt")
+    if contract_schema is not None:
+        findings.extend(validate_schema_instance(receipt, contract_schema, "HandoffReceiptV1"))
+    if receipt.get("schemaVersion") != "HandoffReceiptV1":
+        findings.append(_finding("CTX.SCHEMA.VERSION"))
     for field in sorted(RECEIPT_FIELDS):
         if field not in receipt:
             findings.append(_finding("CTX.RECEIPT.FIELD_MISSING", field))
@@ -522,11 +688,27 @@ def validate_receipt(
     if receipt.get("head") != actual_head or receipt.get("head") != capsule.get("expectedHead"):
         findings.append(_finding("CTX.RECEIPT.HEAD_MISMATCH"))
     commands = _objects(receipt.get("commands"))
+    if not commands:
+        findings.append(_finding("CTX.RECEIPT.COMMAND_MISSING"))
     for index, command in enumerate(commands):
         if set(command) != {"argv", "exitCode", "result"}:
             findings.append(_finding("CTX.RECEIPT.COMMAND_INCOMPLETE", str(index)))
-    if receipt.get("selfCertification"):
+    self_certification = receipt.get("selfCertification")
+    if not isinstance(self_certification, list) or self_certification:
         findings.append(_finding("CTX.RECEIPT.SELF_CERTIFICATION"))
+    proved_text = canonical_json(_list(receipt.get("claimsProved"))).upper()
+    reserved_proved = {
+        claim for claim in RESERVED_RECEIPT_CLAIMS if re.search(rf"\b{claim}\b", proved_text)
+    }
+    if reserved_proved:
+        findings.append(_finding("CTX.RECEIPT.RESERVED_CLAIM", ",".join(sorted(reserved_proved))))
+    budget = receipt.get("budget", {})
+    capsule_budget = capsule.get("budgets", {})
+    if isinstance(budget, dict) and isinstance(capsule_budget, dict):
+        if int(budget.get("actualLines", 0)) > int(capsule_budget.get("lineCeiling", 0)) or int(
+            budget.get("actualTokens", 0)
+        ) > int(capsule_budget.get("tokenCeiling", 0)):
+            findings.append(_finding("CTX.BUDGET.RECEIPT_OVERFLOW"))
     authority = capsule.get("authority", {})
     if capsule.get("actionMode") == "READ_ONLY" and _list(receipt.get("filesChanged")):
         findings.append(_finding("CTX.RECEIPT.READ_ONLY_CHANGED"))
@@ -593,10 +775,11 @@ def route_request(
 ) -> tuple[JsonObject, list[Finding]]:
     """Route only an independently frozen exact cohort; ambiguity and unknowns stop."""
 
-    del manifest
     if fixture_set is None:
         return {}, [_finding("CTX.ROUTE.UNKNOWN")]
     findings: list[Finding] = []
+    if canonical_digest(fixture_set) != FROZEN_FIXTURE_DIGEST:
+        findings.append(_finding("CTX.FIXTURE.DRIFT"))
     provenance = fixture_set.get("provenance", {})
     if isinstance(provenance, dict) and provenance.get("routerOutputUsedAsExpectedValue") is not False:
         findings.append(_finding("CTX.FIXTURE.CIRCULAR_ORACLE"))
@@ -609,7 +792,34 @@ def route_request(
     expected = fixture.get("expectedRoute", {})
     included = fixture.get("includedModules", [])
     rejected = fixture.get("rejectedModules", [])
-    closure = fixture.get("dependencyClosure", [])
+    modules = {str(item.get("moduleId")): item for item in _objects(manifest.get("modules"))}
+    included_ids = [str(item.get("moduleId")) for item in _objects(included)]
+    closure_ids = set(included_ids)
+    pending = list(included_ids)
+    while pending:
+        module_id = pending.pop()
+        module = modules.get(module_id)
+        if module is None:
+            findings.append(_finding("CTX.MODULE.REQUIRED_MISSING", module_id))
+            continue
+        for dependency in _list(module.get("dependsOn")):
+            dependency_id = str(dependency)
+            if dependency_id not in closure_ids:
+                closure_ids.add(dependency_id)
+                pending.append(dependency_id)
+    closure = [module_id for module_id in modules if module_id in closure_ids]
+    if closure != fixture.get("dependencyClosure"):
+        findings.append(_finding("CTX.ROUTE.CLOSURE_MISMATCH"))
+    if str(expected.get("packetBudget")) not in manifest.get("budgets", {}):
+        findings.append(_finding("CTX.BUDGET.UNKNOWN"))
+    active_rules = {
+        str(rule.get("ruleId")): str(rule.get("moduleId"))
+        for rule in _objects(manifest.get("rules")) if rule.get("status") == "active"
+    }
+    selected_rule_ids = [rule_id for module in _objects(included) for rule_id in _list(module.get("ruleIds"))]
+    for rule_id in selected_rule_ids:
+        if active_rules.get(str(rule_id)) not in closure_ids:
+            findings.append(_finding("CTX.ROUTE.RULE_MODULE_MISMATCH", str(rule_id)))
     receipt: JsonObject = {
         "schemaVersion": "RoutingReceiptV1",
         "fixtureId": fixture.get("fixtureId"),
@@ -620,9 +830,7 @@ def route_request(
         "includedModules": included,
         "rejectedModules": rejected,
         "dependencyClosure": closure,
-        "selectedRuleIds": [
-            rule_id for module in _objects(included) for rule_id in _list(module.get("ruleIds"))
-        ],
+        "selectedRuleIds": selected_rule_ids,
         "unresolvedConflicts": [],
     }
     receipt["receiptDigest"] = canonical_digest(receipt)
@@ -677,6 +885,8 @@ def build_packet(
     ]
     if {str(rule.get("ruleId")) for rule in rules} != selected_rule_ids:
         findings.append(_finding("CTX.PACKET.CRITICAL_RULE_MISSING", "canonical-rule-definition"))
+    if any(str(rule.get("moduleId")) not in included for rule in rules):
+        findings.append(_finding("CTX.PACKET.RULE_MODULE_MISSING"))
     packet: JsonObject = {
         "schemaVersion": "ContextPacketV1",
         "manifestDigest": canonical_digest(manifest),

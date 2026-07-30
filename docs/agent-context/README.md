@@ -42,7 +42,16 @@ Modules bind exact full resources or exact Markdown heading sections. Each
 module stores the whole-source SHA-256 and selected-content SHA-256. A packet
 contains selected source text, the matching active rule definitions, the exact
 repository commit, routing reasons, dependency closure, and canonical digests.
-Summaries are never substituted for source authority.
+The router derives dependency closure from the manifest, proves that every
+selected rule is owned by an included module, and rejects any drift in the
+independently frozen fixture content hash. Summaries are never substituted for
+source authority.
+
+Manifest, contract, current-state, history, fixture, status, issue-scope, and
+selected module bytes are all read from the requested Git commit. `WORKTREE` is
+an explicit validation mode; it is never silently mixed with commit-pinned
+input. Every V1 object is checked against the checked-in strict contract before
+its semantic invariants are evaluated.
 
 ## Non-Widening Delegation
 
@@ -59,7 +68,7 @@ external authority is a denial. A child may narrow an allow or add a deny; it
 cannot add an allow or remove an inherited deny. Exact paths reject traversal,
 absolute paths, globs, prose, symlinks, and normalized parallel collisions.
 
-`AgentTaskCapsuleV1` binds the branch, base/head, objective, deliverable,
+`AgentTaskCapsuleV1` binds the branch, distinct base/head, objective, deliverable,
 authority digest, selected rules/module hashes, tests, assumptions, budgets,
 stop conditions, and expected receipt. The CLI emits one deterministic capsule
 with every routed fixture. The capsule is evidence of delegated bounds, not
@@ -101,8 +110,10 @@ implementation, and 2,000/24,000 for high-risk governance/security. Token
 budgeting uses documented `ceil(UTF-8 bytes / 4)` estimates; the measured
 mandatory baseline uses `cl100k_base` for comparison.
 
-At GREEN, routed packets measure 158–369 lines and 2,068–3,902 estimated
-tokens. Capsules measure one canonical line and 563–912 estimated tokens.
+At corrected GREEN, the universal bootstrap measures 43 lines and 928 estimated
+tokens. Routed packets measure 158–369 lines and 2,079–3,913 estimated tokens;
+capsules measure 114–167 pretty-printed lines and 724–1,162 estimated tokens.
+All are validated against their executable ceilings.
 Smaller size is not acceptance evidence; seeded-defect recall, critical-rule
 completeness, cold reconstruction, and false-positive behavior remain the
 meaningful comparison.

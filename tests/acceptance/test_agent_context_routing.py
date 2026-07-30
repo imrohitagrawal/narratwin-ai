@@ -19,10 +19,19 @@ def _fixture_set() -> dict[str, Any]:
 
 
 def _manifest(fixture_set: dict[str, Any]) -> dict[str, Any]:
+    module_by_rule = {
+        rule_id: module["moduleId"]
+        for module in fixture_set["moduleVocabulary"]
+        for rule_id in module["ruleIds"]
+    }
     return {
         "schemaVersion": "ContextPolicyManifestV1",
         "modules": fixture_set["moduleVocabulary"],
-        "rules": fixture_set["ruleVocabulary"],
+        "rules": [
+            {**rule, "moduleId": module_by_rule[rule["ruleId"]], "status": "active"}
+            for rule in fixture_set["ruleVocabulary"]
+        ],
+        "budgets": fixture_set["budgets"],
     }
 
 
@@ -56,7 +65,10 @@ def test_ambiguous_task_class_fails_closed() -> None:
     _, findings = route_request(
         _manifest(fixture_set), duplicated["request"], fixture_set=fixture_set
     )
-    assert {finding.code for finding in findings} == {"CTX.ROUTE.AMBIGUOUS"}
+    assert {finding.code for finding in findings} == {
+        "CTX.FIXTURE.DRIFT",
+        "CTX.ROUTE.AMBIGUOUS",
+    }
 
 
 def test_packet_rejects_omitted_critical_rule() -> None:

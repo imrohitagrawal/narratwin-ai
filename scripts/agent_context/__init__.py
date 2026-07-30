@@ -13,6 +13,7 @@ from scripts.agent_context.core import (
     validate_manifest,
     validate_path,
     validate_receipt,
+    validate_schema_instance,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "validate_manifest",
     "validate_path",
     "validate_receipt",
+    "validate_schema_instance",
 ]

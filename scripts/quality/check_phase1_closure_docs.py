@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -6942,6 +6943,8 @@ def check_issue319_agent_context(failures: list[str]) -> None:
         fail(failures, "Issue #319 routing fixtures must be valid JSON.")
         return
     provenance = fixtures.get("provenance", {}) if isinstance(fixtures, dict) else {}
+    fixture_path = ROOT / "docs/agent-context/fixtures/routing-fixtures-v1.json"
+    fixture_sha = hashlib.sha256(fixture_path.read_bytes()).hexdigest()
     if (
         len(fixtures.get("fixtures", [])) != 9
         or len(fixtures.get("seededDefectCatalog", [])) != 36
@@ -6949,6 +6952,8 @@ def check_issue319_agent_context(failures: list[str]) -> None:
         or provenance.get("routerOutputUsedAsExpectedValue") is not False
     ):
         fail(failures, "Issue #319 routing fixtures lost frozen independent provenance or coverage.")
+    if fixture_sha != "394abe652b0dee2b245bbc3dd43f3b12e88c683ee4a56d686142f12b390baa08":
+        fail(failures, "Issue #319 independently frozen routing fixture content drifted.")
     result = subprocess.run(
         ["python3", "-m", "scripts.agent_context.cli", "validate", "--commit", "WORKTREE"],
         cwd=ROOT,

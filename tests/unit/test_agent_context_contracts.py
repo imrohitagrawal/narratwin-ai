@@ -18,6 +18,7 @@ from scripts.agent_context import (
     validate_capsule,
     validate_manifest,
     validate_receipt,
+    validate_schema_instance,
 )
 
 JsonObject = dict[str, Any]
@@ -330,6 +331,34 @@ def test_incomplete_manifest_contract_fails_closed() -> None:
     assert "CTX.SCHEMA.REQUIRED" in _codes(validate_manifest(incomplete))
 
 
+def test_contract_validator_enforces_one_of_minimum_and_date_time() -> None:
+    contract = json.loads(Path("docs/agent-context/contracts-v1.schema.json").read_text())
+    assert "CTX.SCHEMA.ONE_OF" in _codes(
+        validate_schema_instance(
+            "not-a-commit",
+            {"$defs": {"Candidate": {"oneOf": [{"const": "WORKTREE"}, {"$ref": "#/$defs/Commit"}]},
+                        "Commit": contract["$defs"]["Commit"]}},
+            "Candidate",
+        )
+    )
+    capsule = _capsule()
+    capsule.update(
+        {
+            "capsuleDigest": "0" * 64,
+            "expiresAt": "not-a-date",
+            "budgets": {
+                "lineCeiling": 0,
+                "tokenCeiling": 0,
+                "actualLines": 0,
+                "actualTokens": 0,
+                "estimateAlgorithm": "ceil-utf8-bytes-divided-by-4",
+            },
+        }
+    )
+    codes = _codes(validate_schema_instance(capsule, contract, "AgentTaskCapsuleV1"))
+    assert {"CTX.SCHEMA.MINIMUM", "CTX.SCHEMA.FORMAT"} <= codes
+
+
 def test_capsule_digest_binds_objective_and_budget() -> None:
     capsule = _capsule()
     capsule["budgets"].update({"actualLines": 1, "actualTokens": 1})
@@ -393,7 +422,7 @@ def test_cli_capsule_binds_distinct_repository_base_and_head() -> None:
             "scripts.agent_context.cli",
             "route",
             "--commit",
-            "HEAD",
+            "WORKTREE",
             "--fixture-id",
             "RFV1-06-COLD-PR-REVIEW",
         ],

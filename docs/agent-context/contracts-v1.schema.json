@@ -110,7 +110,7 @@
     "AgentTaskCapsuleV1": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "capsuleId", "parentCapsuleId", "repository", "branch", "baseCommit", "expectedHead", "actionMode", "objective", "deliverable", "claims", "negativeInvariants", "requiredPaths", "authority", "selectedRuleIds", "moduleHashes", "requiredTests", "assumptions", "budgets", "stopConditions", "expiresAt", "expectedReceiptSchema", "authorityDigest"],
+      "required": ["schemaVersion", "capsuleId", "parentCapsuleId", "repository", "branch", "baseCommit", "expectedHead", "actionMode", "objective", "deliverable", "claims", "negativeInvariants", "requiredPaths", "authority", "selectedRuleIds", "moduleHashes", "requiredTests", "assumptions", "budgets", "stopConditions", "expiresAt", "expectedReceiptSchema", "authorityDigest", "capsuleDigest"],
       "properties": {
         "schemaVersion": {"const": "AgentTaskCapsuleV1"},
         "capsuleId": {"type": "string"},
@@ -130,7 +130,18 @@
         "moduleHashes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Sha256"}},
         "requiredTests": {"$ref": "#/$defs/StringSet"},
         "assumptions": {"$ref": "#/$defs/StringSet"},
-        "budgets": {"type": "object"},
+        "budgets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lineCeiling", "tokenCeiling", "actualLines", "actualTokens", "estimateAlgorithm"],
+          "properties": {
+            "lineCeiling": {"type": "integer", "minimum": 1},
+            "tokenCeiling": {"type": "integer", "minimum": 1},
+            "actualLines": {"type": "integer", "minimum": 0},
+            "actualTokens": {"type": "integer", "minimum": 0},
+            "estimateAlgorithm": {"const": "ceil-utf8-bytes-divided-by-4"}
+          }
+        },
         "stopConditions": {"$ref": "#/$defs/StringSet"},
         "expiresAt": {"type": "string", "format": "date-time"},
         "expectedReceiptSchema": {"const": "HandoffReceiptV1"},
@@ -160,6 +171,7 @@
         "filesChanged": {"$ref": "#/$defs/PathSet"},
         "commands": {
           "type": "array",
+          "minItems": 1,
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -211,7 +223,7 @@
     "RoutingReceiptV1": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "fixtureId", "routeId", "executionMode", "packetBudget", "requestDigest", "includedModules", "rejectedModules", "dependencyClosure", "selectedRuleIds", "unresolvedConflicts", "repositoryCommit", "receiptDigest"],
+      "required": ["schemaVersion", "fixtureId", "routeId", "executionMode", "packetBudget", "requestDigest", "includedModules", "rejectedModules", "dependencyClosure", "selectedRuleIds", "unresolvedConflicts", "bootstrapMetrics", "repositoryCommit", "receiptDigest"],
       "properties": {
         "schemaVersion": {"const": "RoutingReceiptV1"},
         "fixtureId": {"type": "string"},
@@ -224,6 +236,7 @@
         "dependencyClosure": {"$ref": "#/$defs/StringSet"},
         "selectedRuleIds": {"$ref": "#/$defs/StringSet"},
         "unresolvedConflicts": {"type": "array", "maxItems": 0},
+        "bootstrapMetrics": {"type": "object"},
         "repositoryCommit": {"oneOf": [{"$ref": "#/$defs/Commit"}, {"const": "WORKTREE"}]},
         "receiptDigest": {"$ref": "#/$defs/Sha256"}
       }

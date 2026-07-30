@@ -14,6 +14,7 @@ from scripts.agent_context import (
     validate_capsule,
     validate_path,
 )
+from scripts.agent_context.cli import _read_source
 
 SHA = "a" * 40
 
@@ -93,6 +94,11 @@ def test_symlink_escape_fails_closed(tmp_path: Path) -> None:
     assert "CTX.PATH.SYMLINK_ESCAPE" in _codes(
         validate_path("escape", repository_root=tmp_path)
     )
+
+
+def test_cli_rejects_unsafe_source_before_read(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="unsafe source path"):
+        _read_source(tmp_path, "WORKTREE", "/etc/passwd")
 
 
 def test_normalized_parallel_write_sets_collide() -> None:

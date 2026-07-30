@@ -25,7 +25,11 @@ Add a standard-library shadow layer with:
    commands, files, findings, claims, budgets, and prevented actions;
 5. separate structured current state and non-authorizing append-only history;
 6. fail-closed graph, hash, conflict, staleness, path, collision, budget,
-   summary-substitution, injection, and self-certification checks.
+   summary-substitution, injection, and self-certification checks;
+7. strict standard-library validation of every emitted V1 contract, with
+   manifest-derived dependency closure and rule ownership; and
+8. commit-pinned reads for every routing input, plus an explicit and separate
+   `WORKTREE` validation mode.
 
 Child allows are the intersection of repository, issue, parent, and child
 allows. Denies are their union. This does not change existing authority
@@ -40,7 +44,8 @@ the exact commit. CI can execute the shadow validator, while root mandatory
 reading remains unchanged and available as the comparison baseline.
 
 Exact fixture matching intentionally fails unknown and ambiguous tasks. The
-current source hashes require explicit refresh when binding sources change.
+current source hashes and independently frozen fixture-content hash require an
+explicit, reviewed refresh when binding sources or expected values change.
 Receipts are not signed or self-authenticating, and tool enforcement remains
 outside this slice.
 
