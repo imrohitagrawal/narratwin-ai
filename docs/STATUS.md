@@ -18,15 +18,19 @@ Use it to answer:
 - Current stage marker: `.stage/current = 8`
 - Forensic baseline: evidence at exact head
   `f93653e8a11e697c88766b207fb01c18662339d6` establishes that Issue `#280` is
-  not fixed. Issue `#300` is the active negative-forensic-only reset. The
-  historical GitHub closure of issue `#280`, issue `#298`, and PR `#299`
-  remain preserved forensic evidence; PR
-  `#299` must not be merged or sent for human review. No product/runtime repair
-  or C3B work may be inferred from that historical closure. PR `#318` merged
-  Issue `#317` semantic repair slice 1, but merged-tree acceptance found two
-  compatibility regressions and Issue `#317` remains open. The repository owner
-  selected the single narrow correction controlled by Issue `#321`; it is not
-  part of the independent, closed Issue `#319` governance slice.
+  not fixed. Issue `#300` and PR `#301` are completed historical negative
+  containment. Issue `#313` and PR `#314` completed the architecture and
+  independent-oracle decision. Issue `#317` and PR `#318` completed the bounded
+  Spanish `STANDARD` semantic slice; Issue `#321` and PR `#322` completed its
+  renderer compatibility correction. Issue #298 remains open as the semantic
+  multilingual gap tracker. PR #299 remains immutable open forensic evidence at
+  head `f93653e8a11e697c88766b207fb01c18662339d6` and must not be merged or sent
+  for human review. No broader Issue `#280`, product/runtime, or C3B completion
+  may be inferred from these bounded results. The next product action requires
+  a separately controlled, repository-owner-authorized Slice 2 issue, branch,
+  and pull request. Before that controller is created, the Issue `#294`
+  replacement must pass merged-tree acceptance, PR `#295` must close unmerged
+  as superseded, and Issue `#294` must close as satisfied by the replacement.
 - Current implementation permission: Phase 1 Closure governance only. Demo
   Phase 0 planning for issue `#225` completed through PR `#226`; Checkpoint 1
   is accepted as local/fake disabled-default reviewer evidence only through
@@ -243,7 +247,7 @@ evidence, next action posture, and prohibited work.
 |---|---|---|---|---|---|
 | SSV1-BASELINE | merge-baseline | PR #187 | merged | merged | Current mutable state starts after PR #187 merged at 24bc1f581d005777ef16df2a2228a936eb86d926. |
 | SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
-| SSV1-NEXT | next-action | repo owner | decision-required | decision-required | Once Issue #321's reviewed correction merges and merged-tree acceptance passes, Issues #321 and #317 are satisfied only for the bounded Spanish STANDARD slice and the next action again requires explicit authority. Until merge, this is an intended target state, not a completion claim. Mandatory reading, Issue #280, PR #299, broader product/runtime, providers, deployment, release, and production posture remain unchanged. |
+| SSV1-NEXT | next-action | repo owner | decision-required | decision-required | Issues #317 and #321 are closed after the bounded Spanish STANDARD slice and compatibility correction completed through PR #318 at c293b4a62a5afdaf893af83f3f23efd65f11b950 and PR #322 at 704c5b9536c62e29ba7fd74c7344d067770c728e. Issue #280 remains administratively closed but not semantically fixed, Issue #298 remains open, and PR #299 remains immutable open forensic evidence. Before any Slice 2 controller is created, the Issue #294 replacement must pass merged-tree acceptance, PR #295 must close unmerged as superseded, and Issue #294 must close as satisfied by the replacement. The next product action then requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request. Mandatory reading and broader product/runtime, provider, deployment, release, and production posture remain unchanged. |
 | SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed | Issue #8 is satisfied by Issue #311 once its PR merges; close only after post-merge six-criterion verification. |
 | SSV1-ISSUE155 | product-mode-controller | #155 | closed | closed | Issue #155 is closed for the controlled local/mock Product Mode 1 checkpoint after issue #213 and PR #214 completed Checkpoint A through Checkpoint B with latest-head human approval and evidence. |
 | SSV1-PREDECESSOR | stopped-evidence | #162/#163/#166/#167/#168 | preserved | preserved | Stopped predecessor evidence remains preserved and must not be resumed, patched, rebased, merged, closed, deleted, or rewritten. |
@@ -501,14 +505,14 @@ Use these files together with this tracker:
 | `#269` | Closed | Checkpoint 3A child CP8 real-browser E2E probe | Closed after PR `#273` merged at `0f737c564f9245b66640988573ac04f4432e06d5`. The C3A-CP8 branch added the eighth executable `make checkpoint3-acceptance` probe for real-browser E2E evidence: approved synthetic local project knowledge through the user-visible workflow, local backend/frontend launch, browser-observed API request/response binding, runtime nonce, project/document/ingestion/run/evaluation/source binding, artifact metadata, bounded ops/status evidence, local/mock provider posture, no success-path interception, docs/prose/static/API-only/canned-success rejection, stale and cross-project false-pass rejection, bounded subprocess timeout, and redacted failure summaries. It kept issue `#249` open. It authorized no hosted deployment, public URL, provider setup, real provider call, paid spend, cloned identity, real media binaries, public distribution, Checkpoint 3B, Checkpoint 3C, or production-readiness claim. |
 | `#274` | Satisfied by prior reviewed PR | Checkpoint 3B child PR1 consent/provenance planning gate | Public-safe consent/provenance planning, acceptance contracts, risk boundaries, and future issue sequencing are satisfied by the prior reviewed PR. It kept issue `#249` open as the public Checkpoint 3 tracker and authorized no Checkpoint 3B implementation, Checkpoint 3C, hosted deployment, public URL, provider setup, real provider call, paid spend, cloned identity runtime, real media binaries, public distribution, or production-readiness claim. |
 | `#280` | Closed in GitHub; not fixed | Checkpoint 3A C3A-R3 arbitrary local/demo multilingual closure | PR A-D merged through PRs `#281`-`#284`; two canonical payload runs at PR E evidence head `f93653e8a11e697c88766b207fb01c18662339d6` completed 525/525 combinations without translation refusal, retained seven audience-sensitive accepted scripts, and produced one visible target body across seven audiences in all 75 successful language/depth groups. The old 217/308/31-group assertion was not reproduced. PR #301 preserves this negative forensic state and supplies no product repair or positive closure authority. |
-| `#313` | Decision complete when reviewed and merged | Issue #280 repair feasibility and independent semantic oracle | Defines the audience-collapse defect, schema-closed independent proposition oracle, exact semantic thresholds, architecture alternatives, and ADR `0044` semantic-frame GO candidate. Runtime repair remains NO-GO until a separate controlling issue commits oracle-backed behavioral RED; PR #299 and all existing forensic evidence remain unchanged. Issue #300 and PR #301 are completed historical negative-containment evidence. |
+| `#313` | Closed | Issue #280 repair feasibility and independent semantic oracle | Completed through merged PR `#314` at `84be60c6df59c4b482edc4cff5ae2bfd4ab54b25`. It defines the audience-collapse defect, schema-closed independent proposition oracle, exact semantic thresholds, architecture alternatives, and ADR `0044` semantic-frame GO candidate. PR #299 and all existing forensic evidence remain unchanged. Issue #300 and PR #301 are completed historical negative-containment evidence. |
 | `#315` | Governance gate complete when reviewed and merged | Self-contained product and end-goal PR context | Issue #315 requires self-contained product and end-goal context for every non-trivial PR. The gate requires the current state, problem, exact changes, done state, expected and prohibited outcomes, demo/production-path impact, remaining gap, and reviewer pass/fail validation in plain English. Counted exact-change claims must enumerate every claimed item, and the reusable rule is carried by the new-project engineering playbook. Issue references and links remain supplemental. Runtime and production authorization remain unchanged. |
-| `#317` | PR target: close after Issue #321 merged-tree acceptance | Issue #280 semantic repair slice 1 | PR `#318` merged the bounded implementation, but merged-tree validation found two compatibility regressions that return `500` instead of the required `422`. Issue `#321` controls the single narrow correction; Issue #319 does not absorb this repair. Closure remains contingent on the correction merging and merged-main validation passing. |
-| `#321` | PR target: satisfied after merged-tree acceptance | Issue #317 renderer compatibility correction | Preserves the legacy three-keyword non-semantic renderer contract, exact semantic-frame delivery, once-only invocation, public-safe internal `500`, and established unsupported-output `422` behavior. Close only after the reviewed correction merges and bounded merged-main acceptance passes. It does not repair the German baseline drift, expand Issue #317, or claim Issue #280 fixed. |
+| `#317` | Closed | Issue #280 semantic repair slice 1 | Completed through merged PR `#318` at `c293b4a62a5afdaf893af83f3f23efd65f11b950` and bounded merged-tree acceptance after PR `#322`. The result certifies only the Spanish `STANDARD` seven-audience cohort; it does not complete Issue #280 or Issue #298. |
+| `#321` | Closed | Issue #317 renderer compatibility correction | Completed through merged PR `#322` at `704c5b9536c62e29ba7fd74c7344d067770c728e`. It preserves the legacy three-keyword non-semantic renderer contract, exact semantic-frame delivery, once-only invocation, public-safe internal `500`, and established unsupported-output `422` behavior. The German baseline drift and broader semantic repair remain outside scope. |
 | `#319` | PR target: close after merged-tree acceptance | Agent context architecture slice 1 | PR `#320` supplies the standard-library, governance-only shadow manifest, router, non-widening capsules, receipts, packets, context budgets, contradiction checks, and cold-context evidence. Close only after exact merge-commit workflows, merged-tree focused validation, routed-packet replay, cold benchmark, acceptance reconciliation, and protected-evidence checks pass. Existing mandatory reading and product/release authority remain unchanged. |
 | `#287` | Open | Governance quality-gate drift repair | Superseded for merge purposes by combined issue `#289` because the governance-only PR is circularly blocked by the inherited PostCSS audit advisory on `main`. |
 | `#289` | Open | Security unblock for PostCSS audit and Stage 8 gate drift | Combined unblock branch `phase-1-closure-process-289-security-postcss-stage8-gate-unblock` intentionally includes the PostCSS dependency metadata remediation, required ADR/traceability/third-party notice updates, and the inherited Stage 8 quality-marker drift repair so required CI can pass atomically. PR `#284` settled before the historical PR E attempt. Issue `#289` authorizes no product/runtime code, provider setup, paid spend, hosted/public demo, Next downgrade, production-readiness claim, or issue-closing wording for `#249` or `#280`. |
-| `#296` | Open | Frontend brace-expansion audit unblock | Branch `phase-1-closure-process-296-frontend-brace-expansion-audit` is limited to the npm audit blocker surfaced while validating PR `#295`: pin transitive `minimatch` to `10.2.5` and `brace-expansion` to `5.0.8` through the frontend override and lockfile, keep frontend lint/typecheck/test/build green, and update the exact branch allowlist, ADR `0039`, status, traceability, and notices. It authorizes no product/runtime code, backend changes, provider setup, paid spend, hosted/public demo, real media, public distribution, production-readiness claim, PR `#295` mutation, or issue-closing wording for `#249`. |
+| `#296` | Closed | Frontend brace-expansion audit unblock | Completed through merged PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` after exact-head approval on `3b5b24a722beac6cfc6e586ecdc1d46757a5084d`. The dependency-only correction preserved the no-product/runtime, provider, hosted/public, media, release, and production boundaries. |
 
 ## Pull Request Ledger
 
@@ -821,12 +825,17 @@ Use these files together with this tracker:
 2. Preserve closed Issue `#8`, Issue `#308`, and Issue `#311` as completed
    product-memory and Heartbeat 2 evidence; do not reopen them.
 3. Treat Issue #300 and merged PR #301 as completed historical
-   negative-containment evidence. Issue #313 selected the architecture and
-   PR #318 merged the first bounded Issue #317 repair slice, but Issue #317
-   remains open after merged-tree acceptance found two compatibility regressions.
-   Do not select a correction without the reserved owner decision. Issue #319 is
-   an independent governance-only context shadow slice; PR #299 and existing
-   forensic evidence remain unchanged and issue `#249` remains open.
+   negative-containment evidence. Issue #313 and PR #314 completed the
+   architecture/oracle decision. Issues #317/#321 and PRs #318/#322 completed
+   only the bounded Spanish `STANDARD` semantic slice and its compatibility
+   correction. Issue #319 remains an independent governance-only context shadow
+   slice. Issue #280 remains not semantically fixed, Issue #298
+   remains open, PR #299 and existing forensic evidence remain unchanged, and
+   issue `#249` remains open. Further product work requires a separately
+   controlled, repository-owner-authorized Slice 2 issue, branch, and pull
+   request, after the Issue `#294` replacement passes merged-tree acceptance,
+   PR `#295` closes unmerged as superseded, and Issue `#294` closes as satisfied
+   by the replacement.
 4. Keep production,
    multi-worker deployment, hosted launch, Product Mode 2, external provider
    use, real audio/video export, and public synthetic-media distribution No-Go
@@ -860,7 +869,9 @@ Required update rules:
 
 | Date | Change |
 |---|---|
-| 2026-07-30 | Issue `#319` started the governance-only agent-context shadow slice after read-only preflight confirmed bounded concurrency. PR `#320` carries the post-merge target state: close Issue `#319` only after merged-tree acceptance, then return next-action authority to an explicit repo-owner decision. The repository/live Issue `#317` completion contradiction is recorded rather than hidden: PR `#318` merged, Issue `#317` remains open with two post-merge compatibility regressions, and corrective authority remains reserved. Mandatory reading, Issue `#280`, PR `#299`, product/runtime, providers, deployment, release, and production posture remain unchanged. |
+| 2026-07-30 | PR `#322` merged the Issue `#321` renderer compatibility correction at `704c5b9536c62e29ba7fd74c7344d067770c728e`; Issues `#317` and `#321` closed after bounded merged-tree acceptance. The result certifies only the Spanish `STANDARD` seven-audience cohort and preserves Issue `#280` as not fixed, Issue `#298` open, PR `#299` immutable/open, the German baseline drift, and explicit owner authority for any Slice 2. |
+| 2026-07-30 | Issue `#319` started the governance-only agent-context shadow slice after read-only preflight confirmed bounded concurrency. PR `#320` carried a post-merge target state that returned next-action authority to an explicit repo-owner decision. Its then-current repository/live Issue `#317` completion contradiction was recorded rather than hidden; later PR `#322` completed the narrow compatibility correction. Mandatory reading, Issue `#280`, PR `#299`, product/runtime, providers, deployment, release, and production posture remained unchanged. |
+| 2026-07-25 | PR `#297` merged the Issue `#296` frontend brace-expansion audit unblock at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` after exact-head approval on `3b5b24a722beac6cfc6e586ecdc1d46757a5084d`; Issue `#296` closed with no product/runtime authority. |
 | 2026-07-25 | Issue `#296` started on branch `phase-1-closure-process-296-frontend-brace-expansion-audit` after local `make ci` for PR `#295` found the frontend npm audit blocked by GHSA-mh99-v99m-4gvg in transitive `brace-expansion`. Scope is limited to pinning `minimatch` to `10.2.5` and `brace-expansion` to `5.0.8` through the frontend npm override/lockfile and the required governance allowlist/status/traceability/notice updates. It authorizes no product/runtime code, provider setup, paid spend, hosted/public demo, real media, public distribution, production-readiness claim, PR `#295` mutation, or issue-closing wording for `#249`. |
 | 2026-07-25 | Historical correction: the Issue `#280` PR E attempt at evidence head `f93653e8a11e697c88766b207fb01c18662339d6` did not close the product requirement. Canonical reproduction completed 525/525 combinations without refusal but collapsed seven accepted audience-specific scripts to one visible target body per group; the old 217/308 aggregate was not reproduced. The current `make issue280-output-correctness` target is negative forensic integrity only. |
 | 2026-07-25 | PR `#284` merged the Issue `#280` PR D UI/browser slice at `3f3bbdd05f844384311f193c16075b45e9d076f2` after the security-only backend runtime `uv` bump cleared the backend image scan blocker. Issues `#249` and `#280` remained open after PR D; no hosted/public demo, provider setup, paid spend, cloned identity runtime, real media, public distribution, production-readiness claim, or issue-closing wording was authorized. |

@@ -585,6 +585,28 @@ ISSUE_289_ALLOWED_CHANGED_FILES = {
     "tests/unit/test_phase1_closure_docs.py",
     "tests/unit/test_stage8_quality_gate.py",
 }
+ISSUE_294_REPLACEMENT_BRANCH = (
+    "phase-1-closure-process-294-post-322-ledger-replacement"
+)
+ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-294.json",
+    "docs/STATUS.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/TRACEABILITY.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_294_REPLACEMENT_LINE_CAP = 500
+ISSUE_294_REPLACEMENT_MEANINGFUL_SURFACES = {
+    "authority-preflight": {"docs/governance/preflights/issue-294.json"},
+    "status-stage-ledger": {
+        "docs/STATUS.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/TRACEABILITY.md",
+    },
+    "executable-checker": {"scripts/quality/check_phase1_closure_docs.py"},
+    "checker-regression-tests": {"tests/unit/test_phase1_closure_docs.py"},
+}
 ISSUE_296_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-296.json",
     "docs/STAGE_ISSUE_PLAN.md",
@@ -2067,7 +2089,7 @@ STATUS_STATE_V1_ROWS = {
         "repo owner",
         "decision-required",
         "decision-required",
-        "Once Issue #321's reviewed correction merges and merged-tree acceptance passes, Issues #321 and #317 are satisfied only for the bounded Spanish STANDARD slice and the next action again requires explicit authority. Until merge, this is an intended target state, not a completion claim. Mandatory reading, Issue #280, PR #299, broader product/runtime, providers, deployment, release, and production posture remain unchanged.",
+        "Issues #317 and #321 are closed after the bounded Spanish STANDARD slice and compatibility correction completed through PR #318 at c293b4a62a5afdaf893af83f3f23efd65f11b950 and PR #322 at 704c5b9536c62e29ba7fd74c7344d067770c728e. Issue #280 remains administratively closed but not semantically fixed, Issue #298 remains open, and PR #299 remains immutable open forensic evidence. Before any Slice 2 controller is created, the Issue #294 replacement must pass merged-tree acceptance, PR #295 must close unmerged as superseded, and Issue #294 must close as satisfied by the replacement. The next product action then requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request. Mandatory reading and broader product/runtime, provider, deployment, release, and production posture remain unchanged.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -2390,6 +2412,81 @@ def issue8_closeout_status_findings(text: str) -> list[str]:
     return ["I8.STATUS.TERMINAL" for marker in required if marker not in text]
 
 
+def issue294_replacement_ledger_findings(documents: dict[str, str]) -> list[str]:
+    status = re.sub(r"\s+", " ", documents.get("docs/STATUS.md", ""))
+    stage = re.sub(r"\s+", " ", documents.get("docs/STAGE_ISSUE_PLAN.md", ""))
+    traceability = documents.get("docs/TRACEABILITY.md", "")
+    required = {
+        "I294.STATUS.296": (
+            status,
+            "| `#296` | Closed | Frontend brace-expansion audit unblock | Completed through merged PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` after exact-head approval on `3b5b24a722beac6cfc6e586ecdc1d46757a5084d`",
+        ),
+        "I294.STATUS.313": (
+            status,
+            "| `#313` | Closed | Issue #280 repair feasibility and independent semantic oracle | Completed through merged PR `#314` at `84be60c6df59c4b482edc4cff5ae2bfd4ab54b25`",
+        ),
+        "I294.STATUS.317": (
+            status,
+            "| `#317` | Closed | Issue #280 semantic repair slice 1 | Completed through merged PR `#318` at `c293b4a62a5afdaf893af83f3f23efd65f11b950`",
+        ),
+        "I294.STATUS.321": (
+            status,
+            "| `#321` | Closed | Issue #317 renderer compatibility correction | Completed through merged PR `#322` at `704c5b9536c62e29ba7fd74c7344d067770c728e`",
+        ),
+        "I294.STATUS.NEXT": (
+            status,
+            "The next product action requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.",
+        ),
+        "I294.STATUS.PROTECTED": (
+            status,
+            "PR #299 remains immutable open forensic evidence at head `f93653e8a11e697c88766b207fb01c18662339d6`",
+        ),
+        "I294.STATUS.TERMINAL": (
+            status,
+            "Before any Slice 2 controller is created, the Issue #294 replacement must pass merged-tree acceptance, PR #295 must close unmerged as superseded, and Issue #294 must close as satisfied by the replacement.",
+        ),
+        "I294.STAGE.300": (
+            stage,
+            "Issue `#300` and PR `#301` are completed historical negative containment.",
+        ),
+        "I294.STAGE.313": (
+            stage,
+            "Issue `#313` and PR `#314` completed the architecture and independent-oracle decision.",
+        ),
+        "I294.STAGE.317": (
+            stage,
+            "Issue `#317` and PR `#318` completed the bounded Spanish `STANDARD` semantic slice.",
+        ),
+        "I294.STAGE.CLOSEOUT": (
+            stage,
+            "Issue `#321` and PR `#322` completed the renderer compatibility correction.",
+        ),
+        "I294.STAGE.NEXT": (
+            stage,
+            "Further product work requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.",
+        ),
+        "I294.STAGE.TERMINAL": (
+            stage,
+            "Before that controller is created, the Issue `#294` replacement must pass merged-tree acceptance, PR `#295` must close unmerged as superseded, and Issue `#294` must close as satisfied by the replacement.",
+        ),
+        "I294.TRACE.296": (
+            traceability,
+            "| Phase 1 Closure / `#296` | Completed through PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` |",
+        ),
+    }
+    findings = [code for code, (text, marker) in required.items() if marker not in text]
+    forbidden = {
+        "I294.STALE.300": (status, "Issue `#300` is the active negative-forensic-only reset"),
+        "I294.STALE.317": (status, "Issue `#317` remains open"),
+        "I294.STALE.321": (status, "Once Issue #321's reviewed correction merges"),
+        "I294.STALE.UNMERGED": (status, "Until merge, this is an intended target state"),
+        "I294.STALE.CLOSE_ONLY": (status, "Close only after the reviewed correction merges"),
+        "I294.STALE.OWNER_DECISION": (status, "Do not select a correction without the reserved owner decision"),
+    }
+    findings.extend(code for code, (text, marker) in forbidden.items() if marker in text)
+    return findings
+
+
 def issue313_oracle_findings(oracle: object) -> list[str]:
     if not isinstance(oracle, dict):
         return ["F280.ORACLE.SCHEMA"]
@@ -2488,17 +2585,18 @@ def issue313_decision_findings(decision: str, adr: str) -> list[str]:
 
 
 def issue313_status_findings(text: str) -> list[str]:
+    normalized = re.sub(r"\s+", " ", text)
     required = (
-        "| `#313` | Decision complete when reviewed and merged | Issue #280 repair feasibility and independent semantic oracle |",
+        "| `#313` | Closed | Issue #280 repair feasibility and independent semantic oracle |",
         "Issue #300 and PR #301 are completed historical negative-containment evidence",
-        "Runtime repair remains NO-GO until a separate controlling issue",
+        "The next product action requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request",
     )
-    findings = ["F280.STATUS.MISSING" for marker in required if marker not in text]
+    findings = ["F280.STATUS.MISSING" for marker in required if marker not in normalized]
     for stale in (
         "Issue #300 is the active negative-forensic-only reset",
         "Complete PR #301 negative forensic containment",
     ):
-        if stale in text:
+        if stale in normalized:
             findings.append("F280.STATUS.STALE")
     return findings
 
@@ -4258,6 +4356,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_287_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-289-security-postcss-stage8-gate-unblock":
         allowed_files = ISSUE_289_ALLOWED_CHANGED_FILES
+    elif branch == ISSUE_294_REPLACEMENT_BRANCH:
+        allowed_files = ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-294-"):
+        allowed_files = set()
     elif branch == "phase-1-closure-process-296-frontend-brace-expansion-audit":
         allowed_files = ISSUE_296_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-300-issue280-semantic-closure-reset":
@@ -4494,6 +4596,20 @@ def check_changed_files(failures: list[str]) -> None:
         active_surfaces = {surface for surface, paths in ISSUE_317_MEANINGFUL_SURFACES.items() if paths & set(changed)}
         if len(active_surfaces) > 10:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its 10-surface cap.")
+    if branch == ISSUE_294_REPLACEMENT_BRANCH:
+        missing = ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES - set(changed)
+        for rel in sorted(missing):
+            fail(failures, f"Phase 1 Closure branch {branch} must change {rel}.")
+        for rel in sorted(ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES):
+            if not (ROOT / rel).is_file() or (ROOT / rel).is_symlink():
+                fail(failures, f"Phase 1 Closure branch {branch} must retain {rel} as a regular file.")
+        active_surfaces = {
+            surface
+            for surface, paths in ISSUE_294_REPLACEMENT_MEANINGFUL_SURFACES.items()
+            if paths & set(changed)
+        }
+        if len(active_surfaces) > 4:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its 4-surface cap.")
     if branch == ISSUE_319_BRANCH:
         active_surfaces = {surface for surface, paths in ISSUE_319_MEANINGFUL_SURFACES.items() if paths & set(changed)}
         if len(active_surfaces) > 10:
@@ -4539,6 +4655,16 @@ def check_changed_files(failures: list[str]) -> None:
             fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
         elif local > ISSUE_317_LINE_CAP:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_317_LINE_CAP}-line cap.")
+    if branch == ISSUE_294_REPLACEMENT_BRANCH:
+        local = charged_lines(resolve_base())
+        if local is None:
+            fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
+        elif local > ISSUE_294_REPLACEMENT_LINE_CAP:
+            fail(
+                failures,
+                f"Phase 1 Closure branch {branch} exceeds its "
+                f"{ISSUE_294_REPLACEMENT_LINE_CAP}-line cap.",
+            )
     if branch == ISSUE_319_BRANCH:
         local = charged_lines(resolve_base())
         if local is None:
@@ -4970,6 +5096,16 @@ def check_phf020a_policy_contract(failures: list[str]) -> None:
         fail(failures, f"Issue #8 product-memory finding: {finding}")
     for finding in issue8_closeout_status_findings(read("docs/STATUS.md")):
         fail(failures, f"Issue #8 closeout-status finding: {finding}")
+    issue294_documents = {
+        rel: read(rel)
+        for rel in (
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+        )
+    }
+    for finding in issue294_replacement_ledger_findings(issue294_documents):
+        fail(failures, f"Issue #294 replacement-ledger finding: {finding}")
 
     agents = read("AGENTS.md")
     if "- `docs/PHASE_PLAN.md`" not in agents:

@@ -2912,6 +2912,102 @@ def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     assert "SSV1.STATE.INVALID" in phase1.status_state_v1_findings(mutated)
 
 
+def test_issue294_replacement_records_the_post322_live_ledger() -> None:
+    status = Path("docs/STATUS.md").read_text(encoding="utf-8")
+    stage = Path("docs/STAGE_ISSUE_PLAN.md").read_text(encoding="utf-8")
+    traceability = Path("docs/TRACEABILITY.md").read_text(encoding="utf-8")
+    normalized_status = re.sub(r"\s+", " ", status)
+    normalized_stage = re.sub(r"\s+", " ", stage)
+
+    for marker in (
+        "| `#296` | Closed | Frontend brace-expansion audit unblock | Completed through merged PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1`",
+        "| `#317` | Closed | Issue #280 semantic repair slice 1 | Completed through merged PR `#318` at `c293b4a62a5afdaf893af83f3f23efd65f11b950`",
+        "| `#321` | Closed | Issue #317 renderer compatibility correction | Completed through merged PR `#322` at `704c5b9536c62e29ba7fd74c7344d067770c728e`",
+        "Issue #298 remains open as the semantic multilingual gap tracker.",
+        "PR #299 remains immutable open forensic evidence at head `f93653e8a11e697c88766b207fb01c18662339d6`",
+        "The next product action requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.",
+        "Before any Slice 2 controller is created, the Issue #294 replacement must pass merged-tree acceptance, PR #295 must close unmerged as superseded, and Issue #294 must close as satisfied by the replacement.",
+    ):
+        assert marker in normalized_status
+
+    for stale in (
+        "Issue `#300` is the active negative-forensic-only reset",
+        "Issue `#317` remains open",
+        "Once Issue #321's reviewed correction merges",
+        "Until merge, this is an intended target state",
+        "Close only after the reviewed correction merges",
+        "Do not select a correction without the reserved owner decision",
+    ):
+        assert stale not in status
+
+    for marker in (
+        "Issue `#300` and PR `#301` are completed historical negative containment.",
+        "Issue `#313` and PR `#314` completed the architecture and independent-oracle decision.",
+        "Issue `#317` and PR `#318` completed the bounded Spanish `STANDARD` semantic slice.",
+        "Issue `#321` and PR `#322` completed the renderer compatibility correction.",
+        "Further product work requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.",
+        "Before that controller is created, the Issue `#294` replacement must pass merged-tree acceptance, PR `#295` must close unmerged as superseded, and Issue `#294` must close as satisfied by the replacement.",
+    ):
+        assert marker in normalized_stage
+    assert "Issue `#321` is the single post-merge corrective controller selected" not in stage
+
+    assert (
+        "| Phase 1 Closure / `#296` | Completed through PR `#297` at "
+        "`cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` |"
+    ) in traceability
+    assert "| Phase 1 Closure / `#296` | In progress |" not in traceability
+
+
+def test_issue294_replacement_executable_ledger_rejects_fact_and_stale_mutations() -> None:
+    documents = {
+        rel: Path(rel).read_text(encoding="utf-8")
+        for rel in (
+            "docs/STATUS.md",
+            "docs/STAGE_ISSUE_PLAN.md",
+            "docs/TRACEABILITY.md",
+        )
+    }
+    assert phase1.issue294_replacement_ledger_findings(documents) == []
+
+    mutations = (
+        ("docs/STATUS.md", "3b5b24a722beac6cfc6e586ecdc1d46757a5084d", "0" * 40),
+        ("docs/STATUS.md", "84be60c6df59c4b482edc4cff5ae2bfd4ab54b25", "0" * 40),
+        (
+            "docs/STAGE_ISSUE_PLAN.md",
+            "Issue `#300` and PR `#301` are completed historical negative containment.",
+            "REMOVED",
+        ),
+        (
+            "docs/STAGE_ISSUE_PLAN.md",
+            "Issue `#313` and PR `#314` completed the architecture and independent-oracle\ndecision.",
+            "REMOVED",
+        ),
+        (
+            "docs/STAGE_ISSUE_PLAN.md",
+            "Issue `#317` and PR `#318` completed the bounded Spanish `STANDARD` semantic\nslice.",
+            "REMOVED",
+        ),
+        (
+            "docs/STAGE_ISSUE_PLAN.md",
+            "Further product work requires a separately\ncontrolled, repository-owner-authorized Slice 2 issue, branch, and pull request.",
+            "REMOVED",
+        ),
+    )
+    for rel, old, new in mutations:
+        assert old in documents[rel]
+        mutated = dict(documents)
+        mutated[rel] = documents[rel].replace(old, new)
+        assert phase1.issue294_replacement_ledger_findings(mutated)
+
+    for rel, stale in (
+        ("docs/STATUS.md", "Close only after the reviewed correction merges"),
+        ("docs/STATUS.md", "Do not select a correction without the reserved owner decision"),
+    ):
+        mutated = dict(documents)
+        mutated[rel] += f"\n{stale}\n"
+        assert phase1.issue294_replacement_ledger_findings(mutated)
+
+
 def test_post_pr250_status_reconciliation_is_recorded() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
     normalized_status = re.sub(r"\s+", " ", status_text)
@@ -2944,11 +3040,11 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "`09584b264c0f30da3eecd6693829e5bcb071e568`",
         "post-merge main quality workflow run `30095714825` passing",
         "Issue `#278` is closed after PR `#279` merged the bounded C3A-R2 full-project multilingual corpus gate",
-                "| `#313` | Decision complete when reviewed and merged",
+                "| `#313` | Closed | Issue #280 repair feasibility and independent semantic oracle |",
                 "Issue #315 requires self-contained product and end-goal context",
                 "Runtime and production authorization remain unchanged",
             "Issue #300 and PR #301 are completed historical negative-containment evidence",
-            "Runtime repair remains NO-GO until a separate controlling issue",
+            "The next product action requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request",
         "full-project multilingual corpus gate",
         "ADR `0034`",
         "major-market multilingual output correctness",
@@ -3558,6 +3654,95 @@ def test_issue321_scope_and_budget_fail_closed(monkeypatch: Any) -> None:
     assert run_changed_files_check(
         monkeypatch, branch=near_match, files=["docs/STATUS.md"]
     ) == [f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."]
+
+
+def test_issue294_replacement_scope_budget_and_surfaces_are_exact(
+    monkeypatch: Any,
+) -> None:
+    expected = {
+        "docs/governance/preflights/issue-294.json",
+        "docs/STATUS.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+    assert phase1.ISSUE_294_REPLACEMENT_BRANCH == (
+        "phase-1-closure-process-294-post-322-ledger-replacement"
+    )
+    assert phase1.ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES == expected
+    assert phase1.ISSUE_294_REPLACEMENT_LINE_CAP == 500
+    assert len(phase1.ISSUE_294_REPLACEMENT_MEANINGFUL_SURFACES) == 4
+    assert set().union(
+        *phase1.ISSUE_294_REPLACEMENT_MEANINGFUL_SURFACES.values()
+    ) == expected
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 500)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_294_REPLACEMENT_BRANCH,
+        files=sorted(expected),
+    ) == []
+
+
+def test_issue294_replacement_scope_and_budget_fail_closed(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 501)
+    missing = sorted(phase1.ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES)[0]
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_294_REPLACEMENT_BRANCH,
+        files=sorted(phase1.ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES - {missing})
+        + ["backend/app/issue280.py"],
+    )
+    assert (
+        f"Phase 1 Closure branch {phase1.ISSUE_294_REPLACEMENT_BRANCH} may not "
+        "change backend/app/issue280.py."
+    ) in failures
+    assert (
+        f"Phase 1 Closure branch {phase1.ISSUE_294_REPLACEMENT_BRANCH} must "
+        f"change {missing}."
+    ) in failures
+    assert (
+        f"Phase 1 Closure branch {phase1.ISSUE_294_REPLACEMENT_BRANCH} exceeds "
+        "its 500-line cap."
+    ) in failures
+    near_match = f"{phase1.ISSUE_294_REPLACEMENT_BRANCH}-extra"
+    assert run_changed_files_check(
+        monkeypatch, branch=near_match, files=["docs/STATUS.md"]
+    ) == [f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."]
+
+
+@pytest.mark.parametrize(("is_file", "is_symlink"), ((False, False), (True, True)))
+def test_issue294_replacement_rejects_deleted_or_symlinked_required_path(
+    monkeypatch: Any, is_file: bool, is_symlink: bool
+) -> None:
+    target = "tests/unit/test_phase1_closure_docs.py"
+    original_is_file = Path.is_file
+    original_is_symlink = Path.is_symlink
+
+    def patched_is_file(path: Path) -> bool:
+        if path == phase1.ROOT / target:
+            return is_file
+        return original_is_file(path)
+
+    def patched_is_symlink(path: Path) -> bool:
+        if path == phase1.ROOT / target:
+            return is_symlink
+        return original_is_symlink(path)
+
+    monkeypatch.setattr(Path, "is_file", patched_is_file)
+    monkeypatch.setattr(Path, "is_symlink", patched_is_symlink)
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_294_REPLACEMENT_BRANCH,
+        files=sorted(phase1.ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES),
+    )
+
+    assert failures == [
+        f"Phase 1 Closure branch {phase1.ISSUE_294_REPLACEMENT_BRANCH} must retain "
+        f"{target} as a regular file."
+    ]
 
 
 def test_issue319_fixture_provenance_fails_closed(monkeypatch: Any) -> None:

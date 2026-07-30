@@ -2120,8 +2120,9 @@ Issue `#311` is reference-only under `#8` and uses exact branch `phase-1-closure
 
 ## Issue 313 Issue #280 repair feasibility and oracle scope
 
-Issue `#313` is the controlling architecture/evaluation decision workstream for
-the still-unfixed Issue `#280`. It uses exact branch
+Issue `#300` and PR `#301` are completed historical negative containment.
+Issue `#313` and PR `#314` completed the architecture and independent-oracle
+decision. Issue `#280` remains not semantically fixed. The work used exact branch
 `phase-1-closure-process-313-issue280-repair-feasibility-oracle` and is limited
 to exactly nine paths, at most 950 charged lines, and seven surfaces:
 GovernancePreflightV1, feasibility decision, machine-readable oracle contract,
@@ -2134,8 +2135,7 @@ use caller-selected scope, or treat structural success as semantic proof.
 
 ADR `0044` selects a source-grounded semantic-frame intermediate representation
 with deterministic fail-closed local/mock renderers only as the bounded GO
-candidate for a later controlling repair issue. Runtime repair remains
-`NO_GO_UNTIL_SEPARATE_REPAIR_ISSUE`. PR `#299`, existing Issue #280 reports,
+candidate for separately controlled repair slices. PR `#299`, existing Issue #280 reports,
 the negative forensic verifier, public provenance, Issues `#280`, `#298`,
 `#300`, `#301`, and all stopped/protected evidence remain unchanged.
 
@@ -2164,6 +2164,11 @@ durability, privacy, hosting, deployment, production, and release remain
 separate work. PR #299, the negative forensic verifier, reports, screenshots,
 matrices, and Issues #280/#298/#300/#301/#313 remain untouched.
 
+Issue `#317` and PR `#318` completed the bounded Spanish `STANDARD` semantic
+slice. The Issue `#321` compatibility correction passed merged-tree acceptance
+through PR `#322`. Further product work requires a separately
+controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.
+
 ## Issue 319 agent-context architecture shadow slice 1
 
 Issue `#319` is an independent Phase 1 Closure governance controller on branch
@@ -2184,9 +2189,9 @@ authorized.
 
 ## Issue 321 Issue 317 renderer compatibility correction
 
-Issue `#321` is the single post-merge corrective controller selected by the
-repository owner after Issue `#317` acceptance found two PR `#318`
-regressions. It uses exact branch
+Issue `#321` and PR `#322` completed the renderer compatibility correction.
+The repository owner selected this narrow post-merge correction after Issue
+`#317` acceptance found two PR `#318` regressions. It used exact branch
 `phase-1-closure-321-issue317-renderer-compatibility`, exactly nine changed
 files, at most 800 charged lines, and six meaningful surfaces. Its first
 commit contains only `docs/governance/preflights/issue-321.json`.
@@ -2203,4 +2208,8 @@ The pre-existing German test/catalog drift remains reported and unmodified.
 Issue `#280` remains not fully fixed; PR `#299` and all forensic evidence remain
 protected. No broader language/depth/audience work, dependency, workflow,
 provider, database, Docker, deployment, release, public, or production change
-is authorized.
+was authorized. Any further semantic product work requires a separately
+controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.
+Before that controller is created, the Issue `#294` replacement must pass
+merged-tree acceptance, PR `#295` must close unmerged as superseded, and Issue
+`#294` must close as satisfied by the replacement.

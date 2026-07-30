@@ -8,7 +8,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 ## Version
 
-- Last updated: 2026-07-25
+- Last updated: 2026-07-30
 - Current PRD source: `docs/PRD.md` v1.0
 - Canonical source: `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
 
@@ -26,7 +26,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 | Artifact | Requirement coverage | Stage / issue | Status |
 |---|---|---|---|
-| `frontend/package.json`, `frontend/package-lock.json`, `docs/ADR/0039-frontend-brace-expansion-audit-remediation.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/STATUS.md`, `docs/TRACEABILITY.md`, `docs/THIRD_PARTY_NOTICES.md`, `scripts/quality/check_phase1_closure_docs.py`, and `tests/unit/test_phase1_closure_docs.py` | Issue `#296` security unblock: resolves the frontend npm audit blocker for transitive `brace-expansion` by pinning `minimatch` to `10.2.5` and `brace-expansion` to `5.0.8` through the frontend npm override and lockfile, while keeping the change dependency/governance-only with no product runtime behavior, backend changes, provider setup, hosted/public demo, paid spend, real media, public distribution, production-readiness claim, PR `#295` mutation, or closure of issue `#249` | Phase 1 Closure / `#296` | In progress |
+| `frontend/package.json`, `frontend/package-lock.json`, `docs/ADR/0039-frontend-brace-expansion-audit-remediation.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/STATUS.md`, `docs/TRACEABILITY.md`, `docs/THIRD_PARTY_NOTICES.md`, `scripts/quality/check_phase1_closure_docs.py`, and `tests/unit/test_phase1_closure_docs.py` | Issue `#296` security unblock: resolves the frontend npm audit blocker for transitive `brace-expansion` by pinning `minimatch` to `10.2.5` and `brace-expansion` to `5.0.8` through the frontend npm override and lockfile, while keeping the change dependency/governance-only with no product runtime behavior, backend changes, provider setup, hosted/public demo, paid spend, real media, public distribution, production-readiness claim, PR `#295` mutation, or closure of issue `#249` | Phase 1 Closure / `#296` | Completed through PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` |
 | `frontend/package.json`, `frontend/package-lock.json`, `docs/ADR/0037-postcss-audit-remediation.md`, `docs/QUALITY_GATES.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/STATUS.md`, `scripts/quality/check_stage8_docs.py`, `scripts/quality/check_phase1_closure_docs.py`, `tests/unit/test_stage8_quality_gate.py`, and `tests/unit/test_phase1_closure_docs.py` | Issue `#289` security unblock: resolves the PostCSS audit advisory by pinning PostCSS to `8.5.23` without downgrading Next, repairs inherited Stage 8 governance marker drift, and keeps the change dependency/governance-only with no product runtime behavior, provider setup, hosted/public demo, paid spend, public distribution, production-readiness claim, PR `#284` mutation, or closure of issues `#249` and `#280` | Phase 1 Closure / `#289` | In progress |
 | `docs/PRODUCT_STRATEGY.md` | Product modes, segments, value proposition, trade-offs, provider modes | Stage 1 / `#1` | Updated |
 | `docs/PRD.md` | PRD v1.0 requirements, journeys, MVP scope, safety rules, metrics | Stage 1 / `#1` | Updated |
