@@ -628,12 +628,19 @@ class Issue280LocalDemoService:
             glossary_terms=request.glossary_terms,
         )
         selected_facts = _semantic_frame_facts(facts, semantic_frame) if semantic_frame else facts
-        accepted_script_text = _render_grounded_script(
-            facts=selected_facts,
-            audience=request.audience,
-            depth=request.depth,
-            semantic_frame=semantic_frame,
-        )
+        if semantic_frame is None:
+            accepted_script_text = _render_grounded_script(
+                facts=selected_facts,
+                audience=request.audience,
+                depth=request.depth,
+            )
+        else:
+            accepted_script_text = _render_grounded_script(
+                facts=selected_facts,
+                audience=request.audience,
+                depth=request.depth,
+                semantic_frame=semantic_frame,
+            )
         proposition_ids = (
             {item.citation_index: item.proposition_id for item in semantic_frame.propositions}
             if semantic_frame
