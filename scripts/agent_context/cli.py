@@ -233,7 +233,7 @@ def _run_route(args: argparse.Namespace) -> int:
         route_findings.append(Finding("CTX.CAPSULE.PARENT_UNEXPECTED"))
     if parent_capsule is not None:
         matches = [item for item in fixture_set.get("fixtures", []) if item.get("fixtureId") == parent_capsule.get("fixtureId")]
-        if len(matches) != 1 or parent_capsule.get("parentCapsuleId") is not None:
+        if len(matches) != 1 or parent_capsule.get("parentCapsuleId") is not None or "CHILD" in str(matches[0].get("request", {}).get("role", "")):
             route_findings.append(Finding("CTX.CAPSULE.PARENT_ROUTE_INVALID"))
         else:
             parent_fixture = matches[0]

@@ -557,9 +557,10 @@ def validate_capsule(
     _, authority_findings = intersect_authority(repository_authority, issue_authority, parent_authority, authority)
     findings.extend(authority_findings)
     write_paths = _domain(authority, "allows", "writePaths")
+    external_actions = _domain(authority, "allows", "externalActions")
     mode = capsule.get("actionMode")
-    if mode == "READ_ONLY" and write_paths:
-        findings.append(_finding("CTX.MODE.READ_ONLY_WRITE"))
+    if mode == "READ_ONLY" and (write_paths or external_actions):
+        findings.append(_finding("CTX.MODE.READ_ONLY_MUTATION"))
     elif mode == "EDIT" and not write_paths:
         findings.append(_finding("CTX.MODE.EDIT_WITHOUT_WRITE"))
     elif mode == "GITHUB_MUTATION" and not _domain(authority, "allows", "externalActions"):
@@ -592,6 +593,9 @@ def validate_capsule(
     else:
         expected_binding = _task_binding(expected_fixture, expected_route)
         if any(capsule.get(field) != value for field, value in expected_binding.items()):
+            findings.append(_finding("CTX.CAPSULE.TASK_SCOPE_MISMATCH"))
+        expected_mode = "READ_ONLY" if expected_route.get("executionMode") in {"READ_ONLY", "READ_ONLY_CHILD"} else "GITHUB_MUTATION" if expected_route.get("executionMode") == "EXTERNAL_MUTATION_EXPLICIT_GRANTS" else "EDIT"
+        if mode != expected_mode:
             findings.append(_finding("CTX.CAPSULE.TASK_SCOPE_MISMATCH"))
     if any(not _list(capsule.get(field)) for field in ("claims", "requiredPaths", "selectedRuleIds")) or not capsule.get(
         "moduleHashes"
