@@ -490,6 +490,23 @@ def test_authority_layers_do_not_mirror_injected_child_reads_or_claims() -> None
     assert "docs/STATUS.md/child" not in issue["allows"]["writePaths"]
 
 
+def test_child_authority_layer_is_never_synthesized_from_issue_authority() -> None:
+    manifest = json.loads(Path("docs/agent-context/context-policy-manifest-v1.json").read_text())
+    fixtures = json.loads(Path("docs/agent-context/fixtures/routing-fixtures-v1.json").read_text())
+    scope = json.loads(Path("docs/governance/preflights/issue-319.json").read_text())
+    _, _, parent = _authority_layers(manifest, fixtures["fixtures"][7], scope)
+    assert parent is None
+
+
+def test_issue_authority_profile_must_match_preflight_path_scope() -> None:
+    manifest = json.loads(Path("docs/agent-context/context-policy-manifest-v1.json").read_text())
+    fixtures = json.loads(Path("docs/agent-context/fixtures/routing-fixtures-v1.json").read_text())
+    scope = json.loads(Path("docs/governance/preflights/issue-319.json").read_text())
+    manifest["authorityProfiles"]["issue"]["allows"]["writePaths"] = ["backend/app/example.py"]
+    with pytest.raises(ValueError, match="Issue authority does not match pinned preflight scope"):
+        _authority_layers(manifest, fixtures["fixtures"][5], scope)
+
+
 def test_receipt_requires_authorized_claims_required_reads_and_typed_budget() -> None:
     receipt = _receipt()
     receipt["claimsProved"] = ["ISSUE_317_FIXED"]
