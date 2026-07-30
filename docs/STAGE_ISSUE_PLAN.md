@@ -2163,3 +2163,21 @@ Issue #280. Further languages, depths, arbitrary approved knowledge, providers,
 durability, privacy, hosting, deployment, production, and release remain
 separate work. PR #299, the negative forensic verifier, reports, screenshots,
 matrices, and Issues #280/#298/#300/#301/#313 remain untouched.
+
+## Issue 319 agent-context architecture shadow slice 1
+
+Issue `#319` is an independent Phase 1 Closure governance controller on branch
+`phase-1-closure-process-319-agent-context-architecture-slice1`. It authorizes
+exactly the 22 paths in its first-commit GovernancePreflightV1, at most 4,200
+charged lines, and ten meaningful surfaces. The first commit is preflight only;
+independent fixtures precede behavioral RED, which precedes the standard-library
+GREEN manifest/router/capsule/receipt implementation.
+
+The slice is shadow-only. Root `AGENTS.md` and all 13 mandatory sources remain
+binding. Unknown or ambiguous tasks, missing dependencies, hash/state drift,
+authority widening, lost denies, path escape, write collision, budget overflow,
+summary substitution, untrusted authority instructions, and receipt overclaim
+fail closed when the shadow command runs. Issue `#317` correction, Issue `#280`,
+PR `#299`, product/runtime code, workflows, dependencies, providers, deployment,
+release, production, full migration, and mandatory-reading retirement are not
+authorized.

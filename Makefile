@@ -1,4 +1,4 @@
-.PHONY: quality stage0-quality stage1-quality stage2-quality stage3-quality stage4-quality stage5-quality stage6-quality stage7-quality stage8-quality final-review-quality phase1-closure-quality checkpoint3-acceptance issue280-output-correctness lint typecheck test api-test ui-test e2e eval security ci secrets-scan security-scan dependency-audit container-scan backend-lint backend-test frontend-build frontend-smoke frontend-lighthouse docker-build docker-image-scan eval-smoke performance-smoke
+.PHONY: quality stage0-quality stage1-quality stage2-quality stage3-quality stage4-quality stage5-quality stage6-quality stage7-quality stage8-quality final-review-quality phase1-closure-quality agent-context-quality checkpoint3-acceptance issue280-output-correctness lint typecheck test api-test ui-test e2e eval security ci secrets-scan security-scan dependency-audit container-scan backend-lint backend-test frontend-build frontend-smoke frontend-lighthouse docker-build docker-image-scan eval-smoke performance-smoke
 
 export UV_CACHE_DIR ?= .uv-cache
 
@@ -123,6 +123,10 @@ final-review-quality:
 phase1-closure-quality:
 	python3 scripts/quality/check_recommended_review_items.py "Phase 1 Closure"
 	python3 scripts/quality/check_phase1_closure_docs.py
+
+agent-context-quality:
+	python3 -m scripts.agent_context.cli validate --commit WORKTREE
+	uv run pytest tests/unit/test_agent_context_contracts.py tests/unit/test_agent_context_security.py tests/acceptance/test_agent_context_routing.py
 
 checkpoint3-acceptance:
 	python3 scripts/quality/check_checkpoint3_acceptance.py

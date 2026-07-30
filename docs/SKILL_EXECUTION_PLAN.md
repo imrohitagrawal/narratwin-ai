@@ -169,3 +169,20 @@ semantic claim or exceed the bounded local/mock surface. No dependency or skill
 installation is needed. Human review remains mandatory for bilingual meaning,
 non-cosmetic audience emphasis, citation truth, oracle/runtime independence,
 claim boundaries, and merge wording.
+
+## Issue 319 agent-context shadow slice
+
+Issue `#319` uses context engineering, specification-driven development, TDD,
+API/interface design, ADR documentation, security/hardening, code review,
+incremental implementation, Git workflow, GitHub workflow guidance, and task
+breakdown. They changed the work by separating authority from progressive
+context, freezing independent fixtures, requiring 50 behavioral RED failures,
+typing path/action/claim/decision planes, using deny-by-default boundaries, and
+preserving exact-head review/closeout. Evidence is the commits, hashes, tests,
+packets, receipts, budgets, gates, and independent review—not invocation.
+
+Frontend/backend product implementation, RAG, providers, performance,
+observability, shipping, deployment, deprecation/migration, custom skills,
+hosted models, model judges, databases, new dependencies, and workflows are
+rejected as wrong-surface, premature, circular, or outside the frozen shadow
+authority. Root mandatory reading and human approval remain unchanged.
