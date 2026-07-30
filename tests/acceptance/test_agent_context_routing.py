@@ -232,3 +232,4 @@ def test_emitted_capsule_records_inherited_repository_denies() -> None:
     inherited = set(manifest["authorityProfiles"]["repository"]["denies"]["reservedDecisions"])
     recorded = set(payload["taskCapsule"]["authority"]["denies"]["reservedDecisions"])
     assert inherited <= recorded
+    assert payload["taskCapsule"]["budgets"]["actualLines"] == len(json.dumps(payload["taskCapsule"], indent=2, sort_keys=True).splitlines())
