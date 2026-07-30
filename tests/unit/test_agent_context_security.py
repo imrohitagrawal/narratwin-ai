@@ -132,13 +132,14 @@ def test_prefix_parallel_write_sets_collide() -> None:
     assert "CTX.WRITESET.COLLISION" in _codes(detect_write_set_collisions(capsules))
 
 
-@pytest.mark.parametrize(("mode", "expected"), [("READ_ONLY", "CTX.MODE.READ_ONLY_WRITE"),
+@pytest.mark.parametrize(("mode", "expected"), [("READ_ONLY", "CTX.MODE.READ_ONLY_MUTATION"),
                          ("EDIT", "CTX.MODE.EDIT_WITHOUT_WRITE"),
                          ("GITHUB_MUTATION", "CTX.MODE.GITHUB_WITHOUT_EXTERNAL")])
 def test_action_mode_matches_typed_grants(mode: str, expected: str) -> None:
     capsule = _capsule(mode=mode)
     if mode == "READ_ONLY":
         capsule["authority"]["allows"]["writePaths"] = ["docs/STATUS.md"]
+        capsule["authority"]["allows"]["externalActions"] = ["GITHUB_MUTATION"]
     findings = validate_capsule(
         capsule,
         repository_authority=_authority(),
