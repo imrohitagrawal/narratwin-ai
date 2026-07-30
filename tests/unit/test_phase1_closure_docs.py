@@ -2912,6 +2912,50 @@ def test_status_state_v1_contract_rejects_status_overclaim() -> None:
     assert "SSV1.STATE.INVALID" in phase1.status_state_v1_findings(mutated)
 
 
+def test_issue294_replacement_records_the_post322_live_ledger() -> None:
+    status = Path("docs/STATUS.md").read_text(encoding="utf-8")
+    stage = Path("docs/STAGE_ISSUE_PLAN.md").read_text(encoding="utf-8")
+    traceability = Path("docs/TRACEABILITY.md").read_text(encoding="utf-8")
+    normalized_status = re.sub(r"\s+", " ", status)
+    normalized_stage = re.sub(r"\s+", " ", stage)
+
+    for marker in (
+        "| `#296` | Closed | Frontend brace-expansion audit unblock | Completed through merged PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1`",
+        "| `#317` | Closed | Issue #280 semantic repair slice 1 | Completed through merged PR `#318` at `c293b4a62a5afdaf893af83f3f23efd65f11b950`",
+        "| `#321` | Closed | Issue #317 renderer compatibility correction | Completed through merged PR `#322` at `704c5b9536c62e29ba7fd74c7344d067770c728e`",
+        "Issue #298 remains open as the semantic multilingual gap tracker.",
+        "PR #299 remains immutable open forensic evidence at head `f93653e8a11e697c88766b207fb01c18662339d6`",
+        "The next product action requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.",
+    ):
+        assert marker in normalized_status
+
+    for stale in (
+        "Issue `#300` is the active negative-forensic-only reset",
+        "Issue `#317` remains open",
+        "Once Issue #321's reviewed correction merges",
+        "Until merge, this is an intended target state",
+        "Close only after the reviewed correction merges",
+        "Do not select a correction without the reserved owner decision",
+    ):
+        assert stale not in status
+
+    for marker in (
+        "Issue `#300` and PR `#301` are completed historical negative containment.",
+        "Issue `#313` and PR `#314` completed the architecture and independent-oracle decision.",
+        "Issue `#317` and PR `#318` completed the bounded Spanish `STANDARD` semantic slice.",
+        "Issue `#321` and PR `#322` completed the renderer compatibility correction.",
+        "Further product work requires a separately controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.",
+    ):
+        assert marker in normalized_stage
+    assert "Issue `#321` is the single post-merge corrective controller selected" not in stage
+
+    assert (
+        "| Phase 1 Closure / `#296` | Completed through PR `#297` at "
+        "`cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` |"
+    ) in traceability
+    assert "| Phase 1 Closure / `#296` | In progress |" not in traceability
+
+
 def test_post_pr250_status_reconciliation_is_recorded() -> None:
     status_text = Path("docs/STATUS.md").read_text(encoding="utf-8")
     normalized_status = re.sub(r"\s+", " ", status_text)
@@ -3555,6 +3599,63 @@ def test_issue321_scope_and_budget_fail_closed(monkeypatch: Any) -> None:
         f"Phase 1 Closure branch {phase1.ISSUE_321_BRANCH} exceeds its 800-line cap."
     ) in failures
     near_match = f"{phase1.ISSUE_321_BRANCH}-extra"
+    assert run_changed_files_check(
+        monkeypatch, branch=near_match, files=["docs/STATUS.md"]
+    ) == [f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."]
+
+
+def test_issue294_replacement_scope_budget_and_surfaces_are_exact(
+    monkeypatch: Any,
+) -> None:
+    expected = {
+        "docs/governance/preflights/issue-294.json",
+        "docs/STATUS.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+    assert phase1.ISSUE_294_REPLACEMENT_BRANCH == (
+        "phase-1-closure-process-294-post-322-ledger-replacement"
+    )
+    assert phase1.ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES == expected
+    assert phase1.ISSUE_294_REPLACEMENT_LINE_CAP == 500
+    assert len(phase1.ISSUE_294_REPLACEMENT_MEANINGFUL_SURFACES) == 4
+    assert set().union(
+        *phase1.ISSUE_294_REPLACEMENT_MEANINGFUL_SURFACES.values()
+    ) == expected
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 500)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_294_REPLACEMENT_BRANCH,
+        files=sorted(expected),
+    ) == []
+
+
+def test_issue294_replacement_scope_and_budget_fail_closed(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 501)
+    missing = sorted(phase1.ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES)[0]
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_294_REPLACEMENT_BRANCH,
+        files=sorted(phase1.ISSUE_294_REPLACEMENT_ALLOWED_CHANGED_FILES - {missing})
+        + ["backend/app/issue280.py"],
+    )
+    assert (
+        f"Phase 1 Closure branch {phase1.ISSUE_294_REPLACEMENT_BRANCH} may not "
+        "change backend/app/issue280.py."
+    ) in failures
+    assert (
+        f"Phase 1 Closure branch {phase1.ISSUE_294_REPLACEMENT_BRANCH} must "
+        f"change {missing}."
+    ) in failures
+    assert (
+        f"Phase 1 Closure branch {phase1.ISSUE_294_REPLACEMENT_BRANCH} exceeds "
+        "its 500-line cap."
+    ) in failures
+    near_match = f"{phase1.ISSUE_294_REPLACEMENT_BRANCH}-extra"
     assert run_changed_files_check(
         monkeypatch, branch=near_match, files=["docs/STATUS.md"]
     ) == [f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."]
