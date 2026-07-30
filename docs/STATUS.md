@@ -826,8 +826,8 @@ Use these files together with this tracker:
    negative-containment evidence. Issue #313 and PR #314 completed the
    architecture/oracle decision. Issues #317/#321 and PRs #318/#322 completed
    only the bounded Spanish `STANDARD` semantic slice and its compatibility
-   correction. Issue #319 remains an independent completed governance-only
-   context shadow slice. Issue #280 remains not semantically fixed, Issue #298
+   correction. Issue #319 remains an independent governance-only context shadow
+   slice. Issue #280 remains not semantically fixed, Issue #298
    remains open, PR #299 and existing forensic evidence remain unchanged, and
    issue `#249` remains open. Further product work requires a separately
    controlled, repository-owner-authorized Slice 2 issue, branch, and pull
