@@ -32,6 +32,7 @@ def valid_observations(manifest: dict[str, Any]) -> dict[str, Any]:
             context_id = f"context-{proposition_id}"
             segments.append(
                 {
+                    "propositionId": proposition_id,
                     "sourceText": proposition["sourceText"],
                     "targetText": f"{proposition['targetClause']} [{proposition['citationIndex']}].",
                     "citationIndexes": [proposition["citationIndex"]],
@@ -102,7 +103,10 @@ def test_oracle_computes_semantic_pass_for_all_mandatory_rows(
     ],
 )
 def test_oracle_rejects_semantic_and_surface_false_passes(
-    manifest: dict[str, Any], valid_observations: dict[str, Any], mutation: str, failure_fragment: str
+    manifest: dict[str, Any],
+    valid_observations: dict[str, Any],
+    mutation: str,
+    failure_fragment: str,
 ) -> None:
     observations = copy.deepcopy(valid_observations)
     row = observations["rows"][0]
@@ -130,7 +134,9 @@ def test_oracle_rejects_semantic_and_surface_false_passes(
         row["artifactSegments"][0]["citationIndexes"] = [9]
     elif mutation == "glossary-loss":
         for surface in (row["apiSegments"], row["artifactSegments"]):
-            surface[0]["targetText"] = surface[0]["targetText"].replace("NarraTwin", "la plataforma")
+            surface[0]["targetText"] = surface[0]["targetText"].replace(
+                "NarraTwin", "la plataforma"
+            )
         row["visibleTargetTexts"][0] = row["apiSegments"][0]["targetText"]
         row["artifactScriptText"] = "\n".join(row["visibleTargetTexts"])
     elif mutation == "english-fallback":
@@ -169,7 +175,9 @@ def test_oracle_rejects_identical_and_prefix_only_audience_bodies(
         row["visibleTargetTexts"] = [prefix + text for text in row["visibleTargetTexts"]]
         row["apiSegments"] = copy.deepcopy(first["apiSegments"])
         row["artifactSegments"] = copy.deepcopy(row["apiSegments"])
-        row["artifactScriptText"] = "\n".join(row["apiSegments"][item]["targetText"] for item in range(3))
+        row["artifactScriptText"] = "\n".join(
+            row["apiSegments"][item]["targetText"] for item in range(3)
+        )
     assert evaluate(manifest, prefix_only).classification == "FAILED"
 
 
@@ -208,4 +216,3 @@ def test_runtime_and_oracle_sources_cannot_import_each_other() -> None:
     assert "issue280_semantic_repair_slice1.json" not in runtime
     assert "issue280_semantic_oracle" not in runtime
     assert "backend.app.issue280" not in oracle
-

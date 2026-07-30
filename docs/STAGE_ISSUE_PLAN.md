@@ -2138,3 +2138,28 @@ candidate for a later controlling repair issue. Runtime repair remains
 `NO_GO_UNTIL_SEPARATE_REPAIR_ISSUE`. PR `#299`, existing Issue #280 reports,
 the negative forensic verifier, public provenance, Issues `#280`, `#298`,
 `#300`, `#301`, and all stopped/protected evidence remain unchanged.
+
+## Issue 317 Issue #280 semantic repair slice 1 scope
+
+Issue `#317` is the separate implementation controller required by Issue #313.
+It authorizes one source-grounded deterministic cohort only: the identical
+repository-owned synthetic source, Spanish, `STANDARD` depth, and all seven
+existing audiences. Two essential propositions and one audience-required
+emphasis must appear per row with immutable proposition IDs, exact source and
+citation bindings, glossary preservation, replayed storage, artifact parity,
+and browser-visible output. Every mandatory threshold is exact; there is no
+weighted or partial pass.
+
+The branch is `phase-1-closure-317-issue280-semantic-repair-slice1`. Its exact
+18-path, 3,000-charged-line, ten-surface envelope is frozen in
+`docs/governance/preflights/issue-317.json` and enforced by the Phase 1 checker.
+The proposition manifest was authored and committed before runtime GREEN; the
+oracle does not import runtime, and runtime does not import the manifest or
+oracle. Altered/partial fixture semantics, non-Spanish language, and
+non-`STANDARD` depth refuse.
+
+The slice relieves one product-faithful demo dependency but does not close
+Issue #280. Further languages, depths, arbitrary approved knowledge, providers,
+durability, privacy, hosting, deployment, production, and release remain
+separate work. PR #299, the negative forensic verifier, reports, screenshots,
+matrices, and Issues #280/#298/#300/#301/#313 remain untouched.

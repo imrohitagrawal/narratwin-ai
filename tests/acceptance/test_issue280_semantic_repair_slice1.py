@@ -25,7 +25,13 @@ def reset_state() -> None:
     reset_app_state_for_tests()
 
 
-def request_body(*, audience: str, target_language: str = "es", depth: str = "STANDARD", markdown: str | None = None) -> dict[str, Any]:
+def request_body(
+    *,
+    audience: str,
+    target_language: str = "es",
+    depth: str = "STANDARD",
+    markdown: str | None = None,
+) -> dict[str, Any]:
     return {
         "documents": [
             {
@@ -51,9 +57,13 @@ def post(body: dict[str, Any], key: str) -> dict[str, Any]:
     return cast(dict[str, Any], response.json())
 
 
-def observation(row: dict[str, Any], response: dict[str, Any], replay: dict[str, Any]) -> dict[str, Any]:
+def observation(
+    row: dict[str, Any], response: dict[str, Any], replay: dict[str, Any]
+) -> dict[str, Any]:
     metadata = json.loads(decode(response["artifacts"]["transcriptMetadata"]))
     script = decode(response["artifacts"]["translatedScript"])
+    api_segments = oracle_segments(response["multilingual"]["segments"])
+    artifact_segments = oracle_segments(metadata["segments"])
     return {
         "rowId": row["rowId"],
         "audience": response["request"]["audience"],
@@ -62,15 +72,40 @@ def observation(row: dict[str, Any], response: dict[str, Any], replay: dict[str,
         "runId": response["multilingual"]["multilingualRunId"],
         "outputId": response["storage"]["outputId"],
         "sourceChecksum": response["retrieval"]["contextRefs"][0]["sourceChecksum"],
-        "apiSegments": response["multilingual"]["segments"],
-        "visibleTargetTexts": [segment["targetText"] for segment in response["multilingual"]["segments"]],
+        "apiSegments": api_segments,
+        "visibleTargetTexts": [
+            segment["targetText"] for segment in response["multilingual"]["segments"]
+        ],
         "artifactScriptText": script,
-        "artifactSegments": metadata["segments"],
-        "claimSupports": response["evaluation"]["claimSupports"],
+        "artifactSegments": artifact_segments,
+        "claimSupports": oracle_supports(response["evaluation"]["claimSupports"]),
         "unsupportedClaimCount": response["evaluation"]["unsupportedClaimCount"],
         "stored": response["storage"]["stored"],
         "replayed": replay["session"]["replayed"],
     }
+
+
+def oracle_segments(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    keys = {
+        "propositionId",
+        "sourceText",
+        "targetText",
+        "citationIndexes",
+        "contextRefIds",
+        "claimSupportIds",
+    }
+    return [{key: segment[key] for key in keys} for segment in segments]
+
+
+def oracle_supports(supports: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    keys = {
+        "claimSupportId",
+        "propositionId",
+        "supportStatus",
+        "contextRefId",
+        "citationIndex",
+    }
+    return [{key: support[key] for key in keys} for support in supports]
 
 
 def test_current_runtime_red_reproduces_visible_target_audience_collapse() -> None:
@@ -95,10 +130,12 @@ def test_current_runtime_red_requires_semantic_frame_and_oracle_pass() -> None:
         response = post(request_body(audience=row["audience"]), key)
         replay = post(request_body(audience=row["audience"]), key)
         assert response["generated"]["semanticFrameVersion"] == "Issue280SemanticFrameV1"
-        assert [segment["propositionId"] for segment in response["multilingual"]["segments"]] == row[
-            "requiredPropositionIds"
-        ]
-        target_bodies.add(tuple(segment["targetText"] for segment in response["multilingual"]["segments"]))
+        assert [
+            segment["propositionId"] for segment in response["multilingual"]["segments"]
+        ] == row["requiredPropositionIds"]
+        target_bodies.add(
+            tuple(segment["targetText"] for segment in response["multilingual"]["segments"])
+        )
         observations.append(observation(row, response, replay))
 
     assert len(target_bodies) == 7
@@ -114,7 +151,9 @@ def test_current_runtime_red_requires_semantic_frame_and_oracle_pass() -> None:
     ("override", "value"),
     [("targetLanguage", "hi"), ("depth", "DEEP")],
 )
-def test_semantic_repair_slice_refuses_unsupported_language_and_depth(override: str, value: str) -> None:
+def test_semantic_repair_slice_refuses_unsupported_language_and_depth(
+    override: str, value: str
+) -> None:
     body = request_body(audience="ENGINEER")
     body[override] = value
     response = TestClient(app).post(
@@ -128,7 +167,10 @@ def test_semantic_repair_slice_refuses_unsupported_language_and_depth(override: 
 
 
 def test_semantic_repair_slice_refuses_unsupported_clause_instead_of_false_success() -> None:
-    markdown = MANIFEST["fixture"]["markdown"] + "\n## Unsupported\n\nThe product predicts revenue growth.\n"
+    markdown = (
+        MANIFEST["fixture"]["markdown"]
+        + "\n## Unsupported\n\nThe product predicts revenue growth.\n"
+    )
     response = TestClient(app).post(
         PATH,
         json=request_body(audience="CUSTOMER", markdown=markdown),

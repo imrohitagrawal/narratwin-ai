@@ -878,3 +878,29 @@ Issue `#308` directly authorizes a post-Checkpoint-B local/mock curated reviewer
 `scripts/ci/heartbeat2_evidence.py` must fail closed on stale identity, malformed provenance, any skipped/non-passing result, malformed ledgers, request/response mismatch, non-local trace traffic, source drift, broken product joins, artifact mismatch, unsafe archive, or forbidden material. `SEMANTIC_PASS_LOCAL` is not execution evidence. CI acceptance additionally requires exact-head checkout, zero-exit runner execution, `CI_EXECUTION_BOUND`, success-only upload, and post-run artifact/workflow metadata reconciliation. PR B remains blocked until PR A is approved at exact head, merged, and verified.
 
 Both PRs require behavioral RED before GREEN, exact branch/allowlist checks, focused regressions, guardrails, `make quality`, required CI/security gates, and eligible non-author exact-head approval. Evidence upload is success-only; providers, real media, deployment, hosting, production claims, private data, and Q&A remain absent.
+
+## Issue 317 semantic repair slice 1 gates
+
+Issue `#317` uses exact branch
+`phase-1-closure-317-issue280-semantic-repair-slice1`, exactly 18 changed paths,
+at most 3,000 charged lines, and ten meaningful surfaces. The Phase 1 checker
+fails closed for missing, extra, near-match, over-budget, or binary scope.
+
+Required focused evidence is:
+
+```bash
+uv run pytest -p no:cacheprovider tests/unit/test_issue280_semantic_oracle.py tests/acceptance/test_issue280_semantic_repair_slice1.py
+uv run pytest -p no:cacheprovider tests/contract/test_issue280_ui_api_artifact_parity.py tests/acceptance/test_issue280_pr_e_closure.py
+npm --prefix frontend exec playwright test -- --config=playwright.issue280.config.ts --project=issue280-desktop --grep "seven distinct Spanish"
+uv run pytest -p no:cacheprovider tests/unit/test_phase1_closure_docs.py
+```
+
+The first command must prove every zero-tolerance semantic threshold over all
+seven mandatory rows and reject all frozen false-pass mutations. Browser
+evidence must use the real Next-to-backend path without interception. Full
+validation additionally requires repository guardrails, `make quality`, lint,
+typing, `make ci`, security, dependency audit, container scan, secrets scan,
+evaluation, and a forced pull-request-event guardrails run against the final PR
+body. The negative `make issue280-output-correctness` command remains
+intentionally nonzero historical evidence and is not converted into a green
+runtime gate.

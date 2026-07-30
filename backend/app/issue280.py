@@ -14,7 +14,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from backend.app.rag.chunking import checksum_text
 from backend.app.stage6 import LANGUAGE_CATALOG_BY_TAG, LanguageCatalogRecord
-from backend.app.stage4 import contains_prompt_injection, contains_secret_like_content, normalize_content_type
+from backend.app.stage4 import (
+    contains_prompt_injection,
+    contains_secret_like_content,
+    normalize_content_type,
+)
 
 ISSUE280_INPUT_CONTRACT_PATH = "/api/v1/checkpoint3/issue280/input-contract"
 ISSUE280_LOCAL_E2E_DEMO_PATH = "/api/v1/checkpoint3/issue280/local-e2e-demo"
@@ -152,7 +156,15 @@ class Issue280InputContractRequest(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
 
     documents: list[Issue280DocumentInput]
-    audience: Literal["RECRUITER", "HIRING_MANAGER", "ENGINEER", "PRODUCT_LEADER", "CUSTOMER", "BEGINNER", "GLOBAL_VIEWER"]
+    audience: Literal[
+        "RECRUITER",
+        "HIRING_MANAGER",
+        "ENGINEER",
+        "PRODUCT_LEADER",
+        "CUSTOMER",
+        "BEGINNER",
+        "GLOBAL_VIEWER",
+    ]
     depth: Literal["CONCISE", "STANDARD", "DEEP"]
     target_language: str = Field(alias="targetLanguage")
     glossary_terms: list[str] = Field(default_factory=list, alias="glossaryTerms")
@@ -211,8 +223,12 @@ class Issue280TraceResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     request_id: str = Field(alias="requestId")
-    evidence_level: Literal["input-api-error-contract", "local-e2e-demo"] = Field(alias="evidenceLevel")
-    runtime_provider_mode: Literal["LOCAL_MOCK_DISABLED_EXTERNAL"] = Field(alias="runtimeProviderMode")
+    evidence_level: Literal["input-api-error-contract", "local-e2e-demo"] = Field(
+        alias="evidenceLevel"
+    )
+    runtime_provider_mode: Literal["LOCAL_MOCK_DISABLED_EXTERNAL"] = Field(
+        alias="runtimeProviderMode"
+    )
 
 
 class Issue280InputContractResponse(BaseModel):
@@ -264,12 +280,16 @@ class Issue280LocalDemoGeneratedResponse(BaseModel):
     accepted_script_text: str = Field(alias="acceptedScriptText")
     source_language: Literal["en"] = Field(alias="sourceLanguage")
     generation_mode: Literal["LOCAL_MOCK_DETERMINISTIC"] = Field(alias="generationMode")
+    semantic_frame_version: Literal["Issue280SemanticFrameV1"] | None = Field(
+        default=None, alias="semanticFrameVersion"
+    )
 
 
 class Issue280LocalDemoTranscriptSegmentResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     segment_id: str = Field(alias="segmentId")
+    proposition_id: str | None = Field(default=None, alias="propositionId")
     source_text: str = Field(alias="sourceText")
     target_text: str = Field(alias="targetText")
     english_reference_text: str = Field(alias="englishReferenceText")
@@ -294,6 +314,7 @@ class Issue280LocalDemoClaimSupportResponse(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     claim_support_id: str = Field(alias="claimSupportId")
+    proposition_id: str | None = Field(default=None, alias="propositionId")
     claim_text: str = Field(alias="claimText")
     support_status: Literal["SUPPORTED"] = Field(alias="supportStatus")
     context_ref_id: str = Field(alias="contextRefId")
@@ -376,6 +397,118 @@ class Issue280GroundedFact:
 
 
 @dataclass(frozen=True)
+class Issue280SemanticProposition:
+    proposition_id: str
+    source_text: str
+    target_clause: str
+    citation_index: int
+    essential: bool
+    audience: str | None
+    depth_roles: tuple[str, ...]
+    glossary_terms: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Issue280SemanticFrame:
+    version: Literal["Issue280SemanticFrameV1"]
+    propositions: tuple[Issue280SemanticProposition, ...]
+
+
+_SEMANTIC_PROPOSITIONS = (
+    Issue280SemanticProposition(
+        "P-ESS-01",
+        "NarraTwin converts approved project knowledge into grounded walkthroughs with citations",
+        "NarraTwin convierte conocimiento aprobado del proyecto en recorridos fundamentados con citas",
+        1,
+        True,
+        None,
+        ("STANDARD",),
+        ("NarraTwin",),
+    ),
+    Issue280SemanticProposition(
+        "P-ESS-02",
+        "The local mock workflow refuses unsupported claims before storing output",
+        "El flujo simulado local rechaza afirmaciones no respaldadas antes de guardar el resultado",
+        2,
+        True,
+        None,
+        ("STANDARD",),
+        (),
+    ),
+    Issue280SemanticProposition(
+        "P-AUD-REC",
+        "Recruiters review role relevance and concise hiring evidence",
+        "Para reclutadores, destaca la relevancia para el puesto y evidencia concisa de contratación",
+        3,
+        False,
+        "RECRUITER",
+        ("STANDARD",),
+        (),
+    ),
+    Issue280SemanticProposition(
+        "P-AUD-HM",
+        "Hiring managers review delivery ownership and execution confidence",
+        "Para responsables de contratación, destaca la responsabilidad de entrega y la confianza de ejecución",
+        4,
+        False,
+        "HIRING_MANAGER",
+        ("STANDARD",),
+        (),
+    ),
+    Issue280SemanticProposition(
+        "P-AUD-ENG",
+        "Engineers review source bindings, deterministic behavior, and technical tradeoffs",
+        "Para ingeniería, destaca los vínculos de fuente, el comportamiento determinista y las compensaciones técnicas",
+        5,
+        False,
+        "ENGINEER",
+        ("STANDARD",),
+        (),
+    ),
+    Issue280SemanticProposition(
+        "P-AUD-PROD",
+        "Product leaders review user outcomes, adoption signals, and roadmap decisions",
+        "Para líderes de producto, destaca resultados de usuario, señales de adopción y decisiones de hoja de ruta",
+        6,
+        False,
+        "PRODUCT_LEADER",
+        ("STANDARD",),
+        (),
+    ),
+    Issue280SemanticProposition(
+        "P-AUD-CUST",
+        "Customers review practical value, trustworthy evidence, and expected results",
+        "Para clientes, destaca el valor práctico, la evidencia confiable y los resultados esperados",
+        7,
+        False,
+        "CUSTOMER",
+        ("STANDARD",),
+        (),
+    ),
+    Issue280SemanticProposition(
+        "P-AUD-BEG",
+        "Beginners receive plain-language orientation and a clear next step",
+        "Para principiantes, ofrece orientación en lenguaje claro y un siguiente paso definido",
+        8,
+        False,
+        "BEGINNER",
+        ("STANDARD",),
+        (),
+    ),
+    Issue280SemanticProposition(
+        "P-AUD-GLOB",
+        "Global viewers receive culturally neutral context and glossary-preserved terminology",
+        "Para audiencias globales, ofrece contexto culturalmente neutral y terminología preservada del glosario",
+        9,
+        False,
+        "GLOBAL_VIEWER",
+        ("STANDARD",),
+        (),
+    ),
+)
+
+
+@dataclass(frozen=True)
 class Issue280StoredLocalDemo:
     request_checksum: str
     response: Issue280LocalE2EDemoResponse
@@ -406,7 +539,9 @@ def issue280_local_e2e_trace_response(request_id: str) -> Issue280TraceResponse:
     )
 
 
-def validate_issue280_input_contract(request: Issue280InputContractRequest) -> Issue280InputContractResponse:
+def validate_issue280_input_contract(
+    request: Issue280InputContractRequest,
+) -> Issue280InputContractResponse:
     documents = _validate_documents(request.documents)
     _validate_glossary(request.glossary_terms)
     return Issue280InputContractResponse(
@@ -473,16 +608,42 @@ class Issue280LocalDemoService:
         request_checksum = checksum_text(request.model_dump_json(by_alias=True))
         replay_key = (idempotency_key or "").strip()
         if not replay_key:
-            raise Issue280ContractError("ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "idempotencyKey")
+            raise Issue280ContractError(
+                "ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "idempotencyKey"
+            )
         stored = self._idempotency.get(replay_key)
         if stored is not None:
             if stored.request_checksum != request_checksum:
-                raise Issue280ContractError("ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "idempotencyKey")
+                raise Issue280ContractError(
+                    "ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "idempotencyKey"
+                )
             return _copy_response_for_request(stored.response, request_id=request_id, replayed=True)
 
         facts = _extract_grounded_facts(request)
-        accepted_script_text = _render_grounded_script(facts=facts, audience=request.audience, depth=request.depth)
-        claim_supports = _evaluate_supported_claims(accepted_script_text, facts)
+        semantic_frame = _compile_semantic_frame(
+            facts=facts,
+            audience=request.audience,
+            depth=request.depth,
+            target_language=target_language,
+            glossary_terms=request.glossary_terms,
+        )
+        selected_facts = _semantic_frame_facts(facts, semantic_frame) if semantic_frame else facts
+        accepted_script_text = _render_grounded_script(
+            facts=selected_facts,
+            audience=request.audience,
+            depth=request.depth,
+            semantic_frame=semantic_frame,
+        )
+        proposition_ids = (
+            {item.citation_index: item.proposition_id for item in semantic_frame.propositions}
+            if semantic_frame
+            else {}
+        )
+        claim_supports = _evaluate_supported_claims(
+            accepted_script_text,
+            selected_facts,
+            proposition_ids=proposition_ids,
+        )
         if len(claim_supports) == 0:
             raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "generatedClaims")
         multilingual = _build_multilingual_response(
@@ -491,6 +652,7 @@ class Issue280LocalDemoService:
             target_language=target_language,
             target_record=target_record,
             glossary_terms=request.glossary_terms,
+            semantic_frame=semantic_frame,
         )
         evaluation_checksum = _evaluation_checksum(claim_supports)
         output_checksum = checksum_text(
@@ -498,8 +660,12 @@ class Issue280LocalDemoService:
                 {
                     "script": accepted_script_text,
                     "targetLanguage": target_language,
-                    "segments": [segment.model_dump(by_alias=True) for segment in multilingual.segments],
-                    "claimSupports": [support.model_dump(by_alias=True) for support in claim_supports],
+                    "segments": [
+                        segment.model_dump(by_alias=True) for segment in multilingual.segments
+                    ],
+                    "claimSupports": [
+                        support.model_dump(by_alias=True) for support in claim_supports
+                    ],
                 },
                 sort_keys=True,
             )
@@ -581,6 +747,7 @@ class Issue280LocalDemoService:
                 acceptedScriptText=accepted_script_text,
                 sourceLanguage="en",
                 generationMode="LOCAL_MOCK_DETERMINISTIC",
+                semanticFrameVersion=semantic_frame.version if semantic_frame else None,
             ),
             multilingual=multilingual,
             evaluation=evaluation,
@@ -597,7 +764,9 @@ class Issue280LocalDemoService:
             providerPosture=input_summary.provider_posture,
             trace=issue280_local_e2e_trace_response(request_id),
         )
-        stored_response = Issue280StoredLocalDemo(request_checksum=request_checksum, response=response)
+        stored_response = Issue280StoredLocalDemo(
+            request_checksum=request_checksum, response=response
+        )
         self._stored_outputs[output_id] = stored_response
         self._idempotency[replay_key] = stored_response
         return response
@@ -617,13 +786,17 @@ def _copy_response_for_request(
     )
 
 
-def _extract_grounded_facts(request: Issue280InputContractRequest) -> tuple[Issue280GroundedFact, ...]:
+def _extract_grounded_facts(
+    request: Issue280InputContractRequest,
+) -> tuple[Issue280GroundedFact, ...]:
     facts: list[Issue280GroundedFact] = []
     for document_index, document in enumerate(request.documents, start=1):
         normalized_markdown = document.markdown.replace("\r\n", "\n").replace("\r", "\n")
         document_id = f"issue280_doc_{document_index:03d}"
         source_checksum = checksum_text(normalized_markdown)
-        for fact_index, (heading, fact_text) in enumerate(_iter_markdown_facts(normalized_markdown), start=1):
+        for fact_index, (heading, fact_text) in enumerate(
+            _iter_markdown_facts(normalized_markdown), start=1
+        ):
             chunk_id = f"issue280_chunk_{document_index:03d}_{fact_index:03d}"
             fact_checksum = checksum_text(fact_text)
             citation_index = len(facts) + 1
@@ -632,7 +805,8 @@ def _extract_grounded_facts(request: Issue280InputContractRequest) -> tuple[Issu
                     fact_id=f"issue280_fact_{citation_index:03d}",
                     document_id=document_id,
                     chunk_id=chunk_id,
-                    context_ref_id="issue280_ctx_" + checksum_text(f"{chunk_id}:{fact_checksum}")[:16],
+                    context_ref_id="issue280_ctx_"
+                    + checksum_text(f"{chunk_id}:{fact_checksum}")[:16],
                     source_checksum=source_checksum,
                     fact_checksum=fact_checksum,
                     section_heading=heading,
@@ -666,18 +840,69 @@ def _iter_markdown_facts(markdown: str) -> tuple[tuple[str, str], ...]:
         facts.extend(_body_lines_to_facts(current_heading, current_body))
     if facts:
         return tuple(facts)
-    return tuple((heading, f"Section {heading} is present in the approved synthetic knowledge") for heading in headings)
+    return tuple(
+        (heading, f"Section {heading} is present in the approved synthetic knowledge")
+        for heading in headings
+    )
 
 
 def _body_lines_to_facts(heading: str, body: list[str]) -> list[tuple[str, str]]:
     combined = " ".join(" ".join(line.split()) for line in body)
     if not combined:
         return []
-    sentences = [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", combined) if sentence.strip()]
-    return [(heading, sentence.rstrip(".")) for sentence in sentences[:3]]
+    sentences = [
+        sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", combined) if sentence.strip()
+    ]
+    return [
+        (heading, sentence.rstrip(".")) for sentence in sentences[:ISSUE280_MAX_TRANSCRIPT_SEGMENTS]
+    ]
 
 
-def _render_grounded_script(*, facts: tuple[Issue280GroundedFact, ...], audience: str, depth: str) -> str:
+def _compile_semantic_frame(
+    *,
+    facts: tuple[Issue280GroundedFact, ...],
+    audience: str,
+    depth: str,
+    target_language: str,
+    glossary_terms: list[str],
+) -> Issue280SemanticFrame | None:
+    expected_sources = {item.source_text for item in _SEMANTIC_PROPOSITIONS}
+    actual_sources = [fact.fact_text for fact in facts]
+    if not (set(actual_sources) & expected_sources):
+        return None
+    if (
+        len(actual_sources) != len(expected_sources)
+        or set(actual_sources) != expected_sources
+        or target_language != "es"
+        or depth != "STANDARD"
+        or "NarraTwin" not in _preserved_glossary_terms(glossary_terms)
+    ):
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "semanticCoverage")
+    selected = tuple(
+        item for item in _SEMANTIC_PROPOSITIONS if item.essential or item.audience == audience
+    )
+    if len(selected) != 3 or any(depth not in item.depth_roles for item in selected):
+        raise Issue280ContractError("ISSUE280_TRANSLATION_REFUSED", "semanticCoverage")
+    return Issue280SemanticFrame(version="Issue280SemanticFrameV1", propositions=selected)
+
+
+def _semantic_frame_facts(
+    facts: tuple[Issue280GroundedFact, ...],
+    semantic_frame: Issue280SemanticFrame,
+) -> tuple[Issue280GroundedFact, ...]:
+    facts_by_text = {fact.fact_text: fact for fact in facts}
+    return tuple(facts_by_text[item.source_text] for item in semantic_frame.propositions)
+
+
+def _render_grounded_script(
+    *,
+    facts: tuple[Issue280GroundedFact, ...],
+    audience: str,
+    depth: str,
+    semantic_frame: Issue280SemanticFrame | None = None,
+) -> str:
+    if semantic_frame is not None:
+        return " ".join(f"{fact.fact_text} [{fact.citation_index}]." for fact in facts)
     audience_label, audience_marker = _AUDIENCE_PROFILES[audience]
     if depth == "CONCISE":
         selected_facts = facts[: max(1, min(3, len(facts)))]
@@ -705,10 +930,16 @@ def _render_grounded_script(*, facts: tuple[Issue280GroundedFact, ...], audience
 def _evaluate_supported_claims(
     accepted_script_text: str,
     facts: tuple[Issue280GroundedFact, ...],
+    *,
+    proposition_ids: dict[int, str] | None = None,
 ) -> list[Issue280LocalDemoClaimSupportResponse]:
     facts_by_citation = {fact.citation_index: fact for fact in facts}
     supports: list[Issue280LocalDemoClaimSupportResponse] = []
-    sentences = [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", accepted_script_text) if sentence.strip()]
+    sentences = [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", accepted_script_text)
+        if sentence.strip()
+    ]
     for sentence in sentences:
         match = _SENTENCE_PATTERN.fullmatch(sentence)
         if match is None:
@@ -721,6 +952,7 @@ def _evaluate_supported_claims(
         supports.append(
             Issue280LocalDemoClaimSupportResponse(
                 claimSupportId=f"issue280_claimsup_{citation_index:03d}",
+                propositionId=(proposition_ids or {}).get(citation_index),
                 claimText=claim_text,
                 supportStatus="SUPPORTED",
                 contextRefId=fact.context_ref_id,
@@ -737,19 +969,31 @@ def _build_multilingual_response(
     target_language: str,
     target_record: LanguageCatalogRecord,
     glossary_terms: list[str],
+    semantic_frame: Issue280SemanticFrame | None = None,
 ) -> Issue280LocalDemoMultilingualResponse:
     facts_by_citation = {fact.citation_index: fact for fact in facts}
+    propositions_by_citation = (
+        {item.citation_index: item for item in semantic_frame.propositions}
+        if semantic_frame
+        else {}
+    )
     segments: list[Issue280LocalDemoTranscriptSegmentResponse] = []
     for support in claim_supports:
         fact = facts_by_citation[support.citation_index]
+        proposition = propositions_by_citation.get(fact.citation_index)
         segments.append(
             Issue280LocalDemoTranscriptSegmentResponse(
                 segmentId=f"issue280_segment_{fact.citation_index:03d}",
+                propositionId=proposition.proposition_id if proposition else None,
                 sourceText=fact.fact_text,
-                targetText=_translate_fact(
-                    fact=fact,
-                    target_record=target_record,
-                    glossary_terms=glossary_terms,
+                targetText=(
+                    f"{proposition.target_clause} [{fact.citation_index}]."
+                    if proposition
+                    else _translate_fact(
+                        fact=fact,
+                        target_record=target_record,
+                        glossary_terms=glossary_terms,
+                    )
                 ),
                 englishReferenceText=fact.fact_text,
                 contextRefIds=[fact.context_ref_id],
@@ -762,7 +1006,8 @@ def _build_multilingual_response(
         targetLanguage=target_language,
         direction=target_record.direction,
         translationMode="LOCAL_MOCK_DETERMINISTIC",
-        multilingualRunId="issue280_multi_" + checksum_text(
+        multilingualRunId="issue280_multi_"
+        + checksum_text(
             json.dumps(
                 {
                     "targetLanguage": target_language,
@@ -788,7 +1033,9 @@ def _translate_fact(
     glossary_clause = _glossary_clause(preserved_terms)
     if target_record.language_tag == "en":
         return f"{fact.fact_text} {glossary_clause}{citation}"
-    template = _LOCAL_TRANSLATION_TEMPLATES.get(target_record.language_tag, _LOCAL_TRANSLATION_TEMPLATES["default"])
+    template = _LOCAL_TRANSLATION_TEMPLATES.get(
+        target_record.language_tag, _LOCAL_TRANSLATION_TEMPLATES["default"]
+    )
     return template.format(
         native_name=target_record.native_name,
         english_name=target_record.english_name,
@@ -847,7 +1094,9 @@ def _build_artifacts(
         "preservedGlossaryTerms": multilingual.preserved_glossary_terms,
         "segments": [segment.model_dump(by_alias=True) for segment in multilingual.segments],
         "contextRefs": [context_ref.model_dump(by_alias=True) for context_ref in context_refs],
-        "claimSupports": [support.model_dump(by_alias=True) for support in evaluation.claim_supports],
+        "claimSupports": [
+            support.model_dump(by_alias=True) for support in evaluation.claim_supports
+        ],
         "evaluationId": evaluation.evaluation_id,
         "evaluationChecksum": evaluation.evaluation_checksum,
         "outputChecksum": output_checksum,
@@ -967,8 +1216,8 @@ def _avatar_demo_html(
     evaluation_id = html.escape(evaluation.evaluation_id)
     evaluation_checksum = html.escape(evaluation.evaluation_checksum)
     return (
-        "<!doctype html><html><head><meta charset=\"utf-8\"><title>Issue 280 Local Avatar Demo</title></head>"
-        f"<body dir=\"{direction}\"><main><h1>Issue 280 Local Mock Avatar Demo</h1>"
+        '<!doctype html><html><head><meta charset="utf-8"><title>Issue 280 Local Avatar Demo</title></head>'
+        f'<body dir="{direction}"><main><h1>Issue 280 Local Mock Avatar Demo</h1>'
         "<p>Local demo placeholder only. No real provider call, cloned identity, hosted production output, or real media.</p>"
         f"<p>Evaluation: {evaluation_id} ({evaluation_checksum})</p><ol>{segment_items}</ol></main></body></html>"
     )
@@ -1033,7 +1282,9 @@ def _build_correctness_report(
 issue280_local_demo_service = Issue280LocalDemoService()
 
 
-def _validate_documents(documents: list[Issue280DocumentInput]) -> list[Issue280DocumentSummaryResponse]:
+def _validate_documents(
+    documents: list[Issue280DocumentInput],
+) -> list[Issue280DocumentSummaryResponse]:
     if not documents:
         raise Issue280ContractError("ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "documents")
     if len(documents) > ISSUE280_MAX_DOCUMENTS:
@@ -1049,7 +1300,11 @@ def _validate_documents(documents: list[Issue280DocumentInput]) -> list[Issue280
         size_bytes = len(markdown.encode("utf-8"))
         if size_bytes > ISSUE280_MAX_BYTES or _section_body_too_large(markdown):
             raise Issue280ContractError("ISSUE280_INPUT_TOO_LARGE", "documents")
-        if not markdown.strip() or _CONTROL_CHARACTER_PATTERN.search(markdown) or contains_secret_like_content(markdown):
+        if (
+            not markdown.strip()
+            or _CONTROL_CHARACTER_PATTERN.search(markdown)
+            or contains_secret_like_content(markdown)
+        ):
             raise Issue280ContractError("ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "documents")
         if _PRIVATE_MARKER_PATTERN.search(markdown):
             raise Issue280ContractError("ISSUE280_UNSAFE_OR_PRIVATE_INPUT_REJECTED", "documents")
@@ -1114,5 +1369,7 @@ def _validate_glossary(glossary_terms: list[str]) -> None:
         normalized = " ".join(term.split())
         if not normalized or len(normalized) > ISSUE280_MAX_GLOSSARY_TERM_CHARS:
             raise Issue280ContractError("ISSUE280_GLOSSARY_INVALID", "glossaryTerms")
-        if contains_prompt_injection(normalized) or _GLOSSARY_INSTRUCTION_PATTERN.search(normalized):
+        if contains_prompt_injection(normalized) or _GLOSSARY_INSTRUCTION_PATTERN.search(
+            normalized
+        ):
             raise Issue280ContractError("ISSUE280_GLOSSARY_INVALID", "glossaryTerms")

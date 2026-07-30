@@ -1897,6 +1897,40 @@ ISSUE_315_ALLOWED_CHANGED_FILES = {
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
 }
 ISSUE_315_LINE_CAP = 1000
+ISSUE_317_BRANCH = "phase-1-closure-317-issue280-semantic-repair-slice1"
+ISSUE_317_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-317.json",
+    "docs/reviews/ISSUE_317_ISSUE280_SEMANTIC_REPAIR_SLICE1.md",
+    "docs/evals/issue280_semantic_repair_slice1.json",
+    "scripts/eval/issue280_semantic_oracle.py",
+    "tests/unit/test_issue280_semantic_oracle.py",
+    "tests/acceptance/test_issue280_semantic_repair_slice1.py",
+    "tests/contract/test_issue280_ui_api_artifact_parity.py",
+    "frontend/tests/issue280-ui-browser.spec.ts",
+    "backend/app/issue280.py",
+    "docs/API_CONTRACT.md",
+    "docs/ADR/0045-issue280-semantic-repair-slice1.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_317_LINE_CAP = 3000
+ISSUE_317_MEANINGFUL_SURFACES = {
+    "governance-authority": {"docs/governance/preflights/issue-317.json", "docs/reviews/ISSUE_317_ISSUE280_SEMANTIC_REPAIR_SLICE1.md"},
+    "oracle-contract": {"docs/evals/issue280_semantic_repair_slice1.json", "scripts/eval/issue280_semantic_oracle.py"},
+    "oracle-tests": {"tests/unit/test_issue280_semantic_oracle.py"},
+    "runtime": {"backend/app/issue280.py"},
+    "api-artifact-tests": {"tests/acceptance/test_issue280_semantic_repair_slice1.py", "tests/contract/test_issue280_ui_api_artifact_parity.py"},
+    "browser": {"frontend/tests/issue280-ui-browser.spec.ts"},
+    "architecture-contract": {"docs/API_CONTRACT.md", "docs/ADR/0045-issue280-semantic-repair-slice1.md"},
+    "quality-policy": {"docs/QUALITY_GATES.md", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"},
+    "status-traceability": {"docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md"},
+    "skill-evidence": {"docs/SKILL_EXECUTION_PLAN.md"},
+}
 ISSUE_313_ORACLE_PATH = "docs/evals/issue280_semantic_oracle_v1.json"
 ISSUE_313_METRICS = [
     ("essential-proposition-recall", "eq", 1.0),
@@ -1965,10 +1999,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #315",
-        "pr-product-context-gate-complete",
-        "pr-product-context-gate-complete",
-        "Issue #315 requires self-contained product and end-goal context for every non-trivial PR and makes missing, issue-only, link-only, generic, or production-overclaim context fail `policy-gates`. It explains each contribution against the end-to-end demo and eventual production path while independent reviewers retain truth and strategic judgment. Issue #300 and PR #301 are completed historical negative-containment evidence; PR #299 and all forensic artifacts remain preserved. Runtime and production authorization remain unchanged; Issue #280 repair, Heartbeat 3, Product Mode 2/#20, providers, hosting, deployment, private data, and protected work remain unauthorized.",
+        "issue #317",
+        "semantic-repair-slice1-complete",
+        "semantic-repair-slice1-complete",
+        "Issue #317 completes only the deterministic Spanish STANDARD semantic-frame cohort across seven audiences with an independent zero-tolerance oracle, API/storage/artifact/browser parity, and fail-closed refusal outside that fixture boundary. Issue #280 remains not fully fixed; PR #299 and all forensic evidence remain preserved. Other languages, depths, arbitrary content, providers, hosting, deployment, production, release, private data, Product Mode 2/#20, and Heartbeat 3 remain unclaimed and unauthorized.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -2287,7 +2321,7 @@ def issue8_product_memory_findings(documents: dict[str, str]) -> list[str]:
 
 
 def issue8_closeout_status_findings(text: str) -> list[str]:
-    required = ("| SSV1-NEXT | next-action | issue #315 | pr-product-context-gate-complete | pr-product-context-gate-complete |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
+    required = ("| SSV1-NEXT | next-action | issue #317 | semantic-repair-slice1-complete | semantic-repair-slice1-complete |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
     return ["I8.STATUS.TERMINAL" for marker in required if marker not in text]
 
 
@@ -4193,6 +4227,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_315_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-315-"):
         allowed_files = set()
+    elif branch == ISSUE_317_BRANCH:
+        allowed_files = ISSUE_317_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-317-"):
+        allowed_files = set()
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
@@ -4376,6 +4414,13 @@ def check_changed_files(failures: list[str]) -> None:
             continue
         if rel not in allowed_files:
             fail(failures, f"Phase 1 Closure branch {branch} may not change {rel}.")
+    if branch == ISSUE_317_BRANCH:
+        missing = ISSUE_317_ALLOWED_CHANGED_FILES - set(changed)
+        for rel in sorted(missing):
+            fail(failures, f"Phase 1 Closure branch {branch} must change {rel}.")
+        active_surfaces = {surface for surface, paths in ISSUE_317_MEANINGFUL_SURFACES.items() if paths & set(changed)}
+        if len(active_surfaces) > 10:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its 10-surface cap.")
     if branch in ISSUE_308_LINE_CAPS:
         local, aggregate = charged_lines(resolve_base()), charged_lines(ISSUE_308_FROZEN_BASE)
         if local is None or aggregate is None:
@@ -4400,6 +4445,12 @@ def check_changed_files(failures: list[str]) -> None:
             fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
         elif local > ISSUE_315_LINE_CAP:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_315_LINE_CAP}-line cap.")
+    if branch == ISSUE_317_BRANCH:
+        local = charged_lines(resolve_base())
+        if local is None:
+            fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
+        elif local > ISSUE_317_LINE_CAP:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_317_LINE_CAP}-line cap.")
 
 
 def check_final_review_baseline(failures: list[str]) -> None:

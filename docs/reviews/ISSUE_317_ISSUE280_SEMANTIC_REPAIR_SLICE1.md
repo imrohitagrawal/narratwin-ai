@@ -70,3 +70,50 @@ authenticity, protected forensic preservation, bounded claims, and final
 reference-only squash wording. This slice proves no other language/depth,
 arbitrary translation quality, provider behavior, hosted/public operation,
 production readiness, release, real data, or real/cloned media.
+
+## Behavioral RED evidence
+
+Commit `f0bd287` froze executable tests before any runtime edit. The focused run
+reported 7 failed and 13 passed. The failures were behavioral: all seven
+Spanish audience requests produced one target body; the runtime exposed no
+semantic frame; unsupported Hindi, `DEEP`, and an added unsupported clause
+returned `201`; the executor did not yet classify glossary loss or cross-row
+source drift. The committed mutations also reject missing essential/emphasis
+propositions, unsupported propositions, bad citation bindings, prefix-only
+differences, omitted/duplicated/caller-scoped rows, unknown fields,
+author-supplied verdicts, English fallback, runtime/oracle coupling, and
+API/visible/artifact disagreement.
+
+## GREEN acceptance result
+
+The runtime-owned semantic frame contains the same owner-authorized meanings
+without importing the independent manifest. For each mandatory row it selects
+`P-ESS-01`, `P-ESS-02`, and exactly one audience proposition. The executor
+computes this exact aggregate:
+
+| Metric | Result | Required |
+|---|---:|---:|
+| essential-proposition recall | 1.0 | 1.0 |
+| unsupported-proposition count | 0 | 0 |
+| citation-support precision | 1.0 | 1.0 |
+| audience-required-emphasis recall | 1.0 | 1.0 |
+| pairwise audience-collapse count | 0 | 0 |
+| depth-role violation count | 0 | 0 |
+| glossary-loss count | 0 | 0 |
+| target-script violation count | 0 | 0 |
+| mandatory-row coverage | 1.0 | 1.0 |
+
+Focused unit, API, replay, artifact, contract, and legacy tests pass. The real
+Playwright Next-to-backend test observes all seven distinct target bodies and
+their visible Spanish emphasis without response interception. Unsupported
+cohort language/depth/clauses return `422 ISSUE280_TRANSLATION_REFUSED` before
+storage. Full gates and exact-head remote evidence are recorded in the PR and
+closeout comments rather than asserted prematurely here.
+
+## Exact scope accounting
+
+The final envelope is exactly the 18 frozen paths across ten mapped surfaces.
+The pre-review charged-line result is below the 3,000-line ceiling; the exact
+number is recomputed at final head. No dependency, workflow, provider,
+database, migration, Docker, frontend runtime component, report, screenshot,
+or forensic-verifier path changes.

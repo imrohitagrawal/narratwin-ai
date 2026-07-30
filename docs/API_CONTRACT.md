@@ -1843,3 +1843,25 @@ It returns `schema=source-curation-summary-v1`, stable identity ordering, and th
 Another principal receives the existing `403` owner denial without project-specific disclosure.
 Restore preserves legal source-less exclusions and prunes any attached source, chunk, ingestion, dependent, or invalid replay graph before repaired persistence.
 A2 adds no frontend/browser, publication, provider, hosted, deployment, or production contract.
+
+## Issue 317 semantic repair slice 1 contract
+
+The existing `POST /api/v1/checkpoint3/issue280/local-e2e-demo` contract has an
+additive, bounded semantic-frame path for the repository-owned Issue #317
+fixture. It accepts only Spanish (`es`) at `STANDARD` depth, the exact nine
+source propositions, the protected `NarraTwin` glossary term, and one of the
+seven existing audience enum values. The response adds
+`generated.semanticFrameVersion=Issue280SemanticFrameV1`; every selected
+multilingual segment and claim support carries the same immutable
+`propositionId`. The response contains both essential propositions and exactly
+one audience-required proposition, with the frozen source citation and context
+binding.
+
+Any partial, extended, or altered Issue #317 proposition set, any other target
+language, any other depth, or loss of the required glossary term returns `422
+ISSUE280_TRANSLATION_REFUSED` before storage. Unrelated legacy local/mock
+fixtures retain their existing behavior and are not semantically certified by
+this slice. `correctnessReport` remains structural runtime metadata; only the
+independent Issue #317 oracle can establish the bounded semantic claim. No
+arbitrary translation, provider, hosted, production, or release contract is
+added.

@@ -16,34 +16,77 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST = ROOT / "docs/evals/issue280_semantic_repair_slice1.json"
 
 MANIFEST_KEYS = {
-    "schemaVersion", "authority", "fixture", "propositions", "mandatoryRows",
-    "thresholds", "disallowedTargetText",
+    "schemaVersion",
+    "authority",
+    "fixture",
+    "propositions",
+    "mandatoryRows",
+    "thresholds",
+    "disallowedTargetText",
 }
 AUTHORITY_KEYS = {
-    "controllingIssue", "architectureDecision", "dataClass", "language", "depth", "glossaryTerms",
+    "controllingIssue",
+    "architectureDecision",
+    "dataClass",
+    "language",
+    "depth",
+    "glossaryTerms",
 }
 FIXTURE_KEYS = {"fixtureId", "filename", "contentType", "markdown"}
 PROPOSITION_KEYS = {
-    "id", "sourceText", "targetClause", "citationIndex", "essential", "audience",
-    "depthRoles", "glossaryTerms",
+    "id",
+    "sourceText",
+    "targetClause",
+    "citationIndex",
+    "essential",
+    "audience",
+    "depthRoles",
+    "glossaryTerms",
 }
 ROW_KEYS = {"rowId", "audience", "requiredPropositionIds"}
 THRESHOLD_KEYS = {
-    "essentialPropositionRecall", "unsupportedPropositionCount", "citationSupportPrecision",
-    "audienceRequiredEmphasisRecall", "pairwiseAudienceCollapseCount", "depthRoleViolationCount",
-    "glossaryLossCount", "targetScriptViolationCount", "mandatoryRowCoverage",
+    "essentialPropositionRecall",
+    "unsupportedPropositionCount",
+    "citationSupportPrecision",
+    "audienceRequiredEmphasisRecall",
+    "pairwiseAudienceCollapseCount",
+    "depthRoleViolationCount",
+    "glossaryLossCount",
+    "targetScriptViolationCount",
+    "mandatoryRowCoverage",
 }
 OBSERVATION_KEYS = {"schemaVersion", "rows"}
 OBSERVATION_ROW_KEYS = {
-    "rowId", "audience", "depth", "targetLanguage", "runId", "outputId", "sourceChecksum",
-    "apiSegments", "visibleTargetTexts", "artifactScriptText", "artifactSegments",
-    "claimSupports", "unsupportedClaimCount", "stored", "replayed",
+    "rowId",
+    "audience",
+    "depth",
+    "targetLanguage",
+    "runId",
+    "outputId",
+    "sourceChecksum",
+    "apiSegments",
+    "visibleTargetTexts",
+    "artifactScriptText",
+    "artifactSegments",
+    "claimSupports",
+    "unsupportedClaimCount",
+    "stored",
+    "replayed",
 }
 SEGMENT_KEYS = {
-    "sourceText", "targetText", "citationIndexes", "contextRefIds", "claimSupportIds",
+    "propositionId",
+    "sourceText",
+    "targetText",
+    "citationIndexes",
+    "contextRefIds",
+    "claimSupportIds",
 }
 SUPPORT_KEYS = {
-    "claimSupportId", "propositionId", "supportStatus", "contextRefId", "citationIndex",
+    "claimSupportId",
+    "propositionId",
+    "supportStatus",
+    "contextRefId",
+    "citationIndex",
 }
 
 
@@ -133,9 +176,29 @@ def _normalized(text: str) -> str:
     return re.sub(r"[^\wáéíóúüñ]+", " ", text, flags=re.UNICODE).strip()
 
 
-def _observed_proposition(segment: dict[str, Any], propositions: list[dict[str, Any]]) -> dict[str, Any] | None:
+def _observed_proposition(
+    segment: dict[str, Any], propositions: list[dict[str, Any]]
+) -> dict[str, Any] | None:
     target = _normalized(str(segment["targetText"]))
-    matches = [item for item in propositions if _normalized(item["targetClause"]) == target]
+    matches = [
+        item
+        for item in propositions
+        if item["id"] == segment["propositionId"]
+        and _normalized(item["sourceText"]) == _normalized(str(segment["sourceText"]))
+        and _normalized(item["targetClause"]) == target
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _source_proposition(
+    segment: dict[str, Any], propositions: list[dict[str, Any]]
+) -> dict[str, Any] | None:
+    matches = [
+        item
+        for item in propositions
+        if item["id"] == segment["propositionId"]
+        and _normalized(item["sourceText"]) == _normalized(str(segment["sourceText"]))
+    ]
     return matches[0] if len(matches) == 1 else None
 
 
@@ -166,7 +229,11 @@ def evaluate(manifest_value: Any, observation_value: Any) -> OracleResult:
         if expected is None:
             failures.append(f"{row_id}:unexpected-row")
             continue
-        if row["audience"] != expected["audience"] or row["depth"] != "STANDARD" or row["targetLanguage"] != "es":
+        if (
+            row["audience"] != expected["audience"]
+            or row["depth"] != "STANDARD"
+            or row["targetLanguage"] != "es"
+        ):
             failures.append(f"{row_id}:axis-mismatch")
         segments = row["apiSegments"]
         supports = row["claimSupports"]
@@ -185,23 +252,36 @@ def evaluate(manifest_value: Any, observation_value: Any) -> OracleResult:
         support_by_id = {item["claimSupportId"]: item for item in supports}
         for segment in segments:
             proposition = _observed_proposition(segment, propositions)
+            source_proposition = _source_proposition(segment, propositions)
             text = str(segment["targetText"])
-            if any(disallowed.casefold() in text.casefold() for disallowed in manifest["disallowedTargetText"]):
+            if any(
+                disallowed.casefold() in text.casefold()
+                for disallowed in manifest["disallowedTargetText"]
+            ):
                 script_violations += 1
+            if source_proposition is not None and any(
+                term not in text for term in source_proposition["glossaryTerms"]
+            ):
+                glossary_loss += 1
             if proposition is None:
                 continue
             proposition_id = proposition["id"]
             observed.append(proposition_id)
             if "STANDARD" not in proposition["depthRoles"]:
                 depth_violations += 1
-            if any(term not in text for term in proposition["glossaryTerms"]):
-                glossary_loss += 1
             citation_ok = segment["citationIndexes"] == [proposition["citationIndex"]]
-            source_ok = _normalized(str(segment["sourceText"])) == _normalized(proposition["sourceText"])
+            source_ok = _normalized(str(segment["sourceText"])) == _normalized(
+                proposition["sourceText"]
+            )
             support_ids = segment["claimSupportIds"]
             context_ids = segment["contextRefIds"]
             support_ok = False
-            if isinstance(support_ids, list) and len(support_ids) == 1 and isinstance(context_ids, list) and len(context_ids) == 1:
+            if (
+                isinstance(support_ids, list)
+                and len(support_ids) == 1
+                and isinstance(context_ids, list)
+                and len(context_ids) == 1
+            ):
                 support = support_by_id.get(support_ids[0])
                 support_ok = bool(
                     support
@@ -220,10 +300,13 @@ def evaluate(manifest_value: Any, observation_value: Any) -> OracleResult:
         required_audience = required - essential_ids
         unsupported = len(observed) - len([item for item in observed if item in required])
         metrics: dict[str, float | int] = {
-            "essentialPropositionRecall": len(observed_set & required_essential) / len(required_essential),
-            "unsupportedPropositionCount": unsupported + sum(_observed_proposition(item, propositions) is None for item in segments),
+            "essentialPropositionRecall": len(observed_set & required_essential)
+            / len(required_essential),
+            "unsupportedPropositionCount": unsupported
+            + sum(_observed_proposition(item, propositions) is None for item in segments),
             "citationSupportPrecision": supported_citations / len(segments) if segments else 0.0,
-            "audienceRequiredEmphasisRecall": len(observed_set & required_audience) / len(required_audience),
+            "audienceRequiredEmphasisRecall": len(observed_set & required_audience)
+            / len(required_audience),
             "pairwiseAudienceCollapseCount": 0,
             "depthRoleViolationCount": depth_violations,
             "glossaryLossCount": glossary_loss,
@@ -249,19 +332,36 @@ def evaluate(manifest_value: Any, observation_value: Any) -> OracleResult:
             if left == right:
                 collapse_count += 1
     coverage = len(set(observed_ids) & set(expected_rows)) / len(expected_rows)
+    source_checksums = {row["sourceChecksum"] for row in rows}
+    if len(source_checksums) != 1 or not all(
+        isinstance(value, str) and value for value in source_checksums
+    ):
+        failures.append("source-identity")
     for metrics in row_metrics.values():
         metrics["pairwiseAudienceCollapseCount"] = collapse_count
         metrics["mandatoryRowCoverage"] = coverage
 
     aggregate = {
-        "essentialPropositionRecall": min((item["essentialPropositionRecall"] for item in row_metrics.values()), default=0.0),
-        "unsupportedPropositionCount": sum(int(item["unsupportedPropositionCount"]) for item in row_metrics.values()),
-        "citationSupportPrecision": min((item["citationSupportPrecision"] for item in row_metrics.values()), default=0.0),
-        "audienceRequiredEmphasisRecall": min((item["audienceRequiredEmphasisRecall"] for item in row_metrics.values()), default=0.0),
+        "essentialPropositionRecall": min(
+            (item["essentialPropositionRecall"] for item in row_metrics.values()), default=0.0
+        ),
+        "unsupportedPropositionCount": sum(
+            int(item["unsupportedPropositionCount"]) for item in row_metrics.values()
+        ),
+        "citationSupportPrecision": min(
+            (item["citationSupportPrecision"] for item in row_metrics.values()), default=0.0
+        ),
+        "audienceRequiredEmphasisRecall": min(
+            (item["audienceRequiredEmphasisRecall"] for item in row_metrics.values()), default=0.0
+        ),
         "pairwiseAudienceCollapseCount": collapse_count,
-        "depthRoleViolationCount": sum(int(item["depthRoleViolationCount"]) for item in row_metrics.values()),
+        "depthRoleViolationCount": sum(
+            int(item["depthRoleViolationCount"]) for item in row_metrics.values()
+        ),
         "glossaryLossCount": sum(int(item["glossaryLossCount"]) for item in row_metrics.values()),
-        "targetScriptViolationCount": sum(int(item["targetScriptViolationCount"]) for item in row_metrics.values()),
+        "targetScriptViolationCount": sum(
+            int(item["targetScriptViolationCount"]) for item in row_metrics.values()
+        ),
         "mandatoryRowCoverage": coverage,
     }
     thresholds = manifest["thresholds"]
