@@ -185,3 +185,20 @@ def test_cli_accepts_issue_319_exact_path_child_authority() -> None:
     payload = json.loads(result.stdout)
     assert result.returncode == 0
     assert payload["status"] == "PASS"
+
+
+def test_emitted_capsule_records_inherited_repository_denies() -> None:
+    result = subprocess.run(
+        [
+            "python3", "-m", "scripts.agent_context.cli", "route",
+            "--commit", "WORKTREE", "--fixture-id", "RFV1-06-COLD-PR-REVIEW",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(result.stdout)
+    manifest = json.loads(Path("docs/agent-context/context-policy-manifest-v1.json").read_text())
+    inherited = set(manifest["authorityProfiles"]["repository"]["denies"]["reservedDecisions"])
+    recorded = set(payload["taskCapsule"]["authority"]["denies"]["reservedDecisions"])
+    assert inherited <= recorded
