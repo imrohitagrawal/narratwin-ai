@@ -154,7 +154,7 @@ def test_capsule_rejects_authority_snapshot_expansion() -> None:
         actual_branch="issue-branch",
         actual_head=SHA,
     )
-    assert "CTX.AUTH.SNAPSHOT_DRIFT" in _codes(findings)
+    assert {"CTX.AUTH.SNAPSHOT_DRIFT", "CTX.CAPSULE.PARENT_BINDING_MISMATCH"} <= _codes(findings)
 
 
 def test_capsule_rejects_stale_base_or_head() -> None:

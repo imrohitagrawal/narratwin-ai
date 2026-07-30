@@ -7,13 +7,8 @@ from typing import Any
 
 import pytest
 
-from scripts.agent_context import (
-    canonical_digest,
-    detect_write_set_collisions,
-    intersect_authority,
-    validate_capsule,
-    validate_path,
-)
+from scripts.agent_context import (canonical_digest, detect_write_set_collisions,
+                                   intersect_authority, validate_capsule, validate_path)
 from scripts.agent_context.cli import _read_source
 
 SHA = "a" * 40
@@ -137,9 +132,13 @@ def test_prefix_parallel_write_sets_collide() -> None:
     assert "CTX.WRITESET.COLLISION" in _codes(detect_write_set_collisions(capsules))
 
 
-def test_read_only_capsule_rejects_write_attempt() -> None:
-    capsule = _capsule(mode="READ_ONLY")
-    capsule["authority"]["allows"]["writePaths"] = ["docs/STATUS.md"]
+@pytest.mark.parametrize(("mode", "expected"), [("READ_ONLY", "CTX.MODE.READ_ONLY_WRITE"),
+                         ("EDIT", "CTX.MODE.EDIT_WITHOUT_WRITE"),
+                         ("GITHUB_MUTATION", "CTX.MODE.GITHUB_WITHOUT_EXTERNAL")])
+def test_action_mode_matches_typed_grants(mode: str, expected: str) -> None:
+    capsule = _capsule(mode=mode)
+    if mode == "READ_ONLY":
+        capsule["authority"]["allows"]["writePaths"] = ["docs/STATUS.md"]
     findings = validate_capsule(
         capsule,
         repository_authority=_authority(),
@@ -148,7 +147,7 @@ def test_read_only_capsule_rejects_write_attempt() -> None:
         actual_branch="issue-branch",
         actual_head=SHA,
     )
-    assert "CTX.MODE.READ_ONLY_WRITE" in _codes(findings)
+    assert expected in _codes(findings)
 
 
 def test_github_mutation_defaults_to_denied() -> None:
