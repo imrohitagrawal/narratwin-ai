@@ -147,6 +147,86 @@ def test_current_runtime_red_requires_semantic_frame_and_oracle_pass() -> None:
     assert result.metrics == MANIFEST["thresholds"]
 
 
+def test_semantic_route_passes_the_exact_compiled_frame_to_one_renderer_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from backend.app import issue280
+
+    original_compile = issue280._compile_semantic_frame
+    original_render = issue280._render_grounded_script
+    captured: dict[str, Any] = {"calls": 0}
+
+    def compile_spy(**kwargs: Any) -> issue280.Issue280SemanticFrame | None:
+        frame = original_compile(**kwargs)
+        captured["compiled_frame"] = frame
+        return frame
+
+    def render_spy(
+        *,
+        facts: tuple[issue280.Issue280GroundedFact, ...],
+        audience: str,
+        depth: str,
+        semantic_frame: issue280.Issue280SemanticFrame,
+    ) -> str:
+        captured["calls"] += 1
+        captured["rendered_frame"] = semantic_frame
+        return original_render(
+            facts=facts,
+            audience=audience,
+            depth=depth,
+            semantic_frame=semantic_frame,
+        )
+
+    monkeypatch.setattr(issue280, "_compile_semantic_frame", compile_spy)
+    monkeypatch.setattr(issue280, "_render_grounded_script", render_spy)
+
+    response = TestClient(app).post(
+        PATH,
+        json=request_body(audience="ENGINEER"),
+        headers={"Idempotency-Key": "issue321-exact-semantic-frame"},
+    )
+
+    assert response.status_code == 201, response.text
+    assert captured["calls"] == 1
+    assert captured["compiled_frame"] is not None
+    assert captured["rendered_frame"] is captured["compiled_frame"]
+    assert captured["rendered_frame"].version == "Issue280SemanticFrameV1"
+
+
+def test_internal_semantic_renderer_type_error_is_safe_and_never_retried(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from backend.app import issue280
+
+    calls = 0
+
+    def broken_renderer(
+        *,
+        facts: tuple[issue280.Issue280GroundedFact, ...],
+        audience: str,
+        depth: str,
+        semantic_frame: issue280.Issue280SemanticFrame | None = None,
+    ) -> str:
+        nonlocal calls
+        del facts, audience, depth, semantic_frame
+        calls += 1
+        raise TypeError("private-issue321-renderer-marker")
+
+    monkeypatch.setattr(issue280, "_render_grounded_script", broken_renderer)
+
+    response = TestClient(app).post(
+        PATH,
+        json=request_body(audience="ENGINEER"),
+        headers={"Idempotency-Key": "issue321-internal-type-error"},
+    )
+
+    assert calls == 1
+    assert response.status_code == 500
+    assert response.json()["error"]["code"] == "ISSUE280_INTERNAL_ERROR_SAFE"
+    assert "private-issue321-renderer-marker" not in response.text
+    assert "correctnessReport" not in response.text
+
+
 @pytest.mark.parametrize(
     ("override", "value"),
     [("targetLanguage", "hi"), ("depth", "DEEP")],

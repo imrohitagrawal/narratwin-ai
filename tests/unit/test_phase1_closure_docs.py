@@ -3517,6 +3517,49 @@ def test_issue319_scope_and_budget_fail_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue321_scope_budget_and_surface_contract_are_exact(monkeypatch: Any) -> None:
+    assert phase1.ISSUE_321_BRANCH == (
+        "phase-1-closure-321-issue317-renderer-compatibility"
+    )
+    assert len(phase1.ISSUE_321_ALLOWED_CHANGED_FILES) == 9
+    assert len(phase1.ISSUE_321_MEANINGFUL_SURFACES) == 6
+    assert set().union(*phase1.ISSUE_321_MEANINGFUL_SURFACES.values()) == (
+        phase1.ISSUE_321_ALLOWED_CHANGED_FILES
+    )
+    assert phase1.ISSUE_321_LINE_CAP == 800
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 800)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_321_BRANCH,
+        files=sorted(phase1.ISSUE_321_ALLOWED_CHANGED_FILES),
+    ) == []
+
+
+def test_issue321_scope_and_budget_fail_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 801)
+    missing = sorted(phase1.ISSUE_321_ALLOWED_CHANGED_FILES)[0]
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_321_BRANCH,
+        files=sorted(phase1.ISSUE_321_ALLOWED_CHANGED_FILES - {missing})
+        + ["backend/app/main.py"],
+    )
+    assert (
+        f"Phase 1 Closure branch {phase1.ISSUE_321_BRANCH} may not change "
+        "backend/app/main.py."
+    ) in failures
+    assert (
+        f"Phase 1 Closure branch {phase1.ISSUE_321_BRANCH} must change {missing}."
+    ) in failures
+    assert (
+        f"Phase 1 Closure branch {phase1.ISSUE_321_BRANCH} exceeds its 800-line cap."
+    ) in failures
+    near_match = f"{phase1.ISSUE_321_BRANCH}-extra"
+    assert run_changed_files_check(
+        monkeypatch, branch=near_match, files=["docs/STATUS.md"]
+    ) == [f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."]
+
+
 def test_issue319_fixture_provenance_fails_closed(monkeypatch: Any) -> None:
     fixtures = json.loads(
         Path("docs/agent-context/fixtures/routing-fixtures-v1.json").read_text()

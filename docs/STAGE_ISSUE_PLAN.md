@@ -2181,3 +2181,26 @@ fail closed when the shadow command runs. Issue `#317` correction, Issue `#280`,
 PR `#299`, product/runtime code, workflows, dependencies, providers, deployment,
 release, production, full migration, and mandatory-reading retirement are not
 authorized.
+
+## Issue 321 Issue 317 renderer compatibility correction
+
+Issue `#321` is the single post-merge corrective controller selected by the
+repository owner after Issue `#317` acceptance found two PR `#318`
+regressions. It uses exact branch
+`phase-1-closure-321-issue317-renderer-compatibility`, exactly nine changed
+files, at most 800 charged lines, and six meaningful surfaces. Its first
+commit contains only `docs/governance/preflights/issue-321.json`.
+
+The runtime change is limited to one explicit call-path distinction: semantic
+requests pass the exact semantic frame once; non-semantic requests call the
+legacy-compatible renderer once with only `facts`, `audience`, and `depth`.
+`TypeError` is not caught or retried. The two established unsupported-output
+tests must return HTTP 422, while an internal renderer `TypeError` remains a
+public-safe HTTP 500. The Spanish `STANDARD` seven-audience cohort and its
+oracle, API, replay, artifact, citation, and browser bindings remain unchanged.
+
+The pre-existing German test/catalog drift remains reported and unmodified.
+Issue `#280` remains not fully fixed; PR `#299` and all forensic evidence remain
+protected. No broader language/depth/audience work, dependency, workflow,
+provider, database, Docker, deployment, release, public, or production change
+is authorized.

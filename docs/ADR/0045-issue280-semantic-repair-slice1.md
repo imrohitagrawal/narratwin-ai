@@ -44,3 +44,17 @@ depth, provider quality, real-data behavior, hosted/public operation,
 durability, privacy, production readiness, release, or complete Issue #280
 repair. Those require separately authorized expansion. PR #299 and all
 forensic evidence remain immutable historical evidence.
+
+## Post-merge compatibility correction
+
+Issue #321 preserves this architecture while correcting the renderer call
+boundary introduced by PR #318. A semantic request passes its exact non-null
+frame to the renderer. A non-semantic request uses the established
+`facts`/`audience`/`depth` keyword contract without supplying the optional
+keyword as `None`. Each path invokes the renderer once.
+
+The correction deliberately does not catch `TypeError` or retry rendering.
+Internal renderer defects therefore remain public-safe internal failures,
+while unsupported renderer output continues through the existing evaluator to
+the established HTTP 422 refusal. No semantic proposition, language, depth,
+artifact, citation, oracle, storage, or browser contract changes.
