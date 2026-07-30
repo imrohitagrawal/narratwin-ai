@@ -2,6 +2,7 @@
 
 from scripts.agent_context.core import (
     Finding,
+    build_capsule,
     build_packet,
     canonical_digest,
     detect_state_contradictions,
@@ -16,6 +17,7 @@ from scripts.agent_context.core import (
 
 __all__ = [
     "Finding",
+    "build_capsule",
     "build_packet",
     "canonical_digest",
     "detect_state_contradictions",

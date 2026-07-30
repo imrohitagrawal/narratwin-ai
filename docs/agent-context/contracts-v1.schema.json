@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/imrohitagrawal/narratwin-ai/docs/agent-context/contracts-v1.schema.json",
+  "title": "NarraTwin agent-context shadow contracts v1",
+  "type": "object",
+  "oneOf": [
+    {"$ref": "#/$defs/ContextPolicyManifestV1"},
+    {"$ref": "#/$defs/AgentTaskCapsuleV1"},
+    {"$ref": "#/$defs/HandoffReceiptV1"},
+    {"$ref": "#/$defs/RoutingRequestV1"},
+    {"$ref": "#/$defs/RoutingReceiptV1"},
+    {"$ref": "#/$defs/ContextPacketV1"},
+    {"$ref": "#/$defs/CurrentStateV1"},
+    {"$ref": "#/$defs/HistoryEntryV1"}
+  ],
+  "$defs": {
+    "Sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "Commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "ExactPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*[?*\\[\\]\\\\])[A-Za-z0-9._/@+-]+(?:/[A-Za-z0-9._@+-]+)*$"
+    },
+    "StringSet": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "PathSet": {"type": "array", "items": {"$ref": "#/$defs/ExactPath"}, "uniqueItems": true},
+    "AuthorityDomain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["readPaths", "writePaths", "actions", "externalActions", "claims", "reservedDecisions"],
+      "properties": {
+        "readPaths": {"$ref": "#/$defs/PathSet"},
+        "writePaths": {"$ref": "#/$defs/PathSet"},
+        "actions": {"$ref": "#/$defs/StringSet"},
+        "externalActions": {"$ref": "#/$defs/StringSet"},
+        "claims": {"$ref": "#/$defs/StringSet"},
+        "reservedDecisions": {"$ref": "#/$defs/StringSet"}
+      }
+    },
+    "Authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allows", "denies"],
+      "properties": {
+        "allows": {"$ref": "#/$defs/AuthorityDomain"},
+        "denies": {"$ref": "#/$defs/AuthorityDomain"}
+      }
+    },
+    "Module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleId", "schemaVersion", "location", "sourceSha256", "contentSha256", "authorityLevel", "status", "effectiveVersion", "taskTriggers", "pathTriggers", "claimTriggers", "stageTriggers", "dependsOn", "supersedes", "conflictsWith", "coldReviewInheritance", "binding", "ruleIds"],
+      "properties": {
+        "moduleId": {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
+        "schemaVersion": {"const": "ContextPolicyModuleV1"},
+        "location": {"$ref": "#/$defs/ExactPath"},
+        "sourceSha256": {"$ref": "#/$defs/Sha256"},
+        "contentSha256": {"$ref": "#/$defs/Sha256"},
+        "authorityLevel": {"enum": ["repository", "current-state", "stage", "issue", "security", "product", "evidence", "delegation", "review", "merge"]},
+        "status": {"enum": ["active", "historical", "superseded", "explanatory"]},
+        "effectiveVersion": {"type": "string", "minLength": 1},
+        "taskTriggers": {"$ref": "#/$defs/StringSet"},
+        "pathTriggers": {"$ref": "#/$defs/PathSet"},
+        "claimTriggers": {"$ref": "#/$defs/StringSet"},
+        "stageTriggers": {"$ref": "#/$defs/StringSet"},
+        "dependsOn": {"$ref": "#/$defs/StringSet"},
+        "supersedes": {"$ref": "#/$defs/StringSet"},
+        "conflictsWith": {"$ref": "#/$defs/StringSet"},
+        "coldReviewInheritance": {"enum": ["always", "when-selected", "never"]},
+        "binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "heading"],
+          "properties": {
+            "kind": {"enum": ["full", "markdown-section", "structured-resource"]},
+            "heading": {"type": ["string", "null"]}
+          }
+        },
+        "ruleIds": {"$ref": "#/$defs/StringSet"}
+      }
+    },
+    "Rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ruleId", "moduleId", "status", "kind", "meaning"],
+      "properties": {
+        "ruleId": {"type": "string", "pattern": "^(CONST|STATE|STAGE|SCOPE|SEC|AI|EVID|DELEG|REVIEW|MERGE)-[0-9]{3}$"},
+        "moduleId": {"type": "string"},
+        "status": {"enum": ["active", "historical", "superseded", "explanatory"]},
+        "kind": {"enum": ["workflow", "state", "stage", "path", "action", "claim", "reserved-decision", "evidence", "delegation", "review", "merge"]},
+        "meaning": {"type": "string", "minLength": 1}
+      }
+    },
+    "ContextPolicyManifestV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "manifestId", "repository", "effectiveVersion", "shadowOnly", "currentStateModuleId", "modules", "rules", "budgets", "reservedDecisions"],
+      "properties": {
+        "schemaVersion": {"const": "ContextPolicyManifestV1"},
+        "manifestId": {"type": "string"},
+        "repository": {"type": "string"},
+        "effectiveVersion": {"type": "string"},
+        "shadowOnly": {"const": true},
+        "currentStateModuleId": {"type": "string"},
+        "modules": {"type": "array", "items": {"$ref": "#/$defs/Module"}, "minItems": 1},
+        "rules": {"type": "array", "items": {"$ref": "#/$defs/Rule"}, "minItems": 1},
+        "budgets": {"type": "object"},
+        "reservedDecisions": {"$ref": "#/$defs/StringSet"}
+      }
+    },
+    "AgentTaskCapsuleV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "capsuleId", "parentCapsuleId", "repository", "branch", "baseCommit", "expectedHead", "actionMode", "objective", "deliverable", "claims", "negativeInvariants", "requiredPaths", "authority", "selectedRuleIds", "moduleHashes", "requiredTests", "assumptions", "budgets", "stopConditions", "expiresAt", "expectedReceiptSchema", "authorityDigest"],
+      "properties": {
+        "schemaVersion": {"const": "AgentTaskCapsuleV1"},
+        "capsuleId": {"type": "string"},
+        "parentCapsuleId": {"type": ["string", "null"]},
+        "repository": {"type": "string"},
+        "branch": {"type": "string"},
+        "baseCommit": {"$ref": "#/$defs/Commit"},
+        "expectedHead": {"$ref": "#/$defs/Commit"},
+        "actionMode": {"enum": ["READ_ONLY", "EDIT", "TEST", "GITHUB_MUTATION"]},
+        "objective": {"type": "string"},
+        "deliverable": {"type": "string"},
+        "claims": {"$ref": "#/$defs/StringSet"},
+        "negativeInvariants": {"$ref": "#/$defs/StringSet"},
+        "requiredPaths": {"$ref": "#/$defs/PathSet"},
+        "authority": {"$ref": "#/$defs/Authority"},
+        "selectedRuleIds": {"$ref": "#/$defs/StringSet"},
+        "moduleHashes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Sha256"}},
+        "requiredTests": {"$ref": "#/$defs/StringSet"},
+        "assumptions": {"$ref": "#/$defs/StringSet"},
+        "budgets": {"type": "object"},
+        "stopConditions": {"$ref": "#/$defs/StringSet"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "expectedReceiptSchema": {"const": "HandoffReceiptV1"},
+        "authorityDigest": {"$ref": "#/$defs/Sha256"},
+        "capsuleDigest": {"$ref": "#/$defs/Sha256"}
+      }
+    },
+    "HandoffReceiptV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "receiptId", "capsuleId", "parentIdentity", "childIdentity", "acceptedAuthorityDigest", "branch", "head", "manifestVersion", "manifestHash", "validatedRules", "moduleHashes", "additionalSources", "filesInspected", "filesChanged", "commands", "findings", "claimsProved", "claimsDisproved", "claimsNotTested", "assumptions", "blockers", "residualRisks", "preventedActions", "budget", "worktreeCollisionCheck", "suggestedFollowUp", "selfCertification"],
+      "properties": {
+        "schemaVersion": {"const": "HandoffReceiptV1"},
+        "receiptId": {"type": "string"},
+        "capsuleId": {"type": "string"},
+        "parentIdentity": {"type": "string"},
+        "childIdentity": {"type": "string"},
+        "acceptedAuthorityDigest": {"$ref": "#/$defs/Sha256"},
+        "branch": {"type": "string"},
+        "head": {"$ref": "#/$defs/Commit"},
+        "manifestVersion": {"type": "string"},
+        "manifestHash": {"$ref": "#/$defs/Sha256"},
+        "validatedRules": {"$ref": "#/$defs/StringSet"},
+        "moduleHashes": {"type": "object"},
+        "additionalSources": {"$ref": "#/$defs/PathSet"},
+        "filesInspected": {"$ref": "#/$defs/PathSet"},
+        "filesChanged": {"$ref": "#/$defs/PathSet"},
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["argv", "exitCode", "result"],
+            "properties": {
+              "argv": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+              "exitCode": {"type": "integer"},
+              "result": {"enum": ["PASS", "FAIL", "NOT_RUN"]}
+            }
+          }
+        },
+        "findings": {"type": "array"},
+        "claimsProved": {"type": "array"},
+        "claimsDisproved": {"type": "array"},
+        "claimsNotTested": {"type": "array"},
+        "assumptions": {"type": "array"},
+        "blockers": {"type": "array"},
+        "residualRisks": {"type": "array"},
+        "preventedActions": {"type": "array"},
+        "budget": {"type": "object"},
+        "worktreeCollisionCheck": {"type": "string"},
+        "suggestedFollowUp": {"type": "string"},
+        "selfCertification": {"type": "array", "maxItems": 0}
+      }
+    },
+    "RoutingRequestV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "stage", "riskDomains", "changedPaths", "claims", "externalActions", "independence", "role"],
+      "properties": {
+        "operation": {"type": "string"},
+        "stage": {"type": "string"},
+        "riskDomains": {"$ref": "#/$defs/StringSet"},
+        "changedPaths": {"$ref": "#/$defs/PathSet"},
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["class", "value"],
+            "properties": {"class": {"type": "string"}, "value": {"type": "string"}}
+          }
+        },
+        "externalActions": {"$ref": "#/$defs/StringSet"},
+        "independence": {"type": "string"},
+        "role": {"type": "string"}
+      }
+    },
+    "RoutingReceiptV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "fixtureId", "routeId", "executionMode", "packetBudget", "requestDigest", "includedModules", "rejectedModules", "dependencyClosure", "selectedRuleIds", "unresolvedConflicts", "repositoryCommit", "receiptDigest"],
+      "properties": {
+        "schemaVersion": {"const": "RoutingReceiptV1"},
+        "fixtureId": {"type": "string"},
+        "routeId": {"type": "string"},
+        "executionMode": {"type": "string"},
+        "packetBudget": {"type": "string"},
+        "requestDigest": {"$ref": "#/$defs/Sha256"},
+        "includedModules": {"type": "array"},
+        "rejectedModules": {"type": "array"},
+        "dependencyClosure": {"$ref": "#/$defs/StringSet"},
+        "selectedRuleIds": {"$ref": "#/$defs/StringSet"},
+        "unresolvedConflicts": {"type": "array", "maxItems": 0},
+        "repositoryCommit": {"oneOf": [{"$ref": "#/$defs/Commit"}, {"const": "WORKTREE"}]},
+        "receiptDigest": {"$ref": "#/$defs/Sha256"}
+      }
+    },
+    "ContextPacketV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "manifestDigest", "routeDigest", "moduleIds", "modules", "rules", "metrics", "repositoryCommit", "packetDigest"],
+      "properties": {
+        "schemaVersion": {"const": "ContextPacketV1"},
+        "manifestDigest": {"$ref": "#/$defs/Sha256"},
+        "routeDigest": {"$ref": "#/$defs/Sha256"},
+        "moduleIds": {"$ref": "#/$defs/StringSet"},
+        "modules": {"type": "array"},
+        "rules": {"type": "array"},
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lines", "estimatedTokens", "estimateAlgorithm", "lineCeiling", "tokenCeiling"],
+          "properties": {
+            "lines": {"type": "integer", "minimum": 0},
+            "estimatedTokens": {"type": "integer", "minimum": 0},
+            "estimateAlgorithm": {"const": "ceil-utf8-bytes-divided-by-4"},
+            "lineCeiling": {"type": "integer", "minimum": 1},
+            "tokenCeiling": {"type": "integer", "minimum": 1}
+          }
+        },
+        "repositoryCommit": {"oneOf": [{"$ref": "#/$defs/Commit"}, {"const": "WORKTREE"}]},
+        "packetDigest": {"$ref": "#/$defs/Sha256"}
+      }
+    },
+    "CurrentStateV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "stateId", "repository", "baseCommit", "observedAt", "shadowOnly", "facts", "reservedDecisions"],
+      "properties": {
+        "schemaVersion": {"const": "CurrentStateV1"},
+        "stateId": {"type": "string"},
+        "repository": {"type": "string"},
+        "baseCommit": {"$ref": "#/$defs/Commit"},
+        "observedAt": {"type": "string", "format": "date-time"},
+        "shadowOnly": {"const": true},
+        "facts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "value", "sourceRefs"],
+            "properties": {
+              "id": {"type": "string"},
+              "value": {"type": "string"},
+              "sourceRefs": {"$ref": "#/$defs/StringSet"}
+            }
+          }
+        },
+        "reservedDecisions": {"$ref": "#/$defs/StringSet"}
+      }
+    },
+    "HistoryEntryV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "eventId", "recordedAt", "status", "authorizing", "event", "facts", "sourceRefs", "disposition"],
+      "properties": {
+        "schemaVersion": {"const": "HistoryEntryV1"},
+        "eventId": {"type": "string"},
+        "recordedAt": {"type": "string", "format": "date-time"},
+        "status": {"const": "historical"},
+        "authorizing": {"const": false},
+        "event": {"type": "string"},
+        "facts": {"type": "object"},
+        "sourceRefs": {"$ref": "#/$defs/StringSet"},
+        "disposition": {"type": "string"}
+      }
+    }
+  }
+}
