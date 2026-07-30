@@ -1,0 +1,46 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 321,
+  "branch": "phase-1-closure-321-issue317-renderer-compatibility",
+  "objective": "Correct two PR #318 compatibility regressions without changing the Issue #317 semantic-frame architecture. The non-semantic path must invoke the established renderer contract with only facts, audience, and depth so unsupported-citation and uncited-unsupported-claim output reaches the existing fail-closed evaluator and returns HTTP 422. The semantic path must invoke the renderer once with the exact non-null semantic frame. Internal renderer TypeError must remain a single-invocation public-safe HTTP 500 and must never be caught, retried, or reclassified. Preserve the Spanish STANDARD seven-audience oracle/runtime/parity/browser cohort, all API/storage/artifact/citation contracts, PR #299 at f93653e8a11e697c88766b207fb01c18662339d6 and tree 60d97b3c1b2c48dba32d07dd514fc0f6ce577088, the pre-existing German drift, release No-Go, and all Issue #280 limitations. Evidence requires current-main behavioral RED, baseline comparison at 5fd7840c2219f9bed578e61c0933b2f9c7f45114, two missing once-only/exception-safety tests before GREEN, exact branch and nine-file scope, at most 800 charged lines and six meaningful surfaces, focused and full local gates, exact-head non-author approval, reference-only merge wording, and merged-tree closeout.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-321.json",
+      "backend/app/issue280.py",
+      "tests/acceptance/test_issue280_semantic_repair_slice1.py",
+      "docs/ADR/0045-issue280-semantic-repair-slice1.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-321.json",
+      "backend/app/issue280.py",
+      "tests/acceptance/test_issue280_semantic_repair_slice1.py",
+      "docs/ADR/0045-issue280-semantic-repair-slice1.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py"
+    ],
+    "forbidden": [
+      ".github/workflows/",
+      "backend/app/main.py",
+      "backend/app/stage6.py",
+      "docs/evals/issue280_semantic_repair_slice1.json",
+      "docs/governance/preflights/issue-317.json",
+      "docs/reviews/ISSUE_317_ISSUE280_SEMANTIC_REPAIR_SLICE1.md",
+      "frontend/",
+      "pyproject.toml",
+      "scripts/eval/issue280_semantic_oracle.py",
+      "tests/acceptance/test_issue280_local_e2e_demo.py",
+      "tests/contract/test_issue280_ui_api_artifact_parity.py",
+      "tests/unit/test_issue280_semantic_oracle.py",
+      "uv.lock"
+    ]
+  }
+}
