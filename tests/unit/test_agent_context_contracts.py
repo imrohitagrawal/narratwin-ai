@@ -508,6 +508,28 @@ def test_receipt_requires_authorized_claims_required_reads_and_typed_budget() ->
     } <= _codes(findings)
 
 
+def test_receipt_claim_buckets_are_typed_bounded_and_mutually_exclusive() -> None:
+    receipt = _receipt()
+    receipt["claimsDisproved"] = [{"claim": "ISSUE_317_FIXED"}]
+    receipt["claimsNotTested"] = [42]
+    receipt["claimsProved"] = ["FINDING"]
+    receipt["claimsDisproved"].append("FINDING")
+    contract = json.loads(Path("docs/agent-context/contracts-v1.schema.json").read_text())
+    findings = validate_receipt(
+        receipt,
+        capsule=_capsule(),
+        manifest_digest="3" * 64,
+        actual_branch="issue-branch",
+        actual_head=SHA,
+        contract_schema=contract,
+    )
+    assert {
+        "CTX.SCHEMA.TYPE",
+        "CTX.RECEIPT.CLAIM_SCOPE_MISMATCH",
+        "CTX.RECEIPT.CLAIM_CLASSIFICATION_CONFLICT",
+    } <= _codes(findings)
+
+
 def test_capsule_requires_intrinsic_content_and_route_binding() -> None:
     capsule = _capsule()
     capsule["claims"] = []

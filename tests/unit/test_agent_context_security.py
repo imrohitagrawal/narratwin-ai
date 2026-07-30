@@ -121,6 +121,14 @@ def test_normalized_deny_wins_inside_authority_algebra() -> None:
     assert "CTX.AUTH.DENY_WINS" in _codes(findings)
 
 
+def test_exact_path_authority_preserves_git_path_case() -> None:
+    child = _authority(writes=["DOCS/status.MD"])
+    repository = _authority(writes=["docs/STATUS.md"])
+    effective, findings = intersect_authority(repository, repository, repository, child)
+    assert effective["allows"]["writePaths"] == []
+    assert "CTX.AUTH.CHILD_WIDENS_REPOSITORY" in _codes(findings)
+
+
 def test_prefix_parallel_write_sets_collide() -> None:
     capsules = [
         {"capsuleId": "a", "authority": {"allows": {"writePaths": ["docs/policy"]}}},
