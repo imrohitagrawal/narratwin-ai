@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -1931,6 +1932,44 @@ ISSUE_317_MEANINGFUL_SURFACES = {
     "status-traceability": {"docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md"},
     "skill-evidence": {"docs/SKILL_EXECUTION_PLAN.md"},
 }
+ISSUE_319_BRANCH = "phase-1-closure-process-319-agent-context-architecture-slice1"
+ISSUE_319_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-319.json",
+    "docs/ADR/0046-agent-context-shadow-architecture.md",
+    "docs/agent-context/README.md",
+    "docs/agent-context/contracts-v1.schema.json",
+    "docs/agent-context/context-policy-manifest-v1.json",
+    "docs/agent-context/current-state-v1.json",
+    "docs/agent-context/history-v1.jsonl",
+    "docs/agent-context/fixtures/routing-fixtures-v1.json",
+    "scripts/agent_context/__init__.py",
+    "scripts/agent_context/core.py",
+    "scripts/agent_context/cli.py",
+    "tests/unit/test_agent_context_contracts.py",
+    "tests/unit/test_agent_context_security.py",
+    "tests/acceptance/test_agent_context_routing.py",
+    "Makefile",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/SKILL_EXECUTION_PLAN.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_319_LINE_CAP = 4200
+ISSUE_319_MEANINGFUL_SURFACES = {
+    "governance-authority": {"docs/governance/preflights/issue-319.json"},
+    "architecture-spec": {"docs/ADR/0046-agent-context-shadow-architecture.md", "docs/agent-context/README.md"},
+    "contracts-state": {"docs/agent-context/contracts-v1.schema.json", "docs/agent-context/context-policy-manifest-v1.json", "docs/agent-context/current-state-v1.json", "docs/agent-context/history-v1.jsonl"},
+    "independent-fixtures": {"docs/agent-context/fixtures/routing-fixtures-v1.json"},
+    "context-implementation": {"scripts/agent_context/__init__.py", "scripts/agent_context/core.py", "scripts/agent_context/cli.py"},
+    "contract-security-tests": {"tests/unit/test_agent_context_contracts.py", "tests/unit/test_agent_context_security.py"},
+    "routing-acceptance": {"tests/acceptance/test_agent_context_routing.py"},
+    "quality-integration": {"Makefile", "docs/QUALITY_GATES.md", "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py"},
+    "status-traceability": {"docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md"},
+    "skill-evidence": {"docs/SKILL_EXECUTION_PLAN.md"},
+}
 ISSUE_313_ORACLE_PATH = "docs/evals/issue280_semantic_oracle_v1.json"
 ISSUE_313_METRICS = [
     ("essential-proposition-recall", "eq", 1.0),
@@ -1999,10 +2038,10 @@ STATUS_STATE_V1_ROWS = {
     ),
     "SSV1-NEXT": (
         "next-action",
-        "issue #317",
-        "semantic-repair-slice1-complete",
-        "semantic-repair-slice1-complete",
-        "Issue #317 completes only the deterministic Spanish STANDARD semantic-frame cohort across seven audiences with an independent zero-tolerance oracle, API/storage/artifact/browser parity, and fail-closed refusal outside that fixture boundary. Issue #280 remains not fully fixed; PR #299 and all forensic evidence remain preserved. Other languages, depths, arbitrary content, providers, hosting, deployment, production, release, private data, Product Mode 2/#20, and Heartbeat 3 remain unclaimed and unauthorized.",
+        "repo owner",
+        "decision-required",
+        "decision-required",
+        "After Issue #319 closeout, the next action requires explicit authority. Issue #317 remains open after post-merge acceptance found two compatibility regressions; its correction remains a reserved owner decision. Mandatory reading, Issue #280, PR #299, product/runtime, providers, deployment, release, and production posture remain unchanged.",
     ),
     "SSV1-ISSUE8": (
         "product-definition-parent",
@@ -2321,7 +2360,7 @@ def issue8_product_memory_findings(documents: dict[str, str]) -> list[str]:
 
 
 def issue8_closeout_status_findings(text: str) -> list[str]:
-    required = ("| SSV1-NEXT | next-action | issue #317 | semantic-repair-slice1-complete | semantic-repair-slice1-complete |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
+    required = ("| SSV1-NEXT | next-action | repo owner | decision-required | decision-required |", "| SSV1-ISSUE8 | product-definition-parent | #8 | closed | closed |", "| `#8` | Closed | Product-definition support |", "| `#308` | Closed | Heartbeat 2 authority |", "PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`")
     return ["I8.STATUS.TERMINAL" for marker in required if marker not in text]
 
 
@@ -4231,6 +4270,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_317_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-317-"):
         allowed_files = set()
+    elif branch == ISSUE_319_BRANCH:
+        allowed_files = ISSUE_319_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-319-"):
+        allowed_files = set()
     elif branch == "phase-1-closure-process-172-gpf-v1-offline-core":
         allowed_files = ISSUE_172_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-176-gpf-v1-repository-integration":
@@ -4421,6 +4464,10 @@ def check_changed_files(failures: list[str]) -> None:
         active_surfaces = {surface for surface, paths in ISSUE_317_MEANINGFUL_SURFACES.items() if paths & set(changed)}
         if len(active_surfaces) > 10:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its 10-surface cap.")
+    if branch == ISSUE_319_BRANCH:
+        active_surfaces = {surface for surface, paths in ISSUE_319_MEANINGFUL_SURFACES.items() if paths & set(changed)}
+        if len(active_surfaces) > 10:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its 10-surface cap.")
     if branch in ISSUE_308_LINE_CAPS:
         local, aggregate = charged_lines(resolve_base()), charged_lines(ISSUE_308_FROZEN_BASE)
         if local is None or aggregate is None:
@@ -4451,6 +4498,12 @@ def check_changed_files(failures: list[str]) -> None:
             fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
         elif local > ISSUE_317_LINE_CAP:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_317_LINE_CAP}-line cap.")
+    if branch == ISSUE_319_BRANCH:
+        local = charged_lines(resolve_base())
+        if local is None:
+            fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
+        elif local > ISSUE_319_LINE_CAP:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_319_LINE_CAP}-line cap.")
 
 
 def check_final_review_baseline(failures: list[str]) -> None:
@@ -6881,6 +6934,37 @@ def check_process_docs(failures: list[str]) -> None:
     )
 
 
+def check_issue319_agent_context(failures: list[str]) -> None:
+    """Run the shadow validator and freeze fixture independence markers."""
+
+    try:
+        fixtures = json.loads(read("docs/agent-context/fixtures/routing-fixtures-v1.json"))
+    except (json.JSONDecodeError, OSError):
+        fail(failures, "Issue #319 routing fixtures must be valid JSON.")
+        return
+    provenance = fixtures.get("provenance", {}) if isinstance(fixtures, dict) else {}
+    fixture_path = ROOT / "docs/agent-context/fixtures/routing-fixtures-v1.json"
+    fixture_sha = hashlib.sha256(fixture_path.read_bytes()).hexdigest()
+    if (
+        len(fixtures.get("fixtures", [])) != 9
+        or len(fixtures.get("seededDefectCatalog", [])) != 36
+        or provenance.get("authoredBeforeRouterImplementation") is not True
+        or provenance.get("routerOutputUsedAsExpectedValue") is not False
+    ):
+        fail(failures, "Issue #319 routing fixtures lost frozen independent provenance or coverage.")
+    if fixture_sha != "37872e94d14685fcfca819a4effe4cacd11dbcedac784877a172538e4ef3af76":
+        fail(failures, "Issue #319 independently frozen routing fixture content drifted.")
+    result = subprocess.run(
+        ["python3", "-m", "scripts.agent_context.cli", "validate", "--commit", "WORKTREE"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        fail(failures, f"Issue #319 shadow context validation failed closed: {result.stdout.strip()}")
+
+
 def main() -> int:
     failures: list[str] = []
     check_branch(failures)
@@ -6904,6 +6988,7 @@ def main() -> int:
         check_process_docs(failures)
         check_issue300_semantic_governance(failures)
         check_issue313_repair_feasibility(failures)
+        check_issue319_agent_context(failures)
 
     if failures:
         print("Phase 1 Closure quality failures:")

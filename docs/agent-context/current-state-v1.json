@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "CurrentStateV1",
+  "stateId": "narratwin-current-state-shadow-2026-07-30",
+  "repository": "imrohitagrawal/narratwin-ai",
+  "baseCommit": "c293b4a62a5afdaf893af83f3f23efd65f11b950",
+  "observedAt": "2026-07-30T07:00:00+05:30",
+  "shadowOnly": true,
+  "facts": [
+    {
+      "id": "repo-mode",
+      "value": "phase1-closure",
+      "sourceRefs": ["docs/STATUS.md#StatusStateV1"]
+    },
+    {
+      "id": "stage-posture",
+      "value": "stage-8-complete-phase1-closure-active",
+      "sourceRefs": [".stage/current", "docs/STATUS.md#StatusStateV1"]
+    },
+    {
+      "id": "release-posture",
+      "value": "no-go",
+      "sourceRefs": ["docs/STATUS.md#StatusStateV1"]
+    },
+    {
+      "id": "issue-317-lifecycle",
+      "value": "open-post-merge-acceptance-incomplete",
+      "sourceRefs": ["https://github.com/imrohitagrawal/narratwin-ai/issues/317"]
+    },
+    {
+      "id": "issue-317-correction-authority",
+      "value": "reserved-owner-decision",
+      "sourceRefs": ["https://github.com/imrohitagrawal/narratwin-ai/issues/317"]
+    },
+    {
+      "id": "issue-319-authority-boundary",
+      "value": "bounded-shadow-controller-close-only-after-merged-tree-acceptance",
+      "sourceRefs": ["https://github.com/imrohitagrawal/narratwin-ai/issues/319"]
+    },
+    {
+      "id": "mandatory-reading-posture",
+      "value": "unchanged-binding",
+      "sourceRefs": ["AGENTS.md#Required Reading"]
+    }
+  ],
+  "reservedDecisions": [
+    "issue-317-corrective-authority",
+    "mandatory-reading-retirement",
+    "routed-context-default-activation",
+    "release-or-production-readiness"
+  ]
+}

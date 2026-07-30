@@ -352,3 +352,13 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 This mapping proves one synthetic Spanish cohort, not arbitrary multilingual
 quality or full Issue #280 closure. Provider, hosted, production, privacy,
 durability, deployment, and release decisions remain outside this trace.
+
+## Issue 319 agent-context shadow traceability
+
+| Evidence | Requirement | State |
+|---|---|---|
+| Manifest, strict contracts, structured current state, append-only history | `CTX-SCHEMA-001`, `CTX-MODULE-*`, `CTX-STATE-*`, stable rule families | Shadow-only machine authority foundation |
+| Independent nine-cohort fixture commit before router | `CTX-ROUTE-*`, `CTX-FIXTURE-001`, context budgets | Expected values cannot be regenerated from implementation |
+| 50 behavioral RED then GREEN tests | `CTX-AUTH-*`, `CTX-PATH-*`, `CTX-RECEIPT-*`, injection/collision/summary/claim cases | Deterministic standard-library evidence |
+| CLI packets/capsules and Phase 1 checker | exact commit/hash reproduction, non-widening delegation, budget measurement | Existing mandatory reading remains binding |
+| ADR `0046`, STATUS reconciliation, Issue `#319` | detected Issue `#317` state contradiction and reserved correction | No Issue `#317` repair, product, provider, release, or production authority |

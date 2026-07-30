@@ -2936,7 +2936,7 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "PR `#281`",
         "`3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c`",
         "post-merge main quality workflow run `30085558061` passing",
-                "semantic-repair-slice1-complete",
+                "| SSV1-NEXT | next-action | repo owner | decision-required | decision-required |",
         "PR `#282`",
         "`b889604a490c9f014130e420c1c949af7879dd84`",
         "post-merge main quality workflow run `30092008592` passing",
@@ -3481,6 +3481,64 @@ def test_issue317_charged_line_cap_fails_closed(monkeypatch: Any) -> None:
     )
     assert failures == [
         f"Phase 1 Closure branch {phase1.ISSUE_317_BRANCH} exceeds its 3000-line cap."
+    ]
+
+
+def test_issue319_scope_budget_and_surface_contract_are_exact(monkeypatch: Any) -> None:
+    assert phase1.ISSUE_319_BRANCH == (
+        "phase-1-closure-process-319-agent-context-architecture-slice1"
+    )
+    assert len(phase1.ISSUE_319_ALLOWED_CHANGED_FILES) == 22
+    assert len(phase1.ISSUE_319_MEANINGFUL_SURFACES) == 10
+    assert set().union(*phase1.ISSUE_319_MEANINGFUL_SURFACES.values()) == (
+        phase1.ISSUE_319_ALLOWED_CHANGED_FILES
+    )
+    assert phase1.ISSUE_319_LINE_CAP == 4200
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 4200)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_319_BRANCH,
+        files=sorted(phase1.ISSUE_319_ALLOWED_CHANGED_FILES),
+    ) == []
+
+
+def test_issue319_scope_and_budget_fail_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 4201)
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_319_BRANCH,
+        files=["backend/app/main.py"],
+    )
+    assert f"Phase 1 Closure branch {phase1.ISSUE_319_BRANCH} may not change backend/app/main.py." in failures
+    assert f"Phase 1 Closure branch {phase1.ISSUE_319_BRANCH} exceeds its 4200-line cap." in failures
+    near_match = f"{phase1.ISSUE_319_BRANCH}-extra"
+    assert run_changed_files_check(monkeypatch, branch=near_match, files=["docs/STATUS.md"]) == [
+        f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."
+    ]
+
+
+def test_issue319_fixture_provenance_fails_closed(monkeypatch: Any) -> None:
+    fixtures = json.loads(
+        Path("docs/agent-context/fixtures/routing-fixtures-v1.json").read_text()
+    )
+    fixtures["provenance"]["routerOutputUsedAsExpectedValue"] = True
+    monkeypatch.setattr(
+        phase1,
+        "read",
+        read_with_overrides(
+            phase1,
+            {"docs/agent-context/fixtures/routing-fixtures-v1.json": json.dumps(fixtures)},
+        ),
+    )
+    monkeypatch.setattr(
+        phase1.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 0, "{}", ""),
+    )
+    failures: list[str] = []
+    phase1.check_issue319_agent_context(failures)
+    assert failures == [
+        "Issue #319 routing fixtures lost frozen independent provenance or coverage."
     ]
 
 
