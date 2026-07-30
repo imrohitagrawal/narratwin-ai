@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+import subprocess
 from pathlib import Path
 from typing import Any, cast
 
@@ -132,3 +133,55 @@ def test_router_derives_manifest_closure_instead_of_trusting_fixture_copy() -> N
     )
     assert "CTX.ROUTE.CLOSURE_MISMATCH" in {finding.code for finding in findings}
     assert receipt["dependencyClosure"] != fixture["dependencyClosure"]
+
+
+@pytest.mark.parametrize(
+    ("fixture_id", "expected_code"),
+    [
+        ("RFV1-02-BACKEND-TDD", "CTX.AUTH.CHILD_WIDENS_ISSUE"),
+        ("RFV1-07-MERGE-CLOSEOUT", "CTX.AUTH.EXTERNAL_NOT_GRANTED"),
+    ],
+)
+def test_cli_fails_closed_when_representative_authority_exceeds_issue_319(
+    fixture_id: str, expected_code: str
+) -> None:
+    result = subprocess.run(
+        [
+            "python3",
+            "-m",
+            "scripts.agent_context.cli",
+            "route",
+            "--commit",
+            "WORKTREE",
+            "--fixture-id",
+            fixture_id,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["status"] == "FAIL_CLOSED"
+    assert expected_code in {finding["code"] for finding in payload["findings"]}
+
+
+def test_cli_accepts_issue_319_exact_path_child_authority() -> None:
+    result = subprocess.run(
+        [
+            "python3",
+            "-m",
+            "scripts.agent_context.cli",
+            "route",
+            "--commit",
+            "WORKTREE",
+            "--fixture-id",
+            "RFV1-09-DISJOINT-WRITE-CHILD",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0
+    assert payload["status"] == "PASS"
