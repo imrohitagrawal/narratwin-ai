@@ -337,3 +337,18 @@ change-level traceability only, to avoid duplicate requirement tables drifting.
 | Curated UI, passive Playwright capture, and canonical runner | One curated project through grounded walkthrough, mock translation/voice, consent, local render, visible citations, and owner isolation | PR B governed by canonical comment `5122147727` |
 | Real artifact-schema joins and recursive zero-match scan | Bind source/chunks/evaluation to Stage 6/7 artifacts while excluding forbidden fixtures from evidence | Exact-head CI gate; local result is semantic-only |
 | ADR `0043`, status, and Phase 1 checker | Preserve 11/900/6 PR B and 15/2,500/8 aggregate caps plus all provider/hosting/private-data/#20 exclusions | Repository contract |
+
+## Issue 317 semantic repair slice 1 traceability
+
+| Evidence | Requirement | State |
+|---|---|---|
+| Frozen synthetic manifest and independent executor | `SR1-ORACLE-001`, `SR1-METRIC-001` | Nine immutable propositions, seven mandatory rows, exact thresholds, computed verdict only |
+| Committed RED tests at `f0bd287` | `SR1-RED-001` | Reproduces one-body audience collapse and semantic, citation, glossary, scope, schema, refusal, independence, and surface false passes before runtime GREEN |
+| Runtime-owned semantic frame in `backend/app/issue280.py` | `SR1-FRAME-001`, `SR1-COHORT-001` | Two essentials plus one audience emphasis for Spanish `STANDARD`; no runtime oracle/manifest import |
+| API/acceptance/contract tests | `SR1-PARITY-001`, `SR1-REFUSAL-001` | Same run/source/output across API, replay, artifact, citation, support, and oracle observations; unsupported fixture axes/clauses refuse |
+| Real Playwright browser test | `SR1-PARITY-001` | Seven visibly distinct audience bodies through the existing Next-to-backend path without interception |
+| Exact branch checker and repository ledgers | `SR1-SCOPE-001`, `SR1-PRESERVE-001` | Exactly 18 paths, 3,000 charged lines, ten surfaces; protected forensic surfaces remain unchanged |
+
+This mapping proves one synthetic Spanish cohort, not arbitrary multilingual
+quality or full Issue #280 closure. Provider, hosted, production, privacy,
+durability, deployment, and release decisions remain outside this trace.

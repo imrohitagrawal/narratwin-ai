@@ -150,3 +150,22 @@ When a later stage activates a skill, update `docs/SKILL_LOCK.md` with:
 - whether it writes files, runs scripts, touches network, or can affect credentials
 - stage where the skill is active
 - reviewer evidence in the stage PR
+
+## Issue 317 semantic repair slice 1
+
+Issue `#317` invokes spec-driven development to freeze the independent fixture
+and contract, test-driven development for committed behavioral RED before
+runtime GREEN, API/interface design for additive proposition/run/source
+bindings, frontend UI engineering plus browser testing for genuine visible
+behavior, and security/hardening guidance for fail-closed untrusted input.
+Evidence is the commit order, mutation tests, semantic metrics, API/artifact
+joins, real Playwright execution, exact scope gate, and independent exact-head
+review; invocation alone proves nothing.
+
+Phrasebook expansion, provider/model adapters, model judges, refusal-only
+containment, performance optimization, observability expansion, shipping,
+deployment, and custom skills are rejected because they either fail the
+semantic claim or exceed the bounded local/mock surface. No dependency or skill
+installation is needed. Human review remains mandatory for bilingual meaning,
+non-cosmetic audience emphasis, citation truth, oracle/runtime independence,
+claim boundaries, and merge wording.

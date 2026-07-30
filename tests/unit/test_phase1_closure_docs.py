@@ -2936,7 +2936,7 @@ def test_post_pr250_status_reconciliation_is_recorded() -> None:
         "PR `#281`",
         "`3058ea11a808fd7fbfbced3bd1ace07c96ef5f0c`",
         "post-merge main quality workflow run `30085558061` passing",
-                "pr-product-context-gate-complete",
+                "semantic-repair-slice1-complete",
         "PR `#282`",
         "`b889604a490c9f014130e420c1c949af7879dd84`",
         "post-merge main quality workflow run `30092008592` passing",
@@ -3438,6 +3438,49 @@ def test_issue315_charged_line_cap_fails_closed(monkeypatch: Any) -> None:
 
     assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_315_BRANCH, files=[]) == [
         f"Phase 1 Closure branch {phase1.ISSUE_315_BRANCH} exceeds its 1000-line cap."
+    ]
+
+
+def test_issue317_scope_budget_and_surface_contract_are_exact(monkeypatch: Any) -> None:
+    assert phase1.ISSUE_317_BRANCH == "phase-1-closure-317-issue280-semantic-repair-slice1"
+    assert len(phase1.ISSUE_317_ALLOWED_CHANGED_FILES) == 18
+    assert len(phase1.ISSUE_317_MEANINGFUL_SURFACES) == 10
+    assert set().union(*phase1.ISSUE_317_MEANINGFUL_SURFACES.values()) == phase1.ISSUE_317_ALLOWED_CHANGED_FILES
+    assert phase1.ISSUE_317_LINE_CAP == 3000
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 3000)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_317_BRANCH,
+        files=sorted(phase1.ISSUE_317_ALLOWED_CHANGED_FILES),
+    ) == []
+
+
+def test_issue317_scope_gate_fails_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 0)
+    missing = sorted(phase1.ISSUE_317_ALLOWED_CHANGED_FILES)[0]
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_317_BRANCH,
+        files=sorted(phase1.ISSUE_317_ALLOWED_CHANGED_FILES - {missing}) + ["backend/app/main.py"],
+    )
+    assert f"Phase 1 Closure branch {phase1.ISSUE_317_BRANCH} may not change backend/app/main.py." in failures
+    assert f"Phase 1 Closure branch {phase1.ISSUE_317_BRANCH} must change {missing}." in failures
+    near_match = f"{phase1.ISSUE_317_BRANCH}-extra"
+    assert run_changed_files_check(monkeypatch, branch=near_match, files=["docs/STATUS.md"]) == [
+        f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."
+    ]
+
+
+def test_issue317_charged_line_cap_fails_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "resolve_base", lambda: "branch-base")
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 3001)
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_317_BRANCH,
+        files=sorted(phase1.ISSUE_317_ALLOWED_CHANGED_FILES),
+    )
+    assert failures == [
+        f"Phase 1 Closure branch {phase1.ISSUE_317_BRANCH} exceeds its 3000-line cap."
     ]
 
 
