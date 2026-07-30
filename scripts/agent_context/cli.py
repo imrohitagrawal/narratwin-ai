@@ -250,6 +250,8 @@ def _run_route(args: argparse.Namespace) -> int:
         contract_schema=contract,
         expected_rule_ids={str(item) for item in route.get("selectedRuleIds", [])},
         expected_module_hashes=expected_module_hashes,
+        expected_fixture=fixture,
+        expected_route=route,
     )
     budget_name = str(route.get("packetBudget"))
     budget = manifest.get("budgets", {}).get(budget_name, {})

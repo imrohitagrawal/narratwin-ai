@@ -64,6 +64,9 @@ CAPSULE_FIELDS = {
     "branch",
     "baseCommit",
     "expectedHead",
+    "fixtureId",
+    "requestDigest",
+    "routeDigest",
     "actionMode",
     "objective",
     "deliverable",
@@ -520,11 +523,13 @@ def validate_capsule(
     contract_schema: JsonObject | None = None,
     expected_rule_ids: set[str] | None = None,
     expected_module_hashes: JsonObject | None = None,
+    expected_fixture: JsonObject | None = None,
+    expected_route: JsonObject | None = None,
 ) -> list[Finding]:
     """Validate exact state, typed authority, non-widening, and review independence."""
 
     findings = _unknown_fields(capsule, CAPSULE_FIELDS, "capsule")
-    required = CAPSULE_FIELDS - {"role", "historyMode", "untrustedData"}
+    required = CAPSULE_FIELDS - {"untrustedData"}
     findings.extend(_required_fields(capsule, required, "capsule"))
     if contract_schema is not None:
         findings.extend(validate_schema_instance(capsule, contract_schema, "AgentTaskCapsuleV1"))
@@ -572,8 +577,17 @@ def validate_capsule(
         findings.append(_finding("CTX.CAPSULE.RULE_SCOPE_MISMATCH"))
     if expected_module_hashes is not None and capsule.get("moduleHashes") != expected_module_hashes:
         findings.append(_finding("CTX.CAPSULE.MODULE_SCOPE_MISMATCH"))
-    if expected_rule_ids is None or expected_module_hashes is None:
+    if (
+        expected_rule_ids is None
+        or expected_module_hashes is None
+        or expected_fixture is None
+        or expected_route is None
+    ):
         findings.append(_finding("CTX.CAPSULE.ROUTE_BINDING_MISSING"))
+    else:
+        expected_binding = _task_binding(expected_fixture, expected_route)
+        if any(capsule.get(field) != value for field, value in expected_binding.items()):
+            findings.append(_finding("CTX.CAPSULE.TASK_SCOPE_MISMATCH"))
     if any(not _list(capsule.get(field)) for field in ("claims", "requiredPaths", "selectedRuleIds")) or not capsule.get(
         "moduleHashes"
     ):
@@ -597,7 +611,7 @@ def validate_capsule(
         if _domain(authority, "allows", "externalActions") or write_paths:
             findings.append(_finding("CTX.INJECT.AUTHORITY_UNTRUSTED"))
     if capsule.get("role") in {"INDEPENDENT_PR_REVIEWER", "INDEPENDENT_SECURITY_REVIEWER"}:
-        if capsule.get("historyMode") not in {"EXCLUDED", None} or write_paths:
+        if capsule.get("historyMode") != "EXCLUDED" or write_paths:
             findings.append(_finding("CTX.REVIEW.NOT_INDEPENDENT"))
     return _dedupe(findings)
 
@@ -612,6 +626,23 @@ def _capsule_metrics(capsule: JsonObject) -> tuple[int, int]:
         }
     rendered = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)
     return _line_count(rendered), _estimated_tokens(rendered)
+
+
+def _task_binding(fixture: JsonObject, route: JsonObject) -> JsonObject:
+    request = fixture.get("request", {})
+    request = request if isinstance(request, dict) else {}
+    claims = _objects(request.get("claims"))
+    posture = fixture.get("coldHistoryPosture", {})
+    posture = posture if isinstance(posture, dict) else {}
+    return {
+        "fixtureId": fixture.get("fixtureId"),
+        "requestDigest": canonical_digest(request),
+        "routeDigest": canonical_digest(route),
+        "objective": str(request.get("operation", "bounded-task")),
+        "deliverable": str(claims[0].get("value", "bounded evidence")) if claims else "bounded evidence",
+        "role": request.get("role"),
+        "historyMode": posture.get("authorReasoning"),
+    }
 
 
 def build_capsule(
@@ -647,9 +678,7 @@ def build_capsule(
         for module in _objects(manifest.get("modules"))
         if module.get("moduleId") in set(route.get("dependencyClosure", []))
     }
-    claims = _objects(fixture.get("request", {}).get("claims")) if isinstance(fixture.get("request"), dict) else []
-    objective = str(fixture.get("request", {}).get("operation", "bounded-task")) if isinstance(fixture.get("request"), dict) else "bounded-task"
-    deliverable = str(claims[0].get("value", "bounded evidence")) if claims else "bounded evidence"
+    task_binding = _task_binding(fixture, route)
     capsule: JsonObject = {
         "schemaVersion": "AgentTaskCapsuleV1",
         "capsuleId": f"capsule-{fixture.get('fixtureId')}",
@@ -658,9 +687,8 @@ def build_capsule(
         "branch": branch,
         "baseCommit": base_commit,
         "expectedHead": repository_commit,
+        **task_binding,
         "actionMode": action_mode,
-        "objective": objective,
-        "deliverable": deliverable,
         "claims": authority["allows"]["claims"],
         "negativeInvariants": [f"deny:{item}" for item in authority["denies"]["claims"]],
         "requiredPaths": fixture.get("requiredPaths", authority["allows"]["readPaths"]),
@@ -668,7 +696,7 @@ def build_capsule(
         "selectedRuleIds": route.get("selectedRuleIds", []),
         "moduleHashes": module_hashes,
         "requiredTests": fixture.get("seededDefectIds", []),
-        "assumptions": ["shadow-mode-only", "mandatory-reading-unchanged"],
+        "assumptions": [],
         "budgets": dict(fixture.get("budgets", {}).get("taskCapsule", {})),
         "stopConditions": [
             "AUTHORITY_DRIFT",

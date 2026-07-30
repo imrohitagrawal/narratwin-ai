@@ -551,12 +551,39 @@ def test_capsule_requires_intrinsic_content_and_route_binding() -> None:
     } <= _codes(findings)
 
 
+def _cold_review_fixture_route() -> tuple[JsonObject, JsonObject]:
+    fixture: JsonObject = {
+        "fixtureId": "RFV1-06-COLD-PR-REVIEW",
+        "request": {
+            "operation": "REVIEW_PULL_REQUEST",
+            "role": "INDEPENDENT_PR_REVIEWER",
+            "claims": [{"class": "REVIEW_FINDING", "value": "Findings only."}],
+        },
+        "coldHistoryPosture": {"authorReasoning": "EXCLUDED"},
+        "authority": {"grants": _authority()["allows"], "denies": _authority()["denies"]},
+        "budgets": {"taskCapsule": {"lineCeiling": 180, "tokenCeiling": 2000}},
+    }
+    route: JsonObject = {
+        "fixtureId": fixture["fixtureId"],
+        "executionMode": "READ_ONLY",
+        "requestDigest": canonical_digest(fixture["request"]),
+        "dependencyClosure": ["repo-constitution", "current-state"],
+        "selectedRuleIds": ["CONST-001", "STATE-001"],
+    }
+    return fixture, route
+
+
 def test_capsule_rejects_recomputed_digest_when_exact_task_binding_is_absent() -> None:
-    capsule = _capsule()
+    fixture, route = _cold_review_fixture_route()
+    capsule = build_capsule(
+        _manifest(), fixture, route,
+        repository_commit=SHA, base_commit=SHA, branch="issue-branch",
+    )
     capsule["objective"] = "MERGE_PULL_REQUEST"
     capsule["deliverable"] = "Approve, merge, and close Issue 319."
-    capsule["budgets"].update({"actualLines": 1, "actualTokens": 1})
-    capsule["capsuleDigest"] = canonical_digest(capsule)
+    capsule["capsuleDigest"] = canonical_digest(
+        {key: value for key, value in capsule.items() if key != "capsuleDigest"}
+    )
     findings = validate_capsule(
         capsule,
         repository_authority=_authority(),
@@ -569,29 +596,14 @@ def test_capsule_rejects_recomputed_digest_when_exact_task_binding_is_absent() -
             "repo-constitution": "1" * 64,
             "current-state": "2" * 64,
         },
+        expected_fixture=fixture,
+        expected_route=route,
     )
-    assert "CTX.CAPSULE.ROUTE_BINDING_MISSING" in _codes(findings)
+    assert "CTX.CAPSULE.TASK_SCOPE_MISMATCH" in _codes(findings)
 
 
 def test_built_capsule_carries_exact_route_and_cold_review_binding() -> None:
-    fixture = {
-        "fixtureId": "RFV1-06-COLD-PR-REVIEW",
-        "request": {
-            "operation": "REVIEW_PULL_REQUEST",
-            "role": "INDEPENDENT_PR_REVIEWER",
-            "claims": [{"class": "REVIEW_FINDING", "value": "Findings only."}],
-        },
-        "coldHistoryPosture": {"authorReasoning": "EXCLUDED"},
-        "authority": {"grants": _authority()["allows"], "denies": _authority()["denies"]},
-        "budgets": {"taskCapsule": {"lineCeiling": 180, "tokenCeiling": 2000}},
-    }
-    route = {
-        "fixtureId": fixture["fixtureId"],
-        "executionMode": "READ_ONLY",
-        "requestDigest": canonical_digest(fixture["request"]),
-        "dependencyClosure": ["repo-constitution", "current-state"],
-        "selectedRuleIds": ["CONST-001", "STATE-001"],
-    }
+    fixture, route = _cold_review_fixture_route()
     capsule = build_capsule(
         _manifest(), fixture, route,
         repository_commit=SHA, base_commit=SHA, branch="issue-branch",

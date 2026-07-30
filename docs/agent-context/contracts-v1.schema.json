@@ -115,7 +115,7 @@
     "AgentTaskCapsuleV1": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "capsuleId", "parentCapsuleId", "repository", "branch", "baseCommit", "expectedHead", "actionMode", "objective", "deliverable", "claims", "negativeInvariants", "requiredPaths", "authority", "selectedRuleIds", "moduleHashes", "requiredTests", "assumptions", "budgets", "stopConditions", "expiresAt", "expectedReceiptSchema", "authorityDigest", "capsuleDigest"],
+      "required": ["schemaVersion", "capsuleId", "parentCapsuleId", "repository", "branch", "baseCommit", "expectedHead", "fixtureId", "requestDigest", "routeDigest", "role", "historyMode", "actionMode", "objective", "deliverable", "claims", "negativeInvariants", "requiredPaths", "authority", "selectedRuleIds", "moduleHashes", "requiredTests", "assumptions", "budgets", "stopConditions", "expiresAt", "expectedReceiptSchema", "authorityDigest", "capsuleDigest"],
       "properties": {
         "schemaVersion": {"const": "AgentTaskCapsuleV1"},
         "capsuleId": {"type": "string"},
@@ -124,6 +124,11 @@
         "branch": {"type": "string"},
         "baseCommit": {"$ref": "#/$defs/Commit"},
         "expectedHead": {"$ref": "#/$defs/Commit"},
+        "fixtureId": {"type": "string"},
+        "requestDigest": {"$ref": "#/$defs/Sha256"},
+        "routeDigest": {"$ref": "#/$defs/Sha256"},
+        "role": {"enum": ["PRIMARY_READ_ONLY", "PRIMARY_IMPLEMENTER", "INDEPENDENT_SECURITY_REVIEWER", "INDEPENDENT_PR_REVIEWER", "MERGE_CLOSEOUT_OPERATOR", "READ_ONLY_CHILD_INVESTIGATOR", "EXACT_PATH_WRITE_CHILD"]},
+        "historyMode": {"enum": ["EXCLUDED", "NOT_APPLICABLE", "ALLOWED_FOR_IMPLEMENTATION_NOT_AUTHORITY", "NOT_APPROVAL_EVIDENCE"]},
         "actionMode": {"enum": ["READ_ONLY", "EDIT", "TEST", "GITHUB_MUTATION"]},
         "objective": {"type": "string"},
         "deliverable": {"type": "string"},
