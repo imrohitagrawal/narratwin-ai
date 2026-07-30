@@ -466,7 +466,7 @@ def _domain(authority: JsonObject, plane: str, domain: str) -> set[str]:
         return set()
     items = {str(item) for item in _list(value.get(domain))}
     if domain in {"readPaths", "writePaths"}:
-        return {_normalized_path(item) for item in items}
+        return {_authority_path(item) for item in items}
     return items
 
 
@@ -563,7 +563,7 @@ def validate_capsule(
     denied_claims = _domain(authority, "denies", "claims")
     if declared_claims - allowed_claims or declared_claims & denied_claims:
         findings.append(_finding("CTX.CAPSULE.CLAIM_SCOPE_MISMATCH"))
-    required_paths = {_normalized_path(str(item)) for item in _list(capsule.get("requiredPaths"))}
+    required_paths = {_authority_path(str(item)) for item in _list(capsule.get("requiredPaths"))}
     if required_paths - _domain(authority, "allows", "readPaths"):
         findings.append(_finding("CTX.CAPSULE.REQUIRED_PATH_SCOPE_MISMATCH"))
     if expected_rule_ids is not None and {
@@ -738,12 +738,18 @@ def validate_receipt(
     }
     if reserved_proved:
         findings.append(_finding("CTX.RECEIPT.RESERVED_CLAIM", ",".join(sorted(reserved_proved))))
-    proved_claims = {str(item) for item in _list(receipt.get("claimsProved"))}
+    claim_sets = [
+        {str(item) for item in _list(receipt.get(field)) if isinstance(item, str)}
+        for field in ("claimsProved", "claimsDisproved", "claimsNotTested")
+    ]
+    proved_claims = set().union(*claim_sets)
     authority = capsule.get("authority", {})
     allowed_claims = _domain(authority if isinstance(authority, dict) else {}, "allows", "claims")
     denied_claims = _domain(authority if isinstance(authority, dict) else {}, "denies", "claims")
     if proved_claims - allowed_claims or proved_claims & denied_claims:
         findings.append(_finding("CTX.RECEIPT.CLAIM_SCOPE_MISMATCH"))
+    if any(claim_sets[left] & claim_sets[right] for left, right in ((0, 1), (0, 2), (1, 2))):
+        findings.append(_finding("CTX.RECEIPT.CLAIM_CLASSIFICATION_CONFLICT"))
     budget = receipt.get("budget", {})
     capsule_budget = capsule.get("budgets", {})
     if isinstance(budget, dict) and isinstance(capsule_budget, dict):
@@ -761,18 +767,18 @@ def validate_receipt(
     if capsule.get("actionMode") == "READ_ONLY" and _list(receipt.get("filesChanged")):
         findings.append(_finding("CTX.RECEIPT.READ_ONLY_CHANGED"))
     allowed_writes = _domain(authority if isinstance(authority, dict) else {}, "allows", "writePaths")
-    changed = {str(item) for item in _list(receipt.get("filesChanged"))}
+    changed = {_authority_path(str(item)) for item in _list(receipt.get("filesChanged"))}
     if changed - allowed_writes:
         findings.append(_finding("CTX.RECEIPT.WRITE_SCOPE_MISMATCH"))
     allowed_reads = _domain(authority if isinstance(authority, dict) else {}, "allows", "readPaths")
     inspected = {
-        _normalized_path(str(item))
+        _authority_path(str(item))
         for field in ("filesInspected", "additionalSources")
         for item in _list(receipt.get(field))
     }
     if inspected - allowed_reads:
         findings.append(_finding("CTX.RECEIPT.READ_SCOPE_MISMATCH"))
-    required = {_normalized_path(str(item)) for item in _list(capsule.get("requiredPaths"))}
+    required = {_authority_path(str(item)) for item in _list(capsule.get("requiredPaths"))}
     if required - inspected:
         findings.append(_finding("CTX.RECEIPT.REQUIRED_EVIDENCE_MISSING"))
     if {str(item) for item in _list(receipt.get("validatedRules"))} != {
@@ -786,6 +792,10 @@ def validate_receipt(
 
 def _normalized_path(path: str) -> str:
     return unicodedata.normalize("NFC", path).casefold().rstrip("/")
+
+
+def _authority_path(path: str) -> str:
+    return unicodedata.normalize("NFC", path)
 
 
 def detect_write_set_collisions(capsules: list[JsonObject]) -> list[Finding]:

@@ -511,7 +511,7 @@ def test_receipt_requires_authorized_claims_required_reads_and_typed_budget() ->
 def test_receipt_claim_buckets_are_typed_bounded_and_mutually_exclusive() -> None:
     receipt = _receipt()
     receipt["claimsDisproved"] = [{"claim": "ISSUE_317_FIXED"}]
-    receipt["claimsNotTested"] = [42]
+    receipt["claimsNotTested"] = [42, "ISSUE_317_FIXED"]
     receipt["claimsProved"] = ["FINDING"]
     receipt["claimsDisproved"].append("FINDING")
     contract = json.loads(Path("docs/agent-context/contracts-v1.schema.json").read_text())
