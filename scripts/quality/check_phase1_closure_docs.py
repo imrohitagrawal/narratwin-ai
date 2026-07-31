@@ -7258,8 +7258,8 @@ def check_issue158_security_history_contract(failures: list[str]) -> None:
         lowered = prefix.lower()
         wrapped = (
             len(re.findall(r"(?m)^[ \t]{0,3}(?:`{3,}|~{3,})", prefix)) % 2
-            or prefix.rfind("<!--") > prefix.rfind("-->")
-            or any(lowered.rfind(f"<{tag}") > lowered.rfind(f"</{tag}>") for tag in ("div", "details", "template"))
+            or prefix.count("<!--") != prefix.count("-->")
+            or any(lowered.count(f"<{tag}") != lowered.count(f"</{tag}>") for tag in ("div", "details", "template"))
         )
         if (
             text.count(ISSUE_158_RECORD_BEGIN) != 1

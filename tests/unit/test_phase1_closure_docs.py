@@ -3896,7 +3896,7 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
 def test_issue158_allows_future_content_outside_bounded_record(monkeypatch: Any) -> None:
     rel = "docs/TRACEABILITY.md"
     mutated = (
-        "## Earlier valid context\n\nPreserved.\n\n"
+        "## Earlier valid context\n\n````text\n<!-- balanced example -->\n````\n\n<div>Visible.</div>\n\nPreserved.\n\n"
         + phase1.read(rel)
         + "\n\n## Later valid traceability entry\n\nFuture repository work remains editable.\n"
     )
