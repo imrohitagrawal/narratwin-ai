@@ -52,6 +52,16 @@ def run_changed_files_check(monkeypatch: Any, *, branch: str, files: list[str]) 
     return failures
 
 
+def run_issue158_security_history_check(
+    monkeypatch: Any, *, read_overrides: dict[str, str] | None = None
+) -> list[str]:
+    if read_overrides:
+        monkeypatch.setattr(phase1, "read", read_with_overrides(phase1, read_overrides))
+    failures: list[str] = []
+    phase1.check_issue158_security_history_contract(failures)
+    return failures
+
+
 def run_branch_check(
     monkeypatch: Any,
     *,
@@ -3654,6 +3664,252 @@ def test_issue321_scope_and_budget_fail_closed(monkeypatch: Any) -> None:
     assert run_changed_files_check(
         monkeypatch, branch=near_match, files=["docs/STATUS.md"]
     ) == [f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."]
+
+
+EXPECTED_ISSUE158_RECORD = {
+    "schema_version": "issue-158-security-history-v2",
+    "record_verified_on": "2026-08-01",
+    "evidence_scope": "public GitHub and merged repository evidence",
+    "pr_152": {
+        "number": 152,
+        "head_commit": "1308e88255724918bbde3a4775a0c973abaca8f4",
+        "ready_for_review_at": "2026-07-14T10:51:12Z",
+        "approved_by": "rohitagrawal4u",
+        "approved_at": "2026-07-14T10:50:43Z",
+        "latest_required_checks_at_merge": "passed",
+        "earlier_failed_reruns_observed": True,
+        "merge_commit": "648c81c066127056334c5c2babae28585fd58d4d",
+        "merged_at": "2026-07-14T10:52:59Z",
+    },
+    "state_at_pr_152_merge": {
+        "issue_138": "open",
+        "issue_150": "open",
+        "issue_151": "open",
+        "process_contract_deviation": True,
+        "branch_protection_bypass_in_reviewed_evidence": "not-observed",
+        "explicit_dated_semgrep_risk_acceptance_in_reviewed_evidence": "not-found",
+        "cpython_scanner_consensus": "absent",
+        "cpython_remediation": "incomplete",
+        "waiver_in_reviewed_evidence": "not-found",
+        "blocked_claims": ["clean-container-security", "hosted-release", "production"],
+    },
+    "issue_138_closeout": {
+        "closed_at": "2026-07-14T10:53:41Z",
+        "state_after_closeout": "closed",
+    },
+    "later_issue_151_resolution": {
+        "pr": 180,
+        "merge_commit": "8d18c3830ab5cb1336b33ce661e0aa33230e95e2",
+        "merged_at": "2026-07-16T21:47:31Z",
+        "issue_151_closed_at": "2026-07-16T21:48:43Z",
+        "issue_151_state_after_closeout": "closed",
+        "retroactively_erases_pr_152_deviation": False,
+    },
+    "state_as_of_record_verification": {
+        "issue_150": "open",
+        "issue_151": "closed",
+        "release_posture": "no-go",
+    },
+    "issue_158_effect": {
+        "runtime_behavior": "unchanged",
+        "scanner_behavior": "unchanged",
+        "product_behavior": "unchanged",
+    },
+    "historical_source": {
+        "commit": "648c81c066127056334c5c2babae28585fd58d4d",
+        "blobs": {
+            "docs/ADR/0006-stage8-release-hardening.md": "fa100222873b640371664a49caa2ba08c1f26073",
+            "docs/RISK_REGISTER.md": "517e93cf86365574565f07f25ab44b289ca4e722",
+            "docs/TRACEABILITY.md": "48c3c11a6abfa02014d4c044ce4ca906fa486822",
+            "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md": "a44d5be907e54c1e6f661c6d651d605242d668de",
+        },
+    },
+}
+
+
+def issue158_leaf_paths(value: object, prefix: tuple[object, ...] = ()) -> list[tuple[object, ...]]:
+    if isinstance(value, dict):
+        return [
+            path
+            for key, child in value.items()
+            for path in issue158_leaf_paths(child, prefix + (key,))
+        ]
+    if isinstance(value, list):
+        return [
+            path
+            for index, child in enumerate(value)
+            for path in issue158_leaf_paths(child, prefix + (index,))
+        ]
+    return [prefix]
+
+
+def mutate_issue158_leaf(record: dict[str, object], path: tuple[object, ...]) -> None:
+    target: Any = record
+    for component in path[:-1]:
+        target = target[component]
+    leaf = target[path[-1]]
+    if type(leaf) is bool:
+        target[path[-1]] = not leaf
+    elif type(leaf) is int:
+        target[path[-1]] = leaf + 1
+    else:
+        target[path[-1]] = f"{leaf}-mutated"
+
+
+def replace_issue158_record(text: str, replacement: str) -> str:
+    pattern = re.compile(
+        rf"({re.escape(phase1.ISSUE_158_RECORD_BEGIN)}\n\n"
+        rf"## Issue #158 Security History Chronology\n\n```json\n)"
+        rf"(?P<payload>.*?)(\n```\n\n{re.escape(phase1.ISSUE_158_RECORD_END)})",
+        flags=re.S,
+    )
+    match = pattern.search(text)
+    assert match is not None
+    return text[: match.start("payload")] + replacement + text[match.end("payload") :]
+
+
+def test_issue158_scope_budget_and_surfaces_are_exact(monkeypatch: Any) -> None:
+    expected = {
+        "docs/governance/preflights/issue-158.json",
+        "docs/STATUS.md",
+        "docs/ADR/0006-stage8-release-hardening.md",
+        "docs/RISK_REGISTER.md",
+        "docs/TRACEABILITY.md",
+        "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+    assert phase1.ISSUE_158_BRANCH == (
+        "phase-1-closure-process-158-phf-security-history-v2"
+    )
+    assert phase1.ISSUE_158_ALLOWED_CHANGED_FILES == expected
+    assert phase1.ISSUE_158_LINE_CAP == 650
+    assert len(phase1.ISSUE_158_MEANINGFUL_SURFACES) == 8
+    assert set().union(*phase1.ISSUE_158_MEANINGFUL_SURFACES.values()) == expected
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 650)
+    assert run_changed_files_check(
+        monkeypatch, branch=phase1.ISSUE_158_BRANCH, files=sorted(expected)
+    ) == []
+
+
+def test_issue158_scope_and_budget_fail_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 651)
+    missing = "docs/STATUS.md"
+    failures = run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_158_BRANCH,
+        files=sorted(phase1.ISSUE_158_ALLOWED_CHANGED_FILES - {missing})
+        + ["backend/app/main.py"],
+    )
+    assert f"Phase 1 Closure branch {phase1.ISSUE_158_BRANCH} may not change backend/app/main.py." in failures
+    assert f"Phase 1 Closure branch {phase1.ISSUE_158_BRANCH} must change {missing}." in failures
+    assert f"Phase 1 Closure branch {phase1.ISSUE_158_BRANCH} exceeds its 650-line cap." in failures
+    near_match = f"{phase1.ISSUE_158_BRANCH}-extra"
+    assert run_changed_files_check(
+        monkeypatch, branch=near_match, files=["docs/STATUS.md"]
+    ) == [f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."]
+
+
+def test_issue158_record_schema_and_current_documents(monkeypatch: Any) -> None:
+    assert phase1.ISSUE_158_SECURITY_HISTORY_RECORD == EXPECTED_ISSUE158_RECORD
+    assert run_issue158_security_history_check(monkeypatch) == []
+
+
+@pytest.mark.parametrize("leaf_path", issue158_leaf_paths(EXPECTED_ISSUE158_RECORD))
+def test_issue158_rejects_every_leaf_value_mutation(
+    monkeypatch: Any, leaf_path: tuple[object, ...]
+) -> None:
+    rel = "docs/ADR/0006-stage8-release-hardening.md"
+    record = json.loads(json.dumps(EXPECTED_ISSUE158_RECORD))
+    mutate_issue158_leaf(record, leaf_path)
+    mutated = replace_issue158_record(phase1.read(rel), json.dumps(record, indent=2))
+    failures = run_issue158_security_history_check(
+        monkeypatch, read_overrides={rel: mutated}
+    )
+    assert any("record differs" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("path", "invalid"),
+    (
+        (("pr_152", "number"), 152.0),
+        (("pr_152", "earlier_failed_reruns_observed"), 1),
+        (("state_at_pr_152_merge", "process_contract_deviation"), 1),
+        (("state_at_pr_152_merge", "blocked_claims"), "production"),
+        (("later_issue_151_resolution", "retroactively_erases_pr_152_deviation"), 0),
+    ),
+)
+def test_issue158_rejects_json_type_substitution(
+    monkeypatch: Any, path: tuple[str, ...], invalid: object
+) -> None:
+    rel = "docs/RISK_REGISTER.md"
+    record = json.loads(json.dumps(EXPECTED_ISSUE158_RECORD))
+    target: Any = record
+    for component in path[:-1]:
+        target = target[component]
+    target[path[-1]] = invalid
+    mutated = replace_issue158_record(phase1.read(rel), json.dumps(record, indent=2))
+    failures = run_issue158_security_history_check(
+        monkeypatch, read_overrides={rel: mutated}
+    )
+    assert any("record type differs" in failure for failure in failures)
+
+
+@pytest.mark.parametrize("mutation", ("duplicate-key", "missing-key", "unknown-key", "malformed"))
+def test_issue158_rejects_invalid_json_shape(monkeypatch: Any, mutation: str) -> None:
+    rel = "docs/TRACEABILITY.md"
+    payload = json.dumps(EXPECTED_ISSUE158_RECORD, indent=2)
+    if mutation == "duplicate-key":
+        payload = payload.replace(
+            '  "record_verified_on": "2026-08-01",',
+            '  "record_verified_on": "2026-08-01",\n  "record_verified_on": "2026-08-01",',
+            1,
+        )
+    elif mutation == "missing-key":
+        payload = payload.replace('  "record_verified_on": "2026-08-01",\n', "", 1)
+    elif mutation == "unknown-key":
+        payload = payload.replace(
+            '  "record_verified_on": "2026-08-01",',
+            '  "record_verified_on": "2026-08-01",\n  "unknown": true,',
+            1,
+        )
+    else:
+        payload = "{not-json}"
+    mutated = replace_issue158_record(phase1.read(rel), payload)
+    failures = run_issue158_security_history_check(
+        monkeypatch, read_overrides={rel: mutated}
+    )
+    assert any("record" in failure for failure in failures)
+
+
+def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: Any) -> None:
+    rel = "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md"
+    original = phase1.read(rel)
+    start = original.index(phase1.ISSUE_158_RECORD_BEGIN)
+    end = original.index(phase1.ISSUE_158_RECORD_END) + len(phase1.ISSUE_158_RECORD_END)
+    duplicated = original + "\n\n" + original[start:end]
+    extra_prose = original.replace(
+        "## Issue #158 Security History Chronology\n\n```json",
+        "## Issue #158 Security History Chronology\n\nUnstructured claim.\n\n```json",
+        1,
+    )
+    for mutated in (duplicated, extra_prose):
+        failures = run_issue158_security_history_check(
+            monkeypatch, read_overrides={rel: mutated}
+        )
+        assert any("bounded record" in failure for failure in failures)
+
+
+def test_issue158_allows_future_content_outside_bounded_record(monkeypatch: Any) -> None:
+    rel = "docs/TRACEABILITY.md"
+    mutated = (
+        "## Earlier valid context\n\nPreserved.\n\n"
+        + phase1.read(rel)
+        + "\n\n## Later valid traceability entry\n\nFuture repository work remains editable.\n"
+    )
+    assert run_issue158_security_history_check(
+        monkeypatch, read_overrides={rel: mutated}
+    ) == []
 
 
 def test_issue294_replacement_scope_budget_and_surfaces_are_exact(
