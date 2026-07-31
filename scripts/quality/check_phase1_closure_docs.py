@@ -8,6 +8,7 @@ import json
 import os
 import re
 import subprocess
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import cast
 
@@ -7226,6 +7227,27 @@ def issue158_json_types_match(observed: object, expected: object) -> bool:
     return True
 
 
+class Issue158HTMLParser(HTMLParser):
+    INERT = {"code", "details", "dialog", "iframe", "noembed", "noframes", "noscript", "object", "plaintext", "pre", "script", "style", "template", "textarea", "xmp"}
+    VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.stack: list[tuple[str, bool]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = {name.lower(): (value or "").lower() for name, value in attrs}
+        style = values.get("style", "")
+        hidden = tag in self.INERT or "hidden" in values or values.get("aria-hidden") == "true" or "display:none" in style.replace(" ", "") or "visibility:hidden" in style.replace(" ", "")
+        if tag not in self.VOID:
+            self.stack.append((tag, hidden))
+
+    def handle_endtag(self, tag: str) -> None:
+        positions = [index for index, item in enumerate(self.stack) if item[0] == tag]
+        if positions:
+            del self.stack[positions[-1] :]
+
+
 def issue158_prefix_is_top_level(prefix: str) -> bool:
     fence: tuple[str, int] | None = None
     visible: list[str] = []
@@ -7241,21 +7263,15 @@ def issue158_prefix_is_top_level(prefix: str) -> bool:
             continue
         if fence is None:
             visible.append(line)
-    surface = re.sub(r"<!--.*?-->", "", "\n".join(visible), flags=re.S)
+    surface = re.sub(r"(?s)(?<!`)(`+)(?!`).*?(?<!`)\1(?!`)", "", "\n".join(visible))
+    surface = re.sub(r"(?<!\\)\\<", "&lt;", surface)
+    surface = re.sub(r"<!--.*?-->", "", surface, flags=re.S)
     if fence or "<!--" in surface:
         return False
-    stack: list[tuple[str, bool]] = []
-    for match in re.finditer(r"<(/?)([A-Za-z][\w:-]*)([^>]*)>", surface):
-        closing, tag, attrs = match.groups()
-        tag = tag.lower()
-        if closing:
-            positions = [index for index, item in enumerate(stack) if item[0] == tag]
-            if positions:
-                del stack[positions[-1] :]
-        elif tag not in {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"} and not attrs.rstrip().endswith("/"):
-            hidden = tag in {"code", "details", "noscript", "pre", "script", "style", "template", "textarea", "xmp"} or re.search(r"\b(?:hidden|aria-hidden\s*=\s*['\"]?true)\b|(?:display\s*:\s*none|visibility\s*:\s*hidden)", attrs, flags=re.I) is not None
-            stack.append((tag, hidden))
-    return not any(hidden for _, hidden in stack)
+    parser = Issue158HTMLParser()
+    parser.feed(surface)
+    parser.close()
+    return not any(hidden for _, hidden in parser.stack)
 
 
 def check_issue158_security_history_contract(failures: list[str]) -> None:
