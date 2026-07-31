@@ -7245,10 +7245,10 @@ def issue158_prefix_is_top_level(prefix: str) -> bool:
             elif fence and run[0] == fence[0] and len(run) >= fence[1] and not rest.strip():
                 fence = None
             continue
-        if fence is None and (not (line.startswith("\t") or len(line) - len(stripped) >= 4) or bool(visible and visible[-1].strip())):
+        if fence is None:
             visible.append(line)
     surface = re.sub(r"(\\+)([<`])", issue158_markdown_escape, "\n".join(visible))
-    surface = re.sub(r"(?s)(?<!`)(`+)(?!`).*?(?<!`)\1(?!`)", "", surface)
+    surface = re.sub(r"(?<!`)(`+)(?!`).*?(?<!`)\1(?!`)", "", surface)
     surface = re.sub(r"<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^ <>]*|[^ <>@]+@[^ <>@]+)>", "", surface)
     return not fence and re.search(r"<(?:/?[A-Za-z]|[!?])", surface) is None
 
