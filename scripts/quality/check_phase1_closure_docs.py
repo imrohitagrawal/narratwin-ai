@@ -7254,10 +7254,21 @@ def check_issue158_security_history_contract(failures: list[str]) -> None:
     for rel in documents:
         text = read(rel)
         matches = list(pattern.finditer(text))
+        prefix = text[: matches[0].start()] if matches else ""
+        lowered = prefix.lower()
+        wrapped = (
+            len(re.findall(r"(?m)^[ \t]{0,3}(?:`{3,}|~{3,})", prefix)) % 2
+            or prefix.rfind("<!--") > prefix.rfind("-->")
+            or any(lowered.rfind(f"<{tag}") > lowered.rfind(f"</{tag}>") for tag in ("div", "details", "template"))
+        )
         if (
             text.count(ISSUE_158_RECORD_BEGIN) != 1
             or text.count(ISSUE_158_RECORD_END) != 1
+            or text.count("ISSUE158-SECURITY-HISTORY-V2") != 2
+            or text.count("## Issue #158 Security History Chronology") != 1
+            or text.count("issue-158-security-history-v2") != 1
             or len(matches) != 1
+            or wrapped
         ):
             fail(failures, f"{rel} must contain exactly one Issue #158 bounded record.")
             continue
