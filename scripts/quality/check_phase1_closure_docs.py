@@ -7250,8 +7250,7 @@ def issue158_prefix_is_top_level(prefix: str) -> bool:
     surface = re.sub(r"(\\+)([<`])", issue158_markdown_escape, "\n".join(visible))
     surface = re.sub(r"(?s)(?<!`)(`+)(?!`).*?(?<!`)\1(?!`)", "", surface)
     surface = re.sub(r"<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^ <>]*|[^ <>@]+@[^ <>@]+)>", "", surface)
-    surface = re.sub(r"<!--.*?-->", "", surface, flags=re.S)
-    return not fence and "<!--" not in surface and re.search(r"<(?:/?[A-Za-z]|[!?])", surface) is None
+    return not fence and re.search(r"<(?:/?[A-Za-z]|[!?])", surface) is None
 
 
 def check_issue158_security_history_contract(failures: list[str]) -> None:
