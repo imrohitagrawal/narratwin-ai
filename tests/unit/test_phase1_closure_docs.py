@@ -3881,10 +3881,8 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
     css_bypass = f'<div style="display:\tnone">\n{original}\n</div>'
     escape_bypass = "\\`<div hidden>`\n" + original
     template_bypass = f"<details>\n<template></details></template>\n{original}\n</details>"
-    fence_info_bypass = f"```x``` <details>\n\n{original}\n</details>"
     raw_text_bypasses = [f"<details>\n<{tag}></details></{tag}>\n{original}\n</details>" for tag in ("iframe", "noembed", "noframes", "xmp", "textarea", "title", "noscript")]
-    plaintext_bypass = f"<details><plaintext></details>\n{original}\n</details>"
-    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass, section_bypass, script_bypass, tilde_bypass, order_bypass, quoted_bypass, raw_close_bypass, dialog_bypass, iframe_bypass, noembed_bypass, self_close_bypass, incomplete_bypass, duplicate_bypass, aria_bypass, css_bypass, escape_bypass, template_bypass, fence_info_bypass, plaintext_bypass, *raw_text_bypasses):
+    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass, section_bypass, script_bypass, tilde_bypass, order_bypass, quoted_bypass, raw_close_bypass, dialog_bypass, iframe_bypass, noembed_bypass, self_close_bypass, incomplete_bypass, duplicate_bypass, aria_bypass, css_bypass, escape_bypass, template_bypass, f"```x``` <details>\n\n{original}\n</details>", f"   ````x```` <div hidden>\n\n{original}\n</div>", f"```x``` <!--\n\n{original}\n-->", f"Text\n    <details>\n{original}\n</details>", f"<details><plaintext></details>\n{original}\n</details>", *raw_text_bypasses):
         failures = run_issue158_security_history_check(
             monkeypatch, read_overrides={rel: mutated}
         )
