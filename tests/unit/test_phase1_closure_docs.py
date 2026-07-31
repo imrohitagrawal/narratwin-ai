@@ -3890,7 +3890,9 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
     hidden_bypass = f"<div hidden>\n<!-- </div> -->\n{original}\n</div>"
     section_bypass = f"<section hidden>\n{original}\n</section>"
     script_bypass = f'<script type="text/plain">\n{original}\n</script>'
-    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass, section_bypass, script_bypass):
+    tilde_bypass = f"~~~markdown\n```\n{original}\n~~~"
+    order_bypass = f"</div>\n<div hidden>\n{original}\n</div>"
+    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass, section_bypass, script_bypass, tilde_bypass, order_bypass):
         failures = run_issue158_security_history_check(
             monkeypatch, read_overrides={rel: mutated}
         )

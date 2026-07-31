@@ -7226,6 +7226,38 @@ def issue158_json_types_match(observed: object, expected: object) -> bool:
     return True
 
 
+def issue158_prefix_is_top_level(prefix: str) -> bool:
+    fence: tuple[str, int] | None = None
+    visible: list[str] = []
+    for line in prefix.splitlines():
+        stripped = line.lstrip(" ")
+        marker = re.match(r"(`{3,}|~{3,})(.*)$", stripped) if len(line) - len(stripped) <= 3 else None
+        if marker:
+            run, rest = marker.groups()
+            if fence is None and not (run[0] == "`" and "`" in rest):
+                fence = (run[0], len(run))
+            elif fence and run[0] == fence[0] and len(run) >= fence[1] and not rest.strip():
+                fence = None
+            continue
+        if fence is None:
+            visible.append(line)
+    surface = re.sub(r"<!--.*?-->", "", "\n".join(visible), flags=re.S)
+    if fence or "<!--" in surface:
+        return False
+    stack: list[tuple[str, bool]] = []
+    for match in re.finditer(r"<(/?)([A-Za-z][\w:-]*)([^>]*)>", surface):
+        closing, tag, attrs = match.groups()
+        tag = tag.lower()
+        if closing:
+            positions = [index for index, item in enumerate(stack) if item[0] == tag]
+            if positions:
+                del stack[positions[-1] :]
+        elif tag not in {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"} and not attrs.rstrip().endswith("/"):
+            hidden = tag in {"code", "details", "noscript", "pre", "script", "style", "template", "textarea", "xmp"} or re.search(r"\b(?:hidden|aria-hidden\s*=\s*['\"]?true)\b|(?:display\s*:\s*none|visibility\s*:\s*hidden)", attrs, flags=re.I) is not None
+            stack.append((tag, hidden))
+    return not any(hidden for _, hidden in stack)
+
+
 def check_issue158_security_history_contract(failures: list[str]) -> None:
     documents = (
         "docs/ADR/0006-stage8-release-hardening.md",
@@ -7255,12 +7287,6 @@ def check_issue158_security_history_contract(failures: list[str]) -> None:
         text = read(rel)
         matches = list(pattern.finditer(text))
         prefix = text[: matches[0].start()] if matches else ""
-        lowered = prefix.lower()
-        wrapped = (
-            len(re.findall(r"(?m)^[ \t]{0,3}(?:`{3,}|~{3,})", prefix)) % 2
-            or prefix.count("<!--") != prefix.count("-->")
-            or any(lowered.count(f"<{tag}") != lowered.count(f"</{tag}>") for tag in ("div", "details", "template"))
-        )
         if (
             text.count(ISSUE_158_RECORD_BEGIN) != 1
             or text.count(ISSUE_158_RECORD_END) != 1
@@ -7268,7 +7294,7 @@ def check_issue158_security_history_contract(failures: list[str]) -> None:
             or text.count("## Issue #158 Security History Chronology") != 1
             or text.count("issue-158-security-history-v2") != 1
             or len(matches) != 1
-            or wrapped
+            or not issue158_prefix_is_top_level(prefix)
         ):
             fail(failures, f"{rel} must contain exactly one Issue #158 bounded record.")
             continue
