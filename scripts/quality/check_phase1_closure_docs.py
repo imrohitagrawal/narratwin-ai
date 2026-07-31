@@ -7229,6 +7229,7 @@ def issue158_json_types_match(observed: object, expected: object) -> bool:
 
 class Issue158HTMLParser(HTMLParser):
     VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+    RAW = {"iframe", "noembed", "noframes", "noscript", "script", "style", "textarea", "title", "xmp"}
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -7237,12 +7238,16 @@ class Issue158HTMLParser(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag not in self.VOID:
             self.stack.append(tag)
+            if tag in self.RAW:
+                self.set_cdata_mode(tag, escapable=tag in {"textarea", "title"})
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag not in self.VOID:
             self.handle_starttag(tag, attrs)
 
     def handle_endtag(self, tag: str) -> None:
+        if "plaintext" in self.stack:
+            return
         floor = 0 if tag == "template" else max((index + 1 for index, item in enumerate(self.stack) if item == "template"), default=0)
         positions = [index for index in range(floor, len(self.stack)) if self.stack[index] == tag]
         if positions:
@@ -7261,14 +7266,14 @@ def issue158_prefix_is_top_level(prefix: str) -> bool:
     for line in prefix.splitlines():
         stripped = line.lstrip(" ")
         marker = re.match(r"(`{3,}|~{3,})(.*)$", stripped) if len(line) - len(stripped) <= 3 else None
-        if marker:
+        if marker and (fence or marker.group(1)[0] == "~" or "`" not in marker.group(2)):
             run, rest = marker.groups()
-            if fence is None and not (run[0] == "`" and "`" in rest):
+            if fence is None:
                 fence = (run[0], len(run))
             elif fence and run[0] == fence[0] and len(run) >= fence[1] and not rest.strip():
                 fence = None
             continue
-        if fence is None:
+        if fence is None and (not (line.startswith("\t") or len(line) - len(stripped) >= 4) or bool(visible and visible[-1].strip())):
             visible.append(line)
     surface = re.sub(r"(\\+)([<`])", issue158_markdown_escape, "\n".join(visible))
     surface = re.sub(r"(?s)(?<!`)(`+)(?!`).*?(?<!`)\1(?!`)", "", surface)
