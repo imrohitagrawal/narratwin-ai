@@ -3897,7 +3897,10 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
         "## Issue #158 Security History Chronology\n\nUnstructured claim.\n\n```json",
         1,
     )
-    for mutated in (duplicated, extra_prose):
+    forged = original + "\n\n## Issue #158 Security History Chronology\n\n```json\n{}\n```"
+    fenced = f"```markdown\n{original}\n```"
+    hidden = f"<div hidden>\n{original}\n</div>"
+    for mutated in (duplicated, extra_prose, forged, fenced, hidden):
         failures = run_issue158_security_history_check(
             monkeypatch, read_overrides={rel: mutated}
         )
