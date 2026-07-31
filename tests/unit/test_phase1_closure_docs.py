@@ -3881,8 +3881,8 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
     css_bypass = f'<div style="display:\tnone">\n{original}\n</div>'
     escape_bypass = "\\`<div hidden>`\n" + original
     template_bypass = f"<details>\n<template></details></template>\n{original}\n</details>"
-    raw_text_bypasses = [f"<details>\n<{tag}{slash}></details></{tag}>\n{original}\n</details>" for tag in ("script", "style", "iframe", "noembed", "noframes", "xmp", "textarea", "title", "noscript") for slash in ("", "/")]
-    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass, section_bypass, script_bypass, tilde_bypass, order_bypass, quoted_bypass, raw_close_bypass, dialog_bypass, iframe_bypass, noembed_bypass, self_close_bypass, incomplete_bypass, duplicate_bypass, aria_bypass, css_bypass, escape_bypass, template_bypass, f"```x``` <details>\n\n{original}\n</details>", f"   ````x```` <div hidden>\n\n{original}\n</div>", f"```x``` <!--\n\n{original}\n-->", f"Text\n    <details>\n{original}\n</details>", f"<details><plaintext></details>\n{original}\n</details>", *raw_text_bypasses):
+    raw_text_bypasses = [f"<details>\n<{tag}{slash}></details></{tag}>\n{original}\n</details>" for tag in ("script", "style", "iframe", "noembed", "noframes", "xmp", "textarea", "title", "noscript", "table", "select", "object", "marquee", "applet") for slash in ("", "/")]
+    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass, section_bypass, script_bypass, tilde_bypass, order_bypass, quoted_bypass, raw_close_bypass, dialog_bypass, iframe_bypass, noembed_bypass, self_close_bypass, incomplete_bypass, duplicate_bypass, aria_bypass, css_bypass, escape_bypass, template_bypass, f"<div>Visible.</div>\n{original}", f"```x``` <details>\n\n{original}\n</details>", f"   ````x```` <div hidden>\n\n{original}\n</div>", f"```x``` <!--\n\n{original}\n-->", f"Text\n    <details>\n{original}\n</details>", f"<details><plaintext></details>\n{original}\n</details>", *raw_text_bypasses):
         failures = run_issue158_security_history_check(
             monkeypatch, read_overrides={rel: mutated}
         )
@@ -3892,7 +3892,7 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
 def test_issue158_allows_future_content_outside_bounded_record(monkeypatch: Any) -> None:
     rel = "docs/TRACEABILITY.md"
     mutated = (
-        "    <details>\n\n\t<section hidden>\n\n## Earlier valid context\n\n````text\n```\n<div hidden>\n````\n\nUse ``<div hidden>``, \\<section hidden>, and \\\\\\<article hidden> as literals. <https://example.com>\n\n<div>Visible.</div><details open>Visible.</details>\n\nPreserved.\n\n"
+        "    <details>\n\n\t<section hidden>\n\n## Earlier valid context\n\n````text\n```\n<div hidden>\n````\n\nUse ``<div hidden>``, \\<section hidden>, and \\\\\\<article hidden> as literals. <https://example.com>\n\nPreserved.\n\n"
         + phase1.read(rel)
         + "\n\n## Later valid traceability entry\n\nFuture repository work remains editable.\n"
     )
