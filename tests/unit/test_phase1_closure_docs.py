@@ -3886,7 +3886,9 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
     hidden = f"<div hidden>\n{original}\n</div>"
     schema_mimic = original + '\n\n{"schema_version":"issue-158-security-history-v2","false_claim":"production-ready"}'
     marker_mimic = original + "\n\n<!-- ISSUE158-SECURITY-HISTORY-V2:FORGED -->"
-    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic):
+    fence_bypass = f"````markdown\n```\n{original}\n````"
+    hidden_bypass = f"<div hidden>\n<!-- </div> -->\n{original}\n</div>"
+    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass):
         failures = run_issue158_security_history_check(
             monkeypatch, read_overrides={rel: mutated}
         )
