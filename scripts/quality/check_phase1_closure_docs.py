@@ -1884,6 +1884,75 @@ PHF020A_ACCEPTANCE_TRANSFER = {
     "ISSUE8-06": ("#8", "No application code changes", "Issue #311 exact governance-only branch gate"),
 }
 ISSUE8_SKILL_PLAN_MARKER = "Before coding, PM/spec skills must validate both Product Mode 1 and Product Mode 2 and the reusable `project-avatar-pack` contract across the PRD, roadmap, architecture, and Slice 1 planning."
+ISSUE_158_BRANCH = "phase-1-closure-process-158-phf-security-history-v2"
+ISSUE_158_ALLOWED_CHANGED_FILES = {
+    "docs/governance/preflights/issue-158.json", "docs/STATUS.md",
+    "docs/ADR/0006-stage8-release-hardening.md", "docs/RISK_REGISTER.md",
+    "docs/TRACEABILITY.md", "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md",
+    "scripts/quality/check_phase1_closure_docs.py", "tests/unit/test_phase1_closure_docs.py",
+}
+ISSUE_158_LINE_CAP = 650
+ISSUE_158_MEANINGFUL_SURFACES = {
+    "governance-authority": {"docs/governance/preflights/issue-158.json"},
+    "status": {"docs/STATUS.md"},
+    "architecture-history": {"docs/ADR/0006-stage8-release-hardening.md"},
+    "risk-history": {"docs/RISK_REGISTER.md"},
+    "traceability-history": {"docs/TRACEABILITY.md"},
+    "preflight-history": {"docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md"},
+    "quality-gate": {"scripts/quality/check_phase1_closure_docs.py"},
+    "quality-tests": {"tests/unit/test_phase1_closure_docs.py"},
+}
+ISSUE_158_RECORD_BEGIN = "<!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->"
+ISSUE_158_RECORD_END = "<!-- ISSUE158-SECURITY-HISTORY-V2:END -->"
+ISSUE_158_SECURITY_HISTORY_RECORD: dict[str, object] = {
+    "schema_version": "issue-158-security-history-v2",
+    "record_verified_on": "2026-08-01",
+    "evidence_scope": "public GitHub and merged repository evidence",
+    "pr_152": {
+        "number": 152, "head_commit": "1308e88255724918bbde3a4775a0c973abaca8f4",
+        "ready_for_review_at": "2026-07-14T10:51:12Z", "approved_by": "rohitagrawal4u",
+        "approved_at": "2026-07-14T10:50:43Z", "latest_required_checks_at_merge": "passed",
+        "earlier_failed_reruns_observed": True,
+        "merge_commit": "648c81c066127056334c5c2babae28585fd58d4d",
+        "merged_at": "2026-07-14T10:52:59Z",
+    },
+    "state_at_pr_152_merge": {
+        "issue_138": "open", "issue_150": "open", "issue_151": "open",
+        "process_contract_deviation": True,
+        "branch_protection_bypass_in_reviewed_evidence": "not-observed",
+        "explicit_dated_semgrep_risk_acceptance_in_reviewed_evidence": "not-found",
+        "cpython_scanner_consensus": "absent", "cpython_remediation": "incomplete",
+        "waiver_in_reviewed_evidence": "not-found",
+        "blocked_claims": ["clean-container-security", "hosted-release", "production"],
+    },
+    "issue_138_closeout": {
+        "closed_at": "2026-07-14T10:53:41Z", "state_after_closeout": "closed",
+    },
+    "later_issue_151_resolution": {
+        "pr": 180, "merge_commit": "8d18c3830ab5cb1336b33ce661e0aa33230e95e2",
+        "head_commit": "f64cfb3dd34368a4920d9ec79ce9887fc17ca48e",
+        "merged_at": "2026-07-16T21:47:31Z", "issue_151_at_pr_180_merge": "open",
+        "issue_151_closed_at": "2026-07-16T21:48:43Z",
+        "issue_151_state_after_closeout": "closed",
+        "retroactively_erases_pr_152_deviation": False,
+    },
+    "state_as_of_record_verification": {
+        "issue_150": "open", "issue_151": "closed", "release_posture": "no-go",
+    },
+    "issue_158_effect": {
+        "runtime_behavior": "unchanged", "scanner_behavior": "unchanged",
+        "product_behavior": "unchanged", "global_clean_security_claim": "not-established",
+    },
+    "historical_source": {
+        "commit": "648c81c066127056334c5c2babae28585fd58d4d",
+        "blobs": {
+            "docs/ADR/0006-stage8-release-hardening.md": "fa100222873b640371664a49caa2ba08c1f26073",
+            "docs/RISK_REGISTER.md": "517e93cf86365574565f07f25ab44b289ca4e722",
+            "docs/TRACEABILITY.md": "48c3c11a6abfa02014d4c044ce4ca906fa486822",
+            "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md": "a44d5be907e54c1e6f661c6d651d605242d668de",
+        },
+    },
+}
 ISSUE_311_BRANCH = "phase-1-closure-process-311-issue8-product-memory-closeout"
 ISSUE_311_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-311.json", "docs/PHASE_PLAN.md",
@@ -4352,6 +4421,10 @@ def check_changed_files(failures: list[str]) -> None:
         allowed_files = ISSUE_138_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-151-cpython313-security-remediation":
         allowed_files = ISSUE_151_ALLOWED_CHANGED_FILES
+    elif branch == ISSUE_158_BRANCH:
+        allowed_files = ISSUE_158_ALLOWED_CHANGED_FILES
+    elif branch.startswith("phase-1-closure-process-158-"):
+        allowed_files = set()
     elif branch == "phase-1-closure-process-287-stage8-quality-gate-drift":
         allowed_files = ISSUE_287_ALLOWED_CHANGED_FILES
     elif branch == "phase-1-closure-process-289-security-postcss-stage8-gate-unblock":
@@ -4625,6 +4698,20 @@ def check_changed_files(failures: list[str]) -> None:
         }
         if len(active_surfaces) > 6:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its 6-surface cap.")
+    if branch == ISSUE_158_BRANCH:
+        missing = ISSUE_158_ALLOWED_CHANGED_FILES - set(changed)
+        for rel in sorted(missing):
+            fail(failures, f"Phase 1 Closure branch {branch} must change {rel}.")
+        for rel in sorted(ISSUE_158_ALLOWED_CHANGED_FILES):
+            if not (ROOT / rel).is_file() or (ROOT / rel).is_symlink():
+                fail(failures, f"Phase 1 Closure branch {branch} must retain {rel} as a regular file.")
+        active_surfaces = {
+            surface
+            for surface, paths in ISSUE_158_MEANINGFUL_SURFACES.items()
+            if paths & set(changed)
+        }
+        if len(active_surfaces) > 8:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its 8-surface cap.")
     if branch in ISSUE_308_LINE_CAPS:
         local, aggregate = charged_lines(resolve_base()), charged_lines(ISSUE_308_FROZEN_BASE)
         if local is None or aggregate is None:
@@ -4677,6 +4764,12 @@ def check_changed_files(failures: list[str]) -> None:
             fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
         elif local > ISSUE_321_LINE_CAP:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_321_LINE_CAP}-line cap.")
+    if branch == ISSUE_158_BRANCH:
+        local = charged_lines(resolve_base())
+        if local is None:
+            fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
+        elif local > ISSUE_158_LINE_CAP:
+            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {ISSUE_158_LINE_CAP}-line cap.")
 
 
 def check_final_review_baseline(failures: list[str]) -> None:
@@ -7117,6 +7210,80 @@ def check_process_docs(failures: list[str]) -> None:
     )
 
 
+def issue158_json_types_match(observed: object, expected: object) -> bool:
+    if type(observed) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return isinstance(observed, dict) and observed.keys() == expected.keys() and all(
+            issue158_json_types_match(observed[key], value)
+            for key, value in expected.items()
+        )
+    if isinstance(expected, list):
+        return isinstance(observed, list) and len(observed) == len(expected) and all(
+            issue158_json_types_match(item, expected[index])
+            for index, item in enumerate(observed)
+        )
+    return True
+
+
+def check_issue158_security_history_contract(failures: list[str]) -> None:
+    documents = (
+        "docs/ADR/0006-stage8-release-hardening.md",
+        "docs/RISK_REGISTER.md",
+        "docs/TRACEABILITY.md",
+        "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md",
+    )
+    pattern = re.compile(
+        rf"{re.escape(ISSUE_158_RECORD_BEGIN)}\n\n"
+        rf"## Issue #158 Security History Chronology\n\n```json\n"
+        rf"(?P<payload>.*?)\n```\n\n{re.escape(ISSUE_158_RECORD_END)}",
+        flags=re.S,
+    )
+
+    def reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        parsed: dict[str, object] = {}
+        for key, value in pairs:
+            if key in parsed:
+                raise ValueError(f"duplicate key {key!r}")
+            parsed[key] = value
+        return parsed
+
+    def reject_nonstandard_constant(value: str) -> object:
+        raise ValueError(f"non-standard JSON constant {value!r}")
+
+    for rel in documents:
+        text = read(rel)
+        matches = list(pattern.finditer(text))
+        if (
+            text.count(ISSUE_158_RECORD_BEGIN) != 1
+            or text.count(ISSUE_158_RECORD_END) != 1
+            or len(matches) != 1
+        ):
+            fail(failures, f"{rel} must contain exactly one Issue #158 bounded record.")
+            continue
+        try:
+            observed = json.loads(
+                matches[0].group("payload"),
+                object_pairs_hook=reject_duplicate_keys,
+                parse_constant=reject_nonstandard_constant,
+            )
+        except (json.JSONDecodeError, ValueError) as exc:
+            fail(failures, f"{rel} Issue #158 record is invalid: {exc}.")
+            continue
+        if not issue158_json_types_match(observed, ISSUE_158_SECURITY_HISTORY_RECORD):
+            fail(failures, f"{rel} Issue #158 record type differs from the contract.")
+        elif observed != ISSUE_158_SECURITY_HISTORY_RECORD:
+            fail(failures, f"{rel} Issue #158 record differs from the contract.")
+
+    source = cast(dict[str, object], ISSUE_158_SECURITY_HISTORY_RECORD["historical_source"])
+    commit = cast(str, source["commit"])
+    blobs = cast(dict[str, str], source["blobs"])
+    for rel, expected_blob in blobs.items():
+        observed_blob = run_git(["rev-parse", f"{commit}:{rel}"])
+        if observed_blob != expected_blob or run_git(["cat-file", "-t", expected_blob]) != "blob":
+            fail(failures, f"{rel} Issue #158 historical Git blob anchor is not reproducible.")
+
+
 def check_issue319_agent_context(failures: list[str]) -> None:
     """Run the shadow validator and freeze fixture independence markers."""
 
@@ -7169,6 +7336,7 @@ def main() -> int:
         check_phf020a_policy_contract(failures)
         check_status_state_v1_contract(failures)
         check_process_docs(failures)
+        check_issue158_security_history_contract(failures)
         check_issue300_semantic_governance(failures)
         check_issue313_repair_feasibility(failures)
         check_issue319_agent_context(failures)

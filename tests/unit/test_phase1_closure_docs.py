@@ -3699,8 +3699,10 @@ EXPECTED_ISSUE158_RECORD = {
     },
     "later_issue_151_resolution": {
         "pr": 180,
+        "head_commit": "f64cfb3dd34368a4920d9ec79ce9887fc17ca48e",
         "merge_commit": "8d18c3830ab5cb1336b33ce661e0aa33230e95e2",
         "merged_at": "2026-07-16T21:47:31Z",
+        "issue_151_at_pr_180_merge": "open",
         "issue_151_closed_at": "2026-07-16T21:48:43Z",
         "issue_151_state_after_closeout": "closed",
         "retroactively_erases_pr_152_deviation": False,
@@ -3713,7 +3715,7 @@ EXPECTED_ISSUE158_RECORD = {
     "issue_158_effect": {
         "runtime_behavior": "unchanged",
         "scanner_behavior": "unchanged",
-        "product_behavior": "unchanged",
+        "product_behavior": "unchanged", "global_clean_security_claim": "not-established",
     },
     "historical_source": {
         "commit": "648c81c066127056334c5c2babae28585fd58d4d",
@@ -3855,7 +3857,7 @@ def test_issue158_rejects_json_type_substitution(
     assert any("record type differs" in failure for failure in failures)
 
 
-@pytest.mark.parametrize("mutation", ("duplicate-key", "missing-key", "unknown-key", "malformed"))
+@pytest.mark.parametrize("mutation", ("duplicate-key", "missing-key", "unknown-key", "nonstandard", "malformed"))
 def test_issue158_rejects_invalid_json_shape(monkeypatch: Any, mutation: str) -> None:
     rel = "docs/TRACEABILITY.md"
     payload = json.dumps(EXPECTED_ISSUE158_RECORD, indent=2)
@@ -3873,6 +3875,8 @@ def test_issue158_rejects_invalid_json_shape(monkeypatch: Any, mutation: str) ->
             '  "record_verified_on": "2026-08-01",\n  "unknown": true,',
             1,
         )
+    elif mutation == "nonstandard":
+        payload = payload.replace('"number": 152', '"number": NaN', 1)
     else:
         payload = "{not-json}"
     mutated = replace_issue158_record(phase1.read(rel), payload)
@@ -3910,6 +3914,12 @@ def test_issue158_allows_future_content_outside_bounded_record(monkeypatch: Any)
     assert run_issue158_security_history_check(
         monkeypatch, read_overrides={rel: mutated}
     ) == []
+
+
+def test_issue158_rejects_unreproducible_historical_blob(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "run_git", lambda args: "")
+    failures = run_issue158_security_history_check(monkeypatch)
+    assert any("historical Git blob anchor" in failure for failure in failures)
 
 
 def test_issue294_replacement_scope_budget_and_surfaces_are_exact(

@@ -118,3 +118,45 @@ security exception. Do not convert any such result into an ignored finding.
 - Independent adversarial review found two high, two medium, and one low
   false-green/contract gaps. All were corrected; the fresh re-review reported
   no remaining findings. Human security/platform decisions remain pending.
+
+<!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
+
+## Issue #158 Security History Chronology
+
+```json
+{
+  "schema_version": "issue-158-security-history-v2",
+  "record_verified_on": "2026-08-01",
+  "evidence_scope": "public GitHub and merged repository evidence",
+  "pr_152": {
+    "number": 152, "head_commit": "1308e88255724918bbde3a4775a0c973abaca8f4",
+    "ready_for_review_at": "2026-07-14T10:51:12Z", "approved_by": "rohitagrawal4u",
+    "approved_at": "2026-07-14T10:50:43Z", "latest_required_checks_at_merge": "passed", "earlier_failed_reruns_observed": true,
+    "merge_commit": "648c81c066127056334c5c2babae28585fd58d4d", "merged_at": "2026-07-14T10:52:59Z"
+  },
+  "state_at_pr_152_merge": {
+    "issue_138": "open", "issue_150": "open", "issue_151": "open", "process_contract_deviation": true,
+    "branch_protection_bypass_in_reviewed_evidence": "not-observed", "explicit_dated_semgrep_risk_acceptance_in_reviewed_evidence": "not-found",
+    "cpython_scanner_consensus": "absent", "cpython_remediation": "incomplete", "waiver_in_reviewed_evidence": "not-found",
+    "blocked_claims": ["clean-container-security", "hosted-release", "production"]
+  },
+  "issue_138_closeout": {"closed_at": "2026-07-14T10:53:41Z", "state_after_closeout": "closed"},
+  "later_issue_151_resolution": {
+    "pr": 180, "merge_commit": "8d18c3830ab5cb1336b33ce661e0aa33230e95e2",
+    "head_commit": "f64cfb3dd34368a4920d9ec79ce9887fc17ca48e",
+    "merged_at": "2026-07-16T21:47:31Z", "issue_151_at_pr_180_merge": "open", "issue_151_closed_at": "2026-07-16T21:48:43Z",
+    "issue_151_state_after_closeout": "closed", "retroactively_erases_pr_152_deviation": false
+  },
+  "state_as_of_record_verification": {"issue_150": "open", "issue_151": "closed", "release_posture": "no-go"},
+  "issue_158_effect": {"runtime_behavior": "unchanged", "scanner_behavior": "unchanged", "product_behavior": "unchanged", "global_clean_security_claim": "not-established"},
+  "historical_source": {
+    "commit": "648c81c066127056334c5c2babae28585fd58d4d",
+    "blobs": {
+      "docs/ADR/0006-stage8-release-hardening.md": "fa100222873b640371664a49caa2ba08c1f26073", "docs/RISK_REGISTER.md": "517e93cf86365574565f07f25ab44b289ca4e722",
+      "docs/TRACEABILITY.md": "48c3c11a6abfa02014d4c044ce4ca906fa486822", "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md": "a44d5be907e54c1e6f661c6d651d605242d668de"
+    }
+  }
+}
+```
+
+<!-- ISSUE158-SECURITY-HISTORY-V2:END -->
