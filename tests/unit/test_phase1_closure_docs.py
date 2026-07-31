@@ -3918,8 +3918,7 @@ def test_issue158_allows_future_content_outside_bounded_record(monkeypatch: Any)
 
 def test_issue158_rejects_unreproducible_historical_blob(monkeypatch: Any) -> None:
     monkeypatch.setattr(phase1, "run_git", lambda args: "")
-    failures = run_issue158_security_history_check(monkeypatch)
-    assert any("historical Git blob anchor" in failure for failure in failures)
+    assert any("historical Git blob anchor" in failure for failure in run_issue158_security_history_check(monkeypatch))
 
 
 def test_issue294_replacement_scope_budget_and_surfaces_are_exact(
@@ -3983,6 +3982,7 @@ def test_issue294_replacement_scope_and_budget_fail_closed(
 def test_issue294_replacement_rejects_deleted_or_symlinked_required_path(
     monkeypatch: Any, is_file: bool, is_symlink: bool
 ) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 0)
     target = "tests/unit/test_phase1_closure_docs.py"
     original_is_file = Path.is_file
     original_is_symlink = Path.is_symlink
