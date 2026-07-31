@@ -7228,24 +7228,31 @@ def issue158_json_types_match(observed: object, expected: object) -> bool:
 
 
 class Issue158HTMLParser(HTMLParser):
-    INERT = {"code", "details", "dialog", "iframe", "noembed", "noframes", "noscript", "object", "plaintext", "pre", "script", "style", "template", "textarea", "xmp"}
     VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.stack: list[tuple[str, bool]] = []
+        self.stack: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        values = {name.lower(): (value or "").lower() for name, value in attrs}
-        style = values.get("style", "")
-        hidden = tag in self.INERT or "hidden" in values or values.get("aria-hidden") == "true" or "display:none" in style.replace(" ", "") or "visibility:hidden" in style.replace(" ", "")
         if tag not in self.VOID:
-            self.stack.append((tag, hidden))
+            self.stack.append(tag)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag not in self.VOID:
+            self.handle_starttag(tag, attrs)
 
     def handle_endtag(self, tag: str) -> None:
-        positions = [index for index, item in enumerate(self.stack) if item[0] == tag]
+        floor = 0 if tag == "template" else max((index + 1 for index, item in enumerate(self.stack) if item == "template"), default=0)
+        positions = [index for index in range(floor, len(self.stack)) if self.stack[index] == tag]
         if positions:
             del self.stack[positions[-1] :]
+
+
+def issue158_markdown_escape(match: re.Match[str]) -> str:
+    slashes, character = match.groups()
+    literal = "\\" * (len(slashes) // 2)
+    return literal + ({"`": "&#96;", "<": "&lt;"}[character] if len(slashes) % 2 else character)
 
 
 def issue158_prefix_is_top_level(prefix: str) -> bool:
@@ -7263,15 +7270,17 @@ def issue158_prefix_is_top_level(prefix: str) -> bool:
             continue
         if fence is None:
             visible.append(line)
-    surface = re.sub(r"(?s)(?<!`)(`+)(?!`).*?(?<!`)\1(?!`)", "", "\n".join(visible))
-    surface = re.sub(r"(?<!\\)\\<", "&lt;", surface)
+    surface = re.sub(r"(\\+)([<`])", issue158_markdown_escape, "\n".join(visible))
+    surface = re.sub(r"(?s)(?<!`)(`+)(?!`).*?(?<!`)\1(?!`)", "", surface)
+    surface = re.sub(r"<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^ <>]*|[^ <>@]+@[^ <>@]+)>", "", surface)
     surface = re.sub(r"<!--.*?-->", "", surface, flags=re.S)
     if fence or "<!--" in surface:
         return False
     parser = Issue158HTMLParser()
     parser.feed(surface)
+    incomplete = bool(parser.rawdata)
     parser.close()
-    return not any(hidden for _, hidden in parser.stack)
+    return not incomplete and not parser.stack
 
 
 def check_issue158_security_history_contract(failures: list[str]) -> None:
