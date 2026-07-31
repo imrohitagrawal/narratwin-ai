@@ -3874,7 +3874,13 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
     dialog_bypass = f"<dialog>\n{original}\n</dialog>"
     iframe_bypass = f"<iframe>\n{original}\n</iframe>"
     noembed_bypass = f"<noembed>\n{original}\n</noembed>"
-    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass, section_bypass, script_bypass, tilde_bypass, order_bypass, quoted_bypass, raw_close_bypass, dialog_bypass, iframe_bypass, noembed_bypass):
+    self_close_bypass = f"<div hidden />\n{original}\n</div>"
+    incomplete_bypass = f'<script type="text/plain"\n{original}\n>ignored</script>'
+    duplicate_bypass = f'<div style="display:none" style="">\n{original}\n</div>'
+    aria_bypass = f'<div aria-hidden="true" aria-hidden="false">\n{original}\n</div>'
+    css_bypass = f'<div style="display:\tnone">\n{original}\n</div>'
+    escape_bypass = "\\`<div hidden>`\n" + original
+    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass, section_bypass, script_bypass, tilde_bypass, order_bypass, quoted_bypass, raw_close_bypass, dialog_bypass, iframe_bypass, noembed_bypass, self_close_bypass, incomplete_bypass, duplicate_bypass, aria_bypass, css_bypass, escape_bypass):
         failures = run_issue158_security_history_check(
             monkeypatch, read_overrides={rel: mutated}
         )
@@ -3884,7 +3890,7 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
 def test_issue158_allows_future_content_outside_bounded_record(monkeypatch: Any) -> None:
     rel = "docs/TRACEABILITY.md"
     mutated = (
-        "## Earlier valid context\n\n````text\n```\n<div hidden>\n````\n\nUse ``<div hidden>`` and \\<section hidden> as literals.\n\n<div>Visible.</div>\n\nPreserved.\n\n"
+        "## Earlier valid context\n\n````text\n```\n<div hidden>\n````\n\nUse ``<div hidden>``, \\<section hidden>, and \\\\\\<article hidden> as literals.\n\n<div>Visible.</div>\n\nPreserved.\n\n"
         + phase1.read(rel)
         + "\n\n## Later valid traceability entry\n\nFuture repository work remains editable.\n"
     )
