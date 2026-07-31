@@ -3888,7 +3888,9 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
     marker_mimic = original + "\n\n<!-- ISSUE158-SECURITY-HISTORY-V2:FORGED -->"
     fence_bypass = f"````markdown\n```\n{original}\n````"
     hidden_bypass = f"<div hidden>\n<!-- </div> -->\n{original}\n</div>"
-    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass):
+    section_bypass = f"<section hidden>\n{original}\n</section>"
+    script_bypass = f'<script type="text/plain">\n{original}\n</script>'
+    for mutated in (duplicated, extra_prose, forged, fenced, hidden, schema_mimic, marker_mimic, fence_bypass, hidden_bypass, section_bypass, script_bypass):
         failures = run_issue158_security_history_check(
             monkeypatch, read_overrides={rel: mutated}
         )
@@ -3898,7 +3900,7 @@ def test_issue158_rejects_duplicate_or_unstructured_bounded_record(monkeypatch: 
 def test_issue158_allows_future_content_outside_bounded_record(monkeypatch: Any) -> None:
     rel = "docs/TRACEABILITY.md"
     mutated = (
-        "## Earlier valid context\n\n````text\n<!-- balanced example -->\n````\n\n<div>Visible.</div>\n\nPreserved.\n\n"
+        "## Earlier valid context\n\n````text\n```\n<div hidden>\n````\n\n<div>Visible.</div>\n\nPreserved.\n\n"
         + phase1.read(rel)
         + "\n\n## Later valid traceability entry\n\nFuture repository work remains editable.\n"
     )
