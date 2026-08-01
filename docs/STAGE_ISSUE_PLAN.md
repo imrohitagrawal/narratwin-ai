@@ -2241,3 +2241,65 @@ gates compute the result; current public sources use neutral product language;
 historical records remain contextual; launch No-Go and human-only risk decisions
 remain unchanged; and no runtime, provider, media, Q&A, hosting, release, or
 production capability is claimed.
+
+## R0C-A1 governance-truth recovery
+
+Issue `#328` is the recovery controller. Its current owner instruction is the
+OWNER-authored comment `5151625565`; Issue `#329` is the implementation-free
+R0C-A1 child controller. R0C-A1 must run one merged child at a time in this
+order: A1.1 semantic freshness, A1.2 status and release-checklist
+reconciliation, then A1.3 ADR identity and index migration. A1.1 is split to
+avoid asking the existing generic branch guard to authorize edits to itself.
+
+Issue `#330` is A1.1a, the executable scope-freeze prerequisite. Its exact
+branch is
+`phase-1-closure-process-330-r0c-a1-1a-freshness-scope-freeze`; its five-file,
+450-charged-line scope is:
+
+- `docs/governance/preflights/issue-330.json`;
+- `tests/unit/test_phase1_closure_docs.py`;
+- `scripts/quality/check_phase1_closure_docs.py`;
+- `docs/STAGE_ISSUE_PLAN.md`; and
+- `docs/STATUS.md`.
+
+After merged-tree closeout, create only A1.1b. Its exact branch form is
+`phase-1-closure-process-<issue>-r0c-a1-1b-offline-freshness`; its eight-file,
+800-charged-line scope is:
+
+- `docs/governance/preflights/issue-<issue>.json`;
+- `docs/agent-context/contracts-v1.schema.json`;
+- `docs/agent-context/current-state-v1.json`;
+- `docs/agent-context/context-policy-manifest-v1.json`;
+- `scripts/agent_context/core.py`;
+- `scripts/agent_context/cli.py`;
+- `tests/unit/test_agent_context_freshness.py`; and
+- `docs/STATUS.md`.
+
+A1.1b must make offline validation return structurally valid but `UNVERIFIED`
+without independent live evidence. It validates the checked-in observation
+receipt's schema, repository and head binding, source digest, observation time,
+24-hour expiry, authority, and contradiction state. Stale, expired, forged,
+copied, superseded-authority, wrong-head, self-certified, or unavailable live
+state cannot establish current or release truth. Unavailable live state does
+not block unrelated local tests.
+
+After A1.1b merged-tree closeout, create only A1.1c. Its exact branch form is
+`phase-1-closure-process-<issue>-r0c-a1-1c-live-freshness`; its six-file,
+650-charged-line scope is:
+
+- `docs/governance/preflights/issue-<issue>.json`;
+- `scripts/agent_context/github.py`;
+- `tests/unit/test_agent_context_github.py`;
+- `.github/workflows/quality-gates.yml`;
+- `docs/QUALITY_GATES.md`; and
+- `docs/STATUS.md`.
+
+A1.1c adds trusted GitHub CI verification of live issue, pull request, review,
+check-run, application, and exact-head facts. Negative and mutation cases must
+prove that marker prose, frozen hashes, copied receipts, caller-supplied pass
+fields, unauthorized scope, or a checker weakened with its fixture cannot
+certify freshness. Near-match A1.1 branch names fail closed. These recovery
+children authorize no product-runtime behavior, provider activation, spend,
+deployment, publication, release, or production-readiness claim. Agent context
+remains `STALE_GOVERNANCE` and shadow-only until A1.1c is merged and independently
+verified.

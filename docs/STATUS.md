@@ -14,8 +14,18 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-30
+- Last reviewed date: 2026-08-01
 - Current stage marker: `.stage/current = 8`
+- Recovery control: Issue `#328` is the current controller under OWNER comment
+  `5151625565`. Issue `#329` is its implementation-free R0C-A1 controller, and
+  Issue `#330` is the first dependency, A1.1a. The checked-in agent-context
+  packet is `STALE_GOVERNANCE` and shadow-only: it predates current GitHub state,
+  and the existing validator can pass without expiry, contradiction, or
+  independently refreshed live-state proof. Issue `#330` freezes only the
+  executable scopes for A1.1b offline receipt semantics and A1.1c trusted live
+  verification. Status and release-checklist reconciliation remains A1.2;
+  duplicate ADR identity/index migration remains A1.3. No product-runtime,
+  provider, deployment, publication, release, or production authority follows.
 - Forensic baseline: evidence at exact head
   `f93653e8a11e697c88766b207fb01c18662339d6` establishes that Issue `#280` is
   not fixed. Issue `#300` and PR `#301` are completed historical negative
@@ -829,18 +839,16 @@ required checks, merge, and merged-tree closeout complete.
    or rewrite that implementation history.
 2. Preserve closed Issue `#8`, Issue `#308`, and Issue `#311` as completed
    product-memory and Heartbeat 2 evidence; do not reopen them.
-3. Treat Issue #300 and merged PR #301 as completed historical
-   negative-containment evidence. Issue #313 and PR #314 completed the
-   architecture/oracle decision. Issues #317/#321 and PRs #318/#322 completed
-   only the bounded Spanish `STANDARD` semantic slice and its compatibility
-   correction. Issue #319 remains an independent governance-only context shadow
-   slice. Issue #280 remains not semantically fixed, Issue #298
-   remains open, PR #299 and existing forensic evidence remain unchanged, and
-   issue `#249` remains open. Further product work requires a separately
-   controlled, repository-owner-authorized Slice 2 issue, branch, and pull
-   request, after the Issue `#294` replacement passes merged-tree acceptance,
-   PR `#295` closes unmerged as superseded, and Issue `#294` closes as satisfied
-   by the replacement.
+3. Follow Issue `#328` through Issue `#329` in dependency order. Complete and
+   close A1.1a Issue `#330` first; after merged-tree acceptance, create only the
+   A1.1b offline-freshness child, then only the A1.1c trusted-live-freshness
+   child. A1.2 owns reconciliation of this ledger and the release checklist;
+   A1.3 owns duplicate ADR identity and index migration. Existing Issue `#280`,
+   Issue `#294`, PR `#299`, and their forensic evidence remain read-only. The
+   older Slice 2 next-action prose above is stale governance evidence, not
+   current execution authority, and must be reconciled by A1.2 rather than
+   silently rewritten in A1.1a. Agent-context packets remain shadow-only until
+   executable freshness closes.
 4. Keep production,
    multi-worker deployment, hosted launch, Product Mode 2, external provider
    use, real audio/video export, and public synthetic-media distribution No-Go
@@ -874,6 +882,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-08-01 | Issue `#328` owner comment `5151625565` established the current recovery order. Issue `#329` is the implementation-free R0C-A1 controller, and Issue `#330` is the narrow A1.1a prerequisite. A1.1a records GovernancePreflightV1, committed RED scope evidence, exact near-match-resistant five/eight/six-file branch scopes, and 450/800/650 charged-line budgets. The current agent-context false pass is classified `STALE_GOVERNANCE`; A1.1b offline receipt semantics, A1.1c trusted GitHub verification, A1.2 status/release reconciliation, and A1.3 ADR migration remain unimplemented dependencies. No product-runtime or release capability is added. |
 | 2026-07-30 | PR `#322` merged the Issue `#321` renderer compatibility correction at `704c5b9536c62e29ba7fd74c7344d067770c728e`; Issues `#317` and `#321` closed after bounded merged-tree acceptance. The result certifies only the Spanish `STANDARD` seven-audience cohort and preserves Issue `#280` as not fixed, Issue `#298` open, PR `#299` immutable/open, the German baseline drift, and explicit owner authority for any Slice 2. |
 | 2026-07-30 | Issue `#319` started the governance-only agent-context shadow slice after read-only preflight confirmed bounded concurrency. PR `#320` carried a post-merge target state that returned next-action authority to an explicit repo-owner decision. Its then-current repository/live Issue `#317` completion contradiction was recorded rather than hidden; later PR `#322` completed the narrow compatibility correction. Mandatory reading, Issue `#280`, PR `#299`, product/runtime, providers, deployment, release, and production posture remained unchanged. |
 | 2026-07-25 | PR `#297` merged the Issue `#296` frontend brace-expansion audit unblock at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` after exact-head approval on `3b5b24a722beac6cfc6e586ecdc1d46757a5084d`; Issue `#296` closed with no product/runtime authority. |
