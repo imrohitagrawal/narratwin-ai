@@ -1,0 +1,42 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 330,
+  "branch": "phase-1-closure-process-330-r0c-a1-1a-freshness-scope-freeze",
+  "objective": "Freeze the non-circular R0C-A1.1 semantic-freshness contract and exact future A1.1b/A1.1c branch scopes before any agent-context implementation. Reproduce the current false-pass, add independent RED scope tests, then minimally enforce near-match-resistant static allowlists and record the dependency order. Preserve agent-context as STALE_GOVERNANCE, release No-Go, history, protected Issue #280/Issue #294/PR #299 evidence, product runtime, providers, deployment, publication, and production posture. The first commit contains only this preflight; final scope is exactly five files and at most 450 charged lines. Rollback is one revert. Stop on authority drift, collision, circular oracle, generic scope widening, a sixth file, budget breach, protected evidence contact, or irreproducible exact-head evidence.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-330.json",
+      "tests/unit/test_phase1_closure_docs.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-330.json",
+      "tests/unit/test_phase1_closure_docs.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      ".github/workflows/",
+      "AGENTS.md",
+      "backend/",
+      "frontend/",
+      "docs/ADR/",
+      "docs/RELEASE_CHECKLIST.md",
+      "docs/agent-context/",
+      "docs/evals/issue280_semantic_repair_slice1.json",
+      "docs/governance/preflights/issue-294.json",
+      "docs/reviews/ISSUE_294_REPLACEMENT_GOVERNANCE.md",
+      "scripts/agent_context/",
+      "scripts/eval/issue280_semantic_oracle.py",
+      "tests/acceptance/",
+      "tests/contract/test_issue280_ui_api_artifact_parity.py",
+      "tests/unit/test_agent_context_contracts.py",
+      "tests/unit/test_agent_context_security.py",
+      "tests/unit/test_issue280_semantic_oracle.py"
+    ]
+  }
+}
