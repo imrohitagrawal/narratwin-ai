@@ -1,0 +1,41 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 335,
+  "branch": "phase-1-closure-process-335-r0c-a2-1-stage4-rag-v1-lineage",
+  "objective": "Under R0C-A2 Issue #334 and Issue #328 OWNER comment 5152829686, from base 225506a25f9efe3c804c5a1723b20db0e940ff62, restore accepted stage4-rag-v1 selection and replay identity without redefining semantics. Commit an independent RED/mutation oracle first; enforce topK 6, inclusive score 0.72, max three chunks per document, canonical ranking, no corpus expansion or synthetic scores, and terminal LOW_RETRIEVAL_CONFIDENCE before generation. Persist version, top K, and threshold on run/evaluation state; emit stored lineage, not globals; reject missing, forged, non-finite, malformed, or contradictory lineage. Quarantine structurally valid legacy run/idempotency rows and round-trip them without relabeling, activation, or deletion; block same-key replay as STALE_RETRIEVAL_LINEAGE with zero generation. Limit writes to the six scoped paths and 550 charged lines, two repair rounds, zero provider calls/cash, and synthetic temporary state. Require focused unit/API/durability/stage/guardrail/quality evidence; independent test/eval, grounding/refusal, persistence/lineage, plan, and exact-head reviews; trusted exact-head CI; eligible non-author approval; and exact merge-text confirmation. Agent-context is SHADOW_ONLY. A2 remains PARTIAL pending A2.2/A2.3. Safe rollback refuses generation and preserves quarantine; never restore .60/6, fabricated expansion, global relabeling, or deletion. Stop for authority/base drift, collision, protected evidence, scope/budget breach, false-pass, third repair, need for v2, quarantine or zero-call failure, unreproducible evidence, external data/provider/deployment/publication, or legal/privacy/licensing/security-risk acceptance. The artifact self-enforces only typed issue, branch, path, and status-decision fields; other constraints remain reviewed evidence.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-335.json",
+      "tests/unit/test_retrieval_strategy_v1_contract.py",
+      "backend/app/rag/models.py",
+      "backend/app/stage4.py",
+      "docs/API_CONTRACT.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-335.json",
+      "tests/unit/test_retrieval_strategy_v1_contract.py",
+      "backend/app/rag/models.py",
+      "backend/app/stage4.py",
+      "docs/API_CONTRACT.md",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "backend/app/main.py",
+      "backend/app/rag/grounding.py",
+      "backend/app/rag/retrieval.py",
+      "backend/app/stage5.py",
+      "backend/app/stage6.py",
+      "backend/app/stage7.py",
+      "docs/ADR/",
+      "docs/agent-context/",
+      "frontend/",
+      "scripts/",
+      "tests/api/",
+      "tests/fixtures/"
+    ]
+  }
+}
