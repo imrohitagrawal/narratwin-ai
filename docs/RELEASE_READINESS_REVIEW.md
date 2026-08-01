@@ -10,7 +10,7 @@ Review date: 2026-07-01
 No-Go for production release, multi-worker deployment, external paid/provider-backed
 generation, real video export, and public synthetic-media distribution.
 
-Conditional local mock-provider portfolio/demo review remains distinct from
+Controlled local mock-provider review remains distinct from
 production go-live. With `#35`, `#36`, `#37`, `#40`, `#41`, and `#42` closed,
 `#38` resolved with live branch-protection evidence, and `#39` adding optional
 local file-backed restart recovery plus `/api/v1/ops/status`, local/mock
@@ -91,7 +91,7 @@ P0/P1 closure items must complete before Phase 2. Current reconciliation:
   local restart recovery and local ops posture visibility; still release-blocking
   for production go-live.
 - `#40` Canonical RTM stale: closed through merged PR `#46`.
-- `#41` Portfolio local-demo durability disclosure: closed through merged PR
+- `#41` Controlled local-demo durability disclosure: closed through merged PR
   `#46`.
 - `#42` Stage 7 source-evaluation checksum binding: closed through merged PR
   `#50`.

@@ -60,7 +60,7 @@ documentation. It is the product-facing companion to `docs/TRACEABILITY.md`.
 
 | Use case | Covered by requirements | Current status |
 |---|---|---|
-| Portfolio/recruiter walkthrough | FR-001 through FR-011 | Implemented for local mock-provider demo with citations and eval result. |
+| Audience-adapted project walkthrough | FR-001 through FR-011 | Implemented for local mock-provider demo with citations and eval result. |
 | Hiring manager review | FR-006, FR-007, FR-008 | Implemented through audience parameter and grounded script generation; usefulness scoring remains future review work. |
 | Engineer technical review | FR-005, FR-006, FR-007, FR-010 | Implemented for uploaded technical source context. |
 | Global localized walkthrough | FR-012, FR-013, FR-014 | Implemented for mock/local translation, subtitle, and voice-manifest artifacts. |

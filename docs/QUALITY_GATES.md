@@ -410,7 +410,7 @@ Gate validates:
   markers rather than treating Docker Scout command syntax as mandatory.
 - frontend production image strips npm/npx from the runner layer before
   scanning so package-manager-only vulnerabilities are not shipped
-- release checklist, runbook, demo seed data, portfolio README, and
+- release checklist, runbook, demo seed data, controlled local demo guide, and
   `docs/RELEASE_READINESS_REVIEW.md` exist
 - RR-029 through RR-035 have explicit Stage 8 dispositions, especially
   multi-worker durability blocks, real video export/license posture, persistent
@@ -446,6 +446,25 @@ Phase 1 Closure quality is executable through `make phase1-closure-quality`.
 On `phase-1-closure-*` branches, the top-level `make quality` dispatcher runs
 the Phase 1 Closure gate even though `.stage/current` remains `8`.
 When `docs/STATUS.md` StatusStateV1 records `SSV1-MODE` as `phase1-closure`, plain local `make quality` on `main` dispatches the Phase 1 Closure gate.
+
+Issue `#324` makes `scripts/quality/check_phase1_quality.py` the canonical Phase
+1 entry point for both `make quality` and `make phase1-closure-quality`. Its
+runner invokes the modular publication gate first, then preserved legacy global
+contracts. The exact Issue `#324` scope and removed demo-document check replace
+only their obsolete legacy counterparts. Source characterization fails if a
+legacy check or demo marker is silently added, removed, or reordered. Other
+branches and merged `main` retain legacy scope enforcement. The publication
+gate derives scope from pinned Git evidence, rejects unavailable/binary
+evidence, reconciles event and Git branch identity, and enforces per-file line,
+byte, and maximum-line-length budgets over both recursively indexed new
+packages, their mirrored tests, shared helpers, and both thin entry points.
+Controlled files must be regular non-symlink files. A 500-line grandfathered
+ceiling also prevents the touched pre-existing integration gates from becoming
+new monoliths. Whole-file receipts prevent silent growth in the frozen legacy
+checker and test. Bounded reporting prevents untrusted failure content from
+creating log injection or unbounded output. A
+written claim that the gate passed is not evidence; the executable exit status
+is authoritative.
 
 Issue `#319` adds `make agent-context-quality` as a shadow-only sub-gate. It
 validates exact source/section hashes, module closure, active rule uniqueness,
@@ -513,7 +532,7 @@ Gate validates:
   minimum questions, expected answers, evidence paths, required/forbidden
   claims, citation policy, metric floors, unsupported-claim threshold of zero,
   and at least one prompt-injection and one safety-boundary fixture
-- Phase 1 demo docs and portfolio docs include runnable local startup,
+- Phase 1 demo docs, including `docs/demo/CONTROLLED_LOCAL_DEMO.md`, include runnable local startup,
   health/readiness, project/upload/generation/citation/eval/saved-output flow,
   and single-process, local-only, optional JSON restart snapshot,
   no-production-durability, mock/local-only disclosures

@@ -372,6 +372,15 @@ durability, deployment, and release decisions remain outside this trace.
 | Existing Issue #317 oracle/runtime/parity/browser suites | Spanish `STANDARD` seven-audience behavior, proposition/citation bindings, replay, artifacts, and visible output remain unchanged | No new language, depth, audience, proposition, provider, release, or full Issue #280 claim |
 | PR #299 head `f93653e8a11e697c88766b207fb01c18662339d6`, tree `60d97b3c1b2c48dba32d07dd514fc0f6ce577088` | Protected forensic identity remains unchanged | No Issue #280/#298/#300/#301/#313 or forensic mutation |
 
+## Issue #324 publication-boundary traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| `PUB-324-001` classify public surfaces prospectively | `PublicationBoundaryV1`, canonical public sources, known-regression inventory | Historical evidence remains contextual and unmodified |
+| `PUB-324-002` prevent caller/model authority mimicry | Compiled policy plus trusted, payload-bound `PublicationApproval` decision tests | Runtime registry, cryptographic trust, identity, and authorization remain unimplemented |
+| `PUB-324-003` keep enforcement modular and reviewable | Contract, decision, repository, scope, CLI, entry-point, and mirrored test modules with executable context budgets | Phase 1 checker/test monoliths remain unchanged |
+| `PUB-324-004` preserve product and launch truth | Controlled local demo guide, current-state Q&A limitation, Stage 8 compatibility tests | No provider, media, hosting, release, public-distribution, or production authorization |
+
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 
 ## Issue #158 Security History Chronology

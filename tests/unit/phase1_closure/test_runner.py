@@ -7,8 +7,17 @@ from scripts.quality.phase1_closure import runner
 
 def test_runner_checks_publication_boundary_before_preserved_contracts(monkeypatch: Any) -> None:
     calls: list[str] = []
-    monkeypatch.setattr(runner, "check_publication_boundary", lambda: calls.append("new") or 0)
-    monkeypatch.setattr(runner, "run_preserved_contracts", lambda: calls.append("legacy") or 0)
+
+    def publication() -> int:
+        calls.append("new")
+        return 0
+
+    def preserved() -> int:
+        calls.append("legacy")
+        return 0
+
+    monkeypatch.setattr(runner, "check_publication_boundary", publication)
+    monkeypatch.setattr(runner, "run_preserved_contracts", preserved)
 
     assert runner.main() == 0
     assert calls == ["new", "legacy"]
@@ -16,8 +25,17 @@ def test_runner_checks_publication_boundary_before_preserved_contracts(monkeypat
 
 def test_publication_failure_prevents_legacy_continuation(monkeypatch: Any) -> None:
     calls: list[str] = []
-    monkeypatch.setattr(runner, "check_publication_boundary", lambda: calls.append("new") or 17)
-    monkeypatch.setattr(runner, "run_preserved_contracts", lambda: calls.append("legacy") or 0)
+
+    def publication() -> int:
+        calls.append("new")
+        return 17
+
+    def preserved() -> int:
+        calls.append("legacy")
+        return 0
+
+    monkeypatch.setattr(runner, "check_publication_boundary", publication)
+    monkeypatch.setattr(runner, "run_preserved_contracts", preserved)
 
     assert runner.main() == 17
     assert calls == ["new"]

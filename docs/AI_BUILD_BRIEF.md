@@ -8,7 +8,10 @@ NarraTwin AI
 
 ## Product definition
 
-NarraTwin AI is a standalone multilingual AI avatar walkthrough platform. It turns approved project knowledge, README files, architecture docs, demo scripts, and demo videos into audience-aware avatar walkthroughs for recruiters, hiring managers, engineers, product leaders, customers, and global non-English audiences.
+NarraTwin turns approved knowledge into grounded, cited, multilingual avatar
+explanations and interactive Q&A. It supports legitimate product audiences such
+as recruiters, hiring managers, engineers, product leaders, customers,
+beginners, and global viewers.
 
 ## Product modes to preserve
 
@@ -29,7 +32,8 @@ English demo video or demo script
 → export/shareable demo
 ```
 
-This mode is useful for LinkedIn, YouTube, portfolio pages, recruiter sharing, product onboarding, and customer education.
+This mode provides reusable, shareable explanations for project review, product
+onboarding, customer education, and other approved external experiences.
 
 ### Mode 2: Interactive AI avatar guide
 
@@ -164,7 +168,8 @@ Use provider-agnostic interfaces:
 
 ## Critical license rule
 
-Do not use non-commercial or research-only tools in public, recruiter-facing, portfolio, or commercial workflows.
+Do not use non-commercial or research-only tools in external, public, or
+commercial workflows.
 
 Wav2Lip must not be enabled by default because its usage restrictions can create public/commercial-use risk.
 

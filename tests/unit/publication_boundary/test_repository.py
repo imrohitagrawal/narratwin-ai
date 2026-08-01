@@ -9,7 +9,7 @@ def read_with_overrides(module: Any, overrides: dict[str, str]) -> Callable[[str
     def _read(path: str) -> str:
         if path in overrides:
             return overrides[path]
-        return (module.ROOT / path).read_text(encoding="utf-8")
+        return str((module.ROOT / path).read_text(encoding="utf-8"))
 
     return _read
 
@@ -47,7 +47,9 @@ def test_canonical_source_marker_mutation_fails(
         monkeypatch,
         overrides={
             "docs/PRODUCT_STRATEGY.md": source.replace(
-                package.PUBLIC_STATEMENT, "NarraTwin is a generic avatar.", 1
+                "NarraTwin turns approved knowledge into grounded, cited, multilingual avatar",
+                "NarraTwin is a generic avatar",
+                1,
             )
         },
     )
@@ -73,7 +75,7 @@ def test_policy_preserves_no_go_and_human_decisions(
     assert any("release authorization" in failure for failure in failures)
 
     human_mutation = policy.replace(
-        "Qualified humans retain legal, privacy, biometric, licensing, confidentiality, and security-risk decisions.",
+        "Qualified humans retain legal, privacy, biometric, licensing, confidentiality,",
         "The publication gate accepts all risk decisions.",
         1,
     )
@@ -98,9 +100,8 @@ def test_known_private_framing_regressions_are_exact_supplemental_checks(
             overrides={path: f"{source}\n{markers[0]}\n"},
         )
         assert any("known private-framing regression" in failure for failure in failures)
-    assert "A vocabulary scan is not data-loss prevention" in package.repository.read(
-        "docs/PUBLICATION_BOUNDARY.md"
-    )
+    policy = " ".join(package.repository.read("docs/PUBLICATION_BOUNDARY.md").split())
+    assert "A vocabulary scan is not data-loss prevention" in policy
 
 
 def test_current_state_calls_interactive_q_and_a_planned_not_implemented(

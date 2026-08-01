@@ -50,7 +50,7 @@ avatar polish.
 | Cost | Estimated cost per run | Provider cost estimate when available | Lower |
 | Cost | Cache hit rate | Share of repeated eligible runs served from cache | Higher |
 | Reliability | Generation success rate | Share of runs that complete without system error | Higher |
-| Portfolio value | Reviewer usefulness score | Recruiter/hiring-manager/engineer feedback on usefulness | Higher |
+| Reviewer value | Reviewer usefulness score | Audience-specific feedback on usefulness | Higher |
 
 ## Slice 1 Required Measurements
 

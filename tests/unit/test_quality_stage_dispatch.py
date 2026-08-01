@@ -27,7 +27,7 @@ def configure_phase1_dispatch(
         calls.append(args)
         return statuses.pop(0)
 
-    monkeypatch.setattr(quality_stage.subprocess, "call", fake_call)
+    monkeypatch.setattr(getattr(quality_stage, "subprocess"), "call", fake_call)
     return calls
 
 

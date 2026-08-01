@@ -9,8 +9,9 @@
 
 ## Strategy Thesis
 
-NarraTwin AI helps project creators turn approved project knowledge into grounded,
-audience-aware walkthroughs for hiring, portfolio, onboarding, and product education.
+NarraTwin turns approved knowledge into grounded, cited, multilingual avatar
+explanations and interactive Q&A. It helps project creators produce reusable,
+audience-aware walkthroughs for project review, onboarding, and product education.
 The product is not an avatar generator with a chatbot attached. The durable value is
 a reusable project knowledge system that can explain the same project consistently
 across audiences, languages, scripts, subtitles, voice, video, and future interactive
@@ -43,9 +44,9 @@ implementation slice proves only the grounded script loop.
 
 ### Mode 1: Pre-rendered Multilingual Demo Video
 
-This mode helps project creators produce portfolio-ready and recruiter-ready demo
-assets for LinkedIn, YouTube, portfolio sites, customer onboarding, and product
-education.
+This mode helps project creators produce reusable, shareable explanations for
+project review, customer onboarding, product education, and other approved
+external experiences.
 
 Target flow:
 
@@ -104,8 +105,8 @@ success can be evaluated without building full avatar rendering first.
   explanations.
 - How: upload approved project knowledge, select audience and language, generate a
   grounded walkthrough with evaluation metadata.
-- After: the creator has reusable project storytelling for portfolios, interviews,
-  onboarding, and demos.
+- After: the creator has reusable project storytelling for reviews, onboarding,
+  education, and demonstrations.
 - Alternatives: hand-written scripts, generic chatbots, static README files, manual
   video editing, and one-off demo recordings.
 
@@ -117,7 +118,7 @@ success can be evaluated without building full avatar rendering first.
   approved project facts.
 - After: reviewers get a faster, clearer signal about project purpose, ownership,
   impact, and maturity.
-- Alternatives: resume bullets, GitHub links, portfolio pages, and generic video
+- Alternatives: short summaries, GitHub links, static project pages, and generic video
   demos.
 
 ### Engineering Reviewer
@@ -136,7 +137,7 @@ NarraTwin AI competes against several partial alternatives:
 - generic LLM summaries
 - avatar video tools
 - manual demo video editing
-- static portfolio pages
+- static project pages
 - README-driven project review
 - presentation decks and walkthrough scripts
 
@@ -200,15 +201,15 @@ Supporting metric families:
 - safety: prompt-injection refusal pass rate and empty-context refusal pass rate
 - media readiness: subtitle, voice, and avatar render success rates in later stages
 - cost: estimated cost per run and cache hit rate
-- portfolio usefulness: creator approval and recruiter/hiring-manager usefulness
+- reviewer usefulness: creator approval and audience-specific usefulness
   feedback
 
 ## Growth Strategy
 
-Initial growth is product-led through visible portfolio artifacts:
+Initial growth is product-led through useful, shareable product artifacts:
 
-- project creators generate recruiter-ready walkthroughs
-- portfolio visitors consume short explanations
+- project creators generate audience-ready walkthroughs
+- viewers consume short explanations
 - hiring and engineering reviewers request deeper views
 - shared demos expose the value of the reusable project-avatar-pack
 
@@ -245,8 +246,8 @@ security, privacy, and provider-mode controls.
 
 1. Project creators will upload or maintain enough approved knowledge to generate a
    useful walkthrough.
-2. Recruiters and hiring managers value a short, grounded walkthrough more than
-   another generic portfolio page.
+2. Reviewers value a short, grounded walkthrough more than another generic
+   static project page.
 3. Evaluation gates can reduce unsupported claims enough to make generated scripts
    reviewable.
 4. Free-first mode can prove the product without premium media providers.

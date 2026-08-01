@@ -2,9 +2,16 @@
 
 **NarraTwin AI** is a provider-agnostic multilingual AI avatar walkthrough platform.
 
-It turns approved project knowledge, README files, architecture docs, demo scripts, and demo videos into audience-aware avatar walkthroughs for recruiters, hiring managers, engineers, product leaders, customers, and global non-English audiences.
+NarraTwin turns approved knowledge into grounded, cited, multilingual avatar
+explanations and interactive Q&A. It adapts explanations for legitimate product
+audiences including recruiters, hiring managers, engineers, product leaders,
+customers, beginners, and global viewers.
 
 ## Current repository state
+
+Interactive avatar Q&A remains intended and is not currently implemented.
+Current executable behavior is described below and must not be inferred from the
+product statement alone.
 
 Stage 8 and the Final Independent Reviewer Pass are merged to `main`. Phase 1
 Closure is active, and the release posture remains **No-Go** until required P0/P1
@@ -84,7 +91,7 @@ Project creation → upload markdown knowledge → ingest/chunk/store → retrie
 - No mandatory paid APIs.
 - No secrets committed.
 - No unsupported project claims.
-- No non-commercial tools in public/portfolio/commercial paths.
+- No non-commercial tools in external, public, or commercial paths.
 - Wav2Lip must not be enabled by default.
 - AI avatar/voice disclosure is mandatory.
 - Cloned face/voice requires explicit documented consent.

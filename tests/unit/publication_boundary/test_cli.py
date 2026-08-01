@@ -5,6 +5,7 @@ from typing import Any
 
 def configure_success(cli: Any, monkeypatch: Any, *, branch: str) -> None:
     monkeypatch.setattr(cli, "check_publication_boundary", lambda failures: None)
+    monkeypatch.setattr(cli, "check_context_budgets", lambda failures: None)
     monkeypatch.setattr(cli, "current_branch", lambda: branch)
     monkeypatch.setattr(cli, "resolve_base", lambda: "base")
     monkeypatch.setattr(cli, "changed_files", lambda _base: ["docs/STATUS.md"])
@@ -18,10 +19,15 @@ def test_cli_runs_scope_only_for_issue324_family(
     package = publication_boundary
     configure_success(package.cli, monkeypatch, branch=package.ISSUE_324_BRANCH)
     calls: list[dict[str, Any]] = []
+
+    def record_scope(**kwargs: Any) -> list[str]:
+        calls.append(kwargs)
+        return []
+
     monkeypatch.setattr(
         package.cli,
         "validate_issue_scope",
-        lambda **kwargs: calls.append(kwargs) or [],
+        record_scope,
     )
     assert package.cli.main() == 0
     assert calls == [
@@ -39,6 +45,16 @@ def test_cli_runs_scope_only_for_issue324_family(
         lambda **_kwargs: (_ for _ in ()).throw(AssertionError("scope bypass")),
     )
     assert package.cli.main() == 0
+
+
+def test_cli_rejects_unavailable_or_inconsistent_branch(
+    publication_boundary: Any, monkeypatch: Any, capsys: Any
+) -> None:
+    package = publication_boundary
+    configure_success(package.cli, monkeypatch, branch="")
+
+    assert package.cli.main() == 1
+    assert "branch evidence is unavailable or inconsistent" in capsys.readouterr().out
 
 
 def test_cli_fails_closed_on_missing_evidence_or_internal_exception(
@@ -68,8 +84,9 @@ def test_cli_bounds_failure_output(publication_boundary: Any, monkeypatch: Any, 
         "check_publication_boundary",
         lambda failures: failures.extend(f"failure-{index}" for index in range(200)),
     )
+    monkeypatch.setattr(package.cli, "check_context_budgets", lambda failures: None)
     monkeypatch.setattr(package.cli, "current_branch", lambda: "main")
     assert package.cli.main() == 1
     output = capsys.readouterr().out.splitlines()
-    assert len(output) <= package.cli.MAX_FAILURES + 2
+    assert len(output) <= package.reporting.MAX_FAILURES + 2
     assert output[-1] == "- Additional failures omitted."

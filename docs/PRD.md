@@ -16,6 +16,9 @@ NarraTwin AI is a provider-agnostic multilingual AI avatar walkthrough platform.
 turns approved project knowledge into audience-aware, grounded scripts and later
 voice, subtitle, video, and interactive avatar outputs.
 
+NarraTwin turns approved knowledge into grounded, cited, multilingual avatar
+explanations and interactive Q&A.
+
 The first usable product slice must prove the trust loop: upload project knowledge,
 ingest and retrieve context, generate a grounded walkthrough script, evaluate
 unsupported claims, store the result, and display it to the user. Avatar rendering,
@@ -26,7 +29,7 @@ that trusted foundation.
 
 | Role | Owner | Responsibility |
 |---|---|---|
-| Product owner | Rohit Agrawal | Product direction, stage approval, portfolio use case |
+| Product owner | Rohit Agrawal | Product direction, stage approval, and product outcomes |
 | Engineering agent | Codex | Issue-linked docs, specs, implementation plans, and code changes after gates pass |
 | Reviewer | GitHub PR reviewer | Guardrail, safety, scope, and quality review |
 | Future independent reviewer | TBD | Final review before release claims |
@@ -85,7 +88,7 @@ project creation
 
 | Segment | Problem | Primary output |
 |---|---|---|
-| Project creator | Needs reusable project storytelling for portfolio and interviews | Audience-aware grounded walkthrough |
+| Project creator | Needs reusable project storytelling for reviews and demonstrations | Audience-aware grounded walkthrough |
 | Recruiter | Needs fast signal from a technical project | 60-second summary with role and impact |
 | Hiring manager | Needs ownership, trade-offs, maturity, and delivery scope | Concise walkthrough with decisions and outcomes |
 | Engineer | Needs architecture and implementation evidence | Technical walkthrough with citations/context references |
@@ -96,8 +99,8 @@ project creation
 
 ### Mode 1: Pre-rendered Multilingual Demo Video
 
-User value: create a shareable demo for portfolios, LinkedIn, YouTube, customer
-education, or onboarding.
+User value: create a reusable, shareable explanation for project review,
+customer education, onboarding, or another approved external experience.
 
 Target flow:
 
@@ -272,7 +275,7 @@ Requirements:
 
 ## 10. User Journeys
 
-### Journey A: Portfolio Creator Generates Recruiter Walkthrough
+### Journey A: Project Creator Generates Recruiter Walkthrough
 
 1. Creator creates a project.
 2. Creator uploads markdown project knowledge.

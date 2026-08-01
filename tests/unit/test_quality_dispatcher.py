@@ -1,4 +1,6 @@
 import importlib.util
+import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -49,14 +51,19 @@ def run_dispatcher(
     return calls
 
 
-PHASE1_STATUS = """
+PHASE1_STATUS_ROW = (
+    "| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | "
+    "Phase 1 Closure remains active; release posture remains No-Go. |"
+)
+
+PHASE1_STATUS = f"""
 # Program Status
 
 ## StatusStateV1
 
 | ID | State kind | Owner | Expected status | Current status | Contract |
 |---|---|---|---|---|---|
-| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure | Phase 1 Closure remains active; release posture remains No-Go. |
+{PHASE1_STATUS_ROW}
 """.strip()
 
 
@@ -75,7 +82,7 @@ def test_main_dispatches_phase1_closure_when_status_state_says_phase1(monkeypatc
     calls = run_dispatcher(monkeypatch, tmp_path, branch="main", status_text=PHASE1_STATUS)
 
     assert len(calls) == 1
-    assert calls[0][-1] == "scripts/quality/check_phase1_closure_docs.py"
+    assert calls[0][-1] == "scripts/quality/check_phase1_quality.py"
 
 
 def test_phase1_closure_branch_dispatch_still_uses_phase1_gate(monkeypatch: Any, tmp_path: Path) -> None:
@@ -86,7 +93,7 @@ def test_phase1_closure_branch_dispatch_still_uses_phase1_gate(monkeypatch: Any,
         status_text=STAGE8_STATUS,
     )
 
-    assert calls[0][-1] == "scripts/quality/check_phase1_closure_docs.py"
+    assert calls[0][-1] == "scripts/quality/check_phase1_quality.py"
 
 
 def test_main_stage8_dispatch_is_preserved_when_status_state_is_not_phase1(monkeypatch: Any, tmp_path: Path) -> None:
@@ -112,3 +119,30 @@ def test_stage8_branch_dispatch_is_not_weakened_by_phase1_status(monkeypatch: An
     )
 
     assert calls == [["make", "stage8-quality"]]
+
+
+def test_dispatcher_rejects_unavailable_branch_evidence(monkeypatch: Any, tmp_path: Path) -> None:
+    dispatcher = load_dispatcher()
+    stage_file = tmp_path / "current"
+    stage_file.write_text("8\n", encoding="utf-8")
+    monkeypatch.setattr(dispatcher, "CURRENT_STAGE", stage_file)
+    monkeypatch.setattr(dispatcher, "current_branch", lambda: "")
+
+    assert dispatcher.main() == 1
+
+
+def test_touched_quality_scripts_bootstrap_imports_outside_repository(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    command = "import runpy,sys; runpy.run_path(sys.argv[1], run_name='import_smoke')"
+    for relative_path in (
+        "scripts/quality/check_quality_stage.py",
+        "scripts/quality/check_stage8_docs.py",
+    ):
+        result = subprocess.run(
+            [sys.executable, "-c", command, str(root / relative_path)],
+            cwd=tmp_path,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr
