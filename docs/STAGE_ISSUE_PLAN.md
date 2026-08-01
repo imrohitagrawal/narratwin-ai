@@ -2253,14 +2253,21 @@ avoid asking the existing generic branch guard to authorize edits to itself.
 
 Issue `#330` is A1.1a, the executable scope-freeze prerequisite. Its exact
 branch is
-`phase-1-closure-process-330-r0c-a1-1a-freshness-scope-freeze`; its five-file,
-450-charged-line scope is:
+`phase-1-closure-process-330-r0c-a1-1a-freshness-scope-freeze`; its seven-file,
+500-charged-line, Issue #324 receipt-compatible scope is:
 
 - `docs/governance/preflights/issue-330.json`;
-- `tests/unit/test_phase1_closure_docs.py`;
-- `scripts/quality/check_phase1_closure_docs.py`;
+- `scripts/quality/r0c_a1_scope.py`;
+- `tests/unit/test_r0c_a1_scope.py`;
+- `scripts/quality/phase1_closure/runner.py`;
+- `scripts/quality/phase1_closure/legacy.py`;
 - `docs/STAGE_ISSUE_PLAN.md`; and
 - `docs/STATUS.md`.
+
+The modular runner evaluates recovery scope before preserved contracts. Only
+an exact recovery-managed branch may bypass the frozen legacy changed-file
+dispatcher; it still runs every other preserved check. Both frozen legacy file
+receipts and the Issue #324 preflight remain unchanged.
 
 After merged-tree closeout, create only A1.1b. Its exact branch form is
 `phase-1-closure-process-<issue>-r0c-a1-1b-offline-freshness`; its eight-file,

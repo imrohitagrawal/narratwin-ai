@@ -2061,39 +2061,6 @@ ISSUE_319_MEANINGFUL_SURFACES = {
     "status-traceability": {"docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md"},
     "skill-evidence": {"docs/SKILL_EXECUTION_PLAN.md"},
 }
-ISSUE_330_BRANCH = "phase-1-closure-process-330-r0c-a1-1a-freshness-scope-freeze"
-ISSUE_330_ALLOWED_CHANGED_FILES = {
-    "docs/governance/preflights/issue-330.json",
-    "tests/unit/test_phase1_closure_docs.py",
-    "scripts/quality/check_phase1_closure_docs.py",
-    "docs/STAGE_ISSUE_PLAN.md",
-    "docs/STATUS.md",
-}
-R0C_A1_1B_BRANCH = re.compile(
-    r"^phase-1-closure-process-(\d+)-r0c-a1-1b-offline-freshness$"
-)
-R0C_A1_1B_ALLOWED_CHANGED_FILES = {
-    "docs/agent-context/contracts-v1.schema.json",
-    "docs/agent-context/current-state-v1.json",
-    "docs/agent-context/context-policy-manifest-v1.json",
-    "scripts/agent_context/core.py",
-    "scripts/agent_context/cli.py",
-    "tests/unit/test_agent_context_freshness.py",
-    "docs/STATUS.md",
-}
-R0C_A1_1C_BRANCH = re.compile(
-    r"^phase-1-closure-process-(\d+)-r0c-a1-1c-live-freshness$"
-)
-R0C_A1_1C_ALLOWED_CHANGED_FILES = {
-    "scripts/agent_context/github.py",
-    "tests/unit/test_agent_context_github.py",
-    ".github/workflows/quality-gates.yml",
-    "docs/QUALITY_GATES.md",
-    "docs/STATUS.md",
-}
-R0C_A1_RESERVED_BRANCH = re.compile(
-    r"^phase-1-closure-process-\d+-r0c-a1-1[bc]-"
-)
 ISSUE_321_BRANCH = "phase-1-closure-321-issue317-renderer-compatibility"
 ISSUE_321_ALLOWED_CHANGED_FILES = {
     "docs/governance/preflights/issue-321.json",
@@ -4448,7 +4415,6 @@ def check_required_files(failures: list[str]) -> None:
 def check_changed_files(failures: list[str]) -> None:
     branch = current_branch()
     allowed_process_preflight: str | None = None
-    r0c_a1_line_cap: int | None = None
     if branch.startswith("phase-1-closure-141-"):
         allowed_files = ISSUE_141_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-138-"):
@@ -4508,21 +4474,6 @@ def check_changed_files(failures: list[str]) -> None:
     elif branch == ISSUE_319_BRANCH:
         allowed_files = ISSUE_319_ALLOWED_CHANGED_FILES
     elif branch.startswith("phase-1-closure-process-319-"):
-        allowed_files = set()
-    elif branch == ISSUE_330_BRANCH:
-        allowed_files = ISSUE_330_ALLOWED_CHANGED_FILES
-        r0c_a1_line_cap = 450
-    elif branch.startswith("phase-1-closure-process-330-"):
-        allowed_files = set()
-    elif match := R0C_A1_1B_BRANCH.fullmatch(branch):
-        allowed_files = R0C_A1_1B_ALLOWED_CHANGED_FILES
-        allowed_process_preflight = f"docs/governance/preflights/issue-{match.group(1)}.json"
-        r0c_a1_line_cap = 800
-    elif match := R0C_A1_1C_BRANCH.fullmatch(branch):
-        allowed_files = R0C_A1_1C_ALLOWED_CHANGED_FILES
-        allowed_process_preflight = f"docs/governance/preflights/issue-{match.group(1)}.json"
-        r0c_a1_line_cap = 650
-    elif R0C_A1_RESERVED_BRANCH.match(branch):
         allowed_files = set()
     elif branch == ISSUE_321_BRANCH:
         allowed_files = ISSUE_321_ALLOWED_CHANGED_FILES
@@ -4747,12 +4698,6 @@ def check_changed_files(failures: list[str]) -> None:
         }
         if len(active_surfaces) > 6:
             fail(failures, f"Phase 1 Closure branch {branch} exceeds its 6-surface cap.")
-    if r0c_a1_line_cap is not None:
-        local = charged_lines(resolve_base())
-        if local is None:
-            fail(failures, f"Phase 1 Closure branch {branch} has uncountable or binary charged lines.")
-        elif local > r0c_a1_line_cap:
-            fail(failures, f"Phase 1 Closure branch {branch} exceeds its {r0c_a1_line_cap}-line cap.")
     if branch == ISSUE_158_BRANCH:
         missing = ISSUE_158_ALLOWED_CHANGED_FILES - set(changed)
         for rel in sorted(missing):
