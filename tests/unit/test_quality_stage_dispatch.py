@@ -8,16 +8,17 @@ from scripts.quality import check_quality_stage as quality_stage
 
 
 def configure_phase1_dispatch(
-    monkeypatch: Any, tmp_path: Path, statuses: list[int]
+    monkeypatch: Any,
+    tmp_path: Path,
+    statuses: list[int],
+    *,
+    branch: str = "phase-1-closure-process-324-publication-boundary-v2",
 ) -> list[list[str]]:
     stage_file = tmp_path / "current"
     stage_file.write_text("8\n", encoding="utf-8")
     monkeypatch.setattr(quality_stage, "CURRENT_STAGE", stage_file)
-    monkeypatch.setattr(
-        quality_stage,
-        "current_branch",
-        lambda: "phase-1-closure-process-324-publication-boundary-v2",
-    )
+    monkeypatch.setattr(quality_stage, "current_branch", lambda: branch)
+    monkeypatch.setattr(quality_stage, "phase1_closure_mode_active", lambda: True)
     monkeypatch.setattr(quality_stage, "run_recommended_review_item_check", lambda _stage: 0)
     calls: list[list[str]] = []
 
@@ -48,3 +49,18 @@ def test_phase1_quality_dispatch_propagates_modular_gate_failure(
     assert quality_stage.main() == 17
     assert calls[-1] == [sys.executable, "scripts/quality/check_publication_boundary.py"]
 
+
+def test_phase1_quality_dispatch_stops_when_legacy_gate_fails(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    calls = configure_phase1_dispatch(monkeypatch, tmp_path, [19])
+    assert quality_stage.main() == 19
+    assert calls == [[sys.executable, "scripts/quality/check_phase1_closure_docs.py"]]
+
+
+def test_merged_main_phase1_mode_still_runs_modular_gate(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    calls = configure_phase1_dispatch(monkeypatch, tmp_path, [0, 0], branch="main")
+    assert quality_stage.main() == 0
+    assert calls[-1] == [sys.executable, "scripts/quality/check_publication_boundary.py"]
