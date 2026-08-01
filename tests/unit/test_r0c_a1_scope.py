@@ -94,6 +94,23 @@ def test_unrelated_branch_is_not_managed() -> None:
     ) == scope.ScopeEvaluation(False, ())
 
 
+def test_repository_evaluation_derives_scope_from_git(monkeypatch: Any) -> None:
+    monkeypatch.setattr(scope, "current_branch", lambda: CURRENT_BRANCH, raising=False)
+    monkeypatch.setattr(
+        scope, "legacy_checker", SimpleNamespace(resolve_base=lambda: "verified-base"), raising=False
+    )
+    monkeypatch.setattr(
+        scope,
+        "git_evidence",
+        SimpleNamespace(
+            changed_files=lambda base: sorted(CURRENT_FILES) if base == "verified-base" else None,
+            charged_lines=lambda base: 500 if base == "verified-base" else None,
+        ),
+        raising=False,
+    )
+    assert scope.evaluate_repository_scope() == scope.ScopeEvaluation(True, ())
+
+
 def test_runner_orders_scope_before_preserved_contracts(monkeypatch: Any) -> None:
     calls: list[object] = []
     monkeypatch.setattr(runner, "check_publication_boundary", lambda: calls.append("publication") or 0)
