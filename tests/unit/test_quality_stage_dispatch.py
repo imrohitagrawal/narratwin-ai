@@ -31,36 +31,25 @@ def configure_phase1_dispatch(
     return calls
 
 
-def test_phase1_quality_dispatch_runs_legacy_then_modular_publication_gate(
+def test_phase1_quality_dispatch_runs_modular_phase1_runner(
     monkeypatch: Any, tmp_path: Path
 ) -> None:
-    calls = configure_phase1_dispatch(monkeypatch, tmp_path, [0, 0])
+    calls = configure_phase1_dispatch(monkeypatch, tmp_path, [0])
     assert quality_stage.main() == 0
-    assert calls == [
-        [sys.executable, "scripts/quality/check_phase1_closure_docs.py"],
-        [sys.executable, "scripts/quality/check_publication_boundary.py"],
-    ]
+    assert calls == [[sys.executable, "scripts/quality/check_phase1_quality.py"]]
 
 
-def test_phase1_quality_dispatch_propagates_modular_gate_failure(
+def test_phase1_quality_dispatch_propagates_runner_failure(
     monkeypatch: Any, tmp_path: Path
 ) -> None:
-    calls = configure_phase1_dispatch(monkeypatch, tmp_path, [0, 17])
+    calls = configure_phase1_dispatch(monkeypatch, tmp_path, [17])
     assert quality_stage.main() == 17
-    assert calls[-1] == [sys.executable, "scripts/quality/check_publication_boundary.py"]
-
-
-def test_phase1_quality_dispatch_stops_when_legacy_gate_fails(
-    monkeypatch: Any, tmp_path: Path
-) -> None:
-    calls = configure_phase1_dispatch(monkeypatch, tmp_path, [19])
-    assert quality_stage.main() == 19
-    assert calls == [[sys.executable, "scripts/quality/check_phase1_closure_docs.py"]]
+    assert calls == [[sys.executable, "scripts/quality/check_phase1_quality.py"]]
 
 
 def test_merged_main_phase1_mode_still_runs_modular_gate(
     monkeypatch: Any, tmp_path: Path
 ) -> None:
-    calls = configure_phase1_dispatch(monkeypatch, tmp_path, [0, 0], branch="main")
+    calls = configure_phase1_dispatch(monkeypatch, tmp_path, [0], branch="main")
     assert quality_stage.main() == 0
-    assert calls[-1] == [sys.executable, "scripts/quality/check_publication_boundary.py"]
+    assert calls[-1] == [sys.executable, "scripts/quality/check_phase1_quality.py"]
