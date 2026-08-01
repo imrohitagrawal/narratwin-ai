@@ -2168,6 +2168,9 @@ Issue `#317` and PR `#318` completed the bounded Spanish `STANDARD` semantic
 slice. The Issue `#321` compatibility correction passed merged-tree acceptance
 through PR `#322`. Further product work requires a separately
 controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.
+That preceding Slice 2 route sentence is frozen `STALE_GOVERNANCE`
+compatibility evidence. It cannot select, authorize, or block current Cut 1
+work under Issue `#328` OWNER comment `5152829686`.
 
 ## Issue 319 agent-context architecture shadow slice 1
 
@@ -2213,6 +2216,10 @@ controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.
 Before that controller is created, the Issue `#294` replacement must pass
 merged-tree acceptance, PR `#295` must close unmerged as superseded, and Issue
 `#294` must close as satisfied by the replacement.
+The two preceding Slice 2 and Issue `#294`/PR `#295` route sentences are frozen
+`STALE_GOVERNANCE` compatibility markers. They preserve protected evidence and
+unrelated obligations, but cannot select, authorize, or block the Issue `#332`
+to R0C-A2 sequence under OWNER comment `5152829686`.
 
 ## Issue #324 publication boundary
 

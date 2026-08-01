@@ -47,6 +47,11 @@ Use it to answer:
   and pull request. Before that controller is created, the Issue `#294`
   replacement must pass merged-tree acceptance, PR `#295` must close unmerged
   as superseded, and Issue `#294` must close as satisfied by the replacement.
+  The two preceding Slice 2 and Issue `#294`/PR `#295` route sentences are
+  frozen `STALE_GOVERNANCE` compatibility markers, not current Cut 1 routing
+  authority. They preserve the protected evidence and unrelated obligations,
+  but cannot select, authorize, or block the Issue `#332` to R0C-A2 sequence
+  under OWNER comment `5152829686`.
 - Current implementation permission: Phase 1 Closure governance only. Demo
   Phase 0 planning for issue `#225` completed through PR `#226`; Checkpoint 1
   is accepted as local/fake disabled-default reviewer evidence only through
@@ -863,6 +868,11 @@ required checks, merge, and merged-tree closeout complete.
    request, after the Issue `#294` replacement passes merged-tree acceptance,
    PR `#295` closes unmerged as superseded, and Issue `#294` closes as satisfied
    by the replacement.
+   This retained Slice 2 and Issue `#294`/PR `#295` route text is
+   `STALE_GOVERNANCE` compatibility evidence. It does not select, authorize, or
+   block current Cut 1 work; the Current Baseline owns the Issue `#332` to
+   R0C-A2 pointer, while the older evidence and unrelated obligations remain
+   preserved.
 4. Keep production,
    multi-worker deployment, hosted launch, Product Mode 2, external provider
    use, real audio/video export, and public synthetic-media distribution No-Go
