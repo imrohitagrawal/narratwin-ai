@@ -144,3 +144,18 @@ def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
     assert failures == [
         "Stage 8 work must run on a stage8-* branch or main after merge; got feature/untracked-stage8-work."
     ]
+
+
+def test_issue324_v2_branch_allows_only_modular_preflight_scope(monkeypatch: Any) -> None:
+    monkeypatch.setenv("GITHUB_HEAD_REF", stage8.ISSUE324_PUBLICATION_BRANCH)
+    expected = sorted(stage8.PROCESS_BRANCH_ALLOWED_FILES[stage8.ISSUE324_PUBLICATION_BRANCH])
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: expected)
+    failures: list[str] = []
+    stage8.check_stage_marker_and_branch(failures)
+    stage8.check_stage_scope(failures)
+    assert failures == []
+
+
+def test_stage8_uses_neutral_controlled_demo_path() -> None:
+    assert "docs/demo/CONTROLLED_LOCAL_DEMO.md" in stage8.REQUIRED_FILES
+    assert "portfolio/README.md" not in stage8.REQUIRED_FILES
