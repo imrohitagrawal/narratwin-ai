@@ -1,0 +1,136 @@
+from __future__ import annotations
+
+import importlib.util
+from pathlib import Path
+from types import ModuleType
+from typing import Any
+
+
+def load_stage8_quality_module() -> ModuleType:
+    module_path = Path(__file__).parents[2] / "scripts" / "quality" / "check_stage8_docs.py"
+    spec = importlib.util.spec_from_file_location("issue324_stage8_under_test", module_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+stage8: Any = load_stage8_quality_module()
+
+
+def expected_issue324_scope() -> set[str]:
+    return {
+        "Makefile",
+        "README.md",
+        "docs/ADR/0047-publication-boundary.md",
+        "docs/AI_BUILD_BRIEF.md",
+        "docs/ARCHITECTURE.md",
+        "docs/NORTH_STAR_METRICS.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/PRD.md",
+        "docs/PRODUCT_STRATEGY.md",
+        "docs/PUBLICATION_BOUNDARY.md",
+        "docs/QUALITY_GATES.md",
+        "docs/RELEASE_READINESS_REVIEW.md",
+        "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/THREAT_MODEL.md",
+        "docs/TRACEABILITY.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
+        "docs/demo/CONTROLLED_LOCAL_DEMO.md",
+        "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+        "docs/evals/phase1_golden_questions.jsonl",
+        "docs/governance/preflights/issue-324.json",
+        "docs/governance/publication-boundary-v1.json",
+        "portfolio/README.md",
+        "scripts/quality/branch_identity.py",
+        "scripts/quality/check_phase1_quality.py",
+        "scripts/quality/check_publication_boundary.py",
+        "scripts/quality/check_quality_stage.py",
+        "scripts/quality/check_stage8_docs.py",
+        "scripts/quality/phase1_closure/__init__.py",
+        "scripts/quality/phase1_closure/legacy.py",
+        "scripts/quality/phase1_closure/runner.py",
+        "scripts/quality/publication_boundary/__init__.py",
+        "scripts/quality/publication_boundary/cli.py",
+        "scripts/quality/publication_boundary/context.py",
+        "scripts/quality/publication_boundary/contract.py",
+        "scripts/quality/publication_boundary/decision.py",
+        "scripts/quality/publication_boundary/git_evidence.py",
+        "scripts/quality/publication_boundary/reporting.py",
+        "scripts/quality/publication_boundary/repository.py",
+        "scripts/quality/publication_boundary/scope.py",
+        "tests/unit/phase1_closure/test_legacy.py",
+        "tests/unit/phase1_closure/test_runner.py",
+        "tests/unit/publication_boundary/conftest.py",
+        "tests/unit/publication_boundary/test_cli.py",
+        "tests/unit/publication_boundary/test_contract.py",
+        "tests/unit/publication_boundary/test_decision.py",
+        "tests/unit/publication_boundary/test_decision_adversarial.py",
+        "tests/unit/publication_boundary/test_reporting.py",
+        "tests/unit/publication_boundary/test_repository.py",
+        "tests/unit/publication_boundary/test_scope.py",
+        "tests/unit/test_branch_identity.py",
+        "tests/unit/test_issue324_stage8_quality.py",
+        "tests/unit/test_quality_dispatcher.py",
+        "tests/unit/test_quality_stage_dispatch.py",
+        "tests/unit/test_stage8_quality_gate.py",
+    }
+
+
+def test_issue324_branch_uses_exact_modular_preflight_scope(monkeypatch: Any) -> None:
+    expected = expected_issue324_scope()
+    assert len(expected) == 58
+    assert "scripts/quality/check_phase1_closure_docs.py" not in expected
+    assert "tests/unit/test_phase1_closure_docs.py" not in expected
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE324_PUBLICATION_BRANCH)
+    assert stage8.PROCESS_BRANCH_ALLOWED_FILES[stage8.ISSUE324_PUBLICATION_BRANCH] == expected
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(expected))
+    failures: list[str] = []
+
+    stage8.check_stage_marker_and_branch(failures)
+    stage8.check_stage_scope(failures)
+
+    assert failures == []
+
+
+def test_issue324_scope_rejects_runtime_monolith_and_near_branch(monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE324_PUBLICATION_BRANCH)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: ["backend/app/main.py", "tests/unit/test_phase1_closure_docs.py"],
+    )
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert len(failures) == 2
+
+    monkeypatch.setattr(
+        stage8,
+        "current_branch",
+        lambda: f"{stage8.ISSUE324_PUBLICATION_BRANCH}-copy",
+    )
+    failures = []
+    stage8.check_stage_marker_and_branch(failures)
+    assert any("must run on a stage8-* branch" in failure for failure in failures)
+
+
+def test_unavailable_branch_evidence_cannot_select_default_scope(monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "current_branch", lambda: "")
+    failures: list[str] = []
+
+    stage8.check_stage_marker_and_branch(failures)
+    stage8.check_stage_scope(failures)
+
+    assert len(failures) == 2
+    assert all("unavailable or inconsistent" in failure for failure in failures)
+
+
+def test_stage8_uses_neutral_controlled_demo_path() -> None:
+    assert "docs/demo/CONTROLLED_LOCAL_DEMO.md" in stage8.REQUIRED_FILES
+    assert "portfolio/README.md" not in stage8.REQUIRED_FILES
+    assert not (stage8.ROOT / "portfolio" / "README.md").exists()

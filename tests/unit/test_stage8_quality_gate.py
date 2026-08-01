@@ -20,7 +20,7 @@ stage8: Any = load_stage8_quality_module()
 
 
 def test_issue84_guardrail_branch_allows_process_guardrail_files(monkeypatch: Any) -> None:
-    monkeypatch.setenv("GITHUB_HEAD_REF", stage8.ISSUE84_GUARDRAIL_BRANCH)
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE84_GUARDRAIL_BRANCH)
     monkeypatch.setattr(
         stage8,
         "changed_files_for_stage_scope",
@@ -41,7 +41,7 @@ def test_issue84_guardrail_branch_allows_process_guardrail_files(monkeypatch: An
 
 
 def test_issue84_guardrail_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
-    monkeypatch.setenv("GITHUB_HEAD_REF", stage8.ISSUE84_GUARDRAIL_BRANCH)
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE84_GUARDRAIL_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["backend/app/stage4.py"])
 
     failures: list[str] = []
@@ -51,7 +51,7 @@ def test_issue84_guardrail_branch_rejects_runtime_product_files(monkeypatch: Any
 
 
 def test_issue287_stage8_drift_branch_allows_only_governance_gate_files(monkeypatch: Any) -> None:
-    monkeypatch.setenv("GITHUB_HEAD_REF", stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
     monkeypatch.setattr(
         stage8,
         "changed_files_for_stage_scope",
@@ -77,7 +77,7 @@ def test_issue287_stage8_drift_branch_allows_only_governance_gate_files(monkeypa
 
 
 def test_issue287_stage8_drift_branch_rejects_dependency_files(monkeypatch: Any) -> None:
-    monkeypatch.setenv("GITHUB_HEAD_REF", stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["frontend/package-lock.json"])
 
     failures: list[str] = []
@@ -87,7 +87,7 @@ def test_issue287_stage8_drift_branch_rejects_dependency_files(monkeypatch: Any)
 
 
 def test_issue289_security_unblock_branch_allows_combined_dependency_and_gate_files(monkeypatch: Any) -> None:
-    monkeypatch.setenv("GITHUB_HEAD_REF", stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH)
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH)
     monkeypatch.setattr(
         stage8,
         "changed_files_for_stage_scope",
@@ -118,7 +118,7 @@ def test_issue289_security_unblock_branch_allows_combined_dependency_and_gate_fi
 
 
 def test_issue289_security_unblock_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
-    monkeypatch.setenv("GITHUB_HEAD_REF", stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH)
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["backend/app/main.py"])
 
     failures: list[str] = []
@@ -136,7 +136,7 @@ def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
 
 
 def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
-    monkeypatch.setenv("GITHUB_HEAD_REF", "feature/untracked-stage8-work")
+    monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
 
     failures: list[str] = []
     stage8.check_stage_marker_and_branch(failures)

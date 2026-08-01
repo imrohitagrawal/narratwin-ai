@@ -187,7 +187,7 @@ Controls:
 - provider egress disabled by default locally
 - no raw prompts in logs
 
-### A4: Unsupported Portfolio Claims
+### A4: Unsupported Project Claims
 
 Attack:
 

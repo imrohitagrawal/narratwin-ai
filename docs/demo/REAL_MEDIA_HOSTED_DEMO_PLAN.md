@@ -91,7 +91,7 @@ Candidate source facts to review:
 | Hosting | Render | `https://render.com/docs/free` | free service/database limitations and non-production posture |
 
 Provider-backed implementation is the recommended Checkpoint 1 path because it
-can produce recruiter-visible real media without local GPU setup, large model
+can produce externally reviewable real media without local GPU setup, large model
 bundles, or uncertain local render quality.
 
 ### Source-Fact Snapshot
@@ -106,8 +106,8 @@ Reviewed on 2026-07-21 against the official sources listed above:
 | Tavus | Pricing page lists developer/API access, allocated conversation or video-generation minutes, pay-as-you-go behavior on paid plans, 30-second minimums for conversations, and no overage cap on paid plans. | Viable alternate avatar/video adapter candidate only with app-side hard quotas; selected plan, stock replica/custom replica rules, and generated-video cost must be refreshed before selection. |
 | OpenVoice | Official repository states OpenVoice V1 and V2 are MIT licensed and free for commercial and research use. | Promising local clone research candidate, but still needs dependency, model-weight, quality, hardware, and consent review. |
 | SadTalker | Official repository states the license has moved to Apache 2.0 and removed the prior non-commercial restriction. | Possible local avatar research candidate, but still needs model-weight, asset, quality, hardware, and consent review. |
-| Wav2Lip | Official repository says the code can only be used for personal/research/non-commercial purposes. | Rejected for the default recruiter/portfolio demo path. |
-| XTTS-v2 | Hugging Face license states the model and outputs are non-commercial only. | Rejected for the default recruiter/portfolio clone path. |
+| Wav2Lip | Official repository says the code can only be used for personal/research/non-commercial purposes. | Rejected for the default external/public/commercial demo path. |
+| XTTS-v2 | Hugging Face license states the model and outputs are non-commercial only. | Rejected for the default external/public/commercial clone path. |
 
 ### Local-Model Path
 
@@ -117,7 +117,7 @@ Local models are a research track, not the first implementation path.
 |---|---|---|
 | OpenVoice | `https://github.com/myshell-ai/OpenVoice` | promising local voice-clone candidate; verify exact code, weight, dependency, and output-license posture before use |
 | SadTalker | `https://github.com/OpenTalker/SadTalker` | possible local talking-head candidate; verify license, model weights, assets, runtime, GPU, and quality before use |
-| Wav2Lip | `https://github.com/Rudrabha/Wav2Lip` | rejected for default recruiter/portfolio path while official repo says personal/research/non-commercial only |
+| Wav2Lip | `https://github.com/Rudrabha/Wav2Lip` | rejected for default external/public/commercial path while official repo says personal/research/non-commercial only |
 | XTTS-v2 | `https://huggingface.co/coqui/XTTS-v2/blob/main/LICENSE.txt` | rejected for public/commercial-facing clone path while model license permits only non-commercial use |
 
 Local models reduce third-party runtime dependency but add hardware, quality,
@@ -133,13 +133,13 @@ The default controlled-demo posture should be cost-minimized:
 | Cost area | Cost-minimized planning estimate | Control required |
 |---|---:|---|
 | Hosted app/database/cache | `$0-$5/month` preferred for the controlled demo; use `$20+` only if the selected host requires paid spend controls or team features | hard monthly cloud budget, teardown plan, and no production durability claim |
-| TTS or voice clone | Checkpoint 1 TTS should target low single-digit usage or the smallest terms-compatible paid plan when output is recruiter-facing or otherwise external; cloned voice remains out of scope until Checkpoint 2 | per-run character/minute cap |
+| TTS or voice clone | Checkpoint 1 TTS should target low single-digit usage or the smallest terms-compatible paid plan when output is external; cloned voice remains out of scope until Checkpoint 2 | per-run character/minute cap |
 | Avatar/video generation | target roughly `$1/minute` for non-cloned/stock/synthetic output; avoid premium avatar engines unless explicitly justified | per-user video-minute quota |
 | Failed runs and retries | 20 percent default buffer; 50 percent only for provider-selection testing, not normal reviewer access | retry budget and idempotency |
 | Cost-minimized first-month demo target | `$30-$60` for 10 invited reviewers x one 2-minute output each | app-level provider budget stop |
 | First-month approval ceiling | `$75-$200` only if paid hosting controls, monthly provider plans, or higher-cost avatar engines are explicitly selected | owner approval before spend |
 
-The cheapest credible recruiter-facing demo mode is view-first:
+The cheapest credible external demonstration mode is view-first:
 
 ```text
 invite link
@@ -289,7 +289,7 @@ dashboards, making real provider test calls, or enabling any provider call.
 
 | ID | Area | Official source | Fact used | Checkpoint 1 implication |
 |---|---|---|---|---|
-| `SRC-ELEVEN-TTS-001` | ElevenLabs TTS pricing | `https://elevenlabs.io/pricing/api` | API pricing lists TTS by characters, with lower-cost Flash/Turbo and higher-cost Multilingual/v3 classes. | The TTS PR must calculate estimated character cost per run, reserve quota before provider calls, and default to the lowest acceptable terms-compatible model for the controlled demo. Free-tier output is not acceptable for recruiter-facing or external output unless a fresh terms review explicitly proves the selected use is allowed. |
+| `SRC-ELEVEN-TTS-001` | ElevenLabs TTS pricing | `https://elevenlabs.io/pricing/api` | API pricing lists TTS by characters, with lower-cost Flash/Turbo and higher-cost Multilingual/v3 classes. | The TTS PR must calculate estimated character cost per run, reserve quota before provider calls, and default to the lowest acceptable terms-compatible model for the controlled demo. Free-tier output is not acceptable for external output unless a fresh terms review explicitly proves the selected use is allowed. |
 | `SRC-ELEVEN-TTS-002` | ElevenLabs TTS model limits | `https://elevenlabs.io/text-to-speech-api` | Public TTS page describes model-specific language support, character limits, and approximate per-minute costs. | The TTS PR must cap script length and selected languages before audio generation. |
 | `SRC-ELEVEN-CLONE-001` | ElevenLabs voice cloning | `https://elevenlabs.io/docs/eleven-api/guides/how-to/voices/professional-voice-cloning` and `https://help.elevenlabs.io/hc/en-us/articles/36842751624209-Can-I-create-a-Professional-Voice-Clone-of-someone-else-s-voice` | Professional Voice Cloning requires verification, and ElevenLabs help states a user can create a Professional Voice Clone only of their own voice; another person must create, verify, and privately share their own clone from their own account. | Checkpoint 1 must avoid cloned identity. Checkpoint 2 consent is necessary but not sufficient for ElevenLabs PVC: third-party PVC enrollment is excluded unless the subject owns the verified clone and privately shares it under a recorded scope. |
 | `SRC-ELEVEN-POLICY-001` | ElevenLabs use policy | `https://elevenlabs.io/use-policy` | Policy prohibits unauthorized, deceptive, or harmful impersonation, including replicating another person's voice without consent or legal right. | Consent, disclosure, and no-deceptive-impersonation gates are mandatory before any voice clone path. |
@@ -303,12 +303,12 @@ dashboards, making real provider test calls, or enabling any provider call.
 | `SRC-TAVUS-KEY-001` | Tavus API authentication | `https://docs.tavus.io/api-reference/authentication` | Tavus docs state API keys are secrets and must not be exposed in browser/client-side code; load securely from environment/server configuration. | Future provider PRs must keep provider calls server-side, env-only, disabled by default, and redacted from logs. |
 | `SRC-TAVUS-CONSENT-001` | Tavus face rights | `https://docs.tavus.io/sections/replica/replica-faqs` | Tavus requires appropriate rights and permissions for another person's likeness, voice, and training content. | Checkpoint 2 clone work must record rights, permissions, consent scope, revocation, and deletion paths before profile creation. |
 | `SRC-RAILWAY-001` | Railway pricing | `https://docs.railway.com/pricing/plans` and `https://docs.railway.com/pricing/cost-control` | Railway plans include usage credits/minimum commitments, and cost-control docs describe configurable usage limits for some spend areas. | Hosted-demo PR must use an owner-approved project budget, alerts, teardown plan, and no production durability claim. |
-| `SRC-VERCEL-001` | Vercel pricing and limits | `https://vercel.com/pricing`, `https://vercel.com/docs/pricing`, and `https://vercel.com/docs/plans/hobby` | Vercel has Hobby and Pro tiers, usage limits, Pro included credit across resources, and Hobby is described as personal/non-commercial. | Vercel Hobby must not be selected for a recruiter-facing or external demo unless the owner records a terms-compatible non-commercial classification. Otherwise budget Vercel as Pro-like spend or choose another host with source-backed access and spend controls. |
-| `SRC-RENDER-001` | Render free service behavior | `https://render.com/docs/free` | Render free web services spin down after 15 minutes without inbound traffic and take about one minute to spin back up. | Render free hosting is risky for recruiter first impression unless view-first media, warmup, or paid non-spindown behavior is selected. |
+| `SRC-VERCEL-001` | Vercel pricing and limits | `https://vercel.com/pricing`, `https://vercel.com/docs/pricing`, and `https://vercel.com/docs/plans/hobby` | Vercel has Hobby and Pro tiers, usage limits, Pro included credit across resources, and Hobby is described as personal/non-commercial. | Vercel Hobby must not be selected for an external demo unless the owner records a terms-compatible non-commercial classification. Otherwise budget Vercel as Pro-like spend or choose another host with source-backed access and spend controls. |
+| `SRC-RENDER-001` | Render free service behavior | `https://render.com/docs/free` | Render free web services spin down after 15 minutes without inbound traffic and take about one minute to spin back up. | Render free hosting is risky for the first external view unless view-first media, warmup, or paid non-spindown behavior is selected. |
 | `SRC-OPENVOICE-001` | OpenVoice license | `https://github.com/myshell-ai/OpenVoice` | Official repository states OpenVoice V1 and V2 are MIT licensed and free for commercial and research use. | OpenVoice remains a local research candidate only; model weights, dependencies, hardware, quality, consent, and output rights still need review. |
 | `SRC-SADTALKER-001` | SadTalker license | `https://github.com/OpenTalker/SadTalker` | Official repository says the license moved to Apache 2.0 and removed the prior non-commercial restriction. | SadTalker remains a local research candidate only; model weights, assets, runtime, hardware, consent, and output quality still need review. |
-| `SRC-WAV2LIP-001` | Wav2Lip license | `https://github.com/Rudrabha/Wav2Lip` | Official repository says the code can only be used for personal/research/non-commercial purposes. | Wav2Lip remains rejected for the recruiter/portfolio demo path. |
-| `SRC-XTTS-001` | XTTS-v2 license | `https://huggingface.co/coqui/XTTS-v2/blob/main/LICENSE.txt` | The model license allows only non-commercial use of the model and outputs. | XTTS-v2 remains rejected for public, recruiter-facing, or commercial-facing clone output. |
+| `SRC-WAV2LIP-001` | Wav2Lip license | `https://github.com/Rudrabha/Wav2Lip` | Official repository says the code can only be used for personal/research/non-commercial purposes. | Wav2Lip remains rejected for the external/public/commercial demo path. |
+| `SRC-XTTS-001` | XTTS-v2 license | `https://huggingface.co/coqui/XTTS-v2/blob/main/LICENSE.txt` | The model license allows only non-commercial use of the model and outputs. | XTTS-v2 remains rejected for public or commercial-facing clone output. |
 
 ## Checkpoint 1 Implementation Contract
 
@@ -530,7 +530,7 @@ selection:
 | HeyGen Video Agent Prompt to Video | `$0.0333/sec` | `$39.96` plus wallet/minimum spend | Cost-plausible if output can preserve source/eval/citation bindings and disclosure. |
 | HeyGen Avatar IV/V Digital Twin or Studio Avatar | `$0.0667/sec` | `$80.04` plus wallet/minimum spend | Outside target and inside approval-ceiling territory; not a default Checkpoint 1 choice. |
 | Tavus generated video overage | provider pricing describes allocated minutes, overage, 30-second minimums, and possible no-overage-cap behavior | must be recomputed from the selected paid plan | Not cost-safe until app-side caps and provider dashboard evidence exist. |
-| D-ID credits | FAQ maps one credit to up to 15 seconds | must be recomputed from selected paid plan and credit expiry | Alternate only; trial/free output is not acceptable for recruiter-visible output unless terms explicitly allow it. |
+| D-ID credits | FAQ maps one credit to up to 15 seconds | must be recomputed from selected paid plan and credit expiry | Alternate only; trial/free output is not acceptable for external output unless terms explicitly allow it. |
 
 Hosting/access cost must be separated from media generation:
 
@@ -543,13 +543,13 @@ Hosting/access cost must be separated from media generation:
   behavior, Render free cold starts/ephemeral filesystem/30-day free Postgres,
   and paid deployment-protection add-ons must be treated as first-month budget
   inputs, not ignored overhead.
-- Vercel Hobby must not be used for recruiter-facing or otherwise external
+- Vercel Hobby must not be used for external
   access unless the owner records a source-backed non-commercial classification;
   absent that record, budget Vercel as Pro-like spend or choose a different
   terms-compatible host.
 - Render Free is acceptable only for previewing platform behavior, not for a
   production-readiness claim, and only if cold start cannot make the first
-  recruiter viewport look broken.
+  external viewport look broken.
 
 Hard guardrails required before any paid provider call:
 
@@ -654,7 +654,7 @@ Future implementation PRs must block media display unless:
 - translated-claim support or meaning-preservation checks are represented in the
   PR failure matrix and tests.
 
-### Recruiter Flow UX Contract
+### External Reviewer Flow UX Contract
 
 Minimum first-screen controlled-demo behavior:
 
@@ -743,7 +743,7 @@ Future implementation PRs must adapt these prompts before coding:
   deletion.
 - Eval/grounding/citations: attack unsupported claims, citation drift, stale
   source runs, failed eval media display, and source-run/eval/media mismatch.
-- UX/demo/recruiter flow: attack view-first path, first impression latency,
+- UX/demo/external-review flow: attack view-first path, first impression latency,
   quota copy, disclosure visibility, evidence inspectability, and soft-launch
   overclaim.
 - Performance/reliability/quota: attack provider timeout, async polling,
@@ -763,7 +763,7 @@ Issue `#229` PR 1 review posture:
 | Cost/provider terms | Blocking review found false-pass risk in generic `$1/minute` avatar cost, understated ElevenLabs PVC ownership limits, and hosting/access costs mixed with static artifact costs. | Source facts now use model-specific HeyGen rates, budget math for 20 reviewer-minutes, ElevenLabs own-voice/share constraint, and separate static artifact versus authenticated hosted-app cost contracts. App-side hard quotas remain mandatory. |
 | Security/privacy/consent | Review attacked clone consent, revocation, provider-output trust, and deletion. | Checkpoint 1 keeps cloned identity out of scope; `CONSENT-REVOKED-001`, `CLONE-PROFILE-DELETION-001`, `RETENTION-DELETION-001`, and provider-output failure rows are explicit future gates. |
 | Eval/grounding/citations | Review attacked stale eval display, citation drift, source-run/media mismatch, and multilingual translation drift. | Media cache and multilingual contracts require current `PASSED` eval, matching citations/source run/language checksums, and block display on mismatch. |
-| UX/demo/recruiter flow | Review attacked first viewport trust, quota/error copy, evidence inspectability, and public-launch overclaim. | Recruiter-flow contract requires view-first artifact, disclosure, unsupported-claim/eval/source counts, citation/eval drawer, access-denied states, owner contact path, and no provider call on first view. |
+| UX/demo/external-review flow | Review attacked first viewport trust, quota/error copy, evidence inspectability, and public-launch overclaim. | External-review flow requires view-first artifact, disclosure, unsupported-claim/eval/source counts, citation/eval drawer, access-denied states, owner contact path, and no provider call on first view. |
 | Performance/reliability/quota | Review attacked async provider jobs, retries, cold starts, duplicate spend, provider outages, and budget stops. | Async lifecycle, idempotency, retry, cache, and `COST-*` controls now require bounded polling, app-side quota reservation, one transient retry max, and fallback to valid view-first artifacts. |
 | Test/quality/CI | Review attacked first-commit evidence, branch allowlist, PR-body guardrails, and docs-only false passes. | First commit contains only the issue preflight; branch allowlist is formalized; forced PR guardrails are required after PR creation; local quality commands remain mandatory evidence. |
 | Governance/taste-check | Local review attacked scope creep, duplicated source-of-truth docs, vague contracts, and ceremonial review. | The PR reuses `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`, keeps runtime/provider files untouched, expands concrete IDs instead of category labels, and records a stop rule for future implementation drift. |
@@ -775,7 +775,7 @@ Issue `#235` PR 2 review posture:
 | Cost/provider terms | Fresh review found that pricing, credits, rate limits, overage caps, retry billing, refund semantics, and dashboard controls are volatile and differ across candidate TTS, avatar/video, and hosting providers. | PR2 treats provider and hosting facts as planning inputs only. It sets a target first-month spend and owner approval ceiling, forbids account setup, dashboard configuration, plan activation, wallet funding, model/voice selection, test calls, and spend, and requires fresh selected-provider source facts plus executable quota safeguards in PR3 before egress. |
 | Security/privacy/consent | Review attacked uploads, prompts, transcripts, provider/model outputs, external URLs, generated media retention, provider-side deletion evidence, and clone-adjacent identity drift. | PR2 keeps all such inputs untrusted, keeps cloned identity and real media generation out of scope, requires disabled-by-default provider behavior, retention/deletion/tombstone/provider-side evidence paths, and keeps consent/profile work for later issue-linked PRs. |
 | Eval/grounding/citations | Review attacked unsupported claims, stale citations, failed eval display, source-run/media mismatch, and cache reuse after source or eval changes. | PR2 requires cached or pre-generated media to display only when provenance, citation, eval, disclosure, retention, and launch/access state match; future implementation must map every display claim to executable cache/eval/provenance tests. |
-| UX/demo/recruiter flow | Review attacked first-view latency, cold start, unavailable/provider-off states, quota copy, evidence inspectability, and accidental public-launch claims. | PR2 requires a view-first pre-generated path, explicit unavailable states, reviewer capacity assumptions, no provider generation on first view, and launch/access wording aligned to `docs/LAUNCH_LEVELS.md` before any hosted URL exists. |
+| UX/demo/external-review flow | Review attacked first-view latency, cold start, unavailable/provider-off states, quota copy, evidence inspectability, and accidental public-launch claims. | PR2 requires a view-first pre-generated path, explicit unavailable states, reviewer capacity assumptions, no provider generation on first view, and launch/access wording aligned to `docs/LAUNCH_LEVELS.md` before any hosted URL exists. |
 | Performance/reliability/quota | Review attacked provider 429s, async delay, retries, duplicate spend, queue saturation, timeout handling, provider outage, and quota exhaustion. | PR2 adds contract IDs for latency, capacity, quota reservation/refund, retry, timeout, backpressure, duplicate-spend prevention, provider-off/failure/missing-artifact/quota-exhaustion states, and later executable tests. |
 | Test/quality/CI | Review attacked the missing issue `#235` changed-file allowlist, absent unrelated-file regression, marker-only prose scans, first-commit drift, and PR-body guardrail gaps. | PR2 adds an exact branch allowlist and regression test, preserves the first branch commit as preflight-only evidence, and requires PR-body claim mapping, human checklist rows, validation evidence, and forced PR guardrails after PR creation. |
 | Governance/taste-check | Review attacked launch-level wording drift, duplicate authority, pre-authorizing hosted-demo work, standalone status-only follow-ups, and ceremonial source-fact review. | PR2 keeps `docs/LAUNCH_LEVELS.md` canonical for access/launch authority, updates `docs/STATUS.md` in the same PR with the intended post-merge next state, keeps routine closeout facts in PR/issue comments, and leaves PR3/provider egress blocked until fresh facts and executable safeguards exist. |

@@ -6,6 +6,14 @@ NarraTwin AI must make every walkthrough run traceable, debuggable, and cost-awa
 
 The MVP does not need a full dashboard, but it must store enough metadata to explain what happened in each run.
 
+## Publication-safe telemetry
+
+Logs, traces, metrics labels, search queries, and provider request metadata are
+publication surfaces under `PublicationBoundaryV1`. Telemetry carries the most
+restrictive source classification and must use bounded identifiers rather than
+raw internal/restricted content. Observability cannot promote data to `PUBLIC`,
+and a public dashboard requires a separate reviewed projection contract.
+
 ## RunMetadata
 
 Run metadata is persisted business/run state. It is not a log event and not an

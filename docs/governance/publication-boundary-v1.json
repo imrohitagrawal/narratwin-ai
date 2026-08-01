@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "PublicationBoundaryV1",
+  "publicProductStatement": "NarraTwin turns approved knowledge into grounded, cited, multilingual avatar explanations and interactive Q&A.",
+  "authorityOrder": [
+    "OWNER_APPROVED_ISSUE_324",
+    "VERSIONED_PUBLICATION_CONTRACT",
+    "CANONICAL_MERGED_PRODUCT_SOURCES",
+    "EXECUTABLE_GATES_AND_TESTS",
+    "RUNTIME_EVIDENCE",
+    "HISTORICAL_RECORDS_CONTEXT_ONLY"
+  ],
+  "classes": [
+    {
+      "id": "PUBLIC",
+      "destination": "APPROVED_PUBLIC_SURFACE",
+      "defaultAction": "VALIDATE_THEN_ALLOW"
+    },
+    {
+      "id": "INTERNAL",
+      "destination": "EXTERNAL_ACCESS_CONTROLLED_SYSTEM",
+      "defaultAction": "OMIT_OR_REDACT"
+    },
+    {
+      "id": "RESTRICTED",
+      "destination": "APPROVED_RESTRICTED_SYSTEM",
+      "defaultAction": "BLOCK"
+    }
+  ],
+  "surfaceFamilies": [
+    {"id": "CANONICAL_DOCUMENTS", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "USER_INTERFACE_COPY", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "API_FIXTURES_RESPONSES", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "GENERATED_SCRIPTS_CAPTIONS_DOWNLOADS", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "ARTIFACT_MANIFESTS_MEDIA_METADATA", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "FILENAMES_URLS", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "SCREENSHOTS_RELEASE_MATERIAL", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "LOGS_TRACES", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "SEARCH_QUERIES", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "PROVIDER_REQUEST_METADATA", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "PROMPTS_MODEL_OUTPUT", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"},
+    {"id": "RETRIEVED_CONTEXT", "defaultClassification": "INTERNAL", "publicAction": "VALIDATE"}
+  ],
+  "promotionRules": {
+    "unknownClassAction": "BLOCK",
+    "mixedClassAction": "MOST_RESTRICTIVE",
+    "promptMayReclassify": false,
+    "retrievalMayReclassify": false,
+    "modelMayReclassify": false,
+    "providerMayReclassify": false,
+    "humanApprovalRequired": true
+  },
+  "canonicalPublicSources": [
+    "README.md",
+    "docs/AI_BUILD_BRIEF.md",
+    "docs/PRODUCT_STRATEGY.md",
+    "docs/PRD.md",
+    "docs/demo/CONTROLLED_LOCAL_DEMO.md"
+  ],
+  "legacyReplacement": {
+    "activePath": "docs/demo/CONTROLLED_LOCAL_DEMO.md",
+    "removedPath": "portfolio/README.md",
+    "historicalReferences": "PRESERVE_WITH_CONTEXT"
+  },
+  "launchPosture": {
+    "publicationIsReleaseAuthorization": false,
+    "publicDistributionAuthorized": false,
+    "productionAuthorized": false
+  }
+}

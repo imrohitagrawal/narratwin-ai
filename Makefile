@@ -122,7 +122,7 @@ final-review-quality:
 
 phase1-closure-quality:
 	python3 scripts/quality/check_recommended_review_items.py "Phase 1 Closure"
-	python3 scripts/quality/check_phase1_closure_docs.py
+	python3 scripts/quality/check_phase1_quality.py
 
 agent-context-quality:
 	python3 -m scripts.agent_context.cli validate --commit WORKTREE

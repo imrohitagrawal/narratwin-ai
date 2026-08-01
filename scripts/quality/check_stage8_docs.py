@@ -7,14 +7,28 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.quality.branch_identity import current_branch  # noqa: E402
+
+
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
 ISSUE289_SECURITY_UNBLOCK_BRANCH = "phase-1-closure-process-289-security-postcss-stage8-gate-unblock"
+ISSUE324_PUBLICATION_BRANCH = "phase-1-closure-process-324-publication-boundary-v2"
+
+
+def issue324_allowed_files() -> set[str]:
+    artifact = json.loads(
+        (ROOT / "docs/governance/preflights/issue-324.json").read_text(encoding="utf-8")
+    )
+    return set(artifact["scope"]["required"])
 
 REQUIRED_FILES = [
     ".stage/current",
@@ -63,7 +77,7 @@ REQUIRED_FILES = [
     "docs/STATUS.md",
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
-    "portfolio/README.md",
+    "docs/demo/CONTROLLED_LOCAL_DEMO.md",
 ]
 
 STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {
@@ -104,6 +118,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
         "tests/unit/test_phase1_closure_docs.py",
         "tests/unit/test_stage8_quality_gate.py",
     },
+    ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(),
 }
 
 
@@ -117,13 +132,6 @@ def read(path: str) -> str:
 
 def fail(message: str, failures: list[str]) -> None:
     failures.append(message)
-
-
-def current_branch() -> str:
-    env_branch = os.environ.get("GITHUB_HEAD_REF", "").strip()
-    if env_branch:
-        return env_branch
-    return run(["git", "branch", "--show-current"]).stdout.strip()
 
 
 def changed_files_for_stage_scope() -> list[str]:
@@ -162,6 +170,9 @@ def check_stage_marker_and_branch(failures: list[str]) -> None:
         fail(".stage/current must contain 8 for Stage 8 quality.", failures)
 
     branch = current_branch()
+    if not branch:
+        fail("Stage 8 branch evidence is unavailable or inconsistent.", failures)
+        return
     if (
         branch
         and branch != "main"
@@ -172,7 +183,11 @@ def check_stage_marker_and_branch(failures: list[str]) -> None:
 
 
 def check_stage_scope(failures: list[str]) -> None:
-    allowed_files = PROCESS_BRANCH_ALLOWED_FILES.get(current_branch(), STAGE8_ALLOWED_FILES)
+    branch = current_branch()
+    if not branch:
+        fail("Stage 8 scope branch evidence is unavailable or inconsistent.", failures)
+        return
+    allowed_files = PROCESS_BRANCH_ALLOWED_FILES.get(branch, STAGE8_ALLOWED_FILES)
     for path in changed_files_for_stage_scope():
         if path not in allowed_files:
             fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
@@ -222,7 +237,11 @@ def check_backend_and_tests(failures: list[str]) -> None:
     for marker in ("replay_response", "conflict_response", "secret-upload"):
         if marker not in stage4_api_tests:
             fail(f"Stage 8 Stage 4 API tests must cover {marker}.", failures)
-    for marker in ("test_tts_provider_manifest_rejects_unknown_schema_fields", "unexpectedTopLevel", "unexpectedNested"):
+    for marker in (
+        "test_tts_provider_manifest_rejects_unknown_schema_fields",
+        "unexpectedTopLevel",
+        "unexpectedNested",
+    ):
         if marker not in stage6_unit_tests:
             fail(f"Stage 8 Stage 6 unit tests must cover {marker}.", failures)
     frontend_dockerfile = read("frontend/Dockerfile")
@@ -278,10 +297,20 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
     ):
         if marker not in scripts:
             fail(f"Stage 8 scripts must include {marker}.", failures)
-    for marker in ("security / docker build", "Docker image vulnerability scan", "docker-image-scan.sh", "upload-artifact"):
+    for marker in (
+        "security / docker build",
+        "Docker image vulnerability scan",
+        "docker-image-scan.sh",
+        "upload-artifact",
+    ):
         if marker not in security_workflow:
             fail(f"Stage 8 security workflow must include {marker}.", failures)
-    for marker in ("stage8 / performance lighthouse", "performance-smoke.sh", "frontend-lighthouse.sh", "stage8-performance-lighthouse-reports"):
+    for marker in (
+        "stage8 / performance lighthouse",
+        "performance-smoke.sh",
+        "frontend-lighthouse.sh",
+        "stage8-performance-lighthouse-reports",
+    ):
         if marker not in ci_workflow:
             fail(f"Stage 8 CI workflow must include {marker}.", failures)
 
@@ -308,7 +337,7 @@ def check_docs(failures: list[str]) -> None:
             "docs/STATUS.md",
             "docs/THIRD_PARTY_NOTICES.md",
             "docs/TRACEABILITY.md",
-            "portfolio/README.md",
+            "docs/demo/CONTROLLED_LOCAL_DEMO.md",
             "demo/stage8_seed_project.md",
         )
     }
@@ -337,7 +366,7 @@ def check_docs(failures: list[str]) -> None:
         "rollback",
         "runbook",
         "demo seed data",
-        "portfolio",
+        "Controlled Local Demo",
         "LRN-001",
         "LRN-002",
         "Review Rigor Retrospective",

@@ -8,26 +8,17 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.quality.branch_identity import current_branch  # noqa: E402
+
+
 CURRENT_STAGE = ROOT / ".stage" / "current"
 STATUS_DOC = ROOT / "docs" / "STATUS.md"
 FINAL_REVIEW_BRANCH_PREFIX = "final-review-"
 PHASE1_CLOSURE_BRANCH_PREFIX = "phase-1-closure-"
-
-
-def current_branch() -> str:
-    env_branch = os.environ.get("GITHUB_HEAD_REF", "").strip()
-    if env_branch:
-        return env_branch
-    result = subprocess.run(
-        ["git", "branch", "--show-current"],
-        cwd=ROOT,
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    return result.stdout.strip() if result.returncode == 0 else ""
 
 
 def run_recommended_review_item_check(stage: str) -> int:
@@ -54,6 +45,9 @@ def main() -> int:
 
     stage = CURRENT_STAGE.read_text(encoding="utf-8").strip()
     branch = current_branch()
+    if not branch:
+        print("Quality dispatcher branch evidence is unavailable or inconsistent.")
+        return 1
     if branch.startswith(FINAL_REVIEW_BRANCH_PREFIX):
         stage = "Final Review"
     if branch.startswith(PHASE1_CLOSURE_BRANCH_PREFIX):
@@ -98,7 +92,9 @@ def main() -> int:
     if stage == "Final Review":
         return subprocess.call([sys.executable, "scripts/quality/check_final_review_docs.py"], cwd=ROOT)
     if stage == "Phase 1 Closure":
-        return subprocess.call([sys.executable, "scripts/quality/check_phase1_closure_docs.py"], cwd=ROOT)
+        return subprocess.call(
+            [sys.executable, "scripts/quality/check_phase1_quality.py"], cwd=ROOT
+        )
 
     return subprocess.call(
         [sys.executable, "scripts/quality/stage_not_implemented.py", f"Stage {stage}"],

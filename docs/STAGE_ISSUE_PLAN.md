@@ -501,7 +501,7 @@ Allowed changes:
 - `docs/STATUS.md`
 - `docs/THIRD_PARTY_NOTICES.md`
 - `docs/TRACEABILITY.md`
-- `portfolio/README.md`
+- `docs/demo/CONTROLLED_LOCAL_DEMO.md`
 
 Blocked changes:
 
@@ -527,7 +527,7 @@ Required Stage 8 hardening within this scope:
 - release checklist and rollback notes
 - runbook
 - demo seed data
-- portfolio README
+- controlled local demo guide
 - `docs/RELEASE_READINESS_REVIEW.md`
 - project learnings tracker and dedicated review-rigor/governance learning pages
 - PR template checklist for learnings-tracker review and invariant,
@@ -565,7 +565,7 @@ Allowed governance/reporting changes for Module A:
 - `docs/demo/PHASE_1_DEMO_CHECKLIST.md`
 - `docs/demo/PHASE_1_SCREENSHOT_GUIDE.md`
 - `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md`
-- `portfolio/README.md`
+- `docs/demo/CONTROLLED_LOCAL_DEMO.md`
 - `scripts/quality/check_phase1_closure_docs.py`
 - `scripts/quality/check_quality_stage.py`
 - `scripts/quality/check_recommended_review_items.py`
@@ -2213,3 +2213,31 @@ controlled, repository-owner-authorized Slice 2 issue, branch, and pull request.
 Before that controller is created, the Issue `#294` replacement must pass
 merged-tree acceptance, PR `#295` must close unmerged as superseded, and Issue
 `#294` must close as satisfied by the replacement.
+
+## Issue #324 publication boundary
+
+Issue `#324` is the prospective public/internal/restricted publication
+controller. The v2 branch uses a responsibility-split gate package and does not
+modify the historical Phase 1 checker or test monolith. Its first commit is the
+GovernancePreflightV1 artifact; committed RED tests precede implementation.
+
+Definition of Test:
+
+- strict duplicate-safe contract parsing and compiled-policy evidence;
+- trusted approval records bound to policy version, accountable approver,
+  surface, source checksums, and exact envelope digest;
+- fail-closed direct, paraphrased, metadata, generated-output, filename/URL,
+  log/trace, search-query, provider-metadata, prompt, and retrieval fixtures;
+- exact 58-path scope, 3,700 charged-line cap, fixed base commit, and bounded Git
+  failures;
+- 250-line, 32,000-byte, and 120-character module/test budgets, with a 40-line
+  executable entry-point limit and a 500-line grandfathered integration-gate
+  ceiling; and
+- one modular Phase 1 runner with executable legacy-source parity, Stage 8
+  compatibility, guardrails, full quality, and independent exact-head review.
+
+Definition of Done is repository evidence, not an agent statement: tests and
+gates compute the result; current public sources use neutral product language;
+historical records remain contextual; launch No-Go and human-only risk decisions
+remain unchanged; and no runtime, provider, media, Q&A, hosting, release, or
+production capability is claimed.

@@ -43,6 +43,63 @@ system boundaries, not runnable product code.
 - Preserve both product modes: pre-rendered multilingual demo video and interactive
   AI avatar walkthrough.
 
+## Publication Boundary
+
+`docs/governance/publication-boundary-v1.json` is the provider-neutral
+publication contract. Repository documents, UI/API output, generated artifacts,
+media metadata, filenames/URLs, screenshots, logs/traces, search queries,
+provider metadata, prompts/model output, and retrieved context retain source
+classification. The most restrictive provenance wins; prompts, retrieval,
+models, and providers cannot reclassify it. Runtime enforcement remains a later
+separately authorized slice, so generated artifacts are not public by default.
+
+Issue `#324` keeps the governance oracle modular:
+
+```text
+branch_identity.py       # one validated event/Git identity for touched gates
+
+check_phase1_quality.py
+└── phase1_closure/
+    ├── runner.py    # publication gate first, then preserved legacy contracts
+    ├── legacy.py    # source-parity characterization and compatibility boundary
+    └── __init__.py  # explicit supported API/index
+
+publication_boundary/
+├── contract.py    # strict JSON -> compiled policy
+├── decision.py    # trusted approval + exact envelope -> ALLOW/OMIT/BLOCK
+├── repository.py  # canonical sources and known-regression checks
+├── scope.py       # exact branch/path/charged-line policy
+├── git_evidence.py # pinned base + bounded tracked/untracked evidence
+├── context.py     # recursive preflight index + per-file budgets
+├── reporting.py   # bounded, control-safe failures
+├── cli.py         # fail-closed composition
+└── __init__.py    # explicit supported API/index
+```
+
+The historical 7,387-line checker and 9,970-line test module remain frozen.
+Whole-file SHA-256 and line-count receipts prevent silent additions. The runner
+also characterizes check order and demo markers from the legacy source,
+preserves every still-applicable global check, and supersedes only the Issue
+`#324` branch scope and removed demo-document contract. A later
+characterization-led controller must extract the remaining legacy domains.
+
+The intended later runtime trust boundary is:
+
+```text
+untrusted surface payload + approval ID
+                    |
+                    v
+authenticated server-side approval registry
+  -> policy version + approver + source checksums + surface + payload digest
+                    |
+                    v
+compiled PublicationBoundaryV1 decision -> ALLOW / OMIT / BLOCK
+```
+
+The repository oracle verifies this contract and rejects caller-mimicked
+authority. It does not implement the authenticated registry, cryptographic
+integrity, runtime authorization, or publication transport.
+
 ## System Context
 
 ```text

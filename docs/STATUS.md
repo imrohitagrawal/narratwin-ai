@@ -446,7 +446,11 @@ Use these files together with this tracker:
 | `#138` | Closed | Security follow-up | `PYSEC-2026-2132` Click command-injection remediation completed and closed on 2026-07-14. This did not change production or restore readiness. |
 | `#150` | Open | Security follow-up | Remove the Semgrep Click and MCP compatibility overrides by `2026-08-13` or earlier when upstream supports fixed compatible dependencies; any tool version, lock, rule, target, invocation, or advisory change triggers immediate re-review. |
 | `#151` | Closed | Security follow-up | CPython `3.13.14` security remediation and scanner-consensus work closed on 2026-07-16. This does not change production, restore, hosted launch, or Product Mode 1 local-demo posture. |
-| `#158` | PR target: close after merged-tree acceptance | Security governance history | This PR preserves the July 14 preflight as point-in-time evidence, records the PR `#152` process-contract deviation separately from the later PR `#180` remediation and issue `#151` closure, and keeps issue `#150` open. After exact-head review, merge, and merged-tree acceptance, close `#158` manually and unblock the publication-boundary controller in issue `#324`. Release and production posture remain No-Go. |
+| `#158` | Closed | Security governance history | PR `#325` merged at `11385d661e1da23f9be4101d9e8d3b3d2ca679e4`; merged-tree quality passed and Issue `#158` closed, unblocking the publication-boundary controller. Issue `#150` remains open and release/production posture remains No-Go. |
+| `#324` | Active | Publication boundary | `PublicationBoundaryV1` work proceeds on `phase-1-closure-process-324-publication-boundary-v2` after the first monolith-coupled attempt was stopped. The replacement uses modular contract, decision, repository, scope, CLI, and test ownership. It changes no runtime, provider, media, Q&A, hosting, release, or production behavior. |
+
+Issue #324 publication boundary status is active until its exact-head review,
+required checks, merge, and merged-tree closeout complete.
 
 ### Additional Backlog And Governance Issues
 

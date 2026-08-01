@@ -18,7 +18,7 @@ filenames, prompts, transcripts, retrieved context, provider responses, and mode
 outputs are untrusted.
 
 The security goal is to make the first product slice safe enough to review before
-it handles public portfolio or customer-facing content.
+it handles public or customer-facing content.
 
 ## Assets
 
@@ -46,6 +46,16 @@ High-value assets:
 - Prefer local/mock providers for development and CI.
 - Keep third-party provider egress explicit, auditable, and optional.
 - Secret screening is mandatory before non-local provider egress.
+
+### Publication Classification
+
+The `PublicationBoundaryV1` contract classifies information as `PUBLIC`,
+`INTERNAL`, or `RESTRICTED`. Unknown or mixed provenance fails closed at the
+most restrictive class. A prompt, retrieved document, model response, provider
+response, filename, log field, or metadata value cannot grant publication
+authority. Internal records require genuine access control outside this public
+repository; restricted personal, biometric, customer, credential, and
+human-risk records must not be committed here.
 
 ## Required Controls
 
