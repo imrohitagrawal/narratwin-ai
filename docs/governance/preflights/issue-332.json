@@ -1,0 +1,32 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 332,
+  "branch": "phase-1-closure-process-332-r0c-cut1-containment",
+  "objective": "Under Issue #328 OWNER comment 5152829686, from fixed base 13941ca7a46515d5dd0d8d6d5b40b807f6cfa636, contain the failed R0C-A1 freshness path without changing product runtime or the shadow implementation. Preserve PR #331 and Issue #330 forensic evidence; keep agent-context SHADOW_ONLY and STALE_GOVERNANCE so it cannot establish current truth, routing, merge, release, or readiness; remove A1.1b/A1.1c machine freshness from the Cut 1 blocking path; defer A1.2, A1.3, and immutable external trust-anchor evaluation as NONBLOCKING_HARDENING; explicitly retain live Git/GitHub bootstrap, exact-head trusted required checks, eligible latest-head non-author approval, and exact merge-title/body confirmation as the residual human-reviewed trust boundary; and make R0C-A2 the sole next blocking package after merged-tree closeout. Limit the correction to this preflight plus STATUS, STAGE_ISSUE_PLAN, and QUALITY_GATES, at most four files and 450 charged lines. Require the existing agent-context shadow gate, Phase 1 closure gate, make quality, independent source/gap/cold-plan/test/exact-head reviews, and two repair rounds. GovernancePreflightV1 enforces only its typed issue, branch, path, and status-decision fields; the fixed-base, line, repair, review, evidence, and human-gate requirements in this objective remain controller- and human-reviewed plan constraints and are not self-proved by this artifact. Roll back with one bounded documentation revert. Stop for scope or budget breach, protected-evidence mutation, worktree collision, unreproducible exact-head evidence, unauthorized repository administration, provider spend, personal or biometric data, deployment or publication, and legal, privacy, licensing, or security-risk acceptance. No GitHub App, branch-protection or ruleset change, repository transfer, plan purchase, external infrastructure, provider, media, runtime, Issue #280/#294, PR #299, release, readiness, or avatar-completion claim is authorized.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-332.json",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-332.json",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "backend/",
+      "docs/ADR/",
+      "docs/RELEASE_CHECKLIST.md",
+      "docs/agent-context/",
+      "frontend/",
+      "scripts/",
+      "tests/"
+    ]
+  }
+}
