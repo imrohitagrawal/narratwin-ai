@@ -39,6 +39,11 @@ C_FILES = {
 }
 
 
+def record(calls: list[Any], marker: str, result: Any) -> Any:
+    calls.append(marker)
+    return result
+
+
 @pytest.mark.parametrize(
     ("branch", "files", "cap"),
     [
@@ -113,14 +118,14 @@ def test_repository_evaluation_derives_scope_from_git(monkeypatch: Any) -> None:
 
 def test_runner_orders_scope_before_preserved_contracts(monkeypatch: Any) -> None:
     calls: list[object] = []
-    monkeypatch.setattr(runner, "check_publication_boundary", lambda: calls.append("publication") or 0)
+    monkeypatch.setattr(runner, "check_publication_boundary", lambda: record(calls, "publication", 0))
     monkeypatch.setattr(
         runner,
         "evaluate_repository_scope",
-        lambda: calls.append("recovery") or scope.ScopeEvaluation(True, ()),
+        lambda: record(calls, "recovery", scope.ScopeEvaluation(True, ())),
         raising=False,
     )
-    monkeypatch.setattr(runner, "run_preserved_contracts", lambda: calls.append("legacy") or 0)
+    monkeypatch.setattr(runner, "run_preserved_contracts", lambda: record(calls, "legacy", 0))
     assert runner.main() == 0
     assert calls == ["publication", "recovery", "legacy"]
 
@@ -134,7 +139,7 @@ def test_runner_scope_failure_stops_preserved_contracts(monkeypatch: Any) -> Non
         lambda: scope.ScopeEvaluation(True, ("scope failed",)),
         raising=False,
     )
-    monkeypatch.setattr(runner, "run_preserved_contracts", lambda: calls.append("legacy") or 0)
+    monkeypatch.setattr(runner, "run_preserved_contracts", lambda: record(calls, "legacy", 0))
     assert runner.main() == 1
     assert calls == []
 

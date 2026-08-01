@@ -14,6 +14,7 @@ from typing import Protocol
 from scripts.quality.branch_identity import current_branch
 from scripts.quality.publication_boundary.reporting import MAX_FAILURES, print_result
 from scripts.quality.publication_boundary.scope import ISSUE_324_BRANCH
+from scripts.quality.r0c_a1_scope import is_managed_branch
 
 
 LEGACY_MAIN_SOURCE_SHA256 = "eb5c6a4892fbbdb9c7929f12ace5c360d627d620bd19db205ecf544b02f33944"
@@ -197,7 +198,7 @@ def run_preserved_contracts() -> int:
         return _print_result(["Phase 1 branch evidence is unavailable or inconsistent."])
     checker.check_branch(failures)
     checker.check_required_files(failures)
-    if branch != ISSUE_324_BRANCH:
+    if branch != ISSUE_324_BRANCH and not is_managed_branch(branch):
         checker.check_changed_files(failures)
     if not failures:
         for name in PRESERVED_CHECKS:
