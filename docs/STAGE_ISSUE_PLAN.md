@@ -2257,7 +2257,7 @@ evidence, providers, media, deployment, or release posture.
 | Agent-context | `SHADOW_ONLY`; `STALE_GOVERNANCE` | It may emit opt-in shadow proposals and structurally validate checked-in bytes. It cannot establish current truth, select consequential routing, or authorize approval, merge, release, or readiness. |
 | A1.1a / PR `#331` | `STOPPED_UNMERGED` | PR `#331` is closed unmerged. Local head `6fe80eec80d8b926b0d92a8b7f855af592f13d1e`, remote head `5f02e250b174febe373cb5fef72af2e31e470bf8`, the branches, and RCA remain protected forensic evidence; no scope oracle merged. |
 | A1.1b and A1.1c | `REMOVED_FROM_CUT1_BLOCKING_PATH` | They were never created or completed. Any future freshness work requires new authority and replanning. |
-| A1.2 status/release reconciliation | `NONBLOCKING_HARDENING` | Incomplete and visible; it cannot be represented as implemented or silently copied into current truth. |
+| A1.2 status/release reconciliation | `NONBLOCKING_HARDENING` | Incomplete and visible. The frozen `SSV1-NEXT` compatibility row is `STALE_GOVERNANCE`, not current routing authority; it cannot be represented as implemented or silently copied into current truth. |
 | A1.3 ADR identity/index migration | `NONBLOCKING_HARDENING` | Incomplete and visible; duplicate active IDs remain a tracked governance defect. |
 | R0C-specific immutable external GitHub trust anchor | `NONBLOCKING_HARDENING` | Unevaluated and not authorized here. Other immutable pins and supply-chain obligations are unchanged. |
 | Issues `#329` and `#330` | live open; `SUPERSEDED_FOR_CUT1` | Their older blocking sequence cannot route Cut 1 work. Merged-tree closeout must disposition them as stopped/superseded without deleting their evidence. |

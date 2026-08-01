@@ -254,10 +254,16 @@ Use it to answer:
 
 ## StatusStateV1
 
-This table is the normalized mutable current-state authority for PHF-020B. It
-does not replace the PHF-020A Product Mode policy tables in `docs/PHASE_PLAN.md`;
-it records only the current repository state, open issue boundaries, preserved
-evidence, next action posture, and prohibited work.
+This table is the frozen PHF-020B compatibility contract that previously served
+as the normalized mutable current-state authority. `SSV1-MODE` remains the
+repository stage-dispatch marker. Under Issue `#328` OWNER comment `5152829686`,
+`SSV1-NEXT` is `STALE_GOVERNANCE`: its old Issue `#294`/PR `#295`/Slice 2 route
+is preserved as compatibility evidence until nonblocking A1.2 reconciliation,
+but it cannot select, authorize, or block current work. The Current Baseline
+above owns the R0C recovery pointer to Issue `#332` closeout and then R0C-A2.
+The table does not replace the PHF-020A Product Mode policy tables in
+`docs/PHASE_PLAN.md`; its other rows continue to record their scoped repository
+state, open issue boundaries, preserved evidence, and prohibited work.
 
 | ID | State kind | Owner | Expected status | Current status | Contract |
 |---|---|---|---|---|---|

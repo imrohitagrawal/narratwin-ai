@@ -504,7 +504,10 @@ stale, wrong-head, wrong-application, self-authored, or contradictory evidence
 leaves the affected consequential action `UNVERIFIED` and stops that action.
 Unrelated local tests may continue. Local output and agent-authored receipts
 never substitute for the live checks, eligible review, or human merge-text
-confirmation.
+confirmation. The frozen `StatusStateV1` check for `SSV1-NEXT` preserves a
+legacy compatibility row only; while A1.2 remains incomplete, its green result
+is not current routing evidence and cannot override the Issue `#332` recovery
+pointer.
 For stacked Phase 1 Closure chunk PRs whose reviewed base is another
 `phase-1-closure-*` branch, local evidence must run against that reviewed base:
 `GITHUB_BASE_SHA=<reviewed-prereq-head> make phase1-closure-quality` or
