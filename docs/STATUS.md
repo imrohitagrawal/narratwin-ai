@@ -14,7 +14,23 @@ Use it to answer:
 
 ## Current Baseline
 
-- Last reviewed date: 2026-07-30
+- Last reviewed date: 2026-08-02
+- Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
+  `5152829686` supersedes older recovery sequencing where it conflicts. Issue
+  `#332` is the narrow controller correction. Agent-context remains
+  `SHADOW_ONLY` and its mutable state is `STALE_GOVERNANCE`; its outputs cannot
+  establish current truth, select consequential work routing, or authorize
+  merge, release, or readiness. PR `#331` is `STOPPED_UNMERGED`; its local and
+  remote heads and the Issue `#330` RCA are preserved. Issues `#329` and `#330`
+  remain live open but are `SUPERSEDED_FOR_CUT1` pending Issue `#332`
+  merged-tree closeout. A1.1b/A1.1c are removed from the Cut 1 blocking path,
+  not completed. A1.2, A1.3, and the R0C-specific immutable external GitHub
+  trust-anchor evaluation remain incomplete `NONBLOCKING_HARDENING`. The sole
+  next blocking package after Issue `#332` merge, closeout, and fresh live
+  bootstrap is R0C-A2; create only that controller issue at that boundary.
+  Existing protected exact-head CI, eligible latest-push non-author approval,
+  human confirmation of exact merge wording, and every product-safety gate
+  remain mandatory.
 - Current stage marker: `.stage/current = 8`
 - Forensic baseline: evidence at exact head
   `f93653e8a11e697c88766b207fb01c18662339d6` establishes that Issue `#280` is
@@ -874,6 +890,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-08-02 | Issue `#328` OWNER comment `5152829686` authorized Cut 1 fail-safe containment. PR `#331` closed unmerged; its stopped heads and Issue `#330` RCA remain evidence. Issue `#332` started the four-file controller correction from base `13941ca7a46515d5dd0d8d6d5b40b807f6cfa636`: agent-context stays `SHADOW_ONLY`/`STALE_GOVERNANCE`, its outputs are non-authoritative for truth/routing/merge/release/readiness, A1.1b/A1.1c leave the Cut 1 blocking path, A1.2/A1.3/the R0C external trust anchor remain incomplete nonblocking hardening, and R0C-A2 becomes the sole next blocker only after merged-tree closeout. No product runtime, provider, media, deployment, repository-setting, protected-evidence, release, or readiness change is authorized. |
 | 2026-07-30 | PR `#322` merged the Issue `#321` renderer compatibility correction at `704c5b9536c62e29ba7fd74c7344d067770c728e`; Issues `#317` and `#321` closed after bounded merged-tree acceptance. The result certifies only the Spanish `STANDARD` seven-audience cohort and preserves Issue `#280` as not fixed, Issue `#298` open, PR `#299` immutable/open, the German baseline drift, and explicit owner authority for any Slice 2. |
 | 2026-07-30 | Issue `#319` started the governance-only agent-context shadow slice after read-only preflight confirmed bounded concurrency. PR `#320` carried a post-merge target state that returned next-action authority to an explicit repo-owner decision. Its then-current repository/live Issue `#317` completion contradiction was recorded rather than hidden; later PR `#322` completed the narrow compatibility correction. Mandatory reading, Issue `#280`, PR `#299`, product/runtime, providers, deployment, release, and production posture remained unchanged. |
 | 2026-07-25 | PR `#297` merged the Issue `#296` frontend brace-expansion audit unblock at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` after exact-head approval on `3b5b24a722beac6cfc6e586ecdc1d46757a5084d`; Issue `#296` closed with no product/runtime authority. |

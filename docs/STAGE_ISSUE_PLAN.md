@@ -2241,3 +2241,48 @@ gates compute the result; current public sources use neutral product language;
 historical records remain contextual; launch No-Go and human-only risk decisions
 remain unchanged; and no runtime, provider, media, Q&A, hosting, release, or
 production capability is claimed.
+
+## Issue #332 R0C Cut 1 fail-safe containment
+
+Issue `#332` implements the dependency correction authorized by Issue `#328`
+OWNER comment `5152829686`. It is a four-file governance correction from fixed
+base `13941ca7a46515d5dd0d8d6d5b40b807f6cfa636`; it does not change product
+runtime, the agent-context subsystem, workflows, repository settings, protected
+evidence, providers, media, deployment, or release posture.
+
+### Authority and capability classification
+
+| Item | State after this correction | Meaning |
+|---|---|---|
+| Agent-context | `SHADOW_ONLY`; `STALE_GOVERNANCE` | It may emit opt-in shadow proposals and structurally validate checked-in bytes. It cannot establish current truth, select consequential routing, or authorize approval, merge, release, or readiness. |
+| A1.1a / PR `#331` | `STOPPED_UNMERGED` | PR `#331` is closed unmerged. Local head `6fe80eec80d8b926b0d92a8b7f855af592f13d1e`, remote head `5f02e250b174febe373cb5fef72af2e31e470bf8`, the branches, and RCA remain protected forensic evidence; no scope oracle merged. |
+| A1.1b and A1.1c | `REMOVED_FROM_CUT1_BLOCKING_PATH` | They were never created or completed. Any future freshness work requires new authority and replanning. |
+| A1.2 status/release reconciliation | `NONBLOCKING_HARDENING` | Incomplete and visible; it cannot be represented as implemented or silently copied into current truth. |
+| A1.3 ADR identity/index migration | `NONBLOCKING_HARDENING` | Incomplete and visible; duplicate active IDs remain a tracked governance defect. |
+| R0C-specific immutable external GitHub trust anchor | `NONBLOCKING_HARDENING` | Unevaluated and not authorized here. Other immutable pins and supply-chain obligations are unchanged. |
+| Issues `#329` and `#330` | live open; `SUPERSEDED_FOR_CUT1` | Their older blocking sequence cannot route Cut 1 work. Merged-tree closeout must disposition them as stopped/superseded without deleting their evidence. |
+| R0C-A2 | `PLANNED`; sole next blocker | Create only its controller issue after Issue `#332` merges, merged-tree checks pass, stale controllers are dispositioned, and live Git/GitHub is re-bootstrapped. |
+
+### Corrected blocking sequence
+
+1. Merge Issue `#332` through its exact-head required checks, eligible
+   latest-head non-author approval, and human-confirmed exact merge text.
+2. Perform merged-tree closeout, preserve PR `#331`/Issue `#330` evidence,
+   disposition Issues `#329` and `#330`, and repeat live Git/GitHub bootstrap.
+3. Create only the R0C-A2 controller and resolve Stage 4 semantic contract
+   parity without silently changing retrieval semantics.
+4. Follow the shortest dependency-safe Cut 1 product-authority,
+   architecture, evaluation/control, and implementation-contract path.
+5. Recalculate `Cut1ImplementationUnlockV1` without A1.1b, A1.1c, A1.2,
+   A1.3, or the R0C-specific external trust anchor as blocking prerequisites.
+6. Implement narrow Cut 1 slices only after that unlock passes, then require
+   `Cut1DemoCompleteV1` and non-intercepted real-browser acceptance.
+
+This correction removes circular governance blockers; it does not remove any
+product-safety gate. Grounding, citations, unsupported-claim refusal,
+authorization and project isolation, consent and disclosure, provenance,
+provider-disabled behavior, idempotency, no-double-invocation, quota and cost,
+observability, artifact replay/download, and real-browser evidence remain
+mandatory. Provider spend, personal or biometric data, deployment/publication,
+and legal, privacy, licensing, or security-risk acceptance remain explicit
+human gates.

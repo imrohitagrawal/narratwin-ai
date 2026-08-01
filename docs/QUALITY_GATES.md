@@ -470,9 +470,41 @@ Issue `#319` adds `make agent-context-quality` as a shadow-only sub-gate. It
 validates exact source/section hashes, module closure, active rule uniqueness,
 current/history separation, frozen fixture independence, and the focused
 authority/router/receipt/security tests. The Phase 1 checker invokes the
-shadow validator on the worktree so a stale hash, unresolved current-state
-contradiction, or fixture provenance change fails `make quality`. This does not
-make routed context the default or make mandatory reading optional.
+shadow validator on the worktree so a known source-hash, internal contradiction,
+or fixture-provenance change fails `make quality`. A pass establishes only
+schema, hash, fixture, and authored-field consistency for the evaluated bytes.
+It does not authenticate command execution, check observation age, query live
+GitHub, or prove semantic currency. The opt-in router can emit shadow proposals,
+but it cannot select or authorize consequential work routing. A packet, capsule,
+receipt, copied log, command-result field, or green shadow gate cannot establish
+current truth, approval, merge eligibility, completion, release, or readiness.
+Mandatory reading remains binding.
+
+### R0C residual live-state trust boundary
+
+Issue `#332`, under Issue `#328` OWNER comment `5152829686`, keeps agent-context
+`SHADOW_ONLY` and classifies its mutable state as `STALE_GOVERNANCE`. It does
+not repair or activate freshness. Consequential GitHub actions therefore retain
+a human-reviewed live bootstrap boundary:
+
+- record a non-authoritative observation with repository, issue or PR,
+  `observedAt`, base SHA, and exact head SHA;
+- for every required context, record check/run identity, details URL, status,
+  conclusion, and the trusted GitHub Actions application identity;
+- record reviewer identity, association, reviewed commit, and submission time,
+  and require eligible non-author approval after the latest push;
+- present the exact proposed final squash title and body for human confirmation,
+  and record the confirmer and confirmation time; and
+- repeat the affected observation after any relevant head, check, review,
+  authority, or merge-text change.
+
+The repository guardrails and live branch protection remain the owners of the
+required-check set; this note does not replace or reconfigure them. Unavailable,
+stale, wrong-head, wrong-application, self-authored, or contradictory evidence
+leaves the affected consequential action `UNVERIFIED` and stops that action.
+Unrelated local tests may continue. Local output and agent-authored receipts
+never substitute for the live checks, eligible review, or human merge-text
+confirmation.
 For stacked Phase 1 Closure chunk PRs whose reviewed base is another
 `phase-1-closure-*` branch, local evidence must run against that reviewed base:
 `GITHUB_BASE_SHA=<reviewed-prereq-head> make phase1-closure-quality` or
