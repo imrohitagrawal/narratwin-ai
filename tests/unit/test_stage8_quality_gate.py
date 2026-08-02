@@ -34,7 +34,6 @@ def put(repo: Path, path: str, value: str) -> None:
     target = repo / path
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(value, encoding="utf-8")
-
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
     for branch, scope in SCOPES.items():
         monkeypatch.setattr(stage8, "current_branch", lambda branch=branch: branch)
@@ -84,7 +83,8 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     git(tmp_path, "mv", "forbidden/rename-source.txt", "rename-destination.txt")
     put(tmp_path, "copy-destination.txt", "copy"); put(tmp_path, "committed.txt", "committed")
     put(tmp_path, "backend/app/main.py", "forbidden first push")
-    git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "first push"); first_head = git(tmp_path, "rev-parse", "HEAD")
+    git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "first push")
+    first_head = git(tmp_path, "rev-parse", "HEAD")
     put(tmp_path, "docs/STATUS.md", "allowed second push")
     git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "second push"); head = git(tmp_path, "rev-parse", "HEAD")
     git(tmp_path, "checkout", "main"); put(tmp_path, "main-only.txt", "main")
@@ -116,7 +116,8 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     monkeypatch.setenv("GITHUB_EVENT_PATH", str(event)); monkeypatch.delenv("GITHUB_HEAD_SHA")
     with pytest.raises(RuntimeError, match="exact head"): stage8.changed_files_for_stage_scope()
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request_review")
-    event.write_text(json.dumps({"pull_request": {"head": {"sha": head}}})); assert required <= set(stage8.changed_files_for_stage_scope())
+    event.write_text(json.dumps({"pull_request": {"head": {"sha": head}}}))
+    assert required <= set(stage8.changed_files_for_stage_scope())
     monkeypatch.setenv("GITHUB_EVENT_NAME", "push"); event.write_text(json.dumps({"after": head}))
     assert required <= set(stage8.changed_files_for_stage_scope()); event.write_text("{")
     with pytest.raises(RuntimeError, match="malformed or unavailable"): stage8.changed_files_for_stage_scope()
@@ -169,7 +170,6 @@ def test_issue84_guardrail_branch_allows_process_guardrail_files(monkeypatch: An
 def test_issue84_guardrail_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE84_GUARDRAIL_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["backend/app/stage4.py"])
-
     failures: list[str] = []; stage8.check_stage_scope(failures)
     assert failures == ["Stage 8 changed file outside the allowlist: backend/app/stage4.py"]
 def test_issue287_stage8_drift_branch_allows_only_governance_gate_files(monkeypatch: Any) -> None:
