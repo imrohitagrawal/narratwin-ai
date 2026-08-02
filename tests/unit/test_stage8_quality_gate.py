@@ -15,20 +15,13 @@ from scripts.guardrails_check import canonical_stage_issue
 TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 TRANSITION_FILES = {
-    "docs/governance/preflights/issue-346.json",
-    "scripts/quality/check_stage8_docs.py",
-    "tests/unit/test_stage8_quality_gate.py",
-    "docs/QUALITY_GATES.md",
-    "docs/STAGE_ISSUE_PLAN.md",
-    "docs/STATUS.md",
+    "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
+    "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
 }
 ISSUE335_FILES = {
-    "docs/governance/preflights/issue-335.json",
-    "tests/unit/test_retrieval_strategy_v1_contract.py",
-    "backend/app/rag/models.py",
-    "backend/app/stage4.py",
-    "docs/API_CONTRACT.md",
-    "docs/STATUS.md",
+    "docs/governance/preflights/issue-335.json", "tests/unit/test_retrieval_strategy_v1_contract.py",
+    "backend/app/rag/models.py", "backend/app/stage4.py", "docs/API_CONTRACT.md", "docs/STATUS.md",
 }
 
 
@@ -121,14 +114,10 @@ def test_exact_cut1_branch_dispatches_stage8_without_issue13_binding(
 @pytest.mark.parametrize(
     "branch",
     (
-        f"{TRANSITION_BRANCH}-copy",
-        f"{TRANSITION_BRANCH}-retry",
-        f"{TRANSITION_BRANCH}/child",
-        "cut1-process-347-governance-transition",
-        f"{ISSUE335_BRANCH}-copy",
-        f"{ISSUE335_BRANCH}-retry",
-        f"{ISSUE335_BRANCH}/child",
-        "cut1-336-r0c-a2-1-stage4-rag-v1-lineage",
+        f"{TRANSITION_BRANCH}-copy", f"{TRANSITION_BRANCH}-retry",
+        f"{TRANSITION_BRANCH}/child", "cut1-process-347-governance-transition",
+        f"{ISSUE335_BRANCH}-copy", f"{ISSUE335_BRANCH}-retry",
+        f"{ISSUE335_BRANCH}/child", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage",
         "cut1-proces\u0455-346-governance-transition",
     ),
 )

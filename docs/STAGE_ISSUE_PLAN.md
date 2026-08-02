@@ -534,6 +534,17 @@ Required Stage 8 hardening within this scope:
   exploit-matrix, and contract/gate review
 - Stage 8 CI budget status for Locust performance smoke and Lighthouse checks
 
+### Cut 1 Exact Stage 8 Routes
+
+Issue `#346` uses exact branch `cut1-process-346-governance-transition` for its
+preflight, Stage 8 checker/test, and `QUALITY_GATES`, `STAGE_ISSUE_PLAN`, and
+`STATUS` updates. Refreshed Issue `#335` uses exact branch
+`cut1-335-r0c-a2-1-stage4-rag-v1-lineage` for its preflight, retrieval contract
+test, RAG models, Stage 4 service, API contract, and status update. Near-match
+branches inherit neither scope. Issues and stopped implementations `#336`–`#345`
+remain forensic-only. Ordinary Issue `#335` fixture/oracle repairs stay inside
+that active issue's six-path and repair budget.
+
 ## Phase 1 Closure Branch Scope
 
 Allowed governance/reporting changes for Module A:

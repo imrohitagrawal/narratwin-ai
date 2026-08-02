@@ -14,6 +14,14 @@ Use it to answer:
 
 ## Current Baseline
 
+- Current Cut 1 routing transition: Issue `#346` on exact branch
+  `cut1-process-346-governance-transition` supersedes the older new-work
+  Phase-1 routing pointer without changing legacy compatibility. After its
+  merge and closeout, refresh Issue `#335` from that merged base on exact branch
+  `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` and continue A2.1. Agent-context is
+  still `SHADOW_ONLY`; scope checks are supporting evidence under exact-head
+  human review. Issues and stopped implementations `#336`–`#345` are
+  forensic-only and must not be revived or reused.
 - Last reviewed date: 2026-08-02
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue

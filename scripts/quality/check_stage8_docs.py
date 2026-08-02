@@ -22,6 +22,8 @@ ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
 ISSUE289_SECURITY_UNBLOCK_BRANCH = "phase-1-closure-process-289-security-postcss-stage8-gate-unblock"
 ISSUE324_PUBLICATION_BRANCH = "phase-1-closure-process-324-publication-boundary-v2"
+ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
+ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 
 
 def issue324_allowed_files() -> set[str]:
@@ -86,6 +88,22 @@ STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {
 }
 
 PROCESS_BRANCH_ALLOWED_FILES = {
+    ISSUE346_TRANSITION_BRANCH: {
+        "docs/governance/preflights/issue-346.json",
+        "scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+    },
+    ISSUE335_A2_1_BRANCH: {
+        "docs/governance/preflights/issue-335.json",
+        "tests/unit/test_retrieval_strategy_v1_contract.py",
+        "backend/app/rag/models.py",
+        "backend/app/stage4.py",
+        "docs/API_CONTRACT.md",
+        "docs/STATUS.md",
+    },
     ISSUE84_GUARDRAIL_BRANCH: {
         "docs/STATUS.md",
         "scripts/guardrails_check.py",
@@ -135,27 +153,85 @@ def fail(message: str, failures: list[str]) -> None:
 
 
 def changed_files_for_stage_scope() -> list[str]:
-    base_candidates = [os.environ.get("GITHUB_BASE_SHA", "").strip(), "origin/main", "main"]
+    head_result = run(["git", "rev-parse", "HEAD"])
+    if head_result.returncode != 0 or not head_result.stdout.strip():
+        raise RuntimeError(head_result.stderr.strip() or "git rev-parse HEAD failed")
+    head = head_result.stdout.strip()
+    expected_head = os.environ.get("GITHUB_HEAD_SHA", "").strip()
+    if expected_head:
+        expected_result = run(["git", "rev-parse", f"{expected_head}^{{commit}}"])
+        if expected_result.returncode != 0 or not expected_result.stdout.strip():
+            raise RuntimeError(expected_result.stderr.strip() or "git rev-parse exact head failed")
+        if expected_result.stdout.strip() != head:
+            raise RuntimeError("Stage 8 scope checkout does not match the exact head.")
+
+    preferred_base = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    base_candidates = [preferred_base] if preferred_base else ["origin/main", "main"]
     merge_base = ""
-    for candidate in [item for item in base_candidates if item]:
-        result = run(["git", "merge-base", candidate, "HEAD"])
+    last_error = ""
+    for candidate in base_candidates:
+        result = run(["git", "merge-base", candidate, head])
         if result.returncode == 0 and result.stdout.strip():
             merge_base = result.stdout.strip()
             break
+        last_error = result.stderr.strip()
     if not merge_base:
-        raise RuntimeError("git merge-base failed for Stage 8 scope.")
+        raise RuntimeError(last_error or "git merge-base failed for Stage 8 scope.")
 
-    outputs: list[str] = []
+    diff_flags = [
+        "--name-status",
+        "-z",
+        "--find-renames",
+        "--find-copies",
+        "--find-copies-harder",
+    ]
+    paths: list[str] = []
     for args in (
-        ["git", "diff", "--name-only", f"{merge_base}..HEAD"],
-        ["git", "diff", "--name-only", "HEAD"],
-        ["git", "ls-files", "--others", "--exclude-standard"],
+        ["git", "diff", *diff_flags, f"{merge_base}..{head}", "--"],
+        ["git", "diff", "--cached", *diff_flags, head, "--"],
+        ["git", "diff", *diff_flags, "--"],
     ):
         result = run(args)
         if result.returncode != 0:
             raise RuntimeError(result.stderr.strip() or f"{' '.join(args)} failed")
-        outputs.append(result.stdout)
-    return sorted({line.strip() for output in outputs for line in output.splitlines() if line.strip()})
+        paths.extend(parse_name_status_z(result.stdout))
+    untracked = run(["git", "ls-files", "-z", "--others", "--exclude-standard"])
+    if untracked.returncode != 0:
+        raise RuntimeError(untracked.stderr.strip() or "git ls-files failed")
+    paths.extend(parse_paths_z(untracked.stdout))
+    return sorted(set(paths))
+
+
+def parse_paths_z(output: str) -> list[str]:
+    if not output:
+        return []
+    if not output.endswith("\0"):
+        raise RuntimeError("Malformed NUL-delimited Git path output.")
+    paths = output[:-1].split("\0")
+    if any(not path for path in paths):
+        raise RuntimeError("Malformed empty Git path.")
+    return paths
+
+
+def parse_name_status_z(output: str) -> list[str]:
+    fields = parse_paths_z(output)
+    paths: list[str] = []
+    index = 0
+    while index < len(fields):
+        status = fields[index]
+        index += 1
+        if status in {"A", "B", "D", "M", "T", "U"}:
+            arity = 1
+        elif re.fullmatch(r"[RC]\d{1,3}", status) and int(status[1:]) <= 100:
+            arity = 2
+        else:
+            raise RuntimeError(f"Malformed Git name-status record: {status!r}")
+        record_paths = fields[index : index + arity]
+        if len(record_paths) != arity:
+            raise RuntimeError(f"Incomplete Git name-status record: {status!r}")
+        paths.extend(record_paths)
+        index += arity
+    return paths
 
 
 def check_required_files(failures: list[str]) -> None:
@@ -186,6 +262,9 @@ def check_stage_scope(failures: list[str]) -> None:
     branch = current_branch()
     if not branch:
         fail("Stage 8 scope branch evidence is unavailable or inconsistent.", failures)
+        return
+    if branch not in PROCESS_BRANCH_ALLOWED_FILES and branch != "main" and not STAGE8_BRANCH_PATTERN.match(branch):
+        fail(f"Stage 8 scope requires an exact reviewed branch; got {branch}.", failures)
         return
     allowed_files = PROCESS_BRANCH_ALLOWED_FILES.get(branch, STAGE8_ALLOWED_FILES)
     for path in changed_files_for_stage_scope():

@@ -18,6 +18,16 @@ branch prefix and dispatch to their dedicated governance gates.
 When `docs/STATUS.md` StatusStateV1 records `SSV1-MODE` as `phase1-closure`, plain local `make quality` on `main` dispatches the Phase 1 Closure gate.
 Product behavior outside approved Phase 1 closure remediation remains blocked.
 
+### Cut 1 Stage 8 Transition
+
+Issue `#346` admits only `cut1-process-346-governance-transition` and
+`cut1-335-r0c-a2-1-stage4-rag-v1-lineage` through the normal Stage 8/full-CI
+route. `SSV1-MODE` and `phase-1-closure-*` remain compatibility routing only;
+they cannot route new Cut 1 product work. Scope output is supporting evidence,
+not authorization: exact-head merge-base review includes rename/copy sources and
+destinations, and existing trusted CI, non-author approval, and confirmed merge
+wording remain mandatory. Agent-context remains `SHADOW_ONLY`.
+
 ## Required Make Targets
 
 The `Makefile` must expose:

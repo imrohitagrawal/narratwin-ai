@@ -13,27 +13,7 @@
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md"
     ],
-    "allowed_prefixes": [
-      "docs/governance/preflights/issue-346.json",
-      "scripts/quality/check_stage8_docs.py",
-      "tests/unit/test_stage8_quality_gate.py",
-      "docs/QUALITY_GATES.md",
-      "docs/STAGE_ISSUE_PLAN.md",
-      "docs/STATUS.md"
-    ],
-    "forbidden": [
-      ".github/",
-      "AGENTS.md",
-      "Makefile",
-      "backend/",
-      "docs/ADR/",
-      "docs/API_CONTRACT.md",
-      "docs/agent-context/",
-      "frontend/",
-      "scripts/guardrails_check.py",
-      "scripts/quality/check_phase1_closure_docs.py",
-      "scripts/quality/check_quality_stage.py",
-      "tests/api/"
-    ]
+    "allowed_prefixes": ["docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md"],
+    "forbidden": [".github/", "AGENTS.md", "Makefile", "backend/", "docs/ADR/", "docs/API_CONTRACT.md", "docs/agent-context/", "frontend/", "scripts/guardrails_check.py", "scripts/quality/check_phase1_closure_docs.py", "scripts/quality/check_quality_stage.py", "tests/api/"]
   }
 }
