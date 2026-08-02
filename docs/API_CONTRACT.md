@@ -218,6 +218,17 @@ For duplicate keys:
   return `429 RATE_LIMIT_EXCEEDED` before idempotency replay logic when a caller
   exceeds the local write window.
 
+Stage 4 walkthrough replay has one fail-closed exception. A structurally valid
+stored walkthrough whose retrieval lineage is missing, stale, noncanonical, or
+contradictory remains audit-preserved but inactive. Reusing its key with the
+identical request returns `409 STALE_RETRIEVAL_LINEAGE` and the public message
+`Stored walkthrough cannot be replayed because its retrieval lineage is stale or
+unavailable.` Reusing that key with a changed request instead returns ordinary
+`409 IDEMPOTENCY_CONFLICT`. Both outcomes are terminal for that request, perform
+no retrieval or generation, and must not activate, relabel, delete, or expose the
+quarantined row. A caller may review the refusal and submit a new canonical
+request under a new idempotency key; there is no automatic retry or migration.
+
 Write endpoints requiring idempotency:
 
 - `POST /api/v1/projects`
