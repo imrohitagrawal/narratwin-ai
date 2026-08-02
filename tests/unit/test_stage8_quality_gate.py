@@ -69,7 +69,6 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
     for branch in SCOPES:
         calls.clear(); monkeypatch.setattr(dispatcher, "current_branch", lambda branch=branch: branch)
         assert (dispatcher.main(), calls, canonical_stage_issue(branch)) == (0, [["make", "stage8-quality"]], None)
-
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     git(tmp_path, "init", "-b", "main"); git(tmp_path, "config", "user.name", "Scope Test")
     git(tmp_path, "config", "user.email", "scope@example.invalid")
@@ -95,6 +94,7 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     def record(args: list[str]) -> subprocess.CompletedProcess[str]:
         calls.append(args); return subprocess.run(args, cwd=tmp_path, text=True, capture_output=True, check=False)
     monkeypatch.setattr(stage8, "ROOT", tmp_path); monkeypatch.setattr(stage8, "run", record)
+    monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)
     monkeypatch.setenv("GITHUB_EVENT_NAME", "push"); monkeypatch.setenv("NARRATWIN_HEAD_REF", "feature")
     monkeypatch.setenv("GITHUB_BASE_SHA", first_head)
     monkeypatch.setenv("GITHUB_HEAD_SHA", head); paths = set(stage8.changed_files_for_stage_scope())
