@@ -117,19 +117,15 @@ def test_v1_literals_boundary_cap_and_tie_order(monkeypatch: pytest.MonkeyPatch)
     assert [c.chunk.chunk_id for c in select(monkeypatch, caps, scores)] == ["a0", "a1", "a2", "boundary"]
     many = [chunk(f"many{i}", f"many_doc{i}", 0, "2026-01-01", f"many{i}") for i in range(7)]
     assert len(select(monkeypatch, many, {f"many{i}": 0.9 for i in range(7)})) == 6
-    ordered = [
-        chunk("score", "d0", 9, "2025-01-01", "score"),
-        chunk("approval-old", "d1", 9, "2025-01-01", "approval-old"),
-        chunk("approval-new", "d2", 9, "2026-01-01", "approval-new"),
-        chunk("index-two", "d3", 2, "2025-01-01", "index-two"),
-        chunk("id-z", "d4", 1, "2025-01-01", "id-z"),
-        chunk("id-a", "d5", 1, "2025-01-01", "id-a"),
-    ]
+    ordered = [chunk("score", "d0", 9, "2025-01-01", "score"),
+               chunk("approval-old", "d1", 9, "2025-01-01", "approval-old"),
+               chunk("approval-new", "d2", 9, "2026-01-01", "approval-new"),
+               chunk("index-two", "d3", 2, "2025-01-01", "index-two"),
+               chunk("id-z", "d4", 1, "2025-01-01", "id-z"), chunk("id-a", "d5", 1, "2025-01-01", "id-a")]
     tie_scores = {"score": 0.95, "approval-old": 0.90, "approval-new": 0.90,
                   "index-two": 0.80, "id-z": 0.80, "id-a": 0.80}
-    assert [c.chunk.chunk_id for c in select(monkeypatch, ordered, tie_scores)] == [
-        "score", "approval-new", "approval-old", "id-a", "id-z", "index-two",
-    ]
+    actual = [c.chunk.chunk_id for c in select(monkeypatch, ordered, tie_scores)]
+    assert actual == ["score", "approval-new", "approval-old", "id-a", "id-z", "index-two"]
 
 
 def test_orchestration_preserves_rank_and_never_expands(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -162,8 +158,7 @@ def test_all_low_refuses_before_generation(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(service.llm, "generate_script", lambda **_kw: pytest.fail("generation after refusal"))
     run = service.generate_walkthrough(principal=principal, project_id=project.project_id, idempotency_key="w", **REQUEST)
     assert (run.status, run.failure_reason, service.walkthrough_runs[run.run_id]) == (
-        "REFUSED", "LOW_RETRIEVAL_CONFIDENCE", run,
-    )
+        "REFUSED", "LOW_RETRIEVAL_CONFIDENCE", run)
 
 
 def test_new_lineage_survives_restart_and_global_mutation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -189,7 +184,12 @@ def test_new_lineage_survives_restart_and_global_mutation(tmp_path: Path, monkey
     replay = restored.generate_walkthrough(principal=principal, project_id=project_id, idempotency_key="walk", **REQUEST)
     assert replay.run_id == run.run_id
     assert walkthrough_to_api(replay) == original_api
-
+    context = run.retrieved_context[0]
+    foreign = stage4.replace(context, chunk=stage4.replace(
+        context.chunk, tenant_id="tenant_other", project_id="proj_other"))
+    monkeypatch.setattr(restored, "_restored_chunk_is_valid", lambda _chunk: True)
+    monkeypatch.setattr(restored.rag_store, "has_chunk", lambda **_kw: True)
+    assert not restored._restored_walkthrough_run_is_valid(stage4.replace(run, retrieved_context=[foreign]))
 
 @pytest.mark.parametrize("case", [
     "both_missing", "run_missing", "evaluation_missing", "mismatch", "topk7", "bool_topk",
