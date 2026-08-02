@@ -119,7 +119,8 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any) -> None:
                      "committed" if any(".." in arg for arg in args) else "unstaged")
             output = "head\n" if layer == "rev-parse" else "base\n" if layer == "merge-base" else ""
             return subprocess.CompletedProcess(args, int(layer == failed or "0" * 40 in args), output, "failed")
-        monkeypatch.setattr(stage8, "run", fake); monkeypatch.setenv("GITHUB_BASE_SHA", "0" * 40 if failed is None else "base")
+        base = "0" * 40 if failed is None else "base"
+        monkeypatch.setattr(stage8, "run", fake); monkeypatch.setenv("GITHUB_BASE_SHA", base)
         monkeypatch.setenv("GITHUB_HEAD_SHA", "head")
         if failed:
             with pytest.raises(RuntimeError, match="failed"): stage8.changed_files_for_stage_scope()
@@ -129,7 +130,6 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any) -> None:
             assert ["git", "merge-base", "origin/main", "head"] in calls
             for args in diffs:
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
-
 def test_issue84_guardrail_branch_allows_process_guardrail_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE84_GUARDRAIL_BRANCH)
     monkeypatch.setattr(
