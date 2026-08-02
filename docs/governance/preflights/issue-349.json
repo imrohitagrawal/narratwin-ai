@@ -1,0 +1,27 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 349,
+  "branch": "cut1-349-r0c-a2-2-machine-contract-parity",
+  "objective": "From exact base 454025c403334933306142f65bc3e25541eeb23e, execute only R0C-A2.2 under Issue #349 and parent #334. Add maxChunksPerDocument=3 to the Stage 2 machine contract; bind the accepted stage4-rag-v1 version, topK 6, inclusive 0.72 threshold, minimum one chunk and one distinct document, maximum three chunks per document, exact score/approval/index/ID ranking, tenant/project-scoped computed keyword fallback, no synthetic or below-threshold backfill, and terminal LOW_RETRIEVAL_CONFIDENCE before generation to an implementation-independent AST/JSON quality oracle derived from unchanged Architecture and ADR 0002. Commit mutation RED before GREEN; prove declaration-only, runtime-only, accepted-source, control-flow, and paired runtime/declaration weakening fail with exact diagnostics. Invoke the narrow parity oracle from Stage 2 and every Stage 8 run; add only the exact cut1-349-r0c-a2-2-machine-contract-parity route, with near matches rejected. Reconcile stale active-#335 wording while keeping A2 PARTIAL and A2.3 unauthorized. Exactly nine paths, at most 500 charged additions plus deletions with a target at or below 350, two repair rounds, zero provider calls, and zero spend. Roll back by reverting the A2.2 PR. Stop for a tenth path, more than 500 charged lines, runtime or retrieval-semantic change, protected #336-#345 evidence mutation, scope/base/authority drift, a third repair recurrence, unresolved high/critical finding, or provider, data, deployment, legal, privacy, licensing, or security-risk authority. No frontend, provider, avatar/media, database, Docker, workflow, infrastructure, release, readiness, hosted/public, production, multilingual, live-Q&A, personal, private, likeness, or biometric capability is authorized or claimed.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-349.json", "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+      "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py",
+      "docs/STATUS.md", "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md",
+      "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-349.json", "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+      "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py",
+      "docs/STATUS.md", "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md",
+      "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md"
+    ],
+    "forbidden": [
+      ".github/", "AGENTS.md", "Makefile", "README.md", "backend/", "docs/ARCHITECTURE.md",
+      "docs/API_CONTRACT.md", "docs/TRACEABILITY.md", "frontend/", "scripts/guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py", "scripts/quality/check_quality_stage.py",
+      "tests/api/", "tests/unit/test_retrieval_strategy_v1_contract.py"
+    ]
+  }
+}
