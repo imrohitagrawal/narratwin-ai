@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import math
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -16,8 +17,7 @@ from backend.app.rag.models import KnowledgeChunk, RetrievedContext
 from backend.app.stage4 import LocalPrincipal, Stage4Service, walkthrough_to_api
 
 
-V1 = ("stage4-rag-v1", 6, 0.72, 3)
-STALE_MESSAGE = "Stored walkthrough cannot be replayed because its retrieval lineage is stale or unavailable."
+V1, STALE_MESSAGE = ("stage4-rag-v1", 6, 0.72, 3), "Stored walkthrough cannot be replayed because its retrieval lineage is stale or unavailable."
 REQUEST = {"audience": "RECRUITER", "requested_language": "en", "depth": "CONCISE", "style": "CONFIDENT",
            "prompt": "Create a concise grounded walkthrough for a recruiter."}
 
@@ -45,7 +45,7 @@ def chunk(chunk_id: str, document_id: str, index: int, approved: str, text: str)
 def select(monkeypatch: pytest.MonkeyPatch, chunks: list[KnowledgeChunk], scores: dict[str, float]) -> list[RetrievedContext]:
     monkeypatch.setattr(retrieval, "_retrieval_score", lambda **kw: scores[kw["text"]])
     return retrieval.retrieve_context(
-        store=Store(chunks), embedder=Embedder(), tenant_id="tenant_local", project_id="proj_000001",
+        store=cast(Any, Store(chunks)), embedder=cast(Any, Embedder()), tenant_id="tenant_local", project_id="proj_000001",
         query="query", top_k=6, min_score=0.72,
     )
 
@@ -138,16 +138,16 @@ def test_orchestration_preserves_rank_and_never_expands(tmp_path: Path, monkeypa
     ranked = [RetrievedContext("c1", stored[0], 0.95), RetrievedContext("c2", stored[1], 0.90)]
     called: dict[str, Any] = {}
     monkeypatch.setattr(stage4, "retrieve_context", lambda **kw: (called.update(kw), ranked)[1])
-    original, seen = service.llm.generate_script, []
-    monkeypatch.setattr(service.llm, "generate_script", lambda **kw: (seen.extend(kw["retrieved_context"]), original(**kw))[1])
+    original, captured = service.llm.generate_script, cast(dict[str, Any], {})
+    monkeypatch.setattr(service.llm, "generate_script", lambda **kw: (captured.update(contexts=kw["retrieved_context"]), original(**kw))[1])
     run = service.generate_walkthrough(principal=principal, project_id=project.project_id, idempotency_key="w", **REQUEST)
     expected = [("rank-first", 0.95), ("rank-second", 0.90)]
     assert (called["top_k"], called["min_score"]) == V1[1:3]
-    assert [(c.chunk.chunk_id, c.score) for c in seen] == expected
+    assert [(c.chunk.chunk_id, c.score) for c in captured["contexts"]] == expected
     assert [(c.chunk.chunk_id, c.score) for c in run.retrieved_context] == expected
     assert [(c["chunkId"], c["evidenceSnapshot"]["retrievalScore"])
             for c in walkthrough_to_api(run)["contextRefs"]] == expected
-    assert len(run.evaluation.claim_supports) == 2
+    assert run.evaluation is not None and run.generated_script is not None and len(run.evaluation.claim_supports) == 2 and [claim.citation_index for claim in run.generated_script.claims] == [1, 2]
 
 
 def test_all_low_refuses_before_generation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -172,8 +172,8 @@ def test_new_lineage_survives_restart_and_global_mutation(tmp_path: Path, monkey
     restored = Stage4Service(state_path=path)
     run = next(iter(restored.walkthrough_runs.values()))
     assert (run.retrieval_strategy_version, run.retrieval_top_k, run.retrieval_score_threshold) == V1[:3]
-    assert (run.evaluation.retrieval_strategy_version, run.evaluation.retrieval_top_k,
-            run.evaluation.retrieval_score_threshold) == V1[:3]
+    assert run.evaluation is not None and (run.evaluation.retrieval_strategy_version, run.evaluation.retrieval_top_k,
+                                           run.evaluation.retrieval_score_threshold) == V1[:3]
     original_api = walkthrough_to_api(run)
     monkeypatch.setattr(restored.llm, "generate_script", lambda **_kw: pytest.fail("duplicate generation"))
     monkeypatch.setattr(restored.embedder, "embed", lambda _text: pytest.fail("duplicate retrieval"))
@@ -185,11 +185,11 @@ def test_new_lineage_survives_restart_and_global_mutation(tmp_path: Path, monkey
     assert replay.run_id == run.run_id
     assert walkthrough_to_api(replay) == original_api
     context = run.retrieved_context[0]
-    foreign = stage4.replace(context, chunk=stage4.replace(
+    foreign = replace(context, chunk=replace(
         context.chunk, tenant_id="tenant_other", project_id="proj_other"))
     monkeypatch.setattr(restored, "_restored_chunk_is_valid", lambda _chunk: True)
     monkeypatch.setattr(restored.rag_store, "has_chunk", lambda **_kw: True)
-    assert not restored._restored_walkthrough_run_is_valid(stage4.replace(run, retrieved_context=[foreign]))
+    assert not restored._restored_walkthrough_run_is_valid(replace(run, retrieved_context=[foreign]))
 
 @pytest.mark.parametrize("case", [
     "both_missing", "run_missing", "evaluation_missing", "mismatch", "topk7", "bool_topk",
