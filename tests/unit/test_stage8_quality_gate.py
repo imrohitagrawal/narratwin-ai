@@ -110,7 +110,11 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any) -> None:
     assert stage8.parse_name_status_z("R087\0old\0new\0C064\0source\0copy\0") == ["old", "new", "source", "copy"]
     for malformed in ("R100\0old\0", "M\0path", "M\0\0", "Q\0path\0", "R101\0old\0new\0"):
         with pytest.raises(RuntimeError): stage8.parse_name_status_z(malformed)
-    for failed in (None, "rev-parse", "merge-base", "committed", "cached", "unstaged", "untracked"):
+    bad_bases = ("0" * 39, "0" * 41, "0" * 39 + "1", "invalid-explicit-base")
+    layers = ("rev-parse", "merge-base", "committed", "cached", "unstaged", "untracked")
+    cases = [(None, "0" * 40), *((layer, "base") for layer in layers)]
+    cases += [("explicit-base", base) for base in bad_bases]
+    for failed, base in cases:
         calls: list[list[str]] = []
         def fake(args: list[str]) -> subprocess.CompletedProcess[str]:
             calls.append(args)
@@ -118,12 +122,15 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any) -> None:
                      "untracked" if "ls-files" in args else "cached" if "--cached" in args else
                      "committed" if any(".." in arg for arg in args) else "unstaged")
             output = "head\n" if layer == "rev-parse" else "base\n" if layer == "merge-base" else ""
-            return subprocess.CompletedProcess(args, int(layer == failed or "0" * 40 in args), output, "failed")
-        base = "0" * 40 if failed is None else "base"
+            explicit_failure = failed == "explicit-base" and args == ["git", "merge-base", base, "head"]
+            should_fail = layer == failed or explicit_failure or "0" * 40 in args
+            return subprocess.CompletedProcess(args, int(should_fail), output, "failed")
         monkeypatch.setattr(stage8, "run", fake); monkeypatch.setenv("GITHUB_BASE_SHA", base)
         monkeypatch.setenv("GITHUB_HEAD_SHA", "head")
         if failed:
             with pytest.raises(RuntimeError, match="failed"): stage8.changed_files_for_stage_scope()
+            if failed == "explicit-base":
+                assert [args[2] for args in calls if args[:2] == ["git", "merge-base"]] == [base]
         else:
             assert stage8.changed_files_for_stage_scope() == []
             diffs = [args for args in calls if args[:2] == ["git", "diff"]]; assert len(diffs) == 3
@@ -149,7 +156,6 @@ def test_issue84_guardrail_branch_allows_process_guardrail_files(monkeypatch: An
     stage8.check_stage_scope(failures)
 
     assert failures == []
-
 def test_issue84_guardrail_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE84_GUARDRAIL_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["backend/app/stage4.py"])
@@ -158,7 +164,6 @@ def test_issue84_guardrail_branch_rejects_runtime_product_files(monkeypatch: Any
     stage8.check_stage_scope(failures)
 
     assert failures == ["Stage 8 changed file outside the allowlist: backend/app/stage4.py"]
-
 def test_issue287_stage8_drift_branch_allows_only_governance_gate_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
     monkeypatch.setattr(
@@ -183,7 +188,6 @@ def test_issue287_stage8_drift_branch_allows_only_governance_gate_files(monkeypa
     stage8.check_stage_scope(failures)
 
     assert failures == []
-
 def test_issue287_stage8_drift_branch_rejects_dependency_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["frontend/package-lock.json"])
@@ -192,7 +196,6 @@ def test_issue287_stage8_drift_branch_rejects_dependency_files(monkeypatch: Any)
     stage8.check_stage_scope(failures)
 
     assert failures == ["Stage 8 changed file outside the allowlist: frontend/package-lock.json"]
-
 def test_issue289_security_unblock_branch_allows_combined_dependency_and_gate_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH)
     monkeypatch.setattr(
@@ -222,7 +225,6 @@ def test_issue289_security_unblock_branch_allows_combined_dependency_and_gate_fi
     stage8.check_stage_scope(failures)
 
     assert failures == []
-
 def test_issue289_security_unblock_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["backend/app/main.py"])
@@ -231,14 +233,12 @@ def test_issue289_security_unblock_branch_rejects_runtime_product_files(monkeypa
     stage8.check_stage_scope(failures)
 
     assert failures == ["Stage 8 changed file outside the allowlist: backend/app/main.py"]
-
 def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
     failures: list[str] = []
     stage8.check_dependencies_and_scripts(failures)
 
     assert not [failure for failure in failures if "docker scout cves" in failure]
     assert not [failure for failure in failures if "--only-severity critical,high" in failure]
-
 def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
 
