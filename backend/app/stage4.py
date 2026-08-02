@@ -676,7 +676,7 @@ class Stage4Service:
         if len(scores) != len(context_rows) or any(type(score) is bool or not isinstance(score, (int, float)) or not math.isfinite(score) or score < RETRIEVAL_MIN_SCORE for score in scores):
             return False
         contexts = run.retrieved_context
-        if any(sum(other.chunk.document_id == context.chunk.document_id for other in contexts) > RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT for context in contexts) or len({item.context_ref_id for item in contexts}) != len(contexts):
+        if any(sum(other.chunk.document_id == context.chunk.document_id for other in contexts) > RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT for context in contexts) or len({item.context_ref_id for item in contexts}) != len(contexts) or len({item.chunk.chunk_id for item in contexts}) != len(contexts):
             return False
         ordered = sorted(contexts, key=lambda item: (-item.score, tuple(-ord(char) for char in item.chunk.approved_at), item.chunk.chunk_index, item.chunk.chunk_id))
         return contexts == ordered
