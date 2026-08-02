@@ -95,7 +95,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
         "tests/api/test_stage4_slice_api.py", "tests/api/test_stage6_multilingual_api.py",
         "docs/ADR/0002-rag-storage.md",
         "docs/TRACEABILITY.md", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py",
-        "evals/smoke/stage5_grounded_script_dataset.json", "docs/EVAL_REPORT.md", "docs/STAGE_ISSUE_PLAN.md",
+        "evals/smoke/stage5_grounded_script_dataset.json", "docs/EVAL_REPORT.md", "docs/STAGE_ISSUE_PLAN.md", "frontend/src/app/page.tsx", "scripts/ci/heartbeat2_evidence.py", "tests/unit/test_phase1_closure_docs.py",
     },
     ISSUE84_GUARDRAIL_BRANCH: {
         "docs/STATUS.md",

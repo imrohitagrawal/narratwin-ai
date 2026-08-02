@@ -66,12 +66,12 @@ Use it to answer:
   authority. They preserve the protected evidence and unrelated obligations,
   but cannot select, authorize, or block the Issue `#346` to exact Issue `#335`
   Cut 1 route under OWNER authority.
-- Current implementation permission remains closed except for the exact Issue
-  `#335` A2.1 envelope authorized by OWNER comments `5158609698` and
-  `5158848442`, frozen by its preflight, and routed on exact branch
+- Current implementation permission remains closed except for the exact 20-path,
+  650-charged-line Issue `#335` A2.1 envelope authorized by OWNER comments
+  `5158609698`, `5158848442`, and `5159267478`, frozen by its preflight and routed on exact branch
   `cut1-335-r0c-a2-1-stage4-rag-v1-lineage`, after Issue `#346` / PR `#347`
   merged-tree closeout and refresh from its exact merged base. That route uses
-  normal Stage 8/full CI. Legacy Phase 1 routing is compatibility-only; near
+  normal Stage 8/full CI; its controlled Heartbeat 2 now proves the fixture-grounded prompt through local/mock render while execution authenticity remains unattested. Legacy Phase 1 routing is compatibility-only; near
   matches and Issues `#336`–`#345` confer no authority. Demo Phase 0 planning
   for issue `#225` completed through PR `#226`; Checkpoint 1
   is accepted as local/fake disabled-default reviewer evidence only through
