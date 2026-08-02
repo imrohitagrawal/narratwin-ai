@@ -101,11 +101,12 @@ def mutate(payload: dict[str, Any], case: str) -> None:
         run["retrieval_score_threshold"] = evaluation["retrieval_score_threshold"] = value
     elif case == "wrong_version":
         run["retrieval_strategy_version"] = evaluation["retrieval_strategy_version"] = "stage4-rag-v2"
+    elif case == "duplicate_chunk":
+        run["retrieved_context"].append(deepcopy(run["retrieved_context"][0]) | {"context_ref_id": "ctx_duplicate"})
     else:
         payload["walkthroughRuns"][0]["retrieved_context"][0]["score"] = {
             "low_score": 0.719999, "bool_score": True, "infinite_score": math.inf,
         }[case]
-
 
 def test_v1_literals_boundary_cap_and_tie_order(monkeypatch: pytest.MonkeyPatch) -> None:
     assert (models.RETRIEVAL_STRATEGY_VERSION, models.RETRIEVAL_TOP_K, models.RETRIEVAL_MIN_SCORE,
@@ -194,7 +195,7 @@ def test_new_lineage_survives_restart_and_global_mutation(tmp_path: Path, monkey
 @pytest.mark.parametrize("case", [
     "both_missing", "run_missing", "evaluation_missing", "mismatch", "topk7", "bool_topk",
     "threshold60", "bool_threshold", "nan", "positive_inf", "negative_inf", "wrong_version",
-    "low_score", "bool_score", "infinite_score", "malformed"])
+    "low_score", "bool_score", "infinite_score", "duplicate_chunk", "malformed"])
 def test_stale_lineage_is_preserved_but_inactive_twice(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     path = tmp_path / f"{case}.json"
     _, principal, project_id = seed(path)
