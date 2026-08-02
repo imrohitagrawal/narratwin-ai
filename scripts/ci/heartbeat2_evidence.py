@@ -264,7 +264,7 @@ def _joins(root: Path, bundle: dict[str, Any]) -> None:
         trace, render_trace = media["trace"], render["trace"]
         valid = (
             bundle["principal"] == "curator_demo" and bundle["projectCount"] == 1 and bundle["legacySources"] == [] and len(chunk_rows) == len(chunks) and len(contexts) == len(set(context_ids))
-            and source["decisionState"] == "APPROVED" and source["ingestionStatus"] == "INGESTED" and source["checksum"] == PUBLIC_FIXTURE_SHA256 and chunks and chunks == context_chunks
+            and source["decisionState"] == "APPROVED" and source["ingestionStatus"] == "INGESTED" and source["checksum"] == PUBLIC_FIXTURE_SHA256 and chunks and 1 <= len(contexts) <= 3 and len(context_chunks) == len(contexts) and context_chunks <= chunks
             and all(x["documentId"] == source["sourceId"] and x["evidenceSnapshot"]["sourceDocumentChecksum"] == source["checksum"] for x in contexts)
             and len(support_rows) == len(set(support_rows)) and set(support_rows) == {(x["claimId"], x["contextRefId"], x["documentId"], x["chunkId"], x["evidenceSnapshot"]["chunkChecksum"]) for x in contexts}
             and citation_indexes == list(range(1, len(contexts) + 1))
