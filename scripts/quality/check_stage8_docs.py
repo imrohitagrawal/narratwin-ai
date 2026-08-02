@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Executable Stage 8 quality gate for hardening and release readiness."""
-
 from __future__ import annotations
 
 import json
@@ -9,15 +8,12 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
-
-
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
@@ -27,14 +23,11 @@ ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 NULL_GIT_SHA = "0" * 40
-
-
 def issue324_allowed_files() -> set[str]:
     artifact = json.loads(
         (ROOT / "docs/governance/preflights/issue-324.json").read_text(encoding="utf-8")
     )
     return set(artifact["scope"]["required"])
-
 REQUIRED_FILES = [
     ".stage/current",
     ".github/pull_request_template.md",
@@ -80,9 +73,7 @@ REQUIRED_FILES = [
     "docs/TRACEABILITY.md",
     "docs/demo/CONTROLLED_LOCAL_DEMO.md",
 ]
-
 STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
-
 PROCESS_BRANCH_ALLOWED_FILES = {
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
@@ -138,8 +129,6 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     },
     ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(),
 }
-
-
 def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=ROOT, text=True, capture_output=True, check=False)
 
