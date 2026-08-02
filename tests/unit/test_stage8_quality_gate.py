@@ -86,24 +86,36 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "base"); git(tmp_path, "checkout", "-b", "feature")
     git(tmp_path, "mv", "forbidden/rename-source.txt", "rename-destination.txt")
     put(tmp_path, "copy-destination.txt", "copy"); put(tmp_path, "committed.txt", "committed")
-    git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "feature"); head = git(tmp_path, "rev-parse", "HEAD")
+    put(tmp_path, "backend/app/main.py", "forbidden first push")
+    git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "first push"); first_head = git(tmp_path, "rev-parse", "HEAD")
+    put(tmp_path, "docs/STATUS.md", "allowed second push")
+    git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "second push"); head = git(tmp_path, "rev-parse", "HEAD")
     git(tmp_path, "checkout", "main"); put(tmp_path, "main-only.txt", "main")
     git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "main"); base = git(tmp_path, "rev-parse", "HEAD")
+    git(tmp_path, "update-ref", "refs/remotes/origin/main", base)
     git(tmp_path, "checkout", "feature"); git(tmp_path, "mv", "forbidden/cached-source.txt", "cached-destination.txt")
     (tmp_path / "forbidden/unstaged-source.txt").rename(tmp_path / "unstaged-destination.txt")
     put(tmp_path, "forbidden/cancelled.txt", "staged"); git(tmp_path, "add", "forbidden/cancelled.txt")
     put(tmp_path, "forbidden/cancelled.txt", "original"); put(tmp_path, "untracked\nnewline.txt", "new")
-    monkeypatch.setattr(stage8, "ROOT", tmp_path); monkeypatch.setenv("GITHUB_BASE_SHA", base)
+    real_run, calls = stage8.run, []
+    def record(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args); return real_run(args)
+    monkeypatch.setattr(stage8, "ROOT", tmp_path); monkeypatch.setattr(stage8, "run", record)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push"); monkeypatch.setenv("GITHUB_BASE_SHA", first_head)
     monkeypatch.setenv("GITHUB_HEAD_SHA", head); paths = set(stage8.changed_files_for_stage_scope())
     required = {"forbidden/rename-source.txt", "rename-destination.txt", "forbidden/copy-source.txt",
                 "copy-destination.txt", "forbidden/cached-source.txt", "cached-destination.txt",
                 "forbidden/unstaged-source.txt", "unstaged-destination.txt", "forbidden/cancelled.txt",
-                "committed.txt", "untracked\nnewline.txt"}
+                "backend/app/main.py", "committed.txt", "docs/STATUS.md", "untracked\nnewline.txt"}
     assert required <= paths and "main-only.txt" not in paths
+    assert ["git", "merge-base", "origin/main", head] in calls
+    assert ["git", "merge-base", first_head, head] not in calls
     monkeypatch.setattr(stage8, "current_branch", lambda: TRANSITION); failures: list[str] = []
     stage8.check_stage_scope(failures)
     assert all(f"Stage 8 changed file outside the allowlist: {path}" in failures for path in required)
-    monkeypatch.setenv("GITHUB_HEAD_SHA", git(tmp_path, "merge-base", "main", "feature"))
+    event = tmp_path / "event.json"; event.write_text(json.dumps({"pull_request": {"head": {"sha": first_head}}}))
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request"); monkeypatch.setenv("GITHUB_BASE_SHA", base)
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event)); monkeypatch.delenv("GITHUB_HEAD_SHA")
     with pytest.raises(RuntimeError, match="exact head"): stage8.changed_files_for_stage_scope()
 
 def test_scope_parser_flags_and_command_failures(monkeypatch: Any) -> None:
@@ -139,30 +151,22 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any) -> None:
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
 def test_issue84_guardrail_branch_allows_process_guardrail_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE84_GUARDRAIL_BRANCH)
-    monkeypatch.setattr(
-        stage8,
-        "changed_files_for_stage_scope",
-        lambda: [
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: [
             "docs/STATUS.md",
             "scripts/guardrails_check.py",
             "scripts/quality/check_stage8_docs.py",
             "tests/unit/test_guardrails_check.py",
             "tests/unit/test_stage8_quality_gate.py",
-        ],
-    )
-
+        ])
     failures: list[str] = []
     stage8.check_stage_marker_and_branch(failures)
     stage8.check_stage_scope(failures)
-
     assert failures == []
 def test_issue84_guardrail_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE84_GUARDRAIL_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["backend/app/stage4.py"])
 
-    failures: list[str] = []
-    stage8.check_stage_scope(failures)
-
+    failures: list[str] = []; stage8.check_stage_scope(failures)
     assert failures == ["Stage 8 changed file outside the allowlist: backend/app/stage4.py"]
 def test_issue287_stage8_drift_branch_allows_only_governance_gate_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
@@ -192,9 +196,7 @@ def test_issue287_stage8_drift_branch_rejects_dependency_files(monkeypatch: Any)
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["frontend/package-lock.json"])
 
-    failures: list[str] = []
-    stage8.check_stage_scope(failures)
-
+    failures: list[str] = []; stage8.check_stage_scope(failures)
     assert failures == ["Stage 8 changed file outside the allowlist: frontend/package-lock.json"]
 def test_issue289_security_unblock_branch_allows_combined_dependency_and_gate_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH)
@@ -229,22 +231,16 @@ def test_issue289_security_unblock_branch_rejects_runtime_product_files(monkeypa
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["backend/app/main.py"])
 
-    failures: list[str] = []
-    stage8.check_stage_scope(failures)
-
+    failures: list[str] = []; stage8.check_stage_scope(failures)
     assert failures == ["Stage 8 changed file outside the allowlist: backend/app/main.py"]
 def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
-    failures: list[str] = []
-    stage8.check_dependencies_and_scripts(failures)
-
+    failures: list[str] = []; stage8.check_dependencies_and_scripts(failures)
     assert not [failure for failure in failures if "docker scout cves" in failure]
     assert not [failure for failure in failures if "--only-severity critical,high" in failure]
 def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
 
-    failures: list[str] = []
-    stage8.check_stage_marker_and_branch(failures)
-
+    failures: list[str] = []; stage8.check_stage_marker_and_branch(failures)
     assert failures == [
         "Stage 8 work must run on a stage8-* branch or main after merge; got feature/untracked-stage8-work."
     ]
