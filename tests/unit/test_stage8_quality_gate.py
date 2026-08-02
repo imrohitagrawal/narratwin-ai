@@ -306,11 +306,15 @@ SINGLE_MUTATIONS = [
     (MODELS, 'RETRIEVAL_STRATEGY_VERSION = "stage4-rag-v1"', 'RETRIEVAL_STRATEGY_VERSION = "v2"',
      1, [A22_RUNTIME]),
     (MODELS, 'RETRIEVAL_TOP_K = 6', 'RETRIEVAL_TOP_K = 7', 1, [A22_RUNTIME]),
+    (MODELS, 'RETRIEVAL_TOP_K = 6', 'RETRIEVAL_TOP_K = 6\nRETRIEVAL_TOP_K = 7', 1, [A22_RUNTIME]),
     (MODELS, 'RETRIEVAL_MIN_SCORE = 0.72', 'RETRIEVAL_MIN_SCORE = 0.60', 1, [A22_RUNTIME]),
     (MODELS, 'RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = 3', 'RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = 6',
      1, [A22_RUNTIME]),
     (RETRIEVAL, 'if score >= min_score:', 'if score > min_score:', 1, [A22_SELECTION]),
     (RETRIEVAL, 'if score >= min_score:', 'if True:', 1, [A22_SELECTION]),
+    (RETRIEVAL, '    ranked = heapq.nsmallest(',
+     '    scored.extend((min_score, c.approved_at, c.chunk_index, c.chunk_id, RetrievedContext("synthetic", c, min_score)) for c in store.chunks_for_project(tenant_id=tenant_id, project_id=project_id))\n    ranked = heapq.nsmallest(',
+     1, [A22_SELECTION]),
     (RETRIEVAL, 'RetrievedContext(context_ref_id, chunk, score)',
      'RetrievedContext(context_ref_id, chunk, min_score)', 1, [A22_SELECTION]),
     (RETRIEVAL, 'for chunk in store.chunks_for_project(tenant_id=tenant_id, project_id=project_id):',
@@ -394,7 +398,7 @@ def test_a22_stage_entrypoints_invoke_parity_even_when_stage8_already_failed(mon
     assert stage8.main() == 1 and calls == [stage8.ROOT]
     tree = ast.parse((Path(__file__).parents[2] / "scripts/quality/check_stage2_docs.py").read_text())
     main_node = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main")
-    calls_in_main = [node for node in ast.walk(main_node) if isinstance(node, ast.Call)
-                     and isinstance(node.func, ast.Name)
-                     and node.func.id == "check_retrieval_strategy_v1_parity"]
-    assert len(calls_in_main) == 1
+    direct = [statement.value for statement in main_node.body if isinstance(statement, ast.Expr)
+              and isinstance(statement.value, ast.Call) and isinstance(statement.value.func, ast.Name)
+              and statement.value.func.id == "check_retrieval_strategy_v1_parity"]
+    assert len(direct) == 1 and [ast.unparse(arg) for arg in direct[0].args] == ["ROOT", "failures"]
