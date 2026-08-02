@@ -7,20 +7,19 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from fastapi.testclient import TestClient
 
+import backend.app.main as main
+import backend.app.stage4 as stage4
 from backend.app.rag import models, retrieval
 from backend.app.rag.models import KnowledgeChunk, RetrievedContext
-from backend.app.stage4 import LocalPrincipal, Stage4Error, Stage4Service, walkthrough_to_api
-import backend.app.stage4 as stage4
+from backend.app.stage4 import LocalPrincipal, Stage4Service, walkthrough_to_api
 
 
 V1 = ("stage4-rag-v1", 6, 0.72, 3)
 STALE_MESSAGE = "Stored walkthrough cannot be replayed because its retrieval lineage is stale or unavailable."
 REQUEST = dict(
-    audience="RECRUITER",
-    requested_language="en",
-    depth="CONCISE",
-    style="CONFIDENT",
+    audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT",
     prompt="Create a concise grounded walkthrough for a recruiter.",
 )
 
@@ -79,6 +78,9 @@ def canonical_payload(path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[
     lineage = {"retrieval_strategy_version": V1[0], "retrieval_top_k": V1[1], "retrieval_score_threshold": V1[2]}
     run.update(lineage)
     run["evaluation"].update(lineage)
+    run["retrieved_context"] = run["retrieved_context"][:1]
+    run["generated_script"]["claims"] = run["generated_script"]["claims"][:1]
+    run["evaluation"]["claim_supports"] = run["evaluation"]["claim_supports"][:1]
     idem = next(row for row in payload["idempotencyRecords"] if row["idempotency_key"] == "walk")
     return payload, deepcopy(run), deepcopy(idem)
 
@@ -89,7 +91,7 @@ def mutate(payload: dict[str, Any], case: str) -> None:
     if case in {"both_missing", "run_missing", "evaluation_missing"}:
         targets = (run, evaluation) if case == "both_missing" else (run,) if case == "run_missing" else (evaluation,)
         for target in targets:
-            for name in names:
+            for name in names if case == "both_missing" else names[:1]:
                 target.pop(name)
     elif case == "mismatch":
         evaluation["retrieval_top_k"] = 7
@@ -115,6 +117,8 @@ def test_v1_literals_boundary_cap_and_tie_order(monkeypatch: pytest.MonkeyPatch)
              chunk("low", "doc_c", 0, "2026-01-01", "low")]
     scores = {f"a{i}": 0.99 - i / 100 for i in range(4)} | {"boundary": 0.72, "low": 0.719999}
     assert [c.chunk.chunk_id for c in select(monkeypatch, caps, scores)] == ["a0", "a1", "a2", "boundary"]
+    many = [chunk(f"many{i}", f"many_doc{i}", 0, "2026-01-01", f"many{i}") for i in range(7)]
+    assert len(select(monkeypatch, many, {f"many{i}": 0.9 for i in range(7)})) == 6
     ordered = [
         chunk("score", "d0", 9, "2025-01-01", "score"),
         chunk("approval-old", "d1", 9, "2025-01-01", "approval-old"),
@@ -138,17 +142,25 @@ def test_orchestration_preserves_rank_and_never_expands(tmp_path: Path, monkeypa
            chunk("below", "d3", 0, "2026-01-01", "Below fact.")]
     stored = service.rag_store.add_chunks(raw, service.embedder)
     ranked = [RetrievedContext("c1", stored[0], 0.95), RetrievedContext("c2", stored[1], 0.90)]
-    monkeypatch.setattr(stage4, "retrieve_context", lambda **_kw: ranked)
+    called: dict[str, Any] = {}
+    monkeypatch.setattr(stage4, "retrieve_context", lambda **kw: (called.update(kw), ranked)[1])
     original, seen = service.llm.generate_script, []
     monkeypatch.setattr(service.llm, "generate_script", lambda **kw: (seen.extend(kw["retrieved_context"]), original(**kw))[1])
-    service.generate_walkthrough(principal=principal, project_id=project.project_id, idempotency_key="w", **REQUEST)
-    assert [(c.chunk.chunk_id, c.score) for c in seen] == [("rank-first", 0.95), ("rank-second", 0.90)]
+    run = service.generate_walkthrough(principal=principal, project_id=project.project_id, idempotency_key="w", **REQUEST)
+    expected = [("rank-first", 0.95), ("rank-second", 0.90)]
+    assert (called["top_k"], called["min_score"]) == V1[1:3]
+    assert [(c.chunk.chunk_id, c.score) for c in seen] == expected
+    assert [(c.chunk.chunk_id, c.score) for c in run.retrieved_context] == expected
+    assert [(c["chunkId"], c["evidenceSnapshot"]["retrievalScore"])
+            for c in walkthrough_to_api(run)["contextRefs"]] == expected
+    assert len(run.evaluation.claim_supports) == 2
 
 
 def test_all_low_refuses_before_generation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     service, principal = Stage4Service(state_path=tmp_path / "refuse.json"), LocalPrincipal()
     project = service.create_project(principal=principal, name="Refuse", idempotency_key="p")
-    monkeypatch.setattr(stage4, "retrieve_context", lambda **_kw: [])
+    service.rag_store.add_chunks([chunk("low", "doc", 0, "2026-01-01", "Low fact.")], service.embedder)
+    monkeypatch.setattr(retrieval, "_retrieval_score", lambda **_kw: 0.70)
     monkeypatch.setattr(service.llm, "generate_script", lambda **_kw: pytest.fail("generation after refusal"))
     run = service.generate_walkthrough(principal=principal, project_id=project.project_id, idempotency_key="w", **REQUEST)
     assert (run.status, run.failure_reason, service.walkthrough_runs[run.run_id]) == (
@@ -159,19 +171,26 @@ def test_all_low_refuses_before_generation(tmp_path: Path, monkeypatch: pytest.M
 def test_new_lineage_survives_restart_and_global_mutation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     path = tmp_path / "valid.json"
     _, principal, project_id = seed(path)
+    raw = json.loads(path.read_text())["walkthroughRuns"][0]
+    assert tuple(raw[name] for name in ("retrieval_strategy_version", "retrieval_top_k",
+                                        "retrieval_score_threshold")) == V1[:3]
+    assert tuple(raw["evaluation"][name] for name in ("retrieval_strategy_version", "retrieval_top_k",
+                                                       "retrieval_score_threshold")) == V1[:3]
     restored = Stage4Service(state_path=path)
     run = next(iter(restored.walkthrough_runs.values()))
     assert (run.retrieval_strategy_version, run.retrieval_top_k, run.retrieval_score_threshold) == V1[:3]
     assert (run.evaluation.retrieval_strategy_version, run.evaluation.retrieval_top_k,
             run.evaluation.retrieval_score_threshold) == V1[:3]
+    original_api = walkthrough_to_api(run)
     monkeypatch.setattr(restored.llm, "generate_script", lambda **_kw: pytest.fail("duplicate generation"))
-    monkeypatch.setattr(stage4, "RETRIEVAL_STRATEGY_VERSION", "mutant")
-    monkeypatch.setattr(stage4, "RETRIEVAL_TOP_K", 7)
-    monkeypatch.setattr(stage4, "RETRIEVAL_MIN_SCORE", 0.60)
+    monkeypatch.setattr(restored.embedder, "embed", lambda _text: pytest.fail("duplicate retrieval"))
+    for namespace in (stage4, models):
+        monkeypatch.setattr(namespace, "RETRIEVAL_STRATEGY_VERSION", "mutant")
+        monkeypatch.setattr(namespace, "RETRIEVAL_TOP_K", 7)
+        monkeypatch.setattr(namespace, "RETRIEVAL_MIN_SCORE", 0.60)
     replay = restored.generate_walkthrough(principal=principal, project_id=project_id, idempotency_key="walk", **REQUEST)
     assert replay.run_id == run.run_id
-    api = walkthrough_to_api(replay)["evaluation"]
-    assert (api["retrievalStrategyVersion"], api["retrievalTopK"], api["retrievalScoreThreshold"]) == V1[:3]
+    assert walkthrough_to_api(replay) == original_api
 
 
 @pytest.mark.parametrize("case", [
@@ -186,13 +205,17 @@ def test_stale_lineage_is_preserved_but_inactive_twice(case: str, tmp_path: Path
     mutate(payload, case)
     expected_run = deepcopy(payload["walkthroughRuns"][0])
     expected_idem = next(row for row in payload["idempotencyRecords"] if row["idempotency_key"] == "walk")
+    expected = tuple(json.dumps(row, sort_keys=True, separators=(",", ":")) for row in (expected_run, expected_idem))
     path.write_text(json.dumps(payload))
     for _ in range(2):
         restored = Stage4Service(state_path=path)
         persisted = json.loads(path.read_text())
         assert not restored.walkthrough_runs and project_id in restored.projects
-        assert persisted["quarantinedWalkthroughRuns"] == [expected_run]
-        assert persisted["quarantinedIdempotencyRecords"] == [expected_idem]
+        assert not any(record.idempotency_key == "walk" for record in restored.idempotency_records.values())
+        assert persisted["walkthroughRuns"] == []
+        assert not any(row["idempotency_key"] == "walk" for row in persisted["idempotencyRecords"])
+        actual = (persisted["quarantinedWalkthroughRuns"][0], persisted["quarantinedIdempotencyRecords"][0])
+        assert tuple(json.dumps(row, sort_keys=True, separators=(",", ":")) for row in actual) == expected
 
 
 @pytest.mark.parametrize("changed,code", [(False, "STALE_RETRIEVAL_LINEAGE"), (True, "IDEMPOTENCY_CONFLICT")])
@@ -205,10 +228,17 @@ def test_stale_key_blocks_exact_and_changed_payload(changed: bool, code: str, tm
     payload["walkthroughRuns"][0]["evaluation"]["retrieval_top_k"] = 7
     path.write_text(json.dumps(payload))
     restored = Stage4Service(state_path=path)
-    monkeypatch.setattr(restored.llm, "generate_script", lambda **_kw: pytest.fail("stale replay generated"))
+    before = path.read_text()
+    monkeypatch.setattr(stage4, "retrieve_context", lambda **_kw: pytest.fail("stale request retrieved"))
+    monkeypatch.setattr(restored.llm, "generate_script", lambda **_kw: pytest.fail("stale request generated"))
+    monkeypatch.setattr(main, "stage4_service", restored)
     request = REQUEST | ({"prompt": "Changed payload."} if changed else {})
-    with pytest.raises(Stage4Error) as raised:
-        restored.generate_walkthrough(principal=principal, project_id=project_id, idempotency_key="walk", **request)
-    assert (raised.value.status_code, raised.value.code) == (409, code)
+    response = TestClient(main.app).post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs",
+        json={"audience": request["audience"], "requestedLanguage": "en", "depth": request["depth"],
+              "style": request["style"], "prompt": request["prompt"]}, headers={"Idempotency-Key": "walk"},
+    )
+    assert (response.status_code, response.json()["error"]["code"]) == (409, code)
     if not changed:
-        assert raised.value.message == STALE_MESSAGE
+        assert response.json()["error"]["message"] == STALE_MESSAGE
+    assert path.read_text() == before and not restored.walkthrough_runs
