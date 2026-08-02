@@ -98,7 +98,7 @@ def _request_contract(writes: list[Any], bundle: dict[str, Any]) -> None:
         "project": {"name": "Heartbeat 2 reviewer demo", "description": "Controlled synthetic curated walkthrough", "defaultAudience": "RECRUITER", "defaultLanguage": "en"},
         "approve": {"approvalStatus": "APPROVED", "action": "APPROVE", "curationSchemaVersion": "source-curation-v1", **{key: source[key] for key in ("sourceId", "decisionId", "policyVersion", "sourceVersion", "checksum", "assertionsFingerprint")}},
         "ingest": {"documentIds": [], "sourceIds": [source["sourceId"]]},
-        "walkthrough": {"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Create the controlled synthetic grounded reviewer walkthrough."},
+        "walkthrough": {"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Explain how NarraTwin AI turns approved project knowledge into grounded walkthrough scripts, supports recruiters hiring managers engineers product leaders customers beginners and global audiences with audience-aware explanations, and ensures every generated walkthrough claim cites retrieved source chunks from approved knowledge."},
         "multilingual": {"targetLanguage": media["targetLanguage"], "glossaryTerms": [], "requestedVoiceProvider": "mock"},
         "consent": {"consentToUseSyntheticAvatar": True},
     }
