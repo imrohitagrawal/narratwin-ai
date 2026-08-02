@@ -1,13 +1,8 @@
 from __future__ import annotations
 # ruff: noqa: E302, E305, E701, E702
-import importlib.util
-import json
-import subprocess
-from pathlib import Path
-from types import ModuleType
-from typing import Any
-import pytest
-from scripts.guardrails_check import canonical_stage_issue
+import importlib.util; import json; import subprocess
+from pathlib import Path; from types import ModuleType; from typing import Any
+import pytest; from scripts.guardrails_check import canonical_stage_issue
 TRANSITION = "cut1-process-346-governance-transition"
 A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 SCOPES = {
@@ -17,7 +12,8 @@ SCOPES = {
     A2_1: {"docs/governance/preflights/issue-335.json", "tests/unit/test_retrieval_strategy_v1_contract.py",
            "backend/app/rag/models.py", "backend/app/stage4.py", "docs/API_CONTRACT.md", "docs/STATUS.md",
            "tests/unit/test_local_durability.py", "backend/app/storage/local_restore_drill.py",
-           "tests/api/test_stage4_slice_api.py", "tests/api/test_stage6_multilingual_api.py", "docs/ADR/0002-rag-storage.md",
+           "tests/api/test_stage4_slice_api.py", "tests/api/test_stage6_multilingual_api.py",
+           "docs/ADR/0002-rag-storage.md",
            "docs/TRACEABILITY.md", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py",
            "evals/smoke/stage5_grounded_script_dataset.json", "docs/EVAL_REPORT.md", "docs/STAGE_ISSUE_PLAN.md"},
 }
