@@ -66,8 +66,9 @@ Use it to answer:
   authority. They preserve the protected evidence and unrelated obligations,
   but cannot select, authorize, or block the Issue `#346` to exact Issue `#335`
   Cut 1 route under OWNER authority.
-- Current implementation permission remains closed except for the six-path
-  Issue `#335` A2.1 slice on exact branch
+- Current implementation permission remains closed except for the exact Issue
+  `#335` A2.1 envelope authorized by OWNER comments `5158609698` and
+  `5158848442`, frozen by its preflight, and routed on exact branch
   `cut1-335-r0c-a2-1-stage4-rag-v1-lineage`, after Issue `#346` / PR `#347`
   merged-tree closeout and refresh from its exact merged base. That route uses
   normal Stage 8/full CI. Legacy Phase 1 routing is compatibility-only; near
