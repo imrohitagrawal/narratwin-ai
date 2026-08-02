@@ -1,9 +1,10 @@
 from __future__ import annotations
 # ruff: noqa: E302, E305, E701, E702
-import importlib.util; import json; import subprocess
+import ast; import importlib.util; import json; import subprocess
 from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
+A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"
 SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
                  "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
                  "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md"},
@@ -16,6 +17,10 @@ SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/qua
            "tests/unit/test_stage8_quality_gate.py", "docs/EVAL_REPORT.md", "docs/STAGE_ISSUE_PLAN.md",
            "evals/smoke/stage5_grounded_script_dataset.json", "scripts/ci/heartbeat2_evidence.py",
            "tests/unit/test_phase1_closure_docs.py", "scripts/quality/phase1_closure/legacy.py"},
+    A2_2: {"docs/governance/preflights/issue-349.json", "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+           "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
+           "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
+           "docs/STAGE_ISSUE_PLAN.md"},
 }
 def load_module(relative: str, name: str) -> ModuleType:
     module_path = Path(__file__).parents[2] / relative
@@ -25,6 +30,7 @@ def load_module(relative: str, name: str) -> ModuleType:
     spec.loader.exec_module(module)
     return module
 stage8: Any = load_module("scripts/quality/check_stage8_docs.py", "stage8_quality_under_test")
+stage2: Any = load_module("scripts/quality/check_stage2_docs.py", "stage2_quality_under_test")
 def git(repo: Path, *args: str) -> str:
     return subprocess.run(["git", *args], cwd=repo, text=True, capture_output=True, check=True).stdout.strip()
 def put(repo: Path, path: str, value: str) -> None:
@@ -43,15 +49,19 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
         failures = []; stage8.check_stage_scope(failures)
         assert failures == [f"Stage 8 changed file outside the allowlist: {extra}"]
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
-                   f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", "cut1-proces\u0455-346-transition"):
+                   f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry",
+                   f"{A2_2}/child", "cut1-350-r0c-a2-2-machine-contract-parity",
+                   "cut1-349-r0c-a2-2-machine-contract-parit\u0443", "cut1-proces\u0455-346-transition"):
         monkeypatch.setattr(stage8, "current_branch", lambda branch=branch: branch)
         failures = []; stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures)
         assert len(failures) == 2
-    artifact = json.loads((Path(__file__).parents[2] / "docs/governance/preflights/issue-346.json").read_text())
-    assert artifact["branch"] == TRANSITION and set(artifact["scope"]["required"]) == SCOPES[TRANSITION]
+    for issue, branch in ((346, TRANSITION), (349, A2_2)):
+        artifact = json.loads((Path(__file__).parents[2] / f"docs/governance/preflights/issue-{issue}.json").read_text())
+        assert artifact["branch"] == branch and set(artifact["scope"]["required"]) == SCOPES[branch]
     original_read = Path.read_text
     monkeypatch.setattr(Path, "read_text", lambda path, *a, **kw: (_ for _ in ()).throw(AssertionError())
-                        if path.name in {"issue-346.json", "issue-335.json"} else original_read(path, *a, **kw))
+                        if path.name in {"issue-346.json", "issue-335.json", "issue-349.json"}
+                        else original_read(path, *a, **kw))
     policy = load_module("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {branch: policy[branch] for branch in SCOPES} == SCOPES
     assert {branch for branch in policy if branch.startswith("cut1-")} == set(SCOPES)
@@ -248,3 +258,143 @@ def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
     assert failures == [
         "Stage 8 work must run on a stage8-* branch or main after merge; got feature/untracked-stage8-work."
     ]
+
+A22_SOURCE = "Stage 2 retrieval-v1 accepted sources must retain the canonical oracle."
+A22_DECLARATION = "Stage 2 retrievalStrategy must equal the canonical v1 machine declaration."
+A22_RUNTIME = "Stage 4 retrieval-v1 runtime constants must equal the canonical oracle."
+A22_SELECTION = "Stage 4 retrieval selection must preserve canonical v1 control flow."
+A22_REFUSAL = "Stage 4 retrieval refusal must be terminal before generation."
+A22_FILES = (
+    "docs/ARCHITECTURE.md", "docs/ADR/0002-rag-storage.md", "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+    "backend/app/rag/models.py", "backend/app/rag/retrieval.py", "backend/app/stage4.py",
+)
+
+def a22_root(tmp_path: Path) -> Path:
+    source = Path(__file__).parents[2]
+    for relative in A22_FILES:
+        put(tmp_path, relative, (source / relative).read_text(encoding="utf-8"))
+    return tmp_path
+
+def a22_edit(root: Path, edits: list[tuple[str, str, str, int]]) -> None:
+    for relative, old, new, count in edits:
+        target = root / relative; value = target.read_text(encoding="utf-8")
+        assert value.count(old) == count, (relative, old, value.count(old))
+        target.write_text(value.replace(old, new, count), encoding="utf-8")
+
+def a22_check(root: Path) -> list[str]:
+    failures: list[str] = []
+    stage2.check_retrieval_strategy_v1_parity(root, failures)
+    return failures
+
+DECL = "docs/STAGE2_ARCHITECTURE_CONTRACT.json"; MODELS = "backend/app/rag/models.py"
+RETRIEVAL = "backend/app/rag/retrieval.py"; STAGE4 = "backend/app/stage4.py"
+SINGLE_MUTATIONS = [
+    (DECL, '"topK": 6', '"topK": 7', 1, [A22_DECLARATION]),
+    (DECL, '"minimumScoreThreshold": 0.72', '"minimumScoreThreshold": 0.60', 1, [A22_DECLARATION]),
+    (DECL, '    "maximumChunksPerDocument": 3,\n', '', 1, [A22_DECLARATION]),
+    (DECL, '"maximumChunksPerDocument": 3', '"maximumChunksPerDocument": true', 1, [A22_DECLARATION]),
+    (DECL, '"maximumChunksPerDocument": 3', '"maximumChunksPerDocument": 6', 1, [A22_DECLARATION]),
+    (DECL, '"score desc"', '"score asc"', 1, [A22_DECLARATION]),
+    (DECL, '"approved_at desc"', '"approved_at asc"', 1, [A22_DECLARATION]),
+    (DECL, '"chunk_index asc"', '"chunk_id asc"', 1, [A22_DECLARATION]),
+    (DECL, '"chunk_id asc"', '"chunk_id desc"', 1, [A22_DECLARATION]),
+    (DECL, 'deterministic keyword overlap fallback only; no cross-project expansion',
+     'deterministic global fallback', 1, [A22_DECLARATION]),
+    (DECL, '"LOW_RETRIEVAL_CONFIDENCE",', '"LOW_CONFIDENCE",', 1, [A22_DECLARATION]),
+    (DECL, '"maximumChunksPerDocument": 3,', '"maximumChunksPerDocument": 3,\n    "minimumChunks": 1,',
+     1, [A22_DECLARATION]),
+    (MODELS, 'RETRIEVAL_STRATEGY_VERSION = "stage4-rag-v1"', 'RETRIEVAL_STRATEGY_VERSION = "v2"',
+     1, [A22_RUNTIME]),
+    (MODELS, 'RETRIEVAL_TOP_K = 6', 'RETRIEVAL_TOP_K = 7', 1, [A22_RUNTIME]),
+    (MODELS, 'RETRIEVAL_MIN_SCORE = 0.72', 'RETRIEVAL_MIN_SCORE = 0.60', 1, [A22_RUNTIME]),
+    (MODELS, 'RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = 3', 'RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = 6',
+     1, [A22_RUNTIME]),
+    (RETRIEVAL, 'if score >= min_score:', 'if score > min_score:', 1, [A22_SELECTION]),
+    (RETRIEVAL, 'if score >= min_score:', 'if True:', 1, [A22_SELECTION]),
+    (RETRIEVAL, 'RetrievedContext(context_ref_id, chunk, score)',
+     'RetrievedContext(context_ref_id, chunk, min_score)', 1, [A22_SELECTION]),
+    (RETRIEVAL, 'for chunk in store.chunks_for_project(tenant_id=tenant_id, project_id=project_id):',
+     'for chunk in store.chunks_for_project(tenant_id="tenant_local", project_id=project_id):',
+     1, [A22_SELECTION]),
+    (RETRIEVAL, 'for chunk in store.chunks_for_project(tenant_id=tenant_id, project_id=project_id):',
+     'for chunk in store.chunks_for_project(tenant_id=tenant_id, project_id="proj_other"):',
+     1, [A22_SELECTION]),
+    (RETRIEVAL, 'key=lambda item: (-item[0], _reverse_sort_text(item[1]), item[2], item[3]),',
+     'key=lambda item: (item[0], _reverse_sort_text(item[1]), item[2], item[3]),', 1, [A22_SELECTION]),
+    (RETRIEVAL, 'key=lambda item: (-item[0], _reverse_sort_text(item[1]), item[2], item[3]),',
+     'key=lambda item: (-item[0], item[1], item[2], item[3]),', 1, [A22_SELECTION]),
+    (RETRIEVAL, 'key=lambda item: (-item[0], _reverse_sort_text(item[1]), item[2], item[3]),',
+     'key=lambda item: (-item[0], _reverse_sort_text(item[1]), item[3], item[2]),', 1, [A22_SELECTION]),
+    (RETRIEVAL, 'key=lambda item: (-item[0], _reverse_sort_text(item[1]), item[2], item[3]),',
+     'key=lambda item: (-item[0], _reverse_sort_text(item[1]), item[2], _reverse_sort_text(item[3])),',
+     1, [A22_SELECTION]),
+    (RETRIEVAL, '>= RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT:', '> RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT:',
+     1, [A22_SELECTION]),
+    (RETRIEVAL, 'context.chunk.document_id', 'context.chunk.chunk_id', 2, [A22_SELECTION]),
+    (RETRIEVAL, 'return min(1.0, cosine + lexical_overlap * 0.25)', 'return min(1.0, cosine)',
+     1, [A22_SELECTION]),
+    (STAGE4, 'query=retrieval_query,\n                        top_k=RETRIEVAL_TOP_K,',
+     'query=retrieval_query,\n                        top_k=7,', 1, [A22_REFUSAL]),
+    (STAGE4, 'top_k=RETRIEVAL_TOP_K,\n                        min_score=RETRIEVAL_MIN_SCORE,',
+     'top_k=RETRIEVAL_TOP_K,\n                        min_score=0.60,', 1, [A22_REFUSAL]),
+    (STAGE4, 'WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL = "LOW_RETRIEVAL_CONFIDENCE"',
+     'WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL = "LOW_CONFIDENCE"', 1, [A22_REFUSAL]),
+    (STAGE4, '                    if not retrieved:\n', '                    if False and not retrieved:\n',
+     1, [A22_REFUSAL]),
+    (STAGE4, 'status="REFUSED",\n                            failure_reason=self.WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL,',
+     'status="FAILED",\n                            failure_reason=self.WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL,',
+     1, [A22_REFUSAL]),
+    ("docs/ARCHITECTURE.md", '`topK = 6`', '`topK = 7`', 1, [A22_SOURCE]),
+    ("docs/ADR/0002-rag-storage.md", '`topK = 6`', '`topK = 7`', 1, [A22_SOURCE]),
+]
+
+@pytest.mark.parametrize("relative,old,new,count,expected", SINGLE_MUTATIONS)
+def test_a22_oracle_rejects_independent_drift(relative: str, old: str, new: str, count: int,
+                                               expected: list[str], tmp_path: Path) -> None:
+    root = a22_root(tmp_path); assert a22_check(root) == []
+    a22_edit(root, [(relative, old, new, count)])
+    assert a22_check(root) == expected
+
+@pytest.mark.parametrize("field,json_old,json_new,model_old,model_new", [
+    ("topK", '"topK": 6', '"topK": 7', 'RETRIEVAL_TOP_K = 6', 'RETRIEVAL_TOP_K = 7'),
+    ("threshold", '"minimumScoreThreshold": 0.72', '"minimumScoreThreshold": 0.60',
+     'RETRIEVAL_MIN_SCORE = 0.72', 'RETRIEVAL_MIN_SCORE = 0.60'),
+    ("cap", '"maximumChunksPerDocument": 3', '"maximumChunksPerDocument": 6',
+     'RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = 3', 'RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = 6'),
+])
+def test_a22_oracle_rejects_paired_runtime_and_declaration_weakening(
+    field: str, json_old: str, json_new: str, model_old: str, model_new: str, tmp_path: Path,
+) -> None:
+    root = a22_root(tmp_path); assert field
+    a22_edit(root, [(DECL, json_old, json_new, 1), (MODELS, model_old, model_new, 1)])
+    assert a22_check(root) == [A22_DECLARATION, A22_RUNTIME]
+
+def test_a22_oracle_cannot_be_redefined_by_all_candidate_surfaces(tmp_path: Path) -> None:
+    root = a22_root(tmp_path)
+    a22_edit(root, [
+        ("docs/ARCHITECTURE.md", '`topK = 6`', '`topK = 7`', 1),
+        ("docs/ADR/0002-rag-storage.md", '`topK = 6`', '`topK = 7`', 1),
+        (DECL, '"topK": 6', '"topK": 7', 1), (MODELS, 'RETRIEVAL_TOP_K = 6', 'RETRIEVAL_TOP_K = 7', 1),
+    ])
+    assert a22_check(root) == [A22_SOURCE, A22_DECLARATION, A22_RUNTIME]
+
+def test_a22_refusal_rejects_generation_before_empty_selection_guard(tmp_path: Path) -> None:
+    root = a22_root(tmp_path)
+    old = '                    if not retrieved:\n'
+    new = ('                    self.llm.generate_script(audience=audience, prompt=prompt, '
+           'retrieved_context=retrieved)\n                    if not retrieved:\n')
+    a22_edit(root, [(STAGE4, old, new, 1)])
+    assert a22_check(root) == [A22_REFUSAL]
+
+def test_a22_stage_entrypoints_invoke_parity_even_when_stage8_already_failed(monkeypatch: Any) -> None:
+    calls: list[Path] = []
+    monkeypatch.setattr(stage8, "check_required_files", lambda failures: failures.append("earlier"))
+    monkeypatch.setattr(stage8, "check_retrieval_strategy_v1_parity",
+                        lambda root, failures: calls.append(root))
+    assert stage8.main() == 1 and calls == [stage8.ROOT]
+    tree = ast.parse((Path(__file__).parents[2] / "scripts/quality/check_stage2_docs.py").read_text())
+    main_node = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main")
+    calls_in_main = [node for node in ast.walk(main_node) if isinstance(node, ast.Call)
+                     and isinstance(node.func, ast.Name)
+                     and node.func.id == "check_retrieval_strategy_v1_parity"]
+    assert len(calls_in_main) == 1
