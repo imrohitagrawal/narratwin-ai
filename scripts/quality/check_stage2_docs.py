@@ -382,8 +382,8 @@ def load_stage2_contract(failures: list[str]) -> dict[str, Any]:
 
 
 def _retrieval_section(text: str, heading: str) -> str:
-    starts = [match.start() for match in re.finditer(rf"(?m)^{re.escape(heading)}$", text)]
-    if len(starts) != 1:
+    starts = [match.start() for match in re.finditer(rf"(?m)^ {{0,3}}{re.escape(heading)}(?:[ \t]+#+[ \t]*|[ \t]*)$", text)]
+    if len(starts) != 1 or text.count(heading.removeprefix("## ")) != 1:
         return ""
     start = starts[0]
     ends = [index for marker in ("\n## ", "\n### ") if (index := text.find(marker, start + len(heading))) >= 0]
@@ -429,9 +429,10 @@ def check_retrieval_strategy_v1_parity(root: Path, failures: list[str]) -> None:
         fail(RETRIEVAL_V1_SOURCE_ERROR, failures)
 
     try:
-        declaration = json.loads((root / "docs/STAGE2_ARCHITECTURE_CONTRACT.json").read_text(encoding="utf-8"))
+        declaration = json.loads((root / "docs/STAGE2_ARCHITECTURE_CONTRACT.json").read_text(encoding="utf-8"),
+            object_pairs_hook=lambda pairs: dict(pairs) if len(dict(pairs)) == len(pairs) else (_ for _ in ()).throw(ValueError("duplicate JSON key")))
         declaration_ok = isinstance(declaration, dict) and declaration.get("retrievalStrategy") == RETRIEVAL_V1_DECLARATION
-    except (OSError, json.JSONDecodeError):
+    except (OSError, ValueError):
         declaration_ok = False
     if not declaration_ok:
         fail(RETRIEVAL_V1_DECLARATION_ERROR, failures)
@@ -475,7 +476,9 @@ def check_retrieval_strategy_v1_parity(root: Path, failures: list[str]) -> None:
     expected_score = ["cosine = _cosine_similarity(query_embedding, embedding)", "query_terms = set(WORD_PATTERN.findall(query.lower()))", "text_terms = set(WORD_PATTERN.findall(text.lower()))", "if not query_terms:\n    return cosine", "lexical_overlap = len(query_terms & text_terms) / len(query_terms)", "return min(1.0, cosine + lexical_overlap * 0.25)"]
     expected_cosine = ["if not left or not right or len(left) != len(right):\n    return 0.0",
                        "return sum((left_value * right_value for left_value, right_value in zip(left, right, strict=True)))"]
+    semantic_builtins = ("int", "len", "min", "ord", "set", "sum", "tuple", "zip")
     selection_ok = bool(retrieve and cosine and score and reverse and retrieval_imports_ok
+        and not any(name in retrieval_bindings for name in semantic_builtins)
         and retrieval_bindings.count("WORD_PATTERN") == len(patterns) == 1
         and ast.unparse(patterns[0].value) == "re.compile('[a-z0-9]+')"
         and [ast.unparse(node) for node in retrieve.body] == expected_retrieve
