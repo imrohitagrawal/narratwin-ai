@@ -541,9 +541,9 @@ preflight, Stage 8 checker/test, and `QUALITY_GATES`, `STAGE_ISSUE_PLAN`, and
 `STATUS` updates. Refreshed Issue `#335` uses exact branch
 `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` for the A2.1 envelope frozen by its
 preflight and the Stage 8 checker/test. Owner comments `5158609698`,
-`5158848442`, and `5159267478` authorize the bounded runtime, fixture/oracle,
+`5158848442`, `5159267478`, and `5159543127` authorize the bounded runtime, fixture/oracle,
 evaluation-evidence, documentation, and controlled Heartbeat 2 repairs inside
-the exact 20-path, 650-charged-line preflight authority. Near-match branches inherit no scope.
+the exact 22-path, 650-charged-line preflight authority, including the one-time reviewed legacy receipt rotation and ADR `0047` amendment. Near-match branches inherit no scope.
 Issues and stopped implementations `#336`–`#345` remain forensic-only. Non-main push validation uses
 the complete `origin/main` merge-base-to-exact-head candidate rather than the
 latest push delta. PR/review validation keeps the reviewed base and binds the
