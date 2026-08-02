@@ -1,0 +1,19 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 346,
+  "branch": "cut1-process-346-governance-transition",
+  "objective": "Under Issue #346 and the owner-authorized residual human-review trust boundary, transition only new Cut 1 work from Phase-1 Closure compatibility routing to normal Stage-8/full-CI routing from exact base 225506a25f9efe3c804c5a1723b20db0e940ff62. Keep agent-context SHADOW_ONLY and STALE_GOVERNANCE; preserve Issues and stopped implementations #336-#345 as forensic-only; and do not change A2 product requirements. Add literal code-owned routes only for cut1-process-346-governance-transition and cut1-335-r0c-a2-1-stage4-rag-v1-lineage. Make exact-head scope evidence NUL-safe, rename/copy source-and-destination aware, and separately collect committed, cached, unstaged, and untracked paths. For every non-main push compare the complete branch from merge-base(origin/main, exact-head), never only event.before; for PR, review, and push events derive the expected head from the GitHub event payload when the custom head variable is absent, reject contradictions, and fail closed on malformed or unavailable event evidence. Reconcile STATUS and STAGE_ISSUE_PLAN so obsolete Issue #332 and Phase-1 directions remain historical rather than current routing. The owner explicitly directed these published-head review repairs to remain in PR #347; another same-class false pass stops this path. Treat scope checks and this artifact as supporting evidence, never self-authorization. Preserve existing trusted required CI, eligible latest-head non-author approval, exact merge-base semantic review, and human-confirmed squash text. Limit this issue to the six required paths and 500 charged lines. Roll back by reverting the transition PR. Stop for scope/budget breach, unreproducible exact-head evidence, protected-evidence mutation, stopped-branch collision or reuse, secrets, provider spend, personal or biometric data, infrastructure, deployment or publication, or legal, privacy, licensing, or security-risk acceptance. No dispatcher, Phase-1 checker, workflow, Makefile, guardrail, repository setting, product runtime, dependency, provider, infrastructure, release, readiness, or avatar-completion change is authorized.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-346.json",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": ["docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md"],
+    "forbidden": [".github/", "AGENTS.md", "Makefile", "backend/", "docs/ADR/", "docs/API_CONTRACT.md", "docs/agent-context/", "frontend/", "scripts/guardrails_check.py", "scripts/quality/check_phase1_closure_docs.py", "scripts/quality/check_quality_stage.py", "tests/api/"]
+  }
+}

@@ -534,6 +534,20 @@ Required Stage 8 hardening within this scope:
   exploit-matrix, and contract/gate review
 - Stage 8 CI budget status for Locust performance smoke and Lighthouse checks
 
+### Cut 1 Exact Stage 8 Routes
+
+Issue `#346` uses exact branch `cut1-process-346-governance-transition` for its
+preflight, Stage 8 checker/test, and `QUALITY_GATES`, `STAGE_ISSUE_PLAN`, and
+`STATUS` updates. Refreshed Issue `#335` uses exact branch
+`cut1-335-r0c-a2-1-stage4-rag-v1-lineage` for its preflight, retrieval contract
+test, RAG models, Stage 4 service, API contract, and status update. Near-match
+branches inherit neither scope. Issues and stopped implementations `#336`–`#345`
+remain forensic-only. Ordinary Issue `#335` fixture/oracle repairs stay inside
+that active issue's six-path and repair budget. Non-main push validation uses
+the complete `origin/main` merge-base-to-exact-head candidate rather than the
+latest push delta. PR/review validation keeps the reviewed base and binds the
+checkout to the GitHub event head; scope output remains supporting evidence.
+
 ## Phase 1 Closure Branch Scope
 
 Allowed governance/reporting changes for Module A:
@@ -2218,8 +2232,8 @@ merged-tree acceptance, PR `#295` must close unmerged as superseded, and Issue
 `#294` must close as satisfied by the replacement.
 The two preceding Slice 2 and Issue `#294`/PR `#295` route sentences are frozen
 `STALE_GOVERNANCE` compatibility markers. They preserve protected evidence and
-unrelated obligations, but cannot select, authorize, or block the Issue `#332`
-to R0C-A2 sequence under OWNER comment `5152829686`.
+unrelated obligations, but cannot select, authorize, or block the Issue `#346`
+to exact Issue `#335` Cut 1 route under OWNER authority.
 
 ## Issue #324 publication boundary
 
@@ -2249,13 +2263,20 @@ historical records remain contextual; launch No-Go and human-only risk decisions
 remain unchanged; and no runtime, provider, media, Q&A, hosting, release, or
 production capability is claimed.
 
-## Issue #332 R0C Cut 1 fail-safe containment
+## Historical Issue #332 R0C Cut 1 fail-safe containment
 
 Issue `#332` implements the dependency correction authorized by Issue `#328`
 OWNER comment `5152829686`. It is a four-file governance correction from fixed
 base `13941ca7a46515d5dd0d8d6d5b40b807f6cfa636`; it does not change product
 runtime, the agent-context subsystem, workflows, repository settings, protected
 evidence, providers, media, deployment, or release posture.
+
+This section preserves the Issue `#332` containment sequence as historical
+evidence. Its `PLANNED` and "Create only" directions are `STALE_GOVERNANCE` and
+cannot select current work. For new Cut 1 work, the exact route above supersedes
+them: complete Issue `#346`, then refresh Issue `#335` on
+`cut1-335-r0c-a2-1-stage4-rag-v1-lineage`. Issues `#336`–`#345` and their stopped
+implementations remain forensic-only and cannot be revived or reused.
 
 ### Authority and capability classification
 

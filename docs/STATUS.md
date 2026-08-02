@@ -14,20 +14,27 @@ Use it to answer:
 
 ## Current Baseline
 
+- Current Cut 1 route authority: Issue `#346` / PR `#347` establishes exact
+  branch `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` as the only renewed A2.1
+  route after its merged-tree closeout. Refresh Issue `#335` from that exact
+  merged base before any new write. Agent-context remains `SHADOW_ONLY`; scope
+  checks remain supporting evidence under exact-head semantic review. Issues,
+  branches, and stopped implementations `#336`–`#345` are forensic-only and
+  must not be revived or reused.
 - Last reviewed date: 2026-08-02
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
-  `#332` is the narrow controller correction. Agent-context remains
+  `#332` / PR `#333` completed the narrow containment correction at merged main
+  `225506a25f9efe3c804c5a1723b20db0e940ff62`; Issues `#329`, `#330`, and `#332`
+  are closed. Issue `#334` is the open R0C-A2 controller and Issue `#335` is its
+  next narrow child after Issue `#346` / PR `#347` closeout. Agent-context remains
   `SHADOW_ONLY` and its mutable state is `STALE_GOVERNANCE`; its outputs cannot
   establish current truth, select consequential work routing, or authorize
   merge, release, or readiness. PR `#331` is `STOPPED_UNMERGED`; its local and
-  remote heads and the Issue `#330` RCA are preserved. Issues `#329` and `#330`
-  remain live open but are `SUPERSEDED_FOR_CUT1` pending Issue `#332`
-  merged-tree closeout. A1.1b/A1.1c are removed from the Cut 1 blocking path,
-  not completed. A1.2, A1.3, and the R0C-specific immutable external GitHub
-  trust-anchor evaluation remain incomplete `NONBLOCKING_HARDENING`. The sole
-  next blocking package after Issue `#332` merge, closeout, and fresh live
-  bootstrap is R0C-A2; create only that controller issue at that boundary.
+  remote heads and the closed Issue `#330` RCA are preserved. A1.1b/A1.1c are
+  removed from the Cut 1 blocking path, not completed. A1.2, A1.3, and the
+  R0C-specific immutable external GitHub trust-anchor evaluation remain
+  incomplete `NONBLOCKING_HARDENING`.
   Existing protected exact-head CI, eligible latest-push non-author approval,
   human confirmation of exact merge wording, and every product-safety gate
   remain mandatory.
@@ -50,10 +57,15 @@ Use it to answer:
   The two preceding Slice 2 and Issue `#294`/PR `#295` route sentences are
   frozen `STALE_GOVERNANCE` compatibility markers, not current Cut 1 routing
   authority. They preserve the protected evidence and unrelated obligations,
-  but cannot select, authorize, or block the Issue `#332` to R0C-A2 sequence
-  under OWNER comment `5152829686`.
-- Current implementation permission: Phase 1 Closure governance only. Demo
-  Phase 0 planning for issue `#225` completed through PR `#226`; Checkpoint 1
+  but cannot select, authorize, or block the Issue `#346` to exact Issue `#335`
+  Cut 1 route under OWNER authority.
+- Current implementation permission remains closed except for the six-path
+  Issue `#335` A2.1 slice on exact branch
+  `cut1-335-r0c-a2-1-stage4-rag-v1-lineage`, after Issue `#346` / PR `#347`
+  merged-tree closeout and refresh from its exact merged base. That route uses
+  normal Stage 8/full CI. Legacy Phase 1 routing is compatibility-only; near
+  matches and Issues `#336`–`#345` confer no authority. Demo Phase 0 planning
+  for issue `#225` completed through PR `#226`; Checkpoint 1
   is accepted as local/fake disabled-default reviewer evidence only through
   merged PRs `#230`, `#236`, `#238`, `#242`, `#244`, `#246`, and `#248`.
   Issue `#247` is closed after the safe refusal UX repair. Issue `#249` remains
@@ -265,7 +277,8 @@ repository stage-dispatch marker. Under Issue `#328` OWNER comment `5152829686`,
 `SSV1-NEXT` is `STALE_GOVERNANCE`: its old Issue `#294`/PR `#295`/Slice 2 route
 is preserved as compatibility evidence until nonblocking A1.2 reconciliation,
 but it cannot select, authorize, or block current work. The Current Baseline
-above owns the R0C recovery pointer to Issue `#332` closeout and then R0C-A2.
+above owns the R0C recovery pointer from Issue `#346` closeout to exact Issue
+`#335` A2.1 routing.
 The table does not replace the PHF-020A Product Mode policy tables in
 `docs/PHASE_PLAN.md`; its other rows continue to record their scoped repository
 state, open issue boundaries, preserved evidence, and prohibited work.
@@ -870,9 +883,9 @@ required checks, merge, and merged-tree closeout complete.
    by the replacement.
    This retained Slice 2 and Issue `#294`/PR `#295` route text is
    `STALE_GOVERNANCE` compatibility evidence. It does not select, authorize, or
-   block current Cut 1 work; the Current Baseline owns the Issue `#332` to
-   R0C-A2 pointer, while the older evidence and unrelated obligations remain
-   preserved.
+   block current Cut 1 work; the Current Baseline owns the Issue `#346` to exact
+   Issue `#335` A2.1 pointer, while the older evidence and unrelated obligations
+   remain preserved.
 4. Keep production,
    multi-worker deployment, hosted launch, Product Mode 2, external provider
    use, real audio/video export, and public synthetic-media distribution No-Go
