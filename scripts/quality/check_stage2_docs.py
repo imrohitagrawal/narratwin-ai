@@ -17,18 +17,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 STAGE2_BRANCH_PATTERN = re.compile(r"^stage2-")
 RETRIEVAL_V1_SOURCE_ERROR, RETRIEVAL_V1_DECLARATION_ERROR, RETRIEVAL_V1_RUNTIME_ERROR, RETRIEVAL_V1_SELECTION_ERROR, RETRIEVAL_V1_REFUSAL_ERROR = ("Stage 2 retrieval-v1 accepted sources must retain the canonical oracle.", "Stage 2 retrievalStrategy must equal the canonical v1 machine declaration.", "Stage 4 retrieval-v1 runtime constants must equal the canonical oracle.", "Stage 4 retrieval selection must preserve canonical v1 control flow.", "Stage 4 retrieval refusal must be terminal before generation.")
-RETRIEVAL_V1_DECLARATION = {
-    "version": "stage4-rag-v1", "topK": 6, "minimumScoreThreshold": 0.72,
-    "maximumChunksPerDocument": 3,
-    "tieBreakOrder": ["score desc", "approved_at desc", "chunk_index asc", "chunk_id asc"],
-    "fallback": "deterministic keyword overlap fallback only; no cross-project expansion",
-    "refusalReasons": ["EMPTY_CONTEXT", "LOW_RETRIEVAL_CONFIDENCE", "AMBIGUOUS_CONTEXT",
-                       "CROSS_PROJECT_CONTEXT", "UNSAFE_CONTEXT"],
-}
+RETRIEVAL_V1_DECLARATION = {"version": "stage4-rag-v1", "topK": 6, "minimumScoreThreshold": 0.72, "maximumChunksPerDocument": 3, "tieBreakOrder": ["score desc", "approved_at desc", "chunk_index asc", "chunk_id asc"], "fallback": "deterministic keyword overlap fallback only; no cross-project expansion", "refusalReasons": ["EMPTY_CONTEXT", "LOW_RETRIEVAL_CONFIDENCE", "AMBIGUOUS_CONTEXT", "CROSS_PROJECT_CONTEXT", "UNSAFE_CONTEXT"]}
 RETRIEVAL_V1_SOURCE_SECTIONS = (
-    ("docs/ARCHITECTURE.md", "## Retrieval Strategy v1", "216605678fdf9bb8ca41395f14a75aba27ee70c6662c02951dc97e79401d4c2c"),
-    ("docs/ADR/0002-rag-storage.md", "## Retrieval Strategy v1 Decision", "dac842cb365229a868844565051601bb1d2a6eb8f19edfb02292c0177af3a8df"),
-)
+    ("docs/ARCHITECTURE.md", "## Retrieval Strategy v1", "216605678fdf9bb8ca41395f14a75aba27ee70c6662c02951dc97e79401d4c2c"), ("docs/ADR/0002-rag-storage.md", "## Retrieval Strategy v1 Decision", "dac842cb365229a868844565051601bb1d2a6eb8f19edfb02292c0177af3a8df"))
 
 REQUIRED_FILES = [
     ".env.example",
@@ -391,22 +382,38 @@ def load_stage2_contract(failures: list[str]) -> dict[str, Any]:
 
 
 def _retrieval_section(text: str, heading: str) -> str:
-    start = text.find(heading)
-    if start < 0:
+    starts = [match.start() for match in re.finditer(rf"(?m)^{re.escape(heading)}$", text)]
+    if len(starts) != 1:
         return ""
-    ends = [index for marker in ("\n## ", "\n### ")
-            if (index := text.find(marker, start + len(heading))) >= 0]
+    start = starts[0]
+    ends = [index for marker in ("\n## ", "\n### ") if (index := text.find(marker, start + len(heading))) >= 0]
     return text[start:min(ends)] if ends else text[start:]
 
 
-def _unique_function(tree: ast.Module, name: str) -> ast.FunctionDef | None:
+def _bound_names(tree: ast.AST) -> list[str]:
+    names = [node.id for node in ast.walk(tree) if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del))]
+    names += [node.name for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))]
+    names += [node.arg for node in ast.walk(tree) if isinstance(node, ast.arg)]
+    names += [(node.asname or node.name.split(".")[0]) for node in ast.walk(tree) if isinstance(node, ast.alias)]
+    names += [node.name for node in ast.walk(tree) if isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and node.name]
+    return names
+
+
+def _imports_once(tree: ast.Module, module: str | None, names: tuple[str, ...]) -> bool:
+    imported = [alias.name for node in tree.body if isinstance(node, (ast.Import, ast.ImportFrom)) for alias in node.names
+                if alias.asname is None and ((module is None and isinstance(node, ast.Import)) or
+                (isinstance(node, ast.ImportFrom) and node.level == 0 and node.module == module))]
+    bindings = _bound_names(tree)
+    return "*" not in bindings and all(imported.count(name) == bindings.count(name) == 1 for name in names)
+
+
+def _unique_function(tree: ast.Module | ast.ClassDef, name: str) -> ast.FunctionDef | None:
     matches = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == name]
-    return matches[0] if len(matches) == 1 else None
+    return matches[0] if len(matches) == 1 and not matches[0].decorator_list and _bound_names(tree).count(name) == 1 else None
 
 
 def _call_name(node: ast.Call) -> str:
-    return node.func.id if isinstance(node.func, ast.Name) else (
-        node.func.attr if isinstance(node.func, ast.Attribute) else "")
+    return node.func.id if isinstance(node.func, ast.Name) else node.func.attr if isinstance(node.func, ast.Attribute) else ""
 
 
 def check_retrieval_strategy_v1_parity(root: Path, failures: list[str]) -> None:
@@ -422,11 +429,8 @@ def check_retrieval_strategy_v1_parity(root: Path, failures: list[str]) -> None:
         fail(RETRIEVAL_V1_SOURCE_ERROR, failures)
 
     try:
-        declaration = json.loads((root / "docs/STAGE2_ARCHITECTURE_CONTRACT.json").read_text(
-            encoding="utf-8"))
-        declaration_ok = isinstance(declaration, dict) and (
-            declaration.get("retrievalStrategy") == RETRIEVAL_V1_DECLARATION
-        )
+        declaration = json.loads((root / "docs/STAGE2_ARCHITECTURE_CONTRACT.json").read_text(encoding="utf-8"))
+        declaration_ok = isinstance(declaration, dict) and declaration.get("retrievalStrategy") == RETRIEVAL_V1_DECLARATION
     except (OSError, json.JSONDecodeError):
         declaration_ok = False
     if not declaration_ok:
@@ -439,31 +443,25 @@ def check_retrieval_strategy_v1_parity(root: Path, failures: list[str]) -> None:
         except (OSError, SyntaxError):
             trees[relative] = None
 
-    expected_constants = {
-        "RETRIEVAL_STRATEGY_VERSION": "stage4-rag-v1", "RETRIEVAL_TOP_K": 6,
-        "RETRIEVAL_MIN_SCORE": 0.72, "RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT": 3,
-    }
-    constants: dict[str, list[Any]] = {name: [] for name in expected_constants}
+    expected_constants = {"RETRIEVAL_STRATEGY_VERSION": "stage4-rag-v1", "RETRIEVAL_TOP_K": 6, "RETRIEVAL_MIN_SCORE": 0.72, "RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT": 3}
     models_tree = trees["backend/app/rag/models.py"]
-    if models_tree:
-        for node in models_tree.body:
-            if not isinstance(node, ast.Assign) or len(node.targets) != 1 or not isinstance(node.targets[0], ast.Name):
-                continue
-            name = node.targets[0].id
-            if name in constants:
-                try:
-                    constants[name].append(ast.literal_eval(node.value))
-                except (ValueError, TypeError):
-                    constants[name].append(None)
-    runtime_ok = all(len(constants[name]) == 1 and type(constants[name][0]) is type(expected)
-                     and constants[name][0] == expected for name, expected in expected_constants.items())
+    runtime_ok = bool(models_tree and all(
+        _bound_names(models_tree).count(name) == 1 and
+        [ast.unparse(node) for node in models_tree.body if isinstance(node, ast.Assign) and
+         any(isinstance(target, ast.Name) and target.id == name for target in node.targets)] == [f"{name} = {expected!r}"]
+        for name, expected in expected_constants.items()))
     if not runtime_ok:
         fail(RETRIEVAL_V1_RUNTIME_ERROR, failures)
 
     retrieval_tree = trees["backend/app/rag/retrieval.py"]
-    retrieve = _unique_function(retrieval_tree, "retrieve_context") if retrieval_tree else None
-    score = _unique_function(retrieval_tree, "_retrieval_score") if retrieval_tree else None
-    reverse = _unique_function(retrieval_tree, "_reverse_sort_text") if retrieval_tree else None
+    functions = ("retrieve_context", "_cosine_similarity", "_retrieval_score", "_reverse_sort_text")
+    retrieve, cosine, score, reverse = tuple(_unique_function(retrieval_tree, name) for name in functions) if retrieval_tree else (None,) * 4
+    retrieval_bindings = _bound_names(retrieval_tree) if retrieval_tree else []
+    retrieval_imports_ok = bool(retrieval_tree and _imports_once(retrieval_tree, None, ("hashlib", "heapq", "re"))
+        and _imports_once(retrieval_tree, "collections", ("defaultdict",)) and _imports_once(
+            retrieval_tree, "backend.app.rag.models", ("RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT", "RetrievedContext")))
+    patterns = [node for node in retrieval_tree.body if isinstance(node, ast.Assign) and any(
+        isinstance(target, ast.Name) and target.id == "WORD_PATTERN" for target in node.targets)] if retrieval_tree else []
     expected_retrieve = [
         "query_embedding = embedder.embed(query)",
         "scored: list[tuple[float, str, int, str, RetrievedContext]] = []",
@@ -474,32 +472,29 @@ def check_retrieval_strategy_v1_parity(root: Path, failures: list[str]) -> None:
         "for _score, _approved_at, _chunk_index, _chunk_id, context in ranked:\n    if per_document_counts[context.chunk.document_id] >= RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT:\n        continue\n    selected.append(context)\n    per_document_counts[context.chunk.document_id] += 1\n    if len(selected) == top_k:\n        break",
         "return selected",
     ]
-    expected_score = [
-        "cosine = _cosine_similarity(query_embedding, embedding)",
-        "query_terms = set(WORD_PATTERN.findall(query.lower()))",
-        "text_terms = set(WORD_PATTERN.findall(text.lower()))",
-        "if not query_terms:\n    return cosine",
-        "lexical_overlap = len(query_terms & text_terms) / len(query_terms)",
-        "return min(1.0, cosine + lexical_overlap * 0.25)",
-    ]
-    if retrieve is None or score is None or reverse is None:
-        selection_ok = False
-    else:
-        selection_ok = ([ast.unparse(node) for node in retrieve.body] == expected_retrieve
-                        and [arg.arg for arg in retrieve.args.kwonlyargs]
-                        == ["store", "embedder", "tenant_id", "project_id", "query", "top_k", "min_score"]
-                        and [ast.unparse(node) for node in score.body] == expected_score
-                        and [ast.unparse(node) for node in reverse.body]
-                        == ["return tuple((-ord(char) for char in value))"])
+    expected_score = ["cosine = _cosine_similarity(query_embedding, embedding)", "query_terms = set(WORD_PATTERN.findall(query.lower()))", "text_terms = set(WORD_PATTERN.findall(text.lower()))", "if not query_terms:\n    return cosine", "lexical_overlap = len(query_terms & text_terms) / len(query_terms)", "return min(1.0, cosine + lexical_overlap * 0.25)"]
+    expected_cosine = ["if not left or not right or len(left) != len(right):\n    return 0.0",
+                       "return sum((left_value * right_value for left_value, right_value in zip(left, right, strict=True)))"]
+    selection_ok = bool(retrieve and cosine and score and reverse and retrieval_imports_ok
+        and retrieval_bindings.count("WORD_PATTERN") == len(patterns) == 1
+        and ast.unparse(patterns[0].value) == "re.compile('[a-z0-9]+')"
+        and [ast.unparse(node) for node in retrieve.body] == expected_retrieve
+        and [arg.arg for arg in retrieve.args.kwonlyargs] == ["store", "embedder", "tenant_id", "project_id", "query", "top_k", "min_score"]
+        and [ast.unparse(node) for node in cosine.body] == expected_cosine
+        and [ast.unparse(node) for node in score.body] == expected_score
+        and [ast.unparse(node) for node in reverse.body] == ["return tuple((-ord(char) for char in value))"])
     if not selection_ok:
         fail(RETRIEVAL_V1_SELECTION_ERROR, failures)
 
     stage4_tree = trees["backend/app/stage4.py"]
     classes = ([node for node in stage4_tree.body if isinstance(node, ast.ClassDef)
                 and node.name == "Stage4Service"] if stage4_tree else [])
-    methods = ([node for node in classes[0].body if isinstance(node, ast.FunctionDef)
-                and node.name == "_generate_walkthrough_once"] if len(classes) == 1 else [])
-    method = methods[0] if len(methods) == 1 else None
+    stage4_bindings_ok = bool(
+        stage4_tree and _imports_once(stage4_tree, "backend.app.rag.models", tuple(expected_constants))
+        and _imports_once(stage4_tree, "backend.app.rag.retrieval", ("retrieve_context",)))
+    class_ok = (len(classes) == 1 and not classes[0].decorator_list
+                and _bound_names(stage4_tree).count("Stage4Service") == 1) if stage4_tree else False
+    method = _unique_function(classes[0], "_generate_walkthrough_once") if class_ok else None
     class_constants = ([node for node in classes[0].body if isinstance(node, ast.Assign)
                         and any(isinstance(target, ast.Name)
                                 and target.id == "WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL"
@@ -509,7 +504,9 @@ def check_retrieval_strategy_v1_parity(root: Path, failures: list[str]) -> None:
     generators = [node for node in calls if _call_name(node) == "generate_script"]
     refusal_ifs = [node for node in ast.walk(method) if isinstance(node, ast.If)
                    and ast.unparse(node.test) == "not retrieved"] if method else []
-    refusal_ok = len(class_constants) == len(retrieve_calls) == len(generators) == len(refusal_ifs) == 1
+    refusal_ok = (stage4_bindings_ok and len(class_constants) == len(retrieve_calls)
+                  == len(generators) == len(refusal_ifs) == 1
+                  and _bound_names(classes[0]).count("WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL") == 1)
     if refusal_ok:
         retrieval_keywords = {item.arg: ast.unparse(item.value) for item in retrieve_calls[0].keywords}
         refusal = refusal_ifs[0]
@@ -521,7 +518,7 @@ def check_retrieval_strategy_v1_parity(root: Path, failures: list[str]) -> None:
         builder_keywords = ({item.arg: ast.unparse(item.value) for item in builders[0].keywords}
                             if len(builders) == 1 else {})
         refusal_ok = (
-            ast.literal_eval(class_constants[0].value) == "LOW_RETRIEVAL_CONFIDENCE"
+            ast.unparse(class_constants[0].value) == "'LOW_RETRIEVAL_CONFIDENCE'"
             and retrieval_keywords == {"store": "self.rag_store", "embedder": "self.embedder",
                                        "tenant_id": "principal.tenant_id", "project_id": "project_id",
                                        "query": "retrieval_query", "top_k": "RETRIEVAL_TOP_K",

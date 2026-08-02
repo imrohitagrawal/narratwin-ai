@@ -1,6 +1,6 @@
 from __future__ import annotations
 # ruff: noqa: E302, E305, E701, E702
-import hashlib; import importlib.util; import json; import subprocess
+import importlib.util; import json; import subprocess
 from pathlib import Path; from types import ModuleType; from typing import Any, Mapping, Sequence
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
@@ -167,12 +167,86 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
             assert ["git", "merge-base", "origin/main", "head"] in calls
             for args in diffs:
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
-def test_legacy_route_allowlists_remain_exact() -> None:
-    source = stage8.PROCESS_BRANCH_ALLOWED_FILES
-    branches = (stage8.ISSUE84_GUARDRAIL_BRANCH, stage8.ISSUE287_STAGE8_DRIFT_BRANCH,
-                stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH); policy = {b: sorted(source[b]) for b in branches}
-    encoded = json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
-    assert hashlib.sha256(encoded).hexdigest() == "95bbea6ae7294e5db03ed5c62caae3b74a7aff8c8f12aef5efe134b15a585117"
+def test_issue84_guardrail_branch_allows_process_guardrail_files(monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE84_GUARDRAIL_BRANCH)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: [
+            "docs/STATUS.md",
+            "scripts/guardrails_check.py",
+            "scripts/quality/check_stage8_docs.py",
+            "tests/unit/test_guardrails_check.py",
+            "tests/unit/test_stage8_quality_gate.py",
+        ])
+    failures: list[str] = []
+    stage8.check_stage_marker_and_branch(failures)
+    stage8.check_stage_scope(failures)
+    assert failures == []
+def test_issue84_guardrail_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE84_GUARDRAIL_BRANCH)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["backend/app/stage4.py"])
+    failures: list[str] = []; stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: backend/app/stage4.py"]
+def test_issue287_stage8_drift_branch_allows_only_governance_gate_files(monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: sorted(
+            {
+                "docs/governance/preflights/issue-287.json",
+                "docs/QUALITY_GATES.md",
+                "docs/STAGE_ISSUE_PLAN.md",
+                "docs/STATUS.md",
+                "scripts/quality/check_phase1_closure_docs.py",
+                "scripts/quality/check_stage8_docs.py",
+                "tests/unit/test_phase1_closure_docs.py",
+                "tests/unit/test_stage8_quality_gate.py",
+            }
+        ),
+    )
+    failures: list[str] = []
+    stage8.check_stage_marker_and_branch(failures)
+    stage8.check_stage_scope(failures)
+    assert failures == []
+def test_issue287_stage8_drift_branch_rejects_dependency_files(monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["frontend/package-lock.json"])
+    failures: list[str] = []; stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: frontend/package-lock.json"]
+def test_issue289_security_unblock_branch_allows_combined_dependency_and_gate_files(monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: sorted(
+            {
+                "docs/governance/preflights/issue-289.json",
+                "docs/QUALITY_GATES.md",
+                "docs/STAGE_ISSUE_PLAN.md",
+                "docs/STATUS.md",
+                "docs/ADR/0037-postcss-audit-remediation.md",
+                "docs/TRACEABILITY.md",
+                "docs/THIRD_PARTY_NOTICES.md",
+                "frontend/package.json",
+                "frontend/package-lock.json",
+                "scripts/quality/check_phase1_closure_docs.py",
+                "scripts/quality/check_stage8_docs.py",
+                "tests/unit/test_phase1_closure_docs.py",
+                "tests/unit/test_stage8_quality_gate.py",
+            }
+        ),
+    )
+
+    failures: list[str] = []
+    stage8.check_stage_marker_and_branch(failures)
+    stage8.check_stage_scope(failures)
+
+    assert failures == []
+def test_issue289_security_unblock_branch_rejects_runtime_product_files(monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["backend/app/main.py"])
+
+    failures: list[str] = []; stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: backend/app/main.py"]
 def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
     failures: list[str] = []; stage8.check_dependencies_and_scripts(failures)
     assert not [failure for failure in failures if "docker scout cves" in failure]
@@ -206,7 +280,8 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
     low = 'status="REFUSED",\n' + " " * 28 + "failure_reason=self.WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL,"
     changes: dict[str, tuple[tuple[Any, ...], ...]] = {
         MODELS: tuple((f"RETRIEVAL_{name} = {old}", f"RETRIEVAL_{name} = {new}") for name, old, new in model) +
-                (("RETRIEVAL_TOP_K = 6", "RETRIEVAL_TOP_K = 6\nRETRIEVAL_TOP_K = 7"),),
+                tuple(("RETRIEVAL_TOP_K = 6", "RETRIEVAL_TOP_K = 6\n" + suffix) for suffix in
+                      ("RETRIEVAL_TOP_K = 7", "RETRIEVAL_TOP_K += 1", "RETRIEVAL_TOP_K: int = 7")),
         RETRIEVAL: (("if score >= min_score:", "if score > min_score:"), ("if score >= min_score:", "if True:"),
             ("    ranked =", "    scored += [(min_score, '', 0, '', None)]\n    ranked ="),
             ("RetrievedContext(context_ref_id, chunk, score)", "RetrievedContext(context_ref_id, chunk, min_score)"),
@@ -215,14 +290,23 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
             ("item[2]", "'wrong'"), ("item[3]", "'wrong'"),
             (">= RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT:", "> RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT:"),
             ("context.chunk.document_id", "context.chunk.chunk_id", 2),
-            ("return min(1.0, cosine + lexical_overlap * 0.25)", "return min(1.0, cosine)")),
+            ("return min(1.0, cosine + lexical_overlap * 0.25)", "return min(1.0, cosine)"),
+            ("from backend.app.rag.models import RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT, RetrievedContext",
+             "from backend.app.rag.models import RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT, RetrievedContext\nRETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = 6"),
+            ("def _cosine_similarity(left: tuple[float, ...], right: tuple[float, ...]) -> float:\n",
+             "def _cosine_similarity(left: tuple[float, ...], right: tuple[float, ...]) -> float:\n    return 1.0\n"),
+            ("def retrieve_context(\n", "@staticmethod\ndef retrieve_context(\n"),
+            ("def _cosine_similarity(", "retrieve_context = lambda **kwargs: []\n\ndef _cosine_similarity(")),
         STAGE4: ((prefix + "top_k=RETRIEVAL_TOP_K,", prefix + "top_k=7,"),
             ('WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL = "LOW_RETRIEVAL_CONFIDENCE"',
              'WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL = "LOW_CONFIDENCE"'),
             ("                    if not retrieved:\n", "                    if False and not retrieved:\n"),
-            (low, low.replace("REFUSED", "FAILED"))),
+            (low, low.replace("REFUSED", "FAILED")),
+            ("from backend.app.rag.retrieval import retrieve_context",
+             "from backend.app.rag.retrieval import retrieve_context\nRETRIEVAL_TOP_K = 7")),
         ARCH: (("`topK = 6`", "`topK = 7`"), ("`min_retrieved_chunks = 1`", "`min_retrieved_chunks = 0`"),
-               ("`min_distinct_documents = 1`", "`min_distinct_documents = 0`")),
+               ("`min_distinct_documents = 1`", "`min_distinct_documents = 0`"),
+               ("## Provider Adapter Contract", "## Provider Adapter Contract\n\n## Retrieval Strategy v1\n\n- `topK = 7`")),
         ADR: (("`topK = 6`", "`topK = 7`"),),
         DECL: (('    "maximumChunksPerDocument": 3,\n', ""),
                ('"maximumChunksPerDocument": 3', '"maximumChunksPerDocument": true'),

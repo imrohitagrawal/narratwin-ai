@@ -71,7 +71,7 @@ deployment, release, or production-readiness boundary.
 
 ## A2.2 Machine Contract Parity Enforcement
 
-Issue #349 adds only `maxChunksPerDocument = 3` to the Stage 2 machine
+Issue #349 adds only `maximumChunksPerDocument = 3` to the Stage 2 machine
 declaration. A fixed oracle derived from this decision and Architecture checks
 the complete declaration and statically verifies the active runtime selection,
 ranking, tenant/project scope, computed scores, and terminal refusal flow.
