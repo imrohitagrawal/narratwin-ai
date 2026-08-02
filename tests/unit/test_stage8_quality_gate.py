@@ -9,6 +9,8 @@ from typing import Any
 
 import pytest
 
+from scripts.guardrails_check import canonical_stage_issue
+
 
 TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
@@ -41,6 +43,15 @@ def load_stage8_quality_module() -> ModuleType:
 
 
 stage8: Any = load_stage8_quality_module()
+
+
+def load_quality_dispatcher_module() -> ModuleType:
+    module_path = Path(__file__).parents[2] / "scripts" / "quality" / "check_quality_stage.py"
+    spec = importlib.util.spec_from_file_location("quality_dispatcher_under_test", module_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def git(repo: Path, *args: str) -> str:
@@ -81,6 +92,30 @@ def test_exact_cut1_branch_uses_literal_allowlist(
     stage8.check_stage_scope(failures)
 
     assert failures == []
+
+
+@pytest.mark.parametrize("branch", (TRANSITION_BRANCH, ISSUE335_BRANCH))
+def test_exact_cut1_branch_dispatches_stage8_without_issue13_binding(
+    monkeypatch: Any, tmp_path: Path, branch: str
+) -> None:
+    dispatcher: Any = load_quality_dispatcher_module()
+    stage = tmp_path / "current"
+    status = tmp_path / "STATUS.md"
+    stage.write_text("8\n", encoding="utf-8")
+    status.write_text(
+        "| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n",
+        encoding="utf-8",
+    )
+    calls: list[list[str]] = []
+    monkeypatch.setattr(dispatcher, "CURRENT_STAGE", stage)
+    monkeypatch.setattr(dispatcher, "STATUS_DOC", status)
+    monkeypatch.setattr(dispatcher, "current_branch", lambda: branch)
+    monkeypatch.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)
+    monkeypatch.setattr(dispatcher.subprocess, "call", lambda args, cwd: calls.append(args) or 0)
+
+    assert dispatcher.main() == 0
+    assert calls == [["make", "stage8-quality"]]
+    assert canonical_stage_issue(branch) is None
 
 
 @pytest.mark.parametrize(
@@ -144,7 +179,9 @@ def test_exact_cut1_route_rejects_seventh_path(
     assert failures == [f"Stage 8 changed file outside the allowlist: {extra}"]
 
 
-def test_transition_preflight_is_supporting_evidence_not_policy_input(tmp_path: Path) -> None:
+def test_transition_preflight_is_supporting_evidence_not_policy_input(
+    monkeypatch: Any,
+) -> None:
     artifact = json.loads(
         (Path(__file__).parents[2] / "docs/governance/preflights/issue-346.json").read_text(
             encoding="utf-8"
@@ -152,12 +189,16 @@ def test_transition_preflight_is_supporting_evidence_not_policy_input(tmp_path: 
     )
     assert artifact["branch"] == TRANSITION_BRANCH
     assert set(artifact["scope"]["required"]) == TRANSITION_FILES
+    real_read_text = Path.read_text
 
-    artifact["scope"]["required"].append("backend/app/stage4.py")
-    mutated = tmp_path / "issue-346.json"
-    mutated.write_text(json.dumps(artifact), encoding="utf-8")
+    def reject_policy_read(path: Path, *args: Any, **kwargs: Any) -> str:
+        if path.name in {"issue-346.json", "issue-335.json"}:
+            raise AssertionError("Cut 1 policy must not load mutable preflight scope")
+        return real_read_text(path, *args, **kwargs)
 
-    assert stage8.PROCESS_BRANCH_ALLOWED_FILES[TRANSITION_BRANCH] == TRANSITION_FILES
+    monkeypatch.setattr(Path, "read_text", reject_policy_read)
+    reloaded: Any = load_stage8_quality_module()
+    assert reloaded.PROCESS_BRANCH_ALLOWED_FILES[TRANSITION_BRANCH] == TRANSITION_FILES
 
 
 @pytest.mark.parametrize(
@@ -165,8 +206,8 @@ def test_transition_preflight_is_supporting_evidence_not_policy_input(tmp_path: 
     (
         ("M\0path with\nnewline\0", ["path with\nnewline"]),
         ("D\0deleted.txt\0", ["deleted.txt"]),
-        ("R100\0old.txt\0new.txt\0", ["old.txt", "new.txt"]),
-        ("C100\0source.txt\0copy.txt\0", ["source.txt", "copy.txt"]),
+        ("R087\0old.txt\0new.txt\0", ["old.txt", "new.txt"]),
+        ("C064\0source.txt\0copy.txt\0", ["source.txt", "copy.txt"]),
     ),
 )
 def test_name_status_parser_preserves_all_paths(payload: str, expected: list[str]) -> None:
@@ -214,7 +255,7 @@ def test_scope_collection_includes_committed_cached_unstaged_and_untracked(
     monkeypatch: Any, tmp_path: Path
 ) -> None:
     init_repo(tmp_path)
-    for path in ("cached.txt", "unstaged.txt", "cancelled.txt"):
+    for path in ("cached-source.txt", "unstaged-source.txt", "cancelled.txt"):
         write(tmp_path, path, "original\n")
     git(tmp_path, "add", ".")
     git(tmp_path, "commit", "-m", "tracked fixtures")
@@ -222,23 +263,24 @@ def test_scope_collection_includes_committed_cached_unstaged_and_untracked(
     write(tmp_path, "committed.txt", "committed\n")
     git(tmp_path, "add", ".")
     git(tmp_path, "commit", "-m", "feature")
-    write(tmp_path, "cached.txt", "cached\n")
-    git(tmp_path, "add", "cached.txt")
-    write(tmp_path, "unstaged.txt", "unstaged\n")
+    git(tmp_path, "mv", "cached-source.txt", "cached-destination.txt")
+    (tmp_path / "unstaged-source.txt").rename(tmp_path / "unstaged-destination.txt")
     write(tmp_path, "cancelled.txt", "staged\n")
     git(tmp_path, "add", "cancelled.txt")
     write(tmp_path, "cancelled.txt", "original\n")
-    write(tmp_path, "untracked.txt", "untracked\n")
+    write(tmp_path, "untracked\nnewline.txt", "untracked\n")
     monkeypatch.setattr(stage8, "ROOT", tmp_path)
     monkeypatch.delenv("GITHUB_BASE_SHA", raising=False)
     monkeypatch.delenv("GITHUB_HEAD_SHA", raising=False)
 
     assert stage8.changed_files_for_stage_scope() == [
-        "cached.txt",
+        "cached-destination.txt",
+        "cached-source.txt",
         "cancelled.txt",
         "committed.txt",
-        "unstaged.txt",
-        "untracked.txt",
+        "unstaged-destination.txt",
+        "unstaged-source.txt",
+        "untracked\nnewline.txt",
     ]
 
 
@@ -259,12 +301,18 @@ def test_scope_collection_includes_rename_and_copy_sources_and_destinations(
     monkeypatch.delenv("GITHUB_BASE_SHA", raising=False)
     monkeypatch.delenv("GITHUB_HEAD_SHA", raising=False)
 
-    assert set(stage8.changed_files_for_stage_scope()) == {
+    paths = stage8.changed_files_for_stage_scope()
+    assert set(paths) == {
         "forbidden/rename-source.txt",
         "rename-destination.txt",
         "forbidden/copy-source.txt",
         "copy-destination.txt",
     }
+    monkeypatch.setattr(stage8, "current_branch", lambda: TRANSITION_BRANCH)
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert "Stage 8 changed file outside the allowlist: forbidden/rename-source.txt" in failures
+    assert "Stage 8 changed file outside the allowlist: forbidden/copy-source.txt" in failures
 
 
 def test_scope_collection_rejects_wrong_exact_head(monkeypatch: Any, tmp_path: Path) -> None:
@@ -280,26 +328,30 @@ def test_scope_collection_rejects_wrong_exact_head(monkeypatch: Any, tmp_path: P
         stage8.changed_files_for_stage_scope()
 
 
-@pytest.mark.parametrize("failed_layer", ("committed", "cached", "unstaged", "untracked"))
+@pytest.mark.parametrize(
+    "failed_layer", ("rev-parse", "merge-base", "committed", "cached", "unstaged", "untracked")
+)
 def test_scope_collection_rejects_partial_git_evidence(
     monkeypatch: Any, failed_layer: str
 ) -> None:
     def fake_run(args: list[str]) -> subprocess.CompletedProcess[str]:
-        command = " ".join(args)
         if args[:2] == ["git", "rev-parse"]:
-            return subprocess.CompletedProcess(args, 0, "head\n", "")
-        if args[:2] == ["git", "merge-base"]:
-            return subprocess.CompletedProcess(args, 0, "base\n", "")
-        layer = (
-            "untracked"
-            if "ls-files" in args
-            else "cached"
-            if "--cached" in args
-            else "committed"
-            if "base..head" in command
-            else "unstaged"
+            layer = "rev-parse"
+            output = "head\n"
+        elif args[:2] == ["git", "merge-base"]:
+            layer = "merge-base"
+            output = "base\n"
+        elif "ls-files" in args:
+            layer, output = "untracked", ""
+        elif "--cached" in args:
+            layer, output = "cached", ""
+        elif any(".." in arg for arg in args):
+            layer, output = "committed", ""
+        else:
+            layer, output = "unstaged", ""
+        return subprocess.CompletedProcess(
+            args, 1 if layer == failed_layer else 0, output, "failed"
         )
-        return subprocess.CompletedProcess(args, 1 if layer == failed_layer else 0, "", "failed")
 
     monkeypatch.setattr(stage8, "run", fake_run)
     monkeypatch.setenv("GITHUB_BASE_SHA", "base")
@@ -307,6 +359,25 @@ def test_scope_collection_rejects_partial_git_evidence(
 
     with pytest.raises(RuntimeError, match="failed"):
         stage8.changed_files_for_stage_scope()
+
+
+def test_all_tracked_scope_layers_use_nul_rename_copy_flags(monkeypatch: Any) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        output = "head\n" if "rev-parse" in args else "base\n" if "merge-base" in args else ""
+        return subprocess.CompletedProcess(args, 0, output, "")
+
+    monkeypatch.setattr(stage8, "run", fake_run)
+    monkeypatch.setenv("GITHUB_BASE_SHA", "base")
+    monkeypatch.setenv("GITHUB_HEAD_SHA", "head")
+    stage8.changed_files_for_stage_scope()
+
+    diffs = [args for args in calls if args[:2] == ["git", "diff"]]
+    assert len(diffs) == 3
+    for args in diffs:
+        assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
 
 
 def test_issue84_guardrail_branch_allows_process_guardrail_files(monkeypatch: Any) -> None:
