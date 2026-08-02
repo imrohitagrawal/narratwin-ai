@@ -16,7 +16,8 @@ marker remains `.stage/current = 8`. Ordinary Stage 8 branches dispatch to the
 Stage 8 gate. Final Review and Phase 1 Closure branches override that marker by
 branch prefix and dispatch to their dedicated governance gates.
 When `docs/STATUS.md` StatusStateV1 records `SSV1-MODE` as `phase1-closure`, plain local `make quality` on `main` dispatches the Phase 1 Closure gate.
-Product behavior outside approved Phase 1 closure remediation remains blocked.
+Product behavior remains blocked except for an exact owner-authorized Stage 8
+Cut 1 route described below.
 
 ### Cut 1 Stage 8 Transition
 
@@ -24,9 +25,15 @@ Issue `#346` admits only `cut1-process-346-governance-transition` and
 `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` through the normal Stage 8/full-CI
 route. `SSV1-MODE` and `phase-1-closure-*` remain compatibility routing only;
 they cannot route new Cut 1 product work. Scope output is supporting evidence,
-not authorization: exact-head merge-base review includes rename/copy sources and
-destinations, and existing trusted CI, non-author approval, and confirmed merge
-wording remain mandatory. Agent-context remains `SHADOW_ONLY`.
+not authorization. A non-main push ignores the previous-push `before` SHA and
+collects the complete branch from `merge-base(origin/main, exact-head)`; PR and
+review events keep their explicit base. The checker binds its checkout to the
+GitHub event's PR head or push `after` SHA when the workflow does not forward a
+custom head variable, and contradictory, malformed, missing, or stale head
+evidence fails closed. Exact merge-base review includes rename/copy sources and
+destinations. Existing trusted CI, non-author approval, and confirmed merge
+wording remain mandatory. Local scope output without live GitHub evidence is
+supporting evidence only. Agent-context remains `SHADOW_ONLY`.
 
 ## Required Make Targets
 
@@ -516,8 +523,8 @@ Unrelated local tests may continue. Local output and agent-authored receipts
 never substitute for the live checks, eligible review, or human merge-text
 confirmation. The frozen `StatusStateV1` check for `SSV1-NEXT` preserves a
 legacy compatibility row only; while A1.2 remains incomplete, its green result
-is not current routing evidence and cannot override the Issue `#332` recovery
-pointer.
+is not current routing evidence and cannot override the Issue `#346` to exact
+Issue `#335` Cut 1 recovery pointer.
 For stacked Phase 1 Closure chunk PRs whose reviewed base is another
 `phase-1-closure-*` branch, local evidence must run against that reviewed base:
 `GITHUB_BASE_SHA=<reviewed-prereq-head> make phase1-closure-quality` or
