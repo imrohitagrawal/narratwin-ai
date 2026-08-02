@@ -1,15 +1,12 @@
 from __future__ import annotations
 # ruff: noqa: E302, E305, E701, E702
-
 import importlib.util
 import json
 import subprocess
 from pathlib import Path
 from types import ModuleType
 from typing import Any
-
 import pytest
-
 from scripts.guardrails_check import canonical_stage_issue
 TRANSITION = "cut1-process-346-governance-transition"
 A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
@@ -118,20 +115,25 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request_review")
     event.write_text(json.dumps({"pull_request": {"head": {"sha": head}}}))
     assert required <= set(stage8.changed_files_for_stage_scope())
+    before = len(calls); monkeypatch.setenv("GITHUB_HEAD_SHA", first_head)
+    with pytest.raises(RuntimeError, match="contradicts"): stage8.changed_files_for_stage_scope()
+    assert calls[before:] == [["git", "rev-parse", "HEAD"]]; monkeypatch.delenv("GITHUB_HEAD_SHA")
     monkeypatch.setenv("GITHUB_EVENT_NAME", "push"); event.write_text(json.dumps({"after": head}))
     assert required <= set(stage8.changed_files_for_stage_scope()); event.write_text("{")
     with pytest.raises(RuntimeError, match="malformed or unavailable"): stage8.changed_files_for_stage_scope()
     monkeypatch.delenv("GITHUB_EVENT_PATH")
     with pytest.raises(RuntimeError, match="malformed or unavailable"): stage8.changed_files_for_stage_scope()
-def test_scope_parser_flags_and_command_failures(monkeypatch: Any) -> None:
+def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Path) -> None:
     assert stage8.parse_name_status_z("R087\0old\0new\0C064\0source\0copy\0") == ["old", "new", "source", "copy"]
     for malformed in ("R100\0old\0", "M\0path", "M\0\0", "Q\0path\0", "R101\0old\0new\0"):
         with pytest.raises(RuntimeError): stage8.parse_name_status_z(malformed)
     bad_bases = ("0" * 39, "0" * 41, "0" * 39 + "1", "invalid-explicit-base")
     layers = ("rev-parse", "merge-base", "committed", "cached", "unstaged", "untracked")
-    cases = [(None, "0" * 40), *((layer, "base") for layer in layers)]
-    cases += [("explicit-base", base) for base in bad_bases]
-    for failed, base in cases:
+    cases = [(None, "0" * 40, ""), *((layer, "base", "") for layer in layers)]
+    cases += [("explicit-base", base, ("pull_request" if index % 2 else "pull_request_review"))
+              for index, base in enumerate(bad_bases)]
+    event = tmp_path / "event.json"; event.write_text(json.dumps({"pull_request": {"head": {"sha": "head"}}}))
+    for failed, base, event_name in cases:
         calls: list[list[str]] = []
         def fake(args: list[str]) -> subprocess.CompletedProcess[str]:
             calls.append(args)
@@ -144,6 +146,7 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any) -> None:
             return subprocess.CompletedProcess(args, int(should_fail), output, "failed")
         monkeypatch.setattr(stage8, "run", fake); monkeypatch.setenv("GITHUB_BASE_SHA", base)
         monkeypatch.setenv("GITHUB_HEAD_SHA", "head")
+        monkeypatch.setenv("GITHUB_EVENT_NAME", event_name); monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
         if failed:
             with pytest.raises(RuntimeError, match="failed"): stage8.changed_files_for_stage_scope()
             if failed == "explicit-base":
@@ -190,16 +193,13 @@ def test_issue287_stage8_drift_branch_allows_only_governance_gate_files(monkeypa
             }
         ),
     )
-
     failures: list[str] = []
     stage8.check_stage_marker_and_branch(failures)
     stage8.check_stage_scope(failures)
-
     assert failures == []
 def test_issue287_stage8_drift_branch_rejects_dependency_files(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: stage8.ISSUE287_STAGE8_DRIFT_BRANCH)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: ["frontend/package-lock.json"])
-
     failures: list[str] = []; stage8.check_stage_scope(failures)
     assert failures == ["Stage 8 changed file outside the allowlist: frontend/package-lock.json"]
 def test_issue289_security_unblock_branch_allows_combined_dependency_and_gate_files(monkeypatch: Any) -> None:
