@@ -118,14 +118,15 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any) -> None:
                      "untracked" if "ls-files" in args else "cached" if "--cached" in args else
                      "committed" if any(".." in arg for arg in args) else "unstaged")
             output = "head\n" if layer == "rev-parse" else "base\n" if layer == "merge-base" else ""
-            return subprocess.CompletedProcess(args, int(layer == failed), output, "failed")
-        monkeypatch.setattr(stage8, "run", fake); monkeypatch.setenv("GITHUB_BASE_SHA", "base")
+            return subprocess.CompletedProcess(args, int(layer == failed or "0" * 40 in args), output, "failed")
+        monkeypatch.setattr(stage8, "run", fake); monkeypatch.setenv("GITHUB_BASE_SHA", "0" * 40 if failed is None else "base")
         monkeypatch.setenv("GITHUB_HEAD_SHA", "head")
         if failed:
             with pytest.raises(RuntimeError, match="failed"): stage8.changed_files_for_stage_scope()
         else:
             assert stage8.changed_files_for_stage_scope() == []
             diffs = [args for args in calls if args[:2] == ["git", "diff"]]; assert len(diffs) == 3
+            assert ["git", "merge-base", "origin/main", "head"] in calls
             for args in diffs:
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
 
