@@ -94,6 +94,10 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     ISSUE335_A2_1_BRANCH: {
         "docs/governance/preflights/issue-335.json", "tests/unit/test_retrieval_strategy_v1_contract.py",
         "backend/app/rag/models.py", "backend/app/stage4.py", "docs/API_CONTRACT.md", "docs/STATUS.md",
+        "tests/unit/test_local_durability.py", "backend/app/storage/local_restore_drill.py",
+        "tests/api/test_stage4_slice_api.py", "tests/api/test_stage6_multilingual_api.py", "docs/ADR/0002-rag-storage.md",
+        "docs/TRACEABILITY.md", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py",
+        "evals/smoke/stage5_grounded_script_dataset.json", "docs/EVAL_REPORT.md", "docs/STAGE_ISSUE_PLAN.md",
     },
     ISSUE84_GUARDRAIL_BRANCH: {
         "docs/STATUS.md",
