@@ -58,6 +58,17 @@ Stage 4 retrieval uses `stage4-rag-v1`:
 - refusal before generation with `EMPTY_CONTEXT`, `LOW_RETRIEVAL_CONFIDENCE`,
   `AMBIGUOUS_CONTEXT`, `CROSS_PROJECT_CONTEXT`, or `UNSAFE_CONTEXT`
 
+Issue #335 completes the A2.1 local/mock lineage contract for this strategy. Runs
+and evaluations persist the producing strategy version, `topK`, and threshold;
+API reads return that stored lineage rather than mutable runtime settings.
+Structurally valid stale-lineage rows remain audit-preserved but inactive: an
+exact replay returns public-safe `STALE_RETRIEVAL_LINEAGE`, a changed replay
+conflicts, and neither path reaches generation. Restored contexts must match the
+run's `tenant_id` and `project_id`; unrelated or unsafe rows are discarded. The
+runtime preserves deterministic ranking, the three-chunk document cap, and no
+synthetic below-threshold backfill. This decision changes no provider, media,
+deployment, release, or production-readiness boundary.
+
 ## Knowledge State Decision
 
 Vector records, retrieval caches, and generated-script caches are derived from
