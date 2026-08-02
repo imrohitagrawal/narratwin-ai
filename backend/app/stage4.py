@@ -612,7 +612,8 @@ class Stage4Service:
                 return False
         else:
             return False
-        if any(not self._restored_chunk_is_valid(context.chunk) for context in run.retrieved_context):
+        if any((context.chunk.tenant_id, context.chunk.project_id) != (run.tenant_id, run.project_id)
+               or not self._restored_chunk_is_valid(context.chunk) for context in run.retrieved_context):
             return False
         if any(
             not self.rag_store.has_chunk(
@@ -690,9 +691,7 @@ class Stage4Service:
             "ingestionRuns": deepcopy(self.ingestion_runs),
             "walkthroughRuns": deepcopy(self.walkthrough_runs),
             "idempotencyRecords": deepcopy(self.idempotency_records),
-            "quarantinedWalkthroughRuns": deepcopy(self._quarantined_walkthrough_rows),
-            "quarantinedIdempotencyRecords": deepcopy(self._quarantined_idempotency_rows),
-            "staleIdempotency": deepcopy(self._stale_idempotency),
+            "quarantinedWalkthroughRuns": deepcopy(self._quarantined_walkthrough_rows), "quarantinedIdempotencyRecords": deepcopy(self._quarantined_idempotency_rows), "staleIdempotency": deepcopy(self._stale_idempotency),
             "activeIngestions": deepcopy(self._active_ingestions),
             "activeGenerations": deepcopy(self._active_generations),
             "counters": {
@@ -1737,8 +1736,7 @@ def evaluation_from_dict(row: dict[str, Any]) -> EvaluationResult:
         policy_version=str(row["policy_version"]),
         schema_version=str(row["schema_version"]),
         safety_policy_version=str(row["safety_policy_version"]),
-        retrieval_strategy_version=row.get("retrieval_strategy_version"), retrieval_top_k=row.get("retrieval_top_k"),
-        retrieval_score_threshold=row.get("retrieval_score_threshold"),
+        retrieval_strategy_version=row.get("retrieval_strategy_version"), retrieval_top_k=row.get("retrieval_top_k"), retrieval_score_threshold=row.get("retrieval_score_threshold"),
     )
 
 
