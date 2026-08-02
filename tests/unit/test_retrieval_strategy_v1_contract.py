@@ -18,10 +18,8 @@ from backend.app.stage4 import LocalPrincipal, Stage4Service, walkthrough_to_api
 
 V1 = ("stage4-rag-v1", 6, 0.72, 3)
 STALE_MESSAGE = "Stored walkthrough cannot be replayed because its retrieval lineage is stale or unavailable."
-REQUEST = dict(
-    audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT",
-    prompt="Create a concise grounded walkthrough for a recruiter.",
-)
+REQUEST = {"audience": "RECRUITER", "requested_language": "en", "depth": "CONCISE", "style": "CONFIDENT",
+           "prompt": "Create a concise grounded walkthrough for a recruiter."}
 
 
 class Embedder:
@@ -61,12 +59,10 @@ def seed(path: Path) -> tuple[Stage4Service, LocalPrincipal, str]:
         principal=principal, project_id=project.project_id, source_filename="stage4_project.md",
         content_type="text/markdown", data=Path("tests/fixtures/stage4_project.md").read_bytes(), idempotency_key="d",
     )
-    service.approve_document(
-        principal=principal, project_id=project.project_id, document_id=document.document_id, idempotency_key="a",
-    )
-    service.ingest_documents(
-        principal=principal, project_id=project.project_id, document_ids=[document.document_id], idempotency_key="i",
-    )
+    service.approve_document(principal=principal, project_id=project.project_id,
+                             document_id=document.document_id, idempotency_key="a")
+    service.ingest_documents(principal=principal, project_id=project.project_id,
+                             document_ids=[document.document_id], idempotency_key="i")
     run = service.generate_walkthrough(principal=principal, project_id=project.project_id, idempotency_key="walk", **REQUEST)
     assert run.status == "COMPLETED"
     return service, principal, project.project_id
@@ -88,7 +84,9 @@ def canonical_payload(path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[
 def mutate(payload: dict[str, Any], case: str) -> None:
     run, evaluation = payload["walkthroughRuns"][0], payload["walkthroughRuns"][0]["evaluation"]
     names = ("retrieval_strategy_version", "retrieval_top_k", "retrieval_score_threshold")
-    if case in {"both_missing", "run_missing", "evaluation_missing"}:
+    if case == "malformed":
+        run["audience"] = True
+    elif case in {"both_missing", "run_missing", "evaluation_missing"}:
         targets = (run, evaluation) if case == "both_missing" else (run,) if case == "run_missing" else (evaluation,)
         for target in targets:
             for name in names if case == "both_missing" else names[:1]:
@@ -196,16 +194,13 @@ def test_new_lineage_survives_restart_and_global_mutation(tmp_path: Path, monkey
 @pytest.mark.parametrize("case", [
     "both_missing", "run_missing", "evaluation_missing", "mismatch", "topk7", "bool_topk",
     "threshold60", "bool_threshold", "nan", "positive_inf", "negative_inf", "wrong_version",
-    "low_score", "bool_score", "infinite_score",
-])
-def test_stale_lineage_is_preserved_but_inactive_twice(case: str, tmp_path: Path) -> None:
+    "low_score", "bool_score", "infinite_score", "malformed"])
+def test_stale_lineage_is_preserved_but_inactive_twice(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     path = tmp_path / f"{case}.json"
-    _, _, project_id = seed(path)
+    _, principal, project_id = seed(path)
     payload, _, _ = canonical_payload(path)
     mutate(payload, case)
-    expected_run = deepcopy(payload["walkthroughRuns"][0])
-    expected_idem = next(row for row in payload["idempotencyRecords"] if row["idempotency_key"] == "walk")
-    expected = tuple(json.dumps(row, sort_keys=True, separators=(",", ":")) for row in (expected_run, expected_idem))
+    expected = tuple(json.dumps(row, sort_keys=True, separators=(",", ":")) for row in (deepcopy(payload["walkthroughRuns"][0]), next(row for row in payload["idempotencyRecords"] if row["idempotency_key"] == "walk")))
     path.write_text(json.dumps(payload))
     for _ in range(2):
         restored = Stage4Service(state_path=path)
@@ -214,6 +209,12 @@ def test_stale_lineage_is_preserved_but_inactive_twice(case: str, tmp_path: Path
         assert not any(record.idempotency_key == "walk" for record in restored.idempotency_records.values())
         assert persisted["walkthroughRuns"] == []
         assert not any(row["idempotency_key"] == "walk" for row in persisted["idempotencyRecords"])
+        if case == "malformed":
+            assert not persisted.get("quarantinedWalkthroughRuns") and not persisted.get("quarantinedIdempotencyRecords")
+            monkeypatch.setattr(stage4, "retrieve_context", lambda **_kw: [])
+            assert restored.generate_walkthrough(principal=principal, project_id=project_id,
+                                                  idempotency_key="walk", **REQUEST).status == "REFUSED"
+            return
         actual = (persisted["quarantinedWalkthroughRuns"][0], persisted["quarantinedIdempotencyRecords"][0])
         assert tuple(json.dumps(row, sort_keys=True, separators=(",", ":")) for row in actual) == expected
 
