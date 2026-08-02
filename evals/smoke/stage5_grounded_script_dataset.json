@@ -16,7 +16,7 @@
     "requestedLanguage": "en",
     "depth": "CONCISE",
     "style": "CONFIDENT",
-    "prompt": "Create a concise grounded walkthrough for a recruiter."
+    "prompt": "Explain how NarraTwin AI turns approved project knowledge into grounded walkthrough scripts, supports recruiters hiring managers engineers product leaders customers beginners and global audiences with audience-aware explanations, and ensures every generated walkthrough claim cites retrieved source chunks from approved knowledge."
   },
   "unsupportedClaimCases": [
     {
