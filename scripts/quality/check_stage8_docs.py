@@ -24,6 +24,7 @@ ISSUE289_SECURITY_UNBLOCK_BRANCH = "phase-1-closure-process-289-security-postcss
 ISSUE324_PUBLICATION_BRANCH = "phase-1-closure-process-324-publication-boundary-v2"
 ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
+NULL_GIT_SHA = "0" * 40
 
 
 def issue324_allowed_files() -> set[str]:
@@ -166,7 +167,7 @@ def changed_files_for_stage_scope() -> list[str]:
             raise RuntimeError("Stage 8 scope checkout does not match the exact head.")
 
     preferred_base = os.environ.get("GITHUB_BASE_SHA", "").strip()
-    base_candidates = [preferred_base] if preferred_base else ["origin/main", "main"]
+    base_candidates = [preferred_base] if preferred_base and preferred_base != NULL_GIT_SHA else ["origin/main", "main"]
     merge_base = ""
     last_error = ""
     for candidate in base_candidates:
