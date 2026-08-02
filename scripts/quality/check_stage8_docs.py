@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.quality.branch_identity import current_branch  # noqa: E402
+from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
 
 
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
@@ -24,6 +25,7 @@ ISSUE289_SECURITY_UNBLOCK_BRANCH = "phase-1-closure-process-289-security-postcss
 ISSUE324_PUBLICATION_BRANCH = "phase-1-closure-process-324-publication-boundary-v2"
 ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
+ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 NULL_GIT_SHA = "0" * 40
 
 
@@ -97,6 +99,11 @@ PROCESS_BRANCH_ALLOWED_FILES = {
         "tests/unit/test_stage8_quality_gate.py", "docs/EVAL_REPORT.md", "docs/STAGE_ISSUE_PLAN.md",
         "evals/smoke/stage5_grounded_script_dataset.json", "scripts/ci/heartbeat2_evidence.py",
         "tests/unit/test_phase1_closure_docs.py", "scripts/quality/phase1_closure/legacy.py"},
+    ISSUE349_A2_2_BRANCH: {
+        "docs/governance/preflights/issue-349.json", "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+        "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
+        "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md"},
     ISSUE84_GUARDRAIL_BRANCH: {
         "docs/STATUS.md",
         "scripts/guardrails_check.py",
@@ -479,6 +486,7 @@ def check_docs(failures: list[str]) -> None:
 def main() -> int:
     failures: list[str] = []
     check_required_files(failures)
+    check_retrieval_strategy_v1_parity(ROOT, failures)
     if not failures:
         check_stage_marker_and_branch(failures)
         check_stage_scope(failures)

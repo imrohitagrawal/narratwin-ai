@@ -69,6 +69,16 @@ runtime preserves deterministic ranking, the three-chunk document cap, and no
 synthetic below-threshold backfill. This decision changes no provider, media,
 deployment, release, or production-readiness boundary.
 
+## A2.2 Machine Contract Parity Enforcement
+
+Issue #349 adds only `maxChunksPerDocument = 3` to the Stage 2 machine
+declaration. A fixed oracle derived from this decision and Architecture checks
+the complete declaration and statically verifies the active runtime selection,
+ranking, tenant/project scope, computed scores, and terminal refusal flow.
+Stage 2 and Stage 8 both execute that oracle. Runtime or declaration drift,
+including paired weakening, fails without importing or executing product code.
+This enforcement changes no retrieval semantics or runtime behavior.
+
 ## Knowledge State Decision
 
 Vector records, retrieval caches, and generated-script caches are derived from

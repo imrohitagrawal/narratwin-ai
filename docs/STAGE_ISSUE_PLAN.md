@@ -544,6 +544,10 @@ preflight and the Stage 8 checker/test. Owner comments `5158609698`,
 `5158848442`, `5159267478`, and `5159543127` authorize the bounded runtime, fixture/oracle,
 evaluation-evidence, documentation, and controlled Heartbeat 2 repairs inside
 the exact 22-path, 650-charged-line preflight authority, including the one-time reviewed legacy receipt rotation and ADR `0047` amendment. Near-match branches inherit no scope.
+Issue `#349` uses exact branch `cut1-349-r0c-a2-2-machine-contract-parity` for
+the nine-path, 500-charged-line A2.2 machine-contract parity package. Its fixed
+source oracle, Stage 2 checker, Stage 8 invocation, and mutation tests detect
+independent or paired drift without changing retrieval runtime semantics.
 Issues and stopped implementations `#336`–`#345` remain forensic-only. Non-main push validation uses
 the complete `origin/main` merge-base-to-exact-head candidate rather than the
 latest push delta. PR/review validation keeps the reviewed base and binds the
