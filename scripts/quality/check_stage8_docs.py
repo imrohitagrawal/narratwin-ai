@@ -83,27 +83,17 @@ REQUIRED_FILES = [
     "docs/demo/CONTROLLED_LOCAL_DEMO.md",
 ]
 
-STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {
-    "tests/api/test_health_api.py",
-    "tests/unit/test_health_contract.py",
-}
+STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
 
 PROCESS_BRANCH_ALLOWED_FILES = {
     ISSUE346_TRANSITION_BRANCH: {
-        "docs/governance/preflights/issue-346.json",
-        "scripts/quality/check_stage8_docs.py",
-        "tests/unit/test_stage8_quality_gate.py",
-        "docs/QUALITY_GATES.md",
-        "docs/STAGE_ISSUE_PLAN.md",
-        "docs/STATUS.md",
+        "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
     },
     ISSUE335_A2_1_BRANCH: {
-        "docs/governance/preflights/issue-335.json",
-        "tests/unit/test_retrieval_strategy_v1_contract.py",
-        "backend/app/rag/models.py",
-        "backend/app/stage4.py",
-        "docs/API_CONTRACT.md",
-        "docs/STATUS.md",
+        "docs/governance/preflights/issue-335.json", "tests/unit/test_retrieval_strategy_v1_contract.py",
+        "backend/app/rag/models.py", "backend/app/stage4.py", "docs/API_CONTRACT.md", "docs/STATUS.md",
     },
     ISSUE84_GUARDRAIL_BRANCH: {
         "docs/STATUS.md",
@@ -158,7 +148,22 @@ def changed_files_for_stage_scope() -> list[str]:
     if head_result.returncode != 0 or not head_result.stdout.strip():
         raise RuntimeError(head_result.stderr.strip() or "git rev-parse HEAD failed")
     head = head_result.stdout.strip()
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "").strip()
     expected_head = os.environ.get("GITHUB_HEAD_SHA", "").strip()
+    event_path = os.environ.get("GITHUB_EVENT_PATH", "").strip()
+    if event_path and event_name in {"pull_request", "pull_request_review", "push"}:
+        try:
+            payload = json.loads(Path(event_path).read_text(encoding="utf-8"))
+            event_head = (payload["after"] if event_name == "push" else payload["pull_request"]["head"]["sha"])
+        except (KeyError, OSError, TypeError, ValueError) as error:
+            raise RuntimeError("GitHub exact head evidence is malformed or unavailable.") from error
+        if not isinstance(event_head, str) or not event_head.strip():
+            raise RuntimeError("GitHub exact head evidence is malformed or unavailable.")
+        if expected_head and expected_head != event_head.strip():
+            raise RuntimeError("GitHub exact head evidence contradicts GITHUB_HEAD_SHA.")
+        expected_head = event_head.strip()
+    if not expected_head and event_name in {"pull_request", "pull_request_review", "push"}:
+        raise RuntimeError("GitHub exact head evidence is malformed or unavailable.")
     if expected_head:
         expected_result = run(["git", "rev-parse", f"{expected_head}^{{commit}}"])
         if expected_result.returncode != 0 or not expected_result.stdout.strip():
@@ -167,7 +172,9 @@ def changed_files_for_stage_scope() -> list[str]:
             raise RuntimeError("Stage 8 scope checkout does not match the exact head.")
 
     preferred_base = os.environ.get("GITHUB_BASE_SHA", "").strip()
-    base_candidates = [preferred_base] if preferred_base and preferred_base != NULL_GIT_SHA else ["origin/main", "main"]
+    push_ref = os.environ.get("NARRATWIN_HEAD_REF", os.environ.get("GITHUB_REF_NAME", "")).strip()
+    branch_base = (event_name == "push" and push_ref != "main") or not preferred_base or preferred_base == NULL_GIT_SHA
+    base_candidates = ["origin/main", "main"] if branch_base else [preferred_base]
     merge_base = ""
     last_error = ""
     for candidate in base_candidates:
@@ -179,13 +186,7 @@ def changed_files_for_stage_scope() -> list[str]:
     if not merge_base:
         raise RuntimeError(last_error or "git merge-base failed for Stage 8 scope.")
 
-    diff_flags = [
-        "--name-status",
-        "-z",
-        "--find-renames",
-        "--find-copies",
-        "--find-copies-harder",
-    ]
+    diff_flags = ["--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"]
     paths: list[str] = []
     for args in (
         ["git", "diff", *diff_flags, f"{merge_base}..{head}", "--"],

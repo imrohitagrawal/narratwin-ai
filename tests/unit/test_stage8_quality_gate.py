@@ -27,12 +27,9 @@ def load_module(relative: str, name: str) -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
 stage8: Any = load_module("scripts/quality/check_stage8_docs.py", "stage8_quality_under_test")
-
 def git(repo: Path, *args: str) -> str:
     return subprocess.run(["git", *args], cwd=repo, text=True, capture_output=True, check=True).stdout.strip()
-
 def put(repo: Path, path: str, value: str) -> None:
     target = repo / path
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -97,27 +94,34 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     (tmp_path / "forbidden/unstaged-source.txt").rename(tmp_path / "unstaged-destination.txt")
     put(tmp_path, "forbidden/cancelled.txt", "staged"); git(tmp_path, "add", "forbidden/cancelled.txt")
     put(tmp_path, "forbidden/cancelled.txt", "original"); put(tmp_path, "untracked\nnewline.txt", "new")
-    real_run, calls = stage8.run, []
+    calls: list[list[str]] = []
     def record(args: list[str]) -> subprocess.CompletedProcess[str]:
-        calls.append(args); return real_run(args)
+        calls.append(args); return subprocess.run(args, cwd=tmp_path, text=True, capture_output=True, check=False)
     monkeypatch.setattr(stage8, "ROOT", tmp_path); monkeypatch.setattr(stage8, "run", record)
-    monkeypatch.setenv("GITHUB_EVENT_NAME", "push"); monkeypatch.setenv("GITHUB_BASE_SHA", first_head)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push"); monkeypatch.setenv("NARRATWIN_HEAD_REF", "feature")
+    monkeypatch.setenv("GITHUB_BASE_SHA", first_head)
     monkeypatch.setenv("GITHUB_HEAD_SHA", head); paths = set(stage8.changed_files_for_stage_scope())
     required = {"forbidden/rename-source.txt", "rename-destination.txt", "forbidden/copy-source.txt",
                 "copy-destination.txt", "forbidden/cached-source.txt", "cached-destination.txt",
                 "forbidden/unstaged-source.txt", "unstaged-destination.txt", "forbidden/cancelled.txt",
                 "backend/app/main.py", "committed.txt", "docs/STATUS.md", "untracked\nnewline.txt"}
     assert required <= paths and "main-only.txt" not in paths
-    assert ["git", "merge-base", "origin/main", head] in calls
-    assert ["git", "merge-base", first_head, head] not in calls
+    assert ["git", "merge-base", "origin/main", head] in calls and ["git", "merge-base", first_head, head] not in calls
     monkeypatch.setattr(stage8, "current_branch", lambda: TRANSITION); failures: list[str] = []
     stage8.check_stage_scope(failures)
-    assert all(f"Stage 8 changed file outside the allowlist: {path}" in failures for path in required)
+    forbidden = required - SCOPES[TRANSITION]; assert all(
+        f"Stage 8 changed file outside the allowlist: {path}" in failures for path in forbidden)
     event = tmp_path / "event.json"; event.write_text(json.dumps({"pull_request": {"head": {"sha": first_head}}}))
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request"); monkeypatch.setenv("GITHUB_BASE_SHA", base)
     monkeypatch.setenv("GITHUB_EVENT_PATH", str(event)); monkeypatch.delenv("GITHUB_HEAD_SHA")
     with pytest.raises(RuntimeError, match="exact head"): stage8.changed_files_for_stage_scope()
-
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request_review")
+    event.write_text(json.dumps({"pull_request": {"head": {"sha": head}}})); assert required <= set(stage8.changed_files_for_stage_scope())
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push"); event.write_text(json.dumps({"after": head}))
+    assert required <= set(stage8.changed_files_for_stage_scope()); event.write_text("{")
+    with pytest.raises(RuntimeError, match="malformed or unavailable"): stage8.changed_files_for_stage_scope()
+    monkeypatch.delenv("GITHUB_EVENT_PATH")
+    with pytest.raises(RuntimeError, match="malformed or unavailable"): stage8.changed_files_for_stage_scope()
 def test_scope_parser_flags_and_command_failures(monkeypatch: Any) -> None:
     assert stage8.parse_name_status_z("R087\0old\0new\0C064\0source\0copy\0") == ["old", "new", "source", "copy"]
     for malformed in ("R100\0old\0", "M\0path", "M\0\0", "Q\0path\0", "R101\0old\0new\0"):
