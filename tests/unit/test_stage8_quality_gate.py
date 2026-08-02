@@ -104,7 +104,10 @@ def test_exact_cut1_branch_dispatches_stage8_without_issue13_binding(
     monkeypatch.setattr(dispatcher, "STATUS_DOC", status)
     monkeypatch.setattr(dispatcher, "current_branch", lambda: branch)
     monkeypatch.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)
-    monkeypatch.setattr(dispatcher.subprocess, "call", lambda args, cwd: calls.append(args) or 0)
+    def record_call(args: list[str], cwd: Path) -> int:
+        calls.append(args)
+        return 0
+    monkeypatch.setattr(dispatcher.subprocess, "call", record_call)
 
     assert dispatcher.main() == 0
     assert calls == [["make", "stage8-quality"]]
@@ -263,12 +266,8 @@ def test_scope_collection_includes_committed_cached_unstaged_and_untracked(
     monkeypatch.delenv("GITHUB_HEAD_SHA", raising=False)
 
     assert stage8.changed_files_for_stage_scope() == [
-        "cached-destination.txt",
-        "cached-source.txt",
-        "cancelled.txt",
-        "committed.txt",
-        "unstaged-destination.txt",
-        "unstaged-source.txt",
+        "cached-destination.txt", "cached-source.txt", "cancelled.txt", "committed.txt",
+        "unstaged-destination.txt", "unstaged-source.txt",
         "untracked\nnewline.txt",
     ]
 
