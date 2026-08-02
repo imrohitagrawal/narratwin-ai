@@ -156,12 +156,12 @@ def test_a1_v1_restore_preserves_legacy_without_decision(case: str, tmp_path: Pa
     document = service.upload_document(principal=principal, project_id=project.project_id, source_filename="legacy.md", content_type="text/markdown", data=Path("tests/fixtures/stage4_project.md").read_bytes(), idempotency_key="d")
     if case != "pending": service.approve_document(principal=principal, project_id=project.project_id, document_id=document.document_id, idempotency_key="a")
     if case in {"ingested", "run", "evaluation", "completed_replay"}: service.ingest_documents(principal=principal, project_id=project.project_id, document_ids=[document.document_id], idempotency_key="i")
-    if case in {"run", "evaluation", "completed_replay"}: service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Create a concise grounded walkthrough for a recruiter.", idempotency_key="w")
+    if case in {"run", "evaluation", "completed_replay"}: service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.", idempotency_key="w")
     if case == "failed_replay":
         with pytest.raises(Stage4Error): service.upload_document(principal=principal, project_id=project.project_id, source_filename="large.md", content_type="text/markdown", data=b"a" * (MAX_UPLOAD_BYTES + 1), idempotency_key="f")
     restored = Stage4Service(state_path=tmp_path / "legacy.json"); restored_document = restored.documents["doc_000001"]
     assert restored.source_decisions == {} and (restored_document.approval_status, restored_document.ingestion_status) == {"pending": ("PENDING", "NOT_STARTED"), "approved": ("APPROVED", "NOT_STARTED")}.get(case, ("APPROVED", "INGESTED") if case != "failed_replay" else ("APPROVED", "NOT_STARTED")); assert case not in {"ingested", "run", "evaluation", "completed_replay"} or restored.rag_store.chunk_count_for_project(tenant_id=principal.tenant_id, project_id=project.project_id) > 0; assert case not in {"run", "evaluation", "completed_replay"} or (len(restored.walkthrough_runs) == 1 and (case != "evaluation" or next(iter(restored.walkthrough_runs.values())).evaluation is not None))
-    if case == "completed_replay": assert restored.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Create a concise grounded walkthrough for a recruiter.", idempotency_key="w") == next(iter(restored.walkthrough_runs.values()))
+    if case == "completed_replay": assert restored.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.", idempotency_key="w") == next(iter(restored.walkthrough_runs.values()))
     if case == "failed_replay": replayed = pytest.raises(Stage4Error, restored.upload_document, principal=principal, project_id=project.project_id, source_filename="large.md", content_type="text/markdown", data=b"a" * (MAX_UPLOAD_BYTES + 1), idempotency_key="f"); assert (replayed.value.status_code, replayed.value.code) == (413, "UPLOAD_TOO_LARGE")
 @pytest.mark.parametrize("case", ["pair", "type_null", "type_object", "type_array", "type_bool", "type_number", "chunk", "chunk_meta", "ingestion", "walkthrough", "evaluation", "idempotency", "walkthrough_checksum", "idem_raw", "idem_immutable", "idem_code", "idem_row", "idem_type", "ingestion_exact", "ingestion_changed", "ingestion_actor", "ingestion_scope", "ingestion_endpoint", "ingestion_checksum", "failure_message", "failure_code", "failure_status", "failure_actor", "failure_scope", "failure_endpoint", "failure_checksum", "idem_source_null", "idem_source_array", "idem_source_bool", "idem_source_number", "idem_source_string", "idem_assertions_array", "idem_decision_null", "idem_approved_at_object", "idem_raw_int", "id_alias", "id_duplicate"])
 def test_a1_restore_prunes_curated_tamper(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -200,7 +200,7 @@ def test_a1_restore_prunes_curated_tamper(case: str, tmp_path: Path, monkeypatch
     elif case.startswith("ingestion_"): assert not any(record.idempotency_key == "tamper-ingest" for record in restored.idempotency_records.values())
     elif case.startswith("failure_"): assert not any(record.idempotency_key == "tamper-failure" for record in restored.idempotency_records.values()) and "A1_PRIVATE_RAW_CANARY" not in state_path.read_text()
     elif case.startswith("idem_source_") or case in {"idem_assertions_array", "idem_decision_null", "idem_approved_at_object", "idem_raw_int"}: assert sibling["documentId"] in restored.documents and not any(record.idempotency_key == "a1-approve" for record in restored.idempotency_records.values())
-    elif case == "walkthrough_checksum": assert next(record for record in restored.idempotency_records.values() if record.idempotency_key == "tamper-run").request_checksum == next(iter(restored.walkthrough_runs.values())).request_checksum and "\"request_checksum\": \"000000" not in state_path.read_text()
+    elif case == "walkthrough_checksum": assert not any(record.idempotency_key == "tamper-run" for record in restored.idempotency_records.values()) and restored.walkthrough_runs and "\"request_checksum\": \"000000" not in state_path.read_text()
     else: assert not any(record.idempotency_key == ("tamper-run" if case in {"idempotency", "walkthrough_checksum"} else "a1-submit") for record in restored.idempotency_records.values())
 
 def fifth_red_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, str, dict[str, object], dict[str, object]]:
@@ -351,7 +351,7 @@ def test_create_upload_ingest_generate_grounded_script_with_citations() -> None:
             "requestedLanguage": "en",
             "depth": "CONCISE",
             "style": "CONFIDENT",
-            "prompt": "Create a concise grounded walkthrough for a recruiter.",
+            "prompt": "approved knowledge source chunks",
         },
         headers={"Idempotency-Key": "test-generate"},
     )

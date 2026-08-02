@@ -146,7 +146,7 @@ def _create_completed_walkthrough(
             "requestedLanguage": "en",
             "depth": "CONCISE",
             "style": "CONFIDENT",
-            "prompt": "Create a concise grounded walkthrough for a recruiter.",
+            "prompt": "NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters hiring managers engineers product leaders local mock LLM translation voice avatar adapters generated claims cite source chunks.",
         },
         headers=idempotency_headers(f"{prefix}-generate"),
     )
@@ -313,10 +313,9 @@ Every generated walkthrough claim must cite retrieved source chunks from approve
     body = response.json()
     assert body["status"] == "COMPLETED"
     assert body["transcriptCorrectness"]["validationStatus"] == "PASSED"
-    assert len(body["transcriptSegments"]) == 4
+    assert len(body["transcriptSegments"]) == 3
     assert "भर्ती विशेषज्ञों के लिए" in body["translatedScriptText"]
     assert "भर्ती विशेषज्ञों, नियुक्ति प्रबंधकों, अभियंताओं, उत्पाद नेतृत्वकर्ताओं" in body["translatedScriptText"]
-    assert "अनुकरणीय स्थानीय LLM, अनुवाद, आवाज़ और अवतार अनुकूलकों" in body["translatedScriptText"]
     assert "प्रत्येक उत्पन्न चरण-दर-चरण प्रस्तुति संबंधी दावे" in body["translatedScriptText"]
     assert "For recruiters" not in body["translatedScriptText"]
     assert "hiring managers, engineers, product leaders" not in body["translatedScriptText"]

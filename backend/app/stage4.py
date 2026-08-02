@@ -23,6 +23,7 @@ from backend.app.rag.models import (
     MOCK_EMBEDDING_MODEL,
     MOCK_EMBEDDING_MODEL_VERSION,
     OWNER_LOCAL,
+    RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT,
     RETRIEVAL_MIN_SCORE,
     RETRIEVAL_STRATEGY_VERSION,
     RETRIEVAL_TOP_K,
@@ -114,6 +115,9 @@ def _context_ref_id(*, tenant_id: str, project_id: str, chunk_id: str, query: st
     return "ctx_" + hashlib.sha256(f"{tenant_id}:{project_id}:{chunk_id}:{query}".encode("utf-8")).hexdigest()[:16]
 
 
+def _valid_retrieval_tuple(values: tuple[Any, ...]) -> bool: return type(values[1]) is int and type(values[2]) is not bool and isinstance(values[2], (int, float)) and math.isfinite(values[2])
+
+
 class Stage4Error(Exception):
     def __init__(self, status_code: int, code: str, message: str) -> None:
         super().__init__(message)
@@ -199,6 +203,9 @@ class WalkthroughRunRecord:
     evaluation: EvaluationResult | None
     created_at: str
     request_checksum: str = ""
+    retrieval_strategy_version: str | None = None
+    retrieval_top_k: int | None = None
+    retrieval_score_threshold: float | None = None
 
 
 @dataclass
@@ -246,6 +253,7 @@ class Stage4Service:
         self.ingestion_runs: dict[str, IngestionRunRecord] = {}
         self.walkthrough_runs: dict[str, WalkthroughRunRecord] = {}
         self.idempotency_records: dict[tuple[str, str, str, str, str], IdempotencyRecord] = {}
+        self._quarantined_walkthrough_rows, self._quarantined_idempotency_rows, self._stale_idempotency = cast(tuple[list[dict[str, Any]], list[dict[str, Any]], dict[tuple[str, str, str, str, str], str]], ([], [], {}))
         self._active_ingestions: set[tuple[str, str]] = set()
         self._active_generations: set[tuple[str, str]] = set()
         self._operation_lock = RLock()
@@ -270,6 +278,7 @@ class Stage4Service:
         self.ingestion_runs.clear()
         self.walkthrough_runs.clear()
         self.idempotency_records.clear()
+        self._quarantined_walkthrough_rows, self._quarantined_idempotency_rows, self._stale_idempotency = [], [], {}
         self._active_ingestions.clear()
         self._active_generations.clear()
         self._project_counter = 0
@@ -290,7 +299,6 @@ class Stage4Service:
             self.sources, self.source_decisions = restore_curated(payload.get("sources"), payload.get("sourceDecisions"), self.projects, self._restored_curated_source_is_safe, self.documents)
             self.ingestion_runs = restored_records(payload.get("ingestionRuns"), "ingestion_run_id", lambda row: IngestionRunRecord(**row), self._restored_ingestion_run_is_valid)
             self.rag_store = restored_rag_store(payload.get("ragStore"))
-            self.walkthrough_runs = restored_records(payload.get("walkthroughRuns"), "run_id", walkthrough_run_from_dict, lambda _run: True)
             self.rag_store.prune(lambda chunk: record_is_valid(chunk, self._restored_chunk_is_valid))
             self.ingestion_runs = {
                 run_id: run
@@ -299,37 +307,14 @@ class Stage4Service:
             }
             self._reconcile_restored_document_ingestion_status()
             self.rag_store.prune(lambda chunk: record_is_valid(chunk, self._restored_chunk_is_valid))
-            self.walkthrough_runs = {
-                run_id: run
-                for run_id, run in self.walkthrough_runs.items()
-                if record_is_valid(run, self._restored_walkthrough_run_is_valid)
-            }
-            self.idempotency_records = {}
-            idempotency_rows = payload.get("idempotencyRecords")
-            for row in idempotency_rows if isinstance(idempotency_rows, list) else []:
-                if not isinstance(row, dict):
-                    continue
-                if row.get("status") == "PENDING":
-                    continue
-                try:
-                    record = idempotency_record_from_dict(row, self)
-                except (KeyError, TypeError, ValueError) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 4 idempotency record: %s", exc)
-                    continue
-                key = (
-                    record.tenant_id,
-                    record.actor_id,
-                    record.idempotency_scope,
-                    record.endpoint,
-                    record.idempotency_key,
-                )
-                self.idempotency_records[key] = record
+            stale_runs = self._restore_walkthrough_rows(payload)
+            self._restore_idempotency_rows(payload, stale_runs)
             counters = payload.get("counters", {})
             project_counter = max_numeric_suffix(self.projects, "proj_")
             document_counter = max_numeric_suffix(self.documents, "doc_")
             source_counter = max(max_numeric_suffix(self.sources, "source_"), max_numeric_suffix(self.source_decisions, "decision_"))
             ingestion_counter = max_numeric_suffix(self.ingestion_runs, "ing_")
-            run_counter = max_numeric_suffix(self.walkthrough_runs, "run_")
+            run_counter = max(max_numeric_suffix(self.walkthrough_runs, "run_"), max_numeric_suffix({str(row.get("run_id")): None for row in self._quarantined_walkthrough_rows}, "run_"))
             counter_values = counters if isinstance(counters, dict) else {}
             self._project_counter = max(counter_values.get("project", 0), project_counter) if type(counter_values.get("project", 0)) is int else project_counter
             self._document_counter = max(counter_values.get("document", 0), document_counter) if type(counter_values.get("document", 0)) is int else document_counter
@@ -340,6 +325,74 @@ class Stage4Service:
         except (KeyError, TypeError, ValueError) as exc:
             LOGGER.warning("Ignoring incompatible Stage 4 local state snapshot: %s", exc)
             self._clear_runtime_state()
+
+    def _restore_walkthrough_rows(self, payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        rows = [*(cast(list[object], payload.get("walkthroughRuns")) if isinstance(payload.get("walkthroughRuns"), list) else []), *(cast(list[object], payload.get("quarantinedWalkthroughRuns")) if isinstance(payload.get("quarantinedWalkthroughRuns"), list) else [])]
+        rows = rows[: MAX_PROJECTS_PER_TENANT * MAX_RUNS_PER_PROJECT]
+        identities = [row.get("run_id") for row in rows if isinstance(row, dict)]
+        self.walkthrough_runs, self._quarantined_walkthrough_rows = {}, []
+        stale: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            if not isinstance(row, dict) or not isinstance(row.get("run_id"), str) or identities.count(row.get("run_id")) != 1:
+                continue
+            try:
+                run = walkthrough_run_from_dict(row)
+            except (KeyError, TypeError, ValueError):
+                continue
+            if not record_is_valid(run, self._restored_walkthrough_run_is_valid):
+                continue
+            if self._restored_retrieval_lineage_is_current(row, run):
+                self.walkthrough_runs[run.run_id] = run
+            else:
+                stale[run.run_id] = deepcopy(row)
+                self._quarantined_walkthrough_rows.append(deepcopy(row))
+        return stale
+
+    def _restore_idempotency_rows(self, payload: dict[str, Any], stale_runs: dict[str, dict[str, Any]]) -> None:
+        rows = [*(cast(list[object], payload.get("idempotencyRecords")) if isinstance(payload.get("idempotencyRecords"), list) else []), *(cast(list[object], payload.get("quarantinedIdempotencyRecords")) if isinstance(payload.get("quarantinedIdempotencyRecords"), list) else [])]
+        rows = rows[:MAX_IDEMPOTENCY_RECORDS_PER_TENANT]
+        identities = [row.get("idempotency_record_id") for row in rows if isinstance(row, dict)]
+        keys = [tuple(row.get(name) for name in ("tenant_id", "actor_id", "idempotency_scope", "endpoint", "idempotency_key")) for row in rows if isinstance(row, dict)]
+        self.idempotency_records, self._quarantined_idempotency_rows, self._stale_idempotency = {}, [], {}
+        for row in rows:
+            if not isinstance(row, dict) or row.get("status") == "PENDING" or identities.count(row.get("idempotency_record_id")) != 1:
+                continue
+            raw_key = tuple(row.get(name) for name in ("tenant_id", "actor_id", "idempotency_scope", "endpoint", "idempotency_key"))
+            if keys.count(raw_key) != 1:
+                if all(isinstance(part, str) for part in raw_key):
+                    self._stale_idempotency[cast(tuple[str, str, str, str, str], raw_key)] = ""
+                continue
+            stale = self._stale_idempotency_binding(row, stale_runs)
+            if stale is not None:
+                key, checksum = stale
+                self._quarantined_idempotency_rows.append(deepcopy(row))
+                self._stale_idempotency[key] = checksum
+                continue
+            try:
+                record = idempotency_record_from_dict(row, self)
+            except (KeyError, TypeError, ValueError) as exc:
+                LOGGER.warning("Skipping incompatible Stage 4 idempotency record: %s", exc)
+                continue
+            key = (record.tenant_id, record.actor_id, record.idempotency_scope, record.endpoint, record.idempotency_key)
+            self.idempotency_records[key] = record
+
+    def _stale_idempotency_binding(self, row: dict[str, Any], stale_runs: dict[str, dict[str, Any]]) -> tuple[tuple[str, str, str, str, str], str] | None:
+        names = ("tenant_id", "actor_id", "idempotency_scope", "endpoint", "idempotency_key", "request_checksum")
+        if row.get("status") != "COMPLETED" or not all(isinstance(row.get(name), str) for name in names):
+            return None
+        tenant, actor, scope, endpoint, key, checksum = cast(tuple[str, str, str, str, str, str], tuple(row[name] for name in names))
+        value, project = row.get("value"), self.projects.get(scope)
+        run = stale_runs.get(str(value.get("id", ""))) if isinstance(value, dict) else None
+        record_id, binding = "idem_" + hashlib.sha256(f"{tenant}:{actor}:{scope}:{endpoint}:{key}".encode()).hexdigest()[:16], [tenant, actor, scope, endpoint, checksum]
+        if not isinstance(value, dict) or not isinstance(run, dict) or project is None:
+            return None
+        if row.get("idempotency_record_id") != record_id or re.fullmatch(r"(?:sha256:)?[0-9a-f]{64}", checksum) is None:
+            return None
+        if value.get("kind") != "walkthrough" or value.get("binding") != binding or endpoint != "POST /api/v1/projects/{projectId}/walkthrough-runs":
+            return None
+        if (tenant, actor, scope, checksum) != (run.get("tenant_id"), run.get("actor_id"), run.get("project_id"), run.get("request_checksum")) or (tenant, actor) != (project.tenant_id, project.owner_id):
+            return None
+        return (tenant, actor, scope, endpoint, key), checksum
 
     def _restore_failed_operation_locked(
         self,
@@ -396,6 +449,9 @@ class Stage4Service:
         self._source_counter = max(int(counters["source"]), max_numeric_suffix(self.sources, "source_"))
         self._ingestion_counter = max(int(counters["ingestion"]), max_numeric_suffix(self.ingestion_runs, "ing_"))
         self._run_counter = max(int(counters["run"]), max_numeric_suffix(self.walkthrough_runs, "run_"))
+        self._quarantined_walkthrough_rows = deepcopy(snapshot["quarantinedWalkthroughRuns"])
+        self._quarantined_idempotency_rows = deepcopy(snapshot["quarantinedIdempotencyRecords"])
+        self._stale_idempotency = deepcopy(snapshot["staleIdempotency"])
 
     def _restored_project_is_valid(self, project: ProjectRecord) -> bool:
         fields = (project.project_id, project.tenant_id, project.owner_id, project.name, project.description, project.default_audience, project.default_language, project.created_at, project.updated_at)
@@ -556,7 +612,8 @@ class Stage4Service:
                 return False
         else:
             return False
-        if any(not self._restored_chunk_is_valid(context.chunk) for context in run.retrieved_context):
+        if any((context.chunk.tenant_id, context.chunk.project_id) != (run.tenant_id, run.project_id)
+               or not self._restored_chunk_is_valid(context.chunk) for context in run.retrieved_context):
             return False
         if any(
             not self.rag_store.has_chunk(
@@ -599,6 +656,31 @@ class Stage4Service:
             for support in run.evaluation.claim_supports
         )
 
+    def _restored_retrieval_lineage_is_current(self, row: dict[str, Any], run: WalkthroughRunRecord) -> bool:
+        names, expected = ("retrieval_strategy_version", "retrieval_top_k", "retrieval_score_threshold"), (RETRIEVAL_STRATEGY_VERSION, RETRIEVAL_TOP_K, RETRIEVAL_MIN_SCORE)
+        raw = tuple(row.get(name) for name in names)
+        if not _valid_retrieval_tuple(raw) or raw != expected or tuple(getattr(run, name) for name in names) != expected:
+            return False
+        if run.status == "REFUSED":
+            return row.get("evaluation") is None
+        evaluation_row = row.get("evaluation")
+        if not isinstance(evaluation_row, dict) or run.evaluation is None:
+            return False
+        evaluation_raw = tuple(evaluation_row.get(name) for name in names)
+        if not _valid_retrieval_tuple(evaluation_raw) or evaluation_raw != expected or tuple(getattr(run.evaluation, name) for name in names) != expected:
+            return False
+        context_rows = row.get("retrieved_context")
+        if not isinstance(context_rows, list) or len(context_rows) != len(run.retrieved_context) or len(context_rows) > RETRIEVAL_TOP_K:
+            return False
+        scores = [item.get("score") for item in context_rows if isinstance(item, dict)]
+        if len(scores) != len(context_rows) or any(type(score) is bool or not isinstance(score, (int, float)) or not math.isfinite(score) or score < RETRIEVAL_MIN_SCORE for score in scores):
+            return False
+        contexts = run.retrieved_context
+        if any(sum(other.chunk.document_id == context.chunk.document_id for other in contexts) > RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT for context in contexts) or len({item.context_ref_id for item in contexts}) != len(contexts) or len({item.chunk.chunk_id for item in contexts}) != len(contexts):
+            return False
+        ordered = sorted(contexts, key=lambda item: (-item.score, tuple(-ord(char) for char in item.chunk.approved_at), item.chunk.chunk_index, item.chunk.chunk_id))
+        return contexts == ordered
+
     def _runtime_snapshot_locked(self) -> dict[str, Any]:
         return {
             "ragStore": self.rag_store.to_dict(),
@@ -609,6 +691,7 @@ class Stage4Service:
             "ingestionRuns": deepcopy(self.ingestion_runs),
             "walkthroughRuns": deepcopy(self.walkthrough_runs),
             "idempotencyRecords": deepcopy(self.idempotency_records),
+            "quarantinedWalkthroughRuns": deepcopy(self._quarantined_walkthrough_rows), "quarantinedIdempotencyRecords": deepcopy(self._quarantined_idempotency_rows), "staleIdempotency": deepcopy(self._stale_idempotency),
             "activeIngestions": deepcopy(self._active_ingestions),
             "activeGenerations": deepcopy(self._active_generations),
             "counters": {
@@ -633,10 +716,12 @@ class Stage4Service:
                 "walkthroughRuns": [
                     walkthrough_run_to_dict(run) for run in self.walkthrough_runs.values()
                 ],
+                "quarantinedWalkthroughRuns": deepcopy(self._quarantined_walkthrough_rows),
                 "idempotencyRecords": [
                     idempotency_record_to_dict(record) for record in self.idempotency_records.values()
                     if record.status != "PENDING"
                 ],
+                "quarantinedIdempotencyRecords": deepcopy(self._quarantined_idempotency_rows),
                 "ragStore": self.rag_store.to_dict(),
                 "counters": {
                     "project": self._project_counter,
@@ -1135,27 +1220,10 @@ class Stage4Service:
                         top_k=RETRIEVAL_TOP_K,
                         min_score=RETRIEVAL_MIN_SCORE,
                     )
-                    retrieved = sorted(retrieved, key=lambda context: context.chunk.chunk_index)
                     all_chunks = self.rag_store.chunks_for_project(
                         tenant_id=principal.tenant_id,
                         project_id=project_id,
                     )
-                    if retrieved and len(all_chunks) <= RETRIEVAL_TOP_K:
-                        retrieved_by_chunk_id = {context.chunk.chunk_id: context for context in retrieved}
-                        retrieved = [
-                            retrieved_by_chunk_id.get(chunk.chunk_id)
-                            or RetrievedContext(
-                                context_ref_id=_context_ref_id(
-                                    tenant_id=principal.tenant_id,
-                                    project_id=project_id,
-                                    chunk_id=chunk.chunk_id,
-                                    query=retrieval_query,
-                                ),
-                                chunk=chunk,
-                                score=RETRIEVAL_MIN_SCORE,
-                            )
-                            for chunk in sorted(all_chunks, key=lambda item: item.chunk_index)
-                        ]
                     if not retrieved:
                         run = self._build_walkthrough_run(
                             run_id=run_id,
@@ -1219,6 +1287,7 @@ class Stage4Service:
                             prompt=prompt,
                             all_chunks=all_chunks,
                         )
+                        evaluation = replace(evaluation, retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION, retrieval_top_k=RETRIEVAL_TOP_K, retrieval_score_threshold=RETRIEVAL_MIN_SCORE)
                         input_tokens, output_tokens = evaluate_token_usage(
                             prompt=prompt,
                             retrieved_context=retrieved,
@@ -1329,6 +1398,9 @@ class Stage4Service:
             retrieved_context=retrieved_context,
             evaluation=evaluation,
             created_at=started_at,
+            retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION,
+            retrieval_top_k=RETRIEVAL_TOP_K,
+            retrieval_score_threshold=RETRIEVAL_MIN_SCORE,
         )
         record_walkthrough_metrics(
             tenant_id=principal.tenant_id,
@@ -1425,6 +1497,11 @@ class Stage4Service:
                 if isinstance(existing.value, CuratedOutcome):
                     return cast(T, replace(existing.value, idempotency_replayed=True))
                 return cast(T, existing.value)
+            stale_checksum = self._stale_idempotency.get(record_key)
+            if stale_checksum is not None:
+                if stale_checksum != request_checksum:
+                    raise Stage4Error(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request.")
+                raise Stage4Error(409, "STALE_RETRIEVAL_LINEAGE", "Stored walkthrough cannot be replayed because its retrieval lineage is stale or unavailable.")
             if self._idempotency_count_for_tenant(principal=principal) >= MAX_IDEMPOTENCY_RECORDS_PER_TENANT:
                 raise Stage4Error(429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit.")
             now = _now()
@@ -1659,6 +1736,7 @@ def evaluation_from_dict(row: dict[str, Any]) -> EvaluationResult:
         policy_version=str(row["policy_version"]),
         schema_version=str(row["schema_version"]),
         safety_policy_version=str(row["safety_policy_version"]),
+        retrieval_strategy_version=row.get("retrieval_strategy_version"), retrieval_top_k=row.get("retrieval_top_k"), retrieval_score_threshold=row.get("retrieval_score_threshold"),
     )
 
 
@@ -1720,10 +1798,10 @@ def idempotency_record_from_dict(row: dict[str, Any], service: Stage4Service) ->
         elif kind == "walkthrough":
             walkthrough_value = service.walkthrough_runs.get(identifier)
             if walkthrough_value is not None and (tenant_id, actor_id, scope, endpoint) == (walkthrough_value.tenant_id, walkthrough_value.actor_id, walkthrough_value.project_id, "POST /api/v1/projects/{projectId}/walkthrough-runs"):
-                if walkthrough_value.request_checksum:
-                    request_checksum = walkthrough_value.request_checksum
+                projection = [tenant_id, actor_id, scope, endpoint, request_checksum]
+                if walkthrough_value.request_checksum == request_checksum and value_ref.get("binding") == projection:
                     value = walkthrough_value
-                elif value_ref.get("binding") is None:
+                elif not walkthrough_value.request_checksum and value_ref.get("binding") is None:
                     value = walkthrough_value
         elif kind == "curated":
             source_data, decision_data = value_ref.get("source"), value_ref.get("decision")
@@ -1993,9 +2071,9 @@ def evaluation_to_api(evaluation: EvaluationResult, run: WalkthroughRunRecord) -
         "embeddingModelVersion": MOCK_EMBEDDING_MODEL_VERSION,
         "embeddingDimension": 16,
         "vectorStore": "memory",
-        "retrievalStrategyVersion": RETRIEVAL_STRATEGY_VERSION,
-        "retrievalTopK": RETRIEVAL_TOP_K,
-        "retrievalScoreThreshold": RETRIEVAL_MIN_SCORE,
+        "retrievalStrategyVersion": evaluation.retrieval_strategy_version,
+        "retrievalTopK": evaluation.retrieval_top_k,
+        "retrievalScoreThreshold": evaluation.retrieval_score_threshold,
         "policyVersion": evaluation.policy_version,
         "schemaVersion": evaluation.schema_version,
         "safetyPolicyVersion": evaluation.safety_policy_version,

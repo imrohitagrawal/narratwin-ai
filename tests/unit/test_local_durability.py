@@ -502,7 +502,7 @@ def test_stage4_file_state_drops_walkthrough_runs_with_missing_restored_chunks(t
         requested_language="en",
         depth="CONCISE",
         style="CONFIDENT",
-        prompt="Create a concise grounded walkthrough for a recruiter.",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.",
         idempotency_key="generate-walkthrough",
     )
     assert run.status == "COMPLETED"
@@ -598,7 +598,7 @@ def test_stage4_file_state_drops_completed_walkthrough_without_evaluation(tmp_pa
         requested_language="en",
         depth="CONCISE",
         style="CONFIDENT",
-        prompt="Create a concise grounded walkthrough for a recruiter.",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.",
         idempotency_key="generate-walkthrough",
     )
     payload = json.loads(state_path.read_text(encoding="utf-8"))
@@ -643,7 +643,7 @@ def test_stage4_file_state_drops_walkthrough_with_tampered_evaluation_support(tm
         requested_language="en",
         depth="CONCISE",
         style="CONFIDENT",
-        prompt="Create a concise grounded walkthrough for a recruiter.",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.",
         idempotency_key="generate-walkthrough",
     )
     payload = json.loads(state_path.read_text(encoding="utf-8"))

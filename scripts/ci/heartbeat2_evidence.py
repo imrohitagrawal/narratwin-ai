@@ -98,7 +98,7 @@ def _request_contract(writes: list[Any], bundle: dict[str, Any]) -> None:
         "project": {"name": "Heartbeat 2 reviewer demo", "description": "Controlled synthetic curated walkthrough", "defaultAudience": "RECRUITER", "defaultLanguage": "en"},
         "approve": {"approvalStatus": "APPROVED", "action": "APPROVE", "curationSchemaVersion": "source-curation-v1", **{key: source[key] for key in ("sourceId", "decisionId", "policyVersion", "sourceVersion", "checksum", "assertionsFingerprint")}},
         "ingest": {"documentIds": [], "sourceIds": [source["sourceId"]]},
-        "walkthrough": {"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Create the controlled synthetic grounded reviewer walkthrough."},
+        "walkthrough": {"audience": "RECRUITER", "requestedLanguage": "en", "depth": "CONCISE", "style": "CONFIDENT", "prompt": "Explain how NarraTwin AI turns approved project knowledge into grounded walkthrough scripts, supports recruiters hiring managers engineers product leaders customers beginners and global audiences with audience-aware explanations, and ensures every generated walkthrough claim cites retrieved source chunks from approved knowledge."},
         "multilingual": {"targetLanguage": media["targetLanguage"], "glossaryTerms": [], "requestedVoiceProvider": "mock"},
         "consent": {"consentToUseSyntheticAvatar": True},
     }
@@ -264,7 +264,7 @@ def _joins(root: Path, bundle: dict[str, Any]) -> None:
         trace, render_trace = media["trace"], render["trace"]
         valid = (
             bundle["principal"] == "curator_demo" and bundle["projectCount"] == 1 and bundle["legacySources"] == [] and len(chunk_rows) == len(chunks) and len(contexts) == len(set(context_ids))
-            and source["decisionState"] == "APPROVED" and source["ingestionStatus"] == "INGESTED" and source["checksum"] == PUBLIC_FIXTURE_SHA256 and chunks and chunks == context_chunks
+            and source["decisionState"] == "APPROVED" and source["ingestionStatus"] == "INGESTED" and source["checksum"] == PUBLIC_FIXTURE_SHA256 and chunks and 1 <= len(contexts) <= 3 and len(context_chunks) == len(contexts) and context_chunks <= chunks
             and all(x["documentId"] == source["sourceId"] and x["evidenceSnapshot"]["sourceDocumentChecksum"] == source["checksum"] for x in contexts)
             and len(support_rows) == len(set(support_rows)) and set(support_rows) == {(x["claimId"], x["contextRefId"], x["documentId"], x["chunkId"], x["evidenceSnapshot"]["chunkChecksum"]) for x in contexts}
             and citation_indexes == list(range(1, len(contexts) + 1))

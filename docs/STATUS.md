@@ -14,13 +14,20 @@ Use it to answer:
 
 ## Current Baseline
 
-- Current Cut 1 route authority: Issue `#346` / PR `#347` establishes exact
-  branch `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` as the only renewed A2.1
-  route after its merged-tree closeout. Refresh Issue `#335` from that exact
-  merged base before any new write. Agent-context remains `SHADOW_ONLY`; scope
-  checks remain supporting evidence under exact-head semantic review. Issues,
-  branches, and stopped implementations `#336`–`#345` are forensic-only and
-  must not be revived or reused.
+- Current Cut 1 route authority: Issue `#346` / PR `#347` merged at
+  `4c5d7cf16fb8cdf7046d561c882f655d06125127` and established exact branch
+  `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` as the only renewed A2.1 route.
+  Issue `#335` A2.1 now binds new Stage 4 output and evaluations to canonical
+  `stage4-rag-v1` (`topK=6`, inclusive `0.72`, at most three chunks per
+  document), preserves retrieval order without synthetic expansion, and keeps
+  structurally valid stale-lineage local rows audit-preserved but inactive.
+  A2 remains `PARTIAL`: A2.2 must add complete machine-contract drift
+  enforcement and A2.3 must bind downstream evaluation checksum lineage before
+  A2 closeout. Agent-context remains `SHADOW_ONLY`; scope checks remain
+  supporting evidence under exact-head semantic review. Issues, branches, and
+  stopped implementations `#336`–`#345` are forensic-only and must not be
+  revived or reused. No Cut 1, release, readiness, deployment, or avatar
+  completion is established by this slice.
 - Last reviewed date: 2026-08-02
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
@@ -59,11 +66,12 @@ Use it to answer:
   authority. They preserve the protected evidence and unrelated obligations,
   but cannot select, authorize, or block the Issue `#346` to exact Issue `#335`
   Cut 1 route under OWNER authority.
-- Current implementation permission remains closed except for the six-path
-  Issue `#335` A2.1 slice on exact branch
+- Current implementation permission remains closed except for the exact 22-path,
+  650-charged-line Issue `#335` A2.1 envelope authorized by OWNER comments
+  `5158609698`, `5158848442`, `5159267478`, and `5159543127`, frozen by its preflight and routed on exact branch
   `cut1-335-r0c-a2-1-stage4-rag-v1-lineage`, after Issue `#346` / PR `#347`
   merged-tree closeout and refresh from its exact merged base. That route uses
-  normal Stage 8/full CI. Legacy Phase 1 routing is compatibility-only; near
+  normal Stage 8/full CI; its controlled Heartbeat 2 proves the fixture-grounded prompt through local/mock render, and its one-time reviewed receipt rotation is recorded in ADR `0047`, while execution authenticity remains unattested. Legacy Phase 1 routing is compatibility-only; near
   matches and Issues `#336`–`#345` confer no authority. Demo Phase 0 planning
   for issue `#225` completed through PR `#226`; Checkpoint 1
   is accepted as local/fake disabled-default reviewer evidence only through

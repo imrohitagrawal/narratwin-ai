@@ -944,7 +944,7 @@ export default function Home() {
     });
   }
 
-  const h2WalkthroughBody = { audience: "RECRUITER", requestedLanguage: "en", depth: "CONCISE", style: "CONFIDENT", prompt: "Create the controlled synthetic grounded reviewer walkthrough." };
+  const h2WalkthroughBody = { audience: "RECRUITER", requestedLanguage: "en", depth: "CONCISE", style: "CONFIDENT", prompt: "Explain how NarraTwin AI turns approved project knowledge into grounded walkthrough scripts, supports recruiters hiring managers engineers product leaders customers beginners and global audiences with audience-aware explanations, and ensures every generated walkthrough claim cites retrieved source chunks from approved knowledge." };
   const h2MediaBody = { targetLanguage: "es", glossaryTerms: [], requestedVoiceProvider: "mock" };
   const h2ConsentBody = { consentToUseSyntheticAvatar: true };
 

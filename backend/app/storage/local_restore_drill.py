@@ -191,7 +191,7 @@ def _seed_source_state(paths: StageStatePaths) -> SeededDrillState:
         requested_language="en",
         depth="CONCISE",
         style="CONFIDENT",
-        prompt="Create a concise grounded walkthrough for a recruiter.",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.",
         idempotency_key="restore-drill-generate-walkthrough",
     )
     source_script = walkthrough.accepted_script_text
@@ -446,7 +446,7 @@ def _assert_replay_safety(seeded: SeededDrillState, restored: RestoredDrillServi
         requested_language="en",
         depth="CONCISE",
         style="CONFIDENT",
-        prompt="Create a concise grounded walkthrough for a recruiter.",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.",
         idempotency_key="restore-drill-generate-walkthrough",
     )
     replayed_stage6 = stage6.generate_multilingual_walkthrough(

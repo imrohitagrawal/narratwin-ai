@@ -13,9 +13,9 @@ Generated: generated-by-stage5-eval-smoke
 | Metric | Value |
 | --- | --- |
 | faithfulness | 1.0 |
-| answerRelevancy | 1.0 |
+| answerRelevancy | 0.9032258064516129 |
 | contextPrecision | 1.0 |
-| contextRecall | 1.0 |
+| contextRecall | 0.75 |
 
 ## Checks
 
@@ -60,5 +60,5 @@ Generated: generated-by-stage5-eval-smoke
 | file upload abuse rejected: mismatch.md | PASS | {'status': 415, 'errorCode': 'UNSUPPORTED_MEDIA_TYPE'} | {'status': 415, 'errorCode': 'UNSUPPORTED_MEDIA_TYPE'} |
 | file upload abuse rejected: invalid-utf8.md | PASS | {'status': 422, 'errorCode': 'VALIDATION_ERROR'} | {'status': 422, 'errorCode': 'VALIDATION_ERROR'} |
 | trace metadata has latency, token counts, and mock cost | PASS | traceId present, nonnegative latency, positive tokens, mock cost 0.0 | {'traceId': 'present', 'latencyMs': 'nonnegative int', 'inputTokens': 'positive int', 'outputTokens': 'positive int', 'estimatedCost': 0.0} |
-| golden metrics thresholds | PASS | {'faithfulness': '>= 0.85', 'answerRelevancy': '>= 0.80', 'contextPrecision': '>= 0.75', 'contextRecall': '>= 0.70'} | {'faithfulness': 1.0, 'answerRelevancy': 1.0, 'contextPrecision': 1.0, 'contextRecall': 1.0} |
+| golden metrics thresholds | PASS | {'faithfulness': '>= 0.85', 'answerRelevancy': '>= 0.80', 'contextPrecision': '>= 0.75', 'contextRecall': '>= 0.70'} | {'faithfulness': 1.0, 'answerRelevancy': 0.9032258064516129, 'contextPrecision': 1.0, 'contextRecall': 0.75} |
 | golden unsupported claim count | PASS | 0 | 0 |

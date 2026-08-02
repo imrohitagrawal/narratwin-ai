@@ -100,3 +100,12 @@ the accepted product path.
   not retroactive erasure.
 - Future runtime publication requires a separate issue, implementation, tests,
   human risk decisions, and launch authorization.
+
+## Issue #335 amendment — 2026-08-02
+
+Issue #335 required a one-time, human-reviewed receipt rotation. The frozen test
+remains exactly 9,970 lines; its only ratified changes replace the controlled
+Heartbeat 2 prompt and repair the independent expectation so selected retrieval
+contexts are a bounded, unique subset of accepted chunks. This amendment does
+not authorize further growth of either legacy monolith. Future unrelated
+behavior still requires modular extraction rather than another monolith edit.

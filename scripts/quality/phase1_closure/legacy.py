@@ -27,7 +27,7 @@ FROZEN_LEGACY_FILES = (
     ),
     (
         "tests/unit/test_phase1_closure_docs.py",
-        "19413a07c0811ce6caf2e7c51053d154a797d9bf106fa853e57429950d9fae82",
+        "8c36edf1f7f68c082243007b1e1327c71e3a4e3d93490c0b2ab4b9b1da9ee90a",
         9970,
     ),
 )
