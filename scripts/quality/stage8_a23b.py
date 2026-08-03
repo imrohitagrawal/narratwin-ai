@@ -78,16 +78,12 @@ def _legacy_fields(node: ast.AST, assignments: dict[str, ast.AST]) -> bool:
         node = _resolve(node.value if isinstance(node, ast.Starred) else node.elts[0], assignments)
     if isinstance(node, ast.Subscript) and isinstance(node.slice, ast.Constant) and isinstance(node.slice.value, str):
         container = _resolve(node.value, assignments)
-        values: Mapping[str, ast.AST]
         if isinstance(container, ast.Dict):
             values = {
-                key.value: value
-                for key, value in zip(container.keys, container.values)
+                key.value: value for key, value in zip(container.keys, container.values)
                 if isinstance(key, ast.Constant) and isinstance(key.value, str)
             }
-        else:
-            values = assignments
-        node = _resolve(values.get(node.slice.value, node), assignments)
+            node = _resolve(values.get(node.slice.value, node), assignments)
     if isinstance(node, (ast.GeneratorExp, ast.ListComp)) and node.generators:
         node = _resolve(node.generators[0].iter, assignments)
     if not isinstance(node, (ast.List, ast.Tuple)) or len(node.elts) != 6:
@@ -137,6 +133,11 @@ def _legacy_preimage(
             bindings.update(zip((arg.arg for arg in positional_args), node.args, strict=False))
             if function_args.vararg:
                 bindings[function_args.vararg.arg] = ast.Tuple(elts=node.args[len(positional_args) :], ctx=ast.Load())
+            if function_args.kwarg:
+                bindings[function_args.kwarg.arg] = ast.Dict(
+                    keys=[ast.Constant(item.arg) for item in node.keywords if item.arg],
+                    values=[item.value for item in node.keywords if item.arg],
+                )
             bindings.update((item.arg, item.value) for item in node.keywords if item.arg)
             if isinstance(definition, ast.Lambda):
                 values = iter((definition.body,))
@@ -186,7 +187,6 @@ def semantic_legacy_failures(path: Path, source: str | None = None) -> list[str]
             failures.append(f"{path}: manual six-field evaluation-checksum preimage")
     return failures
 
-
 def a23a_markers_frozen(markers: object) -> bool:
     encoded = json.dumps(markers, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest() == "0087f47c997797f9df40bd270379168b253ee7c744be71383a7c581592600288"
@@ -205,7 +205,7 @@ def semantic_detector_self_test(workdir: Path) -> bool:
         'evaluation_status+"\\n"+context_ref_ids+"\\n"+citation_indexes)'
     )
     dict_lookup = "parts={'fields':" + fields + "}\nchecksum_text('\\n'.join(parts['fields']))"
-    kwargs = "parts={}\ndef legacy(**parts): return '\\n'.join(parts['fields'])\nchecksum_text(legacy(fields=" + fields + "))"
+    kwargs = "p={}\ndef f(**p): return '\\n'.join(p['fields'])\nchecksum_text(f(fields=" + fields + "))"
     parameter = "def legacy(fields): return '\\n'.join(fields)\nchecksum_text(legacy(" + fields + "))"
     vararg = ("def legacy(prefix,*fields): return '\\n'.join(fields)\nchecksum_text(legacy('x',"
               + fields[1:-1] + "))")
