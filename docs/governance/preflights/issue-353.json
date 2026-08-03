@@ -1,0 +1,63 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 353,
+  "branch": "stage8-353-r0c-a2-3b-evaluation-lineage-v2",
+  "objective": "From exact base 90bbd59a84913ce9c7601bc180e051347cfccbcf, execute only R0C-A2.3b under Issue #353, controller #334, parent #328, and completed dependency #351 / PR #352. Atomically activate frozen stage7-source-evaluation-checksum-v2 through verified Stage 4 derivation, Stage 6/7 generation, consent, persistence, restore, connected rows, replay, artifacts, manifests, API orchestration, the local restore drill, acceptance callers, and the Stage 8 semantic legacy-preimage gate. New writes use Stage 6 v3 and Stage 7 v2; legacy, stale, malformed, mismatched, duplicate, noncanonical, future-schema, or forged graphs stay inactive and quarantined before idempotency, provider, generation, consent, render, manifest, or replay work. The shared runtime helper is the only canonical implementation; no v1 default, independent preimage, synthesized fallback, dual-active behavior, provider call, spend, frontend, deployment, production migration, authenticity claim, or protected #336-#345 / PR #299 / Issue #280 / Issue #298 mutation is allowed. The issue body is the pre-code intent, source, invariant, mutation, reviewer-prompt, skill-selection, and stop-rule artifact; committed RED must precede GREEN. Exactly 17 paths, planning 817, delivery target 825, hard ceiling 850 charged lines, two implementation repairs, and zero provider calls/spend. Stop for an eighteenth path, budget/context overflow, third repair, authority/base drift, weakened A2.3a, compatibility behavior, duplicated checksum logic, downstream work before lineage validation, or required excluded scope.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-353.json",
+      "docs/STATUS.md",
+      "backend/app/evaluation_lineage.py",
+      "backend/app/main.py",
+      "backend/app/stage6.py",
+      "backend/app/stage7.py",
+      "backend/app/storage/local_restore_drill.py",
+      "scripts/quality/check_stage8_docs.py",
+      "scripts/quality/stage8_a23b.py",
+      "tests/unit/test_stage6_multilingual.py",
+      "tests/unit/test_stage7_avatar.py",
+      "tests/unit/test_local_restore_drill.py",
+      "tests/unit/test_local_durability.py",
+      "tests/api/test_stage7_avatar_api.py",
+      "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+      "tests/acceptance/test_checkpoint3_media_artifacts.py",
+      "tests/unit/test_stage8_quality_gate.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-353.json",
+      "docs/STATUS.md",
+      "backend/app/evaluation_lineage.py",
+      "backend/app/main.py",
+      "backend/app/stage6.py",
+      "backend/app/stage7.py",
+      "backend/app/storage/local_restore_drill.py",
+      "scripts/quality/check_stage8_docs.py",
+      "scripts/quality/stage8_a23b.py",
+      "tests/unit/test_stage6_multilingual.py",
+      "tests/unit/test_stage7_avatar.py",
+      "tests/unit/test_local_restore_drill.py",
+      "tests/unit/test_local_durability.py",
+      "tests/api/test_stage7_avatar_api.py",
+      "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+      "tests/acceptance/test_checkpoint3_media_artifacts.py",
+      "tests/unit/test_stage8_quality_gate.py"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "docs/ADR/",
+      "docs/API_CONTRACT.md",
+      "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+      "docs/TRACEABILITY.md",
+      "docs/agent-context/",
+      "frontend/",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "scripts/quality/check_quality_stage.py",
+      "tests/api/test_stage6_multilingual_api.py"
+    ]
+  }
+}
