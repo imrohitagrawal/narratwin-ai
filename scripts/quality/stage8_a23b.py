@@ -74,6 +74,8 @@ def _resolve(node: ast.AST, assignments: dict[str, ast.AST]) -> ast.AST:
 
 def _legacy_fields(node: ast.AST, assignments: dict[str, ast.AST]) -> bool:
     node = _resolve(node, assignments)
+    while isinstance(node, ast.Starred) or isinstance(node, (ast.List, ast.Tuple)) and len(node.elts) == 1:
+        node = _resolve(node.value if isinstance(node, ast.Starred) else node.elts[0], assignments)
     if isinstance(node, (ast.GeneratorExp, ast.ListComp)) and node.generators:
         node = _resolve(node.generators[0].iter, assignments)
     if not isinstance(node, (ast.List, ast.Tuple)) or len(node.elts) != 6:
@@ -218,10 +220,7 @@ def semantic_detector_self_test(workdir: Path) -> bool:
         ("cycle.py", cycle, False),
         ("canonical.py", "build_source_evaluation_checksum(lineage_payload)", False),
     )
-    results = (
-        bool(semantic_legacy_failures(workdir / name, sample)) is expected
-        for name, sample, expected in samples
-    )
+    results = (bool(semantic_legacy_failures(workdir / name, sample)) is expected for name, sample, expected in samples)
     source = Path(__file__).read_text(encoding="utf-8")
     lines = source.splitlines()
     bounded = len(lines) <= 250 and len(source.encode()) <= 32 * 1024 and max(map(len, lines)) <= 120
