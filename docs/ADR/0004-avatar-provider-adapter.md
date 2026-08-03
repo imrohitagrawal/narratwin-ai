@@ -29,6 +29,23 @@ normalized evaluation status, normalized source context ref IDs, and normalized
 source citation indexes, in that order. Render manifests, video placeholders,
 and API trace metadata must expose the same checksum for the same source run.
 
+### R0C-A2.3a amendment
+
+Issue #351 supersedes the checksum preimage decision for future A2.3b writes.
+V2 domain-separates canonical JSON and binds top-level tenant/project scope,
+the full accepted inclusive retrieval/refusal policy, computed-score provenance,
+ordered unique selected evidence including its exact approval ranking timestamp
+and canonical full stored score, citations, and evaluation identity/status.
+Every consumer must validate the evidence snapshot and recompute rather than trust a caller value.
+Legacy v1 rows cannot replay as v2; they may remain audit evidence and require regeneration
+from verified Stage 4 lineage.
+
+The accepted claim is local/mock stale-or-mismatch integrity; it is not cryptographic authenticity
+against an actor who can rewrite and recompute all local state.
+Before v2 state exists, revert is bounded; afterward rollback refuses the
+affected path and preserves state for corrected roll-forward rather than
+downgrading, fabricating lineage, relabeling, or erasing evidence.
+
 Avatar rendering input must include:
 
 - grounded script reference

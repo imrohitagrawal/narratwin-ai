@@ -985,3 +985,18 @@ evaluation, and a forced pull-request-event guardrails run against the final PR
 body. The negative `make issue280-output-correctness` command remains
 intentionally nonzero historical evidence and is not converted into a green
 runtime gate.
+
+## A2.3a evaluation-lineage contract gate
+
+Issue #351 adds no runtime behavior. The Stage 8 checker requires the exact
+eight-file route and freezes checksum-v2 schema, field set, serialization,
+golden vector, local/mock claim boundary, migration, and rollback prose.
+The second and final implementation repair binds scope independent of context
+count, every accepted retrieval/refusal semantic, exact approval timestamps,
+unique evidence identity, and one canonical full stored-score conversion.
+Focused tests must fail for every marker mutation, golden-vector drift, a
+near-match branch, a ninth file, or missing, stale, forged, legacy-v1,
+duplicate, cross-scope, wrong-schema, and normalization drift. Context budgets use
+`uv run pytest -q tests/unit/publication_boundary/test_scope.py -k per_file_context_budgets_are_executable`.
+A2.3b must later supply runtime mutation proof; exact-head required CI and
+eligible non-author approval remain pending human-only merge gates.

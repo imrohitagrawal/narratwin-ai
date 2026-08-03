@@ -1,10 +1,10 @@
 from __future__ import annotations
 # ruff: noqa: E302, E305, E701, E702
-import importlib.util; import json; import subprocess
+import hashlib; import importlib.util; import json; import subprocess
 from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
-A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"
+A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"; A2_3A = "cut1-351-r0c-a2-3a-evaluation-lineage-contract"
 SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
                  "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
                  "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md"},
@@ -21,45 +21,40 @@ SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/qua
            "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
            "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
            "docs/STAGE_ISSUE_PLAN.md"},
+    A2_3A: {"docs/governance/preflights/issue-351.json", "docs/STATUS.md", "docs/API_CONTRACT.md",
+            "docs/ADR/0004-avatar-provider-adapter.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md",
+            "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"},
 }
 def load_module(relative: str, name: str) -> ModuleType:
     module_path = Path(__file__).parents[2] / relative
-    spec = importlib.util.spec_from_file_location(name, module_path)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    spec = importlib.util.spec_from_file_location(name, module_path); assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
 stage8: Any = load_module("scripts/quality/check_stage8_docs.py", "stage8_quality_under_test")
 stage2: Any = load_module("scripts/quality/check_stage2_docs.py", "stage2_quality_under_test")
 def git(repo: Path, *args: str) -> str:
     return subprocess.run(["git", *args], cwd=repo, text=True, capture_output=True, check=True).stdout.strip()
 def put(repo: Path, path: str, value: str) -> None:
-    target = repo / path
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(value, encoding="utf-8")
+    target = repo / path; target.parent.mkdir(parents=True, exist_ok=True); target.write_text(value, encoding="utf-8")
+def route(monkeypatch: Any, branch: str, changed: list[str]) -> list[str]:
+    monkeypatch.setattr(stage8,"current_branch",lambda:branch)
+    monkeypatch.setattr(stage8,"changed_files_for_stage_scope",lambda:changed); failures: list[str]=[]
+    stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures); return failures
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
     for branch, scope in SCOPES.items():
-        monkeypatch.setattr(stage8, "current_branch", lambda branch=branch: branch)
-        monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda scope=scope: sorted(scope))
-        failures: list[str] = []
-        stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures)
-        assert failures == []
+        assert route(monkeypatch,branch,sorted(scope)) == []
         extra = "backend/app/main.py" if branch == A2_1 else "backend/app/stage4.py"
-        monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda extra=extra: [extra])
-        failures = []; stage8.check_stage_scope(failures)
-        assert failures == [f"Stage 8 changed file outside the allowlist: {extra}"]
+        assert route(monkeypatch,branch,[extra]) == [f"Stage 8 changed file outside the allowlist: {extra}"]
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", f"{A2_2}/child",
-                   A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", "cut1-proces\u0455-346-transition"):
-        monkeypatch.setattr(stage8, "current_branch", lambda branch=branch: branch)
-        failures = []; stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures)
-        assert len(failures) == 2
-    for issue, branch in ((346, TRANSITION), (349, A2_2)):
+                   A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{A2_3A}-retry",
+                   A2_3A.replace("-351-", "-350-"), "cut1-proces\u0455-346-transition"):
+        assert len(route(monkeypatch,branch,[])) == 2
+    for issue, branch in ((346, TRANSITION), (349, A2_2), (351, A2_3A)):
         artifact = json.loads((Path(__file__).parents[2]/f"docs/governance/preflights/issue-{issue}.json").read_text())
         assert artifact["branch"] == branch and set(artifact["scope"]["required"]) == SCOPES[branch]
     original_read = Path.read_text
     monkeypatch.setattr(Path, "read_text", lambda path, *a, **kw: (_ for _ in ()).throw(AssertionError())
-                        if path.name in {"issue-346.json", "issue-335.json", "issue-349.json"}
+                        if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json"}
                         else original_read(path, *a, **kw))
     policy = load_module("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {branch: policy[branch] for branch in SCOPES} == SCOPES
@@ -68,12 +63,10 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
     stage_file, status_file = tmp_path / "stage", tmp_path / "status"
     mode = "| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
     stage_file.write_text("8\n"); status_file.write_text(mode)
-    calls: list[list[str]] = []
+    calls: list[list[str]] = []; monkeypatch.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)
     monkeypatch.setattr(dispatcher, "CURRENT_STAGE", stage_file)
     monkeypatch.setattr(dispatcher, "STATUS_DOC", status_file)
-    monkeypatch.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)
-    def record(args: list[str], cwd: Path) -> int:
-        calls.append(args); return 0
+    def record(args: list[str], cwd: Path) -> int: calls.append(args); return 0
     monkeypatch.setattr(dispatcher.subprocess, "call", record)
     for branch in SCOPES:
         calls.clear(); monkeypatch.setattr(dispatcher, "current_branch", lambda branch=branch: branch)
@@ -89,8 +82,7 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     put(tmp_path, "copy-destination.txt", "copy"); put(tmp_path, "committed.txt", "committed")
     put(tmp_path, "backend/app/main.py", "forbidden first push")
     git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "first push")
-    first_head = git(tmp_path, "rev-parse", "HEAD")
-    put(tmp_path, "docs/STATUS.md", "allowed second push")
+    first_head = git(tmp_path, "rev-parse", "HEAD"); put(tmp_path, "docs/STATUS.md", "allowed second push")
     git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "second push"); head = git(tmp_path, "rev-parse", "HEAD")
     git(tmp_path, "checkout", "main"); put(tmp_path, "main-only.txt", "main")
     git(tmp_path, "add", "."); git(tmp_path, "commit", "-m", "main"); base = git(tmp_path, "rev-parse", "HEAD")
@@ -114,8 +106,7 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     assert required <= paths and "main-only.txt" not in paths
     assert ["git", "merge-base", "origin/main", head] in calls and ["git", "merge-base", first_head, head] not in calls
     monkeypatch.setattr(stage8, "current_branch", lambda: TRANSITION); failures: list[str] = []
-    stage8.check_stage_scope(failures)
-    forbidden = required - SCOPES[TRANSITION]; assert all(
+    stage8.check_stage_scope(failures); forbidden = required - SCOPES[TRANSITION]; assert all(
         f"Stage 8 changed file outside the allowlist: {path}" in failures for path in forbidden)
     event = tmp_path / "event.json"; event.write_text(json.dumps({"pull_request": {"head": {"sha": first_head}}}))
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request"); monkeypatch.setenv("GITHUB_BASE_SHA", base)
@@ -174,11 +165,9 @@ def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> 
     encoded = json.dumps({b: sorted(source[b]) for b, _ in cases}, sort_keys=True, separators=(",", ":")).encode()
     assert sha(encoded).hexdigest() == "95bbea6ae7294e5db03ed5c62caae3b74a7aff8c8f12aef5efe134b15a585117"
     for branch, rejected in cases:
-        monkeypatch.setattr(stage8, "current_branch", lambda branch=branch: branch)
         error = f"Stage 8 changed file outside the allowlist: {rejected}"
         for changed, expected in ((sorted(source[branch]), []), ([rejected], [error])):
-            monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda changed=changed: changed)
-            failures: list[str] = []; stage8.check_stage_scope(failures); assert failures == expected
+            assert route(monkeypatch,branch,changed) == expected
 def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
     failures: list[str] = []; stage8.check_dependencies_and_scripts(failures)
     assert not [failure for failure in failures if "docker scout cves" in failure]
@@ -225,13 +214,11 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
         STAGE4: ((prefix + "top_k=RETRIEVAL_TOP_K,", prefix + "top_k=7,"),
             ('LOW_RETRIEVAL = "LOW_RETRIEVAL_CONFIDENCE"', 'LOW_RETRIEVAL = "LOW_CONFIDENCE"'),
             ("                    if not retrieved:\n", "                    if False and not retrieved:\n"),
-            (low, low.replace("REFUSED", "FAILED")),
-            ("import math", "import math\nRETRIEVAL_TOP_K = 7")),
+            (low, low.replace("REFUSED", "FAILED")), ("import math", "import math\nRETRIEVAL_TOP_K = 7")),
         ARCH: (("`topK = 6`", "`topK = 7`"), ("`min_retrieved_chunks = 1`", "`min_retrieved_chunks = 0`"),
                ("`min_distinct_documents = 1`", "`min_distinct_documents = 0`"),
                ("## Provider Adapter Contract", "## Retrieval Strategy v1   \n\n## Provider Adapter Contract")),
-        ADR: (("`topK = 6`", "`topK = 7`"),),
-        DECL: (('    "maximumChunksPerDocument": 3,\n', ""),
+        ADR: (("`topK = 6`", "`topK = 7`"),), DECL: (('    "maximumChunksPerDocument": 3,\n', ""),
                ('"maximumChunksPerDocument": 3', '"maximumChunksPerDocument": true'),
                ('"maximumChunksPerDocument": 3', '"maximumChunksPerDocument": 6'),
                ('"retrievalStrategy": {', '"retrievalStrategy": {},\n  "retrievalStrategy": {'),
@@ -248,3 +235,16 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
     for module in (stage8, stage2):
         monkeypatch.setattr(module, "check_retrieval_strategy_v1_parity", lambda root, failures: calls.append(root))
         assert module.main() == 1 and calls == [module.ROOT]; calls.clear()
+def test_a23a_contract_gate_rejects_every_frozen_marker_mutation() -> None:
+    encoded=json.dumps(stage8.A23A_CONTRACT_MARKERS,sort_keys=True,separators=(",",":")).encode()
+    assert hashlib.sha256(encoded).hexdigest() == "0087f47c997797f9df40bd270379168b253ee7c744be71383a7c581592600288"
+    documents={path:(REPO/path).read_text(encoding="utf-8") for path in stage8.A23A_CONTRACT_MARKERS}
+    assert stage8.evaluation_lineage_checksum_v2_contract_valid(documents)
+    for path, markers in stage8.A23A_CONTRACT_MARKERS.items():
+        for marker in markers:
+            assert documents[path].count(marker)>=1
+            mutated={**documents,path:documents[path].replace(marker,"MUTATED")}
+            assert not stage8.evaluation_lineage_checksum_v2_contract_valid(mutated)
+    api=documents["docs/API_CONTRACT.md"]; preimage=api.rsplit("```json\n",1)[1].split("\n```",1)[0]
+    assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (
+        "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377")
