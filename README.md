@@ -1,17 +1,35 @@
 # NarraTwin AI
 
-**NarraTwin AI** is a provider-agnostic multilingual AI avatar walkthrough platform.
+**NarraTwin AI** explores how approved product knowledge can become grounded,
+cited, multilingual walkthroughs without hiding unsupported claims or
+synthetic-media risk.
 
-NarraTwin turns approved knowledge into grounded, cited, multilingual avatar
-explanations and interactive Q&A. It adapts explanations for legitimate product
-audiences including recruiters, hiring managers, engineers, product leaders,
-customers, beginners, and global viewers.
+> **Release posture: No-Go.** This repository demonstrates an implemented
+> local/mock vertical slice. It is not hosted, publicly released,
+> production-ready, or connected to a real avatar, video, TTS, or paid
+> generation provider.
+
+[Run the local demo](#local-demo) ·
+[Contribute](https://github.com/imrohitagrawal/.github/blob/main/CONTRIBUTING.md) ·
+[Join a Discussion](https://github.com/imrohitagrawal/narratwin-ai/discussions) ·
+[Report a bug](https://github.com/imrohitagrawal/narratwin-ai/issues/new)
+
+## What works now—and what does not
+
+The implemented local/mock path accepts approved markdown or text, builds a
+project-scoped retrieval index, generates a grounded walkthrough script,
+displays citations, evaluates unsupported claims, and stores the result for the
+local UI.
+
+Not implemented: interactive avatar Q&A, real avatar or video generation,
+provider-backed media generation, hosted deployment, production durability,
+public release, or production readiness.
+
+All current media behavior is synthetic and local/mock. Cloned face or voice
+use requires explicit documented consent and remains disabled; AI-generated
+media must retain provenance and disclosure boundaries.
 
 ## Current repository state
-
-Interactive avatar Q&A remains intended and is not currently implemented.
-Current executable behavior is described below and must not be inferred from the
-product statement alone.
 
 Stage 8 and the Final Independent Reviewer Pass are merged to `main`. Phase 1
 Closure is active, and the release posture remains **No-Go** until required P0/P1
@@ -32,26 +50,17 @@ as `docs/REVIEW_RIGOR_RETROSPECTIVE.md` and
 implementation stage, opening a release-readiness PR, or using this project as a
 template for a new application.
 
-The implemented local/mock Phase 1 path covers:
-
-- project creation
-- markdown/text knowledge upload
-- ingest, chunk, and project-scoped retrieval
-- grounded walkthrough script generation
-- citation/source-reference display
-- unsupported-claim evaluation
-- stored output display in the UI
-
 The current demo is local-only, single-process, process-local, and non-durable.
-It does not approve production release, multi-worker deployment, real video
-export, external paid/provider-backed generation, cloned identity use, or public
-synthetic-media distribution.
 
 ## Local demo
 
 ```bash
-cp .env.example .env
-docker compose up --build
+cp .env.example .env && docker compose up --build
+```
+
+Then, in another terminal, verify the local services:
+
+```bash
 curl http://localhost:8000/api/v1/healthz
 curl http://localhost:8000/api/v1/readyz
 ```
