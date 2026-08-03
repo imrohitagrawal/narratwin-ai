@@ -41,22 +41,40 @@ def fixture_lineage(**values: Any) -> dict[str, Any]:
     citations = tuple(citations)
     if len(refs) != values["source_context_ref_count"] or len(citations) != values["source_citation_count"]:
         raise Stage7Error(422, "VALIDATION_ERROR", "Fixture evidence count is invalid.")
-    values.update(source_context_ref_ids=refs, source_citation_indexes=citations,
-                  source_evaluation_id=values["source_evaluation_id"].strip(),
-                  source_run_id=values["source_run_id"].strip(), trace_id=values["trace_id"].strip(),
-                  evaluation_status=values["evaluation_status"].strip().upper())
+    values.update(
+        source_context_ref_ids=refs,
+        source_citation_indexes=citations,
+        source_evaluation_id=values["source_evaluation_id"].strip(),
+        source_run_id=values["source_run_id"].strip(),
+        trace_id=values["trace_id"].strip(),
+        evaluation_status=values["evaluation_status"].strip().upper(),
+    )
     lineage = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
-    lineage["evaluation"].update(evaluationId=values["source_evaluation_id"], runId=values["source_run_id"],
-                                 status=values["evaluation_status"], traceId=values["trace_id"])
+    lineage["evaluation"].update(
+        evaluationId=values["source_evaluation_id"],
+        runId=values["source_run_id"],
+        status=values["evaluation_status"],
+        traceId=values["trace_id"],
+    )
     tenant_id = values.get("tenant_id", "tenant")
     project_id = values.get("project_id", "project")
     lineage["scope"] = {"projectId": project_id, "tenantId": tenant_id}
     template = lineage["selectedContext"][0]
-    lineage["selectedContext"] = [{**template, "chunkChecksum": checksum_text(ref), "chunkId": f"chunk_{index}",
-        "chunkIndex": index, "contextRefId": ref, "documentId": f"doc_{index}", "projectId": project_id,
-        "snapshotChecksum": checksum_text("snapshot:" + ref),
-        "sourceDocumentChecksum": checksum_text("document:" + ref), "tenantId": tenant_id}
-        for index, ref in enumerate(refs)]
+    lineage["selectedContext"] = [
+        {
+            **template,
+            "chunkChecksum": checksum_text(ref),
+            "chunkId": f"chunk_{index}",
+            "chunkIndex": index,
+            "contextRefId": ref,
+            "documentId": f"doc_{index}",
+            "projectId": project_id,
+            "snapshotChecksum": checksum_text("snapshot:" + ref),
+            "sourceDocumentChecksum": checksum_text("document:" + ref),
+            "tenantId": tenant_id,
+        }
+        for index, ref in enumerate(refs)
+    ]
     lineage["sourceCitationIndexes"] = list(citations)
     return validate_evaluation_lineage_payload(lineage)
 
@@ -73,17 +91,26 @@ def _inject_fixture_lineage(call: dict[str, Any]) -> None:
     citations = tuple(call.get("source_citation_indexes") or ())
     if not refs and call.get("evaluation_status") == "PASSED":
         refs, citations = ("ctx_fixture",), (1,)
-        call.update(source_context_ref_ids=refs, source_context_ref_count=1,
-                    source_citation_indexes=citations, source_citation_count=1)
+        call.update(
+            source_context_ref_ids=refs,
+            source_context_ref_count=1,
+            source_citation_indexes=citations,
+            source_citation_count=1,
+        )
     durable = call.get("durable_consent")
     tenant_id = call.get("tenant_id", durable.tenant_id if durable is not None else "tenant")
     project_id = call.get("project_id", durable.project_id if durable is not None else "project")
     values = {**call, "tenant_id": tenant_id, "project_id": project_id}
-    values.update(source_evaluation_id=call.get("source_evaluation_id", "local_evaluation"),
-                  source_run_id=call.get("source_run_id", "local_source_run"),
-                  trace_id=call.get("trace_id", "local_trace"), evaluation_status=call.get("evaluation_status", "UNKNOWN"),
-                  source_context_ref_ids=refs, source_context_ref_count=call.get("source_context_ref_count", len(refs)),
-                  source_citation_indexes=citations, source_citation_count=call.get("source_citation_count", len(citations)))
+    values.update(
+        source_evaluation_id=call.get("source_evaluation_id", "local_evaluation"),
+        source_run_id=call.get("source_run_id", "local_source_run"),
+        trace_id=call.get("trace_id", "local_trace"),
+        evaluation_status=call.get("evaluation_status", "UNKNOWN"),
+        source_context_ref_ids=refs,
+        source_context_ref_count=call.get("source_context_ref_count", len(refs)),
+        source_citation_indexes=citations,
+        source_citation_count=call.get("source_citation_count", len(citations)),
+    )
     legacy = {key: value for key, value in values.items() if key not in {"tenant_id", "project_id"}}
     lineage = call.setdefault("source_evaluation_lineage", fixture_lineage(**values))
     expected_checksum = build_v2_source_evaluation_checksum(lineage)
@@ -112,11 +139,6 @@ def create_stage7_service(*args: Any, **kwargs: Any) -> Any:
 
         setattr(service, name, with_lineage)
     return service
-
-
-
-
-
 
 
 

@@ -583,12 +583,17 @@ class Stage7Service:
         for render in self.avatar_renders.values():
             bundle = render.multilingual_bundle
             values = multilingual_bundle_to_manifest(bundle) if bundle is not None else None
-            rows.append(PersistedLineage(
-                component="Stage 7 render", row_id=render.avatar_render_id,
-                upstream_row_id=bundle.multilingual_run_id if bundle else None,
-                source_run_id=render.source_run_id, payload=render.source_evaluation_lineage,
-                digest=render.source_evaluation_checksum, connected_values=values,
-            ))
+            rows.append(
+                PersistedLineage(
+                    component="Stage 7 render",
+                    row_id=render.avatar_render_id,
+                    upstream_row_id=bundle.multilingual_run_id if bundle else None,
+                    source_run_id=render.source_run_id,
+                    payload=render.source_evaluation_lineage,
+                    digest=render.source_evaluation_checksum,
+                    connected_values=values,
+                )
+            )
         return tuple(rows)
 
     def quarantine_restored_state(self, reason: str) -> None:

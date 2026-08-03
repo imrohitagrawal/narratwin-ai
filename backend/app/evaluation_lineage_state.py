@@ -111,8 +111,11 @@ def validate_upstream_connections(rows: Iterable[PersistedLineage]) -> None:
         if row.upstream_row_id is None:
             continue
         source = upstream.get(row.upstream_row_id)
-        if (source is None or source.source_run_id != row.source_run_id
-                or source.connected_values != row.connected_values):
+        if (
+            source is None
+            or source.source_run_id != row.source_run_id
+            or source.connected_values != row.connected_values
+        ):
             raise ValueError(f"{row.component} upstream Stage 6 bundle is mismatched.")
 
 

@@ -1,4 +1,4 @@
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import json
 from pathlib import Path
 from typing import Any
@@ -66,6 +66,7 @@ def test_local_restore_drill_writes_json_summary(tmp_path: Path) -> None:
         ("stage7", ("schema",), "stage7-local-state-v1"),
         ("stage7", ("syntheticMediaConsents", 0, "source_evaluation_checksum"), "sha256:stale"),
         ("stage7", ("avatarRenders", 0, "source_evaluation_lineage", "sourceCitationIndexes", 0), 99),
+        ("stage7", ("avatarRenders", 0, "multilingual_bundle", "provider_posture", "voiceProvider"), "stale"),
         ("stage7", ("artifactMetadata", 0, "metadata", 0, "checksum"), "sha256:stale"),
         ("stage7", ("idempotencyRecords", 0, "request_checksum"), "sha256:stale"),
     ],
@@ -100,3 +101,61 @@ def test_local_restore_drill_rejects_mutated_connected_graph_before_replay(
     with pytest.raises(LocalRestoreDrillError):
         run_local_restore_drill(workdir=tmp_path)
     assert replay_calls == 0
+
+
+def test_restore_drill_cross_store_comparison_is_a_replay_safety_oracle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_bundle = drill._stage7_bundle
+
+    def divergent_bundle(result: Any) -> Any:
+        bundle = original_bundle(result)
+        posture = {**bundle.provider_posture, "voiceProvider": "well-formed-but-different"}
+        return replace(bundle, provider_posture=posture)
+
+    monkeypatch.setattr(drill, "_stage7_bundle", divergent_bundle)
+    source_paths = drill._state_paths(tmp_path / "source")
+    restored_paths = drill._state_paths(tmp_path / "restored")
+    for state_path in (*source_paths.values(), *restored_paths.values()):
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+    seeded = drill._seed_source_state(source_paths)
+    drill._copy_and_verify_state_files(source_paths, restored_paths)
+    restored = drill._restore_services(restored_paths)
+    original_bytes = {service: state_path.read_bytes() for service, state_path in restored_paths.items()}
+    downstream_calls: list[str] = []
+
+    def unexpected_downstream_call(*args: Any, call_name: str, **kwargs: Any) -> None:
+        del args, kwargs
+        downstream_calls.append(call_name)
+        raise AssertionError(f"cross-store mutation reached replay: {call_name}")
+
+    boundaries = (
+        (restored.stage4, "create_project", "stage4 replay"),
+        (restored.stage4, "generate_walkthrough", "generation"),
+        (restored.stage6, "generate_multilingual_walkthrough", "translation/voice"),
+        (restored.stage7, "capture_synthetic_avatar_consent", "consent"),
+        (restored.stage7, "render_avatar_demo", "render/artifact/manifest"),
+        (restored.stage7.avatar_provider, "render", "provider"),
+    )
+    for owner, name, call_name in boundaries:
+        monkeypatch.setattr(
+            owner,
+            name,
+            lambda *args, _call_name=call_name, **kwargs: unexpected_downstream_call(
+                *args,
+                call_name=_call_name,
+                **kwargs,
+            ),
+        )
+
+    with pytest.raises(LocalRestoreDrillError, match="connected lineage is mismatched"):
+        drill._assert_replay_safety(seeded, restored)
+    assert downstream_calls == []
+    assert {service: path.read_bytes() for service, path in restored_paths.items()} == original_bytes
+
+    monkeypatch.setattr(drill, "validate_cross_store_lineages", lambda *args, **kwargs: ())
+    with pytest.raises(AssertionError, match="cross-store mutation reached replay"):
+        drill._assert_replay_safety(seeded, restored)
+    assert downstream_calls == ["stage4 replay"]
+    assert {service: path.read_bytes() for service, path in restored_paths.items()} == original_bytes

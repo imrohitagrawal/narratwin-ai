@@ -1012,7 +1012,8 @@ class Stage6Service:
                 payload=result.source_evaluation_lineage,
                 digest=result.source_evaluation_checksum,
                 connected_values={
-                    "sourceRunId": result.source_run_id, "multilingualRunId": result.multilingual_run_id,
+                    "sourceRunId": result.source_run_id,
+                    "multilingualRunId": result.multilingual_run_id,
                     "targetLanguage": result.target_language,
                     "translatedScriptChecksum": result.artifacts.translated_script.checksum,
                     "subtitlesChecksum": result.artifacts.subtitles.checksum,
@@ -1252,31 +1253,31 @@ class Stage6Service:
 
     def _state_payload_locked(self) -> dict[str, Any]:
         return {
-                "schema": "stage6-local-state-v3",
+            "schema": "stage6-local-state-v3",
             "multilingualRuns": [
                 multilingual_result_to_dict(result) for result in self.multilingual_runs.values()
             ],
-                "requestDedupeIndex": [
-                    {
-                        "idempotency_scope": scope,
-                        "request_checksum": request_checksum,
-                        "multilingual_run_id": multilingual_run_id,
-                    }
+            "requestDedupeIndex": [
+                {
+                    "idempotency_scope": scope,
+                    "request_checksum": request_checksum,
+                    "multilingual_run_id": multilingual_run_id,
+                }
                 for (
                     scope,
                     request_checksum,
                 ), multilingual_run_id in self.request_dedupe_index.items()
-                ],
-                "idempotencyRecords": [
-                    stage6_idempotency_record_to_dict(record)
-                    for record in self.idempotency_records.values()
-                    if record.status not in {"PENDING", "RUNNING"}
-                ],
-                "ttsDeletions": [
+            ],
+            "idempotencyRecords": [
+                stage6_idempotency_record_to_dict(record)
+                for record in self.idempotency_records.values()
+                if record.status not in {"PENDING", "RUNNING"}
+            ],
+            "ttsDeletions": [
                 tts_artifact_deletion_record_to_dict(record)
                 for record in self.tts_deletions.values()
-                ],
-                "counters": {"run": self._run_counter},
+            ],
+            "counters": {"run": self._run_counter},
         }
 
     def _persist_locked(self) -> None:

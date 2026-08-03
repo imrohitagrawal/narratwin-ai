@@ -13,6 +13,7 @@ from time import perf_counter
 from typing import TypeAlias
 
 from backend.app.evaluation_lineage import build_source_evaluation_checksum, derive_evaluation_lineage
+from backend.app.evaluation_lineage_state import validate_cross_store_lineages
 from backend.app.stage4 import (
     DocumentRecord,
     IngestionRunRecord,
@@ -24,7 +25,9 @@ from backend.app.stage6 import MultilingualWalkthroughResult, Stage6Service
 from backend.app.stage7 import (
     AvatarRenderResult,
     DurableAvatarRenderScope,
+    Stage7MultilingualBundle,
     Stage7Service,
+    SYNTHETIC_AVATAR_CONSENT_VERSION,
     SyntheticAvatarConsentRecord,
     create_stage7_service,
 )
@@ -91,6 +94,28 @@ class RestoredDrillServices:
     stage4: Stage4Service
     stage6: Stage6Service
     stage7: Stage7Service
+
+
+def _stage7_bundle(result: MultilingualWalkthroughResult) -> Stage7MultilingualBundle:
+    return Stage7MultilingualBundle(
+        source_run_id=result.source_run_id,
+        multilingual_run_id=result.multilingual_run_id,
+        target_language=result.target_language,
+        translated_script_checksum=result.artifacts.translated_script.checksum,
+        subtitles_checksum=result.artifacts.subtitles.checksum,
+        voice_manifest_checksum=result.artifacts.voice_manifest.checksum,
+        context_ref_ids=result.source_context_ref_ids,
+        citation_indexes=result.source_citation_indexes,
+        evaluation_id=result.source_evaluation_id,
+        evaluation_checksum=result.source_evaluation_checksum,
+        provider_posture={
+            "translationProvider": result.translation_provider.provider,
+            "translationProviderMode": result.translation_provider.provider_mode,
+            "voiceProvider": result.voice.provider,
+            "voiceProviderMode": result.voice.provider_mode,
+        },
+        consent_disclosure_version=SYNTHETIC_AVATAR_CONSENT_VERSION,
+    )
 
 
 def run_local_restore_drill(
@@ -250,7 +275,7 @@ def _seed_source_state(paths: StageStatePaths) -> SeededDrillState:
         idempotency_key="restore-drill-stage7-consent",
     )
     render = stage7.render_avatar_demo(
-        source_script=source_script,
+        source_script=multilingual.translated_script_text,
         requested_avatar_provider="mock",
         source_run_id=walkthrough.run_id,
         trace_id=walkthrough.trace_id,
@@ -262,6 +287,7 @@ def _seed_source_state(paths: StageStatePaths) -> SeededDrillState:
         source_evaluation_lineage=evaluation_lineage,
         source_evaluation_checksum=evaluation_checksum,
         evaluation_status=walkthrough.evaluation.evaluation_status,
+        multilingual_bundle=_stage7_bundle(multilingual),
         consent_to_use_synthetic_avatar=True,
         durable_consent=DurableAvatarRenderScope(
             tenant_id=principal.tenant_id,
@@ -417,10 +443,15 @@ def _assert_replay_safety(seeded: SeededDrillState, restored: RestoredDrillServi
     restored_render = stage7.avatar_renders.get(seeded.render.avatar_render_id)
     if restored_stage6 is None or restored_consent is None or restored_render is None:
         raise LocalRestoreDrillError("Restored Stage 6/7 lineage graph is inactive.")
-    connected = (seeded.evaluation_lineage, restored_stage6.source_evaluation_lineage,
-                 restored_consent.source_evaluation_lineage, restored_render.source_evaluation_lineage)
-    if any(lineage != evaluation_lineage for lineage in connected) or evaluation_checksum != seeded.evaluation_checksum:
+    if evaluation_lineage != seeded.evaluation_lineage or evaluation_checksum != seeded.evaluation_checksum:
         raise LocalRestoreDrillError("Restored Stage 4/6/7 lineage graph is mismatched.")
+    try:
+        validate_cross_store_lineages(
+            stage4.walkthrough_runs,
+            (*stage6.persisted_lineage_rows(), *stage7.persisted_lineage_rows()),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise LocalRestoreDrillError("Restored Stage 6/7 connected lineage is mismatched.") from exc
     source_script = walkthrough.accepted_script_text
     evaluation = walkthrough.evaluation
     if source_script is None or evaluation is None:
@@ -501,7 +532,7 @@ def _assert_replay_safety(seeded: SeededDrillState, restored: RestoredDrillServi
         idempotency_key="restore-drill-stage7-consent",
     )
     replayed_render = stage7.render_avatar_demo(
-        source_script=source_script,
+        source_script=replayed_stage6.translated_script_text,
         requested_avatar_provider="mock",
         source_run_id=walkthrough.run_id,
         trace_id=walkthrough.trace_id,
@@ -513,6 +544,7 @@ def _assert_replay_safety(seeded: SeededDrillState, restored: RestoredDrillServi
         source_evaluation_lineage=evaluation_lineage,
         source_evaluation_checksum=evaluation_checksum,
         evaluation_status=evaluation.evaluation_status,
+        multilingual_bundle=_stage7_bundle(replayed_stage6),
         consent_to_use_synthetic_avatar=True,
         durable_consent=DurableAvatarRenderScope(
             tenant_id=principal.tenant_id,

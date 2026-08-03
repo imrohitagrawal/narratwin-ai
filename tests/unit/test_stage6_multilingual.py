@@ -45,17 +45,29 @@ def fixture_lineage(**values: Any) -> dict[str, Any]:
     tenant_id = values.get("tenant_id", "tenant")
     project_id = values.get("project_id", "project")
     lineage = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
-    lineage["evaluation"].update(evaluationId=values.get("source_evaluation_id", "eval_local"),
-                                 runId=values.get("source_run_id", "local_source_run"),
-                                 status=values.get("evaluation_status", "PASSED"),
-                                 traceId=values.get("trace_id", "local_trace"))
+    lineage["evaluation"].update(
+        evaluationId=values.get("source_evaluation_id", "eval_local"),
+        runId=values.get("source_run_id", "local_source_run"),
+        status=values.get("evaluation_status", "PASSED"),
+        traceId=values.get("trace_id", "local_trace"),
+    )
     lineage["scope"] = {"projectId": project_id, "tenantId": tenant_id}
     template = lineage["selectedContext"][0]
-    lineage["selectedContext"] = [{**template, "chunkChecksum": checksum_text(cid), "chunkId": f"chunk_{index}",
-        "chunkIndex": index, "contextRefId": cid, "documentId": f"doc_{index}", "projectId": project_id,
-        "snapshotChecksum": checksum_text("snapshot:" + cid),
-        "sourceDocumentChecksum": checksum_text("document:" + cid), "tenantId": tenant_id}
-        for index, cid in enumerate(context_ids)]
+    lineage["selectedContext"] = [
+        {
+            **template,
+            "chunkChecksum": checksum_text(context_id),
+            "chunkId": f"chunk_{index}",
+            "chunkIndex": index,
+            "contextRefId": context_id,
+            "documentId": f"doc_{index}",
+            "projectId": project_id,
+            "snapshotChecksum": checksum_text("snapshot:" + context_id),
+            "sourceDocumentChecksum": checksum_text("document:" + context_id),
+            "tenantId": tenant_id,
+        }
+        for index, context_id in enumerate(context_ids)
+    ]
     lineage["sourceCitationIndexes"] = list(citations)
     return cast(dict[str, Any], lineage)
 
@@ -68,15 +80,21 @@ def create_stage6_service(*args: Any, **kwargs: Any) -> Any:
         if "source_evaluation_checksum" not in call:
             if not re.search(r"\[\d+\]", call.get("source_script", "")):
                 call["source_script"] = call.get("source_script", "").rstrip() + " [1]"
-            defaults = {"source_context_ref_count": 1, "source_citation_count": 1,
-                        "source_context_ref_ids": ("ctx_001",), "source_citation_indexes": (1,),
-                        "source_claim_support_ids": ("claimsup_001",), "source_evaluation_id": "eval_local",
-                        "evaluation_status": "PASSED"}
+            defaults = {
+                "source_context_ref_count": 1,
+                "source_citation_count": 1,
+                "source_context_ref_ids": ("ctx_001",),
+                "source_citation_indexes": (1,),
+                "source_claim_support_ids": ("claimsup_001",),
+                "source_evaluation_id": "eval_local",
+                "evaluation_status": "PASSED",
+            }
             for key, value in defaults.items():
                 call.setdefault(key, value)
         lineage = call.setdefault("source_evaluation_lineage", fixture_lineage(**call))
         call.setdefault("source_evaluation_checksum", build_source_evaluation_checksum(lineage))
         return generate(**call)
+
     setattr(service, "generate_multilingual_walkthrough", with_lineage)
     return service
 

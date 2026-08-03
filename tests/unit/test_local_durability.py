@@ -23,20 +23,32 @@ GOLDEN_V2_LINEAGE = json.loads(_contract.rsplit("```json\n", 1)[1].split("\n```"
 def evaluation_lineage_fixture(**values: Any) -> dict[str, Any]:
     context_ids = tuple(values.get("source_context_ref_ids", ("ctx_001",)))
     citations = tuple(values.get("source_citation_indexes", (1,)))
-    tenant_id, project_id = values.get("tenant_id", "tenant"), values.get("project_id", "project")
+    tenant_id = values.get("tenant_id", "tenant")
+    project_id = values.get("project_id", "project")
     lineage = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
-    lineage["evaluation"].update(evaluationId=values.get("source_evaluation_id", "eval_local"),
-                                 runId=values.get("source_run_id", "local_source_run"),
-                                 status=str(values.get("evaluation_status", "PASSED")).strip().upper(),
-                                 traceId=values.get("trace_id", "local_trace"))
+    lineage["evaluation"].update(
+        evaluationId=values.get("source_evaluation_id", "eval_local"),
+        runId=values.get("source_run_id", "local_source_run"),
+        status=str(values.get("evaluation_status", "PASSED")).strip().upper(),
+        traceId=values.get("trace_id", "local_trace"),
+    )
     lineage["scope"] = {"projectId": project_id, "tenantId": tenant_id}
     template = lineage["selectedContext"][0]
-    lineage["selectedContext"] = [{**template, "chunkChecksum": checksum_text(context_id),
-        "chunkId": f"chunk_{index}", "chunkIndex": index, "contextRefId": context_id,
-        "documentId": f"doc_{index}", "projectId": project_id,
-        "snapshotChecksum": checksum_text("snapshot:" + context_id),
-        "sourceDocumentChecksum": checksum_text("document:" + context_id), "tenantId": tenant_id}
-        for index, context_id in enumerate(context_ids)]
+    lineage["selectedContext"] = [
+        {
+            **template,
+            "chunkChecksum": checksum_text(context_id),
+            "chunkId": f"chunk_{index}",
+            "chunkIndex": index,
+            "contextRefId": context_id,
+            "documentId": f"doc_{index}",
+            "projectId": project_id,
+            "snapshotChecksum": checksum_text("snapshot:" + context_id),
+            "sourceDocumentChecksum": checksum_text("document:" + context_id),
+            "tenantId": tenant_id,
+        }
+        for index, context_id in enumerate(context_ids)
+    ]
     lineage["sourceCitationIndexes"] = list(citations)
     return validate_evaluation_lineage_payload(lineage)
 
@@ -59,12 +71,17 @@ def _inject_stage7_lineage(values: dict[str, Any]) -> dict[str, Any]:
     durable = call.get("durable_consent")
     tenant_id = call.get("tenant_id", durable.tenant_id if durable is not None else "tenant")
     project_id = call.get("project_id", durable.project_id if durable is not None else "project")
-    fixture_values = {**call, "tenant_id": tenant_id, "project_id": project_id,
-                      "source_context_ref_ids": refs, "source_citation_indexes": citations,
-                      "source_evaluation_id": call.get("source_evaluation_id", "local_evaluation"),
-                      "source_run_id": call.get("source_run_id", "local_source_run"),
-                      "trace_id": call.get("trace_id", "local_trace"),
-                      "evaluation_status": call.get("evaluation_status", "UNKNOWN")}
+    fixture_values = {
+        **call,
+        "tenant_id": tenant_id,
+        "project_id": project_id,
+        "source_context_ref_ids": refs,
+        "source_citation_indexes": citations,
+        "source_evaluation_id": call.get("source_evaluation_id", "local_evaluation"),
+        "source_run_id": call.get("source_run_id", "local_source_run"),
+        "trace_id": call.get("trace_id", "local_trace"),
+        "evaluation_status": call.get("evaluation_status", "UNKNOWN"),
+    }
     legacy = {key: value for key, value in fixture_values.items() if key not in {"tenant_id", "project_id"}}
     lineage = call.setdefault("source_evaluation_lineage", evaluation_lineage_fixture(**fixture_values))
     expected_checksum = build_source_evaluation_checksum(lineage)
@@ -1995,10 +2012,10 @@ def test_stage7_file_state_terminal_persist_failure_preserves_concurrent_success
             source_context_ref_count: int,
             source_citation_count: int,
             source_context_ref_ids: tuple[str, ...] = (),
-                source_citation_indexes: tuple[int, ...] = (),
-                source_evaluation_id: str = "local_evaluation",
-                source_evaluation_lineage: dict[str, Any] | None = None,
-                source_evaluation_checksum: str = "",
+            source_citation_indexes: tuple[int, ...] = (),
+            source_evaluation_id: str = "local_evaluation",
+            source_evaluation_lineage: dict[str, Any] | None = None,
+            source_evaluation_checksum: str = "",
             evaluation_status: str = "UNKNOWN",
             multilingual_bundle: stage7_module.Stage7MultilingualBundle | None = None,
         ) -> stage7_module.AvatarProviderResult:
@@ -2014,10 +2031,10 @@ def test_stage7_file_state_terminal_persist_failure_preserves_concurrent_success
                 source_context_ref_count=source_context_ref_count,
                 source_citation_count=source_citation_count,
                 source_context_ref_ids=source_context_ref_ids,
-                    source_citation_indexes=source_citation_indexes,
-                    source_evaluation_id=source_evaluation_id,
-                    source_evaluation_lineage=source_evaluation_lineage,
-                    source_evaluation_checksum=source_evaluation_checksum,
+                source_citation_indexes=source_citation_indexes,
+                source_evaluation_id=source_evaluation_id,
+                source_evaluation_lineage=source_evaluation_lineage,
+                source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
                 multilingual_bundle=multilingual_bundle,
             )

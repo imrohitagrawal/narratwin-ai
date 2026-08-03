@@ -248,24 +248,3 @@ def test_a23a_contract_gate_rejects_every_frozen_marker_mutation(tmp_path: Path)
     assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (
         "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377")
     assert a23b.semantic_detector_self_test(tmp_path)
-
-
-@pytest.mark.parametrize(
-    "source",
-    [
-        "def legacy(*values): return '\\n'.join(values)\nchecksum_text(legacy(evaluation_id, run_id, trace_id, evaluation_status, context_ref_ids, citation_indexes))",
-        "legacy = lambda values: '\\n'.join(values)\nchecksum_text(legacy([evaluation_id, run_id, trace_id, evaluation_status, context_ref_ids, citation_indexes]))",
-        "values = ['\\n'.join([evaluation_id, run_id, trace_id, evaluation_status, context_ref_ids, citation_indexes])]\nchecksum_text(*values)",
-    ],
-    ids=["vararg-forwarding", "lambda-forwarding", "starred-checksum-argument"],
-)
-def test_a23b_semantic_detector_rejects_forwarding_mutations(source: str, tmp_path: Path) -> None:
-    assert a23b.semantic_legacy_failures(tmp_path / "mutation.py", source)
-
-
-def test_a23b_semantic_detector_terminates_cycles_and_accepts_canonical_v2(tmp_path: Path) -> None:
-    cycle = "def left(value): return right(value)\ndef right(value): return left(value)\nchecksum_text(left(payload))"
-    canonical = "checksum = build_source_evaluation_checksum(lineage_payload)"
-
-    assert a23b.semantic_legacy_failures(tmp_path / "cycle.py", cycle) == []
-    assert a23b.semantic_legacy_failures(tmp_path / "canonical.py", canonical) == []

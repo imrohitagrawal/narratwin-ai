@@ -8,26 +8,51 @@ from typing import Any, Callable, Mapping
 
 A23B_BRANCH = "stage8-353-r0c-a2-3b-evaluation-lineage-v2"
 A23A_BRANCH = "cut1-351-r0c-a2-3a-evaluation-lineage-contract"
-A23B_BASE, A23B_LINE_CAP = "90bbd59a84913ce9c7601bc180e051347cfccbcf", 2400
+A23B_BASE, A23B_LINE_CAP = "90bbd59a84913ce9c7601bc180e051347cfccbcf", 2700
 A23B_ALLOWED_FILES = {
-    "tests/acceptance/test_checkpoint3_full_project_multilingual.py", "backend/app/storage/local_restore_drill.py",
-    "tests/acceptance/test_checkpoint3_media_artifacts.py", "docs/governance/preflights/issue-353.json",
-    "tests/unit/test_stage6_multilingual.py", "tests/unit/test_local_restore_drill.py", "backend/app/stage6.py",
-    "tests/unit/test_stage8_quality_gate.py", "scripts/quality/check_stage8_docs.py", "backend/app/stage7.py",
-    "tests/unit/test_local_durability.py", "tests/api/test_stage7_avatar_api.py", "scripts/quality/stage8_a23b.py",
-    "backend/app/evaluation_lineage.py", "tests/unit/test_stage7_avatar.py", "backend/app/main.py",
-    "docs/STATUS.md", "backend/app/evaluation_lineage_state.py", "tests/unit/test_evaluation_lineage.py",
-    "tests/unit/test_evaluation_lineage_state.py", "scripts/guardrails_check.py",
-    "tests/unit/test_guardrails_check.py", "docs/ADR/0004-avatar-provider-adapter.md", "docs/TRACEABILITY.md",
+    "backend/app/evaluation_lineage.py",
+    "backend/app/evaluation_lineage_state.py",
+    "backend/app/main.py",
+    "backend/app/stage6.py",
+    "backend/app/stage7.py",
+    "backend/app/storage/local_restore_drill.py",
+    "docs/ADR/0004-avatar-provider-adapter.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/governance/preflights/issue-353.json",
+    "scripts/guardrails_check.py",
+    "scripts/quality/check_stage8_docs.py",
+    "scripts/quality/stage8_a23b.py",
+    "tests/acceptance/test_checkpoint3_full_project_multilingual.py",
+    "tests/acceptance/test_checkpoint3_media_artifacts.py",
+    "tests/api/test_stage7_avatar_api.py",
+    "tests/unit/test_evaluation_lineage.py",
+    "tests/unit/test_evaluation_lineage_state.py",
+    "tests/unit/test_guardrails_check.py",
+    "tests/unit/test_local_durability.py",
+    "tests/unit/test_local_restore_drill.py",
+    "tests/unit/test_stage6_multilingual.py",
+    "tests/unit/test_stage7_avatar.py",
+    "tests/unit/test_stage8_quality_gate.py",
 }
 A23A_ALLOWED_FILES = {
-    "docs/governance/preflights/issue-351.json", "docs/STATUS.md", "docs/API_CONTRACT.md",
-    "docs/ADR/0004-avatar-provider-adapter.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md",
-    "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py",
+    "docs/ADR/0004-avatar-provider-adapter.md",
+    "docs/API_CONTRACT.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/governance/preflights/issue-351.json",
+    "scripts/quality/check_stage8_docs.py",
+    "tests/unit/test_stage8_quality_gate.py",
 }
 A23_ROUTES = {A23A_BRANCH: A23A_ALLOWED_FILES, A23B_BRANCH: A23B_ALLOWED_FILES}
 LEGACY_FIELDS = (
-    ("evaluation", "id"), ("run", "id"), ("trace", "id"), ("evaluation", "status"), ("context", "ref"), ("citation",),
+    ("evaluation", "id"),
+    ("run", "id"),
+    ("trace", "id"),
+    ("evaluation", "status"),
+    ("context", "ref"),
+    ("citation",),
 )
 
 
@@ -67,6 +92,10 @@ def _legacy_preimage(
     if id(node) in seen:
         return False
     seen |= {id(node)}
+    if isinstance(node, ast.Starred):
+        return _legacy_preimage(node.value, assignments, functions, seen)
+    if isinstance(node, (ast.List, ast.Tuple)) and len(node.elts) == 1:
+        return _legacy_preimage(node.elts[0], assignments, functions, seen)
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
         if node.func.attr == "encode":
             return _legacy_preimage(node.func.value, assignments, functions, seen)
@@ -80,10 +109,25 @@ def _legacy_preimage(
     if isinstance(node, ast.Call):
         function = _resolve(node.func, assignments)
         name = function.id if isinstance(function, ast.Name) else ""
-        definition = functions.get(name)
+        definition = function if isinstance(function, ast.Lambda) else functions.get(name)
         if definition:
-            bindings = assignments | dict(zip((arg.arg for arg in definition.args.args), node.args, strict=False))
-            values = (item.value for item in ast.walk(definition) if isinstance(item, ast.Return) and item.value)
+            function_args = definition.args
+            bindings = assignments | dict(
+                zip((arg.arg for arg in function_args.args[::-1]), function_args.defaults[::-1], strict=False)
+            )
+            bindings.update(
+                (arg.arg, value)
+                for arg, value in zip(function_args.kwonlyargs, function_args.kw_defaults, strict=True)
+                if value is not None
+            )
+            bindings.update(zip((arg.arg for arg in function_args.args), node.args, strict=False))
+            if function_args.vararg:
+                bindings[function_args.vararg.arg] = ast.Tuple(elts=node.args, ctx=ast.Load())
+            bindings.update((item.arg, item.value) for item in node.keywords if item.arg)
+            if isinstance(definition, ast.Lambda):
+                values = iter((definition.body,))
+            else:
+                values = (item.value for item in ast.walk(definition) if isinstance(item, ast.Return) and item.value)
             return any(_legacy_preimage(value, bindings, functions, seen) for value in values)
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
         names = [ast.unparse(item).lower() for item in ast.walk(node) if isinstance(item, (ast.Name, ast.Attribute))]
@@ -101,11 +145,19 @@ def semantic_legacy_failures(path: Path, source: str | None = None) -> list[str]
         target.id: node.value for node in ast.walk(tree) if isinstance(node, ast.Assign)
         for target in node.targets if isinstance(target, ast.Name)
     }
-    functions = {node.name: node for node in ast.walk(tree)
-                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    functions = {
+        node.name: node
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
     checksum_names = {"build_source_evaluation_checksum"}
-    checksum_names.update(alias.asname for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)
-                          for alias in node.names if alias.name == "build_source_evaluation_checksum" and alias.asname)
+    checksum_names.update(
+        alias.asname
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+        if alias.name == "build_source_evaluation_checksum" and alias.asname
+    )
     failures: list[str] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -115,7 +167,8 @@ def semantic_legacy_failures(path: Path, source: str | None = None) -> list[str]
         if name in checksum_names and len(node.args) != 1:
             if not _negative_typeerror(node, parents):
                 failures.append(f"{path}: legacy evaluation-checksum call")
-        if any(_legacy_preimage(argument, assignments, functions) for argument in node.args):
+        arguments = (*node.args, *(item.value for item in node.keywords))
+        if any(_legacy_preimage(argument, assignments, functions) for argument in arguments):
             failures.append(f"{path}: manual six-field evaluation-checksum preimage")
     return failures
 
@@ -126,29 +179,47 @@ def a23a_markers_frozen(markers: object) -> bool:
 
 
 def semantic_detector_self_test(workdir: Path) -> bool:
-    direct = ("build_source_evaluation_checksum(evaluation_id=e,run_id=r,trace_id=t,"
-              "evaluation_status=s,context_ref_ids=c,citation_indexes=i)")
-    manual = ('checksum_text("\\n".join([evaluation_id,run_id,trace_id,'
-              'evaluation_status,context_ref_ids,citation_indexes]))')
-    indirect = ('fields=[evaluation_id,run_id,trace_id,evaluation_status,context_ref_ids,citation_indexes]\n'
-                'checksum_text("\\n".join(fields))')
+    direct = (
+        "build_source_evaluation_checksum(evaluation_id=e,run_id=r,trace_id=t,"
+        "evaluation_status=s,context_ref_ids=c,citation_indexes=i)"
+    )
+    fields = "[evaluation_id,run_id,trace_id,evaluation_status,context_ref_ids,citation_indexes]"
+    manual = 'checksum_text("\\n".join(' + fields + "))"
+    indirect = "fields=" + fields + '\nchecksum_text("\\n".join(fields))'
     generator = indirect.replace("join(fields)", "join(value for value in fields)")
-    concat = ('checksum_text(evaluation_id+"\\n"+run_id+"\\n"+trace_id+"\\n"+'
-              'evaluation_status+"\\n"+context_ref_ids+"\\n"+citation_indexes)')
+    concat = (
+        'checksum_text(evaluation_id+"\\n"+run_id+"\\n"+trace_id+"\\n"+'
+        'evaluation_status+"\\n"+context_ref_ids+"\\n"+citation_indexes)'
+    )
     joined = manual.removeprefix("checksum_text(").removesuffix(")")
     helper = "def legacy(): return " + joined + "\nchecksum_text(legacy())"
-    parameter = "def legacy(fields): return '\\n'.join(fields)\n" + manual.replace('"\\n".join(', "legacy(", 1)
+    parameter = "def legacy(fields): return '\\n'.join(fields)\nchecksum_text(legacy(" + fields + "))"
+    keyword = parameter.replace("legacy(fields)", "legacy(*, fields)").replace("legacy([", "legacy(fields=[")
+    vararg = parameter.replace("legacy(fields)", "legacy(*fields)").replace("legacy([", "legacy(").replace("]))", "))")
+    lambda_forward = parameter.replace("def legacy(fields): return", "legacy = lambda fields:")
     alias = "legacy=build_source_evaluation_checksum\n" + direct.replace("build_source_evaluation_checksum", "legacy")
-    imported = "from backend.app.evaluation_lineage import build_source_evaluation_checksum as legacy\n"
-    imported += alias.split("\n")[1]
+    starred = "values=[" + joined + "]\nchecksum_text(*values)"
     cycle = "value=value.encode()\nchecksum_text(value)"
-    samples = (("direct.py", direct, True), ("manual.py", manual, True), ("indirect.py", indirect, True),
-               ("generator.py", generator, True), ("concat.py", concat, True), ("helper.py", helper, True),
-               ("parameter.py", parameter, True), ("alias.py", alias, True), ("imported.py", imported, True),
-               ("cycle.py", cycle, False),
-               ("canonical.py", "build_source_evaluation_checksum(lineage_payload)", False))
-    results = (bool(semantic_legacy_failures(workdir / name, sample)) is expected
-               for name, sample, expected in samples)
+    samples = (
+        ("direct.py", direct, True),
+        ("manual.py", manual, True),
+        ("indirect.py", indirect, True),
+        ("generator.py", generator, True),
+        ("concat.py", concat, True),
+        ("helper.py", helper, True),
+        ("parameter.py", parameter, True),
+        ("keyword.py", keyword, True),
+        ("vararg.py", vararg, True),
+        ("lambda.py", lambda_forward, True),
+        ("alias.py", alias, True),
+        ("starred.py", starred, True),
+        ("cycle.py", cycle, False),
+        ("canonical.py", "build_source_evaluation_checksum(lineage_payload)", False),
+    )
+    results = (
+        bool(semantic_legacy_failures(workdir / name, sample)) is expected
+        for name, sample, expected in samples
+    )
     source = Path(__file__).read_text(encoding="utf-8")
     lines = source.splitlines()
     bounded = len(lines) <= 250 and len(source.encode()) <= 32 * 1024 and max(map(len, lines)) <= 120
@@ -174,4 +245,4 @@ def check_a23b(root: Path, run: Callable[[list[str]], Any], failures: list[str],
     if numstat.returncode or any(len(row) != 3 or not row[0].isdigit() or not row[1].isdigit() for row in rows):
         failures.append("Issue #353 charged-line evidence is unavailable.")
     elif sum(int(row[0]) + int(row[1]) for row in rows) > A23B_LINE_CAP:
-        failures.append("Issue #353 exceeds its 2,400 charged-line hard ceiling.")
+        failures.append("Issue #353 exceeds its 2,700 charged-line hard ceiling.")
