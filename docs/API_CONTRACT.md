@@ -1876,3 +1876,39 @@ this slice. `correctnessReport` remains structural runtime metadata; only the
 independent Issue #317 oracle can establish the bounded semantic claim. No
 arbitrary translation, provider, hosted, production, or release contract is
 added.
+
+## R0C-A2.3a source-evaluation checksum v2
+
+Schema `stage7-source-evaluation-checksum-v2` is SHA-256 over compact sorted-key UTF-8 JSON
+(`ensure_ascii=false`, separators `,`/`:`, no BOM or trailing newline). The
+exact root object has five fields:
+
+- `checksumSchema`: the schema value above;
+- `evaluation`: normalized `evaluationId`, `runId`, uppercase `status`,
+  and `traceId`; status is `PASSED`, `FAILED`, or `UNKNOWN`;
+- `retrievalPolicy`: `version=stage4-rag-v1`, `topK=6`,
+  `minimumScoreThreshold="0.72"`, `maximumChunksPerDocument=3`, the accepted
+  score-desc/approval-desc/chunk-index-asc/chunk-ID-asc tie-break array,
+  deterministic project-local keyword fallback with no cross-project expansion,
+  and `EMPTY_CONTEXT`, `LOW_RETRIEVAL_CONFIDENCE`, `AMBIGUOUS_CONTEXT`,
+  `CROSS_PROJECT_CONTEXT`, and `UNSAFE_CONTEXT` refusal reasons;
+- `selectedContext`: the semantic selection order, with each row binding
+  `contextRefId`, tenant/project/document/chunk IDs, `chunkIndex`, source and
+  chunk checksums, `chunkingStrategyVersion`, normalized decimal
+  `retrievalScore`, and independently verified `snapshotChecksum`; and
+- `sourceCitationIndexes`: positive integers in script citation order.
+
+Counts derive from arrays. IDs are unique where required; evidence must share
+tenant/project scope; scores are finite non-negative decimal strings without
+exponents or insignificant trailing zeroes. The reviewed vector is the exact
+preimage in `test_a23a_golden_vector_is_serialization_stable` and yields
+`sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4`.
+
+New local/mock writes implemented later by A2.3b are v2-only while retaining
+the `sha256:<64 lowercase hex>` representation. Missing/extra fields,
+wrong schema, invalid normalization/count/order/scope, duplicate evidence,
+legacy v1, or any supplied stale, mismatched, or arbitrary valid-looking hash
+fails before render/replay acceptance. Legacy bytes may be audit-preserved but
+cannot be relabeled; regeneration requires a currently verified Stage 4 run.
+No deployed/customer migration or authenticity against full-state rewrite is
+claimed.

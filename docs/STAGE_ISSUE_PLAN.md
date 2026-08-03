@@ -2319,3 +2319,17 @@ observability, artifact replay/download, and real-browser evidence remain
 mandatory. Provider spend, personal or biometric data, deployment/publication,
 and legal, privacy, licensing, or security-risk acceptance remain explicit
 human gates.
+
+## R0C-A2.3a evaluation-lineage contract
+
+Issue #351 is the sole child under #334 for this package. Exact branch
+`cut1-351-r0c-a2-3a-evaluation-lineage-contract` starts at
+`c8ae874fe2179345bb463539935a77e08ac4c547` and owns only its preflight,
+STATUS, API contract, ADR 0004, quality-gate/issue-plan docs, Stage 8 checker,
+and focused checker test. Target is 220 and the hard ceiling is 300 charged lines
+with two repair rounds and zero provider calls/spend.
+
+The child freezes v2 contract/migration/rollback and mutation gates only.
+A2.3b runtime wiring cannot start until merged-tree closeout and separate owner
+authorization. Protected #336-#345, PR #299, Issue #280, frontend, providers,
+deployment, production migration, and cryptographic authenticity stay excluded.

@@ -21,10 +21,12 @@ Use it to answer:
   `stage4-rag-v1` (`topK=6`, inclusive `0.72`, at most three chunks per
   document), preserves retrieval order without synthetic expansion, and keeps
   structurally valid stale-lineage local rows audit-preserved but inactive.
-  On merge, Issue `#349` and its linked A2.2 PR complete machine-contract parity and executable drift detection from exact branch
-  `cut1-349-r0c-a2-2-machine-contract-parity`; that one-time permission then
-  expires. A2 remains `PARTIAL`, and A2.3 checksum lineage is not authorized
-  here. Agent-context remains `SHADOW_ONLY`; scope checks remain
+  Issue `#349` is closed through PR `#350` at
+  `c8ae874fe2179345bb463539935a77e08ac4c547`, completing machine-contract
+  parity and executable drift detection. Issue `#351` is the exact contract-only
+  A2.3a route. On merge its checksum-v2 contract and mutation gate are frozen;
+  A2.3b remains blocked until merged-tree closeout and separate owner authority.
+  A2 remains `PARTIAL`. Agent-context remains `SHADOW_ONLY`; scope checks remain
   supporting evidence under exact-head semantic review. Issues, branches, and
   stopped implementations `#336`–`#345` are forensic-only and must not be
   revived or reused. No Cut 1, release, readiness, deployment, or avatar
@@ -35,8 +37,8 @@ Use it to answer:
   `#332` / PR `#333` completed the narrow containment correction at merged main
   `225506a25f9efe3c804c5a1723b20db0e940ff62`; Issues `#329`, `#330`, and `#332`
   are closed. Issue `#334` is the open R0C-A2 controller; Issue `#335` is closed
-  completed; Issue `#349` is its exact A2.2 child, and its linked PR is this
-  merge target. Agent-context remains
+  completed; its A2.2 child is closed, and A2.3a is the current merge target.
+  Agent-context remains
   `SHADOW_ONLY` and its mutable state is `STALE_GOVERNANCE`; its outputs cannot
   establish current truth, select consequential work routing, or authorize
   merge, release, or readiness. PR `#331` is `STOPPED_UNMERGED`; its local and

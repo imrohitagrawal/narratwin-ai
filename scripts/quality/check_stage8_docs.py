@@ -22,6 +22,7 @@ ISSUE324_PUBLICATION_BRANCH = "phase-1-closure-process-324-publication-boundary-
 ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
+ISSUE351_A2_3A_BRANCH = "cut1-351-r0c-a2-3a-evaluation-lineage-contract"
 NULL_GIT_SHA = "0" * 40
 def issue324_allowed_files() -> set[str]:
     artifact = json.loads(
@@ -95,6 +96,10 @@ PROCESS_BRANCH_ALLOWED_FILES = {
         "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
         "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md"},
+    ISSUE351_A2_3A_BRANCH: {
+        "docs/governance/preflights/issue-351.json", "docs/STATUS.md", "docs/API_CONTRACT.md",
+        "docs/ADR/0004-avatar-provider-adapter.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md",
+        "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"},
     ISSUE84_GUARDRAIL_BRANCH: {
         "docs/STATUS.md",
         "scripts/guardrails_check.py",
@@ -238,6 +243,19 @@ def check_required_files(failures: list[str]) -> None:
     for path in REQUIRED_FILES:
         if not (ROOT / path).is_file():
             fail(f"Missing required Stage 8 file: {path}", failures)
+
+
+A23A_CONTRACT_MARKERS = {
+    "docs/API_CONTRACT.md": ("stage7-source-evaluation-checksum-v2", "compact sorted-key UTF-8 JSON", "`checksumSchema`: the schema value above", "minimumScoreThreshold", "maximumChunksPerDocument", "selectedContext", "independently verified `snapshotChecksum`", "`sourceCitationIndexes`: positive integers", "sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4"),
+    "docs/ADR/0004-avatar-provider-adapter.md": ("local/mock stale-or-mismatch integrity", "not cryptographic authenticity", "Legacy v1 rows cannot replay as v2"),
+    "docs/QUALITY_GATES.md": ("A2.3a evaluation-lineage contract gate", "wrong-schema"),
+    "docs/STAGE_ISSUE_PLAN.md": (ISSUE351_A2_3A_BRANCH, "300 charged lines"),
+    "docs/STATUS.md": ("Issue `#351`", "A2.3b remains blocked"),
+}
+def check_evaluation_lineage_checksum_v2_contract(root: Path, failures: list[str]) -> None:
+    if any(marker not in (root / path).read_text(encoding="utf-8")
+           for path, markers in A23A_CONTRACT_MARKERS.items() for marker in markers):
+        fail("A2.3a evaluation-lineage checksum v2 contract is incomplete or drifted.", failures)
 
 
 def check_stage_marker_and_branch(failures: list[str]) -> None:
@@ -476,6 +494,7 @@ def main() -> int:
     failures: list[str] = []
     check_required_files(failures)
     check_retrieval_strategy_v1_parity(ROOT, failures)
+    check_evaluation_lineage_checksum_v2_contract(ROOT, failures)
     if not failures:
         check_stage_marker_and_branch(failures)
         check_stage_scope(failures)

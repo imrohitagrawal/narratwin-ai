@@ -256,7 +256,7 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
 
 A23A_ERROR = "A2.3a evaluation-lineage checksum v2 contract is incomplete or drifted."
 A23A_MARKERS = {
-    "docs/API_CONTRACT.md": ("stage7-source-evaluation-checksum-v2", "compact sorted-key UTF-8 JSON", "minimumScoreThreshold", "maximumChunksPerDocument", "selectedContext", "snapshotChecksum", "sourceCitationIndexes", "sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4"),
+    "docs/API_CONTRACT.md": ("stage7-source-evaluation-checksum-v2", "compact sorted-key UTF-8 JSON", "`checksumSchema`: the schema value above", "minimumScoreThreshold", "maximumChunksPerDocument", "selectedContext", "independently verified `snapshotChecksum`", "`sourceCitationIndexes`: positive integers", "sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4"),
     "docs/ADR/0004-avatar-provider-adapter.md": ("local/mock stale-or-mismatch integrity", "not cryptographic authenticity", "Legacy v1 rows cannot replay as v2"),
     "docs/QUALITY_GATES.md": ("A2.3a evaluation-lineage contract gate", "wrong-schema"),
     "docs/STAGE_ISSUE_PLAN.md": (A2_3A, "300 charged lines"),
