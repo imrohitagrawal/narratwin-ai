@@ -16,25 +16,27 @@ Use it to answer:
 
 - Current Cut 1 route authority: Issue `#346` / PR `#347` merged at
   `4c5d7cf16fb8cdf7046d561c882f655d06125127` and established exact branch
-  `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` as the only renewed A2.1 route.
-  Issue `#335` A2.1 now binds new Stage 4 output and evaluations to canonical
+  `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` for A2.1. Issue `#335` is closed
+  completed through PR `#348` at `454025c403334933306142f65bc3e25541eeb23e` and binds new Stage 4 output and evaluations to canonical
   `stage4-rag-v1` (`topK=6`, inclusive `0.72`, at most three chunks per
   document), preserves retrieval order without synthetic expansion, and keeps
   structurally valid stale-lineage local rows audit-preserved but inactive.
-  A2 remains `PARTIAL`: A2.2 must add complete machine-contract drift
-  enforcement and A2.3 must bind downstream evaluation checksum lineage before
-  A2 closeout. Agent-context remains `SHADOW_ONLY`; scope checks remain
+  On merge, Issue `#349` and its linked A2.2 PR complete machine-contract parity and executable drift detection from exact branch
+  `cut1-349-r0c-a2-2-machine-contract-parity`; that one-time permission then
+  expires. A2 remains `PARTIAL`, and A2.3 checksum lineage is not authorized
+  here. Agent-context remains `SHADOW_ONLY`; scope checks remain
   supporting evidence under exact-head semantic review. Issues, branches, and
   stopped implementations `#336`–`#345` are forensic-only and must not be
   revived or reused. No Cut 1, release, readiness, deployment, or avatar
   completion is established by this slice.
-- Last reviewed date: 2026-08-02
+- Last reviewed date: 2026-08-03
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
   `#332` / PR `#333` completed the narrow containment correction at merged main
   `225506a25f9efe3c804c5a1723b20db0e940ff62`; Issues `#329`, `#330`, and `#332`
-  are closed. Issue `#334` is the open R0C-A2 controller and Issue `#335` is its
-  next narrow child after Issue `#346` / PR `#347` closeout. Agent-context remains
+  are closed. Issue `#334` is the open R0C-A2 controller; Issue `#335` is closed
+  completed; Issue `#349` is its exact A2.2 child, and its linked PR is this
+  merge target. Agent-context remains
   `SHADOW_ONLY` and its mutable state is `STALE_GOVERNANCE`; its outputs cannot
   establish current truth, select consequential work routing, or authorize
   merge, release, or readiness. PR `#331` is `STOPPED_UNMERGED`; its local and
@@ -64,13 +66,12 @@ Use it to answer:
   The two preceding Slice 2 and Issue `#294`/PR `#295` route sentences are
   frozen `STALE_GOVERNANCE` compatibility markers, not current Cut 1 routing
   authority. They preserve the protected evidence and unrelated obligations,
-  but cannot select, authorize, or block the Issue `#346` to exact Issue `#335`
-  Cut 1 route under OWNER authority.
-- Current implementation permission remains closed except for the exact 22-path,
-  650-charged-line Issue `#335` A2.1 envelope authorized by OWNER comments
-  `5158609698`, `5158848442`, `5159267478`, and `5159543127`, frozen by its preflight and routed on exact branch
-  `cut1-335-r0c-a2-1-stage4-rag-v1-lineage`, after Issue `#346` / PR `#347`
-  merged-tree closeout and refresh from its exact merged base. That route uses
+  but cannot select, authorize, or block the exact Issue `#349` A2.2 Cut 1 route
+  under current OWNER authority.
+- Implementation permission is otherwise closed. The exact nine-path,
+  500-charged-line Issue `#349` A2.2 permission frozen by its preflight is
+  limited to this merge target and expires when it lands on main. It is routed
+  on `cut1-349-r0c-a2-2-machine-contract-parity` from `454025c403334933306142f65bc3e25541eeb23e`. The completed A2.1 route used
   normal Stage 8/full CI; its controlled Heartbeat 2 proves the fixture-grounded prompt through local/mock render, and its one-time reviewed receipt rotation is recorded in ADR `0047`, while execution authenticity remains unattested. Legacy Phase 1 routing is compatibility-only; near
   matches and Issues `#336`–`#345` confer no authority. Demo Phase 0 planning
   for issue `#225` completed through PR `#226`; Checkpoint 1
@@ -891,8 +892,8 @@ required checks, merge, and merged-tree closeout complete.
    by the replacement.
    This retained Slice 2 and Issue `#294`/PR `#295` route text is
    `STALE_GOVERNANCE` compatibility evidence. It does not select, authorize, or
-   block current Cut 1 work; the Current Baseline owns the Issue `#346` to exact
-   Issue `#335` A2.1 pointer, while the older evidence and unrelated obligations
+   block current Cut 1 work; the Current Baseline records exact Issue `#349` as this
+   A2.2 merge target before merge and its completed historical route after merge. A2.3 remains unauthorized, while the older evidence and unrelated obligations
    remain preserved.
 4. Keep production,
    multi-worker deployment, hosted launch, Product Mode 2, external provider

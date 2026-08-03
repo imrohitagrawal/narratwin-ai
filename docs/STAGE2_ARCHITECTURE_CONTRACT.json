@@ -198,6 +198,7 @@
     "version": "stage4-rag-v1",
     "topK": 6,
     "minimumScoreThreshold": 0.72,
+    "maximumChunksPerDocument": 3,
     "tieBreakOrder": [
       "score desc",
       "approved_at desc",

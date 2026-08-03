@@ -21,9 +21,11 @@ Cut 1 route described below.
 
 ### Cut 1 Stage 8 Transition
 
-Issue `#346` admits only `cut1-process-346-governance-transition` and
-`cut1-335-r0c-a2-1-stage4-rag-v1-lineage` through the normal Stage 8/full-CI
-route. `SSV1-MODE` and `phase-1-closure-*` remain compatibility routing only;
+Exact branches `cut1-process-346-governance-transition`,
+`cut1-335-r0c-a2-1-stage4-rag-v1-lineage`, and
+`cut1-349-r0c-a2-2-machine-contract-parity` use normal Stage 8/full CI.
+The shared Stage 2 retrieval-v1 parity oracle runs on every Stage 8 invocation.
+`SSV1-MODE` and `phase-1-closure-*` remain compatibility routing only;
 they cannot route new Cut 1 product work. Scope output is supporting evidence,
 not authorization. A non-main push ignores the previous-push `before` SHA and
 collects the complete branch from `merge-base(origin/main, exact-head)`; PR and
