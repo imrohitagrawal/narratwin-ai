@@ -112,24 +112,25 @@ def _legacy_preimage(
         definition = function if isinstance(function, ast.Lambda) else functions.get(name)
         if definition:
             function_args = definition.args
+            positional_args = (*function_args.posonlyargs, *function_args.args)
             bindings = assignments | dict(
-                zip((arg.arg for arg in function_args.args[::-1]), function_args.defaults[::-1], strict=False)
+                zip((arg.arg for arg in positional_args[::-1]), function_args.defaults[::-1], strict=False)
             )
             bindings.update(
                 (arg.arg, value)
                 for arg, value in zip(function_args.kwonlyargs, function_args.kw_defaults, strict=True)
                 if value is not None
             )
-            bindings.update(zip((arg.arg for arg in function_args.args), node.args, strict=False))
+            bindings.update(zip((arg.arg for arg in positional_args), node.args, strict=False))
             if function_args.vararg:
-                bindings[function_args.vararg.arg] = ast.Tuple(elts=node.args, ctx=ast.Load())
+                bindings[function_args.vararg.arg] = ast.Tuple(elts=node.args[len(positional_args) :], ctx=ast.Load())
             bindings.update((item.arg, item.value) for item in node.keywords if item.arg)
             if isinstance(definition, ast.Lambda):
                 values = iter((definition.body,))
             else:
                 values = (item.value for item in ast.walk(definition) if isinstance(item, ast.Return) and item.value)
             return any(_legacy_preimage(value, bindings, functions, seen) for value in values)
-    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+    if isinstance(node, ast.JoinedStr) or isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
         names = [ast.unparse(item).lower() for item in ast.walk(node) if isinstance(item, (ast.Name, ast.Attribute))]
         newline = any(isinstance(item, ast.Constant) and item.value == "\n" for item in ast.walk(node))
         return newline and all(
@@ -184,20 +185,18 @@ def semantic_detector_self_test(workdir: Path) -> bool:
         "evaluation_status=s,context_ref_ids=c,citation_indexes=i)"
     )
     fields = "[evaluation_id,run_id,trace_id,evaluation_status,context_ref_ids,citation_indexes]"
-    manual = 'checksum_text("\\n".join(' + fields + "))"
     indirect = "fields=" + fields + '\nchecksum_text("\\n".join(fields))'
     generator = indirect.replace("join(fields)", "join(value for value in fields)")
     concat = (
         'checksum_text(evaluation_id+"\\n"+run_id+"\\n"+trace_id+"\\n"+'
         'evaluation_status+"\\n"+context_ref_ids+"\\n"+citation_indexes)'
     )
-    joined = manual.removeprefix("checksum_text(").removesuffix(")")
+    joined = '"\\n".join(' + fields + ")"
     helper = "def legacy(): return " + joined + "\nchecksum_text(legacy())"
     parameter = "def legacy(fields): return '\\n'.join(fields)\nchecksum_text(legacy(" + fields + "))"
     positional_only = parameter.replace("legacy(fields)", "legacy(fields, /)")
-    vararg = (
-        "def legacy(prefix,*fields): return '\\n'.join(fields)\nchecksum_text(legacy('x'," + fields[1:-1] + "))"
-    )
+    vararg = ("def legacy(prefix,*fields): return '\\n'.join(fields)\nchecksum_text(legacy('x',"
+              + fields[1:-1] + "))")
     lambda_forward = parameter.replace("def legacy(fields): return", "legacy = lambda fields:")
     fstring = 'checksum_text(f"' + "\\n".join("{" + item + "}" for item in fields[1:-1].split(",")) + '")'
     alias = "legacy=build_source_evaluation_checksum\n" + direct.replace("build_source_evaluation_checksum", "legacy")
