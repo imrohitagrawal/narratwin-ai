@@ -193,8 +193,8 @@ def semantic_detector_self_test(workdir: Path) -> bool:
         'checksum_text(evaluation_id+"\\n"+run_id+"\\n"+trace_id+"\\n"+'
         'evaluation_status+"\\n"+context_ref_ids+"\\n"+citation_indexes)'
     )
-    joined = '"\\n".join(' + fields + ")"
-    helper = "def legacy(): return " + joined + "\nchecksum_text(legacy())"
+    dict_lookup = "parts={'fields':" + fields + "}\nchecksum_text('\\n'.join(parts['fields']))"
+    kwargs = "def legacy(**parts): return '\\n'.join(parts['fields'])\nchecksum_text(legacy(fields=" + fields + "))"
     parameter = "def legacy(fields): return '\\n'.join(fields)\nchecksum_text(legacy(" + fields + "))"
     positional_only = parameter.replace("legacy(fields)", "legacy(fields, /)")
     vararg = ("def legacy(prefix,*fields): return '\\n'.join(fields)\nchecksum_text(legacy('x',"
@@ -207,10 +207,10 @@ def semantic_detector_self_test(workdir: Path) -> bool:
     samples = (
         ("direct.py", direct, True),
         ("fstring.py", fstring, True),
-        ("indirect.py", indirect, True),
+        ("dict.py", dict_lookup, True),
         ("generator.py", generator, True),
         ("concat.py", concat, True),
-        ("helper.py", helper, True),
+        ("kwargs.py", kwargs, True),
         ("parameter.py", parameter, True),
         ("positional.py", positional_only, True),
         ("vararg.py", vararg, True),
