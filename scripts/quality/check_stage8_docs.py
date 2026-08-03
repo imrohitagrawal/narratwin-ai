@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
+from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
@@ -21,7 +22,6 @@ ISSUE324_PUBLICATION_BRANCH = "phase-1-closure-process-324-publication-boundary-
 ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
-ISSUE351_A2_3A_BRANCH = "cut1-351-r0c-a2-3a-evaluation-lineage-contract"
 NULL_GIT_SHA = "0" * 40
 def issue324_allowed_files() -> set[str]:
     artifact = json.loads(
@@ -95,10 +95,6 @@ PROCESS_BRANCH_ALLOWED_FILES = {
         "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
         "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md"},
-    ISSUE351_A2_3A_BRANCH: {
-        "docs/governance/preflights/issue-351.json", "docs/STATUS.md", "docs/API_CONTRACT.md",
-        "docs/ADR/0004-avatar-provider-adapter.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md",
-        "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"},
     ISSUE84_GUARDRAIL_BRANCH: {
         "docs/STATUS.md",
         "scripts/guardrails_check.py",
@@ -133,6 +129,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     },
     ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(),
 }
+PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES)
 def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=ROOT, text=True, capture_output=True, check=False)
 def read(path: str) -> str:
@@ -248,7 +245,7 @@ A23A_CONTRACT_MARKERS = {
         "local/mock stale-or-mismatch integrity", "not cryptographic authenticity",
         "Legacy v1 rows cannot replay as v2"),
     "docs/QUALITY_GATES.md": ("A2.3a evaluation-lineage contract gate", "wrong-schema"),
-    "docs/STAGE_ISSUE_PLAN.md": (ISSUE351_A2_3A_BRANCH, "300 charged lines"),
+    "docs/STAGE_ISSUE_PLAN.md": (A23A_BRANCH, "300 charged lines"),
     "docs/STATUS.md": ("Issue `#351`", "A2.3b remains blocked"),
 }
 def evaluation_lineage_checksum_v2_contract_valid(documents: dict[str, str]) -> bool:
@@ -486,6 +483,8 @@ def main() -> int:
     if not failures:
         check_stage_marker_and_branch(failures)
         check_stage_scope(failures)
+        if current_branch() == A23B_BRANCH:
+            check_a23b(ROOT, run, failures)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)

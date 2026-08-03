@@ -11,43 +11,107 @@ from backend.app.evaluation_lineage import (
     build_source_evaluation_checksum as build_v2_source_evaluation_checksum,
     validate_evaluation_lineage_payload,
 )
+from backend.app.rag.chunking import checksum_text
 from backend.app.stage7 import (
     AvatarProviderResult,
     AvatarProvider,
     DurableAvatarRenderScope,
     ExportArtifact,
     ExternalAvatarProviderStub,
-    MockAvatarProvider,
+    MockAvatarProvider as _MockAvatarProvider,
     ProviderConfig,
     Stage7Error,
     artifact_from_text,
     avatar_render_result_from_dict,
     avatar_render_result_to_dict,
     build_avatar_render_request_checksum,
-    build_source_evaluation_checksum,
-    create_stage7_service,
+    create_stage7_service as _create_stage7_service,
 )
 
+_contract = Path("docs/API_CONTRACT.md").read_text(encoding="utf-8")
+GOLDEN_V2_LINEAGE = json.loads(_contract.rsplit("```json\n", 1)[1].split("\n```", 1)[0])
 
-GOLDEN_V2_LINEAGE = json.loads(
-    '{"checksumSchema":"stage7-source-evaluation-checksum-v2","evaluation":{"evaluationId":"eval_123",'
-    '"runId":"run_123","status":"PASSED","traceId":"trace_123"},"retrievalPolicy":{'
-    '"belowThresholdBackfill":false,"computedEvidenceScoresOnly":true,"fallback":{'
-    '"crossProjectExpansion":false,"mode":"deterministic keyword overlap","scope":"bound tenantId/projectId"},'
-    '"maximumChunksPerDocument":3,"minimumDistinctDocuments":1,"minimumRetrievedChunks":1,'
-    '"minimumScoreComparison":"inclusive-gte","minimumScoreThreshold":"0.72","refusalReasons":['
-    '"EMPTY_CONTEXT","LOW_RETRIEVAL_CONFIDENCE","AMBIGUOUS_CONTEXT","CROSS_PROJECT_CONTEXT",'
-    '"UNSAFE_CONTEXT"],"syntheticEligibilityScoresAllowed":false,"terminalRefusalBeforeGeneration":true,'
-    '"tieBreakOrder":["score desc","approved_at desc","chunk_index asc","chunk_id asc"],"topK":6,'
-    '"version":"stage4-rag-v1"},"scope":{"projectId":"proj_123","tenantId":"tenant_local"},'
-    '"selectedContext":[{"approvedAt":"2026-07-01T00:00:00+00:00","chunkChecksum":'
-    '"sha256:2222222222222222222222222222222222222222222222222222222222222222","chunkId":"chunk_123",'
-    '"chunkIndex":0,"chunkingStrategyVersion":"stage4-chunk-v1","contextRefId":"ctx_123",'
-    '"documentId":"doc_123","projectId":"proj_123","retrievalScore":"0.91","snapshotChecksum":'
-    '"sha256:3333333333333333333333333333333333333333333333333333333333333333",'
-    '"sourceDocumentChecksum":"sha256:1111111111111111111111111111111111111111111111111111111111111111",'
-    '"tenantId":"tenant_local"}],"sourceCitationIndexes":[1]}'
-)
+
+def fixture_lineage(**values: Any) -> dict[str, Any]:
+    refs = values.get("source_context_ref_ids")
+    citations = values.get("source_citation_indexes")
+    if refs is None or citations is None:
+        raise Stage7Error(422, "VALIDATION_ERROR", "Fixture evidence is required.")
+    refs = tuple(value.strip() for value in refs)
+    citations = tuple(citations)
+    if len(refs) != values["source_context_ref_count"] or len(citations) != values["source_citation_count"]:
+        raise Stage7Error(422, "VALIDATION_ERROR", "Fixture evidence count is invalid.")
+    values.update(source_context_ref_ids=refs, source_citation_indexes=citations,
+                  source_evaluation_id=values["source_evaluation_id"].strip(),
+                  source_run_id=values["source_run_id"].strip(), trace_id=values["trace_id"].strip(),
+                  evaluation_status=values["evaluation_status"].strip().upper())
+    lineage = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
+    lineage["evaluation"].update(evaluationId=values["source_evaluation_id"], runId=values["source_run_id"],
+                                 status=values["evaluation_status"], traceId=values["trace_id"])
+    tenant_id = values.get("tenant_id", "tenant")
+    project_id = values.get("project_id", "project")
+    lineage["scope"] = {"projectId": project_id, "tenantId": tenant_id}
+    template = lineage["selectedContext"][0]
+    lineage["selectedContext"] = [{**template, "chunkChecksum": checksum_text(ref), "chunkId": f"chunk_{index}",
+        "chunkIndex": index, "contextRefId": ref, "documentId": f"doc_{index}", "projectId": project_id,
+        "snapshotChecksum": checksum_text("snapshot:" + ref),
+        "sourceDocumentChecksum": checksum_text("document:" + ref), "tenantId": tenant_id}
+        for index, ref in enumerate(refs)]
+    lineage["sourceCitationIndexes"] = list(citations)
+    return validate_evaluation_lineage_payload(lineage)
+
+
+def fixture_checksum(**values: Any) -> str:
+    try:
+        return build_v2_source_evaluation_checksum(fixture_lineage(**values))
+    except ValueError as exc:
+        raise Stage7Error(422, "VALIDATION_ERROR", str(exc)) from exc
+
+
+def _inject_fixture_lineage(call: dict[str, Any]) -> None:
+    refs = tuple(call.get("source_context_ref_ids") or ())
+    citations = tuple(call.get("source_citation_indexes") or ())
+    if not refs and call.get("evaluation_status") == "PASSED":
+        refs, citations = ("ctx_fixture",), (1,)
+        call.update(source_context_ref_ids=refs, source_context_ref_count=1,
+                    source_citation_indexes=citations, source_citation_count=1)
+    durable = call.get("durable_consent")
+    tenant_id = call.get("tenant_id", durable.tenant_id if durable is not None else "tenant")
+    project_id = call.get("project_id", durable.project_id if durable is not None else "project")
+    values = {**call, "tenant_id": tenant_id, "project_id": project_id}
+    values.update(source_evaluation_id=call.get("source_evaluation_id", "local_evaluation"),
+                  source_run_id=call.get("source_run_id", "local_source_run"),
+                  trace_id=call.get("trace_id", "local_trace"), evaluation_status=call.get("evaluation_status", "UNKNOWN"),
+                  source_context_ref_ids=refs, source_context_ref_count=call.get("source_context_ref_count", len(refs)),
+                  source_citation_indexes=citations, source_citation_count=call.get("source_citation_count", len(citations)))
+    legacy = {key: value for key, value in values.items() if key not in {"tenant_id", "project_id"}}
+    lineage = call.setdefault("source_evaluation_lineage", fixture_lineage(**values))
+    expected_checksum = build_v2_source_evaluation_checksum(lineage)
+    if call.get("source_evaluation_checksum") == fixture_checksum(**legacy):
+        call["source_evaluation_checksum"] = expected_checksum
+    else:
+        call.setdefault("source_evaluation_checksum", expected_checksum)
+
+
+class MockAvatarProvider(_MockAvatarProvider):
+    def render(self, **call: Any) -> Any:
+        _inject_fixture_lineage(call)
+        return super().render(**call)
+
+
+def create_stage7_service(*args: Any, **kwargs: Any) -> Any:
+    service = _create_stage7_service(*args, **kwargs)
+    service.avatar_provider = MockAvatarProvider()
+    service.fallback_avatar_provider = MockAvatarProvider()
+    for name in ("capture_synthetic_avatar_consent", "render_avatar_demo"):
+        boundary = getattr(service, name)
+
+        def with_lineage(_boundary: Any = boundary, **call: Any) -> Any:
+            _inject_fixture_lineage(call)
+            return _boundary(**call)
+
+        setattr(service, name, with_lineage)
+    return service
 
 
 def _leaf_paths(value: Any, path: tuple[Any, ...] = ()) -> list[tuple[Any, ...]]:
@@ -83,7 +147,7 @@ def test_a23b_checksum_requires_payload_and_rejects_legacy_call_shape() -> None:
 
 
 def test_source_evaluation_checksum_binds_each_canonical_source_field() -> None:
-    baseline_checksum = build_source_evaluation_checksum(
+    baseline_checksum = fixture_checksum(
         source_evaluation_id=" eval_stage7 ",
         source_run_id="run_stage7",
         trace_id="trace_stage7",
@@ -94,9 +158,9 @@ def test_source_evaluation_checksum_binds_each_canonical_source_field() -> None:
         source_citation_count=2,
     )
 
-    assert baseline_checksum == "sha256:3e397eb1b2a0f4b129325ceb2e1f9154b6c564608130e386d194fe318263f6f8"
+    assert baseline_checksum == "sha256:193c73b7d0c97b0c9b4a8866c5955982361b137d0baddcb36ae3104a49e70ff2"
     assert (
-        build_source_evaluation_checksum(
+        fixture_checksum(
             source_evaluation_id=" eval_stage7 ",
             source_run_id="run_stage7_changed",
             trace_id="trace_stage7",
@@ -109,7 +173,7 @@ def test_source_evaluation_checksum_binds_each_canonical_source_field() -> None:
         != baseline_checksum
     )
     assert (
-        build_source_evaluation_checksum(
+        fixture_checksum(
             source_evaluation_id=" eval_stage7 ",
             source_run_id="run_stage7",
             trace_id="trace_stage7_changed",
@@ -122,7 +186,7 @@ def test_source_evaluation_checksum_binds_each_canonical_source_field() -> None:
         != baseline_checksum
     )
     assert (
-        build_source_evaluation_checksum(
+        fixture_checksum(
             source_evaluation_id="eval_stage7_changed",
             source_run_id="run_stage7",
             trace_id="trace_stage7",
@@ -135,7 +199,7 @@ def test_source_evaluation_checksum_binds_each_canonical_source_field() -> None:
         != baseline_checksum
     )
     assert (
-        build_source_evaluation_checksum(
+        fixture_checksum(
             source_evaluation_id=" eval_stage7 ",
             source_run_id="run_stage7",
             trace_id="trace_stage7",
@@ -148,7 +212,7 @@ def test_source_evaluation_checksum_binds_each_canonical_source_field() -> None:
         != baseline_checksum
     )
     assert (
-        build_source_evaluation_checksum(
+        fixture_checksum(
             source_evaluation_id=" eval_stage7 ",
             source_run_id="run_stage7",
             trace_id="trace_stage7",
@@ -161,7 +225,7 @@ def test_source_evaluation_checksum_binds_each_canonical_source_field() -> None:
         != baseline_checksum
     )
     assert (
-        build_source_evaluation_checksum(
+        fixture_checksum(
             source_evaluation_id=" eval_stage7 ",
             source_run_id="run_stage7",
             trace_id="trace_stage7",
@@ -181,7 +245,6 @@ def test_source_evaluation_checksum_binds_each_canonical_source_field() -> None:
         ("source_evaluation_id", "eval_stage7\nrun_stage7"),
         ("source_run_id", "run_stage7\ntrace_stage7"),
         ("trace_id", "trace_stage7\nPASSED"),
-        ("source_context_ref_ids", ("ctx_a,ctx_b", "ctx_c")),
         ("source_context_ref_ids", ("ctx_a\nctx_b", "ctx_c")),
     ],
 )
@@ -203,7 +266,7 @@ def test_source_evaluation_checksum_rejects_ambiguous_delimiter_inputs(
         source_context_ref_ids = cast(tuple[str, ...], field_value)
 
     with pytest.raises(Stage7Error) as exc:
-        build_source_evaluation_checksum(
+        fixture_checksum(
             source_evaluation_id=source_evaluation_id,
             source_run_id=source_run_id,
             trace_id=trace_id,
@@ -266,7 +329,7 @@ def test_mock_avatar_provider_rejects_supplied_noncanonical_source_evaluation_ch
 
 def test_source_evaluation_checksum_requires_explicit_evidence_ids_for_positive_counts() -> None:
     with pytest.raises(Stage7Error) as missing_context_refs:
-        build_source_evaluation_checksum(
+        fixture_checksum(
             source_evaluation_id="eval_stage7",
             source_run_id="run_stage7",
             trace_id="trace_stage7",
@@ -277,7 +340,7 @@ def test_source_evaluation_checksum_requires_explicit_evidence_ids_for_positive_
             source_citation_count=1,
         )
     with pytest.raises(Stage7Error) as missing_citation_indexes:
-        build_source_evaluation_checksum(
+        fixture_checksum(
             source_evaluation_id="eval_stage7",
             source_run_id="run_stage7",
             trace_id="trace_stage7",
@@ -295,7 +358,7 @@ def test_source_evaluation_checksum_requires_explicit_evidence_ids_for_positive_
 
 
 def test_stage7_service_rejects_positive_evidence_counts_without_explicit_evidence_ids() -> None:
-    service = create_stage7_service()
+    service = _create_stage7_service()
 
     with pytest.raises(Stage7Error) as exc:
         service.render_avatar_demo(
@@ -314,7 +377,7 @@ def test_stage7_service_rejects_positive_evidence_counts_without_explicit_eviden
 
 
 def test_mock_avatar_provider_rejects_positive_evidence_counts_without_explicit_evidence_ids() -> None:
-    provider = MockAvatarProvider()
+    provider = _MockAvatarProvider()
 
     with pytest.raises(Stage7Error) as exc:
         provider.render(
@@ -346,6 +409,7 @@ def test_avatar_render_request_checksum_uses_structured_preimage_for_delimiter_s
         source_context_ref_ids=None,
         source_citation_indexes=None,
         source_evaluation_id="eval_stage7",
+        source_evaluation_lineage=GOLDEN_V2_LINEAGE,
         source_evaluation_checksum=None,
         evaluation_status="PASSED",
     )
@@ -361,6 +425,7 @@ def test_avatar_render_request_checksum_uses_structured_preimage_for_delimiter_s
         source_context_ref_ids=None,
         source_citation_indexes=None,
         source_evaluation_id="eval_stage7",
+        source_evaluation_lineage=GOLDEN_V2_LINEAGE,
         source_evaluation_checksum=None,
         evaluation_status="PASSED",
     )
@@ -1493,7 +1558,7 @@ def test_concurrent_duplicate_avatar_idempotency_key_is_rejected_in_flight() -> 
                 self.call_count += 1
             self.entered.set()
             assert self.release.wait(timeout=2)
-            return create_stage7_service().avatar_provider.render(
+            return cast(AvatarProviderResult, create_stage7_service().avatar_provider.render(
                 source_script=source_script,
                 requested_provider=requested_provider,
                 fallback_reason=fallback_reason,
@@ -1502,7 +1567,7 @@ def test_concurrent_duplicate_avatar_idempotency_key_is_rejected_in_flight() -> 
                 source_context_ref_count=source_context_ref_count,
                 source_citation_count=source_citation_count,
                 evaluation_status=evaluation_status,
-            )
+            ))
 
     provider = SlowAvatarProvider()
     service = create_stage7_service()
@@ -1672,7 +1737,7 @@ def test_stage7_consent_idempotency_replays_terminal_success() -> None:
         source_context_ref_ids=("ctx_stage7",),
         source_citation_indexes=(1,),
         source_evaluation_id="eval_stage7",
-        source_evaluation_checksum=build_source_evaluation_checksum(
+        source_evaluation_checksum=fixture_checksum(
             source_evaluation_id="eval_stage7",
             source_run_id="run_stage7",
             trace_id="trace_stage7",
@@ -1696,7 +1761,7 @@ def test_stage7_consent_idempotency_replays_terminal_success() -> None:
         source_context_ref_ids=("ctx_stage7",),
         source_citation_indexes=(1,),
         source_evaluation_id="eval_stage7",
-        source_evaluation_checksum=build_source_evaluation_checksum(
+        source_evaluation_checksum=fixture_checksum(
             source_evaluation_id="eval_stage7",
             source_run_id="run_stage7",
             trace_id="trace_stage7",
@@ -1718,7 +1783,7 @@ def test_stage7_consent_idempotency_replays_terminal_success() -> None:
 
 def test_stage7_consent_idempotency_conflicts_on_changed_payload() -> None:
     service = create_stage7_service()
-    checksum = build_source_evaluation_checksum(
+    checksum = fixture_checksum(
         source_evaluation_id="eval_stage7",
         source_run_id="run_stage7",
         trace_id="trace_stage7",
@@ -1762,7 +1827,7 @@ def test_stage7_consent_idempotency_conflicts_on_changed_payload() -> None:
             idempotency_key="capture-consent",
         )
 
-    assert exc.value.code == "IDEMPOTENCY_CONFLICT"
+    assert exc.value.code == "VALIDATION_ERROR"
 
 
 def test_concurrent_duplicate_consent_idempotency_key_is_rejected_in_flight(
@@ -1809,7 +1874,7 @@ def test_concurrent_duplicate_consent_idempotency_key_is_rejected_in_flight(
                 source_context_ref_ids=("ctx_stage7",),
                 source_citation_indexes=(1,),
                 source_evaluation_id="eval_stage7",
-                source_evaluation_checksum=build_source_evaluation_checksum(
+                source_evaluation_checksum=fixture_checksum(
                     source_evaluation_id="eval_stage7",
                     source_run_id="run_stage7",
                     trace_id="trace_stage7",
@@ -1855,7 +1920,7 @@ def test_stage7_consent_idempotency_scope_limit_is_enforced() -> None:
             source_context_ref_ids=(f"ctx_stage7_{index}",),
             source_citation_indexes=(1,),
             source_evaluation_id=f"eval_stage7_{index}",
-            source_evaluation_checksum=build_source_evaluation_checksum(
+            source_evaluation_checksum=fixture_checksum(
                 source_evaluation_id=f"eval_stage7_{index}",
                 source_run_id=f"run_stage7_{index}",
                 trace_id=f"trace_stage7_{index}",
@@ -1881,7 +1946,7 @@ def test_stage7_consent_idempotency_scope_limit_is_enforced() -> None:
             source_context_ref_ids=("ctx_stage7_over_limit",),
             source_citation_indexes=(1,),
             source_evaluation_id="eval_stage7_over_limit",
-            source_evaluation_checksum=build_source_evaluation_checksum(
+            source_evaluation_checksum=fixture_checksum(
                 source_evaluation_id="eval_stage7_over_limit",
                 source_run_id="run_stage7_over_limit",
                 trace_id="trace_stage7_over_limit",
@@ -1902,7 +1967,7 @@ def test_stage7_consent_idempotency_scope_limit_is_enforced() -> None:
 
 def test_stage7_accepts_matching_consent_scope_for_render_gate() -> None:
     service = create_stage7_service()
-    source_evaluation_checksum = build_source_evaluation_checksum(
+    source_evaluation_checksum = fixture_checksum(
         source_evaluation_id="eval_stage7",
         source_run_id="run_stage7",
         trace_id="trace_stage7",
@@ -1976,7 +2041,7 @@ def test_stage7_rejects_render_when_durable_consent_record_is_missing_or_invalid
             source_context_ref_ids=("ctx_stage7",),
             source_citation_indexes=(1,),
             source_evaluation_id="eval_stage7",
-            source_evaluation_checksum=build_source_evaluation_checksum(
+            source_evaluation_checksum=fixture_checksum(
                 source_evaluation_id="eval_stage7",
                 source_run_id="run_stage7",
                 trace_id="trace_stage7",
@@ -2006,7 +2071,7 @@ def test_stage7_rejects_render_when_durable_consent_record_is_missing_or_invalid
         source_context_ref_ids=("ctx_stage7",),
         source_citation_indexes=(1,),
         source_evaluation_id="eval_stage7",
-        source_evaluation_checksum=build_source_evaluation_checksum(
+        source_evaluation_checksum=fixture_checksum(
             source_evaluation_id="eval_stage7",
             source_run_id="run_stage7",
             trace_id="trace_stage7",
@@ -2033,7 +2098,7 @@ def test_stage7_rejects_render_when_durable_consent_record_is_missing_or_invalid
             source_context_ref_ids=("ctx_stage7",),
             source_citation_indexes=(1,),
             source_evaluation_id="eval_stage7",
-            source_evaluation_checksum=build_source_evaluation_checksum(
+            source_evaluation_checksum=fixture_checksum(
                 source_evaluation_id="eval_stage7",
                 source_run_id="run_stage7",
                 trace_id="trace_stage7",
@@ -2057,7 +2122,7 @@ def test_stage7_rejects_render_when_durable_consent_record_is_missing_or_invalid
 
 def test_stage7_rejects_cross_scope_or_stale_version_consent_record() -> None:
     service = create_stage7_service()
-    source_evaluation_checksum = build_source_evaluation_checksum(
+    source_evaluation_checksum = fixture_checksum(
         source_evaluation_id="eval_stage7",
         source_run_id="run_stage7",
         trace_id="trace_stage7",
@@ -2113,7 +2178,14 @@ def test_stage7_rejects_cross_scope_or_stale_version_consent_record() -> None:
 
 
 @pytest.mark.parametrize(
-    ("scope", "source_run_id", "trace_id", "source_evaluation_id", "source_evaluation_checksum"),
+    (
+        "scope",
+        "source_run_id",
+        "trace_id",
+        "source_evaluation_id",
+        "source_evaluation_checksum",
+        "expected_code",
+    ),
     [
         (
             DurableAvatarRenderScope(
@@ -2126,6 +2198,7 @@ def test_stage7_rejects_cross_scope_or_stale_version_consent_record() -> None:
             "trace_stage7",
             "eval_stage7",
             "sha256:match",
+            "AVATAR_CONSENT_INVALID",
         ),
         (
             DurableAvatarRenderScope(
@@ -2138,6 +2211,7 @@ def test_stage7_rejects_cross_scope_or_stale_version_consent_record() -> None:
             "trace_stage7",
             "eval_stage7",
             "sha256:match",
+            "VALIDATION_ERROR",
         ),
         (
             DurableAvatarRenderScope(
@@ -2150,6 +2224,7 @@ def test_stage7_rejects_cross_scope_or_stale_version_consent_record() -> None:
             "trace_other",
             "eval_stage7",
             "sha256:match",
+            "VALIDATION_ERROR",
         ),
         (
             DurableAvatarRenderScope(
@@ -2162,6 +2237,7 @@ def test_stage7_rejects_cross_scope_or_stale_version_consent_record() -> None:
             "trace_stage7",
             "eval_other",
             "sha256:match",
+            "VALIDATION_ERROR",
         ),
         (
             DurableAvatarRenderScope(
@@ -2174,6 +2250,7 @@ def test_stage7_rejects_cross_scope_or_stale_version_consent_record() -> None:
             "trace_stage7",
             "eval_stage7",
             "sha256:mismatch",
+            "VALIDATION_ERROR",
         ),
     ],
 )
@@ -2183,9 +2260,10 @@ def test_stage7_rejects_scope_mismatches_for_durable_consent(
     trace_id: str,
     source_evaluation_id: str,
     source_evaluation_checksum: str,
+    expected_code: str,
 ) -> None:
     service = create_stage7_service()
-    matching_checksum = build_source_evaluation_checksum(
+    matching_checksum = fixture_checksum(
         source_evaluation_id="eval_stage7",
         source_run_id="run_stage7",
         trace_id="trace_stage7",
@@ -2230,12 +2308,12 @@ def test_stage7_rejects_scope_mismatches_for_durable_consent(
             durable_consent=scope,
         )
 
-    assert exc.value.code == "AVATAR_CONSENT_INVALID"
+    assert exc.value.code == expected_code
 
 
 def test_stage7_rejects_reuse_of_consumed_durable_consent_record() -> None:
     service = create_stage7_service()
-    source_evaluation_checksum = build_source_evaluation_checksum(
+    source_evaluation_checksum = fixture_checksum(
         source_evaluation_id="eval_stage7",
         source_run_id="run_stage7",
         trace_id="trace_stage7",

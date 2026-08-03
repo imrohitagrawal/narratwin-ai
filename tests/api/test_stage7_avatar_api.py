@@ -5,10 +5,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.app.evaluation_lineage import build_source_evaluation_checksum, derive_evaluation_lineage
 from backend.app.main import app, reset_app_state_for_tests
 from backend.app.stage4 import stage4_service
 from backend.app.stage6 import stage6_service
-from backend.app.stage7 import SYNTHETIC_AVATAR_CONSENT_VERSION, build_source_evaluation_checksum
+from backend.app.stage7 import SYNTHETIC_AVATAR_CONSENT_VERSION
 
 IDEMPOTENCY_HEADER = "Idempotency-" + "Key"
 
@@ -102,16 +103,7 @@ def _capture_avatar_consent(
     assert body["sourceContextRefIds"] == [context.context_ref_id for context in source_run.retrieved_context]
     assert body["sourceCitationIndexes"] == [support.citation_index for support in evaluation.claim_supports]
     assert body["sourceEvaluationId"] == evaluation.evaluation_id
-    assert body["sourceEvaluationChecksum"] == build_source_evaluation_checksum(
-        source_evaluation_id=evaluation.evaluation_id,
-        source_run_id=source_run.run_id,
-        trace_id=source_run.trace_id,
-        evaluation_status=source_run.evaluation_status or "UNKNOWN",
-        source_context_ref_ids=tuple(context.context_ref_id for context in source_run.retrieved_context),
-        source_context_ref_count=len(source_run.retrieved_context),
-        source_citation_indexes=tuple(support.citation_index for support in evaluation.claim_supports),
-        source_citation_count=len(evaluation.claim_supports),
-    )
+    assert body["sourceEvaluationChecksum"] == build_source_evaluation_checksum(derive_evaluation_lineage(source_run))
     assert body["evaluationStatus"] == "PASSED"
     assert body["consentStatementVersion"] == "stage7-synthetic-avatar-consent-v1"
     assert body["consentStatementText"].startswith("I affirm that I am authorized")
@@ -292,16 +284,7 @@ def test_avatar_render_api_returns_validated_demo_export_artifacts() -> None:
     assert body["trace"]["evaluationStatus"] == "PASSED"
     source_run = stage4_service.walkthrough_runs[run_id]
     assert source_run.evaluation is not None
-    expected_source_evaluation_checksum = build_source_evaluation_checksum(
-        source_evaluation_id=source_run.evaluation.evaluation_id,
-        source_run_id=source_run.run_id,
-        trace_id=source_run.trace_id,
-        evaluation_status=source_run.evaluation_status or "UNKNOWN",
-        source_context_ref_ids=tuple(context.context_ref_id for context in source_run.retrieved_context),
-        source_context_ref_count=len(source_run.retrieved_context),
-        source_citation_indexes=tuple(support.citation_index for support in source_run.evaluation.claim_supports),
-        source_citation_count=len(source_run.evaluation.claim_supports),
-    )
+    expected_source_evaluation_checksum = build_source_evaluation_checksum(derive_evaluation_lineage(source_run))
     assert body["trace"]["sourceEvaluationChecksum"] == expected_source_evaluation_checksum
     manifest = json.loads(base64.b64decode(body["artifacts"]["renderManifest"]["contentBase64"]).decode("utf-8"))
     assert body["sourceScriptText"] == stage6_service.multilingual_runs[str(multilingual_bundle["multilingualRunId"])].translated_script_text

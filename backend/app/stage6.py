@@ -8,7 +8,7 @@ import json
 import logging
 import re
 import threading
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass, replace
 from datetime import timedelta
 from pathlib import Path
@@ -20,9 +20,9 @@ from pydub import AudioSegment  # type: ignore[import-untyped]
 import srt  # type: ignore[import-untyped]
 
 from backend.app.rag.chunking import checksum_text
+from backend.app.evaluation_lineage import validate_lineage_binding, validate_lineage_for_run
 from backend.app.storage import load_state, resolve_state_file, write_state
-from backend.app.stage4 import contains_secret_like_content
-from backend.app.stage7 import build_source_evaluation_checksum
+from backend.app.stage4 import WalkthroughRunRecord, contains_secret_like_content
 from backend.app.tts_provider import (
     ElevenLabsTTSProvider,
     ExternalTTSResult,
@@ -786,6 +786,7 @@ class MultilingualWalkthroughResult:
     source_citation_indexes: tuple[int, ...]
     source_claim_support_ids: tuple[str, ...]
     source_evaluation_id: str
+    source_evaluation_lineage: dict[str, Any]
     source_evaluation_checksum: str
     evaluation_status: EvaluationStatus
 
@@ -975,6 +976,7 @@ class Stage6Service:
         self.idempotency_records: dict[tuple[str, str, str], Stage6IdempotencyRecord] = {}
         self._operation_lock = threading.Lock()
         self._run_counter = 0
+        self._state_quarantine_reason: str | None = None
         self._restore()
 
     def reset(self) -> None:
@@ -992,13 +994,36 @@ class Stage6Service:
         self.idempotency_records.clear()
         self._run_counter = 0
 
+    def activate_verified_lineage(
+        self,
+        walkthrough_runs: Mapping[str, WalkthroughRunRecord],
+    ) -> None:
+        with self._operation_lock:
+            try:
+                for result in self.multilingual_runs.values():
+                    source_run = walkthrough_runs[result.source_run_id]
+                    validate_lineage_for_run(
+                        result.source_evaluation_lineage,
+                        result.source_evaluation_checksum,
+                        source_run,
+                    )
+            except (KeyError, TypeError, ValueError):
+                self._clear_runtime_state()
+                self._state_quarantine_reason = (
+                    "Stage 6 graph that does not match verified Stage 4 state"
+                )
+
     def _restore(self) -> None:
         payload = load_state(self.state_path)
         if payload is None:
             return
         try:
             schema = payload.get("schema")
-            if schema not in {"stage6-local-state-v1", "stage6-local-state-v2"}:
+            if schema != "stage6-local-state-v3":
+                if schema in {"stage6-local-state-v1", "stage6-local-state-v2"}:
+                    LOGGER.warning("Quarantining inactive legacy Stage 6 state at %s.", self.state_path)
+                    self._state_quarantine_reason = "legacy Stage 6 state"
+                    return
                 raise ValueError("Stage 6 state schema mismatch.")
             counters = payload.get("counters", {})
             run_counter = 0
@@ -1121,6 +1146,7 @@ class Stage6Service:
                 type(exc).__name__,
             )
             self._clear_runtime_state()
+            self._state_quarantine_reason = "incompatible Stage 6 state"
 
     def _runtime_snapshot_locked(self) -> dict[str, Any]:
         return {
@@ -1181,10 +1207,12 @@ class Stage6Service:
         )
 
     def _persist_locked(self) -> None:
+        if self._state_quarantine_reason is not None:
+            raise OSError(f"Refusing to overwrite quarantined {self._state_quarantine_reason}.")
         write_state(
             self.state_path,
             {
-                "schema": "stage6-local-state-v2",
+                "schema": "stage6-local-state-v3",
                 "multilingualRuns": [multilingual_result_to_dict(result) for result in self.multilingual_runs.values()],
                 "requestDedupeIndex": [
                     {
@@ -1225,6 +1253,7 @@ class Stage6Service:
         source_citation_indexes: tuple[int, ...] | None = None,
         source_claim_support_ids: tuple[str, ...] | None = None,
         source_evaluation_id: str = "eval_local",
+        source_evaluation_lineage: dict[str, Any] | None = None,
         source_evaluation_checksum: str = "",
         evaluation_status: str = "UNKNOWN",
         idempotency_scope: str | None = None,
@@ -1243,16 +1272,23 @@ class Stage6Service:
         raw_source_claim_support_ids = tuple(source_claim_support_ids or ())
         raw_source_evaluation_id = source_evaluation_id.strip() or "eval_local"
         raw_evaluation_status = evaluation_status.strip().upper() or "UNKNOWN"
-        raw_source_evaluation_checksum = source_evaluation_checksum.strip() or build_source_evaluation_checksum(
-            source_evaluation_id=raw_source_evaluation_id,
-            source_run_id=normalized_source_run_id,
-            trace_id=normalized_trace_id,
-            evaluation_status=cast(EvaluationStatus, raw_evaluation_status),
-            source_context_ref_ids=raw_source_context_ref_ids,
-            source_context_ref_count=source_context_ref_count,
-            source_citation_indexes=raw_source_citation_indexes,
-            source_citation_count=source_citation_count,
-        )
+        raw_source_evaluation_checksum = source_evaluation_checksum.strip()
+        try:
+            canonical_lineage = validate_lineage_binding(
+                source_evaluation_lineage, raw_source_evaluation_checksum,
+                evaluation_id=raw_source_evaluation_id, run_id=normalized_source_run_id,
+                trace_id=normalized_trace_id, status=raw_evaluation_status,
+                tenant_id=normalized_tenant_id, project_id=normalized_project_id,
+                context_ref_ids=raw_source_context_ref_ids, citation_indexes=raw_source_citation_indexes,
+            )
+        except (TypeError, ValueError) as exc:
+            raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", str(exc)) from exc
+        if self._state_quarantine_reason is not None:
+            raise Stage6Error(
+                409,
+                "STATE_QUARANTINED",
+                f"Refusing work while {self._state_quarantine_reason} is preserved.",
+            )
         normalized_source_language = normalize_language_tag(source_language)
         normalized_target_language = normalize_language_tag(target_language)
         normalized_terms = normalize_glossary_terms(raw_glossary_terms)
@@ -1279,6 +1315,7 @@ class Stage6Service:
             source_citation_indexes=raw_source_citation_indexes,
             source_claim_support_ids=raw_source_claim_support_ids,
             source_evaluation_id=normalized_evaluation_id,
+            source_evaluation_lineage=canonical_lineage,
             source_evaluation_checksum=raw_source_evaluation_checksum,
             evaluation_status=normalized_evaluation_status,
         )
@@ -1370,17 +1407,7 @@ class Stage6Service:
                 prefix="claimsup_",
                 field_name="source claim-support identifiers",
             )
-            normalized_evaluation_checksum = validate_source_evaluation_checksum(
-                source_evaluation_checksum=raw_source_evaluation_checksum,
-                source_evaluation_id=normalized_evaluation_id,
-                source_run_id=normalized_source_run_id,
-                trace_id=normalized_trace_id,
-                evaluation_status=normalized_evaluation_status,
-                source_context_ref_ids=normalized_context_ref_ids,
-                source_context_ref_count=source_context_ref_count,
-                source_citation_indexes=normalized_citation_indexes,
-                source_citation_count=source_citation_count,
-            )
+            normalized_evaluation_checksum = raw_source_evaluation_checksum
             validate_multilingual_source_evidence(
                 source_text=source_text,
                 evaluation_status=normalized_evaluation_status,
@@ -1416,6 +1443,7 @@ class Stage6Service:
                 source_citation_indexes=normalized_citation_indexes,
                 source_claim_support_ids=normalized_claim_support_ids,
                 source_evaluation_id=normalized_evaluation_id,
+                source_evaluation_lineage=canonical_lineage,
                 source_evaluation_checksum=normalized_evaluation_checksum,
                 evaluation_status=normalized_evaluation_status,
                 source_evaluation_checksum_supplied=bool(source_evaluation_checksum.strip()),
@@ -1492,6 +1520,7 @@ class Stage6Service:
         source_citation_indexes: tuple[int, ...],
         source_claim_support_ids: tuple[str, ...],
         source_evaluation_id: str,
+        source_evaluation_lineage: dict[str, Any],
         source_evaluation_checksum: str,
         evaluation_status: EvaluationStatus,
         source_evaluation_checksum_supplied: bool,
@@ -1628,6 +1657,7 @@ class Stage6Service:
             source_citation_indexes=source_citation_indexes,
             source_claim_support_ids=source_claim_support_ids,
             source_evaluation_id=source_evaluation_id,
+            source_evaluation_lineage=source_evaluation_lineage,
             source_evaluation_checksum=source_evaluation_checksum,
             evaluation_status=evaluation_status,
             glossary_terms=normalized_terms,
@@ -1684,6 +1714,7 @@ class Stage6Service:
             source_citation_indexes=source_citation_indexes,
             source_claim_support_ids=source_claim_support_ids,
             source_evaluation_id=source_evaluation_id,
+            source_evaluation_lineage=source_evaluation_lineage,
             source_evaluation_checksum=source_evaluation_checksum,
             evaluation_status=evaluation_status,
         )
@@ -2065,17 +2096,16 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Restored Stage 6 citation count is inconsistent.")
     source_evaluation_id = normalize_evaluation_id(str(row["source_evaluation_id"]))
     evaluation_status = validate_evaluation_status(str(row["evaluation_status"]))
-    source_evaluation_checksum = validate_source_evaluation_checksum(
-        source_evaluation_checksum=str(row["source_evaluation_checksum"]),
-        source_evaluation_id=source_evaluation_id,
-        source_run_id=str(row["source_run_id"]),
-        trace_id=str(row["trace_id"]),
-        evaluation_status=evaluation_status,
-        source_context_ref_ids=source_context_ref_ids,
-        source_context_ref_count=source_context_ref_count,
-        source_citation_indexes=source_citation_indexes,
-        source_citation_count=source_citation_count,
-    )
+    source_evaluation_checksum = str(row["source_evaluation_checksum"])
+    try:
+        source_evaluation_lineage = validate_lineage_binding(
+            cast(dict[str, Any], row["source_evaluation_lineage"]), source_evaluation_checksum,
+            evaluation_id=source_evaluation_id, run_id=str(row["source_run_id"]), trace_id=str(row["trace_id"]),
+            status=evaluation_status, tenant_id=tenant_id, project_id=project_id,
+            context_ref_ids=source_context_ref_ids, citation_indexes=source_citation_indexes,
+        )
+    except (TypeError, ValueError) as exc:
+        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", str(exc)) from exc
     transcript_segments = tuple(
         transcript_segment_from_any(cast(dict[str, Any], segment))
         for segment in row.get("transcript_segments", row.get("transcriptSegments", ()))
@@ -2120,6 +2150,7 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         source_citation_indexes=source_citation_indexes,
         source_claim_support_ids=source_claim_support_ids,
         source_evaluation_id=source_evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
     )
@@ -2166,6 +2197,7 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         source_citation_indexes=source_citation_indexes,
         source_claim_support_ids=source_claim_support_ids,
         source_evaluation_id=source_evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
         glossary_terms=[str(term) for term in row.get("glossary_terms", [])],
@@ -2245,6 +2277,7 @@ def multilingual_result_from_dict(row: dict[str, Any]) -> MultilingualWalkthroug
         source_citation_indexes=source_citation_indexes,
         source_claim_support_ids=source_claim_support_ids,
         source_evaluation_id=source_evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
     )
@@ -2371,6 +2404,7 @@ def build_multilingual_request_checksum(
     source_citation_indexes: tuple[int, ...] | None,
     source_claim_support_ids: tuple[str, ...] | None,
     source_evaluation_id: str,
+    source_evaluation_lineage: dict[str, Any],
     source_evaluation_checksum: str,
     evaluation_status: str,
 ) -> str:
@@ -2398,6 +2432,7 @@ def build_multilingual_request_checksum(
                 "sourceContextRefCount": source_context_ref_count,
                 "sourceContextRefIds": list(source_context_ref_ids) if source_context_ref_ids is not None else None,
                 "sourceEvaluationChecksum": source_evaluation_checksum,
+                "sourceEvaluationLineage": source_evaluation_lineage,
                 "sourceEvaluationId": normalized_source_evaluation_id,
                 "sourceLanguage": normalized_source_language,
                 "sourceRunId": source_run_id,
@@ -2852,18 +2887,20 @@ def validate_multilingual_transcript_correctness(
     source_segments = source_transcript_segments(source_text)
     if len(normalized_segments) != len(source_segments):
         raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript does not cover every cited source segment.")
+    context_by_citation = dict(zip(citation_indexes, context_ref_ids, strict=False))
+    claim_by_citation = dict(zip(citation_indexes, claim_support_ids, strict=False))
     expected_indexes: list[int] = []
     for index, (segment, expected_source) in enumerate(zip(normalized_segments, source_segments, strict=True), start=1):
         source_segment, markers, indexes = expected_source
         expected_context_refs = tuple(
-            context_ref_ids[citation_indexes.index(citation_index)]
+            context_by_citation[citation_index]
             for citation_index in indexes
-            if citation_index in citation_indexes
+            if citation_index in context_by_citation
         )
         expected_claim_supports = tuple(
-            claim_support_ids[citation_indexes.index(citation_index)]
+            claim_by_citation[citation_index]
             for citation_index in indexes
-            if citation_index in citation_indexes
+            if citation_index in claim_by_citation
         )
         if segment.segment_id != f"seg_{index:03d}":
             raise Stage6Error(422, "TRANSCRIPT_CORRECTNESS_FAILED", "Transcript segment order is invalid.")
@@ -3026,35 +3063,6 @@ def validate_evaluation_status(value: str) -> EvaluationStatus:
     if candidate not in {"PASSED", "FAILED", "UNKNOWN"}:
         raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Invalid source evaluation status.")
     return cast(EvaluationStatus, candidate)
-
-
-def validate_source_evaluation_checksum(
-    *,
-    source_evaluation_checksum: str,
-    source_evaluation_id: str,
-    source_run_id: str,
-    trace_id: str,
-    evaluation_status: EvaluationStatus,
-    source_context_ref_ids: tuple[str, ...],
-    source_context_ref_count: int,
-    source_citation_indexes: tuple[int, ...],
-    source_citation_count: int,
-) -> str:
-    if source_context_ref_count > 0 and evaluation_status != "PASSED":
-        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Stage 6 replay requires passed source evaluation evidence.")
-    expected = build_source_evaluation_checksum(
-        source_evaluation_id=source_evaluation_id,
-        source_run_id=source_run_id,
-        trace_id=trace_id,
-        evaluation_status=evaluation_status,
-        source_context_ref_ids=source_context_ref_ids,
-        source_context_ref_count=source_context_ref_count,
-        source_citation_indexes=source_citation_indexes,
-        source_citation_count=source_citation_count,
-    )
-    if source_evaluation_checksum != expected:
-        raise Stage6Error(422, "PROVIDER_OUTPUT_INVALID", "Source evaluation checksum is invalid.")
-    return expected
 
 
 def validate_multilingual_source_evidence(
@@ -3569,6 +3577,7 @@ def build_stage6_metadata_text(
     source_citation_indexes: tuple[int, ...],
     source_claim_support_ids: tuple[str, ...],
     source_evaluation_id: str,
+    source_evaluation_lineage: dict[str, Any],
     source_evaluation_checksum: str,
     evaluation_status: EvaluationStatus,
     glossary_terms: list[str],
@@ -3602,6 +3611,7 @@ def build_stage6_metadata_text(
         "sourceCitationIndexes": list(source_citation_indexes),
         "sourceClaimSupportIds": list(source_claim_support_ids),
         "sourceEvaluationId": source_evaluation_id,
+        "sourceEvaluationLineage": source_evaluation_lineage,
         "sourceEvaluationChecksum": source_evaluation_checksum,
         "evaluationStatus": evaluation_status,
         "glossaryTerms": glossary_terms,
@@ -3689,6 +3699,7 @@ def multilingual_to_api(result: MultilingualWalkthroughResult) -> dict[str, obje
             "sourceCitationIndexes": list(result.source_citation_indexes),
             "sourceClaimSupportIds": list(result.source_claim_support_ids),
             "sourceEvaluationId": result.source_evaluation_id,
+            "sourceEvaluationLineage": result.source_evaluation_lineage,
             "sourceEvaluationChecksum": result.source_evaluation_checksum,
             "evaluationStatus": result.evaluation_status,
         },

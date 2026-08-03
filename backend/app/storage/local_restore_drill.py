@@ -12,6 +12,7 @@ import tempfile
 from time import perf_counter
 from typing import TypeAlias
 
+from backend.app.evaluation_lineage import build_source_evaluation_checksum, derive_evaluation_lineage
 from backend.app.stage4 import (
     DocumentRecord,
     IngestionRunRecord,
@@ -25,7 +26,6 @@ from backend.app.stage7 import (
     DurableAvatarRenderScope,
     Stage7Service,
     SyntheticAvatarConsentRecord,
-    build_source_evaluation_checksum,
     create_stage7_service,
 )
 
@@ -77,6 +77,7 @@ class SeededDrillState:
     context_ref_ids: tuple[str, ...]
     citation_indexes: tuple[int, ...]
     claim_support_ids: tuple[str, ...]
+    evaluation_lineage: dict[str, object]
     evaluation_checksum: str
     stage6_scope: str
     stage7_scope: str
@@ -201,16 +202,8 @@ def _seed_source_state(paths: StageStatePaths) -> SeededDrillState:
     context_ref_ids = tuple(item.context_ref_id for item in walkthrough.retrieved_context)
     citation_indexes = tuple(claim.citation_index for claim in walkthrough.generated_script.claims)
     claim_support_ids = tuple(item.claim_support_id for item in walkthrough.evaluation.claim_supports)
-    evaluation_checksum = build_source_evaluation_checksum(
-        source_evaluation_id=walkthrough.evaluation.evaluation_id,
-        source_run_id=walkthrough.run_id,
-        trace_id=walkthrough.trace_id,
-        evaluation_status=walkthrough.evaluation.evaluation_status,
-        source_context_ref_ids=context_ref_ids,
-        source_context_ref_count=len(context_ref_ids),
-        source_citation_indexes=citation_indexes,
-        source_citation_count=len(citation_indexes),
-    )
+    evaluation_lineage = derive_evaluation_lineage(walkthrough)
+    evaluation_checksum = build_source_evaluation_checksum(evaluation_lineage)
 
     stage6_scope = f"{principal.tenant_id}:{principal.actor_id}:{project.project_id}:{walkthrough.run_id}"
     stage6 = Stage6Service(state_path=paths["stage6"])
@@ -231,6 +224,7 @@ def _seed_source_state(paths: StageStatePaths) -> SeededDrillState:
         source_citation_indexes=citation_indexes,
         source_claim_support_ids=claim_support_ids,
         source_evaluation_id=walkthrough.evaluation.evaluation_id,
+        source_evaluation_lineage=evaluation_lineage,
         source_evaluation_checksum=evaluation_checksum,
         evaluation_status=walkthrough.evaluation.evaluation_status,
         idempotency_scope=stage6_scope,
@@ -248,6 +242,7 @@ def _seed_source_state(paths: StageStatePaths) -> SeededDrillState:
         source_context_ref_ids=context_ref_ids,
         source_citation_indexes=citation_indexes,
         source_evaluation_id=walkthrough.evaluation.evaluation_id,
+        source_evaluation_lineage=evaluation_lineage,
         source_evaluation_checksum=evaluation_checksum,
         evaluation_status=walkthrough.evaluation.evaluation_status,
         consent_to_use_synthetic_avatar=True,
@@ -264,6 +259,7 @@ def _seed_source_state(paths: StageStatePaths) -> SeededDrillState:
         source_context_ref_ids=context_ref_ids,
         source_citation_indexes=citation_indexes,
         source_evaluation_id=walkthrough.evaluation.evaluation_id,
+        source_evaluation_lineage=evaluation_lineage,
         source_evaluation_checksum=evaluation_checksum,
         evaluation_status=walkthrough.evaluation.evaluation_status,
         consent_to_use_synthetic_avatar=True,
@@ -291,6 +287,7 @@ def _seed_source_state(paths: StageStatePaths) -> SeededDrillState:
         context_ref_ids=context_ref_ids,
         citation_indexes=citation_indexes,
         claim_support_ids=claim_support_ids,
+        evaluation_lineage=evaluation_lineage,
         evaluation_checksum=evaluation_checksum,
         stage6_scope=stage6_scope,
         stage7_scope=stage7_scope,
@@ -400,7 +397,6 @@ def _collect_counts(stage4: Stage4Service, stage6: Stage6Service, stage7: Stage7
 
 def _assert_replay_safety(seeded: SeededDrillState, restored: RestoredDrillServices) -> dict[str, str]:
     principal = seeded.principal
-    walkthrough = seeded.walkthrough
     stage4 = restored.stage4
     stage6 = restored.stage6
     stage7 = restored.stage7
@@ -408,7 +404,23 @@ def _assert_replay_safety(seeded: SeededDrillState, restored: RestoredDrillServi
     context_ref_ids = seeded.context_ref_ids
     citation_indexes = seeded.citation_indexes
     claim_support_ids = seeded.claim_support_ids
-    evaluation_checksum = seeded.evaluation_checksum
+    walkthrough = stage4.walkthrough_runs.get(seeded.walkthrough.run_id)
+    if walkthrough is None:
+        raise LocalRestoreDrillError("Restored Stage 4 lineage source is missing.")
+    try:
+        evaluation_lineage = derive_evaluation_lineage(walkthrough)
+        evaluation_checksum = build_source_evaluation_checksum(evaluation_lineage)
+    except ValueError as exc:
+        raise LocalRestoreDrillError("Restored Stage 4 lineage is invalid.") from exc
+    restored_stage6 = stage6.multilingual_runs.get(seeded.stage6_result.multilingual_run_id)
+    restored_consent = stage7.synthetic_media_consents.get(seeded.consent.consent_record_id)
+    restored_render = stage7.avatar_renders.get(seeded.render.avatar_render_id)
+    if restored_stage6 is None or restored_consent is None or restored_render is None:
+        raise LocalRestoreDrillError("Restored Stage 6/7 lineage graph is inactive.")
+    connected = (seeded.evaluation_lineage, restored_stage6.source_evaluation_lineage,
+                 restored_consent.source_evaluation_lineage, restored_render.source_evaluation_lineage)
+    if any(lineage != evaluation_lineage for lineage in connected) or evaluation_checksum != seeded.evaluation_checksum:
+        raise LocalRestoreDrillError("Restored Stage 4/6/7 lineage graph is mismatched.")
     source_script = walkthrough.accepted_script_text
     evaluation = walkthrough.evaluation
     if source_script is None or evaluation is None:
@@ -466,6 +478,7 @@ def _assert_replay_safety(seeded: SeededDrillState, restored: RestoredDrillServi
         source_citation_indexes=citation_indexes,
         source_claim_support_ids=claim_support_ids,
         source_evaluation_id=evaluation.evaluation_id,
+        source_evaluation_lineage=evaluation_lineage,
         source_evaluation_checksum=evaluation_checksum,
         evaluation_status=evaluation.evaluation_status,
         idempotency_scope=seeded.stage6_scope,
@@ -480,6 +493,7 @@ def _assert_replay_safety(seeded: SeededDrillState, restored: RestoredDrillServi
         source_context_ref_ids=context_ref_ids,
         source_citation_indexes=citation_indexes,
         source_evaluation_id=evaluation.evaluation_id,
+        source_evaluation_lineage=evaluation_lineage,
         source_evaluation_checksum=evaluation_checksum,
         evaluation_status=evaluation.evaluation_status,
         consent_to_use_synthetic_avatar=True,
@@ -496,6 +510,7 @@ def _assert_replay_safety(seeded: SeededDrillState, restored: RestoredDrillServi
         source_context_ref_ids=context_ref_ids,
         source_citation_indexes=citation_indexes,
         source_evaluation_id=evaluation.evaluation_id,
+        source_evaluation_lineage=evaluation_lineage,
         source_evaluation_checksum=evaluation_checksum,
         evaluation_status=evaluation.evaluation_status,
         consent_to_use_synthetic_avatar=True,

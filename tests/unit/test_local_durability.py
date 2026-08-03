@@ -10,11 +10,79 @@ import pytest
 import backend.app.stage4 as stage4_module
 import backend.app.stage6 as stage6_module
 import backend.app.stage7 as stage7_module
+from backend.app.evaluation_lineage import build_source_evaluation_checksum, validate_evaluation_lineage_payload
 from backend.app.rag.chunking import checksum_text
 from backend.app.storage import write_state as storage_write_state
 from backend.app.stage4 import LocalPrincipal, Stage4Error, Stage4Service
 from backend.app.stage6 import create_stage6_service
-from backend.app.stage7 import create_stage7_service
+
+_contract = Path("docs/API_CONTRACT.md").read_text(encoding="utf-8")
+GOLDEN_V2_LINEAGE = json.loads(_contract.rsplit("```json\n", 1)[1].split("\n```", 1)[0])
+
+
+def evaluation_lineage_fixture(**values: Any) -> dict[str, Any]:
+    context_ids = tuple(values.get("source_context_ref_ids", ("ctx_001",)))
+    citations = tuple(values.get("source_citation_indexes", (1,)))
+    tenant_id, project_id = values.get("tenant_id", "tenant"), values.get("project_id", "project")
+    lineage = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
+    lineage["evaluation"].update(evaluationId=values.get("source_evaluation_id", "eval_local"),
+                                 runId=values.get("source_run_id", "local_source_run"),
+                                 status=str(values.get("evaluation_status", "PASSED")).strip().upper(),
+                                 traceId=values.get("trace_id", "local_trace"))
+    lineage["scope"] = {"projectId": project_id, "tenantId": tenant_id}
+    template = lineage["selectedContext"][0]
+    lineage["selectedContext"] = [{**template, "chunkChecksum": checksum_text(context_id),
+        "chunkId": f"chunk_{index}", "chunkIndex": index, "contextRefId": context_id,
+        "documentId": f"doc_{index}", "projectId": project_id,
+        "snapshotChecksum": checksum_text("snapshot:" + context_id),
+        "sourceDocumentChecksum": checksum_text("document:" + context_id), "tenantId": tenant_id}
+        for index, context_id in enumerate(context_ids)]
+    lineage["sourceCitationIndexes"] = list(citations)
+    return validate_evaluation_lineage_payload(lineage)
+
+
+def lineage_checksum(**values: Any) -> str:
+    values.pop("source_context_ref_count", None)
+    values.pop("source_citation_count", None)
+    return build_source_evaluation_checksum(evaluation_lineage_fixture(**values))
+
+
+def _inject_stage7_lineage(values: dict[str, Any]) -> dict[str, Any]:
+    call = dict(values)
+    if "source_evaluation_lineage" not in call:
+        call.pop("source_evaluation_checksum", None)
+    refs = tuple(call.get("source_context_ref_ids") or ())
+    citations = tuple(call.get("source_citation_indexes") or ())
+    if not refs and call.get("evaluation_status") == "PASSED":
+        refs, citations = ("ctx_fixture",), (1,)
+        call.update(source_context_ref_ids=refs, source_citation_indexes=citations)
+    durable = call.get("durable_consent")
+    tenant_id = call.get("tenant_id", durable.tenant_id if durable is not None else "tenant")
+    project_id = call.get("project_id", durable.project_id if durable is not None else "project")
+    fixture_values = {**call, "tenant_id": tenant_id, "project_id": project_id,
+                      "source_context_ref_ids": refs, "source_citation_indexes": citations,
+                      "source_evaluation_id": call.get("source_evaluation_id", "local_evaluation"),
+                      "source_run_id": call.get("source_run_id", "local_source_run"),
+                      "trace_id": call.get("trace_id", "local_trace"),
+                      "evaluation_status": call.get("evaluation_status", "UNKNOWN")}
+    legacy = {key: value for key, value in fixture_values.items() if key not in {"tenant_id", "project_id"}}
+    lineage = call.setdefault("source_evaluation_lineage", evaluation_lineage_fixture(**fixture_values))
+    expected_checksum = build_source_evaluation_checksum(lineage)
+    if call.get("source_evaluation_checksum") in {None, lineage_checksum(**legacy)}:
+        call["source_evaluation_checksum"] = expected_checksum
+    return call
+
+
+class FixtureStage7Service(stage7_module.Stage7Service):
+    def capture_synthetic_avatar_consent(self, **values: Any) -> Any:
+        return super().capture_synthetic_avatar_consent(**_inject_stage7_lineage(values))
+
+    def render_avatar_demo(self, **values: Any) -> Any:
+        return super().render_avatar_demo(**_inject_stage7_lineage(values))
+
+
+def create_stage7_service(*, state_path: Path | None = None) -> FixtureStage7Service:
+    return FixtureStage7Service(state_path=state_path)
 
 
 class FailingAfterFirstEmbeddingProvider:
@@ -230,6 +298,8 @@ def test_file_state_schema_mismatch_degrades_to_empty_local_state(tmp_path: Path
         json.dumps({"schema": "stage7-local-state-v999", "avatarRenders": [{"avatar_render_id": "bad"}]}),
         encoding="utf-8",
     )
+    stage6_bytes = stage6_path.read_bytes()
+    stage7_bytes = stage7_path.read_bytes()
 
     stage4 = Stage4Service(state_path=stage4_path)
     stage6 = create_stage6_service(state_path=stage6_path)
@@ -238,6 +308,45 @@ def test_file_state_schema_mismatch_degrades_to_empty_local_state(tmp_path: Path
     assert stage4.projects == {}
     assert stage6.idempotency_records == {}
     assert stage7.avatar_renders == {}
+    with pytest.raises(OSError, match="quarantined"):
+        stage6.reset()
+    with pytest.raises(OSError, match="quarantined"):
+        stage7.reset()
+    assert stage6_path.read_bytes() == stage6_bytes
+    assert stage7_path.read_bytes() == stage7_bytes
+
+
+@pytest.mark.parametrize(
+    ("stage", "schema", "connected_key"),
+    [(6, "stage6-local-state-v2", "multilingualRuns"), (7, "stage7-local-state-v1", "avatarRenders")],
+)
+def test_downstream_legacy_state_is_preserved_as_inactive_quarantine(
+    tmp_path: Path,
+    stage: int,
+    schema: str,
+    connected_key: str,
+) -> None:
+    state_path = tmp_path / f"stage{stage}.json"
+    original = json.dumps(
+        {
+            "schema": schema,
+            connected_key: [{"legacy": "connected-row"}],
+            "idempotencyRecords": [{"legacy": "idempotency"}],
+        }
+    ).encode()
+    state_path.write_bytes(original)
+
+    service = (
+        create_stage6_service(state_path=state_path)
+        if stage == 6
+        else create_stage7_service(state_path=state_path)
+    )
+    active = (cast(stage6_module.Stage6Service, service).multilingual_runs if stage == 6
+              else cast(FixtureStage7Service, service).avatar_renders)
+    assert active == {}
+    with pytest.raises(OSError, match=f"legacy Stage {stage}"):
+        service.reset()
+    assert state_path.read_bytes() == original
 
 
 def test_stage4_file_state_replays_failed_idempotency_after_restart(tmp_path: Path) -> None:
@@ -1178,15 +1287,25 @@ def stage6_source_binding_kwargs(
         "source_citation_indexes": source_citation_indexes,
         "source_claim_support_ids": source_claim_support_ids,
         "source_evaluation_id": source_evaluation_id,
-        "source_evaluation_checksum": stage7_module.build_source_evaluation_checksum(
-            source_evaluation_id=source_evaluation_id,
+        "source_evaluation_lineage": evaluation_lineage_fixture(
+            tenant_id=tenant_id,
+            project_id=project_id,
             source_run_id=source_run_id,
             trace_id=trace_id,
             evaluation_status=evaluation_status,
             source_context_ref_ids=source_context_ref_ids,
-            source_context_ref_count=len(source_context_ref_ids),
             source_citation_indexes=source_citation_indexes,
-            source_citation_count=len(source_citation_indexes),
+            source_evaluation_id=source_evaluation_id,
+        ),
+        "source_evaluation_checksum": lineage_checksum(
+            tenant_id=tenant_id,
+            project_id=project_id,
+            source_run_id=source_run_id,
+            trace_id=trace_id,
+            evaluation_status=evaluation_status,
+            source_context_ref_ids=source_context_ref_ids,
+            source_citation_indexes=source_citation_indexes,
+            source_evaluation_id=source_evaluation_id,
         ),
         "evaluation_status": evaluation_status,
     }
@@ -1587,7 +1706,7 @@ def test_stage6_file_state_drops_failed_idempotency_with_missing_error(tmp_path:
     state_path.write_text(
         json.dumps(
             {
-                "schema": "stage6-local-state-v2",
+                    "schema": "stage6-local-state-v3",
                 "multilingualRuns": [],
                 "requestDedupeIndex": [],
                 "idempotencyRecords": [
@@ -1671,7 +1790,7 @@ def test_stage6_drops_running_idempotency_record_on_restore(tmp_path: Path) -> N
     state_path.write_text(
         json.dumps(
             {
-                "schema": "stage6-local-state-v2",
+                    "schema": "stage6-local-state-v3",
                 "multilingualRuns": [],
                 "requestDedupeIndex": [],
                 "idempotencyRecords": [
@@ -1874,9 +1993,10 @@ def test_stage7_file_state_terminal_persist_failure_preserves_concurrent_success
             source_context_ref_count: int,
             source_citation_count: int,
             source_context_ref_ids: tuple[str, ...] = (),
-            source_citation_indexes: tuple[int, ...] = (),
-            source_evaluation_id: str = "local_evaluation",
-            source_evaluation_checksum: str = "",
+                source_citation_indexes: tuple[int, ...] = (),
+                source_evaluation_id: str = "local_evaluation",
+                source_evaluation_lineage: dict[str, Any] | None = None,
+                source_evaluation_checksum: str = "",
             evaluation_status: str = "UNKNOWN",
             multilingual_bundle: stage7_module.Stage7MultilingualBundle | None = None,
         ) -> stage7_module.AvatarProviderResult:
@@ -1892,9 +2012,10 @@ def test_stage7_file_state_terminal_persist_failure_preserves_concurrent_success
                 source_context_ref_count=source_context_ref_count,
                 source_citation_count=source_citation_count,
                 source_context_ref_ids=source_context_ref_ids,
-                source_citation_indexes=source_citation_indexes,
-                source_evaluation_id=source_evaluation_id,
-                source_evaluation_checksum=source_evaluation_checksum,
+                    source_citation_indexes=source_citation_indexes,
+                    source_evaluation_id=source_evaluation_id,
+                    source_evaluation_lineage=source_evaluation_lineage,
+                    source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
                 multilingual_bundle=multilingual_bundle,
             )
@@ -1914,19 +2035,23 @@ def test_stage7_file_state_terminal_persist_failure_preserves_concurrent_success
 
     def render(run_id: str, idempotency_key: str) -> stage7_module.AvatarRenderResult:
         return service.render_avatar_demo(
-            source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
-            requested_avatar_provider="mock",
-            source_run_id=run_id,
-            trace_id=f"trace_{run_id}",
-            source_context_ref_count=1,
-            source_citation_count=1,
-            source_context_ref_ids=(f"ctx_{run_id}",),
-            source_citation_indexes=(1,),
-            source_evaluation_id=f"eval_{run_id}",
-            evaluation_status="PASSED",
-            consent_to_use_synthetic_avatar=True,
-            idempotency_scope="tenant:user:project:run",
-            idempotency_key=idempotency_key,
+            **_inject_stage7_lineage(
+                {
+                    "source_script": "NarraTwin AI creates grounded walkthrough scripts. [1]",
+                    "requested_avatar_provider": "mock",
+                    "source_run_id": run_id,
+                    "trace_id": f"trace_{run_id}",
+                    "source_context_ref_count": 1,
+                    "source_citation_count": 1,
+                    "source_context_ref_ids": (f"ctx_{run_id}",),
+                    "source_citation_indexes": (1,),
+                    "source_evaluation_id": f"eval_{run_id}",
+                    "evaluation_status": "PASSED",
+                    "consent_to_use_synthetic_avatar": True,
+                    "idempotency_scope": "tenant:user:project:run",
+                    "idempotency_key": idempotency_key,
+                }
+            )
         )
 
     with ThreadPoolExecutor(max_workers=2) as executor:
@@ -2052,7 +2177,7 @@ def test_stage7_file_state_replays_completed_avatar_idempotency_after_canonicali
         source_citation_count=1,
         source_context_ref_ids=("ctx_canonical",),
         source_citation_indexes=(1,),
-        source_evaluation_id=" eval_canonical ",
+        source_evaluation_id="eval_canonical",
         evaluation_status="passed",
         consent_to_use_synthetic_avatar=True,
         idempotency_scope="tenant:user:project:run",
@@ -2100,7 +2225,7 @@ def test_stage7_file_state_replays_idempotency_when_replay_supplies_canonical_ev
         idempotency_scope="tenant:user:project:run",
         idempotency_key="render",
     )
-    canonical_source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+    canonical_source_evaluation_checksum = lineage_checksum(
         source_evaluation_id="eval_checksum",
         source_run_id="run_eval_checksum",
         trace_id="trace_eval_checksum",
@@ -2201,15 +2326,16 @@ def test_stage7_file_state_replays_provider_failed_fallback_history(
             source_context_ref_ids: tuple[str, ...] = (),
             source_citation_indexes: tuple[int, ...] = (),
             source_evaluation_id: str = "local_evaluation",
+            source_evaluation_lineage: dict[str, Any] | None = None,
             source_evaluation_checksum: str = "",
             evaluation_status: str = "UNKNOWN",
             multilingual_bundle: stage7_module.Stage7MultilingualBundle | None = None,
         ) -> stage7_module.AvatarProviderResult:
-            del multilingual_bundle
+            del multilingual_bundle, source_evaluation_lineage
             raise RuntimeError("provider unavailable during local test")
 
     state_path = tmp_path / "stage7.json"
-    service = stage7_module.Stage7Service(avatar_provider=FailingAvatarProvider(), state_path=state_path)
+    service = FixtureStage7Service(avatar_provider=FailingAvatarProvider(), state_path=state_path)
     original = service.render_avatar_demo(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         requested_avatar_provider="heygen",
@@ -2275,15 +2401,16 @@ def test_stage7_file_state_replays_pure_provider_failed_fallback_history(
             source_context_ref_ids: tuple[str, ...] = (),
             source_citation_indexes: tuple[int, ...] = (),
             source_evaluation_id: str = "local_evaluation",
+            source_evaluation_lineage: dict[str, Any] | None = None,
             source_evaluation_checksum: str = "",
             evaluation_status: str = "UNKNOWN",
             multilingual_bundle: stage7_module.Stage7MultilingualBundle | None = None,
         ) -> stage7_module.AvatarProviderResult:
-            del multilingual_bundle
+            del multilingual_bundle, source_evaluation_lineage
             raise RuntimeError("provider failed during local restore replay test")
 
     state_path = tmp_path / "stage7.json"
-    service = stage7_module.Stage7Service(avatar_provider=FailingAvatarProvider(), state_path=state_path)
+    service = FixtureStage7Service(avatar_provider=FailingAvatarProvider(), state_path=state_path)
     original = service.render_avatar_demo(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         requested_avatar_provider="mock",
@@ -2331,7 +2458,7 @@ def test_stage7_file_state_replays_pure_provider_failed_fallback_history(
 def test_stage7_file_state_drops_cross_scope_render_idempotency_record(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+    source_evaluation_checksum = lineage_checksum(
         source_evaluation_id="eval_scope",
         source_run_id="run_scope",
         trace_id="trace_scope",
@@ -2400,7 +2527,7 @@ def test_stage7_file_state_drops_cross_scope_consent_idempotency_record(tmp_path
         source_context_ref_ids=("ctx_scope",),
         source_citation_indexes=(1,),
         source_evaluation_id="eval_scope",
-        source_evaluation_checksum=stage7_module.build_source_evaluation_checksum(
+        source_evaluation_checksum=lineage_checksum(
             source_evaluation_id="eval_scope",
             source_run_id="run_scope",
             trace_id="trace_scope",
@@ -2465,7 +2592,7 @@ def test_stage7_file_state_drops_consent_idempotency_with_wrong_endpoint(tmp_pat
         source_context_ref_ids=("ctx_endpoint",),
         source_citation_indexes=(1,),
         source_evaluation_id="eval_endpoint",
-        source_evaluation_checksum=stage7_module.build_source_evaluation_checksum(
+        source_evaluation_checksum=lineage_checksum(
             source_evaluation_id="eval_endpoint",
             source_run_id="run_endpoint",
             trace_id="trace_endpoint",
@@ -2524,7 +2651,7 @@ def test_stage7_file_state_drops_render_with_self_consistent_cross_scope_without
 ) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+    source_evaluation_checksum = lineage_checksum(
         source_evaluation_id="eval_render_scope",
         source_run_id="run_render_scope",
         trace_id="trace_render_scope",
@@ -2586,6 +2713,7 @@ def test_stage7_file_state_drops_render_with_self_consistent_cross_scope_without
         source_context_ref_ids=tuple(render_row["source_context_ref_ids"]),
         source_citation_indexes=tuple(render_row["source_citation_indexes"]),
         source_evaluation_id=render_row["source_evaluation_id"],
+        source_evaluation_lineage=render_row["source_evaluation_lineage"],
         source_evaluation_checksum=render_row["source_evaluation_checksum"],
         evaluation_status=render_row["evaluation_status"],
         consent_record_id=render_row["consent_record_id"],
@@ -2662,6 +2790,7 @@ def test_stage7_file_state_drops_render_with_noncanonical_source_evaluation_chec
         source_context_ref_ids=tuple(payload["avatarRenders"][0]["source_context_ref_ids"]),
         source_citation_indexes=tuple(payload["avatarRenders"][0]["source_citation_indexes"]),
         source_evaluation_id=payload["avatarRenders"][0]["source_evaluation_id"],
+        source_evaluation_lineage=payload["avatarRenders"][0]["source_evaluation_lineage"],
         source_evaluation_checksum=payload["avatarRenders"][0]["source_evaluation_checksum"],
         evaluation_status=payload["avatarRenders"][0]["evaluation_status"],
         consent_record_id=payload["avatarRenders"][0]["consent_record_id"],
@@ -2855,7 +2984,7 @@ def test_stage7_file_state_drops_artifact_metadata_for_missing_render(tmp_path: 
     state_path.write_text(
         json.dumps(
             {
-                "schema": "stage7-local-state-v1",
+                "schema": "stage7-local-state-v2",
                 "avatarRenders": [],
                 "artifactMetadata": [
                     {
@@ -2956,13 +3085,21 @@ def test_stage7_file_state_drops_failed_idempotency_with_missing_error(tmp_path:
         source_context_ref_ids=("ctx_failed",),
         source_citation_indexes=(1,),
         source_evaluation_id="eval_failed",
+            source_evaluation_lineage=evaluation_lineage_fixture(
+            source_run_id="run_failed",
+            trace_id="trace_failed",
+            source_context_ref_ids=("ctx_failed",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_failed",
+            evaluation_status="PASSED",
+        ),
         source_evaluation_checksum=None,
         evaluation_status="PASSED",
     )
     state_path.write_text(
         json.dumps(
             {
-                "schema": "stage7-local-state-v1",
+                "schema": "stage7-local-state-v2",
                 "avatarRenders": [],
                 "artifactMetadata": [],
                 "idempotencyRecords": [
@@ -3019,13 +3156,21 @@ def test_stage7_file_state_drops_failed_render_idempotency_after_restart(tmp_pat
         source_context_ref_ids=("ctx_failed_replay",),
         source_citation_indexes=(1,),
         source_evaluation_id="eval_failed_replay",
+        source_evaluation_lineage=evaluation_lineage_fixture(
+            source_run_id="run_failed_replay",
+            trace_id="trace_failed_replay",
+            source_context_ref_ids=("ctx_failed_replay",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_failed_replay",
+            evaluation_status="PASSED",
+        ),
         source_evaluation_checksum=None,
         evaluation_status="PASSED",
     )
     state_path.write_text(
         json.dumps(
             {
-                "schema": "stage7-local-state-v1",
+                "schema": "stage7-local-state-v2",
                 "avatarRenders": [],
                 "artifactMetadata": [],
                 "idempotencyRecords": [
@@ -3055,6 +3200,14 @@ def test_stage7_file_state_drops_failed_render_idempotency_after_restart(tmp_pat
                             source_context_ref_ids=("ctx_failed_replay",),
                             source_citation_indexes=(1,),
                             source_evaluation_id="eval_failed_replay",
+                            source_evaluation_lineage=evaluation_lineage_fixture(
+                                source_run_id="run_failed_replay",
+                                trace_id="trace_failed_replay",
+                                source_context_ref_ids=("ctx_failed_replay",),
+                                source_citation_indexes=(1,),
+                                source_evaluation_id="eval_failed_replay",
+                                evaluation_status="PASSED",
+                            ),
                             source_evaluation_checksum="sha256:consent",
                             evaluation_status="PASSED",
                             idempotency_scope="tenant:user:project:run",
@@ -3171,7 +3324,7 @@ def test_stage7_file_state_derives_stale_low_counters_from_restored_ids(tmp_path
 def test_stage7_records_durable_synthetic_media_consent_and_replays_it(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+    source_evaluation_checksum = lineage_checksum(
         source_evaluation_id="eval_stage7",
         source_run_id="run_stage7",
         trace_id="trace_stage7",
@@ -3225,7 +3378,7 @@ def test_stage7_file_state_terminal_persist_failure_restores_consent_bound_rende
 ) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+    source_evaluation_checksum = lineage_checksum(
         source_evaluation_id="eval_stage7",
         source_run_id="run_stage7",
         trace_id="trace_stage7",
@@ -3317,7 +3470,7 @@ def test_stage7_file_state_terminal_persist_failure_restores_consent_bound_rende
 def test_stage7_restores_consumed_durable_consent_binding_after_successful_render(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+    source_evaluation_checksum = lineage_checksum(
         source_evaluation_id="eval_stage7",
         source_run_id="run_stage7",
         trace_id="trace_stage7",
@@ -3381,7 +3534,7 @@ def test_stage7_restores_consumed_durable_consent_binding_after_successful_rende
 def test_stage7_drops_tampered_consumed_consent_binding_on_restore(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    source_evaluation_checksum = stage7_module.build_source_evaluation_checksum(
+    source_evaluation_checksum = lineage_checksum(
         source_evaluation_id="eval_stage7",
         source_run_id="run_stage7",
         trace_id="trace_stage7",
@@ -3460,7 +3613,7 @@ def test_stage7_drops_running_consent_idempotency_record_on_restore(tmp_path: Pa
     state_path.write_text(
         json.dumps(
             {
-                "schema": "stage7-local-state-v1",
+                "schema": "stage7-local-state-v2",
                 "avatarRenders": [],
                 "artifactMetadata": [],
                 "syntheticMediaConsents": [],
@@ -3491,7 +3644,26 @@ def test_stage7_drops_running_consent_idempotency_record_on_restore(tmp_path: Pa
         source_context_ref_ids=("ctx_stage7",),
         source_citation_indexes=(1,),
         source_evaluation_id="eval_stage7",
-        source_evaluation_checksum="sha256:eval",
+        source_evaluation_lineage=evaluation_lineage_fixture(
+            tenant_id="tenant_local",
+            project_id="proj_stage7",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7",
+                evaluation_status="PASSED",
+            ),
+            source_evaluation_checksum=lineage_checksum(
+                tenant_id="tenant_local",
+                project_id="proj_stage7",
+                source_run_id="run_stage7",
+                trace_id="trace_stage7",
+                source_context_ref_ids=("ctx_stage7",),
+                source_citation_indexes=(1,),
+                source_evaluation_id="eval_stage7",
+                evaluation_status="PASSED",
+            ),
         evaluation_status="PASSED",
         consent_to_use_synthetic_avatar=True,
         idempotency_scope="tenant_local:user_local:proj_stage7:run_stage7",
@@ -3513,13 +3685,23 @@ def test_stage7_drops_malformed_or_cross_boundary_consent_record_on_restore(tmp_
         source_context_ref_ids=("ctx_stage7",),
         source_citation_indexes=(1,),
         source_evaluation_id="eval_stage7",
+        source_evaluation_lineage=evaluation_lineage_fixture(
+            tenant_id="tenant_local",
+            project_id="proj_stage7",
+            source_run_id="run_stage7",
+            trace_id="trace_stage7",
+            source_context_ref_ids=("ctx_stage7",),
+            source_citation_indexes=(1,),
+            source_evaluation_id="eval_stage7",
+            evaluation_status="PASSED",
+        ),
         source_evaluation_checksum="sha256:eval",
         evaluation_status="PASSED",
     )
     state_path.write_text(
         json.dumps(
             {
-                "schema": "stage7-local-state-v1",
+                "schema": "stage7-local-state-v2",
                 "avatarRenders": [],
                 "artifactMetadata": [],
                 "syntheticMediaConsents": [

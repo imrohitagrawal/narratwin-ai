@@ -22,6 +22,7 @@ for _state_env_name in (
     os.environ.pop(_state_env_name, None)
 
 from backend.app.main import app, reset_app_state_for_tests
+from backend.app.evaluation_lineage import build_source_evaluation_checksum, derive_evaluation_lineage
 from backend.app.rag.chunking import checksum_text
 from backend.app.rag.providers import MockLLMProvider
 from backend.app.stage4 import stage4_service
@@ -218,19 +219,16 @@ def decode_artifact(artifact: dict[str, Any], *, expected_mime: str, expected_su
     return decoded
 
 
+def runtime_evaluation_lineage(run: dict[str, Any]) -> dict[str, Any]:
+    source_record = stage4_service.walkthrough_runs[run["runId"]]
+    assert source_record.trace_id == run["trace"]["traceId"]
+    assert source_record.evaluation is not None
+    assert source_record.evaluation.evaluation_id == run["evaluation"]["evaluationId"]
+    return derive_evaluation_lineage(source_record)
+
+
 def runtime_evaluation_checksum(run: dict[str, Any]) -> str:
-    return checksum_text(
-        "\n".join(
-            [
-                run["evaluation"]["evaluationId"],
-                run["runId"],
-                run["trace"]["traceId"],
-                run["evaluationStatus"],
-                ",".join(context["contextRefId"] for context in run["contextRefs"]),
-                ",".join(str(support["citationIndex"]) for support in run["evaluation"]["claimSupports"]),
-            ]
-        )
-    )
+    return build_source_evaluation_checksum(runtime_evaluation_lineage(run))
 
 
 def runtime_claim_support_ids(run: dict[str, Any]) -> list[str]:
@@ -274,6 +272,7 @@ def assert_stage6_media_artifacts(multilingual: dict[str, Any], *, run: dict[str
     ]
     assert trace["sourceEvaluationId"] == run["evaluation"]["evaluationId"]
     assert trace["evaluationStatus"] == "PASSED"
+    assert trace["sourceEvaluationLineage"] == runtime_evaluation_lineage(run)
     assert trace["sourceEvaluationChecksum"] == runtime_evaluation_checksum(run)
     assert trace["sourceClaimSupportIds"] == runtime_claim_support_ids(run)
 
@@ -324,6 +323,7 @@ def assert_stage6_media_artifacts(multilingual: dict[str, Any], *, run: dict[str
     assert "No cloned voice or paid provider was used" in voice_manifest["disclosure"]
     assert metadata["sourceRunId"] == run["runId"]
     assert metadata["sourceEvaluationChecksum"] == trace["sourceEvaluationChecksum"]
+    assert metadata["sourceEvaluationLineage"] == trace["sourceEvaluationLineage"]
     assert metadata["sourceClaimSupportIds"] == trace["sourceClaimSupportIds"]
     assert metadata["transcriptSegments"] == multilingual["transcriptSegments"]
     assert metadata["transcriptCorrectness"] == multilingual["transcriptCorrectness"]
@@ -363,6 +363,7 @@ def assert_stage7_media_artifacts(avatar: dict[str, Any], *, run: dict[str, Any]
         support["citationIndex"] for support in run["evaluation"]["claimSupports"]
     ]
     assert trace["sourceEvaluationId"] == run["evaluation"]["evaluationId"]
+    assert trace["sourceEvaluationLineage"] == runtime_evaluation_lineage(run)
     assert trace["sourceEvaluationChecksum"] == runtime_evaluation_checksum(run)
     assert trace["evaluationStatus"] == "PASSED"
     assert trace["multilingualRunId"] == multilingual["multilingualRunId"]
@@ -389,6 +390,7 @@ def assert_stage7_media_artifacts(avatar: dict[str, Any], *, run: dict[str, Any]
     assert manifest["source"]["contextRefIds"] == trace["sourceContextRefIds"]
     assert manifest["source"]["citationIndexes"] == trace["sourceCitationIndexes"]
     assert manifest["source"]["evaluationId"] == trace["sourceEvaluationId"]
+    assert manifest["source"]["evaluationLineage"] == trace["sourceEvaluationLineage"]
     assert manifest["source"]["evaluationChecksum"] == trace["sourceEvaluationChecksum"]
     assert manifest["multilingualBundle"]["multilingualRunId"] == multilingual["multilingualRunId"]
     assert manifest["multilingualBundle"]["translatedScriptChecksum"] == trace["translatedScriptChecksum"]

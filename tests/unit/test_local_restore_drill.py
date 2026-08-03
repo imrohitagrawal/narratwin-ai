@@ -22,6 +22,9 @@ def test_local_restore_drill_replays_restored_state_without_new_ids(tmp_path: Pa
     assert summary.replay_ids["stage7RenderId"] == "avrun_000001"
     assert len(summary.state_files) == 3
     assert {item.service for item in summary.state_files} == {"stage4", "stage6", "stage7"}
+    state_by_service = {item.service: json.loads(Path(item.source_path).read_text()) for item in summary.state_files}
+    schemas = [state_by_service[stage]["schema"] for stage in ("stage6", "stage7")]
+    assert schemas == ["stage6-local-state-v3", "stage7-local-state-v2"]
     assert all(item.byte_size > 0 for item in summary.state_files)
     assert all(len(item.sha256) == 64 for item in summary.state_files)
     assert all(Path(item.source_path).is_file() for item in summary.state_files)
