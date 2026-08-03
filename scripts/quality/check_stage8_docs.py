@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Executable Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
+# ruff: noqa: E302, E305
 
 import json
 import os
@@ -136,16 +137,10 @@ PROCESS_BRANCH_ALLOWED_FILES = {
 }
 def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=ROOT, text=True, capture_output=True, check=False)
-
-
 def read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
-
-
 def fail(message: str, failures: list[str]) -> None:
     failures.append(message)
-
-
 def changed_files_for_stage_scope() -> list[str]:
     head_result = run(["git", "rev-parse", "HEAD"])
     if head_result.returncode != 0 or not head_result.stdout.strip():
@@ -173,7 +168,6 @@ def changed_files_for_stage_scope() -> list[str]:
             raise RuntimeError(expected_result.stderr.strip() or "git rev-parse exact head failed")
         if expected_result.stdout.strip() != head:
             raise RuntimeError("Stage 8 scope checkout does not match the exact head.")
-
     preferred_base = os.environ.get("GITHUB_BASE_SHA", "").strip()
     push_ref = os.environ.get("NARRATWIN_HEAD_REF", os.environ.get("GITHUB_REF_NAME", "")).strip()
     branch_base = (event_name == "push" and push_ref != "main") or not preferred_base or preferred_base == NULL_GIT_SHA
@@ -205,8 +199,6 @@ def changed_files_for_stage_scope() -> list[str]:
         raise RuntimeError(untracked.stderr.strip() or "git ls-files failed")
     paths.extend(parse_paths_z(untracked.stdout))
     return sorted(set(paths))
-
-
 def parse_paths_z(output: str) -> list[str]:
     if not output:
         return []
@@ -216,8 +208,6 @@ def parse_paths_z(output: str) -> list[str]:
     if any(not path for path in paths):
         raise RuntimeError("Malformed empty Git path.")
     return paths
-
-
 def parse_name_status_z(output: str) -> list[str]:
     fields = parse_paths_z(output)
     paths: list[str] = []
@@ -237,27 +227,30 @@ def parse_name_status_z(output: str) -> list[str]:
         paths.extend(record_paths)
         index += arity
     return paths
-
-
 def check_required_files(failures: list[str]) -> None:
     for path in REQUIRED_FILES:
         if not (ROOT / path).is_file():
             fail(f"Missing required Stage 8 file: {path}", failures)
-
-
 A23A_CONTRACT_MARKERS = {
-    "docs/API_CONTRACT.md": ("stage7-source-evaluation-checksum-v2", "compact sorted-key UTF-8 JSON", "`checksumSchema`: the schema value above", "minimumScoreThreshold", "maximumChunksPerDocument", "selectedContext", "independently verified `snapshotChecksum`", "`sourceCitationIndexes`: positive integers", "sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4"),
-    "docs/ADR/0004-avatar-provider-adapter.md": ("local/mock stale-or-mismatch integrity", "not cryptographic authenticity", "Legacy v1 rows cannot replay as v2"),
+    "docs/API_CONTRACT.md": (
+        "stage7-source-evaluation-checksum-v2", "compact sorted-key UTF-8 JSON",
+        "`checksumSchema`: the schema value above", "minimumScoreThreshold", "maximumChunksPerDocument",
+        "selectedContext", "independently verified `snapshotChecksum`", "`sourceCitationIndexes`: positive integers",
+        "sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4"),
+    "docs/ADR/0004-avatar-provider-adapter.md": (
+        "local/mock stale-or-mismatch integrity", "not cryptographic authenticity",
+        "Legacy v1 rows cannot replay as v2"),
     "docs/QUALITY_GATES.md": ("A2.3a evaluation-lineage contract gate", "wrong-schema"),
     "docs/STAGE_ISSUE_PLAN.md": (ISSUE351_A2_3A_BRANCH, "300 charged lines"),
     "docs/STATUS.md": ("Issue `#351`", "A2.3b remains blocked"),
 }
+def evaluation_lineage_checksum_v2_contract_valid(documents: dict[str, str]) -> bool:
+    return all(marker in documents[path]
+               for path, markers in A23A_CONTRACT_MARKERS.items() for marker in markers)
 def check_evaluation_lineage_checksum_v2_contract(root: Path, failures: list[str]) -> None:
-    if any(marker not in (root / path).read_text(encoding="utf-8")
-           for path, markers in A23A_CONTRACT_MARKERS.items() for marker in markers):
+    documents = {path: (root / path).read_text(encoding="utf-8") for path in A23A_CONTRACT_MARKERS}
+    if not evaluation_lineage_checksum_v2_contract_valid(documents):
         fail("A2.3a evaluation-lineage checksum v2 contract is incomplete or drifted.", failures)
-
-
 def check_stage_marker_and_branch(failures: list[str]) -> None:
     current = read(".stage/current").strip()
     if current != "8":
@@ -274,8 +267,6 @@ def check_stage_marker_and_branch(failures: list[str]) -> None:
         and branch not in PROCESS_BRANCH_ALLOWED_FILES
     ):
         fail(f"Stage 8 work must run on a stage8-* branch or main after merge; got {branch}.", failures)
-
-
 def check_stage_scope(failures: list[str]) -> None:
     branch = current_branch()
     if not branch:
@@ -288,8 +279,6 @@ def check_stage_scope(failures: list[str]) -> None:
     for path in changed_files_for_stage_scope():
         if path not in allowed_files:
             fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
-
-
 def check_backend_and_tests(failures: list[str]) -> None:
     main_text = read("backend/app/main.py")
     stage4_text = read("backend/app/stage4.py")
@@ -345,8 +334,6 @@ def check_backend_and_tests(failures: list[str]) -> None:
     for marker in ("/usr/local/lib/node_modules/npm", "/usr/local/bin/npm", "/usr/local/bin/npx"):
         if marker not in frontend_dockerfile:
             fail(f"Stage 8 frontend runtime image must remove {marker}.", failures)
-
-
 def check_dependencies_and_scripts(failures: list[str]) -> None:
     pyproject = read("pyproject.toml")
     package = json.loads(read("frontend/package.json"))
@@ -410,8 +397,6 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
     ):
         if marker not in ci_workflow:
             fail(f"Stage 8 CI workflow must include {marker}.", failures)
-
-
 def check_docs(failures: list[str]) -> None:
     docs = {
         path: read(path)
@@ -501,7 +486,6 @@ def main() -> int:
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)
-
     if failures:
         print("Stage 8 quality gate failed:")
         for item in failures:

@@ -1900,9 +1900,12 @@ exact root object has five fields:
 
 Counts derive from arrays. IDs are unique where required; evidence must share
 tenant/project scope; scores are finite non-negative decimal strings without
-exponents or insignificant trailing zeroes. The reviewed vector is the exact
-preimage in `test_a23a_golden_vector_is_serialization_stable` and yields
+exponents or insignificant trailing zeroes. The following reviewed preimage yields
 `sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4`.
+
+```json
+{"checksumSchema":"stage7-source-evaluation-checksum-v2","evaluation":{"evaluationId":"eval_123","runId":"run_123","status":"PASSED","traceId":"trace_123"},"retrievalPolicy":{"fallback":"deterministic keyword overlap fallback only; no cross-project expansion","maximumChunksPerDocument":3,"minimumScoreThreshold":"0.72","refusalReasons":["EMPTY_CONTEXT","LOW_RETRIEVAL_CONFIDENCE","AMBIGUOUS_CONTEXT","CROSS_PROJECT_CONTEXT","UNSAFE_CONTEXT"],"tieBreakOrder":["score desc","approved_at desc","chunk_index asc","chunk_id asc"],"topK":6,"version":"stage4-rag-v1"},"selectedContext":[{"chunkChecksum":"sha256:2222222222222222222222222222222222222222222222222222222222222222","chunkId":"chunk_123","chunkIndex":0,"chunkingStrategyVersion":"stage4-chunk-v1","contextRefId":"ctx_123","documentId":"doc_123","projectId":"proj_123","retrievalScore":"0.91","snapshotChecksum":"sha256:3333333333333333333333333333333333333333333333333333333333333333","sourceDocumentChecksum":"sha256:1111111111111111111111111111111111111111111111111111111111111111","tenantId":"tenant_local"}],"sourceCitationIndexes":[1]}
+```
 
 New local/mock writes implemented later by A2.3b are v2-only while retaining
 the `sha256:<64 lowercase hex>` representation. Missing/extra fields,
