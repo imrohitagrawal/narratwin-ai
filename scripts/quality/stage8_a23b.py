@@ -205,7 +205,7 @@ def semantic_detector_self_test(workdir: Path) -> bool:
         'evaluation_status+"\\n"+context_ref_ids+"\\n"+citation_indexes)'
     )
     dict_lookup = "parts={'fields':" + fields + "}\nchecksum_text('\\n'.join(parts['fields']))"
-    kwargs = "def legacy(**parts): return '\\n'.join(parts['fields'])\nchecksum_text(legacy(fields=" + fields + "))"
+    kwargs = "parts={}\ndef legacy(**parts): return '\\n'.join(parts['fields'])\nchecksum_text(legacy(fields=" + fields + "))"
     parameter = "def legacy(fields): return '\\n'.join(fields)\nchecksum_text(legacy(" + fields + "))"
     vararg = ("def legacy(prefix,*fields): return '\\n'.join(fields)\nchecksum_text(legacy('x',"
               + fields[1:-1] + "))")
