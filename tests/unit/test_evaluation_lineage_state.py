@@ -58,14 +58,17 @@ def test_request_binding_rejects_missing_payload_before_replay() -> None:
 
 
 def test_stage7_bundle_requires_the_exact_connected_stage6_row() -> None:
+    binding = {"sourceRunId": "run", "providerPosture": {"voiceProvider": "mock"}}
     stage6 = PersistedLineage(
         component="Stage 6", source_run_id="run", row_id="mlrun", payload={}, digest="",
-        connected_values=("es", "translated", "subtitles", "voice"),
+        connected_values=binding,
     )
     stage7 = replace(stage6, component="Stage 7", row_id="render", upstream_row_id="mlrun")
     validate_upstream_connections((stage6, stage7))
     with pytest.raises(ValueError, match="upstream Stage 6 bundle"):
-        validate_upstream_connections((stage6, replace(stage7, connected_values=("stale",))))
+        validate_upstream_connections((stage6, replace(stage7, connected_values={"stale": True})))
+    with pytest.raises(ValueError, match="upstream Stage 6 bundle"):
+        validate_upstream_connections((stage6, replace(stage7, source_run_id="other")))
 
 
 def test_schema_decision_distinguishes_current_legacy_and_future() -> None:

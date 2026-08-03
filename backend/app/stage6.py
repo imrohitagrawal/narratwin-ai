@@ -8,7 +8,7 @@ import json
 import logging
 import re
 import threading
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, replace
 from datetime import timedelta
 from pathlib import Path
@@ -22,14 +22,14 @@ import srt  # type: ignore[import-untyped]
 from backend.app.rag.chunking import checksum_text
 from backend.app.evaluation_lineage_state import (
     PersistedLineage,
+    STAGE7_CONSENT_DISCLOSURE_VERSION,
     quarantine_reason_for_schema,
     refuse_quarantined_write,
     restored_state_matches,
     validate_lineage_binding,
-    validate_rows_against_stage4,
 )
 from backend.app.storage import load_state, resolve_state_file, write_state
-from backend.app.stage4 import WalkthroughRunRecord, contains_secret_like_content
+from backend.app.stage4 import contains_secret_like_content
 from backend.app.tts_provider import (
     ElevenLabsTTSProvider,
     ExternalTTSResult,
@@ -1001,19 +1001,6 @@ class Stage6Service:
         self.idempotency_records.clear()
         self._run_counter = 0
 
-    def activate_verified_lineage(
-        self,
-        walkthrough_runs: Mapping[str, WalkthroughRunRecord],
-    ) -> None:
-        with self._operation_lock:
-            try:
-                validate_rows_against_stage4(walkthrough_runs, self.persisted_lineage_rows())
-            except (KeyError, TypeError, ValueError):
-                self._clear_runtime_state()
-                self._state_quarantine_reason = (
-                    "Stage 6 graph that does not match verified Stage 4 state"
-                )
-
     def persisted_lineage_rows(self) -> tuple[PersistedLineage, ...]:
         if self._state_quarantine_reason is not None:
             raise ValueError(self._state_quarantine_reason)
@@ -1024,8 +1011,24 @@ class Stage6Service:
                 source_run_id=result.source_run_id,
                 payload=result.source_evaluation_lineage,
                 digest=result.source_evaluation_checksum,
-                connected_values=(result.target_language, result.artifacts.translated_script.checksum,
-                                  result.artifacts.subtitles.checksum, result.artifacts.voice_manifest.checksum),
+                connected_values={
+                    "sourceRunId": result.source_run_id, "multilingualRunId": result.multilingual_run_id,
+                    "targetLanguage": result.target_language,
+                    "translatedScriptChecksum": result.artifacts.translated_script.checksum,
+                    "subtitlesChecksum": result.artifacts.subtitles.checksum,
+                    "voiceManifestChecksum": result.artifacts.voice_manifest.checksum,
+                    "contextRefIds": list(result.source_context_ref_ids),
+                    "citationIndexes": list(result.source_citation_indexes),
+                    "evaluationId": result.source_evaluation_id,
+                    "evaluationChecksum": result.source_evaluation_checksum,
+                    "providerPosture": {
+                        "translationProvider": result.translation_provider.provider,
+                        "translationProviderMode": result.translation_provider.provider_mode,
+                        "voiceProvider": result.voice.provider,
+                        "voiceProviderMode": result.voice.provider_mode,
+                    },
+                    "consentDisclosureVersion": STAGE7_CONSENT_DISCLOSURE_VERSION,
+                },
             )
             for result in self.multilingual_runs.values()
         )

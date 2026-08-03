@@ -22,7 +22,7 @@ class PersistedLineage:
     digest: str
     row_id: str = ""
     upstream_row_id: str | None = None
-    connected_values: tuple[str, ...] = ()
+    connected_values: Mapping[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -30,6 +30,9 @@ class LineageActivation:
     payload: dict[str, Any]
     digest: str
     rows: tuple[PersistedLineage, ...]
+
+
+STAGE7_CONSENT_DISCLOSURE_VERSION = "stage7-synthetic-avatar-consent-v1"
 
 
 def validate_lineage_binding(
@@ -108,7 +111,8 @@ def validate_upstream_connections(rows: Iterable[PersistedLineage]) -> None:
         if row.upstream_row_id is None:
             continue
         source = upstream.get(row.upstream_row_id)
-        if source is None or source.connected_values != row.connected_values:
+        if (source is None or source.source_run_id != row.source_run_id
+                or source.connected_values != row.connected_values):
             raise ValueError(f"{row.component} upstream Stage 6 bundle is mismatched.")
 
 

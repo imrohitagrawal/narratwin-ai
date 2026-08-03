@@ -60,7 +60,7 @@ def _legacy_fields(node: ast.AST, assignments: dict[str, ast.AST]) -> bool:
 def _legacy_preimage(
     node: ast.AST,
     assignments: dict[str, ast.AST],
-    returns: Mapping[str, tuple[ast.AST, ...]],
+    functions: Mapping[str, ast.FunctionDef | ast.AsyncFunctionDef],
     seen: frozenset[int] = frozenset(),
 ) -> bool:
     node = _resolve(node, assignments)
@@ -69,7 +69,7 @@ def _legacy_preimage(
     seen |= {id(node)}
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
         if node.func.attr == "encode":
-            return _legacy_preimage(node.func.value, assignments, returns, seen)
+            return _legacy_preimage(node.func.value, assignments, functions, seen)
         if node.func.attr == "join" and node.args:
             separator = _resolve(node.func.value, assignments)
             return (
@@ -80,8 +80,11 @@ def _legacy_preimage(
     if isinstance(node, ast.Call):
         function = _resolve(node.func, assignments)
         name = function.id if isinstance(function, ast.Name) else ""
-        if name in returns:
-            return any(_legacy_preimage(value, assignments, returns, seen) for value in returns[name])
+        definition = functions.get(name)
+        if definition:
+            bindings = assignments | dict(zip((arg.arg for arg in definition.args.args), node.args, strict=False))
+            values = (item.value for item in ast.walk(definition) if isinstance(item, ast.Return) and item.value)
+            return any(_legacy_preimage(value, bindings, functions, seen) for value in values)
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
         names = [ast.unparse(item).lower() for item in ast.walk(node) if isinstance(item, (ast.Name, ast.Attribute))]
         newline = any(isinstance(item, ast.Constant) and item.value == "\n" for item in ast.walk(node))
@@ -98,20 +101,21 @@ def semantic_legacy_failures(path: Path, source: str | None = None) -> list[str]
         target.id: node.value for node in ast.walk(tree) if isinstance(node, ast.Assign)
         for target in node.targets if isinstance(target, ast.Name)
     }
-    returns = {
-        node.name: tuple(item.value for item in ast.walk(node) if isinstance(item, ast.Return) and item.value)
-        for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-    }
+    functions = {node.name: node for node in ast.walk(tree)
+                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    checksum_names = {"build_source_evaluation_checksum"}
+    checksum_names.update(alias.asname for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)
+                          for alias in node.names if alias.name == "build_source_evaluation_checksum" and alias.asname)
     failures: list[str] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         function = _resolve(node.func, assignments)
         name = function.attr if isinstance(function, ast.Attribute) else getattr(function, "id", "")
-        if name == "build_source_evaluation_checksum" and len(node.args) != 1:
+        if name in checksum_names and len(node.args) != 1:
             if not _negative_typeerror(node, parents):
                 failures.append(f"{path}: legacy evaluation-checksum call")
-        if any(_legacy_preimage(argument, assignments, returns) for argument in node.args):
+        if any(_legacy_preimage(argument, assignments, functions) for argument in node.args):
             failures.append(f"{path}: manual six-field evaluation-checksum preimage")
     return failures
 
@@ -131,13 +135,17 @@ def semantic_detector_self_test(workdir: Path) -> bool:
     generator = indirect.replace("join(fields)", "join(value for value in fields)")
     concat = ('checksum_text(evaluation_id+"\\n"+run_id+"\\n"+trace_id+"\\n"+'
               'evaluation_status+"\\n"+context_ref_ids+"\\n"+citation_indexes)')
-    helper = ("def legacy(): return " + manual.removeprefix("checksum_text(").removesuffix(")")
-              + "\nchecksum_text(legacy())")
+    joined = manual.removeprefix("checksum_text(").removesuffix(")")
+    helper = "def legacy(): return " + joined + "\nchecksum_text(legacy())"
+    parameter = "def legacy(fields): return '\\n'.join(fields)\n" + manual.replace('"\\n".join(', "legacy(", 1)
     alias = "legacy=build_source_evaluation_checksum\n" + direct.replace("build_source_evaluation_checksum", "legacy")
+    imported = "from backend.app.evaluation_lineage import build_source_evaluation_checksum as legacy\n"
+    imported += alias.split("\n")[1]
     cycle = "value=value.encode()\nchecksum_text(value)"
     samples = (("direct.py", direct, True), ("manual.py", manual, True), ("indirect.py", indirect, True),
                ("generator.py", generator, True), ("concat.py", concat, True), ("helper.py", helper, True),
-               ("alias.py", alias, True), ("cycle.py", cycle, False),
+               ("parameter.py", parameter, True), ("alias.py", alias, True), ("imported.py", imported, True),
+               ("cycle.py", cycle, False),
                ("canonical.py", "build_source_evaluation_checksum(lineage_payload)", False))
     results = (bool(semantic_legacy_failures(workdir / name, sample)) is expected
                for name, sample, expected in samples)

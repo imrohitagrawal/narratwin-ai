@@ -22,15 +22,14 @@ from backend.app.evaluation_lineage import (
 )
 from backend.app.evaluation_lineage_state import (
     PersistedLineage,
+    STAGE7_CONSENT_DISCLOSURE_VERSION,
     quarantine_reason_for_schema,
     refuse_quarantined_write,
     restored_state_matches,
     validate_lineage_binding,
-    validate_rows_against_stage4,
 )
 from backend.app.rag.chunking import checksum_text
 from backend.app.storage import load_state, resolve_state_file, write_state
-from backend.app.stage4 import WalkthroughRunRecord
 
 MAX_SOURCE_SCRIPT_CHARS = 20_000
 MAX_EXPORT_ARTIFACT_BYTES = 512 * 1024
@@ -49,7 +48,7 @@ CHECKSUM_COMPONENT_DELIMITER_PATTERN = re.compile(r"[\x00-\x1f\x7f,]")
 PUBLIC_USE_LICENSE_CHECK = "mock-local-provider-only-no-third-party-media"
 AVATAR_RENDER_ENDPOINT = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders"
 AVATAR_CONSENT_ENDPOINT = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-consents"
-SYNTHETIC_AVATAR_CONSENT_VERSION = "stage7-synthetic-avatar-consent-v1"
+SYNTHETIC_AVATAR_CONSENT_VERSION = STAGE7_CONSENT_DISCLOSURE_VERSION
 SYNTHETIC_AVATAR_CONSENT_TEXT = (
     "I affirm that I am authorized to approve this Stage 7 synthetic local avatar "
     "demo for the selected walkthrough run."
@@ -568,19 +567,6 @@ class Stage7Service:
                 f"Refusing work while {self._state_quarantine_reason} is preserved.",
             )
 
-    def activate_verified_lineage(
-        self,
-        walkthrough_runs: Mapping[str, WalkthroughRunRecord],
-    ) -> None:
-        with self._operation_lock:
-            try:
-                validate_rows_against_stage4(walkthrough_runs, self.persisted_lineage_rows())
-            except (KeyError, TypeError, ValueError):
-                self._clear_runtime_state()
-                self._state_quarantine_reason = (
-                    "Stage 7 graph that does not match verified Stage 4 state"
-                )
-
     def persisted_lineage_rows(self) -> tuple[PersistedLineage, ...]:
         if self._state_quarantine_reason is not None:
             raise ValueError(self._state_quarantine_reason)
@@ -596,8 +582,7 @@ class Stage7Service:
         ]
         for render in self.avatar_renders.values():
             bundle = render.multilingual_bundle
-            values = (() if bundle is None else (bundle.target_language, bundle.translated_script_checksum,
-                       bundle.subtitles_checksum, bundle.voice_manifest_checksum))
+            values = multilingual_bundle_to_manifest(bundle) if bundle is not None else None
             rows.append(PersistedLineage(
                 component="Stage 7 render", row_id=render.avatar_render_id,
                 upstream_row_id=bundle.multilingual_run_id if bundle else None,
