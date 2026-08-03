@@ -1880,38 +1880,36 @@ added.
 ## R0C-A2.3a source-evaluation checksum v2
 
 Schema `stage7-source-evaluation-checksum-v2` is SHA-256 over compact sorted-key UTF-8 JSON
-(`ensure_ascii=false`, separators `,`/`:`, no BOM or trailing newline). The
-exact root object has five fields:
+(`ensure_ascii=false`, separators `,`/`:`, no BOM or trailing newline). The exact root object has six fields:
 
 - `checksumSchema`: the schema value above;
-- `evaluation`: normalized `evaluationId`, `runId`, uppercase `status`,
-  and `traceId`; status is `PASSED`, `FAILED`, or `UNKNOWN`;
-- `retrievalPolicy`: `version=stage4-rag-v1`, `topK=6`,
-  `minimumScoreThreshold="0.72"`, `maximumChunksPerDocument=3`, the accepted
-  score-desc/approval-desc/chunk-index-asc/chunk-ID-asc tie-break array,
-  deterministic project-local keyword fallback with no cross-project expansion,
-  and `EMPTY_CONTEXT`, `LOW_RETRIEVAL_CONFIDENCE`, `AMBIGUOUS_CONTEXT`,
-  `CROSS_PROJECT_CONTEXT`, and `UNSAFE_CONTEXT` refusal reasons;
-- `selectedContext`: the semantic selection order, with each row binding
-  `contextRefId`, tenant/project/document/chunk IDs, `chunkIndex`, source and
-  chunk checksums, `chunkingStrategyVersion`, normalized decimal
-  `retrievalScore`, and independently verified `snapshotChecksum`; and
+- `evaluation`: normalized `evaluationId`, `runId`, uppercase `status`, and `traceId`; status is `PASSED`, `FAILED`, or `UNKNOWN`;
+- `scope`: normalized `tenantId` and `projectId`, bound even when `selectedContext` is empty;
+- `retrievalPolicy`: `version=stage4-rag-v1`, `topK=6`, `minimumScoreThreshold="0.72"`,
+  `minimumScoreComparison="inclusive-gte"`, `minimumRetrievedChunks=1`, `minimumDistinctDocuments=1`, and
+  `maximumChunksPerDocument=3`. Equality with the threshold is eligible. `tieBreakOrder` is exact:
+  score desc, approval timestamp desc, chunk index asc, then chunk ID asc. `fallback` is deterministic keyword overlap with
+  `scope="bound tenantId/projectId"` and `crossProjectExpansion=false`; `computedEvidenceScoresOnly=true`,
+  `syntheticEligibilityScoresAllowed=false`, `belowThresholdBackfill=false`, and `terminalRefusalBeforeGeneration=true`;
+  refusal reasons are `EMPTY_CONTEXT`, `LOW_RETRIEVAL_CONFIDENCE`, `AMBIGUOUS_CONTEXT`, `CROSS_PROJECT_CONTEXT`, and `UNSAFE_CONTEXT`;
+- `selectedContext`: the semantic selection order; each row binds `contextRefId`, tenant/project/document/chunk IDs,
+  `chunkIndex`, source/chunk checksums, exact stored `approvedAt`, `chunkingStrategyVersion`, normalized `retrievalScore`, and independently verified `snapshotChecksum`; and
 - `sourceCitationIndexes`: positive integers in script citation order.
 
-Counts derive from arrays. IDs are unique where required; evidence must share
-tenant/project scope; scores are finite non-negative decimal strings without
-exponents or insignificant trailing zeroes. The following reviewed preimage yields
-`sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4`.
+Counts derive from arrays; each array position is its zero-based context ordinal, and no ordinal field is trusted.
+Rows have unique `contextRefId` and `chunkId`; every row's tenant/project IDs must equal `scope`. `approvedAt` is the exact stored Stage 4 ranking value.
+
+The score source is persisted `retrieved_context[].score`, parsed once as a non-boolean finite IEEE-754 binary64 in `[0,1]`.
+Emit the shortest correctly rounded base-10 representation that round-trips to identical bits (ties choose an even last digit),
+expand any exponent to fixed notation, remove insignificant fractional zeroes/decimal point, and map signed zero to `0`; canonical zero is `0`.
+Only that recomputed string is accepted, so alternate caller encodings cannot represent the same input. The preimage yields `sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377`.
 
 ```json
-{"checksumSchema":"stage7-source-evaluation-checksum-v2","evaluation":{"evaluationId":"eval_123","runId":"run_123","status":"PASSED","traceId":"trace_123"},"retrievalPolicy":{"fallback":"deterministic keyword overlap fallback only; no cross-project expansion","maximumChunksPerDocument":3,"minimumScoreThreshold":"0.72","refusalReasons":["EMPTY_CONTEXT","LOW_RETRIEVAL_CONFIDENCE","AMBIGUOUS_CONTEXT","CROSS_PROJECT_CONTEXT","UNSAFE_CONTEXT"],"tieBreakOrder":["score desc","approved_at desc","chunk_index asc","chunk_id asc"],"topK":6,"version":"stage4-rag-v1"},"selectedContext":[{"chunkChecksum":"sha256:2222222222222222222222222222222222222222222222222222222222222222","chunkId":"chunk_123","chunkIndex":0,"chunkingStrategyVersion":"stage4-chunk-v1","contextRefId":"ctx_123","documentId":"doc_123","projectId":"proj_123","retrievalScore":"0.91","snapshotChecksum":"sha256:3333333333333333333333333333333333333333333333333333333333333333","sourceDocumentChecksum":"sha256:1111111111111111111111111111111111111111111111111111111111111111","tenantId":"tenant_local"}],"sourceCitationIndexes":[1]}
+{"checksumSchema":"stage7-source-evaluation-checksum-v2","evaluation":{"evaluationId":"eval_123","runId":"run_123","status":"PASSED","traceId":"trace_123"},"retrievalPolicy":{"belowThresholdBackfill":false,"computedEvidenceScoresOnly":true,"fallback":{"crossProjectExpansion":false,"mode":"deterministic keyword overlap","scope":"bound tenantId/projectId"},"maximumChunksPerDocument":3,"minimumDistinctDocuments":1,"minimumRetrievedChunks":1,"minimumScoreComparison":"inclusive-gte","minimumScoreThreshold":"0.72","refusalReasons":["EMPTY_CONTEXT","LOW_RETRIEVAL_CONFIDENCE","AMBIGUOUS_CONTEXT","CROSS_PROJECT_CONTEXT","UNSAFE_CONTEXT"],"syntheticEligibilityScoresAllowed":false,"terminalRefusalBeforeGeneration":true,"tieBreakOrder":["score desc","approved_at desc","chunk_index asc","chunk_id asc"],"topK":6,"version":"stage4-rag-v1"},"scope":{"projectId":"proj_123","tenantId":"tenant_local"},"selectedContext":[{"approvedAt":"2026-07-01T00:00:00+00:00","chunkChecksum":"sha256:2222222222222222222222222222222222222222222222222222222222222222","chunkId":"chunk_123","chunkIndex":0,"chunkingStrategyVersion":"stage4-chunk-v1","contextRefId":"ctx_123","documentId":"doc_123","projectId":"proj_123","retrievalScore":"0.91","snapshotChecksum":"sha256:3333333333333333333333333333333333333333333333333333333333333333","sourceDocumentChecksum":"sha256:1111111111111111111111111111111111111111111111111111111111111111","tenantId":"tenant_local"}],"sourceCitationIndexes":[1]}
 ```
 
-New local/mock writes implemented later by A2.3b are v2-only while retaining
-the `sha256:<64 lowercase hex>` representation. Missing/extra fields,
-wrong schema, invalid normalization/count/order/scope, duplicate evidence,
-legacy v1, or any supplied stale, mismatched, or arbitrary valid-looking hash
-fails before render/replay acceptance. Legacy bytes may be audit-preserved but
-cannot be relabeled; regeneration requires a currently verified Stage 4 run.
-No deployed/customer migration or authenticity against full-state rewrite is
-claimed.
+New local/mock writes implemented later by A2.3b are v2-only while retaining the `sha256:<64 lowercase hex>` representation.
+Missing/extra fields, wrong schema, invalid normalization/count/order/scope, duplicate evidence, legacy v1, or any supplied
+stale, mismatched, or arbitrary valid-looking hash fails before render/replay acceptance. Legacy bytes may be audit-preserved
+but cannot be relabeled; regeneration requires a currently verified Stage 4 run. No deployed/customer migration or
+authenticity against full-state rewrite is claimed.

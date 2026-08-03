@@ -32,9 +32,11 @@ and API trace metadata must expose the same checksum for the same source run.
 ### R0C-A2.3a amendment
 
 Issue #351 supersedes the checksum preimage decision for future A2.3b writes.
-V2 domain-separates canonical JSON and binds the full accepted retrieval policy,
-ordered exact selected evidence, citations, and evaluation identity/status.
-Every consumer must recompute rather than trust a caller value.
+V2 domain-separates canonical JSON and binds top-level tenant/project scope,
+the full accepted inclusive retrieval/refusal policy, computed-score provenance,
+ordered unique selected evidence including its exact approval ranking timestamp
+and canonical full stored score, citations, and evaluation identity/status.
+Every consumer must validate the evidence snapshot and recompute rather than trust a caller value.
 Legacy v1 rows cannot replay as v2; they may remain audit evidence and require regeneration
 from verified Stage 4 lineage.
 

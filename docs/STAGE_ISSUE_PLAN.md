@@ -2329,7 +2329,9 @@ STATUS, API contract, ADR 0004, quality-gate/issue-plan docs, Stage 8 checker,
 and focused checker test. Target is 220 and the hard ceiling is 300 charged lines
 with two repair rounds and zero provider calls/spend.
 
-The child freezes v2 contract/migration/rollback and mutation gates only.
+The child freezes the corrected full v2 scope/policy/evidence contract,
+migration/rollback, deterministic numeric conversion, and mutation gates only.
+Its second implementation repair is final; a third repair is a stop condition.
 A2.3b runtime wiring cannot start until merged-tree closeout and separate owner
 authorization. Protected #336-#345, PR #299, Issue #280, frontend, providers,
 deployment, production migration, and cryptographic authenticity stay excluded.

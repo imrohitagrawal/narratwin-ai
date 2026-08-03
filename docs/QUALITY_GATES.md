@@ -991,7 +991,12 @@ runtime gate.
 Issue #351 adds no runtime behavior. The Stage 8 checker requires the exact
 eight-file route and freezes checksum-v2 schema, field set, serialization,
 golden vector, local/mock claim boundary, migration, and rollback prose.
-Focused tests must fail for every marker mutation, a near-match branch, a ninth
-file, or missing, stale, forged, legacy-v1, duplicate, cross-scope,
-wrong-schema, and normalization drift. A2.3b must later supply runtime mutation
-proof; exact-head required CI and non-author approval remain human-gated.
+The second and final implementation repair binds scope independent of context
+count, every accepted retrieval/refusal semantic, exact approval timestamps,
+unique evidence identity, and one canonical full stored-score conversion.
+Focused tests must fail for every marker mutation, golden-vector drift, a
+near-match branch, a ninth file, or missing, stale, forged, legacy-v1,
+duplicate, cross-scope, wrong-schema, and normalization drift. Context budgets use
+`uv run pytest -q tests/unit/publication_boundary/test_scope.py -k per_file_context_budgets_are_executable`.
+A2.3b must later supply runtime mutation proof; exact-head required CI and
+eligible non-author approval remain pending human-only merge gates.

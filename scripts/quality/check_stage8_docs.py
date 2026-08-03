@@ -2,7 +2,6 @@
 """Executable Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
 # ruff: noqa: E302, E305
-
 import json
 import os
 import re
@@ -12,7 +11,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-
 from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
@@ -182,7 +180,6 @@ def changed_files_for_stage_scope() -> list[str]:
         last_error = result.stderr.strip()
     if not merge_base:
         raise RuntimeError(last_error or "git merge-base failed for Stage 8 scope.")
-
     diff_flags = ["--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"]
     paths: list[str] = []
     for args in (
@@ -234,9 +231,19 @@ def check_required_files(failures: list[str]) -> None:
 A23A_CONTRACT_MARKERS = {
     "docs/API_CONTRACT.md": (
         "stage7-source-evaluation-checksum-v2", "compact sorted-key UTF-8 JSON",
-        "`checksumSchema`: the schema value above", "minimumScoreThreshold", "maximumChunksPerDocument",
-        "selectedContext", "independently verified `snapshotChecksum`", "`sourceCitationIndexes`: positive integers",
-        "sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4"),
+        "`scope`: normalized `tenantId` and `projectId`", "even when `selectedContext` is empty",
+        "`topK=6`", '`minimumScoreThreshold="0.72"`', '`minimumScoreComparison="inclusive-gte"`',
+        "`minimumRetrievedChunks=1`", "`minimumDistinctDocuments=1`",
+        "`maximumChunksPerDocument=3`", "`tieBreakOrder` is exact", "`fallback`",
+        "`computedEvidenceScoresOnly=true`", "`syntheticEligibilityScoresAllowed=false`",
+        "`belowThresholdBackfill=false`", "`terminalRefusalBeforeGeneration=true`",
+        "`EMPTY_CONTEXT`", "`LOW_RETRIEVAL_CONFIDENCE`", "`AMBIGUOUS_CONTEXT`",
+        "`CROSS_PROJECT_CONTEXT`", "`UNSAFE_CONTEXT`", "`approvedAt`",
+        "unique `contextRefId` and `chunkId`", "array position is its zero-based context ordinal",
+        "every row's tenant/project IDs must equal `scope`", "finite IEEE-754 binary64",
+        "shortest correctly rounded base-10", "expand any exponent to fixed notation", "canonical zero is `0`",
+        "independently verified `snapshotChecksum`", "`sourceCitationIndexes`: positive integers",
+        "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377"),
     "docs/ADR/0004-avatar-provider-adapter.md": (
         "local/mock stale-or-mismatch integrity", "not cryptographic authenticity",
         "Legacy v1 rows cannot replay as v2"),
@@ -245,17 +252,15 @@ A23A_CONTRACT_MARKERS = {
     "docs/STATUS.md": ("Issue `#351`", "A2.3b remains blocked"),
 }
 def evaluation_lineage_checksum_v2_contract_valid(documents: dict[str, str]) -> bool:
-    return all(marker in documents[path]
-               for path, markers in A23A_CONTRACT_MARKERS.items() for marker in markers)
+    return all(marker in documents[path] for path, markers in A23A_CONTRACT_MARKERS.items() for marker in markers)
 def check_evaluation_lineage_checksum_v2_contract(root: Path, failures: list[str]) -> None:
     documents = {path: (root / path).read_text(encoding="utf-8") for path in A23A_CONTRACT_MARKERS}
     if not evaluation_lineage_checksum_v2_contract_valid(documents):
-        fail("A2.3a evaluation-lineage checksum v2 contract is incomplete or drifted.", failures)
+        fail("A2.3a contract is incomplete or drifted.", failures)
 def check_stage_marker_and_branch(failures: list[str]) -> None:
     current = read(".stage/current").strip()
     if current != "8":
         fail(".stage/current must contain 8 for Stage 8 quality.", failures)
-
     branch = current_branch()
     if not branch:
         fail("Stage 8 branch evidence is unavailable or inconsistent.", failures)
@@ -473,8 +478,6 @@ def check_docs(failures: list[str]) -> None:
             fail(f"Stage 8 docs must include {marker}.", failures)
     if "| RR-029 |" not in docs["docs/RECOMMENDED_REVIEW_ITEMS.md"]:
         fail("Stage 8 must carry forward RR-029 through RR-035.", failures)
-
-
 def main() -> int:
     failures: list[str] = []
     check_required_files(failures)
@@ -491,10 +494,7 @@ def main() -> int:
         for item in failures:
             print(f"- {item}")
         return 1
-
     print("Stage 8 quality gate passed.")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())
