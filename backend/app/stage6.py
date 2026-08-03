@@ -24,6 +24,7 @@ from backend.app.evaluation_lineage_state import (
     PersistedLineage,
     quarantine_reason_for_schema,
     refuse_quarantined_write,
+    restored_state_matches,
     validate_lineage_binding,
     validate_rows_against_stage4,
 )
@@ -1006,24 +1007,33 @@ class Stage6Service:
     ) -> None:
         with self._operation_lock:
             try:
-                validate_rows_against_stage4(
-                    walkthrough_runs,
-                    (
-                        PersistedLineage(
-                            component="Stage 6 multilingual run",
-                            row_id=result.multilingual_run_id,
-                            source_run_id=result.source_run_id,
-                            payload=result.source_evaluation_lineage,
-                            digest=result.source_evaluation_checksum,
-                        )
-                        for result in self.multilingual_runs.values()
-                    ),
-                )
+                validate_rows_against_stage4(walkthrough_runs, self.persisted_lineage_rows())
             except (KeyError, TypeError, ValueError):
                 self._clear_runtime_state()
                 self._state_quarantine_reason = (
                     "Stage 6 graph that does not match verified Stage 4 state"
                 )
+
+    def persisted_lineage_rows(self) -> tuple[PersistedLineage, ...]:
+        if self._state_quarantine_reason is not None:
+            raise ValueError(self._state_quarantine_reason)
+        return tuple(
+            PersistedLineage(
+                component="Stage 6 multilingual run",
+                row_id=result.multilingual_run_id,
+                source_run_id=result.source_run_id,
+                payload=result.source_evaluation_lineage,
+                digest=result.source_evaluation_checksum,
+                connected_values=(result.target_language, result.artifacts.translated_script.checksum,
+                                  result.artifacts.subtitles.checksum, result.artifacts.voice_manifest.checksum),
+            )
+            for result in self.multilingual_runs.values()
+        )
+
+    def quarantine_restored_state(self, reason: str) -> None:
+        with self._operation_lock:
+            self._clear_runtime_state()
+            self._state_quarantine_reason = reason
 
     def _restore(self) -> None:
         payload = load_state(self.state_path)
@@ -1162,7 +1172,13 @@ class Stage6Service:
                 max_multilingual_run_suffix(self.idempotency_records),
                 max_multilingual_run_identifier(self.multilingual_runs),
             )
-            if payload != self._state_payload_locked():
+            if not restored_state_matches(
+                payload,
+                self._state_payload_locked(),
+                transient_collections=("idempotencyRecords",),
+                derived_keys=("counters",),
+                optional_empty_collections=("ttsDeletions",),
+            ):
                 raise ValueError("Stage 6 state contains inactive or altered connected rows.")
         except (KeyError, TypeError, ValueError, Stage6Error) as exc:
             LOGGER.warning(

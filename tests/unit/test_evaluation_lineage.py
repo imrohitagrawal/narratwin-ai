@@ -56,9 +56,25 @@ def test_checksum_requires_payload_and_rejects_legacy_call_shape() -> None:
         )
 
 
-@pytest.mark.parametrize("score", [0.91, "9.1e-1", "0.910"])
+@pytest.mark.parametrize("score", [0.91, True, "nan", "inf", "-0", "1.1", "-0.1", "9.1e-1", "0.910"])
 def test_checksum_rejects_noncanonical_score_encodings(score: object) -> None:
     payload = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
     payload["selectedContext"][0]["retrievalScore"] = score
     with pytest.raises(ValueError, match="score"):
         build_source_evaluation_checksum(payload)
+
+
+def test_payload_rejects_duplicate_identity_cross_scope_and_invalid_refusal_state() -> None:
+    mutations = []
+    duplicate = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
+    duplicate["selectedContext"].append(duplicate["selectedContext"][0])
+    mutations.append(duplicate)
+    cross_scope = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
+    cross_scope["selectedContext"][0]["tenantId"] = "tenant_other"
+    mutations.append(cross_scope)
+    refused = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
+    refused["selectedContext"] = []
+    mutations.append(refused)
+    for payload in mutations:
+        with pytest.raises(ValueError):
+            validate_evaluation_lineage_payload(payload)

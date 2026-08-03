@@ -85,6 +85,12 @@ def create_stage7_service(*, state_path: Path | None = None) -> FixtureStage7Ser
     return FixtureStage7Service(state_path=state_path)
 
 
+def assert_quarantined_state(service: Any, state_path: Path, expected_bytes: bytes) -> None:
+    with pytest.raises(OSError, match="quarantined"):
+        service.reset()
+    assert state_path.read_bytes() == expected_bytes
+
+
 class FailingAfterFirstEmbeddingProvider:
     provider = "mock"
     model = "mock-embedding"
@@ -1462,7 +1468,7 @@ def test_stage6_file_state_terminal_persist_failure_preserves_concurrent_success
     assert [row["idempotency_key"] for row in payload["idempotencyRecords"]] == ["translate-fast-success"]
 
 
-def test_stage6_file_state_drops_tampered_nonlocal_provider_result(tmp_path: Path) -> None:
+def test_stage6_file_state_quarantines_tampered_nonlocal_provider_result(tmp_path: Path) -> None:
     state_path = tmp_path / "stage6.json"
     service = create_stage6_service(state_path=state_path)
     service.generate_multilingual_walkthrough(
@@ -1477,10 +1483,14 @@ def test_stage6_file_state_drops_tampered_nonlocal_provider_result(tmp_path: Pat
     result["translation_provider"]["provider_mode"] = "OPTIONAL_EXTERNAL"
     result["voice"]["provider_mode"] = "OPTIONAL_EXTERNAL"
     state_path.write_text(json.dumps(payload), encoding="utf-8")
+    original_bytes = state_path.read_bytes()
 
     restored = create_stage6_service(state_path=state_path)
 
     assert restored.idempotency_records == {}
+    with pytest.raises(OSError, match="quarantined"):
+        restored.reset()
+    assert state_path.read_bytes() == original_bytes
 
 
 def test_stage6_file_state_drops_completed_idempotency_with_error_value(tmp_path: Path) -> None:
@@ -1725,17 +1735,9 @@ def test_stage6_file_state_drops_failed_idempotency_with_missing_error(tmp_path:
         encoding="utf-8",
     )
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage6_service(state_path=state_path)
-    result = restored.generate_multilingual_walkthrough(
-        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
-        target_language="es",
-        **stage6_source_binding_kwargs(source_run_id="run_failed", trace_id="trace_failed"),
-        idempotency_scope="tenant:user:project:run",
-        idempotency_key="bad-failed",
-    )
-
-    assert result.multilingual_run_id == "mlrun_000001"
-    assert len(restored.idempotency_records) == 1
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage6_dedupes_identical_request_checksum_to_existing_durable_run(tmp_path: Path) -> None:
@@ -2075,7 +2077,7 @@ def test_stage7_file_state_terminal_persist_failure_preserves_concurrent_success
 def test_stage7_file_state_drops_completed_idempotency_with_missing_value(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    original = service.render_avatar_demo(
+    service.render_avatar_demo(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         requested_avatar_provider="mock",
         source_run_id="run_dangling",
@@ -2094,32 +2096,15 @@ def test_stage7_file_state_drops_completed_idempotency_with_missing_value(tmp_pa
     payload["avatarRenders"] = []
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-    recreated = restored.render_avatar_demo(
-        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
-        requested_avatar_provider="mock",
-        source_run_id="run_dangling",
-        trace_id="trace_dangling",
-        source_context_ref_count=1,
-        source_citation_count=1,
-        source_context_ref_ids=("ctx_dangling",),
-        source_citation_indexes=(1,),
-        source_evaluation_id="eval_dangling",
-        evaluation_status="PASSED",
-        consent_to_use_synthetic_avatar=True,
-        idempotency_scope="tenant:user:project:run",
-        idempotency_key="render",
-    )
-
-    assert original.avatar_render_id == "avrun_000001"
-    assert recreated.avatar_render_id == "avrun_000002"
-    assert len(restored.avatar_renders) == 1
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_completed_idempotency_with_mismatched_request_checksum(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    original = service.render_avatar_demo(
+    service.render_avatar_demo(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         requested_avatar_provider="mock",
         source_run_id="run_checksum",
@@ -2138,29 +2123,9 @@ def test_stage7_file_state_drops_completed_idempotency_with_mismatched_request_c
     payload["idempotencyRecords"][0]["request_checksum"] = "sha256:tampered"
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-    recreated = restored.render_avatar_demo(
-        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
-        requested_avatar_provider="mock",
-        source_run_id="run_checksum",
-        trace_id="trace_checksum",
-        source_context_ref_count=1,
-        source_citation_count=1,
-        source_context_ref_ids=("ctx_checksum",),
-        source_citation_indexes=(1,),
-        source_evaluation_id="eval_checksum",
-        evaluation_status="PASSED",
-        consent_to_use_synthetic_avatar=True,
-        idempotency_scope="tenant:user:project:run",
-        idempotency_key="render",
-    )
-
-    assert original.avatar_render_id == "avrun_000001"
-    assert recreated.avatar_render_id == "avrun_000002"
-    assert sorted(restored.avatar_renders) == ["avrun_000002"]
-    assert restored.idempotency_records[
-        ("tenant:user:project:run", stage7_module.AVATAR_RENDER_ENDPOINT, "render")
-    ].value == recreated
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_replays_completed_avatar_idempotency_after_canonicalizing_request(
@@ -2483,7 +2448,7 @@ def test_stage7_file_state_drops_cross_scope_render_idempotency_record(tmp_path:
         idempotency_scope="tenant_local:user_local:proj_scope:run_scope",
         idempotency_key="capture-consent",
     )
-    render = service.render_avatar_demo(
+    service.render_avatar_demo(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         requested_avatar_provider="mock",
         source_run_id="run_scope",
@@ -2509,10 +2474,9 @@ def test_stage7_file_state_drops_cross_scope_render_idempotency_record(tmp_path:
     payload["idempotencyRecords"][0]["idempotency_scope"] = "tenant_local:other_user:proj_scope:run_scope"
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-
-    assert render.avatar_render_id in restored.avatar_renders
-    assert restored.idempotency_records == {}
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_cross_scope_consent_idempotency_record(tmp_path: Path) -> None:
@@ -2546,10 +2510,9 @@ def test_stage7_file_state_drops_cross_scope_consent_idempotency_record(tmp_path
     payload["consentIdempotencyRecords"][0]["idempotency_scope"] = "tenant_local:other_user:proj_scope:run_scope"
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-
-    assert len(restored.synthetic_media_consents) == 1
-    assert restored.consent_idempotency_records == {}
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_render_idempotency_with_wrong_endpoint(tmp_path: Path) -> None:
@@ -2574,10 +2537,9 @@ def test_stage7_file_state_drops_render_idempotency_with_wrong_endpoint(tmp_path
     payload["idempotencyRecords"][0]["endpoint"] = "POST /wrong"
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-
-    assert len(restored.avatar_renders) == 1
-    assert restored.idempotency_records == {}
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_consent_idempotency_with_wrong_endpoint(tmp_path: Path) -> None:
@@ -2611,10 +2573,9 @@ def test_stage7_file_state_drops_consent_idempotency_with_wrong_endpoint(tmp_pat
     payload["consentIdempotencyRecords"][0]["endpoint"] = "POST /wrong"
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-
-    assert len(restored.synthetic_media_consents) == 1
-    assert restored.consent_idempotency_records == {}
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_render_with_forged_local_idempotency_scope(tmp_path: Path) -> None:
@@ -2758,7 +2719,7 @@ def test_stage7_file_state_drops_render_missing_request_checksum(tmp_path: Path)
     assert restored.idempotency_records == {}
 
 
-def test_stage7_file_state_drops_render_with_noncanonical_source_evaluation_checksum(tmp_path: Path) -> None:
+def test_stage7_file_state_quarantines_noncanonical_source_evaluation_checksum(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
     service.render_avatar_demo(
@@ -2799,11 +2760,15 @@ def test_stage7_file_state_drops_render_with_noncanonical_source_evaluation_chec
     )
     payload["idempotencyRecords"][0]["request_checksum"] = payload["avatarRenders"][0]["request_checksum"]
     state_path.write_text(json.dumps(payload), encoding="utf-8")
+    original_bytes = state_path.read_bytes()
 
     restored = create_stage7_service(state_path=state_path)
 
     assert restored.avatar_renders == {}
     assert restored.idempotency_records == {}
+    with pytest.raises(OSError, match="quarantined"):
+        restored.reset()
+    assert state_path.read_bytes() == original_bytes
 
 
 def test_stage7_file_state_prunes_idempotency_records_for_invalidated_render(tmp_path: Path) -> None:
@@ -2841,7 +2806,7 @@ def test_stage7_file_state_prunes_idempotency_records_for_invalidated_render(tmp
 def test_stage7_file_state_drops_render_without_terminal_status_history(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    original = service.render_avatar_demo(
+    service.render_avatar_demo(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         requested_avatar_provider="mock",
         source_run_id="run_status",
@@ -2863,32 +2828,15 @@ def test_stage7_file_state_drops_render_without_terminal_status_history(tmp_path
     ]
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-    recreated = restored.render_avatar_demo(
-        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
-        requested_avatar_provider="mock",
-        source_run_id="run_status",
-        trace_id="trace_status",
-        source_context_ref_count=1,
-        source_citation_count=1,
-        source_context_ref_ids=("ctx_status",),
-        source_citation_indexes=(1,),
-        source_evaluation_id="eval_status",
-        evaluation_status="PASSED",
-        consent_to_use_synthetic_avatar=True,
-        idempotency_scope="tenant:user:project:run",
-        idempotency_key="render",
-    )
-
-    assert original.avatar_render_id == "avrun_000001"
-    assert recreated.avatar_render_id == "avrun_000002"
-    assert sorted(restored.avatar_renders) == ["avrun_000002"]
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_render_with_malformed_status_history_item(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    original = service.render_avatar_demo(
+    service.render_avatar_demo(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         requested_avatar_provider="mock",
         source_run_id="run_status",
@@ -2907,32 +2855,15 @@ def test_stage7_file_state_drops_render_with_malformed_status_history_item(tmp_p
     payload["avatarRenders"][0]["render_job_status_history"].append("tampered")
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-    recreated = restored.render_avatar_demo(
-        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
-        requested_avatar_provider="mock",
-        source_run_id="run_status",
-        trace_id="trace_status",
-        source_context_ref_count=1,
-        source_citation_count=1,
-        source_context_ref_ids=("ctx_status",),
-        source_citation_indexes=(1,),
-        source_evaluation_id="eval_status",
-        evaluation_status="PASSED",
-        consent_to_use_synthetic_avatar=True,
-        idempotency_scope="tenant:user:project:run",
-        idempotency_key="render",
-    )
-
-    assert original.avatar_render_id == "avrun_000001"
-    assert recreated.avatar_render_id == "avrun_000002"
-    assert sorted(restored.avatar_renders) == ["avrun_000002"]
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_render_with_impossible_status_history_order(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    original = service.render_avatar_demo(
+    service.render_avatar_demo(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         requested_avatar_provider="mock",
         source_run_id="run_status_order",
@@ -2957,26 +2888,9 @@ def test_stage7_file_state_drops_render_with_impossible_status_history_order(tmp
     ]
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-    recreated = restored.render_avatar_demo(
-        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
-        requested_avatar_provider="mock",
-        source_run_id="run_status_order",
-        trace_id="trace_status_order",
-        source_context_ref_count=1,
-        source_citation_count=1,
-        source_context_ref_ids=("ctx_status_order",),
-        source_citation_indexes=(1,),
-        source_evaluation_id="eval_status_order",
-        evaluation_status="PASSED",
-        consent_to_use_synthetic_avatar=True,
-        idempotency_scope="tenant:user:project:run",
-        idempotency_key="render",
-    )
-
-    assert original.avatar_render_id == "avrun_000001"
-    assert recreated.avatar_render_id == "avrun_000002"
-    assert sorted(restored.avatar_renders) == ["avrun_000002"]
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_artifact_metadata_for_missing_render(tmp_path: Path) -> None:
@@ -3014,7 +2928,7 @@ def test_stage7_file_state_drops_artifact_metadata_for_missing_render(tmp_path: 
 def test_stage7_file_state_drops_malformed_artifact_metadata_without_clearing_valid_render(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    result = service.render_avatar_demo(
+    service.render_avatar_demo(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         requested_avatar_provider="mock",
         source_run_id="run_metadata",
@@ -3033,19 +2947,15 @@ def test_stage7_file_state_drops_malformed_artifact_metadata_without_clearing_va
     payload["artifactMetadata"][0]["metadata"][0].pop("mime_type")
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-
-    assert restored.avatar_renders[result.avatar_render_id].avatar_render_id == result.avatar_render_id
-    assert restored.artifact_metadata == {}
-    assert restored.idempotency_records[
-        ("tenant:user:project:run", stage7_module.AVATAR_RENDER_ENDPOINT, "render")
-    ].value == restored.avatar_renders[result.avatar_render_id]
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_artifact_metadata_that_mismatches_render(tmp_path: Path) -> None:
     state_path = tmp_path / "stage7.json"
     service = create_stage7_service(state_path=state_path)
-    result = service.render_avatar_demo(
+    service.render_avatar_demo(
         source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
         requested_avatar_provider="mock",
         source_run_id="run_metadata",
@@ -3064,11 +2974,9 @@ def test_stage7_file_state_drops_artifact_metadata_that_mismatches_render(tmp_pa
     payload["artifactMetadata"][0]["metadata"][0]["checksum"] = "sha256:tampered"
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-
-    assert result.avatar_render_id == "avrun_000001"
-    assert restored.avatar_renders[result.avatar_render_id].avatar_render_id == result.avatar_render_id
-    assert restored.artifact_metadata == {}
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_failed_idempotency_with_missing_error(tmp_path: Path) -> None:
@@ -3121,25 +3029,9 @@ def test_stage7_file_state_drops_failed_idempotency_with_missing_error(tmp_path:
         encoding="utf-8",
     )
 
+    quarantined_bytes = state_path.read_bytes()
     restored = create_stage7_service(state_path=state_path)
-    result = restored.render_avatar_demo(
-        source_script="NarraTwin AI creates grounded walkthrough scripts. [1]",
-        requested_avatar_provider="mock",
-        source_run_id="run_failed",
-        trace_id="trace_failed",
-        source_context_ref_count=1,
-        source_citation_count=1,
-        source_context_ref_ids=("ctx_failed",),
-        source_citation_indexes=(1,),
-        source_evaluation_id="eval_failed",
-        evaluation_status="PASSED",
-        consent_to_use_synthetic_avatar=True,
-        idempotency_scope="tenant:user:project:run",
-        idempotency_key="bad-failed",
-    )
-
-    assert result.avatar_render_id == "avrun_000001"
-    assert len(restored.idempotency_records) == 1
+    assert_quarantined_state(restored, state_path, quarantined_bytes)
 
 
 def test_stage7_file_state_drops_failed_render_idempotency_after_restart(tmp_path: Path) -> None:

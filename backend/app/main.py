@@ -22,6 +22,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.app.rag.models import OWNER_LOCAL
 from backend.app.evaluation_lineage import build_source_evaluation_checksum, derive_evaluation_lineage
+from backend.app.evaluation_lineage_state import validate_cross_store_lineages
 from backend.app.curation import CuratedOutcome, SourceAssertions
 from backend.app.observability import is_langfuse_enabled, log_event
 from backend.app.stage4 import (
@@ -79,8 +80,19 @@ from backend.app.issue280 import (
     validate_issue280_input_contract,
 )
 
-stage6_service.activate_verified_lineage(stage4_service.walkthrough_runs)
-stage7_service.activate_verified_lineage(stage4_service.walkthrough_runs)
+def activate_restored_downstream_lineage() -> None:
+    try:
+        validate_cross_store_lineages(
+            stage4_service.walkthrough_runs,
+            (*stage6_service.persisted_lineage_rows(), *stage7_service.persisted_lineage_rows()),
+        )
+    except (KeyError, TypeError, ValueError):
+        reason = "Stage 4/6/7 restored lineage graph is inactive"
+        stage6_service.quarantine_restored_state(reason)
+        stage7_service.quarantine_restored_state(reason)
+
+
+activate_restored_downstream_lineage()
 
 ErrorDetailValue = str | int | float | bool
 

@@ -24,6 +24,7 @@ from backend.app.evaluation_lineage_state import (
     PersistedLineage,
     quarantine_reason_for_schema,
     refuse_quarantined_write,
+    restored_state_matches,
     validate_lineage_binding,
     validate_rows_against_stage4,
 )
@@ -573,27 +574,42 @@ class Stage7Service:
     ) -> None:
         with self._operation_lock:
             try:
-                rows: tuple[SyntheticAvatarConsentRecord | AvatarRenderResult, ...] = (
-                    *self.synthetic_media_consents.values(),
-                    *self.avatar_renders.values(),
-                )
-                validate_rows_against_stage4(
-                    walkthrough_runs,
-                    (
-                        PersistedLineage(
-                            component="Stage 7 connected row",
-                            source_run_id=row.source_run_id,
-                            payload=row.source_evaluation_lineage,
-                            digest=row.source_evaluation_checksum,
-                        )
-                        for row in rows
-                    ),
-                )
+                validate_rows_against_stage4(walkthrough_runs, self.persisted_lineage_rows())
             except (KeyError, TypeError, ValueError):
                 self._clear_runtime_state()
                 self._state_quarantine_reason = (
                     "Stage 7 graph that does not match verified Stage 4 state"
                 )
+
+    def persisted_lineage_rows(self) -> tuple[PersistedLineage, ...]:
+        if self._state_quarantine_reason is not None:
+            raise ValueError(self._state_quarantine_reason)
+        rows = [
+            PersistedLineage(
+                component="Stage 7 consent",
+                row_id=record.consent_record_id,
+                source_run_id=record.source_run_id,
+                payload=record.source_evaluation_lineage,
+                digest=record.source_evaluation_checksum,
+            )
+            for record in self.synthetic_media_consents.values()
+        ]
+        for render in self.avatar_renders.values():
+            bundle = render.multilingual_bundle
+            values = (() if bundle is None else (bundle.target_language, bundle.translated_script_checksum,
+                       bundle.subtitles_checksum, bundle.voice_manifest_checksum))
+            rows.append(PersistedLineage(
+                component="Stage 7 render", row_id=render.avatar_render_id,
+                upstream_row_id=bundle.multilingual_run_id if bundle else None,
+                source_run_id=render.source_run_id, payload=render.source_evaluation_lineage,
+                digest=render.source_evaluation_checksum, connected_values=values,
+            ))
+        return tuple(rows)
+
+    def quarantine_restored_state(self, reason: str) -> None:
+        with self._operation_lock:
+            self._clear_runtime_state()
+            self._state_quarantine_reason = reason
 
     def _restore(self) -> None:
         payload = load_state(self.state_path)
@@ -740,7 +756,12 @@ class Stage7Service:
                 )
                 self.consent_idempotency_records[key] = consent_idempotency_record
             self._rebuild_idempotency_scope_counts_locked()
-            if payload != self._state_payload_locked():
+            if not restored_state_matches(
+                payload,
+                self._state_payload_locked(),
+                transient_collections=("idempotencyRecords", "consentIdempotencyRecords"),
+                derived_keys=("counters",),
+            ):
                 raise ValueError("Stage 7 state contains inactive or altered connected rows.")
         except (KeyError, TypeError, ValueError, Stage7Error) as exc:
             LOGGER.warning(

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable, Mapping
+import json
+from typing import Any, Iterable, Mapping, cast
 
 from backend.app.evaluation_lineage import (
     build_source_evaluation_checksum,
@@ -21,6 +22,7 @@ class PersistedLineage:
     digest: str
     row_id: str = ""
     upstream_row_id: str | None = None
+    connected_values: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -52,18 +54,6 @@ def validate_lineage_binding(
     if actual != expected or build_source_evaluation_checksum(canonical) != checksum:
         raise ValueError("Request mismatch.")
     return canonical
-
-
-def validate_lineage_for_run(
-    payload: Mapping[str, object],
-    checksum: str,
-    run: WalkthroughRunRecord,
-) -> dict[str, Any]:
-    derived = derive_evaluation_lineage(run)
-    given = validate_evaluation_lineage_payload(payload)
-    if given != derived or build_source_evaluation_checksum(derived) != checksum:
-        raise ValueError("Stage 4 mismatch.")
-    return derived
 
 
 def validate_connected_lineages(
@@ -101,6 +91,27 @@ def validate_rows_against_stage4(
     return tuple(activations)
 
 
+def validate_cross_store_lineages(
+    walkthrough_runs: Mapping[str, WalkthroughRunRecord],
+    rows: Iterable[PersistedLineage],
+) -> tuple[LineageActivation, ...]:
+    connected = tuple(rows)
+    activations = validate_rows_against_stage4(walkthrough_runs, connected)
+    validate_upstream_connections(connected)
+    return activations
+
+
+def validate_upstream_connections(rows: Iterable[PersistedLineage]) -> None:
+    connected = tuple(rows)
+    upstream = {row.row_id: row for row in connected if row.row_id and row.upstream_row_id is None}
+    for row in connected:
+        if row.upstream_row_id is None:
+            continue
+        source = upstream.get(row.upstream_row_id)
+        if source is None or source.connected_values != row.connected_values:
+            raise ValueError(f"{row.component} upstream Stage 6 bundle is mismatched.")
+
+
 def quarantine_reason_for_schema(
     schema: object,
     *,
@@ -118,3 +129,33 @@ def quarantine_reason_for_schema(
 def refuse_quarantined_write(reason: str | None) -> None:
     if reason is not None:
         raise OSError(f"Refusing to overwrite quarantined {reason}.")
+
+
+def restored_state_matches(
+    original: Mapping[str, object],
+    active: Mapping[str, object],
+    *,
+    transient_collections: tuple[str, ...] = (),
+    derived_keys: tuple[str, ...] = (),
+    optional_empty_collections: tuple[str, ...] = (),
+) -> bool:
+    """Compare parsed JSON with a serializer result without tuple/list false mismatches."""
+    candidate = cast(dict[str, Any], json.loads(json.dumps(original)))
+    normalized = cast(
+        dict[str, Any],
+        json.loads(json.dumps(active, sort_keys=True, separators=(",", ":"))),
+    )
+    for key in transient_collections:
+        rows = candidate.get(key, [])
+        if isinstance(rows, list):
+            candidate[key] = [
+                row
+                for row in rows
+                if not isinstance(row, dict) or row.get("status") not in {"PENDING", "RUNNING"}
+            ]
+    for key in derived_keys:
+        candidate[key] = normalized.get(key)
+    for key in optional_empty_collections:
+        if key not in candidate and normalized.get(key) == []:
+            candidate[key] = []
+    return candidate == normalized

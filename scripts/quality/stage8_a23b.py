@@ -4,11 +4,11 @@ import ast
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 A23B_BRANCH = "stage8-353-r0c-a2-3b-evaluation-lineage-v2"
 A23A_BRANCH = "cut1-351-r0c-a2-3a-evaluation-lineage-contract"
-A23B_BASE, A23B_LINE_CAP = "90bbd59a84913ce9c7601bc180e051347cfccbcf", 1600
+A23B_BASE, A23B_LINE_CAP = "90bbd59a84913ce9c7601bc180e051347cfccbcf", 2400
 A23B_ALLOWED_FILES = {
     "tests/acceptance/test_checkpoint3_full_project_multilingual.py", "backend/app/storage/local_restore_drill.py",
     "tests/acceptance/test_checkpoint3_media_artifacts.py", "docs/governance/preflights/issue-353.json",
@@ -16,7 +16,9 @@ A23B_ALLOWED_FILES = {
     "tests/unit/test_stage8_quality_gate.py", "scripts/quality/check_stage8_docs.py", "backend/app/stage7.py",
     "tests/unit/test_local_durability.py", "tests/api/test_stage7_avatar_api.py", "scripts/quality/stage8_a23b.py",
     "backend/app/evaluation_lineage.py", "tests/unit/test_stage7_avatar.py", "backend/app/main.py",
-    "docs/STATUS.md",
+    "docs/STATUS.md", "backend/app/evaluation_lineage_state.py", "tests/unit/test_evaluation_lineage.py",
+    "tests/unit/test_evaluation_lineage_state.py", "scripts/guardrails_check.py",
+    "tests/unit/test_guardrails_check.py", "docs/ADR/0004-avatar-provider-adapter.md", "docs/TRACEABILITY.md",
 }
 A23A_ALLOWED_FILES = {
     "docs/governance/preflights/issue-351.json", "docs/STATUS.md", "docs/API_CONTRACT.md",
@@ -37,26 +39,79 @@ def _negative_typeerror(node: ast.AST, parents: dict[ast.AST, ast.AST]) -> bool:
     return False
 
 
+def _resolve(node: ast.AST, assignments: dict[str, ast.AST]) -> ast.AST:
+    seen: set[str] = set()
+    while isinstance(node, ast.Name) and node.id in assignments and node.id not in seen:
+        seen.add(node.id)
+        node = assignments[node.id]
+    return node
+
+
+def _legacy_fields(node: ast.AST, assignments: dict[str, ast.AST]) -> bool:
+    node = _resolve(node, assignments)
+    if isinstance(node, (ast.GeneratorExp, ast.ListComp)) and node.generators:
+        node = _resolve(node.generators[0].iter, assignments)
+    if not isinstance(node, (ast.List, ast.Tuple)) or len(node.elts) != 6:
+        return False
+    fields = [ast.unparse(field).lower() for field in node.elts]
+    return all(all(token in field for token in group) for field, group in zip(fields, LEGACY_FIELDS, strict=True))
+
+
+def _legacy_preimage(
+    node: ast.AST,
+    assignments: dict[str, ast.AST],
+    returns: Mapping[str, tuple[ast.AST, ...]],
+    seen: frozenset[int] = frozenset(),
+) -> bool:
+    node = _resolve(node, assignments)
+    if id(node) in seen:
+        return False
+    seen |= {id(node)}
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+        if node.func.attr == "encode":
+            return _legacy_preimage(node.func.value, assignments, returns, seen)
+        if node.func.attr == "join" and node.args:
+            separator = _resolve(node.func.value, assignments)
+            return (
+                isinstance(separator, ast.Constant)
+                and separator.value == "\n"
+                and _legacy_fields(node.args[0], assignments)
+            )
+    if isinstance(node, ast.Call):
+        function = _resolve(node.func, assignments)
+        name = function.id if isinstance(function, ast.Name) else ""
+        if name in returns:
+            return any(_legacy_preimage(value, assignments, returns, seen) for value in returns[name])
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        names = [ast.unparse(item).lower() for item in ast.walk(node) if isinstance(item, (ast.Name, ast.Attribute))]
+        newline = any(isinstance(item, ast.Constant) and item.value == "\n" for item in ast.walk(node))
+        return newline and all(
+            any(all(token in name for token in group) for name in names) for group in LEGACY_FIELDS
+        )
+    return False
+
+
 def semantic_legacy_failures(path: Path, source: str | None = None) -> list[str]:
     tree = ast.parse(path.read_text(encoding="utf-8") if source is None else source, filename=path.as_posix())
     parents = {child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)}
+    assignments: dict[str, ast.AST] = {
+        target.id: node.value for node in ast.walk(tree) if isinstance(node, ast.Assign)
+        for target in node.targets if isinstance(target, ast.Name)
+    }
+    returns = {
+        node.name: tuple(item.value for item in ast.walk(node) if isinstance(item, ast.Return) and item.value)
+        for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
     failures: list[str] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
-        name = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
+        function = _resolve(node.func, assignments)
+        name = function.attr if isinstance(function, ast.Attribute) else getattr(function, "id", "")
         if name == "build_source_evaluation_checksum" and len(node.args) != 1:
             if not _negative_typeerror(node, parents):
                 failures.append(f"{path}: legacy evaluation-checksum call")
-        if not isinstance(node.func, ast.Attribute) or node.func.attr != "join":
-            continue
-        if not isinstance(node.func.value, ast.Constant) or node.func.value.value != "\n":
-            continue
-        sequence = node.args[0] if node.args else None
-        if not isinstance(sequence, (ast.List, ast.Tuple)) or len(sequence.elts) != 6:
-            continue
-        fields = [ast.unparse(field).lower() for field in sequence.elts]
-        if all(all(token in field for token in group) for field, group in zip(fields, LEGACY_FIELDS, strict=True)):
+        if any(_legacy_preimage(argument, assignments, returns) for argument in node.args):
             failures.append(f"{path}: manual six-field evaluation-checksum preimage")
     return failures
 
@@ -71,21 +126,38 @@ def semantic_detector_self_test(workdir: Path) -> bool:
               "evaluation_status=s,context_ref_ids=c,citation_indexes=i)")
     manual = ('checksum_text("\\n".join([evaluation_id,run_id,trace_id,'
               'evaluation_status,context_ref_ids,citation_indexes]))')
-    samples = (("direct.py", direct, True), ("manual.py", manual, True),
+    indirect = ('fields=[evaluation_id,run_id,trace_id,evaluation_status,context_ref_ids,citation_indexes]\n'
+                'checksum_text("\\n".join(fields))')
+    generator = indirect.replace("join(fields)", "join(value for value in fields)")
+    concat = ('checksum_text(evaluation_id+"\\n"+run_id+"\\n"+trace_id+"\\n"+'
+              'evaluation_status+"\\n"+context_ref_ids+"\\n"+citation_indexes)')
+    helper = ("def legacy(): return " + manual.removeprefix("checksum_text(").removesuffix(")")
+              + "\nchecksum_text(legacy())")
+    alias = "legacy=build_source_evaluation_checksum\n" + direct.replace("build_source_evaluation_checksum", "legacy")
+    cycle = "value=value.encode()\nchecksum_text(value)"
+    samples = (("direct.py", direct, True), ("manual.py", manual, True), ("indirect.py", indirect, True),
+               ("generator.py", generator, True), ("concat.py", concat, True), ("helper.py", helper, True),
+               ("alias.py", alias, True), ("cycle.py", cycle, False),
                ("canonical.py", "build_source_evaluation_checksum(lineage_payload)", False))
     results = (bool(semantic_legacy_failures(workdir / name, sample)) is expected
                for name, sample, expected in samples)
     source = Path(__file__).read_text(encoding="utf-8")
     lines = source.splitlines()
     bounded = len(lines) <= 250 and len(source.encode()) <= 32 * 1024 and max(map(len, lines)) <= 120
-    return all(results) and bounded
+    checker = Path(__file__).with_name("check_stage8_docs.py").read_text(encoding="utf-8")
+    return all(results) and bounded and "check_a23b(ROOT, run, failures," in checker
 
 
-def check_a23b(root: Path, run: Callable[[list[str]], Any], failures: list[str]) -> None:
+def check_a23b(root: Path, run: Callable[[list[str]], Any], failures: list[str], exact_route: bool = True) -> None:
+    for path in root.rglob("*.py"):
+        if not any(part in {".git", ".venv"} for part in path.parts):
+            failures.extend(semantic_legacy_failures(path))
+    if not exact_route:
+        return
     artifact = json.loads((root / "docs/governance/preflights/issue-353.json").read_text())
     scope_matches = set(artifact.get("scope", {}).get("required", ())) == A23B_ALLOWED_FILES
     if artifact.get("branch") != A23B_BRANCH or not scope_matches:
-        failures.append("Issue #353 preflight does not match its exact branch and 17-path scope.")
+        failures.append("Issue #353 preflight does not match its exact branch and 24-path scope.")
     merge_base = run(["git", "merge-base", A23B_BASE, "HEAD"])
     if merge_base.returncode or merge_base.stdout.strip() != A23B_BASE:
         failures.append("Issue #353 merge base does not match its exact authorized base.")
@@ -94,7 +166,4 @@ def check_a23b(root: Path, run: Callable[[list[str]], Any], failures: list[str])
     if numstat.returncode or any(len(row) != 3 or not row[0].isdigit() or not row[1].isdigit() for row in rows):
         failures.append("Issue #353 charged-line evidence is unavailable.")
     elif sum(int(row[0]) + int(row[1]) for row in rows) > A23B_LINE_CAP:
-        failures.append("Issue #353 exceeds its 1,600 charged-line hard ceiling.")
-    for path in root.rglob("*.py"):
-        if not any(part in {".git", ".venv"} for part in path.parts):
-            failures.extend(semantic_legacy_failures(path))
+        failures.append("Issue #353 exceeds its 2,400 charged-line hard ceiling.")

@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from backend.app.evaluation_lineage_state import (
     refuse_quarantined_write,
     validate_connected_lineages,
     validate_lineage_binding,
+    validate_upstream_connections,
 )
 
 _contract = Path("docs/API_CONTRACT.md").read_text(encoding="utf-8")
@@ -53,6 +55,17 @@ def test_connected_rows_require_exact_canonical_payload_and_digest() -> None:
 def test_request_binding_rejects_missing_payload_before_replay() -> None:
     with pytest.raises(ValueError, match="required"):
         validate_lineage_binding(None, "sha256:" + "0" * 64)
+
+
+def test_stage7_bundle_requires_the_exact_connected_stage6_row() -> None:
+    stage6 = PersistedLineage(
+        component="Stage 6", source_run_id="run", row_id="mlrun", payload={}, digest="",
+        connected_values=("es", "translated", "subtitles", "voice"),
+    )
+    stage7 = replace(stage6, component="Stage 7", row_id="render", upstream_row_id="mlrun")
+    validate_upstream_connections((stage6, stage7))
+    with pytest.raises(ValueError, match="upstream Stage 6 bundle"):
+        validate_upstream_connections((stage6, replace(stage7, connected_values=("stale",))))
 
 
 def test_schema_decision_distinguishes_current_legacy_and_future() -> None:

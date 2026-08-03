@@ -483,8 +483,7 @@ def main() -> int:
     if not failures:
         check_stage_marker_and_branch(failures)
         check_stage_scope(failures)
-        if current_branch() == A23B_BRANCH:
-            check_a23b(ROOT, run, failures)
+        check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)

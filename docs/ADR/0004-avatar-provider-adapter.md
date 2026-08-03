@@ -93,6 +93,12 @@ belong on the backend side of the trust boundary.
 
 ## Consequences
 
+Issue `#353` / draft PR `#354` activates the already frozen checksum-v2 contract at runtime. Canonical
+payload construction remains in `evaluation_lineage.py`; shared downstream equality, quarantine, rollback,
+and cross-store checks live in `evaluation_lineage_state.py`; Stage 6, Stage 7, and application orchestration
+delegate to those modules. Legacy, future, stale, malformed, or tampered local state remains byte-preserved,
+inactive, and write-blocked. This does not change the frozen vector, digest, or total-state-rewrite limitation.
+
 Positive:
 
 - media generation can be added without rewriting grounded script generation
