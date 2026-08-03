@@ -200,7 +200,7 @@ def semantic_detector_self_test(workdir: Path) -> bool:
     lambda_forward = parameter.replace("def legacy(fields): return", "legacy = lambda fields:")
     fstring = 'checksum_text(f"' + "\\n".join("{" + item + "}" for item in fields[1:-1].split(",")) + '")'
     alias = "legacy=build_source_evaluation_checksum\n" + direct.replace("build_source_evaluation_checksum", "legacy")
-    starred = "values=[" + joined + "]\nchecksum_text(*values)"
+    starred = "def legacy(*fields): return '\\n'.join(fields)\nvalues=" + fields + "\nchecksum_text(legacy(*values))"
     cycle = "value=value.encode()\nchecksum_text(value)"
     samples = (
         ("direct.py", direct, True),
