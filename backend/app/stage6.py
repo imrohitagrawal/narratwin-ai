@@ -20,7 +20,13 @@ from pydub import AudioSegment  # type: ignore[import-untyped]
 import srt  # type: ignore[import-untyped]
 
 from backend.app.rag.chunking import checksum_text
-from backend.app.evaluation_lineage import validate_lineage_binding, validate_lineage_for_run
+from backend.app.evaluation_lineage_state import (
+    PersistedLineage,
+    quarantine_reason_for_schema,
+    refuse_quarantined_write,
+    validate_lineage_binding,
+    validate_rows_against_stage4,
+)
 from backend.app.storage import load_state, resolve_state_file, write_state
 from backend.app.stage4 import WalkthroughRunRecord, contains_secret_like_content
 from backend.app.tts_provider import (
@@ -1000,13 +1006,19 @@ class Stage6Service:
     ) -> None:
         with self._operation_lock:
             try:
-                for result in self.multilingual_runs.values():
-                    source_run = walkthrough_runs[result.source_run_id]
-                    validate_lineage_for_run(
-                        result.source_evaluation_lineage,
-                        result.source_evaluation_checksum,
-                        source_run,
-                    )
+                validate_rows_against_stage4(
+                    walkthrough_runs,
+                    (
+                        PersistedLineage(
+                            component="Stage 6 multilingual run",
+                            row_id=result.multilingual_run_id,
+                            source_run_id=result.source_run_id,
+                            payload=result.source_evaluation_lineage,
+                            digest=result.source_evaluation_checksum,
+                        )
+                        for result in self.multilingual_runs.values()
+                    ),
+                )
             except (KeyError, TypeError, ValueError):
                 self._clear_runtime_state()
                 self._state_quarantine_reason = (
@@ -1019,12 +1031,16 @@ class Stage6Service:
             return
         try:
             schema = payload.get("schema")
-            if schema != "stage6-local-state-v3":
-                if schema in {"stage6-local-state-v1", "stage6-local-state-v2"}:
-                    LOGGER.warning("Quarantining inactive legacy Stage 6 state at %s.", self.state_path)
-                    self._state_quarantine_reason = "legacy Stage 6 state"
-                    return
-                raise ValueError("Stage 6 state schema mismatch.")
+            quarantine = quarantine_reason_for_schema(
+                schema,
+                current="stage6-local-state-v3",
+                legacy=frozenset({"stage6-local-state-v1", "stage6-local-state-v2"}),
+                stage="Stage 6",
+            )
+            if quarantine is not None:
+                LOGGER.warning("Quarantining inactive legacy Stage 6 state at %s.", self.state_path)
+                self._state_quarantine_reason = quarantine
+                return
             counters = payload.get("counters", {})
             run_counter = 0
             if isinstance(counters, dict):
@@ -1069,7 +1085,10 @@ class Stage6Service:
                         continue
                     dedupe_key = (record.idempotency_scope, record.request_checksum)
                     existing_run_id = restored_dedupe_index.get(dedupe_key)
-                    if existing_run_id is not None and existing_run_id != result.multilingual_run_id:
+                    if (
+                        existing_run_id is not None
+                        and existing_run_id != result.multilingual_run_id
+                    ):
                         continue
                     restored_runs[result.multilingual_run_id] = result
                     restored_dedupe_index[dedupe_key] = result.multilingual_run_id
@@ -1084,7 +1103,9 @@ class Stage6Service:
                     multilingual_run_id = str(row["multilingual_run_id"])
                 except KeyError:
                     continue
-                restored_result: MultilingualWalkthroughResult | None = restored_runs.get(multilingual_run_id)
+                restored_result: MultilingualWalkthroughResult | None = restored_runs.get(
+                    multilingual_run_id
+                )
                 if restored_result is None or restored_result.request_checksum != request_checksum:
                     continue
                 try:
@@ -1127,7 +1148,9 @@ class Stage6Service:
                 )
             }
             self.request_dedupe_index = {
-                key: run_id for key, run_id in restored_dedupe_index.items() if run_id in self.multilingual_runs
+                key: run_id
+                for key, run_id in restored_dedupe_index.items()
+                if run_id in self.multilingual_runs
             }
             self.tts_deletions = {
                 run_id: deletion
@@ -1139,6 +1162,8 @@ class Stage6Service:
                 max_multilingual_run_suffix(self.idempotency_records),
                 max_multilingual_run_identifier(self.multilingual_runs),
             )
+            if payload != self._state_payload_locked():
+                raise ValueError("Stage 6 state contains inactive or altered connected rows.")
         except (KeyError, TypeError, ValueError, Stage6Error) as exc:
             LOGGER.warning(
                 "Ignoring incompatible Stage 6 local state snapshot at %s: %s",
@@ -1206,21 +1231,22 @@ class Stage6Service:
             max_multilingual_run_identifier(self.multilingual_runs),
         )
 
-    def _persist_locked(self) -> None:
-        if self._state_quarantine_reason is not None:
-            raise OSError(f"Refusing to overwrite quarantined {self._state_quarantine_reason}.")
-        write_state(
-            self.state_path,
-            {
+    def _state_payload_locked(self) -> dict[str, Any]:
+        return {
                 "schema": "stage6-local-state-v3",
-                "multilingualRuns": [multilingual_result_to_dict(result) for result in self.multilingual_runs.values()],
+            "multilingualRuns": [
+                multilingual_result_to_dict(result) for result in self.multilingual_runs.values()
+            ],
                 "requestDedupeIndex": [
                     {
                         "idempotency_scope": scope,
                         "request_checksum": request_checksum,
                         "multilingual_run_id": multilingual_run_id,
                     }
-                    for (scope, request_checksum), multilingual_run_id in self.request_dedupe_index.items()
+                for (
+                    scope,
+                    request_checksum,
+                ), multilingual_run_id in self.request_dedupe_index.items()
                 ],
                 "idempotencyRecords": [
                     stage6_idempotency_record_to_dict(record)
@@ -1228,11 +1254,15 @@ class Stage6Service:
                     if record.status not in {"PENDING", "RUNNING"}
                 ],
                 "ttsDeletions": [
-                    tts_artifact_deletion_record_to_dict(record) for record in self.tts_deletions.values()
+                tts_artifact_deletion_record_to_dict(record)
+                for record in self.tts_deletions.values()
                 ],
                 "counters": {"run": self._run_counter},
-            },
-        )
+        }
+
+    def _persist_locked(self) -> None:
+        refuse_quarantined_write(self._state_quarantine_reason)
+        write_state(self.state_path, self._state_payload_locked())
 
     def generate_multilingual_walkthrough(
         self,

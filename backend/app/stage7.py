@@ -19,8 +19,13 @@ from typing import Any, Literal, Protocol, cast
 from backend.app.evaluation_lineage import (
     build_source_evaluation_checksum,
     validate_evaluation_lineage_payload,
+)
+from backend.app.evaluation_lineage_state import (
+    PersistedLineage,
+    quarantine_reason_for_schema,
+    refuse_quarantined_write,
     validate_lineage_binding,
-    validate_lineage_for_run,
+    validate_rows_against_stage4,
 )
 from backend.app.rag.chunking import checksum_text
 from backend.app.storage import load_state, resolve_state_file, write_state
@@ -569,15 +574,21 @@ class Stage7Service:
         with self._operation_lock:
             try:
                 rows: tuple[SyntheticAvatarConsentRecord | AvatarRenderResult, ...] = (
-                    *self.synthetic_media_consents.values(), *self.avatar_renders.values(),
+                    *self.synthetic_media_consents.values(),
+                    *self.avatar_renders.values(),
                 )
-                for row in rows:
-                    source_run = walkthrough_runs[row.source_run_id]
-                    validate_lineage_for_run(
-                        row.source_evaluation_lineage,
-                        row.source_evaluation_checksum,
-                        source_run,
-                    )
+                validate_rows_against_stage4(
+                    walkthrough_runs,
+                    (
+                        PersistedLineage(
+                            component="Stage 7 connected row",
+                            source_run_id=row.source_run_id,
+                            payload=row.source_evaluation_lineage,
+                            digest=row.source_evaluation_checksum,
+                        )
+                        for row in rows
+                    ),
+                )
             except (KeyError, TypeError, ValueError):
                 self._clear_runtime_state()
                 self._state_quarantine_reason = (
@@ -590,12 +601,16 @@ class Stage7Service:
             return
         try:
             schema = payload.get("schema")
-            if schema != "stage7-local-state-v2":
-                if schema == "stage7-local-state-v1":
-                    LOGGER.warning("Quarantining inactive legacy Stage 7 state at %s.", self.state_path)
-                    self._state_quarantine_reason = "legacy Stage 7 state"
-                    return
-                raise ValueError("Stage 7 state schema mismatch.")
+            quarantine = quarantine_reason_for_schema(
+                schema,
+                current="stage7-local-state-v2",
+                legacy=frozenset({"stage7-local-state-v1"}),
+                stage="Stage 7",
+            )
+            if quarantine is not None:
+                LOGGER.warning("Quarantining inactive legacy Stage 7 state at %s.", self.state_path)
+                self._state_quarantine_reason = quarantine
+                return
             counters = payload.get("counters", {})
             run_counter = 0
             consent_counter = 0
@@ -608,7 +623,11 @@ class Stage7Service:
                 try:
                     result = avatar_render_result_from_dict(row)
                 except (KeyError, TypeError, ValueError, Stage7Error) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 7 avatar render at %s: %s", self.state_path, exc)
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 7 avatar render at %s: %s",
+                        self.state_path,
+                        exc,
+                    )
                     continue
                 self.avatar_renders[result.avatar_render_id] = result
             run_counter = max(run_counter, max_numeric_suffix(self.avatar_renders, "avrun_"))
@@ -619,10 +638,16 @@ class Stage7Service:
                 try:
                     record = synthetic_avatar_consent_record_from_dict(row)
                 except (KeyError, TypeError, ValueError, Stage7Error) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 7 consent record at %s: %s", self.state_path, exc)
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 7 consent record at %s: %s",
+                        self.state_path,
+                        exc,
+                    )
                     continue
                 self.synthetic_media_consents[record.consent_record_id] = record
-            consent_counter = max(consent_counter, max_numeric_suffix(self.synthetic_media_consents, "consent_"))
+            consent_counter = max(
+                consent_counter, max_numeric_suffix(self.synthetic_media_consents, "consent_")
+            )
             self._consent_counter = consent_counter
             for row in payload.get("artifactMetadata", []):
                 if not isinstance(row, dict):
@@ -630,13 +655,18 @@ class Stage7Service:
                 try:
                     render_id, metadata = artifact_metadata_from_dict(row)
                 except (KeyError, TypeError, ValueError) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 7 artifact metadata at %s: %s", self.state_path, exc)
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 7 artifact metadata at %s: %s",
+                        self.state_path,
+                        exc,
+                    )
                     continue
                 self.artifact_metadata[render_id] = metadata
             self.artifact_metadata = {
                 render_id: metadata
                 for render_id, metadata in self.artifact_metadata.items()
-                if render_id in self.avatar_renders and self._artifact_metadata_matches_render(render_id, metadata)
+                if render_id in self.avatar_renders
+                and self._artifact_metadata_matches_render(render_id, metadata)
             }
             self.synthetic_media_consents = {
                 consent_id: record
@@ -667,7 +697,11 @@ class Stage7Service:
                 try:
                     idempotency_record = stage7_idempotency_record_from_dict(row, self)
                 except (KeyError, TypeError, ValueError) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 7 idempotency record at %s: %s", self.state_path, exc)
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 7 idempotency record at %s: %s",
+                        self.state_path,
+                        exc,
+                    )
                     value_ref = row.get("value", {})
                     if (
                         isinstance(value_ref, dict)
@@ -689,7 +723,9 @@ class Stage7Service:
                 if row.get("status") == "RUNNING":
                     continue
                 try:
-                    consent_idempotency_record = stage7_consent_idempotency_record_from_dict(row, self)
+                    consent_idempotency_record = stage7_consent_idempotency_record_from_dict(
+                        row, self
+                    )
                 except (KeyError, TypeError, ValueError) as exc:
                     LOGGER.warning(
                         "Skipping incompatible Stage 7 consent idempotency record at %s: %s",
@@ -704,8 +740,12 @@ class Stage7Service:
                 )
                 self.consent_idempotency_records[key] = consent_idempotency_record
             self._rebuild_idempotency_scope_counts_locked()
+            if payload != self._state_payload_locked():
+                raise ValueError("Stage 7 state contains inactive or altered connected rows.")
         except (KeyError, TypeError, ValueError, Stage7Error) as exc:
-            LOGGER.warning("Ignoring incompatible Stage 7 local state snapshot at %s: %s", self.state_path, exc)
+            LOGGER.warning(
+                "Ignoring incompatible Stage 7 local state snapshot at %s: %s", self.state_path, exc
+            )
             self._clear_runtime_state()
             self._state_quarantine_reason = "incompatible Stage 7 state"
 
@@ -895,15 +935,12 @@ class Stage7Service:
         self._run_counter = max(snapshot.run_counter, max_numeric_suffix(self.avatar_renders, "avrun_"))
         self._rebuild_idempotency_scope_counts_locked()
 
-    def _persist_locked(self) -> None:
-        if self._state_quarantine_reason is not None:
-            raise OSError(f"Refusing to overwrite quarantined {self._state_quarantine_reason}.")
-        write_state(
-            self.state_path,
-            {
+    def _state_payload_locked(self) -> dict[str, Any]:
+        return {
                 "schema": "stage7-local-state-v2",
                 "syntheticMediaConsents": [
-                    synthetic_avatar_consent_record_to_dict(record) for record in self.synthetic_media_consents.values()
+                synthetic_avatar_consent_record_to_dict(record)
+                for record in self.synthetic_media_consents.values()
                 ],
                 "avatarRenders": [
                     avatar_render_result_to_dict(result) for result in self.avatar_renders.values()
@@ -923,8 +960,11 @@ class Stage7Service:
                     if record.status != "RUNNING"
                 ],
                 "counters": {"run": self._run_counter, "consent": self._consent_counter},
-            },
-        )
+        }
+
+    def _persist_locked(self) -> None:
+        refuse_quarantined_write(self._state_quarantine_reason)
+        write_state(self.state_path, self._state_payload_locked())
 
     def capture_synthetic_avatar_consent(
         self,

@@ -55,37 +55,90 @@ def validate_evaluation_lineage_payload(payload: Mapping[str, object]) -> dict[s
     scope = cast(dict[str, object], value.get("scope"))
     contexts = cast(list[dict[str, object]], value.get("selectedContext"))
     citations = cast(list[object], value.get("sourceCitationIndexes"))
-    _require(set(value) == ROOT_KEYS and value.get("checksumSchema") == CHECKSUM_SCHEMA, "Noncanonical lineage root.")
+    _require(
+        set(value) == ROOT_KEYS and value.get("checksumSchema") == CHECKSUM_SCHEMA,
+        "Noncanonical lineage root.",
+    )
     keys = {"evaluationId", "runId", "status", "traceId"}
-    _require(isinstance(evaluation, dict) and set(evaluation) == keys, "Evaluation lineage identity is noncanonical.")
-    _require(evaluation.get("status") in {"PASSED", "FAILED", "UNKNOWN"}, "Evaluation lineage status is invalid.")
+    _require(
+        isinstance(evaluation, dict) and set(evaluation) == keys,
+        "Evaluation lineage identity is noncanonical.",
+    )
+    _require(
+        evaluation.get("status") in {"PASSED", "FAILED", "UNKNOWN"},
+        "Evaluation lineage status is invalid.",
+    )
     for key in ("evaluationId", "runId", "traceId"):
         _identifier(evaluation.get(key))
-    _require(isinstance(scope, dict) and set(scope) == {"tenantId", "projectId"}, "Lineage scope is noncanonical.")
+    _require(
+        isinstance(scope, dict) and set(scope) == {"tenantId", "projectId"},
+        "Lineage scope is noncanonical.",
+    )
     tenant_id, project_id = _identifier(scope.get("tenantId")), _identifier(scope.get("projectId"))
-    _require(value.get("retrievalPolicy") == RETRIEVAL_POLICY and isinstance(contexts, list), "Noncanonical policy.")
+    _require(
+        value.get("retrievalPolicy") == RETRIEVAL_POLICY and isinstance(contexts, list),
+        "Noncanonical policy.",
+    )
     _require(len(contexts) <= rag.RETRIEVAL_TOP_K, "Evaluation lineage exceeds frozen topK.")
     identities: dict[str, set[str]] = {"refs": set(), "chunks": set()}
     documents: dict[str, int] = {}
     for row in contexts:
-        _require(isinstance(row, dict) and set(row) == CONTEXT_KEYS, "Selected-context evidence is noncanonical.")
-        _require((row.get("tenantId"), row.get("projectId")) == (tenant_id, project_id), "Context crosses scope.")
-        ref, chunk, document = (_identifier(row.get(key)) for key in ("contextRefId", "chunkId", "documentId"))
-        _require(ref not in identities["refs"] and chunk not in identities["chunks"], "Duplicate context identity.")
+        _require(
+            isinstance(row, dict) and set(row) == CONTEXT_KEYS,
+            "Selected-context evidence is noncanonical.",
+        )
+        _require(
+            (row.get("tenantId"), row.get("projectId")) == (tenant_id, project_id),
+            "Context crosses scope.",
+        )
+        ref, chunk, document = (
+            _identifier(row.get(key)) for key in ("contextRefId", "chunkId", "documentId")
+        )
+        _require(
+            ref not in identities["refs"] and chunk not in identities["chunks"],
+            "Duplicate context identity.",
+        )
         identities["refs"].add(ref)
         identities["chunks"].add(chunk)
         documents[document] = documents.get(document, 0) + 1
-        _require(documents[document] <= rag.RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT, "Document cap exceeded.")
-        _require(type(row.get("chunkIndex")) is int and cast(int, row["chunkIndex"]) >= 0, "Chunk index is invalid.")
-        _require(row.get("chunkingStrategyVersion") == rag.CHUNKING_STRATEGY_VERSION, "Invalid chunking version.")
-        score = str(row.get("retrievalScore"))
-        _require(score == canonical_score(float(score)) and float(score) >= rag.RETRIEVAL_MIN_SCORE, "Bad score.")
+        _require(
+            documents[document] <= rag.RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT, "Document cap exceeded."
+        )
+        _require(
+            type(row.get("chunkIndex")) is int and cast(int, row["chunkIndex"]) >= 0,
+            "Chunk index is invalid.",
+        )
+        _require(
+            row.get("chunkingStrategyVersion") == rag.CHUNKING_STRATEGY_VERSION,
+            "Invalid chunking version.",
+        )
+        raw_score = row.get("retrievalScore")
+        _require(isinstance(raw_score, str), "Bad score encoding.")
+        score = cast(str, raw_score)
+        _require(
+            score == canonical_score(float(score)) and float(score) >= rag.RETRIEVAL_MIN_SCORE,
+            "Bad score.",
+        )
         _identifier(row.get("approvedAt"))
-        checksums = (row.get(key) for key in ("chunkChecksum", "snapshotChecksum", "sourceDocumentChecksum"))
-        _require(all(re.fullmatch(r"sha256:[0-9a-f]{64}", str(item)) for item in checksums), "Invalid checksum.")
-    _require(evaluation["status"] != "PASSED" or bool(contexts), "Passed lineage requires selected evidence.")
-    _require(isinstance(citations, list) and all(type(i) is int and i > 0 for i in citations), "Bad citations.")
-    return cast(dict[str, Any], json.loads(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)))
+        checksums = (
+            row.get(key) for key in ("chunkChecksum", "snapshotChecksum", "sourceDocumentChecksum")
+        )
+        _require(
+            all(re.fullmatch(r"sha256:[0-9a-f]{64}", str(item)) for item in checksums),
+            "Invalid checksum.",
+        )
+    _require(
+        evaluation["status"] != "PASSED" or bool(contexts),
+        "Passed lineage requires selected evidence.",
+    )
+    _require(
+        isinstance(citations, list) and all(type(i) is int and i > 0 for i in citations),
+        "Bad citations.",
+    )
+    return cast(
+        dict[str, Any],
+        json.loads(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)),
+    )
 
 
 def build_source_evaluation_checksum(lineage_payload: Mapping[str, object], /) -> str:
@@ -121,24 +174,3 @@ def derive_evaluation_lineage(run: WalkthroughRunRecord) -> dict[str, Any]:
                "selectedContext": selected,
                "sourceCitationIndexes": [support.citation_index for support in ev.claim_supports]}
     return validate_evaluation_lineage_payload(payload)
-
-
-def validate_lineage_for_run(payload: Mapping[str, object], checksum: str, run: WalkthroughRunRecord) -> dict[str, Any]:
-    derived = derive_evaluation_lineage(run)
-    given = validate_evaluation_lineage_payload(payload)
-    _require(given == derived and build_source_evaluation_checksum(derived) == checksum, "Stage 4 mismatch.")
-    return derived
-
-
-def validate_lineage_binding(payload: Mapping[str, object] | None, checksum: str, **expected: object) -> dict[str, Any]:
-    if payload is None:
-        raise ValueError("Canonical v2 evaluation lineage is required.")
-    canonical = validate_evaluation_lineage_payload(payload)
-    identity, scope = canonical["evaluation"], canonical["scope"]
-    actual = {"evaluation_id": identity["evaluationId"], "run_id": identity["runId"],
-              "trace_id": identity["traceId"], "status": identity["status"],
-              "tenant_id": scope["tenantId"], "project_id": scope["projectId"],
-              "context_ref_ids": tuple(row["contextRefId"] for row in canonical["selectedContext"]),
-              "citation_indexes": tuple(canonical["sourceCitationIndexes"])}
-    _require(actual == expected and build_source_evaluation_checksum(canonical) == checksum, "Request mismatch.")
-    return canonical
