@@ -194,21 +194,24 @@ def semantic_detector_self_test(workdir: Path) -> bool:
     joined = manual.removeprefix("checksum_text(").removesuffix(")")
     helper = "def legacy(): return " + joined + "\nchecksum_text(legacy())"
     parameter = "def legacy(fields): return '\\n'.join(fields)\nchecksum_text(legacy(" + fields + "))"
-    keyword = parameter.replace("legacy(fields)", "legacy(*, fields)").replace("legacy([", "legacy(fields=[")
-    vararg = parameter.replace("legacy(fields)", "legacy(*fields)").replace("legacy([", "legacy(").replace("]))", "))")
+    positional_only = parameter.replace("legacy(fields)", "legacy(fields, /)")
+    vararg = (
+        "def legacy(prefix,*fields): return '\\n'.join(fields)\nchecksum_text(legacy('x'," + fields[1:-1] + "))"
+    )
     lambda_forward = parameter.replace("def legacy(fields): return", "legacy = lambda fields:")
+    fstring = 'checksum_text(f"' + "\\n".join("{" + item + "}" for item in fields[1:-1].split(",")) + '")'
     alias = "legacy=build_source_evaluation_checksum\n" + direct.replace("build_source_evaluation_checksum", "legacy")
     starred = "values=[" + joined + "]\nchecksum_text(*values)"
     cycle = "value=value.encode()\nchecksum_text(value)"
     samples = (
         ("direct.py", direct, True),
-        ("manual.py", manual, True),
+        ("fstring.py", fstring, True),
         ("indirect.py", indirect, True),
         ("generator.py", generator, True),
         ("concat.py", concat, True),
         ("helper.py", helper, True),
         ("parameter.py", parameter, True),
-        ("keyword.py", keyword, True),
+        ("positional.py", positional_only, True),
         ("vararg.py", vararg, True),
         ("lambda.py", lambda_forward, True),
         ("alias.py", alias, True),
