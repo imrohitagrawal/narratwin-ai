@@ -71,6 +71,18 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
         calls.clear(); monkeypatch.setattr(dispatcher, "current_branch", lambda branch=branch: branch)
         assert (dispatcher.main(), calls) == (0, [["make", "stage8-quality"]])
         assert branch == a23b.A23B_BRANCH or canonical_stage_issue(branch) is None
+
+def test_quiet_presence_cut1_route_is_exact_and_reference_only(monkeypatch: Any) -> None:
+    branch = "cut1-358-quiet-presence-ui"
+    artifact = json.loads((Path(__file__).parents[2] / "docs/governance/preflights/issue-358.json").read_text())
+    scope = set(artifact["scope"]["required"])
+
+    assert route(monkeypatch, branch, sorted(scope)) == []
+    assert route(monkeypatch, branch, ["frontend/src/app/page.tsx"]) == [
+        "Stage 8 changed file outside the allowlist: frontend/src/app/page.tsx"
+    ]
+    assert len(route(monkeypatch, f"{branch}-retry", [])) == 2
+    assert canonical_stage_issue(branch) is None
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     git(tmp_path, "init", "-b", "main"); git(tmp_path, "config", "user.name", "Scope Test")
     git(tmp_path, "config", "user.email", "scope@example.invalid")
