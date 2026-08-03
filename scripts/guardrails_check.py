@@ -221,6 +221,7 @@ CANONICAL_STAGE_ISSUE_CLOSURE = (
     ("stage7-", "Stage 7", "12"),
     ("stage8-", "Stage 8", "13"),
 )
+ISSUE_353_RECOVERY_BRANCH = "stage8-353-r0c-a2-3b-evaluation-lineage-v2"
 FORCE_PULL_REQUEST_GUARDRAILS_ENV = "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS"
 STATUS_RECONCILIATION_BRANCH_PATTERN = re.compile(
     r"^phase-1-closure-process-(?P<issue>\d+)-post-pr-(?P<pr>\d+)-status-reconciliation$"
@@ -1087,7 +1088,7 @@ def should_enforce_pull_request_issue_checks() -> bool:
 
 
 def canonical_stage_issue(head_ref: str | None) -> tuple[str, str] | None:
-    if not head_ref:
+    if not head_ref or head_ref == ISSUE_353_RECOVERY_BRANCH:
         return None
     for prefix, stage_name, issue_number in CANONICAL_STAGE_ISSUE_CLOSURE:
         if head_ref.startswith(prefix):

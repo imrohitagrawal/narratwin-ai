@@ -5,12 +5,13 @@ import re
 import threading
 from datetime import timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 import srt  # type: ignore[import-untyped]
 
 from backend.app.rag.chunking import checksum_text
+from backend.app.evaluation_lineage import build_source_evaluation_checksum
 from backend.app.stage6 import (
     DownloadableArtifact,
     MAX_CAPTION_CHARS,
@@ -19,7 +20,7 @@ from backend.app.stage6 import (
     Stage6Error,
     TranslationProviderResult,
     VoiceProviderResult,
-    create_stage6_service,
+    create_stage6_service as _create_stage6_service,
     get_language_catalog,
     generate_subtitles,
     translate_demo_source_text,
@@ -28,11 +29,75 @@ from backend.app.stage6 import (
     normalize_language_tag,
     split_captions,
 )
-from backend.app.stage7 import build_source_evaluation_checksum
 from backend.app.tts_provider import ElevenLabsTTSProvider, InMemoryTTSQuotaLedger, TTSHTTPResponse, TTSProviderConfig
 
 # Stage 6 multilingual tests preserve source run_id trace metadata and citation
 # counts from the accepted grounded walkthrough script.
+
+
+_contract = Path("docs/API_CONTRACT.md").read_text(encoding="utf-8")
+GOLDEN_V2_LINEAGE = json.loads(_contract.rsplit("```json\n", 1)[1].split("\n```", 1)[0])
+
+
+def fixture_lineage(**values: Any) -> dict[str, Any]:
+    context_ids = tuple(values.get("source_context_ref_ids", ("ctx_001",)))
+    citations = tuple(values.get("source_citation_indexes", (1,)))
+    tenant_id = values.get("tenant_id", "tenant")
+    project_id = values.get("project_id", "project")
+    lineage = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
+    lineage["evaluation"].update(
+        evaluationId=values.get("source_evaluation_id", "eval_local"),
+        runId=values.get("source_run_id", "local_source_run"),
+        status=values.get("evaluation_status", "PASSED"),
+        traceId=values.get("trace_id", "local_trace"),
+    )
+    lineage["scope"] = {"projectId": project_id, "tenantId": tenant_id}
+    template = lineage["selectedContext"][0]
+    lineage["selectedContext"] = [
+        {
+            **template,
+            "chunkChecksum": checksum_text(context_id),
+            "chunkId": f"chunk_{index}",
+            "chunkIndex": index,
+            "contextRefId": context_id,
+            "documentId": f"doc_{index}",
+            "projectId": project_id,
+            "snapshotChecksum": checksum_text("snapshot:" + context_id),
+            "sourceDocumentChecksum": checksum_text("document:" + context_id),
+            "tenantId": tenant_id,
+        }
+        for index, context_id in enumerate(context_ids)
+    ]
+    lineage["sourceCitationIndexes"] = list(citations)
+    return cast(dict[str, Any], lineage)
+
+
+def create_stage6_service(*args: Any, **kwargs: Any) -> Any:
+    service = _create_stage6_service(*args, **kwargs)
+    generate = service.generate_multilingual_walkthrough
+
+    def with_lineage(**call: Any) -> Any:
+        if "source_evaluation_checksum" not in call:
+            if not re.search(r"\[\d+\]", call.get("source_script", "")):
+                call["source_script"] = call.get("source_script", "").rstrip() + " [1]"
+            defaults = {
+                "source_context_ref_count": 1,
+                "source_citation_count": 1,
+                "source_context_ref_ids": ("ctx_001",),
+                "source_citation_indexes": (1,),
+                "source_claim_support_ids": ("claimsup_001",),
+                "source_evaluation_id": "eval_local",
+                "evaluation_status": "PASSED",
+            }
+            for key, value in defaults.items():
+                call.setdefault(key, value)
+        lineage = call.setdefault("source_evaluation_lineage", fixture_lineage(**call))
+        call.setdefault("source_evaluation_checksum", build_source_evaluation_checksum(lineage))
+        return generate(**call)
+
+    setattr(service, "generate_multilingual_walkthrough", with_lineage)
+    return service
+
 
 GOLDEN_RECRUITER_NARRATWIN_TRANSLATIONS = {
     "en": "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]",
@@ -559,7 +624,7 @@ def external_tts_config(**overrides: object) -> TTSProviderConfig:
 def passed_eval_kwargs(*, citation_indexes: tuple[int, ...] = (1,)) -> dict[str, Any]:
     source_context_ref_ids = tuple(f"ctx_{index:03d}" for index in citation_indexes)
     source_claim_support_ids = tuple(f"claimsup_{index:03d}" for index in citation_indexes)
-    return {
+    values: dict[str, Any] = {
         "source_run_id": "run_001",
         "trace_id": "trace_001",
         "source_context_ref_count": len(source_context_ref_ids),
@@ -568,18 +633,11 @@ def passed_eval_kwargs(*, citation_indexes: tuple[int, ...] = (1,)) -> dict[str,
         "source_citation_indexes": citation_indexes,
         "source_claim_support_ids": source_claim_support_ids,
         "source_evaluation_id": "eval_001",
-        "source_evaluation_checksum": build_source_evaluation_checksum(
-            source_evaluation_id="eval_001",
-            source_run_id="run_001",
-            trace_id="trace_001",
-            evaluation_status="PASSED",
-            source_context_ref_ids=source_context_ref_ids,
-            source_context_ref_count=len(source_context_ref_ids),
-            source_citation_indexes=citation_indexes,
-            source_citation_count=len(citation_indexes),
-        ),
         "evaluation_status": "PASSED",
     }
+    values["source_evaluation_lineage"] = fixture_lineage(**values)
+    values["source_evaluation_checksum"] = build_source_evaluation_checksum(values["source_evaluation_lineage"])
+    return values
 
 
 def configure_external_tts(
@@ -848,7 +906,7 @@ def test_stage6_service_rejects_success_without_passed_source_evidence() -> None
                 preserved_terms=glossary_terms,
             )
 
-    service = create_stage6_service()
+    service = _create_stage6_service()
     service.translation_provider = WrongSemanticProvider()
 
     with pytest.raises(Stage6Error) as exc:
@@ -1357,7 +1415,7 @@ def test_restore_warning_redacts_poisoned_state_values(tmp_path: Path, caplog: p
     assert caplog.records
     assert secret_like_value not in caplog.text
     assert "visible-secret-token-value" not in caplog.text
-    assert "Stage 6 idempotency record" in caplog.text
+    assert "inactive legacy Stage 6 state" in caplog.text
 
 
 def test_concurrent_duplicate_idempotency_key_is_rejected_in_flight() -> None:
@@ -1529,16 +1587,6 @@ def test_provider_output_must_preserve_source_citation_markers() -> None:
             source_citation_indexes=(1,),
             source_claim_support_ids=("claimsup_001",),
             source_evaluation_id="eval_001",
-            source_evaluation_checksum=build_source_evaluation_checksum(
-                source_evaluation_id="eval_001",
-                source_run_id="local_source_run",
-                trace_id="local_trace",
-                evaluation_status="PASSED",
-                source_context_ref_ids=("ctx_001",),
-                source_context_ref_count=1,
-                source_citation_indexes=(1,),
-                source_citation_count=1,
-            ),
             evaluation_status="PASSED",
         )
 

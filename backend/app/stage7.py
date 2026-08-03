@@ -16,6 +16,18 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Protocol, cast
 
+from backend.app.evaluation_lineage import (
+    build_source_evaluation_checksum,
+    validate_evaluation_lineage_payload,
+)
+from backend.app.evaluation_lineage_state import (
+    PersistedLineage,
+    STAGE7_CONSENT_DISCLOSURE_VERSION,
+    quarantine_reason_for_schema,
+    refuse_quarantined_write,
+    restored_state_matches,
+    validate_lineage_binding,
+)
 from backend.app.rag.chunking import checksum_text
 from backend.app.storage import load_state, resolve_state_file, write_state
 
@@ -36,7 +48,7 @@ CHECKSUM_COMPONENT_DELIMITER_PATTERN = re.compile(r"[\x00-\x1f\x7f,]")
 PUBLIC_USE_LICENSE_CHECK = "mock-local-provider-only-no-third-party-media"
 AVATAR_RENDER_ENDPOINT = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-renders"
 AVATAR_CONSENT_ENDPOINT = "POST /api/v1/projects/{project_id}/walkthrough-runs/{run_id}/avatar-consents"
-SYNTHETIC_AVATAR_CONSENT_VERSION = "stage7-synthetic-avatar-consent-v1"
+SYNTHETIC_AVATAR_CONSENT_VERSION = STAGE7_CONSENT_DISCLOSURE_VERSION
 SYNTHETIC_AVATAR_CONSENT_TEXT = (
     "I affirm that I am authorized to approve this Stage 7 synthetic local avatar "
     "demo for the selected walkthrough run."
@@ -172,6 +184,7 @@ class AvatarRenderResult:
     source_context_ref_ids: tuple[str, ...]
     source_citation_indexes: tuple[int, ...]
     source_evaluation_id: str
+    source_evaluation_lineage: dict[str, Any]
     source_evaluation_checksum: str
     evaluation_status: EvaluationStatus
     multilingual_bundle: Stage7MultilingualBundle | None
@@ -191,6 +204,7 @@ class SyntheticAvatarConsentRecord:
     source_context_ref_ids: tuple[str, ...]
     source_citation_indexes: tuple[int, ...]
     source_evaluation_id: str
+    source_evaluation_lineage: dict[str, Any]
     source_evaluation_checksum: str
     evaluation_status: EvaluationStatus
     consent_statement_version: str
@@ -283,6 +297,7 @@ class AvatarProvider(Protocol):
         source_context_ref_ids: tuple[str, ...] = (),
         source_citation_indexes: tuple[int, ...] = (),
         source_evaluation_id: str = "local_evaluation",
+        source_evaluation_lineage: dict[str, Any] | None = None,
         source_evaluation_checksum: str = "",
         evaluation_status: str = "UNKNOWN",
         multilingual_bundle: Stage7MultilingualBundle | None = None,
@@ -307,6 +322,7 @@ class MockAvatarProvider:
         source_context_ref_ids: tuple[str, ...] = (),
         source_citation_indexes: tuple[int, ...] = (),
         source_evaluation_id: str = "local_evaluation",
+        source_evaluation_lineage: dict[str, Any] | None = None,
         source_evaluation_checksum: str = "",
         evaluation_status: str = "UNKNOWN",
         multilingual_bundle: Stage7MultilingualBundle | None = None,
@@ -324,23 +340,19 @@ class MockAvatarProvider:
         )
         source_evaluation_id = normalize_evaluation_id(source_evaluation_id)
         evaluation_status = validate_evaluation_status(evaluation_status)
-        canonical_evaluation_checksum = build_source_evaluation_checksum(
-            source_evaluation_id=source_evaluation_id,
-            source_run_id=source_run_id,
-            trace_id=trace_id,
-            evaluation_status=evaluation_status,
-            source_context_ref_ids=source_context_ref_ids,
-            source_context_ref_count=source_context_ref_count,
-            source_citation_indexes=source_citation_indexes,
-            source_citation_count=source_citation_count,
-        )
-        if source_evaluation_checksum and source_evaluation_checksum != canonical_evaluation_checksum:
+        if source_evaluation_lineage is None:
+            raise Stage7Error(422, "VALIDATION_ERROR", "Canonical v2 evaluation lineage is required.")
+        source_evaluation_lineage = validate_evaluation_lineage_payload(source_evaluation_lineage)
+        if (
+            re.fullmatch(r"sha256:[0-9a-f]{64}", source_evaluation_checksum) is None
+            or build_source_evaluation_checksum(source_evaluation_lineage)
+            != source_evaluation_checksum
+        ):
             raise Stage7Error(
                 422,
                 "VALIDATION_ERROR",
-                "Source evaluation checksum does not match canonical source evidence.",
+                "Source evaluation checksum is required before provider rendering.",
             )
-        source_evaluation_checksum = canonical_evaluation_checksum
         provider_config = ProviderConfig(
             provider=self.provider,
             provider_mode="LOCAL",
@@ -374,6 +386,7 @@ class MockAvatarProvider:
                 "citationCount": source_citation_count,
                 "citationIndexes": list(source_citation_indexes),
                 "evaluationId": source_evaluation_id,
+                "evaluationLineage": source_evaluation_lineage,
                 "evaluationChecksum": source_evaluation_checksum,
                 "evaluationStatus": evaluation_status,
                 "scriptChecksum": checksum_text(source_script),
@@ -418,6 +431,7 @@ class MockAvatarProvider:
                 "citationCount": source_citation_count,
                 "citationIndexes": list(source_citation_indexes),
                 "evaluationId": source_evaluation_id,
+                "evaluationLineage": source_evaluation_lineage,
                 "evaluationChecksum": source_evaluation_checksum,
                 "evaluationStatus": evaluation_status,
                 "scriptChecksum": checksum_text(source_script),
@@ -477,6 +491,7 @@ class ExternalAvatarProviderStub:
         source_context_ref_ids: tuple[str, ...] = (),
         source_citation_indexes: tuple[int, ...] = (),
         source_evaluation_id: str = "local_evaluation",
+        source_evaluation_lineage: dict[str, Any] | None = None,
         source_evaluation_checksum: str = "",
         evaluation_status: str = "UNKNOWN",
         multilingual_bundle: Stage7MultilingualBundle | None = None,
@@ -492,6 +507,7 @@ class ExternalAvatarProviderStub:
             source_context_ref_ids,
             source_citation_indexes,
             source_evaluation_id,
+            source_evaluation_lineage,
             source_evaluation_checksum,
             evaluation_status,
             multilingual_bundle,
@@ -523,6 +539,7 @@ class Stage7Service:
         self._operation_lock = threading.Lock()
         self._run_counter = 0
         self._consent_counter = 0
+        self._state_quarantine_reason: str | None = None
         self._restore()
 
     def reset(self) -> None:
@@ -542,13 +559,64 @@ class Stage7Service:
         self._run_counter = 0
         self._consent_counter = 0
 
+    def _require_active_state(self) -> None:
+        if self._state_quarantine_reason is not None:
+            raise Stage7Error(
+                409,
+                "STATE_QUARANTINED",
+                f"Refusing work while {self._state_quarantine_reason} is preserved.",
+            )
+
+    def persisted_lineage_rows(self) -> tuple[PersistedLineage, ...]:
+        if self._state_quarantine_reason is not None:
+            raise ValueError(self._state_quarantine_reason)
+        rows = [
+            PersistedLineage(
+                component="Stage 7 consent",
+                row_id=record.consent_record_id,
+                source_run_id=record.source_run_id,
+                payload=record.source_evaluation_lineage,
+                digest=record.source_evaluation_checksum,
+            )
+            for record in self.synthetic_media_consents.values()
+        ]
+        for render in self.avatar_renders.values():
+            bundle = render.multilingual_bundle
+            values = multilingual_bundle_to_manifest(bundle) if bundle is not None else None
+            rows.append(
+                PersistedLineage(
+                    component="Stage 7 render",
+                    row_id=render.avatar_render_id,
+                    upstream_row_id=bundle.multilingual_run_id if bundle else None,
+                    source_run_id=render.source_run_id,
+                    payload=render.source_evaluation_lineage,
+                    digest=render.source_evaluation_checksum,
+                    connected_values=values,
+                )
+            )
+        return tuple(rows)
+
+    def quarantine_restored_state(self, reason: str) -> None:
+        with self._operation_lock:
+            self._clear_runtime_state()
+            self._state_quarantine_reason = reason
+
     def _restore(self) -> None:
         payload = load_state(self.state_path)
         if payload is None:
             return
         try:
-            if payload.get("schema") != "stage7-local-state-v1":
-                raise ValueError("Stage 7 state schema mismatch.")
+            schema = payload.get("schema")
+            quarantine = quarantine_reason_for_schema(
+                schema,
+                current="stage7-local-state-v2",
+                legacy=frozenset({"stage7-local-state-v1"}),
+                stage="Stage 7",
+            )
+            if quarantine is not None:
+                LOGGER.warning("Quarantining inactive legacy Stage 7 state at %s.", self.state_path)
+                self._state_quarantine_reason = quarantine
+                return
             counters = payload.get("counters", {})
             run_counter = 0
             consent_counter = 0
@@ -561,7 +629,11 @@ class Stage7Service:
                 try:
                     result = avatar_render_result_from_dict(row)
                 except (KeyError, TypeError, ValueError, Stage7Error) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 7 avatar render at %s: %s", self.state_path, exc)
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 7 avatar render at %s: %s",
+                        self.state_path,
+                        exc,
+                    )
                     continue
                 self.avatar_renders[result.avatar_render_id] = result
             run_counter = max(run_counter, max_numeric_suffix(self.avatar_renders, "avrun_"))
@@ -572,10 +644,16 @@ class Stage7Service:
                 try:
                     record = synthetic_avatar_consent_record_from_dict(row)
                 except (KeyError, TypeError, ValueError, Stage7Error) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 7 consent record at %s: %s", self.state_path, exc)
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 7 consent record at %s: %s",
+                        self.state_path,
+                        exc,
+                    )
                     continue
                 self.synthetic_media_consents[record.consent_record_id] = record
-            consent_counter = max(consent_counter, max_numeric_suffix(self.synthetic_media_consents, "consent_"))
+            consent_counter = max(
+                consent_counter, max_numeric_suffix(self.synthetic_media_consents, "consent_")
+            )
             self._consent_counter = consent_counter
             for row in payload.get("artifactMetadata", []):
                 if not isinstance(row, dict):
@@ -583,13 +661,18 @@ class Stage7Service:
                 try:
                     render_id, metadata = artifact_metadata_from_dict(row)
                 except (KeyError, TypeError, ValueError) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 7 artifact metadata at %s: %s", self.state_path, exc)
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 7 artifact metadata at %s: %s",
+                        self.state_path,
+                        exc,
+                    )
                     continue
                 self.artifact_metadata[render_id] = metadata
             self.artifact_metadata = {
                 render_id: metadata
                 for render_id, metadata in self.artifact_metadata.items()
-                if render_id in self.avatar_renders and self._artifact_metadata_matches_render(render_id, metadata)
+                if render_id in self.avatar_renders
+                and self._artifact_metadata_matches_render(render_id, metadata)
             }
             self.synthetic_media_consents = {
                 consent_id: record
@@ -620,7 +703,11 @@ class Stage7Service:
                 try:
                     idempotency_record = stage7_idempotency_record_from_dict(row, self)
                 except (KeyError, TypeError, ValueError) as exc:
-                    LOGGER.warning("Skipping incompatible Stage 7 idempotency record at %s: %s", self.state_path, exc)
+                    LOGGER.warning(
+                        "Skipping incompatible Stage 7 idempotency record at %s: %s",
+                        self.state_path,
+                        exc,
+                    )
                     value_ref = row.get("value", {})
                     if (
                         isinstance(value_ref, dict)
@@ -642,7 +729,9 @@ class Stage7Service:
                 if row.get("status") == "RUNNING":
                     continue
                 try:
-                    consent_idempotency_record = stage7_consent_idempotency_record_from_dict(row, self)
+                    consent_idempotency_record = stage7_consent_idempotency_record_from_dict(
+                        row, self
+                    )
                 except (KeyError, TypeError, ValueError) as exc:
                     LOGGER.warning(
                         "Skipping incompatible Stage 7 consent idempotency record at %s: %s",
@@ -657,9 +746,19 @@ class Stage7Service:
                 )
                 self.consent_idempotency_records[key] = consent_idempotency_record
             self._rebuild_idempotency_scope_counts_locked()
+            if not restored_state_matches(
+                payload,
+                self._state_payload_locked(),
+                transient_collections=("idempotencyRecords", "consentIdempotencyRecords"),
+                derived_keys=("counters",),
+            ):
+                raise ValueError("Stage 7 state contains inactive or altered connected rows.")
         except (KeyError, TypeError, ValueError, Stage7Error) as exc:
-            LOGGER.warning("Ignoring incompatible Stage 7 local state snapshot at %s: %s", self.state_path, exc)
+            LOGGER.warning(
+                "Ignoring incompatible Stage 7 local state snapshot at %s: %s", self.state_path, exc
+            )
             self._clear_runtime_state()
+            self._state_quarantine_reason = "incompatible Stage 7 state"
 
     def _artifact_metadata_matches_render(self, render_id: str, metadata: tuple[ExportArtifactMetadata, ...]) -> bool:
         result = self.avatar_renders.get(render_id)
@@ -847,13 +946,12 @@ class Stage7Service:
         self._run_counter = max(snapshot.run_counter, max_numeric_suffix(self.avatar_renders, "avrun_"))
         self._rebuild_idempotency_scope_counts_locked()
 
-    def _persist_locked(self) -> None:
-        write_state(
-            self.state_path,
-            {
-                "schema": "stage7-local-state-v1",
+    def _state_payload_locked(self) -> dict[str, Any]:
+        return {
+                "schema": "stage7-local-state-v2",
                 "syntheticMediaConsents": [
-                    synthetic_avatar_consent_record_to_dict(record) for record in self.synthetic_media_consents.values()
+                synthetic_avatar_consent_record_to_dict(record)
+                for record in self.synthetic_media_consents.values()
                 ],
                 "avatarRenders": [
                     avatar_render_result_to_dict(result) for result in self.avatar_renders.values()
@@ -873,8 +971,11 @@ class Stage7Service:
                     if record.status != "RUNNING"
                 ],
                 "counters": {"run": self._run_counter, "consent": self._consent_counter},
-            },
-        )
+        }
+
+    def _persist_locked(self) -> None:
+        refuse_quarantined_write(self._state_quarantine_reason)
+        write_state(self.state_path, self._state_payload_locked())
 
     def capture_synthetic_avatar_consent(
         self,
@@ -887,6 +988,7 @@ class Stage7Service:
         source_context_ref_ids: tuple[str, ...],
         source_citation_indexes: tuple[int, ...],
         source_evaluation_id: str,
+        source_evaluation_lineage: dict[str, Any] | None,
         source_evaluation_checksum: str,
         evaluation_status: str,
         consent_to_use_synthetic_avatar: bool,
@@ -919,6 +1021,17 @@ class Stage7Service:
             field_name="Source evaluation checksum",
         )
         normalized_evaluation_status = validate_evaluation_status(evaluation_status)
+        try:
+            canonical_lineage = validate_lineage_binding(
+                source_evaluation_lineage, normalized_evaluation_checksum,
+                evaluation_id=normalized_evaluation_id, run_id=normalized_source_run_id,
+                trace_id=normalized_trace_id, status=normalized_evaluation_status,
+                tenant_id=normalized_tenant_id, project_id=normalized_project_id,
+                context_ref_ids=normalized_context_ref_ids, citation_indexes=normalized_citation_indexes,
+            )
+        except (TypeError, ValueError) as exc:
+            raise Stage7Error(422, "VALIDATION_ERROR", str(exc)) from exc
+        self._require_active_state()
         request_checksum = build_avatar_consent_request_checksum(
             tenant_id=normalized_tenant_id,
             project_id=normalized_project_id,
@@ -928,6 +1041,7 @@ class Stage7Service:
             source_context_ref_ids=normalized_context_ref_ids,
             source_citation_indexes=normalized_citation_indexes,
             source_evaluation_id=normalized_evaluation_id,
+            source_evaluation_lineage=canonical_lineage,
             source_evaluation_checksum=normalized_evaluation_checksum,
             evaluation_status=normalized_evaluation_status,
             idempotency_scope=idempotency_scope,
@@ -992,6 +1106,7 @@ class Stage7Service:
                     source_context_ref_ids=normalized_context_ref_ids,
                     source_citation_indexes=normalized_citation_indexes,
                     source_evaluation_id=normalized_evaluation_id,
+                    source_evaluation_lineage=canonical_lineage,
                     source_evaluation_checksum=normalized_evaluation_checksum,
                     evaluation_status=normalized_evaluation_status,
                     consent_statement_version=SYNTHETIC_AVATAR_CONSENT_VERSION,
@@ -1048,6 +1163,7 @@ class Stage7Service:
         source_context_ref_ids: tuple[str, ...] | None = None,
         source_citation_indexes: tuple[int, ...] | None = None,
         source_evaluation_id: str = "local_evaluation",
+        source_evaluation_lineage: dict[str, Any] | None = None,
         source_evaluation_checksum: str | None = None,
         evaluation_status: str = "UNKNOWN",
         multilingual_bundle: Stage7MultilingualBundle | None = None,
@@ -1058,21 +1174,20 @@ class Stage7Service:
         idempotency_key: str | None = None,
     ) -> AvatarRenderResult:
         source_text = source_script.strip()
-        canonical_evaluation_checksum = build_source_evaluation_checksum(
-            source_evaluation_id=source_evaluation_id,
-            source_run_id=source_run_id,
-            trace_id=trace_id,
-            evaluation_status=evaluation_status,
-            source_context_ref_ids=source_context_ref_ids,
-            source_context_ref_count=source_context_ref_count,
-            source_citation_indexes=source_citation_indexes,
-            source_citation_count=source_citation_count,
-        )
-        checksum_for_request = (
-            canonical_evaluation_checksum
-            if source_evaluation_checksum is None or source_evaluation_checksum == canonical_evaluation_checksum
-            else source_evaluation_checksum
-        )
+        checksum_for_request = source_evaluation_checksum or ""
+        tenant_id = durable_consent.tenant_id if durable_consent is not None else "tenant"
+        project_id = durable_consent.project_id if durable_consent is not None else "project"
+        try:
+            canonical_lineage = validate_lineage_binding(
+                source_evaluation_lineage, checksum_for_request,
+                evaluation_id=source_evaluation_id, run_id=source_run_id, trace_id=trace_id,
+                status=evaluation_status.strip().upper(), tenant_id=tenant_id, project_id=project_id,
+                context_ref_ids=tuple(source_context_ref_ids or ()),
+                citation_indexes=tuple(source_citation_indexes or ()),
+            )
+        except (TypeError, ValueError) as exc:
+            raise Stage7Error(422, "VALIDATION_ERROR", str(exc)) from exc
+        self._require_active_state()
         request_checksum = build_avatar_render_request_checksum(
             source_text=source_text,
             requested_avatar_provider=requested_avatar_provider,
@@ -1085,6 +1200,7 @@ class Stage7Service:
             source_context_ref_ids=source_context_ref_ids,
             source_citation_indexes=source_citation_indexes,
             source_evaluation_id=source_evaluation_id,
+            source_evaluation_lineage=canonical_lineage,
             source_evaluation_checksum=checksum_for_request,
             evaluation_status=evaluation_status,
             multilingual_bundle=multilingual_bundle,
@@ -1193,13 +1309,6 @@ class Stage7Service:
                         source_evaluation_checksum=source_evaluation_checksum,
                         consent_record_id=durable_consent.consent_record_id,
                     )
-            if source_evaluation_checksum is not None and source_evaluation_checksum != canonical_evaluation_checksum:
-                raise Stage7Error(
-                    422,
-                    "VALIDATION_ERROR",
-                    "Source evaluation checksum does not match canonical source evidence.",
-                )
-
             requested_provider, fallback_reason = resolve_avatar_provider(requested_avatar_provider)
             normalized_evaluation_status = validate_evaluation_status(evaluation_status)
             normalized_context_ref_ids = normalize_evidence_ids(
@@ -1212,7 +1321,7 @@ class Stage7Service:
                 count=source_citation_count,
             )
             normalized_evaluation_id = normalize_evaluation_id(source_evaluation_id)
-            normalized_evaluation_checksum = canonical_evaluation_checksum
+            normalized_evaluation_checksum = checksum_for_request
             result = self._create_avatar_render(
                 source_text=source_text,
                 requested_provider=requested_provider,
@@ -1224,6 +1333,7 @@ class Stage7Service:
                 source_context_ref_ids=normalized_context_ref_ids,
                 source_citation_indexes=normalized_citation_indexes,
                 source_evaluation_id=normalized_evaluation_id,
+                source_evaluation_lineage=canonical_lineage,
                 source_evaluation_checksum=normalized_evaluation_checksum,
                 evaluation_status=normalized_evaluation_status,
                 multilingual_bundle=multilingual_bundle,
@@ -1325,6 +1435,7 @@ class Stage7Service:
         source_context_ref_ids: tuple[str, ...],
         source_citation_indexes: tuple[int, ...],
         source_evaluation_id: str,
+        source_evaluation_lineage: dict[str, Any],
         source_evaluation_checksum: str,
         evaluation_status: EvaluationStatus,
         multilingual_bundle: Stage7MultilingualBundle | None,
@@ -1354,6 +1465,7 @@ class Stage7Service:
                 source_context_ref_ids=source_context_ref_ids,
                 source_citation_indexes=source_citation_indexes,
                 source_evaluation_id=source_evaluation_id,
+                source_evaluation_lineage=source_evaluation_lineage,
                 source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
                 multilingual_bundle=multilingual_bundle,
@@ -1372,6 +1484,7 @@ class Stage7Service:
                 source_context_ref_ids=source_context_ref_ids,
                 source_citation_indexes=source_citation_indexes,
                 source_evaluation_id=source_evaluation_id,
+                source_evaluation_lineage=source_evaluation_lineage,
                 source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
                 multilingual_bundle=multilingual_bundle,
@@ -1388,6 +1501,7 @@ class Stage7Service:
                 source_context_ref_ids=source_context_ref_ids,
                 source_citation_indexes=source_citation_indexes,
                 source_evaluation_id=source_evaluation_id,
+                source_evaluation_lineage=source_evaluation_lineage,
                 source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
                 multilingual_bundle=multilingual_bundle,
@@ -1438,6 +1552,7 @@ class Stage7Service:
             source_context_ref_ids=source_context_ref_ids,
             source_citation_indexes=source_citation_indexes,
             source_evaluation_id=source_evaluation_id,
+            source_evaluation_lineage=source_evaluation_lineage,
             source_evaluation_checksum=source_evaluation_checksum,
             evaluation_status=evaluation_status,
             multilingual_bundle=multilingual_bundle,
@@ -1454,6 +1569,7 @@ class Stage7Service:
             source_context_ref_ids=source_context_ref_ids,
             source_citation_indexes=source_citation_indexes,
             source_evaluation_id=source_evaluation_id,
+            source_evaluation_lineage=source_evaluation_lineage,
             source_evaluation_checksum=source_evaluation_checksum,
             evaluation_status=evaluation_status,
             multilingual_bundle=multilingual_bundle,
@@ -1493,6 +1609,7 @@ class Stage7Service:
             source_context_ref_ids=source_context_ref_ids,
             source_citation_indexes=source_citation_indexes,
             source_evaluation_id=source_evaluation_id,
+            source_evaluation_lineage=source_evaluation_lineage,
             source_evaluation_checksum=source_evaluation_checksum,
             evaluation_status=evaluation_status,
             multilingual_bundle=multilingual_bundle,
@@ -1529,6 +1646,7 @@ class Stage7Service:
         source_context_ref_ids: tuple[str, ...],
         source_citation_indexes: tuple[int, ...],
         source_evaluation_id: str,
+        source_evaluation_lineage: dict[str, Any],
         source_evaluation_checksum: str,
         evaluation_status: EvaluationStatus,
         multilingual_bundle: Stage7MultilingualBundle | None,
@@ -1547,6 +1665,7 @@ class Stage7Service:
                 source_context_ref_ids=source_context_ref_ids,
                 source_citation_indexes=source_citation_indexes,
                 source_evaluation_id=source_evaluation_id,
+                source_evaluation_lineage=source_evaluation_lineage,
                 source_evaluation_checksum=source_evaluation_checksum,
                 evaluation_status=evaluation_status,
                 multilingual_bundle=multilingual_bundle,
@@ -1811,18 +1930,13 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         if row.get("multilingual_bundle") is not None
         else None
     )
-    canonical_evaluation_checksum = build_source_evaluation_checksum(
-        source_evaluation_id=source_evaluation_id,
-        source_run_id=source_run_id,
-        trace_id=trace_id,
-        evaluation_status=evaluation_status,
-        source_context_ref_ids=source_context_ref_ids,
-        source_context_ref_count=source_context_ref_count,
-        source_citation_indexes=source_citation_indexes,
-        source_citation_count=source_citation_count,
+    source_evaluation_lineage = validate_lineage_binding(
+        cast(dict[str, Any], row["source_evaluation_lineage"]), source_evaluation_checksum,
+        evaluation_id=source_evaluation_id, run_id=source_run_id, trace_id=trace_id,
+        status=evaluation_status, tenant_id=str(row.get("tenant_id") or "tenant"),
+        project_id=str(row.get("project_id") or "project"), context_ref_ids=source_context_ref_ids,
+        citation_indexes=source_citation_indexes,
     )
-    if source_evaluation_checksum != canonical_evaluation_checksum:
-        raise ValueError("Stage 7 render source evaluation checksum does not match canonical source evidence.")
     idempotency_scope = str(row["idempotency_scope"]) if row.get("idempotency_scope") is not None else None
     idempotency_key = str(row["idempotency_key"]) if row.get("idempotency_key") is not None else None
     if "request_checksum" not in row or row.get("request_checksum") is None:
@@ -1870,6 +1984,7 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         source_context_ref_ids=source_context_ref_ids,
         source_citation_indexes=source_citation_indexes,
         source_evaluation_id=source_evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
         multilingual_bundle=multilingual_bundle,
@@ -1898,6 +2013,7 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         source_context_ref_ids=source_context_ref_ids,
         source_citation_indexes=source_citation_indexes,
         source_evaluation_id=source_evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
         multilingual_bundle=multilingual_bundle,
@@ -1914,6 +2030,7 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         source_context_ref_ids=source_context_ref_ids,
         source_citation_indexes=source_citation_indexes,
         source_evaluation_id=source_evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
         multilingual_bundle=multilingual_bundle,
@@ -1950,6 +2067,7 @@ def avatar_render_result_from_dict(row: dict[str, Any]) -> AvatarRenderResult:
         source_context_ref_ids=source_context_ref_ids,
         source_citation_indexes=source_citation_indexes,
         source_evaluation_id=source_evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
         multilingual_bundle=multilingual_bundle,
@@ -2068,6 +2186,12 @@ def synthetic_avatar_consent_record_from_dict(row: dict[str, Any]) -> SyntheticA
         field_name="Source evaluation checksum",
     )
     evaluation_status = validate_evaluation_status(str(row["evaluation_status"]))
+    source_evaluation_lineage = validate_lineage_binding(
+        cast(dict[str, Any], row["source_evaluation_lineage"]), source_evaluation_checksum,
+        evaluation_id=source_evaluation_id, run_id=source_run_id, trace_id=trace_id,
+        status=evaluation_status, tenant_id=tenant_id, project_id=project_id,
+        context_ref_ids=source_context_ref_ids, citation_indexes=source_citation_indexes,
+    )
     idempotency_scope = str(row["idempotency_scope"]) if row.get("idempotency_scope") is not None else None
     idempotency_key = str(row["idempotency_key"]) if row.get("idempotency_key") is not None else None
     request_checksum = validate_checksum_component(str(row["request_checksum"]), field_name="Consent request checksum")
@@ -2080,6 +2204,7 @@ def synthetic_avatar_consent_record_from_dict(row: dict[str, Any]) -> SyntheticA
         source_context_ref_ids=source_context_ref_ids,
         source_citation_indexes=source_citation_indexes,
         source_evaluation_id=source_evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
         idempotency_scope=idempotency_scope,
@@ -2097,6 +2222,7 @@ def synthetic_avatar_consent_record_from_dict(row: dict[str, Any]) -> SyntheticA
         source_context_ref_ids=source_context_ref_ids,
         source_citation_indexes=source_citation_indexes,
         source_evaluation_id=source_evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
         consent_statement_version=consent_statement_version,
@@ -2299,44 +2425,6 @@ def normalize_evaluation_id(value: str) -> str:
     return validate_checksum_component(value.strip(), field_name="Source evaluation identifier")
 
 
-def build_source_evaluation_checksum(
-    *,
-    source_evaluation_id: str,
-    source_run_id: str,
-    trace_id: str,
-    evaluation_status: str,
-    source_context_ref_ids: tuple[str, ...] | None,
-    source_context_ref_count: int,
-    source_citation_indexes: tuple[int, ...] | None,
-    source_citation_count: int,
-) -> str:
-    normalized_evaluation_id = normalize_evaluation_id(source_evaluation_id)
-    normalized_source_run_id = validate_checksum_component(source_run_id, field_name="Source run identifier")
-    normalized_trace_id = validate_checksum_component(trace_id, field_name="Source trace identifier")
-    normalized_evaluation_status = validate_evaluation_status(evaluation_status)
-    normalized_context_ref_ids = normalize_evidence_ids(
-        source_context_ref_ids,
-        count=source_context_ref_count,
-        prefix="context_ref",
-    )
-    normalized_citation_indexes = normalize_citation_indexes(
-        source_citation_indexes,
-        count=source_citation_count,
-    )
-    return checksum_text(
-        "\n".join(
-            [
-                normalized_evaluation_id,
-                normalized_source_run_id,
-                normalized_trace_id,
-                normalized_evaluation_status,
-                ",".join(normalized_context_ref_ids),
-                ",".join(str(index) for index in normalized_citation_indexes),
-            ]
-        )
-    )
-
-
 def build_avatar_render_request_checksum(
     *,
     source_text: str,
@@ -2350,6 +2438,7 @@ def build_avatar_render_request_checksum(
     source_context_ref_ids: tuple[str, ...] | None,
     source_citation_indexes: tuple[int, ...] | None,
     source_evaluation_id: str,
+    source_evaluation_lineage: dict[str, Any],
     source_evaluation_checksum: str | None,
     evaluation_status: str,
     multilingual_bundle: Stage7MultilingualBundle | None = None,
@@ -2411,6 +2500,7 @@ def build_avatar_render_request_checksum(
                 "sourceContextRefIds": list(normalized_context_ref_ids),
                 "sourceEvaluationChecksum": normalized_evaluation_checksum,
                 "sourceEvaluationId": normalized_evaluation_id,
+                "sourceEvaluationLineage": source_evaluation_lineage,
                 "sourceRunId": normalized_source_run_id,
                 "sourceText": normalized_source_text,
                 "traceId": normalized_trace_id,
@@ -2434,6 +2524,7 @@ def render_request_checksum_matches(
     source_context_ref_ids: tuple[str, ...] | None,
     source_citation_indexes: tuple[int, ...] | None,
     source_evaluation_id: str,
+    source_evaluation_lineage: dict[str, Any],
     source_evaluation_checksum: str | None,
     evaluation_status: str,
     multilingual_bundle: Stage7MultilingualBundle | None,
@@ -2454,6 +2545,7 @@ def render_request_checksum_matches(
         source_context_ref_ids=source_context_ref_ids,
         source_citation_indexes=source_citation_indexes,
         source_evaluation_id=source_evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=evaluation_status,
         multilingual_bundle=multilingual_bundle,
@@ -2473,6 +2565,7 @@ def build_avatar_consent_request_checksum(
     source_context_ref_ids: tuple[str, ...],
     source_citation_indexes: tuple[int, ...],
     source_evaluation_id: str,
+    source_evaluation_lineage: dict[str, Any],
     source_evaluation_checksum: str,
     evaluation_status: EvaluationStatus,
     idempotency_scope: str | None = None,
@@ -2502,6 +2595,7 @@ def build_avatar_consent_request_checksum(
                 "sourceContextRefIds": list(source_context_ref_ids),
                 "sourceEvaluationChecksum": source_evaluation_checksum,
                 "sourceEvaluationId": source_evaluation_id,
+                "sourceEvaluationLineage": source_evaluation_lineage,
                 "sourceRunId": source_run_id,
                 "tenantId": tenant_id,
                 "traceId": trace_id,
@@ -2604,6 +2698,7 @@ def validate_render_manifest(
     source_context_ref_ids: tuple[str, ...],
     source_citation_indexes: tuple[int, ...],
     source_evaluation_id: str,
+    source_evaluation_lineage: dict[str, Any],
     source_evaluation_checksum: str,
     evaluation_status: EvaluationStatus,
     multilingual_bundle: Stage7MultilingualBundle | None,
@@ -2627,6 +2722,7 @@ def validate_render_manifest(
         disclosure=disclosure,
         scene_count=estimate_scene_count(source_script),
     )
+    cast(dict[str, object], expected["source"])["evaluationLineage"] = source_evaluation_lineage
     if parsed != expected:
         raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", "Render manifest metadata is invalid.")
 
@@ -2643,6 +2739,7 @@ def validate_video_export_placeholder(
     source_context_ref_ids: tuple[str, ...],
     source_citation_indexes: tuple[int, ...],
     source_evaluation_id: str,
+    source_evaluation_lineage: dict[str, Any],
     source_evaluation_checksum: str,
     evaluation_status: EvaluationStatus,
     multilingual_bundle: Stage7MultilingualBundle | None,
@@ -2664,6 +2761,7 @@ def validate_video_export_placeholder(
         multilingual_bundle=multilingual_bundle,
         disclosure=disclosure,
     )
+    cast(dict[str, object], expected["source"])["evaluationLineage"] = source_evaluation_lineage
     if parsed != expected:
         raise Stage7Error(422, "PROVIDER_OUTPUT_INVALID", "Video export placeholder metadata is invalid.")
 
@@ -3068,6 +3166,7 @@ def avatar_render_to_api(result: AvatarRenderResult) -> dict[str, object]:
             "sourceContextRefIds": list(result.source_context_ref_ids),
             "sourceCitationIndexes": list(result.source_citation_indexes),
             "sourceEvaluationId": result.source_evaluation_id,
+            "sourceEvaluationLineage": result.source_evaluation_lineage,
             "sourceEvaluationChecksum": result.source_evaluation_checksum,
             "evaluationStatus": result.evaluation_status,
             "multilingualRunId": result.multilingual_bundle.multilingual_run_id if result.multilingual_bundle else None,
@@ -3094,6 +3193,7 @@ def avatar_consent_to_api(record: SyntheticAvatarConsentRecord) -> dict[str, obj
         "sourceContextRefIds": list(record.source_context_ref_ids),
         "sourceCitationIndexes": list(record.source_citation_indexes),
         "sourceEvaluationId": record.source_evaluation_id,
+        "sourceEvaluationLineage": record.source_evaluation_lineage,
         "sourceEvaluationChecksum": record.source_evaluation_checksum,
         "evaluationStatus": record.evaluation_status,
         "consentStatementVersion": record.consent_statement_version,

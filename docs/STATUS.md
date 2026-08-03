@@ -25,8 +25,9 @@ Use it to answer:
   `c8ae874fe2179345bb463539935a77e08ac4c547`, completing machine-contract
   parity and executable drift detection. Issue `#351` is the exact contract-only
   A2.3a route. On merge its corrected full scope/policy/evidence checksum-v2
-  contract, canonical score rule, and mutation gate are frozen;
-  A2.3b remains blocked until merged-tree closeout and separate owner authority.
+  contract, canonical score rule, and mutation gate are frozen. The historical
+  phrase “A2.3b remains blocked” is superseded by active Issue `#353` on branch
+  `stage8-353-r0c-a2-3b-evaluation-lineage-v2`, without establishing completion.
   A2 remains `PARTIAL`. Agent-context remains `SHADOW_ONLY`; scope checks remain
   supporting evidence under exact-head semantic review. Issues, branches, and
   stopped implementations `#336`–`#345` are forensic-only and must not be
@@ -38,7 +39,8 @@ Use it to answer:
   `#332` / PR `#333` completed the narrow containment correction at merged main
   `225506a25f9efe3c804c5a1723b20db0e940ff62`; Issues `#329`, `#330`, and `#332`
   are closed. Issue `#334` is the open R0C-A2 controller; Issue `#335` is closed
-  completed; its A2.2 child is closed, and A2.3a is the current merge target.
+  completed; its A2.2 and A2.3a children are closed, and Issue `#353` is the
+  current A2.3b review target.
   Agent-context remains
   `SHADOW_ONLY` and its mutable state is `STALE_GOVERNANCE`; its outputs cannot
   establish current truth, select consequential work routing, or authorize

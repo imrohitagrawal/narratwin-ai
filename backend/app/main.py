@@ -21,6 +21,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.app.rag.models import OWNER_LOCAL
+from backend.app.evaluation_lineage import build_source_evaluation_checksum, derive_evaluation_lineage
+from backend.app.evaluation_lineage_state import validate_cross_store_lineages
 from backend.app.curation import CuratedOutcome, SourceAssertions
 from backend.app.observability import is_langfuse_enabled, log_event
 from backend.app.stage4 import (
@@ -54,7 +56,6 @@ from backend.app.stage7 import (
     Stage7Error,
     avatar_consent_to_api,
     avatar_render_to_api,
-    build_source_evaluation_checksum,
     stage7_service,
 )
 from backend.app.hosted_demo import (
@@ -79,6 +80,20 @@ from backend.app.issue280 import (
     validate_issue280_input_contract,
 )
 
+def activate_restored_downstream_lineage() -> None:
+    try:
+        validate_cross_store_lineages(
+            stage4_service.walkthrough_runs,
+            (*stage6_service.persisted_lineage_rows(), *stage7_service.persisted_lineage_rows()),
+        )
+    except (KeyError, TypeError, ValueError):
+        reason = "Stage 4/6/7 restored lineage graph is inactive"
+        stage6_service.quarantine_restored_state(reason)
+        stage7_service.quarantine_restored_state(reason)
+
+
+activate_restored_downstream_lineage()
+
 ErrorDetailValue = str | int | float | bool
 
 
@@ -87,6 +102,7 @@ class Stage7RenderableSource:
     source_run: WalkthroughRunRecord
     source_context_ref_ids: tuple[str, ...]
     source_citation_indexes: tuple[int, ...]
+    source_evaluation_lineage: dict[str, object]
     source_evaluation_checksum: str
 
 
@@ -365,20 +381,13 @@ def resolve_stage7_renderable_source(
 
     source_context_ref_ids = tuple(context.context_ref_id for context in source_run.retrieved_context)
     source_citation_indexes = tuple(support.citation_index for support in source_run.evaluation.claim_supports)
+    source_evaluation_lineage = derive_evaluation_lineage(source_run)
     return Stage7RenderableSource(
         source_run=source_run,
         source_context_ref_ids=source_context_ref_ids,
         source_citation_indexes=source_citation_indexes,
-        source_evaluation_checksum=build_source_evaluation_checksum(
-            source_evaluation_id=source_run.evaluation.evaluation_id,
-            source_run_id=source_run.run_id,
-            trace_id=source_run.trace_id,
-            evaluation_status=source_run.evaluation_status or "UNKNOWN",
-            source_context_ref_ids=source_context_ref_ids,
-            source_context_ref_count=len(source_run.retrieved_context),
-            source_citation_indexes=source_citation_indexes,
-            source_citation_count=len(source_run.evaluation.claim_supports),
-        ),
+        source_evaluation_lineage=source_evaluation_lineage,
+        source_evaluation_checksum=build_source_evaluation_checksum(source_evaluation_lineage),
     )
 
 
@@ -426,6 +435,7 @@ def validate_stage7_multilingual_bundle(
         and request_bundle.evaluation_id == multilingual_run.source_evaluation_id
         and request_bundle.evaluation_checksum == multilingual_run.source_evaluation_checksum
         and request_bundle.evaluation_checksum == renderable.source_evaluation_checksum
+        and multilingual_run.source_evaluation_lineage == renderable.source_evaluation_lineage
         and multilingual_run.evaluation_status == "PASSED"
         and actual_provider_posture == expected_provider_posture
         and request_bundle.consent_disclosure_version == SYNTHETIC_AVATAR_CONSENT_VERSION
@@ -750,6 +760,7 @@ class MultilingualTraceResponse(BaseModel):
     source_citation_indexes: list[int] = Field(alias="sourceCitationIndexes")
     source_claim_support_ids: list[str] = Field(alias="sourceClaimSupportIds")
     source_evaluation_id: str = Field(alias="sourceEvaluationId")
+    source_evaluation_lineage: dict[str, object] = Field(alias="sourceEvaluationLineage")
     source_evaluation_checksum: str = Field(alias="sourceEvaluationChecksum")
     evaluation_status: Literal["PASSED", "FAILED", "UNKNOWN"] = Field(alias="evaluationStatus")
 
@@ -922,6 +933,7 @@ class AvatarTraceResponse(BaseModel):
     source_context_ref_ids: list[str] = Field(alias="sourceContextRefIds")
     source_citation_indexes: list[int] = Field(alias="sourceCitationIndexes")
     source_evaluation_id: str = Field(alias="sourceEvaluationId")
+    source_evaluation_lineage: dict[str, object] = Field(alias="sourceEvaluationLineage")
     source_evaluation_checksum: str = Field(alias="sourceEvaluationChecksum")
     evaluation_status: Literal["PASSED", "FAILED", "UNKNOWN"] = Field(alias="evaluationStatus")
     multilingual_run_id: str | None = Field(default=None, alias="multilingualRunId")
@@ -962,6 +974,7 @@ class AvatarConsentResponse(BaseModel):
     source_context_ref_ids: list[str] = Field(alias="sourceContextRefIds")
     source_citation_indexes: list[int] = Field(alias="sourceCitationIndexes")
     source_evaluation_id: str = Field(alias="sourceEvaluationId")
+    source_evaluation_lineage: dict[str, object] = Field(alias="sourceEvaluationLineage")
     source_evaluation_checksum: str = Field(alias="sourceEvaluationChecksum")
     evaluation_status: Literal["PASSED", "FAILED", "UNKNOWN"] = Field(alias="evaluationStatus")
     consent_statement_version: str = Field(alias="consentStatementVersion")
@@ -1742,16 +1755,8 @@ def generate_multilingual_walkthrough_run(
     source_context_ref_ids = tuple(context.context_ref_id for context in source_run.retrieved_context)
     source_citation_indexes = tuple(support.citation_index for support in source_run.evaluation.claim_supports)
     source_claim_support_ids = tuple(support.claim_support_id for support in source_run.evaluation.claim_supports)
-    source_evaluation_checksum = build_source_evaluation_checksum(
-        source_evaluation_id=source_run.evaluation.evaluation_id,
-        source_run_id=source_run.run_id,
-        trace_id=source_run.trace_id,
-        evaluation_status=source_run.evaluation_status or "UNKNOWN",
-        source_context_ref_ids=source_context_ref_ids,
-        source_context_ref_count=len(source_run.retrieved_context),
-        source_citation_indexes=source_citation_indexes,
-        source_citation_count=source_citation_count,
-    )
+    source_evaluation_lineage = derive_evaluation_lineage(source_run)
+    source_evaluation_checksum = build_source_evaluation_checksum(source_evaluation_lineage)
 
     multilingual_run = stage6_service.generate_multilingual_walkthrough(
         source_script=source_run.accepted_script_text,
@@ -1770,6 +1775,7 @@ def generate_multilingual_walkthrough_run(
         source_citation_indexes=source_citation_indexes,
         source_claim_support_ids=source_claim_support_ids,
         source_evaluation_id=source_run.evaluation.evaluation_id,
+        source_evaluation_lineage=source_evaluation_lineage,
         source_evaluation_checksum=source_evaluation_checksum,
         evaluation_status=source_run.evaluation_status or "UNKNOWN",
         idempotency_scope=f"{principal.tenant_id}:{principal.actor_id}:{project_id}:{run_id}",
@@ -1804,6 +1810,7 @@ def capture_avatar_consent(
         source_context_ref_ids=renderable.source_context_ref_ids,
         source_citation_indexes=renderable.source_citation_indexes,
         source_evaluation_id=evaluation.evaluation_id,
+        source_evaluation_lineage=renderable.source_evaluation_lineage,
         source_evaluation_checksum=renderable.source_evaluation_checksum,
         evaluation_status=source_run.evaluation_status or "UNKNOWN",
         consent_to_use_synthetic_avatar=request.consent_to_use_synthetic_avatar,
@@ -1849,6 +1856,7 @@ def generate_avatar_render(
         source_context_ref_ids=renderable.source_context_ref_ids,
         source_citation_indexes=renderable.source_citation_indexes,
         source_evaluation_id=evaluation.evaluation_id,
+        source_evaluation_lineage=renderable.source_evaluation_lineage,
         source_evaluation_checksum=renderable.source_evaluation_checksum,
         evaluation_status=source_run.evaluation_status or "UNKNOWN",
         multilingual_bundle=multilingual_bundle,

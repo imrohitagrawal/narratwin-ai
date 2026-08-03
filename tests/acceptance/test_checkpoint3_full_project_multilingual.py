@@ -9,7 +9,9 @@ from typing import Any, cast
 
 import pytest
 
+from backend.app.evaluation_lineage import build_source_evaluation_checksum, validate_evaluation_lineage_payload
 from backend.app.rag.chunking import checksum_text
+from backend.app.rag.models import RETRIEVAL_TOP_K
 from backend.app.stage6 import (
     FULL_PROJECT_REPORT_SCHEMA_VERSION,
     LANGUAGE_CATALOG_BY_TAG,
@@ -25,13 +27,33 @@ from backend.app.stage6 import (
     translate_demo_segment_text,
     validate_multilingual_transcript_correctness,
 )
-from backend.app.stage7 import build_source_evaluation_checksum
-
-
 FIXTURE_PATH = Path("tests/fixtures/checkpoint3_full_project_multilingual_corpus.json")
 REPORT_DIR = Path("reports/checkpoint3-multilingual")
 COVERAGE_MATRIX_PATH = REPORT_DIR / "full-project-coverage-matrix.json"
 REPORT_PATH = REPORT_DIR / "full-project-correctness-report.json"
+_contract = Path("docs/API_CONTRACT.md").read_text(encoding="utf-8")
+GOLDEN_V2_LINEAGE = json.loads(_contract.rsplit("```json\n", 1)[1].split("\n```", 1)[0])
+
+
+def fixture_lineage(**values: Any) -> dict[str, Any]:
+    context_ids = tuple(values.get("source_context_ref_ids", ("ctx_001",)))
+    citations = tuple(values.get("source_citation_indexes", (1,)))
+    tenant_id, project_id = values.get("tenant_id", "tenant"), values.get("project_id", "project")
+    lineage = copy.deepcopy(GOLDEN_V2_LINEAGE)
+    lineage["evaluation"].update(evaluationId=values.get("source_evaluation_id", "eval_local"),
+                                 runId=values.get("source_run_id", "local_source_run"),
+                                 status=values.get("evaluation_status", "PASSED"),
+                                 traceId=values.get("trace_id", "local_trace"))
+    lineage["scope"] = {"projectId": project_id, "tenantId": tenant_id}
+    template = lineage["selectedContext"][0]
+    lineage["selectedContext"] = [{**template, "chunkChecksum": checksum_text(context_id),
+        "chunkId": f"chunk_{index}", "chunkIndex": index, "contextRefId": context_id,
+        "documentId": f"doc_{index}", "projectId": project_id,
+        "snapshotChecksum": checksum_text("snapshot:" + context_id),
+        "sourceDocumentChecksum": checksum_text("document:" + context_id), "tenantId": tenant_id}
+        for index, context_id in enumerate(context_ids)]
+    lineage["sourceCitationIndexes"] = list(citations)
+    return validate_evaluation_lineage_payload(lineage)
 
 
 def test_checkpoint3_full_project_multilingual_corpus_proves_all_supported_languages() -> None:
@@ -77,9 +99,9 @@ def test_checkpoint3_full_project_multilingual_corpus_proves_all_supported_langu
         assert result.status == "COMPLETED", language_tag
         assert result.transcript_correctness.validation_status == "PASSED", language_tag
         assert len(result.transcript_segments) == fixture["thresholds"]["transcriptSegmentCount"]
-        assert result.source_context_ref_count == fixture["thresholds"]["claimSupportCount"]
+        assert result.source_context_ref_count == RETRIEVAL_TOP_K
         assert len(result.source_claim_support_ids) == fixture["thresholds"]["claimSupportCount"]
-        assert len(result.source_context_ref_ids) == fixture["thresholds"]["claimSupportCount"]
+        assert len(result.source_context_ref_ids) == RETRIEVAL_TOP_K
 
         record = LANGUAGE_CATALOG_BY_TAG[language_tag]
         assert record.local_demo_support_status == "SUPPORTED"
@@ -247,9 +269,20 @@ def full_project_source_script(fixture: dict[str, Any]) -> str:
 def source_evidence_kwargs(fixture: dict[str, Any]) -> dict[str, Any]:
     citation_pairs = citation_source_ref_pairs(fixture)
     citation_indexes = tuple(index for index, _source_ref in citation_pairs)
-    context_ref_ids = tuple(context_ref_id(citation_index, source_ref) for citation_index, source_ref in citation_pairs)
+    context_ref_ids = tuple(
+        context_ref_id(citation_index, source_ref)
+        for citation_index, source_ref in citation_pairs[:RETRIEVAL_TOP_K]
+    )
     claim_support_ids = tuple(
         claim_support_id(citation_index, source_ref) for citation_index, source_ref in citation_pairs
+    )
+    lineage = fixture_lineage(
+        source_evaluation_id="eval_c3a_r2_full_project",
+        source_run_id="run_c3a_r2_full_project",
+        trace_id="trace_c3a_r2_full_project",
+        evaluation_status="PASSED",
+        source_context_ref_ids=context_ref_ids,
+        source_citation_indexes=citation_indexes,
     )
     return {
         "source_run_id": "run_c3a_r2_full_project",
@@ -260,16 +293,8 @@ def source_evidence_kwargs(fixture: dict[str, Any]) -> dict[str, Any]:
         "source_citation_indexes": citation_indexes,
         "source_claim_support_ids": claim_support_ids,
         "source_evaluation_id": "eval_c3a_r2_full_project",
-        "source_evaluation_checksum": build_source_evaluation_checksum(
-            source_evaluation_id="eval_c3a_r2_full_project",
-            source_run_id="run_c3a_r2_full_project",
-            trace_id="trace_c3a_r2_full_project",
-            evaluation_status="PASSED",
-            source_context_ref_ids=context_ref_ids,
-            source_context_ref_count=len(context_ref_ids),
-            source_citation_indexes=citation_indexes,
-            source_citation_count=len(citation_indexes),
-        ),
+        "source_evaluation_lineage": lineage,
+        "source_evaluation_checksum": build_source_evaluation_checksum(lineage),
         "evaluation_status": "PASSED",
     }
 
@@ -300,6 +325,18 @@ def expected_context_ref_ids(fixture_segment: dict[str, Any]) -> tuple[str, ...]
             fixture_segment["sourceRefs"],
             strict=True,
         )
+    )
+
+
+def active_context_ref_ids(fixture_segment: dict[str, Any]) -> tuple[str, ...]:
+    return tuple(
+        context_ref_id
+        for context_ref_id, citation_index in zip(
+            expected_context_ref_ids(fixture_segment),
+            fixture_segment["citationIndexes"],
+            strict=True,
+        )
+        if int(citation_index) <= RETRIEVAL_TOP_K
     )
 
 
@@ -336,7 +373,7 @@ def assert_supported_language_output(*, result: Any, fixture: dict[str, Any], la
         assert observed.english_reference_text == expected["sourceText"]
         assert observed.citation_indexes == tuple(expected["citationIndexes"])
         assert observed.citation_markers == tuple(f"[{index}]" for index in expected["citationIndexes"])
-        assert observed.context_ref_ids == expected_context_ref_ids(expected)
+        assert observed.context_ref_ids == active_context_ref_ids(expected)
         assert observed.claim_support_ids == expected_claim_support_ids(expected)
         assert observed.source_run_id == result.source_run_id
         assert observed.evaluation_id == result.source_evaluation_id
