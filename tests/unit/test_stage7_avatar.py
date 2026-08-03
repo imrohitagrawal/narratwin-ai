@@ -7,6 +7,10 @@ from typing import Any, cast
 
 import pytest
 
+from backend.app.evaluation_lineage import (
+    build_source_evaluation_checksum as build_v2_source_evaluation_checksum,
+    validate_evaluation_lineage_payload,
+)
 from backend.app.stage7 import (
     AvatarProviderResult,
     AvatarProvider,
@@ -23,6 +27,59 @@ from backend.app.stage7 import (
     build_source_evaluation_checksum,
     create_stage7_service,
 )
+
+
+GOLDEN_V2_LINEAGE = json.loads(
+    '{"checksumSchema":"stage7-source-evaluation-checksum-v2","evaluation":{"evaluationId":"eval_123",'
+    '"runId":"run_123","status":"PASSED","traceId":"trace_123"},"retrievalPolicy":{'
+    '"belowThresholdBackfill":false,"computedEvidenceScoresOnly":true,"fallback":{'
+    '"crossProjectExpansion":false,"mode":"deterministic keyword overlap","scope":"bound tenantId/projectId"},'
+    '"maximumChunksPerDocument":3,"minimumDistinctDocuments":1,"minimumRetrievedChunks":1,'
+    '"minimumScoreComparison":"inclusive-gte","minimumScoreThreshold":"0.72","refusalReasons":['
+    '"EMPTY_CONTEXT","LOW_RETRIEVAL_CONFIDENCE","AMBIGUOUS_CONTEXT","CROSS_PROJECT_CONTEXT",'
+    '"UNSAFE_CONTEXT"],"syntheticEligibilityScoresAllowed":false,"terminalRefusalBeforeGeneration":true,'
+    '"tieBreakOrder":["score desc","approved_at desc","chunk_index asc","chunk_id asc"],"topK":6,'
+    '"version":"stage4-rag-v1"},"scope":{"projectId":"proj_123","tenantId":"tenant_local"},'
+    '"selectedContext":[{"approvedAt":"2026-07-01T00:00:00+00:00","chunkChecksum":'
+    '"sha256:2222222222222222222222222222222222222222222222222222222222222222","chunkId":"chunk_123",'
+    '"chunkIndex":0,"chunkingStrategyVersion":"stage4-chunk-v1","contextRefId":"ctx_123",'
+    '"documentId":"doc_123","projectId":"proj_123","retrievalScore":"0.91","snapshotChecksum":'
+    '"sha256:3333333333333333333333333333333333333333333333333333333333333333",'
+    '"sourceDocumentChecksum":"sha256:1111111111111111111111111111111111111111111111111111111111111111",'
+    '"tenantId":"tenant_local"}],"sourceCitationIndexes":[1]}'
+)
+
+
+def _leaf_paths(value: Any, path: tuple[Any, ...] = ()) -> list[tuple[Any, ...]]:
+    if isinstance(value, dict):
+        return [leaf for key, child in value.items() for leaf in _leaf_paths(child, (*path, key))]
+    if isinstance(value, list):
+        return [leaf for index, child in enumerate(value) for leaf in _leaf_paths(child, (*path, index))]
+    return [path]
+
+
+def test_a23b_runtime_reproduces_golden_v2_and_mutates_every_leaf() -> None:
+    expected = "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377"
+    assert build_v2_source_evaluation_checksum(GOLDEN_V2_LINEAGE) == expected
+    for path in _leaf_paths(GOLDEN_V2_LINEAGE):
+        mutated = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
+        cursor = mutated
+        for key in path[:-1]:
+            cursor = cursor[key]
+        original = cursor[path[-1]]
+        cursor[path[-1]] = not original if isinstance(original, bool) else original + 1 if isinstance(original, int) else original + "x"
+        try:
+            digest = build_v2_source_evaluation_checksum(validate_evaluation_lineage_payload(mutated))
+        except ValueError:
+            continue
+        assert digest != expected
+
+
+def test_a23b_checksum_requires_payload_and_rejects_legacy_call_shape() -> None:
+    with pytest.raises(TypeError):
+        build_v2_source_evaluation_checksum()  # type: ignore[call-arg]
+    with pytest.raises(TypeError):
+        build_v2_source_evaluation_checksum(source_evaluation_id="eval", source_run_id="run")  # type: ignore[call-arg]
 
 
 def test_source_evaluation_checksum_binds_each_canonical_source_field() -> None:
