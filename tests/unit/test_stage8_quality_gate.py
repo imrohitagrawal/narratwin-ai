@@ -1,10 +1,11 @@
 from __future__ import annotations
 # ruff: noqa: E302, E305, E701, E702
-import importlib.util; import json; import subprocess
+import hashlib; import importlib.util; import json; import subprocess
 from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"
+A2_3A = "cut1-351-r0c-a2-3a-evaluation-lineage-contract"
 SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
                  "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
                  "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md"},
@@ -21,6 +22,9 @@ SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/qua
            "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
            "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
            "docs/STAGE_ISSUE_PLAN.md"},
+    A2_3A: {"docs/governance/preflights/issue-351.json", "docs/STATUS.md", "docs/API_CONTRACT.md",
+            "docs/ADR/0004-avatar-provider-adapter.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md",
+            "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"},
 }
 def load_module(relative: str, name: str) -> ModuleType:
     module_path = Path(__file__).parents[2] / relative
@@ -50,16 +54,17 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
         assert failures == [f"Stage 8 changed file outside the allowlist: {extra}"]
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", f"{A2_2}/child",
-                   A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", "cut1-proces\u0455-346-transition"):
+                   A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{A2_3A}-retry", f"{A2_3A}/child",
+                   A2_3A.replace("-351-", "-350-"), "cut1-proces\u0455-346-transition"):
         monkeypatch.setattr(stage8, "current_branch", lambda branch=branch: branch)
         failures = []; stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures)
         assert len(failures) == 2
-    for issue, branch in ((346, TRANSITION), (349, A2_2)):
+    for issue, branch in ((346, TRANSITION), (349, A2_2), (351, A2_3A)):
         artifact = json.loads((Path(__file__).parents[2]/f"docs/governance/preflights/issue-{issue}.json").read_text())
         assert artifact["branch"] == branch and set(artifact["scope"]["required"]) == SCOPES[branch]
     original_read = Path.read_text
     monkeypatch.setattr(Path, "read_text", lambda path, *a, **kw: (_ for _ in ()).throw(AssertionError())
-                        if path.name in {"issue-346.json", "issue-335.json", "issue-349.json"}
+                        if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json"}
                         else original_read(path, *a, **kw))
     policy = load_module("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {branch: policy[branch] for branch in SCOPES} == SCOPES
@@ -248,3 +253,28 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
     for module in (stage8, stage2):
         monkeypatch.setattr(module, "check_retrieval_strategy_v1_parity", lambda root, failures: calls.append(root))
         assert module.main() == 1 and calls == [module.ROOT]; calls.clear()
+
+A23A_ERROR = "A2.3a evaluation-lineage checksum v2 contract is incomplete or drifted."
+A23A_MARKERS = {
+    "docs/API_CONTRACT.md": ("stage7-source-evaluation-checksum-v2", "compact sorted-key UTF-8 JSON", "minimumScoreThreshold", "maximumChunksPerDocument", "selectedContext", "snapshotChecksum", "sourceCitationIndexes", "sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4"),
+    "docs/ADR/0004-avatar-provider-adapter.md": ("local/mock stale-or-mismatch integrity", "not cryptographic authenticity", "Legacy v1 rows cannot replay as v2"),
+    "docs/QUALITY_GATES.md": ("A2.3a evaluation-lineage contract gate", "wrong-schema"),
+    "docs/STAGE_ISSUE_PLAN.md": (A2_3A, "300 charged lines"),
+    "docs/STATUS.md": ("Issue `#351`", "A2.3b remains blocked"),
+}
+A23A_READ = Path.read_text
+def a23a_check(monkeypatch: Any, edit: tuple[str, str] | None = None) -> list[str]:
+    def read(path: Path, *args: Any, **kwargs: Any) -> str:
+        value=A23A_READ(path, *args, **kwargs); relative=path.relative_to(REPO).as_posix()
+        if edit and relative == edit[0]:
+            assert value.count(edit[1]) == 1; value=value.replace(edit[1], "MUTATED", 1)
+        return value
+    monkeypatch.setattr(Path, "read_text", read); failures: list[str] = []
+    stage8.check_evaluation_lineage_checksum_v2_contract(REPO, failures); return failures
+def test_a23a_contract_gate_rejects_every_frozen_marker_mutation(monkeypatch: Any) -> None:
+    assert not a23a_check(monkeypatch)
+    for path, markers in A23A_MARKERS.items():
+        for marker in markers: assert a23a_check(monkeypatch, (path, marker)) == [A23A_ERROR]
+A23A_VECTOR_PREIMAGE = '{"checksumSchema":"stage7-source-evaluation-checksum-v2","evaluation":{"evaluationId":"eval_123","runId":"run_123","status":"PASSED","traceId":"trace_123"},"retrievalPolicy":{"fallback":"deterministic keyword overlap fallback only; no cross-project expansion","maximumChunksPerDocument":3,"minimumScoreThreshold":"0.72","refusalReasons":["EMPTY_CONTEXT","LOW_RETRIEVAL_CONFIDENCE","AMBIGUOUS_CONTEXT","CROSS_PROJECT_CONTEXT","UNSAFE_CONTEXT"],"tieBreakOrder":["score desc","approved_at desc","chunk_index asc","chunk_id asc"],"topK":6,"version":"stage4-rag-v1"},"selectedContext":[{"chunkChecksum":"sha256:2222222222222222222222222222222222222222222222222222222222222222","chunkId":"chunk_123","chunkIndex":0,"chunkingStrategyVersion":"stage4-chunk-v1","contextRefId":"ctx_123","documentId":"doc_123","projectId":"proj_123","retrievalScore":"0.91","snapshotChecksum":"sha256:3333333333333333333333333333333333333333333333333333333333333333","sourceDocumentChecksum":"sha256:1111111111111111111111111111111111111111111111111111111111111111","tenantId":"tenant_local"}],"sourceCitationIndexes":[1]}'
+def test_a23a_golden_vector_is_serialization_stable() -> None:
+    assert "sha256:" + hashlib.sha256(A23A_VECTOR_PREIMAGE.encode()).hexdigest() == "sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4"
