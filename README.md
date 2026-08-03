@@ -68,28 +68,32 @@ curl http://localhost:8000/api/v1/readyz
 Open `http://localhost:3000` and follow
 `docs/demo/PHASE_1_DEMO_SCRIPT.md`.
 
-## Product modes
+## Planned provider modes
 
-### Free Engineering Mode
+The entries below are architecture candidates, not current executable product
+modes. The present slice uses local/mock adapters: it makes no real provider
+calls and produces no real audio, avatar, or video output.
 
-- Gemini API as primary LLM
-- ChromaDB or pgvector for RAG
-- FastAPI backend
-- Next.js frontend
-- FFmpeg for subtitles/video assembly
-- Mock avatar provider first
-- Optional local avatar provider only after license review
+### Free/open-stack candidates
 
-### Premium Showcase Mode
+- Gemini API as an optional LLM candidate, disabled by default
+- pgvector as a future RAG candidate; ChromaDB is currently removed and blocked
+- FastAPI and Next.js as the current application foundations
+- FFmpeg as a future media-assembly candidate, not enabled in the current slice
+- Optional local avatar providers only after license review and implementation
 
-Optional provider adapters for:
+### Premium provider candidates
+
+Future, disabled-by-default adapter candidates include:
 
 - HeyGen
 - Tavus
 - D-ID
 - ElevenLabs
 
-Premium providers must not be hardcoded into core business logic.
+None of these providers is used by the current local/mock path. Any future
+adapter must remain outside core business logic and pass terms, consent,
+privacy, provenance, safety, and release review before use.
 
 ## First vertical slice
 
