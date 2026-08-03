@@ -6,6 +6,7 @@ import pytest
 
 from backend.app.evaluation_lineage import (
     build_source_evaluation_checksum,
+    canonical_stage4_checksum,
     validate_evaluation_lineage_payload,
 )
 
@@ -54,6 +55,13 @@ def test_checksum_requires_payload_and_rejects_legacy_call_shape() -> None:
             source_evaluation_id="eval",
             source_run_id="run",
         )
+
+
+def test_stage4_source_checksum_is_normalized_without_weakening_payload_validation() -> None:
+    digest = "1" * 64
+    assert canonical_stage4_checksum(digest) == f"sha256:{digest}"
+    with pytest.raises(ValueError):
+        canonical_stage4_checksum("not-a-checksum")
 
 
 @pytest.mark.parametrize("score", [0.91, True, "nan", "inf", "-0", "1.1", "-0.1", "9.1e-1", "0.910"])

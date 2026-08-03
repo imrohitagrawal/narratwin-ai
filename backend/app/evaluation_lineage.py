@@ -49,6 +49,12 @@ def canonical_score(value: object) -> str:
     return fixed.rstrip("0").rstrip(".") if "." in fixed else fixed
 
 
+def canonical_stage4_checksum(value: object) -> str:
+    digest = _identifier(value).removeprefix("sha256:")
+    _require(bool(re.fullmatch(r"[0-9a-f]{64}", digest)), "Invalid checksum.")
+    return "sha256:" + digest
+
+
 def validate_evaluation_lineage_payload(payload: Mapping[str, object]) -> dict[str, Any]:
     value = dict(payload)
     evaluation = cast(dict[str, object], value.get("evaluation"))
@@ -124,7 +130,7 @@ def validate_evaluation_lineage_payload(payload: Mapping[str, object]) -> dict[s
             row.get(key) for key in ("chunkChecksum", "snapshotChecksum", "sourceDocumentChecksum")
         )
         _require(
-            all(re.fullmatch(r"sha256:[0-9a-f]{64}", str(item)) for item in checksums),
+            all(canonical_stage4_checksum(item) == item for item in checksums),
             "Invalid checksum.",
         )
     _require(
@@ -163,6 +169,7 @@ def derive_evaluation_lineage(run: WalkthroughRunRecord) -> dict[str, Any]:
         stored = snapshot.pop("snapshotChecksum")
         _require(stored == checksum_text(json.dumps(snapshot, sort_keys=True, separators=(",", ":"))), "Bad snapshot.")
         row = {key: snapshot[key] for key in CONTEXT_KEYS if key in snapshot}
+        row["sourceDocumentChecksum"] = canonical_stage4_checksum(row["sourceDocumentChecksum"])
         row.update(approvedAt=context.chunk.approved_at, contextRefId=context.context_ref_id,
                    retrievalScore=canonical_score(context.score), snapshotChecksum=stored)
         selected.append(row)
