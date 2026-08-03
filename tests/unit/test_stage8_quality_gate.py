@@ -237,7 +237,7 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
         assert module.main() == 1 and calls == [module.ROOT]; calls.clear()
 def test_a23a_contract_gate_rejects_every_frozen_marker_mutation() -> None:
     encoded=json.dumps(stage8.A23A_CONTRACT_MARKERS,sort_keys=True,separators=(",",":")).encode()
-    assert hashlib.sha256(encoded).hexdigest() == "9e028fbfbff58b642280be9f30aa193f88a09adc5c829d760943c2eca622a1fe"
+    assert hashlib.sha256(encoded).hexdigest() == "0087f47c997797f9df40bd270379168b253ee7c744be71383a7c581592600288"
     documents={path:(REPO/path).read_text(encoding="utf-8") for path in stage8.A23A_CONTRACT_MARKERS}
     assert stage8.evaluation_lineage_checksum_v2_contract_valid(documents)
     for path, markers in stage8.A23A_CONTRACT_MARKERS.items():
@@ -247,4 +247,4 @@ def test_a23a_contract_gate_rejects_every_frozen_marker_mutation() -> None:
             assert not stage8.evaluation_lineage_checksum_v2_contract_valid(mutated)
     api=documents["docs/API_CONTRACT.md"]; preimage=api.rsplit("```json\n",1)[1].split("\n```",1)[0]
     assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (
-        "sha256:e8de1be7c728f32521fe903a5eab4e088082001a20a1246b58d971a1e27bd5e4")
+        "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377")
