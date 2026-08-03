@@ -76,6 +76,18 @@ def _legacy_fields(node: ast.AST, assignments: dict[str, ast.AST]) -> bool:
     node = _resolve(node, assignments)
     while isinstance(node, ast.Starred) or isinstance(node, (ast.List, ast.Tuple)) and len(node.elts) == 1:
         node = _resolve(node.value if isinstance(node, ast.Starred) else node.elts[0], assignments)
+    if isinstance(node, ast.Subscript) and isinstance(node.slice, ast.Constant) and isinstance(node.slice.value, str):
+        container = _resolve(node.value, assignments)
+        values: Mapping[str, ast.AST]
+        if isinstance(container, ast.Dict):
+            values = {
+                key.value: value
+                for key, value in zip(container.keys, container.values)
+                if isinstance(key, ast.Constant) and isinstance(key.value, str)
+            }
+        else:
+            values = assignments
+        node = _resolve(values.get(node.slice.value, node), assignments)
     if isinstance(node, (ast.GeneratorExp, ast.ListComp)) and node.generators:
         node = _resolve(node.generators[0].iter, assignments)
     if not isinstance(node, (ast.List, ast.Tuple)) or len(node.elts) != 6:
@@ -94,10 +106,9 @@ def _legacy_preimage(
     if id(node) in seen:
         return False
     seen |= {id(node)}
-    if isinstance(node, ast.Starred):
-        return _legacy_preimage(node.value, assignments, functions, seen)
-    if isinstance(node, (ast.List, ast.Tuple)) and len(node.elts) == 1:
-        return _legacy_preimage(node.elts[0], assignments, functions, seen)
+    if isinstance(node, ast.Starred) or isinstance(node, (ast.List, ast.Tuple)) and len(node.elts) == 1:
+        forwarded = node.value if isinstance(node, ast.Starred) else node.elts[0]
+        return _legacy_preimage(forwarded, assignments, functions, seen)
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
         if node.func.attr == "encode":
             return _legacy_preimage(node.func.value, assignments, functions, seen)
@@ -196,36 +207,26 @@ def semantic_detector_self_test(workdir: Path) -> bool:
     dict_lookup = "parts={'fields':" + fields + "}\nchecksum_text('\\n'.join(parts['fields']))"
     kwargs = "def legacy(**parts): return '\\n'.join(parts['fields'])\nchecksum_text(legacy(fields=" + fields + "))"
     parameter = "def legacy(fields): return '\\n'.join(fields)\nchecksum_text(legacy(" + fields + "))"
-    positional_only = parameter.replace("legacy(fields)", "legacy(fields, /)")
     vararg = ("def legacy(prefix,*fields): return '\\n'.join(fields)\nchecksum_text(legacy('x',"
               + fields[1:-1] + "))")
     lambda_forward = parameter.replace("def legacy(fields): return", "legacy = lambda fields:")
     fstring = 'checksum_text(f"' + "\\n".join("{" + item + "}" for item in fields[1:-1].split(",")) + '")'
     alias = "legacy=build_source_evaluation_checksum\n" + direct.replace("build_source_evaluation_checksum", "legacy")
     starred = "def legacy(*fields): return '\\n'.join(fields)\nvalues=" + fields + "\nchecksum_text(legacy(*values))"
-    cycle = "value=value.encode()\nchecksum_text(value)"
-    samples = (
-        ("direct.py", direct, True),
-        ("fstring.py", fstring, True),
-        ("dict.py", dict_lookup, True),
-        ("generator.py", generator, True),
-        ("concat.py", concat, True),
-        ("kwargs.py", kwargs, True),
-        ("parameter.py", parameter, True),
-        ("positional.py", positional_only, True),
-        ("vararg.py", vararg, True),
-        ("lambda.py", lambda_forward, True),
-        ("alias.py", alias, True),
-        ("starred.py", starred, True),
-        ("cycle.py", cycle, False),
-        ("canonical.py", "build_source_evaluation_checksum(lineage_payload)", False),
+    positive_samples = (direct, fstring, dict_lookup, generator, concat, kwargs,
+        parameter, parameter.replace("legacy(fields)", "legacy(fields, /)"), vararg, lambda_forward, alias, starred,
     )
-    results = (bool(semantic_legacy_failures(workdir / name, sample)) is expected for name, sample, expected in samples)
+    positive = all(semantic_legacy_failures(workdir / f"mutation-{index}.py", sample)
+                   for index, sample in enumerate(positive_samples))
+    cycle_safe = not semantic_legacy_failures(workdir / "cycle.py", "value=value.encode()\nchecksum_text(value)")
+    canonical_safe = not semantic_legacy_failures(
+        workdir / "canonical.py", "build_source_evaluation_checksum(lineage_payload)"
+    )
     source = Path(__file__).read_text(encoding="utf-8")
     lines = source.splitlines()
     bounded = len(lines) <= 250 and len(source.encode()) <= 32 * 1024 and max(map(len, lines)) <= 120
     checker = Path(__file__).with_name("check_stage8_docs.py").read_text(encoding="utf-8")
-    return all(results) and bounded and "check_a23b(ROOT, run, failures," in checker
+    return positive and cycle_safe and canonical_safe and bounded and "check_a23b(ROOT, run, failures," in checker
 
 
 def check_a23b(root: Path, run: Callable[[list[str]], Any], failures: list[str], exact_route: bool = True) -> None:
