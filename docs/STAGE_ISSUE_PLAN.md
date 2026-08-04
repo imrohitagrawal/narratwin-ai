@@ -2340,5 +2340,8 @@ deployment, production migration, and cryptographic authenticity stay excluded.
 
 Branch `cut1-process-360-security-brace-expansion-5-0-9-unblock` starts only from
 `b9a2a8cd4aa05328116565990fc30ae44592c875`. Its declarative sidecar binds Issue #360, that base, its preflight,
-exactly the amended 14 paths, and the 450-line ceiling; near matches and any fifteenth path fail closed. Scope is
-only the frontend development-tool `brace-expansion` 5.0.8-to-5.0.9 security refresh and reference evidence.
+exactly the amended 18 paths, and the 650-line ceiling; near matches, charge 651, and any nineteenth path fail
+closed. Scope converges only frontend development-tool `brace-expansion` 5.0.8-to-5.0.9 and isolated Semgrep
+`cryptography` 49.0.0-to-50.0.0 security evidence. Issue #359 remains open and its branch immutable until this
+convergence merges and merged-main verification passes; Issue #150 expiry and preserved incomplete Issue #358 do
+not change. Product, provider, runtime, deployment, release, public, and production authority remain excluded.

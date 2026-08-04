@@ -15,10 +15,12 @@ BASE = "b9a2a8cd4aa05328116565990fc30ae44592c875"
 FILES = {
     "docs/governance/preflights/issue-360.json", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md",
-    "docs/ADR/0050-brace-expansion-5-0-9-security-refresh.md", "frontend/package.json",
-    "frontend/package-lock.json", "scripts/quality/check_stage8_docs.py",
+    "docs/ADR/0049-semgrep-cryptography-50-lock-refresh.md",
+    "docs/ADR/0050-brace-expansion-5-0-9-security-refresh.md", "frontend/package.json", "frontend/package-lock.json",
+    "scripts/ci/check_semgrep_security.py", "scripts/quality/check_stage8_docs.py",
     "scripts/quality/stage8_brace_expansion_unblock.py", "tests/unit/test_dependency_security_contract.py",
-    "tests/unit/test_stage8_brace_expansion_unblock.py",
+    "tests/unit/test_stage8_brace_expansion_unblock.py", "tools/semgrep/reviewed-inputs.sha256",
+    "tools/semgrep/uv.lock",
 }
 
 
@@ -54,7 +56,7 @@ def test_issue360_preflight_and_base_mutations_fail_closed() -> None:
         lambda value: value.update(issue_number=359),
         lambda value: value.update(branch=f"{BRANCH}-retry"),
         lambda value: value.update(objective=value["objective"].replace(BASE, "0" * 40)),
-        lambda value: value["scope"]["required"].append("fifteenth-path"),
+        lambda value: value["scope"]["required"].append("nineteenth-path"),
     ):
         candidate = copy.deepcopy(data)
         mutate(candidate)
@@ -75,6 +77,16 @@ def test_issue360_preflight_and_base_mutations_fail_closed() -> None:
     failures = []
     sidecar.check_exact_route(ROOT, run, failures, True)
     assert failures == []
+    excessive = dict(valid)
+    diff_command = ("git", "diff", "--numstat", "--no-renames", f"{BASE}..{head}", "--")
+    excessive[diff_command] = "\n".join(
+        f"{651 if index == 0 else 0}\t0\t{path}" for index, path in enumerate(sorted(FILES))
+    )
+    failures = []
+    sidecar.check_exact_route(
+        ROOT, lambda args: SimpleNamespace(returncode=0, stdout=excessive[tuple(args)]), failures, True
+    )
+    assert failures == ["Issue #360 requires exactly 18 paths and at most 650 charged lines."]
     for command in list(valid)[:3]:
         broken = dict(valid)
         broken[command] = ""
@@ -93,7 +105,7 @@ def test_issue360_preflight_and_base_mutations_fail_closed() -> None:
         assert failures
 
 
-def test_issue360_near_match_and_fifteenth_path_are_denied(monkeypatch: Any) -> None:
+def test_issue360_near_match_and_nineteenth_path_are_denied(monkeypatch: Any) -> None:
     checker: Any = load(ROOT / "scripts/quality/check_stage8_docs.py", "stage8_issue360_mutations")
     monkeypatch.setattr(checker, "current_branch", lambda: f"{BRANCH}-retry")
     monkeypatch.setattr(checker, "changed_files_for_stage_scope", lambda: [])
@@ -102,7 +114,7 @@ def test_issue360_near_match_and_fifteenth_path_are_denied(monkeypatch: Any) -> 
     checker.check_stage_scope(failures)
     assert len(failures) == 2
     monkeypatch.setattr(checker, "current_branch", lambda: BRANCH)
-    monkeypatch.setattr(checker, "changed_files_for_stage_scope", lambda: ["fifteenth-path"])
+    monkeypatch.setattr(checker, "changed_files_for_stage_scope", lambda: ["nineteenth-path"])
     failures = []
     checker.check_stage_scope(failures)
-    assert failures == ["Stage 8 changed file outside the allowlist: fifteenth-path"]
+    assert failures == ["Stage 8 changed file outside the allowlist: nineteenth-path"]

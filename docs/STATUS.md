@@ -1126,7 +1126,9 @@ Required update rules:
 
 ## Issue 360 dependency-security status
 
-- Issue `#360` is the current reference-only Stage 8 security unblock from exact base `b9a2a8cd4aa05328116565990fc30ae44592c875`.
-- Scope changes only the frontend development-tool `brace-expansion` override/lock from 5.0.8 to 5.0.9 and its
-  exact 14-path evidence route; product, provider, runtime, deployment, release, and production status do not change.
-- Issues `#359` and `#358`, Cut 1 completion, eligible approval, merge, and all later sequencing remain incomplete.
+- Issue `#360` is the bounded 18-path Stage 8 convergence for the two currently known mandatory dependency
+  findings: frontend development-tool `brace-expansion` 5.0.8 to 5.0.9 and isolated Semgrep `cryptography` 49.0.0
+  to 50.0.0. Product, provider, runtime, deployment, release, public, and production status do not change.
+- Issue `#359` remains open with its exact branch/worktree immutable until convergence merge and merged-main
+  verification; only then may closeout mark it satisfied or superseded. Issue #150 and its `2026-08-13` expiry
+  remain unchanged. Issue #358 stays preserved and incomplete; Cut 1 and all merge/rebase sequencing remain open.

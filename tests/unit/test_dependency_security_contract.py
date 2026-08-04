@@ -35,13 +35,18 @@ BRACE_PATH = "node_modules/brace-expansion"
 BRACE_509_INTEGRITY = (
     "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg=="
 )
+SEMGREP_LOCK_SHA256 = "1975bebb0fca718a45742ad13a759e2092162c44c944c310572b4d553de4d51c"
 
 
-def _base_json(path: str) -> dict[str, Any]:
+def _base_text(path: str) -> str:
     result = subprocess.run(
         ["git", "show", f"{ISSUE360_BASE}:{path}"], cwd=ROOT, text=True, capture_output=True, check=True
     )
-    return json.loads(result.stdout)
+    return result.stdout
+
+
+def _base_json(path: str) -> dict[str, Any]:
+    return json.loads(_base_text(path))
 
 
 def test_frontend_brace_expansion_override_and_lock_are_isolated_and_patched() -> None:
@@ -98,6 +103,23 @@ def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
     assert tool_packages["click"] == {"8.3.3"}
     assert tool_packages["mcp"] == {"1.28.1"}
     assert tool_packages["cryptography"] == {"50.0.0"}
+    assert tool_packages["pyjwt"] == {"2.13.0"}
+
+
+def test_semgrep_cryptography_generated_lock_delta_is_exact_and_isolated() -> None:
+    lock_bytes = (ROOT / "tools/semgrep/uv.lock").read_bytes()
+    lock = tomllib.loads(lock_bytes.decode())
+    base_lock = tomllib.loads(_base_text("tools/semgrep/uv.lock"))
+    assert hashlib.sha256(lock_bytes).hexdigest() == SEMGREP_LOCK_SHA256
+
+    current_indexes = [i for i, package in enumerate(lock["package"]) if package["name"] == "cryptography"]
+    base_crypto = [package for package in base_lock["package"] if package["name"] == "cryptography"]
+    assert len(current_indexes) == len(base_crypto) == 1
+    assert lock["package"][current_indexes[0]]["version"] == "50.0.0"
+    assert base_crypto[0]["version"] == "49.0.0"
+    normalized = copy.deepcopy(lock)
+    normalized["package"][current_indexes[0]] = base_crypto[0]
+    assert normalized == base_lock
 
 
 def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(

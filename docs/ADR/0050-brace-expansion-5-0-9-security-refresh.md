@@ -16,3 +16,4 @@ Node `20 || >=22` compatibility, clean installation, audit, frontend gates, and 
 No ignore, waiver, suppression, downgrade, override relaxation, or risk acceptance is permitted. This decision
 changes no product or provider behavior and grants no product, provider, deployment, release, public-hosting, or
 production-readiness authority. It does not complete Issue #358, Issue #359, or Cut 1.
+ADR 0049 records the separate isolated Semgrep lock repair integrated by the same bounded convergence review.

@@ -1001,9 +1001,12 @@ duplicate, cross-scope, wrong-schema, and normalization drift. Context budgets u
 A2.3b must later supply runtime mutation proof; exact-head required CI and
 eligible non-author approval remain pending human-only merge gates.
 
-## Issue #360 dependency-security unblock gate
+## Issue #360 dependency-security convergence gate
 
-The exact Issue #360 Stage 8 route requires base `b9a2a8cd4aa05328116565990fc30ae44592c875`, all and only
-the authorized 14 paths, at most 450 charged lines, and an isolated frontend development-tool override/lock refresh
-from `brace-expansion` 5.0.8 to 5.0.9. Focused mutation tests, parsed-lock isolation, zero high/critical npm audit,
-full local gates, exact-head CI, and independent review are mandatory; this reference-only gate grants no release.
+The exact Issue #360 Stage 8 route requires base `b9a2a8cd4aa05328116565990fc30ae44592c875`, exactly
+18 paths, and at most 650 charged lines. It refreshes only frontend development-tool `brace-expansion` 5.0.8 to
+5.0.9 and isolated Semgrep `cryptography` 49.0.0 to 50.0.0, preserving all other package versions. Parsed-lock
+isolation, strict audits, installed identities, Semgrep validation/scan/canaries, full gates, exact-head CI, and
+independent review are mandatory. Issue #359 remains open with its branch immutable until convergence merge and
+merged-main verification; Issue #150 expiry and Issue #358 remain unchanged. This reference-only gate grants no
+product, provider, deployment, release, public-availability, or production-readiness authority.
