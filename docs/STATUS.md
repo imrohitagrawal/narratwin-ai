@@ -23,24 +23,26 @@ Use it to answer:
   structurally valid stale-lineage local rows audit-preserved but inactive.
   Issue `#349` is closed through PR `#350` at
   `c8ae874fe2179345bb463539935a77e08ac4c547`, completing machine-contract
-  parity and executable drift detection. Issue `#351` is the exact contract-only
-  A2.3a route. On merge its corrected full scope/policy/evidence checksum-v2
-  contract, canonical score rule, and mutation gate are frozen. The historical
-  phrase “A2.3b remains blocked” is superseded by active Issue `#353` on branch
-  `stage8-353-r0c-a2-3b-evaluation-lineage-v2`, without establishing completion.
-  A2 remains `PARTIAL`. Agent-context remains `SHADOW_ONLY`; scope checks remain
-  supporting evidence under exact-head semantic review. Issues, branches, and
+  parity and executable drift detection. Issue `#351` / PR `#352` froze the
+  A2.3a checksum-v2 contract at `90bbd59a84913ce9c7601bc180e051347cfccbcf`.
+  The historical phrase “A2.3b remains blocked” is superseded by completed Issue
+  `#353` / PR `#354` at `b9a2a8cd4aa05328116565990fc30ae44592c875`.
+  A2 is complete and controller `#334` is closed. Issue `#358` is the current
+  owner-authorized browser-playable local/mock Cut 1 route on exact branch
+  `cut1-358-quiet-presence-ui`; it adds only the focused `/demo` product surface
+  and does not establish deployment, public availability, real media, Q&A, web
+  search, or production readiness. Agent-context remains `SHADOW_ONLY`; scope
+  checks remain supporting evidence under exact-head semantic review. Issues, branches, and
   stopped implementations `#336`–`#345` are forensic-only and must not be
   revived or reused. No Cut 1, release, readiness, deployment, or avatar
   completion is established by this slice.
-- Last reviewed date: 2026-08-03
+- Last reviewed date: 2026-08-04
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
   `#332` / PR `#333` completed the narrow containment correction at merged main
   `225506a25f9efe3c804c5a1723b20db0e940ff62`; Issues `#329`, `#330`, and `#332`
-  are closed. Issue `#334` is the open R0C-A2 controller; Issue `#335` is closed
-  completed; its A2.2 and A2.3a children are closed, and Issue `#353` is the
-  current A2.3b review target.
+  are closed. Issue `#334` and all A2 children are closed completed through
+  Issue `#353` / PR `#354`. Issue `#358` is the current narrow Cut 1 UI target.
   Agent-context remains
   `SHADOW_ONLY` and its mutable state is `STALE_GOVERNANCE`; its outputs cannot
   establish current truth, select consequential work routing, or authorize
@@ -73,10 +75,11 @@ Use it to answer:
   authority. They preserve the protected evidence and unrelated obligations,
   but cannot select, authorize, or block the exact Issue `#349` A2.2 Cut 1 route
   under current OWNER authority.
-- Implementation permission is otherwise closed. The exact nine-path,
-  500-charged-line Issue `#349` A2.2 permission frozen by its preflight is
-  limited to this merge target and expires when it lands on main. It is routed
-  on `cut1-349-r0c-a2-2-machine-contract-parity` from `454025c403334933306142f65bc3e25541eeb23e`. The completed A2.1 route used
+- Implementation permission is otherwise closed. The exact 13-path Issue `#358`
+  permission is limited to the `/demo` local/mock product surface and expires
+  when that reviewed PR lands on main. It is routed on
+  `cut1-358-quiet-presence-ui` from `b9a2a8cd4aa05328116565990fc30ae44592c875`.
+  The completed A2.1 route used
   normal Stage 8/full CI; its controlled Heartbeat 2 proves the fixture-grounded prompt through local/mock render, and its one-time reviewed receipt rotation is recorded in ADR `0047`, while execution authenticity remains unattested. Legacy Phase 1 routing is compatibility-only; near
   matches and Issues `#336`–`#345` confer no authority. Demo Phase 0 planning
   for issue `#225` completed through PR `#226`; Checkpoint 1

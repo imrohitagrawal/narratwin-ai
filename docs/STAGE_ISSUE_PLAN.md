@@ -548,6 +548,14 @@ Issue `#349` uses exact branch `cut1-349-r0c-a2-2-machine-contract-parity` for
 the nine-path, 500-charged-line A2.2 machine-contract parity package. Its fixed
 source oracle, Stage 2 checker, Stage 8 invocation, and mutation tests detect
 independent or paired drift without changing retrieval runtime semantics.
+Issue `#358` uses exact branch `cut1-358-quiet-presence-ui` for the 13-path
+browser-playable local/mock Cut 1 UI. The new `/demo` route keeps a simulated
+host project dominant, runs the existing grounded Stage 4→6→7 pipeline, exposes
+citations/evaluation/provider posture, and proves semantic light/dark, Guide
+Ribbon collapse/focus, full-screen mobile return, keyboard, reduced-motion, and
+safe failure behavior. Q&A, governed web search, real media, cloned identity,
+provider calls, deployment, public availability, and production readiness stay
+out of scope.
 Issues and stopped implementations `#336`–`#345` remain forensic-only. Non-main push validation uses
 the complete `origin/main` merge-base-to-exact-head candidate rather than the
 latest push delta. PR/review validation keeps the reviewed base and binds the

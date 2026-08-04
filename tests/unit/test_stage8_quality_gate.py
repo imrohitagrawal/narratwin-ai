@@ -4,6 +4,7 @@ import hashlib; import importlib.util; import json; import subprocess
 from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 from scripts.quality import stage8_a23b as a23b
+from scripts.quality.check_stage8_docs import QUIET_PRESENCE_BRANCH as QP, QUIET_PRESENCE_FILES as QP_SCOPE
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"
 SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
@@ -22,8 +23,7 @@ SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/qua
            "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
            "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
            "docs/STAGE_ISSUE_PLAN.md"},
-    **a23b.A23_ROUTES,
-}
+    QP: QP_SCOPE, **a23b.A23_ROUTES}
 def load_module(relative: str, name: str) -> ModuleType:
     module_path = Path(__file__).parents[2] / relative
     spec = importlib.util.spec_from_file_location(name, module_path); assert spec and spec.loader
@@ -46,15 +46,15 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", f"{A2_2}/child",
                    A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{a23b.A23A_BRANCH}-retry",
-                   a23b.A23A_BRANCH.replace("-351-", "-350-"), "cut1-proces\u0455-346-transition"):
+                   a23b.A23A_BRANCH.replace("-351-", "-350-"), f"{QP}-retry", "cut1-proces\u0455-346-transition"):
         assert len(route(monkeypatch,branch,[])) == 2
-    for issue, branch in ((346, TRANSITION), (349, A2_2), (351, a23b.A23A_BRANCH), (353, a23b.A23B_BRANCH)):
+    for issue,branch in ((346,TRANSITION),(349,A2_2),(351,a23b.A23A_BRANCH),(353,a23b.A23B_BRANCH),(358,QP)):
         artifact = json.loads((Path(__file__).parents[2]/f"docs/governance/preflights/issue-{issue}.json").read_text())
         assert artifact["branch"] == branch and set(artifact["scope"]["required"]) == SCOPES[branch]
-    original_read = Path.read_text
     monkeypatch.setattr(Path, "read_text", lambda path, *a, **kw: (_ for _ in ()).throw(AssertionError())
-                        if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json"}
-                        else original_read(path, *a, **kw))
+                        if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json",
+                                         "issue-358.json"}
+                        else ORIGINAL_READ(path, *a, **kw))
     policy = load_module("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {branch: policy[branch] for branch in SCOPES} == SCOPES
     assert {branch for branch in policy if branch.startswith("cut1-")} == set(SCOPES) - {a23b.A23B_BRANCH}
@@ -71,18 +71,6 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
         calls.clear(); monkeypatch.setattr(dispatcher, "current_branch", lambda branch=branch: branch)
         assert (dispatcher.main(), calls) == (0, [["make", "stage8-quality"]])
         assert branch == a23b.A23B_BRANCH or canonical_stage_issue(branch) is None
-
-def test_quiet_presence_cut1_route_is_exact_and_reference_only(monkeypatch: Any) -> None:
-    branch = "cut1-358-quiet-presence-ui"
-    artifact = json.loads((Path(__file__).parents[2] / "docs/governance/preflights/issue-358.json").read_text())
-    scope = set(artifact["scope"]["required"])
-
-    assert route(monkeypatch, branch, sorted(scope)) == []
-    assert route(monkeypatch, branch, ["frontend/src/app/page.tsx"]) == [
-        "Stage 8 changed file outside the allowlist: frontend/src/app/page.tsx"
-    ]
-    assert len(route(monkeypatch, f"{branch}-retry", [])) == 2
-    assert canonical_stage_issue(branch) is None
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     git(tmp_path, "init", "-b", "main"); git(tmp_path, "config", "user.name", "Scope Test")
     git(tmp_path, "config", "user.email", "scope@example.invalid")

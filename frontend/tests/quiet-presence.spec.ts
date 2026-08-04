@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const json = (value: unknown) => ({
   status: 200,
@@ -6,7 +6,7 @@ const json = (value: unknown) => ({
   body: JSON.stringify(value),
 });
 
-async function mockQuietPresencePipeline(page: Parameters<typeof test>[0]["page"]) {
+async function mockQuietPresencePipeline(page: Page) {
   await page.route("**/api/v1/**", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -154,7 +154,9 @@ test.describe("Quiet Presence mocked product UI", () => {
     await page.goto("/demo");
     await page.getByRole("button", { name: "Run grounded demo" }).click();
 
-    await expect(page.getByRole("alert")).toContainText("could not complete safely");
+    await expect(
+      page.getByRole("complementary", { name: "NarraTwin project guide" }).getByRole("alert"),
+    ).toContainText("could not complete safely");
     await expect(page.getByText("token=secret")).toHaveCount(0);
     await expect(page.getByText("/private/customer.md")).toHaveCount(0);
     await expect(page.getByText("Passed evaluation · 0 unsupported claims")).toHaveCount(0);
