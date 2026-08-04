@@ -371,7 +371,7 @@ function RibbonPresenter({ presenterState }: { presenterState: string }) {
     <section className={styles.ribbonPresenter} aria-label="Synthetic presenter status">
       <div className={styles.presenterFrame}>
         <PresenterPortrait />
-        <span className={styles.presenterDisclosure}>Synthetic presenter preview</span>
+        <span className={styles.presenterDisclosure}>Fictional synthetic still · no real-person reference</span>
       </div>
       <div className={styles.guideIdentity}>
         <NarraMark /><span><strong>NarraTwin</strong><small>AI project guide</small></span>
@@ -571,7 +571,7 @@ function FocusStage(props: GuideContentProps & {
       <div className={styles.focusLayout}>
         <div className={styles.focusPresenter}>
           <PresenterPortrait fullLength />
-          <p>Synthetic presenter preview · still image</p>
+          <p>Fictional synthetic still · no real-person reference</p>
           <span><i />{props.open ? props.presenterState : "Focus stage ready"}</span>
         </div>
         <div className={styles.focusNarrative}>

@@ -187,7 +187,7 @@ test.describe("Quiet Presence mocked product UI", () => {
 
     await expect(presenter).toHaveAttribute("data-image-src", "/demo/narratwin-synthetic-presenter.webp");
     await expect(presenter).toHaveCSS("background-image", /narratwin-synthetic-presenter\.webp/);
-    await expect(page.getByText("Synthetic presenter preview", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Fictional synthetic still · no real-person reference", { exact: true }).first()).toBeVisible();
   });
 
   test("keeps host context visible and exposes local grounded evidence", async ({ page }) => {
@@ -290,7 +290,7 @@ test.describe("Quiet Presence mocked product UI", () => {
     await expect(page.locator("main")).toHaveAttribute("data-hydrated", "true");
     await page.getByRole("button", { name: "Expand focus" }).click();
     await expect(page.getByRole("dialog", { name: "NarraTwin focus stage" })).toBeVisible();
-    await expect(page.getByText("Synthetic presenter preview · still image")).toBeVisible();
+    await expect(page.getByText("Fictional synthetic still · no real-person reference").last()).toBeVisible();
     const close = page.getByRole("button", { name: "Close focus stage" });
     await expect(close).toBeFocused();
     const consent = page.getByRole("dialog").getByRole("checkbox", {

@@ -16,7 +16,7 @@ describe("Quiet Presence demo", () => {
     expect(html).toContain("Run grounded demo");
     expect(html).toContain("Local mock");
     expect(html).toContain("Verified sources");
-    expect(html).toContain("Synthetic presenter preview");
+    expect(html).toContain("Fictional synthetic still · no real-person reference");
     expect(html).toContain("create a local synthetic presenter preview");
     expect(html).toContain('data-hydrated="false"');
     expect(html).toContain('<input type="checkbox" disabled=""');
@@ -72,7 +72,7 @@ describe("Quiet Presence demo", () => {
     expect(html).toContain('data-guide-state="expanded"');
     expect(html).toContain('data-mobile-guide="open"');
     expect(html).toContain("Simulated host context");
-    expect(html).toContain("Synthetic presenter preview · still image");
+    expect(html).toContain("Fictional synthetic still · no real-person reference");
     expect(html).not.toContain("speaking avatar");
   });
 });
