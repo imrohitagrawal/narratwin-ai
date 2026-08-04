@@ -1123,3 +1123,10 @@ Required update rules:
 - PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`; its exact-head CI and independent review gates passed and its branch was cleaned up.
 - Aggregate reset envelope remains 15 unique files, 2,500 charged lines, eight surfaces; synthetic fixtures and local/mock media only.
 - Excluded: backend/API changes, providers, spend, real media/private data, deployment/hosting/production claims, Product Mode 2/#20, and mutation of #8/#43/#155/#249 or protected trackers.
+
+## Issue 360 dependency-security status
+
+- Issue `#360` is the current reference-only Stage 8 security unblock from exact base `b9a2a8cd4aa05328116565990fc30ae44592c875`.
+- Scope changes only the frontend development-tool `brace-expansion` override/lock from 5.0.8 to 5.0.9 and its
+  exact 14-path evidence route; product, provider, runtime, deployment, release, and production status do not change.
+- Issues `#359` and `#358`, Cut 1 completion, eligible approval, merge, and all later sequencing remain incomplete.

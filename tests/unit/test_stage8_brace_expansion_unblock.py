@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
+import copy
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from types import ModuleType
 from typing import Any
 
@@ -40,3 +42,67 @@ def test_issue360_sidecar_and_effective_route_are_exact() -> None:
     assert checker.EFFECTIVE_STAGE8_ROUTES[BRANCH] == FILES
     assert preflight["branch"] == BRANCH and set(preflight["scope"]["required"]) == FILES
     assert preflight["objective"].count(BASE) == 1
+
+
+def test_issue360_preflight_and_base_mutations_fail_closed() -> None:
+    sidecar: Any = load(SIDECAR, "brace_security_mutations")
+    data = json.loads((ROOT / "docs/governance/preflights/issue-360.json").read_text(encoding="utf-8"))
+    failures: list[str] = []
+    sidecar.validate_preflight(data, failures)
+    assert failures == []
+    for mutate in (
+        lambda value: value.update(issue_number=359),
+        lambda value: value.update(branch=f"{BRANCH}-retry"),
+        lambda value: value.update(objective=value["objective"].replace(BASE, "0" * 40)),
+        lambda value: value["scope"]["required"].append("fifteenth-path"),
+    ):
+        candidate = copy.deepcopy(data)
+        mutate(candidate)
+        failures = []
+        sidecar.validate_preflight(candidate, failures)
+        assert failures
+
+    head = "f" * 40
+    valid = {
+        ("git", "rev-parse", f"{BASE}^{{commit}}"): BASE,
+        ("git", "rev-parse", "HEAD^{commit}"): head,
+        ("git", "merge-base", BASE, head): BASE,
+        ("git", "diff", "--numstat", "--no-renames", f"{BASE}..{head}", "--"):
+            "\n".join(f"1\t0\t{path}" for path in sorted(FILES)),
+    }
+    def run(args: list[str]) -> SimpleNamespace:
+        return SimpleNamespace(returncode=0, stdout=valid[tuple(args)], stderr="")
+    failures = []
+    sidecar.check_exact_route(ROOT, run, failures, True)
+    assert failures == []
+    for command in list(valid)[:3]:
+        broken = dict(valid)
+        broken[command] = ""
+        failures = []
+        sidecar.check_exact_route(
+            ROOT, lambda args, values=broken: SimpleNamespace(returncode=0, stdout=values[tuple(args)]),
+            failures, True,
+        )
+        assert failures
+        failures = []
+        sidecar.check_exact_route(
+            ROOT, lambda args, target=command: SimpleNamespace(
+                returncode=int(tuple(args) == target), stdout=valid[tuple(args)]
+            ), failures, True,
+        )
+        assert failures
+
+
+def test_issue360_near_match_and_fifteenth_path_are_denied(monkeypatch: Any) -> None:
+    checker: Any = load(ROOT / "scripts/quality/check_stage8_docs.py", "stage8_issue360_mutations")
+    monkeypatch.setattr(checker, "current_branch", lambda: f"{BRANCH}-retry")
+    monkeypatch.setattr(checker, "changed_files_for_stage_scope", lambda: [])
+    failures: list[str] = []
+    checker.check_stage_marker_and_branch(failures)
+    checker.check_stage_scope(failures)
+    assert len(failures) == 2
+    monkeypatch.setattr(checker, "current_branch", lambda: BRANCH)
+    monkeypatch.setattr(checker, "changed_files_for_stage_scope", lambda: ["fifteenth-path"])
+    failures = []
+    checker.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: fifteenth-path"]

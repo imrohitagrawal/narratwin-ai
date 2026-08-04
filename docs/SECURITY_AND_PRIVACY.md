@@ -475,6 +475,13 @@ A PR or release is blocked if:
 - the Semgrep compatibility exception expires or changes without security-owner
   review
 
+## Issue #360 frontend development-tool advisory
+
+GHSA-rgw5-rvv9-x895 / CVE-2026-69152 affects the explicit `brace-expansion` 5.0.8 override; 5.0.9 is the fixed
+5.x version. Issue #360 permits only that override and mechanical lock refresh, with zero ignore, waiver,
+suppression, downgrade, or risk acceptance. Compatibility evidence is limited to Node `20 || >=22`, npm install,
+frontend gates, and audit results; it provides no product, provider, deployment, release, or production authority.
+
 ## Related Documents
 
 - `docs/THREAT_MODEL.md`

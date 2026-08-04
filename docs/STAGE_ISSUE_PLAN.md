@@ -2335,3 +2335,10 @@ Its second implementation repair is final; a third repair is a stop condition.
 A2.3b runtime wiring cannot start until merged-tree closeout and separate owner
 authorization. Protected #336-#345, PR #299, Issue #280, frontend, providers,
 deployment, production migration, and cryptographic authenticity stay excluded.
+
+## Issue #360 exact Stage 8 security route
+
+Branch `cut1-process-360-security-brace-expansion-5-0-9-unblock` starts only from
+`b9a2a8cd4aa05328116565990fc30ae44592c875`. Its declarative sidecar binds Issue #360, that base, its preflight,
+exactly the amended 14 paths, and the 450-line ceiling; near matches and any fifteenth path fail closed. Scope is
+only the frontend development-tool `brace-expansion` 5.0.8-to-5.0.9 security refresh and reference evidence.

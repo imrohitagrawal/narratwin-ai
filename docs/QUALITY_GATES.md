@@ -1000,3 +1000,10 @@ duplicate, cross-scope, wrong-schema, and normalization drift. Context budgets u
 `uv run pytest -q tests/unit/publication_boundary/test_scope.py -k per_file_context_budgets_are_executable`.
 A2.3b must later supply runtime mutation proof; exact-head required CI and
 eligible non-author approval remain pending human-only merge gates.
+
+## Issue #360 dependency-security unblock gate
+
+The exact Issue #360 Stage 8 route requires base `b9a2a8cd4aa05328116565990fc30ae44592c875`, all and only
+the authorized 14 paths, at most 450 charged lines, and an isolated frontend development-tool override/lock refresh
+from `brace-expansion` 5.0.8 to 5.0.9. Focused mutation tests, parsed-lock isolation, zero high/critical npm audit,
+full local gates, exact-head CI, and independent review are mandatory; this reference-only gate grants no release.

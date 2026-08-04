@@ -32,7 +32,9 @@ from scripts.ci.check_semgrep_security import (
 ROOT = Path(__file__).resolve().parents[2]
 ISSUE360_BASE = "b9a2a8cd4aa05328116565990fc30ae44592c875"
 BRACE_PATH = "node_modules/brace-expansion"
-BRACE_509_INTEGRITY = "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg=="
+BRACE_509_INTEGRITY = (
+    "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg=="
+)
 
 
 def _base_json(path: str) -> dict[str, Any]:

@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
+from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
 from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
@@ -35,8 +36,7 @@ REQUIRED_FILES = [
     ".github/workflows/security.yml",
     "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py",
     "backend/app/stage6.py", "backend/Dockerfile",
-    "frontend/Dockerfile",
-    "frontend/package.json",
+    "frontend/Dockerfile", "frontend/package.json",
     "frontend/package-lock.json",
     "frontend/src/app/page.test.tsx",
     "frontend/scripts/run-lighthouse.mjs",
@@ -130,6 +130,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(),
 }
 PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES)
+EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES
 def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=ROOT, text=True, capture_output=True, check=False)
 def read(path: str) -> str:
@@ -266,7 +267,7 @@ def check_stage_marker_and_branch(failures: list[str]) -> None:
         branch
         and branch != "main"
         and not STAGE8_BRANCH_PATTERN.match(branch)
-        and branch not in PROCESS_BRANCH_ALLOWED_FILES
+        and branch not in EFFECTIVE_STAGE8_ROUTES
     ):
         fail(f"Stage 8 work must run on a stage8-* branch or main after merge; got {branch}.", failures)
 def check_stage_scope(failures: list[str]) -> None:
@@ -274,10 +275,10 @@ def check_stage_scope(failures: list[str]) -> None:
     if not branch:
         fail("Stage 8 scope branch evidence is unavailable or inconsistent.", failures)
         return
-    if branch not in PROCESS_BRANCH_ALLOWED_FILES and branch != "main" and not STAGE8_BRANCH_PATTERN.match(branch):
+    if branch not in EFFECTIVE_STAGE8_ROUTES and branch != "main" and not STAGE8_BRANCH_PATTERN.match(branch):
         fail(f"Stage 8 scope requires an exact reviewed branch; got {branch}.", failures)
         return
-    allowed_files = PROCESS_BRANCH_ALLOWED_FILES.get(branch, STAGE8_ALLOWED_FILES)
+    allowed_files = EFFECTIVE_STAGE8_ROUTES.get(branch, STAGE8_ALLOWED_FILES)
     for path in changed_files_for_stage_scope():
         if path not in allowed_files:
             fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
@@ -484,6 +485,7 @@ def main() -> int:
         check_stage_marker_and_branch(failures)
         check_stage_scope(failures)
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
+        brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)
