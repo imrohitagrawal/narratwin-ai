@@ -27,13 +27,14 @@ Use it to answer:
   A2.3a checksum-v2 contract at `90bbd59a84913ce9c7601bc180e051347cfccbcf`.
   The historical phrase “A2.3b remains blocked” is superseded by completed Issue
   `#353` / PR `#354` at `b9a2a8cd4aa05328116565990fc30ae44592c875`.
-  A2 is complete and controller `#334` is closed. Issue `#358` is the current
-  owner-authorized local/mock Cut 1 UI-foundation route on exact branch
-  `cut1-358-quiet-presence-ui`; its amended 16-path scope adds only the focused
-  `/demo` product surface, strict local/mock lineage presentation, bounded
-  responsive Guide Ribbon, modal Focus Stage, and disclosed generated still-image presenter
-  and does not establish deployment, public availability, real media, Q&A, web
-  search, or production readiness. Agent-context remains `SHADOW_ONLY`; scope
+  A2 is complete and controller `#334` is closed. Issue `#358` is closed as
+  completed through PR `#362` at merge commit
+  `22277c97eff83d6927c385aa7d769bd01b34f62b`; its obsolete local and remote
+  `cut1-358-quiet-presence-ui` branches are deleted, and post-merge quality run
+  `30954235052` passed. The merged `/demo` is the reviewed local/mock UI
+  foundation with a disclosed fictional synthetic still; it does not establish
+  playable narration, speaking-avatar media, deployment, public availability,
+  release, or production readiness. Agent-context remains `SHADOW_ONLY`; scope
   checks remain supporting evidence under exact-head semantic review. Issues, branches, and
   stopped implementations `#336`–`#345` are forensic-only and must not be
   revived or reused. No Cut 1, release, readiness, deployment, or avatar
@@ -44,7 +45,8 @@ Use it to answer:
   `#332` / PR `#333` completed the narrow containment correction at merged main
   `225506a25f9efe3c804c5a1723b20db0e940ff62`; Issues `#329`, `#330`, and `#332`
   are closed. Issue `#334` and all A2 children are closed completed through
-  Issue `#353` / PR `#354`. Issue `#358` is the current narrow Cut 1 UI-foundation target.
+  Issue `#353` / PR `#354`. Issue `#358` is closed as the PR `#362` UI-foundation outcome;
+  the end-to-end speaking-avatar Cut 1 requires a separate issue, branch, and PR.
   Agent-context remains
   `SHADOW_ONLY` and its mutable state is `STALE_GOVERNANCE`; its outputs cannot
   establish current truth, select consequential work routing, or authorize
@@ -78,10 +80,10 @@ Use it to answer:
   but cannot select, authorize, or block the exact Issue `#349` A2.2 Cut 1 route
   under current OWNER authority.
 - Implementation permission is otherwise closed. The exact amended 16-path Issue `#358`
-  permission is limited to the `/demo` local/mock product surface and expires
-  when that reviewed PR lands on main. It is routed on
-  `cut1-358-quiet-presence-ui`, originally from `b9a2a8cd4aa05328116565990fc30ae44592c875`
-  and rebased onto secure main at `7ae2e19e68a7dbb58ed7a789da51475a75434d50`.
+  permission expired when PR `#362` landed on main. Issues `#18` and `#19`
+  remain open for separately governed playable local audio and video work; they
+  confer no implementation, deployment, release, public-hosting, or production
+  authority by themselves.
   The completed A2.1 route used
   normal Stage 8/full CI; its controlled Heartbeat 2 proves the fixture-grounded prompt through local/mock render, and its one-time reviewed receipt rotation is recorded in ADR `0047`, while execution authenticity remains unattested. Legacy Phase 1 routing is compatibility-only; near
   matches and Issues `#336`–`#345` confer no authority. Demo Phase 0 planning
@@ -1137,4 +1139,5 @@ Required update rules:
   to 50.0.0. Product, provider, runtime, deployment, release, public, and production status do not change.
 - Issue `#359` remains open with its exact branch/worktree immutable until convergence merge and merged-main
   verification; only then may closeout mark it satisfied or superseded. Issue #150 and its `2026-08-13` expiry
-  remain unchanged. Issue #358 stays preserved and incomplete; Cut 1 and all merge/rebase sequencing remain open.
+  remain unchanged. The historical pre-merge Issue #358 sentence is superseded by PR #362 at
+  `22277c97eff83d6927c385aa7d769bd01b34f62b`; playable speaking-avatar Cut 1 remains incomplete.
