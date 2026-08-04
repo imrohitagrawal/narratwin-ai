@@ -1,0 +1,45 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 366,
+  "branch": "cut1-366-real-media-governance-transition",
+  "objective": "Under Issue #366, establish only the checked, seven-path governance transition required before independently reviewed Cut 1 implementation slices can replace the current JSON-manifest and HTML-placeholder media contracts. Record the complete local, key-free end-to-end acceptance boundary for exactly Meera, Myra, and Raj; retain source grounding, citations, unsupported-claim evaluation, disclosure, consent, provenance, revocation, deletion, trace binding, provider-disabled defaults, and false-success rejection. Create no product runtime, asset, provider, dependency, Docker, workflow, deployment, release, public-availability, production-readiness, personal-likeness, face-cloning, or voice-cloning capability. Child issues #367 through #371 must each use a separate exact branch, scope route, preflight, RED/GREEN tests, PR, eligible non-author approval, and merge closeout. Stop for any eighth changed path, any implementation change, an unreviewed legal or license decision, a missing failure-matrix row, or a claim that metadata, a still, HTML, JSON, silence, or a placeholder is playable speaking media.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-366.json",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-366.json",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "docs/ADR/",
+      "docs/API_CONTRACT.md",
+      "docs/DATA_MODEL.md",
+      "docs/ARCHITECTURE.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_quality_stage.py"
+    ]
+  }
+}
