@@ -178,6 +178,18 @@ async function contrastRatio(locator: Locator) {
 }
 
 test.describe("Quiet Presence mocked product UI", () => {
+  test("discloses the reviewed photorealistic fictional presenter as a synthetic still", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/demo");
+    const presenter = page.getByRole("img", {
+      name: "Photorealistic fictional synthetic adult Indian woman presenter; still image, generated without a real-person reference",
+    }).first();
+
+    await expect(presenter).toHaveAttribute("data-image-src", "/demo/narratwin-synthetic-presenter.webp");
+    await expect(presenter).toHaveCSS("background-image", /narratwin-synthetic-presenter\.webp/);
+    await expect(page.getByText("Synthetic presenter preview", { exact: true }).first()).toBeVisible();
+  });
+
   test("keeps host context visible and exposes local grounded evidence", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await mockQuietPresencePipeline(page);

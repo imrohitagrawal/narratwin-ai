@@ -28,9 +28,11 @@ guide with explicit Back and Minimize return paths plus a host-visible launcher.
 
 Focus Stage is a genuine modal: the background is inert, focus stays within the
 dialog, Escape closes it, and focus returns to the originating Focus control.
-The generated presenter is a local, fictional, disclosed still image. Evidence and
-explanation remain primary; no playback, animation, real media, or cloned identity
-is implied.
+The presenter is an OpenAI-generated, photorealistic fictional adult Indian woman
+created without a real-person reference and disclosed as a synthetic still image.
+It is not intended to depict or endorse a real person. Evidence and explanation
+remain primary; the preview is not a registered render identity and implies no
+playback, animation, real media, cloned identity, or provider-runtime activation.
 
 Successful UI state requires exact ordered Stage 4 source/evaluation mappings,
 matching Stage 6 and Stage 7 lineage, approved local/mock provider identities and

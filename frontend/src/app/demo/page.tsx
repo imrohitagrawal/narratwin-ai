@@ -667,7 +667,7 @@ function PresenterPortrait({ fullLength = false }: { fullLength?: boolean }) {
     <div
       className={`${styles.portrait} ${fullLength ? styles.portraitFull : ""}`}
       role="img"
-      aria-label="Stylized fictional full-length synthetic NarraTwin presenter"
+      aria-label="Photorealistic fictional synthetic adult Indian woman presenter; still image, generated without a real-person reference"
       data-image-src="/demo/narratwin-synthetic-presenter.webp"
     />
   );
