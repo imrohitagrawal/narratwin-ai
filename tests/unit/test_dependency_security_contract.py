@@ -4,7 +4,9 @@ import copy
 import datetime as dt
 import hashlib
 import importlib.metadata
+import json
 import shutil
+import subprocess
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -28,6 +30,40 @@ from scripts.ci.check_semgrep_security import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ISSUE360_BASE = "b9a2a8cd4aa05328116565990fc30ae44592c875"
+BRACE_PATH = "node_modules/brace-expansion"
+BRACE_509_INTEGRITY = "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg=="
+
+
+def _base_json(path: str) -> dict[str, Any]:
+    result = subprocess.run(
+        ["git", "show", f"{ISSUE360_BASE}:{path}"], cwd=ROOT, text=True, capture_output=True, check=True
+    )
+    return json.loads(result.stdout)
+
+
+def test_frontend_brace_expansion_override_and_lock_are_isolated_and_patched() -> None:
+    package = json.loads((ROOT / "frontend/package.json").read_text(encoding="utf-8"))
+    lock = json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"))
+    base_package, base_lock = _base_json("frontend/package.json"), _base_json("frontend/package-lock.json")
+
+    assert package["overrides"]["brace-expansion"] == "5.0.9"
+    normalized_package = copy.deepcopy(package)
+    normalized_package["overrides"]["brace-expansion"] = base_package["overrides"]["brace-expansion"]
+    assert normalized_package == base_package
+
+    brace_paths = [path for path in lock["packages"] if path.endswith(BRACE_PATH)]
+    assert brace_paths == [BRACE_PATH]
+    brace = lock["packages"][BRACE_PATH]
+    assert (brace["version"], brace["resolved"], brace["integrity"]) == (
+        "5.0.9",
+        "https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz",
+        BRACE_509_INTEGRITY,
+    )
+    normalized_lock = copy.deepcopy(lock)
+    for field in ("version", "resolved", "integrity"):
+        normalized_lock["packages"][BRACE_PATH][field] = base_lock["packages"][BRACE_PATH][field]
+    assert normalized_lock == base_lock
 
 
 def _packages(lock_path: Path) -> dict[str, set[str]]:
