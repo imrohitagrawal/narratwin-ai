@@ -21,10 +21,24 @@ describe("Quiet Presence demo", () => {
     const html = renderToStaticMarkup(<QuietPresenceDemo />);
 
     expect(html).toContain('aria-label="Switch to dark theme"');
+    expect(html).toContain('aria-label="Minimize guide"');
+    expect(html).toContain('aria-label="Expand focus"');
+    expect(html).toContain("Back to project");
+    expect(html).toContain("External web disabled by policy");
+    expect(html).toContain("Ask next · planned");
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain("Q&amp;A and governed web search are not enabled in this Cut 1");
     expect(html).not.toContain("Production ready");
     expect(html).not.toContain("Real avatar video");
     expect(html).not.toContain("Web search active");
+  });
+
+  it("ships one shared ribbon, focus-stage, and mobile-guide content model", () => {
+    const html = renderToStaticMarkup(<QuietPresenceDemo />);
+
+    expect(html).toContain('data-guide-state="expanded"');
+    expect(html).toContain('data-mobile-guide="open"');
+    expect(html).toContain("Current screen · Active");
+    expect(html).toContain("Synthetic full-length presenter placeholder");
   });
 });

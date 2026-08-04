@@ -117,6 +117,32 @@ test.describe("Quiet Presence mocked product UI", () => {
     expect(overflows).toBe(false);
   });
 
+  test("collapses the ribbon and opens a focus stage without losing host context", async ({ page }) => {
+    await page.goto("/demo");
+
+    await page.getByRole("button", { name: "Minimize guide" }).click();
+    await expect(page.locator('[data-guide-state="collapsed"]')).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Release 2.4.0" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Expand guide" }).click();
+    await page.getByRole("button", { name: "Expand focus" }).click();
+    await expect(page.getByRole("dialog", { name: "NarraTwin focus stage" })).toBeVisible();
+    await expect(page.getByText("Synthetic full-length presenter placeholder")).toBeVisible();
+    await page.getByRole("button", { name: "Close focus stage" }).click();
+    await expect(page.getByRole("heading", { name: "Release 2.4.0" })).toBeVisible();
+  });
+
+  test("uses a full-screen mobile guide with an explicit return to the host project", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/demo");
+
+    await expect(page.locator('[data-mobile-guide="open"]')).toBeVisible();
+    await expect(page.getByRole("button", { name: "Back to project" })).toBeVisible();
+    await page.getByRole("button", { name: "Back to project" }).click();
+    await expect(page.getByRole("heading", { name: "Release 2.4.0" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open NarraTwin guide" })).toBeVisible();
+  });
+
   test("shows a bounded error and no fabricated evidence when the API fails", async ({ page }) => {
     await page.route("**/api/v1/projects", (route) =>
       route.fulfill({
