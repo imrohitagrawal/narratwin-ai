@@ -39,6 +39,14 @@ Use it to answer:
   stopped implementations `#336`–`#345` are forensic-only and must not be
   revived or reused. No Cut 1, release, readiness, deployment, or avatar
   completion is established by this slice.
+- Issue `#363` is closed after PR `#365` merged at
+  `be9c7b1fd7469b89809388743bffcd6c8cbb47f6`; its post-merge main quality
+  run `30957043256` passed and the branch/worktree were removed. Issue `#366`
+  now governs the genuine local, key-free Cut 1 outcome. Its child issues
+  `#367` registry, `#368` local TTS, `#369` local renderer/export, `#370` UI,
+  and `#371` integration evidence are deliberately unstarted. This transition
+  authorizes only their future, separately reviewed contracts; it does not
+  authorize a media implementation or alter the existing no-real-media truth.
 - Last reviewed date: 2026-08-04
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue

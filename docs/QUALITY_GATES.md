@@ -42,6 +42,14 @@ destinations. Existing trusted CI, non-author approval, and confirmed merge
 wording remain mandatory. Local scope output without live GitHub evidence is
 supporting evidence only. Agent-context remains `SHADOW_ONLY`.
 
+Exact branch `cut1-366-real-media-governance-transition` is the Issue `#366`
+governance-only transition. It may update only the seven paths in its checked
+preflight to register the genuine local-media Cut 1 acceptance contract and its
+bounded child slices. It may not add product code, assets, dependencies,
+providers, media binaries, Docker changes, or a production/readiness claim.
+Later child work is not authorized until its own exact issue, branch, preflight,
+scope route, RED/GREEN evidence, PR approval, and merge are complete.
+
 ## Required Make Targets
 
 The `Makefile` must expose:

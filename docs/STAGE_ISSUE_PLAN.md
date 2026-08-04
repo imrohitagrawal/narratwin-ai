@@ -2278,6 +2278,37 @@ historical records remain contextual; launch No-Go and human-only risk decisions
 remain unchanged; and no runtime, provider, media, Q&A, hosting, release, or
 production capability is claimed.
 
+## Issue #366 genuine local-media Cut 1 transition
+
+Issue `#366` is the parent controller for the first real local speaking-media
+outcome. Its branch `cut1-366-real-media-governance-transition` is documentation
+and scope governance only: it adds the exact seven-path route and records the
+failure boundary before implementation. It cannot add a runtime, asset,
+dependency, provider, container, workflow, or production claim.
+
+The strict sequence is:
+
+1. Issue `#367`: registry/lifecycle/provenance contract for exactly Meera,
+   Myra, and Raj, with a single test-only future personal-avatar identity.
+2. Issue `#368`: key-free, intelligible local TTS that reconciles—but does not
+   prematurely close—Issue `#18`.
+3. Issue `#369`: licensed local speaking-animation renderer, captions, muxed
+   export, and validation that reconciles—but does not prematurely close—Issue
+   `#19`.
+4. Issue `#370`: coral-clay accessible real-media UI and non-intercepted
+   browser execution.
+5. Issue `#371`: clean-setup all-presenter replay evidence and adversarial
+   review.
+
+Each child requires an independent issue preflight, exact branch route and
+file allowlist, RED/GREEN tests, docs, PR, eligible non-author approval,
+exact-head CI, and merge closeout. The completed output must be a genuine
+audible, visibly synchronized, captioned MP4/WebM that survives validation,
+browser playback/download, and independent replay. Still images, HTML, JSON,
+manifests, silent or empty audio, unsynchronized animation, metadata-only
+success, external provider calls, cloning, deployment, release, public
+availability, and production-readiness claims are all prohibited.
+
 ## Historical Issue #332 R0C Cut 1 fail-safe containment
 
 Issue `#332` implements the dependency correction authorized by Issue `#328`
