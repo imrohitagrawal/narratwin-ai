@@ -171,6 +171,9 @@ test.describe("Quiet Presence mocked product UI", () => {
     ]) {
       expect((await control.boundingBox())?.height).toBeGreaterThanOrEqual(44);
     }
+    const searchPreview = page.getByLabel("Search Northwind preview");
+    expect((await searchPreview.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await expect(searchPreview).not.toHaveJSProperty("tabIndex", 0);
   });
 
   test("stops an active run without allowing late work to repopulate the guide", async ({ page }) => {
@@ -210,6 +213,7 @@ test.describe("Quiet Presence mocked product UI", () => {
     await expect(page.getByRole("heading", { name: "Release 2.4.0" })).toBeVisible();
 
     await page.getByRole("button", { name: "Expand guide" }).click();
+    await expect(page.locator("main")).toHaveAttribute("data-hydrated", "true");
     await page.getByRole("button", { name: "Expand focus" }).click();
     await expect(page.getByRole("dialog", { name: "NarraTwin focus stage" })).toBeVisible();
     await expect(page.getByText("Synthetic presenter preview · still image")).toBeVisible();

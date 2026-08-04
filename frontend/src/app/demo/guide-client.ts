@@ -95,6 +95,7 @@ type MultilingualResponse = {
 
 type ConsentResponse = {
   consentRecordId: string;
+  traceId: string;
   sourceRunId: string;
   sourceContextRefIds: string[];
   sourceCitationIndexes: number[];
@@ -105,6 +106,8 @@ type ConsentResponse = {
 };
 
 type RenderResponse = {
+  avatarRenderId: string;
+  consentRecordId: string;
   sourceRunId: string;
   status: string;
   renderJobStatus: string;
@@ -125,6 +128,7 @@ type RenderResponse = {
     message: string;
   };
   trace: {
+    traceId: string;
     sourceContextRefCount: number;
     sourceCitationCount: number;
     sourceContextRefIds: string[];
@@ -404,8 +408,10 @@ function validateConsent(
 ) {
   const evaluation = walkthrough.evaluation!;
   requireText(value.consentRecordId, "CONSENT_INVALID");
+  requireText(value.traceId, "CONSENT_INVALID");
   if (
     value.sourceRunId !== walkthrough.runId ||
+    value.traceId !== walkthrough.trace?.traceId ||
     value.sourceEvaluationId !== evaluation.evaluationId || value.evaluationStatus !== "PASSED" ||
     value.sourceEvaluationChecksum !== multilingual.trace.sourceEvaluationChecksum ||
     !arraysEqual(value.sourceContextRefIds, multilingual.trace.sourceContextRefIds) ||
@@ -426,8 +432,12 @@ function validateRender(
   consent: ConsentResponse,
 ) {
   const trace = value.trace;
+  requireText(value.avatarRenderId, "PRESENTER_BOUNDARY_INVALID");
+  requireText(value.consentRecordId, "PRESENTER_BOUNDARY_INVALID");
+  requireText(trace?.traceId, "PRESENTER_BOUNDARY_INVALID");
   if (
     value.status !== "COMPLETED" || value.renderJobStatus !== "COMPLETED" ||
+    value.consentRecordId !== consent.consentRecordId ||
     value.sourceRunId !== walkthrough.runId || value.sourceScriptText !== multilingual.translatedScriptText ||
     !approvedLocalProvider(value.avatarProvider, ["mock"]) ||
     value.providerConfig?.provider !== value.avatarProvider.provider ||
@@ -439,7 +449,8 @@ function validateRender(
     value.providerConfig.supportsClonedIdentity ||
     value.disclosure?.consentStatus !== "CONFIRMED" ||
     value.disclosure?.clonedIdentity
-    || !trace || trace.sourceContextRefCount !== multilingual.trace.sourceContextRefCount
+    || !trace || trace.traceId !== walkthrough.trace?.traceId
+    || trace.sourceContextRefCount !== multilingual.trace.sourceContextRefCount
     || trace.sourceCitationCount !== multilingual.trace.sourceCitationCount
     || !arraysEqual(trace.sourceContextRefIds, multilingual.trace.sourceContextRefIds)
     || !arraysEqual(trace.sourceCitationIndexes, multilingual.trace.sourceCitationIndexes)
@@ -537,7 +548,7 @@ function jsonHeaders(idempotencyKey: string) {
 }
 
 function requireText(value: unknown, code: string, maxLength = 160): asserts value is string {
-  if (typeof value !== "string" || value.length === 0 || value.length > maxLength) {
+  if (typeof value !== "string" || value.trim().length === 0 || value.length > maxLength) {
     throw new GuideWorkflowError(code, "NarraTwin stopped because required local evidence was missing.");
   }
 }

@@ -229,7 +229,7 @@
 }
 
 .search {
-  height: 40px;
+  height: 44px;
   gap: 10px;
   padding: 0 12px;
   color: var(--text-muted);
@@ -238,22 +238,19 @@
   border-radius: 9px;
 }
 
-.search input {
+.search > span {
   min-width: 0;
-  width: 100%;
+  flex: 1;
+  overflow: hidden;
   color: var(--text);
-  background: transparent;
-  border: 0;
-  outline: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.search kbd {
-  padding: 1px 6px;
+.search small {
   color: var(--text-faint);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 5px;
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .topActions {

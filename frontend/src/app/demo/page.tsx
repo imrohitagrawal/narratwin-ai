@@ -66,7 +66,7 @@ export default function QuietPresenceDemo() {
     const dialog = document.getElementById("narratwin-focus-stage");
     const origin = focusButtonRef.current;
     const focusable = () => dialog?.querySelectorAll<HTMLElement>(
-      'button:not(:disabled), select:not(:disabled), [href], [tabindex]:not([tabindex="-1"])',
+      'button:not(:disabled), input:not(:disabled), select:not(:disabled), [href], [tabindex]:not([tabindex="-1"])',
     );
     focusable()?.[0]?.focus();
     const containFocus = (event: KeyboardEvent) => {
@@ -251,10 +251,9 @@ function HostTopbar({ theme, onThemeToggle }: { theme: Theme; onThemeToggle: () 
       <div className={styles.breadcrumbs} aria-label="Breadcrumb">
         <span>Release workflow</span><Icon name="chevron" /><strong>Release 2.4.0</strong>
       </div>
-      <label className={styles.search}>
-        <span className={styles.srOnly}>Search Northwind</span><Icon name="search" />
-        <input placeholder="Search Northwind" /><kbd>/</kbd>
-      </label>
+      <div className={styles.search} aria-label="Search Northwind preview">
+        <Icon name="search" /><span>Search Northwind</span><small>Preview only</small>
+      </div>
       <div className={styles.topActions}>
         <ThemeButton theme={theme} onClick={onThemeToggle} />
         <span className={styles.notification} aria-label="No new notifications"><Icon name="bell" /></span>
@@ -413,7 +412,11 @@ function GuideContent(props: GuideContentProps) {
             </select>
           </label>
         </div>
-        <ConsentControl checked={props.consentAcknowledged} onChange={props.onConsentChange} />
+        <ConsentControl
+          checked={props.consentAcknowledged}
+          disabled={!props.hydrated}
+          onChange={props.onConsentChange}
+        />
         <button
           className={styles.runButton}
           type="button"
@@ -430,10 +433,23 @@ function GuideContent(props: GuideContentProps) {
   );
 }
 
-function ConsentControl({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
+function ConsentControl({
+  checked,
+  disabled,
+  onChange,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  onChange: (value: boolean) => void;
+}) {
   return (
     <label className={styles.consentControl}>
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.currentTarget.checked)} />
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.currentTarget.checked)}
+      />
       <span>I consent to create a local synthetic presenter preview for this run.</span>
     </label>
   );
@@ -470,7 +486,7 @@ function EvidencePanel({
       {result ? (
         <div className={styles.proofBar}>
           <span><Icon name="check" />Passed evaluation · {result.evaluation.unsupportedClaimCount} unsupported claims</span>
-          <span><Icon name="offline" />No network egress</span>
+          <span><Icon name="offline" />No external provider calls</span>
           <span>
             Local providers · {result.providerPosture.translation} / {result.providerPosture.voice} / {result.providerPosture.avatar}
           </span>
@@ -577,7 +593,11 @@ function FocusStage(props: GuideContentProps & {
             onToggle={props.onSourcesToggle}
           />
           <CapabilityBoundary />
-          <ConsentControl checked={props.consentAcknowledged} onChange={props.onConsentChange} />
+          <ConsentControl
+            checked={props.consentAcknowledged}
+            disabled={!props.hydrated}
+            onChange={props.onConsentChange}
+          />
           <div className={styles.focusActions}>
             <button
               type="button"

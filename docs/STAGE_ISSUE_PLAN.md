@@ -556,7 +556,7 @@ and proves semantic light/dark, bounded Guide Ribbon collapse/focus, full-screen
 mobile return, modal keyboard containment, reduced-motion, and safe failure
 behavior. ADR `0048` fixes the reserved/overlay host-adapter boundary; the local
 generated presenter is a disclosed still-image preview. Q&A, governed web search, real media, cloned identity,
-provider calls, deployment, public availability, and production readiness stay
+external provider calls, deployment, public availability, and production readiness stay
 out of scope.
 Issues and stopped implementations `#336`–`#345` remain forensic-only. Non-main push validation uses
 the complete `origin/main` merge-base-to-exact-head candidate rather than the
