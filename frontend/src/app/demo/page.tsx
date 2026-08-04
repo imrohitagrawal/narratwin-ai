@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 
 import {
   GuideWorkflowError,
@@ -42,33 +41,44 @@ export default function QuietPresenceDemo() {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [captionsOn, setCaptionsOn] = useState(true);
+  const [consentAcknowledged, setConsentAcknowledged] = useState(false);
   const [error, setError] = useState("");
+  const [hydrated, setHydrated] = useState(false);
   const focusButtonRef = useRef<HTMLButtonElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
+  const activeRunRef = useRef<{ controller: AbortController; id: number } | null>(null);
+  const nextRunIdRef = useRef(0);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
+      setHydrated(true);
       if (window.innerWidth > 720 && window.innerHeight <= 760) setGuideState("collapsed");
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      activeRunRef.current?.controller.abort();
+      activeRunRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
     if (!focusOpen) return;
     const dialog = document.getElementById("narratwin-focus-stage");
     const origin = focusButtonRef.current;
-    const focusable = dialog?.querySelectorAll<HTMLElement>(
+    const focusable = () => dialog?.querySelectorAll<HTMLElement>(
       'button:not(:disabled), select:not(:disabled), [href], [tabindex]:not([tabindex="-1"])',
     );
-    focusable?.[0]?.focus();
+    focusable()?.[0]?.focus();
     const containFocus = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setFocusOpen(false);
         return;
       }
-      if (event.key !== "Tab" || !focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
+      if (event.key !== "Tab") return;
+      const current = focusable();
+      if (!current?.length) return;
+      const first = current[0];
+      const last = current[current.length - 1];
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
@@ -85,6 +95,10 @@ export default function QuietPresenceDemo() {
   }, [focusOpen]);
 
   async function runDemo() {
+    activeRunRef.current?.controller.abort();
+    const controller = new AbortController();
+    const runId = ++nextRunIdRef.current;
+    activeRunRef.current = { controller, id: runId };
     setIsRunning(true);
     setError("");
     setSourcesOpen(false);
@@ -96,23 +110,33 @@ export default function QuietPresenceDemo() {
         depth,
         targetLanguage: "en",
         glossaryTerms: ["Northwind", "Release 2.4.0"],
-      });
-      setResult(nextResult);
+        syntheticAvatarConsent: consentAcknowledged,
+      }, fetch, controller.signal);
+      if (activeRunRef.current?.id === runId && !controller.signal.aborted) setResult(nextResult);
     } catch (caught) {
-      setResult(null);
-      setError(
-        caught instanceof GuideWorkflowError
-          ? caught.message
-          : "The local NarraTwin demo could not complete safely. Try again.",
-      );
+      if (activeRunRef.current?.id === runId && !controller.signal.aborted) {
+        setResult(null);
+        setError(
+          caught instanceof GuideWorkflowError
+            ? caught.message
+            : "The local NarraTwin demo could not complete safely. Try again.",
+        );
+      }
     } finally {
-      setIsRunning(false);
+      if (activeRunRef.current?.id === runId) {
+        activeRunRef.current = null;
+        setIsRunning(false);
+      }
     }
   }
 
   const stopPresentation = () => {
+    activeRunRef.current?.controller.abort();
+    activeRunRef.current = null;
+    setIsRunning(false);
     setResult(null);
     setSourcesOpen(false);
+    setError("");
   };
   const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
   const returnToHost = () => {
@@ -134,15 +158,18 @@ export default function QuietPresenceDemo() {
   const guideProps: GuideContentProps = {
     audience,
     captionsOn,
+    consentAcknowledged,
     depth,
     error,
     explanation,
     isRunning,
+    hydrated,
     presenterState,
     result,
     sourcesOpen,
     onAudienceChange: setAudience,
     onCaptionsToggle: () => setCaptionsOn(!captionsOn),
+    onConsentChange: setConsentAcknowledged,
     onDepthChange: setDepth,
     onRun: runDemo,
     onSourcesToggle: () => setSourcesOpen(!sourcesOpen),
@@ -154,6 +181,7 @@ export default function QuietPresenceDemo() {
       className={styles.demo}
       data-theme={theme}
       data-mobile-guide={mobileGuideOpen ? "open" : "closed"}
+      data-hydrated={hydrated}
       aria-busy={isRunning}
     >
       <div className={styles.backgroundLayer} inert={focusOpen} aria-hidden={focusOpen || undefined}>
@@ -196,6 +224,7 @@ export default function QuietPresenceDemo() {
               <RibbonControls
                 captionsOn={captionsOn}
                 focusButtonRef={focusButtonRef}
+                isRunning={isRunning}
                 onCaptionsToggle={guideProps.onCaptionsToggle}
                 onFocus={() => setFocusOpen(true)}
                 onMinimize={minimizeGuide}
@@ -320,15 +349,18 @@ function HostWorkspace() {
 type GuideContentProps = {
   audience: string;
   captionsOn: boolean;
+  consentAcknowledged: boolean;
   depth: string;
   error: string;
   explanation: string;
+  hydrated: boolean;
   isRunning: boolean;
   presenterState: string;
   result: GuideDemoResult | null;
   sourcesOpen: boolean;
   onAudienceChange: (value: string) => void;
   onCaptionsToggle: () => void;
+  onConsentChange: (value: boolean) => void;
   onDepthChange: (value: string) => void;
   onRun: () => void;
   onSourcesToggle: () => void;
@@ -381,7 +413,13 @@ function GuideContent(props: GuideContentProps) {
             </select>
           </label>
         </div>
-        <button className={styles.runButton} type="button" disabled={props.isRunning} onClick={props.onRun}>
+        <ConsentControl checked={props.consentAcknowledged} onChange={props.onConsentChange} />
+        <button
+          className={styles.runButton}
+          type="button"
+          disabled={!props.hydrated || !props.consentAcknowledged || props.isRunning}
+          onClick={props.onRun}
+        >
           <Icon name="play" />{props.isRunning ? "Grounding approved evidence…" : "Run grounded demo"}
         </button>
       </div>
@@ -389,6 +427,15 @@ function GuideContent(props: GuideContentProps) {
       <EvidencePanel result={props.result} sourcesOpen={props.sourcesOpen} onToggle={props.onSourcesToggle} />
       <CapabilityBoundary />
     </section>
+  );
+}
+
+function ConsentControl({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <label className={styles.consentControl}>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.currentTarget.checked)} />
+      <span>I consent to create a local synthetic presenter preview for this run.</span>
+    </label>
   );
 }
 
@@ -439,7 +486,7 @@ function CapabilityBoundary() {
       <span><Icon name="offline" /><strong>External web disabled by policy</strong></span>
       <button type="button" disabled>Ask next · planned</button>
       <p>Q&amp;A and governed web search are not enabled in this Cut 1.</p>
-      <small>Local mock · no provider calls, real media, or cloned identity</small>
+      <small>Local mock · no external provider calls, real media, or cloned identity</small>
     </section>
   );
 }
@@ -447,6 +494,7 @@ function CapabilityBoundary() {
 function RibbonControls({
   captionsOn,
   focusButtonRef,
+  isRunning,
   onCaptionsToggle,
   onFocus,
   onMinimize,
@@ -454,6 +502,7 @@ function RibbonControls({
 }: {
   captionsOn: boolean;
   focusButtonRef: React.RefObject<HTMLButtonElement | null>;
+  isRunning: boolean;
   onCaptionsToggle: () => void;
   onFocus: () => void;
   onMinimize: () => void;
@@ -466,7 +515,9 @@ function RibbonControls({
       <button type="button" aria-pressed={captionsOn} onClick={onCaptionsToggle}>
         <Icon name="captions" /><span>Captions {captionsOn ? "on" : "off"}</span>
       </button>
-      <button type="button" onClick={onStop}><Icon name="stop" /><span>Clear</span></button>
+      <button type="button" onClick={onStop}>
+        <Icon name="stop" /><span>{isRunning ? "Stop" : "Clear"}</span>
+      </button>
     </div>
   );
 }
@@ -526,11 +577,19 @@ function FocusStage(props: GuideContentProps & {
             onToggle={props.onSourcesToggle}
           />
           <CapabilityBoundary />
+          <ConsentControl checked={props.consentAcknowledged} onChange={props.onConsentChange} />
           <div className={styles.focusActions}>
-            <button type="button" className={styles.runButton} disabled={props.isRunning} onClick={props.onRun}>
+            <button
+              type="button"
+              className={styles.runButton}
+              disabled={!props.hydrated || !props.consentAcknowledged || props.isRunning}
+              onClick={props.onRun}
+            >
               <Icon name="play" />{props.isRunning ? "Grounding approved evidence…" : "Run grounded demo"}
             </button>
-            <button type="button" disabled={!props.result} onClick={props.onStop}><Icon name="stop" />Stop</button>
+            <button type="button" disabled={!props.result && !props.isRunning} onClick={props.onStop}>
+              <Icon name="stop" />Stop
+            </button>
           </div>
         </div>
       </div>
@@ -585,14 +644,11 @@ function NarraMark() {
 
 function PresenterPortrait({ fullLength = false }: { fullLength?: boolean }) {
   return (
-    <Image
+    <div
       className={`${styles.portrait} ${fullLength ? styles.portraitFull : ""}`}
-      src="/demo/narratwin-synthetic-presenter.webp"
-      alt="Stylized fictional full-length synthetic NarraTwin presenter"
-      width={1122}
-      height={1402}
-      sizes={fullLength ? "(max-width: 720px) 100vw, 36vw" : "214px"}
-      unoptimized
+      role="img"
+      aria-label="Stylized fictional full-length synthetic NarraTwin presenter"
+      data-image-src="/demo/narratwin-synthetic-presenter.webp"
     />
   );
 }

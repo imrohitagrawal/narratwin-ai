@@ -5,6 +5,7 @@ export type GuideDemoInput = {
   depth: string;
   targetLanguage: string;
   glossaryTerms: string[];
+  syntheticAvatarConsent: boolean;
 };
 
 export type GuideSource = {
@@ -154,7 +155,14 @@ const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
 export async function runQuietPresenceDemo(
   input: GuideDemoInput,
   fetcher: Fetcher = fetch,
+  signal?: AbortSignal,
 ): Promise<GuideDemoResult> {
+  if (!input.syntheticAvatarConsent) {
+    throw new GuideWorkflowError(
+      "CONSENT_REQUIRED",
+      "Confirm the local synthetic-presenter consent before running this demo.",
+    );
+  }
   const requestKey = workflowKey(input);
   const project = await postJson<{ projectId: string }>(
     fetcher,
@@ -166,6 +174,7 @@ export async function runQuietPresenceDemo(
       defaultLanguage: "en",
     },
     `${requestKey}-project`,
+    signal,
   );
   requireText(project.projectId, "PROJECT_INVALID");
 
@@ -175,12 +184,13 @@ export async function runQuietPresenceDemo(
     new Blob([input.knowledgeDocument], { type: "text/markdown" }),
     "northwind-release.md",
   );
-  const document = await requestJson<{ documentId: string }>(fetcher, 
+  const document = await requestJson<{ documentId: string }>(fetcher,
     `/projects/${project.projectId}/knowledge-documents`,
     {
       method: "POST",
       headers: { "Idempotency-Key": `${requestKey}-upload` },
       body: upload,
+      signal,
     },
   );
   requireText(document.documentId, "DOCUMENT_INVALID");
@@ -192,6 +202,7 @@ export async function runQuietPresenceDemo(
       method: "PATCH",
       headers: jsonHeaders(`${requestKey}-approval`),
       body: JSON.stringify({ approvalStatus: "APPROVED", reviewNote: "Approved local demo source." }),
+      signal,
     },
   );
 
@@ -200,6 +211,7 @@ export async function runQuietPresenceDemo(
     `/projects/${project.projectId}/ingestion-runs`,
     { documentIds: [document.documentId] },
     `${requestKey}-ingest`,
+    signal,
   );
 
   const walkthrough = await postJson<WalkthroughResponse>(
@@ -213,6 +225,7 @@ export async function runQuietPresenceDemo(
       prompt: "Explain why deployment is blocked using only approved project evidence.",
     },
     `${requestKey}-walkthrough`,
+    signal,
   );
   validateWalkthrough(walkthrough);
 
@@ -225,6 +238,7 @@ export async function runQuietPresenceDemo(
       requestedVoiceProvider: "mock",
     },
     `${requestKey}-multilingual`,
+    signal,
   );
   validateMultilingual(multilingual, walkthrough, input.targetLanguage);
 
@@ -233,6 +247,7 @@ export async function runQuietPresenceDemo(
     `/projects/${project.projectId}/walkthrough-runs/${walkthrough.runId}/avatar-consents`,
     { consentToUseSyntheticAvatar: true },
     `${requestKey}-consent`,
+    signal,
   );
   validateConsent(consent, walkthrough, multilingual);
 
@@ -247,6 +262,7 @@ export async function runQuietPresenceDemo(
       multilingualBundle: buildMultilingualBundle(multilingual, consent),
     },
     `${requestKey}-render`,
+    signal,
   );
   validateRender(render, walkthrough, multilingual, consent);
 
@@ -307,6 +323,9 @@ function buildMultilingualBundle(multilingual: MultilingualResponse, consent: Co
 
 function validateWalkthrough(value: WalkthroughResponse) {
   const evaluation = value.evaluation;
+  requireText(value.runId, "GROUNDING_REFUSED");
+  requireText(value.trace?.traceId, "GROUNDING_REFUSED");
+  requireText(evaluation?.evaluationId, "GROUNDING_REFUSED");
   if (
     value.status !== "COMPLETED" ||
     !value.acceptedScriptText ||
@@ -346,6 +365,9 @@ function validateWalkthrough(value: WalkthroughResponse) {
 
 function validateMultilingual(value: MultilingualResponse, walkthrough: WalkthroughResponse, targetLanguage: string) {
   const evaluation = walkthrough.evaluation!;
+  const artifacts = value.artifacts;
+  const trace = value.trace;
+  requireText(value.multilingualRunId, "MULTILINGUAL_INVALID");
   const contextIds = walkthrough.contextRefs.map((context) => context.contextRefId);
   const citationIndexes = evaluation.claimSupports.map((support) => support.citationIndex);
   const supportIds = evaluation.claimSupports.map((support) => support.claimSupportId);
@@ -355,14 +377,16 @@ function validateMultilingual(value: MultilingualResponse, walkthrough: Walkthro
     value.targetLanguage !== targetLanguage ||
     value.sourceScriptText !== walkthrough.acceptedScriptText ||
     !value.translatedScriptText ||
-    value.trace.sourceEvaluationId !== evaluation.evaluationId ||
-    value.trace.evaluationStatus !== "PASSED" ||
-    value.trace.sourceContextRefCount !== contextIds.length ||
-    value.trace.sourceCitationCount !== citationIndexes.length ||
-    !arraysEqual(value.trace.sourceContextRefIds, contextIds) ||
-    !arraysEqual(value.trace.sourceCitationIndexes, citationIndexes) ||
-    !arraysEqual(value.trace.sourceClaimSupportIds, supportIds) ||
-    !isChecksum(value.trace.sourceEvaluationChecksum) ||
+    !artifacts || !isChecksum(artifacts.translatedScript?.checksum) ||
+    !isChecksum(artifacts.subtitles?.checksum) || !isChecksum(artifacts.voiceManifest?.checksum) ||
+    !trace || trace.sourceEvaluationId !== evaluation.evaluationId ||
+    trace.evaluationStatus !== "PASSED" ||
+    trace.sourceContextRefCount !== contextIds.length ||
+    trace.sourceCitationCount !== citationIndexes.length ||
+    !arraysEqual(trace.sourceContextRefIds, contextIds) ||
+    !arraysEqual(trace.sourceCitationIndexes, citationIndexes) ||
+    !arraysEqual(trace.sourceClaimSupportIds, supportIds) ||
+    !isChecksum(trace.sourceEvaluationChecksum) ||
     !approvedLocalProvider(value.translationProvider, ["mock", "local-rule-based"]) ||
     !approvedLocalProvider(value.voice, ["mock"])
   ) {
@@ -379,8 +403,9 @@ function validateConsent(
   multilingual: MultilingualResponse,
 ) {
   const evaluation = walkthrough.evaluation!;
+  requireText(value.consentRecordId, "CONSENT_INVALID");
   if (
-    !value.consentRecordId || value.sourceRunId !== walkthrough.runId ||
+    value.sourceRunId !== walkthrough.runId ||
     value.sourceEvaluationId !== evaluation.evaluationId || value.evaluationStatus !== "PASSED" ||
     value.sourceEvaluationChecksum !== multilingual.trace.sourceEvaluationChecksum ||
     !arraysEqual(value.sourceContextRefIds, multilingual.trace.sourceContextRefIds) ||
@@ -423,6 +448,9 @@ function validateRender(
     || trace.evaluationStatus !== "PASSED"
     || trace.multilingualRunId !== multilingual.multilingualRunId
     || trace.targetLanguage !== multilingual.targetLanguage
+    || !isChecksum(trace.translatedScriptChecksum)
+    || !isChecksum(trace.subtitlesChecksum)
+    || !isChecksum(trace.voiceManifestChecksum)
     || trace.translatedScriptChecksum !== multilingual.artifacts.translatedScript.checksum
     || trace.subtitlesChecksum !== multilingual.artifacts.subtitles.checksum
     || trace.voiceManifestChecksum !== multilingual.artifacts.voiceManifest.checksum
@@ -454,7 +482,7 @@ function arraysEqual<T>(value: unknown, expected: T[]) {
 }
 
 function isChecksum(value: unknown) {
-  return typeof value === "string" && /^sha256:[0-9a-z]+$/i.test(value);
+  return typeof value === "string" && /^sha256:[0-9a-f]{64}$/.test(value);
 }
 
 async function postJson<T>(
@@ -462,11 +490,13 @@ async function postJson<T>(
   path: string,
   body: object,
   idempotencyKey: string,
+  signal?: AbortSignal,
 ) {
   return requestJson<T>(fetcher, path, {
     method: "POST",
     headers: jsonHeaders(idempotencyKey),
     body: JSON.stringify(body),
+    signal,
   });
 }
 
@@ -474,7 +504,10 @@ async function requestJson<T>(fetcher: Fetcher, path: string, init: RequestInit)
   let response: Response;
   try {
     response = await fetcher(`${apiBase}${path}`, init);
-  } catch {
+  } catch (error) {
+    if (init.signal?.aborted || (error instanceof Error && error.name === "AbortError")) {
+      throw new GuideWorkflowError("REQUEST_ABORTED", "The local NarraTwin demo run was stopped.");
+    }
     throw new GuideWorkflowError(
       "REQUEST_FAILED",
       "The local NarraTwin demo could not complete safely. Check that the local API is running and try again.",

@@ -171,6 +171,7 @@ test.describe("Quiet Presence mocked product UI", () => {
   });
 
   test("stops an active run without allowing late work to repopulate the guide", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.route("**/api/v1/projects", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 200));
       await route.fulfill(json({ projectId: "project_late" })).catch(() => undefined);
@@ -259,7 +260,6 @@ test.describe("Quiet Presence mocked product UI", () => {
   test("defaults to the bounded 60 px ribbon on a short laptop viewport", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto("/demo");
-    await consentToLocalPresenter(page);
     await expect(page.locator('[data-guide-state="collapsed"]')).toBeVisible();
     await expect(page.locator('[data-guide-state="collapsed"]')).toHaveCSS("height", "60px");
     await expect(page.getByRole("heading", { name: "Release 2.4.0" })).toBeVisible();
