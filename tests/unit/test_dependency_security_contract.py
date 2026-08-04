@@ -97,6 +97,50 @@ def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
     assert tool_packages["semgrep"] == {"1.168.0"}
     assert tool_packages["click"] == {"8.3.3"}
     assert tool_packages["mcp"] == {"1.28.1"}
+    assert tool_packages["cryptography"] == {"50.0.0"}
+
+
+def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root_project: dict[str, Any] = {"tool": {"uv": {}}}
+    tool_project: dict[str, Any] = {
+        "project": {"dependencies": ["semgrep==1.168.0"]},
+        "tool": {"uv": {"override-dependencies": ["click==8.3.3", "mcp==1.28.1"]}},
+    }
+    root_lock = {"click": {"8.3.3"}}
+
+    monkeypatch.setattr(
+        semgrep_security,
+        "_toml",
+        lambda path: tool_project if "tools/semgrep" in str(path) else root_project,
+    )
+    monkeypatch.setattr(semgrep_security, "_manifest_targets", lambda root: EXPECTED_TARGETS)
+    monkeypatch.setattr(
+        semgrep_security,
+        "_configured_rule_ids",
+        lambda path: semgrep_security.EXPECTED_RULE_IDS,
+    )
+    monkeypatch.setattr(semgrep_security, "validate_reviewed_inputs", lambda root: None)
+    monkeypatch.setattr(semgrep_security, "validate_audit_wrappers", lambda root: None)
+
+    for version, accepted in (("49.0.0", False), ("50.0.0", True)):
+        tool_lock = {
+            "semgrep": {"1.168.0"},
+            "click": {"8.3.3"},
+            "mcp": {"1.28.1"},
+            "cryptography": {version},
+        }
+        monkeypatch.setattr(
+            semgrep_security,
+            "_locked_versions",
+            lambda path, lock=tool_lock: lock if "tools/semgrep" in str(path) else root_lock,
+        )
+        if accepted:
+            validate_project_contract(ROOT, today=dt.date(2026, 8, 4))
+        else:
+            with pytest.raises(ContractError, match="cryptography"):
+                validate_project_contract(ROOT, today=dt.date(2026, 8, 4))
 
 
 def test_semgrep_tool_contract_rejects_missing_wrong_or_extra_mcp_override(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -131,11 +175,40 @@ def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest
     site_packages = tmp_path / "semgrep-tool" / "lib"
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
-    monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: {"semgrep": {"1.168.0"}, "click": {"8.3.3"}, "mcp": {"1.28.1"}})
-    monkeypatch.setattr(importlib.metadata, "distributions", lambda path: [dist("semgrep", "1.168.0"), dist("click", "8.3.3"), dist("mcp", "1.28.1")])
+    lock = {"semgrep": {"1.168.0"}, "click": {"8.3.3"}, "mcp": {"1.28.1"}, "cryptography": {"50.0.0"}}
+    installed = [dist("semgrep", "1.168.0"), dist("click", "8.3.3"), dist("mcp", "1.28.1"), dist("cryptography", "50.0.0")]
+    monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: lock)
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
     validate_installed_tool(site_packages)
-    monkeypatch.setattr(importlib.metadata, "distributions", lambda path: [dist("semgrep", "1.168.0"), dist("click", "8.3.3"), dist("mcp", "1.23.3")])
+    installed[2] = dist("mcp", "1.23.3")
     with pytest.raises(ContractError, match="MCP identity"):
+        validate_installed_tool(site_packages)
+
+
+def test_installed_semgrep_tool_identity_rejects_vulnerable_cryptography(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def dist(name: str, version: str) -> object:
+        return type("Dist", (), {"metadata": {"Name": name}, "version": version})()
+
+    site_packages = tmp_path / "semgrep-tool" / "lib"
+    site_packages.mkdir(parents=True)
+    monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
+    locked = {
+        "semgrep": {"1.168.0"},
+        "click": {"8.3.3"},
+        "mcp": {"1.28.1"},
+        "cryptography": {"50.0.0"},
+    }
+    monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: locked)
+    installed = [
+        dist("semgrep", "1.168.0"),
+        dist("click", "8.3.3"),
+        dist("mcp", "1.28.1"),
+        dist("cryptography", "49.0.0"),
+    ]
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
+    with pytest.raises(ContractError, match="cryptography"):
         validate_installed_tool(site_packages)
 
 
