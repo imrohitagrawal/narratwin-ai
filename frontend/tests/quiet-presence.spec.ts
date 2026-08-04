@@ -86,6 +86,7 @@ async function mockQuietPresencePipeline(page: Page) {
     if (path.endsWith("/avatar-consents")) {
       return route.fulfill(json({
         consentRecordId: "consent_001",
+        traceId: "trace_001",
         sourceRunId: "run_001",
         sourceContextRefIds: ["context_001"],
         sourceCitationIndexes: [1],
@@ -99,6 +100,7 @@ async function mockQuietPresencePipeline(page: Page) {
     if (path.endsWith("/avatar-renders")) {
       return route.fulfill(json({
         avatarRenderId: "render_001",
+        consentRecordId: "consent_001",
         status: "COMPLETED",
         renderJobStatus: "COMPLETED",
         sourceRunId: "run_001",
@@ -119,6 +121,7 @@ async function mockQuietPresencePipeline(page: Page) {
           message: "Synthetic local presenter. No cloned identity.",
         },
         trace: {
+          traceId: "trace_001",
           sourceContextRefCount: 1,
           sourceCitationCount: 1,
           sourceContextRefIds: ["context_001"],
@@ -158,7 +161,7 @@ test.describe("Quiet Presence mocked product UI", () => {
     await page.getByRole("button", { name: /Verified sources/ }).click();
     await expect(page.getByText("Security review must pass before deployment.")).toBeVisible();
     await expect(page.getByText("Passed evaluation · 0 unsupported claims")).toBeVisible();
-    await expect(page.getByText("No network egress")).toBeVisible();
+    await expect(page.getByText("No external provider calls").first()).toBeVisible();
     await expect(page.getByText("Verified project source").first()).toBeVisible();
     await expect(page.getByText("Local providers · mock / mock / mock")).toBeVisible();
     for (const control of [
@@ -212,8 +215,17 @@ test.describe("Quiet Presence mocked product UI", () => {
     await expect(page.getByText("Synthetic presenter preview · still image")).toBeVisible();
     const close = page.getByRole("button", { name: "Close focus stage" });
     await expect(close).toBeFocused();
-    await page.getByRole("dialog").getByRole("checkbox", { name: /create a local synthetic presenter preview/i }).check();
-    await page.getByRole("dialog").getByRole("button", { name: "Run grounded demo" }).click();
+    const consent = page.getByRole("dialog").getByRole("checkbox", {
+      name: /create a local synthetic presenter preview/i,
+    });
+    await page.keyboard.press("Tab");
+    await expect(consent).toBeFocused();
+    await page.keyboard.press("Space");
+    await expect(consent).toBeChecked();
+    await page.keyboard.press("Tab");
+    const run = page.getByRole("dialog").getByRole("button", { name: "Run grounded demo" });
+    await expect(run).toBeFocused();
+    await run.click();
     await expect(page.getByRole("dialog").getByRole("button", { name: "Stop" })).toBeEnabled();
     await page.getByRole("dialog").getByRole("button", { name: "Run grounded demo" }).focus();
     await page.keyboard.press("Tab");
@@ -292,7 +304,7 @@ test.describe("Quiet Presence mocked product UI", () => {
     await consentToLocalPresenter(page);
     await page.getByRole("button", { name: "Run grounded demo" }).click();
     await expect(page.getByText("Verified project source").first()).toBeVisible();
-    await expect(page.getByText("No network egress")).toBeVisible();
+    await expect(page.getByText("No external provider calls").first()).toBeVisible();
     await expect(page.getByText("Local providers · mock / mock / mock")).toBeVisible();
   });
 });

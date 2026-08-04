@@ -100,6 +100,7 @@ function successfulFetch(overrides: Partial<Record<number, unknown>> = {}) {
       },
       7: {
         consentRecordId: "consent_001",
+        traceId: "trace_001",
         sourceRunId: "run_001",
         sourceContextRefIds: ["context_001"],
         sourceCitationIndexes: [1],
@@ -111,6 +112,7 @@ function successfulFetch(overrides: Partial<Record<number, unknown>> = {}) {
       },
       8: {
         avatarRenderId: "render_001",
+        consentRecordId: "consent_001",
         status: "COMPLETED",
         renderJobStatus: "COMPLETED",
         sourceRunId: "run_001",
@@ -131,6 +133,7 @@ function successfulFetch(overrides: Partial<Record<number, unknown>> = {}) {
           message: "Synthetic local presenter. No cloned identity.",
         },
         trace: {
+          traceId: "trace_001",
           sourceContextRefCount: 1,
           sourceCitationCount: 1,
           sourceContextRefIds: ["context_001"],
@@ -276,6 +279,9 @@ describe("runQuietPresenceDemo", () => {
     ["malformed evaluation digest", 6, { trace: { sourceEvaluationChecksum: "sha256:fake" } }],
     ["malformed translated artifact digest", 6, { artifacts: { translatedScript: { checksum: "sha256:fake" } } }],
     ["blank multilingual identity", 6, { multilingualRunId: "" }],
+    ["blank consent trace identity", 7, { traceId: "" }],
+    ["blank render identity", 8, { avatarRenderId: "" }],
+    ["mismatched render consent identity", 8, { consentRecordId: "consent_other" }],
     ["unconfirmed consent", 8, { disclosure: { consentStatus: "NOT_REQUIRED", clonedIdentity: false, message: "invalid" } }],
     ["real-video capability", 8, { providerConfig: { provider: "mock", providerMode: "LOCAL", adapterKind: "MOCK_LOCAL", allowNetworkEgress: false, requiresApiKey: false, supportsRealVideo: true, supportsClonedIdentity: false } }],
     ["mismatched Stage 7 script", 8, { sourceScriptText: "Different translated script" }],
@@ -283,6 +289,31 @@ describe("runQuietPresenceDemo", () => {
     const baseline = successfulResponses();
     const changed = { ...baseline[position], ...mutation };
     const { fetcher } = successfulFetch({ [position]: changed });
+
+    await expect(runQuietPresenceDemo(input, fetcher)).rejects.toBeInstanceOf(GuideWorkflowError);
+  });
+
+  it("rejects a blank Stage 7 render trace identity", async () => {
+    const baseline = successfulResponses();
+    const render = baseline[8];
+    const { fetcher } = successfulFetch({
+      8: {
+        ...render,
+        trace: { ...(render.trace as Record<string, unknown>), traceId: "" },
+      },
+    });
+
+    await expect(runQuietPresenceDemo(input, fetcher)).rejects.toBeInstanceOf(GuideWorkflowError);
+  });
+
+  it("rejects whitespace-only identities even when downstream lineage repeats them", async () => {
+    const baseline = successfulResponses();
+    const { fetcher } = successfulFetch({
+      5: { ...baseline[5], runId: "   " },
+      6: { ...baseline[6], sourceRunId: "   " },
+      7: { ...baseline[7], sourceRunId: "   " },
+      8: { ...baseline[8], sourceRunId: "   " },
+    });
 
     await expect(runQuietPresenceDemo(input, fetcher)).rejects.toBeInstanceOf(GuideWorkflowError);
   });
@@ -308,11 +339,18 @@ function fixtureResponses(): Record<number, Record<string, unknown>> {
       translationProvider: { provider: "mock", providerMode: "LOCAL" }, voice: { provider: "mock", providerMode: "LOCAL" },
       trace: { sourceContextRefCount: 1, sourceCitationCount: 1, sourceContextRefIds: ["context_001"], sourceCitationIndexes: [1], sourceClaimSupportIds: ["support_001"], sourceEvaluationId: "evaluation_001", sourceEvaluationChecksum: checksums.evaluation, evaluationStatus: "PASSED" },
     },
+    7: {
+      consentRecordId: "consent_001", traceId: "trace_001", sourceRunId: "run_001",
+      sourceContextRefIds: ["context_001"], sourceCitationIndexes: [1], sourceEvaluationId: "evaluation_001",
+      sourceEvaluationChecksum: checksums.evaluation, evaluationStatus: "PASSED",
+      consentStatementVersion: "stage7-synthetic-avatar-consent-v1",
+      consentStatementText: "Synthetic presenter approved for this local demo.",
+    },
     8: {
-      avatarRenderId: "render_001", status: "COMPLETED", renderJobStatus: "COMPLETED", sourceRunId: "run_001", sourceScriptText: "La revisión de seguridad sigue en curso. [1]",
+      avatarRenderId: "render_001", consentRecordId: "consent_001", status: "COMPLETED", renderJobStatus: "COMPLETED", sourceRunId: "run_001", sourceScriptText: "La revisión de seguridad sigue en curso. [1]",
       avatarProvider: { provider: "mock", providerMode: "LOCAL" }, providerConfig: { provider: "mock", providerMode: "LOCAL", adapterKind: "MOCK_LOCAL", allowNetworkEgress: false, requiresApiKey: false, supportsRealVideo: false, supportsClonedIdentity: false },
       disclosure: { consentStatus: "CONFIRMED", clonedIdentity: false, message: "Synthetic local presenter. No cloned identity." },
-      trace: { sourceContextRefCount: 1, sourceCitationCount: 1, sourceContextRefIds: ["context_001"], sourceCitationIndexes: [1], sourceEvaluationId: "evaluation_001", sourceEvaluationChecksum: checksums.evaluation, evaluationStatus: "PASSED", multilingualRunId: "multilingual_001", targetLanguage: "es", translatedScriptChecksum: checksums.script, subtitlesChecksum: checksums.subtitles, voiceManifestChecksum: checksums.voice },
+      trace: { traceId: "trace_001", sourceContextRefCount: 1, sourceCitationCount: 1, sourceContextRefIds: ["context_001"], sourceCitationIndexes: [1], sourceEvaluationId: "evaluation_001", sourceEvaluationChecksum: checksums.evaluation, evaluationStatus: "PASSED", multilingualRunId: "multilingual_001", targetLanguage: "es", translatedScriptChecksum: checksums.script, subtitlesChecksum: checksums.subtitles, voiceManifestChecksum: checksums.voice },
     },
   };
 }

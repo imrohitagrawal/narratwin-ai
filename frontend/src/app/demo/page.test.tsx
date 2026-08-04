@@ -17,9 +17,12 @@ describe("Quiet Presence demo", () => {
     expect(html).toContain("Synthetic presenter preview");
     expect(html).toContain("create a local synthetic presenter preview");
     expect(html).toContain('data-hydrated="false"');
+    expect(html).toContain('<input type="checkbox" disabled=""');
     expect(html).toContain("Simulated host context");
     expect(html).toContain("narratwin-synthetic-presenter.webp");
     expect(html).toContain('role="img"');
+    expect(html).toContain('aria-label="Search Northwind preview"');
+    expect(html).not.toContain('<input placeholder="Search Northwind"');
     expect(html).not.toContain('style="color:transparent"');
   });
 
@@ -36,6 +39,7 @@ describe("Quiet Presence demo", () => {
     expect(html).toContain("Captions on");
     expect(html).toContain("Q&amp;A and governed web search are not enabled in this Cut 1");
     expect(html).toContain("no external provider calls");
+    expect(html).not.toContain("No network egress");
     expect(html).not.toContain("Production ready");
     expect(html).not.toContain("Real avatar video");
     expect(html).not.toContain("Web search active");
@@ -49,5 +53,6 @@ describe("Quiet Presence demo", () => {
     expect(html).toContain('data-mobile-guide="open"');
     expect(html).toContain("Simulated host context");
     expect(html).toContain("Synthetic presenter preview · still image");
+    expect(html).not.toContain("speaking avatar");
   });
 });
