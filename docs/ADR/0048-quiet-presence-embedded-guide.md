@@ -6,8 +6,8 @@ Accepted for Issue #358 local/mock `/demo`; no deployment or production authorit
 
 ## Context
 
-NarraTwin must remain visibly subordinate to the project it explains. The first
-browser-playable cut demonstrates that relationship inside a simulated Northwind
+NarraTwin must remain visibly subordinate to the project it explains. This browser
+UI foundation demonstrates that relationship inside a simulated Northwind
 workspace while preserving a future plug-and-play host integration path. The
 selected Quiet Presence concept uses a bottom Guide Ribbon and an optional dark
 Focus Stage. It must not depend on, inspect, or mutate an embedding product's DOM.
@@ -36,7 +36,7 @@ playback, animation, real media, cloned identity, or provider-runtime activation
 
 Successful UI state requires exact ordered Stage 4 source/evaluation mappings,
 matching Stage 6 and Stage 7 lineage, approved local/mock provider identities and
-modes, confirmed consent, no external egress, no real-video capability, and no
+modes, confirmed consent, no external provider calls, no real-video capability, and no
 cloned identity. Labels come from validated responses. Before that boundary passes,
 the host is a **Simulated host context**; only afterward is it a **Verified project
 source**. Q&A and governed web search remain visibly disabled/planned.
