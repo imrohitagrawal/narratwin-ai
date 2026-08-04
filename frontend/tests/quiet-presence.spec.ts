@@ -1,5 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
+const checksums = {
+  evaluation: `sha256:${"a".repeat(64)}`,
+  script: `sha256:${"b".repeat(64)}`,
+  subtitles: `sha256:${"c".repeat(64)}`,
+  voice: `sha256:${"d".repeat(64)}`,
+};
+
 const json = (value: unknown) => ({
   status: 200,
   contentType: "application/json",
@@ -58,9 +65,9 @@ async function mockQuietPresencePipeline(page: Page) {
         sourceScriptText: "The security review is still in progress. [1]",
         translatedScriptText: "The security review is still in progress. [1]",
         artifacts: {
-          translatedScript: { checksum: "sha256:script" },
-          subtitles: { checksum: "sha256:subtitles" },
-          voiceManifest: { checksum: "sha256:voice" },
+          translatedScript: { checksum: checksums.script },
+          subtitles: { checksum: checksums.subtitles },
+          voiceManifest: { checksum: checksums.voice },
         },
         translationProvider: { provider: "mock", providerMode: "LOCAL" },
         voice: { provider: "mock", providerMode: "LOCAL" },
@@ -71,7 +78,7 @@ async function mockQuietPresencePipeline(page: Page) {
           sourceCitationIndexes: [1],
           sourceClaimSupportIds: ["support_001"],
           sourceEvaluationId: "evaluation_001",
-          sourceEvaluationChecksum: "sha256:evaluation001",
+          sourceEvaluationChecksum: checksums.evaluation,
           evaluationStatus: "PASSED",
         },
       }));
@@ -83,7 +90,7 @@ async function mockQuietPresencePipeline(page: Page) {
         sourceContextRefIds: ["context_001"],
         sourceCitationIndexes: [1],
         sourceEvaluationId: "evaluation_001",
-        sourceEvaluationChecksum: "sha256:evaluation001",
+        sourceEvaluationChecksum: checksums.evaluation,
         evaluationStatus: "PASSED",
         consentStatementVersion: "stage7-synthetic-avatar-consent-v1",
         consentStatementText: "Synthetic presenter approved for this local demo.",
@@ -117,13 +124,13 @@ async function mockQuietPresencePipeline(page: Page) {
           sourceContextRefIds: ["context_001"],
           sourceCitationIndexes: [1],
           sourceEvaluationId: "evaluation_001",
-          sourceEvaluationChecksum: "sha256:evaluation001",
+          sourceEvaluationChecksum: checksums.evaluation,
           evaluationStatus: "PASSED",
           multilingualRunId: "multilingual_001",
           targetLanguage: "en",
-          translatedScriptChecksum: "sha256:script",
-          subtitlesChecksum: "sha256:subtitles",
-          voiceManifestChecksum: "sha256:voice",
+          translatedScriptChecksum: checksums.script,
+          subtitlesChecksum: checksums.subtitles,
+          voiceManifestChecksum: checksums.voice,
         },
       }));
     }
@@ -131,11 +138,17 @@ async function mockQuietPresencePipeline(page: Page) {
   });
 }
 
+async function consentToLocalPresenter(page: Page) {
+  await expect(page.locator("main")).toHaveAttribute("data-hydrated", "true");
+  await page.getByRole("checkbox", { name: /create a local synthetic presenter preview/i }).check();
+}
+
 test.describe("Quiet Presence mocked product UI", () => {
   test("keeps host context visible and exposes local grounded evidence", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await mockQuietPresencePipeline(page);
     await page.goto("/demo");
+    await consentToLocalPresenter(page);
 
     await expect(page.getByRole("heading", { name: "Release 2.4.0" })).toBeVisible();
     await expect(page.getByRole("complementary", { name: "NarraTwin project guide" })).toBeVisible();
@@ -148,9 +161,31 @@ test.describe("Quiet Presence mocked product UI", () => {
     await expect(page.getByText("No network egress")).toBeVisible();
     await expect(page.getByText("Verified project source").first()).toBeVisible();
     await expect(page.getByText("Local providers · mock / mock / mock")).toBeVisible();
+    for (const control of [
+      page.getByLabel("Audience"),
+      page.getByLabel("Depth"),
+      page.getByRole("button", { name: /Verified sources/ }),
+    ]) {
+      expect((await control.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    }
   });
 
-  test("supports dark theme and a mobile bottom-sheet layout without overflow", async ({ page }) => {
+  test("stops an active run without allowing late work to repopulate the guide", async ({ page }) => {
+    await page.route("**/api/v1/projects", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await route.fulfill(json({ projectId: "project_late" })).catch(() => undefined);
+    });
+    await page.goto("/demo");
+    await consentToLocalPresenter(page);
+    await page.getByRole("button", { name: "Run grounded demo" }).click();
+    await page.getByRole("button", { name: "Stop" }).first().click();
+    await expect(page.locator("main")).toHaveAttribute("aria-busy", "false");
+    await expect(page.getByText("Verified project source")).toHaveCount(0);
+    await page.waitForTimeout(250);
+    await expect(page.getByText("Verified project source")).toHaveCount(0);
+  });
+
+  test("supports dark theme and a full-screen mobile guide without overflow", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/demo");
     await page.getByRole("button", { name: "Switch to dark theme" }).click();
@@ -163,6 +198,7 @@ test.describe("Quiet Presence mocked product UI", () => {
 
   test("collapses the ribbon and opens a focus stage without losing host context", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
+    await mockQuietPresencePipeline(page);
     await page.goto("/demo");
 
     await page.getByRole("button", { name: "Minimize guide" }).click();
@@ -175,8 +211,16 @@ test.describe("Quiet Presence mocked product UI", () => {
     await expect(page.getByText("Synthetic presenter preview · still image")).toBeVisible();
     const close = page.getByRole("button", { name: "Close focus stage" });
     await expect(close).toBeFocused();
+    await page.getByRole("dialog").getByRole("checkbox", { name: /create a local synthetic presenter preview/i }).check();
+    await page.getByRole("dialog").getByRole("button", { name: "Run grounded demo" }).click();
+    await expect(page.getByRole("dialog").getByRole("button", { name: "Stop" })).toBeEnabled();
+    await page.getByRole("dialog").getByRole("button", { name: "Run grounded demo" }).focus();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("dialog").getByRole("button", { name: "Stop" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(close).toBeFocused();
     await page.keyboard.press("Shift+Tab");
-    await expect(page.getByRole("dialog").getByRole("button", { name: "Run grounded demo" })).toBeFocused();
+    await expect(page.getByRole("dialog").getByRole("button", { name: "Stop" })).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(close).toBeFocused();
     await page.keyboard.press("Escape");
@@ -200,6 +244,7 @@ test.describe("Quiet Presence mocked product UI", () => {
     await page.setViewportSize({ width: 320, height: 700 });
     await mockQuietPresencePipeline(page);
     await page.goto("/demo");
+    await consentToLocalPresenter(page);
     await page.getByRole("button", { name: "Run grounded demo" }).click();
     await expect(page.getByTestId("translated-captions")).toBeVisible();
     await page.getByRole("button", { name: /Captions on/ }).click();
@@ -214,6 +259,7 @@ test.describe("Quiet Presence mocked product UI", () => {
   test("defaults to the bounded 60 px ribbon on a short laptop viewport", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto("/demo");
+    await consentToLocalPresenter(page);
     await expect(page.locator('[data-guide-state="collapsed"]')).toBeVisible();
     await expect(page.locator('[data-guide-state="collapsed"]')).toHaveCSS("height", "60px");
     await expect(page.getByRole("heading", { name: "Release 2.4.0" })).toBeVisible();
@@ -229,6 +275,7 @@ test.describe("Quiet Presence mocked product UI", () => {
       }),
     );
     await page.goto("/demo");
+    await consentToLocalPresenter(page);
     await page.getByRole("button", { name: "Run grounded demo" }).click();
 
     await expect(
@@ -242,6 +289,7 @@ test.describe("Quiet Presence mocked product UI", () => {
     test.skip(!process.env.NARRATWIN_DEMO_LOCAL_E2E, "Run only with the local mock backend on the configured proxy.");
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/demo");
+    await consentToLocalPresenter(page);
     await page.getByRole("button", { name: "Run grounded demo" }).click();
     await expect(page.getByText("Verified project source").first()).toBeVisible();
     await expect(page.getByText("No network egress")).toBeVisible();

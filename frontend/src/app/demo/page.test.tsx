@@ -15,8 +15,12 @@ describe("Quiet Presence demo", () => {
     expect(html).toContain("Local mock");
     expect(html).toContain("Verified sources");
     expect(html).toContain("Synthetic presenter preview");
+    expect(html).toContain("create a local synthetic presenter preview");
+    expect(html).toContain('data-hydrated="false"');
     expect(html).toContain("Simulated host context");
     expect(html).toContain("narratwin-synthetic-presenter.webp");
+    expect(html).toContain('role="img"');
+    expect(html).not.toContain('style="color:transparent"');
   });
 
   it("exposes theme and accessibility controls without claiming future capabilities", () => {
@@ -31,6 +35,7 @@ describe("Quiet Presence demo", () => {
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain("Captions on");
     expect(html).toContain("Q&amp;A and governed web search are not enabled in this Cut 1");
+    expect(html).toContain("no external provider calls");
     expect(html).not.toContain("Production ready");
     expect(html).not.toContain("Real avatar video");
     expect(html).not.toContain("Web search active");
