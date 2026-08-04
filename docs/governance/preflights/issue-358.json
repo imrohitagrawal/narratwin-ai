@@ -1,0 +1,62 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 358,
+  "branch": "cut1-358-quiet-presence-ui",
+  "objective": "Continue the focused NarraTwin /demo product experience from exact base b9a2a8cd4aa05328116565990fc30ae44592c875 and exact prior GREEN head dacde1a20172e0a195d87df348467d5cd78bec8a. Preserve the selected Concept B visual world while repairing truthfulness, exact Stage 4 to Stage 7 lineage, local/mock provider posture, modal focus, responsive Guide Ribbon geometry, mobile return behavior, captions, accessibility, and source/provider evidence. Add ADR 0048 and one locally stored, photorealistic fictional adult Indian woman presenter still generated without a real-person reference, visibly disclosed as synthetic, and not intended to depict or endorse a real person. Keep the existing root page and every backend/API contract unchanged. Use no new dependency, external font, copied component, real media, claimed personal identity, cloned identity, Q&A, web search, product-runtime provider call, paid product-runtime spend, deployment, public URL, customer data, or production claim. Guidance from UI/UX Pro Max, Design System, Emil, Impeccable, Taste Frontend, taste-check, and Product Design Audit governs the method but is not evidence. Require the amended preflight before repairs, focused component/client/browser evidence including one local-only non-intercepted browser proof, full quality, exact-head CI, and fresh independent design, mobile/accessibility, technical-truthfulness, and taste reviews. The original two-round limit was superseded by the owner-authorized third repair round and the later separate owner visual amendment; repair routine findings within the exact scope until the gates pass. Stop for base or authority drift, a seventeenth path, protected-scope collision, root/backend/API/provider/workflow/Docker change, new dependency, product-runtime provider activity or spend, a failed mandatory gate, or an unresolved high or critical finding after authorized repairs.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-358.json",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/ADR/0048-quiet-presence-embedded-guide.md",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "frontend/src/app/demo/page.tsx",
+      "frontend/src/app/demo/page.module.css",
+      "frontend/src/app/demo/page.test.tsx",
+      "frontend/src/app/demo/guide-client.ts",
+      "frontend/src/app/demo/guide-client.test.ts",
+      "frontend/tests/quiet-presence.spec.ts",
+      "frontend/public/demo/narratwin-synthetic-presenter.webp"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-358.json",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/ADR/0048-quiet-presence-embedded-guide.md",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "frontend/src/app/demo/page.tsx",
+      "frontend/src/app/demo/page.module.css",
+      "frontend/src/app/demo/page.test.tsx",
+      "frontend/src/app/demo/guide-client.ts",
+      "frontend/src/app/demo/guide-client.test.ts",
+      "frontend/tests/quiet-presence.spec.ts",
+      "frontend/public/demo/narratwin-synthetic-presenter.webp"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "docs/API_CONTRACT.md",
+      "frontend/Dockerfile",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "frontend/src/app/page.tsx",
+      "frontend/src/app/page.module.css",
+      "frontend/src/app/page.test.tsx",
+      "frontend/playwright.config.ts",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_quality_stage.py"
+    ]
+  }
+}

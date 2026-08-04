@@ -9,8 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT))
 from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
@@ -23,27 +22,27 @@ ISSUE324_PUBLICATION_BRANCH = "phase-1-closure-process-324-publication-boundary-
 ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
+QUIET_PRESENCE_BRANCH = "cut1-358-quiet-presence-ui"
+QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+    "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
+    "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py", "frontend/src/app/demo/page.tsx",
+    "frontend/src/app/demo/page.module.css", "frontend/src/app/demo/page.test.tsx",
+    "frontend/src/app/demo/guide-client.ts", "frontend/src/app/demo/guide-client.test.ts",
+    "frontend/tests/quiet-presence.spec.ts", "frontend/public/demo/narratwin-synthetic-presenter.webp"}
 NULL_GIT_SHA = "0" * 40
 def issue324_allowed_files() -> set[str]:
-    artifact = json.loads(
-        (ROOT / "docs/governance/preflights/issue-324.json").read_text(encoding="utf-8")
-    )
-    return set(artifact["scope"]["required"])
+    path = ROOT / "docs/governance/preflights/issue-324.json"
+    return set(json.loads(path.read_text(encoding="utf-8"))["scope"]["required"])
 REQUIRED_FILES = [
-    ".stage/current",
-    ".github/pull_request_template.md",
-    ".github/workflows/ci.yml",
-    ".github/workflows/security.yml",
+    ".stage/current", ".github/pull_request_template.md", ".github/workflows/ci.yml", ".github/workflows/security.yml",
     "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py",
     "backend/app/stage6.py", "backend/Dockerfile",
     "frontend/Dockerfile", "frontend/package.json",
-    "frontend/package-lock.json",
-    "frontend/src/app/page.test.tsx",
+    "frontend/package-lock.json", "frontend/src/app/page.test.tsx",
     "frontend/scripts/run-lighthouse.mjs",
-    "perf/stage8_locustfile.py",
-    "pyproject.toml",
-    "uv.lock",
-    "scripts/ci/dependency-security.sh",
+    "perf/stage8_locustfile.py", "pyproject.toml",
+    "uv.lock", "scripts/ci/dependency-security.sh",
     "scripts/ci/docker-image-scan.sh",
     "scripts/ci/frontend-lighthouse.sh",
     "scripts/ci/performance-smoke.sh",
@@ -128,6 +127,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
         "tests/unit/test_stage8_quality_gate.py",
     },
     ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(),
+    QUIET_PRESENCE_BRANCH: QUIET_PRESENCE_FILES,
 }
 PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES)
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES

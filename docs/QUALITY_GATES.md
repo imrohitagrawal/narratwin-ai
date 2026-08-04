@@ -23,7 +23,12 @@ Cut 1 route described below.
 
 Exact branches `cut1-process-346-governance-transition`,
 `cut1-335-r0c-a2-1-stage4-rag-v1-lineage`, and
-`cut1-349-r0c-a2-2-machine-contract-parity` use normal Stage 8/full CI.
+`cut1-349-r0c-a2-2-machine-contract-parity` use normal Stage 8/full CI. Exact
+branch `cut1-358-quiet-presence-ui` adds the amended 16-path `/demo` local/mock
+Quiet Presence route, focused unit/client/browser evidence including an
+explicitly enabled local-backend browser proof without request interception,
+and no root/backend/API,
+provider, dependency, workflow, Docker, deployment, or production claim.
 The shared Stage 2 retrieval-v1 parity oracle runs on every Stage 8 invocation.
 `SSV1-MODE` and `phase-1-closure-*` remain compatibility routing only;
 they cannot route new Cut 1 product work. Scope output is supporting evidence,

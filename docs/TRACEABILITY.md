@@ -8,7 +8,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 ## Version
 
-- Last updated: 2026-07-30
+- Last updated: 2026-08-04
 - Current PRD source: `docs/PRD.md` v1.0
 - Canonical source: `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
 
@@ -26,7 +26,8 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 | Artifact | Requirement coverage | Stage / issue | Status |
 |---|---|---|---|
-| `backend/app/evaluation_lineage.py`, `backend/app/evaluation_lineage_state.py`, Stage 6/7 state, restore drill, and focused lineage tests | Activates the frozen checksum-v2 lineage atomically across verified Stage 4, Stage 6 v3, and Stage 7 v2; rejects or byte-preserves inactive legacy, future, stale, malformed, and tampered graphs without adding provider behavior or production-authenticity claims | Stage 8 recovery / Issue `#353`, draft PR `#354` | In review |
+| `frontend/src/app/demo/` and exact Stage 8 route evidence | Adds the focused Cut 1 browser UI foundation: host-dominant Guide Ribbon, collapse/focus/mobile-return flows, light/dark themes, grounded Stage 4→6→7 local/mock execution, inspectable citations/evaluation/provider posture, and safe loading/error/capability boundaries without Q&A, web search, real media, cloned identity, deployment, or production claims | Cut 1 UI foundation / Issue `#358` | In progress |
+| `backend/app/evaluation_lineage.py`, `backend/app/evaluation_lineage_state.py`, Stage 6/7 state, restore drill, and focused lineage tests | Activates the frozen checksum-v2 lineage atomically across verified Stage 4, Stage 6 v3, and Stage 7 v2; rejects or byte-preserves inactive legacy, future, stale, malformed, and tampered graphs without adding provider behavior or production-authenticity claims | Stage 8 recovery / Issue `#353`, PR `#354` | Completed at `b9a2a8cd4aa05328116565990fc30ae44592c875` |
 | `frontend/package.json`, `frontend/package-lock.json`, `docs/ADR/0039-frontend-brace-expansion-audit-remediation.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/STATUS.md`, `docs/TRACEABILITY.md`, `docs/THIRD_PARTY_NOTICES.md`, `scripts/quality/check_phase1_closure_docs.py`, and `tests/unit/test_phase1_closure_docs.py` | Issue `#296` security unblock: resolves the frontend npm audit blocker for transitive `brace-expansion` by pinning `minimatch` to `10.2.5` and `brace-expansion` to `5.0.8` through the frontend npm override and lockfile, while keeping the change dependency/governance-only with no product runtime behavior, backend changes, provider setup, hosted/public demo, paid spend, real media, public distribution, production-readiness claim, PR `#295` mutation, or closure of issue `#249` | Phase 1 Closure / `#296` | Completed through PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` |
 | `frontend/package.json`, `frontend/package-lock.json`, `docs/ADR/0037-postcss-audit-remediation.md`, `docs/QUALITY_GATES.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/STATUS.md`, `scripts/quality/check_stage8_docs.py`, `scripts/quality/check_phase1_closure_docs.py`, `tests/unit/test_stage8_quality_gate.py`, and `tests/unit/test_phase1_closure_docs.py` | Issue `#289` security unblock: resolves the PostCSS audit advisory by pinning PostCSS to `8.5.23` without downgrading Next, repairs inherited Stage 8 governance marker drift, and keeps the change dependency/governance-only with no product runtime behavior, provider setup, hosted/public demo, paid spend, public distribution, production-readiness claim, PR `#284` mutation, or closure of issues `#249` and `#280` | Phase 1 Closure / `#289` | In progress |
 | `docs/PRODUCT_STRATEGY.md` | Product modes, segments, value proposition, trade-offs, provider modes | Stage 1 / `#1` | Updated |
@@ -391,6 +392,16 @@ durability, deployment, and release decisions remain outside this trace.
 | `PUB-324-002` prevent caller/model authority mimicry | Compiled policy plus trusted, payload-bound `PublicationApproval` decision tests | Runtime registry, cryptographic trust, identity, and authorization remain unimplemented |
 | `PUB-324-003` keep enforcement modular and reviewable | Contract, decision, repository, scope, CLI, entry-point, and mirrored test modules with executable context budgets | Phase 1 checker/test monoliths remain unchanged |
 | `PUB-324-004` preserve product and launch truth | Controlled local demo guide, current-state Q&A limitation, Stage 8 compatibility tests | No provider, media, hosting, release, public-distribution, or production authorization |
+
+## Issue #358 Quiet Presence Cut 1 UI-foundation traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Host-dominant embedded guide | `/demo` simulated host, shared responsive Guide Ribbon height, collapsed short-viewport state, reserved/overlay decision in ADR `0048` | No host-DOM assumptions, copied component, root-page change, or commercial adapter claim |
+| Truthful grounded result | `guide-client.ts` exact Stage 4→6→7 source/evaluation mapping, ordered lineage, provider/consent checks, and negative unit/browser mutations | No citation synthesis, compatibility fallback, external provider calls, real media, cloning, Q&A, or web search |
+| Accessible responsive interaction | Focus Stage inert background, contained Tab order, Escape/return focus, 320 px mobile return/launcher, caption visibility control, reduced motion | No playback timeline or unsupported Pause control |
+| Synthetic presenter preview | Local photorealistic generated WebP, exact committed-asset hash, visible and accessible synthetic still-image disclosure, and light/dark responsive browser evidence | Generated without a real-person reference and not intended to depict or endorse a real person; no copied third-party media, registered render identity, animation, video, or product-runtime provider activity |
+| Local browser proof | Opt-in `NARRATWIN_DEMO_LOCAL_E2E=1` Playwright case traverses the existing local/mock API without interception | Local execution evidence only; no deployment, public URL, release, or production readiness |
 
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 
