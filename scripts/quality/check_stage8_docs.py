@@ -2,7 +2,11 @@
 """Executable Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
 # ruff: noqa: E302, E305
-import json, os, re, subprocess, sys
+import json
+import os
+import re
+import subprocess
+import sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -28,10 +32,8 @@ QUIET_PRESENCE_FILES = {
     "frontend/tests/quiet-presence.spec.ts"}
 NULL_GIT_SHA = "0" * 40
 def issue324_allowed_files() -> set[str]:
-    artifact = json.loads(
-        (ROOT / "docs/governance/preflights/issue-324.json").read_text(encoding="utf-8")
-    )
-    return set(artifact["scope"]["required"])
+    path = ROOT / "docs/governance/preflights/issue-324.json"
+    return set(json.loads(path.read_text(encoding="utf-8"))["scope"]["required"])
 REQUIRED_FILES = [
     ".stage/current",
     ".github/pull_request_template.md",
@@ -40,12 +42,10 @@ REQUIRED_FILES = [
     "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py",
     "backend/app/stage6.py", "backend/Dockerfile",
     "frontend/Dockerfile", "frontend/package.json",
-    "frontend/package-lock.json",
-    "frontend/src/app/page.test.tsx",
+    "frontend/package-lock.json", "frontend/src/app/page.test.tsx",
     "frontend/scripts/run-lighthouse.mjs",
     "perf/stage8_locustfile.py", "pyproject.toml",
-    "uv.lock",
-    "scripts/ci/dependency-security.sh",
+    "uv.lock", "scripts/ci/dependency-security.sh",
     "scripts/ci/docker-image-scan.sh",
     "scripts/ci/frontend-lighthouse.sh",
     "scripts/ci/performance-smoke.sh",
