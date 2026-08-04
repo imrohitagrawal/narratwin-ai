@@ -475,6 +475,16 @@ A PR or release is blocked if:
 - the Semgrep compatibility exception expires or changes without security-owner
   review
 
+## Issue #360 dependency-security convergence
+
+GHSA-rgw5-rvv9-x895 / CVE-2026-69152 affects the explicit frontend `brace-expansion` 5.0.8 override; 5.0.9 is
+the fixed 5.x version. GHSA-g6cj-pr64-35w5 / CVE-2026-69247 affects isolated Semgrep `cryptography==49.0.0`;
+50.0.0 is fixed. Issue #360 permits only those two lock repairs, strict installed identities, audits, Semgrep
+validation/scan/canaries, and hash binding, with zero ignore, waiver, suppression, downgrade, override relaxation,
+or risk acceptance. Issue #359 remains open and immutable until convergence merge plus merged-main verification;
+Issue #150 and its `2026-08-13` expiry and Issue #358 remain unchanged. This provides no product, provider,
+runtime, deployment, release, public-availability, or production-readiness authority.
+
 ## Related Documents
 
 - `docs/THREAT_MODEL.md`

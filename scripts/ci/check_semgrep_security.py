@@ -166,6 +166,7 @@ def validate_project_contract(root: Path = ROOT, *, today: dt.date | None = None
     _require(tool_lock.get("semgrep") == {"1.168.0"}, "tool Semgrep lock drifted")
     _require(tool_lock.get("click") == {"8.3.3"}, "tool Click lock drifted")
     _require(tool_lock.get("mcp") == {"1.28.1"}, "tool MCP lock drifted")
+    _require(tool_lock.get("cryptography") == {"50.0.0"}, "tool cryptography lock drifted")
     _require(_manifest_targets(root) == EXPECTED_TARGETS, "Semgrep target manifest drifted")
     validate_rule_ids(_configured_rule_ids(root / "semgrep.yml"))
     _require(today <= OVERRIDE_EXPIRY, f"Semgrep Click/MCP overrides expired on {OVERRIDE_EXPIRY}")
@@ -185,6 +186,7 @@ def validate_installed_tool(site_packages: Path) -> None:
     _require(installed.get("semgrep") == "1.168.0", "installed Semgrep identity mismatch")
     _require(installed.get("click") == "8.3.3", "installed Click identity mismatch")
     _require(installed.get("mcp") == "1.28.1", "installed MCP identity mismatch")
+    _require(installed.get("cryptography") == "50.0.0", "installed cryptography identity mismatch")
     locked = _locked_versions(TOOL_ROOT / "uv.lock")
     unexpected = {
         f"{name}=={version}"

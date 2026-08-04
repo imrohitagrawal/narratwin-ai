@@ -1123,3 +1123,12 @@ Required update rules:
 - PR B merged through PR `#310` at `857e202b7fecdb9da7e82bcc121461062b67954c`; its exact-head CI and independent review gates passed and its branch was cleaned up.
 - Aggregate reset envelope remains 15 unique files, 2,500 charged lines, eight surfaces; synthetic fixtures and local/mock media only.
 - Excluded: backend/API changes, providers, spend, real media/private data, deployment/hosting/production claims, Product Mode 2/#20, and mutation of #8/#43/#155/#249 or protected trackers.
+
+## Issue 360 dependency-security status
+
+- Issue `#360` is the bounded 18-path Stage 8 convergence for the two currently known mandatory dependency
+  findings: frontend development-tool `brace-expansion` 5.0.8 to 5.0.9 and isolated Semgrep `cryptography` 49.0.0
+  to 50.0.0. Product, provider, runtime, deployment, release, public, and production status do not change.
+- Issue `#359` remains open with its exact branch/worktree immutable until convergence merge and merged-main
+  verification; only then may closeout mark it satisfied or superseded. Issue #150 and its `2026-08-13` expiry
+  remain unchanged. Issue #358 stays preserved and incomplete; Cut 1 and all merge/rebase sequencing remain open.
