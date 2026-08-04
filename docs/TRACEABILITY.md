@@ -393,6 +393,16 @@ durability, deployment, and release decisions remain outside this trace.
 | `PUB-324-003` keep enforcement modular and reviewable | Contract, decision, repository, scope, CLI, entry-point, and mirrored test modules with executable context budgets | Phase 1 checker/test monoliths remain unchanged |
 | `PUB-324-004` preserve product and launch truth | Controlled local demo guide, current-state Q&A limitation, Stage 8 compatibility tests | No provider, media, hosting, release, public-distribution, or production authorization |
 
+## Issue #358 Quiet Presence Cut 1 traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Host-dominant embedded guide | `/demo` simulated host, shared responsive Guide Ribbon height, collapsed short-viewport state, reserved/overlay decision in ADR `0048` | No host-DOM assumptions, copied component, root-page change, or commercial adapter claim |
+| Truthful grounded result | `guide-client.ts` exact Stage 4→6→7 source/evaluation mapping, ordered lineage, provider/consent checks, and negative unit/browser mutations | No citation synthesis, compatibility fallback, external egress, real media, cloning, Q&A, or web search |
+| Accessible responsive interaction | Focus Stage inert background, contained Tab order, Escape/return focus, 320 px mobile return/launcher, caption visibility control, reduced motion | No playback timeline or unsupported Pause control |
+| Synthetic presenter preview | Local generated WebP, visible still-image disclosure, notice hash, and light/dark responsive browser evidence | No real-person likeness, copied third-party media, animation, video, or provider activity |
+| Local browser proof | Opt-in `NARRATWIN_DEMO_LOCAL_E2E=1` Playwright case traverses the existing local/mock API without interception | Local execution evidence only; no deployment, public URL, release, or production readiness |
+
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 
 ## Issue #158 Security History Chronology

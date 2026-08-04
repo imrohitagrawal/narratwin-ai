@@ -22,7 +22,7 @@ function jsonResponse(value: unknown, status = 200) {
   });
 }
 
-function successfulFetch() {
+function successfulFetch(overrides: Partial<Record<number, unknown>> = {}) {
   const calls: Array<{ url: string; init?: RequestInit }> = [];
   const fetcher = async (request: RequestInfo | URL, init?: RequestInit) => {
     const url = String(request);
@@ -36,6 +36,7 @@ function successfulFetch() {
       5: {
         runId: "run_001",
         status: "COMPLETED",
+        evaluationStatus: "PASSED",
         acceptedScriptText: "The security review is still in progress. [1]",
         contextRefs: [
           {
@@ -53,7 +54,13 @@ function successfulFetch() {
           evaluationStatus: "PASSED",
           unsupportedClaimCount: 0,
           claimSupports: [
-            { contextRefId: "context_001", citationIndex: 1 },
+            {
+              claimSupportId: "support_001",
+              contextRefId: "context_001",
+              chunkId: "chunk_001",
+              documentId: "document_001",
+              citationIndex: 1,
+            },
           ],
         },
         trace: { traceId: "trace_001" },
@@ -62,6 +69,8 @@ function successfulFetch() {
         multilingualRunId: "multilingual_001",
         sourceRunId: "run_001",
         targetLanguage: "es",
+        status: "COMPLETED",
+        sourceScriptText: "The security review is still in progress. [1]",
         translatedScriptText: "La revisión de seguridad sigue en curso. [1]",
         artifacts: {
           translatedScript: { checksum: "sha256:script" },
@@ -71,14 +80,24 @@ function successfulFetch() {
         translationProvider: { provider: "mock", providerMode: "LOCAL" },
         voice: { provider: "mock", providerMode: "LOCAL" },
         trace: {
+          sourceContextRefCount: 1,
+          sourceCitationCount: 1,
           sourceContextRefIds: ["context_001"],
           sourceCitationIndexes: [1],
+          sourceClaimSupportIds: ["support_001"],
           sourceEvaluationId: "evaluation_001",
-          sourceEvaluationChecksum: "sha256:evaluation",
+          sourceEvaluationChecksum: "sha256:evaluation001",
+          evaluationStatus: "PASSED",
         },
       },
       7: {
         consentRecordId: "consent_001",
+        sourceRunId: "run_001",
+        sourceContextRefIds: ["context_001"],
+        sourceCitationIndexes: [1],
+        sourceEvaluationId: "evaluation_001",
+        sourceEvaluationChecksum: "sha256:evaluation001",
+        evaluationStatus: "PASSED",
         consentStatementVersion: "stage7-synthetic-avatar-consent-v1",
         consentStatementText: "Synthetic presenter approved for this local demo.",
       },
@@ -86,21 +105,40 @@ function successfulFetch() {
         avatarRenderId: "render_001",
         status: "COMPLETED",
         renderJobStatus: "COMPLETED",
-        sourceScriptText: "The security review is still in progress. [1]",
+        sourceRunId: "run_001",
+        sourceScriptText: "La revisión de seguridad sigue en curso. [1]",
         avatarProvider: { provider: "mock", providerMode: "LOCAL" },
         providerConfig: {
+          provider: "mock",
           providerMode: "LOCAL",
+          adapterKind: "MOCK_LOCAL",
           allowNetworkEgress: false,
+          requiresApiKey: false,
           supportsRealVideo: false,
+          supportsClonedIdentity: false,
         },
         disclosure: {
           consentStatus: "CONFIRMED",
           clonedIdentity: false,
           message: "Synthetic local presenter. No cloned identity.",
         },
+        trace: {
+          sourceContextRefCount: 1,
+          sourceCitationCount: 1,
+          sourceContextRefIds: ["context_001"],
+          sourceCitationIndexes: [1],
+          sourceEvaluationId: "evaluation_001",
+          sourceEvaluationChecksum: "sha256:evaluation001",
+          evaluationStatus: "PASSED",
+          multilingualRunId: "multilingual_001",
+          targetLanguage: "es",
+          translatedScriptChecksum: "sha256:script",
+          subtitlesChecksum: "sha256:subtitles",
+          voiceManifestChecksum: "sha256:voice",
+        },
       },
     };
-    return jsonResponse(responses[position]);
+    return jsonResponse(overrides[position] ?? responses[position]);
   };
   return { calls, fetcher };
 }
@@ -133,11 +171,15 @@ describe("runQuietPresenceDemo", () => {
     expect(result.evaluation).toEqual({ status: "PASSED", unsupportedClaimCount: 0 });
     expect(result.providerPosture).toEqual({
       avatar: "mock",
+      avatarMode: "LOCAL",
       translation: "mock",
+      translationMode: "LOCAL",
       voice: "mock",
+      voiceMode: "LOCAL",
       networkEgress: false,
       realMedia: false,
       clonedIdentity: false,
+      consent: "CONFIRMED",
     });
     expect(JSON.parse(String(calls[7].init?.body))).toMatchObject({
       consentToUseSyntheticAvatar: true,
@@ -179,7 +221,7 @@ describe("runQuietPresenceDemo", () => {
       jsonResponse(
         {
           code: "INTERNAL_ERROR",
-          message: "token=secret-value /private/customer/source.md",
+          message: "sensitivity-canary must stay private from the interface",
         },
         500,
       );
@@ -190,8 +232,52 @@ describe("runQuietPresenceDemo", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(GuideWorkflowError);
       expect(error).toMatchObject({ code: "REQUEST_FAILED" });
-      expect(String(error)).not.toContain("secret-value");
-      expect(String(error)).not.toContain("/private/customer/source.md");
+      expect(String(error)).not.toContain("sensitivity-canary");
     }
   });
+
+  it.each([
+    ["numeric evaluation counts", 5, { evaluation: { evaluationId: "evaluation_001", evaluationStatus: "PASSED", unsupportedClaimCount: "0", claimSupports: [] } }],
+    ["missing source mapping", 5, { evaluation: { evaluationId: "evaluation_001", evaluationStatus: "PASSED", unsupportedClaimCount: 0, claimSupports: [] } }],
+    ["external translation mode", 6, { translationProvider: { provider: "external", providerMode: "OPTIONAL_EXTERNAL" } }],
+    ["missing Stage 6 lineage", 6, { trace: { sourceContextRefIds: [] } }],
+    ["unconfirmed consent", 8, { disclosure: { consentStatus: "NOT_REQUIRED", clonedIdentity: false, message: "invalid" } }],
+    ["real-video capability", 8, { providerConfig: { provider: "mock", providerMode: "LOCAL", adapterKind: "MOCK_LOCAL", allowNetworkEgress: false, requiresApiKey: false, supportsRealVideo: true, supportsClonedIdentity: false } }],
+    ["mismatched Stage 7 script", 8, { sourceScriptText: "Different translated script" }],
+  ])("fails closed on %s before presenting success", async (_label, position, mutation) => {
+    const baseline = successfulResponses();
+    const changed = { ...baseline[position], ...mutation };
+    const { fetcher } = successfulFetch({ [position]: changed });
+
+    await expect(runQuietPresenceDemo(input, fetcher)).rejects.toBeInstanceOf(GuideWorkflowError);
+  });
 });
+
+function successfulResponses(): Record<number, Record<string, unknown>> {
+  return fixtureResponses();
+}
+
+function fixtureResponses(): Record<number, Record<string, unknown>> {
+  return {
+    5: {
+      runId: "run_001", status: "COMPLETED", evaluationStatus: "PASSED",
+      acceptedScriptText: "The security review is still in progress. [1]",
+      contextRefs: [{ contextRefId: "context_001", chunkId: "chunk_001", documentId: "document_001", sourceFilename: "northwind-release.md", evidenceSnapshot: { redactedExcerpt: "Security review must pass before deployment." } }],
+      evaluation: { evaluationId: "evaluation_001", evaluationStatus: "PASSED", unsupportedClaimCount: 0, claimSupports: [{ claimSupportId: "support_001", contextRefId: "context_001", chunkId: "chunk_001", documentId: "document_001", citationIndex: 1 }] },
+      trace: { traceId: "trace_001" },
+    },
+    6: {
+      multilingualRunId: "multilingual_001", sourceRunId: "run_001", targetLanguage: "es", status: "COMPLETED",
+      sourceScriptText: "The security review is still in progress. [1]", translatedScriptText: "La revisión de seguridad sigue en curso. [1]",
+      artifacts: { translatedScript: { checksum: "sha256:script" }, subtitles: { checksum: "sha256:subtitles" }, voiceManifest: { checksum: "sha256:voice" } },
+      translationProvider: { provider: "mock", providerMode: "LOCAL" }, voice: { provider: "mock", providerMode: "LOCAL" },
+      trace: { sourceContextRefCount: 1, sourceCitationCount: 1, sourceContextRefIds: ["context_001"], sourceCitationIndexes: [1], sourceClaimSupportIds: ["support_001"], sourceEvaluationId: "evaluation_001", sourceEvaluationChecksum: "sha256:evaluation001", evaluationStatus: "PASSED" },
+    },
+    8: {
+      avatarRenderId: "render_001", status: "COMPLETED", renderJobStatus: "COMPLETED", sourceRunId: "run_001", sourceScriptText: "La revisión de seguridad sigue en curso. [1]",
+      avatarProvider: { provider: "mock", providerMode: "LOCAL" }, providerConfig: { provider: "mock", providerMode: "LOCAL", adapterKind: "MOCK_LOCAL", allowNetworkEgress: false, requiresApiKey: false, supportsRealVideo: false, supportsClonedIdentity: false },
+      disclosure: { consentStatus: "CONFIRMED", clonedIdentity: false, message: "Synthetic local presenter. No cloned identity." },
+      trace: { sourceContextRefCount: 1, sourceCitationCount: 1, sourceContextRefIds: ["context_001"], sourceCitationIndexes: [1], sourceEvaluationId: "evaluation_001", sourceEvaluationChecksum: "sha256:evaluation001", evaluationStatus: "PASSED", multilingualRunId: "multilingual_001", targetLanguage: "es", translatedScriptChecksum: "sha256:script", subtitlesChecksum: "sha256:subtitles", voiceManifestChecksum: "sha256:voice" },
+    },
+  };
+}

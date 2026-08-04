@@ -29,7 +29,9 @@ Use it to answer:
   `#353` / PR `#354` at `b9a2a8cd4aa05328116565990fc30ae44592c875`.
   A2 is complete and controller `#334` is closed. Issue `#358` is the current
   owner-authorized browser-playable local/mock Cut 1 route on exact branch
-  `cut1-358-quiet-presence-ui`; it adds only the focused `/demo` product surface
+  `cut1-358-quiet-presence-ui`; its amended 16-path scope adds only the focused
+  `/demo` product surface, strict local/mock lineage presentation, bounded
+  responsive Guide Ribbon, modal Focus Stage, and disclosed generated still-image presenter
   and does not establish deployment, public availability, real media, Q&A, web
   search, or production readiness. Agent-context remains `SHADOW_ONLY`; scope
   checks remain supporting evidence under exact-head semantic review. Issues, branches, and
@@ -75,7 +77,7 @@ Use it to answer:
   authority. They preserve the protected evidence and unrelated obligations,
   but cannot select, authorize, or block the exact Issue `#349` A2.2 Cut 1 route
   under current OWNER authority.
-- Implementation permission is otherwise closed. The exact 13-path Issue `#358`
+- Implementation permission is otherwise closed. The exact amended 16-path Issue `#358`
   permission is limited to the `/demo` local/mock product surface and expires
   when that reviewed PR lands on main. It is routed on
   `cut1-358-quiet-presence-ui` from `b9a2a8cd4aa05328116565990fc30ae44592c875`.

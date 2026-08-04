@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 import {
   GuideWorkflowError,
@@ -41,30 +42,59 @@ export default function QuietPresenceDemo() {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [captionsOn, setCaptionsOn] = useState(true);
-  const [isPaused, setIsPaused] = useState(false);
   const [error, setError] = useState("");
+  const focusButtonRef = useRef<HTMLButtonElement>(null);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      if (window.innerWidth > 720 && window.innerHeight <= 760) setGuideState("collapsed");
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   useEffect(() => {
     if (!focusOpen) return;
-    document.getElementById("narratwin-focus-close")?.focus();
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setFocusOpen(false);
+    const dialog = document.getElementById("narratwin-focus-stage");
+    const origin = focusButtonRef.current;
+    const focusable = dialog?.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), select:not(:disabled), [href], [tabindex]:not([tabindex="-1"])',
+    );
+    focusable?.[0]?.focus();
+    const containFocus = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFocusOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", containFocus);
+    return () => {
+      window.removeEventListener("keydown", containFocus);
+      requestAnimationFrame(() => origin?.focus());
+    };
   }, [focusOpen]);
 
   async function runDemo() {
     setIsRunning(true);
     setError("");
     setSourcesOpen(false);
-    setIsPaused(false);
     try {
       const nextResult = await runQuietPresenceDemo({
         projectName: "Northwind release workspace",
         knowledgeDocument: defaultKnowledge,
         audience,
         depth,
-        targetLanguage: "es",
+        targetLanguage: "en",
         glossaryTerms: ["Northwind", "Release 2.4.0"],
       });
       setResult(nextResult);
@@ -83,12 +113,23 @@ export default function QuietPresenceDemo() {
   const stopPresentation = () => {
     setResult(null);
     setSourcesOpen(false);
-    setIsPaused(false);
   };
   const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
+  const returnToHost = () => {
+    setMobileGuideOpen(false);
+    requestAnimationFrame(() => launcherRef.current?.focus());
+  };
+  const minimizeGuide = () => {
+    setGuideState("collapsed");
+    returnToHost();
+  };
+  const openGuide = () => {
+    setGuideState("expanded");
+    setMobileGuideOpen(true);
+  };
   const explanation = result?.explanation ??
     "Run the grounded local demo to validate this release explanation against approved project evidence.";
-  const presenterState = isRunning ? "Grounding evidence" : isPaused ? "Paused" : result ? "Presenting" : "Context ready";
+  const presenterState = isRunning ? "Grounding evidence" : result ? "Explaining verified source" : "Context ready";
 
   const guideProps: GuideContentProps = {
     audience,
@@ -96,7 +137,6 @@ export default function QuietPresenceDemo() {
     depth,
     error,
     explanation,
-    isPaused,
     isRunning,
     presenterState,
     result,
@@ -104,7 +144,6 @@ export default function QuietPresenceDemo() {
     onAudienceChange: setAudience,
     onCaptionsToggle: () => setCaptionsOn(!captionsOn),
     onDepthChange: setDepth,
-    onPauseToggle: () => setIsPaused(!isPaused),
     onRun: runDemo,
     onSourcesToggle: () => setSourcesOpen(!sourcesOpen),
     onStop: stopPresentation,
@@ -117,55 +156,55 @@ export default function QuietPresenceDemo() {
       data-mobile-guide={mobileGuideOpen ? "open" : "closed"}
       aria-busy={isRunning}
     >
-      <HostTopbar theme={theme} onThemeToggle={toggleTheme} />
-      <div className={styles.shell}>
-        <HostSidebar />
-        <HostWorkspace />
-      </div>
-
-      <button
-        type="button"
-        className={styles.mobileGuideLauncher}
-        aria-label="Open NarraTwin guide"
-        onClick={() => setMobileGuideOpen(true)}
-      >
-        <NarraMark />
-        <span><strong>Open NarraTwin guide</strong><small>Security review · context ready</small></span>
-        <Icon name="arrow" />
-      </button>
-
-      <aside
-        className={styles.guideRibbon}
-        aria-label="NarraTwin project guide"
-        data-guide-state={guideState}
-        aria-hidden={focusOpen || undefined}
-      >
-        <div className={styles.mobileGuideTopbar}>
-          <button type="button" aria-label="Back to project" onClick={() => setMobileGuideOpen(false)}>
-            <Icon name="back" /> Back to project
-          </button>
-          <ThemeButton theme={theme} onClick={toggleTheme} />
+      <div className={styles.backgroundLayer} inert={focusOpen} aria-hidden={focusOpen || undefined}>
+        <HostTopbar theme={theme} onThemeToggle={toggleTheme} />
+        <div className={styles.shell}>
+          <HostSidebar />
+          <HostWorkspace />
         </div>
 
-        {focusOpen ? null : guideState === "collapsed" ? (
-          <CollapsedRibbon presenterState={presenterState} onExpand={() => setGuideState("expanded")} />
-        ) : (
-          <>
-            <RibbonPresenter presenterState={presenterState} />
-            <GuideContent {...guideProps} />
-            <RibbonControls
-              captionsOn={captionsOn}
-              hasResult={Boolean(result)}
-              isPaused={isPaused}
-              onCaptionsToggle={guideProps.onCaptionsToggle}
-              onFocus={() => setFocusOpen(true)}
-              onMinimize={() => setGuideState("collapsed")}
-              onPauseToggle={guideProps.onPauseToggle}
-              onStop={stopPresentation}
-            />
-          </>
-        )}
-      </aside>
+        <button
+          ref={launcherRef}
+          type="button"
+          className={styles.mobileGuideLauncher}
+          aria-label="Open NarraTwin guide"
+          onClick={openGuide}
+        >
+          <NarraMark />
+          <span><strong>Open NarraTwin guide</strong><small>Security review · context ready</small></span>
+          <Icon name="arrow" />
+        </button>
+
+        <aside
+          className={styles.guideRibbon}
+          aria-label="NarraTwin project guide"
+          data-guide-state={guideState}
+        >
+          <div className={styles.mobileGuideTopbar}>
+            <button type="button" aria-label="Back to project" onClick={returnToHost}>
+              <Icon name="back" /> Back to project
+            </button>
+            <ThemeButton theme={theme} onClick={toggleTheme} />
+          </div>
+
+          {guideState === "collapsed" ? (
+            <CollapsedRibbon presenterState={presenterState} onExpand={() => setGuideState("expanded")} />
+          ) : (
+            <>
+              <RibbonPresenter presenterState={presenterState} />
+              <GuideContent {...guideProps} />
+              <RibbonControls
+                captionsOn={captionsOn}
+                focusButtonRef={focusButtonRef}
+                onCaptionsToggle={guideProps.onCaptionsToggle}
+                onFocus={() => setFocusOpen(true)}
+                onMinimize={minimizeGuide}
+                onStop={stopPresentation}
+              />
+            </>
+          )}
+        </aside>
+      </div>
 
       <FocusStage
         {...guideProps}
@@ -284,7 +323,6 @@ type GuideContentProps = {
   depth: string;
   error: string;
   explanation: string;
-  isPaused: boolean;
   isRunning: boolean;
   presenterState: string;
   result: GuideDemoResult | null;
@@ -292,7 +330,6 @@ type GuideContentProps = {
   onAudienceChange: (value: string) => void;
   onCaptionsToggle: () => void;
   onDepthChange: (value: string) => void;
-  onPauseToggle: () => void;
   onRun: () => void;
   onSourcesToggle: () => void;
   onStop: () => void;
@@ -317,10 +354,16 @@ function GuideContent(props: GuideContentProps) {
   return (
     <section className={styles.guideContent} aria-label="Grounded project explanation">
       <div className={styles.guideNarrative}>
-        <p className={styles.contextLabel}><Icon name="spark" /> Current screen · Active</p>
+        <p className={styles.contextLabel}>
+          <Icon name="spark" /> {props.result ? "Verified project source" : "Simulated host context"}
+        </p>
         <h2>Why is deployment blocked?</h2>
         <p className={styles.explanation} aria-live="polite">{props.explanation}</p>
-        {props.result ? <p className={styles.translation} lang="es">{props.result.translatedExplanation}</p> : null}
+        {props.result && props.captionsOn ? (
+          <p className={styles.translation} lang={props.result.targetLanguage} data-testid="translated-captions">
+            {props.result.translatedExplanation}
+          </p>
+        ) : null}
         {props.error ? <p className={styles.error} role="alert">{props.error}</p> : null}
       </div>
 
@@ -361,7 +404,8 @@ function EvidencePanel({
   return (
     <section className={styles.evidencePanel} aria-label="Grounding evidence">
       <div className={styles.evidenceTitle}>
-        <span><Icon name="source" /><strong>Current screen</strong></span><em>Verified</em>
+        <span><Icon name="source" /><strong>{result ? "Verified project source" : "Simulated host context"}</strong></span>
+        <em>{result ? "Verified" : "Pending"}</em>
       </div>
       <p>Security review · release approval step 4</p>
       <button type="button" aria-expanded={sourcesOpen} disabled={!result} onClick={onToggle}>
@@ -380,6 +424,9 @@ function EvidencePanel({
         <div className={styles.proofBar}>
           <span><Icon name="check" />Passed evaluation · {result.evaluation.unsupportedClaimCount} unsupported claims</span>
           <span><Icon name="offline" />No network egress</span>
+          <span>
+            Local providers · {result.providerPosture.translation} / {result.providerPosture.voice} / {result.providerPosture.avatar}
+          </span>
         </div>
       ) : null}
     </section>
@@ -399,34 +446,27 @@ function CapabilityBoundary() {
 
 function RibbonControls({
   captionsOn,
-  hasResult,
-  isPaused,
+  focusButtonRef,
   onCaptionsToggle,
   onFocus,
   onMinimize,
-  onPauseToggle,
   onStop,
 }: {
   captionsOn: boolean;
-  hasResult: boolean;
-  isPaused: boolean;
+  focusButtonRef: React.RefObject<HTMLButtonElement | null>;
   onCaptionsToggle: () => void;
   onFocus: () => void;
   onMinimize: () => void;
-  onPauseToggle: () => void;
   onStop: () => void;
 }) {
   return (
     <div className={styles.ribbonControls}>
-      <button type="button" aria-label="Expand focus" onClick={onFocus}><Icon name="expand" /><span>Focus</span></button>
+      <button ref={focusButtonRef} type="button" aria-label="Expand focus" onClick={onFocus}><Icon name="expand" /><span>Focus</span></button>
       <button type="button" aria-label="Minimize guide" onClick={onMinimize}><Icon name="minus" /><span>Minimize</span></button>
       <button type="button" aria-pressed={captionsOn} onClick={onCaptionsToggle}>
         <Icon name="captions" /><span>Captions {captionsOn ? "on" : "off"}</span>
       </button>
-      <button type="button" disabled={!hasResult} aria-pressed={isPaused} onClick={onPauseToggle}>
-        <Icon name={isPaused ? "play" : "pause"} /><span>{isPaused ? "Resume" : "Pause"}</span>
-      </button>
-      <button type="button" disabled={!hasResult} onClick={onStop}><Icon name="stop" /><span>Stop</span></button>
+      <button type="button" onClick={onStop}><Icon name="stop" /><span>Clear</span></button>
     </div>
   );
 }
@@ -448,6 +488,7 @@ function FocusStage(props: GuideContentProps & {
 }) {
   return (
     <section
+      id="narratwin-focus-stage"
       className={styles.focusStage}
       role="dialog"
       aria-modal="true"
@@ -463,16 +504,22 @@ function FocusStage(props: GuideContentProps & {
       <div className={styles.focusLayout}>
         <div className={styles.focusPresenter}>
           <PresenterPortrait fullLength />
-          <p>Synthetic full-length presenter placeholder</p>
+          <p>Synthetic presenter preview · still image</p>
           <span><i />{props.open ? props.presenterState : "Focus stage ready"}</span>
         </div>
         <div className={styles.focusNarrative}>
-          <p className={styles.contextLabel}><Icon name="spark" /> Current screen · Active</p>
+          <p className={styles.contextLabel}>
+            <Icon name="spark" /> {props.result ? "Verified project source" : "Simulated host context"}
+          </p>
           <h2>Why is deployment blocked?</h2>
           <p className={styles.focusExplanation} aria-live="polite">
             {props.open ? props.explanation : "Open the focus stage for the current grounded explanation."}
           </p>
-          {props.open && props.result ? <p className={styles.translation} lang="es">{props.result.translatedExplanation}</p> : null}
+          {props.open && props.result && props.captionsOn ? (
+            <p className={styles.translation} lang={props.result.targetLanguage} data-testid="focus-translated-captions">
+              {props.result.translatedExplanation}
+            </p>
+          ) : null}
           <EvidencePanel
             result={props.open ? props.result : null}
             sourcesOpen={props.open && props.sourcesOpen}
@@ -483,9 +530,6 @@ function FocusStage(props: GuideContentProps & {
             <button type="button" className={styles.runButton} disabled={props.isRunning} onClick={props.onRun}>
               <Icon name="play" />{props.isRunning ? "Grounding approved evidence…" : "Run grounded demo"}
             </button>
-            <button type="button" disabled={!props.result} onClick={props.onPauseToggle}>
-              <Icon name={props.isPaused ? "play" : "pause"} />{props.isPaused ? "Resume" : "Pause"}
-            </button>
             <button type="button" disabled={!props.result} onClick={props.onStop}><Icon name="stop" />Stop</button>
           </div>
         </div>
@@ -495,7 +539,7 @@ function FocusStage(props: GuideContentProps & {
 }
 
 type IconName = "arrow" | "arrowUp" | "back" | "bell" | "captions" | "check" | "chevron" |
-  "close" | "expand" | "globe" | "grid" | "minus" | "moon" | "offline" | "pause" | "play" |
+  "close" | "expand" | "globe" | "grid" | "minus" | "moon" | "offline" | "play" |
   "release" | "search" | "settings" | "shield" | "source" | "spark" | "stop" | "sun";
 
 function Icon({ name }: { name: IconName }) {
@@ -514,7 +558,6 @@ function Icon({ name }: { name: IconName }) {
     minus: <path d="M5 12h14"/>,
     moon: <path d="M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/>,
     offline: <><path d="M5 5 19 19M8.5 8.5A7 7 0 0 0 5 12M15.5 8.5A7 7 0 0 1 19 12M9 16a4 4 0 0 1 6 0M12 20h.01"/></>,
-    pause: <><path d="M9 6v12M15 6v12"/></>,
     play: <path d="m8 5 11 7-11 7Z"/>,
     release: <><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></>,
     search: <><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></>,
@@ -542,21 +585,14 @@ function NarraMark() {
 
 function PresenterPortrait({ fullLength = false }: { fullLength?: boolean }) {
   return (
-    <svg
+    <Image
       className={`${styles.portrait} ${fullLength ? styles.portraitFull : ""}`}
-      viewBox="0 0 260 420"
-      role="img"
-      aria-label="Synthetic full-length presenter placeholder"
-    >
-      <rect width="260" height="420" rx="24" fill="var(--presenter-bg)"/>
-      <circle cx="200" cy="62" r="48" fill="var(--presenter-orb)" opacity=".66"/>
-      <path d="M0 330c54-50 115-58 181-27 29 14 55 15 79 6v111H0Z" fill="var(--presenter-depth)"/>
-      <circle cx="130" cy="105" r="48" fill="var(--presenter-skin)"/>
-      <path d="M81 105c2-38 20-58 50-58 31 0 48 21 49 55-14-12-31-18-50-18-20 0-36 7-49 21Z" fill="var(--presenter-hair)"/>
-      <path d="M83 414c2-103 9-190 47-244 38 51 48 139 49 244Z" fill="var(--presenter-shirt)"/>
-      <path d="M107 108h7m31 0h7m-32 24c7 5 14 5 21 0" fill="none" stroke="var(--presenter-feature)" strokeWidth="3" strokeLinecap="round"/>
-      <path d="M83 220 45 315m134-95 36 95" fill="none" stroke="var(--presenter-skin)" strokeWidth="20" strokeLinecap="round"/>
-      <circle cx="44" cy="52" r="12" fill="var(--presenter-accent)" opacity=".78"/>
-    </svg>
+      src="/demo/narratwin-synthetic-presenter.webp"
+      alt="Stylized fictional full-length synthetic NarraTwin presenter"
+      width={1122}
+      height={1402}
+      sizes={fullLength ? "(max-width: 720px) 100vw, 36vw" : "214px"}
+      unoptimized
+    />
   );
 }
