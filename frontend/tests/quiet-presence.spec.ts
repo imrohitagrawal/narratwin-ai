@@ -203,6 +203,26 @@ test.describe("Quiet Presence mocked product UI", () => {
     expect(overflows).toBe(false);
   });
 
+  test("keeps the search preview label at WCAG AA contrast in both themes", async ({ page }) => {
+    await page.goto("/demo");
+    const contrast = async () => page.getByLabel("Search Northwind preview").locator("small").evaluate((label) => {
+      const channels = (value: string) => value.match(/[\d.]+/g)!.slice(0, 3).map(Number);
+      const luminance = (value: string) => {
+        const linear = channels(value).map((channel) => {
+          const normalized = channel / 255;
+          return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+      };
+      const foreground = luminance(getComputedStyle(label).color);
+      const background = luminance(getComputedStyle(label.parentElement!).backgroundColor);
+      return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+    });
+    expect(await contrast()).toBeGreaterThanOrEqual(4.5);
+    await page.getByRole("button", { name: "Switch to dark theme" }).click();
+    expect(await contrast()).toBeGreaterThanOrEqual(4.5);
+  });
+
   test("collapses the ribbon and opens a focus stage without losing host context", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await mockQuietPresencePipeline(page);

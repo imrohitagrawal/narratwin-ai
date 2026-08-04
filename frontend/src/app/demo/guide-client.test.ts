@@ -280,6 +280,7 @@ describe("runQuietPresenceDemo", () => {
     ["malformed translated artifact digest", 6, { artifacts: { translatedScript: { checksum: "sha256:fake" } } }],
     ["blank multilingual identity", 6, { multilingualRunId: "" }],
     ["blank consent trace identity", 7, { traceId: "" }],
+    ["mismatched consent trace identity", 7, { traceId: "trace_other" }],
     ["blank render identity", 8, { avatarRenderId: "" }],
     ["mismatched render consent identity", 8, { consentRecordId: "consent_other" }],
     ["unconfirmed consent", 8, { disclosure: { consentStatus: "NOT_REQUIRED", clonedIdentity: false, message: "invalid" } }],
@@ -293,13 +294,13 @@ describe("runQuietPresenceDemo", () => {
     await expect(runQuietPresenceDemo(input, fetcher)).rejects.toBeInstanceOf(GuideWorkflowError);
   });
 
-  it("rejects a blank Stage 7 render trace identity", async () => {
+  it.each(["", "trace_other"])("rejects the Stage 7 render trace identity %j", async (traceId) => {
     const baseline = successfulResponses();
     const render = baseline[8];
     const { fetcher } = successfulFetch({
       8: {
         ...render,
-        trace: { ...(render.trace as Record<string, unknown>), traceId: "" },
+        trace: { ...(render.trace as Record<string, unknown>), traceId },
       },
     });
 
