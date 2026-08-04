@@ -80,7 +80,8 @@ Use it to answer:
 - Implementation permission is otherwise closed. The exact amended 16-path Issue `#358`
   permission is limited to the `/demo` local/mock product surface and expires
   when that reviewed PR lands on main. It is routed on
-  `cut1-358-quiet-presence-ui` from `b9a2a8cd4aa05328116565990fc30ae44592c875`.
+  `cut1-358-quiet-presence-ui`, originally from `b9a2a8cd4aa05328116565990fc30ae44592c875`
+  and rebased onto secure main at `7ae2e19e68a7dbb58ed7a789da51475a75434d50`.
   The completed A2.1 route used
   normal Stage 8/full CI; its controlled Heartbeat 2 proves the fixture-grounded prompt through local/mock render, and its one-time reviewed receipt rotation is recorded in ADR `0047`, while execution authenticity remains unattested. Legacy Phase 1 routing is compatibility-only; near
   matches and Issues `#336`–`#345` confer no authority. Demo Phase 0 planning

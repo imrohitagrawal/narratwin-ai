@@ -35,10 +35,7 @@ def issue324_allowed_files() -> set[str]:
     path = ROOT / "docs/governance/preflights/issue-324.json"
     return set(json.loads(path.read_text(encoding="utf-8"))["scope"]["required"])
 REQUIRED_FILES = [
-    ".stage/current",
-    ".github/pull_request_template.md",
-    ".github/workflows/ci.yml",
-    ".github/workflows/security.yml",
+    ".stage/current", ".github/pull_request_template.md", ".github/workflows/ci.yml", ".github/workflows/security.yml",
     "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py",
     "backend/app/stage6.py", "backend/Dockerfile",
     "frontend/Dockerfile", "frontend/package.json",
