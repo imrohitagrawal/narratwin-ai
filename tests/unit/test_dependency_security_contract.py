@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import tomllib
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from packaging.version import Version
@@ -46,7 +46,7 @@ def _base_text(path: str) -> str:
 
 
 def _base_json(path: str) -> dict[str, Any]:
-    return json.loads(_base_text(path))
+    return cast(dict[str, Any], json.loads(_base_text(path)))
 
 
 def test_frontend_brace_expansion_override_and_lock_are_isolated_and_patched() -> None:

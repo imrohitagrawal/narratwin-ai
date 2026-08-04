@@ -33,7 +33,7 @@ def validate_preflight(data: dict[str, Any], failures: list[str]) -> None:
 
 def _git(run: Callable[[list[str]], Any], args: list[str], failures: list[str]) -> str:
     result = run(["git", *args])
-    value = result.stdout.strip()
+    value = str(result.stdout).strip()
     if result.returncode or not value or "\n" in value:
         failures.append(f"Issue #360 Git evidence failed closed: {' '.join(args)}")
         return ""

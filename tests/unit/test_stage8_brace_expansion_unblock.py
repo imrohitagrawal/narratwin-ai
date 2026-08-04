@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 from types import ModuleType
-from typing import Any
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 SIDECAR = ROOT / "scripts/quality/stage8_brace_expansion_unblock.py"
@@ -52,12 +52,13 @@ def test_issue360_preflight_and_base_mutations_fail_closed() -> None:
     failures: list[str] = []
     sidecar.validate_preflight(data, failures)
     assert failures == []
-    for mutate in (
+    mutations: tuple[Callable[[dict[str, Any]], Any], ...] = (
         lambda value: value.update(issue_number=359),
         lambda value: value.update(branch=f"{BRANCH}-retry"),
         lambda value: value.update(objective=value["objective"].replace(BASE, "0" * 40)),
         lambda value: value["scope"]["required"].append("nineteenth-path"),
-    ):
+    )
+    for mutate in mutations:
         candidate = copy.deepcopy(data)
         mutate(candidate)
         failures = []
