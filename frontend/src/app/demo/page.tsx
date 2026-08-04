@@ -256,8 +256,8 @@ function HostTopbar({ theme, onThemeToggle }: { theme: Theme; onThemeToggle: () 
       </div>
       <div className={styles.topActions}>
         <ThemeButton theme={theme} onClick={onThemeToggle} />
-        <span className={styles.notification} aria-label="No new notifications"><Icon name="bell" /></span>
-        <span className={styles.userAvatar} aria-label="Maya Patel">MP</span>
+        <span className={styles.notification} aria-hidden="true"><Icon name="bell" /></span>
+        <span className={styles.userAvatar} role="img" aria-label="Maya Patel">MP</span>
       </div>
     </header>
   );
@@ -501,7 +501,7 @@ function CapabilityBoundary() {
     <section className={styles.capabilityBoundary} aria-label="Current capability boundary">
       <span><Icon name="offline" /><strong>External web disabled by policy</strong></span>
       <button type="button" disabled>Ask next · planned</button>
-      <p>Q&amp;A and governed web search are not enabled in this Cut 1.</p>
+      <p>Q&amp;A and governed web search are not enabled in this UI foundation.</p>
       <small>Local mock · no external provider calls, real media, or cloned identity</small>
     </section>
   );
@@ -528,10 +528,10 @@ function RibbonControls({
     <div className={styles.ribbonControls}>
       <button ref={focusButtonRef} type="button" aria-label="Expand focus" onClick={onFocus}><Icon name="expand" /><span>Focus</span></button>
       <button type="button" aria-label="Minimize guide" onClick={onMinimize}><Icon name="minus" /><span>Minimize</span></button>
-      <button type="button" aria-pressed={captionsOn} onClick={onCaptionsToggle}>
+      <button type="button" aria-label={`Captions ${captionsOn ? "on" : "off"}`} aria-pressed={captionsOn} onClick={onCaptionsToggle}>
         <Icon name="captions" /><span>Captions {captionsOn ? "on" : "off"}</span>
       </button>
-      <button type="button" onClick={onStop}>
+      <button type="button" aria-label={isRunning ? "Stop" : "Clear"} onClick={onStop}>
         <Icon name="stop" /><span>{isRunning ? "Stop" : "Clear"}</span>
       </button>
     </div>

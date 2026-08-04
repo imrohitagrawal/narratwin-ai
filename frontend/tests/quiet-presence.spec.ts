@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const checksums = {
   evaluation: `sha256:${"a".repeat(64)}`,
@@ -146,6 +146,37 @@ async function consentToLocalPresenter(page: Page) {
   await page.getByRole("checkbox", { name: /create a local synthetic presenter preview/i }).check();
 }
 
+async function contrastRatio(locator: Locator) {
+  return locator.evaluate((element) => {
+    const channels = (value: string) => {
+      const values = value.match(/[\d.]+/g)!.slice(0, 3).map(Number);
+      return value.startsWith("color(srgb") ? values.map((channel) => channel * 255) : values;
+    };
+    const luminance = (value: string) => {
+      const linear = channels(value).map((channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+    };
+    let backgroundNode: Element | null = element;
+    let background = "rgb(255 255 255)";
+    while (backgroundNode) {
+      const candidate = getComputedStyle(backgroundNode).backgroundColor;
+      const values = candidate.match(/[\d.]+/g)?.map(Number) ?? [];
+      if (values.length === 3 || (values.length === 4 && values[3] > 0)) {
+        background = candidate;
+        break;
+      }
+      backgroundNode = backgroundNode.parentElement;
+    }
+    const foreground = luminance(getComputedStyle(element).color);
+    const backgroundLuminance = luminance(background);
+    return (Math.max(foreground, backgroundLuminance) + 0.05)
+      / (Math.min(foreground, backgroundLuminance) + 0.05);
+  });
+}
+
 test.describe("Quiet Presence mocked product UI", () => {
   test("keeps host context visible and exposes local grounded evidence", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -203,24 +234,35 @@ test.describe("Quiet Presence mocked product UI", () => {
     expect(overflows).toBe(false);
   });
 
-  test("keeps the search preview label at WCAG AA contrast in both themes", async ({ page }) => {
+  test("keeps reviewed text at WCAG AA contrast in both themes", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/demo");
-    const contrast = async () => page.getByLabel("Search Northwind preview").locator("small").evaluate((label) => {
-      const channels = (value: string) => value.match(/[\d.]+/g)!.slice(0, 3).map(Number);
-      const luminance = (value: string) => {
-        const linear = channels(value).map((channel) => {
-          const normalized = channel / 255;
-          return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
-        });
-        return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
-      };
-      const foreground = luminance(getComputedStyle(label).color);
-      const background = luminance(getComputedStyle(label.parentElement!).backgroundColor);
-      return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
-    });
-    expect(await contrast()).toBeGreaterThanOrEqual(4.5);
-    await page.getByRole("button", { name: "Switch to dark theme" }).click();
-    expect(await contrast()).toBeGreaterThanOrEqual(4.5);
+    const reviewedText = (): [string, Locator][] => [
+      ["search preview", page.getByLabel("Search Northwind preview").locator("small")],
+      ["table header", page.getByText("Step", { exact: true })],
+      ["presenter identity", page.getByRole("complementary").getByText("AI project guide", { exact: true })],
+      ["avatar initials", page.getByLabel("Maya Patel")],
+      ["ribbon controls", page.getByRole("button", { name: "Expand focus" })],
+    ];
+    for (const theme of ["light", "dark"]) {
+      if (theme === "dark") await page.getByRole("button", { name: "Switch to dark theme" }).click();
+      for (const [label, item] of reviewedText()) {
+        expect(await contrastRatio(item), `${theme} ${label}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  test("keeps every desktop and tablet ribbon control inside the viewport", async ({ page }) => {
+    for (const width of [1280, 768]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto("/demo");
+      for (const name of ["Expand focus", "Minimize guide", "Captions on", "Clear"]) {
+        const box = await page.getByRole("button", { name }).boundingBox();
+        expect(box).not.toBeNull();
+        expect(box!.x).toBeGreaterThanOrEqual(0);
+        expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+      }
+    }
   });
 
   test("collapses the ribbon and opens a focus stage without losing host context", async ({ page }) => {

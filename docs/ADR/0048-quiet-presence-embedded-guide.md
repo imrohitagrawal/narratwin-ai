@@ -60,7 +60,7 @@ search, provider enablement, deployment, and billing require separate decisions.
 
 ## Consequences
 
-- The Cut 1 demonstrates a truthful Stage 4→6→7 local/mock walkthrough without
+- The Cut 1 UI foundation demonstrates a truthful Stage 4→6→7 local/mock walkthrough without
   changing backend/API contracts, root UI, dependencies, or provider posture.
 - A commercial host adapter remains possible without treating this simulated
   workspace as production integration evidence.

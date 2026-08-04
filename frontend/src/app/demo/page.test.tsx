@@ -22,6 +22,9 @@ describe("Quiet Presence demo", () => {
     expect(html).toContain("narratwin-synthetic-presenter.webp");
     expect(html).toContain('role="img"');
     expect(html).toContain('aria-label="Search Northwind preview"');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).not.toContain('aria-label="No new notifications"');
+    expect(html).toContain('role="img" aria-label="Maya Patel"');
     expect(html).not.toContain('<input placeholder="Search Northwind"');
     expect(html).not.toContain('style="color:transparent"');
   });
@@ -37,7 +40,7 @@ describe("Quiet Presence demo", () => {
     expect(html).toContain("Ask next · planned");
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain("Captions on");
-    expect(html).toContain("Q&amp;A and governed web search are not enabled in this Cut 1");
+    expect(html).toContain("Q&amp;A and governed web search are not enabled in this UI foundation");
     expect(html).toContain("no external provider calls");
     expect(html).not.toContain("No network egress");
     expect(html).not.toContain("Production ready");

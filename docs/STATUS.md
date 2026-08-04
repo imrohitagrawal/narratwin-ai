@@ -28,7 +28,7 @@ Use it to answer:
   The historical phrase “A2.3b remains blocked” is superseded by completed Issue
   `#353` / PR `#354` at `b9a2a8cd4aa05328116565990fc30ae44592c875`.
   A2 is complete and controller `#334` is closed. Issue `#358` is the current
-  owner-authorized browser-playable local/mock Cut 1 route on exact branch
+  owner-authorized local/mock Cut 1 UI-foundation route on exact branch
   `cut1-358-quiet-presence-ui`; its amended 16-path scope adds only the focused
   `/demo` product surface, strict local/mock lineage presentation, bounded
   responsive Guide Ribbon, modal Focus Stage, and disclosed generated still-image presenter
@@ -44,7 +44,7 @@ Use it to answer:
   `#332` / PR `#333` completed the narrow containment correction at merged main
   `225506a25f9efe3c804c5a1723b20db0e940ff62`; Issues `#329`, `#330`, and `#332`
   are closed. Issue `#334` and all A2 children are closed completed through
-  Issue `#353` / PR `#354`. Issue `#358` is the current narrow Cut 1 UI target.
+  Issue `#353` / PR `#354`. Issue `#358` is the current narrow Cut 1 UI-foundation target.
   Agent-context remains
   `SHADOW_ONLY` and its mutable state is `STALE_GOVERNANCE`; its outputs cannot
   establish current truth, select consequential work routing, or authorize

@@ -85,7 +85,7 @@
   --active-surface: #343149;
   --guide-surface: #29283b;
   --guide-panel: #323044;
-  --guide-structure: #aeb7d6;
+  --guide-structure: #555a78;
   --guide-ink: #f3f0ff;
   --guide-accent: #e9a392;
   --guide-accent-soft: #513d43;
@@ -285,6 +285,10 @@
   border-radius: 50%;
   font-size: 12px;
   font-weight: 750;
+}
+
+.demo[data-theme="dark"] .userAvatar {
+  color: var(--plum-950);
 }
 
 .shell {
@@ -500,7 +504,7 @@
 
 .tableHead {
   min-height: 42px;
-  color: var(--text-faint);
+  color: var(--text-muted);
   background: var(--surface-subtle);
   font-size: 11px;
   font-weight: 750;
@@ -586,7 +590,7 @@
   height: var(--guide-height);
   min-height: var(--guide-height);
   display: grid;
-  grid-template-columns: 214px minmax(0, 1fr) 72px;
+  grid-template-columns: 214px minmax(0, 1fr) 104px;
   color: var(--guide-ink);
   background: var(--guide-surface);
   border-top: 1px solid color-mix(in srgb, var(--guide-ink) 18%, transparent);
@@ -667,7 +671,7 @@
 
 .guideIdentity small {
   overflow: hidden;
-  color: color-mix(in srgb, var(--guide-ink) 72%, transparent);
+  color: var(--guide-ink);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1260,6 +1264,22 @@
   .capabilityBoundary { grid-column: 3; grid-row: 2; }
 }
 
+@media (max-width: 1260px) and (min-width: 721px) {
+  .guideRibbon {
+    grid-template-columns: 190px minmax(0, 1fr) 72px;
+  }
+
+  .ribbonControls button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    padding: 0;
+  }
+
+  .ribbonControls button span {
+    display: none;
+  }
+}
+
 @media (max-width: 980px) and (min-width: 721px) {
   .topbar {
     grid-template-columns: 190px minmax(200px, 1fr) minmax(190px, 280px) auto;
@@ -1575,6 +1595,10 @@
     gap: 2px;
     font-size: 12px;
     text-align: center;
+  }
+
+  .ribbonControls button span {
+    display: inline;
   }
 
   .collapsedRibbon {
