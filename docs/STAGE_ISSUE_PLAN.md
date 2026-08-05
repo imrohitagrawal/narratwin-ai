@@ -2359,7 +2359,7 @@ not change. Product, provider, runtime, deployment, release, public, and product
 ## Issue #372 citation-lineage prerequisite repair
 
 Issue `#372` uses exact branch `cut1-372-citation-index-parity` from base
-`be9c7b1fd7469b89809388743bffcd6c8cbb47f6` and exactly these ten paths:
+`be9c7b1fd7469b89809388743bffcd6c8cbb47f6` and exactly these eleven paths:
 
 1. `docs/governance/preflights/issue-372.json`
 2. `backend/app/stage4.py`
@@ -2371,6 +2371,7 @@ Issue `#372` uses exact branch `cut1-372-citation-index-parity` from base
 8. `docs/STAGE_ISSUE_PLAN.md`
 9. `docs/STATUS.md`
 10. `docs/TRACEABILITY.md`
+11. `docs/ADR/0002-rag-storage.md`
 
 The repair must prove that each exact visible script span carries the same
 citation index as its claim support and retrieved context. Valid stored and
@@ -2387,3 +2388,6 @@ provider, or authorize presenter, audio, renderer, frontend, Docker,
 deployment, release, public-availability, production-readiness, or Cut 1
 completion claims. Parent Issue `#366` and PR `#373` remain separate governance
 work until this repair merges and post-merge validation passes.
+
+The complete branch diff has a 450 charged-line hard ceiling. A twelfth path,
+charge 451, or an omitted ADR decision fails closed.

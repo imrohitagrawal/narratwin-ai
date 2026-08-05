@@ -24,7 +24,7 @@ CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity"
 CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
     "tests/acceptance/test_checkpoint3_output_correctness.py", "tests/unit/test_local_durability.py",
     "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
-    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md"}
+    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/ADR/0002-rag-storage.md"}
 QUIET_PRESENCE_BRANCH = "cut1-358-quiet-presence-ui"
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",

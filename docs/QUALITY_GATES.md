@@ -1037,7 +1037,7 @@ every walk error rather than silently omitting repository-owned source.
 
 ## Issue #372 citation-lineage parity gate
 
-The exact `cut1-372-citation-index-parity` route is limited to the ten paths in
+The exact `cut1-372-citation-index-parity` route is limited to the eleven paths in
 `docs/governance/preflights/issue-372.json`. Its RED/GREEN evidence must prove:
 
 - every claim-support index equals the marker in that claim's exact visible
@@ -1065,3 +1065,6 @@ renumbering, loosened assertion, skipped test, narrowed gate, retrieval change,
 or extra path is a failure. This repair is not presenter/media, deployment,
 release, public-availability, production-readiness, or Cut 1 completion
 evidence.
+
+The complete diff must remain at or below 450 charged lines. A twelfth path or
+charge 451 is a gate failure.
