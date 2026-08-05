@@ -232,6 +232,24 @@ Consequences:
 - This decision adds no production durability, backup/restore, RTO/RPO,
   monitoring, operator-signoff, or issue `#39` closure evidence.
 
+## Issue #374 Frontend Runtime Image Addendum
+
+Date: 2026-08-05
+
+The frontend build stage uses official Node.js `26.6.0-alpine` pinned to index
+digest `sha256:a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8`.
+The standalone runtime uses the minimal Chainguard Node image pinned to index
+digest `sha256:cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734`,
+independently verified to execute Node.js 26.6.0. This replaces the Node.js
+26.4.0 runtime reported for `CVE-2026-58043`, excludes the Alpine image's
+unfixed BusyBox `CVE-2025-60876` Medium, and removes npm/npx before returning to
+the non-root UID 65532. The Stage 8 gate rejects version, digest, mutable-tag,
+and stale-stage drift for both images.
+
+The Debian image choice changes only the container base. It does not change
+frontend behavior, add providers or network calls, suppress scanner findings,
+or authorize deployment, release, public availability, or production readiness.
+
 ## Related Documents
 
 - `docs/QUALITY_GATES.md`

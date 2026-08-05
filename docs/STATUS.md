@@ -1146,9 +1146,12 @@ Required update rules:
 
 - Issue `#374` is the bounded Stage 8 prerequisite repair for the Grype High finding
   `CVE-2026-58043` in the frontend image's Node.js 26.4.0 runtime.
-- Both frontend build and final runtime stages now use the official Node.js 26.6.0
-  Alpine multi-architecture image pinned to digest
-  `sha256:a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8`.
+- The frontend build stage uses official Node.js 26.6.0 Alpine at digest
+  `sha256:a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8`;
+  the minimal runtime uses Chainguard Node at digest
+  `sha256:cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734`,
+  independently verified to execute Node.js 26.6.0.
 - The unchanged scanner-consensus gate is the acceptance oracle. No advisory is
-  ignored or suppressed, the final runtime still removes npm and npx, and Cut 1,
-  deployment, release, public availability, and production readiness remain incomplete.
+  ignored or suppressed; the minimal runtime removes npm, npx, and the Alpine
+  BusyBox Medium finding. Cut 1, deployment, release, public availability, and
+  production readiness remain incomplete.
