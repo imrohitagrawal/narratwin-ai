@@ -81,15 +81,17 @@ This enforcement changes no retrieval semantics or runtime behavior.
 
 ## Restored Grounding Lineage Decision
 
-Issue #372 makes persisted completed and failed walkthrough runs fail closed on
-restore. The runtime reproduces the grounding evaluation from the stored generated
-script, its exact retrieved context, and the current tenant/project-scoped approved
-chunks. A run is restored only when the reproduced evaluation equals the stored
-evaluation, including its disposition, unsupported claims, claim supports,
-citation indices, claim spans, grounding metrics, policy versions, and retrieval
-lineage. Completed runs additionally require accepted text identical to generated
-text; failed runs must not contain accepted text. Invalid runs and their exact
-idempotency replay records are discarded together.
+Issue #372 makes current-lineage completed and failed walkthrough runs fail closed
+on restore. After the existing stale-lineage quarantine decision, the runtime
+reproduces the grounding evaluation from the stored generated script, its exact
+retrieved context, and the current tenant/project-scoped approved chunks. An active
+run is restored only when the reproduced evaluation equals the stored evaluation,
+including its disposition, unsupported claims, claim supports, citation indices,
+claim spans, grounding metrics, policy versions, and retrieval lineage. Completed
+runs additionally require accepted text identical to generated text; failed runs
+must not contain accepted text. Invalid active runs and their exact idempotency
+replay records are discarded together; stale-lineage rows remain audit-preserved
+but inactive under the prior decision.
 
 Answer relevancy is the sole reproduced-field exception because the original
 free-form prompt is not persisted. Restore still requires its stored value to be a

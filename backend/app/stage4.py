@@ -341,9 +341,10 @@ class Stage4Service:
                 continue
             if not record_is_valid(run, self._restored_walkthrough_run_is_valid):
                 continue
-            if self._restored_retrieval_lineage_is_current(row, run):
+            lineage_is_current = self._restored_retrieval_lineage_is_current(row, run)
+            if lineage_is_current and self._restored_citation_lineage_is_valid(run):
                 self.walkthrough_runs[run.run_id] = run
-            else:
+            elif not lineage_is_current:
                 stale[run.run_id] = deepcopy(row)
                 self._quarantined_walkthrough_rows.append(deepcopy(row))
         return stale
@@ -641,8 +642,6 @@ class Stage4Service:
             claim.chunk_id is not None and claim.chunk_id not in context_chunk_ids
             for claim in run.generated_script.claims
         ):
-            return False
-        if not self._restored_citation_lineage_is_valid(run):
             return False
         return all(
             (support.document_id in self.documents or support.document_id in self.sources)
