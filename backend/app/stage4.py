@@ -748,13 +748,21 @@ class Stage4Service:
             f"claimsup_{index:03d}" for index in range(1, len(evaluation.claim_supports) + 1)
         ]:
             return False
+        claims = {claim.claim_id: claim for claim in run.generated_script.claims}
         unsupported = {claim.claim_id for claim in evaluation.unsupported_claims}
+        if len(claims) != len(run.generated_script.claims) or len(unsupported) != len(evaluation.unsupported_claims):
+            return False
+        if not unsupported.issubset(claims):
+            return False
         context_chunks = {item.chunk.chunk_id for item in contexts.values()}
         if any(claim.chunk_id not in context_chunks and claim.claim_id not in unsupported for claim in run.generated_script.claims):
             return False
-        claim_ids = {claim.claim_id for claim in run.generated_script.claims}
         return all(
-            support.claim_id in claim_ids and support.context_ref_id in contexts
+            support.claim_id in claims and support.context_ref_id in contexts
+            and claims[support.claim_id].chunk_id == support.chunk_id
+            and claims[support.claim_id].citation_index == support.citation_index
+            and 0 < support.citation_index <= len(run.retrieved_context)
+            and run.retrieved_context[support.citation_index - 1].context_ref_id == support.context_ref_id
             and contexts[support.context_ref_id].chunk.chunk_id == support.chunk_id
             and contexts[support.context_ref_id].chunk.document_id == support.document_id
             for support in evaluation.claim_supports
