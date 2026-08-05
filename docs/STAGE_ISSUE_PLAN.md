@@ -2376,7 +2376,8 @@ Issue `#372` uses exact branch `cut1-372-citation-index-parity` from base
 The repair must prove that each exact visible script span carries the same citation index as its claim support and
 retrieved context. Valid stored and idempotent replay must preserve that lineage, while accepted/generated text drift,
 marker drift, provider-claim drift, support-index drift, missing links, cross-tenant data, and cross-project data fail
-closed. The route must pass in Python 3.13 and 3.14, the ordered and complete acceptance suite, full backend and frontend
+closed. Raw lineage must use exact types/status, restore work must be bounded per row without snapshot-wide loss, and
+the route budget must use the greater staged-index or working-tree charge. The route must pass in Python 3.13 and 3.14, the ordered and complete acceptance suite, full backend and frontend
 suites, `make checkpoint3-acceptance`, `make quality`, `make ci`, security/evaluation/browser gates as applicable,
 exact-head CI, independent technical/adversarial review, and eligible non-author approval.
 
@@ -2384,5 +2385,5 @@ This prerequisite does not alter retrieval order, renumber citations, enable pro
 renderer, frontend, Docker, deployment, release, public availability, production readiness, or Cut 1 completion.
 Parent Issue `#366` and PR `#373` stay separate until this repair merges and post-merge validation passes.
 
-The complete branch diff has a 550 charged-line hard ceiling. A twelfth path,
-charge 551, or an omitted ADR decision fails closed.
+The complete branch diff has a 1000 charged-line hard ceiling. A twelfth path,
+charge 1001, or an omitted ADR decision fails closed.

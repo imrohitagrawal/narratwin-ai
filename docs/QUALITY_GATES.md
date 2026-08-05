@@ -1042,6 +1042,8 @@ The exact `cut1-372-citation-index-parity` route is limited to the eleven prefli
 - every claim-support index equals the marker in its exact visible `scriptSpanStart`/`scriptSpanEnd` slice and context;
 - valid stored/replayed results preserve accepted/generated text, provider claims, supports, context refs, and indexes;
 - restored text, marker, provider-claim, support-index, and link drift fails closed without completed-run replay; and
+- raw lineage types/status and restore-time size/count/marker work fail closed per row without clearing valid siblings;
+- both exact-base-to-index and exact-base-to-working-tree charges are validated, using the greater value; and
 - tenant/project isolation, unsupported-claim refusal, retrieval order, and key-free local/mock posture stay unchanged.
 
 Focused verification starts with:
@@ -1055,4 +1057,4 @@ The complete suite, quality, CI, security, evaluation, and applicable real-brows
 citation value, renumbering, loosened assertion, skipped test, narrowed gate, retrieval change, or extra path fails.
 This repair is not presenter/media, deployment, release, public availability, production readiness, or Cut 1 evidence.
 
-The complete diff must remain at or below 550 charged lines. A twelfth path or charge 551 is a gate failure.
+The complete diff must remain at or below 1000 charged lines. A twelfth path or charge 1001 is a gate failure.

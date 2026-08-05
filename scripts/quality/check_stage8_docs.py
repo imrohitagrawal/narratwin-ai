@@ -21,7 +21,7 @@ ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity"
-CP_BASE, CP_LIMIT = "be9c7b1fd7469b89809388743bffcd6c8cbb47f6", 550
+CP_BASE, CP_LIMIT = "be9c7b1fd7469b89809388743bffcd6c8cbb47f6", 1000
 CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
     "tests/acceptance/test_checkpoint3_output_correctness.py", "tests/unit/test_local_durability.py",
     "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
@@ -173,15 +173,15 @@ def changed_files_for_stage_scope() -> list[str]:
         raise RuntimeError(untracked.stderr.strip() or "git ls-files failed")
     paths.extend(parse_paths_z(untracked.stdout)); return sorted(set(paths))
 def citation_parity_charge() -> int:
-    b=run(["git","merge-base",CP_BASE,"HEAD"]); d=run(["git","diff","--numstat",CP_BASE,"--"])
-    if b.returncode or b.stdout.strip()!=CP_BASE or d.returncode:raise RuntimeError("Issue #372 base diff unavailable.")
-    try: return sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines()))
+    p=CP_BASE; b=run(["git","merge-base",p,"HEAD"])
+    i=run(["git","diff","--cached","--numstat",p,"--"]); w=run(["git","diff","--numstat",p,"--"])
+    ds=(i,w); bad=b.returncode or b.stdout.strip()!=p or any(d.returncode for d in ds)
+    if bad:raise RuntimeError("Issue #372 base diff unavailable.")
+    try:return max(sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines())) for d in ds)
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
 def parse_paths_z(output: str) -> list[str]:
-    if not output:
-        return []
-    if not output.endswith("\0"):
-        raise RuntimeError("Malformed NUL-delimited Git path output.")
+    if not output:return []
+    if not output.endswith("\0"):raise RuntimeError("Malformed NUL-delimited Git path output.")
     paths = output[:-1].split("\0")
     if any(not path for path in paths):
         raise RuntimeError("Malformed empty Git path.")

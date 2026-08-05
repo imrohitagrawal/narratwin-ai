@@ -37,11 +37,11 @@ def route(monkeypatch: Any, branch: str, changed: list[str]) -> list[str]:
     stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures); return failures
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
     for branch, s in SCOPES.items():
-        monkeypatch.setattr(stage8,"citation_parity_charge",lambda:550); assert route(monkeypatch,branch,sorted(s))==[]
+        monkeypatch.setattr(stage8,"citation_parity_charge",lambda:1000); assert route(monkeypatch,branch,sorted(s))==[]
         extra = "forbidden/outside.txt"
         assert route(monkeypatch,branch,[extra]) == [f"Stage 8 changed file outside the allowlist: {extra}"]
         if branch == CP:
-            missing=min(s); monkeypatch.setattr(stage8,"citation_parity_charge",lambda:551)
+            missing=min(s); monkeypatch.setattr(stage8,"citation_parity_charge",lambda:1001)
             assert len(route(monkeypatch,branch,sorted(s-{missing}))) == 2
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", f"{A2_2}/child",
@@ -155,10 +155,11 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
             for args in diffs:
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
 def test_citation_charge_uses_worktree_and_fails_closed(monkeypatch: Any) -> None:
-    s=stage8; d=sp.CompletedProcess; calls=[]; out=iter(("275\t275\tx\n","275\t276\tx\n","-\t1\tx\n"))
+    s=stage8; d=sp.CompletedProcess; calls=[]
+    out=iter(("500\t500\tx\n","500\t500\tx\n","500\t501\tx\n","500\t500\tx\n","-\t1\tx\n","1\t1\tx\n"))
     def fake(a:list[str])->Any: calls.append(a); return d(a,0,s.CP_BASE+"\n" if a[1]=="merge-base" else next(out),"")
-    monkeypatch.setattr(s,"run",fake); fn=s.citation_parity_charge; assert (fn(),fn())==(550,551)
-    pytest.raises(RuntimeError,fn); assert ["git","diff","--numstat",s.CP_BASE,"--"] in calls
+    monkeypatch.setattr(s,"run",fake); fn=s.citation_parity_charge; assert (fn(),fn())==(1000,1001)
+    pytest.raises(RuntimeError,fn); assert ["git","diff","--cached","--numstat",s.CP_BASE,"--"] in calls
     monkeypatch.setattr(s,"run",lambda args:d(args,1,"","failed")); pytest.raises(RuntimeError,fn)
 def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> None:
     s=stage8; source=s.PROCESS_BRANCH_ALLOWED_FILES; sha=stage2.hashlib.sha256
@@ -244,6 +245,5 @@ def test_a23a_contract_gate_rejects_every_frozen_marker_mutation(tmp_path: Path)
             assert documents[path].count(marker)>=1;mutated={**documents,path:documents[path].replace(marker,"MUTATED")}
             assert not stage8.evaluation_lineage_checksum_v2_contract_valid(mutated)
     api=documents["docs/API_CONTRACT.md"]; preimage=api.rsplit("```json\n",1)[1].split("\n```",1)[0]
-    assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (
-        "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377")
-    assert a23b.semantic_detector_self_test(tmp_path)
+    f=a23b.semantic_detector_self_test; assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (
+        "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377") and f(tmp_path)

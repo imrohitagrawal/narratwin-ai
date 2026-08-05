@@ -89,6 +89,11 @@ citation indices, claim spans, grounding metrics, policy versions, and retrieval
 require accepted text identical to generated text; failed runs must not contain accepted text. Invalid active runs and
 their exact idempotency replay records are discarded together; stale-lineage rows remain audit-preserved but inactive.
 
+Restore validates each raw row before coercive construction, requires exact JSON types and the stored `SUPPORTED`
+status, caps scripts at 20,000 characters and claims, supports, and unsupported claims at 24 each, caps marker digits,
+and caps the Stage 4 local snapshot at 256 MiB before decoding. Validation exceptions quarantine only the affected row
+and its replay binding; they cannot clear a valid sibling run or the rest of the snapshot.
+
 Answer relevancy and context recall are exceptions because the original prompt and historical whole-project corpus are
 not persisted. Restore requires both stored values to be finite but substitutes them before equality comparison.
 Prompt checksum and exact idempotency request binding remain unchanged. These limitations do not weaken citation,

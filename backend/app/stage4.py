@@ -62,6 +62,10 @@ MAX_PROMPT_CHARS = 2_000
 MAX_PUBLIC_EXCERPT_CHARS = 240
 MAX_API_REQUEST_BYTES = 256 * 1024
 MAX_UPLOAD_REQUEST_BYTES = MAX_UPLOAD_BYTES + 65_536
+MAX_STAGE4_STATE_BYTES = 256 * 1_048_576
+MAX_RESTORED_SCRIPT_CHARS = 20_000
+MAX_RESTORED_LINEAGE_ITEMS = 24
+MAX_RESTORED_CITATION_DIGITS = 6
 ALLOWED_EXTENSIONS = {".md", ".txt"}
 ALLOWED_CONTENT_TYPES_BY_EXTENSION = {
     ".md": "text/markdown",
@@ -288,6 +292,14 @@ class Stage4Service:
         self._run_counter = 0
 
     def _restore(self) -> None:
+        if self.state_path is not None:
+            try:
+                if self.state_path.exists() and self.state_path.stat().st_size > MAX_STAGE4_STATE_BYTES:
+                    LOGGER.warning("Ignoring oversized Stage 4 local state snapshot at %s.", self.state_path)
+                    return
+            except OSError as exc:
+                LOGGER.warning("Ignoring unreadable Stage 4 local state snapshot at %s: %s", self.state_path, exc)
+                return
         payload = load_state(self.state_path)
         if payload is None:
             return
@@ -336,17 +348,19 @@ class Stage4Service:
             if not isinstance(row, dict) or not isinstance(row.get("run_id"), str) or identities.count(row.get("run_id")) != 1:
                 continue
             try:
+                if not raw_walkthrough_lineage_is_bounded_and_typed(row):
+                    continue
                 run = walkthrough_run_from_dict(row)
-            except (KeyError, TypeError, ValueError):
-                continue
-            if not record_is_valid(run, self._restored_walkthrough_run_is_valid):
-                continue
-            lineage_is_current = self._restored_retrieval_lineage_is_current(row, run)
-            if lineage_is_current and self._restored_citation_lineage_is_valid(run):
-                self.walkthrough_runs[run.run_id] = run
-            elif not lineage_is_current:
-                stale[run.run_id] = deepcopy(row)
-                self._quarantined_walkthrough_rows.append(deepcopy(row))
+                if not record_is_valid(run, self._restored_walkthrough_run_is_valid):
+                    continue
+                lineage_is_current = self._restored_retrieval_lineage_is_current(row, run)
+                if lineage_is_current and self._restored_citation_lineage_is_valid(run):
+                    self.walkthrough_runs[run.run_id] = run
+                elif not lineage_is_current:
+                    stale[run.run_id] = deepcopy(row)
+                    self._quarantined_walkthrough_rows.append(deepcopy(row))
+            except (ArithmeticError, KeyError, TypeError, ValueError) as exc:
+                LOGGER.warning("Skipping incompatible Stage 4 walkthrough row: %s", exc)
         return stale
 
     def _restore_idempotency_rows(self, payload: dict[str, Any], stale_runs: dict[str, dict[str, Any]]) -> None:
@@ -1726,6 +1740,65 @@ def knowledge_chunk_from_dict(row: dict[str, Any]) -> KnowledgeChunk:
     )
 
 
+def _raw_strings(row: dict[str, Any], names: tuple[str, ...]) -> bool:
+    return all(type(row.get(name)) is str for name in names)
+
+
+def _raw_number(value: object) -> bool:
+    return type(value) in (int, float) and math.isfinite(float(cast(int | float, value)))
+
+
+def raw_walkthrough_lineage_is_bounded_and_typed(row: dict[str, Any]) -> bool:
+    """Reject coercible or unbounded persisted lineage before object construction."""
+    status = row.get("status")
+    if status == "REFUSED":
+        return row.get("generated_script") is None and row.get("evaluation") is None
+    if status not in {"COMPLETED", "FAILED"}:
+        return False
+    script, evaluation, contexts = row.get("generated_script"), row.get("evaluation"), row.get("retrieved_context")
+    if not isinstance(script, dict) or not isinstance(evaluation, dict) or not isinstance(contexts, list):
+        return False
+    text, claims = script.get("text"), script.get("claims")
+    if type(text) is not str or not 0 < len(text) <= MAX_RESTORED_SCRIPT_CHARS or not isinstance(claims, list):
+        return False
+    if len(claims) > MAX_RESTORED_LINEAGE_ITEMS or len(contexts) > RETRIEVAL_TOP_K:
+        return False
+    markers = re.findall(r"\[(\d+)\]", text)
+    if any(len(marker) > MAX_RESTORED_CITATION_DIGITS for marker in markers):
+        return False
+    for claim in claims:
+        if not isinstance(claim, dict) or not _raw_strings(claim, ("claim_id", "text")):
+            return False
+        if type(claim.get("citation_index")) is not int or type(claim.get("script_span_start")) is not int or type(claim.get("script_span_end")) is not int:
+            return False
+        if claim.get("chunk_id") is not None and type(claim.get("chunk_id")) is not str:
+            return False
+    for context in contexts:
+        if not isinstance(context, dict) or type(context.get("context_ref_id")) is not str or not _raw_number(context.get("score")):
+            return False
+        chunk = context.get("chunk")
+        if not isinstance(chunk, dict) or not _raw_strings(chunk, ("chunk_id", "tenant_id", "project_id", "document_id")):
+            return False
+    supports, unsupported = evaluation.get("claim_supports"), evaluation.get("unsupported_claims")
+    if not isinstance(supports, list) or not isinstance(unsupported, list):
+        return False
+    if len(supports) > MAX_RESTORED_LINEAGE_ITEMS or len(unsupported) > MAX_RESTORED_LINEAGE_ITEMS:
+        return False
+    if type(evaluation.get("unsupported_claim_count")) is not int or evaluation.get("unsupported_claim_count") != len(unsupported):
+        return False
+    if evaluation.get("evaluation_status") not in {"PASSED", "FAILED"}:
+        return False
+    metric_names = ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage")
+    if not all(_raw_number(evaluation.get(name)) for name in metric_names):
+        return False
+    for support in supports:
+        if not isinstance(support, dict) or not _raw_strings(support, ("claim_support_id", "claim_id", "context_ref_id", "chunk_id", "document_id", "support_reason")):
+            return False
+        if support.get("support_status") != "SUPPORTED" or type(support.get("citation_index")) is not int or not _raw_number(support.get("support_score")):
+            return False
+    return all(isinstance(claim, dict) and _raw_strings(claim, ("claim_id", "claim_text", "reason")) for claim in unsupported)
+
+
 def generated_script_from_dict(row: dict[str, Any]) -> GeneratedScript:
     return GeneratedScript(
         text=str(row["text"]),
@@ -1776,7 +1849,7 @@ def evaluation_from_dict(row: dict[str, Any]) -> EvaluationResult:
                 context_ref_id=str(support["context_ref_id"]),
                 chunk_id=str(support["chunk_id"]),
                 document_id=str(support["document_id"]),
-                support_status="SUPPORTED",
+                support_status=cast(Literal["SUPPORTED"], support["support_status"]),
                 support_score=float(support["support_score"]),
                 support_reason=str(support["support_reason"]),
                 citation_index=int(support["citation_index"]),
