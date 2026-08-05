@@ -172,12 +172,7 @@ def test_stage8_script_markers_match_mandatory_container_scanners(monkeypatch: A
         dockerfile.replace(f"FROM {runtime_image} AS runner", f"FROM {prior} AS runner"),
         *(dockerfile + f"\n{prefix} {prior} AS bypass\n" for prefix in ("from", "FrOm", "  FROM", "\tFROM")),
         *(dockerfile.replace(marker, "REMOVED") for marker in (*stage8.FRONTEND_BUILD_ARCHIVE_SHA512, *stage8.FRONTEND_BUILD_ARCHIVE_SHA512.values())))
-    assert all(not stage8.frontend_node_image_valid(mutated) for mutated in mutations)
-    next_config = stage8.read("frontend/next.config.ts")
-    assert "generateBuildId" in next_config and "NARRATWIN_BUILD_ID_INPUTS" in next_config
-    scan = stage8.read("scripts/ci/docker-image-scan.sh")
-    assert 'scan_trivy "${FRONTEND_IMAGE}"' in scan and '"CRITICAL,HIGH,MEDIUM"' in scan
-    assert 'scan_grype "${FRONTEND_IMAGE}"' in scan and '"medium"' in scan
+    assert all(not stage8.frontend_node_image_valid(mutated) for mutated in mutations); next_config = stage8.read("frontend/next.config.ts"); scan = stage8.read("scripts/ci/docker-image-scan.sh"); assert "generateBuildId" in next_config and "NARRATWIN_BUILD_ID_INPUTS" in next_config; assert all(marker in scan for marker in ('scan_trivy "${FRONTEND_IMAGE}"', '"CRITICAL,HIGH,MEDIUM"', 'scan_grype "${FRONTEND_IMAGE}"', '"medium"', "previewModeSigningKey", "server action manifest mismatch"))
 def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
     failures: list[str] = []; stage8.check_stage_marker_and_branch(failures); assert failures == [

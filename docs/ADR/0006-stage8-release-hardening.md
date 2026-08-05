@@ -247,11 +247,14 @@ network, and build tooling before returning to non-root UID 65532. The Stage 8
 gate rejects version, digest, mutable-tag, and stale-stage drift for both images
 and validates the built runtime's identity, filesystem, and HTTP behavior. The
 runtime gate binds the path, type, mode, ownership, and content of the complete immutable
-filesystem to canonical inventories
-`1802:11ec37a253c49e02cb141eb206a843a28e4e4759a2d1831283bc0183ddf4b89b`
+filesystem to canonical inventories. Next's per-build preview and server-action secrets
+are the only normalized fields: the gate validates their exact cryptographic formats,
+single occurrences, and cross-manifest equality before hashing all remaining bytes.
+The canonical inventories are
+`1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52`
 (arm64) and
-`1804:074904c07e8134cfb3db31b5951ce70870ba3eab3d226e7340dd366d8a93ff28`
-(amd64). Only Docker-managed virtual trees and injected host/hostname/resolver
+`1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15`
+(amd64). Only those validated secret values, Docker-managed virtual trees, and injected host/hostname/resolver
 mounts are excluded; renamed, relocated, linked, copied, executable, ELF,
 JavaScript, JSON, and other regular-file tooling therefore fails before
 scanner consensus. Raw-byte path traversal and length-prefixed binary records

@@ -13,13 +13,13 @@ TRIVY_IMAGE="${TRIVY_IMAGE:-aquasec/trivy@sha256:cffe3f5161a47a6823fbd23d985795b
 GRYPE_IMAGE="${GRYPE_IMAGE:-anchore/grype@sha256:decd87500a90c1e4faa1706f77b0b2cbc1d2f9364e976f1898ce9037de09cc3a}"
 
 scan_trivy() {
-  local image="$1" output="$2"
-  trivy image --severity CRITICAL,HIGH --exit-code 1 --format sarif --output "${output}" "${image}"
+  local image="$1" output="$2" severity="${3:-CRITICAL,HIGH}"
+  trivy image --severity "${severity}" --exit-code 1 --format sarif --output "${output}" "${image}"
 }
 
 scan_grype() {
-  local image="$1" output="$2"
-  grype "${image}" --fail-on high --output "sarif=${output}"
+  local image="$1" output="$2" severity="${3:-high}"
+  grype "${image}" --fail-on "${severity}" --output "sarif=${output}"
 }
 
 ensure_scanner() {
@@ -102,8 +102,8 @@ if (process.version!=="v26.6.0"||process.getuid()!==65532||process.getgid()!==65
     unsafe.length||trusted.some(p=>{const s=fs.statSync(p);return s.uid!==0||s.gid!==0||(s.mode&0o022)!==0}))
   throw new Error(JSON.stringify({extras,version:process.version}));'
   case "${FRONTEND_ARCH}" in
-    amd64) expected_inventory="1804:074904c07e8134cfb3db31b5951ce70870ba3eab3d226e7340dd366d8a93ff28" ;;
-    arm64) expected_inventory="1802:11ec37a253c49e02cb141eb206a843a28e4e4759a2d1831283bc0183ddf4b89b" ;;
+    amd64) expected_inventory="1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15" ;;
+    arm64) expected_inventory="1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52" ;;
     *) echo "Unsupported frontend runtime architecture: ${FRONTEND_ARCH}" >&2; return 1 ;;
   esac
   actual_inventory="$(docker run --rm --user 0:0 --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= \
@@ -111,7 +111,17 @@ if (process.version!=="v26.6.0"||process.getuid()!==65532||process.getgid()!==65
 const crypto=require("crypto"),fs=require("fs"),records=[],B=Buffer.from,slash=B("/"),empty=Buffer.alloc(0);
 const skip=new Set(["/.dockerenv","/etc/hosts","/etc/hostname","/etc/resolv.conf"].map(x=>B(x).toString("hex")));
 const virtual=new Set(["/dev","/proc","/sys"].map(x=>B(x).toString("hex")));
+const prerender=B("/app/.next/prerender-manifest.json"),serverJson=B("/app/.next/server/server-reference-manifest.json"),serverJs=B("/app/.next/server/server-reference-manifest.js");
 function u32(n) { const x=Buffer.alloc(4); x.writeUInt32BE(n); return x; }
+function normalize(p,raw) {
+  const same=x=>p.equals(x),text=raw.toString("utf8"),replace=(value)=>{const next=text.split(value); if(next.length!==2)throw new Error("volatile field occurrence"); return B(next.join("0".repeat(value.length)));};
+  if(same(prerender)){const preview=JSON.parse(text).preview,keys=Object.keys(preview||{}).sort().join(",");
+    if(keys!=="previewModeEncryptionKey,previewModeId,previewModeSigningKey"||!/^[0-9a-f]{32}$/.test(preview.previewModeId)||!/^[0-9a-f]{64}$/.test(preview.previewModeSigningKey)||!/^[0-9a-f]{64}$/.test(preview.previewModeEncryptionKey))throw new Error("invalid preview secrets");
+    let normalized=text; for(const value of Object.values(preview)){const next=normalized.split(value);if(next.length!==2)throw new Error("preview secret occurrence");normalized=next.join("0".repeat(value.length));} return B(normalized);}
+  if(same(serverJson)||same(serverJs)){const parse=(value,isJs)=>{const prefix="self.__RSC_SERVER_MANIFEST=",json=isJs?JSON.parse(value.slice(prefix.length)):value,manifest=JSON.parse(json);if(isJs&&!value.startsWith(prefix)||Object.keys(manifest).sort().join(",")!=="edge,encryptionKey,node"||!/^[A-Za-z0-9+/]{43}=$/.test(manifest.encryptionKey)||Buffer.from(manifest.encryptionKey,"base64").length!==32)throw new Error("invalid server action key");return manifest;};
+    const manifest=parse(text,same(serverJs)),peer=parse(fs.readFileSync(same(serverJson)?serverJs:serverJson,"utf8"),same(serverJson));if(JSON.stringify(manifest)!==JSON.stringify(peer))throw new Error("server action manifest mismatch");return replace(manifest.encryptionKey);}
+  return raw;
+}
 function record(t,p,s,payload=empty) {
   records.push(Buffer.concat([B(t),u32(p.length),p,u32(s.mode&0o7777),u32(s.uid),u32(s.gid),
     u32(payload.length),payload]));
@@ -119,7 +129,7 @@ function record(t,p,s,payload=empty) {
 function add(p,s) {
   if (s.isSymbolicLink()) record("L",p,s,fs.readlinkSync(p,{encoding:"buffer"}));
   else if (s.isDirectory()) record("D",p,s);
-  else if (s.isFile()) record("F",p,s,crypto.createHash("sha256").update(fs.readFileSync(p)).digest());
+  else if (s.isFile()) record("F",p,s,crypto.createHash("sha256").update(normalize(p,fs.readFileSync(p))).digest());
   else record("O",p,s,u32(s.mode&0o170000));
 }
 function walk(d) { for (const n of fs.readdirSync(d,{encoding:"buffer"}).sort(Buffer.compare)) {
@@ -201,9 +211,9 @@ scan_trivy "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-trivy.raw.sarif.json"
 bt=$?
 scan_grype "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-grype.raw.sarif.json"
 bg=$?
-scan_trivy "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-trivy.raw.sarif.json"
+scan_trivy "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-trivy.raw.sarif.json" "CRITICAL,HIGH,MEDIUM"
 ft=$?
-scan_grype "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-grype.raw.sarif.json"
+scan_grype "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-grype.raw.sarif.json" "medium"
 fg=$?
 if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
   scan_trivy "${FRONTEND_BUILD_IMAGE}" "${REPORT_DIR}/frontend-build-trivy.raw.sarif.json"
