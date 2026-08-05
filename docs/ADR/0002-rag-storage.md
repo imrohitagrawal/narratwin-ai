@@ -92,7 +92,10 @@ their exact idempotency replay records are discarded together; stale-lineage row
 Restore validates each raw row before coercive construction, requires exact JSON types and the stored `SUPPORTED`
 status, caps scripts at 20,000 characters and claims, supports, and unsupported claims at 24 each, caps marker digits,
 and caps the Stage 4 local snapshot at 256 MiB before decoding. Validation exceptions quarantine only the affected row
-and its replay binding; they cannot clear a valid sibling run or the rest of the snapshot.
+and its replay binding; they cannot clear a valid sibling run or the rest of the snapshot. The same script/lineage
+limits are enforced before terminal generation persistence, and writes that would exceed the restore byte cap roll back.
+Legacy boolean, non-finite, or bounded numeric-string retrieval scores may cross object construction only to preserve
+their byte-equivalent inactive audit quarantine; current activation still requires finite, non-boolean raw numbers.
 
 Answer relevancy and context recall are exceptions because the original prompt and historical whole-project corpus are
 not persisted. Restore requires both stored values to be finite but substitutes them before equality comparison.

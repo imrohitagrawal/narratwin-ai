@@ -102,6 +102,7 @@ T = TypeVar("T")
 WalkthroughRunStatus = Literal["COMPLETED", "FAILED", "REFUSED"]
 LOGGER = logging.getLogger(__name__)
 SAFE_RESTORED_FAILURES = {(400, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key header is required for write requests."), (403, "FORBIDDEN", "Document is not accessible to this principal."), (403, "FORBIDDEN", "Project is not accessible to this principal."), (404, "NOT_FOUND", "Curated source not found."), (404, "NOT_FOUND", "Knowledge document not found."), (404, "NOT_FOUND", "Project not found."), (409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request."), (409, "IDEMPOTENCY_IN_PROGRESS", "Idempotency key is already in progress."), (409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale."), (413, "DOCUMENT_TOO_LARGE", "Document exceeds the Stage 4 chunk limit."), (413, "INGESTION_TOO_LARGE", "Too many documents requested for one ingestion run."), (413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 chunk limit."), (413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 corpus size limit."), (413, "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "Project exceeds the Stage 4 document limit."), (413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit."), (413, "UPLOAD_FILE_TOO_LARGE", "Curated source file exceeds the size limit."), (413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit."), (415, "UNSUPPORTED_MEDIA_TYPE", "Archive uploads are not accepted in Stage 4."), (415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted."), (422, "DOCUMENT_NOT_APPROVED", "Document must be approved before ingestion."), (422, "SECRET_LIKE_CONTENT", "Prompt contains secret-like content."), (422, "SECRET_LIKE_CONTENT", "Uploaded document contains secret-like content."), (422, "SOURCE_KIND_MISMATCH", "Legacy documents cannot use curated ingestion."), (422, "SOURCE_NOT_INGESTIBLE", "At least one bounded curated source is required."), (422, "SOURCE_NOT_INGESTIBLE", "Every curated source must be approved and current."), (422, "UNSAFE_DOCUMENT_CONTENT", "Curated source contains unsafe content."), (422, "UNSAFE_DOCUMENT_CONTENT", "Document contains unsafe instruction-like content."), (422, "VALIDATION_ERROR", "At least one document is required."), (422, "VALIDATION_ERROR", "Curated source assertions are incomplete or ineligible."), (422, "VALIDATION_ERROR", "Invalid filename."), (422, "VALIDATION_ERROR", "Project name is required."), (422, "VALIDATION_ERROR", "Uploaded document contains NUL bytes."), (422, "VALIDATION_ERROR", "Uploaded document contains too many control characters."), (422, "VALIDATION_ERROR", "Uploaded document is empty."), (422, "VALIDATION_ERROR", "Uploaded document must be UTF-8 text."), (429, "BACKPRESSURE_QUEUE_FULL", "Another Stage 4 operation is already active for this project."), (429, "RESOURCE_LIMIT_EXCEEDED", "Project exceeds the Stage 4 generation run limit."), (429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit."), (429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 project limit."), (422, "VALIDATION_ERROR", "Curated source content is not safe to retain."), (422, "SECRET_LIKE_CONTENT", "Curated source content is not safe to retain."), (422, "UNSAFE_DOCUMENT_CONTENT", "Curated source content is not safe to retain.")}
+SAFE_RESTORED_FAILURES.add((422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit."))
 RESTORED_FAILURE_CODES_BY_ENDPOINT = {
     "POST /api/v1/projects": {"VALIDATION_ERROR", "RESOURCE_LIMIT_EXCEEDED"},
     "POST /api/v1/projects/{projectId}/knowledge-documents": {"FORBIDDEN", "NOT_FOUND", "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "PROJECT_CORPUS_TOO_LARGE", "UPLOAD_TOO_LARGE", "UPLOAD_FILE_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "VALIDATION_ERROR", "SECRET_LIKE_CONTENT", "UNSAFE_DOCUMENT_CONTENT"},
@@ -770,9 +771,9 @@ class Stage4Service:
         }
 
     def _persist_locked(self) -> None:
-        write_state(
-            self.state_path,
-            {
+        if self.state_path is None:
+            return
+        payload = {
                 "schema": "stage4-local-state-v1",
                 "projects": [asdict(project) for project in self.projects.values()],
                 "documents": [asdict(document) for document in self.documents.values()],
@@ -796,8 +797,11 @@ class Stage4Service:
                     "ingestion": self._ingestion_counter,
                     "run": self._run_counter,
                 },
-            },
-        )
+            }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n"
+        if len(encoded) > MAX_STAGE4_STATE_BYTES:
+            raise OSError("Stage 4 local state exceeds the restore size limit.")
+        write_state(self.state_path, payload)
 
     def create_project(
         self,
@@ -1344,6 +1348,8 @@ class Stage4Service:
                             prompt=prompt,
                             retrieved_context=retrieved,
                         )
+                        if not generated_script_is_bounded(generated):
+                            raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
                         evaluation = evaluate_grounding(
                             tenant_id=principal.tenant_id,
                             project_id=project_id,
@@ -1397,6 +1403,8 @@ class Stage4Service:
                             },
                         )
 
+        if not raw_walkthrough_lineage_is_bounded_and_typed(walkthrough_run_to_dict(run)):
+            raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
         self.walkthrough_runs[run_id] = run
         return run
 
@@ -1748,8 +1756,16 @@ def _raw_number(value: object) -> bool:
     return type(value) in (int, float) and math.isfinite(float(cast(int | float, value)))
 
 
+def generated_script_is_bounded(candidate: object) -> bool:
+    if not isinstance(candidate, GeneratedScript) or type(candidate.text) is not str:
+        return False
+    if len(candidate.text) > MAX_RESTORED_SCRIPT_CHARS or len(candidate.claims) > MAX_RESTORED_LINEAGE_ITEMS:
+        return False
+    return all(len(marker) <= MAX_RESTORED_CITATION_DIGITS for marker in re.findall(r"\[(\d+)\]", candidate.text))
+
+
 def raw_walkthrough_lineage_is_bounded_and_typed(row: dict[str, Any]) -> bool:
-    """Reject coercible or unbounded persisted lineage before object construction."""
+    """Reject active coercible lineage; legacy retrieval scores may only reach inactive quarantine."""
     status = row.get("status")
     if status == "REFUSED":
         return row.get("generated_script") is None and row.get("evaluation") is None
@@ -1774,7 +1790,10 @@ def raw_walkthrough_lineage_is_bounded_and_typed(row: dict[str, Any]) -> bool:
         if claim.get("chunk_id") is not None and type(claim.get("chunk_id")) is not str:
             return False
     for context in contexts:
-        if not isinstance(context, dict) or type(context.get("context_ref_id")) is not str or not isinstance(context.get("score"), (int, float)):
+        if not isinstance(context, dict) or type(context.get("context_ref_id")) is not str:
+            return False
+        score = context.get("score")
+        if not isinstance(score, (int, float)) and not (type(score) is str and len(score) <= 32):
             return False
         chunk = context.get("chunk")
         if not isinstance(chunk, dict) or not _raw_strings(chunk, ("chunk_id", "tenant_id", "project_id", "document_id")):
