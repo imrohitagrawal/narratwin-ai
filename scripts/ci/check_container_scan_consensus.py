@@ -52,8 +52,10 @@ FRONTEND_ENGINE_CONFIG_DEFAULTS = {
 def canonical_frontend_config(config: dict[str, Any]) -> dict[str, Any] | None:
     normalized = dict(config)
     for field, expected in FRONTEND_ENGINE_CONFIG_DEFAULTS.items():
-        if field in normalized and normalized.pop(field) != expected:
-            return None
+        if field in normalized:
+            actual = normalized.pop(field)
+            if type(actual) is not type(expected) or actual != expected:
+                return None
     return normalized
 
 

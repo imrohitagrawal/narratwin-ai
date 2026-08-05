@@ -93,7 +93,7 @@ expected = {
   "ArgsEscaped": True,
 }
 
-assert config == expected, {"actual": config, "expected": expected}
+assert config == expected, "Frontend runtime config does not match the reviewed contract."
 PY
   docker run --rm --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= --entrypoint /usr/bin/node "${image}" -e '
 const fs=require("fs"), extras=[];
