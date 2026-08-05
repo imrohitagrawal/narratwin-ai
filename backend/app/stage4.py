@@ -1476,6 +1476,7 @@ class Stage4Service:
         )
         if (
             not raw_walkthrough_lineage_is_bounded_and_typed(walkthrough_run_to_dict(run))
+            or not self._restored_walkthrough_run_is_valid(run)
             or not self._restored_citation_lineage_is_valid(run)
         ):
             raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
