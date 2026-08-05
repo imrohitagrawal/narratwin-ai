@@ -130,14 +130,21 @@ def test_single_faults_fail_closed(mutation: Callable[[dict[str, Any]], None], e
     assert _evaluate(candidate)["findings"] == expected
 
 
-def test_medium_unrelated_findings_do_not_hide_high_policy() -> None:
+def test_frontend_runtime_medium_findings_fail_closed() -> None:
     case = _case()
     case["reports"]["frontend-grype"] = _sarif("grype", ("CVE-MEDIUM",), "6.5")
     _rehash(case, "frontend-grype")
-    assert _evaluate(case)["findings"] == []
+    assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
     case["reports"]["frontend-grype"] = _sarif("grype", ("CVE-HIGH",), "7.0")
     _rehash(case, "frontend-grype")
-    assert _evaluate(case)["findings"] == ["UNRELATED_HIGH_CRITICAL"]
+    assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
+
+
+def test_backend_medium_findings_retain_the_existing_high_policy() -> None:
+    case = _case()
+    case["reports"]["backend-grype"] = _sarif("grype", ("CVE-MEDIUM",), "6.5")
+    _rehash(case, "backend-grype")
+    assert _evaluate(case)["findings"] == []
 
 
 @pytest.mark.parametrize(
