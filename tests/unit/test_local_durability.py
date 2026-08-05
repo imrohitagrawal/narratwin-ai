@@ -962,6 +962,7 @@ def test_stage4_raw_lineage_limits_accept_boundary_and_reject_boundary_plus_one(
     assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
     unsupported = {"claim_id": "claim", "claim_text": "text", "reason": "reason"}
     row["generated_script"]["text"] = "text"
+    row["generated_script"]["claims"] = []
     row["evaluation"]["unsupported_claims"] = [unsupported] * limit
     row["evaluation"]["unsupported_claim_count"] = limit
     assert stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
@@ -1028,7 +1029,8 @@ def test_stage4_rejects_amplified_claim_before_evaluation(tmp_path: Path, monkey
     service = Stage4Service(state_path=state_path)
     original = service.llm.generate_script
     def amplified(**values: Any) -> GeneratedScript:
-        generated = original(**values); claim = generated.claims[0]
+        generated = original(**values)
+        claim = generated.claims[0]
         return replace(generated, claims=[replace(claim, text="x" * (stage4_module.MAX_RESTORED_SCRIPT_CHARS + 1))])
     monkeypatch.setattr(service.llm, "generate_script", amplified)
     monkeypatch.setattr(stage4_module, "evaluate_grounding", lambda **_values: pytest.fail("evaluator reached"))

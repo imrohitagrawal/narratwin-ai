@@ -105,12 +105,13 @@ WalkthroughRunStatus = Literal["COMPLETED", "FAILED", "REFUSED"]
 LOGGER = logging.getLogger(__name__)
 SAFE_RESTORED_FAILURES = {(400, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key header is required for write requests."), (403, "FORBIDDEN", "Document is not accessible to this principal."), (403, "FORBIDDEN", "Project is not accessible to this principal."), (404, "NOT_FOUND", "Curated source not found."), (404, "NOT_FOUND", "Knowledge document not found."), (404, "NOT_FOUND", "Project not found."), (409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request."), (409, "IDEMPOTENCY_IN_PROGRESS", "Idempotency key is already in progress."), (409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale."), (413, "DOCUMENT_TOO_LARGE", "Document exceeds the Stage 4 chunk limit."), (413, "INGESTION_TOO_LARGE", "Too many documents requested for one ingestion run."), (413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 chunk limit."), (413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 corpus size limit."), (413, "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "Project exceeds the Stage 4 document limit."), (413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit."), (413, "UPLOAD_FILE_TOO_LARGE", "Curated source file exceeds the size limit."), (413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit."), (415, "UNSUPPORTED_MEDIA_TYPE", "Archive uploads are not accepted in Stage 4."), (415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted."), (422, "DOCUMENT_NOT_APPROVED", "Document must be approved before ingestion."), (422, "SECRET_LIKE_CONTENT", "Prompt contains secret-like content."), (422, "SECRET_LIKE_CONTENT", "Uploaded document contains secret-like content."), (422, "SOURCE_KIND_MISMATCH", "Legacy documents cannot use curated ingestion."), (422, "SOURCE_NOT_INGESTIBLE", "At least one bounded curated source is required."), (422, "SOURCE_NOT_INGESTIBLE", "Every curated source must be approved and current."), (422, "UNSAFE_DOCUMENT_CONTENT", "Curated source contains unsafe content."), (422, "UNSAFE_DOCUMENT_CONTENT", "Document contains unsafe instruction-like content."), (422, "VALIDATION_ERROR", "At least one document is required."), (422, "VALIDATION_ERROR", "Curated source assertions are incomplete or ineligible."), (422, "VALIDATION_ERROR", "Invalid filename."), (422, "VALIDATION_ERROR", "Project name is required."), (422, "VALIDATION_ERROR", "Uploaded document contains NUL bytes."), (422, "VALIDATION_ERROR", "Uploaded document contains too many control characters."), (422, "VALIDATION_ERROR", "Uploaded document is empty."), (422, "VALIDATION_ERROR", "Uploaded document must be UTF-8 text."), (429, "BACKPRESSURE_QUEUE_FULL", "Another Stage 4 operation is already active for this project."), (429, "RESOURCE_LIMIT_EXCEEDED", "Project exceeds the Stage 4 generation run limit."), (429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit."), (429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 project limit."), (422, "VALIDATION_ERROR", "Curated source content is not safe to retain."), (422, "SECRET_LIKE_CONTENT", "Curated source content is not safe to retain."), (422, "UNSAFE_DOCUMENT_CONTENT", "Curated source content is not safe to retain.")}
 SAFE_RESTORED_FAILURES.add((422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit."))
+SAFE_RESTORED_FAILURES.add((422, "INVALID_GENERATED_LINEAGE", "Generated script lineage is invalid."))
 RESTORED_FAILURE_CODES_BY_ENDPOINT = {
     "POST /api/v1/projects": {"VALIDATION_ERROR", "RESOURCE_LIMIT_EXCEEDED"},
     "POST /api/v1/projects/{projectId}/knowledge-documents": {"FORBIDDEN", "NOT_FOUND", "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "PROJECT_CORPUS_TOO_LARGE", "UPLOAD_TOO_LARGE", "UPLOAD_FILE_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "VALIDATION_ERROR", "SECRET_LIKE_CONTENT", "UNSAFE_DOCUMENT_CONTENT"},
     "PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval": {"FORBIDDEN", "NOT_FOUND", "SOURCE_NOT_APPROVABLE"},
     "POST /api/v1/projects/{projectId}/ingestion-runs": {"FORBIDDEN", "NOT_FOUND", "SOURCE_NOT_INGESTIBLE", "SOURCE_KIND_MISMATCH", "VALIDATION_ERROR", "INGESTION_TOO_LARGE", "DOCUMENT_NOT_APPROVED", "UNSAFE_DOCUMENT_CONTENT", "DOCUMENT_TOO_LARGE", "PROJECT_CORPUS_TOO_LARGE", "BACKPRESSURE_QUEUE_FULL"},
-    "POST /api/v1/projects/{projectId}/walkthrough-runs": {"FORBIDDEN", "NOT_FOUND", "PROMPT_TOO_LARGE", "SECRET_LIKE_CONTENT", "GENERATED_SCRIPT_TOO_LARGE", "RESOURCE_LIMIT_EXCEEDED", "BACKPRESSURE_QUEUE_FULL"},
+    "POST /api/v1/projects/{projectId}/walkthrough-runs": {"FORBIDDEN", "NOT_FOUND", "PROMPT_TOO_LARGE", "SECRET_LIKE_CONTENT", "GENERATED_SCRIPT_TOO_LARGE", "INVALID_GENERATED_LINEAGE", "RESOURCE_LIMIT_EXCEEDED", "BACKPRESSURE_QUEUE_FULL"},
 }
 
 
@@ -1408,6 +1409,8 @@ class Stage4Service:
                             prompt=prompt,
                             retrieved_context=retrieved,
                         )
+                        if not isinstance(generated, GeneratedScript) or type(generated.text) is not str or not generated.text or not isinstance(generated.claims, list) or any(not isinstance(claim, ScriptClaim) for claim in generated.claims):
+                            raise Stage4Error(422, "INVALID_GENERATED_LINEAGE", "Generated script lineage is invalid.")
                         if not generated_script_is_bounded(generated):
                             raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
                         evaluation = evaluate_grounding(
@@ -1431,7 +1434,7 @@ class Stage4Service:
                         )
                         canonical_evaluation = replace(canonical_evaluation, retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION, retrieval_top_k=RETRIEVAL_TOP_K, retrieval_score_threshold=RETRIEVAL_MIN_SCORE)
                         if evaluation != canonical_evaluation:
-                            raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
+                            raise Stage4Error(422, "INVALID_GENERATED_LINEAGE", "Generated script lineage is invalid.")
                         input_tokens, output_tokens = evaluate_token_usage(
                             prompt=prompt,
                             retrieved_context=retrieved,
@@ -1552,7 +1555,7 @@ class Stage4Service:
             or not self._fresh_lineage_ownership_is_valid(run)
             or not self._restored_citation_lineage_is_valid(run)
         ):
-            raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
+            raise Stage4Error(422, "INVALID_GENERATED_LINEAGE", "Generated script lineage is invalid.")
         record_walkthrough_metrics(
             tenant_id=principal.tenant_id,
             run_id=run_id,
@@ -1826,7 +1829,7 @@ def knowledge_chunk_from_dict(row: dict[str, Any]) -> KnowledgeChunk:
 
 
 def _raw_strings(row: dict[str, Any], names: tuple[str, ...]) -> bool:
-    return all(type(row.get(name)) is str for name in names)
+    return all(type(row.get(name)) is str and len(row[name]) <= MAX_RESTORED_SCRIPT_CHARS for name in names)
 
 
 def _raw_number(value: object) -> bool:
@@ -1836,9 +1839,14 @@ def _raw_number(value: object) -> bool:
 def generated_script_is_bounded(candidate: object) -> bool:
     if not isinstance(candidate, GeneratedScript) or type(candidate.text) is not str:
         return False
-    if len(candidate.text) > MAX_RESTORED_SCRIPT_CHARS or len(candidate.claims) > MAX_RESTORED_LINEAGE_ITEMS:
+    if len(candidate.text) > MAX_RESTORED_SCRIPT_CHARS or not isinstance(candidate.claims, list) or len(candidate.claims) > MAX_RESTORED_LINEAGE_ITEMS:
         return False
-    return all(len(marker) <= MAX_RESTORED_CITATION_DIGITS for marker in re.findall(r"\[(\d+)\]", candidate.text))
+    if any(not isinstance(claim, ScriptClaim) or type(claim.text) is not str
+           or any(type(value) is not str or len(value) > MAX_RESTORED_SCRIPT_CHARS
+                  for value in (claim.claim_id, claim.text, claim.chunk_id or "")) for claim in candidate.claims):
+        return False
+    return sum(len(claim.text) for claim in candidate.claims) <= len(candidate.text) and all(
+        len(marker) <= MAX_RESTORED_CITATION_DIGITS for marker in re.findall(r"\[(\d+)\]", candidate.text))
 
 
 def raw_walkthrough_lineage_is_bounded_and_typed(row: dict[str, Any]) -> bool:
@@ -1866,6 +1874,8 @@ def raw_walkthrough_lineage_is_bounded_and_typed(row: dict[str, Any]) -> bool:
             return False
         if claim.get("chunk_id") is not None and type(claim.get("chunk_id")) is not str:
             return False
+    if sum(len(claim["text"]) for claim in claims) > len(text):
+        return False
     for context in contexts:
         if not isinstance(context, dict) or type(context.get("context_ref_id")) is not str:
             return False
