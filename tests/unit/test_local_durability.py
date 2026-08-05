@@ -140,7 +140,7 @@ class CitationMarkerMismatchProvider:
         del audience, prompt
         context = retrieved_context[0]
         claim_text = context.chunk.text.strip().rstrip(".") + "."
-        sentence = f"For recruiters, {claim_text} [99]"
+        sentence = f"  For recruiters, {claim_text} [99]"
         return GeneratedScript(
             text=sentence,
             claims=[
@@ -149,7 +149,7 @@ class CitationMarkerMismatchProvider:
                     text=claim_text,
                     citation_index=1,
                     chunk_id=context.chunk.chunk_id,
-                    script_span_start=0,
+                    script_span_start=2,
                     script_span_end=len(sentence),
                 )
             ],
