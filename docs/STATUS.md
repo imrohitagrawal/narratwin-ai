@@ -1141,3 +1141,31 @@ Required update rules:
   verification; only then may closeout mark it satisfied or superseded. Issue #150 and its `2026-08-13` expiry
   remain unchanged. The historical pre-merge Issue #358 sentence is superseded by PR #362 at
   `22277c97eff83d6927c385aa7d769bd01b34f62b`; playable speaking-avatar Cut 1 remains incomplete.
+
+## Issue 374 frontend container security repair status
+
+- Issue `#374` is the bounded Stage 8 prerequisite repair for the Grype High finding
+  `CVE-2026-58043` in the frontend image's Node.js 26.4.0 runtime.
+- The frontend build stage uses official Node.js 26.6.0 Alpine at digest
+  `sha256:a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8`;
+  the minimal runtime uses Chainguard Node at digest
+  `sha256:cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734`,
+  independently verified to execute Node.js 26.6.0.
+- The scanner-consensus gate now rejects Medium-or-higher findings for the
+  shipped frontend runtime while retaining the existing backend exception boundary.
+  Its container workflow also validates the built frontend image's exact non-root
+  config, Node version, source-bound Next build identity, architecture-bound
+  immutable-filesystem inventory, and real HTTP
+  response. No advisory is ignored or suppressed; the runtime removes
+  general-purpose shell, network, and build tooling, including npm, npx, and
+  BusyBox. SHA-512-bound npm 12.0.2/fixed-package tarballs and the resulting
+  dependency stage must separately pass both scanners; complete runtime config,
+  file ownership, zero capabilities, and preload controls are bound. Per-build
+  preview/server-action secrets retain cryptographic randomness and are normalized
+  only after exact format, occurrence, and cross-manifest equality validation; a
+  second uncached application build must preserve the build ID and inventory while
+  changing every secret. The sole builder-only
+  BusyBox Medium is accepted only through 2026-08-12 or earlier fixed-builder
+  availability and tracked by `#376`; it is absent from the final runtime.
+  Cut 1, deployment, release, public availability, and production readiness
+  remain incomplete.

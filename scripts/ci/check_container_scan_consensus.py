@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,55 @@ BASE_IMAGE = (
     "docker.io/library/python:3.13-alpine@"
     "sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0"
 )
+FRONTEND_SECRET_FIELDS = (
+    "previewModeId",
+    "previewModeSigningKey",
+    "previewModeEncryptionKey",
+    "serverActionKey",
+)
+FRONTEND_ENGINE_CONFIG_DEFAULTS = {
+    "AttachStderr": False,
+    "AttachStdin": False,
+    "AttachStdout": False,
+    "Domainname": "",
+    "Hostname": "",
+    "Image": "",
+    "OnBuild": None,
+    "OpenStdin": False,
+    "StdinOnce": False,
+    "Tty": False,
+    "Volumes": None,
+}
+FRONTEND_INVENTORIES = {
+    "amd64": frozenset(
+        (
+            "1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15",
+            "1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a",
+        )
+    ),
+    "arm64": frozenset(
+        ("1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52",)
+    ),
+}
+
+
+def frontend_inventory_matches(architecture: str, inventory: str) -> bool:
+    return inventory in FRONTEND_INVENTORIES.get(architecture, frozenset())
+
+
+def require_frontend_inventory(architecture: str, inventory: str) -> None:
+    if not frontend_inventory_matches(architecture, inventory):
+        raise SystemExit("Frontend runtime inventory is not reviewed.")
+
+
+def canonical_frontend_config(config: dict[str, Any]) -> dict[str, Any] | None:
+    normalized = dict(config)
+    for field, expected in FRONTEND_ENGINE_CONFIG_DEFAULTS.items():
+        if field in normalized:
+            actual = normalized.pop(field)
+            if type(actual) is not type(expected) or actual != expected:
+                return None
+    return normalized
 
 
 def _digest(value: Any) -> tuple[str, int]:
@@ -62,6 +112,27 @@ def _valid_vex(vex: dict[str, Any], backend_config: str, component_purl: str) ->
         "component": component_purl,
         "vulnerabilities": list(TARGET_CVES),
     }
+
+
+def frontend_reproduction_findings(primary: dict[str, Any], reproduction: dict[str, Any]) -> list[str]:
+    findings: list[str] = []
+    if primary.get("buildId") != reproduction.get("buildId"):
+        findings.append("FRONTEND_BUILD_ID_CHANGED")
+    primary_inventory = primary.get("inventory")
+    reproduction_inventory = reproduction.get("inventory")
+    inventories_are_reviewed = all(
+        isinstance(value, str) and frontend_inventory_matches(str(record.get("architecture", "")), value)
+        for record, value in ((primary, primary_inventory), (reproduction, reproduction_inventory))
+    )
+    if not inventories_are_reviewed:
+        findings.append("FRONTEND_RUNTIME_INVENTORY_INVALID")
+    elif primary_inventory != reproduction_inventory:
+        findings.append("FRONTEND_RUNTIME_INVENTORY_CHANGED")
+    primary_secrets = {primary.get(field) for field in FRONTEND_SECRET_FIELDS}
+    reproduction_secrets = {reproduction.get(field) for field in FRONTEND_SECRET_FIELDS}
+    if primary_secrets & reproduction_secrets:
+        findings.append("FRONTEND_BUILD_SECRET_REUSED")
+    return findings
 
 
 def evaluate_consensus(
@@ -136,6 +207,8 @@ def evaluate_consensus(
                 _add(findings, "SCANNER_REPORT_MALFORMED")
             elif name.startswith("backend") and rule_id in TARGET_CVES and purl == component_purl:
                 continue
+            elif name.startswith("frontend") and rule_id and severity >= 4.0:
+                _add(findings, "FRONTEND_RUNTIME_MEDIUM_OR_HIGHER")
             elif rule_id and severity >= 7.0:
                 _add(findings, "UNRELATED_HIGH_CRITICAL")
 
@@ -158,8 +231,17 @@ def _load_json(path: Path) -> Any:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--case", type=Path, required=True)
-    result = evaluate_consensus(**_load_json(parser.parse_args().case))
+    parser.add_argument("--case", type=Path)
+    parser.add_argument("--verify-frontend-reproduction", action="store_true")
+    args = parser.parse_args()
+    if args.verify_frontend_reproduction:
+        primary, reproduction = (json.loads(sys.stdin.readline()) for _ in range(2))
+        findings = frontend_reproduction_findings(primary, reproduction)
+        print(json.dumps({"status": "fail" if findings else "pass", "findings": findings}))
+        return 1 if findings else 0
+    if args.case is None:
+        parser.error("--case is required unless verifying frontend reproduction")
+    result = evaluate_consensus(**_load_json(args.case))
     print(json.dumps(result, sort_keys=True))
     return 0 if result["status"] == "pass" else 1
 

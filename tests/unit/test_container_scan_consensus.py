@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, cast
@@ -130,14 +131,295 @@ def test_single_faults_fail_closed(mutation: Callable[[dict[str, Any]], None], e
     assert _evaluate(candidate)["findings"] == expected
 
 
-def test_medium_unrelated_findings_do_not_hide_high_policy() -> None:
+def test_frontend_runtime_medium_findings_fail_closed() -> None:
     case = _case()
     case["reports"]["frontend-grype"] = _sarif("grype", ("CVE-MEDIUM",), "6.5")
     _rehash(case, "frontend-grype")
-    assert _evaluate(case)["findings"] == []
+    assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
     case["reports"]["frontend-grype"] = _sarif("grype", ("CVE-HIGH",), "7.0")
     _rehash(case, "frontend-grype")
-    assert _evaluate(case)["findings"] == ["UNRELATED_HIGH_CRITICAL"]
+    assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
+
+
+def test_backend_medium_findings_retain_the_existing_high_policy() -> None:
+    case = _case()
+    case["reports"]["backend-grype"] = _sarif("grype", ("CVE-MEDIUM",), "6.5")
+    _rehash(case, "backend-grype")
+    assert _evaluate(case)["findings"] == []
+
+
+def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> None:
+    validator = _load().frontend_reproduction_findings
+    primary = {
+        "buildId": "source-bound",
+        "architecture": "amd64",
+        "inventory": "1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15",
+        "previewModeId": "1" * 32,
+        "previewModeSigningKey": "2" * 64,
+        "previewModeEncryptionKey": "3" * 64,
+        "serverActionKey": "A" * 43 + "=",
+    }
+    reproduction = {
+        "buildId": "source-bound",
+        "architecture": "amd64",
+        "inventory": primary["inventory"],
+        "previewModeId": "4" * 32,
+        "previewModeSigningKey": "5" * 64,
+        "previewModeEncryptionKey": "6" * 64,
+        "serverActionKey": "B" * 43 + "=",
+    }
+    assert validator(primary, reproduction) == []
+    reproduction["inventory"] = "1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a"
+    assert validator(primary, reproduction) == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
+    reproduction["inventory"] = primary["inventory"]
+    for bad_inventory in (None, "", "unreviewed"):
+        malformed_primary = {**primary, "inventory": bad_inventory}
+        malformed_reproduction = {**reproduction, "inventory": bad_inventory}
+        assert validator(malformed_primary, malformed_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
+    wrong_arch_primary = {**primary, "inventory": "1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52"}
+    wrong_arch_reproduction = {**reproduction, "inventory": wrong_arch_primary["inventory"]}
+    assert validator(wrong_arch_primary, wrong_arch_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
+    reproduction["previewModeSigningKey"] = primary["previewModeEncryptionKey"]
+    reproduction["previewModeEncryptionKey"] = primary["previewModeSigningKey"]
+    assert validator(primary, reproduction) == ["FRONTEND_BUILD_SECRET_REUSED"]
+    reproduction["previewModeSigningKey"] = "5" * 64
+    reproduction["previewModeEncryptionKey"] = "6" * 64
+    assert validator(primary, primary) == ["FRONTEND_BUILD_SECRET_REUSED"]
+    reproduction["buildId"] = "changed"
+    reproduction["serverActionKey"] = primary["serverActionKey"]
+    assert validator(primary, reproduction) == [
+        "FRONTEND_BUILD_ID_CHANGED",
+        "FRONTEND_BUILD_SECRET_REUSED",
+    ]
+
+
+def test_frontend_reproduction_inventory_rejection_survives_optimized_python() -> None:
+    primary = {"buildId": "stable", "architecture": "amd64", "previewModeId": "1", "previewModeSigningKey": "2", "previewModeEncryptionKey": "3", "serverActionKey": "4"}
+    reproduction = {**primary, "previewModeId": "5", "previewModeSigningKey": "6", "previewModeEncryptionKey": "7", "serverActionKey": "8"}
+    completed = subprocess.run(
+        [sys.executable, "-O", str(ROOT / "scripts/ci/check_container_scan_consensus.py"), "--verify-frontend-reproduction"],
+        cwd=ROOT,
+        input=f"{json.dumps(primary)}\n{json.dumps(reproduction)}\n",
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode != 0
+    assert json.loads(completed.stdout)["findings"] == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
+
+
+def test_runtime_inventory_orchestration_preserves_failures_and_distinct_values(tmp_path: Path) -> None:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    start = source.index('if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then')
+    block = source[start : source.index("\nfi", start) + 3]
+    log = tmp_path / "reproduction.log"
+    harness = f'''set -euo pipefail
+prepare_frontend_images() {{ :; }}
+verify_frontend_runtime() {{ false; printf -v "${{2:-ignored}}" %s "$1-inventory"; }}
+verify_frontend_reproducibility() {{ printf '%s\n' "$@" >"$LOG"; }}
+{block}
+'''
+    env = {**os.environ, "LOG": str(log), "FRONTEND_IMAGE": "primary:tag", "FRONTEND_REPRO_IMAGE": "repro:tag"}
+    failed = subprocess.run(["bash"], input=harness, env=env, text=True, check=False)
+    assert failed.returncode != 0
+    harness = harness.replace("verify_frontend_runtime() { false;", "verify_frontend_runtime() { :;")
+    passed = subprocess.run(["bash"], input=harness, env=env, text=True, check=False)
+    assert passed.returncode == 0
+    assert log.read_text().splitlines() == ["primary:tag", "repro:tag", "primary:tag-inventory", "repro:tag-inventory"]
+
+
+def test_frontend_config_accepts_only_exact_host_engine_defaults() -> None:
+    canonicalize = _load().canonical_frontend_config
+    application_config = {"User": "65532:65532", "Cmd": ["server.js"]}
+    engine_defaults = {
+        "AttachStderr": False,
+        "AttachStdin": False,
+        "AttachStdout": False,
+        "Domainname": "",
+        "Hostname": "",
+        "Image": "",
+        "OnBuild": None,
+        "OpenStdin": False,
+        "StdinOnce": False,
+        "Tty": False,
+        "Volumes": None,
+    }
+    assert canonicalize(application_config) == application_config
+    assert canonicalize({**application_config, **engine_defaults}) == application_config
+    for key, expected in engine_defaults.items():
+        mutation = {**application_config, **engine_defaults}
+        mutation[key] = not expected if isinstance(expected, bool) else "unexpected"
+        assert canonicalize(mutation) is None
+        if isinstance(expected, bool):
+            mutation[key] = 0
+            assert canonicalize(mutation) is None
+    assert canonicalize({**application_config, "Unexpected": False}) == {
+        **application_config,
+        "Unexpected": False,
+    }
+
+
+@pytest.mark.parametrize("optimize", [None, "1"])
+def test_frontend_config_rejection_does_not_disclose_untrusted_values(
+    optimize: str | None,
+) -> None:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    start = source.index("verify_frontend_runtime() {")
+    function = source[start : source.index("\n}\n\nfrontend_build_identity()", start) + 3]
+    marker = "UNTRUSTED-MARKER-MUST-NOT-APPEAR"
+    config = json.dumps({"Labels": {"untrusted": marker}, "Unexpected": marker})
+    env = {**os.environ, "MALICIOUS_CONFIG": config}
+    if optimize:
+        env["PYTHONOPTIMIZE"] = optimize
+    completed = subprocess.run(
+        ["bash"],
+        cwd=ROOT,
+        env=env,
+        input=(
+            "set -e\n"
+            "docker() {\n"
+            "  if [ \"$1\" = image ] && [ \"$2\" = inspect ]; then "
+            "printf '%s\\n' \"$MALICIOUS_CONFIG\"; return; fi\n"
+            "  return 97\n"
+            "}\n"
+            f"{function}\nverify_frontend_runtime image:tag\n"
+        ),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    output = completed.stdout + completed.stderr
+    assert completed.returncode != 0
+    assert marker not in output
+    assert "Frontend runtime config does not match the reviewed contract." in output
+
+
+def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    start = source.index("verify_frontend_runtime() {")
+    function = source[start : source.index("\n}\n\nfrontend_build_identity()", start) + 3]
+    marker = "UNTRUSTED-ARGV-MARKER"
+    argv_log = tmp_path / "argv.log"
+    completed = subprocess.run(
+        ["bash"],
+        cwd=ROOT,
+        env={**os.environ, "MALICIOUS_CONFIG": json.dumps({"Unexpected": marker}), "ARGV_LOG": str(argv_log)},
+        input=(
+            "set -e\n"
+            "docker() { [ \"$1\" = image ] && printf '%s\\n' \"$MALICIOUS_CONFIG\"; }\n"
+            "python3() { printf '%s\\n' \"$@\" >\"$ARGV_LOG\"; return 1; }\n"
+            f"{function}\nverify_frontend_runtime image:tag\n"
+        ),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode != 0
+    assert marker not in argv_log.read_text(encoding="utf-8")
+
+
+def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
+    matches = _load().frontend_inventory_matches
+    amd64 = (
+        "1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15",
+        "1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a",
+    )
+    arm64 = "1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52"
+    assert all(matches("amd64", inventory) for inventory in amd64)
+    assert matches("arm64", arm64)
+    assert not matches("amd64", arm64)
+    assert not matches("arm64", amd64[0])
+    assert not matches("amd64", amd64[0][:-1] + "0")
+    assert not matches("unknown", amd64[0])
+
+
+def test_frontend_inventory_rejection_survives_optimized_python() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-O",
+            "-c",
+            "from scripts.ci.check_container_scan_consensus import require_frontend_inventory; require_frontend_inventory('unknown', 'unreviewed')",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode != 0
+    assert completed.stderr.strip() == "Frontend runtime inventory is not reviewed."
+
+
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        ("FRONTEND_IMAGE", "FRONTEND_BUILD_IMAGE"),
+        ("FRONTEND_IMAGE", "FRONTEND_REPRO_IMAGE"),
+        ("FRONTEND_BUILD_IMAGE", "FRONTEND_REPRO_IMAGE"),
+    ],
+)
+def test_container_scan_rejects_colliding_frontend_image_roles(tmp_path: Path, left: str, right: str) -> None:
+    reports = tmp_path / "reports"
+    env = {
+        **os.environ,
+        "REPORT_DIR": str(reports),
+        "FRONTEND_IMAGE": "primary:tag",
+        "FRONTEND_BUILD_IMAGE": "build:tag",
+        "FRONTEND_REPRO_IMAGE": "repro:tag",
+    }
+    env[left] = env[right]
+    completed = subprocess.run(
+        [str(ROOT / "scripts/ci/docker-image-scan.sh")],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    assert completed.returncode == 1
+    assert completed.stderr == "Frontend image role references must be distinct.\n"
+
+
+@pytest.mark.parametrize(("trivy_rc", "grype_rc"), [(0, 0), (1, 0), (0, 1)])
+def test_dependency_scanners_bind_pre_reproduction_digest_and_fail_closed(
+    tmp_path: Path, trivy_rc: int, grype_rc: int
+) -> None:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    cleanup = 'rm -f "${REPORT_DIR}"/*.raw.json "${REPORT_DIR}"/*.raw.sarif.json'
+    assert source.index(cleanup) < source.index("\n  prepare_frontend_images")
+    start = source.index("prepare_frontend_images() {")
+    function = source[start : source.index("\n}\n", start) + 3]
+    log = tmp_path / "boundary.log"
+    harness = f"""
+docker() {{ printf 'docker:%s\\n' \"$*\" >>\"$LOG\"; }}
+image_config() {{ printf 'sha256:dependency'; }}
+scan_trivy() {{ printf 'trivy:%s\\n' \"$1\" >>\"$LOG\"; return \"$TRIVY_RC\"; }}
+scan_grype() {{ printf 'grype:%s\\n' \"$1\" >>\"$LOG\"; return \"$GRYPE_RC\"; }}
+{function}
+prepare_frontend_images
+"""
+    env = {
+        **os.environ,
+        "LOG": str(log),
+        "TRIVY_RC": str(trivy_rc),
+        "GRYPE_RC": str(grype_rc),
+        "FRONTEND_ARCH": "amd64",
+        "FRONTEND_BUILD_IMAGE": "build:tag",
+        "FRONTEND_REPRO_IMAGE": "repro:tag",
+        "REPORT_DIR": str(tmp_path),
+    }
+    completed = subprocess.run(
+        ["bash"], input=harness, env=env, text=True, capture_output=True, check=False
+    )
+    lines = log.read_text(encoding="utf-8").splitlines()
+    if trivy_rc or grype_rc:
+        assert completed.returncode != 0 and len(lines) == 3
+    else:
+        assert completed.returncode == 0
+        assert "--target deps" in lines[0]
+        assert lines[1:3] == ["trivy:sha256:dependency", "grype:sha256:dependency"]
+        assert "--no-cache-filter build" in lines[3] and "repro:tag" in lines[3]
 
 
 @pytest.mark.parametrize(
@@ -152,7 +434,8 @@ def test_fixed_cve_exception_requires_exact_backend_python_component(name: str, 
     case = _case()
     case["reports"][name] = report
     _rehash(case, name)
-    assert _evaluate(case)["findings"] == ["UNRELATED_HIGH_CRITICAL"]
+    expected = "FRONTEND_RUNTIME_MEDIUM_OR_HIGHER" if name.startswith("frontend") else "UNRELATED_HIGH_CRITICAL"
+    assert _evaluate(case)["findings"] == [expected]
 
 
 @pytest.mark.parametrize(

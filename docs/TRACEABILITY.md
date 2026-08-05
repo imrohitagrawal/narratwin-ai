@@ -403,6 +403,14 @@ durability, deployment, and release decisions remain outside this trace.
 | Synthetic presenter preview | Local photorealistic generated WebP, exact committed-asset hash, visible and accessible synthetic still-image disclosure, and light/dark responsive browser evidence | Generated without a real-person reference and not intended to depict or endorse a real person; no copied third-party media, registered render identity, animation, video, or product-runtime provider activity |
 | Local browser proof | Opt-in `NARRATWIN_DEMO_LOCAL_E2E=1` Playwright case traverses the existing local/mock API without interception | Local execution evidence only; no deployment, public URL, release, or production readiness |
 
+## Issue #374 frontend container security repair traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| `frontend/Dockerfile` official Node.js 26.6.0 build pin, SHA-512-bound exact fixed npm build-tool tarballs, plus minimal Chainguard Node runtime pin | Remove Node.js 26.4.0 affected by Grype finding `CVE-2026-58043`, clear dependency-stage Critical/High findings, omit build tooling from the final image, and keep builder-only BusyBox `CVE-2025-60876` bounded by `#376` through 2026-08-12 | No application package-lock change, ranged repair install, vulnerability suppression, scanner bypass, product behavior, provider, or network-policy change |
+| `frontend/next.config.ts`, `scripts/ci/docker-build.sh`, and executable runtime verification in scanner-consensus `scripts/ci/docker-image-scan.sh` | Build the final image with a source-bound build ID; require both scanners on the exact npm 12.0.2 dependency stage; verify exact non-root config, environment/preload controls, Node version, architecture-bound immutable-filesystem inventory with narrowly validated random-secret normalization, second-build secret freshness, bounded HTTP serving, and fail on Medium-or-higher final-frontend or unrelated High/Critical backend findings | Passing local/container evidence does not authorize deployment, release, public availability, or production readiness |
+| `docs/STATUS.md` and `docs/THIRD_PARTY_NOTICES.md` | Preserve exact image provenance, digest, finding, and scope | Issue `#372` and the remaining Cut 1 work stay separate and incomplete until their own governed closeout |
+
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 
 ## Issue #158 Security History Chronology

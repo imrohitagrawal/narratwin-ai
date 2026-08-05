@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """Executable Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
-# ruff: noqa: E302, E305
-import json
-import os
-import re
-import subprocess
-import sys
+# ruff: noqa: E302, E305, E401
+import json, os, re, subprocess, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -14,6 +10,7 @@ from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
 from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
+from scripts.quality import stage8_node_security as node_security  # noqa: E402
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
@@ -36,44 +33,24 @@ def issue324_allowed_files() -> set[str]:
     return set(json.loads(path.read_text(encoding="utf-8"))["scope"]["required"])
 REQUIRED_FILES = [
     ".stage/current", ".github/pull_request_template.md", ".github/workflows/ci.yml", ".github/workflows/security.yml",
-    "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py",
-    "backend/app/stage6.py", "backend/Dockerfile",
-    "frontend/Dockerfile", "frontend/package.json",
-    "frontend/package-lock.json", "frontend/src/app/page.test.tsx",
-    "frontend/scripts/run-lighthouse.mjs",
-    "perf/stage8_locustfile.py", "pyproject.toml",
-    "uv.lock", "scripts/ci/dependency-security.sh",
-    "scripts/ci/docker-image-scan.sh",
-    "scripts/ci/frontend-lighthouse.sh",
-    "scripts/ci/performance-smoke.sh",
-    "scripts/quality/check_quality_stage.py",
-    "scripts/quality/check_stage8_docs.py",
-    "tests/api/test_stage4_slice_api.py",
-    "tests/api/test_stage6_multilingual_api.py",
-    "tests/api/test_stage8_hardening_api.py",
-    "tests/unit/test_stage6_multilingual.py",
-    "demo/stage8_seed_project.md",
-    "docs/ADR/0006-stage8-release-hardening.md",
-    "docs/API_CONTRACT.md",
-    "docs/ARCHITECTURE.md",
-    "docs/QUALITY_GATES.md",
-    "docs/PROJECT_LEARNINGS_TRACKER.md",
-    "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
-    "docs/RECOMMENDED_REVIEW_ITEMS.md",
-    "docs/REPOSITORY_GUARDRAILS.md",
-    "docs/RELEASE_CHECKLIST.md",
-    "docs/RELEASE_READINESS_REVIEW.md",
-    "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
-    "docs/RUNBOOK.md",
-    "docs/SKILL_LOCK.md",
-    "docs/STAGE_ISSUE_PLAN.md",
-    "docs/STATUS.md",
-    "docs/THIRD_PARTY_NOTICES.md",
-    "docs/TRACEABILITY.md",
-    "docs/demo/CONTROLLED_LOCAL_DEMO.md",
+    "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py", "backend/app/stage6.py",
+    "backend/Dockerfile",
+    "frontend/Dockerfile", "frontend/package.json", "frontend/package-lock.json", "frontend/src/app/page.test.tsx",
+    "frontend/scripts/run-lighthouse.mjs", "perf/stage8_locustfile.py", "pyproject.toml", "uv.lock",
+    "scripts/ci/dependency-security.sh", "scripts/ci/docker-image-scan.sh", "scripts/ci/frontend-lighthouse.sh",
+    "scripts/ci/performance-smoke.sh", "scripts/quality/check_quality_stage.py", "scripts/quality/check_stage8_docs.py",
+    "tests/api/test_stage4_slice_api.py", "tests/api/test_stage6_multilingual_api.py",
+    "tests/api/test_stage8_hardening_api.py", "tests/unit/test_stage6_multilingual.py", "demo/stage8_seed_project.md",
+    "docs/ADR/0006-stage8-release-hardening.md", "docs/API_CONTRACT.md", "docs/ARCHITECTURE.md",
+    "docs/QUALITY_GATES.md", "docs/PROJECT_LEARNINGS_TRACKER.md", "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
+    "docs/RECOMMENDED_REVIEW_ITEMS.md", "docs/REPOSITORY_GUARDRAILS.md", "docs/RELEASE_CHECKLIST.md",
+    "docs/RELEASE_READINESS_REVIEW.md", "docs/REVIEW_RIGOR_RETROSPECTIVE.md", "docs/RUNBOOK.md",
+    "docs/SKILL_LOCK.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md", "docs/demo/CONTROLLED_LOCAL_DEMO.md",
 ]
 STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {
+    node_security.ISSUE374_SECURITY_BRANCH: node_security.ISSUE374_SECURITY_FILES,
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
         "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
@@ -326,15 +303,13 @@ def check_backend_and_tests(failures: list[str]) -> None:
     for marker in ("replay_response", "conflict_response", "secret-upload"):
         if marker not in stage4_api_tests:
             fail(f"Stage 8 Stage 4 API tests must cover {marker}.", failures)
-    for marker in (
-        "test_tts_provider_manifest_rejects_unknown_schema_fields",
-        "unexpectedTopLevel",
-        "unexpectedNested",
-    ):
+    for marker in ("test_tts_provider_manifest_rejects_unknown_schema_fields", "unexpectedTopLevel",
+                   "unexpectedNested"):
         if marker not in stage6_unit_tests:
             fail(f"Stage 8 Stage 6 unit tests must cover {marker}.", failures)
     frontend_dockerfile = read("frontend/Dockerfile")
-    for marker in ("/usr/local/lib/node_modules/npm", "/usr/local/bin/npm", "/usr/local/bin/npx"):
+    for marker in ("/usr/lib/node_modules", "/usr/local/lib/node_modules", "/usr/local/bin", "/bin", "/usr/bin",
+                   "p!=='/usr/bin/node'"):
         if marker not in frontend_dockerfile:
             fail(f"Stage 8 frontend runtime image must remove {marker}.", failures)
 def check_dependencies_and_scripts(failures: list[str]) -> None:
@@ -376,7 +351,10 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
         "NARRATWIN_LOCUST_HEALTH_P95_MS",
         "lighthouse",
         "trivy image",
-        "aquasec/trivy@sha256",
+        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.6.0"',
+        '"65532:65532"', "extras.length", "require_frontend_inventory", "actual_inventory", "open(3)",
+        'encoding:"buffer"', "readlinkSync", "s.uid", "s.gid", "CapEff", "--connect-timeout", "--max-time",
+        "cleanup_frontend_runtime", "FRONTEND_BUILD_IMAGE", "--target deps", "NODE_OPTIONS", "config != expected",
         "largest-contentful-paint",
         "cumulative-layout-shift",
         "performance",
@@ -486,6 +464,7 @@ def main() -> int:
         check_stage_scope(failures)
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
+        node_security.check_frontend_node_image(read("frontend/Dockerfile"), failures)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)

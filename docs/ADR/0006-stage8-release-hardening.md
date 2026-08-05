@@ -232,6 +232,58 @@ Consequences:
 - This decision adds no production durability, backup/restore, RTO/RPO,
   monitoring, operator-signoff, or issue `#39` closure evidence.
 
+## Issue #374 Frontend Runtime Image Addendum
+
+Date: 2026-08-05
+
+The frontend build stage uses official Node.js `26.6.0-alpine` pinned to index
+digest `sha256:a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8`.
+The standalone runtime uses the minimal Chainguard Node image pinned to index
+digest `sha256:cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734`,
+independently verified to execute Node.js 26.6.0. This replaces the Node.js
+26.4.0 runtime reported for `CVE-2026-58043`, excludes the Alpine image's
+unfixed BusyBox `CVE-2025-60876` Medium, and removes all general-purpose shell,
+network, and build tooling before returning to non-root UID 65532. The Stage 8
+gate rejects version, digest, mutable-tag, and stale-stage drift for both images
+and validates the built runtime's identity, filesystem, and HTTP behavior. The
+runtime gate binds the path, type, mode, ownership, and content of the complete immutable
+filesystem to canonical inventories. Next's per-build preview and server-action secrets
+are the only normalized fields: the gate validates their exact cryptographic formats,
+single occurrences, and cross-manifest equality before hashing all remaining bytes.
+It then performs a second uncached application build, requires the same source-bound
+build ID and canonical inventory, and requires every normalized secret to be fresh.
+The canonical inventories are
+`1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52`
+(arm64) and
+`1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15`
+(amd64 Docker Desktop) or
+`1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a`
+(amd64 hosted runner). Each build must match its architecture's finite reviewed set, and the primary
+and uncached reproduction inventories must be identical. Only validated secret values, Docker-managed virtual trees, and injected host/hostname/resolver
+mounts are excluded; renamed, relocated, linked, copied, executable, ELF,
+JavaScript, JSON, and other regular-file tooling therefore fails before
+scanner consensus. Raw-byte path traversal and length-prefixed binary records
+make undecodable filenames unambiguous and any traversal/read error terminal.
+The dependency stage verifies SHA-512 for exact npm 12.0.2 and its exact fixed
+`brace-expansion`, `ip-address`, `tar`, and `undici` tarballs before extraction;
+no ranged nested install supplies those repaired bytes. It is independently
+required to pass both Trivy and Grype at Critical/High severity. The remaining unfixed
+BusyBox `CVE-2025-60876` Medium exists only in the non-shipping build stage;
+Issue `#376` accepts it only through 2026-08-12 or until a fixed BusyBox
+package or suitable fixed builder digest is available, whichever occurs first.
+The clean, shell-free runtime remains required through Medium. Runtime
+configuration verification binds the complete behavior-bearing Docker config,
+including environment, labels, working directory, exposed port, entrypoint,
+and command; undeclared health checks, volumes, stop signals, shells, preload
+controls, and other config fields fail closed. The application and trust paths
+remain root-owned/non-writable and the runtime process must have zero effective
+capabilities.
+
+The Chainguard/Wolfi image choice changes only the container base. It does not
+change frontend behavior, add providers or network calls, suppress scanner
+findings, or authorize deployment, release, public availability, or production
+readiness.
+
 ## Related Documents
 
 - `docs/QUALITY_GATES.md`
