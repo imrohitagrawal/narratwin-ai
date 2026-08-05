@@ -31,58 +31,62 @@ def load(relative: str, name: str) -> ModuleType:
 stage8=load("scripts/quality/check_stage8_docs.py","s8"); stage2=load("scripts/quality/check_stage2_docs.py","s2")
 def git(r:Path,*a:str)->str:return sp.run(["git",*a],cwd=r,text=True,capture_output=True,check=True).stdout.strip()
 def put(r:Path,p:str,v:str)->None:t=r/p;t.parent.mkdir(parents=True,exist_ok=True);t.write_text(v)
-def route(monkeypatch: Any, branch: str, changed: list[str]) -> list[str]:
-    m=monkeypatch; m.setattr(stage8,"current_branch",lambda:branch); failures: list[str]=[]
-    m.setattr(stage8,"changed_files_for_stage_scope",lambda:changed)
-    stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures); return failures
+def route(m:Any,b:str,c:list[str])->list[str]:
+    s=stage8;m.setattr(s,"current_branch",lambda:b);m.setattr(s,"changed_files_for_stage_scope",lambda:c);f=[]
+    s.check_stage_marker_and_branch(f);s.check_stage_scope(f);return f
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
+    m=monkeypatch
     for branch, s in SCOPES.items():
-        monkeypatch.setattr(stage8,"citation_parity_charge",lambda:1200); assert route(monkeypatch,branch,sorted(s))==[]
+        m.setattr(stage8,"citation_parity_charge",lambda:1200); assert route(m,branch,sorted(s))==[]
         extra = "forbidden/outside.txt"
-        assert route(monkeypatch,branch,[extra]) == [f"Stage 8 changed file outside the allowlist: {extra}"]
+        assert route(m,branch,[extra]) == [f"Stage 8 changed file outside the allowlist: {extra}"]
         if branch == CP:
-            monkeypatch.setattr(stage8,"citation_parity_charge",lambda:1201)
-            assert len(route(monkeypatch,branch,sorted(s)[1:]))==2
+            m.setattr(stage8,"citation_parity_charge",lambda:1201);assert len(route(m,branch,sorted(s)[1:]))==2
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", f"{A2_2}/child",
                    A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{CP}-retry", f"{a23b.A23A_BRANCH}-retry",
-                   a23b.A23A_BRANCH.replace("-351-", "-350-"), f"{QP}-retry", "cut1-proces\u0455-346-transition"):
-        assert len(route(monkeypatch,branch,[])) == 2
+                   a23b.A23A_BRANCH.replace("-351-", "-350-"), f"{QP}-retry", f"stage8-{CUT1_REAL_MEDIA_TRANSITION}",
+                   "cut1-proces\u0455-346-transition"): assert len(route(m,branch,[])) == 2
     for issue,branch in ((346,TRANSITION),(349,A2_2),(351,a23b.A23A_BRANCH),(353,a23b.A23B_BRANCH),(358,QP),
                          (366,CUT1_REAL_MEDIA_TRANSITION),(372,CP)):
         artifact = json.loads((Path(__file__).parents[2]/f"docs/governance/preflights/issue-{issue}.json").read_text())
         assert artifact["branch"] == branch and set(artifact["scope"]["required"]) == SCOPES[branch]
-    monkeypatch.setattr(Path, "read_text", lambda path, *a, **kw: (_ for _ in ()).throw(AssertionError())
+    m.setattr(Path, "read_text", lambda path, *a, **kw: (_ for _ in ()).throw(AssertionError())
                         if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json",
                                          "issue-358.json", "issue-372.json"}
                         else ORIGINAL_READ(path, *a, **kw))
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {branch: policy[branch] for branch in SCOPES} == SCOPES
     assert {branch for branch in policy if branch.startswith("cut1-")} == set(SCOPES) - {a23b.A23B_BRANCH}
-    dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher"); stage_file=tmp_path/"stage"
-    status_file=tmp_path/"status"
+    dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file,status_file=(
+        tmp_path/"stage",tmp_path/"status")
     mode = "| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
-    stage_file.write_text("8\n"); status_file.write_text(mode); m = monkeypatch
-    calls: list[list[str]] = []; monkeypatch.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)
+    stage_file.write_text("8\n"); status_file.write_text(mode)
+    calls: list[list[str]] = []; m.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)
     m.setattr(dispatcher, "CURRENT_STAGE", stage_file); m.setattr(dispatcher, "STATUS_DOC", status_file)
-    def record(args: list[str], cwd: Path) -> int: calls.append(args); return 0
-    m.setattr(dispatcher.subprocess,"call",record)
+    record:Any=lambda args,cwd:calls.append(args)or 0;m.setattr(dispatcher.subprocess,"call",record)
     for branch in SCOPES:
-        calls.clear(); monkeypatch.setattr(dispatcher, "current_branch", lambda branch=branch: branch)
+        calls.clear(); m.setattr(dispatcher, "current_branch", lambda branch=branch: branch)
         assert (dispatcher.main(), calls) == (0, [["make", "stage8-quality"]])
         assert branch == a23b.A23B_BRANCH or canonical_stage_issue(branch) is None
 def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypatch: Any) -> None:
-    m=monkeypatch; full=sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE)
-    setc:Any=lambda v:m.setattr(stage8,"cut1_transition_charges",lambda:v); setc((0,{}))
+    m=monkeypatch; raises=pytest.raises; full=sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE)
+    fn=stage8.cut1_transition_charges;sc:Any=lambda v:m.setattr(stage8,"cut1_transition_charges",lambda:v);sc((0,{}))
     assert route(m,CUT1_REAL_MEDIA_TRANSITION,full[1:])==[f"Issue #366 route is missing required path: {full[0]}"]
     limits=[(901,{},"Issue #366 charge 901 exceeds 900."),*((n+1,{p:n+1},
         f"Issue #366 charge for {p} exceeds {n}.") for p,n in stage8.C1_FILE_LIMITS.items())]
-    for total,files,want in limits: setc((total,files)); assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[want]
-    m.setattr(stage8,"cut1_transition_charges",lambda:(0,{})); root=Path(__file__).parents[2]
-    docs={p:(root/p).read_text()for p in(*stage8.C1_DOCS,".stage/current")};m.setattr(stage8,"read",docs.__getitem__)
-    for path in stage8.C1_DOCS:
-        original=docs[path]; docs[path]+="drift"; assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[
-            "Issue #366 governance document contract drifted."]; docs[path]=original
+    for total,files,want in limits: sc((total,files)); assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[want]
+    sc(fn);d=sp.CompletedProcess;out=iter(((0,stage8.C1_BASE+"\n"),(0,"351\t0\t"+next(iter(stage8.C1_FILE_LIMITS))),
+        (0,"300\t0\tscripts/quality/check_stage8_docs.py\n100\t0\ttests/unit/test_stage8_quality_gate.py")))
+    m.setattr(stage8,"run",lambda args:d(args,*next(out),"")); assert fn()==(
+        400,{"scripts/quality/check_stage8_docs.py":351,"tests/unit/test_stage8_quality_gate.py":100})
+    for code,text in ((1,stage8.C1_BASE+"\n"),(0,"malformed")):
+        m.setattr(stage8,"run",lambda _,c=code,t=text:d([],c,t,""));raises(RuntimeError,fn)
+    docs={p:(REPO/p).read_text()for p in stage8.C1_BOUND};m.setattr(stage8,"read",docs.__getitem__)
+    docs[stage8.C1_BOUND[0]]+="drift";assert stage8.cut1_digest()!=stage8.C1_DOC_SHA
+    docs[stage8.C1_BOUND[0]]= (REPO/stage8.C1_BOUND[0]).read_text()
+    plan="docs/STAGE_ISSUE_PLAN.md"; quality="docs/QUALITY_GATES.md"; line,rest=docs[plan].split("\n",1)
+    docs[plan]=rest;docs[quality]+="\n"+line;assert stage8.cut1_digest()!=stage8.C1_DOC_SHA
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")
@@ -165,9 +169,8 @@ def test_citation_charge_uses_worktree_and_fails_closed(monkeypatch: Any) -> Non
     monkeypatch.setattr(s,"run",lambda args:d(args,1,"","failed")); pytest.raises(RuntimeError,fn)
 def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> None:
     s=stage8; source=s.PROCESS_BRANCH_ALLOWED_FILES; sha=stage2.hashlib.sha256
-    cases=((s.ISSUE84_GUARDRAIL_BRANCH,"backend/app/stage4.py"),
-           (s.ISSUE287_STAGE8_DRIFT_BRANCH,"frontend/package-lock.json"),(s.ISSUE289_SECURITY_UNBLOCK_BRANCH,
-            "backend/app/main.py"))
+    cases=((s.ISSUE84_GUARDRAIL_BRANCH,"backend/app/stage4.py"),(s.ISSUE287_STAGE8_DRIFT_BRANCH,
+        "frontend/package-lock.json"),(s.ISSUE289_SECURITY_UNBLOCK_BRANCH,"backend/app/main.py"))
     encoded = json.dumps({b: sorted(source[b]) for b, _ in cases}, sort_keys=True, separators=(",", ":")).encode()
     assert sha(encoded).hexdigest() == "95bbea6ae7294e5db03ed5c62caae3b74a7aff8c8f12aef5efe134b15a585117"
     for branch, rejected in cases:
@@ -180,12 +183,10 @@ def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
     b="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:b); f:list[str]=[]
     stage8.check_stage_marker_and_branch(f)
     assert f==[f"Stage 8 work must run on a stage8-* branch or main after merge; got {b}."]
-A22_SOURCE,A22_DECL,A22_RUNTIME,A22_SELECT,A22_REFUSE=(
-    "Stage 2 retrieval-v1 accepted sources must retain the canonical oracle.",
-    "Stage 2 retrievalStrategy must equal the canonical v1 machine declaration.",
-    "Stage 4 retrieval-v1 runtime constants must equal the canonical oracle.",
-    "Stage 4 retrieval selection must preserve canonical v1 control flow.",
-    "Stage 4 retrieval refusal must be terminal before generation.")
+A22_SOURCE,A22_DECL,A22_RUNTIME,A22_SELECT,A22_REFUSE=("Stage 2 retrieval-v1 accepted sources must retain the canonica"
+    "l oracle.|Stage 2 retrievalStrategy must equal the canonical v1 machine declaration.|Stage 4 retrieval-v1 runtime "
+    "constants must equal the canonical oracle.|Stage 4 retrieval selection must preserve canonical v1 control flow.|"
+    "Stage 4 retrieval refusal must be terminal before generation.").split("|")
 ARCH = "docs/ARCHITECTURE.md"; ADR = "docs/ADR/0002-rag-storage.md"; ORIGINAL_READ = Path.read_text
 DECL = "docs/STAGE2_ARCHITECTURE_CONTRACT.json"; MODELS = "backend/app/rag/models.py"
 RETRIEVAL = "backend/app/rag/retrieval.py"; STAGE4 = "backend/app/stage4.py"; REPO = Path(__file__).parents[2]
@@ -241,10 +242,9 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
 def test_a23a_contract_gate_rejects_every_frozen_marker_mutation(tmp_path: Path) -> None:
     assert a23b.a23a_markers_frozen(stage8.A23A_CONTRACT_MARKERS)
     documents={path:(REPO/path).read_text(encoding="utf-8") for path in stage8.A23A_CONTRACT_MARKERS}
-    assert stage8.evaluation_lineage_checksum_v2_contract_valid(documents)
+    valid=stage8.evaluation_lineage_checksum_v2_contract_valid;assert valid(documents)
     for path,marker in ((p,m) for p,markers in stage8.A23A_CONTRACT_MARKERS.items() for m in markers):
-            assert documents[path].count(marker)>=1;mutated={**documents,path:documents[path].replace(marker,"MUTATED")}
-            assert not stage8.evaluation_lineage_checksum_v2_contract_valid(mutated)
+            mutated={**documents,path:documents[path].replace(marker,"MUTATED")};assert not valid(mutated)
     api=documents["docs/API_CONTRACT.md"]; preimage=api.rsplit("```json\n",1)[1].split("\n```",1)[0]
     f=a23b.semantic_detector_self_test; assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (
         "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377") and f(tmp_path)

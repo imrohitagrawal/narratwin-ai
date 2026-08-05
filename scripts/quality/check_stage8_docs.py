@@ -12,7 +12,7 @@ from scripts.quality import stage8_brace_expansion_unblock as brace_security  # 
 from scripts.quality import stage8_cache_pruning as cache_pruning  # noqa: E402
 from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
 from scripts.quality import stage8_node_security as node_security  # noqa: E402
-STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
+STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-(?!.*cut1-366-real-media-governance-transition)")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
 ISSUE289_SECURITY_UNBLOCK_BRANCH = "phase-1-closure-process-289-security-postcss-stage8-gate-unblock"
@@ -31,7 +31,8 @@ CUT1_REAL_MEDIA_TRANSITION_BRANCH = "cut1-366-real-media-governance-transition"
 C1_BASE, C1_LIMIT = "a69903fea50c22e12926d7e13dffdc74e55dfb65", 900
 C1_FILE_LIMITS = {"scripts/quality/check_stage8_docs.py":350,"tests/unit/test_stage8_quality_gate.py":300}
 C1_DOCS=("docs/QUALITY_GATES.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md")
-C1_DOC_SHA="1c7af0e5b55fe7305081643577155f9a0aa70653f7675d77d1585454c3531132"
+C1_BOUND=("docs/governance/preflights/issue-366.json",*C1_DOCS)
+C1_DOC_SHA="0c7502c6d3da4094c112c5a258ef0212956899640f3eab4c18a8c34b5952787f"
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
@@ -39,8 +40,8 @@ QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALI
     "frontend/src/app/demo/page.module.css", "frontend/src/app/demo/page.test.tsx",
     "frontend/src/app/demo/guide-client.ts", "frontend/src/app/demo/guide-client.test.ts",
     "frontend/tests/quiet-presence.spec.ts", "frontend/public/demo/narratwin-synthetic-presenter.webp"}
-CUT1_REAL_MEDIA_TRANSITION_FILES=set(C1_DOCS)|{"docs/governance/preflights/issue-366.json",
-    "scripts/quality/check_stage8_docs.py","tests/unit/test_stage8_quality_gate.py"}
+CUT1_REAL_MEDIA_TRANSITION_FILES=set(C1_BOUND)|{"scripts/quality/check_stage8_docs.py",
+    "tests/unit/test_stage8_quality_gate.py"}
 NULL_GIT_SHA = "0" * 40
 def issue324_allowed_files() -> set[str]:
     return set(json.loads((ROOT/"docs/governance/preflights/issue-324.json").read_text())["scope"]["required"])
@@ -60,8 +61,7 @@ REQUIRED_FILES = [
     "docs/RELEASE_READINESS_REVIEW.md", "docs/REVIEW_RIGOR_RETROSPECTIVE.md", "docs/RUNBOOK.md",
     "docs/SKILL_LOCK.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md", "docs/demo/CONTROLLED_LOCAL_DEMO.md",
-]
-STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
+]; STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {
     node_security.ISSUE374_SECURITY_BRANCH: node_security.ISSUE374_SECURITY_FILES,
     ISSUE346_TRANSITION_BRANCH: {
@@ -96,8 +96,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
         "docs/TRACEABILITY.md","docs/THIRD_PARTY_NOTICES.md","frontend/package.json","frontend/package-lock.json",
         "scripts/quality/check_phase1_closure_docs.py","scripts/quality/check_stage8_docs.py",
         "tests/unit/test_phase1_closure_docs.py","tests/unit/test_stage8_quality_gate.py"},
-    ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(),
-    QUIET_PRESENCE_BRANCH: QUIET_PRESENCE_FILES,
+    ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(), QUIET_PRESENCE_BRANCH: QUIET_PRESENCE_FILES,
     CUT1_REAL_MEDIA_TRANSITION_BRANCH: CUT1_REAL_MEDIA_TRANSITION_FILES,
     CITATION_PARITY_BRANCH: CITATION_PARITY_FILES,
 }
@@ -168,13 +167,19 @@ def citation_parity_charge() -> int:
     try:return max(sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines())) for d in ds)
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
 def cut1_transition_charges() -> tuple[int, dict[str, int]]:
-    if run(["git","merge-base",C1_BASE,"HEAD"]).stdout.strip()!=C1_BASE:
-        raise RuntimeError("Issue #366 base diff unavailable.")
+    merge=run(["git","merge-base",C1_BASE,"HEAD"])
+    if merge.returncode or merge.stdout.strip()!=C1_BASE: raise RuntimeError("Issue #366 base diff unavailable.")
     results=(run(["git","diff","--cached","--numstat",C1_BASE,"--"]),run(["git","diff","--numstat",C1_BASE,"--"]))
     if any(result.returncode for result in results): raise RuntimeError("Issue #366 base diff unavailable.")
     try: charges=[{p:int(a)+int(d) for a,d,p in (line.split("\t") for line in r.stdout.splitlines())} for r in results]
     except ValueError as error: raise RuntimeError("Issue #366 malformed or binary numstat.") from error
-    return max(((sum(c.values()),c) for c in charges),key=lambda pair:pair[0])
+    paths=set().union(*charges)
+    return max(map(lambda c:sum(c.values()),charges)),{p:max(c.get(p,0) for c in charges) for p in paths}
+def cut1_digest() -> str:
+    digest=hashlib.sha256()
+    for path in C1_BOUND:
+        data=read(path).encode(); digest.update(f"{path}\0{len(data)}\0".encode()); digest.update(data)
+    return digest.hexdigest()
 def parse_paths_z(output: str) -> list[str]:
     if not output:return []
     if not output.endswith("\0"):raise RuntimeError("Malformed NUL-delimited Git path output.")
@@ -272,7 +277,7 @@ def check_stage_scope(failures: list[str]) -> None:
         if total>C1_LIMIT: fail(f"Issue #366 charge {total} exceeds {C1_LIMIT}.",failures)
         failures.extend(f"Issue #366 charge for {p} exceeds {n}." for p,n in C1_FILE_LIMITS.items()
                         if charges.get(p,0)>n)
-        if hashlib.sha256("\n".join(read(p) for p in C1_DOCS).encode()).hexdigest()!=C1_DOC_SHA:
+        if cut1_digest()!=C1_DOC_SHA:
             fail("Issue #366 governance document contract drifted.",failures)
 def check_backend_and_tests(failures: list[str]) -> None:
     main_text = read("backend/app/main.py")

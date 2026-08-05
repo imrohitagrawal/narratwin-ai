@@ -2435,7 +2435,8 @@ exact-head CI, independent technical/adversarial review, and eligible non-author
 
 This prerequisite does not alter retrieval order, renumber citations, enable providers, or authorize presenter, audio,
 renderer, frontend, Docker, deployment, release, public availability, production readiness, or Cut 1 completion.
-Parent Issue `#366` and PR `#373` stay separate until this repair merges and post-merge validation passes.
+Issue `#372` and PR `#381` merged and passed post-merge validation before this revised Issue `#366` / PR `#373`
+governance work.
 
 The complete branch diff has a 1200 charged-line hard ceiling. A twelfth path,
 charge 1201, or an omitted ADR decision fails closed.
