@@ -938,6 +938,38 @@ def test_stage4_file_state_restores_failed_visible_citation_evaluation(tmp_path:
     assert replayed == run
 
 
+def test_stage4_file_state_restores_historical_run_after_project_corpus_growth(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(principal=principal, name="Growing project", idempotency_key="project")
+    source = Path("tests/fixtures/stage4_project.md").read_bytes()
+    prompt = "NarraTwin AI approved project knowledge grounded walkthrough scripts."
+    request = dict(audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT", prompt=prompt)
+    historical = None
+    for index in (1, 2):
+        document = service.upload_document(principal=principal, project_id=project.project_id,
+                                           source_filename=f"{index}.md", content_type="text/markdown",
+                                           data=source, idempotency_key=f"upload-{index}")
+        service.approve_document(principal=principal, project_id=project.project_id,
+                                 document_id=document.document_id, idempotency_key=f"approve-{index}")
+        service.ingest_documents(principal=principal, project_id=project.project_id,
+                                 document_ids=[document.document_id], idempotency_key=f"ingest-{index}")
+        if index == 1:
+            historical = service.generate_walkthrough(principal=principal, project_id=project.project_id,
+                                                       idempotency_key="historical", **request)
+    assert historical is not None
+    restored = Stage4Service(state_path=state_path)
+    replayed = restored.generate_walkthrough(principal=principal, project_id=project.project_id,
+                                              idempotency_key="historical", **request)
+
+    assert historical.status == "COMPLETED"
+    assert restored.walkthrough_runs[historical.run_id] == historical
+    assert replayed == historical
+
+
 def test_stage4_file_state_derives_missing_counters_from_restored_ids(tmp_path: Path) -> None:
     state_path = tmp_path / "stage4.json"
     principal = LocalPrincipal()
