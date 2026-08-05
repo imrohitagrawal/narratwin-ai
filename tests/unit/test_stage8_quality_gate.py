@@ -44,8 +44,8 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", "cut1-proces\u0455-346-transition",
                    A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{CP}-retry", f"{a23b.A23A_BRANCH}-retry",
-                   a23b.A23A_BRANCH.replace("-351-", "-350-"), f"stage8-{CUT1_REAL_MEDIA_TRANSITION[:-1]}",
-                   "stage8-cut1-366-real-media-governance-transiti\u043en"): assert len(route(m,branch,[])) == 2
+                   *(f"stage8-{CUT1_REAL_MEDIA_TRANSITION.replace(a,b)}" for a,b in (("cut1","CUT1"),("cut1","Cut1"),
+                   ("c","\u0441"),("1","l"),("on","\u043en")))): assert len(route(m,branch,[])) == 2
     for issue,branch in ((346,TRANSITION),(349,A2_2),(351,a23b.A23A_BRANCH),(353,a23b.A23B_BRANCH),(358,QP),
                          (366,CUT1_REAL_MEDIA_TRANSITION),(372,CP)):
         artifact = json.loads((Path(__file__).parents[2]/f"docs/governance/preflights/issue-{issue}.json").read_text())

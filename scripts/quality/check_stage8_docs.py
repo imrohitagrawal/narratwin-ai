@@ -12,7 +12,7 @@ from scripts.quality import stage8_brace_expansion_unblock as brace_security  # 
 from scripts.quality import stage8_cache_pruning as cache_pruning  # noqa: E402
 from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
 from scripts.quality import stage8_node_security as node_security  # noqa: E402
-STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-(?!.*cut1)")
+STAGE8_BRANCH_PATTERN = re.compile(r"(?ai)^stage8-(?![a-z0-9-]*366(?:-|$))(?![a-z0-9-]*cut1)[a-z0-9-]+$")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
 ISSUE289_SECURITY_UNBLOCK_BRANCH = "phase-1-closure-process-289-security-postcss-stage8-gate-unblock"
