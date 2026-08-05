@@ -71,7 +71,8 @@ verify_frontend_runtime() {
   config="$(docker image inspect "${image}" --format '{{json .Config}}')"
   python3 - "${config}" <<'PY'
 import json, sys
-config = json.loads(sys.argv[1])
+from scripts.ci.check_container_scan_consensus import canonical_frontend_config
+config = canonical_frontend_config(json.loads(sys.argv[1]))
 expected = {
   "User": "65532:65532", "ExposedPorts": {"3000/tcp": {}},
   "Env": [
@@ -92,7 +93,7 @@ expected = {
   "ArgsEscaped": True,
 }
 
-assert config == expected, {key: config.get(key) for key in sorted(set(config) ^ set(expected))}
+assert config == expected, {"actual": config, "expected": expected}
 PY
   docker run --rm --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= --entrypoint /usr/bin/node "${image}" -e '
 const fs=require("fs"), extras=[];

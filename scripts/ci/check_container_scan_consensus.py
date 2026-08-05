@@ -34,6 +34,27 @@ FRONTEND_SECRET_FIELDS = (
     "previewModeEncryptionKey",
     "serverActionKey",
 )
+FRONTEND_ENGINE_CONFIG_DEFAULTS = {
+    "AttachStderr": False,
+    "AttachStdin": False,
+    "AttachStdout": False,
+    "Domainname": "",
+    "Hostname": "",
+    "Image": "",
+    "OnBuild": None,
+    "OpenStdin": False,
+    "StdinOnce": False,
+    "Tty": False,
+    "Volumes": None,
+}
+
+
+def canonical_frontend_config(config: dict[str, Any]) -> dict[str, Any] | None:
+    normalized = dict(config)
+    for field, expected in FRONTEND_ENGINE_CONFIG_DEFAULTS.items():
+        if field in normalized and normalized.pop(field) != expected:
+            return None
+    return normalized
 
 
 def _digest(value: Any) -> tuple[str, int]:
