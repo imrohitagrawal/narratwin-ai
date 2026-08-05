@@ -21,8 +21,8 @@ ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 QUIET_PRESENCE_BRANCH = "cut1-358-quiet-presence-ui"
 ISSUE374_SECURITY_BRANCH = "stage8-374-node-image-cve-2026-58043"
 ISSUE374_SECURITY_FILES = {
-    "frontend/Dockerfile", "scripts/ci/docker-image-scan.sh", "scripts/quality/check_stage8_docs.py",
-    "tests/unit/test_stage8_quality_gate.py",
+    "frontend/Dockerfile", "frontend/next.config.ts", "scripts/ci/docker-image-scan.sh", "scripts/ci/check_container_scan_consensus.py", "scripts/quality/check_stage8_docs.py",
+    "tests/unit/test_stage8_quality_gate.py", "tests/unit/test_container_scan_consensus.py",
     "docs/ADR/0006-stage8-release-hardening.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md",
 }

@@ -159,7 +159,8 @@ def test_fixed_cve_exception_requires_exact_backend_python_component(name: str, 
     case = _case()
     case["reports"][name] = report
     _rehash(case, name)
-    assert _evaluate(case)["findings"] == ["UNRELATED_HIGH_CRITICAL"]
+    expected = "FRONTEND_RUNTIME_MEDIUM_OR_HIGHER" if name.startswith("frontend") else "UNRELATED_HIGH_CRITICAL"
+    assert _evaluate(case)["findings"] == [expected]
 
 
 @pytest.mark.parametrize(

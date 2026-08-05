@@ -1151,14 +1151,18 @@ Required update rules:
   the minimal runtime uses Chainguard Node at digest
   `sha256:cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734`,
   independently verified to execute Node.js 26.6.0.
-- The scanner-consensus gate remains unchanged, while its container workflow
-  now also validates the built frontend image's exact non-root config, Node
-  version, architecture-bound immutable-filesystem inventory, and real HTTP
+- The scanner-consensus gate now rejects Medium-or-higher findings for the
+  shipped frontend runtime while retaining the existing backend exception boundary.
+  Its container workflow also validates the built frontend image's exact non-root
+  config, Node version, source-bound Next build identity, architecture-bound
+  immutable-filesystem inventory, and real HTTP
   response. No advisory is ignored or suppressed; the runtime removes
   general-purpose shell, network, and build tooling, including npm, npx, and
   BusyBox. SHA-512-bound npm 12.0.2/fixed-package tarballs and the resulting
   dependency stage must separately pass both scanners; complete runtime config,
-  file ownership, zero capabilities, and preload controls are bound. The sole builder-only
+  file ownership, zero capabilities, and preload controls are bound. Per-build
+  preview/server-action secrets retain cryptographic randomness and are normalized
+  only after exact format, occurrence, and cross-manifest equality validation. The sole builder-only
   BusyBox Medium is accepted only through 2026-08-12 or earlier fixed-builder
   availability and tracked by `#376`; it is absent from the final runtime.
   Cut 1, deployment, release, public availability, and production readiness

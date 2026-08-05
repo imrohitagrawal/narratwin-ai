@@ -136,6 +136,8 @@ def evaluate_consensus(
                 _add(findings, "SCANNER_REPORT_MALFORMED")
             elif name.startswith("backend") and rule_id in TARGET_CVES and purl == component_purl:
                 continue
+            elif name.startswith("frontend") and rule_id and severity >= 4.0:
+                _add(findings, "FRONTEND_RUNTIME_MEDIUM_OR_HIGHER")
             elif rule_id and severity >= 7.0:
                 _add(findings, "UNRELATED_HIGH_CRITICAL")
 
