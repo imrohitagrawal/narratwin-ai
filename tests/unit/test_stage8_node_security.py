@@ -64,6 +64,8 @@ def test_issue374_reproducibility_and_runtime_policy_markers() -> None:
         "server action manifest mismatch",
         "--no-cache-filter build",
         "verify_frontend_reproducibility",
+        "FRONTEND_BUILD_CONFIG",
+        'scan_trivy "${FRONTEND_BUILD_CONFIG}"',
     ):
         assert marker in scan
     assert "FRONTEND_BUILD_SECRET_REUSED" in consensus

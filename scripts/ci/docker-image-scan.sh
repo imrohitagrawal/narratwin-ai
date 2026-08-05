@@ -12,6 +12,11 @@ SESSION="${SESSION:-issue151-$(date +%s)}"
 FRONTEND_REPRO_IMAGE="${FRONTEND_REPRO_IMAGE:-narratwin-ai-frontend:repro-${SESSION//[^a-zA-Z0-9_.-]/-}}"
 TRIVY_IMAGE="${TRIVY_IMAGE:-aquasec/trivy@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f}"
 GRYPE_IMAGE="${GRYPE_IMAGE:-anchore/grype@sha256:decd87500a90c1e4faa1706f77b0b2cbc1d2f9364e976f1898ce9037de09cc3a}"
+if [ "${FRONTEND_IMAGE}" = "${FRONTEND_BUILD_IMAGE}" ] || [ "${FRONTEND_IMAGE}" = "${FRONTEND_REPRO_IMAGE}" ] || \
+   [ "${FRONTEND_BUILD_IMAGE}" = "${FRONTEND_REPRO_IMAGE}" ]; then
+  echo "Frontend image role references must be distinct." >&2
+  exit 1
+fi
 
 scan_trivy() {
   local image="$1" output="$2" severity="${3:-CRITICAL,HIGH}"
@@ -221,6 +226,7 @@ FRONTEND_ARCH="${FRONTEND_ARCH:-$(docker image inspect "${FRONTEND_IMAGE}" --for
 if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
   docker build --platform "linux/${FRONTEND_ARCH}" --target deps -f frontend/Dockerfile \
     -t "${FRONTEND_BUILD_IMAGE}" .
+  FRONTEND_BUILD_CONFIG="$(image_config "${FRONTEND_BUILD_IMAGE}")"
   docker build --platform "linux/${FRONTEND_ARCH}" --no-cache-filter build -f frontend/Dockerfile \
     -t "${FRONTEND_REPRO_IMAGE}" .
   verify_frontend_runtime "${FRONTEND_IMAGE}"
@@ -239,9 +245,9 @@ ft=$?
 scan_grype "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-grype.raw.sarif.json" "medium"
 fg=$?
 if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
-  scan_trivy "${FRONTEND_BUILD_IMAGE}" "${REPORT_DIR}/frontend-build-trivy.raw.sarif.json"
+  scan_trivy "${FRONTEND_BUILD_CONFIG}" "${REPORT_DIR}/frontend-build-trivy.raw.sarif.json"
   fbt=$?
-  scan_grype "${FRONTEND_BUILD_IMAGE}" "${REPORT_DIR}/frontend-build-grype.raw.sarif.json"
+  scan_grype "${FRONTEND_BUILD_CONFIG}" "${REPORT_DIR}/frontend-build-grype.raw.sarif.json"
   fbg=$?
 else
   fbt=0; fbg=0
