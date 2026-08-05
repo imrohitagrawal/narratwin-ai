@@ -152,6 +152,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     validator = _load().frontend_reproduction_findings
     primary = {
         "buildId": "source-bound",
+        "architecture": "amd64",
         "inventory": "1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15",
         "previewModeId": "1" * 32,
         "previewModeSigningKey": "2" * 64,
@@ -160,6 +161,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     }
     reproduction = {
         "buildId": "source-bound",
+        "architecture": "amd64",
         "inventory": primary["inventory"],
         "previewModeId": "4" * 32,
         "previewModeSigningKey": "5" * 64,
@@ -170,6 +172,13 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     reproduction["inventory"] = "1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a"
     assert validator(primary, reproduction) == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
     reproduction["inventory"] = primary["inventory"]
+    for bad_inventory in (None, "", "unreviewed"):
+        malformed_primary = {**primary, "inventory": bad_inventory}
+        malformed_reproduction = {**reproduction, "inventory": bad_inventory}
+        assert validator(malformed_primary, malformed_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
+    wrong_arch_primary = {**primary, "inventory": "1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52"}
+    wrong_arch_reproduction = {**reproduction, "inventory": wrong_arch_primary["inventory"]}
+    assert validator(wrong_arch_primary, wrong_arch_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
     reproduction["previewModeSigningKey"] = primary["previewModeEncryptionKey"]
     reproduction["previewModeEncryptionKey"] = primary["previewModeSigningKey"]
     assert validator(primary, reproduction) == ["FRONTEND_BUILD_SECRET_REUSED"]
@@ -182,6 +191,41 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         "FRONTEND_BUILD_ID_CHANGED",
         "FRONTEND_BUILD_SECRET_REUSED",
     ]
+
+
+def test_frontend_reproduction_inventory_rejection_survives_optimized_python() -> None:
+    primary = {"buildId": "stable", "architecture": "amd64", "previewModeId": "1", "previewModeSigningKey": "2", "previewModeEncryptionKey": "3", "serverActionKey": "4"}
+    reproduction = {**primary, "previewModeId": "5", "previewModeSigningKey": "6", "previewModeEncryptionKey": "7", "serverActionKey": "8"}
+    completed = subprocess.run(
+        [sys.executable, "-O", str(ROOT / "scripts/ci/check_container_scan_consensus.py"), "--verify-frontend-reproduction"],
+        cwd=ROOT,
+        input=f"{json.dumps(primary)}\n{json.dumps(reproduction)}\n",
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode != 0
+    assert json.loads(completed.stdout)["findings"] == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
+
+
+def test_runtime_inventory_orchestration_preserves_failures_and_distinct_values(tmp_path: Path) -> None:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    start = source.index('if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then')
+    block = source[start : source.index("\nfi", start) + 3]
+    log = tmp_path / "reproduction.log"
+    harness = f'''set -euo pipefail
+prepare_frontend_images() {{ :; }}
+verify_frontend_runtime() {{ false; printf -v "${{2:-ignored}}" %s "$1-inventory"; }}
+verify_frontend_reproducibility() {{ printf '%s\n' "$@" >"$LOG"; }}
+{block}
+'''
+    env = {**os.environ, "LOG": str(log), "FRONTEND_IMAGE": "primary:tag", "FRONTEND_REPRO_IMAGE": "repro:tag"}
+    failed = subprocess.run(["bash"], input=harness, env=env, text=True, check=False)
+    assert failed.returncode != 0
+    harness = harness.replace("verify_frontend_runtime() { false;", "verify_frontend_runtime() { :;")
+    passed = subprocess.run(["bash"], input=harness, env=env, text=True, check=False)
+    assert passed.returncode == 0
+    assert log.read_text().splitlines() == ["primary:tag", "repro:tag", "primary:tag-inventory", "repro:tag-inventory"]
 
 
 def test_frontend_config_accepts_only_exact_host_engine_defaults() -> None:
