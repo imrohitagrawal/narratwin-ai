@@ -1029,6 +1029,21 @@ def test_stage4_invalid_generated_lineage_has_no_terminal_run_side_effect(tmp_pa
     assert list(Stage4Service(state_path=state_path).walkthrough_runs) == [runs[0].run_id]
 
 
+def test_stage4_rejects_fresh_lineage_that_restore_would_drop(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service = Stage4Service(state_path=state_path)
+    invalid = GeneratedScript(text="Provider text with no grounded claims.", claims=[])
+    monkeypatch.setattr(service.llm, "generate_script", lambda **_values: invalid)
+    with pytest.raises(Stage4Error) as error:
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="fresh-invalid-lineage")
+    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+    assert list(Stage4Service(state_path=state_path).walkthrough_runs) == [runs[0].run_id]
+
+
 def test_stage4_rejects_write_that_would_exceed_restore_byte_cap(tmp_path: Path, monkeypatch: Any) -> None:
     state_path = tmp_path / "stage4.json"
     service = Stage4Service(state_path=state_path)
