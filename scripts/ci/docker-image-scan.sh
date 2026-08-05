@@ -242,13 +242,13 @@ BACKEND_CONFIG="$(image_config "${BACKEND_IMAGE}")"
 FRONTEND_CONFIG="$(image_config "${FRONTEND_IMAGE}")"
 BACKEND_ARCH="${BACKEND_ARCH:-$(docker image inspect "${BACKEND_IMAGE}" --format '{{.Architecture}}')}"
 FRONTEND_ARCH="${FRONTEND_ARCH:-$(docker image inspect "${FRONTEND_IMAGE}" --format '{{.Architecture}}')}"
+rm -f "${REPORT_DIR}"/*.raw.json "${REPORT_DIR}"/*.raw.sarif.json "${REPORT_DIR}"/*.envelope.json "${REPORT_DIR}/container-scan-case.json"
 if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
   prepare_frontend_images
   verify_frontend_runtime "${FRONTEND_IMAGE}"
   verify_frontend_runtime "${FRONTEND_REPRO_IMAGE}"
   verify_frontend_reproducibility "${FRONTEND_IMAGE}" "${FRONTEND_REPRO_IMAGE}"
 fi
-rm -f "${REPORT_DIR}"/*.raw.json "${REPORT_DIR}"/*.raw.sarif.json "${REPORT_DIR}"/*.envelope.json "${REPORT_DIR}/container-scan-case.json"
 
 set +e
 scan_trivy "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-trivy.raw.sarif.json"
