@@ -169,21 +169,23 @@ PY
   fi
   docker stop "${container}" >/dev/null
   trap - EXIT RETURN INT TERM
+  printf '%s\n' "${actual_inventory}"
 }
 
 frontend_build_identity() {
-  docker run --rm --user 0:0 --entrypoint /usr/bin/node "$1" -e '
+  docker run --rm --user 0:0 --env FRONTEND_RUNTIME_INVENTORY="$2" --entrypoint /usr/bin/node "$1" -e '
 const fs=require("fs"),preview=JSON.parse(fs.readFileSync("/app/.next/prerender-manifest.json","utf8")).preview;
 const server=JSON.parse(fs.readFileSync("/app/.next/server/server-reference-manifest.json","utf8"));
 console.log(JSON.stringify({buildId:fs.readFileSync("/app/.next/BUILD_ID","utf8"),
+  inventory:process.env.FRONTEND_RUNTIME_INVENTORY,
   previewModeId:preview.previewModeId,previewModeSigningKey:preview.previewModeSigningKey,
   previewModeEncryptionKey:preview.previewModeEncryptionKey,serverActionKey:server.encryptionKey}));'
 }
 
 verify_frontend_reproducibility() {
-  local primary="$1" reproduction="$2" primary_identity reproduction_identity
-  primary_identity="$(frontend_build_identity "${primary}")"
-  reproduction_identity="$(frontend_build_identity "${reproduction}")"
+  local primary="$1" reproduction="$2" primary_inventory="$3" reproduction_inventory="$4" primary_identity reproduction_identity
+  primary_identity="$(frontend_build_identity "${primary}" "${primary_inventory}")"
+  reproduction_identity="$(frontend_build_identity "${reproduction}" "${reproduction_inventory}")"
   printf '%s\n%s\n' "${primary_identity}" "${reproduction_identity}" | \
     python3 scripts/ci/check_container_scan_consensus.py --verify-frontend-reproduction
 }
@@ -242,10 +244,13 @@ BACKEND_ARCH="${BACKEND_ARCH:-$(docker image inspect "${BACKEND_IMAGE}" --format
 FRONTEND_ARCH="${FRONTEND_ARCH:-$(docker image inspect "${FRONTEND_IMAGE}" --format '{{.Architecture}}')}"
 rm -f "${REPORT_DIR}"/*.raw.json "${REPORT_DIR}"/*.raw.sarif.json "${REPORT_DIR}"/*.envelope.json "${REPORT_DIR}/container-scan-case.json"
 if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
+  primary_inventory=""
+  reproduction_inventory=""
   prepare_frontend_images
-  verify_frontend_runtime "${FRONTEND_IMAGE}"
-  verify_frontend_runtime "${FRONTEND_REPRO_IMAGE}"
-  verify_frontend_reproducibility "${FRONTEND_IMAGE}" "${FRONTEND_REPRO_IMAGE}"
+  primary_inventory="$(verify_frontend_runtime "${FRONTEND_IMAGE}")"
+  reproduction_inventory="$(verify_frontend_runtime "${FRONTEND_REPRO_IMAGE}")"
+  verify_frontend_reproducibility "${FRONTEND_IMAGE}" "${FRONTEND_REPRO_IMAGE}" \
+    "${primary_inventory}" "${reproduction_inventory}"
 fi
 
 set +e

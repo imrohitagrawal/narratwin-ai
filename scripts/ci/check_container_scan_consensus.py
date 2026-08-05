@@ -118,6 +118,8 @@ def frontend_reproduction_findings(primary: dict[str, str], reproduction: dict[s
     findings: list[str] = []
     if primary.get("buildId") != reproduction.get("buildId"):
         findings.append("FRONTEND_BUILD_ID_CHANGED")
+    if primary.get("inventory") != reproduction.get("inventory"):
+        findings.append("FRONTEND_RUNTIME_INVENTORY_CHANGED")
     primary_secrets = {primary.get(field) for field in FRONTEND_SECRET_FIELDS}
     reproduction_secrets = {reproduction.get(field) for field in FRONTEND_SECRET_FIELDS}
     if primary_secrets & reproduction_secrets:

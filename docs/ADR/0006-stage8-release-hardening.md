@@ -256,7 +256,10 @@ The canonical inventories are
 `1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52`
 (arm64) and
 `1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15`
-(amd64). Only those validated secret values, Docker-managed virtual trees, and injected host/hostname/resolver
+(amd64 Docker Desktop) or
+`1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a`
+(amd64 hosted runner). Each build must match its architecture's finite reviewed set, and the primary
+and uncached reproduction inventories must be identical. Only validated secret values, Docker-managed virtual trees, and injected host/hostname/resolver
 mounts are excluded; renamed, relocated, linked, copied, executable, ELF,
 JavaScript, JSON, and other regular-file tooling therefore fails before
 scanner consensus. Raw-byte path traversal and length-prefixed binary records
