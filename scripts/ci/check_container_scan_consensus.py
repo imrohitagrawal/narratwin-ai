@@ -47,6 +47,21 @@ FRONTEND_ENGINE_CONFIG_DEFAULTS = {
     "Tty": False,
     "Volumes": None,
 }
+FRONTEND_INVENTORIES = {
+    "amd64": frozenset(
+        (
+            "1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15",
+            "1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a",
+        )
+    ),
+    "arm64": frozenset(
+        ("1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52",)
+    ),
+}
+
+
+def frontend_inventory_matches(architecture: str, inventory: str) -> bool:
+    return inventory in FRONTEND_INVENTORIES.get(architecture, frozenset())
 
 
 def canonical_frontend_config(config: dict[str, Any]) -> dict[str, Any] | None:

@@ -67,7 +67,7 @@ image_config() {
 }
 
 verify_frontend_runtime() {
-  local image="$1" config container port http_code actual_inventory expected_inventory
+  local image="$1" config container port http_code actual_inventory
   config="$(docker image inspect "${image}" --format '{{json .Config}}')"
   python3 - "${config}" <<'PY'
 import json, sys
@@ -109,11 +109,6 @@ if (process.version!=="v26.6.0"||process.getuid()!==65532||process.getgid()!==65
     extras.length||forbidden.some(fs.existsSync)||!/^CapEff:\s+0+$/m.test(status)||
     unsafe.length||trusted.some(p=>{const s=fs.statSync(p);return s.uid!==0||s.gid!==0||(s.mode&0o022)!==0}))
   throw new Error(JSON.stringify({extras,version:process.version}));'
-  case "${FRONTEND_ARCH}" in
-    amd64) expected_inventory="1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15" ;;
-    arm64) expected_inventory="1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52" ;;
-    *) echo "Unsupported frontend runtime architecture: ${FRONTEND_ARCH}" >&2; return 1 ;;
-  esac
   actual_inventory="$(docker run --rm --user 0:0 --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= \
     --entrypoint /usr/bin/node "${image}" -e '
 const crypto=require("crypto"),fs=require("fs"),records=[],B=Buffer.from,slash=B("/"),empty=Buffer.alloc(0);
@@ -148,10 +143,11 @@ function walk(d) { for (const n of fs.readdirSync(d,{encoding:"buffer"}).sort(Bu
 add(slash,fs.lstatSync(slash)); walk(slash); records.sort(Buffer.compare);
 const h=crypto.createHash("sha256"); for (const r of records) h.update(u32(r.length)).update(r);
 console.log(records.length+":"+h.digest("hex"));')"
-  if [ "${actual_inventory}" != "${expected_inventory}" ]; then
-    echo "Frontend runtime immutable filesystem inventory mismatch: ${actual_inventory}" >&2
-    return 1
-  fi
+  python3 - "${FRONTEND_ARCH}" "${actual_inventory}" <<'PY'
+import sys
+from scripts.ci.check_container_scan_consensus import frontend_inventory_matches
+assert frontend_inventory_matches(*sys.argv[1:]), "Frontend runtime inventory is not reviewed."
+PY
   container="narratwin-runtime-${SESSION//[^a-zA-Z0-9_.-]/-}"
   cleanup_frontend_runtime() { docker rm -f "${container}" >/dev/null 2>&1 || true; }
   trap cleanup_frontend_runtime EXIT RETURN
