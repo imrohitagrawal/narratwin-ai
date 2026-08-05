@@ -238,6 +238,21 @@ def test_frontend_config_rejection_does_not_disclose_untrusted_values() -> None:
     assert "Frontend runtime config does not match the reviewed contract." in output
 
 
+def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
+    matches = _load().frontend_inventory_matches
+    amd64 = (
+        "1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15",
+        "1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a",
+    )
+    arm64 = "1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52"
+    assert all(matches("amd64", inventory) for inventory in amd64)
+    assert matches("arm64", arm64)
+    assert not matches("amd64", arm64)
+    assert not matches("arm64", amd64[0])
+    assert not matches("amd64", amd64[0][:-1] + "0")
+    assert not matches("unknown", amd64[0])
+
+
 @pytest.mark.parametrize(
     ("left", "right"),
     [
