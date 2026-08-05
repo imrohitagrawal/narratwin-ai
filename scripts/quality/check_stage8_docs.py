@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT))
 from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
+from scripts.quality import stage8_cache_pruning as cache_pruning  # noqa: E402
 from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
 from scripts.quality import stage8_node_security as node_security  # noqa: E402
 STAGE8_BRANCH_PATTERN = re.compile(r"^stage8-")
@@ -106,7 +107,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(),
     QUIET_PRESENCE_BRANCH: QUIET_PRESENCE_FILES,
 }
-PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES)
+PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES | cache_pruning.CACHE_PRUNING_ROUTES)
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES
 def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=ROOT, text=True, capture_output=True, check=False)
@@ -465,6 +466,7 @@ def main() -> int:
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
         node_security.check_frontend_node_image(read("frontend/Dockerfile"), failures)
+        cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)

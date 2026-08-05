@@ -1015,3 +1015,22 @@ isolation, strict audits, installed identities, Semgrep validation/scan/canaries
 independent review are mandatory. Issue #359 remains open with its branch immutable until convergence merge and
 merged-main verification; Issue #150 expiry and Issue #358 remain unchanged. This reference-only gate grants no
 product, provider, deployment, release, public-availability, or production-readiness authority.
+
+## Issue #375 ignored-cache pruning gate
+
+The Issue #375 Stage 8 route is bound to base
+`f2312947ef670becfa0373000c8ae6ef1f411e20`, exactly seven paths, and at most
+600 charged lines. The A2.3b semantic scan must use `Path.walk()` top-down and
+remove governed ignored/generated directory names before descent.
+It must still scan similarly named repository-owned directories and must not
+follow directory or file symlinks. Focused mutations, context budgets,
+guardrails, full quality, CI, exact-head checks, and independent review remain
+mandatory. This traversal repair grants no product, provider, media, release,
+public-availability, or production-readiness authority.
+
+Source fact verified 2026-08-05: the official Python
+[`Path.walk()` 3.13 documentation](https://docs.python.org/3.13/library/pathlib.html#pathlib.Path.walk)
+and [3.14 documentation](https://docs.python.org/3.14/library/pathlib.html#pathlib.Path.walk)
+specify top-down `dirnames` mutation for pruning and no directory-symlink
+following by default. The implementation also rejects file symlinks and raises
+every walk error rather than silently omitting repository-owned source.

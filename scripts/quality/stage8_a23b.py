@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable, Mapping
+from scripts.quality.stage8_cache_pruning import repository_python_files
 
 A23B_BRANCH = "stage8-353-r0c-a2-3b-evaluation-lineage-v2"
 A23A_BRANCH = "cut1-351-r0c-a2-3a-evaluation-lineage-contract"
@@ -230,9 +231,8 @@ def semantic_detector_self_test(workdir: Path) -> bool:
 
 
 def check_a23b(root: Path, run: Callable[[list[str]], Any], failures: list[str], exact_route: bool = True) -> None:
-    for path in root.rglob("*.py"):
-        if not any(part in {".git", ".venv"} for part in path.parts):
-            failures.extend(semantic_legacy_failures(path))
+    for path in repository_python_files(root):
+        failures.extend(semantic_legacy_failures(path))
     if not exact_route:
         return
     artifact = json.loads((root / "docs/governance/preflights/issue-353.json").read_text())

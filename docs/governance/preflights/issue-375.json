@@ -2,14 +2,13 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 375,
   "branch": "stage8-375-prune-ignored-caches",
-  "objective": "From exact base be9c7b1fd7469b89809388743bffcd6c8cbb47f6, repair the Stage 8 A2.3b repository semantic scan so ignored dependency and tool-cache directories are pruned before descent while repository-owned Python remains scanned. Authority is the Issue #375 owner preflight comment 5190906076. Preserve the semantic detector, all Stage 8 checks, exact-route enforcement, and fail-closed behavior. Require committed RED proof for cache traversal, symlink escape/cycle, owned cache-like directory, exact branch/base/scope, malformed Git evidence, and context budgets; then require focused tests, full quality, CI, exact-head checks, and independent review. No product behavior, provider, runtime media, deployment, release, public availability, production readiness, scan weakening, test skip, waiver, or risk acceptance is authorized. Stop for base drift, a ninth path, more than 600 charged lines, context-budget breach, or unresolved mandatory/High/Critical finding.",
+  "objective": "From exact base f2312947ef670becfa0373000c8ae6ef1f411e20, repair the Stage 8 A2.3b repository semantic scan so governed ignored/generated directories are pruned before descent while repository-owned Python remains scanned. Authority is the Issue #375 owner preflight comments 5190906076 and 5194691921 plus independent-review correction 5194774674. Preserve the semantic detector, all Stage 8 checks, exact-route enforcement, and fail-closed behavior. Require committed RED proof for cache traversal, symlink escape/cycle, owned cache-like directory, exact branch/base/scope, malformed Git evidence, and context budgets; then require focused tests, full quality, CI, exact-head checks, and independent review. No product behavior, provider, runtime media, deployment, release, public availability, production readiness, scan weakening, test skip, waiver, or risk acceptance is authorized. Stop for base drift, an eighth path, more than 600 charged lines, context-budget breach, or unresolved mandatory/High/Critical finding.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
       "docs/governance/preflights/issue-375.json",
       "docs/QUALITY_GATES.md",
       "docs/STATUS.md",
-      "docs/TRACEABILITY.md",
       "scripts/quality/check_stage8_docs.py",
       "scripts/quality/stage8_a23b.py",
       "scripts/quality/stage8_cache_pruning.py",
@@ -19,7 +18,6 @@
       "docs/governance/preflights/issue-375.json",
       "docs/QUALITY_GATES.md",
       "docs/STATUS.md",
-      "docs/TRACEABILITY.md",
       "scripts/quality/check_stage8_docs.py",
       "scripts/quality/stage8_a23b.py",
       "scripts/quality/stage8_cache_pruning.py",
