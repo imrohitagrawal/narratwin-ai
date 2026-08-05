@@ -2355,3 +2355,35 @@ closed. Scope converges only frontend development-tool `brace-expansion` 5.0.8-t
 `cryptography` 49.0.0-to-50.0.0 security evidence. Issue #359 remains open and its branch immutable until this
 convergence merges and merged-main verification passes; Issue #150 expiry and preserved incomplete Issue #358 do
 not change. Product, provider, runtime, deployment, release, public, and production authority remain excluded.
+
+## Issue #372 citation-lineage prerequisite repair
+
+Issue `#372` uses exact branch `cut1-372-citation-index-parity` from base
+`be9c7b1fd7469b89809388743bffcd6c8cbb47f6` and exactly these ten paths:
+
+1. `docs/governance/preflights/issue-372.json`
+2. `backend/app/stage4.py`
+3. `tests/acceptance/test_checkpoint3_output_correctness.py`
+4. `tests/unit/test_local_durability.py`
+5. `scripts/quality/check_stage8_docs.py`
+6. `tests/unit/test_stage8_quality_gate.py`
+7. `docs/QUALITY_GATES.md`
+8. `docs/STAGE_ISSUE_PLAN.md`
+9. `docs/STATUS.md`
+10. `docs/TRACEABILITY.md`
+
+The repair must prove that each exact visible script span carries the same
+citation index as its claim support and retrieved context. Valid stored and
+idempotent replay must preserve that lineage, while accepted/generated text
+drift, marker drift, provider-claim drift, support-index drift, missing links,
+cross-tenant data, and cross-project data fail closed. The route must pass in
+Python 3.13 and 3.14, the ordered and complete acceptance suite, full backend
+and frontend suites, `make checkpoint3-acceptance`, `make quality`, `make ci`,
+security/evaluation/browser gates as applicable, exact-head CI, independent
+technical/adversarial review, and eligible non-author approval.
+
+This prerequisite does not alter retrieval order, renumber citations, enable a
+provider, or authorize presenter, audio, renderer, frontend, Docker,
+deployment, release, public-availability, production-readiness, or Cut 1
+completion claims. Parent Issue `#366` and PR `#373` remain separate governance
+work until this repair merges and post-merge validation passes.

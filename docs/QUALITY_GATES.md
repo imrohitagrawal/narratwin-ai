@@ -1034,3 +1034,34 @@ and [3.14 documentation](https://docs.python.org/3.14/library/pathlib.html#pathl
 specify top-down `dirnames` mutation for pruning and no directory-symlink
 following by default. The implementation also rejects file symlinks and raises
 every walk error rather than silently omitting repository-owned source.
+
+## Issue #372 citation-lineage parity gate
+
+The exact `cut1-372-citation-index-parity` route is limited to the ten paths in
+`docs/governance/preflights/issue-372.json`. Its RED/GREEN evidence must prove:
+
+- every claim-support index equals the marker in that claim's exact visible
+  `scriptSpanStart`/`scriptSpanEnd` slice and the selected context position;
+- valid stored and idempotent replay preserve accepted text, generated text,
+  provider claims, supports, context references, and citation indexes;
+- restored accepted/generated text drift, visible-marker drift,
+  provider-claim index drift, support-index drift, and missing links fail
+  closed without replaying a completed run; and
+- tenant/project isolation, unsupported-claim refusal, retrieval ordering, and
+  key-free local/mock posture remain unchanged.
+
+Focused verification starts with:
+
+```bash
+uv run --python 3.13 --frozen pytest -p no:cacheprovider tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_local_durability.py
+uv run --isolated --python 3.14 --frozen pytest -p no:cacheprovider tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_local_durability.py
+uv run --python 3.13 --frozen pytest -p no:cacheprovider tests/unit/test_stage8_quality_gate.py tests/unit/publication_boundary/test_scope.py
+make checkpoint3-acceptance
+```
+
+The complete suite, quality, CI, security, evaluation, and applicable real
+browser gates remain mandatory. A fixed citation value, post-generation
+renumbering, loosened assertion, skipped test, narrowed gate, retrieval change,
+or extra path is a failure. This repair is not presenter/media, deployment,
+release, public-availability, production-readiness, or Cut 1 completion
+evidence.

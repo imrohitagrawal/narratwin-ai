@@ -20,6 +20,11 @@ ISSUE324_PUBLICATION_BRANCH = "phase-1-closure-process-324-publication-boundary-
 ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
+CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity"
+CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
+    "tests/acceptance/test_checkpoint3_output_correctness.py", "tests/unit/test_local_durability.py",
+    "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md"}
 QUIET_PRESENCE_BRANCH = "cut1-358-quiet-presence-ui"
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
@@ -106,6 +111,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     },
     ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(),
     QUIET_PRESENCE_BRANCH: QUIET_PRESENCE_FILES,
+    CITATION_PARITY_BRANCH: CITATION_PARITY_FILES,
 }
 PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES | cache_pruning.CACHE_PRUNING_ROUTES)
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES

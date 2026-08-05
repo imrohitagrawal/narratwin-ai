@@ -642,6 +642,8 @@ class Stage4Service:
             for claim in run.generated_script.claims
         ):
             return False
+        if not self._restored_citation_lineage_is_valid(run, context_by_ref):
+            return False
         return all(
             (support.document_id in self.documents or support.document_id in self.sources)
             and support.claim_id in claim_ids
@@ -655,6 +657,53 @@ class Stage4Service:
             )
             for support in run.evaluation.claim_supports
         )
+
+    def _restored_citation_lineage_is_valid(
+        self,
+        run: WalkthroughRunRecord,
+        context_by_ref: dict[str, RetrievedContext],
+    ) -> bool:
+        script, evaluation = run.generated_script, run.evaluation
+        if script is None or evaluation is None:
+            return run.status == "REFUSED"
+        if run.accepted_script_text is not None and run.accepted_script_text != script.text:
+            return False
+        if run.status == "COMPLETED" and run.accepted_script_text != script.text:
+            return False
+        if run.status == "FAILED" and run.accepted_script_text is not None:
+            return False
+        claims = {claim.claim_id: claim for claim in script.claims}
+        supports = {support.claim_id: support for support in evaluation.claim_supports}
+        if len(claims) != len(script.claims) or len(supports) != len(evaluation.claim_supports):
+            return False
+        if run.status == "COMPLETED" and set(claims) != set(supports):
+            return False
+        for claim in script.claims:
+            if not (0 <= claim.script_span_start < claim.script_span_end <= len(script.text)):
+                return False
+            visible = script.text[claim.script_span_start : claim.script_span_end]
+            support = supports.get(claim.claim_id)
+            if claim.chunk_id is None:
+                if support is not None:
+                    return False
+                continue
+            if not (1 <= claim.citation_index <= len(run.retrieved_context)):
+                return False
+            context = run.retrieved_context[claim.citation_index - 1]
+            markers = [int(value) for value in re.findall(r"\[(\d+)\]", visible)]
+            if claim.text not in visible or markers != [claim.citation_index]:
+                return False
+            if context.chunk.chunk_id != claim.chunk_id or support is None:
+                return False
+            if (
+                support.citation_index != claim.citation_index
+                or support.context_ref_id != context.context_ref_id
+                or support.chunk_id != context.chunk.chunk_id
+                or support.document_id != context.chunk.document_id
+                or context_by_ref.get(support.context_ref_id) != context
+            ):
+                return False
+        return True
 
     def _restored_retrieval_lineage_is_current(self, row: dict[str, Any], run: WalkthroughRunRecord) -> bool:
         names, expected = ("retrieval_strategy_version", "retrieval_top_k", "retrieval_score_threshold"), (RETRIEVAL_STRATEGY_VERSION, RETRIEVAL_TOP_K, RETRIEVAL_MIN_SCORE)

@@ -39,6 +39,15 @@ Use it to answer:
   stopped implementations `#336`–`#345` are forensic-only and must not be
   revived or reused. No Cut 1, release, readiness, deployment, or avatar
   completion is established by this slice.
+- Issue `#372` is the active bounded prerequisite repair for parent Cut 1
+  issue `#366`. Its exact branch `cut1-372-citation-index-parity` corrects a
+  stale fixed-index acceptance oracle and makes restored Stage 4 citation
+  lineage fail closed when accepted text, visible markers, provider claims,
+  retrieved-context order, or claim-support indexes drift. Fresh generation
+  already preserves visible-marker/support parity; retrieval ranking and
+  citation numbering do not change. Presenter, audio, video, provider,
+  deployment, release, public-availability, production-readiness, and Cut 1
+  completion remain outside this repair.
 - Last reviewed date: 2026-08-04
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
@@ -938,6 +947,8 @@ Required update rules:
 - keep the tracker factual and source-backed
 
 ## Change Log
+
+| 2026-08-05 | Issue `#372` started from exact main `be9c7b1fd7469b89809388743bffcd6c8cbb47f6` on `cut1-372-citation-index-parity`. Isolated Python 3.13 and 3.14 evidence disproved the reported order dependency: the stale test hard-coded one fact to citation 1 while fresh visible markers, claim metadata, context order, supports, and replay correctly bind that fact to citation 2. The governed repair replaces the fixed oracle with exact visible-span parity and rejects corrupt restored citation lineage. It does not change retrieval, providers, media, deployment, release, public availability, production readiness, or establish Cut 1 completion. |
 
 | Date | Change |
 |---|---|
