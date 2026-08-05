@@ -1141,3 +1141,14 @@ Required update rules:
   verification; only then may closeout mark it satisfied or superseded. Issue #150 and its `2026-08-13` expiry
   remain unchanged. The historical pre-merge Issue #358 sentence is superseded by PR #362 at
   `22277c97eff83d6927c385aa7d769bd01b34f62b`; playable speaking-avatar Cut 1 remains incomplete.
+
+## Issue 374 frontend container security repair status
+
+- Issue `#374` is the bounded Stage 8 prerequisite repair for the Grype High finding
+  `CVE-2026-58043` in the frontend image's Node.js 26.4.0 runtime.
+- Both frontend build and final runtime stages now use the official Node.js 26.6.0
+  Alpine multi-architecture image pinned to digest
+  `sha256:a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8`.
+- The unchanged scanner-consensus gate is the acceptance oracle. No advisory is
+  ignored or suppressed, the final runtime still removes npm and npx, and Cut 1,
+  deployment, release, public availability, and production readiness remain incomplete.

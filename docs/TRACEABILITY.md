@@ -403,6 +403,14 @@ durability, deployment, and release decisions remain outside this trace.
 | Synthetic presenter preview | Local photorealistic generated WebP, exact committed-asset hash, visible and accessible synthetic still-image disclosure, and light/dark responsive browser evidence | Generated without a real-person reference and not intended to depict or endorse a real person; no copied third-party media, registered render identity, animation, video, or product-runtime provider activity |
 | Local browser proof | Opt-in `NARRATWIN_DEMO_LOCAL_E2E=1` Playwright case traverses the existing local/mock API without interception | Local execution evidence only; no deployment, public URL, release, or production readiness |
 
+## Issue #374 frontend container security repair traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| `frontend/Dockerfile` official Node.js 26.6.0 Alpine digest pin | Remove the Node.js 26.4.0 runtime affected by Grype finding `CVE-2026-58043` from both frontend image stages | No package override, vulnerability suppression, scanner bypass, product behavior, provider, or network-policy change |
+| Existing `scripts/ci/docker-build.sh` and scanner-consensus `scripts/ci/docker-image-scan.sh` | Build the final non-root image and fail on any confirmed Critical/High frontend or backend finding | Passing local/container evidence does not authorize deployment, release, public availability, or production readiness |
+| `docs/STATUS.md` and `docs/THIRD_PARTY_NOTICES.md` | Preserve exact image provenance, digest, finding, and scope | Issue `#372` and the remaining Cut 1 work stay separate and incomplete until their own governed closeout |
+
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 
 ## Issue #158 Security History Chronology
