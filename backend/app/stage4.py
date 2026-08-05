@@ -734,6 +734,8 @@ class Stage4Service:
         if len(contexts) != len(run.retrieved_context) or any(
             (item.chunk.tenant_id, item.chunk.project_id) != (run.tenant_id, run.project_id)
             or canonical.get(item.chunk.chunk_id) != item.chunk
+            or ((item.chunk.document_id in self.documents or item.chunk.document_id in self.sources)
+                and re.fullmatch(r"ctx_[0-9a-f]{16}", item.context_ref_id) is None)
             for item in run.retrieved_context
         ):
             return False
@@ -750,13 +752,20 @@ class Stage4Service:
             return False
         claims = {claim.claim_id: claim for claim in run.generated_script.claims}
         unsupported = {claim.claim_id for claim in evaluation.unsupported_claims}
-        if len(claims) != len(run.generated_script.claims) or len(unsupported) != len(evaluation.unsupported_claims):
+        if (not claims or len(claims) != len(run.generated_script.claims)
+            or any(re.fullmatch(r"claim_[A-Za-z0-9_-]{1,128}", claim_id) is None for claim_id in claims)
+            or len(unsupported) != len(evaluation.unsupported_claims)):
             return False
         supported = [support.claim_id for support in evaluation.claim_supports]
         if (
             len(supported) != len(set(supported)) or unsupported.intersection(supported)
             or set(supported).union(unsupported) != set(claims)
         ):
+            return False
+        expected_score = len(supported) / len(claims)
+        expected_status = "PASSED" if not unsupported else "FAILED"
+        if (evaluation.evaluation_status != expected_status or evaluation.groundedness_score != expected_score
+            or evaluation.faithfulness_score != expected_score):
             return False
         context_chunks = {item.chunk.chunk_id for item in contexts.values()}
         if any(claim.chunk_id not in context_chunks and claim.claim_id not in unsupported for claim in run.generated_script.claims):
