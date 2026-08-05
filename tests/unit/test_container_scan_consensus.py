@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, cast
@@ -209,16 +210,22 @@ def test_frontend_config_accepts_only_exact_host_engine_defaults() -> None:
     }
 
 
-def test_frontend_config_rejection_does_not_disclose_untrusted_values() -> None:
+@pytest.mark.parametrize("optimize", [None, "1"])
+def test_frontend_config_rejection_does_not_disclose_untrusted_values(
+    optimize: str | None,
+) -> None:
     source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
     start = source.index("verify_frontend_runtime() {")
     function = source[start : source.index("\n}\n\nfrontend_build_identity()", start) + 3]
     marker = "UNTRUSTED-MARKER-MUST-NOT-APPEAR"
     config = json.dumps({"Labels": {"untrusted": marker}, "Unexpected": marker})
+    env = {**os.environ, "MALICIOUS_CONFIG": config}
+    if optimize:
+        env["PYTHONOPTIMIZE"] = optimize
     completed = subprocess.run(
         ["bash"],
         cwd=ROOT,
-        env={**os.environ, "MALICIOUS_CONFIG": config},
+        env=env,
         input=(
             "set -e\n"
             "docker() {\n"
@@ -238,6 +245,30 @@ def test_frontend_config_rejection_does_not_disclose_untrusted_values() -> None:
     assert "Frontend runtime config does not match the reviewed contract." in output
 
 
+def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    start = source.index("verify_frontend_runtime() {")
+    function = source[start : source.index("\n}\n\nfrontend_build_identity()", start) + 3]
+    marker = "UNTRUSTED-ARGV-MARKER"
+    argv_log = tmp_path / "argv.log"
+    completed = subprocess.run(
+        ["bash"],
+        cwd=ROOT,
+        env={**os.environ, "MALICIOUS_CONFIG": json.dumps({"Unexpected": marker}), "ARGV_LOG": str(argv_log)},
+        input=(
+            "set -e\n"
+            "docker() { [ \"$1\" = image ] && printf '%s\\n' \"$MALICIOUS_CONFIG\"; }\n"
+            "python3() { printf '%s\\n' \"$@\" >\"$ARGV_LOG\"; return 1; }\n"
+            f"{function}\nverify_frontend_runtime image:tag\n"
+        ),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode != 0
+    assert marker not in argv_log.read_text(encoding="utf-8")
+
+
 def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     matches = _load().frontend_inventory_matches
     amd64 = (
@@ -251,6 +282,23 @@ def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     assert not matches("arm64", amd64[0])
     assert not matches("amd64", amd64[0][:-1] + "0")
     assert not matches("unknown", amd64[0])
+
+
+def test_frontend_inventory_rejection_survives_optimized_python() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-O",
+            "-c",
+            "from scripts.ci.check_container_scan_consensus import require_frontend_inventory; require_frontend_inventory('unknown', 'unreviewed')",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode != 0
+    assert completed.stderr.strip() == "Frontend runtime inventory is not reviewed."
 
 
 @pytest.mark.parametrize(
