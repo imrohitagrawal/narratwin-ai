@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,12 @@ PATCH_SHA256 = {
 BASE_IMAGE = (
     "docker.io/library/python:3.13-alpine@"
     "sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0"
+)
+FRONTEND_SECRET_FIELDS = (
+    "previewModeId",
+    "previewModeSigningKey",
+    "previewModeEncryptionKey",
+    "serverActionKey",
 )
 
 
@@ -62,6 +69,15 @@ def _valid_vex(vex: dict[str, Any], backend_config: str, component_purl: str) ->
         "component": component_purl,
         "vulnerabilities": list(TARGET_CVES),
     }
+
+
+def frontend_reproduction_findings(primary: dict[str, str], reproduction: dict[str, str]) -> list[str]:
+    findings: list[str] = []
+    if primary.get("buildId") != reproduction.get("buildId"):
+        findings.append("FRONTEND_BUILD_ID_CHANGED")
+    if any(primary.get(field) == reproduction.get(field) for field in FRONTEND_SECRET_FIELDS):
+        findings.append("FRONTEND_BUILD_SECRET_REUSED")
+    return findings
 
 
 def evaluate_consensus(
@@ -160,8 +176,17 @@ def _load_json(path: Path) -> Any:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--case", type=Path, required=True)
-    result = evaluate_consensus(**_load_json(parser.parse_args().case))
+    parser.add_argument("--case", type=Path)
+    parser.add_argument("--verify-frontend-reproduction", action="store_true")
+    args = parser.parse_args()
+    if args.verify_frontend_reproduction:
+        primary, reproduction = (json.loads(sys.stdin.readline()) for _ in range(2))
+        findings = frontend_reproduction_findings(primary, reproduction)
+        print(json.dumps({"status": "fail" if findings else "pass", "findings": findings}))
+        return 1 if findings else 0
+    if args.case is None:
+        parser.error("--case is required unless verifying frontend reproduction")
+    result = evaluate_consensus(**_load_json(args.case))
     print(json.dumps(result, sort_keys=True))
     return 0 if result["status"] == "pass" else 1
 

@@ -9,6 +9,7 @@ BACKEND_IMAGE="${BACKEND_IMAGE:-narratwin-ai-backend:ci}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-narratwin-ai-frontend:ci}"
 FRONTEND_BUILD_IMAGE="${FRONTEND_BUILD_IMAGE:-narratwin-ai-frontend-build:ci}"
 SESSION="${SESSION:-issue151-$(date +%s)}"
+FRONTEND_REPRO_IMAGE="${FRONTEND_REPRO_IMAGE:-narratwin-ai-frontend:repro-${SESSION//[^a-zA-Z0-9_.-]/-}}"
 TRIVY_IMAGE="${TRIVY_IMAGE:-aquasec/trivy@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f}"
 GRYPE_IMAGE="${GRYPE_IMAGE:-anchore/grype@sha256:decd87500a90c1e4faa1706f77b0b2cbc1d2f9364e976f1898ce9037de09cc3a}"
 
@@ -85,6 +86,7 @@ expected = {
   },
   "ArgsEscaped": True,
 }
+
 assert config == expected, {key: config.get(key) for key in sorted(set(config) ^ set(expected))}
 PY
   docker run --rm --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= --entrypoint /usr/bin/node "${image}" -e '
@@ -166,6 +168,23 @@ console.log(records.length+":"+h.digest("hex"));')"
   trap - EXIT RETURN INT TERM
 }
 
+frontend_build_identity() {
+  docker run --rm --user 0:0 --entrypoint /usr/bin/node "$1" -e '
+const fs=require("fs"),preview=JSON.parse(fs.readFileSync("/app/.next/prerender-manifest.json","utf8")).preview;
+const server=JSON.parse(fs.readFileSync("/app/.next/server/server-reference-manifest.json","utf8"));
+console.log(JSON.stringify({buildId:fs.readFileSync("/app/.next/BUILD_ID","utf8"),
+  previewModeId:preview.previewModeId,previewModeSigningKey:preview.previewModeSigningKey,
+  previewModeEncryptionKey:preview.previewModeEncryptionKey,serverActionKey:server.encryptionKey}));'
+}
+
+verify_frontend_reproducibility() {
+  local primary="$1" reproduction="$2" primary_identity reproduction_identity
+  primary_identity="$(frontend_build_identity "${primary}")"
+  reproduction_identity="$(frontend_build_identity "${reproduction}")"
+  printf '%s\n%s\n' "${primary_identity}" "${reproduction_identity}" | \
+    python3 scripts/ci/check_container_scan_consensus.py --verify-frontend-reproduction
+}
+
 write_json_artifact() {
   local output="$1" target="$2" kind="$3"
   python3 - "$output" "$target" "$kind" <<'PY'
@@ -202,7 +221,11 @@ FRONTEND_ARCH="${FRONTEND_ARCH:-$(docker image inspect "${FRONTEND_IMAGE}" --for
 if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
   docker build --platform "linux/${FRONTEND_ARCH}" --target deps -f frontend/Dockerfile \
     -t "${FRONTEND_BUILD_IMAGE}" .
+  docker build --platform "linux/${FRONTEND_ARCH}" --no-cache-filter build -f frontend/Dockerfile \
+    -t "${FRONTEND_REPRO_IMAGE}" .
   verify_frontend_runtime "${FRONTEND_IMAGE}"
+  verify_frontend_runtime "${FRONTEND_REPRO_IMAGE}"
+  verify_frontend_reproducibility "${FRONTEND_IMAGE}" "${FRONTEND_REPRO_IMAGE}"
 fi
 rm -f "${REPORT_DIR}"/*.raw.json "${REPORT_DIR}"/*.raw.sarif.json "${REPORT_DIR}"/*.envelope.json "${REPORT_DIR}/container-scan-case.json"
 

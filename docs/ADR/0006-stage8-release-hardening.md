@@ -250,6 +250,8 @@ runtime gate binds the path, type, mode, ownership, and content of the complete 
 filesystem to canonical inventories. Next's per-build preview and server-action secrets
 are the only normalized fields: the gate validates their exact cryptographic formats,
 single occurrences, and cross-manifest equality before hashing all remaining bytes.
+It then performs a second uncached application build, requires the same source-bound
+build ID and canonical inventory, and requires every normalized secret to be fresh.
 The canonical inventories are
 `1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52`
 (arm64) and
