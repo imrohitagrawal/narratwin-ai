@@ -314,6 +314,26 @@ def assert_runtime_output_fact_is_grounded(
         assert support["evidenceSnapshot"]["snapshotChecksum"] == context["evidenceSnapshot"]["snapshotChecksum"]
 
 
+def test_grounding_assertion_rejects_zero_citation_index() -> None:
+    client = TestClient(app)
+    project, document = prepare_approved_project(client, prefix="zero-index", name="Zero Index",
+        filename="zero.md", content=ATLAS_OUTPUT_KNOWLEDGE)
+    run = generate_walkthrough(client, prefix="zero-index", project_id=project["projectId"],
+        prompt="Create a grounded walkthrough using only approved source facts.")
+    mutated = copy.deepcopy(run)
+    support = next(row for row in mutated["evaluation"]["claimSupports"]
+        if REQUIRED_ATLAS_FACT in row["evidenceSnapshot"]["redactedExcerpt"])
+    context = next(row for row in mutated["contextRefs"] if row["contextRefId"] == support["contextRefId"])
+    original_index = support["citationIndex"]
+    support["citationIndex"] = 0
+    mutated["contextRefs"] = [context]
+    mutated["evaluation"]["claimSupports"] = [support]
+    mutated["acceptedScriptText"] = mutated["acceptedScriptText"].replace(f"[{original_index}]", "[0]")
+    with pytest.raises(AssertionError):
+        assert_runtime_output_fact_is_grounded(mutated, project_id=project["projectId"],
+            document=document, required_fact=REQUIRED_ATLAS_FACT)
+
+
 def test_checkpoint3_output_correctness_executes_runtime_api_evidence_path() -> None:
     client = TestClient(app)
     project, document = prepare_approved_project(
