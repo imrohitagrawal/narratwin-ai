@@ -1037,7 +1037,9 @@ every walk error rather than silently omitting repository-owned source.
 
 ## Issue #372 citation-lineage parity gate
 
-The exact `cut1-372-citation-index-parity` route is limited to the eleven preflight paths. Its RED/GREEN evidence proves:
+The exact `cut1-372-citation-index-parity-post380` route from
+`372fb78245b8890157ffe54f48b90e523017bc43` is limited to the eleven
+preflight paths. Its RED/GREEN evidence proves:
 
 - every claim-support index equals the marker in its exact visible `scriptSpanStart`/`scriptSpanEnd` slice and context;
 - valid stored/replayed results preserve accepted/generated text, provider claims, supports, context refs, and indexes;

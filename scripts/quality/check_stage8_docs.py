@@ -20,8 +20,8 @@ ISSUE324_PUBLICATION_BRANCH = "phase-1-closure-process-324-publication-boundary-
 ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
-CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity"
-CP_BASE, CP_LIMIT = "be9c7b1fd7469b89809388743bffcd6c8cbb47f6", 1200
+CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity-post380"
+CP_BASE, CP_LIMIT = "372fb78245b8890157ffe54f48b90e523017bc43", 1200
 CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
     "tests/acceptance/test_checkpoint3_output_correctness.py", "tests/unit/test_local_durability.py",
     "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",

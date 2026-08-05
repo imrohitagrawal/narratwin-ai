@@ -2358,8 +2358,9 @@ not change. Product, provider, runtime, deployment, release, public, and product
 
 ## Issue #372 citation-lineage prerequisite repair
 
-Issue `#372` uses exact branch `cut1-372-citation-index-parity` from base
-`be9c7b1fd7469b89809388743bffcd6c8cbb47f6` and exactly these eleven paths:
+Issue `#372` uses exact branch `cut1-372-citation-index-parity-post380` from
+post-PR-380 base `372fb78245b8890157ffe54f48b90e523017bc43` and exactly these
+eleven paths:
 
 1. `docs/governance/preflights/issue-372.json`
 2. `backend/app/stage4.py`
