@@ -1007,6 +1007,26 @@ def test_stage4_rejects_oversized_generated_script_before_terminal_persistence(
     assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
     restored = Stage4Service(state_path=state_path)
     assert list(restored.walkthrough_runs) == [runs[0].run_id]
+    monkeypatch.setattr(restored.llm, "generate_script", lambda **_values: pytest.fail("failure replay invoked provider"))
+    with pytest.raises(Stage4Error) as replay_error:
+        restored.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="oversized")
+    assert replay_error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+
+
+def test_stage4_invalid_generated_lineage_has_no_terminal_run_side_effect(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service = Stage4Service(state_path=state_path)
+    monkeypatch.setattr(service.llm, "generate_script", lambda **_values: GeneratedScript(text="", claims=[]))
+    with pytest.raises(Stage4Error) as error:
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="invalid-lineage")
+    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+    assert list(Stage4Service(state_path=state_path).walkthrough_runs) == [runs[0].run_id]
 
 
 def test_stage4_rejects_write_that_would_exceed_restore_byte_cap(tmp_path: Path, monkeypatch: Any) -> None:
