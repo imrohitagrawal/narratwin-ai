@@ -1040,21 +1040,17 @@ every walk error rather than silently omitting repository-owned source.
 The exact `cut1-372-citation-index-parity` route is limited to the eleven preflight paths. Its RED/GREEN evidence proves:
 
 - every claim-support index equals the marker in its exact visible `scriptSpanStart`/`scriptSpanEnd` slice and context;
-- valid stored and idempotent replay preserve accepted text, generated text,
-  provider claims, supports, context references, and citation indexes;
+- valid stored/replayed results preserve accepted/generated text, provider claims, supports, context refs, and indexes;
 - restored text, marker, provider-claim, support-index, and link drift fails closed without completed-run replay; and
-- tenant/project isolation, unsupported-claim refusal, retrieval ordering, and
-  key-free local/mock posture remain unchanged.
+- tenant/project isolation, unsupported-claim refusal, retrieval order, and key-free local/mock posture stay unchanged.
 
 Focused verification starts with:
-
 ```bash
 uv run --python 3.13 --frozen pytest -p no:cacheprovider tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_local_durability.py
 uv run --isolated --python 3.14 --frozen pytest -p no:cacheprovider tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_local_durability.py
 uv run --python 3.13 --frozen pytest -p no:cacheprovider tests/unit/test_stage8_quality_gate.py tests/unit/publication_boundary/test_scope.py
 make checkpoint3-acceptance
 ```
-
 The complete suite, quality, CI, security, evaluation, and applicable real-browser gates remain mandatory. A fixed
 citation value, renumbering, loosened assertion, skipped test, narrowed gate, retrieval change, or extra path fails.
 This repair is not presenter/media, deployment, release, public availability, production readiness, or Cut 1 evidence.

@@ -873,7 +873,7 @@ def test_stage4_file_state_drops_walkthrough_with_tampered_citation_lineage(
         row.update(status="FAILED", evaluation_status="FAILED", accepted_script_text=None,
                    failure_reason="UNSUPPORTED_PROJECT_FACT")
     else:
-        row["evaluation"]["answer_relevancy"] = 42.0; row["evaluation"]["context_recall"] = -7.0
+        row["evaluation"].update(answer_relevancy=42.0, context_recall=-7.0)
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
     restored = Stage4Service(state_path=state_path)

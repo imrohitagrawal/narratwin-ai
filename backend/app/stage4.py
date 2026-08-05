@@ -627,7 +627,8 @@ class Stage4Service:
             return False
         if run.evaluation is None:
             return True
-        if any(type(getattr(run.evaluation, name)) is bool or not math.isfinite(float(getattr(run.evaluation, name))) for name in ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage")):
+        if any(type(getattr(run.evaluation, name)) is bool or not math.isfinite(float(getattr(run.evaluation, name)))
+               or not 0.0 <= float(getattr(run.evaluation, name)) <= 1.0 for name in ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage")):
             return False
         if (
             run.evaluation.run_id != run.run_id
@@ -664,6 +665,10 @@ class Stage4Service:
         script, evaluation = run.generated_script, run.evaluation
         if script is None or evaluation is None:
             return run.status == "REFUSED"
+        expected_status = "PASSED" if run.status == "COMPLETED" else "FAILED"
+        expected_failure = None if run.status == "COMPLETED" else self.WALKTHROUGH_REFUSAL_REASON_UNSUPPORTED_FACT
+        if evaluation.evaluation_status != expected_status or run.failure_reason != expected_failure:
+            return False
         if run.status == "COMPLETED" and run.accepted_script_text != script.text:
             return False
         if run.status == "FAILED" and run.accepted_script_text is not None:

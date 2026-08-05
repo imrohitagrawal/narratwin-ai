@@ -42,9 +42,8 @@ Use it to answer:
 - Issue `#372` is the bounded prerequisite repair for parent Cut 1 issue `#366`. Its exact branch
   `cut1-372-citation-index-parity` corrects a stale fixed-index oracle and makes restored Stage 4 citation lineage fail
   closed when accepted text, visible markers, provider claims, retrieved-context order, or claim-support indexes drift.
-  Fresh generation preserves visible-marker/support parity; retrieval ranking and citation numbering do not change.
-  Presenter, media, provider, deployment, release, public availability, production readiness, and Cut 1 completion
-  remain outside this repair.
+  Fresh generation preserves marker/support parity without retrieval or numbering changes. Presenter, media, provider,
+  deployment, release, public availability, production readiness, and Cut 1 completion remain outside this repair.
 - Last reviewed date: 2026-08-04
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
