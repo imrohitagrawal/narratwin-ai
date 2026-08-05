@@ -1064,6 +1064,10 @@ def test_stage4_preserves_foreign_claim_only_as_unsupported_failure(tmp_path: Pa
     assert {claim.claim_id for claim in failed.evaluation.unsupported_claims} == {
         claim.claim_id for claim in failed.generated_script.claims
     }
+    forged_evaluation = replace(failed.evaluation, evaluation_status="PASSED")
+    forged = replace(failed, status="COMPLETED", evaluation_status="PASSED",
+        accepted_script_text=failed.generated_script.text, evaluation=forged_evaluation)
+    assert not service._fresh_lineage_ownership_is_valid(forged)
     restored = Stage4Service(state_path=state_path)
     assert list(restored.walkthrough_runs) == [runs[0].run_id, failed.run_id]
     replayed = restored.generate_walkthrough(**request)
