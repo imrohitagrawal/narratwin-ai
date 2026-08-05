@@ -108,7 +108,7 @@ RESTORED_FAILURE_CODES_BY_ENDPOINT = {
     "POST /api/v1/projects/{projectId}/knowledge-documents": {"FORBIDDEN", "NOT_FOUND", "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "PROJECT_CORPUS_TOO_LARGE", "UPLOAD_TOO_LARGE", "UPLOAD_FILE_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "VALIDATION_ERROR", "SECRET_LIKE_CONTENT", "UNSAFE_DOCUMENT_CONTENT"},
     "PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval": {"FORBIDDEN", "NOT_FOUND", "SOURCE_NOT_APPROVABLE"},
     "POST /api/v1/projects/{projectId}/ingestion-runs": {"FORBIDDEN", "NOT_FOUND", "SOURCE_NOT_INGESTIBLE", "SOURCE_KIND_MISMATCH", "VALIDATION_ERROR", "INGESTION_TOO_LARGE", "DOCUMENT_NOT_APPROVED", "UNSAFE_DOCUMENT_CONTENT", "DOCUMENT_TOO_LARGE", "PROJECT_CORPUS_TOO_LARGE", "BACKPRESSURE_QUEUE_FULL"},
-    "POST /api/v1/projects/{projectId}/walkthrough-runs": {"FORBIDDEN", "NOT_FOUND", "PROMPT_TOO_LARGE", "SECRET_LIKE_CONTENT", "RESOURCE_LIMIT_EXCEEDED", "BACKPRESSURE_QUEUE_FULL"},
+    "POST /api/v1/projects/{projectId}/walkthrough-runs": {"FORBIDDEN", "NOT_FOUND", "PROMPT_TOO_LARGE", "SECRET_LIKE_CONTENT", "GENERATED_SCRIPT_TOO_LARGE", "RESOURCE_LIMIT_EXCEEDED", "BACKPRESSURE_QUEUE_FULL"},
 }
 
 
@@ -1403,8 +1403,6 @@ class Stage4Service:
                             },
                         )
 
-        if not raw_walkthrough_lineage_is_bounded_and_typed(walkthrough_run_to_dict(run)):
-            raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
         self.walkthrough_runs[run_id] = run
         return run
 
@@ -1476,6 +1474,11 @@ class Stage4Service:
             retrieval_top_k=RETRIEVAL_TOP_K,
             retrieval_score_threshold=RETRIEVAL_MIN_SCORE,
         )
+        if (
+            not raw_walkthrough_lineage_is_bounded_and_typed(walkthrough_run_to_dict(run))
+            or not self._restored_citation_lineage_is_valid(run)
+        ):
+            raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
         record_walkthrough_metrics(
             tenant_id=principal.tenant_id,
             run_id=run_id,
