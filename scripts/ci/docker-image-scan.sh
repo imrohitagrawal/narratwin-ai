@@ -7,6 +7,7 @@ REPORT_DIR_ABS="$(cd "${REPORT_DIR}" && pwd -P)"
 
 BACKEND_IMAGE="${BACKEND_IMAGE:-narratwin-ai-backend:ci}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-narratwin-ai-frontend:ci}"
+FRONTEND_BUILD_IMAGE="${FRONTEND_BUILD_IMAGE:-narratwin-ai-frontend-build:ci}"
 SESSION="${SESSION:-issue151-$(date +%s)}"
 TRIVY_IMAGE="${TRIVY_IMAGE:-aquasec/trivy@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f}"
 GRYPE_IMAGE="${GRYPE_IMAGE:-anchore/grype@sha256:decd87500a90c1e4faa1706f77b0b2cbc1d2f9364e976f1898ce9037de09cc3a}"
@@ -59,6 +60,102 @@ image_config() {
   fi
 }
 
+verify_frontend_runtime() {
+  local image="$1" config container port http_code actual_inventory expected_inventory
+  config="$(docker image inspect "${image}" --format '{{json .Config}}')"
+  python3 - "${config}" <<'PY'
+import json, sys
+config = json.loads(sys.argv[1])
+expected = {
+  "User": "65532:65532", "ExposedPorts": {"3000/tcp": {}},
+  "Env": [
+    "NPM_CONFIG_UPDATE_NOTIFIER=false", "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin",
+    "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt", "NODE_ENV=production", "NEXT_TELEMETRY_DISABLED=1",
+    "NARRATWIN_API_PROXY_TARGET=http://127.0.0.1:8000", "HOSTNAME=0.0.0.0", "PORT=3000",
+  ],
+  "Entrypoint": ["/usr/bin/node"], "Cmd": ["server.js"], "WorkingDir": "/app",
+  "Labels": {
+    "dev.chainguard.image.title": "node", "dev.chainguard.package.main": "",
+    "org.opencontainers.image.authors": "Chainguard Team https://www.chainguard.dev/",
+    "org.opencontainers.image.created": "2026-08-03T22:17:06Z",
+    "org.opencontainers.image.source": "https://github.com/chainguard-images/images/tree/main/images/node",
+    "org.opencontainers.image.title": "node",
+    "org.opencontainers.image.url": "https://images.chainguard.dev/directory/image/node/overview",
+    "org.opencontainers.image.vendor": "Chainguard",
+  },
+  "ArgsEscaped": True,
+}
+assert config == expected, {key: config.get(key) for key in sorted(set(config) ^ set(expected))}
+PY
+  docker run --rm --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= --entrypoint /usr/bin/node "${image}" -e '
+const fs=require("fs"), extras=[];
+for (const d of ["/bin","/sbin","/usr/bin","/usr/sbin"]) if (fs.existsSync(d)) {
+  for (const n of fs.readdirSync(d)) { const p=d+"/"+n; if (p!=="/usr/bin/node") extras.push(p); }
+}
+const forbidden=["/usr/lib/node_modules","/usr/local/lib/node_modules","/usr/local/bin"];
+const status=fs.readFileSync("/proc/self/status","utf8"),trusted=["/usr/bin/node","/etc/ssl/certs/ca-certificates.crt"],unsafe=[];
+function secureTree(d) { const s=fs.lstatSync(d); if(s.uid!==0||s.gid!==0||(s.mode&0o022)!==0) unsafe.push(d);
+  if(s.isDirectory()) for(const n of fs.readdirSync(d)) secureTree(d+"/"+n); }
+secureTree("/app");
+if (process.version!=="v26.6.0"||process.getuid()!==65532||process.getgid()!==65532||
+    extras.length||forbidden.some(fs.existsSync)||!/^CapEff:\s+0+$/m.test(status)||
+    unsafe.length||trusted.some(p=>{const s=fs.statSync(p);return s.uid!==0||s.gid!==0||(s.mode&0o022)!==0}))
+  throw new Error(JSON.stringify({extras,version:process.version}));'
+  case "${FRONTEND_ARCH}" in
+    amd64) expected_inventory="1804:074904c07e8134cfb3db31b5951ce70870ba3eab3d226e7340dd366d8a93ff28" ;;
+    arm64) expected_inventory="1802:11ec37a253c49e02cb141eb206a843a28e4e4759a2d1831283bc0183ddf4b89b" ;;
+    *) echo "Unsupported frontend runtime architecture: ${FRONTEND_ARCH}" >&2; return 1 ;;
+  esac
+  actual_inventory="$(docker run --rm --user 0:0 --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= \
+    --entrypoint /usr/bin/node "${image}" -e '
+const crypto=require("crypto"),fs=require("fs"),records=[],B=Buffer.from,slash=B("/"),empty=Buffer.alloc(0);
+const skip=new Set(["/.dockerenv","/etc/hosts","/etc/hostname","/etc/resolv.conf"].map(x=>B(x).toString("hex")));
+const virtual=new Set(["/dev","/proc","/sys"].map(x=>B(x).toString("hex")));
+function u32(n) { const x=Buffer.alloc(4); x.writeUInt32BE(n); return x; }
+function record(t,p,s,payload=empty) {
+  records.push(Buffer.concat([B(t),u32(p.length),p,u32(s.mode&0o7777),u32(s.uid),u32(s.gid),
+    u32(payload.length),payload]));
+}
+function add(p,s) {
+  if (s.isSymbolicLink()) record("L",p,s,fs.readlinkSync(p,{encoding:"buffer"}));
+  else if (s.isDirectory()) record("D",p,s);
+  else if (s.isFile()) record("F",p,s,crypto.createHash("sha256").update(fs.readFileSync(p)).digest());
+  else record("O",p,s,u32(s.mode&0o170000));
+}
+function walk(d) { for (const n of fs.readdirSync(d,{encoding:"buffer"}).sort(Buffer.compare)) {
+  const p=d.length===1?Buffer.concat([slash,n]):Buffer.concat([d,slash,n]),key=p.toString("hex");
+  if (skip.has(key)) continue; const s=fs.lstatSync(p); add(p,s);
+  if (s.isDirectory()&&!virtual.has(key)) walk(p);
+}}
+add(slash,fs.lstatSync(slash)); walk(slash); records.sort(Buffer.compare);
+const h=crypto.createHash("sha256"); for (const r of records) h.update(u32(r.length)).update(r);
+console.log(records.length+":"+h.digest("hex"));')"
+  if [ "${actual_inventory}" != "${expected_inventory}" ]; then
+    echo "Frontend runtime immutable filesystem inventory mismatch: ${actual_inventory}" >&2
+    return 1
+  fi
+  container="narratwin-runtime-${SESSION//[^a-zA-Z0-9_.-]/-}"
+  cleanup_frontend_runtime() { docker rm -f "${container}" >/dev/null 2>&1 || true; }
+  trap cleanup_frontend_runtime EXIT RETURN
+  trap 'cleanup_frontend_runtime; exit 130' INT TERM
+  cleanup_frontend_runtime
+  docker run --rm -d --name "${container}" -p 127.0.0.1::3000 "${image}" >/dev/null
+  port="$(docker port "${container}" 3000/tcp | sed -n 's/.*://p' | head -1)"
+  http_code=000
+  for _ in {1..20}; do
+    http_code="$(curl --connect-timeout 1 --max-time 2 -sS -o /dev/null -w '%{http_code}' \
+      "http://127.0.0.1:${port}/" || true)"
+    [ "${http_code}" = 200 ] && break
+    sleep 1
+  done
+  if [ "${http_code}" != 200 ]; then
+    docker logs "${container}" >&2 || true
+    return 1
+  fi
+  docker stop "${container}" >/dev/null
+  trap - EXIT RETURN INT TERM
+}
+
 write_json_artifact() {
   local output="$1" target="$2" kind="$3"
   python3 - "$output" "$target" "$kind" <<'PY'
@@ -92,6 +189,11 @@ BACKEND_CONFIG="$(image_config "${BACKEND_IMAGE}")"
 FRONTEND_CONFIG="$(image_config "${FRONTEND_IMAGE}")"
 BACKEND_ARCH="${BACKEND_ARCH:-$(docker image inspect "${BACKEND_IMAGE}" --format '{{.Architecture}}')}"
 FRONTEND_ARCH="${FRONTEND_ARCH:-$(docker image inspect "${FRONTEND_IMAGE}" --format '{{.Architecture}}')}"
+if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
+  docker build --platform "linux/${FRONTEND_ARCH}" --target deps -f frontend/Dockerfile \
+    -t "${FRONTEND_BUILD_IMAGE}" .
+  verify_frontend_runtime "${FRONTEND_IMAGE}"
+fi
 rm -f "${REPORT_DIR}"/*.raw.json "${REPORT_DIR}"/*.raw.sarif.json "${REPORT_DIR}"/*.envelope.json "${REPORT_DIR}/container-scan-case.json"
 
 set +e
@@ -103,7 +205,20 @@ scan_trivy "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-trivy.raw.sarif.json"
 ft=$?
 scan_grype "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-grype.raw.sarif.json"
 fg=$?
+if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
+  scan_trivy "${FRONTEND_BUILD_IMAGE}" "${REPORT_DIR}/frontend-build-trivy.raw.sarif.json"
+  fbt=$?
+  scan_grype "${FRONTEND_BUILD_IMAGE}" "${REPORT_DIR}/frontend-build-grype.raw.sarif.json"
+  fbg=$?
+else
+  fbt=0; fbg=0
+fi
 set -e
+
+if [ "${fbt}" -ne 0 ] || [ "${fbg}" -ne 0 ]; then
+  echo "Frontend dependency-stage scanner consensus failed." >&2
+  exit 1
+fi
 
 write_json_artifact "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_CONFIG}" cyclonedx
 write_json_artifact "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_CONFIG}" cyclonedx

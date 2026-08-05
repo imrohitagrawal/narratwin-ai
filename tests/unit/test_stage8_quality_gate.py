@@ -27,8 +27,7 @@ def load(relative: str, name: str) -> ModuleType:
     spec = importlib.util.spec_from_file_location(name, module_path); assert spec and spec.loader
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
 stage8=load("scripts/quality/check_stage8_docs.py","s8"); stage2=load("scripts/quality/check_stage2_docs.py","s2")
-def git(r: Path, *args: str) -> str: return sp.run(
-    ["git", *args], cwd=r, text=True, capture_output=True, check=True).stdout.strip()
+def git(r:Path,*a:str)->str:return sp.run(["git",*a],cwd=r,text=True,capture_output=True,check=True).stdout.strip()
 def put(repo: Path, path: str, value: str) -> None:
     target = repo / path; target.parent.mkdir(parents=True, exist_ok=True); target.write_text(value, encoding="utf-8")
 def route(monkeypatch: Any, branch: str, changed: list[str]) -> list[str]:
@@ -167,16 +166,13 @@ def test_stage8_script_markers_match_mandatory_container_scanners(monkeypatch: A
     failures: list[str] = []; stage8.check_dependencies_and_scripts(failures); assert failures == []
     assert route(monkeypatch, stage8.ISSUE374_SECURITY_BRANCH, sorted(stage8.ISSUE374_SECURITY_FILES)) == []
     dockerfile = stage8.read("frontend/Dockerfile"); assert stage8.frontend_node_image_valid(dockerfile)
-    build_image = stage8.FRONTEND_NODE_BUILD_IMAGE; runtime_image = stage8.FRONTEND_NODE_RUNTIME_IMAGE
-    old = "node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9"
-    mutations = (dockerfile.replace(build_image, old), dockerfile.replace(build_image, "node:26.6.0-alpine"),
+    build_image = stage8.FRONTEND_NODE_BUILD_IMAGE; runtime_image = stage8.FRONTEND_NODE_RUNTIME_IMAGE; prior = "node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9"
+    mutations = (dockerfile.replace(build_image, prior), dockerfile.replace(build_image, "node:26.6.0-alpine"), dockerfile.replace("sha512sum -c -", "REMOVED", 1),
         dockerfile.replace(runtime_image, runtime_image[:-1] + ("0" if runtime_image[-1] != "0" else "1")),
-        dockerfile.replace(f"FROM {runtime_image} AS runner", f"FROM {old} AS runner"),
-        dockerfile + f"\nfrom {old} AS bypass\n", dockerfile + f"\nFrOm {old} AS bypass\n",
-        dockerfile + f"\n  FROM {old} AS bypass\n")
+        dockerfile.replace(f"FROM {runtime_image} AS runner", f"FROM {prior} AS runner"),
+        *(dockerfile + f"\n{prefix} {prior} AS bypass\n" for prefix in ("from", "FrOm", "  FROM", "\tFROM")),
+        *(dockerfile.replace(marker, "REMOVED") for marker in (*stage8.FRONTEND_BUILD_ARCHIVE_SHA512, *stage8.FRONTEND_BUILD_ARCHIVE_SHA512.values())))
     assert all(not stage8.frontend_node_image_valid(mutated) for mutated in mutations)
-    for path in ("/bin/busybox", "/usr/bin/busybox", "/bin/sh", "/usr/bin/sh", "/bin/ash", "/usr/bin/ash"):
-        assert path in dockerfile
 def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
     failures: list[str] = []; stage8.check_stage_marker_and_branch(failures); assert failures == [
