@@ -1,0 +1,48 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 383,
+  "branch": "stage8-383-presenter-assets",
+  "objective": "Under the owner-authorized Cut 1 decomposition recorded at https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5198558504 and the complete pre-implementation ledger at https://github.com/imrohitagrawal/narratwin-ai/issues/383#issuecomment-5198566216, add reviewed text-only-generated fictional synthetic portrait assets for Myra and Raj as the prerequisite to Issue #367 while preserving Meera's reviewed royal-blue-saree and gold-jewelry asset byte-for-byte. Accept only distinct, nonempty, decodable 1536x1024 WebP files no larger than 500000 bytes with exact SHA-256 and complete generation/conversion/provenance/disclosure records. Treat generated binary and metadata as untrusted; reject missing, malformed, wrong-format, wrong-dimension, oversized, duplicate, checksum-mismatched, unrecorded, real-person-referenced, cloning-shaped, or stale assets. Use no uploaded/person reference, personal likeness, biometric/customer data, runtime registry, API, UI, TTS, renderer, video, provider/model installation, dependency, workflow, Docker, deployment, release, public availability/distribution, trademark-registration, or production claim. Evidence requires committed RED mutations before assets/GREEN, exact probes and checksums, human visual/provenance review, full gates, exact-head independent review, and eligible non-author GitHub approval. Stop for unclear license or likeness authority, cloning/personal data, paid/key/account/network requirements outside the approved built-in generator, an eighth path, any declared text/binary budget breach, failed mandatory gate, unresolved High/Critical finding, or missing external approval.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-383.json",
+      "frontend/public/demo/myra-synthetic-presenter.webp",
+      "frontend/public/demo/raj-synthetic-presenter.webp",
+      "tests/unit/test_cut1_presenter_assets.py",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-383.json",
+      "frontend/public/demo/myra-synthetic-presenter.webp",
+      "frontend/public/demo/raj-synthetic-presenter.webp",
+      "tests/unit/test_cut1_presenter_assets.py",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "frontend/src/",
+      "frontend/tests/",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "pyproject.toml",
+      "uv.lock",
+      "docs/ADR/",
+      "docs/API_CONTRACT.md",
+      "docs/ARCHITECTURE.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "scripts/",
+      "tests/api/",
+      "tests/acceptance/"
+    ]
+  }
+}
