@@ -190,6 +190,25 @@ verify_frontend_reproducibility() {
     python3 scripts/ci/check_container_scan_consensus.py --verify-frontend-reproduction
 }
 
+prepare_frontend_images() {
+  local fbt fbg
+  docker build --platform "linux/${FRONTEND_ARCH}" --target deps -f frontend/Dockerfile \
+    -t "${FRONTEND_BUILD_IMAGE}" .
+  FRONTEND_BUILD_CONFIG="$(image_config "${FRONTEND_BUILD_IMAGE}")"
+  set +e
+  scan_trivy "${FRONTEND_BUILD_CONFIG}" "${REPORT_DIR}/frontend-build-trivy.raw.sarif.json"
+  fbt=$?
+  scan_grype "${FRONTEND_BUILD_CONFIG}" "${REPORT_DIR}/frontend-build-grype.raw.sarif.json"
+  fbg=$?
+  set -e
+  if [ "${fbt}" -ne 0 ] || [ "${fbg}" -ne 0 ]; then
+    echo "Frontend dependency-stage scanner consensus failed." >&2
+    return 1
+  fi
+  docker build --platform "linux/${FRONTEND_ARCH}" --no-cache-filter build -f frontend/Dockerfile \
+    -t "${FRONTEND_REPRO_IMAGE}" .
+}
+
 write_json_artifact() {
   local output="$1" target="$2" kind="$3"
   python3 - "$output" "$target" "$kind" <<'PY'
@@ -224,11 +243,7 @@ FRONTEND_CONFIG="$(image_config "${FRONTEND_IMAGE}")"
 BACKEND_ARCH="${BACKEND_ARCH:-$(docker image inspect "${BACKEND_IMAGE}" --format '{{.Architecture}}')}"
 FRONTEND_ARCH="${FRONTEND_ARCH:-$(docker image inspect "${FRONTEND_IMAGE}" --format '{{.Architecture}}')}"
 if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
-  docker build --platform "linux/${FRONTEND_ARCH}" --target deps -f frontend/Dockerfile \
-    -t "${FRONTEND_BUILD_IMAGE}" .
-  FRONTEND_BUILD_CONFIG="$(image_config "${FRONTEND_BUILD_IMAGE}")"
-  docker build --platform "linux/${FRONTEND_ARCH}" --no-cache-filter build -f frontend/Dockerfile \
-    -t "${FRONTEND_REPRO_IMAGE}" .
+  prepare_frontend_images
   verify_frontend_runtime "${FRONTEND_IMAGE}"
   verify_frontend_runtime "${FRONTEND_REPRO_IMAGE}"
   verify_frontend_reproducibility "${FRONTEND_IMAGE}" "${FRONTEND_REPRO_IMAGE}"
@@ -244,20 +259,7 @@ scan_trivy "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-trivy.raw.sarif.json" "CR
 ft=$?
 scan_grype "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-grype.raw.sarif.json" "medium"
 fg=$?
-if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
-  scan_trivy "${FRONTEND_BUILD_CONFIG}" "${REPORT_DIR}/frontend-build-trivy.raw.sarif.json"
-  fbt=$?
-  scan_grype "${FRONTEND_BUILD_CONFIG}" "${REPORT_DIR}/frontend-build-grype.raw.sarif.json"
-  fbg=$?
-else
-  fbt=0; fbg=0
-fi
 set -e
-
-if [ "${fbt}" -ne 0 ] || [ "${fbg}" -ne 0 ]; then
-  echo "Frontend dependency-stage scanner consensus failed." >&2
-  exit 1
-fi
 
 write_json_artifact "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_CONFIG}" cyclonedx
 write_json_artifact "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_CONFIG}" cyclonedx
