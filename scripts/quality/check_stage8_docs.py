@@ -29,6 +29,11 @@ ISSUE374_SECURITY_FILES = {
     "docs/ADR/0006-stage8-release-hardening.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md",
 }
+FRONTEND_NODE_BUILD_IMAGE = (
+    "node:26.6.0-alpine@sha256:a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8")
+FRONTEND_NODE_RUNTIME_IMAGE = (
+    "cgr.dev/chainguard/node:latest@sha256:cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734")
+FRONTEND_NODE_IMAGE_FAILURE = "Stage 8 frontend build and runtime images must retain the reviewed Node image pin."
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
@@ -42,41 +47,20 @@ def issue324_allowed_files() -> set[str]:
     return set(json.loads(path.read_text(encoding="utf-8"))["scope"]["required"])
 REQUIRED_FILES = [
     ".stage/current", ".github/pull_request_template.md", ".github/workflows/ci.yml", ".github/workflows/security.yml",
-    "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py",
-    "backend/app/stage6.py", "backend/Dockerfile",
-    "frontend/Dockerfile", "frontend/package.json",
-    "frontend/package-lock.json", "frontend/src/app/page.test.tsx",
-    "frontend/scripts/run-lighthouse.mjs",
-    "perf/stage8_locustfile.py", "pyproject.toml",
-    "uv.lock", "scripts/ci/dependency-security.sh",
-    "scripts/ci/docker-image-scan.sh",
-    "scripts/ci/frontend-lighthouse.sh",
-    "scripts/ci/performance-smoke.sh",
-    "scripts/quality/check_quality_stage.py",
-    "scripts/quality/check_stage8_docs.py",
-    "tests/api/test_stage4_slice_api.py",
-    "tests/api/test_stage6_multilingual_api.py",
-    "tests/api/test_stage8_hardening_api.py",
-    "tests/unit/test_stage6_multilingual.py",
-    "demo/stage8_seed_project.md",
-    "docs/ADR/0006-stage8-release-hardening.md",
-    "docs/API_CONTRACT.md",
-    "docs/ARCHITECTURE.md",
-    "docs/QUALITY_GATES.md",
-    "docs/PROJECT_LEARNINGS_TRACKER.md",
-    "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
-    "docs/RECOMMENDED_REVIEW_ITEMS.md",
-    "docs/REPOSITORY_GUARDRAILS.md",
-    "docs/RELEASE_CHECKLIST.md",
-    "docs/RELEASE_READINESS_REVIEW.md",
-    "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
-    "docs/RUNBOOK.md",
-    "docs/SKILL_LOCK.md",
-    "docs/STAGE_ISSUE_PLAN.md",
-    "docs/STATUS.md",
-    "docs/THIRD_PARTY_NOTICES.md",
-    "docs/TRACEABILITY.md",
-    "docs/demo/CONTROLLED_LOCAL_DEMO.md",
+    "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py", "backend/app/stage6.py",
+    "backend/Dockerfile",
+    "frontend/Dockerfile", "frontend/package.json", "frontend/package-lock.json", "frontend/src/app/page.test.tsx",
+    "frontend/scripts/run-lighthouse.mjs", "perf/stage8_locustfile.py", "pyproject.toml", "uv.lock",
+    "scripts/ci/dependency-security.sh", "scripts/ci/docker-image-scan.sh", "scripts/ci/frontend-lighthouse.sh",
+    "scripts/ci/performance-smoke.sh", "scripts/quality/check_quality_stage.py", "scripts/quality/check_stage8_docs.py",
+    "tests/api/test_stage4_slice_api.py", "tests/api/test_stage6_multilingual_api.py",
+    "tests/api/test_stage8_hardening_api.py", "tests/unit/test_stage6_multilingual.py", "demo/stage8_seed_project.md",
+    "docs/ADR/0006-stage8-release-hardening.md", "docs/API_CONTRACT.md", "docs/ARCHITECTURE.md",
+    "docs/QUALITY_GATES.md", "docs/PROJECT_LEARNINGS_TRACKER.md", "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
+    "docs/RECOMMENDED_REVIEW_ITEMS.md", "docs/REPOSITORY_GUARDRAILS.md", "docs/RELEASE_CHECKLIST.md",
+    "docs/RELEASE_READINESS_REVIEW.md", "docs/REVIEW_RIGOR_RETROSPECTIVE.md", "docs/RUNBOOK.md",
+    "docs/SKILL_LOCK.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md", "docs/demo/CONTROLLED_LOCAL_DEMO.md",
 ]
 STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {
@@ -344,6 +328,14 @@ def check_backend_and_tests(failures: list[str]) -> None:
     for marker in ("/usr/local/lib/node_modules/npm", "/usr/local/bin/npm", "/usr/local/bin/npx"):
         if marker not in frontend_dockerfile:
             fail(f"Stage 8 frontend runtime image must remove {marker}.", failures)
+def frontend_node_image_valid(dockerfile: str) -> bool:
+    expected = [f"FROM {FRONTEND_NODE_BUILD_IMAGE} AS deps", "FROM deps AS build",
+                f"FROM {FRONTEND_NODE_RUNTIME_IMAGE} AS runner"]
+    actual = [line.strip() for line in dockerfile.splitlines() if line.startswith("FROM ")]
+    return actual == expected
+def check_frontend_node_image(failures: list[str]) -> None:
+    if not frontend_node_image_valid(read("frontend/Dockerfile")):
+        fail(FRONTEND_NODE_IMAGE_FAILURE, failures)
 def check_dependencies_and_scripts(failures: list[str]) -> None:
     pyproject = read("pyproject.toml")
     package = json.loads(read("frontend/package.json"))
@@ -493,6 +485,7 @@ def main() -> int:
         check_stage_scope(failures)
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
+        check_frontend_node_image(failures)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)

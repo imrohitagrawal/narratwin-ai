@@ -407,7 +407,7 @@ durability, deployment, and release decisions remain outside this trace.
 
 | Evidence | Requirement | Preserved boundary |
 |---|---|---|
-| `frontend/Dockerfile` official Node.js 26.6.0 Alpine digest pin | Remove the Node.js 26.4.0 runtime affected by Grype finding `CVE-2026-58043` from both frontend image stages | No package override, vulnerability suppression, scanner bypass, product behavior, provider, or network-policy change |
+| `frontend/Dockerfile` official Node.js 26.6.0 build pin plus minimal Chainguard Node runtime pin | Remove Node.js 26.4.0 affected by Grype finding `CVE-2026-58043`, omit build tooling from the final image, and avoid Alpine BusyBox `CVE-2025-60876` | No package override, vulnerability suppression, scanner bypass, product behavior, provider, or network-policy change |
 | Existing `scripts/ci/docker-build.sh` and scanner-consensus `scripts/ci/docker-image-scan.sh` | Build the final non-root image and fail on any confirmed Critical/High frontend or backend finding | Passing local/container evidence does not authorize deployment, release, public availability, or production readiness |
 | `docs/STATUS.md` and `docs/THIRD_PARTY_NOTICES.md` | Preserve exact image provenance, digest, finding, and scope | Issue `#372` and the remaining Cut 1 work stay separate and incomplete until their own governed closeout |
 

@@ -1,11 +1,9 @@
-from __future__ import annotations
 # ruff: noqa: E302, E305, E701, E702
-import hashlib; import importlib.util; import json; import subprocess
+import hashlib; import importlib.util; import json; import subprocess as sp
 from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 from scripts.quality import stage8_a23b as a23b
 from scripts.quality.check_stage8_docs import QUIET_PRESENCE_BRANCH as QP, QUIET_PRESENCE_FILES as QP_SCOPE
-from scripts.quality.check_stage8_docs import ISSUE374_SECURITY_BRANCH as I374, ISSUE374_SECURITY_FILES as I374_SCOPE
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"
 SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
@@ -23,16 +21,14 @@ SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/qua
     A2_2: {"docs/governance/preflights/issue-349.json", "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
            "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
            "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
-           "docs/STAGE_ISSUE_PLAN.md"},
-    QP: QP_SCOPE, I374: I374_SCOPE, **a23b.A23_ROUTES}
-def load_module(relative: str, name: str) -> ModuleType:
+           "docs/STAGE_ISSUE_PLAN.md"}, QP: QP_SCOPE, **a23b.A23_ROUTES}
+def load(relative: str, name: str) -> ModuleType:
     module_path = Path(__file__).parents[2] / relative
     spec = importlib.util.spec_from_file_location(name, module_path); assert spec and spec.loader
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
-stage8: Any = load_module("scripts/quality/check_stage8_docs.py", "stage8_quality_under_test")
-stage2: Any = load_module("scripts/quality/check_stage2_docs.py", "stage2_quality_under_test")
-def git(repo: Path, *args: str) -> str:
-    return subprocess.run(["git", *args], cwd=repo, text=True, capture_output=True, check=True).stdout.strip()
+stage8=load("scripts/quality/check_stage8_docs.py","s8"); stage2=load("scripts/quality/check_stage2_docs.py","s2")
+def git(r: Path, *args: str) -> str: return sp.run(
+    ["git", *args], cwd=r, text=True, capture_output=True, check=True).stdout.strip()
 def put(repo: Path, path: str, value: str) -> None:
     target = repo / path; target.parent.mkdir(parents=True, exist_ok=True); target.write_text(value, encoding="utf-8")
 def route(monkeypatch: Any, branch: str, changed: list[str]) -> list[str]:
@@ -56,16 +52,15 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
                         if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json",
                                          "issue-358.json"}
                         else ORIGINAL_READ(path, *a, **kw))
-    policy = load_module("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
+    policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {branch: policy[branch] for branch in SCOPES} == SCOPES
     assert {branch for branch in policy if branch.startswith("cut1-")} == set(SCOPES) - {a23b.A23B_BRANCH}
-    dispatcher: Any = load_module("scripts/quality/check_quality_stage.py", "dispatcher")
+    dispatcher: Any = load("scripts/quality/check_quality_stage.py", "dispatcher")
     stage_file, status_file = tmp_path / "stage", tmp_path / "status"
     mode = "| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
-    stage_file.write_text("8\n"); status_file.write_text(mode)
+    stage_file.write_text("8\n"); status_file.write_text(mode); m = monkeypatch
     calls: list[list[str]] = []; monkeypatch.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)
-    monkeypatch.setattr(dispatcher, "CURRENT_STAGE", stage_file)
-    monkeypatch.setattr(dispatcher, "STATUS_DOC", status_file)
+    m.setattr(dispatcher, "CURRENT_STAGE", stage_file); m.setattr(dispatcher, "STATUS_DOC", status_file)
     def record(args: list[str], cwd: Path) -> int: calls.append(args); return 0
     monkeypatch.setattr(dispatcher.subprocess, "call", record)
     for branch in SCOPES:
@@ -93,8 +88,8 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     put(tmp_path, "forbidden/cancelled.txt", "staged"); git(tmp_path, "add", "forbidden/cancelled.txt")
     put(tmp_path, "forbidden/cancelled.txt", "original"); put(tmp_path, "untracked\nnewline.txt", "new")
     calls: list[list[str]] = []
-    def record(args: list[str]) -> subprocess.CompletedProcess[str]:
-        calls.append(args); return subprocess.run(args, cwd=tmp_path, text=True, capture_output=True, check=False)
+    def record(args: list[str]) -> sp.CompletedProcess[str]:
+        calls.append(args); return sp.run(args, cwd=tmp_path, text=True, capture_output=True, check=False)
     monkeypatch.setattr(stage8, "ROOT", tmp_path); monkeypatch.setattr(stage8, "run", record)
     monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)
     monkeypatch.setenv("GITHUB_EVENT_NAME", "push"); monkeypatch.setenv("NARRATWIN_HEAD_REF", "feature")
@@ -136,7 +131,7 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
     event = tmp_path / "event.json"; event.write_text(json.dumps({"pull_request": {"head": {"sha": "head"}}}))
     for failed, base, event_name in cases:
         calls: list[list[str]] = []
-        def fake(args: list[str]) -> subprocess.CompletedProcess[str]:
+        def fake(args: list[str]) -> sp.CompletedProcess[str]:
             calls.append(args)
             layer = ("rev-parse" if "rev-parse" in args else "merge-base" if "merge-base" in args else
                      "untracked" if "ls-files" in args else "cached" if "--cached" in args else
@@ -144,7 +139,7 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
             output = "head\n" if layer == "rev-parse" else "base\n" if layer == "merge-base" else ""
             explicit_failure = failed == "explicit-base" and args == ["git", "merge-base", base, "head"]
             should_fail = layer == failed or explicit_failure or "0" * 40 in args
-            return subprocess.CompletedProcess(args, int(should_fail), output, "failed")
+            return sp.CompletedProcess(args, int(should_fail), output, "failed")
         monkeypatch.setattr(stage8, "run", fake); monkeypatch.setenv("GITHUB_BASE_SHA", base)
         monkeypatch.setenv("GITHUB_HEAD_SHA", "head")
         monkeypatch.setenv("GITHUB_EVENT_NAME", event_name); monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
@@ -160,39 +155,28 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
 def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> None:
     source = stage8.PROCESS_BRANCH_ALLOWED_FILES; sha = stage2.hashlib.sha256
-    cases = ((stage8.ISSUE84_GUARDRAIL_BRANCH, "backend/app/stage4.py"),
-             (stage8.ISSUE287_STAGE8_DRIFT_BRANCH, "frontend/package-lock.json"),
-             (stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH, "backend/app/main.py"))
+    cases = ((stage8.ISSUE84_GUARDRAIL_BRANCH, "backend/app/stage4.py"), (stage8.ISSUE287_STAGE8_DRIFT_BRANCH,
+             "frontend/package-lock.json"), (stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH, "backend/app/main.py"))
     encoded = json.dumps({b: sorted(source[b]) for b, _ in cases}, sort_keys=True, separators=(",", ":")).encode()
     assert sha(encoded).hexdigest() == "95bbea6ae7294e5db03ed5c62caae3b74a7aff8c8f12aef5efe134b15a585117"
     for branch, rejected in cases:
         error = f"Stage 8 changed file outside the allowlist: {rejected}"
-        for changed, expected in ((sorted(source[branch]), []), ([rejected], [error])):
-            assert route(monkeypatch,branch,changed) == expected
-def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
-    failures: list[str] = []; stage8.check_dependencies_and_scripts(failures)
-    assert not [failure for failure in failures if "docker scout cves" in failure]
-    assert not [failure for failure in failures if "--only-severity critical,high" in failure]
-def test_frontend_node_image_pin_rejects_version_digest_and_stage_drift(monkeypatch: Any) -> None:
-    dockerfile = stage8.read("frontend/Dockerfile"); failures: list[str] = []
-    stage8.check_frontend_node_image(failures); assert failures == []
-    expected = stage8.FRONTEND_NODE_IMAGE
+        for changed, expected in ((sorted(source[branch]), []), ([rejected], [error])): assert route(
+            monkeypatch,branch,changed) == expected
+def test_stage8_script_markers_match_mandatory_container_scanners(monkeypatch: Any) -> None:
+    failures: list[str] = []; stage8.check_dependencies_and_scripts(failures); assert failures == []
+    assert route(monkeypatch, stage8.ISSUE374_SECURITY_BRANCH, sorted(stage8.ISSUE374_SECURITY_FILES)) == []
+    dockerfile = stage8.read("frontend/Dockerfile"); assert stage8.frontend_node_image_valid(dockerfile)
+    build_image = stage8.FRONTEND_NODE_BUILD_IMAGE; runtime_image = stage8.FRONTEND_NODE_RUNTIME_IMAGE
     old = "node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9"
-    mutations = (
-        dockerfile.replace("node:26.6.0-alpine", "node:26.4.0-alpine"),
-        dockerfile.replace("@sha256:" + expected.split("@sha256:", 1)[1], ""),
-        dockerfile.replace(expected, expected[:-1] + ("0" if expected[-1] != "0" else "1")),
-        dockerfile.replace(f"FROM {expected} AS runner", f"FROM {old} AS runner"),
-    )
-    for mutated in mutations:
-        monkeypatch.setattr(stage8, "read", lambda path, value=mutated: value)
-        failures = []; stage8.check_frontend_node_image(failures)
-        assert failures == [stage8.FRONTEND_NODE_IMAGE_FAILURE]
+    mutations = (dockerfile.replace(build_image, old), dockerfile.replace(build_image, "node:26.6.0-alpine"),
+        dockerfile.replace(runtime_image, runtime_image[:-1] + ("0" if runtime_image[-1] != "0" else "1")),
+        dockerfile.replace(f"FROM {runtime_image} AS runner", f"FROM {old} AS runner"))
+    assert all(not stage8.frontend_node_image_valid(mutated) for mutated in mutations)
 def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
-    failures: list[str] = []; stage8.check_stage_marker_and_branch(failures)
-    assert failures == ["Stage 8 work must run on a stage8-* branch or main after merge; "
-                        "got feature/untracked-stage8-work."]
+    failures: list[str] = []; stage8.check_stage_marker_and_branch(failures); assert failures == [
+        "Stage 8 work must run on a stage8-* branch or main after merge; got feature/untracked-stage8-work."]
 A22_SOURCE = "Stage 2 retrieval-v1 accepted sources must retain the canonical oracle."
 A22_DECL = "Stage 2 retrievalStrategy must equal the canonical v1 machine declaration."
 A22_RUNTIME = "Stage 4 retrieval-v1 runtime constants must equal the canonical oracle."
