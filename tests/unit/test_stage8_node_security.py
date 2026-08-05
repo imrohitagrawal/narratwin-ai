@@ -52,6 +52,7 @@ def test_issue374_scope_and_pinned_images_fail_closed(monkeypatch: Any) -> None:
 def test_issue374_reproducibility_and_runtime_policy_markers() -> None:
     next_config = stage8.read("frontend/next.config.ts")
     scan = stage8.read("scripts/ci/docker-image-scan.sh")
+    consensus = stage8.read("scripts/ci/check_container_scan_consensus.py")
     assert "generateBuildId" in next_config
     assert "NARRATWIN_BUILD_ID_INPUTS" in next_config
     for marker in (
@@ -61,5 +62,8 @@ def test_issue374_reproducibility_and_runtime_policy_markers() -> None:
         '"medium"',
         "previewModeSigningKey",
         "server action manifest mismatch",
+        "--no-cache-filter build",
+        "verify_frontend_reproducibility",
     ):
         assert marker in scan
+    assert "FRONTEND_BUILD_SECRET_REUSED" in consensus

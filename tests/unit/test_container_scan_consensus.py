@@ -147,6 +147,32 @@ def test_backend_medium_findings_retain_the_existing_high_policy() -> None:
     assert _evaluate(case)["findings"] == []
 
 
+def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> None:
+    validator = _load().frontend_reproduction_findings
+    primary = {
+        "buildId": "source-bound",
+        "previewModeId": "1" * 32,
+        "previewModeSigningKey": "2" * 64,
+        "previewModeEncryptionKey": "3" * 64,
+        "serverActionKey": "A" * 43 + "=",
+    }
+    reproduction = {
+        "buildId": "source-bound",
+        "previewModeId": "4" * 32,
+        "previewModeSigningKey": "5" * 64,
+        "previewModeEncryptionKey": "6" * 64,
+        "serverActionKey": "B" * 43 + "=",
+    }
+    assert validator(primary, reproduction) == []
+    assert validator(primary, primary) == ["FRONTEND_BUILD_SECRET_REUSED"]
+    reproduction["buildId"] = "changed"
+    reproduction["serverActionKey"] = primary["serverActionKey"]
+    assert validator(primary, reproduction) == [
+        "FRONTEND_BUILD_ID_CHANGED",
+        "FRONTEND_BUILD_SECRET_REUSED",
+    ]
+
+
 @pytest.mark.parametrize(
     "name,report",
     [

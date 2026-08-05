@@ -1162,7 +1162,9 @@ Required update rules:
   dependency stage must separately pass both scanners; complete runtime config,
   file ownership, zero capabilities, and preload controls are bound. Per-build
   preview/server-action secrets retain cryptographic randomness and are normalized
-  only after exact format, occurrence, and cross-manifest equality validation. The sole builder-only
+  only after exact format, occurrence, and cross-manifest equality validation; a
+  second uncached application build must preserve the build ID and inventory while
+  changing every secret. The sole builder-only
   BusyBox Medium is accepted only through 2026-08-12 or earlier fixed-builder
   availability and tracked by `#376`; it is absent from the final runtime.
   Cut 1, deployment, release, public availability, and production readiness
