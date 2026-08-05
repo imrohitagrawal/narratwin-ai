@@ -178,17 +178,28 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     ]
 
 
-def test_container_scan_rejects_colliding_frontend_image_roles(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        ("FRONTEND_IMAGE", "FRONTEND_BUILD_IMAGE"),
+        ("FRONTEND_IMAGE", "FRONTEND_REPRO_IMAGE"),
+        ("FRONTEND_BUILD_IMAGE", "FRONTEND_REPRO_IMAGE"),
+    ],
+)
+def test_container_scan_rejects_colliding_frontend_image_roles(tmp_path: Path, left: str, right: str) -> None:
     reports = tmp_path / "reports"
+    env = {
+        **os.environ,
+        "REPORT_DIR": str(reports),
+        "FRONTEND_IMAGE": "primary:tag",
+        "FRONTEND_BUILD_IMAGE": "build:tag",
+        "FRONTEND_REPRO_IMAGE": "repro:tag",
+    }
+    env[left] = env[right]
     completed = subprocess.run(
         [str(ROOT / "scripts/ci/docker-image-scan.sh")],
         cwd=ROOT,
-        env={
-            **os.environ,
-            "REPORT_DIR": str(reports),
-            "FRONTEND_BUILD_IMAGE": "same:tag",
-            "FRONTEND_REPRO_IMAGE": "same:tag",
-        },
+        env=env,
         text=True,
         capture_output=True,
         timeout=10,
@@ -196,6 +207,45 @@ def test_container_scan_rejects_colliding_frontend_image_roles(tmp_path: Path) -
     )
     assert completed.returncode == 1
     assert completed.stderr == "Frontend image role references must be distinct.\n"
+
+
+@pytest.mark.parametrize(("trivy_rc", "grype_rc"), [(0, 0), (1, 0), (0, 1)])
+def test_dependency_scanners_bind_pre_reproduction_digest_and_fail_closed(
+    tmp_path: Path, trivy_rc: int, grype_rc: int
+) -> None:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    start = source.index("prepare_frontend_images() {")
+    function = source[start : source.index("\n}\n", start) + 3]
+    log = tmp_path / "boundary.log"
+    harness = f"""
+docker() {{ printf 'docker:%s\\n' \"$*\" >>\"$LOG\"; }}
+image_config() {{ printf 'sha256:dependency'; }}
+scan_trivy() {{ printf 'trivy:%s\\n' \"$1\" >>\"$LOG\"; return \"$TRIVY_RC\"; }}
+scan_grype() {{ printf 'grype:%s\\n' \"$1\" >>\"$LOG\"; return \"$GRYPE_RC\"; }}
+{function}
+prepare_frontend_images
+"""
+    env = {
+        **os.environ,
+        "LOG": str(log),
+        "TRIVY_RC": str(trivy_rc),
+        "GRYPE_RC": str(grype_rc),
+        "FRONTEND_ARCH": "amd64",
+        "FRONTEND_BUILD_IMAGE": "build:tag",
+        "FRONTEND_REPRO_IMAGE": "repro:tag",
+        "REPORT_DIR": str(tmp_path),
+    }
+    completed = subprocess.run(
+        ["bash"], input=harness, env=env, text=True, capture_output=True, check=False
+    )
+    lines = log.read_text(encoding="utf-8").splitlines()
+    if trivy_rc or grype_rc:
+        assert completed.returncode != 0 and len(lines) == 3
+    else:
+        assert completed.returncode == 0
+        assert "--target deps" in lines[0]
+        assert lines[1:3] == ["trivy:sha256:dependency", "grype:sha256:dependency"]
+        assert "--no-cache-filter build" in lines[3] and "repro:tag" in lines[3]
 
 
 @pytest.mark.parametrize(
