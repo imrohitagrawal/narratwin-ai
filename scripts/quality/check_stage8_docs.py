@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Executable Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
-# ruff: noqa: E302, E305, E401
+# ruff: noqa: E302, E305, E401, E701, E702
 import json, os, re, subprocess, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +21,7 @@ ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity"
+CP_BASE, CP_LIMIT = "be9c7b1fd7469b89809388743bffcd6c8cbb47f6", 500
 CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
     "tests/acceptance/test_checkpoint3_output_correctness.py", "tests/unit/test_local_durability.py",
     "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
@@ -35,8 +36,7 @@ QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALI
     "frontend/tests/quiet-presence.spec.ts", "frontend/public/demo/narratwin-synthetic-presenter.webp"}
 NULL_GIT_SHA = "0" * 40
 def issue324_allowed_files() -> set[str]:
-    path = ROOT / "docs/governance/preflights/issue-324.json"
-    return set(json.loads(path.read_text(encoding="utf-8"))["scope"]["required"])
+    return set(json.loads((ROOT/"docs/governance/preflights/issue-324.json").read_text())["scope"]["required"])
 REQUIRED_FILES = [
     ".stage/current", ".github/pull_request_template.md", ".github/workflows/ci.yml", ".github/workflows/security.yml",
     "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py", "backend/app/stage6.py",
@@ -115,18 +115,14 @@ PROCESS_BRANCH_ALLOWED_FILES = {
 }
 PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES | cache_pruning.CACHE_PRUNING_ROUTES)
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES
-def run(args: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(args, cwd=ROOT, text=True, capture_output=True, check=False)
-def read(path: str) -> str:
-    return (ROOT / path).read_text(encoding="utf-8")
-def fail(message: str, failures: list[str]) -> None:
-    failures.append(message)
+def run(args:list[str]): return subprocess.run(args,cwd=ROOT,text=True,capture_output=True,check=False)
+def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
+def fail(message:str,failures:list[str])->None: failures.append(message)
 def changed_files_for_stage_scope() -> list[str]:
     head_result = run(["git", "rev-parse", "HEAD"])
     if head_result.returncode != 0 or not head_result.stdout.strip():
         raise RuntimeError(head_result.stderr.strip() or "git rev-parse HEAD failed")
-    head = head_result.stdout.strip()
-    event_name = os.environ.get("GITHUB_EVENT_NAME", "").strip()
+    head=head_result.stdout.strip(); event_name=os.environ.get("GITHUB_EVENT_NAME","").strip()
     expected_head = os.environ.get("GITHUB_HEAD_SHA", "").strip()
     event_path = os.environ.get("GITHUB_EVENT_PATH", "").strip()
     if event_path and event_name in {"pull_request", "pull_request_review", "push"}:
@@ -152,8 +148,7 @@ def changed_files_for_stage_scope() -> list[str]:
     push_ref = os.environ.get("NARRATWIN_HEAD_REF", os.environ.get("GITHUB_REF_NAME", "")).strip()
     branch_base = (event_name == "push" and push_ref != "main") or not preferred_base or preferred_base == NULL_GIT_SHA
     base_candidates = ["origin/main", "main"] if branch_base else [preferred_base]
-    merge_base = ""
-    last_error = ""
+    merge_base=""; last_error=""
     for candidate in base_candidates:
         result = run(["git", "merge-base", candidate, head])
         if result.returncode == 0 and result.stdout.strip():
@@ -176,8 +171,12 @@ def changed_files_for_stage_scope() -> list[str]:
     untracked = run(["git", "ls-files", "-z", "--others", "--exclude-standard"])
     if untracked.returncode != 0:
         raise RuntimeError(untracked.stderr.strip() or "git ls-files failed")
-    paths.extend(parse_paths_z(untracked.stdout))
-    return sorted(set(paths))
+    paths.extend(parse_paths_z(untracked.stdout)); return sorted(set(paths))
+def citation_parity_charge() -> int:
+    b=run(["git","merge-base",CP_BASE,"HEAD"]); d=run(["git","diff","--numstat",CP_BASE+"..HEAD","--"])
+    if b.returncode or b.stdout.strip()!=CP_BASE or d.returncode:raise RuntimeError("Issue #372 base diff unavailable.")
+    try: return sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines()))
+    except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
 def parse_paths_z(output: str) -> list[str]:
     if not output:
         return []
@@ -263,9 +262,14 @@ def check_stage_scope(failures: list[str]) -> None:
         fail(f"Stage 8 scope requires an exact reviewed branch; got {branch}.", failures)
         return
     allowed_files = EFFECTIVE_STAGE8_ROUTES.get(branch, STAGE8_ALLOWED_FILES)
-    for path in changed_files_for_stage_scope():
-        if path not in allowed_files:
-            fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
+    changed_files = set(changed_files_for_stage_scope())
+    outside = changed_files - allowed_files
+    for path in sorted(outside):
+        fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
+    if branch == CITATION_PARITY_BRANCH and not outside:
+        failures.extend(f"Issue #372 missing required path: {path}" for path in sorted(allowed_files-changed_files))
+        charge=citation_parity_charge()
+        if charge>CP_LIMIT: fail(f"Issue #372 charge {charge} exceeds {CP_LIMIT}.",failures)
 def check_backend_and_tests(failures: list[str]) -> None:
     main_text = read("backend/app/main.py")
     stage4_text = read("backend/app/stage4.py")

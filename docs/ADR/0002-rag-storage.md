@@ -81,25 +81,18 @@ This enforcement changes no retrieval semantics or runtime behavior.
 
 ## Restored Grounding Lineage Decision
 
-Issue #372 makes current-lineage completed and failed walkthrough runs fail closed
-on restore. After the existing stale-lineage quarantine decision, the runtime
-reproduces the grounding evaluation from the stored generated script, its exact
-retrieved context, and the current tenant/project-scoped approved chunks. An active
-run is restored only when the reproduced evaluation equals the stored evaluation,
-including its disposition, unsupported claims, claim supports, citation indices,
-claim spans, grounding metrics, policy versions, and retrieval lineage. Completed
-runs additionally require accepted text identical to generated text; failed runs
-must not contain accepted text. Invalid active runs and their exact idempotency
-replay records are discarded together; stale-lineage rows remain audit-preserved
-but inactive under the prior decision.
+Issue #372 makes current-lineage completed and failed walkthrough runs fail closed on restore. After the existing
+stale-lineage quarantine decision, the runtime reproduces the grounding evaluation from the stored generated script,
+its exact retrieved context, and current tenant/project-scoped approved chunks. An active run is restored only when the
+reproduced evaluation equals the stored evaluation, including its disposition, unsupported claims, claim supports,
+citation indices, claim spans, grounding metrics, policy versions, and retrieval lineage. Completed runs additionally
+require accepted text identical to generated text; failed runs must not contain accepted text. Invalid active runs and
+their exact idempotency replay records are discarded together; stale-lineage rows remain audit-preserved but inactive.
 
-Answer relevancy and context recall are reproduced-field exceptions because the
-original free-form prompt and historical whole-project corpus are not persisted.
-Restore still requires both stored values to be finite, but substitutes them before
-equality comparison. Prompt checksum and exact idempotency request binding remain
-unchanged. These limitations do not weaken citation, source, tenant, or project
-lineage validation and change no provider, ranking, media, deployment, release, or
-production-readiness boundary.
+Answer relevancy and context recall are exceptions because the original prompt and historical whole-project corpus are
+not persisted. Restore requires both stored values to be finite but substitutes them before equality comparison.
+Prompt checksum and exact idempotency request binding remain unchanged. These limitations do not weaken citation,
+source, tenant, or project lineage and change no provider, ranking, media, deployment, release, or production boundary.
 
 ## Knowledge State Decision
 

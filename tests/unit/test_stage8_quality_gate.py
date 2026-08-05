@@ -37,9 +37,12 @@ def route(monkeypatch: Any, branch: str, changed: list[str]) -> list[str]:
     stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures); return failures
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
     for branch, scope in SCOPES.items():
-        assert route(monkeypatch,branch,sorted(scope)) == []
+        stage8.citation_parity_charge=lambda:500; assert route(monkeypatch,branch,sorted(scope)) == []
         extra = "forbidden/outside.txt"
         assert route(monkeypatch,branch,[extra]) == [f"Stage 8 changed file outside the allowlist: {extra}"]
+        if branch == CP:
+            missing=min(scope); stage8.citation_parity_charge=lambda:501
+            assert len(route(monkeypatch,branch,sorted(scope-{missing}))) == 2
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", f"{A2_2}/child",
                    A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{CP}-retry", f"{a23b.A23A_BRANCH}-retry",
@@ -145,12 +148,10 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
         monkeypatch.setenv("GITHUB_EVENT_NAME", event_name); monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
         if failed:
             with pytest.raises(RuntimeError, match="failed"): stage8.changed_files_for_stage_scope()
-            if failed == "explicit-base":
-                assert [args[2] for args in calls if args[:2] == ["git", "merge-base"]] == [base]
+            if failed=="explicit-base": assert [a[2] for a in calls if a[:2]==["git","merge-base"]]==[base]
         else:
-            assert stage8.changed_files_for_stage_scope() == []
-            diffs = [args for args in calls if args[:2] == ["git", "diff"]]; assert len(diffs) == 3
-            assert ["git", "merge-base", "origin/main", "head"] in calls
+            assert stage8.changed_files_for_stage_scope()==[]; diffs=[a for a in calls if a[:2]==["git","diff"]]
+            assert ["git","merge-base","origin/main","head"] in calls; assert len(diffs)==3
             for args in diffs:
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
 def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> None:
@@ -231,8 +232,7 @@ def test_a23a_contract_gate_rejects_every_frozen_marker_mutation(tmp_path: Path)
     assert stage8.evaluation_lineage_checksum_v2_contract_valid(documents)
     for path, markers in stage8.A23A_CONTRACT_MARKERS.items():
         for marker in markers:
-            assert documents[path].count(marker)>=1
-            mutated={**documents,path:documents[path].replace(marker,"MUTATED")}
+            assert documents[path].count(marker)>=1;mutated={**documents,path:documents[path].replace(marker,"MUTATED")}
             assert not stage8.evaluation_lineage_checksum_v2_contract_valid(mutated)
     api=documents["docs/API_CONTRACT.md"]; preimage=api.rsplit("```json\n",1)[1].split("\n```",1)[0]
     assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (

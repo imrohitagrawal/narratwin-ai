@@ -301,6 +301,7 @@ def assert_runtime_output_fact_is_grounded(
         assert support["documentId"] == document["documentId"]
         assert support["chunkId"] == context["chunkId"]
         assert context["claimId"] == support["claimId"]
+        assert context_refs[support["citationIndex"] - 1] == context
         visible_claim = script[context["scriptSpanStart"] : context["scriptSpanEnd"]]
         assert re.findall(r"\[(\d+)\]", visible_claim) == [str(support["citationIndex"])]
         assert support["supportStatus"] == "SUPPORTED"

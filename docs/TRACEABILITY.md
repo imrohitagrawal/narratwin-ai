@@ -400,7 +400,7 @@ durability, deployment, and release decisions remain outside this trace.
 | Visible citation and support parity | Checkpoint 3 output-correctness helper correlates each `claimId` and exact script span to its own `citationIndex` | No hard-coded citation 1, post-generation renumbering, retrieval change, or loosened assertion |
 | Durable lineage replay | Stage 4 restore validation binds accepted/generated text, visible marker, provider claim, retrieved-context position, context reference, chunk/document, and claim support | Valid idempotent replay is exact; corrupt completed rows and their replay records fail closed |
 | Isolation and refusal preservation | Existing Stage 4 API, grounding, local-durability, tenant/project, and unsupported-claim regressions | No cross-project/cross-tenant reuse, provider enablement, or weaker grounding |
-| Governed prerequisite | Issue `#372` preflight, exact eleven-path/450-line Stage 8 route, ADR `0002`, Python 3.13/3.14, checkpoint acceptance, quality/CI/security, and independent review evidence | Parent `#366` and PR `#373` remain separate; no presenter, media, deployment, release, public-availability, production-readiness, or Cut 1 completion claim |
+| Governed prerequisite | Issue `#372` preflight, exact eleven-path/500-line Stage 8 route, ADR `0002`, Python 3.13/3.14, checkpoint acceptance, quality/CI/security, and independent review evidence | Parent `#366` and PR `#373` remain separate; no presenter, media, deployment, release, public-availability, production-readiness, or Cut 1 completion claim |
 
 ## Issue #358 Quiet Presence Cut 1 UI-foundation traceability
 

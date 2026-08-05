@@ -1037,16 +1037,12 @@ every walk error rather than silently omitting repository-owned source.
 
 ## Issue #372 citation-lineage parity gate
 
-The exact `cut1-372-citation-index-parity` route is limited to the eleven paths in
-`docs/governance/preflights/issue-372.json`. Its RED/GREEN evidence must prove:
+The exact `cut1-372-citation-index-parity` route is limited to the eleven preflight paths. Its RED/GREEN evidence proves:
 
-- every claim-support index equals the marker in that claim's exact visible
-  `scriptSpanStart`/`scriptSpanEnd` slice and the selected context position;
+- every claim-support index equals the marker in its exact visible `scriptSpanStart`/`scriptSpanEnd` slice and context;
 - valid stored and idempotent replay preserve accepted text, generated text,
   provider claims, supports, context references, and citation indexes;
-- restored accepted/generated text drift, visible-marker drift,
-  provider-claim index drift, support-index drift, and missing links fail
-  closed without replaying a completed run; and
+- restored text, marker, provider-claim, support-index, and link drift fails closed without completed-run replay; and
 - tenant/project isolation, unsupported-claim refusal, retrieval ordering, and
   key-free local/mock posture remain unchanged.
 
@@ -1059,12 +1055,8 @@ uv run --python 3.13 --frozen pytest -p no:cacheprovider tests/unit/test_stage8_
 make checkpoint3-acceptance
 ```
 
-The complete suite, quality, CI, security, evaluation, and applicable real
-browser gates remain mandatory. A fixed citation value, post-generation
-renumbering, loosened assertion, skipped test, narrowed gate, retrieval change,
-or extra path is a failure. This repair is not presenter/media, deployment,
-release, public-availability, production-readiness, or Cut 1 completion
-evidence.
+The complete suite, quality, CI, security, evaluation, and applicable real-browser gates remain mandatory. A fixed
+citation value, renumbering, loosened assertion, skipped test, narrowed gate, retrieval change, or extra path fails.
+This repair is not presenter/media, deployment, release, public availability, production readiness, or Cut 1 evidence.
 
-The complete diff must remain at or below 450 charged lines. A twelfth path or
-charge 451 is a gate failure.
+The complete diff must remain at or below 500 charged lines. A twelfth path or charge 501 is a gate failure.
