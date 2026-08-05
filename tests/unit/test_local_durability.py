@@ -1138,6 +1138,16 @@ def test_stage4_rejects_duplicate_fresh_claim_identity(tmp_path: Path) -> None:
     assert not service._fresh_lineage_ownership_is_valid(forged)
 
 
+def test_stage4_rejects_duplicate_support_target_identity(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    _principal, _project, runs = _grounded_stage4_state(state_path)
+    service, run = Stage4Service(state_path=state_path), runs[0]
+    assert run.evaluation is not None
+    support = run.evaluation.claim_supports[0]
+    evaluation = replace(run.evaluation, claim_supports=[support, replace(support, claim_support_id="claimsup_002")])
+    assert not service._fresh_lineage_ownership_is_valid(replace(run, evaluation=evaluation))
+
+
 def test_stage4_rejects_write_that_would_exceed_restore_byte_cap(tmp_path: Path, monkeypatch: Any) -> None:
     state_path = tmp_path / "stage4.json"
     service = Stage4Service(state_path=state_path)
