@@ -44,7 +44,7 @@ Use it to answer:
   closed when accepted text, visible markers, provider claims, retrieved-context order, or claim-support indexes drift.
   Fresh generation preserves marker/support parity without retrieval or numbering changes. Presenter, media, provider,
   deployment, release, public availability, production readiness, and Cut 1 completion remain outside this repair.
-- Last reviewed date: 2026-08-04
+- Last reviewed date: 2026-08-05
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
   `#332` / PR `#333` completed the narrow containment correction at merged main

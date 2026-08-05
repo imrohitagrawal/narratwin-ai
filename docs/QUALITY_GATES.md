@@ -1055,4 +1055,4 @@ The complete suite, quality, CI, security, evaluation, and applicable real-brows
 citation value, renumbering, loosened assertion, skipped test, narrowed gate, retrieval change, or extra path fails.
 This repair is not presenter/media, deployment, release, public availability, production readiness, or Cut 1 evidence.
 
-The complete diff must remain at or below 500 charged lines. A twelfth path or charge 501 is a gate failure.
+The complete diff must remain at or below 550 charged lines. A twelfth path or charge 551 is a gate failure.

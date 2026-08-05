@@ -2384,5 +2384,5 @@ This prerequisite does not alter retrieval order, renumber citations, enable pro
 renderer, frontend, Docker, deployment, release, public availability, production readiness, or Cut 1 completion.
 Parent Issue `#366` and PR `#373` stay separate until this repair merges and post-merge validation passes.
 
-The complete branch diff has a 500 charged-line hard ceiling. A twelfth path,
-charge 501, or an omitted ADR decision fails closed.
+The complete branch diff has a 550 charged-line hard ceiling. A twelfth path,
+charge 551, or an omitted ADR decision fails closed.

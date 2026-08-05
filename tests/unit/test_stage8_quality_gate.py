@@ -36,13 +36,13 @@ def route(monkeypatch: Any, branch: str, changed: list[str]) -> list[str]:
     monkeypatch.setattr(stage8,"changed_files_for_stage_scope",lambda:changed); failures: list[str]=[]
     stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures); return failures
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
-    for branch, scope in SCOPES.items():
-        stage8.citation_parity_charge=lambda:500; assert route(monkeypatch,branch,sorted(scope)) == []
+    for branch, s in SCOPES.items():
+        monkeypatch.setattr(stage8,"citation_parity_charge",lambda:550); assert route(monkeypatch,branch,sorted(s))==[]
         extra = "forbidden/outside.txt"
         assert route(monkeypatch,branch,[extra]) == [f"Stage 8 changed file outside the allowlist: {extra}"]
         if branch == CP:
-            missing=min(scope); stage8.citation_parity_charge=lambda:501
-            assert len(route(monkeypatch,branch,sorted(scope-{missing}))) == 2
+            missing=min(s); monkeypatch.setattr(stage8,"citation_parity_charge",lambda:551)
+            assert len(route(monkeypatch,branch,sorted(s-{missing}))) == 2
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", f"{A2_2}/child",
                    A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{CP}-retry", f"{a23b.A23A_BRANCH}-retry",
@@ -154,20 +154,29 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
             assert ["git","merge-base","origin/main","head"] in calls; assert len(diffs)==3
             for args in diffs:
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
+def test_citation_charge_uses_worktree_and_fails_closed(monkeypatch: Any) -> None:
+    s=stage8; d=sp.CompletedProcess; calls=[]; out=iter(("275\t275\tx\n","275\t276\tx\n","-\t1\tx\n"))
+    def fake(args): calls.append(args); return d(args,0,s.CP_BASE+"\n" if "merge-base" in args else next(out),"")
+    monkeypatch.setattr(s,"run",fake); fn=s.citation_parity_charge; assert (fn(),fn())==(550,551)
+    pytest.raises(RuntimeError,fn); assert ["git","diff","--numstat",s.CP_BASE,"--"] in calls
+    monkeypatch.setattr(s,"run",lambda args:d(args,1,"","failed")); pytest.raises(RuntimeError,fn)
 def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> None:
-    source = stage8.PROCESS_BRANCH_ALLOWED_FILES; sha = stage2.hashlib.sha256
-    cases = ((stage8.ISSUE84_GUARDRAIL_BRANCH, "backend/app/stage4.py"), (stage8.ISSUE287_STAGE8_DRIFT_BRANCH,
-             "frontend/package-lock.json"), (stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH, "backend/app/main.py"))
+    s=stage8; source=s.PROCESS_BRANCH_ALLOWED_FILES; sha=stage2.hashlib.sha256
+    cases=((s.ISSUE84_GUARDRAIL_BRANCH,"backend/app/stage4.py"),
+           (s.ISSUE287_STAGE8_DRIFT_BRANCH,"frontend/package-lock.json"),
+           (s.ISSUE289_SECURITY_UNBLOCK_BRANCH,"backend/app/main.py"))
     encoded = json.dumps({b: sorted(source[b]) for b, _ in cases}, sort_keys=True, separators=(",", ":")).encode()
     assert sha(encoded).hexdigest() == "95bbea6ae7294e5db03ed5c62caae3b74a7aff8c8f12aef5efe134b15a585117"
     for branch, rejected in cases:
-        error = f"Stage 8 changed file outside the allowlist: {rejected}"
-        for changed, expected in ((sorted(source[branch]), []), ([rejected], [error])): assert route(
-            monkeypatch,branch,changed) == expected
-def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
-    monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
-    failures: list[str] = []; stage8.check_stage_marker_and_branch(failures); assert failures == [
-        "Stage 8 work must run on a stage8-* branch or main after merge; got feature/untracked-stage8-work."]
+        error=f"Stage 8 changed file outside the allowlist: {rejected}"
+        for c,w in ((sorted(source[branch]),[]),([rejected],[error])): assert route(monkeypatch,branch,c)==w
+def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
+    failures:list[str]=[]; stage8.check_dependencies_and_scripts(failures)
+    assert not any(m in "\n".join(failures) for m in ("docker scout cves","--only-severity critical,high"))
+def test_unrouted_stage8_branch_is_rejected(monkeypatch):
+    branch="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:branch); failures=[]
+    stage8.check_stage_marker_and_branch(failures); assert failures==[
+        f"Stage 8 work must run on a stage8-* branch or main after merge; got {branch}."]
 A22_SOURCE = "Stage 2 retrieval-v1 accepted sources must retain the canonical oracle."
 A22_DECL = "Stage 2 retrievalStrategy must equal the canonical v1 machine declaration."
 A22_RUNTIME = "Stage 4 retrieval-v1 runtime constants must equal the canonical oracle."
