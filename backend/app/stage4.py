@@ -752,7 +752,11 @@ class Stage4Service:
         unsupported = {claim.claim_id for claim in evaluation.unsupported_claims}
         if len(claims) != len(run.generated_script.claims) or len(unsupported) != len(evaluation.unsupported_claims):
             return False
-        if not unsupported.issubset(claims):
+        supported = [support.claim_id for support in evaluation.claim_supports]
+        if (
+            len(supported) != len(set(supported)) or unsupported.intersection(supported)
+            or set(supported).union(unsupported) != set(claims)
+        ):
             return False
         context_chunks = {item.chunk.chunk_id for item in contexts.values()}
         if any(claim.chunk_id not in context_chunks and claim.claim_id not in unsupported for claim in run.generated_script.claims):
