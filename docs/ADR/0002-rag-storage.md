@@ -93,12 +93,13 @@ must not contain accepted text. Invalid active runs and their exact idempotency
 replay records are discarded together; stale-lineage rows remain audit-preserved
 but inactive under the prior decision.
 
-Answer relevancy is the sole reproduced-field exception because the original
-free-form prompt is not persisted. Restore still requires its stored value to be a
-finite number, but substitutes that value before equality comparison. Prompt
-checksum and exact idempotency request binding remain unchanged. This limitation
-does not weaken citation, source, tenant, or project lineage validation and changes
-no provider, ranking, media, deployment, release, or production-readiness boundary.
+Answer relevancy and context recall are reproduced-field exceptions because the
+original free-form prompt and historical whole-project corpus are not persisted.
+Restore still requires both stored values to be finite, but substitutes them before
+equality comparison. Prompt checksum and exact idempotency request binding remain
+unchanged. These limitations do not weaken citation, source, tenant, or project
+lineage validation and change no provider, ranking, media, deployment, release, or
+production-readiness boundary.
 
 ## Knowledge State Decision
 

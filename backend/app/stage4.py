@@ -670,17 +670,17 @@ class Stage4Service:
             return False
         cursor = 0
         for claim in script.claims:
-            if claim.script_span_start != cursor or not (
-                cursor < claim.script_span_end <= len(script.text)
-            ):
+            if not (cursor <= claim.script_span_start < claim.script_span_end <= len(script.text)):
                 return False
-            visible = script.text[cursor : claim.script_span_end]
+            if script.text[cursor : claim.script_span_start].strip():
+                return False
+            visible = script.text[claim.script_span_start : claim.script_span_end]
             visible_claim = re.sub(r"\s*\[\d+\]\s*", " ", visible).strip()
             visible_claim = re.sub(r"(?i)^for\s+[a-z_ -]+s,\s*", "", visible_claim).strip()
             if " ".join(visible_claim.split()) != " ".join(claim.text.split()):
                 return False
-            cursor = claim.script_span_end + 1
-        if not script.claims or cursor - 1 != len(script.text):
+            cursor = claim.script_span_end
+        if not script.claims or script.text[cursor:].strip():
             return False
         reproduced = evaluate_grounding(
             tenant_id=run.tenant_id,
@@ -696,7 +696,7 @@ class Stage4Service:
         )
         reproduced = replace(
             reproduced,
-            answer_relevancy=evaluation.answer_relevancy,
+            answer_relevancy=evaluation.answer_relevancy, context_recall=evaluation.context_recall,
             retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION,
             retrieval_top_k=RETRIEVAL_TOP_K,
             retrieval_score_threshold=RETRIEVAL_MIN_SCORE,
