@@ -563,6 +563,15 @@ the complete `origin/main` merge-base-to-exact-head candidate rather than the
 latest push delta. PR/review validation keeps the reviewed base and binds the
 checkout to the GitHub event head; scope output remains supporting evidence.
 
+Issue `#384` is the governance-only prerequisite discovered during Issue
+`#383` preflight review. Exact branch `stage8-384-presenter-asset-route`
+registers the seven-path #384 route and the exact seven-path
+`stage8-383-presenter-assets` route with fail-closed complete-snapshot line and
+binary-size budgets. After #384 passes merged-main acceptance, #383 may merge
+current main normally, correct its licensing/provenance/human-review preflight,
+and obtain fresh adversarial review before any generation. The serialized Cut
+1 path is #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
+
 ## Phase 1 Closure Branch Scope
 
 Allowed governance/reporting changes for Module A:

@@ -45,10 +45,13 @@ Use it to answer:
   evidence, not an unresolved Cut 1 blocker.
 - Issue `#366` governs the controlled local, key-free Cut 1. PR `#373` revises
   governance only under OWNER comments `5197711390`, `5197717563`, and
-  `5197776590`. The serialized next path is `#367` → `#382` → `#368` → `#369`
-  → `#370` → `#371`, with merged-main acceptance between children. This PR
-  adds no product implementation and does not prove playable media, deployment,
-  release, public availability, trademark registration, or production readiness.
+  `5197776590` and merged as `48fc32a2689c9bbc03742d774f3eadb8a500dafc`;
+  post-merge workflow `31056401428` passed. Issue `#384` registers fail-closed
+  exact scope and budgets before Issue `#383` may add approved Myra and Raj
+  portrait assets. The serialized path is `#384` → `#383` → `#367` → `#382` →
+  `#368` → `#369` → `#370` → `#371`, with merged-main acceptance between
+  children. No playable-media, deployment, release, public-availability,
+  trademark-registration, or production-readiness claim is established.
 - Last reviewed date: 2026-08-06
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue

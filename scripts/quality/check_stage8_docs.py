@@ -2,7 +2,7 @@
 """Executable Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
 # ruff: noqa: E302, E305, E401, E701, E702
-import hashlib, json, os, re, subprocess, sys
+import hashlib, json, os, re, stat, subprocess, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -32,7 +32,29 @@ C1_BASE, C1_LIMIT = "a69903fea50c22e12926d7e13dffdc74e55dfb65", 900
 C1_FILE_LIMITS = {"scripts/quality/check_stage8_docs.py":350,"tests/unit/test_stage8_quality_gate.py":300}
 C1_DOCS=("docs/QUALITY_GATES.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md")
 C1_BOUND=("docs/governance/preflights/issue-366.json",*C1_DOCS)
-C1_DOC_SHA="0c7502c6d3da4094c112c5a258ef0212956899640f3eab4c18a8c34b5952787f"
+C1_DOC_SHA="aedfe18a045d3dc78a84462d468c22931a96ee934e9d75a64e328150a602a087"
+ISSUE383_ASSET_BRANCH = "stage8-383-presenter-assets"
+ISSUE384_ASSET_ROUTE_BRANCH = "stage8-384-presenter-asset-route"
+ISSUE384_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
+ISSUE383_BINARY_FILES = {
+    "frontend/public/demo/myra-synthetic-presenter.webp",
+    "frontend/public/demo/raj-synthetic-presenter.webp",
+}
+ISSUE383_ASSET_FILES = {
+    "docs/governance/preflights/issue-383.json", *ISSUE383_BINARY_FILES,
+    "tests/unit/test_cut1_presenter_assets.py", "docs/THIRD_PARTY_NOTICES.md",
+    "docs/STATUS.md", "docs/TRACEABILITY.md",
+}
+ISSUE384_ASSET_ROUTE_FILES = {
+    "docs/governance/preflights/issue-384.json", "scripts/quality/check_stage8_docs.py",
+    "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+}
+ISSUE383_TEXT_LIMITS = {path: (260 if path == "tests/unit/test_cut1_presenter_assets.py" else 160)
+                        for path in ISSUE383_ASSET_FILES - ISSUE383_BINARY_FILES}
+ISSUE384_TEXT_LIMITS = {path: (400 if path == "scripts/quality/check_stage8_docs.py" else
+                               350 if path == "tests/unit/test_stage8_quality_gate.py" else 160)
+                        for path in ISSUE384_ASSET_ROUTE_FILES}
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
@@ -99,6 +121,8 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(), QUIET_PRESENCE_BRANCH: QUIET_PRESENCE_FILES,
     CUT1_REAL_MEDIA_TRANSITION_BRANCH: CUT1_REAL_MEDIA_TRANSITION_FILES,
     CITATION_PARITY_BRANCH: CITATION_PARITY_FILES,
+    ISSUE383_ASSET_BRANCH: ISSUE383_ASSET_FILES,
+    ISSUE384_ASSET_ROUTE_BRANCH: ISSUE384_ASSET_ROUTE_FILES,
 }
 PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES | cache_pruning.CACHE_PRUNING_ROUTES)
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES
@@ -180,6 +204,75 @@ def cut1_digest() -> str:
     for path in C1_BOUND:
         data=read(path).encode(); digest.update(f"{path}\0{len(data)}\0".encode()); digest.update(data)
     return digest.hexdigest()
+def issue383_route_base() -> str:
+    last_error = ""
+    for candidate in ("origin/main", "main"):
+        result = run(["git", "merge-base", candidate, "HEAD"])
+        if result.returncode == 0 and result.stdout.strip(): return result.stdout.strip()
+        last_error = result.stderr.strip()
+    detail = f": {last_error}" if last_error else "."
+    raise RuntimeError(f"Issue #383 merge-base evidence is unavailable{detail}")
+def issue384_route_base() -> str:
+    result = run(["git", "merge-base", ISSUE384_BASE, "HEAD"])
+    if result.returncode or result.stdout.strip() != ISSUE384_BASE:
+        raise RuntimeError("Issue #384 fixed-base evidence is unavailable or inconsistent.")
+    return ISSUE384_BASE
+def route_text_charges(base: str, paths: set[str]) -> tuple[int, dict[str, int]]:
+    ordered = sorted(paths)
+    untracked = run(["git", "ls-files", "-z", "--others", "--exclude-standard", "--", *ordered])
+    if untracked.returncode:
+        raise RuntimeError(untracked.stderr.strip() or "Route untracked-text evidence failed.")
+    if untracked.stdout:
+        try: found = parse_paths_z(untracked.stdout)
+        except RuntimeError as error: raise RuntimeError("Route untracked-text evidence is malformed.") from error
+        raise RuntimeError(f"Route required text path is untracked: {found[0]}")
+    snapshots: list[dict[str, int]] = []
+    for cached in (True, False):
+        charges: dict[str, int] = {}
+        for path in ordered:
+            args = ["git", "diff"] + (["--cached"] if cached else []) + [
+                "--numstat", "--no-renames", base, "--", path]
+            result = run(args)
+            if result.returncode:
+                raise RuntimeError(result.stderr.strip() or "Route charged-line evidence failed.")
+            rows = result.stdout.splitlines()
+            if len(rows) > 1:
+                raise RuntimeError("Route charged-line evidence contains an unexpected path.")
+            if not rows: continue
+            fields = rows[0].split("\t")
+            if len(fields) != 3 or fields[2] != path:
+                raise RuntimeError("Route charged-line evidence contains an unexpected path.")
+            if not fields[0].isdigit() or not fields[1].isdigit():
+                raise RuntimeError("Route charged-line evidence is malformed or binary.")
+            charges[path] = int(fields[0]) + int(fields[1])
+        snapshots.append(charges)
+    all_paths = set().union(*snapshots)
+    return max(sum(snapshot.values()) for snapshot in snapshots), {
+        path: max(snapshot.get(path, 0) for snapshot in snapshots) for path in all_paths
+    }
+def route_binary_sizes(paths: set[str]) -> dict[str, int]:
+    sizes: dict[str, int] = {}
+    for path in sorted(paths):
+        target = ROOT / path
+        try: metadata = target.lstat()
+        except FileNotFoundError as error: raise RuntimeError(f"Route binary is missing: {path}") from error
+        if target.is_symlink() or not stat.S_ISREG(metadata.st_mode):
+            raise RuntimeError(f"Route binary must be a regular non-symlink file: {path}")
+        if metadata.st_size <= 0: raise RuntimeError(f"Route binary is empty: {path}")
+        sizes[path] = metadata.st_size
+    return sizes
+def check_bounded_route(issue: int, files: set[str], text_limits: dict[str, int], total_limit: int,
+                        base: str, changed: set[str], failures: list[str],
+                        binary_files: set[str] | None = None) -> None:
+    failures.extend(f"Issue #{issue} route is missing required path: {path}" for path in sorted(files - changed))
+    total, charges = route_text_charges(base, set(text_limits))
+    if total > total_limit: fail(f"Issue #{issue} charge {total} exceeds {total_limit}.", failures)
+    failures.extend(f"Issue #{issue} charge for {path} exceeds {limit}."
+                    for path, limit in text_limits.items() if charges.get(path, 0) > limit)
+    if binary_files:
+        sizes = route_binary_sizes(binary_files)
+        failures.extend(f"Issue #{issue} binary {path} exceeds 500000 bytes."
+                        for path, size in sizes.items() if size > 500000)
 def parse_paths_z(output: str) -> list[str]:
     if not output:return []
     if not output.endswith("\0"):raise RuntimeError("Malformed NUL-delimited Git path output.")
@@ -279,6 +372,12 @@ def check_stage_scope(failures: list[str]) -> None:
                         if charges.get(p,0)>n)
         if cut1_digest()!=C1_DOC_SHA:
             fail("Issue #366 governance document contract drifted.",failures)
+    if branch == ISSUE383_ASSET_BRANCH and not outside:
+        check_bounded_route(383, ISSUE383_ASSET_FILES, ISSUE383_TEXT_LIMITS, 700, issue383_route_base(),
+                            changed_files, failures, ISSUE383_BINARY_FILES)
+    if branch == ISSUE384_ASSET_ROUTE_BRANCH and not outside:
+        check_bounded_route(384, ISSUE384_ASSET_ROUTE_FILES, ISSUE384_TEXT_LIMITS, 900, issue384_route_base(),
+                            changed_files, failures)
 def check_backend_and_tests(failures: list[str]) -> None:
     main_text = read("backend/app/main.py")
     stage4_text = read("backend/app/stage4.py")

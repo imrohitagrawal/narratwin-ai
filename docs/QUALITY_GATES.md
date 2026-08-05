@@ -59,6 +59,16 @@ production-readiness claim. Later child work requires its own exact issue,
 branch, preflight, RED/GREEN evidence, PR approval, merge, and merged-main
 acceptance.
 
+Exact governance branch `stage8-384-presenter-asset-route` registers itself and
+the prerequisite asset branch `stage8-383-presenter-assets`. Both require every
+declared path and reject extras and lookalikes. Text budgets charge additions
+plus deletions without deletion credit and use the larger complete-base index
+or worktree snapshot; malformed/binary numstat and untracked required text fail
+closed. Issue #384 is capped at 900 lines (checker 400, test 350, each other
+file 160). Issue #383 is capped at 700 lines (asset test 260, each other text
+file 160); its two required WebP files must be regular non-symlink files of
+1–500000 bytes. This route is scope enforcement, not asset or license approval.
+
 ## Required Make Targets
 
 The `Makefile` must expose:
