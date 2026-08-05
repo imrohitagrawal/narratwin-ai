@@ -989,6 +989,48 @@ def test_stage4_restore_enforces_state_file_byte_boundary(tmp_path: Path, monkey
     assert restored.projects == {} and restored.walkthrough_runs == {}
 
 
+def test_stage4_rejects_oversized_generated_script_before_terminal_persistence(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service = Stage4Service(state_path=state_path)
+    original = service.llm.generate_script
+    def oversized(**values: Any) -> GeneratedScript:
+        generated = original(**values)
+        return GeneratedScript(text="x" * (stage4_module.MAX_RESTORED_SCRIPT_CHARS + 1), claims=generated.claims)
+    monkeypatch.setattr(service.llm, "generate_script", oversized)
+    with pytest.raises(Stage4Error) as error:
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="oversized")
+    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+    restored = Stage4Service(state_path=state_path)
+    assert list(restored.walkthrough_runs) == [runs[0].run_id]
+
+
+def test_stage4_rejects_write_that_would_exceed_restore_byte_cap(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    service = Stage4Service(state_path=state_path)
+    monkeypatch.setattr(stage4_module, "MAX_STAGE4_STATE_BYTES", 1)
+    with pytest.raises(OSError, match="size limit"):
+        service.create_project(principal=LocalPrincipal(), name="Too large", idempotency_key="project")
+    assert service.projects == {} and service.idempotency_records == {} and not state_path.exists()
+
+
+def test_stage4_preserves_numeric_string_retrieval_score_as_inactive_audit_row(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    _grounded_stage4_state(state_path)
+    payload = json.loads(state_path.read_text())
+    payload["walkthroughRuns"][0]["retrieved_context"][0]["score"] = "1.0"
+    state_path.write_text(json.dumps(payload))
+    restored = Stage4Service(state_path=state_path)
+    persisted = json.loads(state_path.read_text())
+    assert restored.walkthrough_runs == {}
+    assert len(persisted["quarantinedWalkthroughRuns"]) == 1
+    assert len(persisted["quarantinedIdempotencyRecords"]) == 1
+
+
 def test_citation_budget_detects_staged_overage_hidden_by_unstaged_inverse(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
