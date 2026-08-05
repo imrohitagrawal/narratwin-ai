@@ -12,6 +12,7 @@ import backend.app.stage6 as stage6_module
 import backend.app.stage7 as stage7_module
 from backend.app.evaluation_lineage import build_source_evaluation_checksum, validate_evaluation_lineage_payload
 from backend.app.rag.chunking import checksum_text
+from backend.app.rag.models import GeneratedScript, RetrievedContext, ScriptClaim
 from backend.app.storage import write_state as storage_write_state
 from backend.app.stage4 import LocalPrincipal, Stage4Error, Stage4Service
 from backend.app.stage6 import create_stage6_service
@@ -123,6 +124,36 @@ class FailingAfterFirstEmbeddingProvider:
         if self.calls > 1:
             raise RuntimeError("simulated embedding failure")
         return (1.0,) + (0.0,) * (self.dimension - 1)
+
+
+class CitationMarkerMismatchProvider:
+    provider = "mock"
+    provider_mode = "LOCAL"
+
+    def generate_script(
+        self,
+        *,
+        audience: str,
+        prompt: str,
+        retrieved_context: list[RetrievedContext],
+    ) -> GeneratedScript:
+        del audience, prompt
+        context = retrieved_context[0]
+        claim_text = context.chunk.text.strip().rstrip(".") + "."
+        sentence = f"For recruiters, {claim_text} [99]"
+        return GeneratedScript(
+            text=sentence,
+            claims=[
+                ScriptClaim(
+                    claim_id="claim_001",
+                    text=claim_text,
+                    citation_index=1,
+                    chunk_id=context.chunk.chunk_id,
+                    script_span_start=0,
+                    script_span_end=len(sentence),
+                )
+            ],
+        )
 
 
 def test_stage4_file_state_restores_projects_chunks_runs_and_idempotency(tmp_path: Path) -> None:
@@ -759,6 +790,11 @@ def test_stage4_file_state_drops_completed_walkthrough_without_evaluation(tmp_pa
         "accepted-script-text",
         "visible-citation-marker",
         "provider-claim-citation-index",
+        "appended-visible-text",
+        "empty-completed",
+        "truncated-claim-text",
+        "shifted-claim-span",
+        "evaluation-status-drift",
     ),
 )
 def test_stage4_file_state_drops_walkthrough_with_tampered_citation_lineage(
@@ -814,8 +850,23 @@ def test_stage4_file_state_drops_walkthrough_with_tampered_citation_lineage(
         row["generated_script"]["text"] = row["generated_script"]["text"].replace(
             "[1]", "[99]", 1
         )
-    else:
+    elif mutation == "provider-claim-citation-index":
         row["generated_script"]["claims"][0]["citation_index"] = 99
+    elif mutation == "appended-visible-text":
+        appendix = " Fabricated unsupported appendix."
+        row["accepted_script_text"] += appendix
+        row["generated_script"]["text"] += appendix
+    elif mutation == "empty-completed":
+        row["accepted_script_text"] = ""
+        row["generated_script"] = {"text": "", "claims": []}
+        row["evaluation"]["claim_supports"] = []
+    elif mutation == "truncated-claim-text":
+        claim = row["generated_script"]["claims"][0]
+        claim["text"] = claim["text"][:-1]
+    elif mutation == "shifted-claim-span":
+        row["generated_script"]["claims"][0]["script_span_start"] += 1
+    else:
+        row["evaluation"]["evaluation_status"] = "FAILED"
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
     restored = Stage4Service(state_path=state_path)
@@ -826,6 +877,65 @@ def test_stage4_file_state_drops_walkthrough_with_tampered_citation_lineage(
         record.endpoint != "POST /api/v1/projects/{projectId}/walkthrough-runs"
         for record in restored.idempotency_records.values()
     )
+
+
+def test_stage4_file_state_restores_failed_visible_citation_evaluation(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(
+        principal=principal, name="Grounded project", idempotency_key="create-project"
+    )
+    document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="project.md",
+        content_type="text/markdown",
+        data=Path("tests/fixtures/stage4_project.md").read_bytes(),
+        idempotency_key="upload-document",
+    )
+    service.approve_document(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        idempotency_key="approve-document",
+    )
+    service.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ingest-document",
+    )
+    service.llm = cast(Any, CitationMarkerMismatchProvider())
+    prompt = "NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks."
+    run = service.generate_walkthrough(
+        principal=principal,
+        project_id=project.project_id,
+        audience="RECRUITER",
+        requested_language="en",
+        depth="CONCISE",
+        style="CONFIDENT",
+        prompt=prompt,
+        idempotency_key="generate-walkthrough",
+    )
+
+    restored = Stage4Service(state_path=state_path)
+    replayed = restored.generate_walkthrough(
+        principal=principal,
+        project_id=project.project_id,
+        audience="RECRUITER",
+        requested_language="en",
+        depth="CONCISE",
+        style="CONFIDENT",
+        prompt=prompt,
+        idempotency_key="generate-walkthrough",
+    )
+
+    assert run.status == "FAILED"
+    assert run.evaluation is not None
+    assert run.evaluation.unsupported_claim_count == 1
+    assert restored.walkthrough_runs[run.run_id] == run
+    assert replayed == run
 
 
 def test_stage4_file_state_derives_missing_counters_from_restored_ids(tmp_path: Path) -> None:
