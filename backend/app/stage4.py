@@ -642,7 +642,7 @@ class Stage4Service:
             for claim in run.generated_script.claims
         ):
             return False
-        if not self._restored_citation_lineage_is_valid(run, context_by_ref):
+        if not self._restored_citation_lineage_is_valid(run):
             return False
         return all(
             (support.document_id in self.documents or support.document_id in self.sources)
@@ -661,49 +661,48 @@ class Stage4Service:
     def _restored_citation_lineage_is_valid(
         self,
         run: WalkthroughRunRecord,
-        context_by_ref: dict[str, RetrievedContext],
     ) -> bool:
         script, evaluation = run.generated_script, run.evaluation
         if script is None or evaluation is None:
             return run.status == "REFUSED"
-        if run.accepted_script_text is not None and run.accepted_script_text != script.text:
-            return False
         if run.status == "COMPLETED" and run.accepted_script_text != script.text:
             return False
         if run.status == "FAILED" and run.accepted_script_text is not None:
             return False
-        claims = {claim.claim_id: claim for claim in script.claims}
-        supports = {support.claim_id: support for support in evaluation.claim_supports}
-        if len(claims) != len(script.claims) or len(supports) != len(evaluation.claim_supports):
-            return False
-        if run.status == "COMPLETED" and set(claims) != set(supports):
-            return False
+        cursor = 0
         for claim in script.claims:
-            if not (0 <= claim.script_span_start < claim.script_span_end <= len(script.text)):
-                return False
-            visible = script.text[claim.script_span_start : claim.script_span_end]
-            support = supports.get(claim.claim_id)
-            if claim.chunk_id is None:
-                if support is not None:
-                    return False
-                continue
-            if not (1 <= claim.citation_index <= len(run.retrieved_context)):
-                return False
-            context = run.retrieved_context[claim.citation_index - 1]
-            markers = [int(value) for value in re.findall(r"\[(\d+)\]", visible)]
-            if claim.text not in visible or markers != [claim.citation_index]:
-                return False
-            if context.chunk.chunk_id != claim.chunk_id or support is None:
-                return False
-            if (
-                support.citation_index != claim.citation_index
-                or support.context_ref_id != context.context_ref_id
-                or support.chunk_id != context.chunk.chunk_id
-                or support.document_id != context.chunk.document_id
-                or context_by_ref.get(support.context_ref_id) != context
+            if claim.script_span_start != cursor or not (
+                cursor < claim.script_span_end <= len(script.text)
             ):
                 return False
-        return True
+            visible = script.text[cursor : claim.script_span_end]
+            visible_claim = re.sub(r"\s*\[\d+\]\s*", " ", visible).strip()
+            visible_claim = re.sub(r"(?i)^for\s+[a-z_ -]+s,\s*", "", visible_claim).strip()
+            if " ".join(visible_claim.split()) != " ".join(claim.text.split()):
+                return False
+            cursor = claim.script_span_end + 1
+        if not script.claims or cursor - 1 != len(script.text):
+            return False
+        reproduced = evaluate_grounding(
+            tenant_id=run.tenant_id,
+            project_id=run.project_id,
+            run_id=run.run_id,
+            candidate=script,
+            retrieved_context=run.retrieved_context,
+            prompt="",
+            all_chunks=self.rag_store.chunks_for_project(
+                tenant_id=run.tenant_id,
+                project_id=run.project_id,
+            ),
+        )
+        reproduced = replace(
+            reproduced,
+            answer_relevancy=evaluation.answer_relevancy,
+            retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION,
+            retrieval_top_k=RETRIEVAL_TOP_K,
+            retrieval_score_threshold=RETRIEVAL_MIN_SCORE,
+        )
+        return reproduced == evaluation
 
     def _restored_retrieval_lineage_is_current(self, row: dict[str, Any], run: WalkthroughRunRecord) -> bool:
         names, expected = ("retrieval_strategy_version", "retrieval_top_k", "retrieval_score_threshold"), (RETRIEVAL_STRATEGY_VERSION, RETRIEVAL_TOP_K, RETRIEVAL_MIN_SCORE)

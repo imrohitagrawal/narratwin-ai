@@ -79,6 +79,25 @@ Stage 2 and Stage 8 both execute that oracle. Runtime or declaration drift,
 including paired weakening, fails without importing or executing product code.
 This enforcement changes no retrieval semantics or runtime behavior.
 
+## Restored Grounding Lineage Decision
+
+Issue #372 makes persisted completed and failed walkthrough runs fail closed on
+restore. The runtime reproduces the grounding evaluation from the stored generated
+script, its exact retrieved context, and the current tenant/project-scoped approved
+chunks. A run is restored only when the reproduced evaluation equals the stored
+evaluation, including its disposition, unsupported claims, claim supports,
+citation indices, claim spans, grounding metrics, policy versions, and retrieval
+lineage. Completed runs additionally require accepted text identical to generated
+text; failed runs must not contain accepted text. Invalid runs and their exact
+idempotency replay records are discarded together.
+
+Answer relevancy is the sole reproduced-field exception because the original
+free-form prompt is not persisted. Restore still requires its stored value to be a
+finite number, but substitutes that value before equality comparison. Prompt
+checksum and exact idempotency request binding remain unchanged. This limitation
+does not weaken citation, source, tenant, or project lineage validation and changes
+no provider, ranking, media, deployment, release, or production-readiness boundary.
+
 ## Knowledge State Decision
 
 Vector records, retrieval caches, and generated-script caches are derived from
