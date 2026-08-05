@@ -17,7 +17,7 @@ from threading import RLock
 from typing import Any, Literal, TypeVar, cast
 
 from backend.app.rag.chunking import checksum_text, chunk_document
-from backend.app.rag.grounding import evaluate_grounding
+from backend.app.rag.grounding import evaluate_grounding as _canonical_evaluate_grounding
 from backend.app.rag.models import (
     CHUNKING_STRATEGY_VERSION,
     MOCK_EMBEDDING_MODEL,
@@ -48,6 +48,8 @@ from backend.app.observability import (
     with_trace,
 )
 from backend.app.curation import (CURATION_POLICY_VERSION, CURATION_SCHEMA_VERSION, CuratedOutcome, SourceAssertions, SourceDecisionRecord, SourceRecord, allowed_for_review, assertions_digest, canonical_digest, legal_exclusion, legal_exclusion_request, legal_pair, record_is_valid, restore_curated, restored_records)
+
+evaluate_grounding = _canonical_evaluate_grounding
 
 MAX_UPLOAD_BYTES = 1_048_576
 MAX_PROJECT_CORPUS_BYTES = 5 * 1_048_576
@@ -705,7 +707,7 @@ class Stage4Service:
             cursor = claim.script_span_end
         if not script.claims or script.text[cursor:].strip():
             return False
-        reproduced = evaluate_grounding(
+        reproduced = _canonical_evaluate_grounding(
             tenant_id=run.tenant_id,
             project_id=run.project_id,
             run_id=run.run_id,
