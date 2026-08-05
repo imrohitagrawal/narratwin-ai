@@ -1420,6 +1420,18 @@ class Stage4Service:
                             all_chunks=all_chunks,
                         )
                         evaluation = replace(evaluation, retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION, retrieval_top_k=RETRIEVAL_TOP_K, retrieval_score_threshold=RETRIEVAL_MIN_SCORE)
+                        canonical_evaluation = _canonical_evaluate_grounding(
+                            tenant_id=principal.tenant_id,
+                            project_id=project_id,
+                            run_id=run_id,
+                            candidate=generated,
+                            retrieved_context=retrieved,
+                            prompt=prompt,
+                            all_chunks=all_chunks,
+                        )
+                        canonical_evaluation = replace(canonical_evaluation, retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION, retrieval_top_k=RETRIEVAL_TOP_K, retrieval_score_threshold=RETRIEVAL_MIN_SCORE)
+                        if evaluation != canonical_evaluation:
+                            raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
                         input_tokens, output_tokens = evaluate_token_usage(
                             prompt=prompt,
                             retrieved_context=retrieved,
