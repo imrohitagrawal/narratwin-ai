@@ -1099,7 +1099,7 @@ def test_stage4_rejects_invalid_retrieved_context_before_terminal_side_effect(
     assert list(service.walkthrough_runs) == [runs[0].run_id]
 
 
-@pytest.mark.parametrize("mutation", ("evaluation", "support", "metric"))
+@pytest.mark.parametrize("mutation", ("evaluation", "support", "metric", "answer", "recall"))
 def test_stage4_rejects_forged_fresh_evaluation_identity(tmp_path: Path, monkeypatch: Any, mutation: str) -> None:
     state_path = tmp_path / "stage4.json"
     principal, project, runs = _grounded_stage4_state(state_path)
@@ -1110,6 +1110,8 @@ def test_stage4_rejects_forged_fresh_evaluation_identity(tmp_path: Path, monkeyp
             return replace(result, evaluation_id="eval_forged")
         if mutation == "metric":
             return replace(result, context_precision=0.123)
+        if mutation in {"answer", "recall"}:
+            return replace(result, **{f"{mutation}_relevancy" if mutation == "answer" else "context_recall": 0.123})
         return replace(result, claim_supports=[replace(item, claim_support_id="claimsup_forged")
             for item in result.claim_supports])
     monkeypatch.setattr(stage4_module, "evaluate_grounding", forged)
