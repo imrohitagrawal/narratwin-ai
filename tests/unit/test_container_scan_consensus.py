@@ -164,6 +164,11 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         "serverActionKey": "B" * 43 + "=",
     }
     assert validator(primary, reproduction) == []
+    reproduction["previewModeSigningKey"] = primary["previewModeEncryptionKey"]
+    reproduction["previewModeEncryptionKey"] = primary["previewModeSigningKey"]
+    assert validator(primary, reproduction) == ["FRONTEND_BUILD_SECRET_REUSED"]
+    reproduction["previewModeSigningKey"] = "5" * 64
+    reproduction["previewModeEncryptionKey"] = "6" * 64
     assert validator(primary, primary) == ["FRONTEND_BUILD_SECRET_REUSED"]
     reproduction["buildId"] = "changed"
     reproduction["serverActionKey"] = primary["serverActionKey"]
@@ -171,6 +176,26 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         "FRONTEND_BUILD_ID_CHANGED",
         "FRONTEND_BUILD_SECRET_REUSED",
     ]
+
+
+def test_container_scan_rejects_colliding_frontend_image_roles(tmp_path: Path) -> None:
+    reports = tmp_path / "reports"
+    completed = subprocess.run(
+        [str(ROOT / "scripts/ci/docker-image-scan.sh")],
+        cwd=ROOT,
+        env={
+            **os.environ,
+            "REPORT_DIR": str(reports),
+            "FRONTEND_BUILD_IMAGE": "same:tag",
+            "FRONTEND_REPRO_IMAGE": "same:tag",
+        },
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    assert completed.returncode == 1
+    assert completed.stderr == "Frontend image role references must be distinct.\n"
 
 
 @pytest.mark.parametrize(
