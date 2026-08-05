@@ -1774,7 +1774,7 @@ def raw_walkthrough_lineage_is_bounded_and_typed(row: dict[str, Any]) -> bool:
         if claim.get("chunk_id") is not None and type(claim.get("chunk_id")) is not str:
             return False
     for context in contexts:
-        if not isinstance(context, dict) or type(context.get("context_ref_id")) is not str or not _raw_number(context.get("score")):
+        if not isinstance(context, dict) or type(context.get("context_ref_id")) is not str or not isinstance(context.get("score"), (int, float)):
             return False
         chunk = context.get("chunk")
         if not isinstance(chunk, dict) or not _raw_strings(chunk, ("chunk_id", "tenant_id", "project_id", "document_id")):
