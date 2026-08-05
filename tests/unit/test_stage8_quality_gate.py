@@ -199,7 +199,11 @@ def test_route_text_charges_rejects_untracked_failed_malformed_binary_and_wrong_
         (completed([], 0, "", ""), completed([], 0, "1\t1\tdocs/other.md\n", ""), "unexpected path"),
     )
     for untracked, diff, message in cases:
-        def fake(args: list[str], u: Any = untracked, d: Any = diff) -> sp.CompletedProcess[str]:
+        def fake(
+            args: list[str],
+            u: sp.CompletedProcess[str] = untracked,
+            d: sp.CompletedProcess[str] = diff,
+        ) -> sp.CompletedProcess[str]:
             return u if "ls-files" in args else d
 
         monkeypatch.setattr(stage8, "run", fake)
