@@ -1112,6 +1112,22 @@ def test_stage4_rejects_forged_fresh_evaluation_identity(tmp_path: Path, monkeyp
     assert list(service.walkthrough_runs) == [runs[0].run_id]
 
 
+def test_stage4_rejects_misaligned_claim_support_binding(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service, original = Stage4Service(state_path=state_path), cast(Any, stage4_module).evaluate_grounding
+    def misaligned(**values: Any) -> Any:
+        result = original(**values)
+        supports = result.claim_supports
+        return replace(result, claim_supports=[replace(supports[0], citation_index=2), *supports[1:]])
+    monkeypatch.setattr(stage4_module, "evaluate_grounding", misaligned)
+    with pytest.raises(Stage4Error):
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="misaligned-support")
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+
+
 def test_stage4_rejects_write_that_would_exceed_restore_byte_cap(tmp_path: Path, monkeypatch: Any) -> None:
     state_path = tmp_path / "stage4.json"
     service = Stage4Service(state_path=state_path)
