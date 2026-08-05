@@ -742,6 +742,12 @@ class Stage4Service:
         evaluation = run.evaluation
         if (evaluation.tenant_id, evaluation.project_id, evaluation.run_id) != (run.tenant_id, run.project_id, run.run_id):
             return False
+        if evaluation.evaluation_id != f"eval_{run.run_id.removeprefix('run_')}":
+            return False
+        if [item.claim_support_id for item in evaluation.claim_supports] != [
+            f"claimsup_{index:03d}" for index in range(1, len(evaluation.claim_supports) + 1)
+        ]:
+            return False
         unsupported = {claim.claim_id for claim in evaluation.unsupported_claims}
         context_chunks = {item.chunk.chunk_id for item in contexts.values()}
         if any(claim.chunk_id not in context_chunks and claim.claim_id not in unsupported for claim in run.generated_script.claims):

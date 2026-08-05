@@ -1097,7 +1097,7 @@ def test_stage4_rejects_invalid_retrieved_context_before_terminal_side_effect(
 def test_stage4_rejects_forged_fresh_evaluation_identity(tmp_path: Path, monkeypatch: Any, mutation: str) -> None:
     state_path = tmp_path / "stage4.json"
     principal, project, runs = _grounded_stage4_state(state_path)
-    service, original = Stage4Service(state_path=state_path), stage4_module.evaluate_grounding
+    service, original = Stage4Service(state_path=state_path), cast(Any, stage4_module).evaluate_grounding
     def forged(**values: Any) -> Any:
         result = original(**values)
         if mutation == "evaluation":
