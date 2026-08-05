@@ -2,7 +2,7 @@
 """Executable Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
 # ruff: noqa: E302, E305, E401, E701, E702
-import json, os, re, subprocess, sys
+import hashlib, json, os, re, subprocess, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -28,12 +28,10 @@ CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/a
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/ADR/0002-rag-storage.md"}
 QUIET_PRESENCE_BRANCH = "cut1-358-quiet-presence-ui"
 CUT1_REAL_MEDIA_TRANSITION_BRANCH = "cut1-366-real-media-governance-transition"
-CUT1_REAL_MEDIA_BASE = "a69903fea50c22e12926d7e13dffdc74e55dfb65"
-CUT1_REAL_MEDIA_LIMIT = 900
-CUT1_REAL_MEDIA_FILE_LIMITS = {
-    "scripts/quality/check_stage8_docs.py": 350,
-    "tests/unit/test_stage8_quality_gate.py": 300,
-}
+C1_BASE, C1_LIMIT = "a69903fea50c22e12926d7e13dffdc74e55dfb65", 900
+C1_FILE_LIMITS = {"scripts/quality/check_stage8_docs.py":350,"tests/unit/test_stage8_quality_gate.py":300}
+C1_DOCS=("docs/QUALITY_GATES.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md")
+C1_DOC_SHA="1c7af0e5b55fe7305081643577155f9a0aa70653f7675d77d1585454c3531132"
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
@@ -41,15 +39,8 @@ QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALI
     "frontend/src/app/demo/page.module.css", "frontend/src/app/demo/page.test.tsx",
     "frontend/src/app/demo/guide-client.ts", "frontend/src/app/demo/guide-client.test.ts",
     "frontend/tests/quiet-presence.spec.ts", "frontend/public/demo/narratwin-synthetic-presenter.webp"}
-CUT1_REAL_MEDIA_TRANSITION_FILES = {
-    "docs/governance/preflights/issue-366.json",
-    "docs/QUALITY_GATES.md",
-    "docs/STAGE_ISSUE_PLAN.md",
-    "docs/STATUS.md",
-    "docs/TRACEABILITY.md",
-    "scripts/quality/check_stage8_docs.py",
-    "tests/unit/test_stage8_quality_gate.py",
-}
+CUT1_REAL_MEDIA_TRANSITION_FILES=set(C1_DOCS)|{"docs/governance/preflights/issue-366.json",
+    "scripts/quality/check_stage8_docs.py","tests/unit/test_stage8_quality_gate.py"}
 NULL_GIT_SHA = "0" * 40
 def issue324_allowed_files() -> set[str]:
     return set(json.loads((ROOT/"docs/governance/preflights/issue-324.json").read_text())["scope"]["required"])
@@ -93,38 +84,18 @@ PROCESS_BRANCH_ALLOWED_FILES = {
         "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
         "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md"},
-    ISSUE84_GUARDRAIL_BRANCH: {
-        "docs/STATUS.md",
-        "scripts/guardrails_check.py",
-        "scripts/quality/check_stage8_docs.py",
-        "tests/unit/test_guardrails_check.py",
-        "tests/unit/test_stage8_quality_gate.py",
-    },
-    ISSUE287_STAGE8_DRIFT_BRANCH: {
-        "docs/governance/preflights/issue-287.json",
-        "docs/QUALITY_GATES.md",
-        "docs/STAGE_ISSUE_PLAN.md",
-        "docs/STATUS.md",
-        "scripts/quality/check_phase1_closure_docs.py",
-        "scripts/quality/check_stage8_docs.py",
-        "tests/unit/test_phase1_closure_docs.py",
-        "tests/unit/test_stage8_quality_gate.py",
-    },
-    ISSUE289_SECURITY_UNBLOCK_BRANCH: {
-        "docs/governance/preflights/issue-289.json",
-        "docs/QUALITY_GATES.md",
-        "docs/STAGE_ISSUE_PLAN.md",
-        "docs/STATUS.md",
-        "docs/ADR/0037-postcss-audit-remediation.md",
-        "docs/TRACEABILITY.md",
-        "docs/THIRD_PARTY_NOTICES.md",
-        "frontend/package.json",
-        "frontend/package-lock.json",
-        "scripts/quality/check_phase1_closure_docs.py",
-        "scripts/quality/check_stage8_docs.py",
-        "tests/unit/test_phase1_closure_docs.py",
-        "tests/unit/test_stage8_quality_gate.py",
-    },
+    ISSUE84_GUARDRAIL_BRANCH: {"docs/STATUS.md","scripts/guardrails_check.py",
+        "scripts/quality/check_stage8_docs.py","tests/unit/test_guardrails_check.py",
+        "tests/unit/test_stage8_quality_gate.py"},
+    ISSUE287_STAGE8_DRIFT_BRANCH: {"docs/governance/preflights/issue-287.json","docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","scripts/quality/check_phase1_closure_docs.py",
+        "scripts/quality/check_stage8_docs.py","tests/unit/test_phase1_closure_docs.py",
+        "tests/unit/test_stage8_quality_gate.py"},
+    ISSUE289_SECURITY_UNBLOCK_BRANCH: {"docs/governance/preflights/issue-289.json","docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/ADR/0037-postcss-audit-remediation.md",
+        "docs/TRACEABILITY.md","docs/THIRD_PARTY_NOTICES.md","frontend/package.json","frontend/package-lock.json",
+        "scripts/quality/check_phase1_closure_docs.py","scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_phase1_closure_docs.py","tests/unit/test_stage8_quality_gate.py"},
     ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(),
     QUIET_PRESENCE_BRANCH: QUIET_PRESENCE_FILES,
     CUT1_REAL_MEDIA_TRANSITION_BRANCH: CUT1_REAL_MEDIA_TRANSITION_FILES,
@@ -197,22 +168,13 @@ def citation_parity_charge() -> int:
     try:return max(sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines())) for d in ds)
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
 def cut1_transition_charges() -> tuple[int, dict[str, int]]:
-    base = CUT1_REAL_MEDIA_BASE
-    if run(["git", "merge-base", base, "HEAD"]).stdout.strip() != base:
+    if run(["git","merge-base",C1_BASE,"HEAD"]).stdout.strip()!=C1_BASE:
         raise RuntimeError("Issue #366 base diff unavailable.")
-    candidates = (run(["git", "diff", "--cached", "--numstat", base, "--"]),
-                  run(["git", "diff", "--numstat", base, "--"]))
-    parsed: list[tuple[int, dict[str, int]]] = []
-    try:
-        for result in candidates:
-            if result.returncode:
-                raise RuntimeError("Issue #366 base diff unavailable.")
-            charges = {path: int(added) + int(deleted)
-                       for added, deleted, path in (line.split("\t") for line in result.stdout.splitlines())}
-            parsed.append((sum(charges.values()), charges))
-    except ValueError as error:
-        raise RuntimeError("Issue #366 malformed or binary numstat.") from error
-    return max(parsed, key=lambda item: item[0])
+    results=(run(["git","diff","--cached","--numstat",C1_BASE,"--"]),run(["git","diff","--numstat",C1_BASE,"--"]))
+    if any(result.returncode for result in results): raise RuntimeError("Issue #366 base diff unavailable.")
+    try: charges=[{p:int(a)+int(d) for a,d,p in (line.split("\t") for line in r.stdout.splitlines())} for r in results]
+    except ValueError as error: raise RuntimeError("Issue #366 malformed or binary numstat.") from error
+    return max(((sum(c.values()),c) for c in charges),key=lambda pair:pair[0])
 def parse_paths_z(output: str) -> list[str]:
     if not output:return []
     if not output.endswith("\0"):raise RuntimeError("Malformed NUL-delimited Git path output.")
@@ -305,57 +267,13 @@ def check_stage_scope(failures: list[str]) -> None:
         charge=citation_parity_charge()
         if charge>CP_LIMIT: fail(f"Issue #372 charge {charge} exceeds {CP_LIMIT}.",failures)
     if branch == CUT1_REAL_MEDIA_TRANSITION_BRANCH and not outside:
-        failures.extend(
-            f"Issue #366 route is missing required path: {path}"
-            for path in sorted(allowed_files - changed_files)
-        )
-        total, charges = cut1_transition_charges()
-        if total > CUT1_REAL_MEDIA_LIMIT:
-            fail(f"Issue #366 charge {total} exceeds {CUT1_REAL_MEDIA_LIMIT}.", failures)
-        for path, limit in CUT1_REAL_MEDIA_FILE_LIMITS.items():
-            if charges.get(path, 0) > limit:
-                fail(f"Issue #366 charge for {path} exceeds {limit}.", failures)
-
-CUT1_TRANSITION_REQUIRED_MARKERS = (
-    ("docs/STAGE_ISSUE_PLAN.md", "Issue `#382`"),
-    ("docs/STAGE_ISSUE_PLAN.md", "StackClimb"),
-    ("docs/STAGE_ISSUE_PLAN.md", "Rohit Agrawal"),
-    ("docs/STAGE_ISSUE_PLAN.md", "Do not use `®`"),
-    ("docs/STAGE_ISSUE_PLAN.md", "90–120 seconds"),
-    ("docs/STAGE_ISSUE_PLAN.md", "Do not silently time-stretch"),
-    ("docs/STAGE_ISSUE_PLAN.md", "citation numbers are not spoken"),
-    ("docs/STAGE_ISSUE_PLAN.md", "Interactive Q&A remains future work"),
-    ("docs/STAGE_ISSUE_PLAN.md", "latest evaluated script version"),
-    ("docs/STAGE_ISSUE_PLAN.md", "invalidates audio, captions, render, export, and replay evidence"),
-    ("docs/STAGE_ISSUE_PLAN.md", "Still images"),
-    ("docs/STAGE_ISSUE_PLAN.md", "HTML"),
-    ("docs/STAGE_ISSUE_PLAN.md", "JSON"),
-    ("docs/STAGE_ISSUE_PLAN.md", "manifests"),
-    ("docs/STAGE_ISSUE_PLAN.md", "silent or empty audio"),
-    ("docs/STAGE_ISSUE_PLAN.md", "metadata-only success"),
-    ("docs/STAGE_ISSUE_PLAN.md", "placeholder"),
-    ("docs/STATUS.md", "Issue `#372` is closed after PR `#381`"),
-    ("docs/STATUS.md", "`#367` → `#382` → `#368`"),
-    ("docs/TRACEABILITY.md", "narration and speech-approval child `#382`"),
-    ("docs/QUALITY_GATES.md", "F366-1 through F366-12"),
-)
-CUT1_TRANSITION_STALE_TEXT = ("#372 must first repair", "blocked by #372", "after #372 is merged")
-CUT1_TRANSITION_PROHIBITED_TEXT = (
-    "trademark is registered", "interactive Q&A is active",
-    "production ready", "publicly available now",
-)
-def check_cut1_transition_contract(failures: list[str]) -> None:
-    documents = {path: read(path) for path, _ in CUT1_TRANSITION_REQUIRED_MARKERS}
-    for path, marker in CUT1_TRANSITION_REQUIRED_MARKERS:
-        if marker not in documents[path]:
-            fail(f"Issue #366 governance contract must include {marker} in {path}.", failures)
-    combined = "\n".join(documents.values())
-    for stale in CUT1_TRANSITION_STALE_TEXT:
-        if stale in combined:
-            fail(f"Issue #366 governance contract retains stale text: {stale}", failures)
-    for prohibited in CUT1_TRANSITION_PROHIBITED_TEXT:
-        if prohibited in combined:
-            fail(f"Issue #366 governance contract contains prohibited text: {prohibited}", failures)
+        failures.extend(f"Issue #366 route is missing required path: {p}" for p in sorted(allowed_files-changed_files))
+        total,charges=cut1_transition_charges()
+        if total>C1_LIMIT: fail(f"Issue #366 charge {total} exceeds {C1_LIMIT}.",failures)
+        failures.extend(f"Issue #366 charge for {p} exceeds {n}." for p,n in C1_FILE_LIMITS.items()
+                        if charges.get(p,0)>n)
+        if hashlib.sha256("\n".join(read(p) for p in C1_DOCS).encode()).hexdigest()!=C1_DOC_SHA:
+            fail("Issue #366 governance document contract drifted.",failures)
 def check_backend_and_tests(failures: list[str]) -> None:
     main_text = read("backend/app/main.py")
     stage4_text = read("backend/app/stage4.py")
@@ -559,8 +477,6 @@ def main() -> int:
     if not failures:
         check_stage_marker_and_branch(failures)
         check_stage_scope(failures)
-        if current_branch() == CUT1_REAL_MEDIA_TRANSITION_BRANCH:
-            check_cut1_transition_contract(failures)
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
         node_security.check_frontend_node_image(read("frontend/Dockerfile"), failures)
