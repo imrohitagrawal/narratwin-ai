@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 import base64
 import json
 from pathlib import Path
+import subprocess
 import threading
 from typing import Any, cast
 
@@ -10,6 +11,7 @@ import pytest
 import backend.app.stage4 as stage4_module
 import backend.app.stage6 as stage6_module
 import backend.app.stage7 as stage7_module
+import scripts.quality.check_stage8_docs as stage8_check
 from backend.app.evaluation_lineage import build_source_evaluation_checksum, validate_evaluation_lineage_payload
 from backend.app.rag.chunking import checksum_text
 from backend.app.rag.models import GeneratedScript, RetrievedContext, ScriptClaim
@@ -154,6 +156,23 @@ class CitationMarkerMismatchProvider:
                 )
             ],
         )
+
+
+def _grounded_stage4_state(state_path: Path, *, run_count: int = 1) -> tuple[LocalPrincipal, Any, list[Any]]:
+    principal = LocalPrincipal(); service = Stage4Service(state_path=state_path)
+    project = service.create_project(principal=principal, name="Grounded project", idempotency_key="project")
+    document = service.upload_document(principal=principal, project_id=project.project_id,
+        source_filename="project.md", content_type="text/markdown",
+        data=Path("tests/fixtures/stage4_project.md").read_bytes(), idempotency_key="upload")
+    service.approve_document(principal=principal, project_id=project.project_id,
+        document_id=document.document_id, idempotency_key="approve")
+    service.ingest_documents(principal=principal, project_id=project.project_id,
+        document_ids=[document.document_id], idempotency_key="ingest")
+    request = dict(audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.")
+    runs = [service.generate_walkthrough(principal=principal, project_id=project.project_id,
+        idempotency_key=f"run-{index}", **request) for index in range(run_count)]
+    return principal, project, runs
 
 
 def test_stage4_file_state_restores_projects_chunks_runs_and_idempotency(tmp_path: Path) -> None:
@@ -884,6 +903,64 @@ def test_stage4_file_state_drops_walkthrough_with_tampered_citation_lineage(
         record.endpoint != "POST /api/v1/projects/{projectId}/walkthrough-runs"
         for record in restored.idempotency_records.values()
     )
+
+
+@pytest.mark.parametrize("mutation", ("huge-marker", "claim-index-string", "support-index-bool",
+                                      "support-status", "support-score-string", "unsupported-count-string"))
+def test_stage4_restore_contains_malformed_raw_lineage_per_row(
+    tmp_path: Path, mutation: str,
+) -> None:
+    state_path=tmp_path/"stage4.json"; _, project, runs=_grounded_stage4_state(state_path,run_count=2)
+    payload=json.loads(state_path.read_text()); bad,good=payload["walkthroughRuns"]
+    claim=bad["generated_script"]["claims"][-1]; support=bad["evaluation"]["claim_supports"][-1]
+    if mutation=="huge-marker":
+        old=f'[{claim["citation_index"]}]'; marker="["+"9"*5000+"]"; position=bad["generated_script"]["text"].rfind(old)
+        bad["generated_script"]["text"]=bad["generated_script"]["text"][:position]+marker
+        bad["accepted_script_text"]=bad["generated_script"]["text"]; claim["script_span_end"]+=len(marker)-len(old)
+    elif mutation=="claim-index-string": claim["citation_index"]=str(claim["citation_index"])
+    elif mutation=="support-index-bool": support["citation_index"]=True
+    elif mutation=="support-status": support["support_status"]="UNSUPPORTED"
+    elif mutation=="support-score-string": support["support_score"]=str(support["support_score"])
+    else: bad["evaluation"]["unsupported_claim_count"]="0"
+    state_path.write_text(json.dumps(payload)); restored=Stage4Service(state_path=state_path)
+    assert project.project_id in restored.projects and good["run_id"] in restored.walkthrough_runs
+    assert bad["run_id"] not in restored.walkthrough_runs and runs[1].run_id==good["run_id"]
+
+
+def test_stage4_raw_lineage_limits_accept_boundary_and_reject_boundary_plus_one(tmp_path: Path) -> None:
+    state_path=tmp_path/"stage4.json"; _grounded_stage4_state(state_path)
+    row=json.loads(state_path.read_text())["walkthroughRuns"][0]
+    claims=row["generated_script"]["claims"]; supports=row["evaluation"]["claim_supports"]
+    row["generated_script"]["claims"]=(claims*stage4_module.MAX_RESTORED_LINEAGE_ITEMS)[:stage4_module.MAX_RESTORED_LINEAGE_ITEMS]
+    row["evaluation"]["claim_supports"]=(supports*stage4_module.MAX_RESTORED_LINEAGE_ITEMS)[:stage4_module.MAX_RESTORED_LINEAGE_ITEMS]
+    assert stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"]["claims"].append(claims[0]); assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"]["claims"]=claims; row["generated_script"]["text"]="x"*stage4_module.MAX_RESTORED_SCRIPT_CHARS
+    assert stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"]["text"]+="x"; assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+
+
+def test_stage4_restore_rejects_state_file_over_byte_limit_before_decode(tmp_path: Path) -> None:
+    state_path=tmp_path/"stage4.json"; state_path.write_text("{}")
+    with state_path.open("ab") as handle: handle.truncate(stage4_module.MAX_STAGE4_STATE_BYTES+1)
+    restored=Stage4Service(state_path=state_path)
+    assert restored.projects=={} and restored.walkthrough_runs=={}
+
+
+def test_citation_budget_detects_staged_overage_hidden_by_unstaged_inverse(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    repo=tmp_path/"repo"; repo.mkdir()
+    def git(*args: str) -> str:
+        return subprocess.run(["git",*args],cwd=repo,text=True,capture_output=True,check=True).stdout.strip()
+    git("init","-b","main"); git("config","user.name","Budget Test"); git("config","user.email","budget@example.invalid")
+    status=repo/"docs/STATUS.md"; status.parent.mkdir(); status.write_text("base\n"); git("add","."); git("commit","-m","base")
+    base=git("rev-parse","HEAD"); git("checkout","-b","feature"); status.write_text("staged\n"*600); git("add",str(status))
+    status.write_text("working\n"); monkeypatch.setattr(stage8_check,"ROOT",repo); monkeypatch.setattr(stage8_check,"CP_BASE",base)
+    def charge(*args: str) -> int:
+        fields=git("diff",*args,"--numstat",base,"--").split("\t"); return int(fields[0])+int(fields[1])
+    staged,working=charge("--cached"),charge(); assert staged>550>working
+    assert stage8_check.citation_parity_charge()==staged
 
 
 def test_stage4_file_state_restores_failed_visible_citation_evaluation(tmp_path: Path) -> None:
