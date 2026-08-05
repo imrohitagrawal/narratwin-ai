@@ -1070,18 +1070,25 @@ def test_stage4_preserves_foreign_claim_only_as_unsupported_failure(tmp_path: Pa
     assert replayed == failed
 
 
-def test_stage4_rejects_foreign_retrieved_context_before_terminal_side_effect(tmp_path: Path, monkeypatch: Any) -> None:
+@pytest.mark.parametrize("mutation", ("foreign-scope", "forged-payload", "duplicate"))
+def test_stage4_rejects_invalid_retrieved_context_before_terminal_side_effect(
+    tmp_path: Path, monkeypatch: Any, mutation: str,
+) -> None:
     state_path = tmp_path / "stage4.json"
     principal, project, runs = _grounded_stage4_state(state_path)
     service, original = Stage4Service(state_path=state_path), cast(Any, stage4_module).retrieve_context
-    def foreign_context(**values: Any) -> list[RetrievedContext]:
-        return [replace(item, chunk=replace(item.chunk, tenant_id="tenant_foreign", project_id="proj_foreign"))
-            for item in original(**values)]
-    monkeypatch.setattr(stage4_module, "retrieve_context", foreign_context)
+    def invalid_context(**values: Any) -> list[RetrievedContext]:
+        items = original(**values)
+        if mutation == "foreign-scope":
+            return [replace(item, chunk=replace(item.chunk, tenant_id="tenant_foreign", project_id="proj_foreign")) for item in items]
+        if mutation == "forged-payload":
+            return [replace(items[0], chunk=replace(items[0].chunk, text="Forged same-ID text.")), *items[1:]]
+        return [items[0], replace(items[0], context_ref_id="ctx_duplicate")]
+    monkeypatch.setattr(stage4_module, "retrieve_context", invalid_context)
     with pytest.raises(Stage4Error) as error:
         service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
             requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
-            idempotency_key="foreign-context")
+            idempotency_key=f"invalid-context-{mutation}")
     assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
     assert list(service.walkthrough_runs) == [runs[0].run_id]
 
