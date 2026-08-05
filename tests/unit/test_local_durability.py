@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 import base64
+from dataclasses import replace
 import json
 from pathlib import Path
 import subprocess
@@ -1067,6 +1068,22 @@ def test_stage4_preserves_foreign_claim_only_as_unsupported_failure(tmp_path: Pa
     assert list(restored.walkthrough_runs) == [runs[0].run_id, failed.run_id]
     replayed = restored.generate_walkthrough(**request)
     assert replayed == failed
+
+
+def test_stage4_rejects_foreign_retrieved_context_before_terminal_side_effect(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service, original = Stage4Service(state_path=state_path), stage4_module.retrieve_context
+    def foreign_context(**values: Any) -> list[RetrievedContext]:
+        return [replace(item, chunk=replace(item.chunk, tenant_id="tenant_foreign", project_id="proj_foreign"))
+            for item in original(**values)]
+    monkeypatch.setattr(stage4_module, "retrieve_context", foreign_context)
+    with pytest.raises(Stage4Error) as error:
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="foreign-context")
+    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
 
 
 def test_stage4_rejects_write_that_would_exceed_restore_byte_cap(tmp_path: Path, monkeypatch: Any) -> None:
