@@ -178,6 +178,34 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     ]
 
 
+def test_frontend_config_accepts_only_exact_host_engine_defaults() -> None:
+    canonicalize = _load().canonical_frontend_config
+    application_config = {"User": "65532:65532", "Cmd": ["server.js"]}
+    engine_defaults = {
+        "AttachStderr": False,
+        "AttachStdin": False,
+        "AttachStdout": False,
+        "Domainname": "",
+        "Hostname": "",
+        "Image": "",
+        "OnBuild": None,
+        "OpenStdin": False,
+        "StdinOnce": False,
+        "Tty": False,
+        "Volumes": None,
+    }
+    assert canonicalize(application_config) == application_config
+    assert canonicalize({**application_config, **engine_defaults}) == application_config
+    for key, expected in engine_defaults.items():
+        mutation = {**application_config, **engine_defaults}
+        mutation[key] = not expected if isinstance(expected, bool) else "unexpected"
+        assert canonicalize(mutation) is None
+    assert canonicalize({**application_config, "Unexpected": False}) == {
+        **application_config,
+        "Unexpected": False,
+    }
+
+
 @pytest.mark.parametrize(
     ("left", "right"),
     [
