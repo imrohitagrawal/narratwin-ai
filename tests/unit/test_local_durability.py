@@ -1044,7 +1044,7 @@ def test_stage4_rejects_fresh_lineage_that_restore_would_drop(tmp_path: Path, mo
     assert list(Stage4Service(state_path=state_path).walkthrough_runs) == [runs[0].run_id]
 
 
-def test_stage4_rejects_fresh_claim_with_foreign_chunk_lineage(tmp_path: Path, monkeypatch: Any) -> None:
+def test_stage4_preserves_foreign_claim_only_as_unsupported_failure(tmp_path: Path, monkeypatch: Any) -> None:
     state_path = tmp_path / "stage4.json"
     principal, project, runs = _grounded_stage4_state(state_path)
     service = Stage4Service(state_path=state_path)
@@ -1055,13 +1055,18 @@ def test_stage4_rejects_fresh_claim_with_foreign_chunk_lineage(tmp_path: Path, m
             claim.script_span_start, claim.script_span_end) for claim in generated.claims]
         return GeneratedScript(text=generated.text, claims=claims)
     monkeypatch.setattr(service.llm, "generate_script", foreign_lineage)
-    with pytest.raises(Stage4Error) as error:
-        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
-            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
-            idempotency_key="foreign-chunk-lineage")
-    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
-    assert list(service.walkthrough_runs) == [runs[0].run_id]
-    assert list(Stage4Service(state_path=state_path).walkthrough_runs) == [runs[0].run_id]
+    request = dict(principal=principal, project_id=project.project_id, audience="RECRUITER",
+        requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+        idempotency_key="foreign-chunk-lineage")
+    failed = service.generate_walkthrough(**request)
+    assert failed.status == "FAILED" and failed.evaluation is not None and failed.generated_script is not None
+    assert {claim.claim_id for claim in failed.evaluation.unsupported_claims} == {
+        claim.claim_id for claim in failed.generated_script.claims
+    }
+    restored = Stage4Service(state_path=state_path)
+    assert list(restored.walkthrough_runs) == [runs[0].run_id, failed.run_id]
+    replayed = restored.generate_walkthrough(**request)
+    assert replayed == failed
 
 
 def test_stage4_rejects_write_that_would_exceed_restore_byte_cap(tmp_path: Path, monkeypatch: Any) -> None:

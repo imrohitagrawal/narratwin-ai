@@ -654,8 +654,11 @@ class Stage4Service:
         context_by_ref = {context.context_ref_id: context for context in run.retrieved_context}
         context_chunk_ids = {context.chunk.chunk_id for context in run.retrieved_context}
         claim_ids = {claim.claim_id for claim in run.generated_script.claims} if run.generated_script is not None else set()
+        unsupported_claim_ids = {claim.claim_id for claim in run.evaluation.unsupported_claims}
         if run.generated_script is not None and any(
-            claim.chunk_id is not None and claim.chunk_id not in context_chunk_ids
+            claim.chunk_id is not None
+            and claim.chunk_id not in context_chunk_ids
+            and claim.claim_id not in unsupported_claim_ids
             for claim in run.generated_script.claims
         ):
             return False
@@ -1476,7 +1479,6 @@ class Stage4Service:
         )
         if (
             not raw_walkthrough_lineage_is_bounded_and_typed(walkthrough_run_to_dict(run))
-            or not self._restored_walkthrough_run_is_valid(run)
             or not self._restored_citation_lineage_is_valid(run)
         ):
             raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
