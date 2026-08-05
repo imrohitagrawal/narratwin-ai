@@ -950,7 +950,7 @@ def test_stage4_raw_lineage_limits_accept_boundary_and_reject_boundary_plus_one(
     claims = row["generated_script"]["claims"]
     supports = row["evaluation"]["claim_supports"]
     limit = stage4_module.MAX_RESTORED_LINEAGE_ITEMS
-    row["generated_script"]["claims"] = (claims * limit)[:limit]
+    row["generated_script"]["claims"] = ([{**claims[0], "text": ""}] * limit)[:limit]
     row["evaluation"]["claim_supports"] = (supports * limit)[:limit]
     assert stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
     row["generated_script"]["claims"].append(claims[0])
@@ -972,6 +972,12 @@ def test_stage4_raw_lineage_limits_accept_boundary_and_reject_boundary_plus_one(
     row["generated_script"]["text"] = "[" + "9" * stage4_module.MAX_RESTORED_CITATION_DIGITS + "]"
     assert stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
     row["generated_script"]["text"] = row["generated_script"]["text"].replace("9]", "99]")
+    assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"].update(text="x" * stage4_module.MAX_RESTORED_SCRIPT_CHARS,
+        claims=[{**claims[0], "text": "x" * stage4_module.MAX_RESTORED_SCRIPT_CHARS}, {**claims[0], "text": "x"}])
+    assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"]["claims"] = claims
+    row["evaluation"]["claim_supports"][0]["support_reason"] = "x" * (stage4_module.MAX_RESTORED_SCRIPT_CHARS + 1)
     assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
 
 
@@ -1016,6 +1022,24 @@ def test_stage4_rejects_oversized_generated_script_before_terminal_persistence(
     assert replay_error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
 
 
+def test_stage4_rejects_amplified_claim_before_evaluation(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service = Stage4Service(state_path=state_path)
+    original = service.llm.generate_script
+    def amplified(**values: Any) -> GeneratedScript:
+        generated = original(**values); claim = generated.claims[0]
+        return replace(generated, claims=[replace(claim, text="x" * (stage4_module.MAX_RESTORED_SCRIPT_CHARS + 1))])
+    monkeypatch.setattr(service.llm, "generate_script", amplified)
+    monkeypatch.setattr(stage4_module, "evaluate_grounding", lambda **_values: pytest.fail("evaluator reached"))
+    with pytest.raises(Stage4Error) as error:
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="amplified-lineage")
+    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+
+
 def test_stage4_invalid_generated_lineage_has_no_terminal_run_side_effect(tmp_path: Path, monkeypatch: Any) -> None:
     state_path = tmp_path / "stage4.json"
     principal, project, runs = _grounded_stage4_state(state_path)
@@ -1025,9 +1049,16 @@ def test_stage4_invalid_generated_lineage_has_no_terminal_run_side_effect(tmp_pa
         service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
             requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
             idempotency_key="invalid-lineage")
-    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+    assert error.value.code == "INVALID_GENERATED_LINEAGE"
     assert list(service.walkthrough_runs) == [runs[0].run_id]
-    assert list(Stage4Service(state_path=state_path).walkthrough_runs) == [runs[0].run_id]
+    restored = Stage4Service(state_path=state_path)
+    assert list(restored.walkthrough_runs) == [runs[0].run_id]
+    monkeypatch.setattr(restored.llm, "generate_script", lambda **_values: pytest.fail("failure replay invoked provider"))
+    with pytest.raises(Stage4Error) as replay:
+        restored.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="invalid-lineage")
+    assert replay.value.code == "INVALID_GENERATED_LINEAGE"
 
 
 def test_stage4_rejects_fresh_lineage_that_restore_would_drop(tmp_path: Path, monkeypatch: Any) -> None:
@@ -1040,7 +1071,7 @@ def test_stage4_rejects_fresh_lineage_that_restore_would_drop(tmp_path: Path, mo
         service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
             requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
             idempotency_key="fresh-invalid-lineage")
-    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+    assert error.value.code == "INVALID_GENERATED_LINEAGE"
     assert list(service.walkthrough_runs) == [runs[0].run_id]
     assert list(Stage4Service(state_path=state_path).walkthrough_runs) == [runs[0].run_id]
 
@@ -1095,7 +1126,7 @@ def test_stage4_rejects_invalid_retrieved_context_before_terminal_side_effect(
         service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
             requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
             idempotency_key=f"invalid-context-{mutation}")
-    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+    assert error.value.code == "INVALID_GENERATED_LINEAGE"
     assert list(service.walkthrough_runs) == [runs[0].run_id]
 
 
