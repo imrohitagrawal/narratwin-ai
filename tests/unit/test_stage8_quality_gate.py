@@ -3,7 +3,8 @@ import hashlib; import importlib.util; import json; import subprocess as sp
 from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 from scripts.quality import stage8_a23b as a23b
-from scripts.quality.check_stage8_docs import QUIET_PRESENCE_BRANCH as QP, QUIET_PRESENCE_FILES as QP_SCOPE
+from scripts.quality.check_stage8_docs import (CITATION_PARITY_BRANCH as CP, CITATION_PARITY_FILES as CP_SCOPE,
+    QUIET_PRESENCE_BRANCH as QP, QUIET_PRESENCE_FILES as QP_SCOPE)
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"
 SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
@@ -21,7 +22,7 @@ SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/qua
     A2_2: {"docs/governance/preflights/issue-349.json", "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
            "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
            "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
-           "docs/STAGE_ISSUE_PLAN.md"}, QP: QP_SCOPE, **a23b.A23_ROUTES}
+           "docs/STAGE_ISSUE_PLAN.md"}, QP: QP_SCOPE, CP: CP_SCOPE, **a23b.A23_ROUTES}
 def load(relative: str, name: str) -> ModuleType:
     module_path = Path(__file__).parents[2] / relative
     spec = importlib.util.spec_from_file_location(name, module_path); assert spec and spec.loader
@@ -35,21 +36,24 @@ def route(monkeypatch: Any, branch: str, changed: list[str]) -> list[str]:
     monkeypatch.setattr(stage8,"changed_files_for_stage_scope",lambda:changed); failures: list[str]=[]
     stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures); return failures
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
-    for branch, scope in SCOPES.items():
-        assert route(monkeypatch,branch,sorted(scope)) == []
-        extra = "backend/app/main.py" if branch == A2_1 else "backend/app/stage4.py"
+    for branch, s in SCOPES.items():
+        monkeypatch.setattr(stage8,"citation_parity_charge",lambda:1200); assert route(monkeypatch,branch,sorted(s))==[]
+        extra = "forbidden/outside.txt"
         assert route(monkeypatch,branch,[extra]) == [f"Stage 8 changed file outside the allowlist: {extra}"]
+        if branch == CP:
+            missing=min(s); monkeypatch.setattr(stage8,"citation_parity_charge",lambda:1201)
+            assert len(route(monkeypatch,branch,sorted(s-{missing}))) == 2
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", f"{A2_2}/child",
-                   A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{a23b.A23A_BRANCH}-retry",
+                   A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{CP}-retry", f"{a23b.A23A_BRANCH}-retry",
                    a23b.A23A_BRANCH.replace("-351-", "-350-"), f"{QP}-retry", "cut1-proces\u0455-346-transition"):
         assert len(route(monkeypatch,branch,[])) == 2
-    for issue,branch in ((346,TRANSITION),(349,A2_2),(351,a23b.A23A_BRANCH),(353,a23b.A23B_BRANCH),(358,QP)):
+    for issue,branch in ((346,TRANSITION),(349,A2_2),(351,a23b.A23A_BRANCH),(353,a23b.A23B_BRANCH),(358,QP),(372,CP)):
         artifact = json.loads((Path(__file__).parents[2]/f"docs/governance/preflights/issue-{issue}.json").read_text())
         assert artifact["branch"] == branch and set(artifact["scope"]["required"]) == SCOPES[branch]
     monkeypatch.setattr(Path, "read_text", lambda path, *a, **kw: (_ for _ in ()).throw(AssertionError())
                         if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json",
-                                         "issue-358.json"}
+                                         "issue-358.json", "issue-372.json"}
                         else ORIGINAL_READ(path, *a, **kw))
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {branch: policy[branch] for branch in SCOPES} == SCOPES
@@ -144,28 +148,36 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
         monkeypatch.setenv("GITHUB_EVENT_NAME", event_name); monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
         if failed:
             with pytest.raises(RuntimeError, match="failed"): stage8.changed_files_for_stage_scope()
-            if failed == "explicit-base":
-                assert [args[2] for args in calls if args[:2] == ["git", "merge-base"]] == [base]
+            if failed=="explicit-base": assert [a[2] for a in calls if a[:2]==["git","merge-base"]]==[base]
         else:
-            assert stage8.changed_files_for_stage_scope() == []
-            diffs = [args for args in calls if args[:2] == ["git", "diff"]]; assert len(diffs) == 3
-            assert ["git", "merge-base", "origin/main", "head"] in calls
+            assert stage8.changed_files_for_stage_scope()==[]; diffs=[a for a in calls if a[:2]==["git","diff"]]
+            assert ["git","merge-base","origin/main","head"] in calls; assert len(diffs)==3
             for args in diffs:
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
+def test_citation_charge_uses_worktree_and_fails_closed(monkeypatch: Any) -> None:
+    s=stage8; d=sp.CompletedProcess; calls=[]
+    out=iter(("600\t600\tx\n","600\t600\tx\n","600\t601\tx\n","600\t600\tx\n","-\t1\tx\n","1\t1\tx\n"))
+    def fake(a:list[str])->Any: calls.append(a); return d(a,0,s.CP_BASE+"\n" if a[1]=="merge-base" else next(out),"")
+    monkeypatch.setattr(s,"run",fake); fn=s.citation_parity_charge; assert (fn(),fn())==(1200,1201)
+    pytest.raises(RuntimeError,fn); assert ["git","diff","--cached","--numstat",s.CP_BASE,"--"] in calls
+    monkeypatch.setattr(s,"run",lambda args:d(args,1,"","failed")); pytest.raises(RuntimeError,fn)
 def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> None:
-    source = stage8.PROCESS_BRANCH_ALLOWED_FILES; sha = stage2.hashlib.sha256
-    cases = ((stage8.ISSUE84_GUARDRAIL_BRANCH, "backend/app/stage4.py"), (stage8.ISSUE287_STAGE8_DRIFT_BRANCH,
-             "frontend/package-lock.json"), (stage8.ISSUE289_SECURITY_UNBLOCK_BRANCH, "backend/app/main.py"))
+    s=stage8; source=s.PROCESS_BRANCH_ALLOWED_FILES; sha=stage2.hashlib.sha256
+    cases=((s.ISSUE84_GUARDRAIL_BRANCH,"backend/app/stage4.py"),
+           (s.ISSUE287_STAGE8_DRIFT_BRANCH,"frontend/package-lock.json"),
+           (s.ISSUE289_SECURITY_UNBLOCK_BRANCH,"backend/app/main.py"))
     encoded = json.dumps({b: sorted(source[b]) for b, _ in cases}, sort_keys=True, separators=(",", ":")).encode()
     assert sha(encoded).hexdigest() == "95bbea6ae7294e5db03ed5c62caae3b74a7aff8c8f12aef5efe134b15a585117"
     for branch, rejected in cases:
-        error = f"Stage 8 changed file outside the allowlist: {rejected}"
-        for changed, expected in ((sorted(source[branch]), []), ([rejected], [error])): assert route(
-            monkeypatch,branch,changed) == expected
-def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
-    monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
-    failures: list[str] = []; stage8.check_stage_marker_and_branch(failures); assert failures == [
-        "Stage 8 work must run on a stage8-* branch or main after merge; got feature/untracked-stage8-work."]
+        error=f"Stage 8 changed file outside the allowlist: {rejected}"
+        for c,w in ((sorted(source[branch]),[]),([rejected],[error])): assert route(monkeypatch,branch,c)==w
+def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
+    failures:list[str]=[]; stage8.check_dependencies_and_scripts(failures)
+    assert not any(m in "\n".join(failures) for m in ("docker scout cves","--only-severity critical,high"))
+def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
+    b="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:b); failures:list[str]=[]
+    stage8.check_stage_marker_and_branch(failures); assert failures==[
+        f"Stage 8 work must run on a stage8-* branch or main after merge; got {b}."]
 A22_SOURCE = "Stage 2 retrieval-v1 accepted sources must retain the canonical oracle."
 A22_DECL = "Stage 2 retrievalStrategy must equal the canonical v1 machine declaration."
 A22_RUNTIME = "Stage 4 retrieval-v1 runtime constants must equal the canonical oracle."
@@ -230,10 +242,8 @@ def test_a23a_contract_gate_rejects_every_frozen_marker_mutation(tmp_path: Path)
     assert stage8.evaluation_lineage_checksum_v2_contract_valid(documents)
     for path, markers in stage8.A23A_CONTRACT_MARKERS.items():
         for marker in markers:
-            assert documents[path].count(marker)>=1
-            mutated={**documents,path:documents[path].replace(marker,"MUTATED")}
+            assert documents[path].count(marker)>=1;mutated={**documents,path:documents[path].replace(marker,"MUTATED")}
             assert not stage8.evaluation_lineage_checksum_v2_contract_valid(mutated)
     api=documents["docs/API_CONTRACT.md"]; preimage=api.rsplit("```json\n",1)[1].split("\n```",1)[0]
-    assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (
-        "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377")
-    assert a23b.semantic_detector_self_test(tmp_path)
+    f=a23b.semantic_detector_self_test; assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (
+        "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377") and f(tmp_path)

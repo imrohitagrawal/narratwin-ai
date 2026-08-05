@@ -393,6 +393,16 @@ durability, deployment, and release decisions remain outside this trace.
 | `PUB-324-003` keep enforcement modular and reviewable | Contract, decision, repository, scope, CLI, entry-point, and mirrored test modules with executable context budgets | Phase 1 checker/test monoliths remain unchanged |
 | `PUB-324-004` preserve product and launch truth | Controlled local demo guide, current-state Q&A limitation, Stage 8 compatibility tests | No provider, media, hosting, release, public-distribution, or production authorization |
 
+## Issue #372 citation-lineage prerequisite traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Visible citation and support parity | Checkpoint 3 output-correctness helper correlates each `claimId` and exact script span to its own `citationIndex` | No hard-coded citation 1, post-generation renumbering, retrieval change, or loosened assertion |
+| Durable lineage replay | Stage 4 restore validation binds accepted/generated text, visible marker, provider claim, retrieved-context position, context reference, chunk/document, and claim support | Valid idempotent replay is exact; corrupt completed rows and their replay records fail closed |
+| Defensive restore boundary | Exact raw JSON type/status checks, 256 MiB state cap, 20,000-character script cap, 24-item lineage caps, bounded marker digits, and per-row exception containment | Malformed lineage cannot be normalized into acceptance or clear valid sibling state |
+| Isolation and refusal preservation | Existing Stage 4 API, grounding, local-durability, tenant/project, and unsupported-claim regressions | No cross-project/cross-tenant reuse, provider enablement, or weaker grounding |
+| Governed prerequisite | Issue `#372` preflight, exact eleven-path/1200-line Stage 8 route, ADR `0002`, Python 3.13/3.14, checkpoint acceptance, quality/CI/security, and independent review evidence | Parent `#366` and PR `#373` remain separate; no presenter, media, deployment, release, public-availability, production-readiness, or Cut 1 completion claim |
+
 ## Issue #358 Quiet Presence Cut 1 UI-foundation traceability
 
 | Requirement | Evidence | Preserved boundary |

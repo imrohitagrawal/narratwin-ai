@@ -17,7 +17,7 @@ from threading import RLock
 from typing import Any, Literal, TypeVar, cast
 
 from backend.app.rag.chunking import checksum_text, chunk_document
-from backend.app.rag.grounding import evaluate_grounding
+from backend.app.rag.grounding import evaluate_grounding as _canonical_evaluate_grounding
 from backend.app.rag.models import (
     CHUNKING_STRATEGY_VERSION,
     MOCK_EMBEDDING_MODEL,
@@ -49,6 +49,8 @@ from backend.app.observability import (
 )
 from backend.app.curation import (CURATION_POLICY_VERSION, CURATION_SCHEMA_VERSION, CuratedOutcome, SourceAssertions, SourceDecisionRecord, SourceRecord, allowed_for_review, assertions_digest, canonical_digest, legal_exclusion, legal_exclusion_request, legal_pair, record_is_valid, restore_curated, restored_records)
 
+evaluate_grounding = _canonical_evaluate_grounding
+
 MAX_UPLOAD_BYTES = 1_048_576
 MAX_PROJECT_CORPUS_BYTES = 5 * 1_048_576
 MAX_ACTIVE_DOCUMENTS_PER_PROJECT = 10
@@ -62,6 +64,10 @@ MAX_PROMPT_CHARS = 2_000
 MAX_PUBLIC_EXCERPT_CHARS = 240
 MAX_API_REQUEST_BYTES = 256 * 1024
 MAX_UPLOAD_REQUEST_BYTES = MAX_UPLOAD_BYTES + 65_536
+MAX_STAGE4_STATE_BYTES = 256 * 1_048_576
+MAX_RESTORED_SCRIPT_CHARS = 20_000
+MAX_RESTORED_LINEAGE_ITEMS = 24
+MAX_RESTORED_CITATION_DIGITS = 6
 ALLOWED_EXTENSIONS = {".md", ".txt"}
 ALLOWED_CONTENT_TYPES_BY_EXTENSION = {
     ".md": "text/markdown",
@@ -98,12 +104,14 @@ T = TypeVar("T")
 WalkthroughRunStatus = Literal["COMPLETED", "FAILED", "REFUSED"]
 LOGGER = logging.getLogger(__name__)
 SAFE_RESTORED_FAILURES = {(400, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key header is required for write requests."), (403, "FORBIDDEN", "Document is not accessible to this principal."), (403, "FORBIDDEN", "Project is not accessible to this principal."), (404, "NOT_FOUND", "Curated source not found."), (404, "NOT_FOUND", "Knowledge document not found."), (404, "NOT_FOUND", "Project not found."), (409, "IDEMPOTENCY_CONFLICT", "Idempotency key was reused with a different request."), (409, "IDEMPOTENCY_IN_PROGRESS", "Idempotency key is already in progress."), (409, "SOURCE_NOT_APPROVABLE", "Curated source bindings or policy are stale."), (413, "DOCUMENT_TOO_LARGE", "Document exceeds the Stage 4 chunk limit."), (413, "INGESTION_TOO_LARGE", "Too many documents requested for one ingestion run."), (413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 chunk limit."), (413, "PROJECT_CORPUS_TOO_LARGE", "Project exceeds the Stage 4 corpus size limit."), (413, "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "Project exceeds the Stage 4 document limit."), (413, "PROMPT_TOO_LARGE", "Prompt exceeds the Stage 4 limit."), (413, "UPLOAD_FILE_TOO_LARGE", "Curated source file exceeds the size limit."), (413, "UPLOAD_TOO_LARGE", "Upload exceeds the Stage 4 size limit."), (415, "UNSUPPORTED_MEDIA_TYPE", "Archive uploads are not accepted in Stage 4."), (415, "UNSUPPORTED_MEDIA_TYPE", "Only markdown and plain text files are accepted."), (422, "DOCUMENT_NOT_APPROVED", "Document must be approved before ingestion."), (422, "SECRET_LIKE_CONTENT", "Prompt contains secret-like content."), (422, "SECRET_LIKE_CONTENT", "Uploaded document contains secret-like content."), (422, "SOURCE_KIND_MISMATCH", "Legacy documents cannot use curated ingestion."), (422, "SOURCE_NOT_INGESTIBLE", "At least one bounded curated source is required."), (422, "SOURCE_NOT_INGESTIBLE", "Every curated source must be approved and current."), (422, "UNSAFE_DOCUMENT_CONTENT", "Curated source contains unsafe content."), (422, "UNSAFE_DOCUMENT_CONTENT", "Document contains unsafe instruction-like content."), (422, "VALIDATION_ERROR", "At least one document is required."), (422, "VALIDATION_ERROR", "Curated source assertions are incomplete or ineligible."), (422, "VALIDATION_ERROR", "Invalid filename."), (422, "VALIDATION_ERROR", "Project name is required."), (422, "VALIDATION_ERROR", "Uploaded document contains NUL bytes."), (422, "VALIDATION_ERROR", "Uploaded document contains too many control characters."), (422, "VALIDATION_ERROR", "Uploaded document is empty."), (422, "VALIDATION_ERROR", "Uploaded document must be UTF-8 text."), (429, "BACKPRESSURE_QUEUE_FULL", "Another Stage 4 operation is already active for this project."), (429, "RESOURCE_LIMIT_EXCEEDED", "Project exceeds the Stage 4 generation run limit."), (429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 idempotency record limit."), (429, "RESOURCE_LIMIT_EXCEEDED", "Tenant exceeds the Stage 4 project limit."), (422, "VALIDATION_ERROR", "Curated source content is not safe to retain."), (422, "SECRET_LIKE_CONTENT", "Curated source content is not safe to retain."), (422, "UNSAFE_DOCUMENT_CONTENT", "Curated source content is not safe to retain.")}
+SAFE_RESTORED_FAILURES.add((422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit."))
+SAFE_RESTORED_FAILURES.add((422, "INVALID_GENERATED_LINEAGE", "Generated script lineage is invalid."))
 RESTORED_FAILURE_CODES_BY_ENDPOINT = {
     "POST /api/v1/projects": {"VALIDATION_ERROR", "RESOURCE_LIMIT_EXCEEDED"},
     "POST /api/v1/projects/{projectId}/knowledge-documents": {"FORBIDDEN", "NOT_FOUND", "PROJECT_DOCUMENT_LIMIT_EXCEEDED", "PROJECT_CORPUS_TOO_LARGE", "UPLOAD_TOO_LARGE", "UPLOAD_FILE_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "VALIDATION_ERROR", "SECRET_LIKE_CONTENT", "UNSAFE_DOCUMENT_CONTENT"},
     "PATCH /api/v1/projects/{projectId}/knowledge-documents/{documentId}/approval": {"FORBIDDEN", "NOT_FOUND", "SOURCE_NOT_APPROVABLE"},
     "POST /api/v1/projects/{projectId}/ingestion-runs": {"FORBIDDEN", "NOT_FOUND", "SOURCE_NOT_INGESTIBLE", "SOURCE_KIND_MISMATCH", "VALIDATION_ERROR", "INGESTION_TOO_LARGE", "DOCUMENT_NOT_APPROVED", "UNSAFE_DOCUMENT_CONTENT", "DOCUMENT_TOO_LARGE", "PROJECT_CORPUS_TOO_LARGE", "BACKPRESSURE_QUEUE_FULL"},
-    "POST /api/v1/projects/{projectId}/walkthrough-runs": {"FORBIDDEN", "NOT_FOUND", "PROMPT_TOO_LARGE", "SECRET_LIKE_CONTENT", "RESOURCE_LIMIT_EXCEEDED", "BACKPRESSURE_QUEUE_FULL"},
+    "POST /api/v1/projects/{projectId}/walkthrough-runs": {"FORBIDDEN", "NOT_FOUND", "PROMPT_TOO_LARGE", "SECRET_LIKE_CONTENT", "GENERATED_SCRIPT_TOO_LARGE", "INVALID_GENERATED_LINEAGE", "RESOURCE_LIMIT_EXCEEDED", "BACKPRESSURE_QUEUE_FULL"},
 }
 
 
@@ -288,6 +296,14 @@ class Stage4Service:
         self._run_counter = 0
 
     def _restore(self) -> None:
+        if self.state_path is not None:
+            try:
+                if self.state_path.exists() and self.state_path.stat().st_size > MAX_STAGE4_STATE_BYTES:
+                    LOGGER.warning("Ignoring oversized Stage 4 local state snapshot at %s.", self.state_path)
+                    return
+            except OSError as exc:
+                LOGGER.warning("Ignoring unreadable Stage 4 local state snapshot at %s: %s", self.state_path, exc)
+                return
         payload = load_state(self.state_path)
         if payload is None:
             return
@@ -336,16 +352,19 @@ class Stage4Service:
             if not isinstance(row, dict) or not isinstance(row.get("run_id"), str) or identities.count(row.get("run_id")) != 1:
                 continue
             try:
+                if not raw_walkthrough_lineage_is_bounded_and_typed(row):
+                    continue
                 run = walkthrough_run_from_dict(row)
-            except (KeyError, TypeError, ValueError):
-                continue
-            if not record_is_valid(run, self._restored_walkthrough_run_is_valid):
-                continue
-            if self._restored_retrieval_lineage_is_current(row, run):
-                self.walkthrough_runs[run.run_id] = run
-            else:
-                stale[run.run_id] = deepcopy(row)
-                self._quarantined_walkthrough_rows.append(deepcopy(row))
+                if not record_is_valid(run, self._restored_walkthrough_run_is_valid):
+                    continue
+                lineage_is_current = self._restored_retrieval_lineage_is_current(row, run)
+                if lineage_is_current and self._restored_citation_lineage_is_valid(run):
+                    self.walkthrough_runs[run.run_id] = run
+                elif not lineage_is_current:
+                    stale[run.run_id] = deepcopy(row)
+                    self._quarantined_walkthrough_rows.append(deepcopy(row))
+            except (ArithmeticError, KeyError, TypeError, ValueError) as exc:
+                LOGGER.warning("Skipping incompatible Stage 4 walkthrough row: %s", exc)
         return stale
 
     def _restore_idempotency_rows(self, payload: dict[str, Any], stale_runs: dict[str, dict[str, Any]]) -> None:
@@ -626,7 +645,8 @@ class Stage4Service:
             return False
         if run.evaluation is None:
             return True
-        if any(type(getattr(run.evaluation, name)) is bool or not math.isfinite(float(getattr(run.evaluation, name))) for name in ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage")):
+        if any(type(getattr(run.evaluation, name)) is bool or not math.isfinite(float(getattr(run.evaluation, name)))
+               or not 0.0 <= float(getattr(run.evaluation, name)) <= 1.0 for name in ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage")):
             return False
         if (
             run.evaluation.run_id != run.run_id
@@ -637,8 +657,11 @@ class Stage4Service:
         context_by_ref = {context.context_ref_id: context for context in run.retrieved_context}
         context_chunk_ids = {context.chunk.chunk_id for context in run.retrieved_context}
         claim_ids = {claim.claim_id for claim in run.generated_script.claims} if run.generated_script is not None else set()
+        unsupported_claim_ids = {claim.claim_id for claim in run.evaluation.unsupported_claims}
         if run.generated_script is not None and any(
-            claim.chunk_id is not None and claim.chunk_id not in context_chunk_ids
+            claim.chunk_id is not None
+            and claim.chunk_id not in context_chunk_ids
+            and claim.claim_id not in unsupported_claim_ids
             for claim in run.generated_script.claims
         ):
             return False
@@ -654,6 +677,111 @@ class Stage4Service:
                 chunk_id=support.chunk_id,
             )
             for support in run.evaluation.claim_supports
+        )
+
+    def _restored_citation_lineage_is_valid(
+        self,
+        run: WalkthroughRunRecord,
+    ) -> bool:
+        script, evaluation = run.generated_script, run.evaluation
+        if script is None or evaluation is None:
+            return run.status == "REFUSED"
+        expected_status = "PASSED" if run.status == "COMPLETED" else "FAILED"
+        expected_failure = None if run.status == "COMPLETED" else self.WALKTHROUGH_REFUSAL_REASON_UNSUPPORTED_FACT
+        if evaluation.evaluation_status != expected_status or run.failure_reason != expected_failure:
+            return False
+        if run.status == "COMPLETED" and run.accepted_script_text != script.text:
+            return False
+        if run.status == "FAILED" and run.accepted_script_text is not None:
+            return False
+        cursor = 0
+        for claim in script.claims:
+            if not (cursor <= claim.script_span_start < claim.script_span_end <= len(script.text)):
+                return False
+            if script.text[cursor : claim.script_span_start].strip():
+                return False
+            visible = script.text[claim.script_span_start : claim.script_span_end]
+            visible_claim = re.sub(r"\s*\[\d+\]\s*", " ", visible).strip()
+            visible_claim = re.sub(r"(?i)^for\s+[a-z_ -]+s,\s*", "", visible_claim).strip()
+            if " ".join(visible_claim.split()) != " ".join(claim.text.split()):
+                return False
+            cursor = claim.script_span_end
+        if not script.claims or script.text[cursor:].strip():
+            return False
+        reproduced = _canonical_evaluate_grounding(
+            tenant_id=run.tenant_id,
+            project_id=run.project_id,
+            run_id=run.run_id,
+            candidate=script,
+            retrieved_context=run.retrieved_context,
+            prompt="",
+            all_chunks=self.rag_store.chunks_for_project(
+                tenant_id=run.tenant_id,
+                project_id=run.project_id,
+            ),
+        )
+        reproduced = replace(
+            reproduced,
+            answer_relevancy=evaluation.answer_relevancy, context_recall=evaluation.context_recall,
+            retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION,
+            retrieval_top_k=RETRIEVAL_TOP_K,
+            retrieval_score_threshold=RETRIEVAL_MIN_SCORE,
+        )
+        return reproduced == evaluation
+
+    def _fresh_lineage_ownership_is_valid(self, run: WalkthroughRunRecord) -> bool:
+        contexts = {item.context_ref_id: item for item in run.retrieved_context}
+        canonical = {item.chunk_id: item for item in self.rag_store.chunks_for_project(
+            tenant_id=run.tenant_id, project_id=run.project_id
+        )}
+        if len(contexts) != len(run.retrieved_context) or any(
+            (item.chunk.tenant_id, item.chunk.project_id) != (run.tenant_id, run.project_id)
+            or canonical.get(item.chunk.chunk_id) != item.chunk
+            or ((item.chunk.document_id in self.documents or item.chunk.document_id in self.sources)
+                and re.fullmatch(r"ctx_[0-9a-f]{16}", item.context_ref_id) is None)
+            for item in run.retrieved_context
+        ):
+            return False
+        if run.evaluation is None or run.generated_script is None:
+            return run.status == "REFUSED"
+        evaluation = run.evaluation
+        if (evaluation.tenant_id, evaluation.project_id, evaluation.run_id) != (run.tenant_id, run.project_id, run.run_id):
+            return False
+        if evaluation.evaluation_id != f"eval_{run.run_id.removeprefix('run_')}":
+            return False
+        if [item.claim_support_id for item in evaluation.claim_supports] != [
+            f"claimsup_{index:03d}" for index in range(1, len(evaluation.claim_supports) + 1)
+        ]:
+            return False
+        claims = {claim.claim_id: claim for claim in run.generated_script.claims}
+        unsupported = {claim.claim_id for claim in evaluation.unsupported_claims}
+        if (not claims or len(claims) != len(run.generated_script.claims)
+            or any(re.fullmatch(r"claim_[A-Za-z0-9_-]{1,128}", claim_id) is None for claim_id in claims)
+            or len(unsupported) != len(evaluation.unsupported_claims)):
+            return False
+        supported = [support.claim_id for support in evaluation.claim_supports]
+        if (
+            len(supported) != len(set(supported)) or unsupported.intersection(supported)
+            or set(supported).union(unsupported) != set(claims)
+        ):
+            return False
+        expected_score = len(supported) / len(claims)
+        expected_status = "PASSED" if not unsupported else "FAILED"
+        if (evaluation.evaluation_status != expected_status or evaluation.groundedness_score != expected_score
+            or evaluation.faithfulness_score != expected_score):
+            return False
+        context_chunks = {item.chunk.chunk_id for item in contexts.values()}
+        if any(claim.chunk_id not in context_chunks and claim.claim_id not in unsupported for claim in run.generated_script.claims):
+            return False
+        return all(
+            support.claim_id in claims and support.context_ref_id in contexts
+            and claims[support.claim_id].chunk_id == support.chunk_id
+            and claims[support.claim_id].citation_index == support.citation_index
+            and 0 < support.citation_index <= len(run.retrieved_context)
+            and run.retrieved_context[support.citation_index - 1].context_ref_id == support.context_ref_id
+            and contexts[support.context_ref_id].chunk.chunk_id == support.chunk_id
+            and contexts[support.context_ref_id].chunk.document_id == support.document_id
+            for support in evaluation.claim_supports
         )
 
     def _restored_retrieval_lineage_is_current(self, row: dict[str, Any], run: WalkthroughRunRecord) -> bool:
@@ -704,9 +832,9 @@ class Stage4Service:
         }
 
     def _persist_locked(self) -> None:
-        write_state(
-            self.state_path,
-            {
+        if self.state_path is None:
+            return
+        payload = {
                 "schema": "stage4-local-state-v1",
                 "projects": [asdict(project) for project in self.projects.values()],
                 "documents": [asdict(document) for document in self.documents.values()],
@@ -730,8 +858,11 @@ class Stage4Service:
                     "ingestion": self._ingestion_counter,
                     "run": self._run_counter,
                 },
-            },
-        )
+            }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n"
+        if len(encoded) > MAX_STAGE4_STATE_BYTES:
+            raise OSError("Stage 4 local state exceeds the restore size limit.")
+        write_state(self.state_path, payload)
 
     def create_project(
         self,
@@ -1278,6 +1409,10 @@ class Stage4Service:
                             prompt=prompt,
                             retrieved_context=retrieved,
                         )
+                        if not isinstance(generated, GeneratedScript) or type(generated.text) is not str or not generated.text or not isinstance(generated.claims, list) or any(not isinstance(claim, ScriptClaim) for claim in generated.claims):
+                            raise Stage4Error(422, "INVALID_GENERATED_LINEAGE", "Generated script lineage is invalid.")
+                        if not generated_script_is_bounded(generated):
+                            raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
                         evaluation = evaluate_grounding(
                             tenant_id=principal.tenant_id,
                             project_id=project_id,
@@ -1288,6 +1423,18 @@ class Stage4Service:
                             all_chunks=all_chunks,
                         )
                         evaluation = replace(evaluation, retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION, retrieval_top_k=RETRIEVAL_TOP_K, retrieval_score_threshold=RETRIEVAL_MIN_SCORE)
+                        canonical_evaluation = _canonical_evaluate_grounding(
+                            tenant_id=principal.tenant_id,
+                            project_id=project_id,
+                            run_id=run_id,
+                            candidate=generated,
+                            retrieved_context=retrieved,
+                            prompt=prompt,
+                            all_chunks=all_chunks,
+                        )
+                        canonical_evaluation = replace(canonical_evaluation, retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION, retrieval_top_k=RETRIEVAL_TOP_K, retrieval_score_threshold=RETRIEVAL_MIN_SCORE)
+                        if evaluation != canonical_evaluation:
+                            raise Stage4Error(422, "INVALID_GENERATED_LINEAGE", "Generated script lineage is invalid.")
                         input_tokens, output_tokens = evaluate_token_usage(
                             prompt=prompt,
                             retrieved_context=retrieved,
@@ -1402,6 +1549,13 @@ class Stage4Service:
             retrieval_top_k=RETRIEVAL_TOP_K,
             retrieval_score_threshold=RETRIEVAL_MIN_SCORE,
         )
+        if (
+            not raw_walkthrough_lineage_is_bounded_and_typed(walkthrough_run_to_dict(run))
+            or not self._restored_retrieval_lineage_is_current(walkthrough_run_to_dict(run), run)
+            or not self._fresh_lineage_ownership_is_valid(run)
+            or not self._restored_citation_lineage_is_valid(run)
+        ):
+            raise Stage4Error(422, "INVALID_GENERATED_LINEAGE", "Generated script lineage is invalid.")
         record_walkthrough_metrics(
             tenant_id=principal.tenant_id,
             run_id=run_id,
@@ -1674,6 +1828,83 @@ def knowledge_chunk_from_dict(row: dict[str, Any]) -> KnowledgeChunk:
     )
 
 
+def _raw_strings(row: dict[str, Any], names: tuple[str, ...]) -> bool:
+    return all(type(row.get(name)) is str and len(row[name]) <= MAX_RESTORED_SCRIPT_CHARS for name in names)
+
+
+def _raw_number(value: object) -> bool:
+    return type(value) in (int, float) and math.isfinite(float(cast(int | float, value)))
+
+
+def generated_script_is_bounded(candidate: object) -> bool:
+    if not isinstance(candidate, GeneratedScript) or type(candidate.text) is not str:
+        return False
+    if len(candidate.text) > MAX_RESTORED_SCRIPT_CHARS or not isinstance(candidate.claims, list) or len(candidate.claims) > MAX_RESTORED_LINEAGE_ITEMS:
+        return False
+    if any(not isinstance(claim, ScriptClaim) or type(claim.text) is not str
+           or any(type(value) is not str or len(value) > MAX_RESTORED_SCRIPT_CHARS
+                  for value in (claim.claim_id, claim.text, claim.chunk_id or "")) for claim in candidate.claims):
+        return False
+    return sum(len(claim.text) for claim in candidate.claims) <= len(candidate.text) and all(
+        len(marker) <= MAX_RESTORED_CITATION_DIGITS for marker in re.findall(r"\[(\d+)\]", candidate.text))
+
+
+def raw_walkthrough_lineage_is_bounded_and_typed(row: dict[str, Any]) -> bool:
+    """Reject active coercible lineage; legacy retrieval scores may only reach inactive quarantine."""
+    status = row.get("status")
+    if status == "REFUSED":
+        return row.get("generated_script") is None and row.get("evaluation") is None
+    if status not in {"COMPLETED", "FAILED"}:
+        return False
+    script, evaluation, contexts = row.get("generated_script"), row.get("evaluation"), row.get("retrieved_context")
+    if not isinstance(script, dict) or not isinstance(evaluation, dict) or not isinstance(contexts, list):
+        return False
+    text, claims = script.get("text"), script.get("claims")
+    if type(text) is not str or not 0 < len(text) <= MAX_RESTORED_SCRIPT_CHARS or not isinstance(claims, list):
+        return False
+    if len(claims) > MAX_RESTORED_LINEAGE_ITEMS or len(contexts) > RETRIEVAL_TOP_K:
+        return False
+    markers = re.findall(r"\[(\d+)\]", text)
+    if any(len(marker) > MAX_RESTORED_CITATION_DIGITS for marker in markers):
+        return False
+    for claim in claims:
+        if not isinstance(claim, dict) or not _raw_strings(claim, ("claim_id", "text")):
+            return False
+        if type(claim.get("citation_index")) is not int or type(claim.get("script_span_start")) is not int or type(claim.get("script_span_end")) is not int:
+            return False
+        if claim.get("chunk_id") is not None and type(claim.get("chunk_id")) is not str:
+            return False
+    if sum(len(claim["text"]) for claim in claims) > len(text):
+        return False
+    for context in contexts:
+        if not isinstance(context, dict) or type(context.get("context_ref_id")) is not str:
+            return False
+        score = context.get("score")
+        if not isinstance(score, (int, float)) and not (type(score) is str and len(score) <= 32):
+            return False
+        chunk = context.get("chunk")
+        if not isinstance(chunk, dict) or not _raw_strings(chunk, ("chunk_id", "tenant_id", "project_id", "document_id")):
+            return False
+    supports, unsupported = evaluation.get("claim_supports"), evaluation.get("unsupported_claims")
+    if not isinstance(supports, list) or not isinstance(unsupported, list):
+        return False
+    if len(supports) > MAX_RESTORED_LINEAGE_ITEMS or len(unsupported) > MAX_RESTORED_LINEAGE_ITEMS:
+        return False
+    if type(evaluation.get("unsupported_claim_count")) is not int or evaluation.get("unsupported_claim_count") != len(unsupported):
+        return False
+    if evaluation.get("evaluation_status") not in {"PASSED", "FAILED"}:
+        return False
+    metric_names = ("groundedness_score", "faithfulness_score", "answer_relevancy", "context_precision", "context_recall", "context_ref_coverage")
+    if not all(_raw_number(evaluation.get(name)) for name in metric_names):
+        return False
+    for support in supports:
+        if not isinstance(support, dict) or not _raw_strings(support, ("claim_support_id", "claim_id", "context_ref_id", "chunk_id", "document_id", "support_reason")):
+            return False
+        if support.get("support_status") != "SUPPORTED" or type(support.get("citation_index")) is not int or not _raw_number(support.get("support_score")):
+            return False
+    return all(isinstance(claim, dict) and _raw_strings(claim, ("claim_id", "claim_text", "reason")) for claim in unsupported)
+
+
 def generated_script_from_dict(row: dict[str, Any]) -> GeneratedScript:
     return GeneratedScript(
         text=str(row["text"]),
@@ -1724,7 +1955,7 @@ def evaluation_from_dict(row: dict[str, Any]) -> EvaluationResult:
                 context_ref_id=str(support["context_ref_id"]),
                 chunk_id=str(support["chunk_id"]),
                 document_id=str(support["document_id"]),
-                support_status="SUPPORTED",
+                support_status=cast(Literal["SUPPORTED"], support["support_status"]),
                 support_score=float(support["support_score"]),
                 support_reason=str(support["support_reason"]),
                 citation_index=int(support["citation_index"]),

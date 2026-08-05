@@ -1034,3 +1034,29 @@ and [3.14 documentation](https://docs.python.org/3.14/library/pathlib.html#pathl
 specify top-down `dirnames` mutation for pruning and no directory-symlink
 following by default. The implementation also rejects file symlinks and raises
 every walk error rather than silently omitting repository-owned source.
+
+## Issue #372 citation-lineage parity gate
+
+The exact `cut1-372-citation-index-parity-post380` route from
+`372fb78245b8890157ffe54f48b90e523017bc43` is limited to the eleven
+preflight paths. Its RED/GREEN evidence proves:
+
+- every claim-support index equals the marker in its exact visible `scriptSpanStart`/`scriptSpanEnd` slice and context;
+- valid stored/replayed results preserve accepted/generated text, provider claims, supports, context refs, and indexes;
+- restored text, marker, provider-claim, support-index, and link drift fails closed without completed-run replay; and
+- raw lineage types/status and restore-time size/count/marker work fail closed per row without clearing valid siblings;
+- both exact-base-to-index and exact-base-to-working-tree charges are validated, using the greater value; and
+- tenant/project isolation, unsupported-claim refusal, retrieval order, and key-free local/mock posture stay unchanged.
+
+Focused verification starts with:
+```bash
+uv run --python 3.13 --frozen pytest -p no:cacheprovider tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_local_durability.py
+uv run --isolated --python 3.14 --frozen pytest -p no:cacheprovider tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_local_durability.py
+uv run --python 3.13 --frozen pytest -p no:cacheprovider tests/unit/test_stage8_quality_gate.py tests/unit/publication_boundary/test_scope.py
+make checkpoint3-acceptance
+```
+The complete suite, quality, CI, security, evaluation, and applicable real-browser gates remain mandatory. A fixed
+citation value, renumbering, loosened assertion, skipped test, narrowed gate, retrieval change, or extra path fails.
+This repair is not presenter/media, deployment, release, public availability, production readiness, or Cut 1 evidence.
+
+The complete diff must remain at or below 1200 charged lines. A twelfth path or charge 1201 is a gate failure.

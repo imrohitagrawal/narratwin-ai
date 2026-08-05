@@ -39,7 +39,16 @@ Use it to answer:
   stopped implementations `#336`–`#345` are forensic-only and must not be
   revived or reused. No Cut 1, release, readiness, deployment, or avatar
   completion is established by this slice.
-- Last reviewed date: 2026-08-04
+- Issue `#372` is the bounded prerequisite repair for parent Cut 1 issue `#366`. Its exact branch
+  `cut1-372-citation-index-parity-post380` corrects a stale fixed-index oracle and makes restored Stage 4 citation lineage fail
+  closed when accepted text, visible markers, provider claims, retrieved-context order, or claim-support indexes drift.
+  Raw restore types, sizes, counts, and marker digits are bounded per row so one malformed run cannot clear valid sibling
+  state; generation and writes enforce the same replay limits. Legacy invalid retrieval scores cross construction only
+  for inactive audit quarantine, never active replay, and the route charges both staged-index and working-tree diffs.
+  Fresh retrieved contexts must exactly equal canonical stored chunks and satisfy restore-time retrieval invariants.
+  Fresh generation preserves marker/support parity without retrieval or numbering changes. Presenter, media, provider,
+  deployment, release, public availability, production readiness, and Cut 1 completion remain outside this repair.
+- Last reviewed date: 2026-08-05
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
   `#332` / PR `#333` completed the narrow containment correction at merged main
@@ -941,6 +950,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-08-05 | Issue `#372` restarted after PR `#380` from exact main `372fb78245b8890157ffe54f48b90e523017bc43` on `cut1-372-citation-index-parity-post380`. Isolated Python 3.13 and 3.14 evidence disproved the reported order dependency: the stale test hard-coded one fact to citation 1 while fresh visible markers, claim metadata, context order, supports, and replay correctly bind that fact to citation 2. The governed repair replaces the fixed oracle with exact visible-span parity and rejects corrupt restored citation lineage. It does not change retrieval, providers, media, deployment, release, public availability, production readiness, or establish Cut 1 completion. |
 | 2026-08-02 | Issue `#328` OWNER comment `5152829686` authorized Cut 1 fail-safe containment. PR `#331` closed unmerged; its stopped heads and Issue `#330` RCA remain evidence. Issue `#332` started the four-file controller correction from base `13941ca7a46515d5dd0d8d6d5b40b807f6cfa636`: agent-context stays `SHADOW_ONLY`/`STALE_GOVERNANCE`, its outputs are non-authoritative for truth/routing/merge/release/readiness, A1.1b/A1.1c leave the Cut 1 blocking path, A1.2/A1.3/the R0C external trust anchor remain incomplete nonblocking hardening, and R0C-A2 becomes the sole next blocker only after merged-tree closeout. No product runtime, provider, media, deployment, repository-setting, protected-evidence, release, or readiness change is authorized. |
 | 2026-07-30 | PR `#322` merged the Issue `#321` renderer compatibility correction at `704c5b9536c62e29ba7fd74c7344d067770c728e`; Issues `#317` and `#321` closed after bounded merged-tree acceptance. The result certifies only the Spanish `STANDARD` seven-audience cohort and preserves Issue `#280` as not fixed, Issue `#298` open, PR `#299` immutable/open, the German baseline drift, and explicit owner authority for any Slice 2. |
 | 2026-07-30 | Issue `#319` started the governance-only agent-context shadow slice after read-only preflight confirmed bounded concurrency. PR `#320` carried a post-merge target state that returned next-action authority to an explicit repo-owner decision. Its then-current repository/live Issue `#317` completion contradiction was recorded rather than hidden; later PR `#322` completed the narrow compatibility correction. Mandatory reading, Issue `#280`, PR `#299`, product/runtime, providers, deployment, release, and production posture remained unchanged. |

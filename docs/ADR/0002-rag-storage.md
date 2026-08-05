@@ -79,6 +79,30 @@ Stage 2 and Stage 8 both execute that oracle. Runtime or declaration drift,
 including paired weakening, fails without importing or executing product code.
 This enforcement changes no retrieval semantics or runtime behavior.
 
+## Restored Grounding Lineage Decision
+
+Issue #372 makes current-lineage completed and failed walkthrough runs fail closed on restore. After the existing
+stale-lineage quarantine decision, the runtime reproduces the grounding evaluation from the stored generated script,
+its exact retrieved context, and current tenant/project-scoped approved chunks. An active run is restored only when the
+reproduced evaluation equals the stored evaluation, including its disposition, unsupported claims, claim supports,
+citation indices, claim spans, grounding metrics, policy versions, and retrieval lineage. Completed runs additionally
+require accepted text identical to generated text; failed runs must not contain accepted text. Invalid active runs and
+their exact idempotency replay records are discarded together; stale-lineage rows remain audit-preserved but inactive.
+
+Restore validates each raw row before coercive construction, requires exact JSON types and the stored `SUPPORTED`
+status, caps scripts at 20,000 characters and claims, supports, and unsupported claims at 24 each, caps marker digits,
+and caps the Stage 4 local snapshot at 256 MiB before decoding. Validation exceptions quarantine only the affected row
+and its replay binding; they cannot clear a valid sibling run or the rest of the snapshot. The same script/lineage
+limits are enforced before terminal generation persistence, and writes that would exceed the restore byte cap roll back.
+Legacy boolean, non-finite, or bounded numeric-string retrieval scores may cross object construction only to preserve
+their byte-equivalent inactive audit quarantine; current activation still requires finite, non-boolean raw numbers.
+Fresh activation also requires exact canonical stored-chunk equality and the same retrieval invariants used on restore.
+
+Answer relevancy and context recall are exceptions because the original prompt and historical whole-project corpus are
+not persisted. Restore requires both stored values to be finite but substitutes them before equality comparison.
+Prompt checksum and exact idempotency request binding remain unchanged. These limitations do not weaken citation,
+source, tenant, or project lineage and change no provider, ranking, media, deployment, release, or production boundary.
+
 ## Knowledge State Decision
 
 Vector records, retrieval caches, and generated-script caches are derived from

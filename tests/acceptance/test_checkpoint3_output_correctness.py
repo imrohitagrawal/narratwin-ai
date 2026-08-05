@@ -6,6 +6,7 @@ import os
 import base64
 import copy
 import json
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, cast
@@ -273,7 +274,7 @@ def assert_runtime_output_fact_is_grounded(
     script = run.get("acceptedScriptText")
     assert isinstance(script, str)
     assert required_fact in script
-    assert "[1]" in script
+    assert re.search(r"\[\d+\]", script)
     assert run["status"] == "COMPLETED"
     assert run["evaluationStatus"] == "PASSED"
     assert run["provider"] == {"provider": "mock", "providerMode": "LOCAL"}
@@ -299,7 +300,12 @@ def assert_runtime_output_fact_is_grounded(
         assert support["projectId"] == project_id
         assert support["documentId"] == document["documentId"]
         assert support["chunkId"] == context["chunkId"]
-        assert support["citationIndex"] == 1
+        assert context["claimId"] == support["claimId"]
+        assert type(support["citationIndex"]) is int
+        assert 1 <= support["citationIndex"] <= len(context_refs)
+        assert context_refs[support["citationIndex"] - 1] == context
+        visible_claim = script[context["scriptSpanStart"] : context["scriptSpanEnd"]]
+        assert re.findall(r"\[(\d+)\]", visible_claim) == [str(support["citationIndex"])]
         assert support["supportStatus"] == "SUPPORTED"
         assert context["projectId"] == project_id
         assert context["documentId"] == document["documentId"]
@@ -308,6 +314,26 @@ def assert_runtime_output_fact_is_grounded(
         assert context["evidenceSnapshot"]["sourceDocumentChecksum"] == document["checksum"]
         assert context["evidenceSnapshot"]["chunkChecksum"] == context["checksum"]
         assert support["evidenceSnapshot"]["snapshotChecksum"] == context["evidenceSnapshot"]["snapshotChecksum"]
+
+
+def test_grounding_assertion_rejects_zero_citation_index() -> None:
+    client = TestClient(app)
+    project, document = prepare_approved_project(client, prefix="zero-index", name="Zero Index",
+        filename="zero.md", content=ATLAS_OUTPUT_KNOWLEDGE)
+    run = generate_walkthrough(client, prefix="zero-index", project_id=project["projectId"],
+        prompt="Create a grounded walkthrough using only approved source facts.")
+    mutated = copy.deepcopy(run)
+    support = next(row for row in mutated["evaluation"]["claimSupports"]
+        if REQUIRED_ATLAS_FACT in row["evidenceSnapshot"]["redactedExcerpt"])
+    context = next(row for row in mutated["contextRefs"] if row["contextRefId"] == support["contextRefId"])
+    original_index = support["citationIndex"]
+    support["citationIndex"] = 0
+    mutated["contextRefs"] = [context]
+    mutated["evaluation"]["claimSupports"] = [support]
+    mutated["acceptedScriptText"] = mutated["acceptedScriptText"].replace(f"[{original_index}]", "[0]")
+    with pytest.raises(AssertionError):
+        assert_runtime_output_fact_is_grounded(mutated, project_id=project["projectId"],
+            document=document, required_fact=REQUIRED_ATLAS_FACT)
 
 
 def test_checkpoint3_output_correctness_executes_runtime_api_evidence_path() -> None:
