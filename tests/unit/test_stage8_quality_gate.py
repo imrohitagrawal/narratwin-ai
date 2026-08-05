@@ -75,6 +75,63 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
         calls.clear(); monkeypatch.setattr(dispatcher, "current_branch", lambda branch=branch: branch)
         assert (dispatcher.main(), calls) == (0, [["make", "stage8-quality"]])
         assert branch == a23b.A23B_BRANCH or canonical_stage_issue(branch) is None
+
+def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypatch: Any) -> None:
+    missing = sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE)[0]
+    partial = sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE - {missing})
+    failures = route(monkeypatch, CUT1_REAL_MEDIA_TRANSITION, partial)
+    assert failures == [f"Issue #366 route is missing required path: {missing}"]
+
+    root = Path(__file__).parents[2]
+    governed = {
+        path: (root / path).read_text(encoding="utf-8")
+        for path in (
+            "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md",
+            "docs/STATUS.md", "docs/TRACEABILITY.md",
+        )
+    }
+    monkeypatch.setattr(stage8, "read", lambda path: governed[path])
+    failures = []
+    stage8.check_cut1_transition_contract(failures)
+    assert failures == []
+
+    required = (
+        ("docs/STAGE_ISSUE_PLAN.md", "Issue `#382`"),
+        ("docs/STAGE_ISSUE_PLAN.md", "StackClimb"),
+        ("docs/STAGE_ISSUE_PLAN.md", "Rohit Agrawal"),
+        ("docs/STAGE_ISSUE_PLAN.md", "90–120 seconds"),
+        ("docs/STAGE_ISSUE_PLAN.md", "Do not silently time-stretch"),
+        ("docs/STAGE_ISSUE_PLAN.md", "citation numbers are not spoken"),
+        ("docs/STAGE_ISSUE_PLAN.md", "Interactive Q&A remains future work"),
+        ("docs/STAGE_ISSUE_PLAN.md", "latest evaluated script version"),
+        ("docs/STAGE_ISSUE_PLAN.md", "invalidates audio, captions, render, export, and replay evidence"),
+        ("docs/STAGE_ISSUE_PLAN.md", "Still images"),
+        ("docs/STAGE_ISSUE_PLAN.md", "HTML"),
+        ("docs/STAGE_ISSUE_PLAN.md", "JSON"),
+        ("docs/STAGE_ISSUE_PLAN.md", "manifests"),
+        ("docs/STAGE_ISSUE_PLAN.md", "silent or empty audio"),
+        ("docs/STAGE_ISSUE_PLAN.md", "metadata-only success"),
+        ("docs/STAGE_ISSUE_PLAN.md", "placeholder"),
+        ("docs/STATUS.md", "Issue `#372` is closed after PR `#381`"),
+        ("docs/STATUS.md", "`#367` → `#382` → `#368`"),
+        ("docs/TRACEABILITY.md", "narration and speech-approval child `#382`"),
+        ("docs/QUALITY_GATES.md", "F366-1 through F366-12"),
+    )
+    for path, marker in required:
+        original = governed[path]
+        assert marker in original
+        governed[path] = original.replace(marker, "", 1)
+        failures = []
+        stage8.check_cut1_transition_contract(failures)
+        assert failures == [f"Issue #366 governance contract must include {marker} in {path}."]
+        governed[path] = original
+
+    for stale in ("#372 must first repair", "blocked by #372", "after #372 is merged"):
+        governed["docs/STATUS.md"] += f"\n{stale}\n"
+        failures = []
+        stage8.check_cut1_transition_contract(failures)
+        assert failures == [f"Issue #366 governance contract retains stale text: {stale}"]
+        governed["docs/STATUS.md"] = governed["docs/STATUS.md"].rsplit("\n", 2)[0]
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     git(tmp_path, "init", "-b", "main"); git(tmp_path, "config", "user.name", "Scope Test")
     git(tmp_path, "config", "user.email", "scope@example.invalid")
