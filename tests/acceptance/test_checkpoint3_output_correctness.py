@@ -6,6 +6,7 @@ import os
 import base64
 import copy
 import json
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, cast
@@ -273,7 +274,7 @@ def assert_runtime_output_fact_is_grounded(
     script = run.get("acceptedScriptText")
     assert isinstance(script, str)
     assert required_fact in script
-    assert "[1]" in script
+    assert re.search(r"\[\d+\]", script)
     assert run["status"] == "COMPLETED"
     assert run["evaluationStatus"] == "PASSED"
     assert run["provider"] == {"provider": "mock", "providerMode": "LOCAL"}
@@ -299,7 +300,9 @@ def assert_runtime_output_fact_is_grounded(
         assert support["projectId"] == project_id
         assert support["documentId"] == document["documentId"]
         assert support["chunkId"] == context["chunkId"]
-        assert support["citationIndex"] == 1
+        assert context["claimId"] == support["claimId"]
+        visible_claim = script[context["scriptSpanStart"] : context["scriptSpanEnd"]]
+        assert re.findall(r"\[(\d+)\]", visible_claim) == [str(support["citationIndex"])]
         assert support["supportStatus"] == "SUPPORTED"
         assert context["projectId"] == project_id
         assert context["documentId"] == document["documentId"]

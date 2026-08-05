@@ -162,7 +162,7 @@ def test_stage4_file_state_restores_projects_chunks_runs_and_idempotency(tmp_pat
         requested_language="en",
         depth="CONCISE",
         style="CONFIDENT",
-        prompt="Create a concise grounded walkthrough for a recruiter.",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.",
         idempotency_key="generate-walkthrough",
     )
 
@@ -179,12 +179,20 @@ def test_stage4_file_state_restores_projects_chunks_runs_and_idempotency(tmp_pat
         requested_language="en",
         depth="CONCISE",
         style="CONFIDENT",
-        prompt="Create a concise grounded walkthrough for a recruiter.",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.",
         idempotency_key="generate-walkthrough",
     )
 
     assert replayed_project.project_id == project.project_id
     assert replayed_run.run_id == run.run_id
+    assert replayed_run == run
+    assert replayed_run.status == "COMPLETED"
+    assert replayed_run.generated_script is not None
+    assert replayed_run.evaluation is not None
+    assert replayed_run.accepted_script_text == replayed_run.generated_script.text
+    assert [support.citation_index for support in replayed_run.evaluation.claim_supports] == [
+        claim.citation_index for claim in replayed_run.generated_script.claims
+    ]
     assert restored.rag_store.chunk_count_for_project(
         tenant_id=principal.tenant_id,
         project_id=project.project_id,
@@ -743,7 +751,20 @@ def test_stage4_file_state_drops_completed_walkthrough_without_evaluation(tmp_pa
     assert restored.walkthrough_runs == {}
 
 
-def test_stage4_file_state_drops_walkthrough_with_tampered_evaluation_support(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        "missing-support-links",
+        "support-citation-index",
+        "accepted-script-text",
+        "visible-citation-marker",
+        "provider-claim-citation-index",
+    ),
+)
+def test_stage4_file_state_drops_walkthrough_with_tampered_citation_lineage(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
     state_path = tmp_path / "stage4.json"
     principal = LocalPrincipal()
     service = Stage4Service(state_path=state_path)
@@ -779,15 +800,32 @@ def test_stage4_file_state_drops_walkthrough_with_tampered_evaluation_support(tm
         idempotency_key="generate-walkthrough",
     )
     payload = json.loads(state_path.read_text(encoding="utf-8"))
-    support = payload["walkthroughRuns"][0]["evaluation"]["claim_supports"][0]
-    support["claim_id"] = "claim_missing"
-    support["context_ref_id"] = "ctx_missing"
+    row = payload["walkthroughRuns"][0]
+    support = row["evaluation"]["claim_supports"][0]
+    if mutation == "missing-support-links":
+        support["claim_id"] = "claim_missing"
+        support["context_ref_id"] = "ctx_missing"
+    elif mutation == "support-citation-index":
+        support["citation_index"] = 99
+    elif mutation == "accepted-script-text":
+        row["accepted_script_text"] = row["accepted_script_text"].replace("[1]", "[99]", 1)
+    elif mutation == "visible-citation-marker":
+        row["accepted_script_text"] = row["accepted_script_text"].replace("[1]", "[99]", 1)
+        row["generated_script"]["text"] = row["generated_script"]["text"].replace(
+            "[1]", "[99]", 1
+        )
+    else:
+        row["generated_script"]["claims"][0]["citation_index"] = 99
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
     restored = Stage4Service(state_path=state_path)
 
     assert run.status == "COMPLETED"
     assert restored.walkthrough_runs == {}
+    assert all(
+        record.endpoint != "POST /api/v1/projects/{projectId}/walkthrough-runs"
+        for record in restored.idempotency_records.values()
+    )
 
 
 def test_stage4_file_state_derives_missing_counters_from_restored_ids(tmp_path: Path) -> None:
