@@ -1,0 +1,52 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 372,
+  "branch": "cut1-372-citation-index-parity-post380",
+  "objective": "From exact base 372fb78245b8890157ffe54f48b90e523017bc43 on cut1-372-citation-index-parity-post380, repair only Issue #372 visible-marker/claim-support citation parity under owner reset 4 at https://github.com/imrohitagrawal/narratwin-ai/issues/372#issuecomment-5195747476. The complete preflight ledger at https://github.com/imrohitagrawal/narratwin-ai/issues/372#issuecomment-5195804254 records actors, trust boundaries, lifecycle, positive claims, negative invariants, F372-1 through F372-14 with per-row evidence status, test/gate mapping, adversarial prompts, human-only pass/fail surfaces and risk owner, documentation mapping, and the skill/tool decision ledger. Preserve retrieval order and lineage, tenant/project isolation, citations, unsupported-claim refusal, evaluation evidence, terminal side-effect safety, durability, and idempotent replay. Do not hard-code or renumber a citation, loosen detectors, broaden claim support, hide unsupported content, or touch media, providers, frontend, Docker, dependencies, deployment, release, public availability, production readiness, PR #373, or Issues #367-#371. The completed candidate requires exactly the eleven scoped paths, at most 1200 combined charged lines, at most 500 charged lines in scripts/quality/check_stage8_docs.py, and at most 250 in tests/unit/test_stage8_quality_gate.py. Use committed RED before GREEN and prove focused parity, mutation, lineage, isolation, refusal, evaluator, replay, bounded-work, exact-scope, supported-Python, full-quality, CI, forced-PR, and independent exact-head review evidence. Stop for authority/base drift, a twelfth path, any budget excess, scope expansion, changed retrieval or post-generation citation value, weakened assertion, failed mandatory gate, or unresolved High/Critical or mandatory finding. The historical branch/worktree is read-only evidence and not authority.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-372.json",
+      "backend/app/stage4.py",
+      "tests/acceptance/test_checkpoint3_output_correctness.py",
+      "tests/unit/test_local_durability.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/ADR/0002-rag-storage.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-372.json",
+      "backend/app/stage4.py",
+      "tests/acceptance/test_checkpoint3_output_correctness.py",
+      "tests/unit/test_local_durability.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/ADR/0002-rag-storage.md"
+    ],
+    "forbidden": [
+      ".github/",
+      ".stage/",
+      "AGENTS.md",
+      "Makefile",
+      "backend/app/main.py",
+      "backend/app/rag/",
+      "backend/app/stage6.py",
+      "backend/app/stage7.py",
+      "backend/app/avatar_video_provider.py",
+      "backend/Dockerfile",
+      "frontend/",
+      "pyproject.toml",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_quality_stage.py",
+      "uv.lock"
+    ]
+  }
+}

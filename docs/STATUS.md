@@ -48,6 +48,16 @@ Use it to answer:
   authorizes only their future, separately reviewed contracts; it does not
   authorize a media implementation or alter the existing no-real-media truth.
 - Last reviewed date: 2026-08-04
+- Issue `#372` is the bounded prerequisite repair for parent Cut 1 issue `#366`. Its exact branch
+  `cut1-372-citation-index-parity-post380` corrects a stale fixed-index oracle and makes restored Stage 4 citation lineage fail
+  closed when accepted text, visible markers, provider claims, retrieved-context order, or claim-support indexes drift.
+  Raw restore types, sizes, counts, and marker digits are bounded per row so one malformed run cannot clear valid sibling
+  state; generation and writes enforce the same replay limits. Legacy invalid retrieval scores cross construction only
+  for inactive audit quarantine, never active replay, and the route charges both staged-index and working-tree diffs.
+  Fresh retrieved contexts must exactly equal canonical stored chunks and satisfy restore-time retrieval invariants.
+  Fresh generation preserves marker/support parity without retrieval or numbering changes. Presenter, media, provider,
+  deployment, release, public availability, production readiness, and Cut 1 completion remain outside this repair.
+- Last reviewed date: 2026-08-05
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
   `#332` / PR `#333` completed the narrow containment correction at merged main
@@ -949,6 +959,7 @@ Required update rules:
 
 | Date | Change |
 |---|---|
+| 2026-08-05 | Issue `#372` restarted after PR `#380` from exact main `372fb78245b8890157ffe54f48b90e523017bc43` on `cut1-372-citation-index-parity-post380`. Isolated Python 3.13 and 3.14 evidence disproved the reported order dependency: the stale test hard-coded one fact to citation 1 while fresh visible markers, claim metadata, context order, supports, and replay correctly bind that fact to citation 2. The governed repair replaces the fixed oracle with exact visible-span parity and rejects corrupt restored citation lineage. It does not change retrieval, providers, media, deployment, release, public availability, production readiness, or establish Cut 1 completion. |
 | 2026-08-02 | Issue `#328` OWNER comment `5152829686` authorized Cut 1 fail-safe containment. PR `#331` closed unmerged; its stopped heads and Issue `#330` RCA remain evidence. Issue `#332` started the four-file controller correction from base `13941ca7a46515d5dd0d8d6d5b40b807f6cfa636`: agent-context stays `SHADOW_ONLY`/`STALE_GOVERNANCE`, its outputs are non-authoritative for truth/routing/merge/release/readiness, A1.1b/A1.1c leave the Cut 1 blocking path, A1.2/A1.3/the R0C external trust anchor remain incomplete nonblocking hardening, and R0C-A2 becomes the sole next blocker only after merged-tree closeout. No product runtime, provider, media, deployment, repository-setting, protected-evidence, release, or readiness change is authorized. |
 | 2026-07-30 | PR `#322` merged the Issue `#321` renderer compatibility correction at `704c5b9536c62e29ba7fd74c7344d067770c728e`; Issues `#317` and `#321` closed after bounded merged-tree acceptance. The result certifies only the Spanish `STANDARD` seven-audience cohort and preserves Issue `#280` as not fixed, Issue `#298` open, PR `#299` immutable/open, the German baseline drift, and explicit owner authority for any Slice 2. |
 | 2026-07-30 | Issue `#319` started the governance-only agent-context shadow slice after read-only preflight confirmed bounded concurrency. PR `#320` carried a post-merge target state that returned next-action authority to an explicit repo-owner decision. Its then-current repository/live Issue `#317` completion contradiction was recorded rather than hidden; later PR `#322` completed the narrow compatibility correction. Mandatory reading, Issue `#280`, PR `#299`, product/runtime, providers, deployment, release, and production posture remained unchanged. |
@@ -1149,3 +1160,43 @@ Required update rules:
   verification; only then may closeout mark it satisfied or superseded. Issue #150 and its `2026-08-13` expiry
   remain unchanged. The historical pre-merge Issue #358 sentence is superseded by PR #362 at
   `22277c97eff83d6927c385aa7d769bd01b34f62b`; playable speaking-avatar Cut 1 remains incomplete.
+
+## Issue 374 frontend container security repair status
+
+- Issue `#374` is the bounded Stage 8 prerequisite repair for the Grype High finding
+  `CVE-2026-58043` in the frontend image's Node.js 26.4.0 runtime.
+- The frontend build stage uses official Node.js 26.6.0 Alpine at digest
+  `sha256:a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8`;
+  the minimal runtime uses Chainguard Node at digest
+  `sha256:cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734`,
+  independently verified to execute Node.js 26.6.0.
+- The scanner-consensus gate now rejects Medium-or-higher findings for the
+  shipped frontend runtime while retaining the existing backend exception boundary.
+  Its container workflow also validates the built frontend image's exact non-root
+  config, Node version, source-bound Next build identity, architecture-bound
+  immutable-filesystem inventory, and real HTTP
+  response. No advisory is ignored or suppressed; the runtime removes
+  general-purpose shell, network, and build tooling, including npm, npx, and
+  BusyBox. SHA-512-bound npm 12.0.2/fixed-package tarballs and the resulting
+  dependency stage must separately pass both scanners; complete runtime config,
+  file ownership, zero capabilities, and preload controls are bound. Per-build
+  preview/server-action secrets retain cryptographic randomness and are normalized
+  only after exact format, occurrence, and cross-manifest equality validation; a
+  second uncached application build must preserve the build ID and inventory while
+  changing every secret. The sole builder-only
+  BusyBox Medium is accepted only through 2026-08-12 or earlier fixed-builder
+  availability and tracked by `#376`; it is absent from the final runtime.
+  Cut 1, deployment, release, public availability, and production readiness
+  remain incomplete.
+
+## Issue 375 Stage 8 ignored-cache traversal status
+
+- Issue `#375` repairs the A2.3b repository semantic scan so exact ignored
+   dependency and tool-cache directory names are pruned before traversal rather
+   than filtered only after recursive enumeration. Repository-owned Python,
+   including similar-but-not-exact directory names, remains in scope.
+- The bounded route uses exact base
+  `f2312947ef670becfa0373000c8ae6ef1f411e20`, seven paths, and 600 charged
+   lines. Symlink escape/cycle, cache poison, exact-scope, malformed-Git, and
+   context-budget regressions are executable. Cut 1 and every product,
+   provider, deployment, release, public, and production claim remain unchanged.

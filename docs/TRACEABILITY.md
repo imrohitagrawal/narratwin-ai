@@ -394,6 +394,16 @@ durability, deployment, and release decisions remain outside this trace.
 | `PUB-324-003` keep enforcement modular and reviewable | Contract, decision, repository, scope, CLI, entry-point, and mirrored test modules with executable context budgets | Phase 1 checker/test monoliths remain unchanged |
 | `PUB-324-004` preserve product and launch truth | Controlled local demo guide, current-state Q&A limitation, Stage 8 compatibility tests | No provider, media, hosting, release, public-distribution, or production authorization |
 
+## Issue #372 citation-lineage prerequisite traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Visible citation and support parity | Checkpoint 3 output-correctness helper correlates each `claimId` and exact script span to its own `citationIndex` | No hard-coded citation 1, post-generation renumbering, retrieval change, or loosened assertion |
+| Durable lineage replay | Stage 4 restore validation binds accepted/generated text, visible marker, provider claim, retrieved-context position, context reference, chunk/document, and claim support | Valid idempotent replay is exact; corrupt completed rows and their replay records fail closed |
+| Defensive restore boundary | Exact raw JSON type/status checks, 256 MiB state cap, 20,000-character script cap, 24-item lineage caps, bounded marker digits, and per-row exception containment | Malformed lineage cannot be normalized into acceptance or clear valid sibling state |
+| Isolation and refusal preservation | Existing Stage 4 API, grounding, local-durability, tenant/project, and unsupported-claim regressions | No cross-project/cross-tenant reuse, provider enablement, or weaker grounding |
+| Governed prerequisite | Issue `#372` preflight, exact eleven-path/1200-line Stage 8 route, ADR `0002`, Python 3.13/3.14, checkpoint acceptance, quality/CI/security, and independent review evidence | Parent `#366` and PR `#373` remain separate; no presenter, media, deployment, release, public-availability, production-readiness, or Cut 1 completion claim |
+
 ## Issue #358 Quiet Presence Cut 1 UI-foundation traceability
 
 | Requirement | Evidence | Preserved boundary |
@@ -403,6 +413,14 @@ durability, deployment, and release decisions remain outside this trace.
 | Accessible responsive interaction | Focus Stage inert background, contained Tab order, Escape/return focus, 320 px mobile return/launcher, caption visibility control, reduced motion | No playback timeline or unsupported Pause control |
 | Synthetic presenter preview | Local photorealistic generated WebP, exact committed-asset hash, visible and accessible synthetic still-image disclosure, and light/dark responsive browser evidence | Generated without a real-person reference and not intended to depict or endorse a real person; no copied third-party media, registered render identity, animation, video, or product-runtime provider activity |
 | Local browser proof | Opt-in `NARRATWIN_DEMO_LOCAL_E2E=1` Playwright case traverses the existing local/mock API without interception | Local execution evidence only; no deployment, public URL, release, or production readiness |
+
+## Issue #374 frontend container security repair traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| `frontend/Dockerfile` official Node.js 26.6.0 build pin, SHA-512-bound exact fixed npm build-tool tarballs, plus minimal Chainguard Node runtime pin | Remove Node.js 26.4.0 affected by Grype finding `CVE-2026-58043`, clear dependency-stage Critical/High findings, omit build tooling from the final image, and keep builder-only BusyBox `CVE-2025-60876` bounded by `#376` through 2026-08-12 | No application package-lock change, ranged repair install, vulnerability suppression, scanner bypass, product behavior, provider, or network-policy change |
+| `frontend/next.config.ts`, `scripts/ci/docker-build.sh`, and executable runtime verification in scanner-consensus `scripts/ci/docker-image-scan.sh` | Build the final image with a source-bound build ID; require both scanners on the exact npm 12.0.2 dependency stage; verify exact non-root config, environment/preload controls, Node version, architecture-bound immutable-filesystem inventory with narrowly validated random-secret normalization, second-build secret freshness, bounded HTTP serving, and fail on Medium-or-higher final-frontend or unrelated High/Critical backend findings | Passing local/container evidence does not authorize deployment, release, public availability, or production readiness |
+| `docs/STATUS.md` and `docs/THIRD_PARTY_NOTICES.md` | Preserve exact image provenance, digest, finding, and scope | Issue `#372` and the remaining Cut 1 work stay separate and incomplete until their own governed closeout |
 
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 

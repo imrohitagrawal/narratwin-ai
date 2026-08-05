@@ -1023,3 +1023,48 @@ isolation, strict audits, installed identities, Semgrep validation/scan/canaries
 independent review are mandatory. Issue #359 remains open with its branch immutable until convergence merge and
 merged-main verification; Issue #150 expiry and Issue #358 remain unchanged. This reference-only gate grants no
 product, provider, deployment, release, public-availability, or production-readiness authority.
+
+## Issue #375 ignored-cache pruning gate
+
+The Issue #375 Stage 8 route is bound to base
+`f2312947ef670becfa0373000c8ae6ef1f411e20`, exactly seven paths, and at most
+600 charged lines. The A2.3b semantic scan must use `Path.walk()` top-down and
+remove governed ignored/generated directory names before descent.
+It must still scan similarly named repository-owned directories and must not
+follow directory or file symlinks. Focused mutations, context budgets,
+guardrails, full quality, CI, exact-head checks, and independent review remain
+mandatory. This traversal repair grants no product, provider, media, release,
+public-availability, or production-readiness authority.
+
+Source fact verified 2026-08-05: the official Python
+[`Path.walk()` 3.13 documentation](https://docs.python.org/3.13/library/pathlib.html#pathlib.Path.walk)
+and [3.14 documentation](https://docs.python.org/3.14/library/pathlib.html#pathlib.Path.walk)
+specify top-down `dirnames` mutation for pruning and no directory-symlink
+following by default. The implementation also rejects file symlinks and raises
+every walk error rather than silently omitting repository-owned source.
+
+## Issue #372 citation-lineage parity gate
+
+The exact `cut1-372-citation-index-parity-post380` route from
+`372fb78245b8890157ffe54f48b90e523017bc43` is limited to the eleven
+preflight paths. Its RED/GREEN evidence proves:
+
+- every claim-support index equals the marker in its exact visible `scriptSpanStart`/`scriptSpanEnd` slice and context;
+- valid stored/replayed results preserve accepted/generated text, provider claims, supports, context refs, and indexes;
+- restored text, marker, provider-claim, support-index, and link drift fails closed without completed-run replay; and
+- raw lineage types/status and restore-time size/count/marker work fail closed per row without clearing valid siblings;
+- both exact-base-to-index and exact-base-to-working-tree charges are validated, using the greater value; and
+- tenant/project isolation, unsupported-claim refusal, retrieval order, and key-free local/mock posture stay unchanged.
+
+Focused verification starts with:
+```bash
+uv run --python 3.13 --frozen pytest -p no:cacheprovider tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_local_durability.py
+uv run --isolated --python 3.14 --frozen pytest -p no:cacheprovider tests/acceptance/test_checkpoint3_output_correctness.py tests/unit/test_local_durability.py
+uv run --python 3.13 --frozen pytest -p no:cacheprovider tests/unit/test_stage8_quality_gate.py tests/unit/publication_boundary/test_scope.py
+make checkpoint3-acceptance
+```
+The complete suite, quality, CI, security, evaluation, and applicable real-browser gates remain mandatory. A fixed
+citation value, renumbering, loosened assertion, skipped test, narrowed gate, retrieval change, or extra path fails.
+This repair is not presenter/media, deployment, release, public availability, production readiness, or Cut 1 evidence.
+
+The complete diff must remain at or below 1200 charged lines. A twelfth path or charge 1201 is a gate failure.

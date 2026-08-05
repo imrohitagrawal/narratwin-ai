@@ -1,7 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor
 import base64
+from dataclasses import replace
 import json
 from pathlib import Path
+import subprocess
 import threading
 from typing import Any, cast
 
@@ -10,8 +12,10 @@ import pytest
 import backend.app.stage4 as stage4_module
 import backend.app.stage6 as stage6_module
 import backend.app.stage7 as stage7_module
+import scripts.quality.check_stage8_docs as stage8_check
 from backend.app.evaluation_lineage import build_source_evaluation_checksum, validate_evaluation_lineage_payload
 from backend.app.rag.chunking import checksum_text
+from backend.app.rag.models import GeneratedScript, RetrievedContext, ScriptClaim
 from backend.app.storage import write_state as storage_write_state
 from backend.app.stage4 import LocalPrincipal, Stage4Error, Stage4Service
 from backend.app.stage6 import create_stage6_service
@@ -125,6 +129,54 @@ class FailingAfterFirstEmbeddingProvider:
         return (1.0,) + (0.0,) * (self.dimension - 1)
 
 
+class CitationMarkerMismatchProvider:
+    provider = "mock"
+    provider_mode = "LOCAL"
+
+    def generate_script(
+        self,
+        *,
+        audience: str,
+        prompt: str,
+        retrieved_context: list[RetrievedContext],
+    ) -> GeneratedScript:
+        del audience, prompt
+        context = retrieved_context[0]
+        claim_text = context.chunk.text.strip().rstrip(".") + "."
+        sentence = f"  For recruiters, {claim_text} [99]"
+        return GeneratedScript(
+            text=sentence,
+            claims=[
+                ScriptClaim(
+                    claim_id="claim_001",
+                    text=claim_text,
+                    citation_index=1,
+                    chunk_id=context.chunk.chunk_id,
+                    script_span_start=2,
+                    script_span_end=len(sentence),
+                )
+            ],
+        )
+
+
+def _grounded_stage4_state(state_path: Path, *, run_count: int = 1) -> tuple[LocalPrincipal, Any, list[Any]]:
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(principal=principal, name="Grounded project", idempotency_key="project")
+    document = service.upload_document(principal=principal, project_id=project.project_id,
+        source_filename="project.md", content_type="text/markdown",
+        data=Path("tests/fixtures/stage4_project.md").read_bytes(), idempotency_key="upload")
+    service.approve_document(principal=principal, project_id=project.project_id,
+        document_id=document.document_id, idempotency_key="approve")
+    service.ingest_documents(principal=principal, project_id=project.project_id,
+        document_ids=[document.document_id], idempotency_key="ingest")
+    request = dict(audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.")
+    runs = [service.generate_walkthrough(principal=principal, project_id=project.project_id,
+        idempotency_key=f"run-{index}", **request) for index in range(run_count)]
+    return principal, project, runs
+
+
 def test_stage4_file_state_restores_projects_chunks_runs_and_idempotency(tmp_path: Path) -> None:
     state_path = tmp_path / "stage4.json"
     principal = LocalPrincipal()
@@ -162,7 +214,7 @@ def test_stage4_file_state_restores_projects_chunks_runs_and_idempotency(tmp_pat
         requested_language="en",
         depth="CONCISE",
         style="CONFIDENT",
-        prompt="Create a concise grounded walkthrough for a recruiter.",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.",
         idempotency_key="generate-walkthrough",
     )
 
@@ -179,12 +231,20 @@ def test_stage4_file_state_restores_projects_chunks_runs_and_idempotency(tmp_pat
         requested_language="en",
         depth="CONCISE",
         style="CONFIDENT",
-        prompt="Create a concise grounded walkthrough for a recruiter.",
+        prompt="NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks.",
         idempotency_key="generate-walkthrough",
     )
 
     assert replayed_project.project_id == project.project_id
     assert replayed_run.run_id == run.run_id
+    assert replayed_run == run
+    assert replayed_run.status == "COMPLETED"
+    assert replayed_run.generated_script is not None
+    assert replayed_run.evaluation is not None
+    assert replayed_run.accepted_script_text == replayed_run.generated_script.text
+    assert [support.citation_index for support in replayed_run.evaluation.claim_supports] == [
+        claim.citation_index for claim in replayed_run.generated_script.claims
+    ]
     assert restored.rag_store.chunk_count_for_project(
         tenant_id=principal.tenant_id,
         project_id=project.project_id,
@@ -743,7 +803,27 @@ def test_stage4_file_state_drops_completed_walkthrough_without_evaluation(tmp_pa
     assert restored.walkthrough_runs == {}
 
 
-def test_stage4_file_state_drops_walkthrough_with_tampered_evaluation_support(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        "missing-support-links",
+        "support-citation-index",
+        "accepted-script-text",
+        "visible-citation-marker",
+        "provider-claim-citation-index",
+        "appended-visible-text",
+        "empty-completed",
+        "truncated-claim-text",
+        "shifted-claim-span",
+        "evaluation-status-drift",
+        "failed-envelope-demotion",
+        "out-of-range-metrics",
+    ),
+)
+def test_stage4_file_state_drops_walkthrough_with_tampered_citation_lineage(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
     state_path = tmp_path / "stage4.json"
     principal = LocalPrincipal()
     service = Stage4Service(state_path=state_path)
@@ -779,15 +859,486 @@ def test_stage4_file_state_drops_walkthrough_with_tampered_evaluation_support(tm
         idempotency_key="generate-walkthrough",
     )
     payload = json.loads(state_path.read_text(encoding="utf-8"))
-    support = payload["walkthroughRuns"][0]["evaluation"]["claim_supports"][0]
-    support["claim_id"] = "claim_missing"
-    support["context_ref_id"] = "ctx_missing"
+    row = payload["walkthroughRuns"][0]
+    support = row["evaluation"]["claim_supports"][0]
+    if mutation == "missing-support-links":
+        support["claim_id"] = "claim_missing"
+        support["context_ref_id"] = "ctx_missing"
+    elif mutation == "support-citation-index":
+        support["citation_index"] = 99
+    elif mutation == "accepted-script-text":
+        row["accepted_script_text"] = row["accepted_script_text"].replace("[1]", "[99]", 1)
+    elif mutation == "visible-citation-marker":
+        row["accepted_script_text"] = row["accepted_script_text"].replace("[1]", "[99]", 1)
+        row["generated_script"]["text"] = row["generated_script"]["text"].replace(
+            "[1]", "[99]", 1
+        )
+    elif mutation == "provider-claim-citation-index":
+        row["generated_script"]["claims"][0]["citation_index"] = 99
+    elif mutation == "appended-visible-text":
+        appendix = " Fabricated unsupported appendix."
+        row["accepted_script_text"] += appendix
+        row["generated_script"]["text"] += appendix
+    elif mutation == "empty-completed":
+        row["accepted_script_text"] = ""
+        row["generated_script"] = {"text": "", "claims": []}
+        row["evaluation"]["claim_supports"] = []
+    elif mutation == "truncated-claim-text":
+        claim = row["generated_script"]["claims"][0]
+        claim["text"] = claim["text"][:-1]
+    elif mutation == "shifted-claim-span":
+        row["generated_script"]["claims"][0]["script_span_start"] += 1
+    elif mutation == "evaluation-status-drift":
+        row["evaluation"]["evaluation_status"] = "FAILED"
+    elif mutation == "failed-envelope-demotion":
+        row.update(status="FAILED", evaluation_status="FAILED", accepted_script_text=None,
+                   failure_reason="UNSUPPORTED_PROJECT_FACT")
+    else:
+        row["evaluation"].update(answer_relevancy=42.0, context_recall=-7.0)
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
     restored = Stage4Service(state_path=state_path)
 
     assert run.status == "COMPLETED"
     assert restored.walkthrough_runs == {}
+    assert all(
+        record.endpoint != "POST /api/v1/projects/{projectId}/walkthrough-runs"
+        for record in restored.idempotency_records.values()
+    )
+
+
+@pytest.mark.parametrize("mutation", ("huge-marker", "claim-index-string", "support-index-bool",
+                                      "support-status", "support-score-string", "unsupported-count-string"))
+def test_stage4_restore_contains_malformed_raw_lineage_per_row(
+    tmp_path: Path, mutation: str,
+) -> None:
+    state_path = tmp_path / "stage4.json"
+    _, project, runs = _grounded_stage4_state(state_path, run_count=2)
+    payload = json.loads(state_path.read_text())
+    bad, good = payload["walkthroughRuns"]
+    claim = bad["generated_script"]["claims"][-1]
+    support = bad["evaluation"]["claim_supports"][-1]
+    if mutation == "huge-marker":
+        old = f'[{claim["citation_index"]}]'
+        marker = "[" + "9" * 5000 + "]"
+        position = bad["generated_script"]["text"].rfind(old)
+        bad["generated_script"]["text"] = bad["generated_script"]["text"][:position] + marker
+        bad["accepted_script_text"] = bad["generated_script"]["text"]
+        claim["script_span_end"] += len(marker) - len(old)
+    elif mutation == "claim-index-string":
+        claim["citation_index"] = str(claim["citation_index"])
+    elif mutation == "support-index-bool":
+        support["citation_index"] = True
+    elif mutation == "support-status":
+        support["support_status"] = "UNSUPPORTED"
+    elif mutation == "support-score-string":
+        support["support_score"] = str(support["support_score"])
+    else:
+        bad["evaluation"]["unsupported_claim_count"] = "0"
+    state_path.write_text(json.dumps(payload))
+    restored = Stage4Service(state_path=state_path)
+    assert project.project_id in restored.projects and good["run_id"] in restored.walkthrough_runs
+    assert bad["run_id"] not in restored.walkthrough_runs and runs[1].run_id==good["run_id"]
+    replay_ids = {getattr(record.value, "run_id", None) for record in restored.idempotency_records.values()}
+    assert good["run_id"] in replay_ids and bad["run_id"] not in replay_ids
+
+
+def test_stage4_raw_lineage_limits_accept_boundary_and_reject_boundary_plus_one(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    _grounded_stage4_state(state_path)
+    row = json.loads(state_path.read_text())["walkthroughRuns"][0]
+    claims = row["generated_script"]["claims"]
+    supports = row["evaluation"]["claim_supports"]
+    limit = stage4_module.MAX_RESTORED_LINEAGE_ITEMS
+    row["generated_script"]["claims"] = ([{**claims[0], "text": ""}] * limit)[:limit]
+    row["evaluation"]["claim_supports"] = (supports * limit)[:limit]
+    assert stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"]["claims"].append(claims[0])
+    assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"]["claims"] = claims
+    row["generated_script"]["text"] = "x" * stage4_module.MAX_RESTORED_SCRIPT_CHARS
+    assert stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"]["text"] += "x"
+    assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    unsupported = {"claim_id": "claim", "claim_text": "text", "reason": "reason"}
+    row["generated_script"]["text"] = "text"
+    row["generated_script"]["claims"] = []
+    row["evaluation"]["unsupported_claims"] = [unsupported] * limit
+    row["evaluation"]["unsupported_claim_count"] = limit
+    assert stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["evaluation"]["unsupported_claims"].append(unsupported)
+    row["evaluation"]["unsupported_claim_count"] += 1
+    assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["evaluation"].update(unsupported_claims=[], unsupported_claim_count=0)
+    row["generated_script"]["text"] = "[" + "9" * stage4_module.MAX_RESTORED_CITATION_DIGITS + "]"
+    assert stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"]["text"] = row["generated_script"]["text"].replace("9]", "99]")
+    assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"].update(text="x" * stage4_module.MAX_RESTORED_SCRIPT_CHARS,
+        claims=[{**claims[0], "text": "x" * stage4_module.MAX_RESTORED_SCRIPT_CHARS}, {**claims[0], "text": "x"}])
+    assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+    row["generated_script"]["claims"] = claims
+    row["evaluation"]["claim_supports"][0]["support_reason"] = "x" * (stage4_module.MAX_RESTORED_SCRIPT_CHARS + 1)
+    assert not stage4_module.raw_walkthrough_lineage_is_bounded_and_typed(row)
+
+
+def test_stage4_restore_enforces_state_file_byte_boundary(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    _, project, runs = _grounded_stage4_state(state_path)
+    real_stat = Path.stat
+    boundary = type("BoundaryStat", (), {"st_size": stage4_module.MAX_STAGE4_STATE_BYTES})()
+    monkeypatch.setattr(Path, "stat", lambda path, *args, **kwargs: boundary if path == state_path else real_stat(path, *args, **kwargs))
+    restored = Stage4Service(state_path=state_path)
+    assert project.project_id in restored.projects and runs[0].run_id in restored.walkthrough_runs
+    monkeypatch.undo()
+    with state_path.open("ab") as handle:
+        handle.truncate(stage4_module.MAX_STAGE4_STATE_BYTES + 1)
+    restored = Stage4Service(state_path=state_path)
+    assert restored.projects == {} and restored.walkthrough_runs == {}
+
+
+def test_stage4_rejects_oversized_generated_script_before_terminal_persistence(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service = Stage4Service(state_path=state_path)
+    original = service.llm.generate_script
+    def oversized(**values: Any) -> GeneratedScript:
+        generated = original(**values)
+        return GeneratedScript(text="x" * (stage4_module.MAX_RESTORED_SCRIPT_CHARS + 1), claims=generated.claims)
+    monkeypatch.setattr(service.llm, "generate_script", oversized)
+    with pytest.raises(Stage4Error) as error:
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="oversized")
+    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+    restored = Stage4Service(state_path=state_path)
+    assert list(restored.walkthrough_runs) == [runs[0].run_id]
+    monkeypatch.setattr(restored.llm, "generate_script", lambda **_values: pytest.fail("failure replay invoked provider"))
+    with pytest.raises(Stage4Error) as replay_error:
+        restored.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="oversized")
+    assert replay_error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+
+
+def test_stage4_rejects_amplified_claim_before_evaluation(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service = Stage4Service(state_path=state_path)
+    original = service.llm.generate_script
+    def amplified(**values: Any) -> GeneratedScript:
+        generated = original(**values)
+        claim = generated.claims[0]
+        return replace(generated, claims=[replace(claim, text="x" * (stage4_module.MAX_RESTORED_SCRIPT_CHARS + 1))])
+    monkeypatch.setattr(service.llm, "generate_script", amplified)
+    monkeypatch.setattr(stage4_module, "evaluate_grounding", lambda **_values: pytest.fail("evaluator reached"))
+    with pytest.raises(Stage4Error) as error:
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="amplified-lineage")
+    assert error.value.code == "GENERATED_SCRIPT_TOO_LARGE"
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+
+
+def test_stage4_invalid_generated_lineage_has_no_terminal_run_side_effect(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service = Stage4Service(state_path=state_path)
+    monkeypatch.setattr(service.llm, "generate_script", lambda **_values: GeneratedScript(text="", claims=[]))
+    with pytest.raises(Stage4Error) as error:
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="invalid-lineage")
+    assert error.value.code == "INVALID_GENERATED_LINEAGE"
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+    restored = Stage4Service(state_path=state_path)
+    assert list(restored.walkthrough_runs) == [runs[0].run_id]
+    monkeypatch.setattr(restored.llm, "generate_script", lambda **_values: pytest.fail("failure replay invoked provider"))
+    with pytest.raises(Stage4Error) as replay:
+        restored.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="invalid-lineage")
+    assert replay.value.code == "INVALID_GENERATED_LINEAGE"
+
+
+def test_stage4_rejects_fresh_lineage_that_restore_would_drop(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service = Stage4Service(state_path=state_path)
+    invalid = GeneratedScript(text="Provider text with no grounded claims.", claims=[])
+    monkeypatch.setattr(service.llm, "generate_script", lambda **_values: invalid)
+    with pytest.raises(Stage4Error) as error:
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="fresh-invalid-lineage")
+    assert error.value.code == "INVALID_GENERATED_LINEAGE"
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+    assert list(Stage4Service(state_path=state_path).walkthrough_runs) == [runs[0].run_id]
+
+
+def test_stage4_preserves_foreign_claim_only_as_unsupported_failure(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service = Stage4Service(state_path=state_path)
+    original = service.llm.generate_script
+    def foreign_lineage(**values: Any) -> GeneratedScript:
+        generated = original(**values)
+        claims = [ScriptClaim(claim.claim_id, claim.text, claim.citation_index, "chunk_foreign",
+            claim.script_span_start, claim.script_span_end) for claim in generated.claims]
+        return GeneratedScript(text=generated.text, claims=claims)
+    monkeypatch.setattr(service.llm, "generate_script", foreign_lineage)
+    request = dict(principal=principal, project_id=project.project_id, audience="RECRUITER",
+        requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+        idempotency_key="foreign-chunk-lineage")
+    failed = service.generate_walkthrough(**request)
+    assert failed.status == "FAILED" and failed.evaluation is not None and failed.generated_script is not None
+    assert {claim.claim_id for claim in failed.evaluation.unsupported_claims} == {
+        claim.claim_id for claim in failed.generated_script.claims
+    }
+    forged_evaluation = replace(failed.evaluation, evaluation_status="PASSED")
+    forged = replace(failed, status="COMPLETED", evaluation_status="PASSED",
+        accepted_script_text=failed.generated_script.text, evaluation=forged_evaluation)
+    assert not service._fresh_lineage_ownership_is_valid(forged)
+    restored = Stage4Service(state_path=state_path)
+    assert list(restored.walkthrough_runs) == [runs[0].run_id, failed.run_id]
+    replayed = restored.generate_walkthrough(**request)
+    assert replayed == failed
+
+
+@pytest.mark.parametrize("mutation", ("foreign-scope", "forged-payload", "duplicate", "noncanonical-ref"))
+def test_stage4_rejects_invalid_retrieved_context_before_terminal_side_effect(
+    tmp_path: Path, monkeypatch: Any, mutation: str,
+) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service, original = Stage4Service(state_path=state_path), cast(Any, stage4_module).retrieve_context
+    def invalid_context(**values: Any) -> list[RetrievedContext]:
+        items = original(**values)
+        if mutation == "foreign-scope":
+            return [replace(item, chunk=replace(item.chunk, tenant_id="tenant_foreign", project_id="proj_foreign")) for item in items]
+        if mutation == "forged-payload":
+            return [replace(items[0], chunk=replace(items[0].chunk, text="Forged same-ID text.")), *items[1:]]
+        if mutation == "noncanonical-ref":
+            return [replace(items[0], context_ref_id="not_canonical"), *items[1:]]
+        return [items[0], replace(items[0], context_ref_id="ctx_duplicate")]
+    monkeypatch.setattr(stage4_module, "retrieve_context", invalid_context)
+    with pytest.raises(Stage4Error) as error:
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key=f"invalid-context-{mutation}")
+    assert error.value.code == "INVALID_GENERATED_LINEAGE"
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+
+
+@pytest.mark.parametrize("mutation", ("evaluation", "support", "metric", "answer", "recall"))
+def test_stage4_rejects_forged_fresh_evaluation_identity(tmp_path: Path, monkeypatch: Any, mutation: str) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service, original = Stage4Service(state_path=state_path), cast(Any, stage4_module).evaluate_grounding
+    def forged(**values: Any) -> Any:
+        result = original(**values)
+        if mutation == "evaluation":
+            return replace(result, evaluation_id="eval_forged")
+        if mutation == "metric":
+            return replace(result, context_precision=0.123)
+        if mutation in {"answer", "recall"}:
+            return replace(result, **{f"{mutation}_relevancy" if mutation == "answer" else "context_recall": 0.123})
+        return replace(result, claim_supports=[replace(item, claim_support_id="claimsup_forged")
+            for item in result.claim_supports])
+    monkeypatch.setattr(stage4_module, "evaluate_grounding", forged)
+    with pytest.raises(Stage4Error):
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key=f"forged-{mutation}")
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+
+
+def test_stage4_rejects_misaligned_claim_support_binding(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service, original = Stage4Service(state_path=state_path), cast(Any, stage4_module).evaluate_grounding
+    def misaligned(**values: Any) -> Any:
+        result = original(**values)
+        supports = result.claim_supports
+        return replace(result, claim_supports=[replace(supports[0], citation_index=2), *supports[1:]])
+    monkeypatch.setattr(stage4_module, "evaluate_grounding", misaligned)
+    with pytest.raises(Stage4Error):
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key="misaligned-support")
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+
+
+def test_stage4_rejects_duplicate_fresh_claim_identity(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    _principal, _project, runs = _grounded_stage4_state(state_path)
+    service, run = Stage4Service(state_path=state_path), runs[0]
+    assert run.generated_script is not None
+    claim = run.generated_script.claims[0]
+    forged = replace(run, generated_script=replace(run.generated_script, claims=[claim, claim]))
+    assert not service._fresh_lineage_ownership_is_valid(forged)
+    assert run.evaluation is not None
+    noncanonical = replace(claim, claim_id="not_canonical")
+    evaluation = replace(run.evaluation, claim_supports=[
+        replace(run.evaluation.claim_supports[0], claim_id="not_canonical")
+    ])
+    forged = replace(run, generated_script=replace(run.generated_script, claims=[noncanonical]), evaluation=evaluation)
+    assert not service._fresh_lineage_ownership_is_valid(forged)
+
+
+def test_stage4_rejects_duplicate_support_target_identity(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    _principal, _project, runs = _grounded_stage4_state(state_path)
+    service, run = Stage4Service(state_path=state_path), runs[0]
+    assert run.evaluation is not None
+    support = run.evaluation.claim_supports[0]
+    evaluation = replace(run.evaluation, claim_supports=[support, replace(support, claim_support_id="claimsup_002")])
+    assert not service._fresh_lineage_ownership_is_valid(replace(run, evaluation=evaluation))
+
+
+def test_stage4_rejects_write_that_would_exceed_restore_byte_cap(tmp_path: Path, monkeypatch: Any) -> None:
+    state_path = tmp_path / "stage4.json"
+    service = Stage4Service(state_path=state_path)
+    monkeypatch.setattr(stage4_module, "MAX_STAGE4_STATE_BYTES", 1)
+    with pytest.raises(OSError, match="size limit"):
+        service.create_project(principal=LocalPrincipal(), name="Too large", idempotency_key="project")
+    assert service.projects == {} and service.idempotency_records == {} and not state_path.exists()
+
+
+def test_stage4_preserves_numeric_string_retrieval_score_as_inactive_audit_row(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    _grounded_stage4_state(state_path)
+    payload = json.loads(state_path.read_text())
+    payload["walkthroughRuns"][0]["retrieved_context"][0]["score"] = "1.0"
+    state_path.write_text(json.dumps(payload))
+    restored = Stage4Service(state_path=state_path)
+    persisted = json.loads(state_path.read_text())
+    assert restored.walkthrough_runs == {}
+    assert len(persisted["quarantinedWalkthroughRuns"]) == 1
+    assert len(persisted["quarantinedIdempotencyRecords"]) == 1
+
+
+def test_citation_budget_detects_staged_overage_hidden_by_unstaged_inverse(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    def git(*args: str) -> str:
+        return subprocess.run(["git",*args],cwd=repo,text=True,capture_output=True,check=True).stdout.strip()
+    git("init", "-b", "main")
+    git("config", "user.name", "Budget Test")
+    git("config", "user.email", "budget@example.invalid")
+    status = repo / "docs/STATUS.md"
+    status.parent.mkdir()
+    status.write_text("base\n")
+    git("add", ".")
+    git("commit", "-m", "base")
+    base = git("rev-parse", "HEAD")
+    git("checkout", "-b", "feature")
+    status.write_text("staged\n" * 1100)
+    git("add", str(status))
+    status.write_text("working\n")
+    monkeypatch.setattr(stage8_check, "ROOT", repo)
+    monkeypatch.setattr(stage8_check, "CP_BASE", base)
+    def charge(*args: str) -> int:
+        fields = git("diff", *args, "--numstat", base, "--").split("\t")
+        return int(fields[0]) + int(fields[1])
+    staged, working = charge("--cached"), charge()
+    assert staged > 1000 > working
+    assert stage8_check.citation_parity_charge() == staged
+
+
+def test_stage4_file_state_restores_failed_visible_citation_evaluation(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(
+        principal=principal, name="Grounded project", idempotency_key="create-project"
+    )
+    document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="project.md",
+        content_type="text/markdown",
+        data=Path("tests/fixtures/stage4_project.md").read_bytes(),
+        idempotency_key="upload-document",
+    )
+    service.approve_document(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        idempotency_key="approve-document",
+    )
+    service.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ingest-document",
+    )
+    service.llm = cast(Any, CitationMarkerMismatchProvider())
+    prompt = "NarraTwin AI approved project knowledge grounded walkthrough scripts recruiters source chunks."
+    run = service.generate_walkthrough(
+        principal=principal,
+        project_id=project.project_id,
+        audience="RECRUITER",
+        requested_language="en",
+        depth="CONCISE",
+        style="CONFIDENT",
+        prompt=prompt,
+        idempotency_key="generate-walkthrough",
+    )
+
+    restored = Stage4Service(state_path=state_path)
+    replayed = restored.generate_walkthrough(
+        principal=principal,
+        project_id=project.project_id,
+        audience="RECRUITER",
+        requested_language="en",
+        depth="CONCISE",
+        style="CONFIDENT",
+        prompt=prompt,
+        idempotency_key="generate-walkthrough",
+    )
+
+    assert run.status == "FAILED"
+    assert run.evaluation is not None
+    assert run.evaluation.unsupported_claim_count == 1
+    assert restored.walkthrough_runs[run.run_id] == run
+    assert replayed == run
+
+
+def test_stage4_file_state_restores_historical_run_after_project_corpus_growth(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal = LocalPrincipal()
+    service = Stage4Service(state_path=state_path)
+    project = service.create_project(principal=principal, name="Growing project", idempotency_key="project")
+    source = Path("tests/fixtures/stage4_project.md").read_bytes()
+    prompt = "NarraTwin AI approved project knowledge grounded walkthrough scripts."
+    request = dict(audience="RECRUITER", requested_language="en", depth="CONCISE", style="CONFIDENT", prompt=prompt)
+    historical = None
+    for index in (1, 2):
+        document = service.upload_document(principal=principal, project_id=project.project_id,
+                                           source_filename=f"{index}.md", content_type="text/markdown",
+                                           data=source, idempotency_key=f"upload-{index}")
+        service.approve_document(principal=principal, project_id=project.project_id,
+                                 document_id=document.document_id, idempotency_key=f"approve-{index}")
+        service.ingest_documents(principal=principal, project_id=project.project_id,
+                                 document_ids=[document.document_id], idempotency_key=f"ingest-{index}")
+        if index == 1:
+            historical = service.generate_walkthrough(principal=principal, project_id=project.project_id,
+                                                       idempotency_key="historical", **request)
+    assert historical is not None
+    restored = Stage4Service(state_path=state_path)
+    replayed = restored.generate_walkthrough(principal=principal, project_id=project.project_id,
+                                              idempotency_key="historical", **request)
+
+    assert historical.status == "COMPLETED"
+    assert restored.walkthrough_runs[historical.run_id] == historical
+    assert replayed == historical
 
 
 def test_stage4_file_state_derives_missing_counters_from_restored_ids(tmp_path: Path) -> None:
