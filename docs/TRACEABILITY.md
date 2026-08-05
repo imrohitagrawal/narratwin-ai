@@ -8,7 +8,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 ## Version
 
-- Last updated: 2026-08-04
+- Last updated: 2026-08-05
 - Current PRD source: `docs/PRD.md` v1.0
 - Canonical source: `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
 
@@ -26,6 +26,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 | Artifact | Requirement coverage | Stage / issue | Status |
 |---|---|---|---|
+| `docs/governance/preflights/issue-366.json` and Stage 8 scope route | Establishes the non-implementation transition after accepted #372: presenter registry #367, narration and speech-approval child `#382`, TTS #368, render #369, UI #370, and integration #371. It binds StackClimb/Rohit authority, exact presenter substitution, latest evaluated-version approval/edit invalidation, measured 90–120-second speech, visible-not-spoken citations, future-only Q&A, and genuine audible/synchronized/captioned binary media acceptance while rejecting placeholder success and every release/provider/cloning/public/production overclaim. | Cut 1 governing transition / Issue `#366`, PR `#373` | Intended complete after this governance PR merges and passes merged-main acceptance; no product capability |
 | `frontend/src/app/demo/` and exact Stage 8 route evidence | Adds the focused Cut 1 browser UI foundation: host-dominant Guide Ribbon, collapse/focus/mobile-return flows, light/dark themes, grounded Stage 4→6→7 local/mock execution, inspectable citations/evaluation/provider posture, and safe loading/error/capability boundaries without Q&A, web search, real media, cloned identity, deployment, or production claims | Cut 1 UI foundation / Issue `#358` | In progress |
 | `backend/app/evaluation_lineage.py`, `backend/app/evaluation_lineage_state.py`, Stage 6/7 state, restore drill, and focused lineage tests | Activates the frozen checksum-v2 lineage atomically across verified Stage 4, Stage 6 v3, and Stage 7 v2; rejects or byte-preserves inactive legacy, future, stale, malformed, and tampered graphs without adding provider behavior or production-authenticity claims | Stage 8 recovery / Issue `#353`, PR `#354` | Completed at `b9a2a8cd4aa05328116565990fc30ae44592c875` |
 | `frontend/package.json`, `frontend/package-lock.json`, `docs/ADR/0039-frontend-brace-expansion-audit-remediation.md`, `docs/STAGE_ISSUE_PLAN.md`, `docs/STATUS.md`, `docs/TRACEABILITY.md`, `docs/THIRD_PARTY_NOTICES.md`, `scripts/quality/check_phase1_closure_docs.py`, and `tests/unit/test_phase1_closure_docs.py` | Issue `#296` security unblock: resolves the frontend npm audit blocker for transitive `brace-expansion` by pinning `minimatch` to `10.2.5` and `brace-expansion` to `5.0.8` through the frontend npm override and lockfile, while keeping the change dependency/governance-only with no product runtime behavior, backend changes, provider setup, hosted/public demo, paid spend, real media, public distribution, production-readiness claim, PR `#295` mutation, or closure of issue `#249` | Phase 1 Closure / `#296` | Completed through PR `#297` at `cc89b2dd52da38e8d8a9acbd813e327737cf0ca1` |

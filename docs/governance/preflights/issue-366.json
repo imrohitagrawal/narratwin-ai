@@ -1,0 +1,45 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 366,
+  "branch": "cut1-366-real-media-governance-transition",
+  "objective": "Under OWNER reset https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197711390 and dependency amendment https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197717563, revise only PR #373's existing seven governance paths after merged Issue #372. The complete pre-implementation ledger at https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197776590 records users/lifecycle, source facts, claims/invariants, trust boundaries, F366-1 through F366-12, matrix-to-test mapping, review prompts, human-only surfaces, skill/tool decisions, exact all-seven-path scope, 900-line aggregate and per-file budgets, and stop rules. Preserve history by normal merge/commit only. Record StackClimb/Rohit Agrawal authority, canonical narration and presenter substitution, visible-not-spoken citations, measured 90-120-second audio rejection without silent time-stretch, future-only Q&A, and Issue #382 between #367 and #368. Require latest evaluated-version speech approval; any edit invalidates approval and derived audio, captions, render, export, and replay. Preserve grounding, citations, unsupported-claim evaluation, consent, disclosure, provenance, revocation/deletion, trace/checksum binding, provider-disabled defaults, and exact false-media prohibitions for Meera, Myra, and Raj. Create no product/runtime, asset, provider, dependency, workflow, Docker, media, cloning/personal-likeness, deployment, release, public, production, registered-mark, or registration claim. Evidence requires committed mutation RED before GREEN, exact-scope/content gates, full local/CI checks, adversarial review, human merge-text inspection, and eligible latest-head non-author approval. Stop for authority/history drift, any scope/budget breach, new blocker class, implementation, unclear license/legal authority, failed gate, unresolved High/Critical finding, or missing external approval.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-366.json",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-366.json",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "docs/ADR/",
+      "docs/API_CONTRACT.md",
+      "docs/DATA_MODEL.md",
+      "docs/ARCHITECTURE.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_quality_stage.py"
+    ]
+  }
+}

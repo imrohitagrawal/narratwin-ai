@@ -42,6 +42,23 @@ destinations. Existing trusted CI, non-author approval, and confirmed merge
 wording remain mandatory. Local scope output without live GitHub evidence is
 supporting evidence only. Agent-context remains `SHADOW_ONLY`.
 
+Exact branch `cut1-366-real-media-governance-transition` is the Issue `#366`
+governance-only transition. F366-1 through F366-12 require all and only the
+seven checked paths, the completed #372 prerequisite, narration child #382
+between #367 and #368, StackClimb/Rohit Agrawal authority, latest evaluated
+script approval and edit invalidation, measured 90–120-second audio rejection
+without silent time-stretch, visible-not-spoken citations, future-only Q&A,
+and every still/HTML/JSON/manifest/metadata/silent/placeholder false-media
+prohibition. The route is limited to 900 charged lines, including at most 350
+in the Stage 8 checker and 300 in its focused test. Missing paths, extra paths,
+near-match branches, stale #372 blocker text, required-marker mutations, or
+prohibited overclaims fail closed. It adds no product code, assets,
+dependencies, providers, media binaries, Docker/workflow changes, cloning,
+deployment, release, public availability, trademark-registration, or
+production-readiness claim. Later child work requires its own exact issue,
+branch, preflight, RED/GREEN evidence, PR approval, merge, and merged-main
+acceptance.
+
 ## Required Make Targets
 
 The `Makefile` must expose:

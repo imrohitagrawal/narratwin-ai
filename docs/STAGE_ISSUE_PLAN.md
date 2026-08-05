@@ -2278,6 +2278,57 @@ historical records remain contextual; launch No-Go and human-only risk decisions
 remain unchanged; and no runtime, provider, media, Q&A, hosting, release, or
 production capability is claimed.
 
+## Issue #366 genuine local-media Cut 1 transition
+
+Issue `#366` is the parent controller for the controlled local, key-free Cut 1.
+Its branch `cut1-366-real-media-governance-transition` changes exactly the seven
+paths in `docs/governance/preflights/issue-366.json`; it adds governance and no
+runtime, asset, dependency, provider, container, workflow, or media binary.
+F366-1 through F366-12 bind exact scope, current prerequisite state, narration,
+approval, branding, measured speech, citations, Q&A, false-media rejection, and
+overclaim prohibitions to focused mutation tests.
+
+The OWNER authority is recorded in Issue `#366` comments `5197711390`,
+`5197717563`, and `5197776590`. Visible brand spelling is exactly `StackClimb`.
+Rohit Agrawal founded, owns, and leads StackClimb and conceived, owns, and
+produces NarraTwin AI under StackClimb. Do not use `®` or claim trademark
+registration, public availability, release, deployment, or production
+readiness.
+
+The strict sequence is:
+
+1. Issue `#367`: registry/lifecycle/provenance contract for exactly Meera,
+   Myra, and Raj; any fourth identity is test-only and no personal likeness.
+2. Issue `#382`: versioned grounded narration, evaluation, explicit approval
+   for speech, branding, and TTS consumption lock.
+3. Issue `#368`: key-free, intelligible local TTS that reconciles—but does not
+   prematurely close—Issue `#18`.
+4. Issue `#369`: licensed local speaking-animation renderer, captions, muxed
+   export, and validation that reconciles—but does not prematurely close—Issue
+   `#19`.
+5. Issue `#370`: coral-clay accessible real-media UI and non-intercepted
+   browser execution.
+6. Issue `#371`: clean-setup all-presenter replay evidence and adversarial
+   review.
+
+The exact canonical narration and presenter substitution rule live in OWNER
+comment `5197711390`: Myra and Raj replace only both occurrences of `Meera`.
+TTS accepts only the latest evaluated script version after explicit speech
+approval. Any edit creates a new version, re-requires evaluation and approval,
+and invalidates audio, captions, render, export, and replay evidence. Accepted
+audio must measure 90–120 seconds; shorter or longer audio is rejected.
+Do not silently time-stretch invalid audio. Captions match the spoken words, while
+visible citation numbers are not spoken. Interactive Q&A remains future work.
+
+Each child requires an independent issue preflight, exact branch route and
+file allowlist, RED/GREEN tests, docs, PR, eligible non-author approval,
+exact-head CI, and merge closeout. The completed output must be a genuine
+audible, visibly synchronized, captioned MP4/WebM that survives validation,
+browser playback/download, and independent replay. Still images, HTML, JSON,
+manifests, silent or empty audio, unsynchronized animation,
+metadata-only success, placeholder output, external provider calls, cloning, deployment,
+release, public availability, and production-readiness claims are prohibited.
+
 ## Historical Issue #332 R0C Cut 1 fail-safe containment
 
 Issue `#332` implements the dependency correction authorized by Issue `#328`
@@ -2384,7 +2435,8 @@ exact-head CI, independent technical/adversarial review, and eligible non-author
 
 This prerequisite does not alter retrieval order, renumber citations, enable providers, or authorize presenter, audio,
 renderer, frontend, Docker, deployment, release, public availability, production readiness, or Cut 1 completion.
-Parent Issue `#366` and PR `#373` stay separate until this repair merges and post-merge validation passes.
+Issue `#372` and PR `#381` merged and passed post-merge validation before this revised Issue `#366` / PR `#373`
+governance work.
 
 The complete branch diff has a 1200 charged-line hard ceiling. A twelfth path,
 charge 1201, or an omitted ADR decision fails closed.
