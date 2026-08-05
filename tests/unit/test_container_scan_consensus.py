@@ -152,6 +152,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     validator = _load().frontend_reproduction_findings
     primary = {
         "buildId": "source-bound",
+        "inventory": "1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15",
         "previewModeId": "1" * 32,
         "previewModeSigningKey": "2" * 64,
         "previewModeEncryptionKey": "3" * 64,
@@ -159,12 +160,16 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     }
     reproduction = {
         "buildId": "source-bound",
+        "inventory": primary["inventory"],
         "previewModeId": "4" * 32,
         "previewModeSigningKey": "5" * 64,
         "previewModeEncryptionKey": "6" * 64,
         "serverActionKey": "B" * 43 + "=",
     }
     assert validator(primary, reproduction) == []
+    reproduction["inventory"] = "1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a"
+    assert validator(primary, reproduction) == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
+    reproduction["inventory"] = primary["inventory"]
     reproduction["previewModeSigningKey"] = primary["previewModeEncryptionKey"]
     reproduction["previewModeEncryptionKey"] = primary["previewModeSigningKey"]
     assert validator(primary, reproduction) == ["FRONTEND_BUILD_SECRET_REUSED"]
