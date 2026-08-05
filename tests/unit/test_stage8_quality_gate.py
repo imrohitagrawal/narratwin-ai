@@ -171,8 +171,12 @@ def test_stage8_script_markers_match_mandatory_container_scanners(monkeypatch: A
     old = "node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9"
     mutations = (dockerfile.replace(build_image, old), dockerfile.replace(build_image, "node:26.6.0-alpine"),
         dockerfile.replace(runtime_image, runtime_image[:-1] + ("0" if runtime_image[-1] != "0" else "1")),
-        dockerfile.replace(f"FROM {runtime_image} AS runner", f"FROM {old} AS runner"))
+        dockerfile.replace(f"FROM {runtime_image} AS runner", f"FROM {old} AS runner"),
+        dockerfile + f"\nfrom {old} AS bypass\n", dockerfile + f"\nFrOm {old} AS bypass\n",
+        dockerfile + f"\n  FROM {old} AS bypass\n")
     assert all(not stage8.frontend_node_image_valid(mutated) for mutated in mutations)
+    for path in ("/bin/busybox", "/usr/bin/busybox", "/bin/sh", "/usr/bin/sh", "/bin/ash", "/usr/bin/ash"):
+        assert path in dockerfile
 def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
     failures: list[str] = []; stage8.check_stage_marker_and_branch(failures); assert failures == [
