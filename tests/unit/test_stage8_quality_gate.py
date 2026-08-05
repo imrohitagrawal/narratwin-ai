@@ -37,11 +37,11 @@ def route(monkeypatch: Any, branch: str, changed: list[str]) -> list[str]:
     stage8.check_stage_marker_and_branch(failures); stage8.check_stage_scope(failures); return failures
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
     for branch, s in SCOPES.items():
-        monkeypatch.setattr(stage8,"citation_parity_charge",lambda:1000); assert route(monkeypatch,branch,sorted(s))==[]
+        monkeypatch.setattr(stage8,"citation_parity_charge",lambda:1100); assert route(monkeypatch,branch,sorted(s))==[]
         extra = "forbidden/outside.txt"
         assert route(monkeypatch,branch,[extra]) == [f"Stage 8 changed file outside the allowlist: {extra}"]
         if branch == CP:
-            missing=min(s); monkeypatch.setattr(stage8,"citation_parity_charge",lambda:1001)
+            missing=min(s); monkeypatch.setattr(stage8,"citation_parity_charge",lambda:1101)
             assert len(route(monkeypatch,branch,sorted(s-{missing}))) == 2
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", f"{A2_2}/child",
@@ -156,9 +156,9 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
 def test_citation_charge_uses_worktree_and_fails_closed(monkeypatch: Any) -> None:
     s=stage8; d=sp.CompletedProcess; calls=[]
-    out=iter(("500\t500\tx\n","500\t500\tx\n","500\t501\tx\n","500\t500\tx\n","-\t1\tx\n","1\t1\tx\n"))
+    out=iter(("550\t550\tx\n","550\t550\tx\n","550\t551\tx\n","550\t550\tx\n","-\t1\tx\n","1\t1\tx\n"))
     def fake(a:list[str])->Any: calls.append(a); return d(a,0,s.CP_BASE+"\n" if a[1]=="merge-base" else next(out),"")
-    monkeypatch.setattr(s,"run",fake); fn=s.citation_parity_charge; assert (fn(),fn())==(1000,1001)
+    monkeypatch.setattr(s,"run",fake); fn=s.citation_parity_charge; assert (fn(),fn())==(1100,1101)
     pytest.raises(RuntimeError,fn); assert ["git","diff","--cached","--numstat",s.CP_BASE,"--"] in calls
     monkeypatch.setattr(s,"run",lambda args:d(args,1,"","failed")); pytest.raises(RuntimeError,fn)
 def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> None:
