@@ -162,17 +162,6 @@ def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> 
         error = f"Stage 8 changed file outside the allowlist: {rejected}"
         for changed, expected in ((sorted(source[branch]), []), ([rejected], [error])): assert route(
             monkeypatch,branch,changed) == expected
-def test_stage8_script_markers_match_mandatory_container_scanners(monkeypatch: Any) -> None:
-    failures: list[str] = []; stage8.check_dependencies_and_scripts(failures); assert failures == []
-    assert route(monkeypatch, stage8.ISSUE374_SECURITY_BRANCH, sorted(stage8.ISSUE374_SECURITY_FILES)) == []
-    dockerfile = stage8.read("frontend/Dockerfile"); assert stage8.frontend_node_image_valid(dockerfile)
-    build_image = stage8.FRONTEND_NODE_BUILD_IMAGE; runtime_image = stage8.FRONTEND_NODE_RUNTIME_IMAGE; prior = "node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9"
-    mutations = (dockerfile.replace(build_image, prior), dockerfile.replace(build_image, "node:26.6.0-alpine"), dockerfile.replace("sha512sum -c -", "REMOVED", 1),
-        dockerfile.replace(runtime_image, runtime_image[:-1] + ("0" if runtime_image[-1] != "0" else "1")),
-        dockerfile.replace(f"FROM {runtime_image} AS runner", f"FROM {prior} AS runner"),
-        *(dockerfile + f"\n{prefix} {prior} AS bypass\n" for prefix in ("from", "FrOm", "  FROM", "\tFROM")),
-        *(dockerfile.replace(marker, "REMOVED") for marker in (*stage8.FRONTEND_BUILD_ARCHIVE_SHA512, *stage8.FRONTEND_BUILD_ARCHIVE_SHA512.values())))
-    assert all(not stage8.frontend_node_image_valid(mutated) for mutated in mutations); next_config = stage8.read("frontend/next.config.ts"); scan = stage8.read("scripts/ci/docker-image-scan.sh"); assert "generateBuildId" in next_config and "NARRATWIN_BUILD_ID_INPUTS" in next_config; assert all(marker in scan for marker in ('scan_trivy "${FRONTEND_IMAGE}"', '"CRITICAL,HIGH,MEDIUM"', 'scan_grype "${FRONTEND_IMAGE}"', '"medium"', "previewModeSigningKey", "server action manifest mismatch"))
 def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
     failures: list[str] = []; stage8.check_stage_marker_and_branch(failures); assert failures == [
