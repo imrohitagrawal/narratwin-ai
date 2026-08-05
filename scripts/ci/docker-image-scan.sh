@@ -69,10 +69,10 @@ image_config() {
 verify_frontend_runtime() {
   local image="$1" config container port http_code actual_inventory
   config="$(docker image inspect "${image}" --format '{{json .Config}}')"
-  python3 - "${config}" <<'PY'
+  python3 - 3<<<"${config}" <<'PY'
 import json, sys
 from scripts.ci.check_container_scan_consensus import canonical_frontend_config
-config = canonical_frontend_config(json.loads(sys.argv[1]))
+config = canonical_frontend_config(json.load(open(3)))
 expected = {
   "User": "65532:65532", "ExposedPorts": {"3000/tcp": {}},
   "Env": [
@@ -93,7 +93,8 @@ expected = {
   "ArgsEscaped": True,
 }
 
-assert config == expected, "Frontend runtime config does not match the reviewed contract."
+if config != expected:
+  raise SystemExit("Frontend runtime config does not match the reviewed contract.")
 PY
   docker run --rm --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= --entrypoint /usr/bin/node "${image}" -e '
 const fs=require("fs"), extras=[];
@@ -145,8 +146,8 @@ const h=crypto.createHash("sha256"); for (const r of records) h.update(u32(r.len
 console.log(records.length+":"+h.digest("hex"));')"
   python3 - "${FRONTEND_ARCH}" "${actual_inventory}" <<'PY'
 import sys
-from scripts.ci.check_container_scan_consensus import frontend_inventory_matches
-assert frontend_inventory_matches(*sys.argv[1:]), "Frontend runtime inventory is not reviewed."
+from scripts.ci.check_container_scan_consensus import require_frontend_inventory
+require_frontend_inventory(*sys.argv[1:])
 PY
   container="narratwin-runtime-${SESSION//[^a-zA-Z0-9_.-]/-}"
   cleanup_frontend_runtime() { docker rm -f "${container}" >/dev/null 2>&1 || true; }

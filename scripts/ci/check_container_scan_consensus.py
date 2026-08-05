@@ -64,6 +64,11 @@ def frontend_inventory_matches(architecture: str, inventory: str) -> bool:
     return inventory in FRONTEND_INVENTORIES.get(architecture, frozenset())
 
 
+def require_frontend_inventory(architecture: str, inventory: str) -> None:
+    if not frontend_inventory_matches(architecture, inventory):
+        raise SystemExit("Frontend runtime inventory is not reviewed.")
+
+
 def canonical_frontend_config(config: dict[str, Any]) -> dict[str, Any] | None:
     normalized = dict(config)
     for field, expected in FRONTEND_ENGINE_CONFIG_DEFAULTS.items():
