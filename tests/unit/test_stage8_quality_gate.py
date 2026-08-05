@@ -5,6 +5,7 @@ from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 from scripts.quality import stage8_a23b as a23b
 from scripts.quality.check_stage8_docs import QUIET_PRESENCE_BRANCH as QP, QUIET_PRESENCE_FILES as QP_SCOPE
+from scripts.quality.check_stage8_docs import ISSUE374_SECURITY_BRANCH as I374, ISSUE374_SECURITY_FILES as I374_SCOPE
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"
 SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
@@ -23,7 +24,7 @@ SCOPES = {TRANSITION: {"docs/governance/preflights/issue-346.json", "scripts/qua
            "scripts/quality/check_stage2_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/STATUS.md",
            "scripts/quality/check_stage8_docs.py", "docs/ADR/0002-rag-storage.md", "docs/QUALITY_GATES.md",
            "docs/STAGE_ISSUE_PLAN.md"},
-    QP: QP_SCOPE, **a23b.A23_ROUTES}
+    QP: QP_SCOPE, I374: I374_SCOPE, **a23b.A23_ROUTES}
 def load_module(relative: str, name: str) -> ModuleType:
     module_path = Path(__file__).parents[2] / relative
     spec = importlib.util.spec_from_file_location(name, module_path); assert spec and spec.loader
@@ -172,6 +173,21 @@ def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
     failures: list[str] = []; stage8.check_dependencies_and_scripts(failures)
     assert not [failure for failure in failures if "docker scout cves" in failure]
     assert not [failure for failure in failures if "--only-severity critical,high" in failure]
+def test_frontend_node_image_pin_rejects_version_digest_and_stage_drift(monkeypatch: Any) -> None:
+    dockerfile = stage8.read("frontend/Dockerfile"); failures: list[str] = []
+    stage8.check_frontend_node_image(failures); assert failures == []
+    expected = stage8.FRONTEND_NODE_IMAGE
+    old = "node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9"
+    mutations = (
+        dockerfile.replace("node:26.6.0-alpine", "node:26.4.0-alpine"),
+        dockerfile.replace("@sha256:" + expected.split("@sha256:", 1)[1], ""),
+        dockerfile.replace(expected, expected[:-1] + ("0" if expected[-1] != "0" else "1")),
+        dockerfile.replace(f"FROM {expected} AS runner", f"FROM {old} AS runner"),
+    )
+    for mutated in mutations:
+        monkeypatch.setattr(stage8, "read", lambda path, value=mutated: value)
+        failures = []; stage8.check_frontend_node_image(failures)
+        assert failures == [stage8.FRONTEND_NODE_IMAGE_FAILURE]
 def test_non_stage8_non_process_branch_still_rejected(monkeypatch: Any) -> None:
     monkeypatch.setattr(stage8, "current_branch", lambda: "feature/untracked-stage8-work")
     failures: list[str] = []; stage8.check_stage_marker_and_branch(failures)
