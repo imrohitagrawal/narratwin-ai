@@ -114,11 +114,19 @@ def _valid_vex(vex: dict[str, Any], backend_config: str, component_purl: str) ->
     }
 
 
-def frontend_reproduction_findings(primary: dict[str, str], reproduction: dict[str, str]) -> list[str]:
+def frontend_reproduction_findings(primary: dict[str, Any], reproduction: dict[str, Any]) -> list[str]:
     findings: list[str] = []
     if primary.get("buildId") != reproduction.get("buildId"):
         findings.append("FRONTEND_BUILD_ID_CHANGED")
-    if primary.get("inventory") != reproduction.get("inventory"):
+    primary_inventory = primary.get("inventory")
+    reproduction_inventory = reproduction.get("inventory")
+    inventories_are_reviewed = all(
+        isinstance(value, str) and frontend_inventory_matches(str(record.get("architecture", "")), value)
+        for record, value in ((primary, primary_inventory), (reproduction, reproduction_inventory))
+    )
+    if not inventories_are_reviewed:
+        findings.append("FRONTEND_RUNTIME_INVENTORY_INVALID")
+    elif primary_inventory != reproduction_inventory:
         findings.append("FRONTEND_RUNTIME_INVENTORY_CHANGED")
     primary_secrets = {primary.get(field) for field in FRONTEND_SECRET_FIELDS}
     reproduction_secrets = {reproduction.get(field) for field in FRONTEND_SECRET_FIELDS}
