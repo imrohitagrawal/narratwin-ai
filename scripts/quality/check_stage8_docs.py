@@ -352,7 +352,7 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
         "lighthouse",
         "trivy image",
         "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.6.0"',
-        '"65532:65532"', "extras.length", "expected_inventory", "actual_inventory", "immutable filesystem",
+        '"65532:65532"', "extras.length", "frontend_inventory_matches", "actual_inventory", "inventory is not reviewed",
         'encoding:"buffer"', "readlinkSync", "s.uid", "s.gid", "CapEff", "--connect-timeout", "--max-time",
         "cleanup_frontend_runtime", "FRONTEND_BUILD_IMAGE", "--target deps", "NODE_OPTIONS", "config == expected",
         "largest-contentful-paint",
