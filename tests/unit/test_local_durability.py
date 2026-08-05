@@ -1128,6 +1128,16 @@ def test_stage4_rejects_misaligned_claim_support_binding(tmp_path: Path, monkeyp
     assert list(service.walkthrough_runs) == [runs[0].run_id]
 
 
+def test_stage4_rejects_duplicate_fresh_claim_identity(tmp_path: Path) -> None:
+    state_path = tmp_path / "stage4.json"
+    _principal, _project, runs = _grounded_stage4_state(state_path)
+    service, run = Stage4Service(state_path=state_path), runs[0]
+    assert run.generated_script is not None
+    claim = run.generated_script.claims[0]
+    forged = replace(run, generated_script=replace(run.generated_script, claims=[claim, claim]))
+    assert not service._fresh_lineage_ownership_is_valid(forged)
+
+
 def test_stage4_rejects_write_that_would_exceed_restore_byte_cap(tmp_path: Path, monkeypatch: Any) -> None:
     state_path = tmp_path / "stage4.json"
     service = Stage4Service(state_path=state_path)
