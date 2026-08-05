@@ -1073,7 +1073,7 @@ def test_stage4_preserves_foreign_claim_only_as_unsupported_failure(tmp_path: Pa
 def test_stage4_rejects_foreign_retrieved_context_before_terminal_side_effect(tmp_path: Path, monkeypatch: Any) -> None:
     state_path = tmp_path / "stage4.json"
     principal, project, runs = _grounded_stage4_state(state_path)
-    service, original = Stage4Service(state_path=state_path), stage4_module.retrieve_context
+    service, original = Stage4Service(state_path=state_path), cast(Any, stage4_module).retrieve_context
     def foreign_context(**values: Any) -> list[RetrievedContext]:
         return [replace(item, chunk=replace(item.chunk, tenant_id="tenant_foreign", project_id="proj_foreign"))
             for item in original(**values)]

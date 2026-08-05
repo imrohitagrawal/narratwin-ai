@@ -726,6 +726,33 @@ class Stage4Service:
         )
         return reproduced == evaluation
 
+    def _fresh_lineage_ownership_is_valid(self, run: WalkthroughRunRecord) -> bool:
+        contexts = {item.context_ref_id: item for item in run.retrieved_context}
+        if len(contexts) != len(run.retrieved_context) or any(
+            (item.chunk.tenant_id, item.chunk.project_id) != (run.tenant_id, run.project_id)
+            or not self.rag_store.has_chunk(
+                tenant_id=run.tenant_id, project_id=run.project_id, chunk_id=item.chunk.chunk_id
+            )
+            for item in run.retrieved_context
+        ):
+            return False
+        if run.evaluation is None or run.generated_script is None:
+            return run.status == "REFUSED"
+        evaluation = run.evaluation
+        if (evaluation.tenant_id, evaluation.project_id, evaluation.run_id) != (run.tenant_id, run.project_id, run.run_id):
+            return False
+        unsupported = {claim.claim_id for claim in evaluation.unsupported_claims}
+        context_chunks = {item.chunk.chunk_id for item in contexts.values()}
+        if any(claim.chunk_id not in context_chunks and claim.claim_id not in unsupported for claim in run.generated_script.claims):
+            return False
+        claim_ids = {claim.claim_id for claim in run.generated_script.claims}
+        return all(
+            support.claim_id in claim_ids and support.context_ref_id in contexts
+            and contexts[support.context_ref_id].chunk.chunk_id == support.chunk_id
+            and contexts[support.context_ref_id].chunk.document_id == support.document_id
+            for support in evaluation.claim_supports
+        )
+
     def _restored_retrieval_lineage_is_current(self, row: dict[str, Any], run: WalkthroughRunRecord) -> bool:
         names, expected = ("retrieval_strategy_version", "retrieval_top_k", "retrieval_score_threshold"), (RETRIEVAL_STRATEGY_VERSION, RETRIEVAL_TOP_K, RETRIEVAL_MIN_SCORE)
         raw = tuple(row.get(name) for name in names)
@@ -1479,6 +1506,7 @@ class Stage4Service:
         )
         if (
             not raw_walkthrough_lineage_is_bounded_and_typed(walkthrough_run_to_dict(run))
+            or not self._fresh_lineage_ownership_is_valid(run)
             or not self._restored_citation_lineage_is_valid(run)
         ):
             raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
