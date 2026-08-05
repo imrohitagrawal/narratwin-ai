@@ -1169,3 +1169,15 @@ Required update rules:
   availability and tracked by `#376`; it is absent from the final runtime.
   Cut 1, deployment, release, public availability, and production readiness
   remain incomplete.
+
+## Issue 375 Stage 8 ignored-cache traversal status
+
+- Issue `#375` repairs the A2.3b repository semantic scan so exact ignored
+   dependency and tool-cache directory names are pruned before traversal rather
+   than filtered only after recursive enumeration. Repository-owned Python,
+   including similar-but-not-exact directory names, remains in scope.
+- The bounded route uses exact base
+  `f2312947ef670becfa0373000c8ae6ef1f411e20`, seven paths, and 600 charged
+   lines. Symlink escape/cycle, cache poison, exact-scope, malformed-Git, and
+   context-budget regressions are executable. Cut 1 and every product,
+   provider, deployment, release, public, and production claim remain unchanged.
