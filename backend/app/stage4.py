@@ -728,11 +728,12 @@ class Stage4Service:
 
     def _fresh_lineage_ownership_is_valid(self, run: WalkthroughRunRecord) -> bool:
         contexts = {item.context_ref_id: item for item in run.retrieved_context}
+        canonical = {item.chunk_id: item for item in self.rag_store.chunks_for_project(
+            tenant_id=run.tenant_id, project_id=run.project_id
+        )}
         if len(contexts) != len(run.retrieved_context) or any(
             (item.chunk.tenant_id, item.chunk.project_id) != (run.tenant_id, run.project_id)
-            or not self.rag_store.has_chunk(
-                tenant_id=run.tenant_id, project_id=run.project_id, chunk_id=item.chunk.chunk_id
-            )
+            or canonical.get(item.chunk.chunk_id) != item.chunk
             for item in run.retrieved_context
         ):
             return False
@@ -1506,6 +1507,7 @@ class Stage4Service:
         )
         if (
             not raw_walkthrough_lineage_is_bounded_and_typed(walkthrough_run_to_dict(run))
+            or not self._restored_retrieval_lineage_is_current(walkthrough_run_to_dict(run), run)
             or not self._fresh_lineage_ownership_is_valid(run)
             or not self._restored_citation_lineage_is_valid(run)
         ):

@@ -45,6 +45,7 @@ Use it to answer:
   Raw restore types, sizes, counts, and marker digits are bounded per row so one malformed run cannot clear valid sibling
   state; generation and writes enforce the same replay limits. Legacy invalid retrieval scores cross construction only
   for inactive audit quarantine, never active replay, and the route charges both staged-index and working-tree diffs.
+  Fresh retrieved contexts must exactly equal canonical stored chunks and satisfy restore-time retrieval invariants.
   Fresh generation preserves marker/support parity without retrieval or numbering changes. Presenter, media, provider,
   deployment, release, public availability, production readiness, and Cut 1 completion remain outside this repair.
 - Last reviewed date: 2026-08-05

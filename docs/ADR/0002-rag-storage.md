@@ -96,6 +96,7 @@ and its replay binding; they cannot clear a valid sibling run or the rest of the
 limits are enforced before terminal generation persistence, and writes that would exceed the restore byte cap roll back.
 Legacy boolean, non-finite, or bounded numeric-string retrieval scores may cross object construction only to preserve
 their byte-equivalent inactive audit quarantine; current activation still requires finite, non-boolean raw numbers.
+Fresh activation also requires exact canonical stored-chunk equality and the same retrieval invariants used on restore.
 
 Answer relevancy and context recall are exceptions because the original prompt and historical whole-project corpus are
 not persisted. Restore requires both stored values to be finite but substitutes them before equality comparison.
