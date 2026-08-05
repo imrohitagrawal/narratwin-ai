@@ -1074,7 +1074,7 @@ def test_stage4_preserves_foreign_claim_only_as_unsupported_failure(tmp_path: Pa
     assert replayed == failed
 
 
-@pytest.mark.parametrize("mutation", ("foreign-scope", "forged-payload", "duplicate"))
+@pytest.mark.parametrize("mutation", ("foreign-scope", "forged-payload", "duplicate", "noncanonical-ref"))
 def test_stage4_rejects_invalid_retrieved_context_before_terminal_side_effect(
     tmp_path: Path, monkeypatch: Any, mutation: str,
 ) -> None:
@@ -1087,6 +1087,8 @@ def test_stage4_rejects_invalid_retrieved_context_before_terminal_side_effect(
             return [replace(item, chunk=replace(item.chunk, tenant_id="tenant_foreign", project_id="proj_foreign")) for item in items]
         if mutation == "forged-payload":
             return [replace(items[0], chunk=replace(items[0].chunk, text="Forged same-ID text.")), *items[1:]]
+        if mutation == "noncanonical-ref":
+            return [replace(items[0], context_ref_id="not_canonical"), *items[1:]]
         return [items[0], replace(items[0], context_ref_id="ctx_duplicate")]
     monkeypatch.setattr(stage4_module, "retrieve_context", invalid_context)
     with pytest.raises(Stage4Error) as error:
@@ -1139,6 +1141,13 @@ def test_stage4_rejects_duplicate_fresh_claim_identity(tmp_path: Path) -> None:
     assert run.generated_script is not None
     claim = run.generated_script.claims[0]
     forged = replace(run, generated_script=replace(run.generated_script, claims=[claim, claim]))
+    assert not service._fresh_lineage_ownership_is_valid(forged)
+    assert run.evaluation is not None
+    noncanonical = replace(claim, claim_id="not_canonical")
+    evaluation = replace(run.evaluation, claim_supports=[
+        replace(run.evaluation.claim_supports[0], claim_id="not_canonical")
+    ])
+    forged = replace(run, generated_script=replace(run.generated_script, claims=[noncanonical]), evaluation=evaluation)
     assert not service._fresh_lineage_ownership_is_valid(forged)
 
 
