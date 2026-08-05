@@ -156,7 +156,7 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
                 assert {"--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"} <= set(args)
 def test_citation_charge_uses_worktree_and_fails_closed(monkeypatch: Any) -> None:
     s=stage8; d=sp.CompletedProcess; calls=[]; out=iter(("275\t275\tx\n","275\t276\tx\n","-\t1\tx\n"))
-    def fake(args): calls.append(args); return d(args,0,s.CP_BASE+"\n" if "merge-base" in args else next(out),"")
+    def fake(a:list[str])->Any: calls.append(a); return d(a,0,s.CP_BASE+"\n" if a[1]=="merge-base" else next(out),"")
     monkeypatch.setattr(s,"run",fake); fn=s.citation_parity_charge; assert (fn(),fn())==(550,551)
     pytest.raises(RuntimeError,fn); assert ["git","diff","--numstat",s.CP_BASE,"--"] in calls
     monkeypatch.setattr(s,"run",lambda args:d(args,1,"","failed")); pytest.raises(RuntimeError,fn)
@@ -173,10 +173,10 @@ def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> 
 def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
     failures:list[str]=[]; stage8.check_dependencies_and_scripts(failures)
     assert not any(m in "\n".join(failures) for m in ("docker scout cves","--only-severity critical,high"))
-def test_unrouted_stage8_branch_is_rejected(monkeypatch):
-    branch="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:branch); failures=[]
+def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
+    b="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:b); failures:list[str]=[]
     stage8.check_stage_marker_and_branch(failures); assert failures==[
-        f"Stage 8 work must run on a stage8-* branch or main after merge; got {branch}."]
+        f"Stage 8 work must run on a stage8-* branch or main after merge; got {b}."]
 A22_SOURCE = "Stage 2 retrieval-v1 accepted sources must retain the canonical oracle."
 A22_DECL = "Stage 2 retrievalStrategy must equal the canonical v1 machine declaration."
 A22_RUNTIME = "Stage 4 retrieval-v1 runtime constants must equal the canonical oracle."

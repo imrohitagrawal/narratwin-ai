@@ -115,7 +115,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
 }
 PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES | cache_pruning.CACHE_PRUNING_ROUTES)
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES
-def run(args:list[str]): return subprocess.run(args,cwd=ROOT,text=True,capture_output=True,check=False)
+def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
 def changed_files_for_stage_scope() -> list[str]:
