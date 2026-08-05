@@ -214,6 +214,8 @@ def test_dependency_scanners_bind_pre_reproduction_digest_and_fail_closed(
     tmp_path: Path, trivy_rc: int, grype_rc: int
 ) -> None:
     source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    cleanup = 'rm -f "${REPORT_DIR}"/*.raw.json "${REPORT_DIR}"/*.raw.sarif.json'
+    assert source.index(cleanup) < source.index("\n  prepare_frontend_images")
     start = source.index("prepare_frontend_images() {")
     function = source[start : source.index("\n}\n", start) + 3]
     log = tmp_path / "boundary.log"
