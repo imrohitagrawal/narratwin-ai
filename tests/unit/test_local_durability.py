@@ -795,6 +795,8 @@ def test_stage4_file_state_drops_completed_walkthrough_without_evaluation(tmp_pa
         "truncated-claim-text",
         "shifted-claim-span",
         "evaluation-status-drift",
+        "failed-envelope-demotion",
+        "out-of-range-metrics",
     ),
 )
 def test_stage4_file_state_drops_walkthrough_with_tampered_citation_lineage(
@@ -865,8 +867,13 @@ def test_stage4_file_state_drops_walkthrough_with_tampered_citation_lineage(
         claim["text"] = claim["text"][:-1]
     elif mutation == "shifted-claim-span":
         row["generated_script"]["claims"][0]["script_span_start"] += 1
-    else:
+    elif mutation == "evaluation-status-drift":
         row["evaluation"]["evaluation_status"] = "FAILED"
+    elif mutation == "failed-envelope-demotion":
+        row.update(status="FAILED", evaluation_status="FAILED", accepted_script_text=None,
+                   failure_reason="UNSUPPORTED_PROJECT_FACT")
+    else:
+        row["evaluation"]["answer_relevancy"] = 42.0; row["evaluation"]["context_recall"] = -7.0
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
     restored = Stage4Service(state_path=state_path)
