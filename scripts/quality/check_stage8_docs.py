@@ -28,6 +28,12 @@ CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/a
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/ADR/0002-rag-storage.md"}
 QUIET_PRESENCE_BRANCH = "cut1-358-quiet-presence-ui"
 CUT1_REAL_MEDIA_TRANSITION_BRANCH = "cut1-366-real-media-governance-transition"
+CUT1_REAL_MEDIA_BASE = "a69903fea50c22e12926d7e13dffdc74e55dfb65"
+CUT1_REAL_MEDIA_LIMIT = 900
+CUT1_REAL_MEDIA_FILE_LIMITS = {
+    "scripts/quality/check_stage8_docs.py": 350,
+    "tests/unit/test_stage8_quality_gate.py": 300,
+}
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
@@ -190,6 +196,23 @@ def citation_parity_charge() -> int:
     if bad:raise RuntimeError("Issue #372 base diff unavailable.")
     try:return max(sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines())) for d in ds)
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
+def cut1_transition_charges() -> tuple[int, dict[str, int]]:
+    base = CUT1_REAL_MEDIA_BASE
+    if run(["git", "merge-base", base, "HEAD"]).stdout.strip() != base:
+        raise RuntimeError("Issue #366 base diff unavailable.")
+    candidates = (run(["git", "diff", "--cached", "--numstat", base, "--"]),
+                  run(["git", "diff", "--numstat", base, "--"]))
+    parsed: list[tuple[int, dict[str, int]]] = []
+    try:
+        for result in candidates:
+            if result.returncode:
+                raise RuntimeError("Issue #366 base diff unavailable.")
+            charges = {path: int(added) + int(deleted)
+                       for added, deleted, path in (line.split("\t") for line in result.stdout.splitlines())}
+            parsed.append((sum(charges.values()), charges))
+    except ValueError as error:
+        raise RuntimeError("Issue #366 malformed or binary numstat.") from error
+    return max(parsed, key=lambda item: item[0])
 def parse_paths_z(output: str) -> list[str]:
     if not output:return []
     if not output.endswith("\0"):raise RuntimeError("Malformed NUL-delimited Git path output.")
@@ -281,6 +304,58 @@ def check_stage_scope(failures: list[str]) -> None:
         failures.extend(f"Issue #372 missing required path: {path}" for path in sorted(allowed_files-changed_files))
         charge=citation_parity_charge()
         if charge>CP_LIMIT: fail(f"Issue #372 charge {charge} exceeds {CP_LIMIT}.",failures)
+    if branch == CUT1_REAL_MEDIA_TRANSITION_BRANCH and not outside:
+        failures.extend(
+            f"Issue #366 route is missing required path: {path}"
+            for path in sorted(allowed_files - changed_files)
+        )
+        total, charges = cut1_transition_charges()
+        if total > CUT1_REAL_MEDIA_LIMIT:
+            fail(f"Issue #366 charge {total} exceeds {CUT1_REAL_MEDIA_LIMIT}.", failures)
+        for path, limit in CUT1_REAL_MEDIA_FILE_LIMITS.items():
+            if charges.get(path, 0) > limit:
+                fail(f"Issue #366 charge for {path} exceeds {limit}.", failures)
+
+CUT1_TRANSITION_REQUIRED_MARKERS = (
+    ("docs/STAGE_ISSUE_PLAN.md", "Issue `#382`"),
+    ("docs/STAGE_ISSUE_PLAN.md", "StackClimb"),
+    ("docs/STAGE_ISSUE_PLAN.md", "Rohit Agrawal"),
+    ("docs/STAGE_ISSUE_PLAN.md", "Do not use `®`"),
+    ("docs/STAGE_ISSUE_PLAN.md", "90–120 seconds"),
+    ("docs/STAGE_ISSUE_PLAN.md", "Do not silently time-stretch"),
+    ("docs/STAGE_ISSUE_PLAN.md", "citation numbers are not spoken"),
+    ("docs/STAGE_ISSUE_PLAN.md", "Interactive Q&A remains future work"),
+    ("docs/STAGE_ISSUE_PLAN.md", "latest evaluated script version"),
+    ("docs/STAGE_ISSUE_PLAN.md", "invalidates audio, captions, render, export, and replay evidence"),
+    ("docs/STAGE_ISSUE_PLAN.md", "Still images"),
+    ("docs/STAGE_ISSUE_PLAN.md", "HTML"),
+    ("docs/STAGE_ISSUE_PLAN.md", "JSON"),
+    ("docs/STAGE_ISSUE_PLAN.md", "manifests"),
+    ("docs/STAGE_ISSUE_PLAN.md", "silent or empty audio"),
+    ("docs/STAGE_ISSUE_PLAN.md", "metadata-only success"),
+    ("docs/STAGE_ISSUE_PLAN.md", "placeholder"),
+    ("docs/STATUS.md", "Issue `#372` is closed after PR `#381`"),
+    ("docs/STATUS.md", "`#367` → `#382` → `#368`"),
+    ("docs/TRACEABILITY.md", "narration and speech-approval child `#382`"),
+    ("docs/QUALITY_GATES.md", "F366-1 through F366-12"),
+)
+CUT1_TRANSITION_STALE_TEXT = ("#372 must first repair", "blocked by #372", "after #372 is merged")
+CUT1_TRANSITION_PROHIBITED_TEXT = (
+    "trademark is registered", "interactive Q&A is active",
+    "production ready", "publicly available now",
+)
+def check_cut1_transition_contract(failures: list[str]) -> None:
+    documents = {path: read(path) for path, _ in CUT1_TRANSITION_REQUIRED_MARKERS}
+    for path, marker in CUT1_TRANSITION_REQUIRED_MARKERS:
+        if marker not in documents[path]:
+            fail(f"Issue #366 governance contract must include {marker} in {path}.", failures)
+    combined = "\n".join(documents.values())
+    for stale in CUT1_TRANSITION_STALE_TEXT:
+        if stale in combined:
+            fail(f"Issue #366 governance contract retains stale text: {stale}", failures)
+    for prohibited in CUT1_TRANSITION_PROHIBITED_TEXT:
+        if prohibited in combined:
+            fail(f"Issue #366 governance contract contains prohibited text: {prohibited}", failures)
 def check_backend_and_tests(failures: list[str]) -> None:
     main_text = read("backend/app/main.py")
     stage4_text = read("backend/app/stage4.py")
@@ -484,6 +559,8 @@ def main() -> int:
     if not failures:
         check_stage_marker_and_branch(failures)
         check_stage_scope(failures)
+        if current_branch() == CUT1_REAL_MEDIA_TRANSITION_BRANCH:
+            check_cut1_transition_contract(failures)
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
         node_security.check_frontend_node_image(read("frontend/Dockerfile"), failures)

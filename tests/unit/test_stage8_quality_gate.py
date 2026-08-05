@@ -77,10 +77,22 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
         assert branch == a23b.A23B_BRANCH or canonical_stage_issue(branch) is None
 
 def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "cut1_transition_charges", lambda: (0, {}))
     missing = sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE)[0]
     partial = sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE - {missing})
     failures = route(monkeypatch, CUT1_REAL_MEDIA_TRANSITION, partial)
     assert failures == [f"Issue #366 route is missing required path: {missing}"]
+    monkeypatch.setattr(stage8, "cut1_transition_charges", lambda: (901, {}))
+    assert route(monkeypatch, CUT1_REAL_MEDIA_TRANSITION, sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE)) == [
+        "Issue #366 charge 901 exceeds 900."
+    ]
+    monkeypatch.setattr(stage8, "cut1_transition_charges", lambda: (
+        351, {"scripts/quality/check_stage8_docs.py": 351},
+    ))
+    assert route(monkeypatch, CUT1_REAL_MEDIA_TRANSITION, sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE)) == [
+        "Issue #366 charge for scripts/quality/check_stage8_docs.py exceeds 350."
+    ]
+    monkeypatch.setattr(stage8, "cut1_transition_charges", lambda: (0, {}))
 
     root = Path(__file__).parents[2]
     governed = {
@@ -99,6 +111,7 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
         ("docs/STAGE_ISSUE_PLAN.md", "Issue `#382`"),
         ("docs/STAGE_ISSUE_PLAN.md", "StackClimb"),
         ("docs/STAGE_ISSUE_PLAN.md", "Rohit Agrawal"),
+        ("docs/STAGE_ISSUE_PLAN.md", "Do not use `®`"),
         ("docs/STAGE_ISSUE_PLAN.md", "90–120 seconds"),
         ("docs/STAGE_ISSUE_PLAN.md", "Do not silently time-stretch"),
         ("docs/STAGE_ISSUE_PLAN.md", "citation numbers are not spoken"),
@@ -120,7 +133,7 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     for path, marker in required:
         original = governed[path]
         assert marker in original
-        governed[path] = original.replace(marker, "", 1)
+        governed[path] = original.replace(marker, "")
         failures = []
         stage8.check_cut1_transition_contract(failures)
         assert failures == [f"Issue #366 governance contract must include {marker} in {path}."]
@@ -131,6 +144,12 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
         failures = []
         stage8.check_cut1_transition_contract(failures)
         assert failures == [f"Issue #366 governance contract retains stale text: {stale}"]
+        governed["docs/STATUS.md"] = governed["docs/STATUS.md"].rsplit("\n", 2)[0]
+    for prohibited in ("trademark is registered", "interactive Q&A is active", "production ready", "publicly available now"):
+        governed["docs/STATUS.md"] += f"\n{prohibited}\n"
+        failures = []
+        stage8.check_cut1_transition_contract(failures)
+        assert failures == [f"Issue #366 governance contract contains prohibited text: {prohibited}"]
         governed["docs/STATUS.md"] = governed["docs/STATUS.md"].rsplit("\n", 2)[0]
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     git(tmp_path, "init", "-b", "main"); git(tmp_path, "config", "user.name", "Scope Test")

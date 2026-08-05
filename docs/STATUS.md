@@ -39,25 +39,17 @@ Use it to answer:
   stopped implementations `#336`–`#345` are forensic-only and must not be
   revived or reused. No Cut 1, release, readiness, deployment, or avatar
   completion is established by this slice.
-- Issue `#363` is closed after PR `#365` merged at
-  `be9c7b1fd7469b89809388743bffcd6c8cbb47f6`; its post-merge main quality
-  run `30957043256` passed and the branch/worktree were removed. Issue `#366`
-  now governs the genuine local, key-free Cut 1 outcome. Its child issues
-  `#367` registry, `#368` local TTS, `#369` local renderer/export, `#370` UI,
-  and `#371` integration evidence are deliberately unstarted. This transition
-  authorizes only their future, separately reviewed contracts; it does not
-  authorize a media implementation or alter the existing no-real-media truth.
-- Last reviewed date: 2026-08-04
-- Issue `#372` is the bounded prerequisite repair for parent Cut 1 issue `#366`. Its exact branch
-  `cut1-372-citation-index-parity-post380` corrects a stale fixed-index oracle and makes restored Stage 4 citation lineage fail
-  closed when accepted text, visible markers, provider claims, retrieved-context order, or claim-support indexes drift.
-  Raw restore types, sizes, counts, and marker digits are bounded per row so one malformed run cannot clear valid sibling
-  state; generation and writes enforce the same replay limits. Legacy invalid retrieval scores cross construction only
-  for inactive audit quarantine, never active replay, and the route charges both staged-index and working-tree diffs.
-  Fresh retrieved contexts must exactly equal canonical stored chunks and satisfy restore-time retrieval invariants.
-  Fresh generation preserves marker/support parity without retrieval or numbering changes. Presenter, media, provider,
-  deployment, release, public availability, production readiness, and Cut 1 completion remain outside this repair.
-- Last reviewed date: 2026-08-05
+- Issue `#372` is closed after PR `#381` merged at
+  `a69903fea50c22e12926d7e13dffdc74e55dfb65`; post-merge `main` workflow
+  `31046587813` passed. Its citation-lineage repair is accepted prerequisite
+  evidence, not an unresolved Cut 1 blocker.
+- Issue `#366` governs the controlled local, key-free Cut 1. PR `#373` revises
+  governance only under OWNER comments `5197711390`, `5197717563`, and
+  `5197776590`. The serialized next path is `#367` → `#382` → `#368` → `#369`
+  → `#370` → `#371`, with merged-main acceptance between children. This PR
+  adds no product implementation and does not prove playable media, deployment,
+  release, public availability, trademark registration, or production readiness.
+- Last reviewed date: 2026-08-06
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
   `#332` / PR `#333` completed the narrow containment correction at merged main
