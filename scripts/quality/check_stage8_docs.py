@@ -23,6 +23,12 @@ ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 QUIET_PRESENCE_BRANCH = "cut1-358-quiet-presence-ui"
+ISSUE374_SECURITY_BRANCH = "stage8-374-node-image-cve-2026-58043"
+ISSUE374_SECURITY_FILES = {
+    "frontend/Dockerfile", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py",
+    "docs/ADR/0006-stage8-release-hardening.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+}
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
@@ -74,6 +80,7 @@ REQUIRED_FILES = [
 ]
 STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {
+    ISSUE374_SECURITY_BRANCH: ISSUE374_SECURITY_FILES,
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
         "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
