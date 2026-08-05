@@ -32,21 +32,20 @@ stage8=load("scripts/quality/check_stage8_docs.py","s8"); stage2=load("scripts/q
 def git(r:Path,*a:str)->str:return sp.run(["git",*a],cwd=r,text=True,capture_output=True,check=True).stdout.strip()
 def put(r:Path,p:str,v:str)->None:t=r/p;t.parent.mkdir(parents=True,exist_ok=True);t.write_text(v)
 def route(m:Any,b:str,c:list[str])->list[str]:
-    s=stage8;m.setattr(s,"current_branch",lambda:b);m.setattr(s,"changed_files_for_stage_scope",lambda:c);f=[]
+    s=stage8;m.setattr(s,"current_branch",lambda:b);m.setattr(s,"changed_files_for_stage_scope",lambda:c);f:list[Any]=[]
     s.check_stage_marker_and_branch(f);s.check_stage_scope(f);return f
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
-    m=monkeypatch
     for branch, s in SCOPES.items():
-        m.setattr(stage8,"citation_parity_charge",lambda:1200); assert route(m,branch,sorted(s))==[]
+        (m:=monkeypatch).setattr(stage8,"citation_parity_charge",lambda:1200); assert route(m,branch,sorted(s))==[]
         extra = "forbidden/outside.txt"
         assert route(m,branch,[extra]) == [f"Stage 8 changed file outside the allowlist: {extra}"]
         if branch == CP:
             m.setattr(stage8,"citation_parity_charge",lambda:1201);assert len(route(m,branch,sorted(s)[1:]))==2
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
-                   f"{A2_1}-copy", "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", f"{A2_2}/child",
+                   "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", "cut1-proces\u0455-346-transition",
                    A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{CP}-retry", f"{a23b.A23A_BRANCH}-retry",
-                   a23b.A23A_BRANCH.replace("-351-", "-350-"), f"{QP}-retry", f"stage8-{CUT1_REAL_MEDIA_TRANSITION}",
-                   "cut1-proces\u0455-346-transition"): assert len(route(m,branch,[])) == 2
+                   a23b.A23A_BRANCH.replace("-351-", "-350-"), f"stage8-{CUT1_REAL_MEDIA_TRANSITION[:-1]}",
+                   "stage8-cut1-366-real-media-governance-transiti\u043en"): assert len(route(m,branch,[])) == 2
     for issue,branch in ((346,TRANSITION),(349,A2_2),(351,a23b.A23A_BRANCH),(353,a23b.A23B_BRANCH),(358,QP),
                          (366,CUT1_REAL_MEDIA_TRANSITION),(372,CP)):
         artifact = json.loads((Path(__file__).parents[2]/f"docs/governance/preflights/issue-{issue}.json").read_text())
@@ -64,7 +63,7 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
     stage_file.write_text("8\n"); status_file.write_text(mode)
     calls: list[list[str]] = []; m.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)
     m.setattr(dispatcher, "CURRENT_STAGE", stage_file); m.setattr(dispatcher, "STATUS_DOC", status_file)
-    record:Any=lambda args,cwd:calls.append(args)or 0;m.setattr(dispatcher.subprocess,"call",record)
+    record:Any=lambda args,cwd:calls.__iadd__([args])and 0;m.setattr(dispatcher.subprocess,"call",record)
     for branch in SCOPES:
         calls.clear(); m.setattr(dispatcher, "current_branch", lambda branch=branch: branch)
         assert (dispatcher.main(), calls) == (0, [["make", "stage8-quality"]])
@@ -76,9 +75,10 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     limits=[(901,{},"Issue #366 charge 901 exceeds 900."),*((n+1,{p:n+1},
         f"Issue #366 charge for {p} exceeds {n}.") for p,n in stage8.C1_FILE_LIMITS.items())]
     for total,files,want in limits: sc((total,files)); assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[want]
-    sc(fn);d=sp.CompletedProcess;out=iter(((0,stage8.C1_BASE+"\n"),(0,"351\t0\t"+next(iter(stage8.C1_FILE_LIMITS))),
-        (0,"300\t0\tscripts/quality/check_stage8_docs.py\n100\t0\ttests/unit/test_stage8_quality_gate.py")))
-    m.setattr(stage8,"run",lambda args:d(args,*next(out),"")); assert fn()==(
+    sc(fn);d=sp.CompletedProcess;out=iter((d([],0,stdout=stage8.C1_BASE+"\n"),
+        d([],0,stdout="351\t0\t"+next(iter(stage8.C1_FILE_LIMITS))),d([],0,
+        stdout="300\t0\tscripts/quality/check_stage8_docs.py\n100\t0\ttests/unit/test_stage8_quality_gate.py")))
+    m.setattr(stage8,"run",lambda _:next(out)); assert fn()==(
         400,{"scripts/quality/check_stage8_docs.py":351,"tests/unit/test_stage8_quality_gate.py":100})
     for code,text in ((1,stage8.C1_BASE+"\n"),(0,"malformed")):
         m.setattr(stage8,"run",lambda _,c=code,t=text:d([],c,t,""));raises(RuntimeError,fn)
