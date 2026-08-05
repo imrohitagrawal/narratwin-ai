@@ -200,10 +200,42 @@ def test_frontend_config_accepts_only_exact_host_engine_defaults() -> None:
         mutation = {**application_config, **engine_defaults}
         mutation[key] = not expected if isinstance(expected, bool) else "unexpected"
         assert canonicalize(mutation) is None
+        if isinstance(expected, bool):
+            mutation[key] = 0
+            assert canonicalize(mutation) is None
     assert canonicalize({**application_config, "Unexpected": False}) == {
         **application_config,
         "Unexpected": False,
     }
+
+
+def test_frontend_config_rejection_does_not_disclose_untrusted_values() -> None:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    start = source.index("verify_frontend_runtime() {")
+    function = source[start : source.index("\n}\n\nfrontend_build_identity()", start) + 3]
+    marker = "UNTRUSTED-MARKER-MUST-NOT-APPEAR"
+    config = json.dumps({"Labels": {"untrusted": marker}, "Unexpected": marker})
+    completed = subprocess.run(
+        ["bash"],
+        cwd=ROOT,
+        env={**os.environ, "MALICIOUS_CONFIG": config},
+        input=(
+            "set -e\n"
+            "docker() {\n"
+            "  if [ \"$1\" = image ] && [ \"$2\" = inspect ]; then "
+            "printf '%s\\n' \"$MALICIOUS_CONFIG\"; return; fi\n"
+            "  return 97\n"
+            "}\n"
+            f"{function}\nverify_frontend_runtime image:tag\n"
+        ),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    output = completed.stdout + completed.stderr
+    assert completed.returncode != 0
+    assert marker not in output
+    assert "Frontend runtime config does not match the reviewed contract." in output
 
 
 @pytest.mark.parametrize(
