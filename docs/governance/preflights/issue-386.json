@@ -1,0 +1,48 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 386,
+  "branch": "stage8-386-modular-route-enforcement",
+  "objective": "Under Issue #386, parent dependency evidence at https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5198721873, exact-head blocker evidence at https://github.com/imrohitagrawal/narratwin-ai/issues/384#issuecomment-5198721867, and the complete ledger at https://github.com/imrohitagrawal/narratwin-ai/issues/386#issuecomment-5198730383, extract new Cut 1 exact-route scope and budget mechanics into one Stage 8 sidecar while keeping the main checker within every unchanged legacy 500-line cap. Register exact final routes for Issue #386 and the resumed Issues #385 and #384; reject missing, extra, lookalike, stale-base, deletion-credit, index/worktree-cancellation, failed, malformed, binary-text, wrong-path, and untracked-text evidence. Preserve legacy routes and caps, preserve Issue #384 and #383 history, and make no product/runtime/catalog/asset/provider/model/dependency/workflow/UI/TTS/renderer/media/deployment/release/public/production change. Evidence requires committed RED before GREEN, focused hostile-Git/integration tests, full local and CI gates, adversarial exact-head review, human module/cap/authority inspection, and eligible latest-head non-author GitHub approval. Stop for an eighth path, cap increase, declared budget/base/authority/history drift, circular import, product/runtime change, failed mandatory gate requiring another repair, unresolved High/Critical finding, or missing external approval.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-386.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-386.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "docs/ADR/",
+      "docs/API_CONTRACT.md",
+      "docs/ARCHITECTURE.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_quality_stage.py",
+      "tests/api/",
+      "tests/acceptance/"
+    ]
+  }
+}
