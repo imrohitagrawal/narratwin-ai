@@ -1093,6 +1093,25 @@ def test_stage4_rejects_invalid_retrieved_context_before_terminal_side_effect(
     assert list(service.walkthrough_runs) == [runs[0].run_id]
 
 
+@pytest.mark.parametrize("mutation", ("evaluation", "support"))
+def test_stage4_rejects_forged_fresh_evaluation_identity(tmp_path: Path, monkeypatch: Any, mutation: str) -> None:
+    state_path = tmp_path / "stage4.json"
+    principal, project, runs = _grounded_stage4_state(state_path)
+    service, original = Stage4Service(state_path=state_path), stage4_module.evaluate_grounding
+    def forged(**values: Any) -> Any:
+        result = original(**values)
+        if mutation == "evaluation":
+            return replace(result, evaluation_id="eval_forged")
+        return replace(result, claim_supports=[replace(item, claim_support_id="claimsup_forged")
+            for item in result.claim_supports])
+    monkeypatch.setattr(stage4_module, "evaluate_grounding", forged)
+    with pytest.raises(Stage4Error):
+        service.generate_walkthrough(principal=principal, project_id=project.project_id, audience="RECRUITER",
+            requested_language="en", depth="CONCISE", style="CONFIDENT", prompt="Grounded walkthrough",
+            idempotency_key=f"forged-{mutation}")
+    assert list(service.walkthrough_runs) == [runs[0].run_id]
+
+
 def test_stage4_rejects_write_that_would_exceed_restore_byte_cap(tmp_path: Path, monkeypatch: Any) -> None:
     state_path = tmp_path / "stage4.json"
     service = Stage4Service(state_path=state_path)
