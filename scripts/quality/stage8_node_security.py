@@ -39,10 +39,7 @@ ISSUE389_SECURITY_FILES = {
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md",
 }
-NODE_SECURITY_ROUTES = {
-    ISSUE374_SECURITY_BRANCH: ISSUE374_SECURITY_FILES,
-    ISSUE389_SECURITY_BRANCH: ISSUE389_SECURITY_FILES,
-}
+I389_ROUTES = {ISSUE389_SECURITY_BRANCH: ISSUE389_SECURITY_FILES}
 FRONTEND_NODE_BUILD_IMAGE = (
     "node:26.6.0-alpine@sha256:"
     "a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8"
@@ -108,6 +105,25 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
 def check_frontend_node_image(dockerfile: str, failures: list[str]) -> None:
     if not frontend_node_image_valid(dockerfile):
         failures.append(FRONTEND_NODE_IMAGE_FAILURE)
+
+
+def check(
+    root: Path,
+    run: Callable[[list[str]], Any],
+    branch: str,
+    changed_files: list[str],
+    failures: list[str],
+) -> None:
+    check_frontend_node_image(
+        (root / "frontend/Dockerfile").read_text(encoding="utf-8"), failures
+    )
+    if branch != ISSUE389_SECURITY_BRANCH:
+        return
+    failures.extend(
+        f"Issue #389 route is missing required path: {path}"
+        for path in sorted(ISSUE389_SECURITY_FILES - set(changed_files))
+    )
+    check_issue389_route(root, run, failures, True)
 
 
 def _charges(output: str, failures: list[str]) -> tuple[int, dict[str, int]]:

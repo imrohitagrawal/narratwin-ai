@@ -32,7 +32,7 @@ C1_BASE, C1_LIMIT = "a69903fea50c22e12926d7e13dffdc74e55dfb65", 900
 C1_FILE_LIMITS = {"scripts/quality/check_stage8_docs.py":350,"tests/unit/test_stage8_quality_gate.py":300}
 C1_DOCS=("docs/QUALITY_GATES.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md")
 C1_BOUND=("docs/governance/preflights/issue-366.json",*C1_DOCS)
-C1_DOC_SHA="0c7502c6d3da4094c112c5a258ef0212956899640f3eab4c18a8c34b5952787f"
+C1_DOC_SHA="22d3962e68dd377a32d24da3cf7cd4e5c101adbeb70db172f36d9c4d49f6839e"
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
@@ -63,7 +63,7 @@ REQUIRED_FILES = [
     "docs/TRACEABILITY.md", "docs/demo/CONTROLLED_LOCAL_DEMO.md",
 ]; STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {
-    **node_security.NODE_SECURITY_ROUTES,
+    node_security.ISSUE374_SECURITY_BRANCH: node_security.ISSUE374_SECURITY_FILES,
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
         "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
@@ -101,7 +101,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     CITATION_PARITY_BRANCH: CITATION_PARITY_FILES,
 }
 PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES | cache_pruning.CACHE_PRUNING_ROUTES)
-EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES
+EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES|brace_security.BRACE_EXPANSION_ROUTES|node_security.I389_ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
@@ -267,12 +267,6 @@ def check_stage_scope(failures: list[str]) -> None:
     outside = changed_files - allowed_files
     for path in sorted(outside):
         fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
-    if branch == node_security.ISSUE389_SECURITY_BRANCH and not outside:
-        failures.extend(
-            f"Issue #389 route is missing required path: {path}"
-            for path in sorted(allowed_files - changed_files)
-        )
-        node_security.check_issue389_route(ROOT, run, failures, True)
     if branch == CITATION_PARITY_BRANCH and not outside:
         failures.extend(f"Issue #372 missing required path: {path}" for path in sorted(allowed_files-changed_files))
         charge=citation_parity_charge()
@@ -490,7 +484,7 @@ def main() -> int:
         check_stage_scope(failures)
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
-        node_security.check_frontend_node_image(read("frontend/Dockerfile"), failures)
+        node_security.check(ROOT, run, current_branch(), changed_files_for_stage_scope(), failures)
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
