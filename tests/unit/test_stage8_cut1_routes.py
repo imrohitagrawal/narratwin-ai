@@ -32,6 +32,7 @@ EXPECTED = {
         "scripts/quality/stage8_cut1_routes.py",
         "scripts/quality/check_stage8_docs.py",
         "tests/unit/test_stage8_cut1_routes.py",
+        "tests/acceptance/test_issue280_local_e2e_demo.py",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",

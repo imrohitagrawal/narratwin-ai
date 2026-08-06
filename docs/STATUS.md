@@ -48,8 +48,9 @@ Use it to answer:
   `5197776590` and merged as `48fc32a2689c9bbc03742d774f3eadb8a500dafc`;
   post-merge workflow `31056401428` passed. Exact-head review of #384 found a
   mandatory legacy checker-cap failure, and clean main exposed a stale Issue
-  #280 unsupported-language oracle. The serialized repair/product path is #386
-  → #385 → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371, with
+  #280 unsupported-language oracle. Owner-approved #386 absorbs only that #385
+  test-oracle repair while preserving German support. The serialized path is
+  #386 → #385 absorbed-closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371, with
   merged-main acceptance between children. No product/media, deployment,
   release, public-availability, trademark-registration, or production claim is established.
 - Last reviewed date: 2026-08-06

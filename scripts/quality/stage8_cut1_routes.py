@@ -18,6 +18,7 @@ ROUTES = {
         "scripts/quality/stage8_cut1_routes.py",
         "scripts/quality/check_stage8_docs.py",
         "tests/unit/test_stage8_cut1_routes.py",
+        "tests/acceptance/test_issue280_local_e2e_demo.py",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
@@ -55,6 +56,7 @@ ISSUE383_BINARY_FILES = {
 TEXT_LIMITS = {
     ISSUE386_BRANCH: {
         path: 300 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py"}
+        else 120 if path == "tests/acceptance/test_issue280_local_e2e_demo.py"
         else 80 if path == "scripts/quality/check_stage8_docs.py" else 120
         for path in ROUTES[ISSUE386_BRANCH]
     },

@@ -11,7 +11,7 @@ from backend.app.issue280 import _SUPPORTED_LOCAL_E2E_LANGUAGES
 
 
 ISSUE280_E2E_PATH = "/api/v1/checkpoint3/issue280/local-e2e-demo"
-UNSUPPORTED_LANGUAGE_TAG = "de"
+UNSUPPORTED_LANGUAGE_TAG = "zz"
 ISSUE280_E2E_EVIDENCE_NOTE = (
     "PR C validates local trace metadata and source_chunk citation binding for generated walkthrough script output."
 )

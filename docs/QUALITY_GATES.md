@@ -61,8 +61,10 @@ acceptance.
 
 Issue `#386` keeps the monolithic Stage 8 checker below its unchanged 500-line
 legacy caps by moving new Cut 1 route mechanics to
-`scripts/quality/stage8_cut1_routes.py`. The sidecar pre-registers exact routes
-for #386, #385, #384, and #383; it requires complete path sets, current-main
+`scripts/quality/stage8_cut1_routes.py`. Its exact eight-path #386 route absorbs
+the stale Issue #280 unsupported-language oracle without changing German support
+or runtime/catalog behavior. The sidecar also pre-registers exact routes for
+#385, #384, and #383; it requires complete path sets, current-main
 ancestry (fixed base for #386), additions-plus-deletions budgets over the larger
 index/worktree snapshot, fail-closed malformed/binary/untracked text evidence,
 and regular bounded #383 portrait files. Lookalikes inherit no authority. This
