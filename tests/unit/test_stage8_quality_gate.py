@@ -87,6 +87,13 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     docs[stage8.C1_BOUND[0]]= (REPO/stage8.C1_BOUND[0]).read_text()
     plan="docs/STAGE_ISSUE_PLAN.md"; quality="docs/QUALITY_GATES.md"; line,rest=docs[plan].split("\n",1)
     docs[plan]=rest;docs[quality]+="\n"+line;assert stage8.cut1_digest()!=stage8.C1_DOC_SHA
+def test_historical_issue366_route_fixture_ignores_later_status_edits(monkeypatch: Any) -> None:
+    docs={p:(REPO/p).read_text() for p in stage8.C1_BOUND};docs[".stage/current"]="8"
+    docs["docs/STATUS.md"]+="\nIssue #383 required status reconciliation.\n"
+    monkeypatch.setattr(stage8,"read",docs.__getitem__)
+    monkeypatch.setattr(stage8,"cut1_transition_charges",lambda:(0,{}))
+    assert stage8.cut1_digest()!=stage8.C1_DOC_SHA
+    assert route(monkeypatch,CUT1_REAL_MEDIA_TRANSITION,sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE))==[]
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")
