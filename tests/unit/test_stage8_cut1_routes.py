@@ -1,0 +1,201 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import subprocess
+from pathlib import Path
+from types import ModuleType
+from typing import Any
+
+import pytest
+
+
+REPO = Path(__file__).parents[2]
+MODULE_PATH = REPO / "scripts/quality/stage8_cut1_routes.py"
+
+
+def load(path: Path, name: str) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+routes: Any = load(MODULE_PATH, "stage8_cut1_routes_under_test")
+stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_cut1_routes")
+
+
+EXPECTED = {
+    "stage8-386-modular-route-enforcement": {
+        "docs/governance/preflights/issue-386.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+    },
+    "stage8-385-issue280-language-oracle": {
+        "docs/governance/preflights/issue-385.json",
+        "tests/acceptance/test_issue280_local_e2e_demo.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+    },
+    "stage8-384-presenter-asset-route": {
+        "docs/governance/preflights/issue-384.json",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
+    "stage8-383-presenter-assets": {
+        "docs/governance/preflights/issue-383.json",
+        "frontend/public/demo/myra-synthetic-presenter.webp",
+        "frontend/public/demo/raj-synthetic-presenter.webp",
+        "tests/unit/test_cut1_presenter_assets.py",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
+}
+
+
+def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
+    return subprocess.CompletedProcess(args, code, out, err)
+
+
+def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
+    assert routes.ROUTES == EXPECTED
+    assert {branch: stage8.PROCESS_BRANCH_ALLOWED_FILES[branch] for branch in EXPECTED} == EXPECTED
+    artifact = json.loads((REPO / "docs/governance/preflights/issue-386.json").read_text(encoding="utf-8"))
+    assert artifact["branch"] == routes.ISSUE386_BRANCH
+    assert set(artifact["scope"]["required"]) == EXPECTED[routes.ISSUE386_BRANCH]
+    assert set(artifact["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE386_BRANCH]
+    assert "check_stage8_docs" not in MODULE_PATH.read_text(encoding="utf-8")
+
+
+def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
+    checker = REPO / "scripts/quality/check_stage8_docs.py"
+    checker_text = checker.read_text(encoding="utf-8")
+    assert len(checker_text.splitlines()) <= 500
+    assert checker.stat().st_size <= 32_000
+    assert len((REPO / "tests/unit/test_stage8_quality_gate.py").read_text(encoding="utf-8").splitlines()) <= 250
+    for relative in (
+        "scripts/quality/stage8_brace_expansion_unblock.py",
+        "scripts/quality/stage8_cache_pruning.py",
+    ):
+        assert '"scripts/quality/check_stage8_docs.py": 500' in (REPO / relative).read_text(encoding="utf-8")
+
+
+def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> None:
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES})
+    for branch, paths in EXPECTED.items():
+        failures: list[str] = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch, set(paths), failures)
+        assert failures == []
+        missing = sorted(paths)[0]
+        failures = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch, paths - {missing}, failures)
+        issue = routes.ROUTE_ISSUES[branch]
+        assert failures == [f"Issue #{issue} route is missing required path: {missing}"]
+        for lookalike in (branch + "-retry", branch.upper(), branch.replace("stage8", "stageв")):
+            failures = []
+            routes.check_exact_route(REPO, lambda _: completed([]), lookalike, set(paths), failures)
+            assert failures == []
+            assert lookalike not in stage8.PROCESS_BRANCH_ALLOWED_FILES
+
+
+def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES})
+    for branch, limit in routes.TOTAL_LIMITS.items():
+        monkeypatch.setattr(routes, "route_text_charges", lambda *_, value=limit: (value + 1, {}))
+        failures: list[str] = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
+        assert failures == [f"Issue #{routes.ROUTE_ISSUES[branch]} charge {limit + 1} exceeds {limit}."]
+    branch = routes.ISSUE383_BRANCH
+    path = "tests/unit/test_cut1_presenter_assets.py"
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (1, {path: 261}))
+    failures = []
+    routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
+    assert failures == [f"Issue #383 charge for {path} exceeds 260."]
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {
+        path: 500001 if "myra" in path else 1 for path in routes.ISSUE383_BINARY_FILES
+    })
+    failures = []
+    routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
+    assert failures == [
+        "Issue #383 binary frontend/public/demo/myra-synthetic-presenter.webp exceeds 500000 bytes."
+    ]
+
+
+def test_dynamic_base_requires_current_origin_main_ancestor() -> None:
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out="a" * 40 + "\n")
+
+    assert routes.route_base(good, routes.ISSUE385_BRANCH) == "a" * 40
+    assert calls == [
+        ["git", "rev-parse", "origin/main^{commit}"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
+    outputs = iter((completed([], out="a" * 40 + "\n"), completed([], out="b" * 40 + "\n")))
+    assert "current main" in str(pytest.raises(RuntimeError, routes.route_base, lambda _: next(outputs),
+                                               routes.ISSUE385_BRANCH).value)
+    assert "fixed base" in str(pytest.raises(RuntimeError, routes.route_base,
+        lambda args: completed(args, 1, err="failed"), routes.ISSUE386_BRANCH).value)
+
+
+def test_text_charges_use_additions_deletions_and_larger_complete_snapshot() -> None:
+    calls: list[list[str]] = []
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        if "ls-files" in args:
+            return completed(args)
+        return completed(args, out="4\t3\tdocs/file.md\n" if "--cached" in args else "5\t4\tdocs/file.md\n")
+
+    assert routes.route_text_charges(run, "base", {"docs/file.md"}) == (9, {"docs/file.md": 9})
+    assert ["git", "diff", "--cached", "--numstat", "--no-renames", "base", "--", "docs/file.md"] in calls
+    assert ["git", "diff", "--numstat", "--no-renames", "base", "--", "docs/file.md"] in calls
+
+
+@pytest.mark.parametrize(
+    ("untracked", "diff", "message"),
+    [
+        (completed([], out="docs/file.md\0"), completed([]), "untracked"),
+        (completed([], code=1, err="failed"), completed([]), "failed"),
+        (completed([]), completed([], out="-\t1\tdocs/file.md\n"), "malformed or binary"),
+        (completed([]), completed([], out="1\t1\tdocs/other.md\n"), "unexpected path"),
+    ],
+)
+def test_text_charges_fail_closed(
+    untracked: subprocess.CompletedProcess[str], diff: subprocess.CompletedProcess[str], message: str
+) -> None:
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return untracked if "ls-files" in args else diff
+
+    assert message in str(pytest.raises(RuntimeError, routes.route_text_charges,
+                                        run, "base", {"docs/file.md"}).value)
+
+
+def test_binary_sizes_reject_missing_non_regular_empty_and_expose_oversize(tmp_path: Path) -> None:
+    path = "frontend/public/demo/myra-synthetic-presenter.webp"
+    target = tmp_path / path
+    target.parent.mkdir(parents=True)
+    assert "missing" in str(pytest.raises(RuntimeError, routes.route_binary_sizes, tmp_path, {path}).value)
+    target.mkdir()
+    assert "regular" in str(pytest.raises(RuntimeError, routes.route_binary_sizes, tmp_path, {path}).value)
+    target.rmdir(); target.write_bytes(b"")
+    assert "empty" in str(pytest.raises(RuntimeError, routes.route_binary_sizes, tmp_path, {path}).value)
+    target.write_bytes(b"x" * 500001)
+    assert routes.route_binary_sizes(tmp_path, {path}) == {path: 500001}
+    target.unlink(); source = tmp_path / "source"; source.write_bytes(b"x"); target.symlink_to(source)
+    assert "regular" in str(pytest.raises(RuntimeError, routes.route_binary_sizes, tmp_path, {path}).value)
