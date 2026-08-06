@@ -2416,6 +2416,19 @@ closed. Scope converges only frontend development-tool `brace-expansion` 5.0.8-t
 convergence merges and merged-main verification passes; Issue #150 expiry and preserved incomplete Issue #358 do
 not change. Product, provider, runtime, deployment, release, public, and production authority remain excluded.
 
+## Issue #389 exact frontend runtime security route
+
+Issue `#389` is the mandatory security prerequisite for blocked PR `#388`.
+Branch `cut1-process-389-frontend-runtime-npm12-security` starts from
+`48fc32a2689c9bbc03742d774f3eadb8a500dafc` and owns exactly the fourteen
+paths in its GovernancePreflightV1 artifact. Its 900-line aggregate and
+180/220/40 route-file ceilings use additions plus deletions without deletion
+credit. The route pins the signed fixed Chainguard index, refreshes measured
+architecture inventories, and preserves both-scanner, SBOM, runtime-hardening,
+and reproducibility enforcement. PR `#388` stays blocked until #389 merges
+and merged-main acceptance passes. No application, provider, presenter, media,
+deployment, release, public, or production work is authorized.
+
 ## Issue #372 citation-lineage prerequisite repair
 
 Issue `#372` uses exact branch `cut1-372-citation-index-parity-post380` from

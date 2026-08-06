@@ -1088,3 +1088,20 @@ citation value, renumbering, loosened assertion, skipped test, narrowed gate, re
 This repair is not presenter/media, deployment, release, public availability, production readiness, or Cut 1 evidence.
 
 The complete diff must remain at or below 1200 charged lines. A twelfth path or charge 1201 is a gate failure.
+
+## Issue #389 frontend runtime npm security gate
+
+The exact `cut1-process-389-frontend-runtime-npm12-security` route starts from
+`48fc32a2689c9bbc03742d774f3eadb8a500dafc`, requires exactly fourteen paths,
+and permits at most 900 additions plus deletions. Per-path change ceilings are
+180 for `stage8_node_security.py`, 220 for its test, and 40 for the Stage 8
+checker. Complete Git evidence, preflight identity, missing/extra paths, binary
+numstat, branch/base drift, and every budget fail closed.
+
+The shipped frontend must use signed Chainguard index
+`sha256:d8d2883b26d4fde4e524d0068cd78abbb23c7c2113a22e67a02cc73a9182552d`,
+execute Node 26.7.0, derive from Wolfi `npm-12 12.0.2-r2`, match a finite
+architecture-bound inventory, and pass the existing runtime-hardening,
+reproduction, SBOM, and Trivy/Grype consensus checks through Medium. The old
+digest, npm r1, mutable tags, scanner suppression, waiver, and product or
+release expansion are prohibited.

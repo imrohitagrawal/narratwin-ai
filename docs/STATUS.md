@@ -1185,6 +1185,21 @@ Required update rules:
   Cut 1, deployment, release, public availability, and production readiness
   remain incomplete.
 
+## Issue 389 frontend runtime security prerequisite status
+
+- Issue `#389` is the mandatory prerequisite for PR `#388` after Grype
+  identified two High and five Medium findings in Wolfi `npm-12 12.0.2-r1`.
+- The exact 14-path route replaces only the shipped runtime pin with signed
+  Chainguard index
+  `sha256:d8d2883b26d4fde4e524d0068cd78abbb23c7c2113a22e67a02cc73a9182552d`,
+  verified as Node 26.7.0 with fixed `npm-12 12.0.2-r2`, and refreshes the
+  finite architecture inventories.
+- Both-scanner Medium cleanliness, SBOM, non-root runtime hardening,
+  reproducibility, exact-head review/approval, and merged-main acceptance remain
+  mandatory. PR `#388` remains blocked until that closeout completes.
+- No application, provider, presenter, media, deployment, release,
+  public-availability, production-readiness, suppression, or waiver is added.
+
 ## Issue 375 Stage 8 ignored-cache traversal status
 
 - Issue `#375` repairs the A2.3b repository semantic scan so exact ignored

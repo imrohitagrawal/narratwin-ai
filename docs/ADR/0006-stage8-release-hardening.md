@@ -284,6 +284,38 @@ change frontend behavior, add providers or network calls, suppress scanner
 findings, or authorize deployment, release, public availability, or production
 readiness.
 
+## Issue #389 Frontend Runtime Security Refresh
+
+Date: 2026-08-06
+
+Live Grype data later reported two High and five Medium findings against Wolfi
+`npm-12 12.0.2-r1` in the Issue #374 runtime image metadata. Issue #389
+therefore supersedes only that runtime pin with signed multi-architecture index
+`sha256:d8d2883b26d4fde4e524d0068cd78abbb23c7c2113a22e67a02cc73a9182552d`.
+Exact execution and the signed SPDX SBOM identify Node.js `26.7.0-r0` (MIT)
+and fixed `npm-12 12.0.2-r2` (Artistic-2.0). Direct Grype scanning finds no
+Medium-or-higher vulnerability in the base.
+
+The public registry provides only the moving latest line without free
+version-specific 26.6.0 access, so a digest-pinned Node 26.7.0 refresh is the
+narrowest fixed public candidate. The final layer still removes npm, shells,
+package managers, and general-purpose tooling. Runtime version, non-root
+identity, complete immutable inventories, reproducibility, fresh build secrets,
+both-scanner consensus, SBOM, config, ownership, zero capabilities, and HTTP
+behavior remain fail-closed. Measured inventories are
+`1803:06e4628f15e836b24128401deedceedeaebe0561bef29f96f3c9de7e2306e3e0`
+for arm64 and
+`1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2`
+for amd64 Docker Desktop and
+`1803:e9a3cd116280dff5bd1e39833d511f9fa0eb952bbde5f0ffaf4aab0ab2306c9f`
+for hosted amd64, measured by the fail-closed
+[GitHub Actions security run](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/31087364866).
+
+Rollback may use only a newly researched, signed, immutable, scanner-clean
+replacement. Returning to the Issue #374 digest, npm r1, a mutable tag, an
+unscanned image, or a waiver is forbidden. This refresh changes no application,
+provider, media, deployment, release, public-availability, or production claim.
+
 ## Related Documents
 
 - `docs/QUALITY_GATES.md`

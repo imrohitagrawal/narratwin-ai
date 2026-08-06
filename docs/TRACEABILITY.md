@@ -422,6 +422,14 @@ durability, deployment, and release decisions remain outside this trace.
 | `frontend/next.config.ts`, `scripts/ci/docker-build.sh`, and executable runtime verification in scanner-consensus `scripts/ci/docker-image-scan.sh` | Build the final image with a source-bound build ID; require both scanners on the exact npm 12.0.2 dependency stage; verify exact non-root config, environment/preload controls, Node version, architecture-bound immutable-filesystem inventory with narrowly validated random-secret normalization, second-build secret freshness, bounded HTTP serving, and fail on Medium-or-higher final-frontend or unrelated High/Critical backend findings | Passing local/container evidence does not authorize deployment, release, public availability, or production readiness |
 | `docs/STATUS.md` and `docs/THIRD_PARTY_NOTICES.md` | Preserve exact image provenance, digest, finding, and scope | Issue `#372` and the remaining Cut 1 work stay separate and incomplete until their own governed closeout |
 
+## Issue #389 frontend runtime npm security traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| Signed Chainguard index `sha256:d8d2883b26d4fde4e524d0068cd78abbb23c7c2113a22e67a02cc73a9182552d`, exact execution, and signed SPDX SBOM | Replace runtime metadata containing `npm-12 12.0.2-r1` with Node 26.7.0 and fixed `npm-12 12.0.2-r2` | No mutable tag, vulnerable rollback, package-lock, provider, application, or media change |
+| Architecture-bound immutable inventories, runtime probe, reproduction check, raw SBOM/SARIF envelopes, and both-scanner consensus | Prove the shipped image is executable, hardened, reproducible, and clean through Medium without hidden scanner disagreement | No suppression, ignore, downgrade, waiver, deployment, release, public, or production claim |
+| GovernancePreflightV1 and exact Stage 8 route | Bind base, branch, fourteen paths, 900 aggregate charge, 180/220/40 route-file ceilings, and fail-closed Git evidence | PR `#388` remains blocked until #389 merged-main acceptance |
+
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 
 ## Issue #158 Security History Chronology
