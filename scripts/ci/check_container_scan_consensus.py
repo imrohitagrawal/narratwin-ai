@@ -65,7 +65,9 @@ def frontend_inventory_matches(architecture: str, inventory: str) -> bool:
 
 def require_frontend_inventory(architecture: str, inventory: str) -> None:
     if not frontend_inventory_matches(architecture, inventory):
-        raise SystemExit("Frontend runtime inventory is not reviewed.")
+        raise SystemExit(
+            f"Frontend runtime inventory is not reviewed: architecture={architecture} inventory={inventory}"
+        )
 
 
 def canonical_frontend_config(config: dict[str, Any]) -> dict[str, Any] | None:

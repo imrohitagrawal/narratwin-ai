@@ -356,7 +356,9 @@ def test_frontend_inventory_rejection_survives_optimized_python() -> None:
         check=False,
     )
     assert completed.returncode != 0
-    assert completed.stderr.strip() == "Frontend runtime inventory is not reviewed."
+    assert completed.stderr.strip() == (
+        "Frontend runtime inventory is not reviewed: architecture=unknown inventory=unreviewed"
+    )
 
 
 @pytest.mark.parametrize(
