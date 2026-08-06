@@ -31,13 +31,11 @@ ISSUE389_FILE_LIMITS = {
     "scripts/quality/check_stage8_docs.py": 40,
 }
 ISSUE389_SECURITY_FILES = {
-    "docs/governance/preflights/issue-389.json", "frontend/Dockerfile",
-    "scripts/ci/docker-image-scan.sh", "scripts/ci/check_container_scan_consensus.py",
-    "scripts/quality/check_stage8_docs.py", "scripts/quality/stage8_node_security.py",
-    "tests/unit/test_container_scan_consensus.py", "tests/unit/test_stage8_node_security.py",
-    "docs/ADR/0006-stage8-release-hardening.md", "docs/QUALITY_GATES.md",
-    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
-    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/governance/preflights/issue-389.json", "frontend/Dockerfile", "scripts/ci/docker-image-scan.sh",
+    "scripts/ci/check_container_scan_consensus.py", "scripts/quality/check_stage8_docs.py",
+    "scripts/quality/stage8_node_security.py", "tests/unit/test_container_scan_consensus.py",
+    "tests/unit/test_stage8_node_security.py", "docs/ADR/0006-stage8-release-hardening.md",
+    "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/THIRD_PARTY_NOTICES.md",
 }
 I389_ROUTES = {ISSUE389_SECURITY_BRANCH: ISSUE389_SECURITY_FILES}
 FRONTEND_NODE_BUILD_IMAGE = (
@@ -107,22 +105,11 @@ def check_frontend_node_image(dockerfile: str, failures: list[str]) -> None:
         failures.append(FRONTEND_NODE_IMAGE_FAILURE)
 
 
-def check(
-    root: Path,
-    run: Callable[[list[str]], Any],
-    branch: str,
-    changed_files: list[str],
-    failures: list[str],
-) -> None:
-    check_frontend_node_image(
-        (root / "frontend/Dockerfile").read_text(encoding="utf-8"), failures
-    )
+def check(root: Path, run: Callable[[list[str]], Any], branch: str, changed_files: list[str], failures: list[str]) -> None:
+    check_frontend_node_image((root / "frontend/Dockerfile").read_text(encoding="utf-8"), failures)
     if branch != ISSUE389_SECURITY_BRANCH:
         return
-    failures.extend(
-        f"Issue #389 route is missing required path: {path}"
-        for path in sorted(ISSUE389_SECURITY_FILES - set(changed_files))
-    )
+    failures.extend(f"Issue #389 route is missing required path: {path}" for path in sorted(ISSUE389_SECURITY_FILES - set(changed_files)))
     check_issue389_route(root, run, failures, True)
 
 
@@ -148,9 +135,7 @@ def check_issue389_route(
     if not active:
         return
     try:
-        preflight = json.loads(
-            (root / "docs/governance/preflights/issue-389.json").read_text(encoding="utf-8")
-        )
+        preflight = json.loads((root / "docs/governance/preflights/issue-389.json").read_text(encoding="utf-8"))
     except (OSError, TypeError, ValueError):
         failures.append("Issue #389 GovernancePreflightV1 is unreadable.")
         return

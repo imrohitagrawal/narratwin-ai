@@ -311,15 +311,6 @@ for amd64 Docker Desktop and
 for hosted amd64, measured by the fail-closed
 [GitHub Actions security run](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/31087364866).
 
-The scanner now emits its actual CycloneDX 1.7 document instead of a target
-marker. Consensus binds the Trivy image ID to the inspected config digest and
-requires exactly `nodejs-26 26.7.0-r0` under MIT plus
-`npm-12 12.0.2-r2` under Artistic-2.0. Empty, stub, oversized, mismatched,
-duplicate, wrong-version, or wrong-license evidence fails closed. The Issue
-`#389` budget also takes the largest committed, staged-index, or complete
-worktree snapshot; malformed, binary, duplicate, foreign, or untracked Git
-evidence cannot cancel out of the charge.
-
 Rollback may use only a newly researched, signed, immutable, scanner-clean
 replacement. Returning to the Issue #374 digest, npm r1, a mutable tag, an
 unscanned image, or a waiver is forbidden. This refresh changes no application,

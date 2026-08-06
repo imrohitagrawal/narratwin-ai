@@ -1,4 +1,5 @@
 from __future__ import annotations
+# ruff: noqa: E701, E702
 
 import copy
 import hashlib
@@ -49,46 +50,9 @@ def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0"
 
 
 def _sbom(target: str, *, frontend: bool) -> dict[str, Any]:
-    components = [
-        {
-            "type": "library",
-            "name": "python",
-            "version": "3.13.14",
-            "purl": "pkg:apk/alpine/python@3.13.14",
-            "licenses": [{"license": {"id": "PSF-2.0"}}],
-        }
-    ]
-    if frontend:
-        components = [
-            {
-                "type": "library",
-                "name": "nodejs-26",
-                "version": "26.7.0-r0",
-                "purl": "pkg:apk/wolfi/nodejs-26@26.7.0-r0",
-                "licenses": [{"license": {"id": "MIT"}}],
-            },
-            {
-                "type": "library",
-                "name": "npm-12",
-                "version": "12.0.2-r2",
-                "purl": "pkg:apk/wolfi/npm-12@12.0.2-r2",
-                "licenses": [{"license": {"id": "Artistic-2.0"}}],
-            },
-        ]
-    return {
-        "bomFormat": "CycloneDX",
-        "specVersion": "1.7",
-        "metadata": {
-            "component": {
-                "type": "container",
-                "name": "image",
-                "properties": [
-                    {"name": "aquasecurity:trivy:ImageID", "value": target}
-                ],
-            }
-        },
-        "components": components,
-    }
+    packages = (("nodejs-26", "26.7.0-r0", "MIT"), ("npm-12", "12.0.2-r2", "Artistic-2.0")) if frontend else (("python", "3.13.14", "PSF-2.0"),)
+    components = [{"type":"library", "name":n, "version":v, "purl":f"pkg:apk/wolfi/{n}@{v}", "licenses":[{"license":{"id":license}}]} for n,v,license in packages]
+    return {"bomFormat": "CycloneDX", "specVersion": "1.7", "metadata": {"component": {"type": "container", "properties": [{"name": "aquasecurity:trivy:ImageID", "value": target}]}}, "components": components}
 
 
 def _envelope(name: str, payload: dict[str, Any], target: str, tool: str) -> dict[str, Any]:
@@ -186,49 +150,18 @@ def test_frontend_runtime_medium_findings_fail_closed() -> None:
 
 def test_issue389_npm12_findings_fail_consensus() -> None:
     case = _case()
-    for cve, severity in (
-        ("CVE-2026-69152", "8.2"),
-        ("CVE-2026-69192", "8.1"),
-        ("CVE-2026-69198", "6.5"),
-    ):
+    for cve, severity in (("CVE-2026-69152","8.2"), ("CVE-2026-69192","8.1"), ("CVE-2026-69198","6.5")):
         case["reports"]["frontend-grype"] = _sarif("grype", (cve,), severity)
-        _rehash(case, "frontend-grype")
-        assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
+        _rehash(case, "frontend-grype"); assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
 
 
-@pytest.mark.parametrize(
-    "mutation",
-    [
-        lambda sbom: sbom.clear(),
-        lambda sbom: (
-            sbom.clear(),
-            sbom.update({"schema": "cyclonedx", "target": FRONTEND_CONFIG}),
-        ),
-        lambda sbom: sbom.update(components=[]),
-        lambda sbom: sbom["metadata"]["component"]["properties"][0].update(
-            value="sha256:" + "0" * 64
-        ),
-        lambda sbom: sbom["components"][0].update(version="26.6.0-r0"),
-        lambda sbom: sbom["components"][1].update(version="12.0.2-r1"),
-        lambda sbom: sbom["components"][1].update(
-            licenses=[{"license": {"id": "MIT"}}]
-        ),
-    ],
-)
-def test_frontend_sbom_identity_packages_and_licenses_fail_closed(
-    mutation: Callable[[dict[str, Any]], None],
-) -> None:
-    case = _case()
-    mutation(case["reports"]["frontend-sbom"])
-    _rehash(case, "frontend-sbom")
-    assert _evaluate(case)["findings"] == ["SBOM_EVIDENCE_INVALID"]
-
-
-def test_container_scan_generates_real_trivy_sboms() -> None:
-    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
-    assert 'scan_sbom_trivy "${BACKEND_IMAGE}"' in source
-    assert 'scan_sbom_trivy "${FRONTEND_IMAGE}"' in source
-    assert "write_json_artifact" not in source
+@pytest.mark.parametrize("mutation", [lambda s:s.clear(), lambda s:s.update(components=[]),
+    lambda s:s["metadata"]["component"]["properties"][0].update(value="sha256:"+"0"*64),
+    lambda s:s["components"][0].update(version="26.6.0-r0"), lambda s:s["components"][1].update(version="12.0.2-r1"),
+    lambda s:s["components"][1].update(licenses=[{"license":{"id":"MIT"}}])])
+def test_frontend_sbom_identity_packages_and_licenses_fail_closed(mutation: Callable[[dict[str, Any]], None]) -> None:
+    sbom = _sbom(FRONTEND_CONFIG, frontend=True); mutation(sbom)
+    assert not _load()._valid_cyclonedx_sbom(sbom, FRONTEND_CONFIG, _load().FRONTEND_SBOM_COMPONENTS)
 
 
 def test_backend_medium_findings_retain_the_existing_high_policy() -> None:

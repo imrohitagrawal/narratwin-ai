@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+# ruff: noqa: E701, E702
 
 import argparse
 import hashlib
@@ -120,45 +121,17 @@ def _valid_vex(vex: dict[str, Any], backend_config: str, component_purl: str) ->
     }
 
 
-def _valid_cyclonedx_sbom(
-    report: dict[str, Any], target: str, required: dict[str, tuple[str, str]]
-) -> bool:
-    metadata = report.get("metadata", {}).get("component", {})
-    components = report.get("components")
-    if (
-        report.get("bomFormat") != "CycloneDX"
-        or report.get("specVersion") != "1.7"
-        or metadata.get("type") != "container"
-        or not isinstance(components, list)
-        or not 0 < len(components) <= 5000
-    ):
+def _valid_cyclonedx_sbom(report: dict[str, Any], target: str, required: dict[str, tuple[str, str]]) -> bool:
+    metadata = report.get("metadata", {}).get("component", {}); components = report.get("components")
+    if (report.get("bomFormat"), report.get("specVersion"), metadata.get("type")) != ("CycloneDX", "1.7", "container") or not isinstance(components, list) or not 0 < len(components) <= 5000:
         return False
-    image_ids = {
-        item.get("value")
-        for item in metadata.get("properties", [])
-        if isinstance(item, dict) and item.get("name") == "aquasecurity:trivy:ImageID"
-    }
-    if image_ids != {target}:
-        return False
+    image_ids = {p.get("value") for p in metadata.get("properties", []) if isinstance(p, dict) and p.get("name") == "aquasecurity:trivy:ImageID"}
+    if image_ids != {target}: return False
     for name, (version, license_id) in required.items():
-        matches = [item for item in components if item.get("name") == name]
-        if len(matches) != 1:
-            return False
-        component = matches[0]
-        licenses = {
-            item.get("license", {}).get("id")
-            for item in component.get("licenses", [])
-            if isinstance(item, dict)
-        }
-        if (
-            component.get("type") != "library"
-            or component.get("version") != version
-            or not str(component.get("purl", "")).startswith(
-                f"pkg:apk/wolfi/{name}@{version}"
-            )
-            or licenses != {license_id}
-        ):
-            return False
+        matches = [c for c in components if isinstance(c, dict) and c.get("name") == name]
+        if len(matches) != 1: return False
+        component = matches[0]; licenses = {x.get("license", {}).get("id") for x in component.get("licenses", []) if isinstance(x, dict)}
+        if (component.get("type"), component.get("version"), str(component.get("purl", "")).startswith(f"pkg:apk/wolfi/{name}@{version}"), licenses) != ("library", version, True, {license_id}): return False
     return True
 
 

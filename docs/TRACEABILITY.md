@@ -427,9 +427,8 @@ durability, deployment, and release decisions remain outside this trace.
 | Evidence | Requirement | Preserved boundary |
 |---|---|---|
 | Signed Chainguard index `sha256:d8d2883b26d4fde4e524d0068cd78abbb23c7c2113a22e67a02cc73a9182552d`, exact execution, and signed SPDX SBOM | Replace runtime metadata containing `npm-12 12.0.2-r1` with Node 26.7.0 and fixed `npm-12 12.0.2-r2` | No mutable tag, vulnerable rollback, package-lock, provider, application, or media change |
-| Architecture-bound immutable inventories, runtime probe, reproduction check, real target-bound CycloneDX 1.7 package/license evidence, raw SARIF envelopes, and both-scanner consensus | Prove the shipped image is executable, hardened, reproducible, clean through Medium, and contains the reviewed Node 26.7.0-r0/MIT and npm-12 12.0.2-r2/Artistic-2.0 records without hidden scanner disagreement | Empty/stub/wrong-identity/version/license SBOM, suppression, ignore, downgrade, waiver, deployment, release, public, or production claims fail closed |
+| Architecture-bound immutable inventories, runtime probe, reproduction check, raw SBOM/SARIF envelopes, and both-scanner consensus | Prove the shipped image is executable, hardened, reproducible, and clean through Medium without hidden scanner disagreement | No suppression, ignore, downgrade, waiver, deployment, release, public, or production claim |
 | GovernancePreflightV1 and exact Stage 8 route | Bind base, branch, fourteen paths, 900 aggregate charge, 180/220/40 route-file ceilings, and fail-closed Git evidence | PR `#388` remains blocked until #389 merged-main acceptance |
-| Independent committed/staged-index/complete-worktree numstat snapshots and mutation tests | Charge the largest Git state without cancellation, deletion credit, untracked omission, binary/malformed evidence, duplicate paths, or foreign paths | No scope, path, or budget expansion is authorized |
 
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 

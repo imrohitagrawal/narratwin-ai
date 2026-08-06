@@ -23,11 +23,6 @@ scan_trivy() {
   trivy image --severity "${severity}" --exit-code 1 --format sarif --output "${output}" "${image}"
 }
 
-scan_sbom_trivy() {
-  local image="$1" output="$2"
-  trivy image --format cyclonedx --output "${output}" "${image}"
-}
-
 scan_grype() {
   local image="$1" output="$2" severity="${3:-high}"
   grype "${image}" --fail-on "${severity}" --output "sarif=${output}"
@@ -214,6 +209,10 @@ prepare_frontend_images() {
     -t "${FRONTEND_REPRO_IMAGE}" .
 }
 
+write_cyclonedx_artifact() {
+  trivy image --format cyclonedx --output "$1" "$2"
+}
+
 write_envelope() {
   local name="$1" raw="$2" target="$3" arch="$4" tool="$5" exit_code="$6"
   python3 - "$REPORT_DIR/${name}.envelope.json" "$raw" "$name" "$target" "$arch" "$tool" "$SESSION" "$exit_code" <<'PY'
@@ -260,8 +259,8 @@ scan_grype "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-grype.raw.sarif.json" "me
 fg=$?
 set -e
 
-scan_sbom_trivy "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-sbom.raw.json"
-scan_sbom_trivy "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-sbom.raw.json"
+write_cyclonedx_artifact "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_IMAGE}"
+write_cyclonedx_artifact "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_IMAGE}"
 if [ "${SKIP_POLICY_EVALUATION:-0}" = "1" ]; then
   python3 - "${REPORT_DIR}/backend-cpython-regressions.raw.json" "${BACKEND_CONFIG}" <<'PY'
 import json, sys
