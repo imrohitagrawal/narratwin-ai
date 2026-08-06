@@ -574,6 +574,15 @@ merged-main acceptance, #385 closes as absorbed; #384 then merges current main
 and removes redundant checker/test diffs through normal commits. The dependency
 order is #386 → #385 closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
 
+After accepted PR `#388`, Issue `#384` resumes through an owner-reset exact
+eight-path route. Its current-main complete-snapshot budget stays 500: five
+governance/preflight paths at 160, the checker at 10 only for digest rebinding,
+and the sidecar plus focused test at 20 each only for route/cap enforcement.
+After #384 merged-main acceptance, #383 may merge current main normally, correct
+its licensing/provenance/human-review preflight, and obtain fresh adversarial
+review before any generation. The remaining order is
+Issue #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
+
 ## Phase 1 Closure Branch Scope
 
 Allowed governance/reporting changes for Module A:

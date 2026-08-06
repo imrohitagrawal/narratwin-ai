@@ -54,6 +54,13 @@ Use it to answer:
   #386 → #385 absorbed-closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371, with
   merged-main acceptance between children. No product/media, deployment,
   release, public-availability, trademark-registration, or production claim is established.
+  PR `#388` resolved both prerequisites and merged as
+  `ee195862e5385b1fb307199dd7cd560500011f55`; Issues `#386` and `#385` are
+  closed after merged-main acceptance. Owner comment `5205259677` resets Issue
+  `#384` to an exact eight-path modular route with unchanged 500 aggregate cap,
+  bounded digest/route/test authority, and no product scope before Issue `#383` may act.
+  No playable-media, deployment, release, public-availability,
+  trademark-registration, or production-readiness claim is established.
 - Last reviewed date: 2026-08-06
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
