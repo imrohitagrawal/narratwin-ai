@@ -80,6 +80,16 @@ test at 20 each solely for route/cap enforcement. The sidecar separately retains
 Issue `#383`'s exact seven-path text/binary contract. No portrait, asset
 implementation, dependency, provider, or product behavior is authorized.
 
+Issue `#393` is the mandatory test-isolation prerequisite discovered by Issue
+`#383` readiness. The accepted #383 route requires `STATUS.md` and
+`TRACEABILITY.md` changes, while the legacy Issue #366 route-test helper read
+those mutable live files when simulating the historical branch. The exact
+eight-path #393 route preserves the production checker and fixed digest, keeps
+direct byte-mutation coverage, and supplies the accepted digest only inside the
+historical route-scope fixture. It caps additions plus deletions at 500, each
+governance/preflight or historical-test path at 160, and the route sidecar and
+its test at 40. No #383 asset, route, budget, or product behavior changes.
+
 ## Required Make Targets
 
 The `Makefile` must expose:

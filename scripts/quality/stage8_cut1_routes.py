@@ -10,6 +10,7 @@ ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE385_BRANCH = "stage8-385-issue280-language-oracle"
 ISSUE384_BRANCH = "stage8-384-presenter-asset-route"
 ISSUE383_BRANCH = "stage8-383-presenter-assets"
+ISSUE393_BRANCH = "stage8-393-historical-digest-test-isolation"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 
 ROUTES = {
@@ -50,9 +51,21 @@ ROUTES = {
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
+    ISSUE393_BRANCH: {
+        "docs/governance/preflights/issue-393.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
 }
-ROUTE_ISSUES = {ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385, ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383}
-TOTAL_LIMITS = {ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350, ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700}
+ROUTE_ISSUES = {ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385, ISSUE384_BRANCH: 384,
+                ISSUE383_BRANCH: 383, ISSUE393_BRANCH: 393}
+TOTAL_LIMITS = {ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350, ISSUE384_BRANCH: 500,
+                ISSUE383_BRANCH: 700, ISSUE393_BRANCH: 500}
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -77,6 +90,11 @@ TEXT_LIMITS = {
     ISSUE383_BRANCH: {
         path: 260 if path == "tests/unit/test_cut1_presenter_assets.py" else 160
         for path in ROUTES[ISSUE383_BRANCH] - ISSUE383_BINARY_FILES
+    },
+    ISSUE393_BRANCH: {
+        path: 40 if path in {"scripts/quality/stage8_cut1_routes.py",
+                             "tests/unit/test_stage8_cut1_routes.py"} else 160
+        for path in ROUTES[ISSUE393_BRANCH]
     },
 }
 

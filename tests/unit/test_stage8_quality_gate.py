@@ -32,8 +32,8 @@ stage8=load("scripts/quality/check_stage8_docs.py","s8"); stage2=load("scripts/q
 def git(r:Path,*a:str)->str:return sp.run(["git",*a],cwd=r,text=True,capture_output=True,check=True).stdout.strip()
 def put(r:Path,p:str,v:str)->None:t=r/p;t.parent.mkdir(parents=True,exist_ok=True);t.write_text(v)
 def route(m:Any,b:str,c:list[str])->list[str]:
-    s=stage8;m.setattr(s,"current_branch",lambda:b);m.setattr(s,"changed_files_for_stage_scope",lambda:c);f:list[Any]=[]
-    s.check_stage_marker_and_branch(f);s.check_stage_scope(f);return f
+    s=stage8;f:list[Any]=[]
+    with m.context() as scope: scope.setattr(s,"current_branch",lambda:b);scope.setattr(s,"changed_files_for_stage_scope",lambda:c);scope.setattr(s,"cut1_digest",lambda:s.C1_DOC_SHA) if b==CUT1_REAL_MEDIA_TRANSITION else None;s.check_stage_marker_and_branch(f);s.check_stage_scope(f);return f
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
     for branch, s in SCOPES.items():
         m=monkeypatch;m.setattr(stage8,"cut1_transition_charges",lambda:(0,{}))
@@ -82,18 +82,11 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
         400,{"scripts/quality/check_stage8_docs.py":351,"tests/unit/test_stage8_quality_gate.py":100})
     for code,text in ((1,stage8.C1_BASE+"\n"),(0,"malformed")):
         m.setattr(stage8,"run",lambda _,c=code,t=text:d([],c,t,""));raises(RuntimeError,fn)
-    docs={p:(REPO/p).read_text()for p in stage8.C1_BOUND};m.setattr(stage8,"read",docs.__getitem__)
-    docs[stage8.C1_BOUND[0]]+="drift";assert stage8.cut1_digest()!=stage8.C1_DOC_SHA
-    docs[stage8.C1_BOUND[0]]= (REPO/stage8.C1_BOUND[0]).read_text()
+    docs={p:(REPO/p).read_text()for p in stage8.C1_BOUND};originals=docs.copy();docs[".stage/current"]="8";m.setattr(stage8,"read",docs.__getitem__);baseline=stage8.cut1_digest()
+    docs[stage8.C1_BOUND[0]]+="drift";assert stage8.cut1_digest()!=baseline
+    docs[stage8.C1_BOUND[0]]=originals[stage8.C1_BOUND[0]]
     plan="docs/STAGE_ISSUE_PLAN.md"; quality="docs/QUALITY_GATES.md"; line,rest=docs[plan].split("\n",1)
-    docs[plan]=rest;docs[quality]+="\n"+line;assert stage8.cut1_digest()!=stage8.C1_DOC_SHA
-def test_historical_issue366_route_fixture_ignores_later_status_edits(monkeypatch: Any) -> None:
-    docs={p:(REPO/p).read_text() for p in stage8.C1_BOUND};docs[".stage/current"]="8"
-    docs["docs/STATUS.md"]+="\nIssue #383 required status reconciliation.\n"
-    monkeypatch.setattr(stage8,"read",docs.__getitem__)
-    monkeypatch.setattr(stage8,"cut1_transition_charges",lambda:(0,{}))
-    assert stage8.cut1_digest()!=stage8.C1_DOC_SHA
-    assert route(monkeypatch,CUT1_REAL_MEDIA_TRANSITION,sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE))==[]
+    docs[plan]=rest;docs[quality]+="\n"+line;assert stage8.cut1_digest()!=baseline;docs.update(originals);docs["docs/STATUS.md"]+="\nIssue #383 required status reconciliation.\n";assert stage8.cut1_digest()!=baseline;sc((0,{}));assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[]
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")

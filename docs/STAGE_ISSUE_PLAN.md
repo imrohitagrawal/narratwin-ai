@@ -583,6 +583,15 @@ its licensing/provenance/human-review preflight, and obtain fresh adversarial
 review before any generation. The remaining order is
 Issue #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
 
+Issue `#383` exact head `511acb2` then reproduced a mandatory historical-test
+coupling after all focused asset/route checks passed: its required status and
+traceability updates change the live bundle read by the legacy Issue #366 test
+fixture. Issue `#393` is the narrow prerequisite that isolates only that fixture
+while preserving the production checker, fixed digest, direct mutation proof,
+and #383's accepted seven-path route. The active order is therefore Issue #393
+→ #383 → #367 → #382 → #368 → #369 → #370 → #371, with merged-main acceptance
+between every dependency.
+
 ## Phase 1 Closure Branch Scope
 
 Allowed governance/reporting changes for Module A:

@@ -59,6 +59,17 @@ Use it to answer:
   closed after merged-main acceptance. Owner comment `5205259677` resets Issue
   `#384` to an exact eight-path modular route with unchanged 500 aggregate cap,
   bounded digest/route/test authority, and no product scope before Issue `#383` may act.
+  Issue `#384` is closed completed through PR `#392`, merged at
+  `9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`; merged-main workflow
+  `31114775860` passed. Issue `#383` exact head `511acb2` passes focused asset,
+  decoder, route, and guardrail checks, but full readiness produced 2975 passes
+  and two failures because its required status/traceability edits alter the live
+  document bundle consumed by the historical Issue #366 route-test fixture.
+  Clean main passes the two tests and the minimal required-document mutation
+  reproduces both failures. Issue `#393` is the mandatory narrow prerequisite:
+  isolate the historical test fixture without changing the production checker,
+  fixed digest, #366 enforcement, or #383 route/assets/history. Issue `#383`
+  remains preserved and blocked; #367 has not started.
   No playable-media, deployment, release, public-availability,
   trademark-registration, or production-readiness claim is established.
 - Last reviewed date: 2026-08-06
