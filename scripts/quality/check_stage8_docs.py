@@ -11,7 +11,7 @@ from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
 from scripts.quality import stage8_cache_pruning as cache_pruning  # noqa: E402
 from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
-from scripts.quality import stage8_node_security as node_security  # noqa: E402
+from scripts.quality import stage8_node_security as node_security, stage8_cut1_routes as cut1_routes  # noqa: E402
 STAGE8_BRANCH_PATTERN = re.compile(r"(?ai)^stage8-(?![a-z0-9-]*366(?:-|$))(?![a-z0-9-]*cut1)[a-z0-9-]+$")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
@@ -32,7 +32,7 @@ C1_BASE, C1_LIMIT = "a69903fea50c22e12926d7e13dffdc74e55dfb65", 900
 C1_FILE_LIMITS = {"scripts/quality/check_stage8_docs.py":350,"tests/unit/test_stage8_quality_gate.py":300}
 C1_DOCS=("docs/QUALITY_GATES.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md")
 C1_BOUND=("docs/governance/preflights/issue-366.json",*C1_DOCS)
-C1_DOC_SHA="0c7502c6d3da4094c112c5a258ef0212956899640f3eab4c18a8c34b5952787f"
+C1_DOC_SHA="aa97ad3ad67d65f79fa21f3c9c8d89ab91594ca70e1fa9ae01c495221b3c2fbe"
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
@@ -100,8 +100,13 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     CUT1_REAL_MEDIA_TRANSITION_BRANCH: CUT1_REAL_MEDIA_TRANSITION_FILES,
     CITATION_PARITY_BRANCH: CITATION_PARITY_FILES,
 }
-PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES | cache_pruning.CACHE_PRUNING_ROUTES)
-EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES
+PROCESS_BRANCH_ALLOWED_FILES.update(
+    A23_ROUTES
+    | cache_pruning.CACHE_PRUNING_ROUTES
+    | {branch: paths for branch, paths in cut1_routes.ROUTES.items() if branch != cut1_routes.ISSUE386_BRANCH}
+)
+EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES \
+    | node_security.I389_ROUTES | cut1_routes.ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
@@ -167,14 +172,7 @@ def citation_parity_charge() -> int:
     try:return max(sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines())) for d in ds)
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
 def cut1_transition_charges() -> tuple[int, dict[str, int]]:
-    merge=run(["git","merge-base",C1_BASE,"HEAD"])
-    if merge.returncode or merge.stdout.strip()!=C1_BASE: raise RuntimeError("Issue #366 base diff unavailable.")
-    results=(run(["git","diff","--cached","--numstat",C1_BASE,"--"]),run(["git","diff","--numstat",C1_BASE,"--"]))
-    if any(result.returncode for result in results): raise RuntimeError("Issue #366 base diff unavailable.")
-    try: charges=[{p:int(a)+int(d) for a,d,p in (line.split("\t") for line in r.stdout.splitlines())} for r in results]
-    except ValueError as error: raise RuntimeError("Issue #366 malformed or binary numstat.") from error
-    paths=set().union(*charges)
-    return max(map(lambda c:sum(c.values()),charges)),{p:max(c.get(p,0) for c in charges) for p in paths}
+    return cut1_routes.cut1_transition_charges(run, C1_BASE, CUT1_REAL_MEDIA_TRANSITION_FILES)
 def cut1_digest() -> str:
     digest=hashlib.sha256()
     for path in C1_BOUND:
@@ -265,6 +263,7 @@ def check_stage_scope(failures: list[str]) -> None:
     allowed_files = EFFECTIVE_STAGE8_ROUTES.get(branch, STAGE8_ALLOWED_FILES)
     changed_files = set(changed_files_for_stage_scope())
     outside = changed_files - allowed_files
+    if not outside: cut1_routes.check_exact_route(ROOT, run, branch, changed_files, failures)
     for path in sorted(outside):
         fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
     if branch == CITATION_PARITY_BRANCH and not outside:
@@ -371,7 +370,7 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
         "NARRATWIN_LOCUST_HEALTH_P95_MS",
         "lighthouse",
         "trivy image",
-        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.6.0"',
+        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.7.0"',
         '"65532:65532"', "extras.length", "require_frontend_inventory", "actual_inventory", "open(3)",
         'encoding:"buffer"', "readlinkSync", "s.uid", "s.gid", "CapEff", "--connect-timeout", "--max-time",
         "cleanup_frontend_runtime", "FRONTEND_BUILD_IMAGE", "--target deps", "NODE_OPTIONS", "config != expected",
@@ -484,7 +483,7 @@ def main() -> int:
         check_stage_scope(failures)
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
-        node_security.check_frontend_node_image(read("frontend/Dockerfile"), failures)
+        node_security.check(ROOT, run, current_branch(), changed_files_for_stage_scope(), failures)
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
