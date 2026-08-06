@@ -32,7 +32,7 @@ C1_BASE, C1_LIMIT = "a69903fea50c22e12926d7e13dffdc74e55dfb65", 900
 C1_FILE_LIMITS = {"scripts/quality/check_stage8_docs.py":350,"tests/unit/test_stage8_quality_gate.py":300}
 C1_DOCS=("docs/QUALITY_GATES.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md")
 C1_BOUND=("docs/governance/preflights/issue-366.json",*C1_DOCS)
-C1_DOC_SHA="0c7502c6d3da4094c112c5a258ef0212956899640f3eab4c18a8c34b5952787f"
+C1_DOC_SHA="22d3962e68dd377a32d24da3cf7cd4e5c101adbeb70db172f36d9c4d49f6839e"
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
@@ -101,7 +101,7 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     CITATION_PARITY_BRANCH: CITATION_PARITY_FILES,
 }
 PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES | cache_pruning.CACHE_PRUNING_ROUTES)
-EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES
+EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES|brace_security.BRACE_EXPANSION_ROUTES|node_security.I389_ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
@@ -371,7 +371,7 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
         "NARRATWIN_LOCUST_HEALTH_P95_MS",
         "lighthouse",
         "trivy image",
-        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.6.0"',
+        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.7.0"',
         '"65532:65532"', "extras.length", "require_frontend_inventory", "actual_inventory", "open(3)",
         'encoding:"buffer"', "readlinkSync", "s.uid", "s.gid", "CapEff", "--connect-timeout", "--max-time",
         "cleanup_frontend_runtime", "FRONTEND_BUILD_IMAGE", "--target deps", "NODE_OPTIONS", "config != expected",
@@ -484,7 +484,7 @@ def main() -> int:
         check_stage_scope(failures)
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
-        node_security.check_frontend_node_image(read("frontend/Dockerfile"), failures)
+        node_security.check(ROOT, run, current_branch(), changed_files_for_stage_scope(), failures)
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)

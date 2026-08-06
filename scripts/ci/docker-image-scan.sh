@@ -84,7 +84,7 @@ expected = {
   "Labels": {
     "dev.chainguard.image.title": "node", "dev.chainguard.package.main": "",
     "org.opencontainers.image.authors": "Chainguard Team https://www.chainguard.dev/",
-    "org.opencontainers.image.created": "2026-08-03T22:17:06Z",
+    "org.opencontainers.image.created": "2026-08-05T21:53:32Z",
     "org.opencontainers.image.source": "https://github.com/chainguard-images/images/tree/main/images/node",
     "org.opencontainers.image.title": "node",
     "org.opencontainers.image.url": "https://images.chainguard.dev/directory/image/node/overview",
@@ -106,7 +106,7 @@ const status=fs.readFileSync("/proc/self/status","utf8"),trusted=["/usr/bin/node
 function secureTree(d) { const s=fs.lstatSync(d); if(s.uid!==0||s.gid!==0||(s.mode&0o022)!==0) unsafe.push(d);
   if(s.isDirectory()) for(const n of fs.readdirSync(d)) secureTree(d+"/"+n); }
 secureTree("/app");
-if (process.version!=="v26.6.0"||process.getuid()!==65532||process.getgid()!==65532||
+if (process.version!=="v26.7.0"||process.getuid()!==65532||process.getgid()!==65532||
     extras.length||forbidden.some(fs.existsSync)||!/^CapEff:\s+0+$/m.test(status)||
     unsafe.length||trusted.some(p=>{const s=fs.statSync(p);return s.uid!==0||s.gid!==0||(s.mode&0o022)!==0}))
   throw new Error(JSON.stringify({extras,version:process.version}));'
@@ -209,13 +209,8 @@ prepare_frontend_images() {
     -t "${FRONTEND_REPRO_IMAGE}" .
 }
 
-write_json_artifact() {
-  local output="$1" target="$2" kind="$3"
-  python3 - "$output" "$target" "$kind" <<'PY'
-import json, sys
-path, target, kind = sys.argv[1:]
-json.dump({"schema": kind, "target": target}, open(path, "w", encoding="utf-8"), sort_keys=True)
-PY
+write_cyclonedx_artifact() {
+  trivy image --format cyclonedx --output "$1" "$2"
 }
 
 write_envelope() {
@@ -264,8 +259,8 @@ scan_grype "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-grype.raw.sarif.json" "me
 fg=$?
 set -e
 
-write_json_artifact "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_CONFIG}" cyclonedx
-write_json_artifact "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_CONFIG}" cyclonedx
+write_cyclonedx_artifact "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_IMAGE}"
+write_cyclonedx_artifact "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_IMAGE}"
 if [ "${SKIP_POLICY_EVALUATION:-0}" = "1" ]; then
   python3 - "${REPORT_DIR}/backend-cpython-regressions.raw.json" "${BACKEND_CONFIG}" <<'PY'
 import json, sys
@@ -305,8 +300,8 @@ write_envelope backend-trivy "${REPORT_DIR}/backend-trivy.raw.sarif.json" "${BAC
 write_envelope backend-grype "${REPORT_DIR}/backend-grype.raw.sarif.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" grype "$bg"
 write_envelope frontend-trivy "${REPORT_DIR}/frontend-trivy.raw.sarif.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" trivy "$ft"
 write_envelope frontend-grype "${REPORT_DIR}/frontend-grype.raw.sarif.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" grype "$fg"
-write_envelope backend-sbom "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" sbom 0
-write_envelope frontend-sbom "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" sbom 0
+write_envelope backend-sbom "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" trivy-cyclonedx 0
+write_envelope frontend-sbom "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" trivy-cyclonedx 0
 write_envelope backend-cpython-regressions "${REPORT_DIR}/backend-cpython-regressions.raw.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" cpython-regressions 0
 
 python3 - "$REPORT_DIR" "$BACKEND_CONFIG" "$FRONTEND_CONFIG" "$BACKEND_ARCH" "$FRONTEND_ARCH" "$SESSION" <<'PY'
