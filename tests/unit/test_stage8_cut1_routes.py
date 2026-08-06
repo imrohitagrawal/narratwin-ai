@@ -194,6 +194,22 @@ def test_text_charges_fail_closed(
                                         run, "base", {"docs/file.md"}).value)
 
 
+def test_issue366_charge_uses_the_complete_fixed_base_snapshot() -> None:
+    calls: list[list[str]] = []
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        if "merge-base" in args:
+            return completed(args, out="base\n")
+        return completed(args, out="1\t1\tforeign/path.txt\n")
+
+    assert routes.cut1_transition_charges(run, "base", {"docs/bound.md"}) == (
+        2, {"foreign/path.txt": 2}
+    )
+    assert ["git", "diff", "--cached", "--numstat", "base", "--"] in calls
+    assert ["git", "diff", "--numstat", "base", "--"] in calls
+
+
 def test_binary_sizes_reject_missing_non_regular_empty_and_expose_oversize(tmp_path: Path) -> None:
     path = "frontend/public/demo/myra-synthetic-presenter.webp"
     target = tmp_path / path
