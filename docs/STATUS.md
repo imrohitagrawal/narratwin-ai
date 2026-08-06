@@ -46,20 +46,27 @@ Use it to answer:
 - Issue `#366` governs the controlled local, key-free Cut 1. PR `#373` revises
   governance only under OWNER comments `5197711390`, `5197717563`, and
   `5197776590` and merged as `48fc32a2689c9bbc03742d774f3eadb8a500dafc`;
-  post-merge workflow `31056401428` passed. Exact-head review of #384 found a
-  mandatory legacy checker-cap failure, and clean main exposed a stale Issue
-  #280 unsupported-language oracle. Owner-approved #386 absorbs only that #385
-  test-oracle repair while preserving German support; its ninth-path reset isolates
-  a generic legacy test without weakening Issue #366 fixed-base coverage. The serialized path is
-  #386 → #385 absorbed-closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371, with
-  merged-main acceptance between children. No product/media, deployment,
-  release, public-availability, trademark-registration, or production claim is established.
+  post-merge workflow `31056401428` passed. The serialized path is #386 → #385
+  absorbed-closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371,
+  with merged-main acceptance between children. No deployment, release,
+  public-availability, trademark-registration, or production claim is established.
   PR `#388` resolved both prerequisites and merged as
   `ee195862e5385b1fb307199dd7cd560500011f55`; Issues `#386` and `#385` are
-  closed after merged-main acceptance. Owner comment `5205259677` resets Issue
-  `#384` to an exact eight-path modular route with unchanged 500 aggregate cap,
-  bounded digest/route/test authority, and no product scope before Issue `#383` may act.
-  No playable-media, deployment, release, public-availability,
+  closed after merged-main acceptance. Issue `#384` is closed as completed
+  through PR `#392`, merged at
+  `9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`; merged-main workflow
+  `31114775860` passed. Its exact seven-path Issue `#383` route is therefore
+  active. Issue `#383` adds only the reviewed, fictional synthetic Myra and Raj
+  1536×1024 WebP assets, provenance/notices, binary validation, and trace/status
+  evidence. Meera remains byte-identical at SHA-256
+  `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`;
+  Myra is `bdd62ae7f5e205c586e70c6a6f3e50ad925dafb6b86dccdfa30f35b42dda5e27`
+  and Raj is `f6419cc527498cd995792334de44da0af61892b2162269a98670a1bbf9d35b65`.
+  The assets remain controlled-local and pending latest-head non-author visual,
+  provenance, and permitted-use review. Presenter registration and all playable
+  media remain blocked until Issue `#383` merges and passes merged-main
+  acceptance; Issue `#367` is next. No clone, personal likeness, runtime
+  provider, audio, animation, video, public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.
 - Last reviewed date: 2026-08-06
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment

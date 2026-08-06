@@ -19,8 +19,12 @@ EXPECTED_SHA256 = {
     "narratwin-synthetic-presenter.webp": (
         "d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1"
     ),
-    "myra-synthetic-presenter.webp": "0" * 64,
-    "raj-synthetic-presenter.webp": "f" * 64,
+    "myra-synthetic-presenter.webp": (
+        "bdd62ae7f5e205c586e70c6a6f3e50ad925dafb6b86dccdfa30f35b42dda5e27"
+    ),
+    "raj-synthetic-presenter.webp": (
+        "f6419cc527498cd995792334de44da0af61892b2162269a98670a1bbf9d35b65"
+    ),
 }
 
 

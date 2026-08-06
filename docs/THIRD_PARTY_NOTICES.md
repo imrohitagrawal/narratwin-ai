@@ -35,6 +35,8 @@ This file is not legal advice. Treat it as the engineering license-review regist
 | Addy Osmani Shipping and Launch Skill | Stage 8 release checklist, runbook, rollback, and launch-readiness guidance | Pending upstream license verification for the locally vendored copy | Guidance only | Stage 8 skill guidance | Activated as `.codex/skills/active/shipping-and-launch`; not a runtime dependency. |
 | Stage 7 mock/local avatar demo artifacts | First-party generated HTML demo export, JSON render manifest, and JSON video export placeholder samples | First-party generated from approved grounded script text; no third-party avatar media, model, or provider asset used | Yes for local/dev/test review with AI-generated avatar/video disclosure | Stage 7 mock/local avatar rendering and export | The mock/local `AvatarProvider` emits deterministic `text/html` and `application/json` artifacts only, including provider config and placeholder metadata. It does not use paid avatar providers, cloned identities, third-party likenesses, stock media, real video encoders, or non-commercial research tools. |
 | Quiet Presence synthetic presenter sample | Project-directed photorealistic fictional adult Indian woman presenter still for `/demo` | Selected from three OpenAI image-generation candidates created on 2026-08-05 from text-only product visual direction, without an uploaded or real-person reference, cloned identity, customer data, credentials, or copied third-party media; output need not be unique and is not intended to depict or endorse a real person | Internal local/mock product review only pending separate public-distribution and legal review | Issue `#358` local asset | Selected source PNG SHA-256 `47860cae597affd9e41f16077a76ef9d60fd6260058d9c400fb2701e150cdcb8`; mechanically converted with Sharp `0.35.3` to the committed 1536×1024 RGB WebP at `frontend/public/demo/narratwin-synthetic-presenter.webp`, 182,126 bytes, SHA-256 `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`. Conversion may not preserve every embedded provenance signal, so the repository checksum binds the reviewed derivative, not generation authenticity. The UI visibly and accessibly labels it as a fictional synthetic still preview and makes no speaking, animation, video, personal identity, product-runtime provider, deployment, release, or production claim. Design-time generation was external; product-runtime provider calls and spend remained zero. |
+| Myra synthetic presenter sample | Original fictional synthetic adult presenter still for the controlled-local Cut 1 | OpenAI image generation on 2026-08-06 under the OpenAI Rest-of-World Terms of Use and OpenAI Service Terms from text-only direction with no uploaded or real-person reference, cloned identity, biometric data, customer data, or copied third-party media; output need not be unique and is not intended to depict or endorse a real person | Controlled-local review only pending separate public-distribution and legal review | Issue `#383` local asset | Source PNG SHA-256 `953ce8277a9b46bcaf005b283596c27979ff38dc7d3095b403053c6c046a9f08`; converted with Sharp `0.35.3` under Apache-2.0 to `frontend/public/demo/myra-synthetic-presenter.webp`, 1536×1024 RGB, 128,740 bytes, SHA-256 `bdd62ae7f5e205c586e70c6a6f3e50ad925dafb6b86dccdfa30f35b42dda5e27`. The reviewed derivative is checksum-bound; no public, distribution, release, deployment, or production authority is created. |
+| Raj synthetic presenter sample | Original fictional synthetic adult presenter still for the controlled-local Cut 1 | OpenAI image generation on 2026-08-06 under the OpenAI Rest-of-World Terms of Use and OpenAI Service Terms from text-only direction with no uploaded or real-person reference, cloned identity, biometric data, customer data, or copied third-party media; output need not be unique and is not intended to depict or endorse a real person | Controlled-local review only pending separate public-distribution and legal review | Issue `#383` local asset | Source PNG SHA-256 `8feb72c340e0b049a07a835a759054964bec77ee123adba56f4198612212c6a2`; converted with Sharp `0.35.3` under Apache-2.0 to `frontend/public/demo/raj-synthetic-presenter.webp`, 1536×1024 RGB, 130,626 bytes, SHA-256 `f6419cc527498cd995792334de44da0af61892b2162269a98670a1bbf9d35b65`. The reviewed derivative is checksum-bound; no public, distribution, release, deployment, or production authority is created. |
 | Stage 8 demo seed data | First-party markdown fixture for the controlled local release-readiness demo | First-party repository content | Yes for local/dev/test and controlled demonstrations | Stage 8 demo seed data | `demo/stage8_seed_project.md` contains synthetic product facts only; no third-party media, model output, provider output, personal data, or secrets. |
 | Hosted-demo local/fake evidence records | First-party local access/quota/retention/disclosure metadata for reviewer evidence | First-party generated metadata only | Yes for local/dev/test review | Demo Checkpoint 1 PR5 hosted-demo access evidence | `backend/app/hosted_demo.py` creates metadata-only local/fake records and redacted events. It does not add hosting infrastructure, third-party SDKs, provider calls, hosted URLs, paid spend, cloned identity, media bytes, provider payloads, or secrets. |
 | Phase 1 golden-question dataset | First-party JSONL governance/eval acceptance contract | First-party repository content | Yes for local/dev/test and governance review | Phase 1 Closure static eval contract | `docs/evals/phase1_golden_questions.jsonl` contains first-party questions, expected answers, required claims, forbidden claims, evidence paths, citation policy, metric floors, and safety-boundary fixtures. It is not third-party data and is not yet executed by the eval runner. |
@@ -105,6 +107,77 @@ This file is not legal advice. Treat it as the engineering license-review regist
 | Docker Compose | Local service orchestration | Docker terms and component licenses require review before release | Yes after dependency review | Stage 3 repo foundation | Used for local health-check-only backend and frontend containers. |
 | PostgreSQL container image | Local relational metadata service foundation | PostgreSQL License; pinned to `postgres:17-alpine@sha256:dc17045ccfd343b49600570ea734b9c4991cf1c3f3302e67df51e3b402dd55c4` for Stage 3 | Yes for local/dev after release review | Stage 3 local Compose foundation | Local service only; no schema, migration, or product persistence code is implemented in Stage 3. |
 | Redis container image | Local cache/queue service foundation | BSD-3-Clause for Redis OSS; pinned to `redis:8-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005` for Stage 3 | Yes for local/dev after release review | Stage 3 local Compose foundation | Local service only; no cache, queue, or product runtime code is implemented in Stage 3. |
+
+### Issue #383 source and conversion record
+
+Myra and Raj were generated independently by the approved image-generation
+skill from text-only fictional directions. No reference image was supplied,
+Meera was not used as a facial reference, and neither prompt named or described
+a real person. The directions prohibited cloning, biometric or customer data,
+copied media, text, logos, watermarks, malformed anatomy, and obstructed mouths.
+
+The exact Myra prompt is frozen at SHA-256
+`cbdfd1be646c7e185b33958c7f7f8bbac1c0d622556322a70e53b185b7819b31`:
+
+```text
+Use case: photorealistic-natural
+Asset type: NarraTwin AI controlled-local synthetic presenter portrait source
+Primary request: Create a completely original, fictional adult woman presenter named Myra. This is a new text-only fictional identity, not based on, copied from, or intended to resemble any real person, public figure, known individual, existing presenter, or uploaded image.
+Scene/backdrop: simple softly textured warm light-clay studio background with no objects or signage
+Subject: fictional adult woman in her late 30s to early 40s; short softly waved dark-brown bob tucked clear of the face; calm attentive expression; relaxed closed mouth fully visible; direct gaze; wearing an unbranded matte terracotta blazer over a plain ivory blouse; small simple stud earrings only
+Style/medium: high-quality photorealistic editorial studio portrait with natural skin texture and believable fabric detail; visibly synthetic fictional presentation asset
+Composition/framing: exact 3:2 landscape composition intended for a 1536 x 1024 derivative; centered symmetrical head-and-upper-torso portrait; eye-level camera; face large and unobstructed; full head, neck, both shoulders, and upper chest visible; generous clean margin around hair and shoulders; no hands in frame
+Lighting/mood: soft even frontal studio lighting, gentle depth, minimal shadows across the mouth and jaw, neutral welcoming professional mood
+Color palette: warm clay, ivory, natural dark brown; clearly distinct visual direction
+Constraints: anatomically coherent single adult; face and mouth unobstructed and suitable for later deterministic speaking animation; natural eyes, teeth not visible, realistic ears, hair, shoulders, clothing, and skin; no facial reference; no uploaded reference; no cloned identity; no biometric or customer data; no copied third-party media; no text; no letters; no numbers; no logos; no trademarks; no symbols; no watermark; no signature; no branded pattern
+Avoid: resemblance to any recognizable person; glamour retouching; uncanny skin; malformed face or anatomy; asymmetrical or duplicated facial features; extra people; cropped head; hair over lips; glasses; hat; microphone; hands; jewelry beyond the small studs; busy background; props; accidental signage or artifacts
+```
+
+The exact Raj prompt is frozen at SHA-256
+`660a927d79865ddddbff82e1eaddfd4af023735fc8da6738b7cdbfa0aa477d78`:
+
+```text
+Use case: photorealistic-natural
+Asset type: NarraTwin AI controlled-local synthetic presenter portrait source
+Primary request: Create a completely original, fictional adult man presenter named Raj. This is a new text-only fictional identity, not based on, copied from, or intended to resemble any real person, public figure, known individual, existing presenter, or uploaded image.
+Scene/backdrop: simple softly textured muted cool stone-gray studio background with no objects or signage
+Subject: fictional adult man in his mid to late 40s; short neatly styled salt-and-pepper hair with a clear hairline; clean-shaven face; calm attentive expression; relaxed closed mouth fully visible; direct gaze; wearing an unbranded deep forest-green band-collar jacket over a plain pale-gray shirt; no jewelry
+Style/medium: high-quality photorealistic editorial studio portrait with natural skin texture and believable fabric detail; visibly synthetic fictional presentation asset
+Composition/framing: exact 3:2 landscape composition intended for a 1536 x 1024 derivative; centered symmetrical head-and-upper-torso portrait; eye-level camera; face large and unobstructed; full head, neck, both shoulders, and upper chest visible; generous clean margin around hair and shoulders; no hands in frame
+Lighting/mood: soft even frontal studio lighting, gentle depth, minimal shadows across the mouth and jaw, neutral reassuring professional mood
+Color palette: cool stone gray, deep forest green, pale gray, salt-and-pepper; clearly distinct visual direction
+Constraints: anatomically coherent single adult; face and mouth unobstructed and suitable for later deterministic speaking animation; natural eyes, teeth not visible, realistic ears, hair, shoulders, clothing, and skin; no facial reference; no uploaded reference; no cloned identity; no biometric or customer data; no copied third-party media; no text; no letters; no numbers; no logos; no trademarks; no symbols; no watermark; no signature; no branded pattern
+Avoid: resemblance to any recognizable person; glamour retouching; uncanny skin; malformed face or anatomy; asymmetrical or duplicated facial features; extra people; cropped head; hair over lips; beard; moustache; glasses; hat; microphone; hands; jewelry; busy background; props; accidental signage or artifacts
+```
+
+Myra's direction specified an adult woman with a short dark-brown bob, a matte
+terracotta blazer, an ivory blouse, and a warm light-clay studio background.
+The generated 1536×1024 RGB PNG was created at
+`2026-08-06T21:15:51+05:30`, measured 2,211,970 bytes, and had SHA-256
+`953ce8277a9b46bcaf005b283596c27979ff38dc7d3095b403053c6c046a9f08`.
+
+Raj's direction specified an adult man with short salt-and-pepper hair, a deep
+forest-green band-collar jacket, a pale-gray shirt, and a cool stone-gray studio
+background. The generated 1536×1024 RGB PNG was created at
+`2026-08-06T21:17:01+05:30`, measured 2,198,777 bytes, and had SHA-256
+`8feb72c340e0b049a07a835a759054964bec77ee123adba56f4198612212c6a2`.
+
+Both sources were mechanically converted with Sharp `0.35.3` under
+Apache-2.0 using auto-orientation, exact 1536×1024 resize, alpha removal, and
+WebP quality 88 with effort 6 and smart chroma subsampling. FFprobe identified
+one WebP/yuv420p image stream at 1536×1024 for each derivative, and FFmpeg
+decoded one complete frame from each. The source files remain session evidence;
+the committed derivatives are bound by their repository paths and checksums.
+
+The engineering visual review found two visibly distinct fictional adults with
+coherent faces and anatomy, unobstructed closed mouths, appropriate head-and-
+upper-torso framing, and no obvious text, logo, watermark, copied mark, or
+generation defect. This is not a legal opinion. A latest-head non-author
+reviewer must explicitly inspect the two images and provenance before merge.
+Public distribution remains blocked on separate public-distribution and legal
+review. No face or voice clone, personal likeness, provider-runtime call,
+deployment, release, trademark, commercial-distribution, or production claim
+is authorized by this record.
 
 ## Rules
 
