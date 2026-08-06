@@ -106,7 +106,7 @@ const status=fs.readFileSync("/proc/self/status","utf8"),trusted=["/usr/bin/node
 function secureTree(d) { const s=fs.lstatSync(d); if(s.uid!==0||s.gid!==0||(s.mode&0o022)!==0) unsafe.push(d);
   if(s.isDirectory()) for(const n of fs.readdirSync(d)) secureTree(d+"/"+n); }
 secureTree("/app");
-if (process.version!=="v26.6.0"||process.getuid()!==65532||process.getgid()!==65532||
+if (process.version!=="v26.7.0"||process.getuid()!==65532||process.getgid()!==65532||
     extras.length||forbidden.some(fs.existsSync)||!/^CapEff:\s+0+$/m.test(status)||
     unsafe.length||trusted.some(p=>{const s=fs.statSync(p);return s.uid!==0||s.gid!==0||(s.mode&0o022)!==0}))
   throw new Error(JSON.stringify({extras,version:process.version}));'

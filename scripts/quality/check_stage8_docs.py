@@ -63,7 +63,7 @@ REQUIRED_FILES = [
     "docs/TRACEABILITY.md", "docs/demo/CONTROLLED_LOCAL_DEMO.md",
 ]; STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {
-    node_security.ISSUE374_SECURITY_BRANCH: node_security.ISSUE374_SECURITY_FILES,
+    **node_security.NODE_SECURITY_ROUTES,
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
         "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
@@ -267,6 +267,12 @@ def check_stage_scope(failures: list[str]) -> None:
     outside = changed_files - allowed_files
     for path in sorted(outside):
         fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
+    if branch == node_security.ISSUE389_SECURITY_BRANCH and not outside:
+        failures.extend(
+            f"Issue #389 route is missing required path: {path}"
+            for path in sorted(allowed_files - changed_files)
+        )
+        node_security.check_issue389_route(ROOT, run, failures, True)
     if branch == CITATION_PARITY_BRANCH and not outside:
         failures.extend(f"Issue #372 missing required path: {path}" for path in sorted(allowed_files-changed_files))
         charge=citation_parity_charge()
@@ -371,7 +377,7 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
         "NARRATWIN_LOCUST_HEALTH_P95_MS",
         "lighthouse",
         "trivy image",
-        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.6.0"',
+        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.7.0"',
         '"65532:65532"', "extras.length", "require_frontend_inventory", "actual_inventory", "open(3)",
         'encoding:"buffer"', "readlinkSync", "s.uid", "s.gid", "CapEff", "--connect-timeout", "--max-time",
         "cleanup_frontend_runtime", "FRONTEND_BUILD_IMAGE", "--target deps", "NODE_OPTIONS", "config != expected",

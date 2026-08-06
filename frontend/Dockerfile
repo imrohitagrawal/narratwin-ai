@@ -36,7 +36,7 @@ ENV NARRATWIN_API_PROXY_TARGET=${NARRATWIN_API_PROXY_TARGET}
 COPY frontend ./
 RUN npm run build
 
-FROM cgr.dev/chainguard/node:latest@sha256:cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734 AS runner
+FROM cgr.dev/chainguard/node:latest@sha256:d8d2883b26d4fde4e524d0068cd78abbb23c7c2113a22e67a02cc73a9182552d AS runner
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
