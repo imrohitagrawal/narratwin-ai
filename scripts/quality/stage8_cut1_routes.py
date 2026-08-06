@@ -6,7 +6,7 @@ import stat
 from pathlib import Path
 from typing import Any, Callable
 
-ISSUE386_BRANCH = "stage8-386-modular-route-enforcement"
+ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE385_BRANCH = "stage8-385-issue280-language-oracle"
 ISSUE384_BRANCH = "stage8-384-presenter-asset-route"
 ISSUE383_BRANCH = "stage8-383-presenter-assets"

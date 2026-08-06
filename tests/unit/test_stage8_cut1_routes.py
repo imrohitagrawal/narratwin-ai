@@ -27,7 +27,7 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
-    "stage8-386-modular-route-enforcement": {
+    "cut1-process-386-modular-route-enforcement": {
         "docs/governance/preflights/issue-386.json",
         "scripts/quality/stage8_cut1_routes.py",
         "scripts/quality/check_stage8_docs.py",
@@ -69,7 +69,7 @@ def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> s
 
 def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
     assert routes.ROUTES == EXPECTED
-    assert {branch: stage8.PROCESS_BRANCH_ALLOWED_FILES[branch] for branch in EXPECTED} == EXPECTED
+    assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
     artifact = json.loads((REPO / "docs/governance/preflights/issue-386.json").read_text(encoding="utf-8"))
     assert artifact["branch"] == routes.ISSUE386_BRANCH
     assert set(artifact["scope"]["required"]) == EXPECTED[routes.ISSUE386_BRANCH]
@@ -105,7 +105,12 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
         routes.check_exact_route(REPO, lambda _: completed([]), branch, paths - {missing}, failures)
         issue = routes.ROUTE_ISSUES[branch]
         assert failures == [f"Issue #{issue} route is missing required path: {missing}"]
-        for lookalike in (branch + "-retry", branch.upper(), branch.replace("stage8", "stageв")):
+        confusable = (
+            branch.replace("stage8", "stageв")
+            if "stage8" in branch
+            else branch.replace("process", "procesѕ")
+        )
+        for lookalike in (branch + "-retry", branch.upper(), confusable):
             failures = []
             routes.check_exact_route(REPO, lambda _: completed([]), lookalike, set(paths), failures)
             assert failures == []
