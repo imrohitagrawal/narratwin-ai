@@ -160,6 +160,33 @@ def route_text_charges(
     }
 
 
+def cut1_transition_charges(
+    run: Callable[[list[str]], Any], base: str, paths: set[str]
+) -> tuple[int, dict[str, int]]:
+    merge = run(["git", "merge-base", base, "HEAD"])
+    if merge.returncode or merge.stdout.strip() != base:
+        raise RuntimeError("Issue #366 base diff unavailable.")
+    ordered = sorted(paths)
+    results = (
+        run(["git", "diff", "--cached", "--numstat", base, "--", *ordered]),
+        run(["git", "diff", "--numstat", base, "--", *ordered]),
+    )
+    if any(result.returncode for result in results):
+        raise RuntimeError("Issue #366 base diff unavailable.")
+    try:
+        charges = [
+            {path: int(added) + int(deleted) for added, deleted, path in
+             (line.split("\t") for line in result.stdout.splitlines())}
+            for result in results
+        ]
+    except ValueError as error:
+        raise RuntimeError("Issue #366 malformed or binary numstat.") from error
+    charged_paths = set().union(*charges)
+    return max(sum(snapshot.values()) for snapshot in charges), {
+        path: max(snapshot.get(path, 0) for snapshot in charges) for path in charged_paths
+    }
+
+
 def route_binary_sizes(root: Path, paths: set[str]) -> dict[str, int]:
     sizes: dict[str, int] = {}
     for path in sorted(paths):

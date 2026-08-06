@@ -167,14 +167,7 @@ def citation_parity_charge() -> int:
     try:return max(sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines())) for d in ds)
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
 def cut1_transition_charges() -> tuple[int, dict[str, int]]:
-    merge=run(["git","merge-base",C1_BASE,"HEAD"])
-    if merge.returncode or merge.stdout.strip()!=C1_BASE: raise RuntimeError("Issue #366 base diff unavailable.")
-    results=(run(["git","diff","--cached","--numstat",C1_BASE,"--",*sorted(CUT1_REAL_MEDIA_TRANSITION_FILES)]),run(["git","diff","--numstat",C1_BASE,"--",*sorted(CUT1_REAL_MEDIA_TRANSITION_FILES)]))
-    if any(result.returncode for result in results): raise RuntimeError("Issue #366 base diff unavailable.")
-    try: charges=[{p:int(a)+int(d) for a,d,p in (line.split("\t") for line in r.stdout.splitlines())} for r in results]
-    except ValueError as error: raise RuntimeError("Issue #366 malformed or binary numstat.") from error
-    paths=set().union(*charges)
-    return max(map(lambda c:sum(c.values()),charges)),{p:max(c.get(p,0) for c in charges) for p in paths}
+    return cut1_routes.cut1_transition_charges(run, C1_BASE, CUT1_REAL_MEDIA_TRANSITION_FILES)
 def cut1_digest() -> str:
     digest=hashlib.sha256()
     for path in C1_BOUND:
@@ -264,7 +257,8 @@ def check_stage_scope(failures: list[str]) -> None:
         return
     allowed_files = EFFECTIVE_STAGE8_ROUTES.get(branch, STAGE8_ALLOWED_FILES)
     changed_files = set(changed_files_for_stage_scope())
-    outside = changed_files - allowed_files; cut1_routes.check_exact_route(ROOT,run,branch,changed_files,failures) if not outside else None
+    outside = changed_files - allowed_files
+    if not outside: cut1_routes.check_exact_route(ROOT, run, branch, changed_files, failures)
     for path in sorted(outside):
         fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
     if branch == CITATION_PARITY_BRANCH and not outside:
