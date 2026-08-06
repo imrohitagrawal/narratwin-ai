@@ -7,9 +7,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import app, reset_app_state_for_tests
+from backend.app.issue280 import _SUPPORTED_LOCAL_E2E_LANGUAGES
 
 
 ISSUE280_E2E_PATH = "/api/v1/checkpoint3/issue280/local-e2e-demo"
+UNSUPPORTED_LANGUAGE_TAG = "de"
 ISSUE280_E2E_EVIDENCE_NOTE = (
     "PR C validates local trace metadata and source_chunk citation binding for generated walkthrough script output."
 )
@@ -78,6 +80,10 @@ def assert_public_safe_error(body: dict[str, Any], *raw_values: str) -> None:
     assert "/Users/" not in serialized
     assert "provider payload" not in serialized.lower()
     assert "sk-" not in serialized
+
+
+def test_issue280_unsupported_language_oracle_is_absent_from_governed_catalog() -> None:
+    assert UNSUPPORTED_LANGUAGE_TAG not in _SUPPORTED_LOCAL_E2E_LANGUAGES
 
 
 def test_issue280_local_e2e_demo_stores_grounded_multilingual_output() -> None:
@@ -212,7 +218,7 @@ def test_issue280_local_e2e_demo_accepts_boundary_documents_empty_sections_and_l
     ("payload_patch", "status_code", "error_code", "raw_values"),
     [
         (
-            {"targetLanguage": "de"},
+            {"targetLanguage": UNSUPPORTED_LANGUAGE_TAG},
             422,
             "ISSUE280_TRANSLATION_REFUSED",
             (),
