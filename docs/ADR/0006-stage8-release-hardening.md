@@ -306,8 +306,10 @@ behavior remain fail-closed. Measured inventories are
 `1803:06e4628f15e836b24128401deedceedeaebe0561bef29f96f3c9de7e2306e3e0`
 for arm64 and
 `1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2`
-for amd64 Docker Desktop. Hosted amd64 must match a separately measured finite
-value before merge.
+for amd64 Docker Desktop and
+`1803:e9a3cd116280dff5bd1e39833d511f9fa0eb952bbde5f0ffaf4aab0ab2306c9f`
+for hosted amd64, measured by the fail-closed
+[GitHub Actions security run](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/31087364866).
 
 Rollback may use only a newly researched, signed, immutable, scanner-clean
 replacement. Returning to the Issue #374 digest, npm r1, a mutable tag, an

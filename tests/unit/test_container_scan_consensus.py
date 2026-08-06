@@ -332,12 +332,15 @@ def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
 
 def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     matches = _load().frontend_inventory_matches
-    amd64 = ("1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",)
+    amd64 = (
+        "1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",
+        "1803:e9a3cd116280dff5bd1e39833d511f9fa0eb952bbde5f0ffaf4aab0ab2306c9f",
+    )
     arm64 = "1803:06e4628f15e836b24128401deedceedeaebe0561bef29f96f3c9de7e2306e3e0"
     assert all(matches("amd64", inventory) for inventory in amd64)
     assert matches("arm64", arm64)
     assert not matches("amd64", arm64)
-    assert not matches("arm64", amd64[0])
+    assert all(not matches("arm64", inventory) for inventory in amd64)
     assert not matches("amd64", amd64[0][:-1] + "0")
     assert not matches("unknown", amd64[0])
 

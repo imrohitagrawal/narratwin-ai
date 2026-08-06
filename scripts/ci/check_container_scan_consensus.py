@@ -51,6 +51,7 @@ FRONTEND_INVENTORIES = {
     "amd64": frozenset(
         (
             "1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",
+            "1803:e9a3cd116280dff5bd1e39833d511f9fa0eb952bbde5f0ffaf4aab0ab2306c9f",
         )
     ),
     "arm64": frozenset(
