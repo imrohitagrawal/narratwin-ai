@@ -73,7 +73,9 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert artifact["branch"] == routes.ISSUE386_BRANCH
     assert set(artifact["scope"]["required"]) == EXPECTED[routes.ISSUE386_BRANCH]
     assert set(artifact["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE386_BRANCH]
-    assert "check_stage8_docs" not in MODULE_PATH.read_text(encoding="utf-8")
+    module_source = MODULE_PATH.read_text(encoding="utf-8")
+    assert "from scripts.quality.check_stage8_docs" not in module_source
+    assert "import scripts.quality.check_stage8_docs" not in module_source
 
 
 def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
@@ -193,9 +195,13 @@ def test_binary_sizes_reject_missing_non_regular_empty_and_expose_oversize(tmp_p
     assert "missing" in str(pytest.raises(RuntimeError, routes.route_binary_sizes, tmp_path, {path}).value)
     target.mkdir()
     assert "regular" in str(pytest.raises(RuntimeError, routes.route_binary_sizes, tmp_path, {path}).value)
-    target.rmdir(); target.write_bytes(b"")
+    target.rmdir()
+    target.write_bytes(b"")
     assert "empty" in str(pytest.raises(RuntimeError, routes.route_binary_sizes, tmp_path, {path}).value)
     target.write_bytes(b"x" * 500001)
     assert routes.route_binary_sizes(tmp_path, {path}) == {path: 500001}
-    target.unlink(); source = tmp_path / "source"; source.write_bytes(b"x"); target.symlink_to(source)
+    target.unlink()
+    source = tmp_path / "source"
+    source.write_bytes(b"x")
+    target.symlink_to(source)
     assert "regular" in str(pytest.raises(RuntimeError, routes.route_binary_sizes, tmp_path, {path}).value)

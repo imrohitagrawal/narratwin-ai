@@ -563,6 +563,14 @@ the complete `origin/main` merge-base-to-exact-head candidate rather than the
 latest push delta. PR/review validation keeps the reviewed base and binds the
 checkout to the GitHub event head; scope output remains supporting evidence.
 
+Issue `#386` is the governance-only prerequisite for the mandatory checker
+context-cap failure discovered at #384 head `94e7830`. It modularizes new exact
+route enforcement without raising legacy caps and pre-registers final routes
+for #385, #384, and #383. After merged-main acceptance, #385 repairs the stale
+Issue #280 unsupported-language oracle; #384 then merges current main and
+removes its redundant checker/test diffs through normal commits. The dependency
+order is #386 → #385 → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
+
 ## Phase 1 Closure Branch Scope
 
 Allowed governance/reporting changes for Module A:
