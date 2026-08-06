@@ -59,15 +59,26 @@ production-readiness claim. Later child work requires its own exact issue,
 branch, preflight, RED/GREEN evidence, PR approval, merge, and merged-main
 acceptance.
 
-Exact governance branch `stage8-384-presenter-asset-route` registers itself and
-the prerequisite asset branch `stage8-383-presenter-assets`. Both require every
-declared path and reject extras and lookalikes. Text budgets charge additions
-plus deletions without deletion credit and use the larger complete-base index
-or worktree snapshot; malformed/binary numstat and untracked required text fail
-closed. Issue #384 is capped at 900 lines (checker 400, test 350, each other
-file 160). Issue #383 is capped at 700 lines (asset test 260, each other text
-file 160); its two required WebP files must be regular non-symlink files of
-1–500000 bytes. This route is scope enforcement, not asset or license approval.
+Issue `#386` keeps the monolithic Stage 8 checker below its unchanged 500-line
+legacy caps by moving new Cut 1 route mechanics to
+`scripts/quality/stage8_cut1_routes.py`. Its exact nine-path #386 route absorbs
+the stale Issue #280 unsupported-language oracle without changing German support
+or runtime/catalog behavior and isolates only the generic route-enumeration test
+under a 20-line charge cap. The dedicated Issue #366 tests retain the genuine
+unrestricted fixed-base index/worktree snapshot. The sidecar pre-registers routes for
+Issues `#385`, `#384`, and `#383`; it requires complete path sets, current-main
+ancestry (fixed base for #386), additions-plus-deletions budgets over the larger
+index/worktree snapshot, fail-closed malformed/binary/untracked text evidence,
+and regular bounded #383 portrait files. Lookalikes inherit no authority. This
+is governance enforcement, not product, asset, provider, or media approval.
+
+Issue `#384` resumes only through the modular sidecar's pre-registered exact
+five-path documentation/preflight route. It charges additions plus deletions
+over the larger current-main index/worktree snapshot, caps the aggregate at 500
+and every path at 160, and rejects missing, extra, lookalike, malformed, binary,
+or untracked text evidence. The sidecar separately retains Issue `#383`'s exact
+seven-path text/binary contract. No monolithic checker/test change, portrait,
+asset implementation, dependency, provider, or product behavior is authorized.
 
 ## Required Make Targets
 
@@ -1087,3 +1098,20 @@ citation value, renumbering, loosened assertion, skipped test, narrowed gate, re
 This repair is not presenter/media, deployment, release, public availability, production readiness, or Cut 1 evidence.
 
 The complete diff must remain at or below 1200 charged lines. A twelfth path or charge 1201 is a gate failure.
+
+## Issue #389 frontend runtime npm security gate
+
+The exact `cut1-process-389-frontend-runtime-npm12-security` route starts from
+`48fc32a2689c9bbc03742d774f3eadb8a500dafc`, requires exactly fourteen paths,
+and permits at most 900 additions plus deletions. Per-path change ceilings are
+180 for `stage8_node_security.py`, 220 for its test, and 40 for the Stage 8
+checker. Complete Git evidence, preflight identity, missing/extra paths, binary
+numstat, branch/base drift, and every budget fail closed.
+
+The shipped frontend must use signed Chainguard index
+`sha256:d8d2883b26d4fde4e524d0068cd78abbb23c7c2113a22e67a02cc73a9182552d`,
+execute Node 26.7.0, derive from Wolfi `npm-12 12.0.2-r2`, match a finite
+architecture-bound inventory, and pass the existing runtime-hardening,
+reproduction, SBOM, and Trivy/Grype consensus checks through Medium. The old
+digest, npm r1, mutable tags, scanner suppression, waiver, and product or
+release expansion are prohibited.

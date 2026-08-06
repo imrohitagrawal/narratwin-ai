@@ -2,7 +2,7 @@
 """Executable Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
 # ruff: noqa: E302, E305, E401, E701, E702
-import hashlib, json, os, re, stat, subprocess, sys
+import hashlib, json, os, re, subprocess, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -11,7 +11,7 @@ from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
 from scripts.quality import stage8_cache_pruning as cache_pruning  # noqa: E402
 from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
-from scripts.quality import stage8_node_security as node_security  # noqa: E402
+from scripts.quality import stage8_node_security as node_security, stage8_cut1_routes as cut1_routes  # noqa: E402
 STAGE8_BRANCH_PATTERN = re.compile(r"(?ai)^stage8-(?![a-z0-9-]*366(?:-|$))(?![a-z0-9-]*cut1)[a-z0-9-]+$")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
@@ -32,29 +32,7 @@ C1_BASE, C1_LIMIT = "a69903fea50c22e12926d7e13dffdc74e55dfb65", 900
 C1_FILE_LIMITS = {"scripts/quality/check_stage8_docs.py":350,"tests/unit/test_stage8_quality_gate.py":300}
 C1_DOCS=("docs/QUALITY_GATES.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md")
 C1_BOUND=("docs/governance/preflights/issue-366.json",*C1_DOCS)
-C1_DOC_SHA="aedfe18a045d3dc78a84462d468c22931a96ee934e9d75a64e328150a602a087"
-ISSUE383_ASSET_BRANCH = "stage8-383-presenter-assets"
-ISSUE384_ASSET_ROUTE_BRANCH = "stage8-384-presenter-asset-route"
-ISSUE384_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
-ISSUE383_BINARY_FILES = {
-    "frontend/public/demo/myra-synthetic-presenter.webp",
-    "frontend/public/demo/raj-synthetic-presenter.webp",
-}
-ISSUE383_ASSET_FILES = {
-    "docs/governance/preflights/issue-383.json", *ISSUE383_BINARY_FILES,
-    "tests/unit/test_cut1_presenter_assets.py", "docs/THIRD_PARTY_NOTICES.md",
-    "docs/STATUS.md", "docs/TRACEABILITY.md",
-}
-ISSUE384_ASSET_ROUTE_FILES = {
-    "docs/governance/preflights/issue-384.json", "scripts/quality/check_stage8_docs.py",
-    "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
-    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
-}
-ISSUE383_TEXT_LIMITS = {path: (260 if path == "tests/unit/test_cut1_presenter_assets.py" else 160)
-                        for path in ISSUE383_ASSET_FILES - ISSUE383_BINARY_FILES}
-ISSUE384_TEXT_LIMITS = {path: (400 if path == "scripts/quality/check_stage8_docs.py" else
-                               350 if path == "tests/unit/test_stage8_quality_gate.py" else 160)
-                        for path in ISSUE384_ASSET_ROUTE_FILES}
+C1_DOC_SHA="d4dd956f742a9d2853b10664acd0226b63d540551cb77c3e95fe56167b6cbde2"
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
@@ -121,11 +99,14 @@ PROCESS_BRANCH_ALLOWED_FILES = {
     ISSUE324_PUBLICATION_BRANCH: issue324_allowed_files(), QUIET_PRESENCE_BRANCH: QUIET_PRESENCE_FILES,
     CUT1_REAL_MEDIA_TRANSITION_BRANCH: CUT1_REAL_MEDIA_TRANSITION_FILES,
     CITATION_PARITY_BRANCH: CITATION_PARITY_FILES,
-    ISSUE383_ASSET_BRANCH: ISSUE383_ASSET_FILES,
-    ISSUE384_ASSET_ROUTE_BRANCH: ISSUE384_ASSET_ROUTE_FILES,
 }
-PROCESS_BRANCH_ALLOWED_FILES.update(A23_ROUTES | cache_pruning.CACHE_PRUNING_ROUTES)
-EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES
+PROCESS_BRANCH_ALLOWED_FILES.update(
+    A23_ROUTES
+    | cache_pruning.CACHE_PRUNING_ROUTES
+    | {branch: paths for branch, paths in cut1_routes.ROUTES.items() if branch != cut1_routes.ISSUE386_BRANCH}
+)
+EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES \
+    | node_security.I389_ROUTES | cut1_routes.ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
@@ -191,88 +172,12 @@ def citation_parity_charge() -> int:
     try:return max(sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines())) for d in ds)
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
 def cut1_transition_charges() -> tuple[int, dict[str, int]]:
-    merge=run(["git","merge-base",C1_BASE,"HEAD"])
-    if merge.returncode or merge.stdout.strip()!=C1_BASE: raise RuntimeError("Issue #366 base diff unavailable.")
-    results=(run(["git","diff","--cached","--numstat",C1_BASE,"--"]),run(["git","diff","--numstat",C1_BASE,"--"]))
-    if any(result.returncode for result in results): raise RuntimeError("Issue #366 base diff unavailable.")
-    try: charges=[{p:int(a)+int(d) for a,d,p in (line.split("\t") for line in r.stdout.splitlines())} for r in results]
-    except ValueError as error: raise RuntimeError("Issue #366 malformed or binary numstat.") from error
-    paths=set().union(*charges)
-    return max(map(lambda c:sum(c.values()),charges)),{p:max(c.get(p,0) for c in charges) for p in paths}
+    return cut1_routes.cut1_transition_charges(run, C1_BASE, CUT1_REAL_MEDIA_TRANSITION_FILES)
 def cut1_digest() -> str:
     digest=hashlib.sha256()
     for path in C1_BOUND:
         data=read(path).encode(); digest.update(f"{path}\0{len(data)}\0".encode()); digest.update(data)
     return digest.hexdigest()
-def issue383_route_base() -> str:
-    last_error = ""
-    for candidate in ("origin/main", "main"):
-        result = run(["git", "merge-base", candidate, "HEAD"])
-        if result.returncode == 0 and result.stdout.strip(): return result.stdout.strip()
-        last_error = result.stderr.strip()
-    detail = f": {last_error}" if last_error else "."
-    raise RuntimeError(f"Issue #383 merge-base evidence is unavailable{detail}")
-def issue384_route_base() -> str:
-    result = run(["git", "merge-base", ISSUE384_BASE, "HEAD"])
-    if result.returncode or result.stdout.strip() != ISSUE384_BASE:
-        raise RuntimeError("Issue #384 fixed-base evidence is unavailable or inconsistent.")
-    return ISSUE384_BASE
-def route_text_charges(base: str, paths: set[str]) -> tuple[int, dict[str, int]]:
-    ordered = sorted(paths)
-    untracked = run(["git", "ls-files", "-z", "--others", "--exclude-standard", "--", *ordered])
-    if untracked.returncode:
-        raise RuntimeError(untracked.stderr.strip() or "Route untracked-text evidence failed.")
-    if untracked.stdout:
-        try: found = parse_paths_z(untracked.stdout)
-        except RuntimeError as error: raise RuntimeError("Route untracked-text evidence is malformed.") from error
-        raise RuntimeError(f"Route required text path is untracked: {found[0]}")
-    snapshots: list[dict[str, int]] = []
-    for cached in (True, False):
-        charges: dict[str, int] = {}
-        for path in ordered:
-            args = ["git", "diff"] + (["--cached"] if cached else []) + [
-                "--numstat", "--no-renames", base, "--", path]
-            result = run(args)
-            if result.returncode:
-                raise RuntimeError(result.stderr.strip() or "Route charged-line evidence failed.")
-            rows = result.stdout.splitlines()
-            if len(rows) > 1:
-                raise RuntimeError("Route charged-line evidence contains an unexpected path.")
-            if not rows: continue
-            fields = rows[0].split("\t")
-            if len(fields) != 3 or fields[2] != path:
-                raise RuntimeError("Route charged-line evidence contains an unexpected path.")
-            if not fields[0].isdigit() or not fields[1].isdigit():
-                raise RuntimeError("Route charged-line evidence is malformed or binary.")
-            charges[path] = int(fields[0]) + int(fields[1])
-        snapshots.append(charges)
-    all_paths = set().union(*snapshots)
-    return max(sum(snapshot.values()) for snapshot in snapshots), {
-        path: max(snapshot.get(path, 0) for snapshot in snapshots) for path in all_paths
-    }
-def route_binary_sizes(paths: set[str]) -> dict[str, int]:
-    sizes: dict[str, int] = {}
-    for path in sorted(paths):
-        target = ROOT / path
-        try: metadata = target.lstat()
-        except FileNotFoundError as error: raise RuntimeError(f"Route binary is missing: {path}") from error
-        if target.is_symlink() or not stat.S_ISREG(metadata.st_mode):
-            raise RuntimeError(f"Route binary must be a regular non-symlink file: {path}")
-        if metadata.st_size <= 0: raise RuntimeError(f"Route binary is empty: {path}")
-        sizes[path] = metadata.st_size
-    return sizes
-def check_bounded_route(issue: int, files: set[str], text_limits: dict[str, int], total_limit: int,
-                        base: str, changed: set[str], failures: list[str],
-                        binary_files: set[str] | None = None) -> None:
-    failures.extend(f"Issue #{issue} route is missing required path: {path}" for path in sorted(files - changed))
-    total, charges = route_text_charges(base, set(text_limits))
-    if total > total_limit: fail(f"Issue #{issue} charge {total} exceeds {total_limit}.", failures)
-    failures.extend(f"Issue #{issue} charge for {path} exceeds {limit}."
-                    for path, limit in text_limits.items() if charges.get(path, 0) > limit)
-    if binary_files:
-        sizes = route_binary_sizes(binary_files)
-        failures.extend(f"Issue #{issue} binary {path} exceeds 500000 bytes."
-                        for path, size in sizes.items() if size > 500000)
 def parse_paths_z(output: str) -> list[str]:
     if not output:return []
     if not output.endswith("\0"):raise RuntimeError("Malformed NUL-delimited Git path output.")
@@ -358,6 +263,7 @@ def check_stage_scope(failures: list[str]) -> None:
     allowed_files = EFFECTIVE_STAGE8_ROUTES.get(branch, STAGE8_ALLOWED_FILES)
     changed_files = set(changed_files_for_stage_scope())
     outside = changed_files - allowed_files
+    if not outside: cut1_routes.check_exact_route(ROOT, run, branch, changed_files, failures)
     for path in sorted(outside):
         fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
     if branch == CITATION_PARITY_BRANCH and not outside:
@@ -372,12 +278,6 @@ def check_stage_scope(failures: list[str]) -> None:
                         if charges.get(p,0)>n)
         if cut1_digest()!=C1_DOC_SHA:
             fail("Issue #366 governance document contract drifted.",failures)
-    if branch == ISSUE383_ASSET_BRANCH and not outside:
-        check_bounded_route(383, ISSUE383_ASSET_FILES, ISSUE383_TEXT_LIMITS, 700, issue383_route_base(),
-                            changed_files, failures, ISSUE383_BINARY_FILES)
-    if branch == ISSUE384_ASSET_ROUTE_BRANCH and not outside:
-        check_bounded_route(384, ISSUE384_ASSET_ROUTE_FILES, ISSUE384_TEXT_LIMITS, 900, issue384_route_base(),
-                            changed_files, failures)
 def check_backend_and_tests(failures: list[str]) -> None:
     main_text = read("backend/app/main.py")
     stage4_text = read("backend/app/stage4.py")
@@ -470,7 +370,7 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
         "NARRATWIN_LOCUST_HEALTH_P95_MS",
         "lighthouse",
         "trivy image",
-        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.6.0"',
+        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.7.0"',
         '"65532:65532"', "extras.length", "require_frontend_inventory", "actual_inventory", "open(3)",
         'encoding:"buffer"', "readlinkSync", "s.uid", "s.gid", "CapEff", "--connect-timeout", "--max-time",
         "cleanup_frontend_runtime", "FRONTEND_BUILD_IMAGE", "--target deps", "NODE_OPTIONS", "config != expected",
@@ -583,7 +483,7 @@ def main() -> int:
         check_stage_scope(failures)
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
-        node_security.check_frontend_node_image(read("frontend/Dockerfile"), failures)
+        node_security.check(ROOT, run, current_branch(), changed_files_for_stage_scope(), failures)
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)

@@ -48,6 +48,12 @@ def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0"
     return {"version": "2.1.0", "runs": [{"tool": {"driver": {"name": tool, "rules": rules}}, "results": [{"ruleId": rule["id"]} for rule in rules]}]}
 
 
+def _sbom(target: str, *, frontend: bool) -> dict[str, Any]:
+    packages = (("nodejs-26", "26.7.0-r0", "MIT"), ("npm-12", "12.0.2-r2", "Artistic-2.0")) if frontend else (("python", "3.13.14", "PSF-2.0"),)
+    components = [{"type": "library", "name": name, "version": version, "purl": f"pkg:apk/wolfi/{name}@{version}?arch=x86_64&distro=20230201", "licenses": [{"license": {"id": license_id}}]} for name, version, license_id in packages]
+    return {"bomFormat": "CycloneDX", "specVersion": "1.7", "metadata": {"component": {"type": "container", "properties": [{"name": "aquasecurity:trivy:ImageID", "value": target}]}}, "components": components}
+
+
 def _envelope(name: str, payload: dict[str, Any], target: str, tool: str) -> dict[str, Any]:
     digest, size = _digest(payload)
     return {
@@ -64,8 +70,8 @@ def _case() -> dict[str, Any]:
         "backend-grype": _sarif("grype"),
         "frontend-trivy": _sarif("trivy", ()),
         "frontend-grype": _sarif("grype", ()),
-        "backend-sbom": {"sbom": "cyclonedx", "target": BACKEND_CONFIG},
-        "frontend-sbom": {"sbom": "cyclonedx", "target": FRONTEND_CONFIG},
+        "backend-sbom": _sbom(BACKEND_CONFIG, frontend=False),
+        "frontend-sbom": _sbom(FRONTEND_CONFIG, frontend=True),
         "backend-cpython-regressions": {"status": "pass", "config_digest": BACKEND_CONFIG, "patch_sha256": PATCH_SHA256, "checks": {c: {"status": "pass", "seconds": 0.01} for c in TARGET_CVES}},
     }
     envelopes = {
@@ -141,6 +147,29 @@ def test_frontend_runtime_medium_findings_fail_closed() -> None:
     assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
 
 
+def test_issue389_npm12_findings_fail_consensus() -> None:
+    case = _case()
+    for cve, severity in (("CVE-2026-69152","8.2"), ("CVE-2026-69192","8.1"), ("CVE-2026-69198","6.5")):
+        case["reports"]["frontend-grype"] = _sarif("grype", (cve,), severity)
+        _rehash(case, "frontend-grype")
+        assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
+
+
+@pytest.mark.parametrize("mutation", [lambda s:s.clear(), lambda s:s.update(components=[]),
+    lambda s:s["metadata"]["component"]["properties"][0].update(value="sha256:"+"0"*64),
+    lambda s:s["components"][0].update(version="26.6.0-r0"), lambda s:s["components"][1].update(version="12.0.2-r1"),
+    lambda s:s["components"][1].update(licenses=[{"license":{"id":"MIT"}}]),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0"),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0?arch=evil&distro=ubuntu"),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0?arch=x86_64&arch=aarch64&distro=20230201"),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0?arch=x86_64&distro=20230201&foreign=yes")])
+def test_frontend_sbom_identity_packages_and_licenses_fail_closed(mutation: Callable[[dict[str, Any]], None]) -> None:
+    sbom = _sbom(FRONTEND_CONFIG, frontend=True)
+    mutation(sbom)
+    module = _load()
+    assert not module._valid_cyclonedx_sbom(sbom, FRONTEND_CONFIG, module.FRONTEND_SBOM_COMPONENTS, "amd64")
+
+
 def test_backend_medium_findings_retain_the_existing_high_policy() -> None:
     case = _case()
     case["reports"]["backend-grype"] = _sarif("grype", ("CVE-MEDIUM",), "6.5")
@@ -153,7 +182,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     primary = {
         "buildId": "source-bound",
         "architecture": "amd64",
-        "inventory": "1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15",
+        "inventory": "1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",
         "previewModeId": "1" * 32,
         "previewModeSigningKey": "2" * 64,
         "previewModeEncryptionKey": "3" * 64,
@@ -169,14 +198,14 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         "serverActionKey": "B" * 43 + "=",
     }
     assert validator(primary, reproduction) == []
-    reproduction["inventory"] = "1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a"
-    assert validator(primary, reproduction) == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
+    reproduction["inventory"] = "1805:" + "0" * 64
+    assert validator(primary, reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
     reproduction["inventory"] = primary["inventory"]
     for bad_inventory in (None, "", "unreviewed"):
         malformed_primary = {**primary, "inventory": bad_inventory}
         malformed_reproduction = {**reproduction, "inventory": bad_inventory}
         assert validator(malformed_primary, malformed_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
-    wrong_arch_primary = {**primary, "inventory": "1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52"}
+    wrong_arch_primary = {**primary, "inventory": "1803:06e4628f15e836b24128401deedceedeaebe0561bef29f96f3c9de7e2306e3e0"}
     wrong_arch_reproduction = {**reproduction, "inventory": wrong_arch_primary["inventory"]}
     assert validator(wrong_arch_primary, wrong_arch_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
     reproduction["previewModeSigningKey"] = primary["previewModeEncryptionKey"]
@@ -321,14 +350,14 @@ def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
 def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     matches = _load().frontend_inventory_matches
     amd64 = (
-        "1804:55c33102ef9147b311df6e59b4616108df4fdc26e74f0975c6b306cbe7f94e15",
-        "1802:9f07d878443a03e91f94d938b84fb83ed07897bee47fcc13c1f3bd0d32e0931a",
+        "1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",
+        "1803:e9a3cd116280dff5bd1e39833d511f9fa0eb952bbde5f0ffaf4aab0ab2306c9f",
     )
-    arm64 = "1802:57f0e487d68f21d3fa257689364477caa211bd906e7a0f799485eb02ed1dbc52"
+    arm64 = "1803:06e4628f15e836b24128401deedceedeaebe0561bef29f96f3c9de7e2306e3e0"
     assert all(matches("amd64", inventory) for inventory in amd64)
     assert matches("arm64", arm64)
     assert not matches("amd64", arm64)
-    assert not matches("arm64", amd64[0])
+    assert all(not matches("arm64", inventory) for inventory in amd64)
     assert not matches("amd64", amd64[0][:-1] + "0")
     assert not matches("unknown", amd64[0])
 
@@ -347,7 +376,9 @@ def test_frontend_inventory_rejection_survives_optimized_python() -> None:
         check=False,
     )
     assert completed.returncode != 0
-    assert completed.stderr.strip() == "Frontend runtime inventory is not reviewed."
+    assert completed.stderr.strip() == (
+        "Frontend runtime inventory is not reviewed: architecture=unknown inventory=unreviewed"
+    )
 
 
 @pytest.mark.parametrize(
@@ -478,7 +509,8 @@ def test_wrapper_runs_both_scanners_and_persists_all_raw_and_envelope_artifacts(
     )
     assert completed.returncode == 0, completed.stderr
     calls = log.read_text(encoding="utf-8")
-    assert calls.count("trivy image") == 2 and calls.count("grype ") == 2
+    assert calls.count("trivy image") == 4 and calls.count("grype ") == 2
+    assert calls.count("--format cyclonedx") == 2
     assert all((reports / f"{name}.envelope.json").is_file() for name in ARTIFACTS)
     assert all((reports / f"{name}.raw.sarif.json").is_file() for name in ARTIFACTS[:4])
     assert all((reports / f"{name}.raw.json").is_file() for name in ARTIFACTS[4:])

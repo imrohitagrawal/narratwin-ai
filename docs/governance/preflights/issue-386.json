@@ -1,0 +1,51 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 386,
+  "branch": "cut1-process-386-modular-route-enforcement",
+  "objective": "Under Issue #386, parent dependency evidence at https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5198721873, blocker evidence at https://github.com/imrohitagrawal/narratwin-ai/issues/384#issuecomment-5198721867, ledger https://github.com/imrohitagrawal/narratwin-ai/issues/386#issuecomment-5198730383, clarification https://github.com/imrohitagrawal/narratwin-ai/issues/386#issuecomment-5198772765, eight-path reset https://github.com/imrohitagrawal/narratwin-ai/issues/386#issuecomment-5201427308, and exact nine-path owner reset https://github.com/imrohitagrawal/narratwin-ai/issues/386#issuecomment-5204350677, extract new Cut 1 exact-route scope and budget mechanics into one Stage 8 sidecar while keeping every unchanged legacy cap, and absorb only Issue #385 stale unsupported-language test-oracle repair. Register exact routes for Issues #386, #385, #384, and #383; isolate the generic legacy route-enumeration test with a bounded mock while its dedicated Issue #366 tests retain the genuine unrestricted fixed-base complete-snapshot calculation; require the negative oracle to use a schema-valid tag absent from the governed supported catalog while German remains supported; reject missing, extra, lookalike, stale-base, deletion-credit, index/worktree-cancellation, failed, malformed, binary-text, wrong-path, untracked-text, non-regular binary, and oversized-binary evidence. Preserve Issue #384 and #383 history and make no runtime/catalog/asset/provider/model/dependency/workflow/UI/TTS/renderer/media/deployment/release/public/production change. Evidence requires committed mutation RED before GREEN, focused hostile-Git/integration/acceptance tests, full local and CI gates, exact-head review, human inspection, and eligible latest-head non-author GitHub approval. Stop for a tenth path, cap increase, budget/base/authority/history drift, circular import, runtime/catalog change, failed mandatory gate requiring another repair, unresolved High/Critical finding, or missing external approval.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-386.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "tests/acceptance/test_issue280_local_e2e_demo.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-386.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "tests/acceptance/test_issue280_local_e2e_demo.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "docs/ADR/",
+      "docs/API_CONTRACT.md",
+      "docs/ARCHITECTURE.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_quality_stage.py",
+      "tests/api/"
+    ]
+  }
+}

@@ -563,14 +563,24 @@ the complete `origin/main` merge-base-to-exact-head candidate rather than the
 latest push delta. PR/review validation keeps the reviewed base and binds the
 checkout to the GitHub event head; scope output remains supporting evidence.
 
-Issue `#384` is the governance-only prerequisite discovered during Issue
-`#383` preflight review. Exact branch `stage8-384-presenter-asset-route`
-registers the seven-path #384 route and the exact seven-path
-`stage8-383-presenter-assets` route with fail-closed complete-snapshot line and
-binary-size budgets. After #384 passes merged-main acceptance, #383 may merge
+Issue `#386` is the governance-only prerequisite for the mandatory checker
+context-cap failure discovered at #384 head `94e7830`. It modularizes new exact
+route enforcement without raising legacy caps and pre-registers final routes
+for #385, #384, and #383. Its owner-approved ninth path isolates only the generic
+legacy route-enumeration test under a 20-line charge cap while dedicated Issue
+Issue #366 tests retain genuine unrestricted fixed-base snapshot coverage; the eighth
+path absorbs #385's stale Issue #280 oracle while preserving German support. After
+merged-main acceptance, #385 closes as absorbed; #384 then merges current main
+and removes redundant checker/test diffs through normal commits. The dependency
+order is #386 → #385 closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
+
+After accepted PR `#388`, Issue `#384` resumes through the sidecar's exact
+five-path documentation/preflight route and removes its redundant monolithic
+checker/test implementation. Its current-main complete-snapshot budget is 500
+aggregate and 160 per path. After #384 merged-main acceptance, #383 may merge
 current main normally, correct its licensing/provenance/human-review preflight,
-and obtain fresh adversarial review before any generation. The serialized Cut
-1 path is #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
+and obtain fresh adversarial review before any generation. The remaining order
+is #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
 
 ## Phase 1 Closure Branch Scope
 
@@ -2415,6 +2425,19 @@ closed. Scope converges only frontend development-tool `brace-expansion` 5.0.8-t
 `cryptography` 49.0.0-to-50.0.0 security evidence. Issue #359 remains open and its branch immutable until this
 convergence merges and merged-main verification passes; Issue #150 expiry and preserved incomplete Issue #358 do
 not change. Product, provider, runtime, deployment, release, public, and production authority remain excluded.
+
+## Issue #389 exact frontend runtime security route
+
+Issue `#389` is the mandatory security prerequisite for blocked PR `#388`.
+Branch `cut1-process-389-frontend-runtime-npm12-security` starts from
+`48fc32a2689c9bbc03742d774f3eadb8a500dafc` and owns exactly the fourteen
+paths in its GovernancePreflightV1 artifact. Its 900-line aggregate and
+180/220/40 route-file ceilings use additions plus deletions without deletion
+credit. The route pins the signed fixed Chainguard index, refreshes measured
+architecture inventories, and preserves both-scanner, SBOM, runtime-hardening,
+and reproducibility enforcement. PR `#388` stays blocked until #389 merges
+and merged-main acceptance passes. No application, provider, presenter, media,
+deployment, release, public, or production work is authorized.
 
 ## Issue #372 citation-lineage prerequisite repair
 
