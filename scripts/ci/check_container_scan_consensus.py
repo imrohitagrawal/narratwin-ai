@@ -58,6 +58,10 @@ FRONTEND_INVENTORIES = {
         ("1803:06e4628f15e836b24128401deedceedeaebe0561bef29f96f3c9de7e2306e3e0",)
     ),
 }
+FRONTEND_SBOM_COMPONENTS = {
+    "nodejs-26": ("26.7.0-r0", "MIT"),
+    "npm-12": ("12.0.2-r2", "Artistic-2.0"),
+}
 
 
 def frontend_inventory_matches(architecture: str, inventory: str) -> bool:
@@ -114,6 +118,48 @@ def _valid_vex(vex: dict[str, Any], backend_config: str, component_purl: str) ->
         "component": component_purl,
         "vulnerabilities": list(TARGET_CVES),
     }
+
+
+def _valid_cyclonedx_sbom(
+    report: dict[str, Any], target: str, required: dict[str, tuple[str, str]]
+) -> bool:
+    metadata = report.get("metadata", {}).get("component", {})
+    components = report.get("components")
+    if (
+        report.get("bomFormat") != "CycloneDX"
+        or report.get("specVersion") != "1.7"
+        or metadata.get("type") != "container"
+        or not isinstance(components, list)
+        or not 0 < len(components) <= 5000
+    ):
+        return False
+    image_ids = {
+        item.get("value")
+        for item in metadata.get("properties", [])
+        if isinstance(item, dict) and item.get("name") == "aquasecurity:trivy:ImageID"
+    }
+    if image_ids != {target}:
+        return False
+    for name, (version, license_id) in required.items():
+        matches = [item for item in components if item.get("name") == name]
+        if len(matches) != 1:
+            return False
+        component = matches[0]
+        licenses = {
+            item.get("license", {}).get("id")
+            for item in component.get("licenses", [])
+            if isinstance(item, dict)
+        }
+        if (
+            component.get("type") != "library"
+            or component.get("version") != version
+            or not str(component.get("purl", "")).startswith(
+                f"pkg:apk/wolfi/{name}@{version}"
+            )
+            or licenses != {license_id}
+        ):
+            return False
+    return True
 
 
 def frontend_reproduction_findings(primary: dict[str, Any], reproduction: dict[str, Any]) -> list[str]:
@@ -180,6 +226,13 @@ def evaluate_consensus(
 
     if "IMAGE_IDENTITY_INVALID" in findings:
         return {"status": "fail", "fixed": [], "findings": findings, "artifacts": list(ARTIFACTS), "raw_artifacts": raw_artifacts}
+
+    if not _valid_cyclonedx_sbom(reports["backend-sbom"], backend_config, {}):
+        _add(findings, "SBOM_EVIDENCE_INVALID")
+    if not _valid_cyclonedx_sbom(
+        reports["frontend-sbom"], frontend_config, FRONTEND_SBOM_COMPONENTS
+    ):
+        _add(findings, "SBOM_EVIDENCE_INVALID")
 
     expected_manifest = {
         "schema_version": "CPythonSecurityBackportsV1",

@@ -1193,6 +1193,11 @@ Required update rules:
 - Both-scanner Medium cleanliness, SBOM, non-root runtime hardening,
   reproducibility, exact-head review/approval, and merged-main acceptance remain
   mandatory. PR `#388` remains blocked until that closeout completes.
+- The Issue `#389` route now measures committed, staged-index, and complete
+  worktree budgets independently so cancellation cannot hide a charge. Its
+  scanner evidence is a real CycloneDX 1.7 document bound to the exact image,
+  Node 26.7.0-r0/MIT, and npm-12 12.0.2-r2/Artistic-2.0 records; the former
+  target-only marker is rejected.
 - No application, provider, presenter, media, deployment, release,
   public-availability, production-readiness, suppression, or waiver is added.
 

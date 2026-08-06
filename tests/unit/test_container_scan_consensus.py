@@ -200,7 +200,10 @@ def test_issue389_npm12_findings_fail_consensus() -> None:
     "mutation",
     [
         lambda sbom: sbom.clear(),
-        lambda sbom: sbom.update({"schema": "cyclonedx", "target": FRONTEND_CONFIG}),
+        lambda sbom: (
+            sbom.clear(),
+            sbom.update({"schema": "cyclonedx", "target": FRONTEND_CONFIG}),
+        ),
         lambda sbom: sbom.update(components=[]),
         lambda sbom: sbom["metadata"]["component"]["properties"][0].update(
             value="sha256:" + "0" * 64
@@ -567,7 +570,8 @@ def test_wrapper_runs_both_scanners_and_persists_all_raw_and_envelope_artifacts(
     )
     assert completed.returncode == 0, completed.stderr
     calls = log.read_text(encoding="utf-8")
-    assert calls.count("trivy image") == 2 and calls.count("grype ") == 2
+    assert calls.count("trivy image") == 4 and calls.count("grype ") == 2
+    assert calls.count("--format cyclonedx") == 2
     assert all((reports / f"{name}.envelope.json").is_file() for name in ARTIFACTS)
     assert all((reports / f"{name}.raw.sarif.json").is_file() for name in ARTIFACTS[:4])
     assert all((reports / f"{name}.raw.json").is_file() for name in ARTIFACTS[4:])

@@ -133,6 +133,9 @@ def _charges(output: str, failures: list[str]) -> tuple[int, dict[str, int]]:
         if len(fields) != 3 or not fields[0].isdigit() or not fields[1].isdigit():
             failures.append("Issue #389 charged-line evidence is malformed or binary.")
             return 0, {}
+        if fields[2] not in ISSUE389_SECURITY_FILES or fields[2] in paths:
+            failures.append("Issue #389 charged-line evidence has a foreign or duplicate path.")
+            return 0, {}
         charge = int(fields[0]) + int(fields[1])
         total += charge
         paths[fields[2]] = charge
@@ -172,12 +175,19 @@ def check_issue389_route(
         return
     results = [
         run(["git", "diff", "--numstat", "--no-renames", f"{ISSUE389_BASE}..HEAD", "--"]),
+        run(["git", "diff", "--cached", "--numstat", "--no-renames", ISSUE389_BASE, "--"]),
         run(["git", "diff", "--numstat", "--no-renames", ISSUE389_BASE, "--"]),
     ]
-    if any(result.returncode for result in results):
+    untracked = run(["git", "ls-files", "--others", "--exclude-standard", "--"])
+    if any(result.returncode for result in results) or untracked.returncode:
         failures.append("Issue #389 charged-line evidence failed closed.")
         return
+    if untracked.stdout.strip():
+        failures.append("Issue #389 untracked-path evidence is not allowed.")
     charge_sets = [_charges(result.stdout, failures) for result in results]
+    observed_paths = set().union(*(set(value[1]) for value in charge_sets))
+    if observed_paths != ISSUE389_SECURITY_FILES:
+        failures.append("Issue #389 charged-line snapshots do not cover the exact route.")
     total = max(value[0] for value in charge_sets)
     per_file = {
         path: max(values[1].get(path, 0) for values in charge_sets)

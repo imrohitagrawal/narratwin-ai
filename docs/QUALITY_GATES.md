@@ -1094,3 +1094,11 @@ architecture-bound inventory, and pass the existing runtime-hardening,
 reproduction, SBOM, and Trivy/Grype consensus checks through Medium. The old
 digest, npm r1, mutable tags, scanner suppression, waiver, and product or
 release expansion are prohibited.
+
+The route charges the maximum of committed `BASE..HEAD`, staged-index, and
+complete worktree-versus-base numstat snapshots. Every snapshot rejects binary,
+malformed, duplicate, and foreign paths, while any untracked file fails the
+clean-worktree contract. Trivy must persist real CycloneDX 1.7 SBOM bytes for
+the exact inspected image IDs. The frontend document must contain exactly the
+reviewed Node 26.7.0-r0/MIT and npm-12 12.0.2-r2/Artistic-2.0 package records;
+markers, empty components, mismatched identity, version, or license fail.

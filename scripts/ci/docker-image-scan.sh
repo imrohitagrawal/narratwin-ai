@@ -23,6 +23,11 @@ scan_trivy() {
   trivy image --severity "${severity}" --exit-code 1 --format sarif --output "${output}" "${image}"
 }
 
+scan_sbom_trivy() {
+  local image="$1" output="$2"
+  trivy image --format cyclonedx --output "${output}" "${image}"
+}
+
 scan_grype() {
   local image="$1" output="$2" severity="${3:-high}"
   grype "${image}" --fail-on "${severity}" --output "sarif=${output}"
@@ -209,15 +214,6 @@ prepare_frontend_images() {
     -t "${FRONTEND_REPRO_IMAGE}" .
 }
 
-write_json_artifact() {
-  local output="$1" target="$2" kind="$3"
-  python3 - "$output" "$target" "$kind" <<'PY'
-import json, sys
-path, target, kind = sys.argv[1:]
-json.dump({"schema": kind, "target": target}, open(path, "w", encoding="utf-8"), sort_keys=True)
-PY
-}
-
 write_envelope() {
   local name="$1" raw="$2" target="$3" arch="$4" tool="$5" exit_code="$6"
   python3 - "$REPORT_DIR/${name}.envelope.json" "$raw" "$name" "$target" "$arch" "$tool" "$SESSION" "$exit_code" <<'PY'
@@ -264,8 +260,8 @@ scan_grype "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-grype.raw.sarif.json" "me
 fg=$?
 set -e
 
-write_json_artifact "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_CONFIG}" cyclonedx
-write_json_artifact "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_CONFIG}" cyclonedx
+scan_sbom_trivy "${BACKEND_IMAGE}" "${REPORT_DIR}/backend-sbom.raw.json"
+scan_sbom_trivy "${FRONTEND_IMAGE}" "${REPORT_DIR}/frontend-sbom.raw.json"
 if [ "${SKIP_POLICY_EVALUATION:-0}" = "1" ]; then
   python3 - "${REPORT_DIR}/backend-cpython-regressions.raw.json" "${BACKEND_CONFIG}" <<'PY'
 import json, sys
@@ -305,8 +301,8 @@ write_envelope backend-trivy "${REPORT_DIR}/backend-trivy.raw.sarif.json" "${BAC
 write_envelope backend-grype "${REPORT_DIR}/backend-grype.raw.sarif.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" grype "$bg"
 write_envelope frontend-trivy "${REPORT_DIR}/frontend-trivy.raw.sarif.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" trivy "$ft"
 write_envelope frontend-grype "${REPORT_DIR}/frontend-grype.raw.sarif.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" grype "$fg"
-write_envelope backend-sbom "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" sbom 0
-write_envelope frontend-sbom "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" sbom 0
+write_envelope backend-sbom "${REPORT_DIR}/backend-sbom.raw.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" trivy-cyclonedx 0
+write_envelope frontend-sbom "${REPORT_DIR}/frontend-sbom.raw.json" "${FRONTEND_CONFIG}" "${FRONTEND_ARCH}" trivy-cyclonedx 0
 write_envelope backend-cpython-regressions "${REPORT_DIR}/backend-cpython-regressions.raw.json" "${BACKEND_CONFIG}" "${BACKEND_ARCH}" cpython-regressions 0
 
 python3 - "$REPORT_DIR" "$BACKEND_CONFIG" "$FRONTEND_CONFIG" "$BACKEND_ARCH" "$FRONTEND_ARCH" "$SESSION" <<'PY'
