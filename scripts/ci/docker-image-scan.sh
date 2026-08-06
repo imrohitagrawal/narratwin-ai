@@ -84,7 +84,7 @@ expected = {
   "Labels": {
     "dev.chainguard.image.title": "node", "dev.chainguard.package.main": "",
     "org.opencontainers.image.authors": "Chainguard Team https://www.chainguard.dev/",
-    "org.opencontainers.image.created": "2026-08-03T22:17:06Z",
+    "org.opencontainers.image.created": "2026-08-05T21:53:32Z",
     "org.opencontainers.image.source": "https://github.com/chainguard-images/images/tree/main/images/node",
     "org.opencontainers.image.title": "node",
     "org.opencontainers.image.url": "https://images.chainguard.dev/directory/image/node/overview",

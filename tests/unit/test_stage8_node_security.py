@@ -82,6 +82,7 @@ def test_issue389_fixed_runtime_pin_and_package_contract_fail_closed() -> None:
     assert security.FRONTEND_NODE_RUNTIME_IMAGE == expected_runtime
     assert f"FROM {expected_runtime} AS runner" in dockerfile
     assert 'process.version!=="v26.7.0"' in scan
+    assert '"org.opencontainers.image.created": "2026-08-05T21:53:32Z"' in scan
     assert security.FRONTEND_RUNTIME_NODE_VERSION == "26.7.0"
     assert security.FRONTEND_RUNTIME_NPM_PACKAGE == "npm-12 12.0.2-r2"
     for mutation in (
