@@ -59,6 +59,19 @@ production-readiness claim. Later child work requires its own exact issue,
 branch, preflight, RED/GREEN evidence, PR approval, merge, and merged-main
 acceptance.
 
+Issue `#386` keeps the monolithic Stage 8 checker below its unchanged 500-line
+legacy caps by moving new Cut 1 route mechanics to
+`scripts/quality/stage8_cut1_routes.py`. Its exact nine-path #386 route absorbs
+the stale Issue #280 unsupported-language oracle without changing German support
+or runtime/catalog behavior and isolates only the generic route-enumeration test
+under a 20-line charge cap. The dedicated Issue #366 tests retain the genuine
+unrestricted fixed-base index/worktree snapshot. The sidecar pre-registers routes for
+Issues `#385`, `#384`, and `#383`; it requires complete path sets, current-main
+ancestry (fixed base for #386), additions-plus-deletions budgets over the larger
+index/worktree snapshot, fail-closed malformed/binary/untracked text evidence,
+and regular bounded #383 portrait files. Lookalikes inherit no authority. This
+is governance enforcement, not product, asset, provider, or media approval.
+
 ## Required Make Targets
 
 The `Makefile` must expose:
