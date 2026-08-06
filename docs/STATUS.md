@@ -56,8 +56,9 @@ Use it to answer:
   release, public-availability, trademark-registration, or production claim is established.
   PR `#388` resolved both prerequisites and merged as
   `ee195862e5385b1fb307199dd7cd560500011f55`; Issues `#386` and `#385` are
-  closed after merged-main acceptance. Issue `#384` now resumes only through its
-  five-path modular documentation/preflight route before Issue `#383` may act.
+  closed after merged-main acceptance. Owner comment `5205259677` resets Issue
+  `#384` to an exact eight-path modular route with unchanged 500 aggregate cap,
+  bounded digest/route/test authority, and no product scope before Issue `#383` may act.
   No playable-media, deployment, release, public-availability,
   trademark-registration, or production-readiness claim is established.
 - Last reviewed date: 2026-08-06

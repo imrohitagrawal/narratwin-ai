@@ -2,11 +2,14 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 384,
   "branch": "stage8-384-presenter-asset-route",
-  "objective": "Under owner-authored Issue #384, parent Issue #366 dependency evidence at https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5198601907, the pre-implementation ledger at https://github.com/imrohitagrawal/narratwin-ai/issues/384#issuecomment-5198618791, and accepted PR #388, reconcile this governance-only branch to the modular sidecar's pre-registered exact routes for Issue #384 and the stopped Issue #383 branch. Restrict Issue #384 to five documentation/preflight paths under the sidecar's current-main complete-snapshot budget of 500 aggregate and 160 per path; remove its redundant monolithic checker/test implementation while preserving the sidecar's fail-closed Issue #383 text and binary contract. Preserve Issue #383 at preflight-only head 19f367811e653c21c6986e0f33cb3c19b68286d1 until this prerequisite passes merged-main acceptance. Add no portrait, product/runtime, registry, provider/model, dependency, workflow, Docker, UI, TTS, renderer, generated media, cloning, personal likeness, deployment, release, public availability/distribution, legal, trademark-registration, or production change. Evidence requires the preserved committed RED/GREEN history, normal forward merge, focused and full local/CI gates, adversarial exact-head review, human authority/scope inspection, and eligible latest-head non-author GitHub approval. Stop for a sixth path, declared budget breach, authority/history drift, any Issue #383 generation or asset action, dependency/provider/license/legal expansion, failed mandatory gate requiring separate repair, unresolved High/Critical finding, or missing external approval.",
+  "objective": "Under owner-authored Issue #384, parent Issue #366 dependency evidence at https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5198601907, the pre-implementation ledger at https://github.com/imrohitagrawal/narratwin-ai/issues/384#issuecomment-5198618791, accepted PR #388, and the eight-path owner reset at https://github.com/imrohitagrawal/narratwin-ai/issues/384#issuecomment-5205259677, reconcile this governance-only branch to the modular sidecar's exact routes for Issue #384 and the stopped Issue #383 branch. Restrict Issue #384 to exactly eight paths under a current-main complete-snapshot budget of 500: five governance/preflight paths capped at 160, the checker capped at 10 solely for exact C1_DOC_SHA rebinding, and the sidecar plus its test capped at 20 each solely for route/cap registration and regression expectations. Preserve the sidecar's fail-closed Issue #383 text and binary contract and Issue #383's preflight-only head 19f367811e653c21c6986e0f33cb3c19b68286d1 until this prerequisite passes merged-main acceptance. Add no portrait, product/runtime, registry, provider/model, dependency, workflow, Docker, UI, TTS, renderer, generated media, cloning, personal likeness, deployment, release, public availability/distribution, legal, trademark-registration, or production change. Evidence requires the preserved committed RED/GREEN history, normal forward merge, focused and full local/CI gates, adversarial exact-head review, human authority/scope inspection, and eligible latest-head non-author GitHub approval. Stop for a ninth path, declared budget breach, authority/history drift, any Issue #383 generation or asset action, dependency/provider/license/legal expansion, failed mandatory gate requiring separate repair, unresolved High/Critical finding, or missing external approval.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
       "docs/governance/preflights/issue-384.json",
+      "scripts/quality/check_stage8_docs.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
@@ -14,6 +17,9 @@
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-384.json",
+      "scripts/quality/check_stage8_docs.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
@@ -35,8 +41,7 @@
       "docs/SECURITY_AND_PRIVACY.md",
       "docs/THIRD_PARTY_NOTICES.md",
       "scripts/guardrails_check.py",
-      "scripts/quality/",
-      "tests/"
+      "scripts/quality/check_quality_stage.py"
     ]
   }
 }

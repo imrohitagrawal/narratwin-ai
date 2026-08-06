@@ -72,13 +72,13 @@ index/worktree snapshot, fail-closed malformed/binary/untracked text evidence,
 and regular bounded #383 portrait files. Lookalikes inherit no authority. This
 is governance enforcement, not product, asset, provider, or media approval.
 
-Issue `#384` resumes only through the modular sidecar's pre-registered exact
-five-path documentation/preflight route. It charges additions plus deletions
-over the larger current-main index/worktree snapshot, caps the aggregate at 500
-and every path at 160, and rejects missing, extra, lookalike, malformed, binary,
-or untracked text evidence. The sidecar separately retains Issue `#383`'s exact
-seven-path text/binary contract. No monolithic checker/test change, portrait,
-asset implementation, dependency, provider, or product behavior is authorized.
+Issue `#384` resumes through an owner-reset exact eight-path modular route. It
+charges additions plus deletions over the larger current-main index/worktree
+snapshot and caps the aggregate at 500: five governance/preflight paths at 160,
+the checker at 10 solely for the exact bound digest, and the sidecar plus its
+test at 20 each solely for route/cap enforcement. The sidecar separately retains
+Issue `#383`'s exact seven-path text/binary contract. No portrait, asset
+implementation, dependency, provider, or product behavior is authorized.
 
 ## Required Make Targets
 

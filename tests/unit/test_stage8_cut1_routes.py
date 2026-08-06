@@ -47,6 +47,9 @@ EXPECTED = {
     },
     "stage8-384-presenter-asset-route": {
         "docs/governance/preflights/issue-384.json",
+        "scripts/quality/check_stage8_docs.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
@@ -76,6 +79,9 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert set(artifact["scope"]["required"]) == EXPECTED[routes.ISSUE386_BRANCH]
     assert set(artifact["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE386_BRANCH]
     assert routes.TEXT_LIMITS[routes.ISSUE386_BRANCH]["tests/unit/test_stage8_quality_gate.py"] == 20
+    assert routes.TEXT_LIMITS[routes.ISSUE384_BRANCH]["scripts/quality/check_stage8_docs.py"] == 10
+    assert routes.TEXT_LIMITS[routes.ISSUE384_BRANCH]["scripts/quality/stage8_cut1_routes.py"] == 20
+    assert routes.TEXT_LIMITS[routes.ISSUE384_BRANCH]["tests/unit/test_stage8_cut1_routes.py"] == 20
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source

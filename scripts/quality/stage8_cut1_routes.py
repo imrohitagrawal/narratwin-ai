@@ -33,6 +33,9 @@ ROUTES = {
     },
     ISSUE384_BRANCH: {
         "docs/governance/preflights/issue-384.json",
+        "scripts/quality/check_stage8_docs.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
@@ -66,7 +69,11 @@ TEXT_LIMITS = {
         path: 120 if path == "tests/acceptance/test_issue280_local_e2e_demo.py" else 100
         for path in ROUTES[ISSUE385_BRANCH]
     },
-    ISSUE384_BRANCH: {path: 160 for path in ROUTES[ISSUE384_BRANCH]},
+    ISSUE384_BRANCH: {
+        path: 10 if path == "scripts/quality/check_stage8_docs.py"
+        else 20 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py"}
+        else 160 for path in ROUTES[ISSUE384_BRANCH]
+    },
     ISSUE383_BRANCH: {
         path: 260 if path == "tests/unit/test_cut1_presenter_assets.py" else 160
         for path in ROUTES[ISSUE383_BRANCH] - ISSUE383_BINARY_FILES
