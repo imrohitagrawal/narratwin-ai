@@ -19,10 +19,9 @@ SCOPES = {TRANSITION: set("docs/governance/preflights/issue-346.json scripts/qua
         "tests/unit/test_stage8_quality_gate.py docs/EVAL_REPORT.md docs/STAGE_ISSUE_PLAN.md "
         "evals/smoke/stage5_grounded_script_dataset.json scripts/ci/heartbeat2_evidence.py "
         "tests/unit/test_phase1_closure_docs.py scripts/quality/phase1_closure/legacy.py").split()),
-    A2_2: set(("docs/governance/preflights/issue-349.json docs/STAGE2_ARCHITECTURE_CONTRACT.json "
-        "scripts/quality/check_stage2_docs.py tests/unit/test_stage8_quality_gate.py docs/STATUS.md "
-        "scripts/quality/check_stage8_docs.py docs/ADR/0002-rag-storage.md docs/QUALITY_GATES.md "
-        "docs/STAGE_ISSUE_PLAN.md").split()),
+    A2_2: set("""docs/governance/preflights/issue-349.json docs/STAGE2_ARCHITECTURE_CONTRACT.json docs/STATUS.md
+        scripts/quality/check_stage2_docs.py tests/unit/test_stage8_quality_gate.py docs/STAGE_ISSUE_PLAN.md
+        scripts/quality/check_stage8_docs.py docs/ADR/0002-rag-storage.md docs/QUALITY_GATES.md""".split()),
     QP: QP_SCOPE, CP: CP_SCOPE, CUT1_REAL_MEDIA_TRANSITION: CUT1_REAL_MEDIA_TRANSITION_SCOPE, **a23b.A23_ROUTES}
 def load(relative: str, name: str) -> ModuleType:
     spec=importlib.util.spec_from_file_location(name,Path(__file__).parents[2]/relative);assert spec and spec.loader
@@ -109,7 +108,8 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     (tmp_path / "forbidden/unstaged-source.txt").rename(tmp_path / "unstaged-destination.txt")
     put(tmp_path, "forbidden/cancelled.txt", "staged"); git(tmp_path, "add", "forbidden/cancelled.txt")
     put(tmp_path, "forbidden/cancelled.txt", "original"); put(tmp_path, "untracked\nnewline.txt", "new")
-    calls=[];record=lambda a:(calls.append(a),sp.run(a,cwd=tmp_path,text=True,capture_output=True))[1]
+    calls:list[list[str]]=[]
+    def record(a:list[str])->Any:calls.append(a);return sp.run(a,cwd=tmp_path,text=True,capture_output=True)
     m=monkeypatch; collect=stage8.changed_files_for_stage_scope; raises=pytest.raises
     m.setattr(stage8,"ROOT",tmp_path); m.setattr(stage8,"run",record); m.delenv("GITHUB_EVENT_PATH",raising=False)
     m.setenv("GITHUB_EVENT_NAME","push"); m.setenv("NARRATWIN_HEAD_REF","feature")
