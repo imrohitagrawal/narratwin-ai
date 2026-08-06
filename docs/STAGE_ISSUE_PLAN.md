@@ -581,7 +581,7 @@ and the sidecar plus focused test at 20 each only for route/cap enforcement.
 After #384 merged-main acceptance, #383 may merge current main normally, correct
 its licensing/provenance/human-review preflight, and obtain fresh adversarial
 review before any generation. The remaining order is
-#384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
+Issue #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
 
 ## Phase 1 Closure Branch Scope
 

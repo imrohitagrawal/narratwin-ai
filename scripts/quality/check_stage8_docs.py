@@ -32,7 +32,7 @@ C1_BASE, C1_LIMIT = "a69903fea50c22e12926d7e13dffdc74e55dfb65", 900
 C1_FILE_LIMITS = {"scripts/quality/check_stage8_docs.py":350,"tests/unit/test_stage8_quality_gate.py":300}
 C1_DOCS=("docs/QUALITY_GATES.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md")
 C1_BOUND=("docs/governance/preflights/issue-366.json",*C1_DOCS)
-C1_DOC_SHA="47bf48af6ac692436797179f3fd2ab43ca6160b1647c6f8992bbc4845e9ffd36"
+C1_DOC_SHA="aa97ad3ad67d65f79fa21f3c9c8d89ab91594ca70e1fa9ae01c495221b3c2fbe"
 QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
