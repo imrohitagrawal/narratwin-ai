@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from scripts.quality import check_stage8_docs as stage8
@@ -111,3 +113,92 @@ def test_issue389_exact_route_scope_and_budgets_fail_closed(monkeypatch: Any) ->
         "tests/unit/test_stage8_node_security.py": 220,
         "scripts/quality/check_stage8_docs.py": 40,
     }
+
+
+def _git_result(stdout: str = "", returncode: int = 0) -> SimpleNamespace:
+    return SimpleNamespace(stdout=stdout, returncode=returncode)
+
+
+def _issue389_numstat(charge: int = 1) -> str:
+    return "\n".join(
+        f"{charge}\t0\t{path}" for path in sorted(security.ISSUE389_SECURITY_FILES)
+    )
+
+
+def test_issue389_route_measures_index_and_rejects_staged_cancellation() -> None:
+    commands: list[tuple[str, ...]] = []
+
+    def run(command: list[str]) -> SimpleNamespace:
+        commands.append(tuple(command))
+        if command[:3] == ["git", "rev-parse", "HEAD^{commit}"]:
+            return _git_result("f" * 40 + "\n")
+        if command[:2] == ["git", "merge-base"]:
+            return _git_result(security.ISSUE389_BASE + "\n")
+        if "--cached" in command:
+            return _git_result("901\t0\tfrontend/Dockerfile\n")
+        if command[:3] == ["git", "ls-files", "--others"]:
+            return _git_result()
+        return _git_result(_issue389_numstat())
+
+    failures: list[str] = []
+    security.check_issue389_route(stage8.ROOT, run, failures, True)
+    assert "Issue #389 exceeds its 900 charged-line budget." in failures
+    assert any(command[:3] == ("git", "diff", "--cached") for command in commands)
+    assert any(command[:3] == ("git", "ls-files", "--others") for command in commands)
+
+
+def test_issue389_charge_evidence_rejects_duplicate_and_foreign_paths() -> None:
+    for output in (
+        "1\t0\tfrontend/Dockerfile\n2\t0\tfrontend/Dockerfile\n",
+        "1\t0\tforeign/path.py\n",
+        "-\t-\tfrontend/Dockerfile\n",
+    ):
+        failures: list[str] = []
+        security._charges(output, failures)
+        assert failures
+
+
+def test_issue389_route_rejects_untracked_and_failed_git_evidence() -> None:
+    def run(command: list[str]) -> SimpleNamespace:
+        if command[:3] == ["git", "rev-parse", "HEAD^{commit}"]:
+            return _git_result("f" * 40 + "\n")
+        if command[:2] == ["git", "merge-base"]:
+            return _git_result(security.ISSUE389_BASE + "\n")
+        if command[:3] == ["git", "ls-files", "--others"]:
+            return _git_result("frontend/Dockerfile\n")
+        return _git_result(_issue389_numstat())
+
+    failures: list[str] = []
+    security.check_issue389_route(stage8.ROOT, run, failures, True)
+    assert "Issue #389 untracked-path evidence is not allowed." in failures
+
+    def failed_run(command: list[str]) -> SimpleNamespace:
+        if command[:3] == ["git", "rev-parse", "HEAD^{commit}"]:
+            return _git_result("f" * 40 + "\n")
+        if command[:2] == ["git", "merge-base"]:
+            return _git_result(security.ISSUE389_BASE + "\n")
+        return _git_result(returncode=2)
+
+    failures = []
+    security.check_issue389_route(stage8.ROOT, failed_run, failures, True)
+    assert "Issue #389 charged-line evidence failed closed." in failures
+
+
+def test_issue389_per_file_budget_uses_largest_snapshot() -> None:
+    def run(command: list[str]) -> SimpleNamespace:
+        if command[:3] == ["git", "rev-parse", "HEAD^{commit}"]:
+            return _git_result("f" * 40 + "\n")
+        if command[:2] == ["git", "merge-base"]:
+            return _git_result(security.ISSUE389_BASE + "\n")
+        if command[:3] == ["git", "ls-files", "--others"]:
+            return _git_result()
+        if "--cached" in command:
+            return _git_result("181\t0\tscripts/quality/stage8_node_security.py\n")
+        return _git_result(_issue389_numstat())
+
+    failures: list[str] = []
+    security.check_issue389_route(stage8.ROOT, run, failures, True)
+    assert (
+        "Issue #389 charge for scripts/quality/stage8_node_security.py exceeds 180."
+        in failures
+    )

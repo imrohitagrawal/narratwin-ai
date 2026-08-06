@@ -48,6 +48,49 @@ def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0"
     return {"version": "2.1.0", "runs": [{"tool": {"driver": {"name": tool, "rules": rules}}, "results": [{"ruleId": rule["id"]} for rule in rules]}]}
 
 
+def _sbom(target: str, *, frontend: bool) -> dict[str, Any]:
+    components = [
+        {
+            "type": "library",
+            "name": "python",
+            "version": "3.13.14",
+            "purl": "pkg:apk/alpine/python@3.13.14",
+            "licenses": [{"license": {"id": "PSF-2.0"}}],
+        }
+    ]
+    if frontend:
+        components = [
+            {
+                "type": "library",
+                "name": "nodejs-26",
+                "version": "26.7.0-r0",
+                "purl": "pkg:apk/wolfi/nodejs-26@26.7.0-r0",
+                "licenses": [{"license": {"id": "MIT"}}],
+            },
+            {
+                "type": "library",
+                "name": "npm-12",
+                "version": "12.0.2-r2",
+                "purl": "pkg:apk/wolfi/npm-12@12.0.2-r2",
+                "licenses": [{"license": {"id": "Artistic-2.0"}}],
+            },
+        ]
+    return {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.7",
+        "metadata": {
+            "component": {
+                "type": "container",
+                "name": "image",
+                "properties": [
+                    {"name": "aquasecurity:trivy:ImageID", "value": target}
+                ],
+            }
+        },
+        "components": components,
+    }
+
+
 def _envelope(name: str, payload: dict[str, Any], target: str, tool: str) -> dict[str, Any]:
     digest, size = _digest(payload)
     return {
@@ -64,8 +107,8 @@ def _case() -> dict[str, Any]:
         "backend-grype": _sarif("grype"),
         "frontend-trivy": _sarif("trivy", ()),
         "frontend-grype": _sarif("grype", ()),
-        "backend-sbom": {"sbom": "cyclonedx", "target": BACKEND_CONFIG},
-        "frontend-sbom": {"sbom": "cyclonedx", "target": FRONTEND_CONFIG},
+        "backend-sbom": _sbom(BACKEND_CONFIG, frontend=False),
+        "frontend-sbom": _sbom(FRONTEND_CONFIG, frontend=True),
         "backend-cpython-regressions": {"status": "pass", "config_digest": BACKEND_CONFIG, "patch_sha256": PATCH_SHA256, "checks": {c: {"status": "pass", "seconds": 0.01} for c in TARGET_CVES}},
     }
     envelopes = {
@@ -151,6 +194,38 @@ def test_issue389_npm12_findings_fail_consensus() -> None:
         case["reports"]["frontend-grype"] = _sarif("grype", (cve,), severity)
         _rehash(case, "frontend-grype")
         assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda sbom: sbom.clear(),
+        lambda sbom: sbom.update({"schema": "cyclonedx", "target": FRONTEND_CONFIG}),
+        lambda sbom: sbom.update(components=[]),
+        lambda sbom: sbom["metadata"]["component"]["properties"][0].update(
+            value="sha256:" + "0" * 64
+        ),
+        lambda sbom: sbom["components"][0].update(version="26.6.0-r0"),
+        lambda sbom: sbom["components"][1].update(version="12.0.2-r1"),
+        lambda sbom: sbom["components"][1].update(
+            licenses=[{"license": {"id": "MIT"}}]
+        ),
+    ],
+)
+def test_frontend_sbom_identity_packages_and_licenses_fail_closed(
+    mutation: Callable[[dict[str, Any]], None],
+) -> None:
+    case = _case()
+    mutation(case["reports"]["frontend-sbom"])
+    _rehash(case, "frontend-sbom")
+    assert _evaluate(case)["findings"] == ["SBOM_EVIDENCE_INVALID"]
+
+
+def test_container_scan_generates_real_trivy_sboms() -> None:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    assert 'scan_sbom_trivy "${BACKEND_IMAGE}"' in source
+    assert 'scan_sbom_trivy "${FRONTEND_IMAGE}"' in source
+    assert "write_json_artifact" not in source
 
 
 def test_backend_medium_findings_retain_the_existing_high_policy() -> None:
