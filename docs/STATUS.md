@@ -49,7 +49,8 @@ Use it to answer:
   post-merge workflow `31056401428` passed. Exact-head review of #384 found a
   mandatory legacy checker-cap failure, and clean main exposed a stale Issue
   #280 unsupported-language oracle. Owner-approved #386 absorbs only that #385
-  test-oracle repair while preserving German support. The serialized path is
+  test-oracle repair while preserving German support; its ninth-path reset isolates
+  a generic legacy test without weakening Issue #366 fixed-base coverage. The serialized path is
   #386 → #385 absorbed-closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371, with
   merged-main acceptance between children. No product/media, deployment,
   release, public-availability, trademark-registration, or production claim is established.

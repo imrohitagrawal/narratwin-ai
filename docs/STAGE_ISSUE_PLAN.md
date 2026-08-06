@@ -566,8 +566,10 @@ checkout to the GitHub event head; scope output remains supporting evidence.
 Issue `#386` is the governance-only prerequisite for the mandatory checker
 context-cap failure discovered at #384 head `94e7830`. It modularizes new exact
 route enforcement without raising legacy caps and pre-registers final routes
-for #385, #384, and #383. Its owner-approved eighth path absorbs #385's stale
-Issue #280 unsupported-language oracle while preserving German support. After
+for #385, #384, and #383. Its owner-approved ninth path isolates only the generic
+legacy route-enumeration test under a 20-line charge cap while dedicated Issue
+#366 tests retain genuine unrestricted fixed-base snapshot coverage; the eighth
+path absorbs #385's stale Issue #280 oracle while preserving German support. After
 merged-main acceptance, #385 closes as absorbed; #384 then merges current main
 and removes redundant checker/test diffs through normal commits. The dependency
 order is #386 → #385 closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.

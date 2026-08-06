@@ -36,7 +36,7 @@ def route(m:Any,b:str,c:list[str])->list[str]:
     s.check_stage_marker_and_branch(f);s.check_stage_scope(f);return f
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
     for branch, s in SCOPES.items():
-        (m:=monkeypatch).setattr(stage8,"citation_parity_charge",lambda:1200); assert route(m,branch,sorted(s))==[]
+        (m:=monkeypatch).setattr(stage8,"citation_parity_charge",lambda:1200);m.setattr(stage8,"cut1_transition_charges",lambda:(0,{}));assert route(m,branch,sorted(s))==[]
         extra = "forbidden/outside.txt"
         assert route(m,branch,[extra]) == [f"Stage 8 changed file outside the allowlist: {extra}"]
         if branch == CP:

@@ -18,6 +18,7 @@ ROUTES = {
         "scripts/quality/stage8_cut1_routes.py",
         "scripts/quality/check_stage8_docs.py",
         "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_quality_gate.py",
         "tests/acceptance/test_issue280_local_e2e_demo.py",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
@@ -57,6 +58,7 @@ TEXT_LIMITS = {
     ISSUE386_BRANCH: {
         path: 300 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py"}
         else 120 if path == "tests/acceptance/test_issue280_local_e2e_demo.py"
+        else 20 if path == "tests/unit/test_stage8_quality_gate.py"
         else 80 if path == "scripts/quality/check_stage8_docs.py" else 120
         for path in ROUTES[ISSUE386_BRANCH]
     },
@@ -161,15 +163,14 @@ def route_text_charges(
 
 
 def cut1_transition_charges(
-    run: Callable[[list[str]], Any], base: str, paths: set[str]
+    run: Callable[[list[str]], Any], base: str, _paths: set[str]
 ) -> tuple[int, dict[str, int]]:
     merge = run(["git", "merge-base", base, "HEAD"])
     if merge.returncode or merge.stdout.strip() != base:
         raise RuntimeError("Issue #366 base diff unavailable.")
-    ordered = sorted(paths)
     results = (
-        run(["git", "diff", "--cached", "--numstat", base, "--", *ordered]),
-        run(["git", "diff", "--numstat", base, "--", *ordered]),
+        run(["git", "diff", "--cached", "--numstat", base, "--"]),
+        run(["git", "diff", "--numstat", base, "--"]),
     )
     if any(result.returncode for result in results):
         raise RuntimeError("Issue #366 base diff unavailable.")
