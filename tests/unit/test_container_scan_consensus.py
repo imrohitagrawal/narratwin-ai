@@ -141,6 +141,18 @@ def test_frontend_runtime_medium_findings_fail_closed() -> None:
     assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
 
 
+def test_issue389_npm12_findings_fail_consensus() -> None:
+    case = _case()
+    for cve, severity in (
+        ("CVE-2026-69152", "8.2"),
+        ("CVE-2026-69192", "8.1"),
+        ("CVE-2026-69198", "6.5"),
+    ):
+        case["reports"]["frontend-grype"] = _sarif("grype", (cve,), severity)
+        _rehash(case, "frontend-grype")
+        assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
+
+
 def test_backend_medium_findings_retain_the_existing_high_policy() -> None:
     case = _case()
     case["reports"]["backend-grype"] = _sarif("grype", ("CVE-MEDIUM",), "6.5")
