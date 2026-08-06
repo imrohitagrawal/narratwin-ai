@@ -1,5 +1,4 @@
 from __future__ import annotations
-# ruff: noqa: E701, E702
 
 from types import SimpleNamespace
 from typing import Any
@@ -77,7 +76,8 @@ def test_issue374_reproducibility_and_runtime_policy_markers() -> None:
 
 def test_issue389_fixed_runtime_pin_and_package_contract_fail_closed() -> None:
     expected_runtime = "cgr.dev/chainguard/node:latest@sha256:d8d2883b26d4fde4e524d0068cd78abbb23c7c2113a22e67a02cc73a9182552d"
-    dockerfile = stage8.read("frontend/Dockerfile"); scan = stage8.read("scripts/ci/docker-image-scan.sh")
+    dockerfile = stage8.read("frontend/Dockerfile")
+    scan = stage8.read("scripts/ci/docker-image-scan.sh")
     assert security.FRONTEND_NODE_RUNTIME_IMAGE == expected_runtime and f"FROM {expected_runtime} AS runner" in dockerfile
     assert 'process.version!=="v26.7.0"' in scan and '"org.opencontainers.image.created": "2026-08-05T21:53:32Z"' in scan
     assert security.FRONTEND_RUNTIME_NODE_VERSION == "26.7.0"
@@ -87,7 +87,8 @@ def test_issue389_fixed_runtime_pin_and_package_contract_fail_closed() -> None:
 
 
 def test_issue389_exact_route_scope_and_budgets_fail_closed(monkeypatch: Any) -> None:
-    monkeypatch.setattr(stage8, "current_branch", lambda: security.ISSUE389_SECURITY_BRANCH); monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(security.ISSUE389_SECURITY_FILES))
+    monkeypatch.setattr(stage8, "current_branch", lambda: security.ISSUE389_SECURITY_BRANCH)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(security.ISSUE389_SECURITY_FILES))
     failures: list[str] = []
     stage8.check_stage_marker_and_branch(failures)
     stage8.check_stage_scope(failures)
@@ -100,8 +101,10 @@ def test_issue389_exact_route_scope_and_budgets_fail_closed(monkeypatch: Any) ->
 def _runner(*, staged: str = "", untracked: str = "", failed: bool = False) -> Any:
     rows = "\n".join(f"1\t0\t{p}" for p in sorted(security.ISSUE389_SECURITY_FILES))
     def run(command: list[str]) -> SimpleNamespace:
-        if command[:3] == ["git", "rev-parse", "HEAD^{commit}"]: return SimpleNamespace(stdout="f"*40+"\n", returncode=0)
-        if command[:2] == ["git", "merge-base"]: return SimpleNamespace(stdout=security.ISSUE389_BASE+"\n", returncode=0)
+        if command[:3] == ["git", "rev-parse", "HEAD^{commit}"]:
+            return SimpleNamespace(stdout="f" * 40 + "\n", returncode=0)
+        if command[:2] == ["git", "merge-base"]:
+            return SimpleNamespace(stdout=security.ISSUE389_BASE + "\n", returncode=0)
         output = untracked if command[:3] == ["git", "ls-files", "--others"] else staged if "--cached" in command and staged else rows
         return SimpleNamespace(stdout=output, returncode=2 if failed else 0)
     return run
@@ -112,10 +115,13 @@ def _runner(*, staged: str = "", untracked: str = "", failed: bool = False) -> A
     ("181\t0\tscripts/quality/stage8_node_security.py\n", "", False, "exceeds 180"),
     ("", "frontend/Dockerfile\n", False, "untracked-path"), ("", "", True, "evidence failed closed")])
 def test_issue389_all_git_snapshots_fail_closed(staged: str, untracked: str, failed: bool, want: str) -> None:
-    failures: list[str] = []; security.check_issue389_route(stage8.ROOT, _runner(staged=staged, untracked=untracked, failed=failed), failures, True)
+    failures: list[str] = []
+    security.check_issue389_route(stage8.ROOT, _runner(staged=staged, untracked=untracked, failed=failed), failures, True)
     assert any(want in failure for failure in failures)
 
 
 @pytest.mark.parametrize("output", ["1\t0\tfrontend/Dockerfile\n2\t0\tfrontend/Dockerfile\n", "1\t0\tforeign/path.py\n", "-\t-\tfrontend/Dockerfile\n"])
 def test_issue389_charge_evidence_rejects_malformed_or_unscoped(output: str) -> None:
-    failures: list[str] = []; security._charges(output, failures); assert failures
+    failures: list[str] = []
+    security._charges(output, failures)
+    assert failures

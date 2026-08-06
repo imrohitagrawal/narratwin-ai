@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-# ruff: noqa: E701, E702
 
 import argparse
 import hashlib
@@ -8,6 +7,7 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlsplit
 
 
 TARGET_CVES = ("CVE-2026-11940", "CVE-2026-11972", "CVE-2026-15308")
@@ -121,17 +121,28 @@ def _valid_vex(vex: dict[str, Any], backend_config: str, component_purl: str) ->
     }
 
 
-def _valid_cyclonedx_sbom(report: dict[str, Any], target: str, required: dict[str, tuple[str, str]]) -> bool:
-    metadata = report.get("metadata", {}).get("component", {}); components = report.get("components")
+def _valid_cyclonedx_sbom(report: dict[str, Any], target: str, required: dict[str, tuple[str, str]], architecture: str) -> bool:
+    metadata = report.get("metadata", {}).get("component", {})
+    components = report.get("components")
     if (report.get("bomFormat"), report.get("specVersion"), metadata.get("type")) != ("CycloneDX", "1.7", "container") or not isinstance(components, list) or not 0 < len(components) <= 5000:
         return False
     image_ids = {p.get("value") for p in metadata.get("properties", []) if isinstance(p, dict) and p.get("name") == "aquasecurity:trivy:ImageID"}
-    if image_ids != {target}: return False
+    if image_ids != {target}:
+        return False
+    expected_arch = {"amd64": "x86_64", "arm64": "aarch64"}.get(architecture)
     for name, (version, license_id) in required.items():
         matches = [c for c in components if isinstance(c, dict) and c.get("name") == name]
-        if len(matches) != 1: return False
-        component = matches[0]; licenses = {x.get("license", {}).get("id") for x in component.get("licenses", []) if isinstance(x, dict)}
-        if (component.get("type"), component.get("version"), str(component.get("purl", "")).startswith(f"pkg:apk/wolfi/{name}@{version}"), licenses) != ("library", version, True, {license_id}): return False
+        if len(matches) != 1:
+            return False
+        component = matches[0]
+        licenses = {x.get("license", {}).get("id") for x in component.get("licenses", []) if isinstance(x, dict)}
+        try:
+            purl = urlsplit(str(component.get("purl", "")))
+            qualifiers = parse_qs(purl.query, strict_parsing=True)
+        except ValueError:
+            return False
+        if (component.get("type"), component.get("version"), purl.scheme, purl.path, qualifiers, licenses) != ("library", version, "pkg", f"apk/wolfi/{name}@{version}", {"arch": [expected_arch], "distro": ["20230201"]}, {license_id}):
+            return False
     return True
 
 
@@ -200,10 +211,11 @@ def evaluate_consensus(
     if "IMAGE_IDENTITY_INVALID" in findings:
         return {"status": "fail", "fixed": [], "findings": findings, "artifacts": list(ARTIFACTS), "raw_artifacts": raw_artifacts}
 
-    if not _valid_cyclonedx_sbom(reports["backend-sbom"], backend_config, {}):
+    if not _valid_cyclonedx_sbom(reports["backend-sbom"], backend_config, {}, str(image_identity.get("backend", {}).get("architecture", ""))):
         _add(findings, "SBOM_EVIDENCE_INVALID")
     if not _valid_cyclonedx_sbom(
-        reports["frontend-sbom"], frontend_config, FRONTEND_SBOM_COMPONENTS
+        reports["frontend-sbom"], frontend_config, FRONTEND_SBOM_COMPONENTS,
+        str(image_identity.get("frontend", {}).get("architecture", "")),
     ):
         _add(findings, "SBOM_EVIDENCE_INVALID")
 

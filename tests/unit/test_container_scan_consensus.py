@@ -1,5 +1,4 @@
 from __future__ import annotations
-# ruff: noqa: E701, E702
 
 import copy
 import hashlib
@@ -51,7 +50,7 @@ def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0"
 
 def _sbom(target: str, *, frontend: bool) -> dict[str, Any]:
     packages = (("nodejs-26", "26.7.0-r0", "MIT"), ("npm-12", "12.0.2-r2", "Artistic-2.0")) if frontend else (("python", "3.13.14", "PSF-2.0"),)
-    components = [{"type":"library", "name":n, "version":v, "purl":f"pkg:apk/wolfi/{n}@{v}", "licenses":[{"license":{"id":license}}]} for n,v,license in packages]
+    components = [{"type": "library", "name": name, "version": version, "purl": f"pkg:apk/wolfi/{name}@{version}?arch=x86_64&distro=20230201", "licenses": [{"license": {"id": license_id}}]} for name, version, license_id in packages]
     return {"bomFormat": "CycloneDX", "specVersion": "1.7", "metadata": {"component": {"type": "container", "properties": [{"name": "aquasecurity:trivy:ImageID", "value": target}]}}, "components": components}
 
 
@@ -152,16 +151,23 @@ def test_issue389_npm12_findings_fail_consensus() -> None:
     case = _case()
     for cve, severity in (("CVE-2026-69152","8.2"), ("CVE-2026-69192","8.1"), ("CVE-2026-69198","6.5")):
         case["reports"]["frontend-grype"] = _sarif("grype", (cve,), severity)
-        _rehash(case, "frontend-grype"); assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
+        _rehash(case, "frontend-grype")
+        assert _evaluate(case)["findings"] == ["FRONTEND_RUNTIME_MEDIUM_OR_HIGHER"]
 
 
 @pytest.mark.parametrize("mutation", [lambda s:s.clear(), lambda s:s.update(components=[]),
     lambda s:s["metadata"]["component"]["properties"][0].update(value="sha256:"+"0"*64),
     lambda s:s["components"][0].update(version="26.6.0-r0"), lambda s:s["components"][1].update(version="12.0.2-r1"),
-    lambda s:s["components"][1].update(licenses=[{"license":{"id":"MIT"}}])])
+    lambda s:s["components"][1].update(licenses=[{"license":{"id":"MIT"}}]),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0"),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0?arch=evil&distro=ubuntu"),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0?arch=x86_64&arch=aarch64&distro=20230201"),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0?arch=x86_64&distro=20230201&foreign=yes")])
 def test_frontend_sbom_identity_packages_and_licenses_fail_closed(mutation: Callable[[dict[str, Any]], None]) -> None:
-    sbom = _sbom(FRONTEND_CONFIG, frontend=True); mutation(sbom)
-    assert not _load()._valid_cyclonedx_sbom(sbom, FRONTEND_CONFIG, _load().FRONTEND_SBOM_COMPONENTS)
+    sbom = _sbom(FRONTEND_CONFIG, frontend=True)
+    mutation(sbom)
+    module = _load()
+    assert not module._valid_cyclonedx_sbom(sbom, FRONTEND_CONFIG, module.FRONTEND_SBOM_COMPONENTS, "amd64")
 
 
 def test_backend_medium_findings_retain_the_existing_high_policy() -> None:
