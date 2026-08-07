@@ -84,11 +84,12 @@ Issue `#393` is the mandatory test-isolation prerequisite discovered by Issue
 `#383` readiness. The accepted #383 route requires `STATUS.md` and
 `TRACEABILITY.md` changes, while the legacy Issue #366 route-test helper read
 those mutable live files when simulating the historical branch. The exact
-combined 13-path #393/#396 route preserves the production checker and fixed digest, keeps
-direct byte-mutation coverage, and supplies the accepted digest only inside the
-historical route-scope fixture, and patches only `js-yaml` 4.3.0 to 4.3.1. It
-caps additions plus deletions at 600 with 180/160/80/40 per-path tiers. No #383
-asset, route, budget, or product behavior changes.
+combined 15-path #393/#396 route preserves the fixed digest, keeps direct
+byte-mutation coverage, supplies the accepted digest only inside the historical
+route-scope fixture, patches only `js-yaml` 4.3.0 to 4.3.1, and replaces the
+stale frontend inventory set with independently reproduced architecture-bound
+values. It caps additions plus deletions at 700 with 180/160/80/40 per-path
+tiers. No #383 asset, route, budget, or product behavior changes.
 
 ## Required Make Targets
 

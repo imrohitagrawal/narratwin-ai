@@ -74,6 +74,8 @@ ROUTES = {
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_stage8_quality_gate.py",
         "tests/unit/test_dependency_security_contract.py",
+        "scripts/ci/check_container_scan_consensus.py",
+        "tests/unit/test_container_scan_consensus.py",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
@@ -84,7 +86,7 @@ ROUTES = {
 ROUTE_ISSUES = {ISSUE396_BRANCH: 396, ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE393_BRANCH: 393}
 TOTAL_LIMITS = {ISSUE396_BRANCH: 500, ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
-                ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE393_BRANCH: 600}
+                ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE393_BRANCH: 700}
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -118,7 +120,9 @@ TEXT_LIMITS = {
         path: 180 if path.endswith(("issue-393.json", "issue-396.json"))
         else 160 if path == "tests/unit/test_stage8_quality_gate.py"
         else 80 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
-                            "tests/unit/test_dependency_security_contract.py"} else 40
+                            "tests/unit/test_dependency_security_contract.py",
+                            "scripts/ci/check_container_scan_consensus.py",
+                            "tests/unit/test_container_scan_consensus.py"} else 40
         for path in ROUTES[ISSUE393_BRANCH]
     },
 }

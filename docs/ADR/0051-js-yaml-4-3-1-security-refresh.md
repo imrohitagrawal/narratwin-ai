@@ -2,7 +2,8 @@
 
 - Status: Proposed for Issue #396 exact-head review
 - Date: 2026-08-07
-- Decision scope: frontend development-tool lock resolution only
+- Decision scope: frontend development-tool lock resolution and resulting
+  deterministic final-runtime inventory binding only
 
 ## Context
 
@@ -18,6 +19,9 @@ the npm-registry tarball and SHA-512 integrity. Preserve `package.json`, all
 direct dependencies and overrides, and every unrelated lock record. Require
 contract mutations, clean install, strict audit, full security/quality/CI,
 exact-head review, eligible non-author approval, and merged-main acceptance.
+Because the lock is an input to the frontend build, require two matching builds
+per architecture and replace—not append—the reviewed arm64/amd64 inventory
+bindings. Stale, unmeasured, cross-architecture, and mismatched values fail.
 
 ## Alternatives and consequences
 

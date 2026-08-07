@@ -586,11 +586,12 @@ Issue #384 → #393/#396 convergence → #383 → #367 → #382 → #368 → #36
 Issue `#383` exact head `511acb2` then reproduced a mandatory historical-test
 coupling after all focused asset/route checks passed: its required status and
 traceability updates change the live bundle read by the legacy Issue #366 test
-fixture. Issue `#393` is the narrow prerequisite that isolates only that fixture
-while preserving the production checker, fixed digest, direct mutation proof,
-and #383's accepted seven-path route. The active order is therefore Issue #393
-→ #383 → #367 → #382 → #368 → #369 → #370 → #371, with merged-main acceptance
-between every dependency.
+fixture. Issues `#393` and `#396` converge atomically in PR `#395`: the exact
+15-path route isolates only that historical fixture, repairs only the affected
+`js-yaml` lock record, and renews only the measured arm64/amd64 final-frontend
+inventory bindings without weakening their architecture or reproduction checks.
+The active order is therefore #393/#396 → #383 → #367 → #382 → #368 → #369 →
+#370 → #371, with merged-main acceptance between every dependency.
 
 ## Phase 1 Closure Branch Scope
 

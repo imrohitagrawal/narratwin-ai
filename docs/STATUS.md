@@ -1239,6 +1239,11 @@ Required update rules:
   `GHSA-5p4m-2wfm-xmqj` in transitive development-tool `js-yaml` 4.3.0.
 - Issue `#396` owns a lockfile-only 4.3.1 repair, exact eleven-path route, committed
   RED/GREEN evidence, strict audits, full gates, exact-head review and approval,
-  and merged-main acceptance through the combined exact head of PR `#395`.
+  and merged-main acceptance through PR `#395`'s combined exact 15-path,
+  700-line #393/#396 route.
+- Independent primary/reproduction builds bind the refreshed final-frontend
+  inventories to arm64 `1803:1b00f69f5326e4466b69a49078231110e1ca5027ec25f8a215cf8e7aebb39587`
+  and amd64 `1805:80a0ba0401cf0710ca3179727644965433e4b3a199dd0c81cc60f7938df71de0`;
+  prior values, wrong architecture, and unreviewed values fail closed.
 - No product, presenter, provider, media, deployment, release, public/LinkedIn,
   trademark, Issue `#391`, or production status changes.
