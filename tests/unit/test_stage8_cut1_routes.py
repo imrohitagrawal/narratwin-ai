@@ -27,6 +27,18 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "cut1-process-396-js-yaml-4-3-1-security": {
+        "docs/governance/preflights/issue-396.json",
+        "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
     "cut1-process-386-modular-route-enforcement": {
         "docs/governance/preflights/issue-386.json",
         "scripts/quality/stage8_cut1_routes.py",
@@ -82,6 +94,15 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.TEXT_LIMITS[routes.ISSUE384_BRANCH]["scripts/quality/check_stage8_docs.py"] == 10
     assert routes.TEXT_LIMITS[routes.ISSUE384_BRANCH]["scripts/quality/stage8_cut1_routes.py"] == 20
     assert routes.TEXT_LIMITS[routes.ISSUE384_BRANCH]["tests/unit/test_stage8_cut1_routes.py"] == 20
+    issue396 = json.loads((REPO / "docs/governance/preflights/issue-396.json").read_text(encoding="utf-8"))
+    assert issue396["branch"] == routes.ISSUE396_BRANCH
+    assert set(issue396["scope"]["required"]) == EXPECTED[routes.ISSUE396_BRANCH]
+    assert set(issue396["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE396_BRANCH]
+    assert routes.TOTAL_LIMITS[routes.ISSUE396_BRANCH] == 500
+    assert routes.TEXT_LIMITS[routes.ISSUE396_BRANCH] == {
+        path: 180 if path.endswith("issue-396.json") else 80 if path.startswith("tests/unit/") else 40
+        for path in EXPECTED[routes.ISSUE396_BRANCH]
+    }
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source
