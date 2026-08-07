@@ -155,13 +155,15 @@ Myra's direction specified an adult woman with a short dark-brown bob, a matte
 terracotta blazer, an ivory blouse, and a warm light-clay studio background.
 The generated 1536×1024 RGB PNG was created at
 `2026-08-06T21:15:51+05:30`, measured 2,211,970 bytes, and had SHA-256
-`953ce8277a9b46bcaf005b283596c27979ff38dc7d3095b403053c6c046a9f08`.
+`953ce8277a9b46bcaf005b283596c27979ff38dc7d3095b403053c6c046a9f08` at
+`/private/tmp/narratwin-cut1-20260806-LhvfPX/generated/myra-source.png`.
 
 Raj's direction specified an adult man with short salt-and-pepper hair, a deep
 forest-green band-collar jacket, a pale-gray shirt, and a cool stone-gray studio
 background. The generated 1536×1024 RGB PNG was created at
 `2026-08-06T21:17:01+05:30`, measured 2,198,777 bytes, and had SHA-256
-`8feb72c340e0b049a07a835a759054964bec77ee123adba56f4198612212c6a2`.
+`8feb72c340e0b049a07a835a759054964bec77ee123adba56f4198612212c6a2` at
+`/private/tmp/narratwin-cut1-20260806-LhvfPX/generated/raj-source.png`.
 
 Both sources were mechanically converted with Sharp `0.35.3` under
 Apache-2.0 using auto-orientation, exact 1536×1024 resize, alpha removal, and

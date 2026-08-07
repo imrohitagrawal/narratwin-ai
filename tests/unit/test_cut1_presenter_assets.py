@@ -115,6 +115,8 @@ def test_cut1_presenter_notice_binds_provenance_and_controlled_use() -> None:
         "controlled-local",
         "public-distribution and legal review",
         "not intended to depict or endorse a real person",
+        "/private/tmp/narratwin-cut1-20260806-LhvfPX/generated/myra-source.png",
+        "/private/tmp/narratwin-cut1-20260806-LhvfPX/generated/raj-source.png",
     ):
         assert marker in notice
 
