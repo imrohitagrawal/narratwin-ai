@@ -344,8 +344,7 @@ def _identity_payload(identity: PresenterIdentity) -> dict[str, Any]:
 
 
 def _sha256_json(value: Mapping[str, Any]) -> str:
-    serialized = json.dumps(value, ensure_ascii=False, sort_keys=True,
-                            separators=(",", ":")).encode("utf-8")
+    serialized = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(serialized).hexdigest()
 
 
@@ -355,7 +354,7 @@ class PresenterRegistry:
         self.registry_version = registry_version
         self._identities = dict(identities)
         self._asset_root = asset_root
-        self._claimed_traces: set[str] = set()
+        self._issued_bindings: dict[str, str] = {}
         self._lock = threading.Lock()
         for identity in self._identities.values():
             if not identity.test_only:
@@ -407,7 +406,7 @@ class PresenterRegistry:
         if TRACE_PATTERN.match(trace_id) is None:
             _fail("TRACE_INVALID", "Trace identifier is empty, malformed, or oversized.")
         with self._lock:
-            if trace_id in self._claimed_traces:
+            if trace_id in self._issued_bindings:
                 _fail("TRACE_REPLAY", "Trace identifier has already selected a presenter.")
             identity = self.get(presenter_id, presenter_version)
             if (asset_sha256, voice_reference_id, voice_reference_version) != (
@@ -425,26 +424,29 @@ class PresenterRegistry:
                 "registry_sha256": self.manifest_sha256,
             }
             binding = PresenterTraceBinding(**values, binding_sha256=_sha256_json(values))
-            self._claimed_traces.add(trace_id)
+            self._issued_bindings[trace_id] = binding.binding_sha256
             return binding
 
     def verify_binding(self, binding: PresenterTraceBinding) -> None:
+        patterns = ((binding.presenter_id, IDENTIFIER_PATTERN), (binding.presenter_version, VERSION_PATTERN),
+                    (binding.trace_id, TRACE_PATTERN), (binding.asset_sha256, SHA256_PATTERN), (binding.voice_reference_id, IDENTIFIER_PATTERN),
+                    (binding.voice_reference_version, VERSION_PATTERN), (binding.registry_version, VERSION_PATTERN),
+                    (binding.registry_sha256, SHA256_PATTERN), (binding.binding_sha256, SHA256_PATTERN),
+        ) if isinstance(binding, PresenterTraceBinding) else ()
+        if not patterns or any(not isinstance(value, str) or pattern.fullmatch(value) is None
+                               for value, pattern in patterns):
+            _fail("BINDING_MISMATCH", "Presenter trace binding is malformed.")
         try:
             identity = self.get(binding.presenter_id, binding.presenter_version)
         except PresenterRegistryError:
             _fail("BINDING_MISMATCH", "Binding presenter is no longer valid.")
         asset = cast(AssetMetadata, identity.asset)
-        values = {
-            "presenter_id": binding.presenter_id,
-            "presenter_version": binding.presenter_version,
-            "trace_id": binding.trace_id,
-            "asset_sha256": binding.asset_sha256,
-            "voice_reference_id": binding.voice_reference_id,
-            "voice_reference_version": binding.voice_reference_version,
-            "registry_version": binding.registry_version,
-            "registry_sha256": binding.registry_sha256,
-        }
-        if (binding.trace_id not in self._claimed_traces or binding.asset_sha256 != asset.sha256
+        values = {"presenter_id": binding.presenter_id, "presenter_version": binding.presenter_version,
+                  "trace_id": binding.trace_id, "asset_sha256": binding.asset_sha256,
+                  "voice_reference_id": binding.voice_reference_id, "voice_reference_version": binding.voice_reference_version,
+                  "registry_version": binding.registry_version, "registry_sha256": binding.registry_sha256}
+        if (self._issued_bindings.get(binding.trace_id) != binding.binding_sha256
+                or binding.asset_sha256 != asset.sha256
                 or binding.voice_reference_id != identity.voice.reference_id
                 or binding.voice_reference_version != identity.voice.version
                 or binding.registry_version != self.registry_version
@@ -494,7 +496,5 @@ def load_presenter_registry(path: Path, *, asset_root: Path,
 
 def load_cut1_presenter_registry(*, asset_root: Path | None = None) -> PresenterRegistry:
     repository_root = Path(__file__).resolve().parents[2]
-    return load_presenter_registry(
-        Path(__file__).with_name("presenter_registry.json"),
-        asset_root=asset_root or repository_root,
-    )
+    return load_presenter_registry(Path(__file__).with_name("presenter_registry.json"),
+                                   asset_root=asset_root or repository_root)
