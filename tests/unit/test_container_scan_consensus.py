@@ -182,7 +182,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     primary = {
         "buildId": "source-bound",
         "architecture": "amd64",
-        "inventory": "1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",
+        "inventory": "1805:80a0ba0401cf0710ca3179727644965433e4b3a199dd0c81cc60f7938df71de0",
         "previewModeId": "1" * 32,
         "previewModeSigningKey": "2" * 64,
         "previewModeEncryptionKey": "3" * 64,
@@ -205,7 +205,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         malformed_primary = {**primary, "inventory": bad_inventory}
         malformed_reproduction = {**reproduction, "inventory": bad_inventory}
         assert validator(malformed_primary, malformed_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
-    wrong_arch_primary = {**primary, "inventory": "1803:06e4628f15e836b24128401deedceedeaebe0561bef29f96f3c9de7e2306e3e0"}
+    wrong_arch_primary = {**primary, "inventory": "1803:1b00f69f5326e4466b69a49078231110e1ca5027ec25f8a215cf8e7aebb39587"}
     wrong_arch_reproduction = {**reproduction, "inventory": wrong_arch_primary["inventory"]}
     assert validator(wrong_arch_primary, wrong_arch_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
     reproduction["previewModeSigningKey"] = primary["previewModeEncryptionKey"]
@@ -348,18 +348,27 @@ def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
 
 
 def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
-    matches = _load().frontend_inventory_matches
-    amd64 = (
-        "1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",
-        "1803:e9a3cd116280dff5bd1e39833d511f9fa0eb952bbde5f0ffaf4aab0ab2306c9f",
-    )
-    arm64 = "1803:06e4628f15e836b24128401deedceedeaebe0561bef29f96f3c9de7e2306e3e0"
-    assert all(matches("amd64", inventory) for inventory in amd64)
+    module = _load()
+    matches = module.frontend_inventory_matches
+    amd64 = "1805:80a0ba0401cf0710ca3179727644965433e4b3a199dd0c81cc60f7938df71de0"
+    arm64 = "1803:1b00f69f5326e4466b69a49078231110e1ca5027ec25f8a215cf8e7aebb39587"
+    assert module.FRONTEND_INVENTORIES == {
+        "amd64": frozenset((amd64,)),
+        "arm64": frozenset((arm64,)),
+    }
+    assert matches("amd64", amd64)
     assert matches("arm64", arm64)
     assert not matches("amd64", arm64)
-    assert all(not matches("arm64", inventory) for inventory in amd64)
-    assert not matches("amd64", amd64[0][:-1] + "0")
-    assert not matches("unknown", amd64[0])
+    assert not matches("arm64", amd64)
+    assert not matches("amd64", amd64[:-1] + "0")
+    assert not matches("unknown", amd64)
+    for stale in (
+        "1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",
+        "1803:e9a3cd116280dff5bd1e39833d511f9fa0eb952bbde5f0ffaf4aab0ab2306c9f",
+        "1803:06e4628f15e836b24128401deedceedeaebe0561bef29f96f3c9de7e2306e3e0",
+    ):
+        assert not matches("amd64", stale)
+        assert not matches("arm64", stale)
 
 
 def test_frontend_inventory_rejection_survives_optimized_python() -> None:
