@@ -433,7 +433,7 @@ class PresenterRegistry:
                     (binding.voice_reference_version, VERSION_PATTERN), (binding.registry_version, VERSION_PATTERN),
                     (binding.registry_sha256, SHA256_PATTERN), (binding.binding_sha256, SHA256_PATTERN),
         ) if isinstance(binding, PresenterTraceBinding) else ()
-        if not patterns or any(not isinstance(value, str) or pattern.fullmatch(value) is None
+        if not patterns or any(not isinstance(value, str) or pattern.match(value) is None
                                for value, pattern in patterns):
             _fail("BINDING_MISMATCH", "Presenter trace binding is malformed.")
         try:
