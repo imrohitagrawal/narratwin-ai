@@ -39,9 +39,10 @@ validation, it compares every production identity field with an independently
 trusted canonical production digest. It revalidates the asset before selection.
 
 Selection creates a canonical trace binding over presenter ID/version, asset
-digest, voice reference/version, registry version/digest, and trace ID. The
-binding digest is recomputed during verification. Trace IDs are single-use in a
-registry process and claimed under a lock. Lifecycle transitions are monotonic:
+digest, voice reference/version, registry version, mutable runtime manifest
+digest, and trace ID. The binding digest is recomputed during verification, and
+only bindings minted by that registry process verify. Trace IDs are single-use
+and claimed under a lock. Lifecycle transitions are monotonic:
 
 ```text
 ACTIVE -> REVOKED -> DELETED
@@ -49,10 +50,11 @@ ACTIVE ------------> DELETED
 ```
 
 No transition may reactivate or resurrect a record. Revocation/deletion changes
-the registry digest and invalidates prior bindings. The current trace-claim and
-lifecycle state is in-process controlled-local state; later durable consumers
-must persist and revalidate the complete binding rather than infer production
-durability from this slice.
+the mutable runtime manifest digest and invalidates prior bindings; it never
+changes the trusted initial canonical production digest. The current trace-claim
+and lifecycle state is in-process controlled-local state; later durable
+consumers must persist and revalidate the complete binding rather than infer
+production durability from this slice.
 
 One additional `future-personal-test` shape may be parsed only when tests opt in.
 It must be `PERSONAL`, `DISABLED`, and `test_only`, has no asset, contains no

@@ -12,8 +12,7 @@ from types import MappingProxyType
 from typing import Any, Mapping, NoReturn, cast
 
 
-MAX_REGISTRY_BYTES = 65_536
-MAX_ASSET_BYTES = 500_000
+MAX_REGISTRY_BYTES, MAX_ASSET_BYTES = 65_536, 500_000
 REGISTRY_SCHEMA_VERSION = "cut1-presenter-registry-v1"
 PRODUCTION_IDS = frozenset({"meera", "myra", "raj"})
 TEST_PERSONAL_ID = "future-personal-test"
@@ -323,13 +322,13 @@ def _validate_asset(identity: PresenterIdentity, asset_root: Path) -> None:
     if identity.asset is None:
         _fail("PRESENTER_INACTIVE", "Test-only presenter has no selectable asset.")
     asset = identity.asset
-    root = asset_root.resolve()
-    candidate = asset_root / asset.path
+    root, candidate = asset_root.resolve(), asset_root / asset.path
     if not candidate.exists():
         _fail("ASSET_MISSING", "Presenter asset is missing.")
     if candidate.is_symlink() or not candidate.is_file() or not candidate.resolve().is_relative_to(root):
         _fail("ASSET_UNSAFE", "Presenter asset must be a repository-contained regular file.")
-    data = candidate.read_bytes()
+    with candidate.open("rb") as stream:
+        data = stream.read(MAX_ASSET_BYTES + 1)
     if not 0 < len(data) <= MAX_ASSET_BYTES:
         _fail("ASSET_METADATA", "Presenter asset size is outside the controlled bound.")
     if hashlib.sha256(data).hexdigest() != asset.sha256:
@@ -445,7 +444,7 @@ class PresenterRegistry:
             "registry_version": binding.registry_version,
             "registry_sha256": binding.registry_sha256,
         }
-        if (binding.asset_sha256 != asset.sha256
+        if (binding.trace_id not in self._claimed_traces or binding.asset_sha256 != asset.sha256
                 or binding.voice_reference_id != identity.voice.reference_id
                 or binding.voice_reference_version != identity.voice.version
                 or binding.registry_version != self.registry_version
@@ -458,7 +457,8 @@ def load_presenter_registry(path: Path, *, asset_root: Path,
                             allow_test_fixtures: bool = False) -> PresenterRegistry:
     if path.is_symlink() or not path.is_file():
         _fail("REGISTRY_MALFORMED", "Presenter registry must be a regular file.")
-    data = path.read_bytes()
+    with path.open("rb") as stream:
+        data = stream.read(MAX_REGISTRY_BYTES + 1)
     if len(data) > MAX_REGISTRY_BYTES:
         _fail("REGISTRY_TOO_LARGE", "Presenter registry exceeds its byte limit.")
     try:
