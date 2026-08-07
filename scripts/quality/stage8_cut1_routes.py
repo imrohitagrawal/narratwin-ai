@@ -7,12 +7,25 @@ from pathlib import Path
 from typing import Any, Callable
 
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
+ISSUE396_BRANCH = "cut1-process-396-js-yaml-4-3-1-security"
 ISSUE385_BRANCH = "stage8-385-issue280-language-oracle"
 ISSUE384_BRANCH = "stage8-384-presenter-asset-route"
 ISSUE383_BRANCH = "stage8-383-presenter-assets"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 
 ROUTES = {
+    ISSUE396_BRANCH: {
+        "docs/governance/preflights/issue-396.json",
+        "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
     ISSUE386_BRANCH: {
         "docs/governance/preflights/issue-386.json",
         "scripts/quality/stage8_cut1_routes.py",
@@ -51,13 +64,17 @@ ROUTES = {
         "docs/TRACEABILITY.md",
     },
 }
-ROUTE_ISSUES = {ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385, ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383}
-TOTAL_LIMITS = {ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350, ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700}
+ROUTE_ISSUES = {ISSUE396_BRANCH: 396, ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385, ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383}
+TOTAL_LIMITS = {ISSUE396_BRANCH: 500, ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350, ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700}
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE396_BRANCH: {
+        path: 180 if path.endswith("issue-396.json") else 80 if path.startswith("tests/unit/") else 40
+        for path in ROUTES[ISSUE396_BRANCH]
+    },
     ISSUE386_BRANCH: {
         path: 300 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py"}
         else 120 if path == "tests/acceptance/test_issue280_local_e2e_demo.py"

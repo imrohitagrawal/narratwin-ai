@@ -1115,3 +1115,19 @@ architecture-bound inventory, and pass the existing runtime-hardening,
 reproduction, SBOM, and Trivy/Grype consensus checks through Medium. The old
 digest, npm r1, mutable tags, scanner suppression, waiver, and product or
 release expansion are prohibited.
+
+## Issue #396 transitive js-yaml security gate
+
+The exact `cut1-process-396-js-yaml-4-3-1-security` route starts from
+`9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`, requires exactly ten paths, and
+permits at most 500 additions plus deletions. The preflight cap is 180, each
+focused test cap is 80, and every other path cap is 40.
+
+Only `node_modules/js-yaml` may change in `frontend/package-lock.json`, from
+4.3.0 to integrity-bound 4.3.1. `frontend/package.json`, direct dependencies,
+overrides, and every unrelated lock entry must remain identical to the base.
+Focused mutation tests, `npm ci`, `npm audit --audit-level=high`, repository
+dependency/security gates, complete quality and CI, exact-head review,
+eligible non-author approval, and merged-main acceptance are mandatory. No
+waiver, product/media behavior, deployment, release, public, or production
+claim is authorized.

@@ -431,6 +431,14 @@ durability, deployment, and release decisions remain outside this trace.
 | Architecture-bound immutable inventories, runtime probe, reproduction check, raw SBOM/SARIF envelopes, and both-scanner consensus | Prove the shipped image is executable, hardened, reproducible, and clean through Medium without hidden scanner disagreement | No suppression, ignore, downgrade, waiver, deployment, release, public, or production claim |
 | GovernancePreflightV1 and exact Stage 8 route | Bind base, branch, fourteen paths, 900 aggregate charge, 180/220/40 route-file ceilings, and fail-closed Git evidence | PR `#388` remains blocked until #389 merged-main acceptance |
 
+## Issue #396 transitive js-yaml security traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| GitHub-reviewed `GHSA-5p4m-2wfm-xmqj`, npm registry metadata, and exact `frontend/package-lock.json` record | Resolve the sole `node_modules/js-yaml` entry from affected 4.3.0 to patched 4.3.1 with exact tarball and SHA-512 integrity | `frontend/package.json`, direct dependencies, overrides, and unrelated lock entries remain identical to base |
+| Focused dependency-contract mutations, `npm ci`, strict npm/repository audits, quality, CI, and hosted security | Reject vulnerable, missing, wrong-identity/integrity, unrelated-drift, suppressed, or stale evidence | No audit waiver, threshold downgrade, product/runtime behavior, provider, presenter, media, or workflow change |
+| GovernancePreflightV1 and exact Stage 8 route | Bind base, branch, ten paths, 500 aggregate charge, and 180/80/40 per-path ceilings | PR `#395` and Issue `#393` stay separate and blocked until #396 merged-main acceptance; no deployment, release, public/LinkedIn, trademark, Issue #391, or production claim |
+
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 
 ## Issue #158 Security History Chronology

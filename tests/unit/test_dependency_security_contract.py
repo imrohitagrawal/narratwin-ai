@@ -125,8 +125,9 @@ def test_frontend_brace_expansion_override_and_lock_are_isolated_and_patched() -
         BRACE_509_INTEGRITY,
     )
     normalized_lock = copy.deepcopy(lock)
-    for field in ("version", "resolved", "integrity"):
-        normalized_lock["packages"][BRACE_PATH][field] = base_lock["packages"][BRACE_PATH][field]
+    for path in (BRACE_PATH, JS_YAML_PATH):
+        for field in ("version", "resolved", "integrity"):
+            normalized_lock["packages"][path][field] = base_lock["packages"][path][field]
     assert normalized_lock == base_lock
 
 
