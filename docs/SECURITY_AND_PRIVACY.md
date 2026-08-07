@@ -436,7 +436,9 @@ not authenticate an actor able to rewrite all local files. Current lifecycle and
 trace replay state is process-local. Later durable work must preserve the complete
 binding and reconcile current revocation/deletion before narration, TTS, render,
 export, or replay. Logs should use bounded IDs/digests and error codes, not raw
-registry JSON, persona prose, media bytes, provider payloads, or secrets.
+registry JSON, persona prose, media bytes, provider payloads, or secrets. The
+trusted production digest independently rejects changes to names, persona prose
+or anchors, asset provenance, permission-review authority, and voice metadata.
 
 ## Privacy Rules
 

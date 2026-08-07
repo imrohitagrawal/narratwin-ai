@@ -2361,6 +2361,16 @@ Aashna and Veer remain unregistered. This child creates no narration, audio,
 renderer, video, UI, provider, or public capability; Issue `#382` remains next
 after merged-main acceptance.
 
+Issue `#367` voice references are direction metadata only; they do not infer,
+synthesize, implement, validate, or prove a voice, and this slice has no
+listenable audio. Issue `#382` owns exact narration locking. Issue `#368` owns
+key-free intelligible local audio and requires owner-listenable evidence for
+Meera, Myra, and Raj: exact local paths and playback commands (`afplay` on
+macOS where applicable); duration, format, checksum, script version/checksum,
+presenter binding, and voice/profile configuration; intelligibility and
+non-silence evidence; and human review of pronunciation, warmth, pacing,
+naturalness, clarity, technical credibility, and the 90–120-second requirement.
+
 The exact canonical narration and presenter substitution rule live in OWNER
 comment `5197711390`: Myra and Raj replace only both occurrences of `Meera`.
 TTS accepts only the latest evaluated script version after explicit speech

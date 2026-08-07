@@ -269,7 +269,8 @@ Responsibilities:
 - load exactly Meera, Myra, and Raj from bounded, strict JSON;
 - bind stable identity/persona, approved asset, existing provenance, disclosure,
   controlled-local permission, non-cloned voice direction, and renderer-neutral settings;
-- revalidate canonical regular-file WebP bytes and recompute the registry digest;
+- bind all initial production fields to an independently trusted canonical
+  digest, revalidate regular-file WebP bytes, and recompute the runtime digest;
 - create and verify single-use trace bindings; and
 - block stale, replayed, disabled, revoked, deleted, test-only, or mismatched identities.
 
@@ -278,6 +279,7 @@ SDK objects, keys, cloned voice/face inputs, and renderer engine selection canno
 enter its data contract. A future personal-avatar shape is disabled and test-only
 with no likeness or asset. Current lifecycle/trace claims are local-process state;
 downstream durable work must persist and revalidate the complete binding.
+Voice records are direction metadata only and provide no audio or voice inference.
 
 ### Avatar Rendering Adapter
 

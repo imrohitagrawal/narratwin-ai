@@ -780,7 +780,8 @@ Fields:
 - `identity_kind = SYNTHETIC`, `test_only = false`, and monotonic `lifecycle`
 - structured `persona` summary, apparent-age contract, and visual anchors
 - `asset` canonical path, SHA-256, width, height, media type, and provenance ref
-- distinct provider-neutral `voice` reference/version with `cloned = false`
+- distinct provider-neutral `voice` direction reference/version with
+  `cloned = false`; no audio artifact or implemented voice
 - fictional synthetic `disclosure`
 - controlled-local `permission` and publication-disabled posture
 - provider-null renderer-neutral framing and mouth/jaw readiness settings

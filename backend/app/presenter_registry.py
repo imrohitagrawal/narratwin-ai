@@ -21,6 +21,7 @@ VERSION_PATTERN = re.compile(r"^[1-9][0-9]*\.[0-9]+\.[0-9]+$")
 IDENTIFIER_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 TRACE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+CANONICAL_PRODUCTION_SHA256 = "14838d74e2ff35ca4af5336d937eb206ec77a8351ba6b7cd86bfdc6929913855"
 CANONICAL_ASSETS = {
     "meera": ("frontend/public/demo/narratwin-synthetic-presenter.webp",
               "d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1"),
@@ -38,7 +39,6 @@ REQUIRED_PERSONA_ANCHORS = {
             "exceptionally handsome smart charismatic presence",
             "dark non-gray well-groomed hair", "tailored dark Indian formal jacket"},
 }
-
 
 class PresenterRegistryError(ValueError):
     def __init__(self, code: str, message: str) -> None:
@@ -485,6 +485,10 @@ def load_presenter_registry(path: Path, *, asset_root: Path,
     voice_ids = [identities[key].voice.reference_id for key in sorted(PRODUCTION_IDS)]
     if len(set(voice_ids)) != len(voice_ids):
         _fail("VOICE_REFERENCE", "Production voice references must be distinct.")
+    canonical = {item.id: row for item, row in zip(parsed, rows, strict=True)
+                 if item.id in PRODUCTION_IDS}
+    if _sha256_json(canonical) != CANONICAL_PRODUCTION_SHA256:
+        _fail("CANONICAL_REGISTRY", "Owner-approved production registry fields drifted.")
     return PresenterRegistry(registry_version, identities, asset_root=asset_root)
 
 

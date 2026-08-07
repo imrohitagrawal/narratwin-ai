@@ -7,7 +7,7 @@ Proposed in Issue `#367`; accepted only after reviewed merged-main acceptance.
 ## Context
 
 Cut 1 has three owner-approved fictional synthetic identity anchors: Meera,
-Myra A, and Raj C. Later narration, TTS, rendering, and UI work needs one stable
+Myra, and Raj. Later narration, TTS, rendering, and UI work needs one stable
 identity contract without importing provider-specific profiles or trusting a
 caller-supplied asset, voice, lifecycle, or trace claim. Issue `#383` accepted
 still portraits only; it did not register runtime identities or prove audio or
@@ -34,8 +34,9 @@ small provider-neutral Python boundary. Production identity IDs are exactly
 The loader rejects oversized or malformed UTF-8 JSON, duplicate keys, unknown
 fields, noncanonical versions/IDs, path escape, symlinks, missing or substituted
 assets, media drift, duplicate voice references, provider selectors, clone
-metadata, persona drift, and an inexact production ID set. It revalidates the
-asset before selection.
+metadata, persona drift, and an inexact production ID set. After structural
+validation, it compares every production identity field with an independently
+trusted canonical production digest. It revalidates the asset before selection.
 
 Selection creates a canonical trace binding over presenter ID/version, asset
 digest, voice reference/version, registry version/digest, and trace ID. The
@@ -71,8 +72,12 @@ Positive:
 
 Limitations:
 
-- Issue `#367` does not produce or validate narration, audio, animation, video,
-  synchronization, playback, public use, or production durability;
+- Issue `#367` records voice-direction metadata only. It does not generate,
+  infer, synthesize, implement, or validate a voice, and produces no listenable
+  audio artifact. Narration locking belongs to `#382`; key-free local audio and
+  owner listening acceptance belong to `#368`;
+- Issue `#367` does not produce or validate animation, video, synchronization,
+  playback, public use, or production durability;
 - qualitative persona meaning and unknown real-person resemblance remain human
   review surfaces; and
 - publication/legal review remains separate from controlled-local permission.

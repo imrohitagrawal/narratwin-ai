@@ -422,7 +422,7 @@ durability, deployment, and release decisions remain outside this trace.
 
 | Requirement | Evidence | Preserved boundary |
 |---|---|---|
-| Owner-approved still identities | Issue `#383` owner selection of Myra A and Raj C; exact source and derivative hashes; 1536×1024 WebP decode tests | Meera remains byte-identical; rejected Aashna/Character 1 and Veer/Character 2 concepts remain future-only |
+| Owner-approved still identities | Issue `#383` owner selection under the former candidate labels Myra A and Raj C; production names Myra and Raj; exact source and derivative hashes; 1536×1024 WebP decode tests | Meera remains byte-identical; rejected Aashna/Character 1 and Veer/Character 2 concepts remain future-only |
 | Persona and provenance integrity | Frozen exact generation/negative prompts, owner direction, visual review, notices, distinctness and fail-closed checksum tests | Still acceptance proves no narration, voice, animation, video, playback, public use, release, deployment, or production readiness |
 | Governed serialized transition | Issue `#383` preflight and exact seven-path/700-line route | Registration remains blocked until merged-main acceptance; Issue `#367` is next |
 
@@ -430,8 +430,9 @@ durability, deployment, and release decisions remain outside this trace.
 
 | Requirement | Evidence | Preserved boundary |
 |---|---|---|
-| Stable production identity contract | Strict registry JSON and loader bind exactly Meera/Myra/Raj ID/version, owner-approved persona anchors, canonical asset facts, existing provenance, disclosure, controlled-local permission, distinct non-cloned voice direction, and renderer-neutral settings | Meera/Myra/Raj bytes remain unchanged; Aashna/Veer remain unregistered; personal shape is disabled test-only with no likeness/asset |
-| Fail-closed lifecycle and trace integrity | Focused mutations cover missing/extra/stale/mismatched/replayed/revoked/deleted/disabled state, hostile JSON/path/media, canonical registry/binding digests, and no lifecycle resurrection | Local-process lifecycle/replay evidence is not production durability, audio, rendering, playback, or publication proof |
+| Stable production identity contract | Strict registry JSON and loader bind exactly Meera/Myra/Raj ID/version, every authoritative persona/voice/provenance field through an independently trusted canonical digest, canonical asset facts, disclosure, controlled-local permission, and renderer-neutral settings | Meera/Myra/Raj bytes remain unchanged; Aashna/Veer remain unregistered; personal shape is disabled test-only with no likeness/asset |
+| Fail-closed lifecycle and trace integrity | Focused mutations cover authoritative name/persona/voice/provenance drift, candidate-suffix injection, missing/extra/stale/mismatched/replayed/revoked/deleted/disabled state, hostile JSON/path/media, canonical registry/binding digests, and no lifecycle resurrection | Lifecycle remains mutable only after trusted load; local-process lifecycle/replay evidence is not production durability, audio, rendering, playback, or publication proof |
+| Voice scope | Registry voice references are qualitative direction metadata only | No listenable audio, inference, synthesis, implementation, or voice validation exists; narration belongs to `#382` and local audio/listening acceptance to `#368` |
 | Governed serialized transition | Issue `#367` preflight, fourteen-path/2,000-line route, ADR `0052`, RED/GREEN history, and full review/gates | Issue `#382` remains blocked until merged-main acceptance; no API/provider/TTS/renderer/UI/release capability |
 
 ## Issue #374 frontend container security repair traceability

@@ -109,10 +109,12 @@ and ADR; 180 each for the route sidecar and route test; and 120 for every other
 document. Missing/extra/lookalike/untracked/nonregular paths, malformed numstat,
 or budget excess fail closed. Focused tests require exact production identities,
 assets/personas/disclosure/permission, non-cloned provider-neutral voice refs,
-renderer neutrality, monotonic lifecycle, canonical trace bindings, replay
-rejection, hostile JSON/media rejection, and an unselectable test-only personal
-shape. No API, provider, audio, renderer, UI, clone, public, release, or
-production capability is established.
+exact canonical production-field integrity, renderer neutrality, monotonic
+lifecycle, canonical trace bindings, replay rejection, hostile JSON/media
+rejection, and an unselectable test-only personal shape. Voice references are
+direction metadata only: no inference, synthesis, implementation, validation,
+or listenable audio exists. No API, provider, renderer, UI, clone, public,
+release, or production capability is established.
 
 ## Required Make Targets
 

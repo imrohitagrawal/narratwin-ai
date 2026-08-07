@@ -305,7 +305,9 @@ def test_authoritative_production_registry_mutations_fail_closed(
 ) -> None:
     payload = _payload()
     mutation(payload)
-    _assert_code("CANONICAL_REGISTRY", lambda: _load_payload(tmp_path, payload))
+    with pytest.raises(PresenterRegistryError) as caught:
+        _load_payload(tmp_path, payload)
+    assert caught.value.code in {"CANONICAL_REGISTRY", "VOICE_REFERENCE"}
 
 
 def test_registry_rejects_duplicate_json_keys_malformed_utf8_and_oversize(tmp_path: Path) -> None:

@@ -67,8 +67,10 @@ Use it to answer:
   1536×1024 WebP assets, provenance/notices, binary validation, and trace/status
   evidence. Meera remains byte-identical at SHA-256
   `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`;
-  Owner-selected Myra A is `30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97`
-  and Raj C is `663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd`.
+  The former Issue `#383` candidate-selection labels were Myra A for
+  `30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97`
+  and Raj C for `663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd`;
+  the production names are Myra and Raj.
   Issue `#397` is closed completed through PR `#398`, squash-merged as
   `fe9eff7af88ba9aceaebed435a4d93c2ec01529b`; merged-main workflow
   `31163462594` passed. Its exact-path classifier repair exempts only the two
@@ -79,7 +81,9 @@ Use it to answer:
   active exact fourteen-path child for a strict provider-neutral registry of
   Meera, Myra, and Raj. It binds the accepted assets/personas/provenance,
   synthetic disclosure, controlled-local permission, distinct non-cloned voice
-  direction, renderer-neutral settings, monotonic lifecycle, and trace integrity.
+  direction metadata, canonical production-field integrity, renderer-neutral
+  settings, monotonic lifecycle, and trace integrity. It produces no listenable
+  audio and proves no voice implementation or inference.
   Its fourth future-personal shape is disabled and test-only with no likeness or
   asset. This PR satisfies Issue `#367` only after review, merge, and merged-main
   acceptance; Issue `#382` is next and playable media remains blocked. No clone,
