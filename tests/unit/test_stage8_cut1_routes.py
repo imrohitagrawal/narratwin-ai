@@ -34,6 +34,7 @@ EXPECTED = {
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_stage8_quality_gate.py",
         "docs/ADR/0052-pypdf-6-15-0-security-refresh.md",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",

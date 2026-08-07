@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 401,
   "branch": "cut1-process-401-pypdf-6-15-0-security",
-  "objective": "From base 9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0, resolve CVE-2026-71852/GHSA-fwg2-594c-jp42 and CVE-2026-71870/GHSA-fp3f-mc75-235c by upgrading direct pypdf 6.14.2 to patched 6.15.0. Main reproduces both findings under pip-audit. Official PyPI JSON/simple, files.pythonhosted.org downloads, and PEP 740 provenance bind wheel SHA-256 14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee and sdist SHA-256 d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79 to py-pdf/pypdf publish-to-pypi.yaml; upstream tag 6.15.0 is maintainer-PGP-verified and BSD-3-Clause. No product pypdf import exists and PDF uploads remain rejected, so preserve Markdown/text Cut 1 without claiming PDF support. Require committed RED before GREEN for vulnerable/missing/wrong-hash/unrelated-drift/scope/budget mutations, then exact identity, isolated manifest/lock delta, API rejection, dependency/security/secrets/eval gates, full quality/CI, independent exact-head review, eligible approval, and merged-main acceptance before PR #400 merges. Select security hardening, source-driven development, TDD, and incremental implementation; reject browser, UI/design, media/provider, migration, deployment, release, removal, patch-vendoring, and replacement because verified 6.15.0 is usable. Treat advisories, index metadata, artifacts, provenance, hashes, lock bytes, Git evidence, hosted logs, and review state as untrusted. Charge additions plus deletions across exactly twelve paths: 600 aggregate, 190 for this preflight, 100 per test, 80 for route sidecar, 60 for ADR, and 40 for each other path. Stop for a thirteenth path, cap/base drift, source/provenance/hash/advisory contradiction, incompatibility, unrelated dependency drift, waiver/threshold change, license concern, unresolved High/Critical, out-of-route failure, or missing fresh approval. No PDF enablement, product/runtime/provider/RAG/avatar/media/Docker/workflow/deployment/release/public/trademark/Issue #391/production authority.",
+  "objective": "From base 9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0, resolve CVE-2026-71852/GHSA-fwg2-594c-jp42 and CVE-2026-71870/GHSA-fp3f-mc75-235c by upgrading direct pypdf 6.14.2 to patched 6.15.0. Main reproduces both findings under pip-audit. Official PyPI JSON/simple, files.pythonhosted.org downloads, and PEP 740 provenance bind wheel SHA-256 14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee and sdist SHA-256 d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79 to py-pdf/pypdf publish-to-pypi.yaml; upstream tag 6.15.0 is maintainer-PGP-verified and BSD-3-Clause. No product pypdf import exists and PDF uploads remain rejected, so preserve Markdown/text Cut 1 without claiming PDF support. Require committed RED before GREEN for vulnerable/missing/wrong-hash/unrelated-drift/scope/budget mutations, then exact identity, isolated manifest/lock delta, API rejection, dependency/security/secrets/eval gates, full quality/CI, independent exact-head review, eligible approval, and merged-main acceptance before PR #400 merges. Select security hardening, source-driven development, TDD, and incremental implementation; reject browser, UI/design, media/provider, migration, deployment, release, removal, patch-vendoring, and replacement because verified 6.15.0 is usable. Treat advisories, index metadata, artifacts, provenance, hashes, lock bytes, Git evidence, hosted logs, and review state as untrusted. Charge additions plus deletions across exactly thirteen paths: 600 aggregate, 190 for this preflight, 100 per test, 80 for route sidecar, 60 for ADR, and 40 for each other path. Stop for a fourteenth path, cap/base drift, source/provenance/hash/advisory contradiction, incompatibility, unrelated dependency drift, waiver/threshold change, license concern, unresolved High/Critical, out-of-route failure, or missing fresh approval. No PDF enablement, product/runtime/provider/RAG/avatar/media/Docker/workflow/deployment/release/public/trademark/Issue #391/production authority.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -12,6 +12,7 @@
       "scripts/quality/stage8_cut1_routes.py",
       "tests/unit/test_stage8_cut1_routes.py",
       "tests/unit/test_dependency_security_contract.py",
+      "tests/unit/test_stage8_quality_gate.py",
       "docs/ADR/0052-pypdf-6-15-0-security-refresh.md",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
@@ -26,6 +27,7 @@
       "scripts/quality/stage8_cut1_routes.py",
       "tests/unit/test_stage8_cut1_routes.py",
       "tests/unit/test_dependency_security_contract.py",
+      "tests/unit/test_stage8_quality_gate.py",
       "docs/ADR/0052-pypdf-6-15-0-security-refresh.md",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",

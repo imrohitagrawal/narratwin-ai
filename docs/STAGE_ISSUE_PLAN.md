@@ -2514,7 +2514,7 @@ work.
 
 Issue `#401` is the mandatory security prerequisite for open presenter-registry
 PR `#400`. Branch `cut1-process-401-pypdf-6-15-0-security` starts from
-`9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0` and owns exactly the twelve paths
+`9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0` and owns exactly the thirteen paths
 in its GovernancePreflightV1 artifact. It raises only the direct pypdf lower
 bound and sole pypdf lock resolution from 6.14.2 to verified official 6.15.0,
 with exact wheel/source hashes and no unrelated dependency drift.

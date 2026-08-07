@@ -1160,7 +1160,7 @@ combined exact head passes review, approval, merge, and merged-main acceptance.
 ## Issue #401 pypdf 6.15.0 security gate
 
 The exact `cut1-process-401-pypdf-6-15-0-security` route starts from
-`9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0`, requires exactly twelve paths, and
+`9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0`, requires exactly thirteen paths, and
 permits at most 600 additions plus deletions. The preflight cap is 190, each
 focused test cap is 100, the route sidecar cap is 80, the ADR cap is 60, and
 every other path cap is 40.
