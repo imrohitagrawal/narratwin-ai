@@ -788,7 +788,8 @@ Fields:
 
 Lifecycle values are `ACTIVE`, `REVOKED`, `DELETED`, and test-only `DISABLED`.
 Only `ACTIVE -> REVOKED -> DELETED` or `ACTIVE -> DELETED` is valid. There is
-no resurrection. Lifecycle changes alter the canonical registry digest.
+no resurrection. Lifecycle changes alter the mutable runtime manifest digest;
+they do not alter the trusted initial canonical production digest.
 
 ### PresenterTraceBindingV1
 
@@ -797,7 +798,7 @@ Fields:
 - presenter ID/version
 - exact asset SHA-256
 - voice reference ID/version
-- registry version and recomputed canonical registry SHA-256
+- registry version and recomputed mutable runtime manifest SHA-256
 - bounded single-use `trace_id`
 - canonical binding SHA-256
 

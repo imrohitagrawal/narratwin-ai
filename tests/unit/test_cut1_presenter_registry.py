@@ -231,6 +231,7 @@ def test_missing_stale_revoked_deleted_and_disabled_identities_fail_closed() -> 
     (
         (lambda data: data.update({"unknown": True}), "REGISTRY_SCHEMA"),
         (lambda data: data.update({"schema_version": "future"}), "REGISTRY_SCHEMA"),
+        (lambda data: data.update({"registry_version": "9.9.9"}), "REGISTRY_SCHEMA"),
         (lambda data: data["presenters"].pop(), "REGISTRY_ID_SET"),
         (
             lambda data: data["presenters"].append(copy.deepcopy(data["presenters"][0])),

@@ -424,7 +424,7 @@ durability, deployment, and release decisions remain outside this trace.
 |---|---|---|
 | Owner-approved still identities | Issue `#383` owner selection under the former candidate labels Myra A and Raj C; production names Myra and Raj; exact source and derivative hashes; 1536×1024 WebP decode tests | Meera remains byte-identical; rejected Aashna/Character 1 and Veer/Character 2 concepts remain future-only |
 | Persona and provenance integrity | Frozen exact generation/negative prompts, owner direction, visual review, notices, distinctness and fail-closed checksum tests | Still acceptance proves no narration, voice, animation, video, playback, public use, release, deployment, or production readiness |
-| Governed serialized transition | Issue `#383` preflight and exact seven-path/700-line route | Registration remains blocked until merged-main acceptance; Issue `#367` is next |
+| Governed serialized transition | Issue `#383` preflight, exact seven-path/700-line route, merged PR `#399`, and merged-main acceptance | Registration proceeds only through active Issue `#367`; later Cut 1 work remains serialized |
 
 ## Issue #367 presenter-registry traceability
 

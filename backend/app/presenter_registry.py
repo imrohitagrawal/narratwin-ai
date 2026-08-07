@@ -466,8 +466,8 @@ def load_presenter_registry(path: Path, *, asset_root: Path,
     except (UnicodeDecodeError, json.JSONDecodeError, _DuplicateKey):
         _fail("REGISTRY_MALFORMED", "Presenter registry JSON is malformed.")
     root = _object(payload, {"schema_version", "registry_version", "presenters"})
-    if root["schema_version"] != REGISTRY_SCHEMA_VERSION:
-        _fail("REGISTRY_SCHEMA", "Presenter registry schema version is unknown.")
+    if root["schema_version"] != REGISTRY_SCHEMA_VERSION or root["registry_version"] != "1.0.0":
+        _fail("REGISTRY_SCHEMA", "Presenter registry schema or version is unknown.")
     registry_version = _text(root["registry_version"], pattern=VERSION_PATTERN)
     rows = root["presenters"]
     if not isinstance(rows, list):
