@@ -600,7 +600,7 @@ cap to renew the unchanged merge-closeout section's source-file hash. The
 aggregate stays 500, every other manifest field and agent-context control stays
 unchanged, and `docs/REPOSITORY_GUARDRAILS.md` must remain byte-for-byte at the
 authorized digest. The active order is therefore #397 → #383 →
-#367 → #382 → #368 → #369 → #370 → #371, with merged-main acceptance between
+and then #367 → #382 → #368 → #369 → #370 → #371, with merged-main acceptance between
 every dependency.
 
 ## Phase 1 Closure Branch Scope
