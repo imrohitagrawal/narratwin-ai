@@ -3611,6 +3611,33 @@ def test_exact_presenter_media_mixed_with_frontend_code_still_requires_an_adr() 
     assert "Architecture-impacting changes require an ADR update under docs/ADR/." in guardrails.failures
 
 
+@pytest.mark.parametrize(
+    "changed_file",
+    [
+        "src/service.py",
+        "app/service.py",
+        "backend/app/main.py",
+        "infra/runtime.tf",
+        "terraform/main.tf",
+        "docker/Dockerfile",
+        "docs/ARCHITECTURE.md",
+        "docs/API_CONTRACT.md",
+        "docs/DATA_MODEL.md",
+        "docs/PORTABILITY_STRATEGY.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+        "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md",
+        "docs/AI_SAFETY_AND_EVALUATION.md",
+        "docs/THREAT_MODEL.md",
+    ],
+)
+def test_non_frontend_architecture_prefixes_still_require_an_adr(changed_file: str) -> None:
+    guardrails.failures.clear()
+    guardrails.check_traceability_rules([changed_file, "docs/TRACEABILITY.md"])
+
+    assert "Architecture-impacting changes require an ADR update under docs/ADR/." in guardrails.failures
+
+
 def test_workflows_least_privilege_rejects_commented_permissions(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
