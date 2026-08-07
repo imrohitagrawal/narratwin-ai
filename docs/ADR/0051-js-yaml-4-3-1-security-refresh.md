@@ -22,6 +22,9 @@ exact-head review, eligible non-author approval, and merged-main acceptance.
 Because the lock is an input to the frontend build, require two matching builds
 per architecture and replace—not append—the reviewed arm64/amd64 inventory
 bindings. Stale, unmeasured, cross-architecture, and mismatched values fail.
+Two exact-head GitHub amd64 runs independently measured the same native
+inventory; it replaces the earlier QEMU-emulated amd64 measurement, which
+remains explicitly rejected.
 
 ## Alternatives and consequences
 
