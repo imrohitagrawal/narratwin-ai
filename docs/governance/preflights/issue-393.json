@@ -2,28 +2,38 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 393,
   "branch": "stage8-393-historical-digest-test-isolation",
-  "objective": "Under Issue #393, unblock the accepted Issue #383 route after exact head 511acb2 produced 2975 passes and two historical-route failures. Clean main 9ee3f4a passes the focused tests; a nonempty mutation to each #383-required STATUS/TRACEABILITY document makes both fail with Issue #366 governance document contract drifted. Root cause: the unit route helper simulates historical branch cut1-366-real-media-governance-transition while reading the live mutable C1_BOUND bundle. Use preserved RED, then isolate route-scope assertions with accepted C1_DOC_SHA while retaining real cut1_digest mutation coverage for changed, moved, removed, or reordered bytes. Do not alter production checker behavior, C1_DOC_SHA, C1_BASE, #366 scope/budgets, or #383's seven-path route/assets/history. The exact eight-path current-main route charges additions plus deletions over complete index/worktree snapshots: 500 aggregate, 160 for preflight/test/governance documents, 40 for the sidecar and its test. Selected skills: debugging-and-error-recovery for stop/reproduce/localize/root-cause/guard, and test-driven-development for RED then focused/full GREEN. Rejected: browser, frontend, security-hardening, image generation, provider, performance, migration, and release skills; this is isolated governance-test behavior. Use pytest, Git, repository checkers, make quality/ci/security, and GitHub exact-head review; no external provider or secret. Treat Git evidence, branch identity, document bytes, and monkeypatch state as untrusted. Stop on authority/ancestry drift, missing/extra/lookalike path, budget overflow, production digest/checker mutation, weakened negative assertion, mandatory gate failure, Critical/High finding, or missing fresh eligible approval. No asset, registry, API, UI, provider, dependency, audio/video, Docker/workflow, deployment, release, public, trademark, publication, or production authority.",
+  "objective": "Under owner amendments on Issues #393 and #396, atomically unblock the accepted Issue #383 route. Preserve #393 RED proving mutable STATUS/TRACEABILITY bytes poison the historical #366 route fixture, then isolate only that fixture with accepted C1_DOC_SHA while retaining real cut1_digest mutation coverage. Preserve #396 RED proving clean main and PR #395 fail High GHSA-5p4m-2wfm-xmqj through eslint 9.39.4 -> @eslint/eslintrc 3.3.5 -> js-yaml 4.3.0, then update only the sole lock record to integrity-bound 4.3.1. A standalone #396 branch cannot pass because GovernancePreflightV1 requires STATUS while #393 owns the resulting whole-document digest failure; PR #395 cannot pass security without #396. Preserve both normal histories through one merge and require exact 13-path current-main scope, 600 aggregate additions plus deletions, 180 per preflight, 160 for the historical test, 80 for the route sidecar, route test, and dependency test, and 40 otherwise. Preserve production checker, C1_DOC_SHA, C1_BASE, #366 scope/budgets, #383 route/assets/history, package.json, direct dependencies, overrides, and unrelated lock entries. Treat Git/document/monkeypatch/advisory/registry/integrity/CI/review evidence as untrusted. Require focused mutations, clean install/audit, full quality/CI/security/eval, exact-head review, eligible approval, merged-main acceptance, then manual #393/#396 closeout. Stop on a fourteenth path, cap or authority drift, checker/digest weakening, dependency drift, waiver, unresolved High/Critical, or stale approval. No asset, registry, API/UI, provider, audio/video, Docker/workflow, deployment, release, public/LinkedIn, trademark, Issue #391, or production authority.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
       "docs/governance/preflights/issue-393.json",
+      "docs/governance/preflights/issue-396.json",
+      "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
+      "frontend/package-lock.json",
       "scripts/quality/stage8_cut1_routes.py",
       "tests/unit/test_stage8_cut1_routes.py",
       "tests/unit/test_stage8_quality_gate.py",
+      "tests/unit/test_dependency_security_contract.py",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
-      "docs/TRACEABILITY.md"
+      "docs/TRACEABILITY.md",
+      "docs/THIRD_PARTY_NOTICES.md"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-393.json",
+      "docs/governance/preflights/issue-396.json",
+      "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
+      "frontend/package-lock.json",
       "scripts/quality/stage8_cut1_routes.py",
       "tests/unit/test_stage8_cut1_routes.py",
       "tests/unit/test_stage8_quality_gate.py",
+      "tests/unit/test_dependency_security_contract.py",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
-      "docs/TRACEABILITY.md"
+      "docs/TRACEABILITY.md",
+      "docs/THIRD_PARTY_NOTICES.md"
     ],
     "forbidden": [
       ".github/",
@@ -31,7 +41,6 @@
       "Makefile",
       "README.md",
       "backend/",
-      "frontend/",
       "demo/",
       "evals/",
       "perf/",
@@ -43,10 +52,8 @@
       "tests/api/",
       "pyproject.toml",
       "uv.lock",
-      "docs/ADR/",
       "docs/API_CONTRACT.md",
-      "docs/ARCHITECTURE.md",
-      "docs/THIRD_PARTY_NOTICES.md"
+      "docs/ARCHITECTURE.md"
     ]
   }
 }

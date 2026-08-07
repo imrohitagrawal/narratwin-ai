@@ -66,13 +66,14 @@ Use it to answer:
   and two failures because its required status/traceability edits alter the live
   document bundle consumed by the historical Issue #366 route-test fixture.
   Clean main passes the two tests and the minimal required-document mutation
-  reproduces both failures. Issue `#393` is the mandatory narrow prerequisite:
+  reproduces both failures. Issue `#393` now atomically absorbs Issue `#396`:
   isolate the historical test fixture without changing the production checker,
-  fixed digest, #366 enforcement, or #383 route/assets/history. Issue `#383`
+  fixed digest, #366 enforcement, or #383 route/assets/history, while patching
+  only transitive `js-yaml` 4.3.0 to 4.3.1 so PR `#395` can pass security. Issue `#383`
   remains preserved and blocked; #367 has not started.
   No playable-media, deployment, release, public-availability,
   trademark-registration, or production-readiness claim is established.
-- Last reviewed date: 2026-08-06
+- Last reviewed date: 2026-08-07
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
   `#332` / PR `#333` completed the narrow containment correction at merged main
@@ -1238,6 +1239,6 @@ Required update rules:
   `GHSA-5p4m-2wfm-xmqj` in transitive development-tool `js-yaml` 4.3.0.
 - Issue `#396` owns a lockfile-only 4.3.1 repair, exact eleven-path route, committed
   RED/GREEN evidence, strict audits, full gates, exact-head review and approval,
-  and merged-main acceptance. PR `#395` remains blocked until that closeout.
+  and merged-main acceptance through the combined exact head of PR `#395`.
 - No product, presenter, provider, media, deployment, release, public/LinkedIn,
   trademark, Issue `#391`, or production status changes.

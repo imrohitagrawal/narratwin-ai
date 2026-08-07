@@ -67,19 +67,24 @@ ROUTES = {
     },
     ISSUE393_BRANCH: {
         "docs/governance/preflights/issue-393.json",
+        "docs/governance/preflights/issue-396.json",
+        "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
+        "frontend/package-lock.json",
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_stage8_quality_gate.py",
+        "tests/unit/test_dependency_security_contract.py",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
     },
 }
 ROUTE_ISSUES = {ISSUE396_BRANCH: 396, ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE393_BRANCH: 393}
 TOTAL_LIMITS = {ISSUE396_BRANCH: 500, ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
-                ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE393_BRANCH: 500}
+                ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE393_BRANCH: 600}
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -110,8 +115,10 @@ TEXT_LIMITS = {
         for path in ROUTES[ISSUE383_BRANCH] - ISSUE383_BINARY_FILES
     },
     ISSUE393_BRANCH: {
-        path: 40 if path in {"scripts/quality/stage8_cut1_routes.py",
-                             "tests/unit/test_stage8_cut1_routes.py"} else 160
+        path: 180 if path.endswith(("issue-393.json", "issue-396.json"))
+        else 160 if path == "tests/unit/test_stage8_quality_gate.py"
+        else 80 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+                            "tests/unit/test_dependency_security_contract.py"} else 40
         for path in ROUTES[ISSUE393_BRANCH]
     },
 }

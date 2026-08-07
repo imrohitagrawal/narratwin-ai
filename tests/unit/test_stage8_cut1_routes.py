@@ -79,13 +79,18 @@ EXPECTED = {
     },
     "stage8-393-historical-digest-test-isolation": {
         "docs/governance/preflights/issue-393.json",
+        "docs/governance/preflights/issue-396.json",
+        "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
+        "frontend/package-lock.json",
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_stage8_quality_gate.py",
+        "tests/unit/test_dependency_security_contract.py",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
     },
 }
 
@@ -107,6 +112,9 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.TEXT_LIMITS[routes.ISSUE384_BRANCH]["tests/unit/test_stage8_cut1_routes.py"] == 20
     issue393 = json.loads((REPO / "docs/governance/preflights/issue-393.json").read_text(encoding="utf-8"))
     assert issue393["branch"] == routes.ISSUE393_BRANCH and set(issue393["scope"]["required"]) == EXPECTED[routes.ISSUE393_BRANCH]
+    assert routes.TOTAL_LIMITS[routes.ISSUE393_BRANCH] == 600
+    assert routes.TEXT_LIMITS[routes.ISSUE393_BRANCH]["tests/unit/test_stage8_quality_gate.py"] == 160
+    assert routes.TEXT_LIMITS[routes.ISSUE393_BRANCH]["tests/unit/test_dependency_security_contract.py"] == 80
     issue396 = json.loads((REPO / "docs/governance/preflights/issue-396.json").read_text(encoding="utf-8"))
     assert issue396["branch"] == routes.ISSUE396_BRANCH
     assert set(issue396["scope"]["required"]) == EXPECTED[routes.ISSUE396_BRANCH]

@@ -572,7 +572,7 @@ Issue #366 tests retain genuine unrestricted fixed-base snapshot coverage; the e
 path absorbs #385's stale Issue #280 oracle while preserving German support. After
 merged-main acceptance, #385 closes as absorbed; #384 then merges current main
 and removes redundant checker/test diffs through normal commits. The dependency
-order is #386 → #385 closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
+order is #386 → #385 closeout → #384 → #393/#396 convergence → #383 → #367 → #382 → #368 → #369 → #370 → #371.
 
 After accepted PR `#388`, Issue `#384` resumes through an owner-reset exact
 eight-path route. Its current-main complete-snapshot budget stays 500: five
@@ -581,7 +581,7 @@ and the sidecar plus focused test at 20 each only for route/cap enforcement.
 After #384 merged-main acceptance, #383 may merge current main normally, correct
 its licensing/provenance/human-review preflight, and obtain fresh adversarial
 review before any generation. The remaining order is
-Issue #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371.
+Issue #384 → #393/#396 convergence → #383 → #367 → #382 → #368 → #369 → #370 → #371.
 
 Issue `#383` exact head `511acb2` then reproduced a mandatory historical-test
 coupling after all focused asset/route checks passed: its required status and
@@ -2493,8 +2493,8 @@ its GovernancePreflightV1 artifact. It changes only the transitive ESLint-tool
 lock entry from `js-yaml` 4.3.0 to integrity-bound 4.3.1; package manifests,
 direct dependencies, overrides, and unrelated lock entries stay unchanged.
 
-Issue `#396` must merge and pass merged-main acceptance before PR `#395`
-refreshes normally from accepted main. This insertion does not absorb Issue
-`#393`, begin Issue `#383`, or authorize product, presenter, media, provider,
+Issue `#396` is absorbed into PR `#395` because its required status update
+depends on #393 while #395 depends on its audit repair. This convergence does
+not begin Issue `#383` or authorize product, presenter, media, provider,
 deployment, release, public/LinkedIn, trademark, Issue `#391`, or production
 work.
