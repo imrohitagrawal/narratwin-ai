@@ -84,6 +84,7 @@ EXPECTED = {
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
@@ -147,6 +148,7 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.TOTAL_LIMITS[routes.ISSUE397_BRANCH] == 500
     assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["scripts/guardrails_check.py"] == 100
     assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["tests/unit/test_guardrails_check.py"] == 160
+    assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["docs/agent-context/context-policy-manifest-v1.json"] == 10
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source

@@ -73,6 +73,7 @@ ROUTES = {
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
@@ -134,7 +135,8 @@ TEXT_LIMITS = {
     ISSUE397_BRANCH: {
         path: 160 if path in {"docs/governance/preflights/issue-397.json",
                              "tests/unit/test_guardrails_check.py"}
-        else 100 if path == "scripts/guardrails_check.py" else 80
+        else 100 if path == "scripts/guardrails_check.py"
+        else 10 if path == "docs/agent-context/context-policy-manifest-v1.json" else 80
         for path in ROUTES[ISSUE397_BRANCH]
     },
     ISSUE393_BRANCH: {

@@ -72,8 +72,11 @@ Use it to answer:
   `de976b9` then passed quality/CI but reproduced a standalone guardrail false
   positive: its two exact WebP data paths trigger the generic frontend ADR rule,
   while its accepted seven-path route rejects an ADR. Issue `#397` is the narrow
-  exact-path classifier prerequisite; #383 remains preserved and #367 has not
-  started.
+  exact-path classifier prerequisite. Owner comment `5212555339` authorizes its
+  exact eleven-path reset solely to renew the merge-closeout source hash in the
+  agent-context manifest under a 10-line cap while preserving the unchanged
+  section binding and every other control; #383 remains preserved and #367 has
+  not started.
   No playable-media, deployment, release, public-availability,
   trademark-registration, or production-readiness claim is established.
 - Last reviewed date: 2026-08-07

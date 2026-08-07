@@ -594,7 +594,12 @@ PR `#395` accepted #393/#396 at merged main `3c9ede3`. Issue `#383` head
 `de976b9` then reproduced a generic ADR-classifier false positive: its two exact
 WebP data paths are not architecture, but the accepted seven-path route cannot
 admit the demanded ADR. Issue `#397` owns only the exact-path classifier repair
-and hostile lookalike/mixed tests. The active order is therefore #397 → #383 →
+and hostile lookalike/mixed tests. Owner comment `5212555339` resets its route
+to exactly eleven paths, adding only the agent-context manifest under a 10-line
+cap to renew the unchanged merge-closeout section's source-file hash. The
+aggregate stays 500, every other manifest field and agent-context control stays
+unchanged, and `docs/REPOSITORY_GUARDRAILS.md` must remain byte-for-byte at the
+authorized digest. The active order is therefore #397 → #383 →
 #367 → #382 → #368 → #369 → #370 → #371, with merged-main acceptance between
 every dependency.
 
