@@ -2479,7 +2479,7 @@ charge 1201, or an omitted ADR decision fails closed.
 Issue `#396` is the reproduced mandatory security prerequisite for blocked PR
 `#395` and Issue `#393`. Branch
 `cut1-process-396-js-yaml-4-3-1-security` starts from
-`9ee3f4a4d3b8cf1e78b5a878904748b60d557a76` and owns exactly the ten paths in
+`9ee3f4a4d3b8cf1e78b5a878904748b60d557a76` and owns exactly the eleven paths in
 its GovernancePreflightV1 artifact. It changes only the transitive ESLint-tool
 lock entry from `js-yaml` 4.3.0 to integrity-bound 4.3.1; package manifests,
 direct dependencies, overrides, and unrelated lock entries stay unchanged.

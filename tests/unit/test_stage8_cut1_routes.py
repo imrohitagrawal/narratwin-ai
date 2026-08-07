@@ -28,6 +28,7 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 EXPECTED = {
     "cut1-process-396-js-yaml-4-3-1-security": {
+        "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
         "docs/governance/preflights/issue-396.json",
         "frontend/package-lock.json",
         "scripts/quality/stage8_cut1_routes.py",

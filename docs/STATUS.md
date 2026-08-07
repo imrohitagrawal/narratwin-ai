@@ -1225,7 +1225,7 @@ Required update rules:
 - Clean accepted main at `9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`
   and PR `#395` independently reproduced High advisory
   `GHSA-5p4m-2wfm-xmqj` in transitive development-tool `js-yaml` 4.3.0.
-- Issue `#396` owns a lockfile-only 4.3.1 repair, exact ten-path route, committed
+- Issue `#396` owns a lockfile-only 4.3.1 repair, exact eleven-path route, committed
   RED/GREEN evidence, strict audits, full gates, exact-head review and approval,
   and merged-main acceptance. PR `#395` remains blocked until that closeout.
 - No product, presenter, provider, media, deployment, release, public/LinkedIn,

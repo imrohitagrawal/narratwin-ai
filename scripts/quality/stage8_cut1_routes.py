@@ -15,6 +15,7 @@ ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 
 ROUTES = {
     ISSUE396_BRANCH: {
+        "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
         "docs/governance/preflights/issue-396.json",
         "frontend/package-lock.json",
         "scripts/quality/stage8_cut1_routes.py",

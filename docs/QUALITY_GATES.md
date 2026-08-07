@@ -1119,7 +1119,7 @@ release expansion are prohibited.
 ## Issue #396 transitive js-yaml security gate
 
 The exact `cut1-process-396-js-yaml-4-3-1-security` route starts from
-`9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`, requires exactly ten paths, and
+`9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`, requires exactly eleven paths, and
 permits at most 500 additions plus deletions. The preflight cap is 180, each
 focused test cap is 80, and every other path cap is 40.
 
