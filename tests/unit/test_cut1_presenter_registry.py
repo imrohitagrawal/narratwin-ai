@@ -271,6 +271,43 @@ def test_registry_metadata_mutations_fail_closed(
     _assert_code(code, lambda: _load_payload(tmp_path, payload))
 
 
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        lambda data: _presenter(data, "meera").update({"display_name": "Mira"}),
+        lambda data: _presenter(data, "myra")["persona"].update(
+            {"summary": "Contradictory replacement persona."}
+        ),
+        lambda data: _presenter(data, "raj")["persona"]["visual_anchors"].append(
+            "older salt-and-pepper casual executive"
+        ),
+        lambda data: _presenter(data, "raj")["voice"].update(
+            {"reference_id": "cut1-raj-replacement-voice"}
+        ),
+        lambda data: _presenter(data, "raj")["voice"].update(
+            {"reference_id": _presenter(data, "myra")["voice"]["reference_id"]}
+        ),
+        lambda data: _presenter(data, "myra")["voice"].update(
+            {"description": "Different voice direction."}
+        ),
+        lambda data: _presenter(data, "myra")["asset"].update(
+            {"provenance_ref": "docs/THIRD_PARTY_NOTICES.md#replacement"}
+        ),
+        lambda data: _presenter(data, "raj")["permission"].update(
+            {"provenance_review": "Untrusted replacement authority"}
+        ),
+        lambda data: _presenter(data, "myra").update({"display_name": "Myra A"}),
+        lambda data: _presenter(data, "raj").update({"display_name": "Raj C"}),
+    ),
+)
+def test_authoritative_production_registry_mutations_fail_closed(
+    tmp_path: Path, mutation: Callable[[dict[str, Any]], None]
+) -> None:
+    payload = _payload()
+    mutation(payload)
+    _assert_code("CANONICAL_REGISTRY", lambda: _load_payload(tmp_path, payload))
+
+
 def test_registry_rejects_duplicate_json_keys_malformed_utf8_and_oversize(tmp_path: Path) -> None:
     duplicate = tmp_path / "duplicate.json"
     duplicate.write_text('{"schema_version":"a","schema_version":"b"}', encoding="utf-8")
