@@ -591,7 +591,7 @@ fixture. Issues `#393` and `#396` converge atomically in PR `#395`: the exact
 `js-yaml` lock record, and renews only the measured arm64/amd64 final-frontend
 inventory bindings without weakening their architecture or reproduction checks.
 The active order is therefore #393/#396 → #383 → #367 → #382 → #368 → #369 →
-#370 → #371, with merged-main acceptance between every dependency.
+Issue #370 → #371, with merged-main acceptance between every dependency.
 
 ## Phase 1 Closure Branch Scope
 

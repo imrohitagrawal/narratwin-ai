@@ -1144,5 +1144,5 @@ waiver, product/media behavior, deployment, release, public, or production
 claim is authorized.
 
 Issue #396 is absorbed into PR #395 because its mandatory STATUS update needs
-#393 isolation while #395 needs its audit repair; both close only after the
+Issue #393 isolation while #395 needs its audit repair; both close only after the
 combined exact head passes review, approval, merge, and merged-main acceptance.
