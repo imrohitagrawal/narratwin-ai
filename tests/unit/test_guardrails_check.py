@@ -3566,6 +3566,78 @@ def test_new_governance_artifacts_pass_when_status_is_updated() -> None:
     assert guardrails.failures == []
 
 
+def test_exact_cut1_presenter_media_paths_do_not_require_an_adr() -> None:
+    guardrails.failures.clear()
+    guardrails.check_traceability_rules(
+        [
+            "frontend/public/demo/myra-synthetic-presenter.webp",
+            "frontend/public/demo/raj-synthetic-presenter.webp",
+            "docs/TRACEABILITY.md",
+        ]
+    )
+
+    assert guardrails.failures == []
+
+
+@pytest.mark.parametrize(
+    "changed_file",
+    [
+        "frontend/public/demo/myra-synthetic-presenter.png",
+        "frontend/public/demo/myra-synthetic-presenter.WEBP",
+        "frontend/public/demo/myrа-synthetic-presenter.webp",
+        "frontend/public/demo/future-synthetic-presenter.webp",
+        "frontend/src/app/page.tsx",
+        "Frontend/public/demo/myra-synthetic-presenter.webp",
+        "frontеnd/public/demo/myra-synthetic-presenter.webp",
+    ],
+)
+def test_nearby_or_architectural_frontend_paths_still_require_an_adr(changed_file: str) -> None:
+    guardrails.failures.clear()
+    guardrails.check_traceability_rules([changed_file, "docs/TRACEABILITY.md"])
+
+    assert "Architecture-impacting changes require an ADR update under docs/ADR/." in guardrails.failures
+
+
+def test_exact_presenter_media_mixed_with_frontend_code_still_requires_an_adr() -> None:
+    guardrails.failures.clear()
+    guardrails.check_traceability_rules(
+        [
+            "frontend/public/demo/myra-synthetic-presenter.webp",
+            "frontend/src/app/page.tsx",
+            "docs/TRACEABILITY.md",
+        ]
+    )
+
+    assert "Architecture-impacting changes require an ADR update under docs/ADR/." in guardrails.failures
+
+
+@pytest.mark.parametrize(
+    "changed_file",
+    [
+        "src/service.py",
+        "app/service.py",
+        "backend/app/main.py",
+        "infra/runtime.tf",
+        "terraform/main.tf",
+        "docker/Dockerfile",
+        "docs/ARCHITECTURE.md",
+        "docs/API_CONTRACT.md",
+        "docs/DATA_MODEL.md",
+        "docs/PORTABILITY_STRATEGY.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+        "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md",
+        "docs/AI_SAFETY_AND_EVALUATION.md",
+        "docs/THREAT_MODEL.md",
+    ],
+)
+def test_non_frontend_architecture_prefixes_still_require_an_adr(changed_file: str) -> None:
+    guardrails.failures.clear()
+    guardrails.check_traceability_rules([changed_file, "docs/TRACEABILITY.md"])
+
+    assert "Architecture-impacting changes require an ADR update under docs/ADR/." in guardrails.failures
+
+
 def test_workflows_least_privilege_rejects_commented_permissions(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

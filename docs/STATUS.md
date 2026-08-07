@@ -68,11 +68,17 @@ Use it to answer:
   `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`;
   Myra is `bdd62ae7f5e205c586e70c6a6f3e50ad925dafb6b86dccdfa30f35b42dda5e27`
   and Raj is `f6419cc527498cd995792334de44da0af61892b2162269a98670a1bbf9d35b65`.
-  The assets remain controlled-local and pending latest-head non-author visual,
-  provenance, and permitted-use review. Presenter registration and all playable
-  media remain blocked until Issue `#383` merges and passes merged-main
-  acceptance; Issue `#367` is next. No clone, personal likeness, runtime
-  provider, audio, animation, video, public-distribution, deployment, release,
+  Issue `#397` is closed completed through PR `#398`, squash-merged as
+  `fe9eff7af88ba9aceaebed435a4d93c2ec01529b`; merged-main workflow
+  `31163462594` passed. Its exact-path classifier repair exempts only the two
+  governed Myra/Raj WebP data paths from the generic ADR rule while preserving
+  nearby, lookalike, mixed, and actual architecture enforcement. The assets
+  remain controlled-local and pending latest-head non-author visual,
+  provenance, and permitted-use review. This PR satisfies Issue `#383` once it
+  merges and passes merged-main acceptance; presenter registration and all
+  playable media remain blocked until then. Issue `#367` is next. No clone,
+  personal likeness, runtime provider, audio, animation, video,
+  public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.
 - Last reviewed date: 2026-08-07
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment

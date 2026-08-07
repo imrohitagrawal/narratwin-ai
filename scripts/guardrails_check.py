@@ -120,6 +120,20 @@ ARCHITECTURE_IMPACT_PREFIXES = (
     "docs/THREAT_MODEL.md",
 )
 
+ADR_EXEMPT_NON_ARCHITECTURAL_PATHS = frozenset(
+    {
+        "frontend/public/demo/myra-synthetic-presenter.webp",
+        "frontend/public/demo/raj-synthetic-presenter.webp",
+    }
+)
+
+
+def is_architecture_impacting_path(path: str) -> bool:
+    folded_path = path.casefold()
+    folded_prefixes = (prefix.casefold() for prefix in ARCHITECTURE_IMPACT_PREFIXES)
+    root = path.partition("/")[0]
+    return any(folded_path.startswith(prefix) for prefix in folded_prefixes) or not root.isascii()
+
 PRD_IMPACT_PREFIXES = (
     "src/",
     "app/",
@@ -2266,7 +2280,11 @@ def check_traceability_rules(changes: list[str]) -> None:
     if not changes:
         return
     changed_set = set(changes)
-    architecture_changed = any(change.startswith(ARCHITECTURE_IMPACT_PREFIXES) for change in changes)
+    architecture_changed = any(
+        is_architecture_impacting_path(change)
+        and change not in ADR_EXEMPT_NON_ARCHITECTURAL_PATHS
+        for change in changes
+    )
     adr_updated = any(change.startswith("docs/ADR/") for change in changes)
     if architecture_changed and not adr_updated:
         failures.append("Architecture-impacting changes require an ADR update under docs/ADR/.")

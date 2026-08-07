@@ -91,6 +91,16 @@ stale frontend inventory set with independently reproduced architecture-bound
 values. It caps additions plus deletions at 700 with 180/160/80/40 per-path
 tiers. No #383 asset, route, budget, or product behavior changes.
 
+Issue `#397` corrects the next mandatory #383 readiness false positive: the
+generic `frontend/` ADR rule included two exact immutable presenter WebP data
+paths. Only those two paths are classified as non-architectural; neighboring,
+lookalike, arbitrary-media, code/config, and mixed frontend changes remain
+ADR-gated. Owner comment `5212555339` resets its route to exactly eleven paths,
+adding only the agent-context manifest with a 10-line cap to renew the unchanged
+merge-closeout section's source-file hash. The route charges additions plus
+deletions against current main, caps the aggregate at 500, and preserves #383's
+seven-path route plus every other manifest field and agent-context control.
+
 ## Required Make Targets
 
 The `Makefile` must expose:
