@@ -247,7 +247,7 @@ def test_trace_binding_rejects_malformed_persisted_field_types(field: str) -> No
         cast(Any, replace)(binding, **{field: []})))
 
 
-@pytest.mark.parametrize("trace_id", ["", " ", "../trace", "trace\nvalue", "x" * 129])
+@pytest.mark.parametrize("trace_id", ["", " ", "../trace", "trace\n", "trace\nvalue", "x" * 129])
 def test_trace_binding_rejects_malformed_trace_ids(trace_id: str) -> None:
     registry = load_cut1_presenter_registry(asset_root=ASSET_ROOT)
     meera = registry.get("meera", "1.0.0")
