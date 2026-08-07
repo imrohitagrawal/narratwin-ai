@@ -182,7 +182,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     primary = {
         "buildId": "source-bound",
         "architecture": "amd64",
-        "inventory": "1805:80a0ba0401cf0710ca3179727644965433e4b3a199dd0c81cc60f7938df71de0",
+        "inventory": "1803:65a8c963c2a19b486dc491454523a4466a5795fa8b9773ccceac9dae1ddb283c",
         "previewModeId": "1" * 32,
         "previewModeSigningKey": "2" * 64,
         "previewModeEncryptionKey": "3" * 64,
@@ -350,7 +350,7 @@ def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
 def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     module = _load()
     matches = module.frontend_inventory_matches
-    amd64 = "1805:80a0ba0401cf0710ca3179727644965433e4b3a199dd0c81cc60f7938df71de0"
+    amd64 = "1803:65a8c963c2a19b486dc491454523a4466a5795fa8b9773ccceac9dae1ddb283c"
     arm64 = "1803:1b00f69f5326e4466b69a49078231110e1ca5027ec25f8a215cf8e7aebb39587"
     assert module.FRONTEND_INVENTORIES == {
         "amd64": frozenset((amd64,)),
@@ -363,6 +363,7 @@ def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     assert not matches("amd64", amd64[:-1] + "1")
     assert not matches("unknown", amd64)
     for stale in (
+        "1805:80a0ba0401cf0710ca3179727644965433e4b3a199dd0c81cc60f7938df71de0",
         "1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",
         "1803:e9a3cd116280dff5bd1e39833d511f9fa0eb952bbde5f0ffaf4aab0ab2306c9f",
         "1803:06e4628f15e836b24128401deedceedeaebe0561bef29f96f3c9de7e2306e3e0",
