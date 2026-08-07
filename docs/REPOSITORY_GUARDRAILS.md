@@ -17,7 +17,10 @@ This repository is protected by workflow, review, and policy-as-code guardrails.
 11. Generated scripts and answers must cite source chunks or context IDs.
 12. Evaluation failures block merge.
 13. Security critical/high findings block merge.
-14. Architecture changes require an ADR update under `docs/ADR/`.
+14. Architecture changes require an ADR update under `docs/ADR/`. The exact
+    Myra and Raj governed WebP data paths are non-architectural for this rule;
+    every neighboring, lookalike, arbitrary-media, code, config, or mixed
+    frontend change remains ADR-gated.
 15. PRD-impacting changes require `docs/TRACEABILITY.md` updates.
 16. GitHub Actions workflows must be YAML-defined.
 17. Workflows must use least-privilege `GITHUB_TOKEN` permissions.
@@ -42,7 +45,8 @@ The policy check fails CI for:
 - likely committed secrets
 - provider key assignments outside `.env.example`
 - missing mock/local provider defaults
-- architecture-impacting changes without ADR updates
+- architecture-impacting changes without ADR updates; only the two exact
+  governed Myra/Raj WebP data paths are classified as non-architectural
 - PRD-impacting changes without traceability updates
 - repository-tracked governance changes without `docs/STATUS.md` updates
 - prospective governance-process branches without exactly one issue-bound

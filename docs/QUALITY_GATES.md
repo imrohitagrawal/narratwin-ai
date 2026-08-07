@@ -91,6 +91,13 @@ stale frontend inventory set with independently reproduced architecture-bound
 values. It caps additions plus deletions at 700 with 180/160/80/40 per-path
 tiers. No #383 asset, route, budget, or product behavior changes.
 
+Issue `#397` corrects the next mandatory #383 readiness false positive: the
+generic `frontend/` ADR rule included two exact immutable presenter WebP data
+paths. Only those two paths are classified as non-architectural; neighboring,
+lookalike, arbitrary-media, code/config, and mixed frontend changes remain
+ADR-gated. Its exact ten-path route charges additions plus deletions against
+current main, caps the aggregate at 500, and preserves #383's seven-path route.
+
 ## Required Make Targets
 
 The `Makefile` must expose:

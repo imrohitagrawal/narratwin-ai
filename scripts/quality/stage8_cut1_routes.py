@@ -11,6 +11,7 @@ ISSUE396_BRANCH = "cut1-process-396-js-yaml-4-3-1-security"
 ISSUE385_BRANCH = "stage8-385-issue280-language-oracle"
 ISSUE384_BRANCH = "stage8-384-presenter-asset-route"
 ISSUE383_BRANCH = "stage8-383-presenter-assets"
+ISSUE397_BRANCH = "stage8-397-presenter-asset-adr-classifier"
 ISSUE393_BRANCH = "stage8-393-historical-digest-test-isolation"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 
@@ -65,6 +66,18 @@ ROUTES = {
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
+    ISSUE397_BRANCH: {
+        "docs/governance/preflights/issue-397.json",
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE393_BRANCH: {
         "docs/governance/preflights/issue-393.json",
         "docs/governance/preflights/issue-396.json",
@@ -84,9 +97,11 @@ ROUTES = {
     },
 }
 ROUTE_ISSUES = {ISSUE396_BRANCH: 396, ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
-                ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE393_BRANCH: 393}
+                ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
+                ISSUE393_BRANCH: 393}
 TOTAL_LIMITS = {ISSUE396_BRANCH: 500, ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
-                ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE393_BRANCH: 700}
+                ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
+                ISSUE393_BRANCH: 700}
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -115,6 +130,12 @@ TEXT_LIMITS = {
     ISSUE383_BRANCH: {
         path: 260 if path == "tests/unit/test_cut1_presenter_assets.py" else 160
         for path in ROUTES[ISSUE383_BRANCH] - ISSUE383_BINARY_FILES
+    },
+    ISSUE397_BRANCH: {
+        path: 160 if path in {"docs/governance/preflights/issue-397.json",
+                             "tests/unit/test_guardrails_check.py"}
+        else 100 if path == "scripts/guardrails_check.py" else 80
+        for path in ROUTES[ISSUE397_BRANCH]
     },
     ISSUE393_BRANCH: {
         path: 180 if path.endswith(("issue-393.json", "issue-396.json"))

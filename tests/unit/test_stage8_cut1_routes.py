@@ -140,6 +140,13 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
         path: 180 if path.endswith("issue-396.json") else 80 if path.startswith("tests/unit/") else 40
         for path in EXPECTED[routes.ISSUE396_BRANCH]
     }
+    issue397 = json.loads((REPO / "docs/governance/preflights/issue-397.json").read_text(encoding="utf-8"))
+    assert issue397["branch"] == routes.ISSUE397_BRANCH
+    assert set(issue397["scope"]["required"]) == EXPECTED[routes.ISSUE397_BRANCH]
+    assert set(issue397["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE397_BRANCH]
+    assert routes.TOTAL_LIMITS[routes.ISSUE397_BRANCH] == 500
+    assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["scripts/guardrails_check.py"] == 100
+    assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["tests/unit/test_guardrails_check.py"] == 160
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source
