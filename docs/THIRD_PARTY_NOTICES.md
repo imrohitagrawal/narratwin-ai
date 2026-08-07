@@ -109,7 +109,7 @@ This file is not legal advice. Treat it as the engineering license-review regist
 | PostgreSQL container image | Local relational metadata service foundation | PostgreSQL License; pinned to `postgres:17-alpine@sha256:dc17045ccfd343b49600570ea734b9c4991cf1c3f3302e67df51e3b402dd55c4` for Stage 3 | Yes for local/dev after release review | Stage 3 local Compose foundation | Local service only; no schema, migration, or product persistence code is implemented in Stage 3. |
 | Redis container image | Local cache/queue service foundation | BSD-3-Clause for Redis OSS; pinned to `redis:8-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005` for Stage 3 | Yes for local/dev after release review | Stage 3 local Compose foundation | Local service only; no cache, queue, or product runtime code is implemented in Stage 3. |
 
-### Issue #383 source and conversion record
+## Issue #383 source and conversion record
 
 Myra and Raj were generated independently by the approved image-generation
 skill from text-only fictional directions. No reference image was supplied,

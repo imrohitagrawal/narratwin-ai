@@ -42,11 +42,45 @@ def _run_media_tool(command: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _probe_exact_webp_container(path: Path) -> dict[str, Any]:
+    data = path.read_bytes()
+    assert len(data) >= 30, "WebP container is too short"
+    assert int.from_bytes(data[4:8], "little") + 8 == len(data), (
+        "WebP RIFF length must cover the exact file"
+    )
+    offset = 12
+    image_chunk: tuple[bytes, bytes] | None = None
+    while offset < len(data):
+        assert offset + 8 <= len(data), "WebP chunk header is truncated"
+        kind = data[offset : offset + 4]
+        size = int.from_bytes(data[offset + 4 : offset + 8], "little")
+        start = offset + 8
+        end = start + size
+        assert end <= len(data), "WebP chunk payload is truncated"
+        if image_chunk is None and kind in {b"VP8 ", b"VP8L", b"VP8X"}:
+            image_chunk = (kind, data[start:end])
+        offset = end + (size % 2)
+    assert offset == len(data), "WebP chunk padding must cover the exact file"
+    assert image_chunk is not None and image_chunk[0] == b"VP8 ", (
+        "expected a lossy VP8 WebP image chunk"
+    )
+    payload = image_chunk[1]
+    assert len(payload) >= 10 and payload[3:6] == b"\x9d\x01\x2a", (
+        "VP8 key-frame header is malformed"
+    )
+    return {
+        "codec_name": "webp",
+        "width": int.from_bytes(payload[6:8], "little") & 0x3FFF,
+        "height": int.from_bytes(payload[8:10], "little") & 0x3FFF,
+        "pix_fmt": "yuv420p",
+    }
+
+
 def _decode_webp(path: Path) -> dict[str, Any]:
     ffprobe = shutil.which("ffprobe")
     ffmpeg = shutil.which("ffmpeg")
-    assert ffprobe is not None, "ffprobe is required for independent WebP validation"
-    assert ffmpeg is not None, "ffmpeg is required for independent WebP decode"
+    if ffprobe is None or ffmpeg is None:
+        return _probe_exact_webp_container(path)
     probe = _run_media_tool(
         [
             ffprobe,
@@ -97,6 +131,20 @@ def test_cut1_presenter_assets_are_exact_distinct_and_decodable() -> None:
         for name, digest in EXPECTED_SHA256.items()
     ]
     assert len(set(digests)) == len(digests), "presenter assets must be byte-distinct"
+
+
+def test_cut1_presenter_assets_fail_closed_without_external_media_tools(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(shutil, "which", lambda _command: None)
+    for name, digest in EXPECTED_SHA256.items():
+        assert _validate_asset(ASSET_DIR / name, digest) == digest
+    truncated = tmp_path / "truncated.webp"
+    truncated.write_bytes(
+        (ASSET_DIR / "narratwin-synthetic-presenter.webp").read_bytes()[:-1]
+    )
+    with pytest.raises(AssertionError, match="RIFF length"):
+        _validate_asset(truncated, _sha256(truncated))
 
 
 def test_cut1_presenter_notice_binds_provenance_and_controlled_use() -> None:
