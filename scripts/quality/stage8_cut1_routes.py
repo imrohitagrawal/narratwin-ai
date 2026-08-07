@@ -7,12 +7,27 @@ from pathlib import Path
 from typing import Any, Callable
 
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
+ISSUE396_BRANCH = "cut1-process-396-js-yaml-4-3-1-security"
 ISSUE385_BRANCH = "stage8-385-issue280-language-oracle"
 ISSUE384_BRANCH = "stage8-384-presenter-asset-route"
 ISSUE383_BRANCH = "stage8-383-presenter-assets"
+ISSUE393_BRANCH = "stage8-393-historical-digest-test-isolation"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 
 ROUTES = {
+    ISSUE396_BRANCH: {
+        "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
+        "docs/governance/preflights/issue-396.json",
+        "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
     ISSUE386_BRANCH: {
         "docs/governance/preflights/issue-386.json",
         "scripts/quality/stage8_cut1_routes.py",
@@ -50,14 +65,37 @@ ROUTES = {
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
+    ISSUE393_BRANCH: {
+        "docs/governance/preflights/issue-393.json",
+        "docs/governance/preflights/issue-396.json",
+        "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
+        "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "scripts/ci/check_container_scan_consensus.py",
+        "tests/unit/test_container_scan_consensus.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
 }
-ROUTE_ISSUES = {ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385, ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383}
-TOTAL_LIMITS = {ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350, ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700}
+ROUTE_ISSUES = {ISSUE396_BRANCH: 396, ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
+                ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE393_BRANCH: 393}
+TOTAL_LIMITS = {ISSUE396_BRANCH: 500, ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
+                ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE393_BRANCH: 700}
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE396_BRANCH: {
+        path: 180 if path.endswith("issue-396.json") else 80 if path.startswith("tests/unit/") else 40
+        for path in ROUTES[ISSUE396_BRANCH]
+    },
     ISSUE386_BRANCH: {
         path: 300 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py"}
         else 120 if path == "tests/acceptance/test_issue280_local_e2e_demo.py"
@@ -77,6 +115,15 @@ TEXT_LIMITS = {
     ISSUE383_BRANCH: {
         path: 260 if path == "tests/unit/test_cut1_presenter_assets.py" else 160
         for path in ROUTES[ISSUE383_BRANCH] - ISSUE383_BINARY_FILES
+    },
+    ISSUE393_BRANCH: {
+        path: 180 if path.endswith(("issue-393.json", "issue-396.json"))
+        else 160 if path == "tests/unit/test_stage8_quality_gate.py"
+        else 80 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+                            "tests/unit/test_dependency_security_contract.py",
+                            "scripts/ci/check_container_scan_consensus.py",
+                            "tests/unit/test_container_scan_consensus.py"} else 40
+        for path in ROUTES[ISSUE393_BRANCH]
     },
 }
 

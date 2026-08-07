@@ -55,8 +55,14 @@ Use it to answer:
   closed after merged-main acceptance. Issue `#384` is closed as completed
   through PR `#392`, merged at
   `9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`; merged-main workflow
-  `31114775860` passed. Its exact seven-path Issue `#383` route is therefore
-  active. Issue `#383` adds only the reviewed, fictional synthetic Myra and Raj
+  `31114775860` passed. Issues `#393` and `#396` are closed completed through
+  PR `#395`, squash-merged as
+  `3c9ede33df021779a3b58129693d7574d01066df`; merged-main workflow
+  `31145231335` passed. The historical Issue #366 fixture is isolated without
+  changing its production digest checker, transitive `js-yaml` is patched to
+  4.3.1, and native arm64/amd64 inventories remain exact and
+  architecture-bound. The exact seven-path Issue `#383` route is active again.
+  Issue `#383` adds only the reviewed, fictional synthetic Myra and Raj
   1536×1024 WebP assets, provenance/notices, binary validation, and trace/status
   evidence. Meera remains byte-identical at SHA-256
   `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`;
@@ -68,7 +74,7 @@ Use it to answer:
   acceptance; Issue `#367` is next. No clone, personal likeness, runtime
   provider, audio, animation, video, public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.
-- Last reviewed date: 2026-08-06
+- Last reviewed date: 2026-08-07
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
   `#332` / PR `#333` completed the narrow containment correction at merged main
@@ -1226,3 +1232,19 @@ Required update rules:
    lines. Symlink escape/cycle, cache poison, exact-scope, malformed-Git, and
    context-budget regressions are executable. Cut 1 and every product,
    provider, deployment, release, public, and production claim remain unchanged.
+
+## Issue 396 transitive dependency-security prerequisite status
+
+- Clean accepted main at `9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`
+  and PR `#395` independently reproduced High advisory
+  `GHSA-5p4m-2wfm-xmqj` in transitive development-tool `js-yaml` 4.3.0.
+- Issue `#396` owns a lockfile-only 4.3.1 repair, exact eleven-path route, committed
+  RED/GREEN evidence, strict audits, full gates, exact-head review and approval,
+  and merged-main acceptance through PR `#395`'s combined exact 15-path,
+  700-line #393/#396 route.
+- Independent primary/reproduction builds bind the refreshed final-frontend
+  inventories to arm64 `1803:1b00f69f5326e4466b69a49078231110e1ca5027ec25f8a215cf8e7aebb39587`
+  and native hosted amd64 `1803:65a8c963c2a19b486dc491454523a4466a5795fa8b9773ccceac9dae1ddb283c`;
+  the superseded QEMU value, prior values, wrong architecture, and unreviewed values fail closed.
+- No product, presenter, provider, media, deployment, release, public/LinkedIn,
+  trademark, Issue `#391`, or production status changes.
