@@ -80,6 +80,17 @@ test at 20 each solely for route/cap enforcement. The sidecar separately retains
 Issue `#383`'s exact seven-path text/binary contract. No portrait, asset
 implementation, dependency, provider, or product behavior is authorized.
 
+Issue `#393` is the mandatory test-isolation prerequisite discovered by Issue
+`#383` readiness. The accepted #383 route requires `STATUS.md` and
+`TRACEABILITY.md` changes, while the legacy Issue #366 route-test helper read
+those mutable live files when simulating the historical branch. The exact
+combined 15-path #393/#396 route preserves the fixed digest, keeps direct
+byte-mutation coverage, supplies the accepted digest only inside the historical
+route-scope fixture, patches only `js-yaml` 4.3.0 to 4.3.1, and replaces the
+stale frontend inventory set with independently reproduced architecture-bound
+values. It caps additions plus deletions at 700 with 180/160/80/40 per-path
+tiers. No #383 asset, route, budget, or product behavior changes.
+
 ## Required Make Targets
 
 The `Makefile` must expose:
@@ -1115,3 +1126,23 @@ architecture-bound inventory, and pass the existing runtime-hardening,
 reproduction, SBOM, and Trivy/Grype consensus checks through Medium. The old
 digest, npm r1, mutable tags, scanner suppression, waiver, and product or
 release expansion are prohibited.
+
+## Issue #396 transitive js-yaml security gate
+
+The exact `cut1-process-396-js-yaml-4-3-1-security` route starts from
+`9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`, requires exactly eleven paths, and
+permits at most 500 additions plus deletions. The preflight cap is 180, each
+focused test cap is 80, and every other path cap is 40.
+
+Only `node_modules/js-yaml` may change in `frontend/package-lock.json`, from
+4.3.0 to integrity-bound 4.3.1. `frontend/package.json`, direct dependencies,
+overrides, and every unrelated lock entry must remain identical to the base.
+Focused mutation tests, `npm ci`, `npm audit --audit-level=high`, repository
+dependency/security gates, complete quality and CI, exact-head review,
+eligible non-author approval, and merged-main acceptance are mandatory. No
+waiver, product/media behavior, deployment, release, public, or production
+claim is authorized.
+
+Issue #396 is absorbed into PR #395 because its mandatory STATUS update needs
+Issue #393 isolation while #395 needs its audit repair; both close only after the
+combined exact head passes review, approval, merge, and merged-main acceptance.
