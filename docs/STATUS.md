@@ -46,38 +46,41 @@ Use it to answer:
 - Issue `#366` governs the controlled local, key-free Cut 1. PR `#373` revises
   governance only under OWNER comments `5197711390`, `5197717563`, and
   `5197776590` and merged as `48fc32a2689c9bbc03742d774f3eadb8a500dafc`;
-  post-merge workflow `31056401428` passed. Exact-head review of #384 found a
-  mandatory legacy checker-cap failure, and clean main exposed a stale Issue
-  #280 unsupported-language oracle. Owner-approved #386 absorbs only that #385
-  test-oracle repair while preserving German support; its ninth-path reset isolates
-  a generic legacy test without weakening Issue #366 fixed-base coverage. The serialized path is
-  #386 → #385 absorbed-closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371, with
-  merged-main acceptance between children. No product/media, deployment,
-  release, public-availability, trademark-registration, or production claim is established.
+  post-merge workflow `31056401428` passed. The serialized path is #386 → #385
+  absorbed-closeout → #384 → #383 → #367 → #382 → #368 → #369 → #370 → #371,
+  with merged-main acceptance between children. No deployment, release,
+  public-availability, trademark-registration, or production claim is established.
   PR `#388` resolved both prerequisites and merged as
   `ee195862e5385b1fb307199dd7cd560500011f55`; Issues `#386` and `#385` are
-  closed after merged-main acceptance. Owner comment `5205259677` resets Issue
-  `#384` to an exact eight-path modular route with unchanged 500 aggregate cap,
-  bounded digest/route/test authority, and no product scope before Issue `#383` may act.
-  Issue `#384` is closed completed through PR `#392`, merged at
+  closed after merged-main acceptance. Issue `#384` is closed as completed
+  through PR `#392`, merged at
   `9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`; merged-main workflow
-  `31114775860` passed. Issue `#383` exact head `511acb2` passes focused asset,
-  decoder, route, and guardrail checks, but full readiness produced 2975 passes
-  and two failures because its required status/traceability edits alter the live
-  document bundle consumed by the historical Issue #366 route-test fixture.
-  Clean main passes the two tests and the minimal required-document mutation
-  reproduces both failures. PR `#395` accepted the #393/#396 convergence as
+  `31114775860` passed. Issues `#393` and `#396` are closed completed through
+  PR `#395`, squash-merged as
   `3c9ede33df021779a3b58129693d7574d01066df`; merged-main workflow
-  `31145231335` passed and both issues are closed completed. Issue `#383` head
-  `de976b9` then passed quality/CI but reproduced a standalone guardrail false
-  positive: its two exact WebP data paths trigger the generic frontend ADR rule,
-  while its accepted seven-path route rejects an ADR. Issue `#397` is the narrow
-  exact-path classifier prerequisite. Owner comment `5212555339` authorizes its
-  exact eleven-path reset solely to renew the merge-closeout source hash in the
-  agent-context manifest under a 10-line cap while preserving the unchanged
-  section binding and every other control; #383 remains preserved and #367 has
-  not started.
-  No playable-media, deployment, release, public-availability,
+  `31145231335` passed. The historical Issue #366 fixture is isolated without
+  changing its production digest checker, transitive `js-yaml` is patched to
+  4.3.1, and native arm64/amd64 inventories remain exact and
+  architecture-bound. The exact seven-path Issue `#383` route is active again.
+  Issue `#383` adds only the reviewed, fictional synthetic Myra and Raj
+  1536×1024 WebP assets, provenance/notices, binary validation, and trace/status
+  evidence. Meera remains byte-identical at SHA-256
+  `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`;
+  Owner-selected Myra A is `30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97`
+  and Raj C is `663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd`.
+  Issue `#397` is closed completed through PR `#398`, squash-merged as
+  `fe9eff7af88ba9aceaebed435a4d93c2ec01529b`; merged-main workflow
+  `31163462594` passed. Its exact-path classifier repair exempts only the two
+  governed Myra/Raj WebP data paths from the generic ADR rule while preserving
+  nearby, lookalike, mixed, and actual architecture enforcement. Rejected
+  concepts remain audit-only as future-scoped Aashna/Character 1 and
+  Veer/Character 2, with no active path or registration. The selected assets
+  remain controlled-local and pending latest-head non-author visual,
+  provenance, and permitted-use review. This PR satisfies Issue `#383` once it
+  merges and passes merged-main acceptance; presenter registration and all
+  playable media remain blocked until then. Issue `#367` is next. No clone,
+  personal likeness, runtime provider, audio, animation, video,
+  public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.
 - Last reviewed date: 2026-08-07
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
