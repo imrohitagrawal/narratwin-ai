@@ -145,6 +145,14 @@ def test_cut1_presenter_assets_fail_closed_without_external_media_tools(
     )
     with pytest.raises(AssertionError, match="RIFF length"):
         _validate_asset(truncated, _sha256(truncated))
+    frame_header_only = tmp_path / "frame-header-only.webp"
+    frame_header = b"\x00\x00\x00\x9d\x01\x2a\x00\x06\x00\x04"
+    frame_header_only.write_bytes(
+        b"RIFF" + (22).to_bytes(4, "little") + b"WEBPVP8 "
+        + len(frame_header).to_bytes(4, "little") + frame_header
+    )
+    with pytest.raises(AssertionError, match="reviewed presenter"):
+        _validate_asset(frame_header_only, _sha256(frame_header_only))
 
 
 def test_cut1_presenter_notice_binds_provenance_and_controlled_use() -> None:
