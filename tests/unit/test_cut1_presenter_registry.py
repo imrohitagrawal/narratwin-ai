@@ -72,6 +72,32 @@ def _assert_code(code: str, operation: Callable[[], object]) -> None:
     assert caught.value.code == code
 
 
+def _require_bounded_read(
+    monkeypatch: pytest.MonkeyPatch, target: Path, expected_size: int
+) -> None:
+    original_open = Path.open
+
+    class Probe:
+        def __init__(self, stream: Any) -> None:
+            self.stream = stream
+
+        def __enter__(self) -> Probe:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            self.stream.close()
+
+        def read(self, size: int = -1) -> bytes:
+            assert size == expected_size
+            return cast(bytes, self.stream.read(size))
+
+    def guarded_open(path: Path, *args: Any, **kwargs: Any) -> Any:
+        stream = original_open(path, *args, **kwargs)
+        return Probe(stream) if path == target else stream
+
+    monkeypatch.setattr(Path, "open", guarded_open)
+
+
 def test_registry_binds_exact_active_cut1_identities_and_assets() -> None:
     registry = load_cut1_presenter_registry(asset_root=ASSET_ROOT)
     assert registry.registry_version == "1.0.0"
@@ -154,6 +180,17 @@ def test_trace_binding_recomputes_every_identity_component_and_rejects_replay() 
         voice_reference_version=myra.voice.version,
     )
     registry.verify_binding(binding)
+    for trace_id in ("", "trace_never_claimed"):
+        values = {key: getattr(binding, key) for key in (
+            "presenter_id", "presenter_version", "trace_id", "asset_sha256",
+            "voice_reference_id", "voice_reference_version", "registry_version",
+            "registry_sha256",
+        )}
+        values["trace_id"] = trace_id
+        digest = hashlib.sha256(json.dumps(values, sort_keys=True,
+                                           separators=(",", ":")).encode()).hexdigest()
+        forged = replace(binding, trace_id=trace_id, binding_sha256=digest)
+        _assert_code("BINDING_MISMATCH", lambda: registry.verify_binding(forged))
     for field, value in (
         ("presenter_id", "raj"),
         ("presenter_version", "9.9.9"),
@@ -311,7 +348,9 @@ def test_authoritative_production_registry_mutations_fail_closed(
     assert caught.value.code in {"CANONICAL_REGISTRY", "VOICE_REFERENCE"}
 
 
-def test_registry_rejects_duplicate_json_keys_malformed_utf8_and_oversize(tmp_path: Path) -> None:
+def test_registry_rejects_duplicate_json_keys_malformed_utf8_and_oversize(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     duplicate = tmp_path / "duplicate.json"
     duplicate.write_text('{"schema_version":"a","schema_version":"b"}', encoding="utf-8")
     _assert_code(
@@ -326,13 +365,16 @@ def test_registry_rejects_duplicate_json_keys_malformed_utf8_and_oversize(tmp_pa
     )
     oversized = tmp_path / "oversized.json"
     oversized.write_bytes(b" " * 65_537)
+    _require_bounded_read(monkeypatch, oversized, 65_537)
     _assert_code(
         "REGISTRY_TOO_LARGE",
         lambda: load_presenter_registry(oversized, asset_root=ASSET_ROOT),
     )
 
 
-def test_registry_revalidates_missing_symlinked_and_mutated_assets(tmp_path: Path) -> None:
+def test_registry_revalidates_missing_symlinked_and_mutated_assets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     payload = _payload()
     asset_root = tmp_path / "assets"
     for path, _digest in EXPECTED_ASSETS.values():
@@ -350,6 +392,11 @@ def test_registry_revalidates_missing_symlinked_and_mutated_assets(tmp_path: Pat
     shutil.copy2(ASSET_ROOT / EXPECTED_ASSETS["myra"][0], myra_path)
     myra_path.write_bytes(myra_path.read_bytes()[:-1] + b"x")
     _assert_code("ASSET_CHECKSUM", lambda: _load_payload(tmp_path, payload, asset_root=asset_root))
+    shutil.copy2(ASSET_ROOT / EXPECTED_ASSETS["myra"][0], myra_path)
+    raj_path = asset_root / EXPECTED_ASSETS["raj"][0]
+    raj_path.write_bytes(b"x" * 500_001)
+    _require_bounded_read(monkeypatch, raj_path, 500_001)
+    _assert_code("ASSET_METADATA", lambda: _load_payload(tmp_path, payload, asset_root=asset_root))
 
 
 def test_voice_references_must_be_distinct_and_persona_anchors_complete(tmp_path: Path) -> None:
