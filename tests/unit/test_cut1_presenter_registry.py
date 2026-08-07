@@ -180,6 +180,20 @@ def test_trace_binding_recomputes_every_identity_component_and_rejects_replay() 
         voice_reference_version=myra.voice.version,
     )
     registry.verify_binding(binding)
+    raj = registry.get("raj", "1.0.0")
+    assert raj.asset is not None
+    raj_values = {key: getattr(binding, key) for key in (
+        "presenter_id", "presenter_version", "trace_id", "asset_sha256",
+        "voice_reference_id", "voice_reference_version", "registry_version",
+        "registry_sha256",
+    )}
+    raj_values.update(presenter_id="raj", asset_sha256=raj.asset.sha256,
+                      voice_reference_id=raj.voice.reference_id)
+    forged_raj = replace(binding, **raj_values,
+                         binding_sha256=hashlib.sha256(json.dumps(
+                             raj_values, sort_keys=True, separators=(",", ":")
+                         ).encode()).hexdigest())
+    _assert_code("BINDING_MISMATCH", lambda: registry.verify_binding(forged_raj))
     for trace_id in ("", "trace_never_claimed"):
         values = {key: getattr(binding, key) for key in (
             "presenter_id", "presenter_version", "trace_id", "asset_sha256",
@@ -217,6 +231,20 @@ def test_trace_binding_recomputes_every_identity_component_and_rejects_replay() 
             voice_reference_version=myra.voice.version,
         ),
     )
+
+
+@pytest.mark.parametrize("field", ["presenter_id", "trace_id"])
+def test_trace_binding_rejects_malformed_persisted_field_types(field: str) -> None:
+    registry = load_cut1_presenter_registry(asset_root=ASSET_ROOT)
+    myra = registry.get("myra", "1.0.0")
+    assert myra.asset is not None
+    binding = registry.bind_for_trace(
+        presenter_id="myra", presenter_version="1.0.0", trace_id=f"malformed_{field}",
+        asset_sha256=myra.asset.sha256, voice_reference_id=myra.voice.reference_id,
+        voice_reference_version=myra.voice.version,
+    )
+    _assert_code("BINDING_MISMATCH", lambda: registry.verify_binding(
+        cast(Any, replace)(binding, **{field: []})))
 
 
 @pytest.mark.parametrize("trace_id", ["", " ", "../trace", "trace\nvalue", "x" * 129])
