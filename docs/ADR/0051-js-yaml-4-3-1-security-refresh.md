@@ -36,4 +36,5 @@ full dependency and public-distribution review remains pending.
 
 Rollback may not restore affected 4.3.0. This decision adds no product runtime,
 provider, presenter, media, deployment, release, public/LinkedIn, trademark,
-Issue #391, or production authority; PR #395 remains blocked until #396 closes.
+Issue #391, or production authority. Issue #396 closes only after PR #395's
+merged-main acceptance.
