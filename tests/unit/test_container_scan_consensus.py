@@ -360,7 +360,7 @@ def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     assert matches("arm64", arm64)
     assert not matches("amd64", arm64)
     assert not matches("arm64", amd64)
-    assert not matches("amd64", amd64[:-1] + "0")
+    assert not matches("amd64", amd64[:-1] + "1")
     assert not matches("unknown", amd64)
     for stale in (
         "1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",
