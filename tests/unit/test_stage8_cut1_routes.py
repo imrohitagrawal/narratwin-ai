@@ -77,6 +77,18 @@ EXPECTED = {
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
+    "stage8-397-presenter-asset-adr-classifier": {
+        "docs/governance/preflights/issue-397.json",
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     "stage8-393-historical-digest-test-isolation": {
         "docs/governance/preflights/issue-393.json",
         "docs/governance/preflights/issue-396.json",

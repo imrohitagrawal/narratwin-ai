@@ -3566,6 +3566,49 @@ def test_new_governance_artifacts_pass_when_status_is_updated() -> None:
     assert guardrails.failures == []
 
 
+def test_exact_cut1_presenter_media_paths_do_not_require_an_adr() -> None:
+    guardrails.failures.clear()
+    guardrails.check_traceability_rules(
+        [
+            "frontend/public/demo/myra-synthetic-presenter.webp",
+            "frontend/public/demo/raj-synthetic-presenter.webp",
+            "docs/TRACEABILITY.md",
+        ]
+    )
+
+    assert guardrails.failures == []
+
+
+@pytest.mark.parametrize(
+    "changed_file",
+    [
+        "frontend/public/demo/myra-synthetic-presenter.png",
+        "frontend/public/demo/myra-synthetic-presenter.WEBP",
+        "frontend/public/demo/myrа-synthetic-presenter.webp",
+        "frontend/public/demo/future-synthetic-presenter.webp",
+        "frontend/src/app/page.tsx",
+    ],
+)
+def test_nearby_or_architectural_frontend_paths_still_require_an_adr(changed_file: str) -> None:
+    guardrails.failures.clear()
+    guardrails.check_traceability_rules([changed_file, "docs/TRACEABILITY.md"])
+
+    assert "Architecture-impacting changes require an ADR update under docs/ADR/." in guardrails.failures
+
+
+def test_exact_presenter_media_mixed_with_frontend_code_still_requires_an_adr() -> None:
+    guardrails.failures.clear()
+    guardrails.check_traceability_rules(
+        [
+            "frontend/public/demo/myra-synthetic-presenter.webp",
+            "frontend/src/app/page.tsx",
+            "docs/TRACEABILITY.md",
+        ]
+    )
+
+    assert "Architecture-impacting changes require an ADR update under docs/ADR/." in guardrails.failures
+
+
 def test_workflows_least_privilege_rejects_commented_permissions(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
