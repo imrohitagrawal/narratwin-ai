@@ -3587,6 +3587,8 @@ def test_exact_cut1_presenter_media_paths_do_not_require_an_adr() -> None:
         "frontend/public/demo/myrа-synthetic-presenter.webp",
         "frontend/public/demo/future-synthetic-presenter.webp",
         "frontend/src/app/page.tsx",
+        "Frontend/public/demo/myra-synthetic-presenter.webp",
+        "frontеnd/public/demo/myra-synthetic-presenter.webp",
     ],
 )
 def test_nearby_or_architectural_frontend_paths_still_require_an_adr(changed_file: str) -> None:
