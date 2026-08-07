@@ -68,6 +68,9 @@ def _probe_exact_webp_container(path: Path) -> dict[str, Any]:
     assert len(payload) >= 10 and payload[3:6] == b"\x9d\x01\x2a", (
         "VP8 key-frame header is malformed"
     )
+    assert hashlib.sha256(data).hexdigest() in EXPECTED_SHA256.values(), (
+        "fallback probe accepts only reviewed presenter bytes"
+    )
     return {
         "codec_name": "webp",
         "width": int.from_bytes(payload[6:8], "little") & 0x3FFF,
