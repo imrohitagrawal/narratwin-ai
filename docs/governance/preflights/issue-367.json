@@ -1,0 +1,59 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 367,
+  "branch": "stage8-367-presenter-registry",
+  "objective": "Under parent #366, Issue #367, accepted #383 evidence https://github.com/imrohitagrawal/narratwin-ai/issues/383#issuecomment-5219667176, owner selection https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5219144875, and pre-code ledger https://github.com/imrohitagrawal/narratwin-ai/issues/367#issuecomment-5219725234, implement a provider-neutral controlled-local registry for exactly active Meera, Myra, and Raj. Bind stable ID/version, owner-approved persona anchors, exact WebP path/hash/dimensions/media facts, provenance/permitted-use references, synthetic disclosure, distinct non-cloned voice references, renderer-neutral settings, lifecycle, canonical registry digest, and single-use trace selection. Treat JSON, paths, bytes, metadata, lifecycle, caller claims, and bindings as untrusted; reject malformed/oversized/unknown/duplicate data, traversal/symlink/missing/substituted media, stale/mismatched/replayed/revoked/deleted/disabled state, clone/provider-specific fields, or test-only activation. A fourth fictional personal-avatar-shaped fixture exists only in tests, disabled, with no likeness, biometric data, clone input, or tracked asset. Preserve all three accepted assets; keep Aashna/Veer unregistered. Use committed RED before GREEN, exact route/budget tests, full gates, independent review, eligible approval, and merged-main acceptance. Charge additions plus deletions across exactly fourteen paths: 2000 aggregate; 500 each implementation/focused test; 260 JSON; 220 each preflight/ADR; 180 each route file; 120 each other doc. No API/UI, narration/TTS/audio, renderer/video, provider/dependency/network, asset mutation, cloning/likeness, deployment, publication, release, or production claim. Stop for authority/ancestry drift, fifteenth path or cap breach, incompatible identity/legal/provenance facts, required likeness/clone/provider scope, failed out-of-route gate, unresolved Critical/High/required finding, or missing fresh approval.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-367.json",
+      "backend/app/presenter_registry.py",
+      "backend/app/presenter_registry.json",
+      "tests/unit/test_cut1_presenter_registry.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0052-cut1-presenter-registry.md",
+      "docs/ARCHITECTURE.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-367.json",
+      "backend/app/presenter_registry.py",
+      "backend/app/presenter_registry.json",
+      "tests/unit/test_cut1_presenter_registry.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0052-cut1-presenter-registry.md",
+      "docs/ARCHITECTURE.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/app/main.py",
+      "backend/app/stage7.py",
+      "backend/app/avatar_video_provider.py",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "docs/API_CONTRACT.md",
+      "docs/PRD.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "scripts/ci/",
+      "tests/api/",
+      "tests/acceptance/"
+    ]
+  }
+}
