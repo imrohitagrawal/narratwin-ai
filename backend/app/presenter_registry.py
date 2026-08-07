@@ -16,10 +16,10 @@ MAX_REGISTRY_BYTES, MAX_ASSET_BYTES = 65_536, 500_000
 REGISTRY_SCHEMA_VERSION = "cut1-presenter-registry-v1"
 PRODUCTION_IDS = frozenset({"meera", "myra", "raj"})
 TEST_PERSONAL_ID = "future-personal-test"
-VERSION_PATTERN = re.compile(r"^[1-9][0-9]*\.[0-9]+\.[0-9]+$")
-IDENTIFIER_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
-TRACE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
-SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+VERSION_PATTERN = re.compile(r"^[1-9][0-9]*\.[0-9]+\.[0-9]+\Z")
+IDENTIFIER_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}\Z")
+TRACE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z")
+SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}\Z")
 CANONICAL_PRODUCTION_SHA256 = "14838d74e2ff35ca4af5336d937eb206ec77a8351ba6b7cd86bfdc6929913855"
 CANONICAL_ASSETS = {
     "meera": ("frontend/public/demo/narratwin-synthetic-presenter.webp",
