@@ -66,11 +66,17 @@ Use it to answer:
   and two failures because its required status/traceability edits alter the live
   document bundle consumed by the historical Issue #366 route-test fixture.
   Clean main passes the two tests and the minimal required-document mutation
-  reproduces both failures. Issue `#393` now atomically absorbs Issue `#396`:
-  isolate the historical test fixture without changing the production checker,
-  fixed digest, #366 enforcement, or #383 route/assets/history, while patching
-  only transitive `js-yaml` 4.3.0 to 4.3.1 so PR `#395` can pass security. Issue `#383`
-  remains preserved and blocked; #367 has not started.
+  reproduces both failures. PR `#395` accepted the #393/#396 convergence as
+  `3c9ede33df021779a3b58129693d7574d01066df`; merged-main workflow
+  `31145231335` passed and both issues are closed completed. Issue `#383` head
+  `de976b9` then passed quality/CI but reproduced a standalone guardrail false
+  positive: its two exact WebP data paths trigger the generic frontend ADR rule,
+  while its accepted seven-path route rejects an ADR. Issue `#397` is the narrow
+  exact-path classifier prerequisite. Owner comment `5212555339` authorizes its
+  exact eleven-path reset solely to renew the merge-closeout source hash in the
+  agent-context manifest under a 10-line cap while preserving the unchanged
+  section binding and every other control; #383 remains preserved and #367 has
+  not started.
   No playable-media, deployment, release, public-availability,
   trademark-registration, or production-readiness claim is established.
 - Last reviewed date: 2026-08-07

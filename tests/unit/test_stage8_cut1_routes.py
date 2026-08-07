@@ -77,6 +77,19 @@ EXPECTED = {
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
+    "stage8-397-presenter-asset-adr-classifier": {
+        "docs/governance/preflights/issue-397.json",
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     "stage8-393-historical-digest-test-isolation": {
         "docs/governance/preflights/issue-393.json",
         "docs/governance/preflights/issue-396.json",
@@ -128,6 +141,14 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
         path: 180 if path.endswith("issue-396.json") else 80 if path.startswith("tests/unit/") else 40
         for path in EXPECTED[routes.ISSUE396_BRANCH]
     }
+    issue397 = json.loads((REPO / "docs/governance/preflights/issue-397.json").read_text(encoding="utf-8"))
+    assert issue397["branch"] == routes.ISSUE397_BRANCH
+    assert set(issue397["scope"]["required"]) == EXPECTED[routes.ISSUE397_BRANCH]
+    assert set(issue397["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE397_BRANCH]
+    assert routes.TOTAL_LIMITS[routes.ISSUE397_BRANCH] == 500
+    assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["scripts/guardrails_check.py"] == 100
+    assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["tests/unit/test_guardrails_check.py"] == 160
+    assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["docs/agent-context/context-policy-manifest-v1.json"] == 10
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source
