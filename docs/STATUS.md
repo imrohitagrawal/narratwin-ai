@@ -66,13 +66,15 @@ Use it to answer:
   1536×1024 WebP assets, provenance/notices, binary validation, and trace/status
   evidence. Meera remains byte-identical at SHA-256
   `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`;
-  Myra is `bdd62ae7f5e205c586e70c6a6f3e50ad925dafb6b86dccdfa30f35b42dda5e27`
-  and Raj is `f6419cc527498cd995792334de44da0af61892b2162269a98670a1bbf9d35b65`.
+  Owner-selected Myra A is `30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97`
+  and Raj C is `663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd`.
   Issue `#397` is closed completed through PR `#398`, squash-merged as
   `fe9eff7af88ba9aceaebed435a4d93c2ec01529b`; merged-main workflow
   `31163462594` passed. Its exact-path classifier repair exempts only the two
   governed Myra/Raj WebP data paths from the generic ADR rule while preserving
-  nearby, lookalike, mixed, and actual architecture enforcement. The assets
+  nearby, lookalike, mixed, and actual architecture enforcement. Rejected
+  concepts remain audit-only as future-scoped Aashna/Character 1 and
+  Veer/Character 2, with no active path or registration. The selected assets
   remain controlled-local and pending latest-head non-author visual,
   provenance, and permitted-use review. This PR satisfies Issue `#383` once it
   merges and passes merged-main acceptance; presenter registration and all

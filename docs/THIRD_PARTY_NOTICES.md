@@ -35,8 +35,8 @@ This file is not legal advice. Treat it as the engineering license-review regist
 | Addy Osmani Shipping and Launch Skill | Stage 8 release checklist, runbook, rollback, and launch-readiness guidance | Pending upstream license verification for the locally vendored copy | Guidance only | Stage 8 skill guidance | Activated as `.codex/skills/active/shipping-and-launch`; not a runtime dependency. |
 | Stage 7 mock/local avatar demo artifacts | First-party generated HTML demo export, JSON render manifest, and JSON video export placeholder samples | First-party generated from approved grounded script text; no third-party avatar media, model, or provider asset used | Yes for local/dev/test review with AI-generated avatar/video disclosure | Stage 7 mock/local avatar rendering and export | The mock/local `AvatarProvider` emits deterministic `text/html` and `application/json` artifacts only, including provider config and placeholder metadata. It does not use paid avatar providers, cloned identities, third-party likenesses, stock media, real video encoders, or non-commercial research tools. |
 | Quiet Presence synthetic presenter sample | Project-directed photorealistic fictional adult Indian woman presenter still for `/demo` | Selected from three OpenAI image-generation candidates created on 2026-08-05 from text-only product visual direction, without an uploaded or real-person reference, cloned identity, customer data, credentials, or copied third-party media; output need not be unique and is not intended to depict or endorse a real person | Internal local/mock product review only pending separate public-distribution and legal review | Issue `#358` local asset | Selected source PNG SHA-256 `47860cae597affd9e41f16077a76ef9d60fd6260058d9c400fb2701e150cdcb8`; mechanically converted with Sharp `0.35.3` to the committed 1536×1024 RGB WebP at `frontend/public/demo/narratwin-synthetic-presenter.webp`, 182,126 bytes, SHA-256 `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`. Conversion may not preserve every embedded provenance signal, so the repository checksum binds the reviewed derivative, not generation authenticity. The UI visibly and accessibly labels it as a fictional synthetic still preview and makes no speaking, animation, video, personal identity, product-runtime provider, deployment, release, or production claim. Design-time generation was external; product-runtime provider calls and spend remained zero. |
-| Myra synthetic presenter sample | Original fictional synthetic adult presenter still for the controlled-local Cut 1 | OpenAI image generation on 2026-08-06 under the OpenAI Rest-of-World Terms of Use and OpenAI Service Terms from text-only direction with no uploaded or real-person reference, cloned identity, biometric data, customer data, or copied third-party media; output need not be unique and is not intended to depict or endorse a real person | Controlled-local review only pending separate public-distribution and legal review | Issue `#383` local asset | Source PNG SHA-256 `953ce8277a9b46bcaf005b283596c27979ff38dc7d3095b403053c6c046a9f08`; converted with Sharp `0.35.3` under Apache-2.0 to `frontend/public/demo/myra-synthetic-presenter.webp`, 1536×1024 WebP/yuv420p, 128,740 bytes, SHA-256 `bdd62ae7f5e205c586e70c6a6f3e50ad925dafb6b86dccdfa30f35b42dda5e27`. The reviewed derivative is checksum-bound; no public, distribution, release, deployment, or production authority is created. |
-| Raj synthetic presenter sample | Original fictional synthetic adult presenter still for the controlled-local Cut 1 | OpenAI image generation on 2026-08-06 under the OpenAI Rest-of-World Terms of Use and OpenAI Service Terms from text-only direction with no uploaded or real-person reference, cloned identity, biometric data, customer data, or copied third-party media; output need not be unique and is not intended to depict or endorse a real person | Controlled-local review only pending separate public-distribution and legal review | Issue `#383` local asset | Source PNG SHA-256 `8feb72c340e0b049a07a835a759054964bec77ee123adba56f4198612212c6a2`; converted with Sharp `0.35.3` under Apache-2.0 to `frontend/public/demo/raj-synthetic-presenter.webp`, 1536×1024 WebP/yuv420p, 130,626 bytes, SHA-256 `f6419cc527498cd995792334de44da0af61892b2162269a98670a1bbf9d35b65`. The reviewed derivative is checksum-bound; no public, distribution, release, deployment, or production authority is created. |
+| Myra synthetic presenter sample | Owner-selected original fictional Indian adult presenter still for the controlled-local Cut 1 | OpenAI image generation on 2026-08-07 under the OpenAI Rest-of-World Terms of Use and OpenAI Service Terms from text-only direction with no uploaded or real-person reference, cloned identity, biometric data, customer data, or copied third-party media; output need not be unique and is not intended to depict or endorse a real person | Controlled-local review only pending separate public-distribution and legal review | Issue `#383` local asset | Owner selected Myra A. Source PNG SHA-256 `a4186431ca0a037620c90f5835e6fb6964d29934b4e2dc517c2929a87396c27d`; converted with Sharp `0.35.3` under Apache-2.0 to `frontend/public/demo/myra-synthetic-presenter.webp`, 1536×1024 WebP/yuv420p, 155,374 bytes, SHA-256 `30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97`. The reviewed derivative is checksum-bound; no public, distribution, release, deployment, or production authority is created. |
+| Raj synthetic presenter sample | Owner-selected original fictional Indian adult presenter still for the controlled-local Cut 1 | OpenAI image generation on 2026-08-07 under the OpenAI Rest-of-World Terms of Use and OpenAI Service Terms from text-only direction with no uploaded or real-person reference, cloned identity, biometric data, customer data, or copied third-party media; output need not be unique and is not intended to depict or endorse a real person | Controlled-local review only pending separate public-distribution and legal review | Issue `#383` local asset | Owner selected Raj C. Source PNG SHA-256 `d829196db1d84173fa077ff099450dde5dd186b39efdd5a3b9a1bac2ab6528a4`; converted with Sharp `0.35.3` under Apache-2.0 to `frontend/public/demo/raj-synthetic-presenter.webp`, 1536×1024 WebP/yuv420p, 59,192 bytes, SHA-256 `663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd`. The reviewed derivative is checksum-bound; no public, distribution, release, deployment, or production authority is created. |
 | Stage 8 demo seed data | First-party markdown fixture for the controlled local release-readiness demo | First-party repository content | Yes for local/dev/test and controlled demonstrations | Stage 8 demo seed data | `demo/stage8_seed_project.md` contains synthetic product facts only; no third-party media, model output, provider output, personal data, or secrets. |
 | Hosted-demo local/fake evidence records | First-party local access/quota/retention/disclosure metadata for reviewer evidence | First-party generated metadata only | Yes for local/dev/test review | Demo Checkpoint 1 PR5 hosted-demo access evidence | `backend/app/hosted_demo.py` creates metadata-only local/fake records and redacted events. It does not add hosting infrastructure, third-party SDKs, provider calls, hosted URLs, paid spend, cloned identity, media bytes, provider payloads, or secrets. |
 | Phase 1 golden-question dataset | First-party JSONL governance/eval acceptance contract | First-party repository content | Yes for local/dev/test and governance review | Phase 1 Closure static eval contract | `docs/evals/phase1_golden_questions.jsonl` contains first-party questions, expected answers, required claims, forbidden claims, evidence paths, citation policy, metric floors, and safety-boundary fixtures. It is not third-party data and is not yet executed by the eval runner. |
@@ -111,76 +111,106 @@ This file is not legal advice. Treat it as the engineering license-review regist
 
 ## Issue #383 source and conversion record
 
-Myra and Raj were generated independently by the approved image-generation
-skill from text-only fictional directions. No reference image was supplied,
-Meera was not used as a facial reference, and neither prompt named or described
-a real person. The directions prohibited cloning, biometric or customer data,
-copied media, text, logos, watermarks, malformed anatomy, and obstructed mouths.
+The approved image-generation skill created three independent text-only
+candidates per presenter on 2026-08-07. No reference image was supplied, Meera
+was not a facial reference, and neither prompt named a real person. The owner
+selected Myra A and Raj C in Issue `#383` comment `5219144636`.
 
-The exact Myra prompt is frozen at SHA-256
-`cbdfd1be646c7e185b33958c7f7f8bbac1c0d622556322a70e53b185b7819b31`:
-
-```text
-Use case: photorealistic-natural
-Asset type: NarraTwin AI controlled-local synthetic presenter portrait source
-Primary request: Create a completely original, fictional adult woman presenter named Myra. This is a new text-only fictional identity, not based on, copied from, or intended to resemble any real person, public figure, known individual, existing presenter, or uploaded image.
-Scene/backdrop: simple softly textured warm light-clay studio background with no objects or signage
-Subject: fictional adult woman in her late 30s to early 40s; short softly waved dark-brown bob tucked clear of the face; calm attentive expression; relaxed closed mouth fully visible; direct gaze; wearing an unbranded matte terracotta blazer over a plain ivory blouse; small simple stud earrings only
-Style/medium: high-quality photorealistic editorial studio portrait with natural skin texture and believable fabric detail; visibly synthetic fictional presentation asset
-Composition/framing: exact 3:2 landscape composition intended for a 1536 x 1024 derivative; centered symmetrical head-and-upper-torso portrait; eye-level camera; face large and unobstructed; full head, neck, both shoulders, and upper chest visible; generous clean margin around hair and shoulders; no hands in frame
-Lighting/mood: soft even frontal studio lighting, gentle depth, minimal shadows across the mouth and jaw, neutral welcoming professional mood
-Color palette: warm clay, ivory, natural dark brown; clearly distinct visual direction
-Constraints: anatomically coherent single adult; face and mouth unobstructed and suitable for later deterministic speaking animation; natural eyes, teeth not visible, realistic ears, hair, shoulders, clothing, and skin; no facial reference; no uploaded reference; no cloned identity; no biometric or customer data; no copied third-party media; no text; no letters; no numbers; no logos; no trademarks; no symbols; no watermark; no signature; no branded pattern
-Avoid: resemblance to any recognizable person; glamour retouching; uncanny skin; malformed face or anatomy; asymmetrical or duplicated facial features; extra people; cropped head; hair over lips; glasses; hat; microphone; hands; jewelry beyond the small studs; busy background; props; accidental signage or artifacts
-```
-
-The exact Raj prompt is frozen at SHA-256
-`660a927d79865ddddbff82e1eaddfd4af023735fc8da6738b7cdbfa0aa477d78`:
+The exact Myra generation prompt, including its negative prompt, is frozen at
+SHA-256 `17605aaf0bd34ac29b0e56b09e61a6791ccc2b340832f2f6bd9fea47f2b9c26d`:
 
 ```text
 Use case: photorealistic-natural
-Asset type: NarraTwin AI controlled-local synthetic presenter portrait source
-Primary request: Create a completely original, fictional adult man presenter named Raj. This is a new text-only fictional identity, not based on, copied from, or intended to resemble any real person, public figure, known individual, existing presenter, or uploaded image.
-Scene/backdrop: simple softly textured muted cool stone-gray studio background with no objects or signage
-Subject: fictional adult man in his mid to late 40s; short neatly styled salt-and-pepper hair with a clear hairline; clean-shaven face; calm attentive expression; relaxed closed mouth fully visible; direct gaze; wearing an unbranded deep forest-green band-collar jacket over a plain pale-gray shirt; no jewelry
-Style/medium: high-quality photorealistic editorial studio portrait with natural skin texture and believable fabric detail; visibly synthetic fictional presentation asset
-Composition/framing: exact 3:2 landscape composition intended for a 1536 x 1024 derivative; centered symmetrical head-and-upper-torso portrait; eye-level camera; face large and unobstructed; full head, neck, both shoulders, and upper chest visible; generous clean margin around hair and shoulders; no hands in frame
-Lighting/mood: soft even frontal studio lighting, gentle depth, minimal shadows across the mouth and jaw, neutral reassuring professional mood
-Color palette: cool stone gray, deep forest green, pale gray, salt-and-pepper; clearly distinct visual direction
-Constraints: anatomically coherent single adult; face and mouth unobstructed and suitable for later deterministic speaking animation; natural eyes, teeth not visible, realistic ears, hair, shoulders, clothing, and skin; no facial reference; no uploaded reference; no cloned identity; no biometric or customer data; no copied third-party media; no text; no letters; no numbers; no logos; no trademarks; no symbols; no watermark; no signature; no branded pattern
-Avoid: resemblance to any recognizable person; glamour retouching; uncanny skin; malformed face or anatomy; asymmetrical or duplicated facial features; extra people; cropped head; hair over lips; beard; moustache; glasses; hat; microphone; hands; jewelry; busy background; props; accidental signage or artifacts
+Asset type: NarraTwin AI controlled-local synthetic presenter identity portrait and future speaking-animation anchor
+
+Primary request: Create a completely original fictional adult Indian woman presenter named Myra, visibly and unambiguously 24–28 years old. She must not be based on, copied from, or intended to resemble any actress, celebrity, influencer, public figure, known individual, existing presenter, or uploaded image. Give her exceptionally beautiful, memorable, leading-lady-caliber screen presence while keeping her believable, culturally respectful, professional, warm, technically credible, and entirely original.
+
+Scene/backdrop: Neutral, elegant premium studio background in a restrained warm taupe or softly graded neutral tone, with subtle depth and no objects, signage, patterns, or clutter.
+
+Subject and presence: A young adult Indian woman with a natural fair or light-warm Indian complexion, realistic skin texture, and refined harmonious facial structure. She appears highly intelligent, technically credible, calm, composed, confident, emotionally intelligent, graceful, sophisticated, well-cultured, warm, sweet, approachable, persuasive, and compelling. Her charisma should come from beauty, warmth, clarity, confidence, and direct audience engagement. Her presentation may be tastefully alluring through a captivating, subtly seductive but professional gaze; never sexualized, explicit, vulgar, coercive, or inappropriate for a public technology demonstration.
+
+Face and eyes: Large, expressive, beautiful dark eyes; direct but warm eye contact with the camera; intelligent, confident, magnetic gaze; natural eyebrows; refined facial proportions; realistic pores and subtle natural skin variation; polished but restrained professional makeup; no artificial doll-like treatment. Use a friendly, composed expression with a relaxed closed mouth, fully visible lips, unobstructed jawline, and a neutral mouth position suitable for later lip synchronization.
+
+Hair: Long, open, naturally black Indian hair, thick, healthy, and glossy, extending clearly below both shoulders. Style it in soft natural waves or refined straight-to-wavy layers. Keep the hair visibly open while arranging it away from the eyes, lips, jawline, and critical facial-animation regions.
+
+Attire: A premium deep-maroon, wine-red, burgundy, or dark-red Indian saree with a clearly visible refined golden or gold-zari border. Use realistic luxurious textile texture, elegant authentic drape, and a sophisticated matching blouse. Show enough upper torso for the saree construction and gold border to be unmistakable. The styling must feel modern yet traditional, youthful, refined, culturally grounded, and suitable for a premium AI technology presenter—not bridal, costume-like, excessively ceremonial, or gaudy.
+
+Jewelry: Jewelry is mandatory and clearly visible. Give Myra a coordinated, premium, realistic, restrained gold, Kundan, or Polki necklace with subtle diamond accents, plus refined matching earrings or restrained jhumkas. A small elegant bindi may be included if it improves the composition. Jewelry must harmonize with the saree’s gold border, look intentionally professionally styled, and remain consistent as an identity anchor. Keep every piece clear of the mouth, jawline, hair, neck-animation region, and facial features. Do not make the jewelry oversized, heavy, cheap-looking, bridal, or costume-like.
+
+Style/medium: High-end cinematic photorealistic studio portrait photography with professional color grading, realistic skin, hair, textile, gold, gemstone, and jewelry textures. Original fictional identity; premium technology-presenter polish without glamour-retouched plasticity.
+
+Composition/framing: Exact 3:2 landscape composition intended for a 1536×1024 derivative. Centered, symmetrical, front-facing head, shoulders, and upper-torso portrait at eye level. Full head, long hair below the shoulders, neck, both shoulders, saree drape, golden border, necklace, earrings, and sufficient upper torso must be visible. Direct natural camera engagement. Keep the face large enough for later animation while leaving clean margin around the hair and shoulders. No hands are required in frame.
+
+Lighting/mood: Soft flattering frontal key light with gentle fill and controlled separation light. Preserve natural facial dimensionality while keeping the eyes, mouth, jaw, hair edges, saree border, and jewelry clearly readable. Cinematic, elegant, warm, magnetic, confident, intelligent, and approachable mood.
+
+Constraints: One anatomically coherent fictional adult Indian woman only; apparent age 24–28; natural complexion without bleaching or artificial whitening; long open black hair; deep-red or deep-maroon saree with clearly visible gold border; mandatory visible coordinated necklace and earrings; unobstructed eyes, lips, mouth, teeth area, jawline, and animation regions; realistic facial symmetry and anatomy; no facial or image reference; no cloning; no biometric or customer data; no copied third-party media; no text, letters, numbers, logo, trademark, symbol, watermark, signature, border, UI, microphone, headset, handheld object, or background prop.
+
+Negative prompt: Do not depict a child, teenager, person under 18, woman over 28, middle-aged woman, older woman, age-ambiguous adult, non-Indian identity, celebrity lookalike, recognizable actress, influencer, public figure, or real-person resemblance. No bob, pixie cut, short hair, shoulder-length hair, tied-back hair, ponytail, braid, bun, gray hair, salt-and-pepper hair, dyed fashion color, or hair covering the eyes, mouth, lips, or jaw. No Western blazer, terracotta blazer, ivory blouse, business suit, shirt-and-jacket styling, casual clothing, bridal saree, wedding styling, costume, crown, veil, excessively ceremonial drape, gaudy embroidery, or cheap fabric. No missing jewelry, jewelry-free styling, oversized necklace, heavy bridal set, gaudy jewelry, duplicate earrings, asymmetric accidental jewelry, melting metal, malformed gemstones, jewelry covering the face, or jewelry tangled into hair. No exaggerated glamour makeup, bleached skin, unnaturally white skin, plastic skin, waxy face, doll face, uncanny eyes, crossed eyes, asymmetrical pupils, distorted face, malformed ears, duplicate features, extra teeth, visible teeth, open mouth, distorted lips, obscured jaw, cropped head, cropped necklace, cropped saree border, extra people, hands, malformed hands, props, microphone, headset, text, caption, logo, watermark, border, UI, signage, clutter, explicit sexuality, fetish styling, vulgar pose, coercive expression, caricature, illustration, painting, CGI appearance, low resolution, blur, compression artifacts, over-sharpening, or inconsistent lighting.
+
+Generate one distinct candidate.
 ```
 
-Myra's direction specified an adult woman with a short dark-brown bob, a matte
-terracotta blazer, an ivory blouse, and a warm light-clay studio background.
-The generated 1536×1024 RGB PNG was created at
-`2026-08-06T21:15:51+05:30`, measured 2,211,970 bytes, and had SHA-256
-`953ce8277a9b46bcaf005b283596c27979ff38dc7d3095b403053c6c046a9f08` at
-`/private/tmp/narratwin-cut1-20260806-LhvfPX/generated/myra-source.png`.
+The exact Raj generation prompt, including its negative prompt, is frozen at
+SHA-256 `79d35ec0d6ce11cdb481f91dc7358a0408b298012ab86f0b50c08c2309f4b9b9`:
 
-Raj's direction specified an adult man with short salt-and-pepper hair, a deep
-forest-green band-collar jacket, a pale-gray shirt, and a cool stone-gray studio
-background. The generated 1536×1024 RGB PNG was created at
-`2026-08-06T21:17:01+05:30`, measured 2,198,777 bytes, and had SHA-256
-`8feb72c340e0b049a07a835a759054964bec77ee123adba56f4198612212c6a2` at
-`/private/tmp/narratwin-cut1-20260806-LhvfPX/generated/raj-source.png`.
+```text
+Use case: photorealistic-natural
+Asset type: NarraTwin AI controlled-local synthetic presenter identity portrait and future speaking-animation anchor
 
-Both sources were mechanically converted with Sharp `0.35.3` under
-Apache-2.0 using auto-orientation, exact 1536×1024 resize, alpha removal, and
-WebP quality 88 with effort 6 and smart chroma subsampling. FFprobe identified
-one WebP/yuv420p image stream at 1536×1024 for each derivative, and FFmpeg
-decoded one complete frame from each. The source files remain session evidence;
-the committed derivatives are bound by their repository paths and checksums.
+Primary request: Create a completely original fictional adult Indian man presenter named Raj, visibly and unambiguously 24–28 years old. He must not be based on, copied from, or intended to resemble any actor, celebrity, influencer, public figure, known individual, existing presenter, or uploaded image. Raj is a tall, slim, fit, exceptionally handsome, smart, polished, and charismatic young man with leading-man-caliber presence while remaining believable, culturally respectful, professional, warm, technically credible, and entirely original.
 
-The engineering visual review found two visibly distinct fictional adults with
-coherent faces and anatomy, unobstructed closed mouths, appropriate head-and-
-upper-torso framing, and no obvious text, logo, watermark, copied mark, or
-generation defect. This is not a legal opinion. A latest-head non-author
-reviewer must explicitly inspect the two images and provenance before merge.
-Public distribution remains blocked on separate public-distribution and legal
-review. No face or voice clone, personal likeness, provider-runtime call,
-deployment, release, trademark, commercial-distribution, or production claim
-is authorized by this record.
+Scene/backdrop: Neutral, elegant premium studio background in a restrained cool charcoal-gray or softly graded neutral tone, with subtle depth and no objects, signage, patterns, or clutter.
+
+Subject and presence: A youthful adult Indian man with a natural fair or light-warm Indian complexion, realistic skin texture, refined Indian facial features, and tall, lean, slim, athletic proportions conveyed through an upright elongated posture, long clean neckline, lean shoulders, and tailored fit. He appears highly intelligent, technically credible, exceptionally handsome, smart, confident, calm, composed, persuasive, socially intelligent, well-cultured, refined, approachable, warm, and charismatic. He should look as though he knows exactly what he is explaining. His charisma must come from appearance, eye contact, warmth, clarity, confidence, and credibility—not aggression, arrogance, dominance, manipulation, or romantic behavior.
+
+Face and hair: Youthful, handsome, harmonious facial structure; direct warm intelligent eye contact; natural eyebrows; friendly composed expression; relaxed closed mouth with fully visible lips and unobstructed jawline suitable for later lip synchronization. Use naturally black or very dark, dense, healthy, neatly groomed hair with a modern youthful style and no gray strands. He may be clean-shaven or have only restrained, carefully groomed light stubble that leaves the lips and jaw-animation regions visually clear.
+
+Attire: A tailored premium Indian formal bandhgala, gala-bandh, refined Jodhpuri, or sophisticated Nehru-style jacket in deep navy, charcoal, black, or dark maroon. Use a youthful contemporary fit, refined collar, elegant minimal buttons, realistic premium textile texture, and culturally grounded styling. Show enough upper torso to make the Indian formal construction unmistakable. The outfit must be formal and polished without looking like wedding attire, a ceremonial costume, or an older executive uniform. Do not use the Western business-suit fallback.
+
+Accessories: Keep accessories minimal and refined. A discreet premium watch or subtle culturally appropriate detail may be present only if naturally visible and non-distracting. No prominent jewelry is required.
+
+Style/medium: High-end cinematic photorealistic studio portrait photography with professional color grading and realistic skin, hair, stubble, fabric, collar, and button textures. Original fictional identity; premium technology-presenter polish without glamour-retouched plasticity or rugged aging.
+
+Composition/framing: Exact 3:2 landscape composition intended for a 1536×1024 derivative. Centered, symmetrical, front-facing head, shoulders, and upper-torso portrait at eye level. Full head, long neck, lean shoulders, formal Indian jacket collar, buttons, and sufficient upper torso must be visible. Use posture and proportions that clearly suggest a tall, slim, fit man while remaining natural. Direct natural camera engagement. Keep the face large enough for later animation while leaving clean margin around the hair and shoulders. No hands are required in frame.
+
+Lighting/mood: Soft flattering frontal key light with gentle fill and controlled separation light. Preserve natural facial dimensionality while keeping the eyes, mouth, jaw, hairline, collar, and jacket details clearly readable. Cinematic, confident, intelligent, warm, composed, magnetic, polished, handsome, smart, charismatic, and approachable mood.
+
+Constraints: One anatomically coherent fictional adult Indian man only; apparent age 24–28; tall, slim, fit, exceptionally handsome, smart, and charismatic identity; natural complexion without bleaching or artificial whitening; naturally black or very dark non-gray hair; youthful grooming; approved formal Indian attire; unobstructed eyes, lips, mouth, jawline, and animation regions; realistic facial symmetry and anatomy; no facial or image reference; no cloning; no biometric or customer data; no copied third-party media; no text, letters, numbers, logo, trademark, symbol, watermark, signature, border, UI, microphone, headset, handheld object, or background prop.
+
+Negative prompt: Do not depict a child, teenager, person under 18, man over 28, middle-aged man, older man, senior executive, age-ambiguous adult, short or stocky build, bulky bodybuilder build, slouched compressed posture, non-Indian identity, celebrity lookalike, recognizable actor, influencer, public figure, or real-person resemblance. No gray hair, salt-and-pepper hair, silver temples, receding older-looking hairline, thinning hair, weathered face, tired eyes, deep aging lines, heavy rugged beard, large moustache, or unkempt facial hair. No green jacket, forest-green jacket, casual band-collar leisure jacket, bomber jacket, field jacket, utility jacket, casual Nehru jacket over a T-shirt, gray crew-neck shirt, T-shirt, crew neck, streetwear, hoodie, casual shirt, open collar, Western business suit, wedding sherwani, wedding attire, ceremonial costume, ornate royal styling, or gaudy buttons. No arrogant smirk, aggressive stare, dominance pose, predatory expression, caricature masculinity, bleached skin, unnaturally white skin, plastic skin, waxy face, doll-like treatment, uncanny eyes, crossed eyes, asymmetrical pupils, distorted face, malformed ears, duplicate features, extra teeth, visible teeth, open mouth, distorted lips, obscured jaw, cropped head, cropped jacket collar, extra people, hands, malformed hands, props, microphone, headset, text, caption, logo, watermark, border, UI, signage, clutter, illustration, painting, CGI appearance, low resolution, blur, compression artifacts, over-sharpening, or inconsistent lighting.
+
+Generate one distinct candidate.
+```
+
+Myra A is the 2,204,077-byte 1536×1024 RGB PNG created at
+`2026-08-07T20:33:39+05:30`, SHA-256
+`a4186431ca0a037620c90f5835e6fb6964d29934b4e2dc517c2929a87396c27d`, at
+`/private/tmp/narratwin-issue383-candidates-lhIQbq/myra-a.png`. Raj C is the
+2,012,461-byte 1536×1024 RGB PNG created at `2026-08-07T20:37:57+05:30`,
+SHA-256 `d829196db1d84173fa077ff099450dde5dd186b39efdd5a3b9a1bac2ab6528a4`, at
+`/private/tmp/narratwin-issue383-candidates-lhIQbq/raj-c.png`.
+
+The rejected source PNG and derivative evidence remains audit-preserved: female
+source `953ce827...a9f08`, derivative `bdd62ae7...a5e27`, frozen prompt
+`cbdfd1be...9b31`; male source `8feb72c3...c6a2`, derivative
+`f6419cc5...b65`, frozen prompt `660a927d...d78`. Their contrary directions
+were late-30s/early-40s bob/blazer and mid-to-late-40s salt-and-pepper casual
+jacket. They are future-only Aashna/Character 1 and Veer/Character 2 concepts,
+not registered presenters; activation requires a separate governed issue.
+
+Both selected sources were mechanically converted on 2026-08-07 with Sharp
+`0.35.3` under Apache-2.0 using auto-orientation, exact 1536×1024 fill resize,
+alpha removal, and WebP quality 88, effort 6, and smart chroma subsampling.
+FFprobe identified one WebP/yuv420p stream per derivative and FFmpeg decoded one
+complete frame. The committed derivatives are path- and checksum-bound.
+
+Owner visual selection confirms the still identities only. Engineering review
+found distinct coherent fictional adults, unobstructed mouths, required attire
+and Myra jewelry, suitable framing, and no obvious text, logo, watermark, or
+artifact. This is not legal advice or proof of voice, animation, video, public
+use, release, deployment, or production readiness. A latest-head non-author
+reviewer must inspect the images, persona contract, and provenance before merge;
+public distribution remains blocked on separate legal and publication review.
 
 ## Rules
 

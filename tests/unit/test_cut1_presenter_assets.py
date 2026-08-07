@@ -20,10 +20,10 @@ EXPECTED_SHA256 = {
         "d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1"
     ),
     "myra-synthetic-presenter.webp": (
-        "bdd62ae7f5e205c586e70c6a6f3e50ad925dafb6b86dccdfa30f35b42dda5e27"
+        "30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97"
     ),
     "raj-synthetic-presenter.webp": (
-        "f6419cc527498cd995792334de44da0af61892b2162269a98670a1bbf9d35b65"
+        "663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd"
     ),
 }
 
@@ -160,6 +160,12 @@ def test_cut1_presenter_assets_fail_closed_without_external_media_tools(
 
 def test_cut1_presenter_notice_binds_provenance_and_controlled_use() -> None:
     notice = NOTICE.read_text(encoding="utf-8")
+    prompt_digests = {
+        hashlib.sha256(block.split("\n```", 1)[0].encode()).hexdigest()
+        for block in notice.split("```text\n")[1:]
+    }
+    assert {"17605aaf0bd34ac29b0e56b09e61a6791ccc2b340832f2f6bd9fea47f2b9c26d",
+            "79d35ec0d6ce11cdb481f91dc7358a0408b298012ab86f0b50c08c2309f4b9b9"} <= prompt_digests
     for name, digest in EXPECTED_SHA256.items():
         assert name in notice
         assert digest in notice
@@ -174,8 +180,15 @@ def test_cut1_presenter_notice_binds_provenance_and_controlled_use() -> None:
         "controlled-local",
         "public-distribution and legal review",
         "not intended to depict or endorse a real person",
-        "/private/tmp/narratwin-cut1-20260806-LhvfPX/generated/myra-source.png",
-        "/private/tmp/narratwin-cut1-20260806-LhvfPX/generated/raj-source.png",
+        "17605aaf0bd34ac29b0e56b09e61a6791ccc2b340832f2f6bd9fea47f2b9c26d",
+        "79d35ec0d6ce11cdb481f91dc7358a0408b298012ab86f0b50c08c2309f4b9b9",
+        "a4186431ca0a037620c90f5835e6fb6964d29934b4e2dc517c2929a87396c27d",
+        "d829196db1d84173fa077ff099450dde5dd186b39efdd5a3b9a1bac2ab6528a4",
+        "selected Myra A and Raj C",
+        "Aashna/Character 1",
+        "Veer/Character 2",
+        "/private/tmp/narratwin-issue383-candidates-lhIQbq/myra-a.png",
+        "/private/tmp/narratwin-issue383-candidates-lhIQbq/raj-c.png",
     ):
         assert marker in notice
 

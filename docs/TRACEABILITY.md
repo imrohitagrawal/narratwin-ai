@@ -418,6 +418,14 @@ durability, deployment, and release decisions remain outside this trace.
 | Synthetic presenter preview | Local photorealistic generated WebP, exact committed-asset hash, visible and accessible synthetic still-image disclosure, and light/dark responsive browser evidence | Generated without a real-person reference and not intended to depict or endorse a real person; no copied third-party media, registered render identity, animation, video, or product-runtime provider activity |
 | Local browser proof | Opt-in `NARRATWIN_DEMO_LOCAL_E2E=1` Playwright case traverses the existing local/mock API without interception | Local execution evidence only; no deployment, public URL, release, or production readiness |
 
+## Issue #383 Myra and Raj identity-anchor traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Owner-approved still identities | Issue `#383` owner selection of Myra A and Raj C; exact source and derivative hashes; 1536×1024 WebP decode tests | Meera remains byte-identical; rejected Aashna/Character 1 and Veer/Character 2 concepts remain future-only |
+| Persona and provenance integrity | Frozen exact generation/negative prompts, owner direction, visual review, notices, distinctness and fail-closed checksum tests | Still acceptance proves no narration, voice, animation, video, playback, public use, release, deployment, or production readiness |
+| Governed serialized transition | Issue `#383` preflight and exact seven-path/700-line route | Registration remains blocked until merged-main acceptance; Issue `#367` is next |
+
 ## Issue #374 frontend container security repair traceability
 
 | Evidence | Requirement | Preserved boundary |
