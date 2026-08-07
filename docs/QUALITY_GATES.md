@@ -101,6 +101,19 @@ merge-closeout section's source-file hash. The route charges additions plus
 deletions against current main, caps the aggregate at 500, and preserves #383's
 seven-path route plus every other manifest field and agent-context control.
 
+Issue `#367` uses exact branch `stage8-367-presenter-registry` and exactly the
+fourteen paths in its GovernancePreflightV1. The route charges additions plus
+deletions against current `main`: 2,000 aggregate; 500 each for the registry
+implementation and focused test; 260 for registry JSON; 220 each for preflight
+and ADR; 180 each for the route sidecar and route test; and 120 for every other
+document. Missing/extra/lookalike/untracked/nonregular paths, malformed numstat,
+or budget excess fail closed. Focused tests require exact production identities,
+assets/personas/disclosure/permission, non-cloned provider-neutral voice refs,
+renderer neutrality, monotonic lifecycle, canonical trace bindings, replay
+rejection, hostile JSON/media rejection, and an unselectable test-only personal
+shape. No API, provider, audio, renderer, UI, clone, public, release, or
+production capability is established.
+
 ## Required Make Targets
 
 The `Makefile` must expose:

@@ -2351,6 +2351,16 @@ The strict sequence is:
 6. Issue `#371`: clean-setup all-presenter replay evidence and adversarial
    review.
 
+Issue `#367` registers only the three accepted synthetic identities. Its strict
+JSON loader revalidates the approved still assets and binds persona, existing
+provenance, controlled-local permission, synthetic disclosure, distinct
+non-cloned provider-neutral voice direction, renderer-neutral settings,
+monotonic lifecycle, and single-use trace evidence. A disabled future-personal
+shape exists only in tests without a likeness, biometric input, clone, or asset.
+Aashna and Veer remain unregistered. This child creates no narration, audio,
+renderer, video, UI, provider, or public capability; Issue `#382` remains next
+after merged-main acceptance.
+
 The exact canonical narration and presenter substitution rule live in OWNER
 comment `5197711390`: Myra and Raj replace only both occurrences of `Meera`.
 TTS accepts only the latest evaluated script version after explicit speech

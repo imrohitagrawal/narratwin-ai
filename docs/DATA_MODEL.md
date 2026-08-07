@@ -769,6 +769,40 @@ Artifact types:
 - `AVATAR_VIDEO`
 - `EXPORT_BUNDLE`
 
+### PresenterIdentityV1
+
+Controlled-local Issue `#367` registry entity. Production rows are exactly
+Meera, Myra, and Raj; the checked-in registry contains no personal identity.
+
+Fields:
+
+- `id`, `display_name`, and semantic `version`
+- `identity_kind = SYNTHETIC`, `test_only = false`, and monotonic `lifecycle`
+- structured `persona` summary, apparent-age contract, and visual anchors
+- `asset` canonical path, SHA-256, width, height, media type, and provenance ref
+- distinct provider-neutral `voice` reference/version with `cloned = false`
+- fictional synthetic `disclosure`
+- controlled-local `permission` and publication-disabled posture
+- provider-null renderer-neutral framing and mouth/jaw readiness settings
+
+Lifecycle values are `ACTIVE`, `REVOKED`, `DELETED`, and test-only `DISABLED`.
+Only `ACTIVE -> REVOKED -> DELETED` or `ACTIVE -> DELETED` is valid. There is
+no resurrection. Lifecycle changes alter the canonical registry digest.
+
+### PresenterTraceBindingV1
+
+Fields:
+
+- presenter ID/version
+- exact asset SHA-256
+- voice reference ID/version
+- registry version and recomputed canonical registry SHA-256
+- bounded single-use `trace_id`
+- canonical binding SHA-256
+
+Every field is recomputed during verification. The Issue `#367` in-memory replay
+set is controlled-local evidence only, not a production durability claim.
+
 ### ConsentRecord
 
 Future identity-media entity.

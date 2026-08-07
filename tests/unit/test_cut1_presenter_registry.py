@@ -6,12 +6,13 @@ import json
 import shutil
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import pytest
 
 from backend.app.presenter_registry import (
     PresenterLifecycle,
+    PresenterRegistry,
     PresenterRegistryError,
     load_cut1_presenter_registry,
     load_presenter_registry,
@@ -38,7 +39,7 @@ EXPECTED_ASSETS = {
 
 
 def _payload() -> dict[str, Any]:
-    return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(REGISTRY_PATH.read_text(encoding="utf-8")))
 
 
 def _write_payload(tmp_path: Path, payload: dict[str, Any]) -> Path:
@@ -53,7 +54,7 @@ def _load_payload(
     *,
     asset_root: Path = ASSET_ROOT,
     allow_test_fixtures: bool = False,
-):
+) -> PresenterRegistry:
     return load_presenter_registry(
         _write_payload(tmp_path, payload),
         asset_root=asset_root,
@@ -82,11 +83,13 @@ def test_registry_binds_exact_active_cut1_identities_and_assets() -> None:
         assert identity.identity_kind == "SYNTHETIC"
         assert identity.lifecycle is PresenterLifecycle.ACTIVE
         assert identity.test_only is False
-        assert identity.asset.path == path
-        assert identity.asset.sha256 == digest
-        assert identity.asset.media_type == "image/webp"
-        assert (identity.asset.width, identity.asset.height) == (1536, 1024)
-        assert identity.asset.provenance_ref.startswith("docs/THIRD_PARTY_NOTICES.md#")
+        assert identity.asset is not None
+        asset = identity.asset
+        assert asset.path == path
+        assert asset.sha256 == digest
+        assert asset.media_type == "image/webp"
+        assert (asset.width, asset.height) == (1536, 1024)
+        assert asset.provenance_ref.startswith("docs/THIRD_PARTY_NOTICES.md#")
         assert hashlib.sha256((ASSET_ROOT / path).read_bytes()).hexdigest() == digest
 
 
@@ -140,11 +143,13 @@ def test_registry_preserves_owner_approved_persona_anchors() -> None:
 def test_trace_binding_recomputes_every_identity_component_and_rejects_replay() -> None:
     registry = load_cut1_presenter_registry(asset_root=ASSET_ROOT)
     myra = registry.get("myra", "1.0.0")
+    assert myra.asset is not None
+    myra_asset_sha256 = myra.asset.sha256
     binding = registry.bind_for_trace(
         presenter_id="myra",
         presenter_version="1.0.0",
         trace_id="trace_cut1_myra_001",
-        asset_sha256=myra.asset.sha256,
+        asset_sha256=myra_asset_sha256,
         voice_reference_id=myra.voice.reference_id,
         voice_reference_version=myra.voice.version,
     )
@@ -160,8 +165,8 @@ def test_trace_binding_recomputes_every_identity_component_and_rejects_replay() 
     ):
         _assert_code(
             "BINDING_MISMATCH",
-            lambda field=field, value=value: registry.verify_binding(
-                replace(binding, **{field: value})
+            lambda: registry.verify_binding(
+                cast(Any, replace)(binding, **{field: value})
             ),
         )
     _assert_code(
@@ -170,7 +175,7 @@ def test_trace_binding_recomputes_every_identity_component_and_rejects_replay() 
             presenter_id="myra",
             presenter_version="1.0.0",
             trace_id=binding.trace_id,
-            asset_sha256=myra.asset.sha256,
+            asset_sha256=myra_asset_sha256,
             voice_reference_id=myra.voice.reference_id,
             voice_reference_version=myra.voice.version,
         ),
@@ -181,13 +186,15 @@ def test_trace_binding_recomputes_every_identity_component_and_rejects_replay() 
 def test_trace_binding_rejects_malformed_trace_ids(trace_id: str) -> None:
     registry = load_cut1_presenter_registry(asset_root=ASSET_ROOT)
     meera = registry.get("meera", "1.0.0")
+    assert meera.asset is not None
+    meera_asset_sha256 = meera.asset.sha256
     _assert_code(
         "TRACE_INVALID",
         lambda: registry.bind_for_trace(
             presenter_id="meera",
             presenter_version="1.0.0",
             trace_id=trace_id,
-            asset_sha256=meera.asset.sha256,
+            asset_sha256=meera_asset_sha256,
             voice_reference_id=meera.voice.reference_id,
             voice_reference_version=meera.voice.version,
         ),
@@ -199,6 +206,7 @@ def test_missing_stale_revoked_deleted_and_disabled_identities_fail_closed() -> 
     _assert_code("PRESENTER_NOT_FOUND", lambda: registry.get("missing", "1.0.0"))
     _assert_code("PRESENTER_STALE", lambda: registry.get("meera", "0.9.0"))
     myra = registry.get("myra", "1.0.0")
+    assert myra.asset is not None
     binding = registry.bind_for_trace(
         presenter_id="myra",
         presenter_version="1.0.0",
@@ -321,7 +329,7 @@ def test_aashna_and_veer_cannot_enter_the_active_registry(tmp_path: Path) -> Non
         extra = copy.deepcopy(payload["presenters"][0])
         extra.update({"id": name.lower(), "display_name": name})
         payload["presenters"].append(extra)
-        _assert_code("REGISTRY_ID_SET", lambda payload=payload: _load_payload(tmp_path, payload))
+        _assert_code("REGISTRY_ID_SET", lambda: _load_payload(tmp_path, payload))
 
 
 def test_future_personal_shape_is_test_only_disabled_and_never_selectable(tmp_path: Path) -> None:

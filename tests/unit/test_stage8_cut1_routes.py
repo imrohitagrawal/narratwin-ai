@@ -77,6 +77,22 @@ EXPECTED = {
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
+    "stage8-367-presenter-registry": {
+        "docs/governance/preflights/issue-367.json",
+        "backend/app/presenter_registry.py",
+        "backend/app/presenter_registry.json",
+        "tests/unit/test_cut1_presenter_registry.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0052-cut1-presenter-registry.md",
+        "docs/ARCHITECTURE.md",
+        "docs/DATA_MODEL.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     "stage8-397-presenter-asset-adr-classifier": {
         "docs/governance/preflights/issue-397.json",
         "scripts/guardrails_check.py",
@@ -149,6 +165,14 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["scripts/guardrails_check.py"] == 100
     assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["tests/unit/test_guardrails_check.py"] == 160
     assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["docs/agent-context/context-policy-manifest-v1.json"] == 10
+    issue367 = json.loads((REPO / "docs/governance/preflights/issue-367.json").read_text(encoding="utf-8"))
+    assert issue367["branch"] == routes.ISSUE367_BRANCH
+    assert set(issue367["scope"]["required"]) == EXPECTED[routes.ISSUE367_BRANCH]
+    assert set(issue367["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE367_BRANCH]
+    assert routes.TOTAL_LIMITS[routes.ISSUE367_BRANCH] == 2000
+    assert routes.TEXT_LIMITS[routes.ISSUE367_BRANCH]["backend/app/presenter_registry.py"] == 500
+    assert routes.TEXT_LIMITS[routes.ISSUE367_BRANCH]["tests/unit/test_cut1_presenter_registry.py"] == 500
+    assert routes.TEXT_LIMITS[routes.ISSUE367_BRANCH]["backend/app/presenter_registry.json"] == 260
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source

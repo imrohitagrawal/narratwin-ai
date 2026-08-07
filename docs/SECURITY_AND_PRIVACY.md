@@ -416,6 +416,28 @@ the override when upstream publishes a reviewed
 Semgrep version compatible with a fixed Click release; issue `#150` tracks the
 deadline and removal work.
 
+## Cut 1 Presenter Registry Boundary
+
+The Issue `#367` registry treats its JSON, path strings, media bytes, metadata,
+lifecycle values, caller selection claims, trace IDs, and persisted bindings as
+untrusted. It fails closed on malformed/oversized/duplicate-key/unknown data,
+path escape, symlinks, missing or substituted assets, checksum/dimension/media
+drift, clone/provider fields, persona drift, replay, and stale/revoked/deleted or
+test-only identities.
+
+Production contains only fictional synthetic Meera, Myra, and Raj. The future
+personal-avatar shape is a disabled test fixture with no tracked asset, likeness,
+biometric data, clone input, or activation path. Aashna and Veer remain absent.
+Voice entries are qualitative, distinct, non-cloned, provider-neutral references;
+they are not audio evidence. Renderer fields select no provider or engine.
+
+Registry and binding SHA-256 values detect local mismatch or stale state; they do
+not authenticate an actor able to rewrite all local files. Current lifecycle and
+trace replay state is process-local. Later durable work must preserve the complete
+binding and reconcile current revocation/deletion before narration, TTS, render,
+export, or replay. Logs should use bounded IDs/digests and error codes, not raw
+registry JSON, persona prose, media bytes, provider payloads, or secrets.
+
 ## Privacy Rules
 
 - Use local-first storage for MVP.

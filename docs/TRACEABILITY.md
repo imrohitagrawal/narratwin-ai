@@ -426,6 +426,14 @@ durability, deployment, and release decisions remain outside this trace.
 | Persona and provenance integrity | Frozen exact generation/negative prompts, owner direction, visual review, notices, distinctness and fail-closed checksum tests | Still acceptance proves no narration, voice, animation, video, playback, public use, release, deployment, or production readiness |
 | Governed serialized transition | Issue `#383` preflight and exact seven-path/700-line route | Registration remains blocked until merged-main acceptance; Issue `#367` is next |
 
+## Issue #367 presenter-registry traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Stable production identity contract | Strict registry JSON and loader bind exactly Meera/Myra/Raj ID/version, owner-approved persona anchors, canonical asset facts, existing provenance, disclosure, controlled-local permission, distinct non-cloned voice direction, and renderer-neutral settings | Meera/Myra/Raj bytes remain unchanged; Aashna/Veer remain unregistered; personal shape is disabled test-only with no likeness/asset |
+| Fail-closed lifecycle and trace integrity | Focused mutations cover missing/extra/stale/mismatched/replayed/revoked/deleted/disabled state, hostile JSON/path/media, canonical registry/binding digests, and no lifecycle resurrection | Local-process lifecycle/replay evidence is not production durability, audio, rendering, playback, or publication proof |
+| Governed serialized transition | Issue `#367` preflight, fourteen-path/2,000-line route, ADR `0052`, RED/GREEN history, and full review/gates | Issue `#382` remains blocked until merged-main acceptance; no API/provider/TTS/renderer/UI/release capability |
+
 ## Issue #374 frontend container security repair traceability
 
 | Evidence | Requirement | Preserved boundary |

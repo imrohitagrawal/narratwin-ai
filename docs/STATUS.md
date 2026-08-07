@@ -61,8 +61,9 @@ Use it to answer:
   `31145231335` passed. The historical Issue #366 fixture is isolated without
   changing its production digest checker, transitive `js-yaml` is patched to
   4.3.1, and native arm64/amd64 inventories remain exact and
-  architecture-bound. The exact seven-path Issue `#383` route is active again.
-  Issue `#383` adds only the reviewed, fictional synthetic Myra and Raj
+  architecture-bound. Issue `#383` is closed completed through PR `#399`,
+  squash-merged as `9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0`; merged-main workflow
+  `31198544810` passed. It adds only the reviewed, fictional synthetic Myra and Raj
   1536×1024 WebP assets, provenance/notices, binary validation, and trace/status
   evidence. Meera remains byte-identical at SHA-256
   `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`;
@@ -74,11 +75,14 @@ Use it to answer:
   governed Myra/Raj WebP data paths from the generic ADR rule while preserving
   nearby, lookalike, mixed, and actual architecture enforcement. Rejected
   concepts remain audit-only as future-scoped Aashna/Character 1 and
-  Veer/Character 2, with no active path or registration. The selected assets
-  remain controlled-local and pending latest-head non-author visual,
-  provenance, and permitted-use review. This PR satisfies Issue `#383` once it
-  merges and passes merged-main acceptance; presenter registration and all
-  playable media remain blocked until then. Issue `#367` is next. No clone,
+  Veer/Character 2, with no active path or registration. Issue `#367` is the
+  active exact fourteen-path child for a strict provider-neutral registry of
+  Meera, Myra, and Raj. It binds the accepted assets/personas/provenance,
+  synthetic disclosure, controlled-local permission, distinct non-cloned voice
+  direction, renderer-neutral settings, monotonic lifecycle, and trace integrity.
+  Its fourth future-personal shape is disabled and test-only with no likeness or
+  asset. This PR satisfies Issue `#367` only after review, merge, and merged-main
+  acceptance; Issue `#382` is next and playable media remains blocked. No clone,
   personal likeness, runtime provider, audio, animation, video,
   public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.
