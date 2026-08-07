@@ -32,6 +32,7 @@ from scripts.ci.check_semgrep_security import (
 ROOT = Path(__file__).resolve().parents[2]
 ISSUE360_BASE = "b9a2a8cd4aa05328116565990fc30ae44592c875"
 ISSUE396_BASE = "9ee3f4a4d3b8cf1e78b5a878904748b60d557a76"
+ISSUE401_BASE = "9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0"
 BRACE_PATH = "node_modules/brace-expansion"
 JS_YAML_PATH = "node_modules/js-yaml"
 JS_YAML_431_INTEGRITY = (
@@ -41,6 +42,8 @@ BRACE_509_INTEGRITY = (
     "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg=="
 )
 SEMGREP_LOCK_SHA256 = "1975bebb0fca718a45742ad13a759e2092162c44c944c310572b4d553de4d51c"
+PYPDF_WHEEL_SHA256 = "14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee"
+PYPDF_SDIST_SHA256 = "d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79"
 
 
 def _text_at(ref: str, path: str) -> str:
@@ -56,6 +59,60 @@ def _base_text(path: str) -> str:
 
 def _base_json(path: str) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(_base_text(path)))
+
+
+def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
+    project, lock = tomllib.loads(project_text), tomllib.loads(lock_text)
+    base_project = tomllib.loads(_text_at(ISSUE401_BASE, "pyproject.toml"))
+    base_lock = tomllib.loads(_text_at(ISSUE401_BASE, "uv.lock"))
+    dependencies = project["project"]["dependencies"]
+    assert [value for value in dependencies if value.startswith("pypdf")] == ["pypdf>=6.15.0"]
+    normalized_project = copy.deepcopy(project)
+    index = dependencies.index("pypdf>=6.15.0")
+    normalized_project["project"]["dependencies"][index] = "pypdf>=6.14.2"
+    assert normalized_project == base_project
+
+    pypdf = [package for package in lock["package"] if package["name"] == "pypdf"]
+    assert len(pypdf) == 1 and pypdf[0]["version"] == "6.15.0"
+    assert pypdf[0]["source"] == {"registry": "https://pypi.org/simple"}
+    assert pypdf[0]["sdist"]["url"].endswith("/pypdf-6.15.0.tar.gz")
+    assert pypdf[0]["sdist"]["hash"] == f"sha256:{PYPDF_SDIST_SHA256}"
+    assert pypdf[0]["sdist"]["size"] == 6993794
+    assert len(pypdf[0]["wheels"]) == 1
+    wheel = pypdf[0]["wheels"][0]
+    assert wheel["url"].endswith("/pypdf-6.15.0-py3-none-any.whl")
+    assert wheel["hash"] == f"sha256:{PYPDF_WHEEL_SHA256}"
+    assert wheel["size"] == 378123
+
+    normalized_lock = copy.deepcopy(lock)
+    root = next(package for package in normalized_lock["package"] if package["name"] == "narratwin-ai")
+    root_metadata = next(item for item in root["metadata"]["requires-dist"] if item["name"] == "pypdf")
+    root_metadata["specifier"] = ">=6.14.2"
+    pypdf_index = next(i for i, package in enumerate(normalized_lock["package"]) if package["name"] == "pypdf")
+    normalized_lock["package"][pypdf_index] = next(
+        package for package in base_lock["package"] if package["name"] == "pypdf"
+    )
+    assert normalized_lock == base_lock
+
+
+def test_root_pypdf_resolution_is_exact_isolated_and_patched() -> None:
+    _assert_pypdf_615_contract(
+        (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
+        (ROOT / "uv.lock").read_text(encoding="utf-8"),
+    )
+
+
+def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
+    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    mutations = (
+        (project_text.replace("pypdf>=6.15.0", "pypdf>=6.14.2"), lock_text),
+        (project_text, lock_text.replace(f"sha256:{PYPDF_WHEEL_SHA256}", "sha256:wrong")),
+        (project_text, lock_text.replace('version = "2.6.2"', 'version = "0.0.0"', 1)),
+    )
+    for candidate_project, candidate_lock in mutations:
+        with pytest.raises(AssertionError):
+            _assert_pypdf_615_contract(candidate_project, candidate_lock)
 
 
 def _assert_js_yaml_431_contract(package_text: str, lock: dict[str, Any]) -> None:

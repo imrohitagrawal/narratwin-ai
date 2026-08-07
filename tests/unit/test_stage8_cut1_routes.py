@@ -27,6 +27,20 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "cut1-process-401-pypdf-6-15-0-security": {
+        "docs/governance/preflights/issue-401.json",
+        "pyproject.toml",
+        "uv.lock",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "docs/ADR/0052-pypdf-6-15-0-security-refresh.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
     "cut1-process-396-js-yaml-4-3-1-security": {
         "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
         "docs/governance/preflights/issue-396.json",
@@ -149,6 +163,11 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["scripts/guardrails_check.py"] == 100
     assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["tests/unit/test_guardrails_check.py"] == 160
     assert routes.TEXT_LIMITS[routes.ISSUE397_BRANCH]["docs/agent-context/context-policy-manifest-v1.json"] == 10
+    issue401 = json.loads((REPO / "docs/governance/preflights/issue-401.json").read_text(encoding="utf-8"))
+    assert issue401["branch"] == routes.ISSUE401_BRANCH
+    assert set(issue401["scope"]["required"]) == EXPECTED[routes.ISSUE401_BRANCH]
+    assert set(issue401["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE401_BRANCH]
+    assert routes.TOTAL_LIMITS[routes.ISSUE401_BRANCH] == 600
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source
