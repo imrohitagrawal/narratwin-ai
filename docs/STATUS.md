@@ -1230,3 +1230,14 @@ Required update rules:
    lines. Symlink escape/cycle, cache poison, exact-scope, malformed-Git, and
    context-budget regressions are executable. Cut 1 and every product,
    provider, deployment, release, public, and production claim remain unchanged.
+
+## Issue 396 transitive dependency-security prerequisite status
+
+- Clean accepted main at `9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`
+  and PR `#395` independently reproduced High advisory
+  `GHSA-5p4m-2wfm-xmqj` in transitive development-tool `js-yaml` 4.3.0.
+- Issue `#396` owns a lockfile-only 4.3.1 repair, exact eleven-path route, committed
+  RED/GREEN evidence, strict audits, full gates, exact-head review and approval,
+  and merged-main acceptance. PR `#395` remains blocked until that closeout.
+- No product, presenter, provider, media, deployment, release, public/LinkedIn,
+  trademark, Issue `#391`, or production status changes.

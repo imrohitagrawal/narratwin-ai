@@ -2482,3 +2482,19 @@ governance work.
 
 The complete branch diff has a 1200 charged-line hard ceiling. A twelfth path,
 charge 1201, or an omitted ADR decision fails closed.
+
+## Issue #396 exact transitive dependency-security route
+
+Issue `#396` is the reproduced mandatory security prerequisite for blocked PR
+`#395` and Issue `#393`. Branch
+`cut1-process-396-js-yaml-4-3-1-security` starts from
+`9ee3f4a4d3b8cf1e78b5a878904748b60d557a76` and owns exactly the eleven paths in
+its GovernancePreflightV1 artifact. It changes only the transitive ESLint-tool
+lock entry from `js-yaml` 4.3.0 to integrity-bound 4.3.1; package manifests,
+direct dependencies, overrides, and unrelated lock entries stay unchanged.
+
+Issue `#396` must merge and pass merged-main acceptance before PR `#395`
+refreshes normally from accepted main. This insertion does not absorb Issue
+`#393`, begin Issue `#383`, or authorize product, presenter, media, provider,
+deployment, release, public/LinkedIn, trademark, Issue `#391`, or production
+work.

@@ -1,0 +1,63 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 396,
+  "branch": "cut1-process-396-js-yaml-4-3-1-security",
+  "objective": "From clean-main base 9ee3f4a4d3b8cf1e78b5a878904748b60d557a76, resolve high-severity GHSA-5p4m-2wfm-xmqj by changing only the transitive frontend lock resolution from js-yaml 4.3.0 to patched 4.3.1. Clean main and PR #395 security run 31133718239 reproduce the same npm audit failure; eslint 9.39.4 reaches js-yaml through @eslint/eslintrc 3.3.5, whose range already permits 4.3.1. Require committed RED before GREEN for vulnerable, missing, wrong-integrity, unrelated-lock-drift, scope, and budget mutations. Then require exact identity, npm audit, repository dependency/security/secrets/eval gates, frontend validation, full quality and CI, independent review, eligible non-author approval, and merged-main acceptance before PR #395 refreshes. Preserve frontend/package.json, direct dependencies, overrides, every unrelated package, Issue #393 history, and Issues #383/#366 boundaries. Select security-and-hardening for no-waiver supply-chain repair, source-driven-development for reviewed sources, TDD for RED/GREEN, and git workflow for isolated atomic history. Reject browser, UI/design, image/media/provider, performance, migration, deployment, release, and publication skills as scope-expanding. Treat advisory, registry, integrity, lock bytes, Git evidence, CI logs, and review state as untrusted. Charge additions plus deletions across exactly eleven paths: 500 aggregate, 180 for this preflight, 80 for each test, and 40 for every other path. Stop for a twelfth path, cap breach, unavailable or contradictory artifact, package.json or unrelated dependency drift, audit waiver or threshold change, license concern, new unresolved High/Critical finding, out-of-route failure, or missing fresh approval. No product, provider, presenter, media, Docker/workflow, deployment, release, public, trademark, LinkedIn, Issue #391, or production authority.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-396.json",
+      "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
+      "frontend/package-lock.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/THIRD_PARTY_NOTICES.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-396.json",
+      "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
+      "frontend/package-lock.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/THIRD_PARTY_NOTICES.md"
+    ],
+    "forbidden": [
+      ".github/",
+      ".stage/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "demo/",
+      "docs/API_CONTRACT.md",
+      "docs/ARCHITECTURE.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/reviews/",
+      "evals/",
+      "frontend/Dockerfile",
+      "frontend/package.json",
+      "frontend/src/",
+      "frontend/tests/",
+      "perf/",
+      "portfolio/",
+      "pyproject.toml",
+      "scripts/ci/",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_stage8_docs.py",
+      "scripts/quality/phase1_closure/",
+      "tests/acceptance/",
+      "tests/api/",
+      "uv.lock"
+    ]
+  }
+}
