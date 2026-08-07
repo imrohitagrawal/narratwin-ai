@@ -2,7 +2,7 @@
 import hashlib; import importlib.util; import json; import subprocess as sp
 from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
-from scripts.quality import stage8_a23b as a23b
+from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_routes
 from scripts.quality.check_stage8_docs import (CUT1_REAL_MEDIA_TRANSITION_BRANCH as CUT1_REAL_MEDIA_TRANSITION,
     CUT1_REAL_MEDIA_TRANSITION_FILES as CUT1_REAL_MEDIA_TRANSITION_SCOPE,
     CITATION_PARITY_BRANCH as CP, CITATION_PARITY_FILES as CP_SCOPE,
@@ -56,7 +56,7 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
                         else ORIGINAL_READ(path, *a, **kw))
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {branch: policy[branch] for branch in SCOPES} == SCOPES
-    assert {branch for branch in policy if branch.startswith("cut1-")} == set(SCOPES) - {a23b.A23B_BRANCH}
+    assert {b for b in policy if b.startswith("cut1-")} == set(SCOPES)-{a23b.A23B_BRANCH}|{cut1_routes.ISSUE396_BRANCH}
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file,status_file=(
         tmp_path/"stage",tmp_path/"status")
     mode = "| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
