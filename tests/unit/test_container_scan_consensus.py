@@ -350,8 +350,8 @@ def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
 def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     module = _load()
     matches = module.frontend_inventory_matches
-    amd64 = "1803:65a8c963c2a19b486dc491454523a4466a5795fa8b9773ccceac9dae1ddb283c"
-    arm64 = "1803:1b00f69f5326e4466b69a49078231110e1ca5027ec25f8a215cf8e7aebb39587"
+    amd64 = "1805:9a18413ff9fefd9c665595ab2564c72bb706dcf81b490fffd59b23653ad73858"
+    arm64 = "1803:ad570be227d414b9e0100f21fa1f03aa42e85acad9128f6c01524d780b7ea064"
     assert module.FRONTEND_INVENTORIES == {
         "amd64": frozenset((amd64,)),
         "arm64": frozenset((arm64,)),
@@ -363,6 +363,8 @@ def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     assert not matches("amd64", amd64[:-1] + "1")
     assert not matches("unknown", amd64)
     for stale in (
+        "1803:65a8c963c2a19b486dc491454523a4466a5795fa8b9773ccceac9dae1ddb283c",
+        "1803:1b00f69f5326e4466b69a49078231110e1ca5027ec25f8a215cf8e7aebb39587",
         "1805:80a0ba0401cf0710ca3179727644965433e4b3a199dd0c81cc60f7938df71de0",
         "1805:1c078e196a032c50ff9ba7f1954c4da2501a4ad47364ac44665ac29aed8c86b2",
         "1803:e9a3cd116280dff5bd1e39833d511f9fa0eb952bbde5f0ffaf4aab0ab2306c9f",
