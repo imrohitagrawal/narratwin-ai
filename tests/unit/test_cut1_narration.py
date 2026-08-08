@@ -290,6 +290,25 @@ def test_f382_06_12_13_distinct_grounding_failures_do_not_collapse(
     assert evaluated.evaluation.result == "FAILED"
 
 
+@pytest.mark.parametrize("mutation", ["empty", "duplicate"])
+def test_f382_13_missing_or_duplicate_support_identity_fails(
+    narration: ModuleType, tmp_path: Path, mutation: str
+) -> None:
+    service, principal, binding, project_id = _service(narration, tmp_path)
+    run = service.stage4.walkthrough_runs["run_narration"]
+    supports = list(run.evaluation.claim_supports)
+    if mutation == "empty":
+        supports = []
+    else:
+        supports[1] = replace(supports[1], claim_support_id=supports[0].claim_support_id)
+    service.stage4.walkthrough_runs[run.run_id] = replace(
+        run, evaluation=replace(run.evaluation, claim_supports=supports)
+    )
+    _assert_code(narration, "EVIDENCE_INVALID", lambda: service.create_draft(
+        principal=principal, project_id=project_id, source_run_id=run.run_id,
+        presenter_binding=binding, review_text=run.accepted_script_text))
+
+
 def test_f382_08_10_checksum_binds_every_authority_leaf(narration: ModuleType, tmp_path: Path) -> None:
     service, principal, draft, project_id = _draft(narration, tmp_path)
     payload = draft.checksum_payload()

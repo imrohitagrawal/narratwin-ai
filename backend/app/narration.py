@@ -297,8 +297,9 @@ class NarrationService:
         indexes = tuple(support.citation_index for support in evaluation.claim_supports)
         context_ids = tuple(context.context_ref_id for context in run.retrieved_context)
         support_ids = tuple(support.claim_support_id for support in evaluation.claim_supports)
-        if max(len(indexes), len(context_ids), len(support_ids), len(cast(Any, run.generated_script).claims)) > MAX_EVIDENCE_ITEMS:
-            _fail("EVIDENCE_LIMIT", "Narration evidence exceeds its bounded limit.")
+        evidence_counts = (len(indexes), len(context_ids), len(support_ids), len(cast(Any, run.generated_script).claims))
+        if max(evidence_counts) > MAX_EVIDENCE_ITEMS or not indexes or len(support_ids) != len(set(support_ids)):
+            _fail("EVIDENCE_INVALID", "Narration evidence is missing, duplicated, or exceeds its bounded limit.")
         row = NarrationVersion(
             principal.tenant_id, principal.actor_id, project_id, version,
             binding.presenter_id, binding.presenter_version, binding, binding.registry_sha256,
